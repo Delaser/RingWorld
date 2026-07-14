@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "ringworld",
+  "version": "${version}",
+  "name": "RingWorld",
+  "description": "A finite, looping cylindrical Overworld.",
+  "authors": ["RingWorld contributors"],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["dev.ringworld.RingWorldMod"],
+    "client": ["dev.ringworld.client.RingWorldClient"]
+  },
+  "mixins": [
+    "ringworld.mixins.json",
+    {"config": "ringworld.client.mixins.json", "environment": "client"}
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "~1.21.11",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}

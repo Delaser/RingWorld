@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.ringworld.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["BoundedRegionArrayMixin", "ChunkGeneratorMixin", "ChunkNoiseSamplerMixin", "ChunkPosDistanceLevelPropagatorMixin", "ChunkRegionMixin", "DensityCoordinateConsumerMixin", "EntityDistanceMixin", "EntityNavigationMixin", "EntityTrackingSectionMixin", "ExplosionImplMixin", "MinecraftServerMixin", "MultiTickSchedulerMixin", "NoiseChunkGeneratorMixin", "PlayerInteractionDistanceMixin", "ProjectileUtilMixin", "ServerChunkManagerMixin", "ServerChunkLoadingManagerMixin", "ServerEntityManagerMixin", "ServerEntityManagerListenerMixin", "ServerEntityTrackerMixin", "ServerPlayNetworkHandlerMixin", "ServerWorldMixin", "WorldEntityLookupMixin", "WorldTickSchedulerMixin"],
+  "injectors": {"defaultRequire": 1}
+}

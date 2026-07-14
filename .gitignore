@@ -1,0 +1,9 @@
+.gradle/
+build/
+run/
+run-multiplayer/
+logs/
+dist/
+.DS_Store
+.idea/
+*.iml

@@ -1,0 +1,2 @@
+c36611f41a94a80f9c527cdac622948376c05d4fe25e8c9b5bad5c1d28404715  RingWorld-Test-Client.zip
+cd0b044ff147fe86356f153d167ae50cb6a8763be5943ca199466d1a616d534e  RingWorld-Test-Client-Windows.zip

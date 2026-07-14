@@ -1,0 +1,75 @@
+package dev.ringworld.net;
+
+import dev.ringworld.RingWorldMod;
+import dev.ringworld.server.RingWorldMultiplayerTest;
+import dev.ringworld.server.RingTerrainAtlasServer;
+import dev.ringworld.world.RingWorldSettings;
+import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.server.network.ServerPlayNetworkHandler;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.text.Text;
+import net.minecraft.world.World;
+
+/** Performs the mandatory client-mod handshake and ships immutable settings. */
+public final class RingWorldNetworking {
+    private RingWorldNetworking() { }
+
+    public static void registerPayloads() {
+        PayloadTypeRegistry.playS2C().register(RingSettingsPayload.ID, RingSettingsPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(RingSettingsAckPayload.ID, RingSettingsAckPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(RingMultiplayerTestPayload.ID, RingMultiplayerTestPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(RingTerrainAtlasTilePayload.ID, RingTerrainAtlasTilePayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(RingTerrainAtlasRequestPayload.ID, RingTerrainAtlasRequestPayload.CODEC);
+    }
+
+    public static void registerServer() {
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> sendSettings(handler));
+        ServerPlayNetworking.registerGlobalReceiver(RingSettingsAckPayload.ID, (payload, context) ->
+                context.server().execute(() -> validateAcknowledgement(payload, context.player().networkHandler)));
+        ServerPlayNetworking.registerGlobalReceiver(RingMultiplayerTestPayload.ID, (payload, context) -> {
+            if (!Boolean.getBoolean("ringworld.multiplayerTest")) return;
+            context.server().execute(() -> {
+                RingWorldMultiplayerTest.recordClientResult(payload.role(), payload.phase(), payload.passed());
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:{}] client phase={} passed={} value={} player={}",
+                        payload.role(), payload.phase(), payload.passed(), payload.value(),
+                        context.player().getName().getString());
+            });
+        });
+        ServerPlayNetworking.registerGlobalReceiver(RingTerrainAtlasRequestPayload.ID, (payload, context) ->
+                context.server().execute(() -> RingTerrainAtlasServer.requestTiles(
+                        context.player(), payload.worldHash(), payload.cacheComplete())));
+    }
+
+    private static void sendSettings(ServerPlayNetworkHandler handler) {
+        ServerWorld overworld = handler.player.getEntityWorld().getServer().getWorld(World.OVERWORLD);
+        if (overworld == null) return;
+        if (!ServerPlayNetworking.canSend(handler.player, RingSettingsPayload.ID)) {
+            handler.disconnect(Text.literal("RingWorld is required on this server."));
+            return;
+        }
+        RingWorldSettings settings = RingWorldSettings.get(overworld);
+        ServerPlayNetworking.send(handler.player, new RingSettingsPayload(
+                settings.widthBlocks(), settings.circumferenceBlocks(), settings.generatorSeed(), settings.formatVersion()));
+    }
+
+    private static void validateAcknowledgement(RingSettingsAckPayload payload,
+                                                ServerPlayNetworkHandler handler) {
+        ServerWorld overworld = handler.player.getEntityWorld().getServer().getWorld(World.OVERWORLD);
+        if (overworld == null) return;
+        RingWorldSettings settings = RingWorldSettings.get(overworld);
+        if (payload.width() != settings.widthBlocks()
+                || payload.circumference() != settings.circumferenceBlocks()
+                || payload.formatVersion() != settings.formatVersion()) {
+            handler.disconnect(Text.literal("RingWorld geometry/protocol acknowledgement mismatch."));
+            return;
+        }
+        RingWorldMod.LOGGER.info("RingWorld settings acknowledged by {}: {}x{}, format {}",
+                handler.player.getName().getString(), payload.circumference(), payload.width(),
+                payload.formatVersion());
+        RingTerrainAtlasServer.sendMetadata(handler.player);
+    }
+}

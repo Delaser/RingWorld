@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.ringworld.client.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": ["CreateWorldScreenInvoker", "EntityRenderManagerMixin", "ClientChunkMapMixin", "ClientConnectionMixin", "ClientPlayNetworkHandlerMixin", "ChunkRenderingDataPreparerMixin", "GlobalSettingsMixin", "PlayerPositionDebugHudEntryMixin", "SkyRenderingMixin"],
+  "injectors": {"defaultRequire": 1}
+}
