@@ -28,7 +28,7 @@ the same change.
 | `EntityNavigationMixin` | `PathNavigation` | Projects AI path targets into the image nearest the mob | Canonical targets without local projection cause full-ring paths |
 | `EntityTrackingSectionMixin` | `EntitySection` | Compares canonicalized entity bounds during section queries | Duplicate/missing entity results at seam |
 | `ExplosionImplMixin` | `ServerExplosion` | Projects exposure rays and knockback direction to nearest entity image | Visual explosion can work while damage/impulse remains wrong |
-| `MinecraftServerMixin` | `MinecraftServer` | Constrains first-world spawn search to the finite Z interior | Can affect non-Overworld spawn setup if guard regresses |
+| `MinecraftServerMixin` | `MinecraftServer` | Constrains first-world spawn search to the finite Z interior and exposes the authoritative read-only dimension storage path | Spawn redirection must remain scoped; storage consumers must not reconstruct dimension folders |
 | `MultiTickSchedulerMixin` | `WorldGenTickAccess` | Canonicalizes generation-time block/fluid scheduled ticks | Tick key must match canonical block storage |
 | `NoiseChunkGeneratorMixin` | `NoiseBasedChunkGenerator` | Attaches geometry, skips exterior density/surface/carvers, scopes the periodic router to biome and terrain sampler construction | The private sampler factory and biome climate call must remain paired without intercepting unrelated router consumers |
 | `PlayerInteractionDistanceMixin` | `Player` | Periodic block use, entity interaction, and attack reach | Server authority; client-only fixes do not restore combat |
@@ -68,6 +68,7 @@ ordinary helpers:
 | --- | --- |
 | `RingWorldMod` | Common initialization |
 | `RingWorldServer` | World lifecycle, end-tick canonical folding, boundary migration, smoke fixtures |
+| `RingWorldStorageAccess` | Read-only bridge from a `ServerLevel` to Minecraft's authoritative per-dimension storage root |
 | `RingWorldNetworking` | Payload registration and mandatory handshake |
 | `RingTerrainAtlasServer` | Atlas generation, persistence, and tile streams |
 | `RingWorldClient` | Client handshake receivers, atlas cache, visual/test hooks |
