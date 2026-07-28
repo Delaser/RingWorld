@@ -4,8 +4,8 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
-Last code and documentation audit: 2026-07-28, covering the implementation
-merged into `main` at commit `97f6a97`.
+Last code and documentation audit: 2026-07-28, covering the final Minecraft
+1.21.11 implementation tagged `mc-1.21.11-final` at commit `2c98650`.
 
 ## What this project is
 
@@ -94,6 +94,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   removing test-world assumptions from custom dimensions.
 - `docs/MINECRAFT_26_1_PORT_PLAN.md`: authoritative Minecraft 26.1.2 port,
   agent ownership, integration, validation, and deployment plan.
+- `docs/MINECRAFT_1_21_11_FINAL_BASELINE.md`: immutable pre-port validation,
+  hashes, performance evidence, and protected rollback inventory.
 - `docs/AGENT_COLLABORATION.md`: dedicated-PC GitHub issue coordination,
   optional same-clone mailbox, and handoff protocol for parallel coding
   agents.

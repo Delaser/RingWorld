@@ -16,6 +16,9 @@ Start here:
 - [`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md): gated
   Minecraft 26.1.2 port plan, primary/secondary agent ownership, integration
   order, validation gates, and deployment criteria.
+- [`MINECRAFT_1_21_11_FINAL_BASELINE.md`](MINECRAFT_1_21_11_FINAL_BASELINE.md):
+  immutable pre-port tag, test results, artifact and screenshot hashes, and
+  protected rollback inventory.
 - [`AGENT_COLLABORATION.md`](AGENT_COLLABORATION.md): cross-PC GitHub issue
   coordination, optional same-clone mailbox, file ownership, and handoff
   protocol for two ChatGPT Desktop coding agents.

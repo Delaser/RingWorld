@@ -1,11 +1,14 @@
 # Minecraft 26.1 port plan
 
-Status: planned
+Status: Phase 1 in progress
 
 Target: Minecraft Java 26.1.2
 
-Baseline: the validated Minecraft 1.21.11 implementation merged into `main`
-at commit `97f6a97`
+Baseline: the validated Minecraft 1.21.11 implementation tagged
+`mc-1.21.11-final` at commit `2c98650`
+
+Baseline evidence:
+[`MINECRAFT_1_21_11_FINAL_BASELINE.md`](MINECRAFT_1_21_11_FINAL_BASELINE.md)
 
 This document is the authoritative implementation and coordination plan for
 porting RingWorld from Minecraft Java 1.21.11 to the 26.1 release family. It
@@ -125,6 +128,8 @@ flowchart TD
 ## Phase 0: freeze the 1.21.11 baseline
 
 Owner: primary agent
+
+Status: complete on 2026-07-28
 
 Before changing mappings or dependencies:
 

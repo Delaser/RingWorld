@@ -1,7 +1,11 @@
 # Current state
 
-Last audited: 2026-07-28 against the implementation merged into `main` at
-commit `97f6a97`.
+Last audited: 2026-07-28 against the final Minecraft 1.21.11 implementation
+tagged `mc-1.21.11-final` at commit `2c98650`.
+
+The Minecraft 26.1.2 port is active on `codex/minecraft-26.1-port`; see
+[`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md) and the
+[`final baseline`](MINECRAFT_1_21_11_FINAL_BASELINE.md).
 
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
