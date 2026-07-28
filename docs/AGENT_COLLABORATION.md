@@ -287,6 +287,9 @@ INTEGRATED S2 as <sha>; storage gate passed
 
 ## Copy-paste bootstrap prompt for the second agent
 
+The complete current prompt is maintained in
+[`SECONDARY_AGENT_BOOTSTRAP_PROMPT.txt`](SECONDARY_AGENT_BOOTSTRAP_PROMPT.txt).
+
 ```text
 You are the secondary RingWorld Minecraft 26.1 port agent. Read AGENTS.md,
 docs/MINECRAFT_26_1_PORT_PLAN.md, and docs/AGENT_COLLABORATION.md completely.

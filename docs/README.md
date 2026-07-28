@@ -19,6 +19,8 @@ Start here:
 - [`AGENT_COLLABORATION.md`](AGENT_COLLABORATION.md): cross-PC GitHub issue
   coordination, optional same-clone mailbox, file ownership, and handoff
   protocol for two ChatGPT Desktop coding agents.
+- [`SECONDARY_AGENT_BOOTSTRAP_PROMPT.txt`](SECONDARY_AGENT_BOOTSTRAP_PROMPT.txt):
+  copy-paste setup and first-task prompt for the secondary dedicated-PC agent.
 - [`NETWORK_PROTOCOL.md`](NETWORK_PROTOCOL.md): login handshake, atlas
   transport, and canonical/presentation packet mapping.
 - [`RENDERING.md`](RENDERING.md): terrain curvature, culling, distant texture,
