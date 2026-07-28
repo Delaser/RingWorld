@@ -4,13 +4,17 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
-Last code and documentation audit: 2026-07-28, covering the final Minecraft
-1.21.11 implementation tagged `mc-1.21.11-final` at commit `2c98650`.
+Last playable code audit: 2026-07-28, covering the final Minecraft 1.21.11
+implementation tagged `mc-1.21.11-final` at commit `2c98650`.
+
+Active port checkpoint: Minecraft 26.1.2/Java 25 compiler baseline; see
+`docs/MINECRAFT_26_1_COMPILER_BASELINE.md`. It intentionally has 95 common
+compile errors and is not playable yet.
 
 ## What this project is
 
-RingWorld is a Fabric mod for Minecraft Java 1.21.11. It turns only the
-Overworld into a finite band:
+RingWorld is a Fabric mod being ported from Minecraft Java 1.21.11 to 26.1.2.
+The validated design turns only the Overworld into a finite band:
 
 - canonical X runs around the circumference and is periodic;
 - Z runs across a finite width;
@@ -96,6 +100,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   agent ownership, integration, validation, and deployment plan.
 - `docs/MINECRAFT_1_21_11_FINAL_BASELINE.md`: immutable pre-port validation,
   hashes, performance evidence, and protected rollback inventory.
+- `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`: current Java 25/26.1.2
+  toolchain and exact expected compile-failure inventory.
 - `docs/AGENT_COLLABORATION.md`: dedicated-PC GitHub issue coordination,
   optional same-clone mailbox, and handoff protocol for parallel coding
   agents.
@@ -107,21 +113,20 @@ The complete mixin ownership table is in
 
 ## Build and fast validation
 
-Java 21 is required. Use the checked-in wrapper:
+The active port requires Java 25. Its current expected checkpoint is:
 
 ```sh
-./gradlew test build
+JAVA_HOME=/path/to/jdk-25/Contents/Home \
+PATH="$JAVA_HOME/bin:$PATH" \
+./gradlew clean compileJava --console=plain
 ```
 
-The expected mod artifact is:
+Expected result: 95 common-source errors and no artifact. Do not treat that
+checkpoint as a release build or suppress errors/mixins to make it green.
 
-```text
-build/libs/ringworld-0.1.0.jar
-```
-
-At the time of this audit there are 73 unit/parameterized cases. A green unit build does not
-prove packet or rendering mixins work in-game; use the integration procedures
-in [`docs/TESTING.md`](docs/TESTING.md).
+The frozen 1.21.11 tag uses Java 21 and passes 73 unit/parameterized cases plus
+the runtime suites recorded in
+[`docs/MINECRAFT_1_21_11_FINAL_BASELINE.md`](docs/MINECRAFT_1_21_11_FINAL_BASELINE.md).
 
 ## Local packaged client
 
@@ -168,7 +173,9 @@ altered test commands, known limitations, and rejected or superseded designs.
 4. Inspect every call path on both sides of the seam: server storage, packet
    encoding, client projection, renderer, and reconnect/save.
 5. Add or extend a pure unit test where possible.
-6. Run `./gradlew test build`.
+6. Run the validation appropriate to the current port gate. At the Phase 2
+   checkpoint this is the documented 95-error Java 25 `compileJava` baseline;
+   once common/client compilation returns, restore `./gradlew test build`.
 7. For topology or packet changes, run the two-client multiplayer harness.
 8. For rendering changes, launch a real world and inspect upward views, the
    live/LOD handoff, the seam, both width rims, day/dusk/night, and movement

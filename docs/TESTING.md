@@ -8,6 +8,23 @@ RingWorld needs tests at three levels:
 
 Rendering and mixin behavior cannot be proven by unit tests alone.
 
+## Active port checkpoint
+
+The current `codex/minecraft-26.1-port` branch requires Java 25 and is expected
+to stop at the 95-error common-source compiler baseline until source porting
+begins:
+
+```sh
+JAVA_HOME=/path/to/jdk-25/Contents/Home \
+PATH="$JAVA_HOME/bin:$PATH" \
+./gradlew clean compileJava --console=plain
+```
+
+See `MINECRAFT_26_1_COMPILER_BASELINE.md`. The commands and 73-case results
+below describe the last green 1.21.11 Mojang-mapped checkpoint. Run them from
+a separate checkout of `mc-1.21.11-final`; they become active on the port
+branch again only after the 26.1 common/client source sets compile.
+
 ## Unit and build validation
 
 Run:

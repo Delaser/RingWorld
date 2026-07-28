@@ -1,6 +1,6 @@
 # Minecraft 26.1 port plan
 
-Status: Phase 1 complete; Phase 2 next
+Status: Phase 2 compiler baseline established; source port in progress
 
 Target: Minecraft Java 26.1.2
 
@@ -198,6 +198,9 @@ Completion evidence:
 
 Owner: primary agent
 
+Status: complete on 2026-07-28; see
+[`MINECRAFT_26_1_COMPILER_BASELINE.md`](MINECRAFT_26_1_COMPILER_BASELINE.md)
+
 Build changes:
 
 - switch `net.fabricmc.fabric-loom-remap` to
@@ -214,6 +217,10 @@ Build changes:
 
 The output of this phase is a compiler-error inventory and a stable commit from
 which parallel code work begins. It does not need to launch yet.
+
+The captured common-source baseline contains 95 errors. Client compilation and
+tests remain gated behind those common errors; no mixin requirement was
+lowered.
 
 ## Primary-agent lane
 

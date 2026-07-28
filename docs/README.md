@@ -21,6 +21,8 @@ Start here:
 - [`MINECRAFT_1_21_11_FINAL_BASELINE.md`](MINECRAFT_1_21_11_FINAL_BASELINE.md):
   immutable pre-port tag, test results, artifact and screenshot hashes, and
   protected rollback inventory.
+- [`MINECRAFT_26_1_COMPILER_BASELINE.md`](MINECRAFT_26_1_COMPILER_BASELINE.md):
+  Java 25/26.1.2 build checkpoint and the exact 95-error source-port inventory.
 - [`AGENT_COLLABORATION.md`](AGENT_COLLABORATION.md): cross-PC GitHub issue
   coordination, optional same-clone mailbox, file ownership, and handoff
   protocol for two ChatGPT Desktop coding agents.

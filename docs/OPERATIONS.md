@@ -1,18 +1,22 @@
 # Configuration and operations
 
-## Supported stack
+## Active port stack
 
 | Component | Version |
 | --- | --- |
-| Minecraft Java | 1.21.11 |
-| Java | 21 |
+| Minecraft Java | 26.1.2 |
+| Java | 25 |
 | Fabric Loader | 0.19.3 |
-| Fabric API | 0.141.4+1.21.11 |
-| Mappings | Official Mojang mappings for 1.21.11 |
+| Fabric API | 0.155.2+26.1.2 |
+| Mappings | None; Minecraft 26.1.2 is unobfuscated |
 | Fabric Loom | 1.17 snapshot used by `gradle.properties` |
-| Gradle wrapper | 9.5.0 |
+| Gradle wrapper | 9.5.1 |
 
-The mod must be installed on the server and every client.
+This stack is the non-playable compiler baseline during the port. The working
+service, packages, and rollback remain Minecraft 1.21.11 at
+`mc-1.21.11-final`; do not deploy the 26.1 branch until every release gate in
+the port plan passes. The finished mod must be installed on the server and
+every client.
 
 ## Bootstrap configuration
 
@@ -164,13 +168,24 @@ format.
 
 ## Build
 
-From the repository root:
+The active branch currently reproduces its Java 25 compiler checkpoint with:
+
+```sh
+JAVA_HOME=/path/to/jdk-25/Contents/Home \
+PATH="$JAVA_HOME/bin:$PATH" \
+./gradlew clean compileJava --console=plain
+```
+
+Expected result: 95 common-source errors and no artifact. See
+`MINECRAFT_26_1_COMPILER_BASELINE.md`.
+
+The frozen 1.21.11 tag builds under Java 21 with:
 
 ```sh
 ./gradlew clean test build
 ```
 
-Artifacts:
+Frozen artifacts:
 
 ```text
 build/libs/ringworld-0.1.0.jar
@@ -179,7 +194,10 @@ build/libs/ringworld-0.1.0-sources.jar
 
 `clean` is optional for normal development but useful before a release.
 
-## Server installation
+## Frozen 1.21.11 server installation
+
+These instructions describe the active public/rollback service, not the
+non-playable 26.1 port branch.
 
 Install:
 
@@ -233,7 +251,7 @@ Before replacing the jar:
 6. validate geometry acknowledgement and atlas cache;
 7. perform a seam interaction test.
 
-## Client installation
+## Frozen 1.21.11 client installation
 
 Clients need:
 

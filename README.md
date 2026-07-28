@@ -1,7 +1,7 @@
 # RingWorld
 
-RingWorld is an experimental Fabric mod for Minecraft Java 1.21.11 that turns
-the Overworld into a finite, genuinely looping cylindrical world.
+RingWorld is an experimental Fabric mod that turns the Minecraft Overworld
+into a finite, genuinely looping cylindrical world.
 
 Walk far enough around the circumference and you return to the same place
 without entering a duplicate world or crossing a corrective teleport. Players,
@@ -11,10 +11,10 @@ world as a continuous ring across the sky.
 
 The Nether and End remain vanilla.
 
-> **Development status:** playable prototype and engine-level modpack feature.
-> The mod is under active development, must be installed on both the server and
-> every client, and is not currently intended for vanilla clients or broad
-> renderer/world-generation mod compatibility.
+> **Port status:** the active development branch targets Minecraft Java
+> 26.1.2 and currently stops at a documented 95-error compiler baseline. It is
+> not playable yet. The validated server, client packages, and rollback tag
+> remain Minecraft 1.21.11 (`mc-1.21.11-final`).
 
 ## What it feels like to play
 
@@ -111,11 +111,11 @@ handoff behavior.
 
 | Component | Version |
 | --- | --- |
-| Minecraft Java | 1.21.11 |
-| Java | 21 |
-| Fabric Loader | 0.19.3 or newer compatible release |
-| Fabric API | 0.141.4+1.21.11 |
-| Development mappings | Official Mojang mappings for 1.21.11 |
+| Minecraft Java | 26.1.2 port target |
+| Java | 25 |
+| Fabric Loader | 0.19.3 |
+| Fabric API | 0.155.2+26.1.2 |
+| Development mappings | None; 26.1.2 is unobfuscated |
 | RingWorld | The same jar on server and clients |
 
 The server performs a required geometry/protocol handshake and rejects missing
@@ -123,27 +123,21 @@ or incompatible clients.
 
 ## Build and install
 
-Build and run the unit suite with the included wrapper:
+The active port checkpoint is reproduced with Java 25:
 
 ```sh
-./gradlew test build
+JAVA_HOME=/path/to/jdk-25/Contents/Home \
+PATH="$JAVA_HOME/bin:$PATH" \
+./gradlew clean compileJava --console=plain
 ```
 
-The mod artifact is:
+It currently fails with the 95 errors inventoried in
+[the 26.1 compiler baseline](docs/MINECRAFT_26_1_COMPILER_BASELINE.md).
+There is intentionally no 26.1 release artifact yet.
 
-```text
-build/libs/ringworld-0.1.0.jar
-```
-
-For local development:
-
-```sh
-./gradlew runClient
-```
-
-Install the RingWorld jar and Fabric API in the `mods/` directory of every
-client and the Fabric server. Configure the desired layout before the first
-Overworld load.
+Client launch and install instructions remain suspended until the 26.1 common
+and client source sets compile. For the working 1.21.11 package, use the public
+download above or the frozen tag rather than attempting to package this branch.
 
 Existing ordinary Overworlds cannot be converted, and existing RingWorld
 dimensions cannot be resized in place.
@@ -241,7 +235,9 @@ Fabric modpacks.
 
 ## Testing
 
-Pure tests and build:
+The commands below describe the green 1.21.11 baseline. Run them from a
+separate checkout of `mc-1.21.11-final`; they will be restored on this branch
+after common and client compilation succeeds:
 
 ```sh
 ./gradlew test build

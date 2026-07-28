@@ -10,14 +10,25 @@ The Minecraft 26.1.2 port is active on `codex/minecraft-26.1-port`; see
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
 
-Port Phase 1 is complete locally: the project now uses official Mojang
-mappings while remaining on Minecraft 1.21.11. All 73 tests, the destructive
+Port Phase 1 is complete: the project moved to official Mojang mappings while
+remaining on Minecraft 1.21.11. All 73 tests, the destructive
 safe-small harness, same-process layout switch, dedicated two-client scenario,
 and production tangent/radial projection capture passed without changing the
 wire protocol, saved formats, or topology behavior. The only
 intermediary-looking source identifier is Mojang's still-unnamed
 `ServerLevel.method_31420` synthetic entity-tick lambda, documented in
 `MIXIN_MAP.md`.
+
+Phase 2 is also established: the active branch now resolves unobfuscated
+Minecraft 26.1.2 and Fabric API 0.155.2 under Java 25 and Gradle 9.5.1. Its
+expected checkpoint is a failing common compile with 95 inventoried errors;
+the client, mixins, runtime, and saved-world upgrade are not yet ported. See
+[`MINECRAFT_26_1_COMPILER_BASELINE.md`](MINECRAFT_26_1_COMPILER_BASELINE.md).
+The playable implementation remains the frozen `mc-1.21.11-final` tag.
+
+The “Implemented” sections below describe that validated 1.21.11 behavior and
+the contract the port must restore. They are not claims that the active 26.1.2
+compiler checkpoint currently launches.
 
 ## Implemented
 

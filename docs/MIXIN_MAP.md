@@ -1,8 +1,10 @@
 # Mixin ownership map
 
-This mod currently depends on Minecraft 1.21.11 internals expressed with
-official Mojang mappings. Use this map to locate the owner of a behavior before
-adding another injection.
+The active branch is compiling against Minecraft 26.1.2, but the mixin source
+still represents the validated Minecraft 1.21.11 behavior under official
+Mojang mappings until each row is explicitly ported. Candidate 26.1.2 targets
+and confidence are tracked in `PORTING_26_1_AUDIT.md`. Use this map to locate
+the owner of a behavior before adding another injection.
 
 The authoritative mixin lists are:
 
