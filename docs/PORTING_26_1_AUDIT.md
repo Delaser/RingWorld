@@ -139,7 +139,7 @@ Confidence meanings:
 | 19 | `ServerEntityManagerListenerMixin` | `ServerEntityManager.Listener.updateEntityPosition` | `PersistentEntitySectionManager.Callback.onMove()` | High | Inner-class name and callback method changed; update the section key exactly once after a fold. | Moving item/boat/projectile through seam, post-crossing query and save/reload. |
 | 20 | `ServerEntityTrackerMixin` | `ServerChunkLoadingManager.EntityTracker.updateTrackedStatus`, redirect `Vec3d.subtract` | `net.minecraft.server.level.ChunkMap.TrackedEntity.updatePlayer(ServerPlayer)` | High | The candidate combines distance, broadcast predicate, and chunk watch state; periodic distance alone must not bypass watch eligibility. | Two-player/entity visibility across seam, range boundary, spectator and non-Overworld controls. |
 | 21 | `ServerPlayNetworkHandlerMixin` | `ServerPlayNetworkHandler.onPlayerMove`/`onVehicleMove` | `net.minecraft.server.network.ServerGamePacketListenerImpl.handleMovePlayer` and `handleMoveVehicle` | High | Packet records, relative flags, anti-cheat baselines, vehicle/passenger reconciliation, and correction thresholds changed. | Natural player/vehicle crossing with zero corrective teleports, bad-move rejection, yaw/pitch/velocity continuity. |
-| 22 | `ServerWorldMixin` | `ServerWorld` constructor, loaded/load/tick checks, synthetic `method_31420`, proximity delivery | `net.minecraft.server.level.ServerLevel`; inspected `shouldTickBlocksAt`, `areEntitiesLoaded`, `isPositionEntityTicking`, `canSpawnEntitiesInChunk`, `startTickingChunk`, and private `sendParticles` proximity path | Low | The synthetic tick method cannot be carried forward by name, entity load/tick predicates were reorganized, and no fallback may become global forced ticking. | Moving entity eligibility, scheduled ticks, spawn checks, proximity particles/effects, save/reconnect, Nether/End. |
+| 22 | `ServerWorldMixin` | `ServerWorld` constructor, loaded/load/tick checks, synthetic `method_31420`, proximity delivery | `net.minecraft.server.level.ServerLevel`; constructor and named `tick` redirect of `DistanceManager.inEntityTickingRange`, plus `areEntitiesLoaded`, `waitForEntities`, tick/spawn predicates, and final `sendParticles` proximity path | Medium | Entity load/tick predicates were reorganized, and no fallback may become global forced ticking. Runtime mixin application and moving-entity eligibility remain unproved. | Moving entity eligibility, scheduled ticks, spawn checks, proximity particles/effects, save/reconnect, Nether/End. |
 | 23 | `WorldEntityLookupMixin` | `World.getOtherEntities` and typed `collectEntitiesByType` | `net.minecraft.world.level.Level.getEntities` untyped and typed overloads, including the bounded-output overload | High | Method names collapsed to overloads; split seam windows once and suppress duplicates, including whole-ring queries. | Unit query-window matrix, typed/untyped seam queries, full-circumference and max-result behavior. |
 | 24 | `WorldTickSchedulerMixin` | `WorldTickScheduler.scheduleTick` | `net.minecraft.world.ticks.LevelTicks.schedule(ScheduledTick)` | High | `ScheduledTick` record accessors and container lookup changed; never store alias positions. | Runtime block/fluid ticks across seam and after save/reload. |
 
@@ -349,9 +349,9 @@ Additional structural changes requiring a compiler/source audit:
 4. Where should the periodic chunk graph context wrap both
    `ChunkTracker.checkNeighborsAfterUpdate` and `getComputedLevel` while
    retaining the vanilla invalid-node sentinel?
-5. Which `ServerLevel` tick lambda replaces Yarn `method_31420`, and is a
-   redirect still the narrowest safe way to preserve entity simulation
-   eligibility?
+5. **Resolved in primary source port:** 26.1.2 places the call directly in
+   named `ServerLevel.tick`; the redirect remains narrowly scoped to
+   `DistanceManager.inEntityTickingRange(long)`.
 6. Should explosion exposure be injected into static
    `ServerExplosion.getSeenPercent`, private `hurtEntities`, or a shared ray
    helper to cover both damage and knockback with one nearest-image decision?

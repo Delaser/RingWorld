@@ -310,11 +310,10 @@ changing version numbers.
   visibility graph can hide sections that cylindrical rendering bends back
   into view. Curved frustum and render-distance culling must remain enabled to
   bound the performance cost.
-- The 1.21.11 Mojang mappings do not name `ServerLevel`'s asynchronous
-  entity-tick lambda; `ServerWorldMixin` therefore retains the synthetic
-  `method_31420` target with an explicit `@Dynamic` explanation. Do not treat
-  that one audited exception as permission to retain other Yarn or
-  intermediary identifiers.
+- The frozen 1.21.11 Mojang baseline targeted the unnamed
+  `ServerLevel.method_31420` entity-tick lambda. Minecraft 26.1 exposes the
+  same call inside named `ServerLevel.tick`; the active mixin targets `tick`
+  and must not regress to a synthetic or optional target.
 
 The detailed current status and open risks are maintained in
 [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md).

@@ -14,8 +14,8 @@ Port Phase 1 is complete: the project moved to official Mojang mappings while
 remaining on Minecraft 1.21.11. All 73 tests, the destructive
 safe-small harness, same-process layout switch, dedicated two-client scenario,
 and production tangent/radial projection capture passed without changing the
-wire protocol, saved formats, or topology behavior. The only
-intermediary-looking source identifier is Mojang's still-unnamed
+wire protocol, saved formats, or topology behavior. At that checkpoint the only
+intermediary-looking source identifier was Mojang's still-unnamed
 `ServerLevel.method_31420` synthetic entity-tick lambda, documented in
 `MIXIN_MAP.md`.
 

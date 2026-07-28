@@ -61,9 +61,10 @@ build/test-results/test/
 
 The 1.21.11 development build uses official Mojang mappings. After any mapping
 migration, also search active Java and descriptor text for `class_`, `field_`,
-and `method_`. The only current exception is the explicitly documented
-`ServerLevel.method_31420` synthetic lambda in `ServerWorldMixin`; a clean
-compile alone is not evidence that a required mixin still applies.
+and `method_`. The frozen 1.21.11 baseline had one audited
+`ServerLevel.method_31420` exception; the active 26.1 source targets named
+`ServerLevel.tick` and permits no intermediary residue. A clean compile alone
+is not evidence that a required mixin still applies.
 
 ## Local automated smoke world
 

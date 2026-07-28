@@ -56,7 +56,7 @@ Mojang-mapped 1.21.11 Phase 1 commit, with 73 cases and all runtime gates.
 | --- | ---: | --- |
 | `ServerChunkLoadingManagerMixin` | 23 | `ChunkPos` record access/packing plus later target redesign |
 | `RingChunkFilter` | 17 | `ChunkPos` record access/packing |
-| `ServerWorldMixin` | 15 | `ChunkPos` record access/packing; synthetic tick target still requires source redesign |
+| `ServerWorldMixin` | 15 | `ChunkPos` record access/packing; synthetic tick target required source redesign |
 | `ServerEntityManagerMixin` | 15 | `ChunkPos` record access/packing |
 | `RingWorldNetworking` | 6 | payload registry method renames |
 | `ServerChunkManagerMixin` | 6 | `ChunkPos` record access/packing |
@@ -95,6 +95,11 @@ The remaining five diagnostics are intentionally left to S2:
 
 This reduction does not prove that any of the affected mixin injection targets
 apply at runtime.
+
+The same pass source-audited the entity simulation call in 26.1.2
+`ServerLevel.tick` and replaced the frozen baseline's synthetic
+`method_31420` redirect. `ChunkTracker` neighbour packing was likewise updated
+from `ChunkPos.asLong` to `ChunkPos.pack`.
 
 ## Next ownership split
 

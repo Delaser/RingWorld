@@ -18,7 +18,6 @@ import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.ticks.LevelTicks;
 import dev.ringworld.world.RingEntityManagerAccess;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -76,10 +75,9 @@ abstract class ServerWorldMixin {
      * only chunks vanilla intends the nearby player to simulate.
      */
     @Redirect(
-            method = "method_31420",
+            method = "tick",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/server/level/DistanceManager;inEntityTickingRange(J)Z"))
-    @Dynamic("Mojang mappings do not name ServerLevel's entity-tick lambda")
     private boolean ringworld$periodicEntityTickEligibility(DistanceManager manager, long packedPos) {
         ServerLevel world = (ServerLevel) (Object) this;
         if (world.dimension() != Level.OVERWORLD) return manager.inEntityTickingRange(packedPos);

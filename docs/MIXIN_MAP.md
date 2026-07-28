@@ -94,8 +94,8 @@ Do not silence an injection failure by lowering `defaultRequire` or marking a
 critical mixin optional. A clean launch with a missing topology patch is more
 dangerous than an explicit startup failure.
 
-The 1.21.11 Mojang mappings leave `ServerLevel`'s asynchronous entity-tick
-lambda named `method_31420`. `ServerWorldMixin` targets that synthetic method
-with an explicit `@Dynamic` explanation. This is the sole accepted
-intermediary-looking identifier in active source and must be source-audited
-again for 26.1 rather than mechanically renamed.
+The frozen 1.21.11 Mojang baseline used the unnamed
+`ServerLevel.method_31420` asynchronous entity-tick lambda. In 26.1.2 the
+source-audited `DistanceManager.inEntityTickingRange` call is directly inside
+named `ServerLevel.tick`, which is now the active redirect target. No
+intermediary-looking identifier remains accepted in active source.
