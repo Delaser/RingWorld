@@ -259,8 +259,9 @@ public final class RingTerrainAtlasServer {
         int step = atlas.sampleStep();
         for (int localZ = step / 2; localZ < 16; localZ += step) {
             for (int localX = step / 2; localX < 16; localX += step) {
-                // Chunk.sampleHeightmap already returns the Y coordinate of
-                // the highest matching block (Heightmap#get minus one). Do
+                // ChunkAccess.getHeight already returns the Y coordinate of
+                // the highest matching block (Heightmap#getFirstAvailable
+                // minus one). Do
                 // not subtract another block here or grass becomes the dirt
                 // underneath it in the distant surface atlas.
                 int surfaceY = chunk.getHeight(

@@ -220,7 +220,7 @@ changing version numbers.
   Pause is process-local and does not alter immutable saved layout.
 - Atlas format 5 represents exposed top-face height and
   texture-luminance-corrected, biome-tinted colour from the actual highest
-  surface block at eight-block source resolution. `Chunk.sampleHeightmap`
+  surface block at eight-block source resolution. `ChunkAccess.getHeight`
   already returns that block's Y; subtracting one samples dirt beneath grass.
   Dedicated servers do not load Minecraft's grass/foliage colormap textures,
   so their zero tint lookup must fall back to the sampled block's map colour;
@@ -258,7 +258,7 @@ changing version numbers.
   profile. Its std140 field order, `GlobalSettings` allocation, and every
   custom program that declares Globals must change together.
 - The dedicated multiplayer clients must not connect before
-  `MinecraftClient.isFinishedLoading()`. Joining during the initial resource
+  `Minecraft.isGameLoadFinished()`. Joining during the initial resource
   reload can run leaf display ticks against unprepared particle sprites.
 - `runLayoutSwitchClient` opens two existing saves in one JVM and stops after
   logging its result. Keep it non-destructive: it may save normally, but must

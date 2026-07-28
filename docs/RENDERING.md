@@ -138,7 +138,7 @@ curved ground.
 ### Source data
 
 The server atlas contains the exposed top-face height and RGB of the actual
-highest generated surface block every eight blocks. `Chunk.sampleHeightmap`
+highest generated surface block every eight blocks. `ChunkAccess.getHeight`
 already returns that block's Y coordinate; the sampled state uses that exact Y
 and the mesh height is its top face at Y+1. Water, grass, and foliage start with
 their biome tint, then apply an average block-texture luminance so the tint is
