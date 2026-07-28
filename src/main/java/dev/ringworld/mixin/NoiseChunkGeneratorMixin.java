@@ -82,9 +82,9 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     }
 
     @Redirect(
-            method = "*",
+            method = "doCreateBiomes",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/levelgen/RandomState;router()Lnet/minecraft/world/level/levelgen/NoiseRouter;"))
-    private NoiseRouter ringworld$periodicRouter(RandomState noiseConfig) {
+    private NoiseRouter ringworld$periodicBiomeRouter(RandomState noiseConfig) {
         NoiseRouter vanilla = noiseConfig.router();
         if (ringworld$geometry == null) return vanilla;
         return ringworld$getOrCreatePeriodicRouter(noiseConfig, vanilla);

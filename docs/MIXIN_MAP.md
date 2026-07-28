@@ -30,7 +30,7 @@ the same change.
 | `ExplosionImplMixin` | `ServerExplosion` | Projects exposure rays and knockback direction to nearest entity image | Visual explosion can work while damage/impulse remains wrong |
 | `MinecraftServerMixin` | `MinecraftServer` | Constrains first-world spawn search to the finite Z interior | Can affect non-Overworld spawn setup if guard regresses |
 | `MultiTickSchedulerMixin` | `WorldGenTickAccess` | Canonicalizes generation-time block/fluid scheduled ticks | Tick key must match canonical block storage |
-| `NoiseChunkGeneratorMixin` | `NoiseBasedChunkGenerator` | Attaches geometry, skips exterior density/surface/carvers, wraps noise router | Broad `method="*"` redirect is highly version-sensitive |
+| `NoiseChunkGeneratorMixin` | `NoiseBasedChunkGenerator` | Attaches geometry, skips exterior density/surface/carvers, scopes the periodic router to biome and terrain sampler construction | The private sampler factory and biome climate call must remain paired without intercepting unrelated router consumers |
 | `PlayerInteractionDistanceMixin` | `Player` | Periodic block use, entity interaction, and attack reach | Server authority; client-only fixes do not restore combat |
 | `ProjectileUtilMixin` | `ProjectileUtil` | Raycasts ordinary and piercing projectiles against projected seam hitboxes | Must return the canonical entity while testing its nearest box |
 | `ServerChunkLoadingManagerMixin` | `ChunkMap` | Canonical generation regions, periodic watch filters, watch diffs, tracking/tick distance | Central chunk lifecycle patch; regressions cause hangs or duplicate holders |
@@ -83,7 +83,9 @@ For a Minecraft or mappings upgrade:
 2. compile and record every failed target;
 3. compare descriptors and bytecode semantics, not only names;
 4. verify injection ordinals and local variable timing;
-5. audit broad redirects, especially `NoiseChunkGeneratorMixin`;
+5. audit broad redirects; `NoiseChunkGeneratorMixin` no longer uses its old
+   wildcard router redirect, and any new wildcard interception needs a
+   call-site inventory first;
 6. inspect shader imports, Globals layout, and camera-origin conventions;
 7. run unit tests;
 8. run local world creation and reconnect;
