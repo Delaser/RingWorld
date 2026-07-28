@@ -1,7 +1,7 @@
 # Minecraft 26.1 port plan
 
-Status: common/client source port and dedicated-server storage gate pass;
-client/runtime port in progress
+Status: common/client source, server storage, and integrated safe-small client
+gates pass; multiplayer/packaging port in progress
 
 Target: Minecraft Java 26.1.2
 
@@ -569,7 +569,7 @@ their corresponding runtime gates.
 
 ### Gate 5: production geometry
 
-- 15,552 × 4,096 validation passes;
+- 15,552 × 256 current-default validation passes;
 - synthetic full-ring projection passes;
 - a real atlas resource benchmark completes;
 - GPU resources remain within policy;

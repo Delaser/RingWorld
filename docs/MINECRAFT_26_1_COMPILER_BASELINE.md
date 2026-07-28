@@ -26,8 +26,11 @@ data use the Overworld's dimension-owned data directory. Legacy settings are
 copied byte-for-byte without altering the source, while a legacy atlas that
 fails current validation is rebuilt safely. The first launch also caught and
 fixed the strict `ServerLevel.lambda$tick$0` entity-eligibility mixin target.
-Client rendering, gameplay, multiplayer, packaging, and staging gates remain,
-so this is still not a playable build.
+A subsequent isolated safe-small client completed resource/shader loading,
+100% atlas-backed tangent/radial rendering, two natural seam crossings, and
+the representative gameplay/rim matrix. Multi-size visual review,
+two-client multiplayer, packaging, and staging gates remain, so this is still
+not a playable build.
 
 ## Toolchain
 

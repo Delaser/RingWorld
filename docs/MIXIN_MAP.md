@@ -55,7 +55,7 @@ the same change.
 | `CreateWorldScreenMixin` | `CreateWorldScreen` | Adds the immutable RingWorld layout editor entry point and current C×W summary | Changes bootstrap defaults for the next new world only; saved settings remain authoritative |
 | `CreateWorldScreenInvoker` | `CreateWorldScreen` | Invokes level creation for the opt-in local automated harness | Test-only; must not auto-create when `testMode=false` |
 | `EntityRenderManagerMixin` | `EntityRenderDispatcher` | Curved translation and tangent rotation for entity models | Transform must match terrain and leave local camera controls unchanged |
-| `GlobalSettingsMixin` | `GlobalSettingsUniform` | Extends Globals with named layout, vertical, render-distance, handoff, detail/reveal, haze, cloud-fade, and visual-profile fields | Shader ABI extension; std140 field order and buffer sizing are version-sensitive |
+| `GlobalSettingsMixin` | `GlobalSettingsUniform.<init>` and `update(..., Vec3, ...)` | Extends Globals with named layout, vertical, render-distance, handoff, detail/reveal, haze, cloud-fade, and visual-profile fields | Shader ABI extension; std140 field order, buffer sizing, and the 26.1 extracted camera-position parameter are version-sensitive |
 | `PlayerPositionDebugHudEntryMixin` | `DebugEntryPosition` | Replaces F3 position section with canonical Ring coordinates and atlas state | Debug display only; never use it as storage logic |
 | `SkyRenderingMixin` | `SkyRenderer` | Small fixed ring-centred sun, time-based sun tint/intensity, no moon, stationary stars, and complete-ring texture invocation | `renderSun` constants and dynamic colour arguments are version-sensitive |
 

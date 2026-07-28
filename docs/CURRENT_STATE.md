@@ -38,9 +38,28 @@ The first dedicated-server launch exposed a strict runtime mixin failure that
 compilation could not detect: entity tick eligibility moved into
 `ServerLevel.lambda$tick$0`. The redirect now names the exact 26.1 synthetic
 descriptor, retains its required injection count, and the fresh and copied
-server launches pass with it. Client rendering, integrated gameplay,
-multiplayer, packaging, and staging gates remain. The only playable
-implementation is still the frozen `mc-1.21.11-final` tag.
+server launches pass with it.
+
+The first real client launch similarly caught a callback-descriptor mismatch:
+`GlobalSettingsUniform.update` receives extracted camera `Vec3`, not `Camera`.
+After that strict fix, the 2,048×416 integrated creative harness completed
+resource/shader loading, terrain generation, a 100% 13,312-cell atlas, a
+2,048×416 GPU surface with 79,872 vertices, and tangent plus radial-up
+complete-ring captures. Two natural seam crossings retained yaw/pitch with
+zero correction packets and no non-canonical chunk-holder requests. Block,
+entity, projectile, vehicle, AI, fluid, explosion, collision, late tracking,
+rim, shortened-wall, and exterior-void probes passed.
+
+The first topology run averaged 8.37 ms at the seam and 8.41 ms by the rim
+with no frames above 50 ms. The full-atlas run averaged 8.41/8.37 ms and
+recorded one isolated frame above 50 ms in each measured phase while
+generation/upload work was active. The captures prove that the 26.1 complete
+ring pipeline executes; multi-size colour/handoff art review remains open.
+The current 15,552×256 default is unit/resource validated but has not yet run
+the full 26.1 production-size visual matrix.
+
+Two-client multiplayer, packaging, and staging gates remain. The only
+playable implementation is still the frozen `mc-1.21.11-final` tag.
 
 The “Implemented” sections below describe validated 1.21.11 behavior and the
 contract the port must restore. They are not claims that every active 26.1.2
@@ -253,7 +272,9 @@ client/runtime gate passes.
 - Broad multi-seed structure/carver/feature coverage at the seam is incomplete.
 - Periodic density noise does not guarantee every vanilla structure placement
   seed or third-party generator treats X=0/C as adjacent.
-- Production default atlas pregeneration is very large: 248,832 chunks.
+- The new 15,552×256 production default still requires 15,552 canonical chunks
+  and 62,208 atlas cells; its real end-to-end pregeneration benchmark remains
+  open.
 - Existing Overworld region files without RingWorld saved settings are
   explicitly rejected; no conversion tool exists.
 - Decorative wall-height changes can produce mixed old/new boundary chunks.

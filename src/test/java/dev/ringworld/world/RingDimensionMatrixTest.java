@@ -14,7 +14,7 @@ class RingDimensionMatrixTest {
         return Stream.of(
                 Arguments.of("safe small", 2_048, 416),
                 Arguments.of("narrow safe small", 2_048, 256),
-                Arguments.of("production default", 15_552, 4_096),
+                Arguments.of("production default", 15_552, 256),
                 Arguments.of("long narrow", 32_768, 512),
                 Arguments.of("wide medium", 4_096, 2_048));
     }
@@ -45,7 +45,7 @@ class RingDimensionMatrixTest {
                 Arguments.of(2_048, 416, 6),
                 Arguments.of(2_048, 416, 12),
                 Arguments.of(2_048, 416, 28),
-                Arguments.of(15_552, 4_096, 28),
+                Arguments.of(15_552, 256, 28),
                 Arguments.of(32_768, 512, 64));
     }
 

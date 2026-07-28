@@ -41,8 +41,12 @@ class RingDimensionReportTest {
                 RingWorldSettings.DEFAULT_WALL_HEIGHT);
 
         assertTrue(report.isValid(), report.errors().toString());
-        assertEquals(248_832L, report.canonicalChunkCount());
-        assertEquals(995_328L, report.atlasCellCount());
+        assertEquals(256, report.geometry().widthBlocks());
+        assertEquals(15_552L, report.canonicalChunkCount());
+        assertEquals(62_208L, report.atlasCellCount());
+        assertTrue(report.oppositeAngularWidthDegrees() > 2.9
+                && report.oppositeAngularWidthDegrees() < 3.0);
+        assertTrue(report.warnings().isEmpty(), report.warnings().toString());
         assertTrue(report.radialClearanceAtHighestPlane() > 2_200.0);
     }
 

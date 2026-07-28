@@ -182,6 +182,9 @@ int UseRgss
 `GlobalSettingsUniform.UBO_SIZE` is still 136 bytes. The Java publisher changed
 from `GlobalSettings.set(..., Camera, ...)` to
 `GlobalSettingsUniform.update(..., DeltaTracker, ..., Vec3 cameraPos, ...)`.
+The first real 26.1 client launch confirmed that this is also the strict mixin
+callback descriptor: retaining `Camera` compiles but fails during
+`GlobalSettingsUniform` transformation before the window initializes.
 The vanilla buffer is initialized through
 `GpuDevice.createBuffer(Supplier,int,long)` in a field initializer. RingWorld's
 appended vectors cannot be assumed safe merely because the GLSL prefix is

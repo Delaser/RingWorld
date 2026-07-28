@@ -13,9 +13,10 @@
 | Gradle wrapper | 9.5.1 |
 
 This stack now produces a green development build and passes isolated fresh
-and copied-world dedicated-server launch gates. It remains non-playable until
-the client, rendering, gameplay, multiplayer, packaging, and staging gates
-pass. The working service, packages, and rollback remain Minecraft 1.21.11 at
+and copied-world dedicated-server launch gates plus the integrated safe-small
+client atlas/rendering/gameplay harness. It remains non-playable until
+multi-size visual review, multiplayer, packaging, and staging gates pass. The
+working service, packages, and rollback remain Minecraft 1.21.11 at
 `mc-1.21.11-final`; do not deploy the 26.1 branch until every release gate in
 the port plan passes. The finished mod must be installed on the server and
 every client.
@@ -32,7 +33,7 @@ If absent, the mod creates it at startup.
 
 | Property | Default | Validation/meaning |
 | --- | ---: | --- |
-| `widthBlocks` | 4096 | At least 256, divisible by 16, sufficient rim interior, and within atlas/axis budgets |
+| `widthBlocks` | 256 | At least 256, divisible by 16, sufficient rim interior, and within atlas/axis budgets |
 | `circumferenceBlocks` | 15552 | Divisible by 16 and large enough for 64 blocks of radial clearance above the build top (2,016 minimum for vanilla bounds) |
 | `wallHeightBlocks` | 160 | At least 32; measured from world minimum Y; wall and cloud top must fit the build range |
 | `testMode` | false | Enables destructive local automated harness |
@@ -93,7 +94,7 @@ path.
 
 ```text
 circumference: 15552 blocks = 972 chunks
-width:          4096 blocks = 256 chunks
+width:           256 blocks = 16 chunks
 radius:         about 2475 blocks
 ```
 
@@ -123,7 +124,7 @@ normal server chunk queue has fewer than 64 pending tasks.
 | Geometry | Canonical chunks | Source cells at 8-block step |
 | --- | ---: | ---: |
 | 2048×416 safe-small | 3,328 | 13,312 |
-| 15552×4096 default | 248,832 | 995,328 |
+| 15552×256 default | 15,552 | 62,208 |
 
 Production-default atlas completion is therefore a large world-generation
 operation. Monitor disk use, server tick time, and progress logs. Set
@@ -132,14 +133,14 @@ complete-ring texture will not build until a complete atlas is available.
 Progress logs report captured cells, cells per second, and an ETA once a rate
 can be measured.
 
-The production-default static resource envelope is approximately 6.6 MiB of
-raw atlas arrays/wire payload, 21.3 MiB for the RGBA8 GPU texture including its
-mip chain, 9.0 MiB for the maximum-detail mesh, and 48.0 MiB of conservative
-texture-build scratch. Gzip disk size depends on terrain but cannot be used as
-the memory budget. The creation editor reports these calculated values. The
-technical 16-million-cell atlas ceiling represents about 106.8 MiB of raw
-atlas arrays and is a hard allocation limit, not a recommended production
-target.
+The 15,552×256 production-default static resource envelope is approximately
+0.42 MiB of raw atlas arrays/wire payload, 5.33 MiB for the RGBA8 GPU texture
+including its mip chain, 2.25 MiB for the maximum-detail mesh, and 12.0 MiB of
+conservative texture-build scratch. Gzip disk size depends on terrain but
+cannot be used as the memory budget. The creation editor reports these
+calculated values. The technical 16-million-cell atlas ceiling represents
+about 106.8 MiB of raw atlas arrays and is a hard allocation limit, not a
+recommended production target.
 
 Operators with gamemaster permission can inspect or control background
 pregeneration without changing immutable world layout:

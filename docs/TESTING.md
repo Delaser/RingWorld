@@ -84,6 +84,35 @@ The 2026-07-28 checkpoint demonstrated:
 These are server/storage gates only. They do not replace `runClient`, visual,
 seam, or two-client multiplayer validation.
 
+## 26.1 integrated safe-small client gate
+
+The 2026-07-28 isolated Java 25 client gate first confirmed that every startup
+mixin and shader resource loaded to the UI. It then ran the destructive
+2,048×416 creative harness twice:
+
+- a no-pregeneration topology run completed two natural wraps and every
+  representative gameplay/rim probe with 8.37/8.41 ms seam/rim averages and
+  no frames over 50 ms;
+- a full-pregeneration run completed all 13,312 atlas cells at roughly 82
+  cells/sec, built a 2,048×416 GPU texture and 79,872-vertex surface, and saved
+  both tangent and radial-up complete-ring captures;
+- both full-atlas natural crossings preserved yaw/pitch and emitted zero
+  correction packets; canonical storage, block interaction, entities,
+  projectile collision, boat, AI, fluid, explosion, collision, rim, wall top,
+  and exterior void all passed;
+- the full-atlas run averaged 8.41/8.37 ms and recorded one isolated frame over
+  50 ms in each measured phase while generation/upload work was active.
+
+This establishes the safe-small functional renderer and gameplay gate, not
+final visual tuning. Inspect both complete-ring images for colour, live/LOD
+handoff, local proxy exclusion, and width-edge alignment. The current
+15,552×256 production default still needs its multi-size visual/resource gate.
+
+The 26.1 `--quickPlaySingleplayer` projection task did not enter the selected
+world during this checkpoint, so the successful complete-ring captures came
+from the integrated harness. Treat that task as an S4 harness-port item rather
+than weakening the visual gate.
+
 ## Local automated smoke world
 
 The opt-in harness is destructive to its own test world: it teleports players,

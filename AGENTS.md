@@ -7,13 +7,14 @@ rendering. Detailed design documents live under [`docs/`](docs/README.md).
 Last playable code audit: 2026-07-28, covering the final Minecraft 1.21.11
 implementation tagged `mc-1.21.11-final` at commit `2c98650`.
 
-Active port checkpoint: Minecraft 26.1.2/Java 25 source and dedicated-server
-runtime gate. Common and client compilation passes, all 83
-unit/parameterized cases pass, and Loom produces the development jars. Fresh
-and copied-1.21.11 dedicated-server worlds launch successfully with
-dimension-owned settings/atlas storage. Client rendering, gameplay,
-multiplayer, packaging, and staging gates remain, so the port is not playable
-yet. See `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`.
+Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
+gate. Common/client compilation and all 83 unit/parameterized cases pass.
+Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
+storage. A real client completes resource/shader loading, a 100% atlas-backed
+ring, tangent/radial captures, two natural wraps, and representative
+gameplay/rim probes. Multi-size visual review, two-client multiplayer,
+packaging, and staging remain, so the port is not playable yet. See
+`docs/CURRENT_STATE.md`.
 
 ## Codex weekly usage reserve
 
@@ -330,6 +331,10 @@ version numbers.
   lies near Y=318.65. It may appear only as a retired deployment/rollback note
   or a required validation-failure fixture. The public server also uses the
   safe-small 2,048-by-416 preset as of 27 July 2026.
+- The production/default geometry is 15,552-by-256 (972 by 16 chunks). Width
+  256 is intentional: the formerly default 4,096-block band looked too broad
+  in the sky. Existing saved worlds remain immutable, and the 4,096-wide
+  layouts in historical validation evidence are not current defaults.
 - The local visual harness reads `testViewDistanceChunks` (2–32) before
   reducing to six chunks for seam/rim traversal. Use 6/12/28 for the safe-small
   capture matrix. It derives capture pitch from the physical target surface;

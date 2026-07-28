@@ -15,10 +15,13 @@ The Nether and End remain vanilla.
 > 26.1.2. The common and client source sets now compile together on Java 25,
 > all 83 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
-> including dimension-owned saved-data migration. Client rendering, gameplay,
-> multiplayer, packaging, and staging gates are still outstanding, so this is
-> not a playable release yet. The validated server, client packages, and
-> rollback tag remain Minecraft 1.21.11 (`mc-1.21.11-final`).
+> including dimension-owned saved-data migration. A safe-small integrated
+> client has completed terrain, full-atlas rendering, two natural wraps, and
+> the representative gameplay/rim matrix. Multi-size visual review,
+> two-client multiplayer, packaging, and staging gates are still outstanding,
+> so this is not a playable release yet. The validated server, client
+> packages, and rollback tag remain Minecraft 1.21.11
+> (`mc-1.21.11-final`).
 
 ## What it feels like to play
 
@@ -166,7 +169,7 @@ The editor provides:
 Dedicated servers use `config/ringworld.properties` before first world load:
 
 ```properties
-widthBlocks=4096
+widthBlocks=256
 circumferenceBlocks=15552
 wallHeightBlocks=160
 testMode=false
@@ -181,7 +184,7 @@ checks. Saved settings always override later bootstrap configuration changes.
 
 | Layout | Circumference | Width | Purpose |
 | --- | ---: | ---: | --- |
-| Production default | 15,552 blocks / 972 chunks | 4,096 blocks / 256 chunks | Approximately one hour to walk a lap at normal speed |
+| Production default | 15,552 blocks / 972 chunks | 256 blocks / 16 chunks | Approximately one hour to walk a lap at normal speed; deliberately slender ring in the sky |
 | Safe-small | 2,048 blocks / 128 chunks | 416 blocks / 26 chunks | Fast development, atlas, and multiplayer testing |
 
 The production atlas covers 248,832 canonical chunks and is a substantial

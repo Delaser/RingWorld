@@ -8,7 +8,6 @@ import dev.ringworld.client.ClientRingState;
 import dev.ringworld.world.RingDimensionReport;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingRenderProfile;
-import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlobalSettingsUniform;
@@ -49,9 +48,8 @@ abstract class GlobalSettingsMixin {
     @Inject(method = "update", at = @At("HEAD"), cancellable = true)
     private void ringworld$publishLayout(int width, int height, double glintStrength,
                                          long time, DeltaTracker tickCounter,
-                                         int menuBackgroundBlurriness, Camera camera,
+                                         int menuBackgroundBlurriness, Vec3 cameraPosition,
                                          boolean useRgss, CallbackInfo ci) {
-        Vec3 cameraPosition = camera.position();
         int cameraX = Mth.floor(cameraPosition.x);
         int cameraY = Mth.floor(cameraPosition.y);
         int cameraZ = Mth.floor(cameraPosition.z);
