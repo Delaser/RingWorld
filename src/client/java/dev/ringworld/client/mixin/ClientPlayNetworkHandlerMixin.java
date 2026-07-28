@@ -210,7 +210,7 @@ abstract class ClientPlayNetworkHandlerMixin {
         if (geometry == null || client.player == null) return packet;
         List<ClientboundChunksBiomesPacket.ChunkBiomeData> mapped = packet.chunkBiomeData().stream()
                 .map(data -> new ClientboundChunksBiomesPacket.ChunkBiomeData(
-                        new ChunkPos(mapChunkX(data.pos().x), data.pos().z), data.buffer()))
+                        new ChunkPos(mapChunkX(data.pos().x()), data.pos().z()), data.buffer()))
                 .toList();
         return new ClientboundChunksBiomesPacket(mapped);
     }
@@ -228,7 +228,7 @@ abstract class ClientPlayNetworkHandlerMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/game/ClientboundForgetLevelChunkPacket;pos()Lnet/minecraft/world/level/ChunkPos;"))
     private ChunkPos ringworld$mapUnloadChunk(ClientboundForgetLevelChunkPacket packet) {
         ChunkPos pos = packet.pos();
-        return new ChunkPos(mapChunkX(pos.x), pos.z);
+        return new ChunkPos(mapChunkX(pos.x()), pos.z());
     }
 
     @Redirect(

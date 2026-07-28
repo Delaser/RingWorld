@@ -46,7 +46,9 @@ abstract class PlayerPositionDebugHudEntryMixin {
         BlockPos rawBlockPos = entity.blockPosition();
         BlockPos blockPos = new BlockPos(geometry.wrapBlockX(rawBlockPos.getX()),
                 rawBlockPos.getY(), rawBlockPos.getZ());
-        ChunkPos chunkPos = new ChunkPos(blockPos);
+        ChunkPos chunkPos = new ChunkPos(
+                SectionPos.blockToSectionCoord(blockPos.getX()),
+                SectionPos.blockToSectionCoord(blockPos.getZ()));
         Direction direction = entity.getDirection();
         String directionDescription = switch (direction) {
             case NORTH -> "Towards negative Z";
@@ -69,7 +71,7 @@ abstract class PlayerPositionDebugHudEntryMixin {
                         blockPos.getX(), blockPos.getY(), blockPos.getZ()),
                 String.format(Locale.ROOT,
                         "Ring Chunk: %d %d %d [%d %d in r.%d.%d.mca]",
-                        chunkPos.x, SectionPos.blockToSectionCoord(blockPos.getY()), chunkPos.z,
+                        chunkPos.x(), SectionPos.blockToSectionCoord(blockPos.getY()), chunkPos.z(),
                         chunkPos.getRegionLocalX(), chunkPos.getRegionLocalZ(),
                         chunkPos.getRegionX(), chunkPos.getRegionZ()),
                 String.format(Locale.ROOT, "Facing: %s (%s) (%.1f / %.1f)",

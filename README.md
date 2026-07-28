@@ -13,9 +13,11 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. Its frozen compiler baseline recorded 95 common errors; the first
-> primary source pass leaves five storage-owned errors. It is not playable
-> yet. The validated server, client packages, and rollback tag remain
-> Minecraft 1.21.11 (`mc-1.21.11-final`).
+> primary source pass leaves five storage-owned errors. A detached client
+> probe inventoried 21 follow-on diagnostics, and the seven mechanical
+> `ChunkPos` cases are now ported. It is not playable yet. The validated
+> server, client packages, and rollback tag remain Minecraft 1.21.11
+> (`mc-1.21.11-final`).
 
 ## What it feels like to play
 

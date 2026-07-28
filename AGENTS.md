@@ -10,7 +10,8 @@ implementation tagged `mc-1.21.11-final` at commit `2c98650`.
 Active port checkpoint: Minecraft 26.1.2/Java 25 compiler baseline; see
 `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`. The frozen Phase 2 checkpoint has
 95 common errors; the first primary source pass leaves five S2-owned storage
-errors. The port is not playable yet.
+errors. A detached client probe found 21 client diagnostics; the seven
+mechanical `ChunkPos` cases are already ported. The port is not playable yet.
 
 ## What this project is
 

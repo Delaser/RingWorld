@@ -4,8 +4,8 @@ Captured: 2026-07-28
 
 Phase 1 base: `581a751`
 
-Status: Phase 2 toolchain established; production and client sources are not
-yet ported
+Status: Phase 2 toolchain established; common source port in progress and
+client compiler baseline captured
 
 This checkpoint deliberately records an honest failing compile. It proves that
 the project resolves the official unobfuscated Minecraft 26.1.2 and Fabric
@@ -46,9 +46,8 @@ dependencies. The expected checkpoint result is:
 BUILD FAILED
 ```
 
-`compileClientJava` and the tests are not yet meaningful because Gradle stops
-at the common-source failure. The last fully passing suite remains the
-Mojang-mapped 1.21.11 Phase 1 commit, with 73 cases and all runtime gates.
+The last fully passing suite remains the Mojang-mapped 1.21.11 Phase 1 commit,
+with 73 cases and all runtime gates.
 
 ## Error inventory
 
@@ -100,6 +99,27 @@ The same pass source-audited the entity simulation call in 26.1.2
 `ServerLevel.tick` and replaced the frozen baseline's synthetic
 `method_31420` redirect. `ChunkTracker` neighbour packing was likewise updated
 from `ChunkPos.asLong` to `ChunkPos.pack`.
+
+## Client probe
+
+A detached worktree with only temporary shims for the five S2-owned common
+errors allowed `compileClientJava` to run without modifying the shared storage
+lane. The first 26.1.2 client compile reported 21 source diagnostics:
+
+| Area | Errors | Primary cause |
+| --- | ---: | --- |
+| sky render mixin | 3 | extracted sky state and level time API changes |
+| entity render mixin | 2 | camera render-state ownership changed |
+| world-creation screen | 4 | GUI graphics/render extraction redesign |
+| terrain proxy renderer | 3 | render-pipeline, far-plane, and light-texture API changes |
+| Fabric world-render callback | 2 | event package/phase redesign |
+| client packet/chart mapping | 4 | `ChunkPos` record access |
+| debug position display | 3 | removed `ChunkPos(BlockPos)` constructor and record access |
+
+The primary branch immediately removes the seven mechanical `ChunkPos`
+diagnostics. The remaining rendering/UI diagnostics require official-source
+inspection; they must not be papered over because sky order, lightmap binding,
+and the complete-ring proxy are core visual behavior.
 
 ## Next ownership split
 
