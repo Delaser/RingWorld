@@ -13,6 +13,14 @@ Start here:
 - [`DIMENSION_SCALING_PLAN.md`](DIMENSION_SCALING_PLAN.md): source-audited
   registry of dimension-sensitive variables, safety limits, and the staged
   custom-size implementation plan.
+- [`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md): gated
+  Minecraft 26.1.2 port plan, primary/secondary agent ownership, integration
+  order, validation gates, and deployment criteria.
+- [`AGENT_COLLABORATION.md`](AGENT_COLLABORATION.md): cross-PC GitHub issue
+  coordination, optional same-clone mailbox, file ownership, and handoff
+  protocol for two ChatGPT Desktop coding agents.
+- [`SECONDARY_AGENT_BOOTSTRAP_PROMPT.txt`](SECONDARY_AGENT_BOOTSTRAP_PROMPT.txt):
+  copy-paste setup and first-task prompt for the secondary dedicated-PC agent.
 - [`NETWORK_PROTOCOL.md`](NETWORK_PROTOCOL.md): login handshake, atlas
   transport, and canonical/presentation packet mapping.
 - [`RENDERING.md`](RENDERING.md): terrain curvature, culling, distant texture,
