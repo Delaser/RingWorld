@@ -1,6 +1,7 @@
 # Current state
 
-Last audited: 2026-07-28 against repository commit `9260ace`.
+Last audited: 2026-07-28 against the implementation merged into `main` at
+commit `97f6a97`.
 
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
