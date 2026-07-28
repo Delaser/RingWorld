@@ -4,8 +4,8 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
-Last code audit: 2026-07-27, based on commit `a1eb031` plus the uncommitted
-documentation introduced with this guide.
+Last code and documentation audit: 2026-07-28, covering the implementation
+published in commit `9260ace`.
 
 ## What this project is
 

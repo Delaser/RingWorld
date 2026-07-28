@@ -1,6 +1,6 @@
 # Current state
 
-Last audited: 2026-07-27.
+Last audited: 2026-07-28 against repository commit `9260ace`.
 
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
