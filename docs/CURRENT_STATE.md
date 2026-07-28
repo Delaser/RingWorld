@@ -325,6 +325,9 @@ client/runtime gate passes.
 
 - The Create World screen has a RingWorld layout editor with safe-small,
   production, and current presets plus live validation/cost preview.
+- Its entry is a third member of Minecraft 26.1's managed Create/Cancel footer
+  row, and the editor uses a compact layout below 320 logical pixels so GUI
+  scale 4 does not overlap its fields, preview, immutable warning, or actions.
 - The layout editor relies on Minecraft's framework-managed background pass;
   it does not request a second menu blur while rendered over Create World.
 - Applying a valid creation layout requires a second explicit confirmation
@@ -339,6 +342,9 @@ client/runtime gate passes.
 - Saved format-2 settings win before generation; format 1 migrates explicitly.
 - The full immutable layout is sent to clients and used for walls, clouds,
   shaders, and atlas identity.
+- The 26.1 F3 position group reports presentation and canonical Ring
+  coordinates, canonical block/chunk/region positions, loop index, and atlas
+  state without feeding any debug value back into storage or chart state.
 - The source-audited variable registry and correction plan are maintained in
   `DIMENSION_SCALING_PLAN.md`.
 

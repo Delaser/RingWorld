@@ -17,6 +17,7 @@ import net.minecraft.network.chat.Component;
 
 /** Pre-creation editor and cost preview for immutable RingWorld layout. */
 public final class RingWorldCreationScreen extends Screen {
+    private static final int COMPACT_HEIGHT = 320;
     private final Screen parent;
     private EditBox circumferenceField;
     private EditBox widthField;
@@ -34,27 +35,33 @@ public final class RingWorldCreationScreen extends Screen {
     protected void init() {
         RingWorldConfig config = RingWorldConfig.load();
         int left = this.width / 2 - 100;
-        circumferenceField = numericField(left, 58, "Circumference blocks",
+        boolean compact = this.height < COMPACT_HEIGHT;
+        int firstFieldY = compact ? 28 : 58;
+        int fieldStep = compact ? 24 : 36;
+        int presetY = compact ? 100 : 166;
+        circumferenceField = numericField(left, firstFieldY, "Circumference blocks",
                 config.circumferenceBlocks());
-        widthField = numericField(left, 94, "Width blocks", config.widthBlocks());
-        wallHeightField = numericField(left, 130, "Wall height blocks",
+        widthField = numericField(left, firstFieldY + fieldStep, "Width blocks",
+                config.widthBlocks());
+        wallHeightField = numericField(left, firstFieldY + fieldStep * 2,
+                "Wall height blocks",
                 config.wallHeightBlocks());
 
         addRenderableWidget(Button.builder(Component.literal("Safe small"),
                 button -> setPreset(2_048, 416, 160))
-                .bounds(this.width / 2 - 154, 166, 100, 20).build());
+                .bounds(this.width / 2 - 154, presetY, 100, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Production"),
                 button -> setPreset(
                         RingWorldSettings.DEFAULT_CIRCUMFERENCE,
                         RingWorldSettings.DEFAULT_WIDTH,
                         RingWorldSettings.DEFAULT_WALL_HEIGHT))
-                .bounds(this.width / 2 - 50, 166, 100, 20).build());
+                .bounds(this.width / 2 - 50, presetY, 100, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Current"),
                 button -> setPreset(
                         config.circumferenceBlocks(),
                         config.widthBlocks(),
                         config.wallHeightBlocks()))
-                .bounds(this.width / 2 + 54, 166, 100, 20).build());
+                .bounds(this.width / 2 + 54, presetY, 100, 20).build());
 
         applyButton = addRenderableWidget(Button.builder(Component.literal("Use for new world"),
                 button -> apply())
@@ -123,6 +130,9 @@ public final class RingWorldCreationScreen extends Screen {
                     confirmedReport.geometry().widthBlocks(),
                     confirmedReport.geometry().circumferenceBlocks(),
                     confirmedReport.wallHeightBlocks());
+            if (parent instanceof LayoutButtonOwner owner) {
+                owner.ringworld$refreshLayoutButton();
+            }
             minecraft.setScreen(parent);
         } catch (RuntimeException exception) {
             inputError = exception.getMessage();
@@ -143,18 +153,25 @@ public final class RingWorldCreationScreen extends Screen {
         // limited to widgets and foreground text so the frame owns one blur.
         super.extractRenderState(context, mouseX, mouseY, deltaTicks);
         int center = width / 2;
-        context.centeredText(font, title, center, 18, 0xFFFFFF);
-        context.text(font, Component.literal("Circumference (blocks)"),
-                center - 100, 46, 0xA0A0A0);
-        context.text(font, Component.literal("Finite width (blocks)"),
-                center - 100, 82, 0xA0A0A0);
-        context.text(font, Component.literal("Rim wall height (from Y=-64)"),
-                center - 100, 118, 0xA0A0A0);
+        boolean compact = this.height < COMPACT_HEIGHT;
+        int firstFieldY = compact ? 28 : 58;
+        int fieldStep = compact ? 24 : 36;
+        context.centeredText(font, title, center, compact ? 6 : 18, 0xFFFFFFFF);
+        drawFieldLabel(context,
+                compact ? "Circumference" : "Circumference (blocks)",
+                firstFieldY, compact);
+        drawFieldLabel(context,
+                compact ? "Finite width" : "Finite width (blocks)",
+                firstFieldY + fieldStep, compact);
+        drawFieldLabel(context,
+                compact ? "Rim wall height" : "Rim wall height (from Y=-64)",
+                firstFieldY + fieldStep * 2, compact);
 
-        int y = 200;
+        int y = compact ? 128 : 200;
+        int lineStep = compact ? 10 : 12;
         if (inputError != null) {
             context.centeredText(font,
-                    Component.literal(inputError), center, y, 0xFF6060);
+                    Component.literal(inputError), center, y, 0xFFFF6060);
         } else if (report != null) {
             RingRenderProfile renderProfile = RingRenderProfile.create(
                     report.geometry(), 28 * 16.0);
@@ -162,45 +179,57 @@ public final class RingWorldCreationScreen extends Screen {
                     .formatted(report.geometry().circumferenceChunks(),
                             report.geometry().widthChunks(),
                             formatLong(report.canonicalChunkCount())));
-            drawReportLine(context, y + 12, String.format(Locale.ROOT,
+            drawReportLine(context, y + lineStep, String.format(Locale.ROOT,
                     "Radius %.2f; centre Y %.2f; sky width %.2f°",
                     report.geometry().radius(), report.geometry().physicalCenterY(),
                     report.oppositeAngularWidthDegrees()));
-            drawReportLine(context, y + 24, String.format(Locale.ROOT,
+            drawReportLine(context, y + lineStep * 2, String.format(Locale.ROOT,
                     "Wall top Y %d; clouds Y %d; top clearance %.2f",
                     report.wallTopYExclusive(), report.cloudBaseY(),
                     report.radialClearanceAtHighestPlane()));
-            drawReportLine(context, y + 36, "Atlas %s cells (~%s MiB); noise lookup ~%s MiB"
+            drawReportLine(context, y + lineStep * 3,
+                    "Atlas %s cells (~%s MiB); noise lookup ~%s MiB"
                     .formatted(formatLong(report.atlasCellCount()),
                             formatMiB(report.estimatedAtlasBytes()),
                             formatMiB(report.estimatedNoiseCoordinateBytes())));
-            drawReportLine(context, y + 48, String.format(Locale.ROOT,
+            drawReportLine(context, y + lineStep * 4, String.format(Locale.ROOT,
                     "GPU %d×%d; %.2f×%.2f blocks/texel; %s vertices",
                     renderProfile.textureColumns(), renderProfile.textureRows(),
                     renderProfile.textureBlocksPerTexelX(),
                     renderProfile.textureBlocksPerTexelZ(),
                     formatLong(renderProfile.vertexCount())));
-            drawReportLine(context, y + 60,
+            drawReportLine(context, y + lineStep * 5,
                     "GPU texture/mesh ~%s/%s MiB; build scratch ~%s MiB"
                             .formatted(formatMiB(renderProfile.estimatedGpuTextureBytes()),
                                     formatMiB(renderProfile.estimatedGpuMeshBytes()),
                                     formatMiB(renderProfile.estimatedTextureBuildScratchBytes())));
             if (!report.errors().isEmpty()) {
                 context.centeredText(font,
-                        Component.literal(report.errors().getFirst()), center, y + 78, 0xFF6060);
+                        Component.literal(report.errors().getFirst()), center,
+                        y + lineStep * 7, 0xFFFF6060);
             } else if (!report.warnings().isEmpty()) {
                 context.centeredText(font,
-                        Component.literal(report.warnings().getFirst()), center, y + 78, 0xFFD060);
+                        Component.literal(report.warnings().getFirst()), center,
+                        y + lineStep * 7, 0xFFFFD060);
             }
         }
         context.centeredText(font,
                 Component.literal("Dimensions become immutable when the Overworld is first loaded."),
-                center, height - 50, 0xFFD060);
+                center, height - 50, 0xFFFFD060);
     }
 
     private void drawReportLine(GuiGraphicsExtractor context, int y, String value) {
         context.centeredText(font, Component.literal(value),
-                width / 2, y, 0xD0D0D0);
+                width / 2, y, 0xFFD0D0D0);
+    }
+
+    private void drawFieldLabel(
+            GuiGraphicsExtractor context, String value, int fieldY, boolean compact) {
+        Component label = Component.literal(value);
+        int fieldLeft = width / 2 - 100;
+        int x = compact ? fieldLeft - font.width(label) - 4 : fieldLeft;
+        int y = compact ? fieldY + 6 : fieldY - 12;
+        context.text(font, label, x, y, 0xFFA0A0A0);
     }
 
     private static String formatLong(long value) {
@@ -209,5 +238,10 @@ public final class RingWorldCreationScreen extends Screen {
 
     private static String formatMiB(long bytes) {
         return String.format(Locale.ROOT, "%.1f", bytes / (1024.0 * 1024.0));
+    }
+
+    /** Parent-screen hook kept UI-local so accepting a layout refreshes its summary. */
+    public interface LayoutButtonOwner {
+        void ringworld$refreshLayoutButton();
     }
 }

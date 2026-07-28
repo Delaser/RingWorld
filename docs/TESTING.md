@@ -281,6 +281,24 @@ visible for multiple frames at GUI scale 4. Minecraft 26.1 permits only one
 menu-blur layer per frame; custom screens must not call a background
 extraction method inside `extractRenderState`, because
 `Screen.extractRenderStateWithTooltipAndSubtitles` already owns that pass.
+At a 1920-by-1080 window this also exercises the compact 480-by-270 logical
+layout. Verify that the RingWorld entry shares the vanilla footer row without
+overlapping Create or Cancel, then exercise all four editor cases:
+
+1. enter an invalid layout and confirm that the error is visible and
+   **Use for new world** is disabled;
+2. select **Safe small** and confirm `2048×416`, wall height `160`, and a valid
+   cost preview;
+3. select **Production** and confirm the configured production dimensions and
+   a valid cost preview;
+4. enter a distinct valid custom layout, confirm its preview, choose
+   **Use for new world**, reject the immutable-layout confirmation once, then
+   accept it and verify that Create World shows the new C×W summary.
+
+Keep the editor open for at least several frames in each case and treat any
+duplicate-blur exception, clipped controls, footer overlap, missing validation
+message, or stale C×W summary as a failure. This is a local UI test; do not
+create or connect to the live server.
 
 ## Non-destructive join screenshot
 
