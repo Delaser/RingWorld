@@ -26,6 +26,9 @@ Start here:
 - [`AGENT_COLLABORATION.md`](AGENT_COLLABORATION.md): cross-PC GitHub issue
   coordination, optional same-clone mailbox, file ownership, and handoff
   protocol for two ChatGPT Desktop coding agents.
+- [`CODEX_USAGE_MONITOR.md`](CODEX_USAGE_MONITOR.md): primary-account weekly
+  quota reserve policy, supported app-server check, and macOS background
+  monitor.
 - [`SECONDARY_AGENT_BOOTSTRAP_PROMPT.txt`](SECONDARY_AGENT_BOOTSTRAP_PROMPT.txt):
   copy-paste setup and first-task prompt for the secondary dedicated-PC agent.
 - [`NETWORK_PROTOCOL.md`](NETWORK_PROTOCOL.md): login handshake, atlas

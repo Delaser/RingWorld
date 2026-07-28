@@ -15,6 +15,40 @@ mechanical `ChunkPos` cases and six GUI/Fabric render-event cases are already
 ported. Source-audited render-state and complete-ring pipeline updates now
 make that detached client compile pass. The port is not playable yet.
 
+## Codex weekly usage reserve
+
+Protect at least 10% of the primary ChatGPT-backed Codex weekly allowance for
+handoff and recovery. Before substantial work and after a long tool-heavy
+milestone, run:
+
+```sh
+python3 scripts/codex_usage_monitor.py
+```
+
+More than 15% remaining is `OK`. At 10–15% (`HOLD`), finish only the current
+bounded handoff and do not start substantial new agent work. At 10% or less
+(`BLOCK`), stop agent work. Do not infer the weekly allowance from context
+tokens or a shorter quota window. The optional five-minute macOS monitor and
+its non-secret status file are documented in
+[`docs/CODEX_USAGE_MONITOR.md`](docs/CODEX_USAGE_MONITOR.md). The secondary
+agent uses a separate account and must monitor its own allowance.
+
+## Secondary response check
+
+The dedicated-PC secondary agent reports through GitHub issue comments using
+the `[SECONDARY]` protocol prefix. Check for a pending response with:
+
+```sh
+python3 scripts/secondary_response_monitor.py
+```
+
+The primary Mac also runs this check every ten minutes. A response stays
+`RESPONSE_PENDING` until the primary agent reads the linked issue comment and
+runs `python3 scripts/secondary_response_monitor.py --ack`. The monitor is
+read-only and never replies automatically. Installation and status-file
+details are in
+[`docs/AGENT_COLLABORATION.md`](docs/AGENT_COLLABORATION.md).
+
 ## What this project is
 
 RingWorld is a Fabric mod being ported from Minecraft Java 1.21.11 to 26.1.2.
