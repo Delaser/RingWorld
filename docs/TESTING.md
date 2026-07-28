@@ -10,20 +10,19 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 
 ## Active port checkpoint
 
-The current `codex/minecraft-26.1-port` branch requires Java 25. The frozen
-Phase 2 checkpoint records 95 common errors; current primary source is expected
-to stop at five S2-owned storage errors:
+The current `codex/minecraft-26.1-port` branch requires Java 25. Common and
+client compilation now pass together, and the development build runs all 83
+unit/parameterized cases:
 
 ```sh
 JAVA_HOME=/path/to/jdk-25/Contents/Home \
 PATH="$JAVA_HOME/bin:$PATH" \
-./gradlew clean compileJava --console=plain
+./gradlew clean test build --console=plain
 ```
 
-See `MINECRAFT_26_1_COMPILER_BASELINE.md`. The commands and 73-case results
-below describe the last green 1.21.11 Mojang-mapped checkpoint. Run them from
-a separate checkout of `mc-1.21.11-final`; they become active on the port
-branch again only after the 26.1 common/client source sets compile.
+See `MINECRAFT_26_1_COMPILER_BASELINE.md` for the historical 95-error inventory
+and its resolution. A green build and dedicated-server launch do not establish
+client rendering, gameplay, or multiplayer compatibility.
 
 ## Unit and build validation
 
@@ -36,10 +35,10 @@ Run:
 Expected artifact:
 
 ```text
-build/libs/ringworld-0.1.0.jar
+build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The 2026-07-28 suite contains 73 unit/parameterized cases:
+The 2026-07-28 suite contains 83 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -52,6 +51,8 @@ The 2026-07-28 suite contains 73 unit/parameterized cases:
 | `RingSkyCycleTest` | Fixed angle, reduced vanilla-sun size, noon/dawn/dusk/midnight tone keyframes, smooth interpolation, time wrapping |
 | `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, completion, cache monotonicity, world hash |
 | `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
+| `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
+| `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
 
 Inspect machine-readable results under:
 
@@ -59,12 +60,29 @@ Inspect machine-readable results under:
 build/test-results/test/
 ```
 
-The 1.21.11 development build uses official Mojang mappings. After any mapping
-migration, also search active Java and descriptor text for `class_`, `field_`,
-and `method_`. The frozen 1.21.11 baseline had one audited
-`ServerLevel.method_31420` exception; the active 26.1 source targets named
-`ServerLevel.tick` and permits no intermediary residue. A clean compile alone
-is not evidence that a required mixin still applies.
+After any mapping or game-version migration, also search active Java and
+descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated
+26.1 source permits no intermediary residue. `ServerLevel` entity tick
+eligibility is in the private synthetic `lambda$tick$0`; its exact descriptor
+is documented in `MIXIN_MAP.md`. A clean compile alone is not evidence that a
+required mixin still applies.
+
+## 26.1 dedicated-server storage gate
+
+Run storage migration gates only from a disposable worktree/run directory.
+Never point them at `dist/`, the public service, or the only copy of a world.
+The 2026-07-28 checkpoint demonstrated:
+
+- a fresh 2,048×416 server world reached `Done`, saved settings and atlas under
+  `dimensions/minecraft/overworld/data/ringworld/`, and stopped cleanly;
+- a copied 1.21.11 RingWorld completed Mojang's upgrade and copied its legacy
+  settings byte-for-byte into the new path without modifying the source;
+- an invalid legacy atlas was rejected and rebuilt at the authoritative new
+  path rather than being silently trusted;
+- the exact required `ServerLevel.lambda$tick$0` mixin applied at runtime.
+
+These are server/storage gates only. They do not replace `runClient`, visual,
+seam, or two-client multiplayer validation.
 
 ## Local automated smoke world
 

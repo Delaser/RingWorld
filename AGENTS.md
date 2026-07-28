@@ -7,13 +7,13 @@ rendering. Detailed design documents live under [`docs/`](docs/README.md).
 Last playable code audit: 2026-07-28, covering the final Minecraft 1.21.11
 implementation tagged `mc-1.21.11-final` at commit `2c98650`.
 
-Active port checkpoint: Minecraft 26.1.2/Java 25 compiler baseline; see
-`docs/MINECRAFT_26_1_COMPILER_BASELINE.md`. The frozen Phase 2 checkpoint has
-95 common errors; the first primary source pass leaves five S2-owned storage
-errors. A detached client probe found 21 client diagnostics; the seven
-mechanical `ChunkPos` cases and six GUI/Fabric render-event cases are already
-ported. Source-audited render-state and complete-ring pipeline updates now
-make that detached client compile pass. The port is not playable yet.
+Active port checkpoint: Minecraft 26.1.2/Java 25 source and dedicated-server
+runtime gate. Common and client compilation passes, all 83
+unit/parameterized cases pass, and Loom produces the development jars. Fresh
+and copied-1.21.11 dedicated-server worlds launch successfully with
+dimension-owned settings/atlas storage. Client rendering, gameplay,
+multiplayer, packaging, and staging gates remain, so the port is not playable
+yet. See `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`.
 
 ## Codex weekly usage reserve
 
@@ -138,8 +138,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   agent ownership, integration, validation, and deployment plan.
 - `docs/MINECRAFT_1_21_11_FINAL_BASELINE.md`: immutable pre-port validation,
   hashes, performance evidence, and protected rollback inventory.
-- `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`: current Java 25/26.1.2
-  toolchain and exact expected compile-failure inventory.
+- `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`: historical Java 25/26.1.2
+  compiler inventory and the subsequent green build/server checkpoint.
 - `docs/AGENT_COLLABORATION.md`: dedicated-PC GitHub issue coordination,
   optional same-clone mailbox, and handoff protocol for parallel coding
   agents.
@@ -151,17 +151,19 @@ The complete mixin ownership table is in
 
 ## Build and fast validation
 
-The active port requires Java 25. Its current expected checkpoint is:
+The active port requires Java 25:
 
 ```sh
 JAVA_HOME=/path/to/jdk-25/Contents/Home \
 PATH="$JAVA_HOME/bin:$PATH" \
-./gradlew clean compileJava --console=plain
+./gradlew clean test build --console=plain
 ```
 
-The Phase 2 commit recorded 95 common-source errors; current primary source
-leaves five storage-owned errors and no artifact. Do not treat either
-checkpoint as a release build or suppress errors/mixins to make it green.
+The expected development artifact is
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 83
+unit/parameterized cases. A green source build and dedicated-server launch are
+not a release gate: required client, rendering, gameplay, multiplayer,
+packaging, and staging checks still remain.
 
 The frozen 1.21.11 tag uses Java 21 and passes 73 unit/parameterized cases plus
 the runtime suites recorded in
@@ -212,9 +214,9 @@ altered test commands, known limitations, and rejected or superseded designs.
 4. Inspect every call path on both sides of the seam: server storage, packet
    encoding, client projection, renderer, and reconnect/save.
 5. Add or extend a pure unit test where possible.
-6. Run the validation appropriate to the current port gate. At the Phase 2
-   checkpoint this is the documented 95-error Java 25 `compileJava` baseline;
-   once common/client compilation returns, restore `./gradlew test build`.
+6. Run the validation appropriate to the current port gate. The active Java 25
+   branch requires `./gradlew test build`; runtime-sensitive changes also
+   require the relevant isolated server or client launch.
 7. For topology or packet changes, run the two-client multiplayer harness.
 8. For rendering changes, launch a real world and inspect upward views, the
    live/LOD handoff, the seam, both width rims, day/dusk/night, and movement
@@ -226,10 +228,10 @@ When two ChatGPT Desktop agents work on the 26.1 port, both must follow
 stable `primary` or `secondary` role, and check the selected coordination
 channel before editing coordinated files, committing, or handing work off.
 
-Mixin method descriptors currently target Minecraft 1.21.11 under official
-Mojang mappings. A Minecraft, mappings, Loader, Loom, or Fabric API upgrade is
-a porting project: audit every injection target and shader ABI rather than only
-changing version numbers.
+Mixin method descriptors on the active branch target unobfuscated Minecraft
+26.1.2. A Minecraft, mappings, Loader, Loom, or Fabric API upgrade is a porting
+project: audit every injection target and shader ABI rather than only changing
+version numbers.
 
 ## Current implementation cautions
 

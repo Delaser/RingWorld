@@ -12,14 +12,13 @@ world as a continuous ring across the sky.
 The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
-> 26.1.2. Its frozen compiler baseline recorded 95 common errors; the first
-> primary source pass leaves five storage-owned errors. A detached client
-> probe inventoried 21 follow-on diagnostics; client coordinate, GUI
-> extraction, Fabric render-event, render-state, and complete-ring pipeline
-> updates now make that detached client compile pass. Whole-project/runtime
-> validation still depends on the storage lane. It is not playable yet. The
-> validated server, client packages, and rollback tag remain Minecraft 1.21.11
-> (`mc-1.21.11-final`).
+> 26.1.2. The common and client source sets now compile together on Java 25,
+> all 83 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
+> including dimension-owned saved-data migration. Client rendering, gameplay,
+> multiplayer, packaging, and staging gates are still outstanding, so this is
+> not a playable release yet. The validated server, client packages, and
+> rollback tag remain Minecraft 1.21.11 (`mc-1.21.11-final`).
 
 ## What it feels like to play
 
@@ -128,22 +127,26 @@ or incompatible clients.
 
 ## Build and install
 
-The active port checkpoint is reproduced with Java 25:
+Build the active port with Java 25:
 
 ```sh
 JAVA_HOME=/path/to/jdk-25/Contents/Home \
 PATH="$JAVA_HOME/bin:$PATH" \
-./gradlew clean compileJava --console=plain
+./gradlew clean test build --console=plain
 ```
 
-The Phase 2 checkpoint failed with the 95 errors inventoried in
-[the 26.1 compiler baseline](docs/MINECRAFT_26_1_COMPILER_BASELINE.md); current
-primary source is gated by five storage-owned errors.
-There is intentionally no 26.1 release artifact yet.
+The expected development artifact is:
 
-Client launch and install instructions remain suspended until the 26.1 common
-and client source sets compile. For the working 1.21.11 package, use the public
-download above or the frozen tag rather than attempting to package this branch.
+```text
+build/libs/ringworld-0.2.0+mc26.1.2.jar
+```
+
+The historical 95-error compiler inventory and subsequent source-port
+milestones are recorded in
+[the 26.1 compiler baseline](docs/MINECRAFT_26_1_COMPILER_BASELINE.md).
+The resulting jar is for development validation only. Client launch and
+install instructions remain suspended until the 26.1 runtime gates pass. For
+the working 1.21.11 package, use the public download above or the frozen tag.
 
 Existing ordinary Overworlds cannot be converted, and existing RingWorld
 dimensions cannot be resized in place.

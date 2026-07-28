@@ -4,13 +4,30 @@ Captured: 2026-07-28
 
 Phase 1 base: `581a751`
 
-Status: Phase 2 toolchain established; common source port in progress and
-client compiler baseline captured
+Status: historical Phase 2 inventory; common/client source and
+dedicated-server storage gates now pass
 
 This checkpoint deliberately records an honest failing compile. It proves that
 the project resolves the official unobfuscated Minecraft 26.1.2 and Fabric
 artifacts under Java 25 without weakening any mixin. It is the stable base for
 parallel source-port work, not a playable build.
+
+## Integrated follow-on checkpoint
+
+The active branch has since resolved the 95 common diagnostics, integrated the
+S2 saved-data/storage migration, and ported the 21 client diagnostics found by
+the detached probe. A direct Java 25 `./gradlew clean test build` now passes
+all 83 unit/parameterized cases and produces
+`ringworld-0.2.0+mc26.1.2.jar` without temporary shims.
+
+An isolated fresh-world dedicated server and a disposable copy of a real
+1.21.11 RingWorld both reach `Done` under 26.1.2. Settings and server atlas
+data use the Overworld's dimension-owned data directory. Legacy settings are
+copied byte-for-byte without altering the source, while a legacy atlas that
+fails current validation is rebuilt safely. The first launch also caught and
+fixed the strict `ServerLevel.lambda$tick$0` entity-eligibility mixin target.
+Client rendering, gameplay, multiplayer, packaging, and staging gates remain,
+so this is still not a playable build.
 
 ## Toolchain
 

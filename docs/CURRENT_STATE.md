@@ -19,28 +19,32 @@ intermediary-looking source identifier was Mojang's still-unnamed
 `ServerLevel.method_31420` synthetic entity-tick lambda, documented in
 `MIXIN_MAP.md`.
 
-Phase 2 is also established: the active branch now resolves unobfuscated
-Minecraft 26.1.2 and Fabric API 0.155.2 under Java 25 and Gradle 9.5.1. Its
-expected checkpoint is a failing common compile with 95 inventoried errors;
-the client, mixins, runtime, and saved-world upgrade are not yet ported. See
-[`MINECRAFT_26_1_COMPILER_BASELINE.md`](MINECRAFT_26_1_COMPILER_BASELINE.md).
-The playable implementation remains the frozen `mc-1.21.11-final` tag.
+Phase 2 and the first integrated source/runtime gate are established. The
+active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
+under Java 25 and Gradle 9.5.1. Common and client compilation passes without
+temporary shims, all 83 unit/parameterized cases pass, and Loom produces
+`ringworld-0.2.0+mc26.1.2.jar`.
 
-The first primary common pass has reduced those 95 errors to five
-storage-owned diagnostics while preserving the Phase 2 checkpoint in history.
-A detached client probe temporarily shimmed only those five errors, exposed 21
-client diagnostics, and the primary branch has removed the seven mechanical
-`ChunkPos` cases plus the GUI extraction, Fabric render-event, level
-render-state, clock, lightmap, projection-diagnostic, and pipeline-state
-cases. The detached `compileClientJava` probe now passes. Direct whole-project
-validation also completes 73 tests and produces jars when the five S2 errors
-are replaced by temporary compile-only shims. Those probe jars are not
-releasable; direct main-branch and runtime validation still wait for S2's
-saved-data/storage integration.
+The S2 storage migration is integrated. RingWorld settings and the server
+terrain atlas now live under the Overworld's 26.1 dimension-owned data
+directory. An isolated fresh-world dedicated server created that layout and
+stopped cleanly. A disposable copy of an actual 1.21.11 RingWorld completed
+Mojang's world upgrade, copied the legacy immutable settings byte-for-byte,
+left both source and copied legacy files unchanged, rejected an invalid legacy
+atlas, rebuilt it at the new authoritative path, reached `Done`, and stopped
+cleanly.
 
-The “Implemented” sections below describe that validated 1.21.11 behavior and
-the contract the port must restore. They are not claims that the active 26.1.2
-compiler checkpoint currently launches.
+The first dedicated-server launch exposed a strict runtime mixin failure that
+compilation could not detect: entity tick eligibility moved into
+`ServerLevel.lambda$tick$0`. The redirect now names the exact 26.1 synthetic
+descriptor, retains its required injection count, and the fresh and copied
+server launches pass with it. Client rendering, integrated gameplay,
+multiplayer, packaging, and staging gates remain. The only playable
+implementation is still the frozen `mc-1.21.11-final` tag.
+
+The “Implemented” sections below describe validated 1.21.11 behavior and the
+contract the port must restore. They are not claims that every active 26.1.2
+client/runtime gate passes.
 
 ## Implemented
 

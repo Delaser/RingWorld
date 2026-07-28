@@ -12,8 +12,10 @@
 | Fabric Loom | 1.17 snapshot used by `gradle.properties` |
 | Gradle wrapper | 9.5.1 |
 
-This stack is the non-playable compiler baseline during the port. The working
-service, packages, and rollback remain Minecraft 1.21.11 at
+This stack now produces a green development build and passes isolated fresh
+and copied-world dedicated-server launch gates. It remains non-playable until
+the client, rendering, gameplay, multiplayer, packaging, and staging gates
+pass. The working service, packages, and rollback remain Minecraft 1.21.11 at
 `mc-1.21.11-final`; do not deploy the 26.1 branch until every release gate in
 the port plan passes. The finished mod must be installed on the server and
 every client.
@@ -190,17 +192,25 @@ format.
 
 ## Build
 
-The active branch currently reproduces its Java 25 compiler checkpoint with:
+Build the active branch under Java 25:
 
 ```sh
 JAVA_HOME=/path/to/jdk-25/Contents/Home \
 PATH="$JAVA_HOME/bin:$PATH" \
-./gradlew clean compileJava --console=plain
+./gradlew clean test build --console=plain
 ```
 
-The Phase 2 checkpoint produced 95 common-source errors. The first primary
-source pass leaves five S2-owned storage errors and no artifact. See
-`MINECRAFT_26_1_COMPILER_BASELINE.md`.
+Expected development artifacts:
+
+```text
+build/libs/ringworld-0.2.0+mc26.1.2.jar
+build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
+```
+
+The current suite contains 83 unit/parameterized cases. The historical Phase 2
+95-error inventory and the subsequent source-port checkpoint are recorded in
+`MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
+release candidates until the remaining runtime gates pass.
 
 The frozen 1.21.11 tag builds under Java 21 with:
 

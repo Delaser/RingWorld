@@ -1,6 +1,7 @@
 # Minecraft 26.1 port plan
 
-Status: Phase 2 compiler baseline established; source port in progress
+Status: common/client source port and dedicated-server storage gate pass;
+client/runtime port in progress
 
 Target: Minecraft Java 26.1.2
 
@@ -343,6 +344,11 @@ Restrictions:
 Start: after the Phase 2 baseline
 
 Branch: `agent2/26.1-storage`
+
+Status: complete and integrated on 2026-07-28. The Java 25 build passes all 83
+cases. Isolated fresh and copied-1.21.11 server launches reached `Done`; legacy
+settings were preserved byte-for-byte and an invalid legacy atlas was safely
+rebuilt at the new dimension-owned path.
 
 Secondary ownership:
 
