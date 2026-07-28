@@ -23,6 +23,47 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
         return circumferenceBlocks / (2.0 * Math.PI);
     }
 
+    /** Authoritative intrinsic surface elevation for settings format 2. */
+    public double surfaceReferenceY() {
+        return SURFACE_Y;
+    }
+
+    public int circumferenceChunks() {
+        return circumferenceBlocks / 16;
+    }
+
+    public int widthChunks() {
+        return widthBlocks / 16;
+    }
+
+    /** Intrinsic Y coordinate occupied by the physical centre of the ring. */
+    public double physicalCenterY() {
+        return radius() + surfaceReferenceY();
+    }
+
+    /** Physical cylindrical radius of an intrinsic horizontal plane. */
+    public double physicalRadiusAt(double intrinsicY) {
+        return physicalCenterY() - intrinsicY;
+    }
+
+    /** Physical distance through the ring centre to the opposite reference surface. */
+    public double oppositeReferenceSurfaceDistance(double observerY) {
+        return physicalRadiusAt(observerY) + radius();
+    }
+
+    /**
+     * Conservative distance from an observer to the opposite reference
+     * surface at the farther finite-width edge.
+     */
+    public double maximumReferenceSurfaceDistance(double observerY, double observerZ) {
+        double maximumWidthDelta = Math.max(
+                Math.abs(observerZ - minWidthZ()),
+                Math.abs(observerZ - (maxWidthZ() + 1.0)));
+        return Math.hypot(
+                oppositeReferenceSurfaceDistance(observerY),
+                maximumWidthDelta);
+    }
+
     public double angleAt(double canonicalX) {
         return Math.PI * 2.0 * wrapX(canonicalX) / circumferenceBlocks;
     }
@@ -43,6 +84,15 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
         return wrapped + imageIndex * circumferenceBlocks;
     }
 
+    /** Next presentation-chart seam strictly ahead while travelling in +X. */
+    public double nextPositiveSeamX(double presentationX) {
+        if (!Double.isFinite(presentationX)) {
+            throw new IllegalArgumentException("presentation X must be finite");
+        }
+        return (Math.floor(presentationX / circumferenceBlocks) + 1.0)
+                * circumferenceBlocks;
+    }
+
     /** True only when a position has left the server's canonical storage range. */
     public boolean needsCanonicalWrap(double x) {
         return x < 0.0 || x >= circumferenceBlocks;
@@ -61,18 +111,31 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
         return minWidthZ() + widthBlocks - 1;
     }
 
+    public int minChunkZ() {
+        return Math.floorDiv(minWidthZ(), 16);
+    }
+
+    public int maxChunkZ() {
+        return Math.floorDiv(maxWidthZ(), 16);
+    }
+
+    /** True only for chunk rows outside the finite playable band. */
+    public boolean isExteriorChunkZ(int chunkZ) {
+        return chunkZ < minChunkZ() || chunkZ > maxChunkZ();
+    }
+
     /** Position in physical ring space: X is lateral width; Y/Z form the ring. */
     public Vec3d toPhysical(double x, double y, double z) {
         double angle = angleAt(x);
-        double radialDistance = radius() + SURFACE_Y - y;
+        double radialDistance = physicalRadiusAt(y);
         return new Vec3d(z, radialDistance * Math.cos(angle), radialDistance * Math.sin(angle));
     }
 
     /** Returns ring-space coordinates in the supplied camera's local Minecraft axes. */
     public Vec3d toCameraLocal(Vec3d canonicalPosition, Vec3d cameraCanonicalPosition) {
         double deltaAngle = tangentFrameAngle(cameraCanonicalPosition.x, canonicalPosition.x);
-        double positionRadius = radius() + SURFACE_Y - canonicalPosition.y;
-        double cameraRadius = radius() + SURFACE_Y - cameraCanonicalPosition.y;
+        double positionRadius = physicalRadiusAt(canonicalPosition.y);
+        double cameraRadius = physicalRadiusAt(cameraCanonicalPosition.y);
         return new Vec3d(
                 positionRadius * Math.sin(deltaAngle),
                 cameraRadius - positionRadius * Math.cos(deltaAngle),
@@ -87,7 +150,7 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
     public Vec3d ringCenterInCameraFrame(Vec3d cameraCanonicalPosition) {
         Vec3d centerAtCameraAngle = new Vec3d(
                 cameraCanonicalPosition.x,
-                radius() + SURFACE_Y,
+                physicalCenterY(),
                 0.0);
         return toCameraLocal(centerAtCameraAngle, cameraCanonicalPosition);
     }
@@ -112,7 +175,7 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
                 * (canonicalBounds.maxX - canonicalBounds.minX) / circumferenceBlocks;
         double minAngle = Math.min(startAngle, endAngle);
         double maxAngle = Math.max(startAngle, endAngle);
-        double cameraRadius = radius() + SURFACE_Y - cameraCanonicalPosition.y;
+        double cameraRadius = physicalRadiusAt(cameraCanonicalPosition.y);
 
         double minX = Double.POSITIVE_INFINITY;
         double minY = Double.POSITIVE_INFINITY;
@@ -129,7 +192,7 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
                     : sample == 1 ? endAngle
                     : (firstCardinal + sample - 2) * (Math.PI / 2.0);
             for (double y : new double[]{canonicalBounds.minY, canonicalBounds.maxY}) {
-                double pointRadius = radius() + SURFACE_Y - y;
+                double pointRadius = physicalRadiusAt(y);
                 double localX = pointRadius * Math.sin(angle);
                 double localY = cameraRadius - pointRadius * Math.cos(angle);
                 minX = Math.min(minX, localX);
@@ -169,5 +232,38 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
         if (delta > circumferenceBlocks / 2.0) delta -= circumferenceBlocks;
         if (delta < -circumferenceBlocks / 2.0) delta += circumferenceBlocks;
         return delta;
+    }
+
+    /** Angular width of the opposite band surface from the supplied width coordinate. */
+    public double oppositeAngularWidthRadians(double cameraZ) {
+        double distance = radius() * 2.0;
+        double lower = Math.atan2(minWidthZ() - cameraZ, distance);
+        double upper = Math.atan2(maxWidthZ() + 1.0 - cameraZ, distance);
+        return upper - lower;
+    }
+
+    public double oppositeAngularWidthDegrees(double cameraZ) {
+        return Math.toDegrees(oppositeAngularWidthRadians(cameraZ));
+    }
+
+    /**
+     * Minecraft camera pitch required to look from one intrinsic pose toward
+     * another after both points are embedded on the cylinder.
+     *
+     * <p>Negative pitch looks upward. The circumference delta is reduced to
+     * its nearest periodic image, while Z remains an ordinary finite-width
+     * offset.</p>
+     */
+    public double pitchDegreesToIntrinsic(double observerY, double targetY,
+                                          double circumferenceDelta,
+                                          double widthDelta) {
+        double delta = shortestCircumferenceDelta(0.0, circumferenceDelta);
+        double angle = Math.PI * 2.0 * delta / circumferenceBlocks;
+        double observerRadius = physicalRadiusAt(observerY);
+        double targetRadius = physicalRadiusAt(targetY);
+        double tangent = targetRadius * Math.sin(angle);
+        double vertical = observerRadius - targetRadius * Math.cos(angle);
+        double horizontal = Math.hypot(tangent, widthDelta);
+        return -Math.toDegrees(Math.atan2(vertical, horizontal));
     }
 }

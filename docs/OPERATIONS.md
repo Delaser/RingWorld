@@ -1,0 +1,339 @@
+# Configuration and operations
+
+## Supported stack
+
+| Component | Version |
+| --- | --- |
+| Minecraft Java | 1.21.11 |
+| Java | 21 |
+| Fabric Loader | 0.19.3 |
+| Fabric API | 0.141.4+1.21.11 |
+| Yarn mappings | 1.21.11+build.6 |
+| Fabric Loom | 1.17 snapshot used by `gradle.properties` |
+| Gradle wrapper | 9.5.0 |
+
+The mod must be installed on the server and every client.
+
+## Bootstrap configuration
+
+File:
+
+```text
+<gameDir>/config/ringworld.properties
+```
+
+If absent, the mod creates it at startup.
+
+| Property | Default | Validation/meaning |
+| --- | ---: | --- |
+| `widthBlocks` | 4096 | At least 256, divisible by 16, sufficient rim interior, and within atlas/axis budgets |
+| `circumferenceBlocks` | 15552 | Divisible by 16 and large enough for 64 blocks of radial clearance above the build top (2,016 minimum for vanilla bounds) |
+| `wallHeightBlocks` | 160 | At least 32; measured from world minimum Y; wall and cloud top must fit the build range |
+| `testMode` | false | Enables destructive local automated harness |
+| `testViewDistanceChunks` | 28 | Initial live/LOD capture distance for the local harness; 2–32 |
+| `pregenerateTerrainAtlas` | true | Generates missing canonical surface chunks in background |
+
+The config record is cached for the process lifetime. Restart after manually
+editing the file. The in-game editor updates both the file and process cache
+immediately.
+
+The Create World screen has a bottom-left `RingWorld C×W` button. Its editor
+provides safe-small (2,048×416), production-default, and current presets plus
+custom circumference, width, and wall-height fields. It previews:
+
+- chunks around/across and total canonical chunks;
+- radius, physical centre, and apparent opposite width;
+- wall/cloud elevation and top radial clearance;
+- atlas cells/raw memory;
+- GPU texture size, blocks per texel, and mesh vertices.
+
+Invalid layouts cannot be applied. The chosen values are bootstrap defaults
+for the next new world; they do not mutate any save already created. Applying
+a valid layout opens a second confirmation that names the dimensions and wall
+height before those immutable first-load defaults are written.
+
+## Persistence and immutability
+
+On first Overworld load, the mod writes persistent state with:
+
+```text
+width, circumference, generator seed, wall height, surface reference, format version
+```
+
+Every saved layout field takes precedence on subsequent loads. Changing
+bootstrap dimensions or wall height does not resize or redecorate an existing
+RingWorld. Format-1 saves migrate to format 2 with surface reference Y=64.
+
+Back up a world before changing any RingWorld version or decorative setting.
+An Overworld with existing `.mca` region files but no RingWorld settings is
+explicitly rejected. There is no supported flat-world conversion path.
+
+## Ring sizes
+
+### Production defaults
+
+```text
+circumference: 15552 blocks = 972 chunks
+width:          4096 blocks = 256 chunks
+radius:         about 2475 blocks
+```
+
+The walking circumference was selected to be approximately one hour at normal
+Minecraft walking speed.
+
+### Development geometry
+
+```text
+circumference: 2048 blocks = 128 chunks
+width:          416 blocks = 26 chunks
+radius:         about 325.95 blocks
+```
+
+This safe-small ring intentionally exaggerates visible curvature and completes
+the atlas quickly. With the current Y=64 surface reference its physical centre
+is near Y=389.95, leaving about 69.95 radial blocks beyond the top vanilla
+build plane. The retired 1600×320 fixture crossed the ring centre near Y=319
+and remains valid only as a required validation-failure case; see
+[`DIMENSION_SCALING_PLAN.md`](DIMENSION_SCALING_PLAN.md).
+
+## Atlas cost
+
+Atlas pregeneration visits one missing canonical chunk at a time when the
+normal server chunk queue has fewer than 64 pending tasks.
+
+| Geometry | Canonical chunks | Source cells at 8-block step |
+| --- | ---: | ---: |
+| 2048×416 safe-small | 3,328 | 13,312 |
+| 15552×4096 default | 248,832 | 995,328 |
+
+Production-default atlas completion is therefore a large world-generation
+operation. Monitor disk use, server tick time, and progress logs. Set
+`pregenerateTerrainAtlas=false` to postpone background generation; the
+complete-ring texture will not build until a complete atlas is available.
+Progress logs report captured cells, cells per second, and an ETA once a rate
+can be measured.
+
+The production-default static resource envelope is approximately 6.6 MiB of
+raw atlas arrays/wire payload, 21.3 MiB for the RGBA8 GPU texture including its
+mip chain, 9.0 MiB for the maximum-detail mesh, and 48.0 MiB of conservative
+texture-build scratch. Gzip disk size depends on terrain but cannot be used as
+the memory budget. The creation editor reports these calculated values. The
+technical 16-million-cell atlas ceiling represents about 106.8 MiB of raw
+atlas arrays and is a hard allocation limit, not a recommended production
+target.
+
+Operators with gamemaster permission can inspect or control background
+pregeneration without changing immutable world layout:
+
+```text
+/ringworld atlas status
+/ringworld atlas pause
+/ringworld atlas resume
+```
+
+Pause stops scheduling new atlas chunks after any one in-flight chunk
+completes. Player-driven chunk capture, cache saving, and client tile streaming
+continue. The pause is operational process state rather than saved layout
+state, so a server restart returns to the configured
+`pregenerateTerrainAtlas` behavior.
+
+Server atlas:
+
+```text
+<world>/data/ringworld-terrain-atlas.rwat.gz
+```
+
+Client atlas:
+
+```text
+<gameDir>/ringworld-cache/terrain-<worldHash>.rwat.gz
+```
+
+Deleting an atlas cache is recoverable but forces regeneration or
+retransmission. Do not delete the world settings state unless intentionally
+invalidating the world.
+
+The current disk atlas format is 5. Upgrading from an older format
+automatically invalidates and rebuilds both server and client caches so the
+renderer samples the actual highest block rather than the block below it,
+records its exposed top-face height, and receives texture-luminance-corrected
+biome surface colours. Format 5 also replaces zero grass/foliage tint from a
+dedicated server's unloaded client-only colour maps with the sampled block map
+colour. This is independent of the persisted RingWorld settings/protocol
+format.
+
+## Build
+
+From the repository root:
+
+```sh
+./gradlew clean test build
+```
+
+Artifacts:
+
+```text
+build/libs/ringworld-0.1.0.jar
+build/libs/ringworld-0.1.0-sources.jar
+```
+
+`clean` is optional for normal development but useful before a release.
+
+## Server installation
+
+Install:
+
+- Fabric server for Minecraft 1.21.11;
+- Fabric API matching the project;
+- the same RingWorld jar used by clients.
+
+Place the bootstrap config before the first world load. The repository
+contains templates under `deploy/server/`:
+
+```text
+DEPLOYMENT.md
+config/ringworld.properties
+server.properties
+ringworld.service
+rcon-send.py
+eula.txt
+```
+
+The current AndWhatNot template assumes:
+
+```text
+host: andwhatnotstudio.com:25565
+install directory: /opt/ringworld-server
+service: ringworld.service
+user/group: minecraftuser
+```
+
+The public test deployment was rebuilt on 27 July 2026 with the safe-small
+2,048×416 layout (128×26 chunks), survival mode, 28-chunk server view distance,
+and asynchronous atlas pregeneration enabled. The preceding 1,600×320 world is
+retained under the server backup directory and is not an active supported
+layout.
+
+Typical service operations:
+
+```sh
+systemctl status ringworld
+journalctl -u ringworld -f
+systemctl restart ringworld
+systemctl stop ringworld
+```
+
+Before replacing the jar:
+
+1. stop the server cleanly;
+2. back up the world, config, and existing jar;
+3. copy the new server/client-identical jar;
+4. start and watch logs for mixin/shader/protocol errors;
+5. connect a matching client;
+6. validate geometry acknowledgement and atlas cache;
+7. perform a seam interaction test.
+
+## Client installation
+
+Clients need:
+
+- Minecraft Java 1.21.11;
+- Fabric Loader 0.19.3;
+- Fabric API;
+- RingWorld jar.
+
+Server join fails for a client that cannot receive the required settings
+payload. A mismatched settings format or geometry acknowledgement is also
+rejected.
+
+The active local development bundle is under `dist/client-bundle/`, but
+`dist/` is deliberately not versioned. It contains generated launcher/runtime
+state and may contain live account tokens after sign-in.
+
+Versioned launcher sources live under `deploy/client/`. Copy them into each
+generated bundle before publishing. On every start they refresh only the
+packaged RingWorld jar, Fabric API jar, and `mmc-pack.json` in an existing
+instance. They preserve accounts, saves, options, screenshots, resource packs,
+existing RingWorld configuration, and `instance.cfg`.
+
+Never distribute a used `.prism-data` directory. Create a fresh package from
+the source instance that contains only:
+
+- mod jars;
+- config;
+- instance metadata;
+- launcher scripts/instructions.
+
+The web landing-page template and published checksums live under
+`deploy/web/ringworld/`. Rebuild archives and update checksums together.
+The current public artifacts are `RingWorld-Test-Client.zip` and
+`RingWorld-Test-Client-Windows.zip`. Validate each outer archive, its nested
+`RingWorld-Prism-Instance.zip`, the embedded mod hash, and a download through
+HTTPS before announcing an update.
+
+Test both package paths: a completely fresh bundle and an in-place upgrade over
+an existing `.prism-data` directory containing sentinel account, save, option,
+and configuration files. A new ZIP whose launcher only initializes a missing
+instance does not update existing users and can leave a stale network codec.
+
+On the public host, replace the page and archives only after copying the
+existing files to a timestamped directory under `/var/backups/`. The current
+27 July 2026 publication rollback, taken immediately before publishing visual
+profile 4, is `/var/backups/ringworld-web-20260727T132653Z/`.
+
+## Local macOS launch
+
+The existing packaged test instance can be opened directly:
+
+```sh
+dist/client-bundle/.launcher/macos/Prism\ Launcher.app/Contents/MacOS/prismlauncher \
+  -d "$PWD/dist/client-bundle/.prism-data" \
+  -l RingWorld-Test \
+  -w "New World"
+```
+
+Copy a newly built jar into the active instance before launch:
+
+```text
+dist/client-bundle/.prism-data/instances/RingWorld-Test/.minecraft/mods/
+```
+
+Also update any clean source instance used to rebuild shareable archives.
+
+## Observability
+
+Useful log messages:
+
+```text
+RingWorld bootstrap settings
+Created RingWorld layout
+Migrated RingWorld settings format
+[diagnostic] joined ring world
+RingWorld settings acknowledged
+Loaded/Saved RingWorld terrain atlas
+RingWorld terrain atlas progress
+RingWorld atlas: ... generation running|paused|complete
+Textured ring surface ready
+Migrated legacy rim chunk
+[test] ...
+[multiplayer] ...
+```
+
+F3 replaces the normal position section in the Overworld with:
+
+- canonical Ring XYZ;
+- canonical block/chunk/region;
+- facing direction;
+- circumference/chunk count;
+- atlas completion and sample step.
+
+## Recovery notes
+
+- An embedded player on join is moved upward only when their actual collision
+  box is obstructed.
+- Invalid/mismatched atlas files are ignored and rebuilt.
+- A stale complete client atlas is protected by world hash.
+- Legacy stone-brick boundary chunks migrate gradually, one loaded chunk per
+  tick.
+- Nether and End should remain usable even if Overworld-specific rendering is
+  unavailable; a missing dimension guard is a bug.

@@ -1,0 +1,31 @@
+# RingWorld documentation
+
+These files describe the implementation currently in the repository. They are
+maintained alongside code and should be updated whenever an invariant, packet
+path, mixin, configuration field, or operational procedure changes.
+
+Start here:
+
+- [`../AGENTS.md`](../AGENTS.md): concise operating rules for future coding
+  agents.
+- [`ARCHITECTURE.md`](ARCHITECTURE.md): coordinate model and end-to-end system
+  design.
+- [`DIMENSION_SCALING_PLAN.md`](DIMENSION_SCALING_PLAN.md): source-audited
+  registry of dimension-sensitive variables, safety limits, and the staged
+  custom-size implementation plan.
+- [`NETWORK_PROTOCOL.md`](NETWORK_PROTOCOL.md): login handshake, atlas
+  transport, and canonical/presentation packet mapping.
+- [`RENDERING.md`](RENDERING.md): terrain curvature, culling, distant texture,
+  fog, clouds, and the small fixed tone-shifting sun.
+- [`SUN_RENDERING_SNAPSHOT_2026-07-26.md`](SUN_RENDERING_SNAPSHOT_2026-07-26.md):
+  frozen rollback description of the removed ring-centred sun and panel array.
+- [`MIXIN_MAP.md`](MIXIN_MAP.md): ownership and risk map for every mixin.
+- [`TESTING.md`](TESTING.md): unit, local smoke, visual, and two-client
+  multiplayer procedures.
+- [`OPERATIONS.md`](OPERATIONS.md): configuration, persistence, build,
+  installation, packaging, and deployment.
+- [`CURRENT_STATE.md`](CURRENT_STATE.md): implemented features, deliberate
+  boundaries, known defects, and recommended next work.
+
+The top-level [`README.md`](../README.md) remains the user-facing overview.
+When it conflicts with these files, verify the source and correct both.

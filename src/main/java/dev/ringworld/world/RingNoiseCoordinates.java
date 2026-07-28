@@ -17,6 +17,11 @@ public final class RingNoiseCoordinates {
         return CACHE.computeIfAbsent(geometry, RingNoiseCoordinates::new);
     }
 
+    /** Drops per-layout lookup arrays when the owning Overworld unloads. */
+    public static void clearCache() {
+        CACHE.clear();
+    }
+
     private RingNoiseCoordinates(RingGeometry geometry) {
         circumference = geometry.circumferenceBlocks();
         radius = geometry.radius();

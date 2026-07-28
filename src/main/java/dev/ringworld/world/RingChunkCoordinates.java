@@ -5,11 +5,30 @@ public final class RingChunkCoordinates {
     private RingChunkCoordinates() { }
 
     public static int circumferenceChunks(RingGeometry geometry) {
-        return geometry.circumferenceBlocks() / 16;
+        return geometry.circumferenceChunks();
     }
 
     public static int wrapChunkX(int chunkX, RingGeometry geometry) {
         return Math.floorMod(chunkX, circumferenceChunks(geometry));
+    }
+
+    /**
+     * Mirrors vanilla's square simulation-distance test while joining the two
+     * circumference edges. The chunk-level propagator remains authoritative;
+     * this helper is also used as a loaded-entity fallback while its queued
+     * player-ticket update settles at a natural seam crossing.
+     */
+    public static boolean isWithinSimulationDistance(int entityChunkX, int entityChunkZ,
+                                                     int playerChunkX, int playerChunkZ,
+                                                     int simulationDistance,
+                                                     RingGeometry geometry) {
+        int circumference = circumferenceChunks(geometry);
+        int canonicalEntityX = Math.floorMod(entityChunkX, circumference);
+        int canonicalPlayerX = Math.floorMod(playerChunkX, circumference);
+        int directX = Math.abs(canonicalEntityX - canonicalPlayerX);
+        int periodicX = Math.min(directX, circumference - directX);
+        long deltaZ = Math.abs((long) entityChunkZ - playerChunkZ);
+        return periodicX <= simulationDistance && deltaZ <= simulationDistance;
     }
 
     /**

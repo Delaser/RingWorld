@@ -42,7 +42,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.function.BiConsumer;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Converts canonical chunk packets back into the nearest logical copy around
@@ -151,13 +153,37 @@ abstract class ClientPlayNetworkHandlerMixin {
     private PlayerPositionLookS2CPacket ringworld$logicalTeleport(PlayerPositionLookS2CPacket packet) {
         MinecraftClient client = MinecraftClient.getInstance();
         ClientPlayerEntity player = client.player;
-        if (ClientRingState.geometry() == null || player == null) return packet;
-        EntityPosition target = EntityPosition.apply(EntityPosition.fromEntity(player), packet.change(), packet.relatives());
+        RingGeometry geometry = ClientRingState.geometry();
+        if (geometry == null || player == null) return packet;
+
+        // The server target is canonical, but the client must stay on the
+        // nearest periodic image. Applying a seam-adjacent command target as
+        // raw canonical X can make a two-block teleport look C blocks long,
+        // clear the client chart, and discard chunks that the server still
+        // considers continuously watched.
+        EntityPosition current = EntityPosition.fromEntity(player);
+        EntityPosition target = EntityPosition.apply(current, packet.change(), packet.relatives());
+        double presentationX = geometry.nearestImageX(target.position().x, player.getX());
+        if (presentationX != target.position().x) {
+            EnumSet<PositionFlag> projectedRelatives = packet.relatives().isEmpty()
+                    ? EnumSet.noneOf(PositionFlag.class)
+                    : EnumSet.copyOf(packet.relatives());
+            projectedRelatives.remove(PositionFlag.X);
+            EntityPosition change = packet.change();
+            packet = new PlayerPositionLookS2CPacket(
+                    packet.teleportId(),
+                    new EntityPosition(
+                            new Vec3d(presentationX, change.position().y, change.position().z),
+                            change.deltaMovement(), change.yaw(), change.pitch()),
+                    Set.copyOf(projectedRelatives));
+            target = EntityPosition.apply(current, packet.change(), packet.relatives());
+        }
         rekeyClientChart(client,
                 Math.floorDiv((int) Math.floor(target.position().x), 16),
                 Math.floorDiv((int) Math.floor(target.position().z), 16));
         // Natural seam folds do not use this packet. Explicit commands,
-        // portals and respawns retain their authoritative canonical target.
+        // portals and respawns remain server-authoritative while using the
+        // equivalent presentation image nearest the current camera.
         return packet;
     }
 

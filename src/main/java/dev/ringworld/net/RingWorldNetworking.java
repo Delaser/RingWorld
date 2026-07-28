@@ -48,12 +48,16 @@ public final class RingWorldNetworking {
         ServerWorld overworld = handler.player.getEntityWorld().getServer().getWorld(World.OVERWORLD);
         if (overworld == null) return;
         if (!ServerPlayNetworking.canSend(handler.player, RingSettingsPayload.ID)) {
-            handler.disconnect(Text.literal("RingWorld is required on this server."));
+            handler.disconnect(Text.literal(
+                    "RingWorld client is missing or out of date. Download the current package from "
+                            + "andwhatnotstudio.com/ringworld"));
             return;
         }
         RingWorldSettings settings = RingWorldSettings.get(overworld);
         ServerPlayNetworking.send(handler.player, new RingSettingsPayload(
-                settings.widthBlocks(), settings.circumferenceBlocks(), settings.generatorSeed(), settings.formatVersion()));
+                settings.widthBlocks(), settings.circumferenceBlocks(), settings.generatorSeed(),
+                settings.wallHeightBlocks(), settings.surfaceReferenceY(),
+                settings.formatVersion(), settings.layoutFingerprint()));
     }
 
     private static void validateAcknowledgement(RingSettingsAckPayload payload,
@@ -61,15 +65,14 @@ public final class RingWorldNetworking {
         ServerWorld overworld = handler.player.getEntityWorld().getServer().getWorld(World.OVERWORLD);
         if (overworld == null) return;
         RingWorldSettings settings = RingWorldSettings.get(overworld);
-        if (payload.width() != settings.widthBlocks()
-                || payload.circumference() != settings.circumferenceBlocks()
-                || payload.formatVersion() != settings.formatVersion()) {
+        if (payload.formatVersion() != settings.formatVersion()
+                || payload.fingerprint() != settings.layoutFingerprint()) {
             handler.disconnect(Text.literal("RingWorld geometry/protocol acknowledgement mismatch."));
             return;
         }
         RingWorldMod.LOGGER.info("RingWorld settings acknowledged by {}: {}x{}, format {}",
-                handler.player.getName().getString(), payload.circumference(), payload.width(),
-                payload.formatVersion());
+                handler.player.getName().getString(), settings.circumferenceBlocks(),
+                settings.widthBlocks(), payload.formatVersion());
         RingTerrainAtlasServer.sendMetadata(handler.player);
     }
 }

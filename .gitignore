@@ -4,6 +4,8 @@ run/
 run-multiplayer/
 logs/
 dist/
+.codex-tmp/
+ringworld-*.jar
 .DS_Store
 .idea/
 *.iml

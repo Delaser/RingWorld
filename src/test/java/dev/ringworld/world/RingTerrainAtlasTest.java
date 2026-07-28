@@ -7,9 +7,11 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingTerrainAtlasTest {
+    /** Pure atlas fixture only; no physical cylinder is constructed from this geometry. */
     private static final RingGeometry GEOMETRY = new RingGeometry(320, 1_024);
     private static final long HASH = 0x1234_5678_9ABC_DEF0L;
 
@@ -97,8 +99,19 @@ class RingTerrainAtlasTest {
         RingWorldSettings first = new RingWorldSettings(320, 1_024, 123L, 160, 1);
         RingWorldSettings differentSeed = new RingWorldSettings(320, 1_024, 124L, 160, 1);
         RingWorldSettings differentLength = new RingWorldSettings(320, 1_040, 123L, 160, 1);
+        RingWorldSettings differentWall = new RingWorldSettings(320, 1_024, 123L, 176, 1);
 
         assertFalse(RingTerrainAtlas.worldHash(first) == RingTerrainAtlas.worldHash(differentSeed));
         assertFalse(RingTerrainAtlas.worldHash(first) == RingTerrainAtlas.worldHash(differentLength));
+        assertFalse(RingTerrainAtlas.worldHash(first) == RingTerrainAtlas.worldHash(differentWall));
+    }
+
+    @Test
+    void allocationBudgetIsEnforcedInsideTheAtlasToo() {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+                () -> new RingTerrainAtlas(
+                        new RingGeometry(1_048_576, 1_048_576), HASH));
+
+        assertTrue(exception.getMessage().contains("terrain atlas requires"));
     }
 }

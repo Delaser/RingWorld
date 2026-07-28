@@ -46,7 +46,7 @@ abstract class ServerChunkLoadingManagerMixin {
                                                         CallbackInfoReturnable<ChunkHolder> cir) {
         if (world.getRegistryKey() != World.OVERWORLD || !RingWorldConfig.load().testMode()) return;
         ChunkPos pos = new ChunkPos(packedPos);
-        int circumferenceChunks = RingWorldServer.geometryFor(world).circumferenceBlocks() / 16;
+        int circumferenceChunks = RingWorldServer.geometryFor(world).circumferenceChunks();
         if (pos.x < 0 || pos.x >= circumferenceChunks) {
             RingWorldServer.recordNonCanonicalHolderRequest();
         }
@@ -77,7 +77,7 @@ abstract class ServerChunkLoadingManagerMixin {
     private ChunkLoader ringworld$createPeriodicLoader(ChunkLoadingManager manager,
                                                        ChunkStatus status, ChunkPos pos) {
         if (world.getRegistryKey() != World.OVERWORLD) return ChunkLoader.create(manager, status, pos);
-        int circumferenceChunks = RingWorldServer.geometryFor(world).circumferenceBlocks() / 16;
+        int circumferenceChunks = RingWorldServer.geometryFor(world).circumferenceChunks();
         return RingRegionContext.run(circumferenceChunks, () -> ChunkLoader.create(manager, status, pos));
     }
 

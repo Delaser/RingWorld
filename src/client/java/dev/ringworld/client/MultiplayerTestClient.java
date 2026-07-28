@@ -37,6 +37,7 @@ final class MultiplayerTestClient {
 
     private int positionedTicks;
     private boolean seamArmed;
+    private double localSeamBoundary = Double.NaN;
     private double previousRemoteX = Double.NaN;
     private double maximumRemoteStep;
     private int remoteMissingTicks;
@@ -60,7 +61,7 @@ final class MultiplayerTestClient {
         if (role.isEmpty()) return false;
         if (!optionsApplied) {
             client.options.getViewDistance().setValue(2);
-            client.options.getSimulationDistance().setValue(2);
+            client.options.getSimulationDistance().setValue(5);
             client.options.getEnableVsync().setValue(false);
             client.options.getInactivityFpsLimit().setValue(InactivityFpsLimit.MINIMIZED);
             client.options.pauseOnLostFocus = false;
@@ -86,6 +87,14 @@ final class MultiplayerTestClient {
     }
 
     private void connectWhenReady(MinecraftClient client) {
+        // Client ticks begin while the initial SplashOverlay resource reload is
+        // still running. Joining a world before it finishes can let random
+        // display ticks request particle sprite providers whose prepared
+        // sprite list has not been installed yet.
+        if (!client.isFinishedLoading()) {
+            menuTicks = 0;
+            return;
+        }
         if (reconnectPending && client.currentScreen != null) {
             connectionRequested = false;
             reconnectPending = false;
@@ -141,11 +150,15 @@ final class MultiplayerTestClient {
         positionedTicks++;
         if (!seamArmed && positionedTicks >= 80) {
             seamArmed = true;
+            if (role.equals("A")) {
+                localSeamBoundary = geometry.nextPositiveSeamX(client.player.getX());
+            }
             previousRemoteX = remote.getX();
             sendResult("movement_started", true, client.player.getX());
             RingWorldMod.LOGGER.info(
-                    "[multiplayer:{}] armed localX={} remote={} remoteLogicalX={} shortestDistance={}",
-                    role, client.player.getX(), remote.getName().getString(), remote.getX(),
+                    "[multiplayer:{}] armed localX={} localSeam={} remote={} remoteLogicalX={} shortestDistance={}",
+                    role, client.player.getX(), localSeamBoundary,
+                    remote.getName().getString(), remote.getX(),
                     Math.abs(geometry.shortestCircumferenceDelta(client.player.getX(), remote.getX())));
         }
         if (!seamArmed) return;
@@ -155,8 +168,8 @@ final class MultiplayerTestClient {
         if (previousRemoteX < 0.0 && remote.getX() >= 0.0) remoteCrossedZero = true;
         previousRemoteX = remote.getX();
 
-        if (role.equals("A") && client.player.getX() < geometry.circumferenceBlocks()) {
-            double nextX = Math.min(geometry.circumferenceBlocks(),
+        if (role.equals("A") && client.player.getX() < localSeamBoundary) {
+            double nextX = Math.min(localSeamBoundary,
                     client.player.getX() + 0.25);
             client.player.setPosition(nextX, client.player.getY(), client.player.getZ());
             client.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.Full(
@@ -168,7 +181,7 @@ final class MultiplayerTestClient {
 
         boolean localCrossed = role.equals("B")
                 ? remoteCrossedZero
-                : client.player.getX() >= geometry.circumferenceBlocks();
+                : client.player.getX() >= localSeamBoundary;
         if (!localCrossed) return;
 
         boolean remoteStillAdjacent = Math.abs(geometry.shortestCircumferenceDelta(
@@ -299,19 +312,21 @@ final class MultiplayerTestClient {
         if (!vehicleSeen) {
             vehicleSeen = true;
             previousVehicleX = boat.getX();
+            sendResult("vehicle_acquired", true, boat.getX());
             RingWorldMod.LOGGER.info("[multiplayer:{}] acquired seam vehicle at x={}", role, boat.getX());
+            return;
         } else {
             maximumVehicleStep = Math.max(maximumVehicleStep, Math.abs(boat.getX() - previousVehicleX));
             previousVehicleX = boat.getX();
         }
-        boolean crossed = role.equals("A")
-                ? boat.getX() >= geometry.circumferenceBlocks()
-                : boat.getX() >= 0.0;
+        double observedSeam = geometry.nearestImageX(0.0, client.player.getX());
+        boolean crossed = boat.getX() >= observedSeam;
         if (crossed) {
             boolean passed = vehicleMissingTicks == 0 && maximumVehicleStep <= 1.0;
             RingWorldMod.LOGGER.info(
-                    "[multiplayer:{}] vehicle visibility result={} x={} maxStep={} missingTicks={}",
-                    role, passed, boat.getX(), maximumVehicleStep, vehicleMissingTicks);
+                    "[multiplayer:{}] vehicle visibility result={} x={} localSeam={} maxStep={} missingTicks={}",
+                    role, passed, boat.getX(), observedSeam,
+                    maximumVehicleStep, vehicleMissingTicks);
             sendResult("vehicle_visibility", passed, maximumVehicleStep);
             stage = 4;
             stageTicks = 0;
@@ -328,7 +343,8 @@ final class MultiplayerTestClient {
                         client.player.getX());
                 sendResult("intentional_teleport", true, client.player.getX());
             } else if (sawFarTeleport
-                    && Math.abs(client.player.getX() - (geometry.circumferenceBlocks() - 4.0)) < 1.0) {
+                    && Math.abs(geometry.shortestCircumferenceDelta(
+                            client.player.getX(), geometry.circumferenceBlocks() - 4.0)) < 1.0) {
                 RingWorldMod.LOGGER.info("[multiplayer:A] return teleport preserved at x={}", client.player.getX());
                 sendResult("teleport_return", true, client.player.getX());
                 stage = 5;

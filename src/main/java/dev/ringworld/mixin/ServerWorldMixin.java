@@ -10,6 +10,7 @@ import net.minecraft.block.Block;
 import net.minecraft.fluid.Fluid;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.server.world.ServerEntityManager;
+import net.minecraft.server.world.ChunkLevelManager;
 import net.minecraft.entity.Entity;
 import net.minecraft.util.math.ChunkPos;
 import net.minecraft.util.math.BlockPos;
@@ -36,7 +37,7 @@ abstract class ServerWorldMixin {
     private void ringworld$attachTickSchedulerGeometry(CallbackInfo ci) {
         ServerWorld world = (ServerWorld) (Object) this;
         if (world.getRegistryKey() != World.OVERWORLD) return;
-        RingGeometry geometry = RingWorldServer.geometryFor(world);
+        RingGeometry geometry = RingWorldServer.attachWorldGeometry(world);
         ((RingEntityManagerAccess) entityManager).ringworld$setGeometry(geometry);
         ((RingTickSchedulerAccess) blockTickScheduler).ringworld$setGeometry(geometry);
         ((RingTickSchedulerAccess) fluidTickScheduler).ringworld$setGeometry(geometry);
@@ -66,18 +67,38 @@ abstract class ServerWorldMixin {
     }
 
     /**
-     * The primary entity tick loop checks an entity's live chunk directly
-     * against the finite chunk-level graph. Use its canonical storage chunk
-     * for that eligibility lookup so moving entities do not freeze at x=C.
+     * The primary entity loop checks the asynchronously propagated simulation
+     * graph. Canonicalize its lookup and cover the brief/stale graph state
+     * observed after a player naturally crosses the joined edge. The fallback
+     * exactly mirrors the configured square simulation distance, uses nearest
+     * periodic chunk images, and excludes spectators; it therefore activates
+     * only chunks vanilla intends the nearby player to simulate.
      */
     @Redirect(
             method = "method_31420",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/util/math/ChunkPos;toLong()J"))
-    private long ringworld$canonicalEntityTickChunk(ChunkPos pos) {
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/server/world/ChunkLevelManager;shouldTickEntities(J)Z"))
+    private boolean ringworld$periodicEntityTickEligibility(ChunkLevelManager manager, long packedPos) {
         ServerWorld world = (ServerWorld) (Object) this;
-        if (world.getRegistryKey() != World.OVERWORLD) return pos.toLong();
+        if (world.getRegistryKey() != World.OVERWORLD) return manager.shouldTickEntities(packedPos);
+
+        ChunkPos pos = new ChunkPos(packedPos);
         RingGeometry geometry = RingWorldServer.geometryFor(world);
-        return ChunkPos.toLong(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
+        int canonicalX = RingChunkCoordinates.wrapChunkX(pos.x, geometry);
+        long canonicalPos = ChunkPos.toLong(canonicalX, pos.z);
+        if (manager.shouldTickEntities(canonicalPos)) return true;
+
+        int simulationDistance = world.getServer().getPlayerManager().getSimulationDistance();
+        for (var player : world.getPlayers()) {
+            if (player.isSpectator()) continue;
+            ChunkPos playerPos = player.getChunkPos();
+            if (RingChunkCoordinates.isWithinSimulationDistance(
+                    canonicalX, pos.z, playerPos.x, playerPos.z,
+                    simulationDistance, geometry)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @ModifyVariable(

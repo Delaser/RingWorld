@@ -17,20 +17,20 @@ out float sphericalVertexDistance;
 out float cylindricalVertexDistance;
 out vec4 vertexColor;
 out vec2 texCoord0;
+out float ringIntrinsicDistance;
 
-// RingWorld writes the negotiated circumference into the otherwise
-// menu-only Globals field each in-world frame. Keeping this in the existing
-// UBO avoids a second terrain pipeline while retaining per-world geometry.
 float ring_circumference() {
-    return float((MenuBlurRadius & 0x7ffffff0) >> 4);
+    return float(RingWorldLayout.y);
 }
 
 bool ring_active() {
-    return MenuBlurRadius < 0;
+    return RingWorldLayout.x != 0;
 }
 
-const float SURFACE_Y = 64.0;
-const float RING_FOG_DISTANCE_SCALE = 1.08;
+// Keep the last live chunks gently atmospheric without raising an obvious
+// fog-colour wall at their outer edge. The distant ring now supplies the
+// remainder of the handoff through a broad alpha cross-fade.
+const float RING_FOG_DISTANCE_SCALE = 1.02;
 
 vec4 minecraft_sample_lightmap(sampler2D lightMap, ivec2 uv) {
     return texture(lightMap, clamp((uv / 256.0) + 0.5 / 16.0, vec2(0.5 / 16.0), vec2(15.5 / 16.0)));
@@ -43,8 +43,8 @@ vec3 camera_local_ring_position(vec3 vertexCanonical, vec3 cameraCanonical) {
     float baseRadius = circumference / (2.0 * 3.14159265358979323846);
     float deltaAngle = 6.28318530717958647692
         * (vertexCanonical.x - cameraCanonical.x) / circumference;
-    float vertexRadius = baseRadius + SURFACE_Y - vertexCanonical.y;
-    float cameraRadius = baseRadius + SURFACE_Y - cameraCanonical.y;
+    float vertexRadius = baseRadius + RingWorldVertical.x - vertexCanonical.y;
+    float cameraRadius = baseRadius + RingWorldVertical.x - cameraCanonical.y;
     return vec3(
         vertexRadius * sin(deltaAngle),
         cameraRadius - vertexRadius * cos(deltaAngle),
@@ -60,6 +60,7 @@ void main() {
         cylindricalVertexDistance = fog_cylindrical_distance(vanillaPos);
         vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
         texCoord0 = UV0;
+        ringIntrinsicDistance = -1.0;
         return;
     }
 
@@ -86,4 +87,8 @@ void main() {
     );
     vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
     texCoord0 = UV0;
+    // Horizontal intrinsic distance matches chunk loading and the textured
+    // surface shader. The fragment shader uses it to reveal the already-drawn
+    // distant ring beneath only the final live terrain band.
+    ringIntrinsicDistance = length(vanillaPos.xz);
 }

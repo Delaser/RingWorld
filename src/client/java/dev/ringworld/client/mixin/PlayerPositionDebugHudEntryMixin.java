@@ -79,7 +79,7 @@ abstract class PlayerPositionDebugHudEntryMixin {
                 String.format(Locale.ROOT, "Loop: X 0-%d, %d blocks / %d chunks",
                         geometry.circumferenceBlocks() - 1,
                         geometry.circumferenceBlocks(),
-                        geometry.circumferenceBlocks() / 16),
+                        geometry.circumferenceChunks()),
                 "Ring Atlas: " + atlasStatus,
                 client.world.getRegistryKey().getValue() + " FC: " + forcedChunks.size()
         ));

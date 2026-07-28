@@ -12,10 +12,8 @@ import net.minecraft.util.math.ChunkPos;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
  * Makes every server chunk acquisition use the canonical circumference chunk.
@@ -24,13 +22,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(ServerChunkManager.class)
 abstract class ServerChunkManagerMixin {
-    @Inject(method = "<init>", at = @At("TAIL"))
-    private void ringworld$attachGeneratorGeometry(CallbackInfo ci) {
-        World world = ((ServerChunkManager) (Object) this).getWorld();
-        if (!(world instanceof ServerWorld serverWorld) || serverWorld.getRegistryKey() != World.OVERWORLD) return;
-        RingWorldServer.attachBootstrapGeometry(((ServerChunkManager) (Object) this).getChunkGenerator());
-    }
-
     @ModifyVariable(
             method = "getChunk(IILnet/minecraft/world/chunk/ChunkStatus;Z)Lnet/minecraft/world/chunk/Chunk;",
             at = @At("HEAD"), argsOnly = true, ordinal = 0)
