@@ -115,6 +115,7 @@ handoff behavior.
 | Java | 21 |
 | Fabric Loader | 0.19.3 or newer compatible release |
 | Fabric API | 0.141.4+1.21.11 |
+| Development mappings | Official Mojang mappings for 1.21.11 |
 | RingWorld | The same jar on server and clients |
 
 The server performs a required geometry/protocol handshake and rejects missing

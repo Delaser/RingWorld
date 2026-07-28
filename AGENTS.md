@@ -180,9 +180,10 @@ When two ChatGPT Desktop agents work on the 26.1 port, both must follow
 stable `primary` or `secondary` role, and check the selected coordination
 channel before editing coordinated files, committing, or handing work off.
 
-Mixin method descriptors target Minecraft 1.21.11/Yarn build 6. A Minecraft,
-Yarn, Loader, Loom, or Fabric API upgrade is a porting project: audit every
-injection target and shader ABI rather than only changing version numbers.
+Mixin method descriptors currently target Minecraft 1.21.11 under official
+Mojang mappings. A Minecraft, mappings, Loader, Loom, or Fabric API upgrade is
+a porting project: audit every injection target and shader ABI rather than only
+changing version numbers.
 
 ## Current implementation cautions
 
@@ -300,6 +301,11 @@ injection target and shader ABI rather than only changing version numbers.
   visibility graph can hide sections that cylindrical rendering bends back
   into view. Curved frustum and render-distance culling must remain enabled to
   bound the performance cost.
+- The 1.21.11 Mojang mappings do not name `ServerLevel`'s asynchronous
+  entity-tick lambda; `ServerWorldMixin` therefore retains the synthetic
+  `method_31420` target with an explicit `@Dynamic` explanation. Do not treat
+  that one audited exception as permission to retain other Yarn or
+  intermediary identifiers.
 
 The detailed current status and open risks are maintained in
 [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md).

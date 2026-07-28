@@ -6,34 +6,6 @@ import dev.ringworld.client.chunk.RingClientChunkMapAccess;
 import dev.ringworld.client.chunk.RingClientChunkMaps;
 import dev.ringworld.world.RingChunkCoordinates;
 import dev.ringworld.world.RingGeometry;
-import net.minecraft.block.BlockState;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.network.ClientPlayerEntity;
-import net.minecraft.client.network.ClientPlayNetworkHandler;
-import net.minecraft.entity.EntityPosition;
-import net.minecraft.network.packet.s2c.play.ChunkDataS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkBiomeDataS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkDeltaUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.ChunkRenderDistanceCenterS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlayerPositionLookS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntitySpawnS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityPositionSyncS2CPacket;
-import net.minecraft.network.packet.s2c.play.EntityPositionS2CPacket;
-import net.minecraft.network.packet.s2c.play.PositionFlag;
-import net.minecraft.network.packet.s2c.play.UnloadChunkS2CPacket;
-import net.minecraft.network.packet.s2c.play.BlockBreakingProgressS2CPacket;
-import net.minecraft.network.packet.s2c.play.BlockEntityUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.BlockUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.LightUpdateS2CPacket;
-import net.minecraft.network.packet.s2c.play.BlockEventS2CPacket;
-import net.minecraft.network.packet.s2c.play.ExplosionS2CPacket;
-import net.minecraft.network.packet.s2c.play.ParticleS2CPacket;
-import net.minecraft.network.packet.s2c.play.PlaySoundS2CPacket;
-import net.minecraft.network.packet.s2c.play.WorldEventS2CPacket;
-import net.minecraft.network.packet.s2c.play.VehicleMoveS2CPacket;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -42,6 +14,34 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.function.BiConsumer;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientPacketListener;
+import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.protocol.game.ClientboundAddEntityPacket;
+import net.minecraft.network.protocol.game.ClientboundBlockDestructionPacket;
+import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
+import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
+import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundChunksBiomesPacket;
+import net.minecraft.network.protocol.game.ClientboundEntityPositionSyncPacket;
+import net.minecraft.network.protocol.game.ClientboundExplodePacket;
+import net.minecraft.network.protocol.game.ClientboundForgetLevelChunkPacket;
+import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
+import net.minecraft.network.protocol.game.ClientboundLevelEventPacket;
+import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
+import net.minecraft.network.protocol.game.ClientboundLightUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundMoveVehiclePacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
+import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
+import net.minecraft.network.protocol.game.ClientboundSetChunkCacheCenterPacket;
+import net.minecraft.network.protocol.game.ClientboundSoundPacket;
+import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
+import net.minecraft.world.entity.PositionMoveRotation;
+import net.minecraft.world.entity.Relative;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.Vec3;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -51,7 +51,7 @@ import java.util.Set;
  * the client. The server can therefore store chunk 0 once while a traveller
  * at chunk 100 sees it immediately beyond the circumference seam.
  */
-@Mixin(ClientPlayNetworkHandler.class)
+@Mixin(ClientPacketListener.class)
 abstract class ClientPlayNetworkHandlerMixin {
     /**
      * A whole-chart jump cannot rely on the following canonical unload
@@ -60,23 +60,23 @@ abstract class ClientPlayNetworkHandlerMixin {
      * logical center. Explicitly evict that old client chart first. Small
      * center changes use vanilla's incremental unload/load path unchanged.
      */
-    @Inject(method = "onChunkRenderDistanceCenter", at = @At("HEAD"))
-    private void ringworld$evictPreviousChunkChart(ChunkRenderDistanceCenterS2CPacket packet,
+    @Inject(method = "handleSetChunkCacheCenter", at = @At("HEAD"))
+    private void ringworld$evictPreviousChunkChart(ClientboundSetChunkCacheCenterPacket packet,
                                                     CallbackInfo ci) {
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         RingGeometry geometry = ClientRingState.geometry();
-        if (geometry == null || client.player == null || client.world == null) return;
+        if (geometry == null || client.player == null || client.level == null) return;
 
-        int nextX = mapChunkX(packet.getChunkX());
-        rekeyClientChart(client, nextX, packet.getChunkZ());
+        int nextX = mapChunkX(packet.getX());
+        rekeyClientChart(client, nextX, packet.getZ());
     }
 
-    private void rekeyClientChart(MinecraftClient client, int nextX, int nextZ) {
-        if (client.world == null) return;
-        RingClientChunkMapAccess access = RingClientChunkMaps.get(client.world.getChunkManager());
+    private void rekeyClientChart(Minecraft client, int nextX, int nextZ) {
+        if (client.level == null) return;
+        RingClientChunkMapAccess access = RingClientChunkMaps.get(client.level.getChunkSource());
         if (access == null) return;
 
-        int viewDistance = client.options.getViewDistance().getValue();
+        int viewDistance = client.options.renderDistance().get();
         int overlapDiameter = viewDistance * 2 + 2;
         if (Math.abs(nextX - access.ringworld$centerChunkX()) <= overlapDiameter
                 && Math.abs(nextZ - access.ringworld$centerChunkZ()) <= overlapDiameter) return;
@@ -87,72 +87,72 @@ abstract class ClientPlayNetworkHandlerMixin {
         // Position packets and chunk-centre packets are separate. A large
         // teleport can deliver them in either order, so make the acceptance
         // window authoritative here instead of leaving it on the old chart.
-        client.world.getChunkManager().setChunkMapCenter(nextX, nextZ);
-        client.worldRenderer.scheduleTerrainUpdate();
+        client.level.getChunkSource().updateViewCenter(nextX, nextZ);
+        client.levelRenderer.needsUpdate();
         RingWorldMod.LOGGER.debug("Re-keyed client chunk chart from {},{} to {},{}",
                 previousX, previousZ, nextX, nextZ);
     }
 
-    @ModifyVariable(method = "onEntitySpawn", at = @At("HEAD"), argsOnly = true)
-    private EntitySpawnS2CPacket ringworld$projectEntitySpawn(EntitySpawnS2CPacket packet) {
+    @ModifyVariable(method = "handleAddEntity", at = @At("HEAD"), argsOnly = true)
+    private ClientboundAddEntityPacket ringworld$projectEntitySpawn(ClientboundAddEntityPacket packet) {
         RingGeometry geometry = ClientRingState.geometry();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (geometry == null || client.player == null) return packet;
         double logicalX = geometry.nearestImageX(packet.getX(), client.player.getX());
         if (logicalX == packet.getX()) return packet;
-        return new EntitySpawnS2CPacket(packet.getEntityId(), packet.getUuid(),
-                logicalX, packet.getY(), packet.getZ(), packet.getPitch(), packet.getYaw(),
-                packet.getEntityType(), packet.getEntityData(), packet.getVelocity(), packet.getHeadYaw());
+        return new ClientboundAddEntityPacket(packet.getId(), packet.getUUID(),
+                logicalX, packet.getY(), packet.getZ(), packet.getXRot(), packet.getYRot(),
+                packet.getType(), packet.getData(), packet.getMovement(), packet.getYHeadRot());
     }
 
-    @ModifyVariable(method = "onEntityPositionSync", at = @At("HEAD"), argsOnly = true)
-    private EntityPositionSyncS2CPacket ringworld$projectEntitySync(EntityPositionSyncS2CPacket packet) {
+    @ModifyVariable(method = "handleEntityPositionSync", at = @At("HEAD"), argsOnly = true)
+    private ClientboundEntityPositionSyncPacket ringworld$projectEntitySync(ClientboundEntityPositionSyncPacket packet) {
         RingGeometry geometry = ClientRingState.geometry();
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (geometry == null || client.world == null || client.player == null) return packet;
-        EntityPosition values = packet.values();
+        Minecraft client = Minecraft.getInstance();
+        if (geometry == null || client.level == null || client.player == null) return packet;
+        PositionMoveRotation values = packet.values();
         double logicalX = geometry.nearestImageX(values.position().x, client.player.getX());
         if (logicalX == values.position().x) return packet;
-        EntityPosition logical = new EntityPosition(
-                new Vec3d(logicalX, values.position().y, values.position().z),
-                values.deltaMovement(), values.yaw(), values.pitch());
-        return new EntityPositionSyncS2CPacket(packet.id(), logical, packet.onGround());
+        PositionMoveRotation logical = new PositionMoveRotation(
+                new Vec3(logicalX, values.position().y, values.position().z),
+                values.deltaMovement(), values.yRot(), values.xRot());
+        return new ClientboundEntityPositionSyncPacket(packet.id(), logical, packet.onGround());
     }
 
-    @ModifyVariable(method = "onEntityPosition", at = @At("HEAD"), argsOnly = true)
-    private EntityPositionS2CPacket ringworld$projectEntityTeleport(EntityPositionS2CPacket packet) {
+    @ModifyVariable(method = "handleTeleportEntity", at = @At("HEAD"), argsOnly = true)
+    private ClientboundTeleportEntityPacket ringworld$projectEntityTeleport(ClientboundTeleportEntityPacket packet) {
         RingGeometry geometry = ClientRingState.geometry();
-        MinecraftClient client = MinecraftClient.getInstance();
-        if (geometry == null || client.world == null || client.player == null
-                || packet.relatives().contains(PositionFlag.X)) return packet;
-        EntityPosition change = packet.change();
+        Minecraft client = Minecraft.getInstance();
+        if (geometry == null || client.level == null || client.player == null
+                || packet.relatives().contains(Relative.X)) return packet;
+        PositionMoveRotation change = packet.change();
         double logicalX = geometry.nearestImageX(change.position().x, client.player.getX());
         if (logicalX == change.position().x) return packet;
-        EntityPosition logical = new EntityPosition(
-                new Vec3d(logicalX, change.position().y, change.position().z),
-                change.deltaMovement(), change.yaw(), change.pitch());
-        return new EntityPositionS2CPacket(packet.entityId(), logical, packet.relatives(), packet.onGround());
+        PositionMoveRotation logical = new PositionMoveRotation(
+                new Vec3(logicalX, change.position().y, change.position().z),
+                change.deltaMovement(), change.yRot(), change.xRot());
+        return new ClientboundTeleportEntityPacket(packet.id(), logical, packet.relatives(), packet.onGround());
     }
 
     /** Keep authoritative vehicle corrections in the rider's current visual chart. */
-    @ModifyVariable(method = "onVehicleMove", at = @At("HEAD"), argsOnly = true)
-    private VehicleMoveS2CPacket ringworld$projectVehicleCorrection(VehicleMoveS2CPacket packet) {
+    @ModifyVariable(method = "handleMoveVehicle", at = @At("HEAD"), argsOnly = true)
+    private ClientboundMoveVehiclePacket ringworld$projectVehicleCorrection(ClientboundMoveVehiclePacket packet) {
         RingGeometry geometry = ClientRingState.geometry();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (geometry == null || client.player == null) return packet;
-        Vec3d position = packet.position();
+        Vec3 position = packet.position();
         double logicalX = geometry.nearestImageX(position.x, client.player.getRootVehicle().getX());
         if (logicalX == position.x) return packet;
-        return new VehicleMoveS2CPacket(
-                new Vec3d(logicalX, position.y, position.z),
-                packet.yaw(), packet.pitch());
+        return new ClientboundMoveVehiclePacket(
+                new Vec3(logicalX, position.y, position.z),
+                packet.yRot(), packet.xRot());
     }
 
     /** Keep the client chunk chart aligned with explicit server teleports. */
-    @ModifyVariable(method = "onPlayerPositionLook", at = @At("HEAD"), argsOnly = true)
-    private PlayerPositionLookS2CPacket ringworld$logicalTeleport(PlayerPositionLookS2CPacket packet) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        ClientPlayerEntity player = client.player;
+    @ModifyVariable(method = "handleMovePlayer", at = @At("HEAD"), argsOnly = true)
+    private ClientboundPlayerPositionPacket ringworld$logicalTeleport(ClientboundPlayerPositionPacket packet) {
+        Minecraft client = Minecraft.getInstance();
+        LocalPlayer player = client.player;
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null || player == null) return packet;
 
@@ -161,22 +161,22 @@ abstract class ClientPlayNetworkHandlerMixin {
         // raw canonical X can make a two-block teleport look C blocks long,
         // clear the client chart, and discard chunks that the server still
         // considers continuously watched.
-        EntityPosition current = EntityPosition.fromEntity(player);
-        EntityPosition target = EntityPosition.apply(current, packet.change(), packet.relatives());
+        PositionMoveRotation current = PositionMoveRotation.of(player);
+        PositionMoveRotation target = PositionMoveRotation.calculateAbsolute(current, packet.change(), packet.relatives());
         double presentationX = geometry.nearestImageX(target.position().x, player.getX());
         if (presentationX != target.position().x) {
-            EnumSet<PositionFlag> projectedRelatives = packet.relatives().isEmpty()
-                    ? EnumSet.noneOf(PositionFlag.class)
+            EnumSet<Relative> projectedRelatives = packet.relatives().isEmpty()
+                    ? EnumSet.noneOf(Relative.class)
                     : EnumSet.copyOf(packet.relatives());
-            projectedRelatives.remove(PositionFlag.X);
-            EntityPosition change = packet.change();
-            packet = new PlayerPositionLookS2CPacket(
-                    packet.teleportId(),
-                    new EntityPosition(
-                            new Vec3d(presentationX, change.position().y, change.position().z),
-                            change.deltaMovement(), change.yaw(), change.pitch()),
+            projectedRelatives.remove(Relative.X);
+            PositionMoveRotation change = packet.change();
+            packet = new ClientboundPlayerPositionPacket(
+                    packet.id(),
+                    new PositionMoveRotation(
+                            new Vec3(presentationX, change.position().y, change.position().z),
+                            change.deltaMovement(), change.yRot(), change.xRot()),
                     Set.copyOf(projectedRelatives));
-            target = EntityPosition.apply(current, packet.change(), packet.relatives());
+            target = PositionMoveRotation.calculateAbsolute(current, packet.change(), packet.relatives());
         }
         rekeyClientChart(client,
                 Math.floorDiv((int) Math.floor(target.position().x), 16),
@@ -188,57 +188,57 @@ abstract class ClientPlayNetworkHandlerMixin {
     }
 
     @Redirect(
-            method = "onChunkData",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/packet/s2c/play/ChunkDataS2CPacket;getChunkX()I"))
-    private int ringworld$mapChunkDataX(ChunkDataS2CPacket packet) {
-        return mapChunkX(packet.getChunkX());
+            method = "handleLevelChunkWithLight",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/game/ClientboundLevelChunkWithLightPacket;getX()I"))
+    private int ringworld$mapChunkDataX(ClientboundLevelChunkWithLightPacket packet) {
+        return mapChunkX(packet.getX());
     }
 
     /** Incremental light packets arrive independently of full chunk data. */
     @Redirect(
-            method = "onLightUpdate",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/packet/s2c/play/LightUpdateS2CPacket;getChunkX()I"))
-    private int ringworld$mapLightUpdateX(LightUpdateS2CPacket packet) {
-        return mapChunkX(packet.getChunkX());
+            method = "handleLightUpdatePacket",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/game/ClientboundLightUpdatePacket;getX()I"))
+    private int ringworld$mapLightUpdateX(ClientboundLightUpdatePacket packet) {
+        return mapChunkX(packet.getX());
     }
 
     /** Keep biome-only refreshes on the same client chart as their chunks. */
-    @ModifyVariable(method = "onChunkBiomeData", at = @At("HEAD"), argsOnly = true)
-    private ChunkBiomeDataS2CPacket ringworld$mapChunkBiomeData(ChunkBiomeDataS2CPacket packet) {
+    @ModifyVariable(method = "handleChunksBiomes", at = @At("HEAD"), argsOnly = true)
+    private ClientboundChunksBiomesPacket ringworld$mapChunkBiomeData(ClientboundChunksBiomesPacket packet) {
         RingGeometry geometry = ClientRingState.geometry();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (geometry == null || client.player == null) return packet;
-        List<ChunkBiomeDataS2CPacket.Serialized> mapped = packet.chunkBiomeData().stream()
-                .map(data -> new ChunkBiomeDataS2CPacket.Serialized(
+        List<ClientboundChunksBiomesPacket.ChunkBiomeData> mapped = packet.chunkBiomeData().stream()
+                .map(data -> new ClientboundChunksBiomesPacket.ChunkBiomeData(
                         new ChunkPos(mapChunkX(data.pos().x), data.pos().z), data.buffer()))
                 .toList();
-        return new ChunkBiomeDataS2CPacket(mapped);
+        return new ClientboundChunksBiomesPacket(mapped);
     }
 
     /** Keep ClientChunkManager's acceptance window on the same presentation chart. */
     @Redirect(
-            method = "onChunkRenderDistanceCenter",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/packet/s2c/play/ChunkRenderDistanceCenterS2CPacket;getChunkX()I"))
-    private int ringworld$mapChunkCenterX(ChunkRenderDistanceCenterS2CPacket packet) {
-        return mapChunkX(packet.getChunkX());
+            method = "handleSetChunkCacheCenter",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/game/ClientboundSetChunkCacheCenterPacket;getX()I"))
+    private int ringworld$mapChunkCenterX(ClientboundSetChunkCacheCenterPacket packet) {
+        return mapChunkX(packet.getX());
     }
 
     @Redirect(
-            method = {"onUnloadChunk", "unloadChunk"},
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/packet/s2c/play/UnloadChunkS2CPacket;pos()Lnet/minecraft/util/math/ChunkPos;"))
-    private ChunkPos ringworld$mapUnloadChunk(UnloadChunkS2CPacket packet) {
+            method = {"handleForgetLevelChunk", "queueLightRemoval"},
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/game/ClientboundForgetLevelChunkPacket;pos()Lnet/minecraft/world/level/ChunkPos;"))
+    private ChunkPos ringworld$mapUnloadChunk(ClientboundForgetLevelChunkPacket packet) {
         ChunkPos pos = packet.pos();
         return new ChunkPos(mapChunkX(pos.x), pos.z);
     }
 
     @Redirect(
-            method = "onChunkDeltaUpdate",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/packet/s2c/play/ChunkDeltaUpdateS2CPacket;visitUpdates(Ljava/util/function/BiConsumer;)V"))
-    private void ringworld$mapChunkDelta(ChunkDeltaUpdateS2CPacket packet,
+            method = "handleChunkBlocksUpdate",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/game/ClientboundSectionBlocksUpdatePacket;runUpdates(Ljava/util/function/BiConsumer;)V"))
+    private void ringworld$mapChunkDelta(ClientboundSectionBlocksUpdatePacket packet,
                                          BiConsumer<BlockPos, BlockState> consumer) {
-        packet.visitUpdates((pos, state) -> {
+        packet.runUpdates((pos, state) -> {
             RingGeometry geometry = ClientRingState.geometry();
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             if (geometry == null || client.player == null) {
                 consumer.accept(pos, state);
                 return;
@@ -256,79 +256,79 @@ abstract class ClientPlayNetworkHandlerMixin {
     }
 
     @Redirect(
-            method = "onBlockUpdate",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/packet/s2c/play/BlockUpdateS2CPacket;getPos()Lnet/minecraft/util/math/BlockPos;"))
-    private BlockPos ringworld$mapBlockUpdate(BlockUpdateS2CPacket packet) {
+            method = "handleBlockUpdate",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/game/ClientboundBlockUpdatePacket;getPos()Lnet/minecraft/core/BlockPos;"))
+    private BlockPos ringworld$mapBlockUpdate(ClientboundBlockUpdatePacket packet) {
         BlockPos mapped = mapBlockPos(packet.getPos());
         if (!System.getProperty("ringworld.multiplayerTestRole", "").isEmpty()
                 && packet.getPos().equals(new BlockPos(1, 119, 0))) {
-            MinecraftClient client = MinecraftClient.getInstance();
+            Minecraft client = Minecraft.getInstance();
             RingWorldMod.LOGGER.info("[multiplayer:{}] seam block update {} -> {} state={} playerX={}",
                     System.getProperty("ringworld.multiplayerTestRole"), packet.getPos(), mapped,
-                    packet.getState().getBlock(), client.player == null ? Double.NaN : client.player.getX());
+                    packet.getBlockState().getBlock(), client.player == null ? Double.NaN : client.player.getX());
         }
         return mapped;
     }
 
     @Redirect(
-            method = "onBlockEntityUpdate",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/packet/s2c/play/BlockEntityUpdateS2CPacket;getPos()Lnet/minecraft/util/math/BlockPos;"))
-    private BlockPos ringworld$mapBlockEntityUpdate(BlockEntityUpdateS2CPacket packet) {
+            method = "handleBlockEntityData",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/game/ClientboundBlockEntityDataPacket;getPos()Lnet/minecraft/core/BlockPos;"))
+    private BlockPos ringworld$mapBlockEntityUpdate(ClientboundBlockEntityDataPacket packet) {
         return mapBlockPos(packet.getPos());
     }
 
     @Redirect(
-            method = "onBlockBreakingProgress",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/packet/s2c/play/BlockBreakingProgressS2CPacket;getPos()Lnet/minecraft/util/math/BlockPos;"))
-    private BlockPos ringworld$mapBlockBreakingProgress(BlockBreakingProgressS2CPacket packet) {
+            method = "handleBlockDestruction",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/game/ClientboundBlockDestructionPacket;getPos()Lnet/minecraft/core/BlockPos;"))
+    private BlockPos ringworld$mapBlockBreakingProgress(ClientboundBlockDestructionPacket packet) {
         return mapBlockPos(packet.getPos());
     }
 
     @Redirect(
-            method = "onBlockEvent",
+            method = "handleBlockEvent",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/network/packet/s2c/play/BlockEventS2CPacket;getPos()Lnet/minecraft/util/math/BlockPos;"))
-    private BlockPos ringworld$mapBlockEvent(BlockEventS2CPacket packet) {
+                    target = "Lnet/minecraft/network/protocol/game/ClientboundBlockEventPacket;getPos()Lnet/minecraft/core/BlockPos;"))
+    private BlockPos ringworld$mapBlockEvent(ClientboundBlockEventPacket packet) {
         return mapBlockPos(packet.getPos());
     }
 
     @Redirect(
-            method = "onWorldEvent",
+            method = "handleLevelEvent",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/network/packet/s2c/play/WorldEventS2CPacket;getPos()Lnet/minecraft/util/math/BlockPos;"))
-    private BlockPos ringworld$mapWorldEvent(WorldEventS2CPacket packet) {
+                    target = "Lnet/minecraft/network/protocol/game/ClientboundLevelEventPacket;getPos()Lnet/minecraft/core/BlockPos;"))
+    private BlockPos ringworld$mapWorldEvent(ClientboundLevelEventPacket packet) {
         return mapBlockPos(packet.getPos());
     }
 
-    @ModifyVariable(method = "onParticle", at = @At("HEAD"), argsOnly = true)
-    private ParticleS2CPacket ringworld$mapParticle(ParticleS2CPacket packet) {
+    @ModifyVariable(method = "handleParticleEvent", at = @At("HEAD"), argsOnly = true)
+    private ClientboundLevelParticlesPacket ringworld$mapParticle(ClientboundLevelParticlesPacket packet) {
         double x = mapX(packet.getX());
         if (x == packet.getX()) return packet;
-        return new ParticleS2CPacket(packet.getParameters(), packet.shouldForceSpawn(), packet.isImportant(),
-                x, packet.getY(), packet.getZ(), packet.getOffsetX(), packet.getOffsetY(), packet.getOffsetZ(),
-                packet.getSpeed(), packet.getCount());
+        return new ClientboundLevelParticlesPacket(packet.getParticle(), packet.isOverrideLimiter(), packet.alwaysShow(),
+                x, packet.getY(), packet.getZ(), packet.getXDist(), packet.getYDist(), packet.getZDist(),
+                packet.getMaxSpeed(), packet.getCount());
     }
 
-    @ModifyVariable(method = "onExplosion", at = @At("HEAD"), argsOnly = true)
-    private ExplosionS2CPacket ringworld$mapExplosion(ExplosionS2CPacket packet) {
+    @ModifyVariable(method = "handleExplosion", at = @At("HEAD"), argsOnly = true)
+    private ClientboundExplodePacket ringworld$mapExplosion(ClientboundExplodePacket packet) {
         double x = mapX(packet.center().x);
         if (x == packet.center().x) return packet;
-        return new ExplosionS2CPacket(new Vec3d(x, packet.center().y, packet.center().z),
+        return new ClientboundExplodePacket(new Vec3(x, packet.center().y, packet.center().z),
                 packet.radius(), packet.blockCount(), packet.playerKnockback(), packet.explosionParticle(),
                 packet.explosionSound(), packet.blockParticles());
     }
 
-    @ModifyVariable(method = "onPlaySound", at = @At("HEAD"), argsOnly = true)
-    private PlaySoundS2CPacket ringworld$mapSound(PlaySoundS2CPacket packet) {
+    @ModifyVariable(method = "handleSoundEvent", at = @At("HEAD"), argsOnly = true)
+    private ClientboundSoundPacket ringworld$mapSound(ClientboundSoundPacket packet) {
         double x = mapX(packet.getX());
         if (x == packet.getX()) return packet;
-        return new PlaySoundS2CPacket(packet.getSound(), packet.getCategory(), x, packet.getY(), packet.getZ(),
+        return new ClientboundSoundPacket(packet.getSound(), packet.getSource(), x, packet.getY(), packet.getZ(),
                 packet.getVolume(), packet.getPitch(), packet.getSeed());
     }
 
     private BlockPos mapBlockPos(BlockPos canonicalPos) {
         RingGeometry geometry = ClientRingState.geometry();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (geometry == null || client.player == null) return canonicalPos;
         double nearestX = geometry.nearestImageX(canonicalPos.getX(), client.player.getX());
         return new BlockPos((int) Math.floor(nearestX), canonicalPos.getY(), canonicalPos.getZ());
@@ -336,14 +336,14 @@ abstract class ClientPlayNetworkHandlerMixin {
 
     private double mapX(double canonicalX) {
         RingGeometry geometry = ClientRingState.geometry();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (geometry == null || client.player == null) return canonicalX;
         return geometry.nearestImageX(canonicalX, client.player.getX());
     }
 
     private int mapChunkX(int canonicalChunkX) {
         RingGeometry geometry = ClientRingState.geometry();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         if (geometry == null || client.player == null) return canonicalChunkX;
         return RingChunkCoordinates.nearestImageChunkX(canonicalChunkX,
                 Math.floorDiv((int) Math.floor(client.player.getX()), 16), geometry);

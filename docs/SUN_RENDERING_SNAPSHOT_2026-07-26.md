@@ -77,7 +77,7 @@ frame, which is why their occlusion remains aligned.
 RingWorld does not currently use a custom sun mesh, texture, or shader.
 
 `SkyRenderingMixin` invokes Minecraft 1.21.11's private
-`SkyRendering.renderSun` through `ringworld$invokeRenderSun`. Vanilla supplies:
+`SkyRenderer.renderSun` through `ringworld$invokeRenderSun`. Vanilla supplies:
 
 ```text
 translation = (0, 100, 0)

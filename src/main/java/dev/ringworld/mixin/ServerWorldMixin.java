@@ -5,18 +5,20 @@ import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.world.RingChunkCoordinates;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingTickSchedulerAccess;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Position;
+import net.minecraft.server.level.DistanceManager;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.entity.PersistentEntitySectionManager;
+import net.minecraft.world.level.material.Fluid;
+import net.minecraft.world.ticks.LevelTicks;
 import dev.ringworld.world.RingEntityManagerAccess;
-import net.minecraft.block.Block;
-import net.minecraft.fluid.Fluid;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.server.world.ServerEntityManager;
-import net.minecraft.server.world.ChunkLevelManager;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Position;
-import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Dynamic;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,41 +26,40 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import net.minecraft.world.tick.WorldTickScheduler;
 
 /** Canonicalizes world-facing loaded-chunk checks such as spawn preparation. */
-@Mixin(ServerWorld.class)
+@Mixin(ServerLevel.class)
 abstract class ServerWorldMixin {
-    @Shadow @Final private WorldTickScheduler<Block> blockTickScheduler;
-    @Shadow @Final private WorldTickScheduler<Fluid> fluidTickScheduler;
-    @Shadow @Final private ServerEntityManager<Entity> entityManager;
+    @Shadow @Final private LevelTicks<Block> blockTicks;
+    @Shadow @Final private LevelTicks<Fluid> fluidTicks;
+    @Shadow @Final private PersistentEntitySectionManager<Entity> entityManager;
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void ringworld$attachTickSchedulerGeometry(CallbackInfo ci) {
-        ServerWorld world = (ServerWorld) (Object) this;
-        if (world.getRegistryKey() != World.OVERWORLD) return;
+        ServerLevel world = (ServerLevel) (Object) this;
+        if (world.dimension() != Level.OVERWORLD) return;
         RingGeometry geometry = RingWorldServer.attachWorldGeometry(world);
         ((RingEntityManagerAccess) entityManager).ringworld$setGeometry(geometry);
-        ((RingTickSchedulerAccess) blockTickScheduler).ringworld$setGeometry(geometry);
-        ((RingTickSchedulerAccess) fluidTickScheduler).ringworld$setGeometry(geometry);
+        ((RingTickSchedulerAccess) blockTicks).ringworld$setGeometry(geometry);
+        ((RingTickSchedulerAccess) fluidTicks).ringworld$setGeometry(geometry);
     }
 
-    @ModifyVariable(method = "isChunkLoaded", at = @At("HEAD"), argsOnly = true)
+    @ModifyVariable(method = "areEntitiesLoaded", at = @At("HEAD"), argsOnly = true)
     private long ringworld$canonicalLoadedChunkKey(long packedPos) {
-        ServerWorld world = (ServerWorld) (Object) this;
-        if (world.getRegistryKey() != World.OVERWORLD) return packedPos;
+        ServerLevel world = (ServerLevel) (Object) this;
+        if (world.dimension() != Level.OVERWORLD) return packedPos;
         ChunkPos pos = new ChunkPos(packedPos);
         RingGeometry geometry = RingWorldServer.geometryFor(world);
-        return ChunkPos.toLong(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
+        return ChunkPos.asLong(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
     }
 
-    @Inject(method = "loadChunks", at = @At("HEAD"))
+    @Inject(method = "waitForEntities", at = @At("HEAD"))
     private void ringworld$preparePeriodicEntityRegion(ChunkPos center, int radius, CallbackInfo ci) {
-        ServerWorld world = (ServerWorld) (Object) this;
-        if (world.getRegistryKey() != World.OVERWORLD) return;
+        ServerLevel world = (ServerLevel) (Object) this;
+        if (world.dimension() != Level.OVERWORLD) return;
 
         RingEntityManagerAccess access = (RingEntityManagerAccess) entityManager;
-        ChunkPos.stream(center, radius).forEach(access::ringworld$ensureLoaded);
+        ChunkPos.rangeClosed(center, radius).forEach(access::ringworld$ensureLoaded);
 
         if (Boolean.getBoolean("ringworld.multiplayerTest")) {
             RingWorldMod.LOGGER.info("[multiplayer] waiting for entity chunks around {},{} radius={}",
@@ -77,21 +78,22 @@ abstract class ServerWorldMixin {
     @Redirect(
             method = "method_31420",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/server/world/ChunkLevelManager;shouldTickEntities(J)Z"))
-    private boolean ringworld$periodicEntityTickEligibility(ChunkLevelManager manager, long packedPos) {
-        ServerWorld world = (ServerWorld) (Object) this;
-        if (world.getRegistryKey() != World.OVERWORLD) return manager.shouldTickEntities(packedPos);
+                    target = "Lnet/minecraft/server/level/DistanceManager;inEntityTickingRange(J)Z"))
+    @Dynamic("Mojang mappings do not name ServerLevel's entity-tick lambda")
+    private boolean ringworld$periodicEntityTickEligibility(DistanceManager manager, long packedPos) {
+        ServerLevel world = (ServerLevel) (Object) this;
+        if (world.dimension() != Level.OVERWORLD) return manager.inEntityTickingRange(packedPos);
 
         ChunkPos pos = new ChunkPos(packedPos);
         RingGeometry geometry = RingWorldServer.geometryFor(world);
         int canonicalX = RingChunkCoordinates.wrapChunkX(pos.x, geometry);
-        long canonicalPos = ChunkPos.toLong(canonicalX, pos.z);
-        if (manager.shouldTickEntities(canonicalPos)) return true;
+        long canonicalPos = ChunkPos.asLong(canonicalX, pos.z);
+        if (manager.inEntityTickingRange(canonicalPos)) return true;
 
-        int simulationDistance = world.getServer().getPlayerManager().getSimulationDistance();
-        for (var player : world.getPlayers()) {
+        int simulationDistance = world.getServer().getPlayerList().getSimulationDistance();
+        for (var player : world.players()) {
             if (player.isSpectator()) continue;
-            ChunkPos playerPos = player.getChunkPos();
+            ChunkPos playerPos = player.chunkPosition();
             if (RingChunkCoordinates.isWithinSimulationDistance(
                     canonicalX, pos.z, playerPos.x, playerPos.z,
                     simulationDistance, geometry)) {
@@ -102,19 +104,19 @@ abstract class ServerWorldMixin {
     }
 
     @ModifyVariable(
-            method = {"shouldTickTestAt", "shouldTickChunkAt", "canSpawnEntitiesAt"},
+            method = {"areEntitiesActuallyLoadedAndTicking", "anyPlayerCloseEnoughForSpawning(Lnet/minecraft/world/level/ChunkPos;)Z", "canSpawnEntitiesInChunk"},
             at = @At("HEAD"), argsOnly = true)
     private ChunkPos ringworld$canonicalTickQuery(ChunkPos pos) {
-        ServerWorld world = (ServerWorld) (Object) this;
-        if (world.getRegistryKey() != World.OVERWORLD) return pos;
+        ServerLevel world = (ServerLevel) (Object) this;
+        if (world.dimension() != Level.OVERWORLD) return pos;
         RingGeometry geometry = RingWorldServer.geometryFor(world);
         return new ChunkPos(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
     }
 
-    @ModifyVariable(method = "shouldTickEntityAt", at = @At("HEAD"), argsOnly = true)
+    @ModifyVariable(method = "isPositionEntityTicking", at = @At("HEAD"), argsOnly = true)
     private BlockPos ringworld$canonicalEntityTickQuery(BlockPos pos) {
-        ServerWorld world = (ServerWorld) (Object) this;
-        if (world.getRegistryKey() != World.OVERWORLD) return pos;
+        ServerLevel world = (ServerLevel) (Object) this;
+        if (world.dimension() != Level.OVERWORLD) return pos;
         RingGeometry geometry = RingWorldServer.geometryFor(world);
         int x = geometry.wrapBlockX(pos.getX());
         return x == pos.getX() ? pos : new BlockPos(x, pos.getY(), pos.getZ());
@@ -122,16 +124,16 @@ abstract class ServerWorldMixin {
 
     /** Particle and other proximity packets must cross the joined edge too. */
     @Redirect(
-            method = "sendToPlayerIfNearby",
+            method = "sendParticles(Lnet/minecraft/server/level/ServerPlayer;ZDDDLnet/minecraft/network/protocol/Packet;)Z",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/util/math/BlockPos;isWithinDistance(Lnet/minecraft/util/math/Position;D)Z"))
+                    target = "Lnet/minecraft/core/BlockPos;closerToCenterThan(Lnet/minecraft/core/Position;D)Z"))
     private boolean ringworld$periodicPacketDistance(BlockPos playerPos, Position eventPos, double range) {
-        ServerWorld world = (ServerWorld) (Object) this;
-        if (world.getRegistryKey() != World.OVERWORLD) return playerPos.isWithinDistance(eventPos, range);
+        ServerLevel world = (ServerLevel) (Object) this;
+        if (world.dimension() != Level.OVERWORLD) return playerPos.closerToCenterThan(eventPos, range);
         RingGeometry geometry = RingWorldServer.geometryFor(world);
-        double dx = geometry.shortestCircumferenceDelta(playerPos.getX(), eventPos.getX());
-        double dy = playerPos.getY() - eventPos.getY();
-        double dz = playerPos.getZ() - eventPos.getZ();
+        double dx = geometry.shortestCircumferenceDelta(playerPos.getX(), eventPos.x());
+        double dy = playerPos.getY() - eventPos.y();
+        double dz = playerPos.getZ() - eventPos.z();
         return dx * dx + dy * dy + dz * dz < range * range;
     }
 }

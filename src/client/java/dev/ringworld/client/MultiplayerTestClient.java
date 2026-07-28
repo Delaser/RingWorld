@@ -4,25 +4,25 @@ import dev.ringworld.RingWorldMod;
 import dev.ringworld.net.RingMultiplayerTestPayload;
 import dev.ringworld.world.RingGeometry;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.block.Blocks;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.GameMenuScreen;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.multiplayer.ConnectScreen;
-import net.minecraft.client.network.AbstractClientPlayerEntity;
-import net.minecraft.client.network.AllowedAddressResolver;
-import net.minecraft.client.network.ServerAddress;
-import net.minecraft.client.network.ServerInfo;
-import net.minecraft.client.option.InactivityFpsLimit;
-import net.minecraft.client.util.ScreenshotRecorder;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.vehicle.BoatEntity;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.text.Text;
-import net.minecraft.util.Hand;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.GameMode;
+import net.minecraft.client.InactivityFpsLimit;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.multiplayer.ServerData;
+import net.minecraft.client.multiplayer.resolver.ServerAddress;
+import net.minecraft.client.multiplayer.resolver.ServerNameResolver;
+import net.minecraft.client.player.AbstractClientPlayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.vehicle.boat.Boat;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
 
 /** A real-network, two-process client driver. It is dormant outside its JVM test flag. */
 final class MultiplayerTestClient {
@@ -57,22 +57,22 @@ final class MultiplayerTestClient {
     private boolean sawRemoteFarTeleport;
     private boolean reconnectResultSent;
 
-    boolean tick(MinecraftClient client) {
+    boolean tick(Minecraft client) {
         if (role.isEmpty()) return false;
         if (!optionsApplied) {
-            client.options.getViewDistance().setValue(2);
-            client.options.getSimulationDistance().setValue(5);
-            client.options.getEnableVsync().setValue(false);
-            client.options.getInactivityFpsLimit().setValue(InactivityFpsLimit.MINIMIZED);
+            client.options.renderDistance().set(2);
+            client.options.simulationDistance().set(5);
+            client.options.enableVsync().set(false);
+            client.options.inactivityFpsLimit().set(InactivityFpsLimit.MINIMIZED);
             client.options.pauseOnLostFocus = false;
             client.options.onboardAccessibility = false;
             optionsApplied = true;
         }
-        if (client.world == null || client.player == null) {
+        if (client.level == null || client.player == null) {
             connectWhenReady(client);
             return true;
         }
-        if (client.currentScreen instanceof GameMenuScreen) client.setScreen(null);
+        if (client.screen instanceof PauseScreen) client.setScreen(null);
         stageTicks++;
         switch (stage) {
             case 0 -> runSeamScenario(client);
@@ -86,16 +86,16 @@ final class MultiplayerTestClient {
         return true;
     }
 
-    private void connectWhenReady(MinecraftClient client) {
+    private void connectWhenReady(Minecraft client) {
         // Client ticks begin while the initial SplashOverlay resource reload is
         // still running. Joining a world before it finishes can let random
         // display ticks request particle sprite providers whose prepared
         // sprite list has not been installed yet.
-        if (!client.isFinishedLoading()) {
+        if (!client.isGameLoadFinished()) {
             menuTicks = 0;
             return;
         }
-        if (reconnectPending && client.currentScreen != null) {
+        if (reconnectPending && client.screen != null) {
             connectionRequested = false;
             reconnectPending = false;
             menuTicks = 0;
@@ -105,38 +105,38 @@ final class MultiplayerTestClient {
         if (connectionRequested) {
             if (++stalledConnectionTicks % 200 == 0) {
                 RingWorldMod.LOGGER.info("[multiplayer:{}] connection state screen={} networkHandler={}",
-                        role, client.currentScreen == null ? "none" : client.currentScreen.getClass().getSimpleName()
-                                + " title=" + client.currentScreen.getNarratedTitle().getString(),
-                        client.getNetworkHandler() != null);
+                        role, client.screen == null ? "none" : client.screen.getClass().getSimpleName()
+                                + " title=" + client.screen.getNarrationMessage().getString(),
+                        client.getConnection() != null);
             }
             return;
         }
-        Screen parent = client.currentScreen;
+        Screen parent = client.screen;
         if (parent == null) return;
         if (++menuTicks < 40) return;
         int port = Integer.getInteger("ringworld.multiplayerTestPort", 25566);
         String addressText = "127.0.0.1:" + port;
-        ServerInfo server = new ServerInfo("RingWorld automated multiplayer", addressText,
-                ServerInfo.ServerType.OTHER);
+        ServerData server = new ServerData("RingWorld automated multiplayer", addressText,
+                ServerData.Type.OTHER);
         connectionRequested = true;
-        ServerAddress address = ServerAddress.parse(addressText);
+        ServerAddress address = ServerAddress.parseString(addressText);
         RingWorldMod.LOGGER.info("[multiplayer:{}] connecting to {} from {}; resolved={}", role, addressText,
-                parent.getClass().getSimpleName(), AllowedAddressResolver.DEFAULT.resolve(address));
+                parent.getClass().getSimpleName(), ServerNameResolver.DEFAULT.resolveAddress(address));
         // A non-null cookie store marks this as a 1.21 server-transfer login.
-        ConnectScreen.connect(parent, client, address, server, false, null);
+        ConnectScreen.startConnecting(parent, client, address, server, false, null);
     }
 
-    private void runSeamScenario(MinecraftClient client) {
+    private void runSeamScenario(Minecraft client) {
         RingGeometry geometry = ClientRingState.geometry();
-        if (geometry == null || client.interactionManager == null
-                || client.interactionManager.getCurrentGameMode() != GameMode.SURVIVAL) return;
+        if (geometry == null || client.gameMode == null
+                || client.gameMode.getPlayerMode() != GameType.SURVIVAL) return;
         boolean atTestPose = role.equals("A")
                 ? Math.abs(geometry.shortestCircumferenceDelta(
                         client.player.getX(), geometry.circumferenceBlocks() - 4.0)) < 0.75
                 : Math.abs(geometry.shortestCircumferenceDelta(client.player.getX(), 2.0)) < 0.75;
         if (!seamArmed && !atTestPose) return;
 
-        AbstractClientPlayerEntity remote = findRemotePlayer(client);
+        AbstractClientPlayer remote = findRemotePlayer(client);
         if (remote == null) {
             if (seamArmed) remoteMissingTicks++;
             return;
@@ -171,11 +171,11 @@ final class MultiplayerTestClient {
         if (role.equals("A") && client.player.getX() < localSeamBoundary) {
             double nextX = Math.min(localSeamBoundary,
                     client.player.getX() + 0.25);
-            client.player.setPosition(nextX, client.player.getY(), client.player.getZ());
-            client.getNetworkHandler().sendPacket(new PlayerMoveC2SPacket.Full(
+            client.player.setPos(nextX, client.player.getY(), client.player.getZ());
+            client.getConnection().send(new ServerboundMovePlayerPacket.PosRot(
                     nextX, client.player.getY(), client.player.getZ(),
-                    client.player.getYaw(), client.player.getPitch(),
-                    client.player.isOnGround(), client.player.horizontalCollision));
+                    client.player.getYRot(), client.player.getXRot(),
+                    client.player.onGround(), client.player.horizontalCollision));
             return;
         }
 
@@ -191,18 +191,18 @@ final class MultiplayerTestClient {
                 "[multiplayer:{}] client seam result={} localX={} remoteX={} maxRemoteStep={} missingTicks={}",
                 role, passed, client.player.getX(), remote.getX(), maximumRemoteStep, remoteMissingTicks);
         sendResult("seam_visibility", passed, maximumRemoteStep);
-        ScreenshotRecorder.saveScreenshot(client.runDirectory,
+        Screenshot.grab(client.gameDirectory,
                 "ringworld-multiplayer-" + role.toLowerCase() + ".png",
-                client.getFramebuffer(), 1,
+                client.getMainRenderTarget(), 1,
                 message -> RingWorldMod.LOGGER.info(
                         "[multiplayer:{}] screenshot: {}", role, message.getString()));
         stage = 1;
         stageTicks = 0;
     }
 
-    private void runCombatScenario(MinecraftClient client) {
+    private void runCombatScenario(Minecraft client) {
         RingGeometry geometry = ClientRingState.geometry();
-        if (geometry == null || client.interactionManager == null) return;
+        if (geometry == null || client.gameMode == null) return;
 
         if (role.equals("B")
                 && (client.player.getHealth() < client.player.getMaxHealth()
@@ -229,7 +229,7 @@ final class MultiplayerTestClient {
 
         int markerX = (int)Math.floor(geometry.nearestImageX(0.0, client.player.getX()));
         BlockPos marker = new BlockPos(markerX, 123, 4);
-        if (client.world.getBlockState(marker).isOf(Blocks.LIME_CONCRETE)) {
+        if (client.level.getBlockState(marker).is(Blocks.LIME_CONCRETE)) {
             RingWorldMod.LOGGER.info("[multiplayer:{}] cross-seam melee result=true attacksSent={}",
                     role, attacksSent);
             sendResult("melee_combat", true, attacksSent);
@@ -237,7 +237,7 @@ final class MultiplayerTestClient {
             stageTicks = 0;
             return;
         }
-        if (client.world.getBlockState(marker).isOf(Blocks.RED_CONCRETE) || stageTicks >= 1_300) {
+        if (client.level.getBlockState(marker).is(Blocks.RED_CONCRETE) || stageTicks >= 1_300) {
             RingWorldMod.LOGGER.error("[multiplayer:{}] cross-seam melee result=false attacksSent={}",
                     role, attacksSent);
             sendResult("melee_combat", false, attacksSent);
@@ -246,10 +246,10 @@ final class MultiplayerTestClient {
             return;
         }
 
-        AbstractClientPlayerEntity remote = findRemotePlayer(client);
+        AbstractClientPlayer remote = findRemotePlayer(client);
         if (role.equals("A") && remote != null && stageTicks >= 20 && stageTicks % 20 == 0) {
-            client.interactionManager.attackEntity(client.player, remote);
-            client.player.swingHand(Hand.MAIN_HAND);
+            client.gameMode.attack(client.player, remote);
+            client.player.swing(InteractionHand.MAIN_HAND);
             attacksSent++;
             RingWorldMod.LOGGER.info(
                     "[multiplayer:A] sent cross-seam melee attack localX={} remoteX={} periodicDistance={}",
@@ -258,24 +258,24 @@ final class MultiplayerTestClient {
         }
     }
 
-    private void runInteractionScenario(MinecraftClient client) {
+    private void runInteractionScenario(Minecraft client) {
         RingGeometry geometry = ClientRingState.geometry();
-        if (geometry == null || client.interactionManager == null) return;
+        if (geometry == null || client.gameMode == null) return;
         int logicalX = (int)Math.floor(geometry.nearestImageX(1.0, client.player.getX()));
         BlockPos target = new BlockPos(logicalX, 119, 0);
-        boolean targetPresent = client.world.getBlockState(target).isOf(Blocks.GOLD_BLOCK);
+        boolean targetPresent = client.level.getBlockState(target).is(Blocks.GOLD_BLOCK);
         blockSeen |= targetPresent;
         if (stageTicks % 100 == 0) {
             RingWorldMod.LOGGER.info(
                     "[multiplayer:{}] seam block probe target={} state={} seen={} playerX={}",
-                    role, target, client.world.getBlockState(target).getBlock(), blockSeen,
+                    role, target, client.level.getBlockState(target).getBlock(), blockSeen,
                     client.player.getX());
         }
 
         // Give the observer client time to receive and render the armed gold
         // block before A removes it; otherwise both updates can coalesce.
         if (role.equals("A") && blockSeen && !interactionSent && stageTicks >= 100) {
-            interactionSent = client.interactionManager.attackBlock(target, Direction.UP);
+            interactionSent = client.gameMode.startDestroyBlock(target, Direction.UP);
             if (interactionSent) {
                 interactionAge = 0;
                 RingWorldMod.LOGGER.info("[multiplayer:A] attacked logical seam block {}", target);
@@ -296,10 +296,10 @@ final class MultiplayerTestClient {
         }
     }
 
-    private void runVehicleScenario(MinecraftClient client) {
+    private void runVehicleScenario(Minecraft client) {
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null) return;
-        BoatEntity boat = findBoat(client);
+        Boat boat = findBoat(client);
         if (boat == null) {
             if (vehicleSeen) vehicleMissingTicks++;
             if (stageTicks >= 600) {
@@ -333,7 +333,7 @@ final class MultiplayerTestClient {
         }
     }
 
-    private void runTeleportScenario(MinecraftClient client) {
+    private void runTeleportScenario(Minecraft client) {
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null) return;
         if (role.equals("A")) {
@@ -358,7 +358,7 @@ final class MultiplayerTestClient {
             return;
         }
 
-        AbstractClientPlayerEntity remote = findRemotePlayer(client);
+        AbstractClientPlayer remote = findRemotePlayer(client);
         if (remote == null) {
             sawRemoteFarTeleport = true;
             return;
@@ -374,14 +374,14 @@ final class MultiplayerTestClient {
             stage = 5;
             stageTicks = 0;
             reconnectPending = true;
-            client.getNetworkHandler().getConnection().disconnect(Text.literal("RingWorld automated reconnect"));
+            client.getConnection().getConnection().disconnect(Component.literal("RingWorld automated reconnect"));
         }
     }
 
-    private void runReconnectResult(MinecraftClient client) {
+    private void runReconnectResult(Minecraft client) {
         if (!role.equals("B") || reconnectResultSent || stageTicks < 40) return;
         RingGeometry geometry = ClientRingState.geometry();
-        AbstractClientPlayerEntity remote = findRemotePlayer(client);
+        AbstractClientPlayer remote = findRemotePlayer(client);
         if ((geometry == null || remote == null) && stageTicks < 600) return;
         boolean passed = geometry != null && remote != null
                 && Math.abs(geometry.shortestCircumferenceDelta(client.player.getX(), remote.getX())) < 12.0;
@@ -398,18 +398,18 @@ final class MultiplayerTestClient {
         }
     }
 
-    private AbstractClientPlayerEntity findRemotePlayer(MinecraftClient client) {
-        if (client.world == null || client.player == null) return null;
-        for (AbstractClientPlayerEntity player : client.world.getPlayers()) {
+    private AbstractClientPlayer findRemotePlayer(Minecraft client) {
+        if (client.level == null || client.player == null) return null;
+        for (AbstractClientPlayer player : client.level.players()) {
             if (player != client.player && player.getName().getString().startsWith("RingTester")) return player;
         }
         return null;
     }
 
-    private BoatEntity findBoat(MinecraftClient client) {
-        if (client.world == null) return null;
-        for (Entity entity : client.world.getEntities()) {
-            if (entity instanceof BoatEntity boat) return boat;
+    private Boat findBoat(Minecraft client) {
+        if (client.level == null) return null;
+        for (Entity entity : client.level.entitiesForRendering()) {
+            if (entity instanceof Boat boat) return boat;
         }
         return null;
     }

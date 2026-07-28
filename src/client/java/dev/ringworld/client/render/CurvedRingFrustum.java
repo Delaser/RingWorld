@@ -1,10 +1,10 @@
 package dev.ringworld.client.render;
 
 import dev.ringworld.world.RingGeometry;
-import net.minecraft.client.render.Frustum;
-import net.minecraft.util.math.BlockBox;
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.world.level.levelgen.structure.BoundingBox;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Frustum adapter matching the cylindrical terrain vertex transform.
@@ -19,16 +19,16 @@ public final class CurvedRingFrustum extends Frustum {
     private static final int INTERSECTING = -1;
 
     private final RingGeometry geometry;
-    private final Vec3d cameraPosition;
+    private final Vec3 cameraPosition;
 
-    public CurvedRingFrustum(Frustum original, RingGeometry geometry, Vec3d cameraPosition) {
+    public CurvedRingFrustum(Frustum original, RingGeometry geometry, Vec3 cameraPosition) {
         super(original);
         this.geometry = geometry;
         this.cameraPosition = cameraPosition;
     }
 
     @Override
-    public int intersectAab(BlockBox box) {
+    public int cubeInFrustum(BoundingBox box) {
         // Octree branches are only an acceleration structure. Always
         // descending them prevents a flat parent box from discarding curved
         // children which rise into the camera's view.
@@ -36,11 +36,11 @@ public final class CurvedRingFrustum extends Frustum {
     }
 
     @Override
-    public boolean isVisible(Box canonicalBox) {
-        Box local = geometry.toCameraLocalBounds(canonicalBox, cameraPosition);
+    public boolean isVisible(AABB canonicalBox) {
+        AABB local = geometry.toCameraLocalBounds(canonicalBox, cameraPosition);
         // Frustum stores an absolute camera origin and subtracts it internally.
         // Rebase the already camera-local curved envelope to that origin.
-        Box rebased = local.offset(cameraPosition);
+        AABB rebased = local.move(cameraPosition);
         return super.isVisible(rebased);
     }
 }

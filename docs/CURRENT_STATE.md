@@ -10,6 +10,15 @@ The Minecraft 26.1.2 port is active on `codex/minecraft-26.1-port`; see
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
 
+Port Phase 1 is complete locally: the project now uses official Mojang
+mappings while remaining on Minecraft 1.21.11. All 69 tests, the destructive
+safe-small harness, same-process layout switch, dedicated two-client scenario,
+and production tangent/radial projection capture passed without changing the
+wire protocol, saved formats, or topology behavior. The only
+intermediary-looking source identifier is Mojang's still-unnamed
+`ServerLevel.method_31420` synthetic entity-tick lambda, documented in
+`MIXIN_MAP.md`.
+
 ## Implemented
 
 ### Topology and storage
@@ -208,8 +217,9 @@ work. It should be updated after every substantial milestone.
   tuning.
 - Custom shaders replace vanilla assets and can conflict with renderer/shader
   mods.
-- Boundary rendering redirects a private `ChunkBuilder.BuiltChunk` readiness
-  check and must be re-audited on Minecraft/Yarn upgrades.
+- Boundary rendering redirects a private
+  `SectionRenderDispatcher.RenderSection` readiness check and must be
+  re-audited on Minecraft or mappings upgrades.
 
 ### Worldgen
 

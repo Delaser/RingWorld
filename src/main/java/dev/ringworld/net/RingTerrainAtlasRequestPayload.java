@@ -1,22 +1,22 @@
 package dev.ringworld.net;
 
 import dev.ringworld.RingWorldMod;
-import net.minecraft.network.RegistryByteBuf;
-import net.minecraft.network.codec.PacketCodec;
-import net.minecraft.network.codec.PacketCodecs;
-import net.minecraft.network.packet.CustomPayload;
-import net.minecraft.util.Identifier;
+import net.minecraft.network.RegistryFriendlyByteBuf;
+import net.minecraft.network.codec.ByteBufCodecs;
+import net.minecraft.network.codec.StreamCodec;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.Identifier;
 
 /** Lets a client reuse a complete atlas cached by world hash. */
 public record RingTerrainAtlasRequestPayload(long worldHash, boolean cacheComplete)
-        implements CustomPayload {
-    public static final Id<RingTerrainAtlasRequestPayload> ID = new Id<>(
-            Identifier.of(RingWorldMod.MOD_ID, "terrain_atlas_request"));
-    public static final PacketCodec<RegistryByteBuf, RingTerrainAtlasRequestPayload> CODEC = PacketCodec.tuple(
-            PacketCodecs.LONG, RingTerrainAtlasRequestPayload::worldHash,
-            PacketCodecs.BOOLEAN, RingTerrainAtlasRequestPayload::cacheComplete,
+        implements CustomPacketPayload {
+    public static final Type<RingTerrainAtlasRequestPayload> ID = new Type<>(
+            Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "terrain_atlas_request"));
+    public static final StreamCodec<RegistryFriendlyByteBuf, RingTerrainAtlasRequestPayload> CODEC = StreamCodec.composite(
+            ByteBufCodecs.LONG, RingTerrainAtlasRequestPayload::worldHash,
+            ByteBufCodecs.BOOL, RingTerrainAtlasRequestPayload::cacheComplete,
             RingTerrainAtlasRequestPayload::new);
 
     @Override
-    public Id<? extends CustomPayload> getId() { return ID; }
+    public Type<? extends CustomPacketPayload> type() { return ID; }
 }

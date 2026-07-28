@@ -2,9 +2,9 @@ package dev.ringworld.client;
 
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.screen.GameMenuScreen;
-import net.minecraft.client.util.ScreenshotRecorder;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.Screenshot;
+import net.minecraft.client.gui.screens.PauseScreen;
 
 /**
  * Opt-in, non-destructive visual probe for the two projection directions that
@@ -17,12 +17,12 @@ final class RingProjectionCaptureClient {
     private int atlasWaitTicks;
     private boolean waitingLogged;
 
-    boolean tick(MinecraftClient client) {
+    boolean tick(Minecraft client) {
         if (!Boolean.getBoolean(ENABLE_PROPERTY)) return false;
         if (stage >= 2) return true;
-        if (client.player == null || client.world == null) return true;
-        if (client.currentScreen instanceof GameMenuScreen) client.setScreen(null);
-        if (client.currentScreen != null) return true;
+        if (client.player == null || client.level == null) return true;
+        if (client.screen instanceof PauseScreen) client.setScreen(null);
+        if (client.screen != null) return true;
 
         RingGeometry geometry = ClientRingState.geometry();
         var atlas = ClientRingState.terrainAtlas();
@@ -41,15 +41,15 @@ final class RingProjectionCaptureClient {
             return true;
         }
 
-        client.player.setYaw(90.0F);
-        client.player.setPitch(stage == 0 ? 0.0F : -90.0F);
+        client.player.setYRot(90.0F);
+        client.player.setXRot(stage == 0 ? 0.0F : -90.0F);
         if (++settleTicks < 100) return true;
         settleTicks = 0;
 
         if (stage == 0) {
-            ScreenshotRecorder.saveScreenshot(
-                    client.runDirectory, "ringworld-projection-tangent.png",
-                    client.getFramebuffer(), 1,
+            Screenshot.grab(
+                    client.gameDirectory, "ringworld-projection-tangent.png",
+                    client.getMainRenderTarget(), 1,
                     message -> RingWorldMod.LOGGER.info(
                             "[projection-capture] tangent screenshot: {}",
                             message.getString()));
@@ -60,9 +60,9 @@ final class RingProjectionCaptureClient {
             return true;
         }
 
-        ScreenshotRecorder.saveScreenshot(
-                client.runDirectory, "ringworld-projection-up.png",
-                client.getFramebuffer(), 1,
+        Screenshot.grab(
+                client.gameDirectory, "ringworld-projection-up.png",
+                client.getMainRenderTarget(), 1,
                 message -> RingWorldMod.LOGGER.info(
                         "[projection-capture] radial-up screenshot: {}",
                         message.getString()));

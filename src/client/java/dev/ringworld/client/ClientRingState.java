@@ -6,8 +6,8 @@ import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingPosition;
 import dev.ringworld.world.RingTerrainAtlas;
 import net.fabricmc.loader.api.FabricLoader;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.world.World;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -51,9 +51,9 @@ public final class ClientRingState {
 
     @Nullable
     public static RingGeometry geometry() {
-        MinecraftClient client = MinecraftClient.getInstance();
-        return geometry != null && client.world != null
-                && client.world.getRegistryKey() == World.OVERWORLD
+        Minecraft client = Minecraft.getInstance();
+        return geometry != null && client.level != null
+                && client.level.dimension() == Level.OVERWORLD
                 ? geometry : null;
     }
 

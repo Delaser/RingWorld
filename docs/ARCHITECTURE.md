@@ -113,7 +113,7 @@ camera or custom controls.
 flowchart TD
     A["Fabric common initialization"] --> B["Load bootstrap ringworld.properties"]
     A --> C["Register payload codecs and server hooks"]
-    D["Overworld ServerWorld load"] --> E["Load or create RingWorldSettings"]
+    D["Overworld ServerLevel load"] --> E["Load or create RingWorldSettings"]
     E --> F["Attach geometry to the Overworld noise generator"]
     E --> G["Load terrain atlas cache"]
     H["Player joins"] --> I["Server sends immutable geometry"]
@@ -144,8 +144,8 @@ Natural movement deliberately avoids a teleport.
 ```mermaid
 sequenceDiagram
     participant C as Client presentation chart
-    participant N as ClientConnection
-    participant S as ServerPlayNetworkHandler
+    participant N as Connection
+    participant S as ServerGamePacketListenerImpl
     participant E as Canonical server entity
     C->>N: small move from C-ε to C+ε
     N->>S: continuous presentation X
@@ -263,7 +263,7 @@ Y is unchanged.
 `RingNoiseCoordinates` precomputes these values when `C <= 1,048,576`.
 `RingNoiseRouter` applies them only to density functions tagged as actual
 horizontal-coordinate consumers. Vanilla caches, interpolation wrappers,
-aquifer-local coordinates, and the identity of `ChunkNoiseSampler` remain
+aquifer-local coordinates, and the identity of `NoiseChunk` remain
 intact. The router override is carried through `RingNoiseSamplingContext` only
 for the Overworld generator.
 
@@ -350,9 +350,9 @@ incomplete server tiles never erase more complete local cells.
 `dev.ringworld.api.RingWorldApi` currently exposes:
 
 ```java
-boolean isRingWorld(ServerWorld world)
-RingWorldSettings settings(ServerWorld world)
-RingGeometry geometry(ServerWorld world)
+boolean isRingWorld(ServerLevel world)
+RingWorldSettings settings(ServerLevel world)
+RingGeometry geometry(ServerLevel world)
 ```
 
 It is server-world only and read-only. `settings` returns `null` outside the

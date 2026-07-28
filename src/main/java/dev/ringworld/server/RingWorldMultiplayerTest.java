@@ -2,24 +2,23 @@ package dev.ringworld.server;
 
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
-import net.minecraft.block.Blocks;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityType;
-import net.minecraft.entity.SpawnReason;
-import net.minecraft.entity.vehicle.BoatEntity;
-import net.minecraft.network.packet.s2c.play.PositionFlag;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.GameMode;
-import net.minecraft.world.WorldProperties;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Relative;
+import net.minecraft.world.entity.vehicle.boat.Boat;
+import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.storage.LevelData;
+import net.minecraft.world.phys.Vec3;
 
 /** Dedicated-server half of the opt-in, two-real-client multiplayer regression. */
 public final class RingWorldMultiplayerTest {
@@ -39,7 +38,7 @@ public final class RingWorldMultiplayerTest {
     private static boolean sawVehicleHighSide;
     private static boolean sawCanonicalVehicleWrap;
     private static int vehicleId = -1;
-    private static ServerPlayerEntity reconnectBaselineB;
+    private static ServerPlayer reconnectBaselineB;
     private static boolean sawReconnectDisconnect;
 
     private RingWorldMultiplayerTest() { }
@@ -52,7 +51,7 @@ public final class RingWorldMultiplayerTest {
         }
     }
 
-    public static void recordPlayerMovementPacket(ServerPlayerEntity player, double projectedX,
+    public static void recordPlayerMovementPacket(ServerPlayer player, double projectedX,
                                                   RingGeometry geometry) {
         if (!Boolean.getBoolean("ringworld.multiplayerTest") || stage != 1
                 || !Boolean.TRUE.equals(CLIENT_RESULTS.get("A:movement_started"))
@@ -61,15 +60,15 @@ public final class RingWorldMultiplayerTest {
                 Math.abs(geometry.shortestCircumferenceDelta(player.getX(), projectedX)));
     }
 
-    static void prepareWaitingPlayer(ServerPlayerEntity player) {
+    static void prepareWaitingPlayer(ServerPlayer player) {
         if (!Boolean.getBoolean("ringworld.multiplayerTest")) return;
         prepareCreativePlayer(player);
     }
 
-    static void tick(ServerWorld world, RingGeometry geometry) {
+    static void tick(ServerLevel world, RingGeometry geometry) {
         if (!Boolean.getBoolean("ringworld.multiplayerTest")) return;
-        ServerPlayerEntity playerA = playerNamed(world, "RingTesterA");
-        ServerPlayerEntity playerB = playerNamed(world, "RingTesterB");
+        ServerPlayer playerA = playerNamed(world, "RingTesterA");
+        ServerPlayer playerB = playerNamed(world, "RingTesterB");
 
         if (!initialized) {
             // Persisted test worlds can leave yesterday's arm marker behind.
@@ -80,14 +79,14 @@ public final class RingWorldMultiplayerTest {
             prepareSeamChunks(world, geometry);
             prepareSeamLane(world, geometry, 120);
             List<Entity> staleTestBoats = new ArrayList<>();
-            for (Entity entity : world.iterateEntities()) {
-                if (entity instanceof BoatEntity) staleTestBoats.add(entity);
+            for (Entity entity : world.getAllEntities()) {
+                if (entity instanceof Boat) staleTestBoats.add(entity);
             }
             staleTestBoats.forEach(Entity::discard);
-            world.setSpawnPoint(WorldProperties.SpawnPoint.create(
-                    world.getRegistryKey(), new BlockPos(0, 120, 0), 0.0f, 0.0f));
-            world.setBlockState(seamArmMarker(), Blocks.RED_CONCRETE.getDefaultState(), 3);
-            world.setBlockState(combatResultMarker(), Blocks.AIR.getDefaultState(), 3);
+            world.setRespawnData(LevelData.RespawnData.of(
+                    world.dimension(), new BlockPos(0, 120, 0), 0.0f, 0.0f));
+            world.setBlock(seamArmMarker(), Blocks.RED_CONCRETE.defaultBlockState(), 3);
+            world.setBlock(combatResultMarker(), Blocks.AIR.defaultBlockState(), 3);
             initialized = true;
             RingWorldMod.LOGGER.info("[multiplayer] seam test region ready; waiting for clients");
         }
@@ -110,14 +109,14 @@ public final class RingWorldMultiplayerTest {
             prepareCreativePlayer(playerB);
         }
         if (stage == 0 && ticks >= 100) {
-            world.setBlockState(combatResultMarker(), Blocks.AIR.getDefaultState(), 3);
+            world.setBlock(combatResultMarker(), Blocks.AIR.defaultBlockState(), 3);
             preparePlayer(playerA);
             preparePlayer(playerB);
-            playerA.teleport(world, geometry.circumferenceBlocks() - 4.0, 120.0, 0.5,
-                    Set.<PositionFlag>of(), 90.0f, 10.0f, false);
-            playerB.teleport(world, 2.0, 120.0, 0.5,
-                    Set.<PositionFlag>of(), -90.0f, 10.0f, false);
-            world.setBlockState(seamArmMarker(), Blocks.BLUE_CONCRETE.getDefaultState(), 3);
+            playerA.teleportTo(world, geometry.circumferenceBlocks() - 4.0, 120.0, 0.5,
+                    Set.<Relative>of(), 90.0f, 10.0f, false);
+            playerB.teleportTo(world, 2.0, 120.0, 0.5,
+                    Set.<Relative>of(), -90.0f, 10.0f, false);
+            world.setBlock(seamArmMarker(), Blocks.BLUE_CONCRETE.defaultBlockState(), 3);
             previousAX = playerA.getX();
             maximumAStep = 0.0;
             maximumAPacketStep = 0.0;
@@ -139,8 +138,8 @@ public final class RingWorldMultiplayerTest {
             boolean reachedPostSeamTarget = sawCanonicalPlayerWrap
                     && playerA.getX() >= 0.0 && playerA.getX() < 0.5;
             if (reachedPostSeamTarget || ticks >= 2_400) {
-                List<Entity> visibleToB = world.getOtherEntities(playerB,
-                        playerB.getBoundingBox().expand(12.0), entity -> entity == playerA);
+                List<Entity> visibleToB = world.getEntities(playerB,
+                        playerB.getBoundingBox().inflate(12.0), entity -> entity == playerA);
                 boolean crossed = sawCanonicalPlayerWrap;
                 boolean queryPassed = visibleToB.size() == 1;
                 boolean distancePassed = playerA.distanceTo(playerB) < 4.0f;
@@ -164,7 +163,7 @@ public final class RingWorldMultiplayerTest {
         if (stage == 2) {
             if (playerB.getHealth() < playerB.getMaxHealth()) {
                 combatPassed = true;
-                world.setBlockState(combatResultMarker(), Blocks.LIME_CONCRETE.getDefaultState(), 3);
+                world.setBlock(combatResultMarker(), Blocks.LIME_CONCRETE.defaultBlockState(), 3);
                 RingWorldMod.LOGGER.info(
                         "[multiplayer] cross-seam melee result=true (A={}, B={}, B health={})",
                         playerA.getX(), playerB.getX(), playerB.getHealth());
@@ -173,7 +172,7 @@ public final class RingWorldMultiplayerTest {
                 stage = 3;
                 ticks = 0;
             } else if (ticks >= 1_200) {
-                world.setBlockState(combatResultMarker(), Blocks.RED_CONCRETE.getDefaultState(), 3);
+                world.setBlock(combatResultMarker(), Blocks.RED_CONCRETE.defaultBlockState(), 3);
                 RingWorldMod.LOGGER.error(
                         "[multiplayer] cross-seam melee result=false (A={}, B={}, periodicDistance={})",
                         playerA.getX(), playerB.getX(), playerA.distanceTo(playerB));
@@ -191,19 +190,19 @@ public final class RingWorldMultiplayerTest {
             // to observe the result independently of the server assertion.
             if (ticks == 20) playerB.setHealth(playerB.getMaxHealth());
             if (ticks == 40) {
-                world.setBlockState(target, Blocks.GOLD_BLOCK.getDefaultState(), 3);
+                world.setBlock(target, Blocks.GOLD_BLOCK.defaultBlockState(), 3);
                 RingWorldMod.LOGGER.info("[multiplayer] cross-seam interaction armed at canonical {}", target);
             }
             if (ticks > 40 && world.getBlockState(target).isAir()) {
                 interactionPassed = true;
-                BoatEntity boat = EntityType.OAK_BOAT.create(world, SpawnReason.COMMAND);
+                Boat boat = EntityType.OAK_BOAT.create(world, EntitySpawnReason.COMMAND);
                 if (boat != null) {
-                    boat.setPosition(geometry.circumferenceBlocks() - 2.0, 120.0, 3.5);
+                    boat.setPos(geometry.circumferenceBlocks() - 2.0, 120.0, 3.5);
                     boat.setNoGravity(true);
                     // Hold the fixture until both clients have acquired it.
                     // This removes network-startup timing from the seam test.
-                    boat.setVelocity(Vec3d.ZERO);
-                    world.spawnEntity(boat);
+                    boat.setDeltaMovement(Vec3.ZERO);
+                    world.addFreshEntity(boat);
                     vehicleId = boat.getId();
                     sawVehicleHighSide = boat.getX() > geometry.circumferenceBlocks() / 2.0;
                 }
@@ -219,7 +218,7 @@ public final class RingWorldMultiplayerTest {
         }
 
         if (stage == 4) {
-            Entity vehicle = world.getEntityById(vehicleId);
+            Entity vehicle = world.getEntity(vehicleId);
             boolean clientsAcquired = clientPassed("A", "vehicle_acquired")
                     && clientPassed("B", "vehicle_acquired");
             if (vehicle != null && clientsAcquired && !sawCanonicalVehicleWrap) {
@@ -231,8 +230,8 @@ public final class RingWorldMultiplayerTest {
                     sawVehicleHighSide = true;
                 }
                 double nextX = geometry.wrapX(sourceX + 0.18);
-                vehicle.setPosition(nextX, vehicle.getY(), vehicle.getZ());
-                vehicle.setVelocity(Vec3d.ZERO);
+                vehicle.setPos(nextX, vehicle.getY(), vehicle.getZ());
+                vehicle.setDeltaMovement(Vec3.ZERO);
                 if (sawVehicleHighSide && nextX < 3.0) {
                     sawCanonicalVehicleWrap = true;
                 }
@@ -257,8 +256,8 @@ public final class RingWorldMultiplayerTest {
         if (stage == 5 && ((ticks >= 20
                 && clientPassed("A", "vehicle_visibility")
                 && clientPassed("B", "vehicle_visibility")) || ticks >= 1_200)) {
-            playerA.teleport(world, 64.5, 120.0, 0.5,
-                    Set.<PositionFlag>of(), playerA.getYaw(), playerA.getPitch(), false);
+            playerA.teleportTo(world, 64.5, 120.0, 0.5,
+                    Set.<Relative>of(), playerA.getYRot(), playerA.getXRot(), false);
             RingWorldMod.LOGGER.info("[multiplayer] intentional long teleport sent to A x={}", playerA.getX());
             stage = 6;
             ticks = 0;
@@ -268,10 +267,10 @@ public final class RingWorldMultiplayerTest {
         if (stage == 6 && ((ticks >= 20
                 && clientPassed("A", "intentional_teleport")) || ticks >= 1_200)) {
             boolean farTeleportPassed = Math.abs(playerA.getX() - 64.5) < 0.75;
-            playerA.teleport(world, geometry.circumferenceBlocks() - 4.0, 120.0, 0.5,
-                    Set.<PositionFlag>of(), 90.0f, 10.0f, false);
-            playerB.teleport(world, 2.0, 120.0, 0.5,
-                    Set.<PositionFlag>of(), -90.0f, 10.0f, false);
+            playerA.teleportTo(world, geometry.circumferenceBlocks() - 4.0, 120.0, 0.5,
+                    Set.<Relative>of(), 90.0f, 10.0f, false);
+            playerB.teleportTo(world, 2.0, 120.0, 0.5,
+                    Set.<Relative>of(), -90.0f, 10.0f, false);
             reconnectBaselineB = playerB;
             RingWorldMod.LOGGER.info("[multiplayer] intentional long teleport server result={}; returned players to seam",
                     farTeleportPassed);
@@ -280,7 +279,7 @@ public final class RingWorldMultiplayerTest {
         }
     }
 
-    private static void tickReconnect(ServerPlayerEntity playerA, ServerPlayerEntity playerB) {
+    private static void tickReconnect(ServerPlayer playerA, ServerPlayer playerB) {
         ticks++;
         if (playerB == null) sawReconnectDisconnect = true;
         boolean newConnection = sawReconnectDisconnect && playerB != null && playerB != reconnectBaselineB;
@@ -315,42 +314,42 @@ public final class RingWorldMultiplayerTest {
         return Boolean.TRUE.equals(CLIENT_RESULTS.get(role + ':' + phase));
     }
 
-    private static ServerPlayerEntity playerNamed(ServerWorld world, String name) {
-        for (ServerPlayerEntity player : world.getPlayers()) {
+    private static ServerPlayer playerNamed(ServerLevel world, String name) {
+        for (ServerPlayer player : world.players()) {
             if (player.getName().getString().equals(name)) return player;
         }
         return null;
     }
 
-    private static void preparePlayer(ServerPlayerEntity player) {
-        player.changeGameMode(GameMode.SURVIVAL);
+    private static void preparePlayer(ServerPlayer player) {
+        player.setGameMode(GameType.SURVIVAL);
         player.setHealth(player.getMaxHealth());
         player.getAbilities().flying = false;
-        player.sendAbilitiesUpdate();
-        player.setVelocity(Vec3d.ZERO);
+        player.onUpdateAbilities();
+        player.setDeltaMovement(Vec3.ZERO);
     }
 
-    private static void prepareCreativePlayer(ServerPlayerEntity player) {
-        player.changeGameMode(GameMode.CREATIVE);
+    private static void prepareCreativePlayer(ServerPlayer player) {
+        player.setGameMode(GameType.CREATIVE);
         player.getAbilities().flying = true;
-        player.sendAbilitiesUpdate();
-        player.setVelocity(Vec3d.ZERO);
+        player.onUpdateAbilities();
+        player.setDeltaMovement(Vec3.ZERO);
     }
 
-    private static void prepareSeamLane(ServerWorld world, RingGeometry geometry, int y) {
+    private static void prepareSeamLane(ServerLevel world, RingGeometry geometry, int y) {
         int circumference = geometry.circumferenceBlocks();
         for (int offset = -16; offset <= 16; offset++) {
             int x = geometry.wrapBlockX(circumference + offset);
             for (int z = -5; z <= 5; z++) {
-                world.setBlockState(new BlockPos(x, y - 1, z), Blocks.GLASS.getDefaultState(), 2);
+                world.setBlock(new BlockPos(x, y - 1, z), Blocks.GLASS.defaultBlockState(), 2);
                 for (int clearY = y; clearY <= y + 4; clearY++) {
-                    world.setBlockState(new BlockPos(x, clearY, z), Blocks.AIR.getDefaultState(), 2);
+                    world.setBlock(new BlockPos(x, clearY, z), Blocks.AIR.defaultBlockState(), 2);
                 }
             }
         }
     }
 
-    private static void prepareSeamChunks(ServerWorld world, RingGeometry geometry) {
+    private static void prepareSeamChunks(ServerLevel world, RingGeometry geometry) {
         int circumferenceChunks = geometry.circumferenceChunks();
         // Covers the test clients' two-chunk view distance on both canonical
         // sides of the seam, with one extra column for tracking transitions.

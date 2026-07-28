@@ -1,26 +1,26 @@
 package dev.ringworld.world;
 
-import net.minecraft.util.dynamic.CodecHolder;
-import net.minecraft.world.gen.chunk.Blender;
-import net.minecraft.world.gen.densityfunction.DensityFunction;
-import net.minecraft.world.gen.noise.NoiseRouter;
+import net.minecraft.util.KeyDispatchDataCodec;
+import net.minecraft.world.level.levelgen.DensityFunction;
+import net.minecraft.world.level.levelgen.NoiseRouter;
+import net.minecraft.world.level.levelgen.blending.Blender;
 
 /** Applies cylindrical coordinates only at noise-consuming density leaves. */
 public final class RingNoiseRouter {
     private RingNoiseRouter() { }
 
     public static NoiseRouter wrap(NoiseRouter router, RingGeometry geometry) {
-        return router.apply(new CylindricalVisitor(RingNoiseCoordinates.forGeometry(geometry)));
+        return router.mapAll(new CylindricalVisitor(RingNoiseCoordinates.forGeometry(geometry)));
     }
 
     /**
      * Cache and interpolation wrappers must continue receiving the real
-     * ChunkNoiseSampler object: several vanilla optimizations and the aquifer
+     * NoiseChunk object: several vanilla optimizations and the aquifer
      * grid rely on that identity and its local coordinates. Only functions
      * which actually consume horizontal coordinates are wrapped.
      */
     private record CylindricalVisitor(RingNoiseCoordinates coordinates)
-            implements DensityFunction.DensityFunctionVisitor {
+            implements DensityFunction.Visitor {
         @Override
         public DensityFunction apply(DensityFunction function) {
             if (isCoordinateConsumer(function)) {
@@ -37,25 +37,25 @@ public final class RingNoiseRouter {
     private record CylindricalDensityFunction(DensityFunction delegate, RingNoiseCoordinates coordinates)
             implements DensityFunction {
         @Override
-        public double sample(NoisePos pos) {
-            return delegate.sample(transform(pos));
+        public double compute(FunctionContext pos) {
+            return delegate.compute(transform(pos));
         }
 
         @Override
-        public void fill(double[] values, EachApplier applier) {
-            delegate.fill(values, new TransformingApplier(applier, coordinates));
+        public void fillArray(double[] values, ContextProvider applier) {
+            delegate.fillArray(values, new TransformingApplier(applier, coordinates));
         }
 
         @Override
-        public DensityFunction apply(DensityFunctionVisitor visitor) {
-            return visitor.apply(new CylindricalDensityFunction(delegate.apply(visitor), coordinates));
+        public DensityFunction mapAll(Visitor visitor) {
+            return visitor.apply(new CylindricalDensityFunction(delegate.mapAll(visitor), coordinates));
         }
 
         @Override public double minValue() { return delegate.minValue(); }
         @Override public double maxValue() { return delegate.maxValue(); }
-        @Override public CodecHolder<? extends DensityFunction> getCodecHolder() { return delegate.getCodecHolder(); }
+        @Override public KeyDispatchDataCodec<? extends DensityFunction> codec() { return delegate.codec(); }
 
-        private NoisePos transform(NoisePos source) {
+        private FunctionContext transform(FunctionContext source) {
             if (source instanceof CylindricalNoisePos) return source;
             int sourceX = source.blockX();
             return new CylindricalNoisePos(coordinates.ringX(sourceX), source.blockY(),
@@ -63,11 +63,11 @@ public final class RingNoiseRouter {
         }
     }
 
-    private record TransformingApplier(DensityFunction.EachApplier delegate, RingNoiseCoordinates coordinates)
-            implements DensityFunction.EachApplier {
+    private record TransformingApplier(DensityFunction.ContextProvider delegate, RingNoiseCoordinates coordinates)
+            implements DensityFunction.ContextProvider {
         @Override
-        public DensityFunction.NoisePos at(int index) {
-            DensityFunction.NoisePos source = delegate.at(index);
+        public DensityFunction.FunctionContext forIndex(int index) {
+            DensityFunction.FunctionContext source = delegate.forIndex(index);
             if (source instanceof CylindricalNoisePos) return source;
             int sourceX = source.blockX();
             return new CylindricalNoisePos(coordinates.ringX(sourceX), source.blockY(),
@@ -75,11 +75,11 @@ public final class RingNoiseRouter {
         }
 
         @Override
-        public void fill(double[] densities, DensityFunction function) {
-            delegate.fill(densities, new CylindricalDensityFunction(function, coordinates));
+        public void fillAllDirectly(double[] densities, DensityFunction function) {
+            delegate.fillAllDirectly(densities, new CylindricalDensityFunction(function, coordinates));
         }
     }
 
     private record CylindricalNoisePos(int blockX, int blockY, int blockZ, Blender getBlender)
-            implements DensityFunction.NoisePos { }
+            implements DensityFunction.FunctionContext { }
 }

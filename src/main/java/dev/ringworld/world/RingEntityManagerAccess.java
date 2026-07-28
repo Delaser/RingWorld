@@ -1,6 +1,6 @@
 package dev.ringworld.world;
 
-import net.minecraft.util.math.ChunkPos;
+import net.minecraft.world.level.ChunkPos;
 
 /** Installs the owning Overworld's periodic coordinate topology on entity storage. */
 public interface RingEntityManagerAccess {

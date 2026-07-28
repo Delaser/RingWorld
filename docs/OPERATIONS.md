@@ -8,7 +8,7 @@
 | Java | 21 |
 | Fabric Loader | 0.19.3 |
 | Fabric API | 0.141.4+1.21.11 |
-| Yarn mappings | 1.21.11+build.6 |
+| Mappings | Official Mojang mappings for 1.21.11 |
 | Fabric Loom | 1.17 snapshot used by `gradle.properties` |
 | Gradle wrapper | 9.5.0 |
 

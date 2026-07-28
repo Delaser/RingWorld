@@ -3,19 +3,18 @@ package dev.ringworld.world;
 import dev.ringworld.RingWorldMod;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
-import net.minecraft.datafixer.DataFixTypes;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.world.PersistentState;
-import net.minecraft.world.PersistentStateManager;
-import net.minecraft.world.PersistentStateType;
-import net.minecraft.util.WorldSavePath;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.datafix.DataFixTypes;
+import net.minecraft.world.level.saveddata.SavedData;
+import net.minecraft.world.level.saveddata.SavedDataType;
+import net.minecraft.world.level.storage.DimensionDataStorage;
+import net.minecraft.world.level.storage.LevelResource;
 
 /** Immutable ring dimensions stored alongside a world once it is created. */
-public final class RingWorldSettings extends PersistentState {
+public final class RingWorldSettings extends SavedData {
     public static final String STORAGE_KEY = RingWorldMod.MOD_ID + "_settings";
     public static final int FORMAT_VERSION = 2;
     public static final int DEFAULT_WIDTH = 4_096;
@@ -33,7 +32,7 @@ public final class RingWorldSettings extends PersistentState {
                     .forGetter(RingWorldSettings::surfaceReferenceY),
             Codec.INT.fieldOf("format").forGetter(RingWorldSettings::formatVersion)
     ).apply(instance, RingWorldSettings::new));
-    private static final PersistentStateType<RingWorldSettings> TYPE = new PersistentStateType<>(
+    private static final SavedDataType<RingWorldSettings> TYPE = new SavedDataType<>(
             STORAGE_KEY, RingWorldSettings::new, CODEC, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
 
     private final int widthBlocks;
@@ -49,7 +48,7 @@ public final class RingWorldSettings extends PersistentState {
                 (int)RingGeometry.SURFACE_Y, FORMAT_VERSION);
         // This constructor is used only when no saved state exists yet.
         RingDimensionReport.forVanillaOverworld(geometry(), wallHeightBlocks).requireValid();
-        markDirty();
+        setDirty();
     }
 
     public RingWorldSettings(int widthBlocks, int circumferenceBlocks, long generatorSeed, int wallHeightBlocks, int formatVersion) {
@@ -76,15 +75,15 @@ public final class RingWorldSettings extends PersistentState {
         this.formatVersion = formatVersion;
     }
 
-    public static RingWorldSettings get(ServerWorld world) {
-        PersistentStateManager manager = world.getPersistentStateManager();
+    public static RingWorldSettings get(ServerLevel world) {
+        DimensionDataStorage manager = world.getDataStorage();
         RingWorldSettings saved = manager.get(TYPE);
         if (saved != null) {
             if (saved.formatVersion() == FORMAT_VERSION) return saved;
             RingWorldSettings upgraded = new RingWorldSettings(
                     saved.widthBlocks(), saved.circumferenceBlocks(), saved.generatorSeed(),
                     saved.wallHeightBlocks(), saved.surfaceReferenceY(), FORMAT_VERSION);
-            upgraded.markDirty();
+            upgraded.setDirty();
             manager.set(TYPE, upgraded);
             RingWorldMod.LOGGER.info("Migrated RingWorld settings format {} to {} for {}x{} world",
                     saved.formatVersion(), FORMAT_VERSION,
@@ -105,7 +104,7 @@ public final class RingWorldSettings extends PersistentState {
         RingWorldSettings created = new RingWorldSettings(
                 config.widthBlocks(), config.circumferenceBlocks(), world.getSeed(),
                 config.wallHeightBlocks(), (int)RingGeometry.SURFACE_Y, FORMAT_VERSION);
-        created.markDirty();
+        created.setDirty();
         manager.set(TYPE, created);
         RingWorldMod.LOGGER.info(
                 "Created RingWorld layout: {}x{} blocks ({}x{} chunks), radius={}, centreY={}, "
@@ -129,8 +128,8 @@ public final class RingWorldSettings extends PersistentState {
     public long layoutFingerprint() { return RingLayoutFingerprint.compute(this); }
     public RingGeometry geometry() { return new RingGeometry(widthBlocks, circumferenceBlocks); }
 
-    private static boolean hasExistingOverworldRegions(ServerWorld world) {
-        Path regionDirectory = world.getServer().getSavePath(WorldSavePath.ROOT).resolve("region");
+    private static boolean hasExistingOverworldRegions(ServerLevel world) {
+        Path regionDirectory = world.getServer().getWorldPath(LevelResource.ROOT).resolve("region");
         if (!Files.isDirectory(regionDirectory)) return false;
         try (var files = Files.list(regionDirectory)) {
             return files.anyMatch(path -> path.getFileName().toString().endsWith(".mca"));

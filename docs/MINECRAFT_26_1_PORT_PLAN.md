@@ -1,6 +1,6 @@
 # Minecraft 26.1 port plan
 
-Status: Phase 1 in progress
+Status: Phase 1 complete; Phase 2 next
 
 Target: Minecraft Java 26.1.2
 
@@ -154,6 +154,8 @@ Exit gate:
 
 Owner: primary agent
 
+Status: complete on 2026-07-28
+
 Fabric recommends migrating Yarn projects to Mojang mappings before moving to
 26.1. Keeping Minecraft at 1.21.11 isolates naming errors from game behavior
 changes.
@@ -175,6 +177,22 @@ Exit gate:
 - behavior is unchanged from the frozen Yarn build;
 - no Yarn or intermediary identifiers remain in active source or descriptors;
 - every required mixin applies.
+
+Completion evidence:
+
+- `./gradlew clean test build` passed all 69 cases;
+- the safe-small local harness passed terrain, two natural seam crossings,
+  block/entity/projectile/vehicle/AI/fluid/explosion/collision, rim, void, and
+  frame-pacing probes;
+- both crossings retained yaw/pitch and emitted zero correction packets;
+- `runLayoutSwitchClient` reported `result=true`;
+- the dedicated two-client harness reported
+  `full scenario result=true`;
+- the complete 15,552×4,096 atlas produced both tangent and radial-up
+  projection captures with far-depth compression active;
+- `method_31420` is retained only for Mojang's unnamed synthetic
+  `ServerLevel` entity-tick lambda and carries an explicit `@Dynamic`
+  explanation.
 
 ## Phase 2: establish the 26.1.2 toolchain
 

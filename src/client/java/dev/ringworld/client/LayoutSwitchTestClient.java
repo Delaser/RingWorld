@@ -3,8 +3,8 @@ package dev.ringworld.client;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingTerrainAtlas;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.text.Text;
+import net.minecraft.client.Minecraft;
+import net.minecraft.network.chat.Component;
 
 /**
  * Opt-in same-process saved-world switch regression.
@@ -26,7 +26,7 @@ final class LayoutSwitchTestClient {
     private RingGeometry firstGeometry;
     private boolean disconnectClearedState;
 
-    boolean tick(MinecraftClient client) {
+    boolean tick(Minecraft client) {
         if (firstWorld.isEmpty() || secondWorld.isEmpty()) return false;
         if (++ticks > STAGE_TIMEOUT_TICKS) {
             finish(client, false, "timed out in stage " + stage);
@@ -44,15 +44,15 @@ final class LayoutSwitchTestClient {
         return true;
     }
 
-    private void startFirstWorld(MinecraftClient client) {
-        if (!client.isFinishedLoading() || client.world != null || client.getServer() != null) return;
+    private void startFirstWorld(Minecraft client) {
+        if (!client.isGameLoadFinished() || client.level != null || client.getSingleplayerServer() != null) return;
         RingWorldMod.LOGGER.info("[layout-switch] opening first save '{}'", firstWorld);
         advanceTo(1);
-        client.createIntegratedServerLoader().start(firstWorld,
+        client.createWorldOpenFlows().openWorld(firstWorld,
                 () -> finish(client, false, "first save load cancelled"));
     }
 
-    private void captureFirstWorld(MinecraftClient client) {
+    private void captureFirstWorld(Minecraft client) {
         RingGeometry geometry = ClientRingState.geometry();
         RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
         if (geometry == null || atlas == null || ticks < JOIN_SETTLE_TICKS) return;
@@ -67,23 +67,23 @@ final class LayoutSwitchTestClient {
                 "[layout-switch] first session ready: {}x{}, fingerprint={}, atlas={}x{}",
                 geometry.circumferenceBlocks(), geometry.widthBlocks(),
                 Long.toUnsignedString(firstFingerprint, 16), atlas.columns(), atlas.rows());
-        client.disconnect(Text.literal("RingWorld layout-switch regression"));
+        client.disconnectFromWorld(Component.literal("RingWorld layout-switch regression"));
         advanceTo(2);
     }
 
-    private void startSecondWorld(MinecraftClient client) {
-        if (client.world != null || client.getServer() != null) return;
+    private void startSecondWorld(Minecraft client) {
+        if (client.level != null || client.getSingleplayerServer() != null) return;
         disconnectClearedState = ClientRingState.layoutFingerprint() == 0L
                 && ClientRingState.terrainAtlas() == null;
         RingWorldMod.LOGGER.info("[layout-switch] disconnect cleared client state={}",
                 disconnectClearedState);
         RingWorldMod.LOGGER.info("[layout-switch] opening second save '{}'", secondWorld);
         advanceTo(3);
-        client.createIntegratedServerLoader().start(secondWorld,
+        client.createWorldOpenFlows().openWorld(secondWorld,
                 () -> finish(client, false, "second save load cancelled"));
     }
 
-    private void verifySecondWorld(MinecraftClient client) {
+    private void verifySecondWorld(Minecraft client) {
         RingGeometry geometry = ClientRingState.geometry();
         RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
         if (geometry == null || atlas == null || ticks < JOIN_SETTLE_TICKS) return;
@@ -104,10 +104,10 @@ final class LayoutSwitchTestClient {
         ticks = 0;
     }
 
-    private void finish(MinecraftClient client, boolean passed, String detail) {
+    private void finish(Minecraft client, boolean passed, String detail) {
         if (stage == 4) return;
         stage = 4;
         RingWorldMod.LOGGER.info("[layout-switch] result={}, {}", passed, detail);
-        client.scheduleStop();
+        client.stop();
     }
 }

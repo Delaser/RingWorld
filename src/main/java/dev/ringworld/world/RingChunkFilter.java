@@ -2,15 +2,14 @@ package dev.ringworld.world;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
-import net.minecraft.server.network.ChunkFilter;
-import net.minecraft.util.math.ChunkPos;
-
 import java.util.function.Consumer;
+import net.minecraft.server.level.ChunkTrackingView;
+import net.minecraft.world.level.ChunkPos;
 
 /** A vanilla-shaped view window whose X axis is a finite periodic graph. */
 public record RingChunkFilter(ChunkPos center, int logicalCenterX,
                               int viewDistance, int circumferenceChunks,
-                              int minChunkZ, int maxChunkZ) implements ChunkFilter {
+                              int minChunkZ, int maxChunkZ) implements ChunkTrackingView {
     public RingChunkFilter(ChunkPos logicalCenter, int viewDistance, RingGeometry geometry) {
         this(logicalCenter, viewDistance, geometry.circumferenceChunks(),
                 geometry.minChunkZ(), geometry.maxChunkZ());
@@ -29,7 +28,7 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
     }
 
     @Override
-    public boolean isWithinDistance(int x, int z, boolean includeEdge) {
+    public boolean contains(int x, int z, boolean includeEdge) {
         return isWithinRingDistance(circumferenceChunks, center.x, center.z,
                 viewDistance, minChunkZ, maxChunkZ, x, z, includeEdge);
     }
@@ -51,15 +50,15 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
             int firstZ = Math.max(minChunkZ, center.z - extent);
             int lastZ = Math.min(maxChunkZ, center.z + extent);
             for (int z = firstZ; z <= lastZ; z++) {
-                if (!isWithinDistance(x, z)) continue;
-                long packed = ChunkPos.toLong(x, z);
+                if (!contains(x, z)) continue;
+                long packed = ChunkPos.asLong(x, z);
                 if (emitted.add(packed)) consumer.accept(new ChunkPos(packed));
             }
         }
     }
 
     /** Diffs any two filters without relying on vanilla's flat-cylinder fast path. */
-    public static void forEachChanged(ChunkFilter oldFilter, ChunkFilter newFilter,
+    public static void forEachChanged(ChunkTrackingView oldFilter, ChunkTrackingView newFilter,
                                       Consumer<ChunkPos> newlyIncluded, Consumer<ChunkPos> justRemoved) {
         if (oldFilter.equals(newFilter)) return;
         if (oldFilter instanceof RingChunkFilter oldRing && newFilter instanceof RingChunkFilter newRing) {
@@ -99,7 +98,7 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
         return periodicDistance > overlapDiameter;
     }
 
-    private static LongSet collect(ChunkFilter filter) {
+    private static LongSet collect(ChunkTrackingView filter) {
         LongSet chunks = new LongOpenHashSet();
         filter.forEach(pos -> chunks.add(pos.toLong()));
         return chunks;

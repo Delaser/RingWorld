@@ -2,9 +2,9 @@ package dev.ringworld.mixin;
 
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingWorldConfig;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.biome.source.util.MultiNoiseUtil;
+import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.biome.Climate;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -13,11 +13,11 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(MinecraftServer.class)
 abstract class MinecraftServerMixin {
     @Redirect(
-            method = "setupSpawn",
+            method = "setInitialSpawn",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/world/biome/source/util/MultiNoiseUtil$MultiNoiseSampler;findBestSpawnPosition()Lnet/minecraft/util/math/BlockPos;"))
-    private static BlockPos ringworld$constrainInitialSpawn(MultiNoiseUtil.MultiNoiseSampler sampler) {
-        BlockPos vanilla = sampler.findBestSpawnPosition();
+                    target = "Lnet/minecraft/world/level/biome/Climate$Sampler;findSpawnPosition()Lnet/minecraft/core/BlockPos;"))
+    private static BlockPos ringworld$constrainInitialSpawn(Climate.Sampler sampler) {
+        BlockPos vanilla = sampler.findSpawnPosition();
         RingWorldConfig config = RingWorldConfig.load();
         RingGeometry geometry = new RingGeometry(config.widthBlocks(), config.circumferenceBlocks());
 

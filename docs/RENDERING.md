@@ -152,7 +152,7 @@ biome tint on integrated servers where the colour maps are loaded.
 
 ### World lifecycle
 
-The visual surface is world-owned even though `SkyRendering` and its static GPU
+The visual surface is world-owned even though `SkyRenderer` and its static GPU
 resources can survive a return to the menus. On disconnect and again when a
 new settings payload is accepted, `RingWorldClient` closes the buffered texture
 and mesh before clearing/installing client state. `RingSurfaceTextureRenderer`

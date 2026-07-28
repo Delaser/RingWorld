@@ -1,8 +1,8 @@
 package dev.ringworld.world;
 
 import org.junit.jupiter.api.Test;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.util.math.Box;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -133,12 +133,12 @@ class RingGeometryTest {
 
     @Test
     void optimizedCameraTransformIsContinuousAndLocallyOriented() {
-        Vec3d camera = new Vec3d(15_551.5, 64.0, 10.0);
-        assertEquals(Vec3d.ZERO, geometry.toCameraLocal(camera, camera));
-        Vec3d acrossSeam = geometry.toCameraLocal(new Vec3d(15_552.5, 64.0, 10.0), camera);
+        Vec3 camera = new Vec3(15_551.5, 64.0, 10.0);
+        assertEquals(Vec3.ZERO, geometry.toCameraLocal(camera, camera));
+        Vec3 acrossSeam = geometry.toCameraLocal(new Vec3(15_552.5, 64.0, 10.0), camera);
         assertTrue(acrossSeam.x > 0.99 && acrossSeam.x < 1.01);
         assertTrue(Math.abs(acrossSeam.y) < 0.001);
-        assertEquals(4.0, geometry.toCameraLocal(new Vec3d(camera.x, camera.y, 14.0), camera).z, 1.0e-9);
+        assertEquals(4.0, geometry.toCameraLocal(new Vec3(camera.x, camera.y, 14.0), camera).z, 1.0e-9);
     }
 
     @Test
@@ -148,14 +148,14 @@ class RingGeometryTest {
                 geometry.circumferenceBlocks() / 2.0,
                 geometry.circumferenceBlocks() * 3.0 / 4.0,
                 geometry.circumferenceBlocks() * 3.0}) {
-            Vec3d camera = new Vec3d(x, 80.0, 0.0);
-            assertEquals(new Vec3d(0.0, ringCenterY - camera.y, 0.0),
+            Vec3 camera = new Vec3(x, 80.0, 0.0);
+            assertEquals(new Vec3(0.0, ringCenterY - camera.y, 0.0),
                     geometry.ringCenterInCameraFrame(camera));
-            assertEquals(new Vec3d(0.0, 1.0, 0.0), geometry.directionToRingCenter(camera));
+            assertEquals(new Vec3(0.0, 1.0, 0.0), geometry.directionToRingCenter(camera));
         }
 
-        Vec3d positiveEdge = new Vec3d(123.0, 80.0, geometry.maxWidthZ());
-        Vec3d negativeEdge = new Vec3d(123.0, 80.0, geometry.minWidthZ());
+        Vec3 positiveEdge = new Vec3(123.0, 80.0, geometry.maxWidthZ());
+        Vec3 negativeEdge = new Vec3(123.0, 80.0, geometry.minWidthZ());
         assertTrue(geometry.directionToRingCenter(positiveEdge).z < 0.0);
         assertTrue(geometry.directionToRingCenter(negativeEdge).z > 0.0);
         assertEquals(geometry.directionToRingCenter(positiveEdge).y,
@@ -177,14 +177,14 @@ class RingGeometryTest {
 
     @Test
     void distantSurfaceFormsACompleteArchThroughTheZenith() {
-        Vec3d camera = new Vec3d(0.0, RingGeometry.SURFACE_Y, 0.0);
-        Vec3d eastBase = geometry.toCameraLocal(
-                new Vec3d(64.0, RingGeometry.SURFACE_Y, 0.0), camera);
-        Vec3d opposite = geometry.toCameraLocal(
-                new Vec3d(geometry.circumferenceBlocks() / 2.0,
+        Vec3 camera = new Vec3(0.0, RingGeometry.SURFACE_Y, 0.0);
+        Vec3 eastBase = geometry.toCameraLocal(
+                new Vec3(64.0, RingGeometry.SURFACE_Y, 0.0), camera);
+        Vec3 opposite = geometry.toCameraLocal(
+                new Vec3(geometry.circumferenceBlocks() / 2.0,
                         RingGeometry.SURFACE_Y, 0.0), camera);
-        Vec3d westBase = geometry.toCameraLocal(
-                new Vec3d(geometry.circumferenceBlocks() - 64.0,
+        Vec3 westBase = geometry.toCameraLocal(
+                new Vec3(geometry.circumferenceBlocks() - 64.0,
                         RingGeometry.SURFACE_Y, 0.0), camera);
 
         assertTrue(eastBase.x > 0.0 && eastBase.y > 0.0);
@@ -196,9 +196,9 @@ class RingGeometryTest {
     @Test
     void curvedSectionBoundsRiseIntoTheUpwardFrustum() {
         RingGeometry smallRing = new RingGeometry(416, 2_048);
-        Vec3d camera = new Vec3d(0.0, 80.0, 0.0);
-        Box flatSection = new Box(432.0, 64.0, -8.0, 448.0, 80.0, 8.0);
-        Box curved = smallRing.toCameraLocalBounds(flatSection, camera);
+        Vec3 camera = new Vec3(0.0, 80.0, 0.0);
+        AABB flatSection = new AABB(432.0, 64.0, -8.0, 448.0, 80.0, 8.0);
+        AABB curved = smallRing.toCameraLocalBounds(flatSection, camera);
 
         assertTrue(curved.minY > 150.0,
                 "a far section should visibly rise with the ring rather than remain flat");
@@ -227,7 +227,7 @@ class RingGeometryTest {
     @Test
     void topologySplitsASeamCrossingBoxIntoCanonicalWindows() {
         RingTopology topology = new RingTopology(geometry);
-        Box query = new Box(15_551.5, 60.0, -1.0, 15_553.5, 62.0, 1.0);
+        AABB query = new AABB(15_551.5, 60.0, -1.0, 15_553.5, 62.0, 1.0);
         var windows = topology.canonicalWindows(query);
         assertEquals(2, windows.size());
         assertEquals(15_551.5, windows.get(0).canonicalBox().minX, 1.0e-9);
@@ -248,7 +248,7 @@ class RingGeometryTest {
     @Test
     void fullCircumferenceQueriesCanonicalStorageOnlyOnce() {
         RingTopology topology = new RingTopology(geometry);
-        var windows = topology.canonicalWindows(new Box(-10.0, 0.0, 0.0, 20_000.0, 1.0, 1.0));
+        var windows = topology.canonicalWindows(new AABB(-10.0, 0.0, 0.0, 20_000.0, 1.0, 1.0));
         assertEquals(1, windows.size());
         assertEquals(0.0, windows.getFirst().canonicalBox().minX, 1.0e-9);
         assertEquals(15_552.0, windows.getFirst().canonicalBox().maxX, 1.0e-9);

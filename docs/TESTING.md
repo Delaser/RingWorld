@@ -42,6 +42,12 @@ Inspect machine-readable results under:
 build/test-results/test/
 ```
 
+The 1.21.11 development build uses official Mojang mappings. After any mapping
+migration, also search active Java and descriptor text for `class_`, `field_`,
+and `method_`. The only current exception is the explicitly documented
+`ServerLevel.method_31420` synthetic lambda in `ServerWorldMixin`; a clean
+compile alone is not evidence that a required mixin still applies.
+
 ## Local automated smoke world
 
 The opt-in harness is destructive to its own test world: it teleports players,

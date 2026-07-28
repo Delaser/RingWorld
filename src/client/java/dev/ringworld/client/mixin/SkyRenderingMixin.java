@@ -1,17 +1,17 @@
 package dev.ringworld.client.mixin;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.math.Axis;
 import dev.ringworld.client.ClientRingState;
 import dev.ringworld.client.render.RingSurfaceTextureRenderer;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingSkyCycle;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.SkyRendering;
-import net.minecraft.client.render.state.SkyRenderState;
-import net.minecraft.client.util.math.MatrixStack;
-import net.minecraft.client.world.ClientWorld;
-import net.minecraft.util.math.RotationAxis;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.MoonPhase;
+import net.minecraft.client.Camera;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.client.renderer.SkyRenderer;
+import net.minecraft.client.renderer.state.SkyRenderState;
+import net.minecraft.world.level.MoonPhase;
+import net.minecraft.world.phys.Vec3;
 import org.joml.Vector4f;
 import org.joml.Vector4fc;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,10 +25,10 @@ import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /** Fixed toned sun plus the active texture-backed complete-ring surface. */
-@Mixin(SkyRendering.class)
+@Mixin(SkyRenderer.class)
 abstract class SkyRenderingMixin {
     @Invoker("renderSun")
-    protected abstract void ringworld$invokeRenderSun(float alpha, MatrixStack matrices);
+    protected abstract void ringworld$invokeRenderSun(float alpha, PoseStack matrices);
 
     @Unique private float ringworld$cameraY;
     @Unique private float ringworld$cameraZ;
@@ -43,8 +43,8 @@ abstract class SkyRenderingMixin {
         RingSurfaceTextureRenderer.clear();
     }
 
-    @Inject(method = "updateRenderState", at = @At("TAIL"))
-    private void ringworld$updateFixedSky(ClientWorld world, float tickProgress, Camera camera,
+    @Inject(method = "extractRenderState", at = @At("TAIL"))
+    private void ringworld$updateFixedSky(ClientLevel world, float tickProgress, Camera camera,
                                           SkyRenderState state, CallbackInfo ci) {
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null) return;
@@ -52,25 +52,25 @@ abstract class SkyRenderingMixin {
         state.moonAngle = RingSkyCycle.FIXED_SUN_ANGLE_RADIANS;
         state.starAngle = 0.0F;
         state.sunriseAndSunsetColor = 0;
-        ringworld$sunVisual = RingSkyCycle.sunVisual(world.getTimeOfDay() + tickProgress);
-        ringworld$cameraY = (float)camera.getCameraPos().y;
-        ringworld$cameraZ = (float)camera.getCameraPos().z;
-        ringworld$cameraX = camera.getCameraPos().x;
+        ringworld$sunVisual = RingSkyCycle.sunVisual(world.getDayTime() + tickProgress);
+        ringworld$cameraY = (float)camera.position().y;
+        ringworld$cameraZ = (float)camera.position().z;
+        ringworld$cameraX = camera.position().x;
 
         // Project the one physical star at the ring centre into the camera's
         // tangent frame. Crossing the finite width tilts it toward that point.
-        Vec3d starDirection = geometry.directionToRingCenter(camera.getCameraPos());
+        Vec3 starDirection = geometry.directionToRingCenter(camera.position());
         ringworld$starTiltRadians = (float)Math.atan2(starDirection.z, starDirection.y);
     }
 
     @Inject(method = "renderMoon", at = @At("HEAD"), cancellable = true)
-    private void ringworld$hideMoon(MoonPhase phase, float alpha, MatrixStack matrices,
+    private void ringworld$hideMoon(MoonPhase phase, float alpha, PoseStack matrices,
                                     CallbackInfo ci) {
         if (ClientRingState.geometry() != null) ci.cancel();
     }
 
     @Inject(method = "renderSun", at = @At("HEAD"), cancellable = true)
-    private void ringworld$hideCameraRelativeSun(float alpha, MatrixStack matrices,
+    private void ringworld$hideCameraRelativeSun(float alpha, PoseStack matrices,
                                                   CallbackInfo ci) {
         if (ClientRingState.geometry() != null && !ringworld$renderingCenteredSun) {
             ci.cancel();
@@ -87,10 +87,7 @@ abstract class SkyRenderingMixin {
             method = "renderSun",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/gl/DynamicUniforms;write("
-                            + "Lorg/joml/Matrix4fc;Lorg/joml/Vector4fc;"
-                            + "Lorg/joml/Vector3fc;Lorg/joml/Matrix4fc;)"
-                            + "Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"),
+                    target = "Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4fc;Lorg/joml/Vector4fc;Lorg/joml/Vector3fc;Lorg/joml/Matrix4fc;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"),
             index = 1,
             require = 1)
     private Vector4fc ringworld$tintCenteredSun(Vector4fc vanillaColor) {
@@ -104,8 +101,8 @@ abstract class SkyRenderingMixin {
                 vanillaColor.w() * ringworld$sunVisual.brightness());
     }
 
-    @Inject(method = "renderCelestialBodies", at = @At("TAIL"))
-    private void ringworld$renderRingAndSun(MatrixStack matrices, float sunAngle,
+    @Inject(method = "renderSunMoonAndStars", at = @At("TAIL"))
+    private void ringworld$renderRingAndSun(PoseStack matrices, float sunAngle,
                                             float moonAngle, float starAngle,
                                             MoonPhase moonPhase, float alpha,
                                             float starBrightness, CallbackInfo ci) {
@@ -113,20 +110,20 @@ abstract class SkyRenderingMixin {
         if (geometry == null) return;
 
         RingSurfaceTextureRenderer.render(matrices, geometry,
-                new Vec3d(ringworld$cameraX, ringworld$cameraY, ringworld$cameraZ),
+                new Vec3(ringworld$cameraX, ringworld$cameraY, ringworld$cameraZ),
                 alpha);
 
         // Vanilla drew stars after its first sun. The ring covers those stars
         // but stays behind the central star, so redraw the fixed sun once.
-        matrices.push();
-        matrices.multiply(RotationAxis.POSITIVE_X.rotation(ringworld$starTiltRadians));
-        matrices.multiply(RotationAxis.POSITIVE_Y.rotationDegrees(-90.0F));
+        matrices.pushPose();
+        matrices.mulPose(Axis.XP.rotation(ringworld$starTiltRadians));
+        matrices.mulPose(Axis.YP.rotationDegrees(-90.0F));
         ringworld$renderingCenteredSun = true;
         try {
             ringworld$invokeRenderSun(alpha, matrices);
         } finally {
             ringworld$renderingCenteredSun = false;
         }
-        matrices.pop();
+        matrices.popPose();
     }
 }
