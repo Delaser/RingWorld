@@ -1,21 +1,101 @@
-MIT License
+RingWorld Evaluation License 1.0
 
-Copyright (c) 2026 RingWorld contributors
+Copyright (c) 2026 Delaser. All rights reserved.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This is a proprietary, source-unavailable software licence. RingWorld is not
+open-source or open-source-licensed software.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. Definitions
+
+"Licensor" means Delaser, the RingWorld project owner.
+
+"Software" means RingWorld source code, object code, documentation, original
+assets, and official packages to which this licence is attached. Third-party
+software and assets remain governed by their own licences.
+
+"Official Build" means an unmodified RingWorld binary package distributed
+directly by the Licensor or through a location the Licensor has expressly
+authorized.
+
+"Commercial Use" means use primarily intended for, or directed toward,
+commercial advantage or monetary compensation. It includes selling,
+licensing, renting, paid distribution, paid access, monetized hosting,
+commercial support or consulting substantially based on the Software, and
+including the Software or a derivative in a paid product, service, server, or
+bundle.
+
+2. Limited Evaluation Grant
+
+Subject to this licence, the Licensor grants an individual end user a limited,
+non-exclusive, non-transferable right to:
+
+  a. download an Official Build;
+  b. install and run that Official Build without modification; and
+  c. make one archival backup copy;
+
+solely for personal, noncommercial gameplay, evaluation, and testing.
+
+Ordinary gameplay screenshots, videos, and livestreams are not Commercial Use
+of the Software merely because the creator receives advertising, subscription,
+or donation revenue, provided they do not distribute, sell, gate access to, or
+market an unauthorized RingWorld build or derivative.
+
+3. Rights Not Granted
+
+Except where applicable law does not permit the restriction, this licence does
+not grant permission to:
+
+  a. modify, adapt, translate, port, or create derivative works of the
+     Software;
+  b. copy or redistribute the Software beyond the single archival copy;
+  c. publish, mirror, sublicense, sell, rent, lease, or commercially exploit
+     the Software;
+  d. include the Software in a modpack, launcher, server pack, repository, or
+     other distribution;
+  e. operate a modified or redistributed RingWorld build on a public or
+     private server;
+  f. reverse engineer, decompile, or disassemble the Software; or
+  g. remove or alter copyright, licence, attribution, or provenance notices.
+
+No patent, trademark, trade-name, logo, or branding rights are granted.
+
+4. Permission for Contributions and Compatibility Work
+
+The Licensor may grant separate written permission for a contribution,
+compatibility patch, modpack-specific adaptation, port, fork, redistribution,
+or commercial use. Any such permission is exceptional and is governed only by
+its written terms.
+
+Do not submit source code or other copyrightable contributions unless the
+Licensor has first approved the work and the contributor has accepted the
+then-current RingWorld contributor agreement. Issue reports, test results, and
+general feedback do not grant a licence to the Software.
+
+5. Ownership
+
+The Software is licensed, not sold. The Licensor and applicable contributors
+retain all right, title, and interest in the Software. All rights not expressly
+granted by this licence are reserved.
+
+6. Termination
+
+Your rights under this licence terminate automatically if you breach any term.
+On termination, you must stop using the Software and destroy copies in your
+possession or control, except where retention is required by law.
+
+7. Disclaimer of Warranty and Limitation of Liability
 
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+IMPLIED, INCLUDING WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR
+PURPOSE, TITLE, AND NON-INFRINGEMENT. TO THE MAXIMUM EXTENT PERMITTED BY LAW,
+THE LICENSOR AND CONTRIBUTORS WILL NOT BE LIABLE FOR ANY CLAIM, DAMAGES, OR
+OTHER LIABILITY ARISING FROM OR RELATED TO THE SOFTWARE OR ITS USE.
+
+8. Previous Versions
+
+This licence applies only to Software versions and copies expressly distributed
+under it. It does not revoke or alter rights that may already have been granted
+for earlier copies under a different licence.
+
+Permission requests must be made through an official RingWorld or
+AndWhatNot Studio contact channel published by the Licensor.
