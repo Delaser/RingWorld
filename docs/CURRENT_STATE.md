@@ -33,7 +33,10 @@ client diagnostics, and the primary branch has removed the seven mechanical
 `ChunkPos` cases plus the GUI extraction, Fabric render-event, level
 render-state, clock, lightmap, projection-diagnostic, and pipeline-state
 cases. The detached `compileClientJava` probe now passes. Direct whole-project
-and runtime validation still wait for S2's saved-data/storage integration.
+validation also completes 73 tests and produces jars when the five S2 errors
+are replaced by temporary compile-only shims. Those probe jars are not
+releasable; direct main-branch and runtime validation still wait for S2's
+saved-data/storage integration.
 
 The “Implemented” sections below describe that validated 1.21.11 behavior and
 the contract the port must restore. They are not claims that the active 26.1.2

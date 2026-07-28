@@ -129,6 +129,13 @@ This is a source-compile checkpoint, not runtime rendering evidence. Mixin
 application, shader ABI, sky order, depth behavior, and live/proxy alignment
 still require the runtime gates after S2 makes the main build whole.
 
+The same detached probe completed `./gradlew test build`: 73 tests passed with
+zero failures/errors/skips, and Loom produced the 26.1.2 mod and sources jars.
+Those artifacts contain temporary compile-only storage shims and are not
+release candidates. The result isolates the remaining main-branch compiler
+block to S2 while proving that the primary client/common port and pure tests
+are buildable together.
+
 ## Next ownership split
 
 Primary work proceeds with common Fabric API/name updates, canonical topology,
