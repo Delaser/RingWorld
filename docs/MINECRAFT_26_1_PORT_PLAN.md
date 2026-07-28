@@ -15,10 +15,13 @@ porting RingWorld from Minecraft Java 1.21.11 to the 26.1 release family. It
 does not authorize changing RingWorld's topology invariants merely to make the
 new game version compile.
 
-The port will be developed by two coding agents on separate dedicated PCs and
-separate Git clones. Cross-PC coordination uses private GitHub issue
-[#4](https://github.com/Delaser/RingWorld/issues/4) under the protocol in
-[`AGENT_COLLABORATION.md`](AGENT_COLLABORATION.md). The local
+The port is developed by two coding agents on separate dedicated PCs and
+separate Git clones. Private GitHub issue
+[#4](https://github.com/Delaser/RingWorld/issues/4) is the epic and escalation
+channel; bounded P1–P4 and S2–S6 work uses linked issues
+[#5–#13](https://github.com/Delaser/RingWorld/issues) under the protocol in
+[`AGENT_COLLABORATION.md`](AGENT_COLLABORATION.md). The primary agent owns and
+maintains issue status, dependencies, assignments, and integration order. The local
 [`scripts/agent-comms.sh`](../scripts/agent-comms.sh) mailbox is only for a
 future same-clone worktree arrangement.
 
@@ -87,8 +90,8 @@ After the current documentation PR is resolved:
 2. run and record the complete 1.21.11 baseline;
 3. tag that state `mc-1.21.11-final`;
 4. create the integration branch `codex/minecraft-26.1-port`;
-5. publish the exact integration commit and assign it to the second PC through
-   coordination issue #4.
+5. publish the exact integration commit and assign it through the task's
+   individual GitHub issue.
 
 Suggested secondary-agent branches:
 
@@ -226,7 +229,7 @@ lowered.
 
 The primary agent owns cross-cutting architectural code.
 
-### P1: canonical topology and simulation
+### P1: canonical topology and simulation ([#5](https://github.com/Delaser/RingWorld/issues/5))
 
 Primary ownership:
 
@@ -254,7 +257,7 @@ Exit gate:
 - no persistent chunk or entity owns X outside `[0, C)`;
 - seam travel produces no corrective teleport or camera discontinuity.
 
-### P2: world generation
+### P2: world generation ([#6](https://github.com/Delaser/RingWorld/issues/6))
 
 Tasks:
 
@@ -265,7 +268,7 @@ Tasks:
 - restore finite-width spawn selection;
 - extend multi-seed seam fixtures where 26.1 internals changed.
 
-### P3: network protocol
+### P3: network protocol ([#7](https://github.com/Delaser/RingWorld/issues/7))
 
 Tasks:
 
@@ -275,7 +278,7 @@ Tasks:
 - synchronize the protocol identity test;
 - ensure a stale client fails before decoding ring-specific play payloads.
 
-### P4: renderer and shaders
+### P4: renderer and shaders ([#8](https://github.com/Delaser/RingWorld/issues/8))
 
 Primary ownership:
 
@@ -335,7 +338,7 @@ Restrictions:
 - use official Mojang and Fabric sources;
 - do not mark an injection resolved without inspecting 26.1 source.
 
-### S2: world storage and saved-world migration
+### S2: world storage and saved-world migration ([#9](https://github.com/Delaser/RingWorld/issues/9))
 
 Start: after the Phase 2 baseline
 
@@ -370,7 +373,7 @@ Restrictions:
 - no topology mixin changes;
 - use world copies only.
 
-### S3: creation UI and debug screen
+### S3: creation UI and debug screen ([#10](https://github.com/Delaser/RingWorld/issues/10))
 
 Start: after common source compilation is stable
 
@@ -395,7 +398,7 @@ Tasks:
 - port canonical F3 coordinates and atlas state;
 - test invalid, safe-small, production, and custom layouts.
 
-### S4: automated harnesses
+### S4: automated harnesses ([#11](https://github.com/Delaser/RingWorld/issues/11))
 
 Start: after a 26.1 client can join a world
 
@@ -428,7 +431,7 @@ Restrictions:
 - do not weaken camera, packet, or seam tolerances without evidence;
 - coordinate before editing `RingWorldClient.java`.
 
-### S5: Java 25 packaging and deployment preparation
+### S5: Java 25 packaging and deployment preparation ([#12](https://github.com/Delaser/RingWorld/issues/12))
 
 Start: after the first successful client/server launch
 
@@ -461,7 +464,7 @@ Restrictions:
 - do not change website downloads;
 - hand artifacts and validation results to the primary agent.
 
-### S6: independent integration review
+### S6: independent integration review ([#13](https://github.com/Delaser/RingWorld/issues/13))
 
 After each major integration, the secondary agent performs a read-only audit:
 
@@ -474,7 +477,9 @@ After each major integration, the secondary agent performs a read-only audit:
 - confirm every global mixin has an Overworld guard;
 - compare documentation with implementation.
 
-Findings should arrive through the coordination mailbox before code changes.
+Findings should be posted to the active task issue before code changes. Use
+epic #4 only for cross-task dependencies, ownership conflicts, or an
+inaccessible task issue.
 
 ## Agent handoff format
 
@@ -495,8 +500,11 @@ Documentation updated:
 Recommended integration order:
 ```
 
-The secondary agent gives the primary agent commit hashes for review and
-cherry-pick. It must not rebase or force-push handed-off commits.
+The secondary agent posts the handoff and commit hashes in the active task
+issue for primary review and cherry-pick. The primary changes that issue to
+`status:review`. The secondary must not rebase or force-push handed-off
+commits, and must not begin the next issue until the primary changes it to
+`status:ready` and posts an assignment.
 
 ## Integration order
 
