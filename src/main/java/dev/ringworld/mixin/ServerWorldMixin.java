@@ -75,7 +75,9 @@ abstract class ServerWorldMixin {
      * only chunks vanilla intends the nearby player to simulate.
      */
     @Redirect(
-            method = "tick",
+            method = "lambda$tick$0(Lnet/minecraft/world/TickRateManager;"
+                    + "Lnet/minecraft/util/profiling/ProfilerFiller;"
+                    + "Lnet/minecraft/world/entity/Entity;)V",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/server/level/DistanceManager;inEntityTickingRange(J)Z"))
     private boolean ringworld$periodicEntityTickEligibility(DistanceManager manager, long packedPos) {

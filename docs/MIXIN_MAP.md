@@ -39,7 +39,7 @@ the same change.
 | `ServerEntityManagerMixin` | `PersistentEntitySectionManager` | Canonicalizes new/disk entities, tracking status, loaded/tick keys, and initial section | Save/reconnect and entity ticking depend on this |
 | `ServerEntityTrackerMixin` | `ChunkMap.TrackedEntity` | Uses periodic distance when deciding player tracking | Remote players/entities vanish across seam without it |
 | `ServerPlayNetworkHandlerMixin` | `ServerGamePacketListenerImpl` | Validates continuous player/vehicle seam movement and folds canonical without correction | Anti-cheat baselines and passengers must shift with the source chart |
-| `ServerWorldMixin` | `ServerLevel` | Canonical loaded/tick checks, nearest-periodic simulation eligibility fallback, entity region load, proximity delivery | Several unrelated world-facing ownership checks converge here; never turn the fallback into global forced ticking |
+| `ServerWorldMixin` | `ServerLevel` | Canonical loaded/tick checks, nearest-periodic simulation eligibility fallback in the private 26.1 `lambda$tick$0(TickRateManager,ProfilerFiller,Entity)` entity consumer, entity region load, proximity delivery | Several unrelated world-facing ownership checks converge here; the entity eligibility call is inside the synthetic tick consumer rather than `tick` itself, and the fallback must never become global forced ticking |
 | `WorldEntityLookupMixin` | `Level` | Splits seam-crossing entity query boxes into canonical windows | Must suppress duplicates and scan full-circumference boxes once |
 | `WorldTickSchedulerMixin` | `LevelTicks` | Canonicalizes runtime block/fluid tick positions | A tick stored under an alias can never find its canonical block |
 
