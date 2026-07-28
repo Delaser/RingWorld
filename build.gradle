@@ -46,6 +46,22 @@ loom {
 			vmArg "-Dringworld.multiplayerTestPort=25566"
 			programArgs "--username", "RingTesterB"
 		}
+		layoutSwitchClient {
+			client()
+			name "RingWorld Layout Switch Client"
+			runDir "run"
+			vmArg "-Dringworld.layoutSwitchFirst=RingWorld Automated Test (10)"
+			vmArg "-Dringworld.layoutSwitchSecond=RingWorld Automated Test (6)"
+		}
+		productionProjectionClient {
+			client()
+			name "RingWorld Production Projection Capture"
+			runDir "run"
+			vmArg "-Dringworld.captureRingProjection=true"
+			programArgs "--quickPlaySingleplayer",
+					providers.gradleProperty("ringProjectionWorld")
+							.orElse("RingWorld Automated Test (3)").get()
+		}
 	}
 }
 

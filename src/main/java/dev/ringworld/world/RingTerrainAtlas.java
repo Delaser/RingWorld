@@ -25,7 +25,7 @@ import java.util.zip.GZIPOutputStream;
  * lets the sky mesh bilinearly sample exactly the same tiled cache.</p>
  */
 public final class RingTerrainAtlas {
-    public static final int FORMAT_VERSION = 1;
+    public static final int FORMAT_VERSION = 5;
     public static final int SAMPLE_STEP_BLOCKS = 8;
     public static final int TILE_SIZE = 16;
     private static final int MAGIC = 0x52574154; // RWAT
@@ -54,25 +54,21 @@ public final class RingTerrainAtlas {
         this.sampleStep = sampleStep;
         this.columns = divideCeil(geometry.circumferenceBlocks(), sampleStep);
         this.rows = divideCeil(geometry.widthBlocks(), sampleStep);
-        this.heights = new short[columns * rows];
-        this.colors = new int[columns * rows];
-        this.present = new boolean[columns * rows];
+        long cells = Math.multiplyExact((long)columns, rows);
+        if (cells > RingDimensionReport.MAX_ATLAS_CELLS) {
+            throw new IllegalArgumentException("terrain atlas requires " + cells
+                    + " cells; current limit is " + RingDimensionReport.MAX_ATLAS_CELLS);
+        }
+        int cellCount = Math.toIntExact(cells);
+        this.heights = new short[cellCount];
+        this.colors = new int[cellCount];
+        this.present = new boolean[cellCount];
     }
 
     public static long worldHash(RingWorldSettings settings) {
-        long value = 0x9E3779B97F4A7C15L ^ settings.generatorSeed();
-        value = mix(value ^ Integer.toUnsignedLong(settings.circumferenceBlocks()));
-        value = mix(value ^ (Integer.toUnsignedLong(settings.widthBlocks()) << 1));
-        value = mix(value ^ (Integer.toUnsignedLong(settings.formatVersion()) << 32));
-        return value;
-    }
-
-    private static long mix(long value) {
-        value ^= value >>> 30;
-        value *= 0xBF58476D1CE4E5B9L;
-        value ^= value >>> 27;
-        value *= 0x94D049BB133111EBL;
-        return value ^ value >>> 31;
+        long value = RingLayoutFingerprint.compute(settings);
+        value = RingLayoutFingerprint.mix(value ^ ((long)FORMAT_VERSION << 32));
+        return RingLayoutFingerprint.mix(value ^ SAMPLE_STEP_BLOCKS);
     }
 
     public RingGeometry geometry() { return geometry; }
@@ -84,6 +80,10 @@ public final class RingTerrainAtlas {
     public int tileRows() { return divideCeil(rows, TILE_SIZE); }
     public int presentCount() { return presentCount; }
     public int cellCount() { return present.length; }
+    public long estimatedMemoryBytes() { return (long)present.length * 7L; }
+    public long estimatedWireBytes() {
+        return (long)present.length * 7L + (long)tileColumns() * tileRows() * 2L;
+    }
     public boolean isComplete() { return presentCount == present.length; }
     public double completion() { return present.length == 0 ? 1.0 : (double)presentCount / present.length; }
 
@@ -283,15 +283,17 @@ public final class RingTerrainAtlas {
         }
     }
 
-    public int firstMissingChunkIndex() {
-        int chunksAlong = geometry.circumferenceBlocks() >> 4;
-        int chunksAcross = geometry.widthBlocks() >> 4;
+    public long firstMissingChunkIndex() {
+        int chunksAlong = geometry.circumferenceChunks();
+        int chunksAcross = geometry.widthChunks();
         for (int chunkX = 0; chunkX < chunksAlong; chunkX++) {
             for (int chunkRow = 0; chunkRow < chunksAcross; chunkRow++) {
-                if (!isChunkPresent(chunkX, chunkRow)) return chunkX * chunksAcross + chunkRow;
+                if (!isChunkPresent(chunkX, chunkRow)) {
+                    return (long)chunkX * chunksAcross + chunkRow;
+                }
             }
         }
-        return chunksAlong * chunksAcross;
+        return (long)chunksAlong * chunksAcross;
     }
 
     public boolean isChunkPresent(int chunkX, int chunkRow) {

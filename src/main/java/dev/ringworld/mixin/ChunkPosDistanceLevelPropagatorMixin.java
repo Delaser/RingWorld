@@ -17,6 +17,6 @@ abstract class ChunkPosDistanceLevelPropagatorMixin {
     private long ringworld$periodicNeighbor(int x, int z) {
         RingGeometry geometry = RingChunkLevelContext.activeGeometry();
         if (geometry == null) return ChunkPos.toLong(x, z);
-        return ChunkPos.toLong(Math.floorMod(x, geometry.circumferenceBlocks() / 16), z);
+        return ChunkPos.toLong(Math.floorMod(x, geometry.circumferenceChunks()), z);
     }
 }

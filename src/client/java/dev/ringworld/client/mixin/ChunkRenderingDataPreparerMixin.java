@@ -11,11 +11,29 @@ import net.minecraft.util.math.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 /** Makes terrain visibility use the same cylindrical space as its shader. */
 @Mixin(ChunkRenderingDataPreparer.class)
 abstract class ChunkRenderingDataPreparerMixin {
+    /**
+     * Vanilla's smart section occlusion propagates visibility through a flat
+     * six-face graph. A mountain can therefore stop traversal to sections
+     * which the cylindrical transform later bends back into view. Use
+     * vanilla's supported non-occluding traversal for the RingWorld only;
+     * render distance and the curved frustum still reject irrelevant
+     * sections.
+     */
+    @ModifyVariable(
+            method = "updateSectionOcclusionGraph",
+            at = @At("HEAD"),
+            argsOnly = true,
+            ordinal = 0)
+    private boolean ringworld$disableFlatSectionOcclusion(boolean useOcclusionCulling) {
+        return ClientRingState.geometry() == null && useOcclusionCulling;
+    }
+
     @ModifyArg(
             method = "collectChunks",
             at = @At(value = "INVOKE",

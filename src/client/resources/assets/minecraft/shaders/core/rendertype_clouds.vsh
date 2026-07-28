@@ -10,11 +10,6 @@ const int FLAG_INSIDE_FACE = 1 << 4;
 const int FLAG_USE_TOP_COLOR = 1 << 5;
 const int FLAG_EXTRA_Z = 1 << 6;
 const int FLAG_EXTRA_X = 1 << 7;
-// The current 160-block rim rises from the Overworld minimum Y=-64, so its
-// first clear block is Y=96. Keep the live cloud deck just above it, leaving
-// a small visible gap without returning to vanilla's detached altitude.
-const float RING_CLOUD_BASE_Y = 104.0;
-
 layout(std140) uniform CloudInfo {
     vec4 CloudColor;
     vec3 CloudOffset;
@@ -42,11 +37,11 @@ const vec4[] faceColors = vec4[](
 );
 
 float ring_circumference() {
-    return float((MenuBlurRadius & 0x7ffffff0) >> 4);
+    return float(RingWorldLayout.y);
 }
 
 bool ring_active() {
-    return MenuBlurRadius < 0;
+    return RingWorldLayout.x != 0;
 }
 
 vec3 curve_cloud_position(vec3 pos) {
@@ -54,7 +49,7 @@ vec3 curve_cloud_position(vec3 pos) {
     float baseRadius = circumference / (2.0 * 3.14159265358979323846);
     float cameraX = float(CameraBlockPos.x) - CameraOffset.x;
     float cameraY = float(CameraBlockPos.y) - CameraOffset.y;
-    float cameraRadius = baseRadius + 64.0 - cameraY;
+    float cameraRadius = baseRadius + RingWorldVertical.x - cameraY;
     float vertexRadius = cameraRadius - pos.y;
 
     // Reconstruct canonical world phase before bending the cell. Reducing the
@@ -82,14 +77,12 @@ vec3 curve_cloud_position(vec3 pos) {
 }
 
 float ring_cloud_visibility(vec3 flatPos) {
-    float circumference = ring_circumference();
-    // A short circumference can otherwise turn even a normal cloud range
-    // through most of a revolution. Limit the local weather layer to a
-    // shallow arc; the atmospheric Arch supplies the far-field cloud cue.
-    float visibleEnd = min(FogCloudsEnd * 0.82, circumference * 0.12);
-    float visibleStart = visibleEnd * 0.55;
     float horizontalDistance = length(flatPos.xz);
-    return 1.0 - smoothstep(visibleStart, visibleEnd, horizontalDistance);
+    return 1.0 - smoothstep(
+        RingWorldAtmosphere.w,
+        RingWorldAtmosphere2.x,
+        horizontalDistance
+    );
 }
 
 void main() {
@@ -110,7 +103,7 @@ void main() {
         float cameraY = float(CameraBlockPos.y) - CameraOffset.y;
         // Preserve vanilla's cell thickness while replacing only the deck's
         // base altitude. CloudOffset.y is the original camera-relative base.
-        pos.y += (RING_CLOUD_BASE_Y - cameraY) - CloudOffset.y;
+        pos.y += (RingWorldVertical.z - cameraY) - CloudOffset.y;
     }
     vec3 flatPos = pos;
     if (ring_active()) {

@@ -5,9 +5,24 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.math.Box;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingGeometryTest {
+    @Test
+    void productionProxyExtendsBeyondAnOrdinaryTwentyEightChunkFarPlane() {
+        RingGeometry production = new RingGeometry(4_096, 15_552);
+        RingGeometry safeSmall = new RingGeometry(416, 2_048);
+        double ordinaryFarPlane = 28 * 16.0 * 4.0;
+
+        assertTrue(production.oppositeReferenceSurfaceDistance(
+                RingGeometry.SURFACE_Y) > ordinaryFarPlane);
+        assertTrue(production.maximumReferenceSurfaceDistance(
+                RingGeometry.SURFACE_Y, 0.0) > ordinaryFarPlane);
+        assertTrue(safeSmall.maximumReferenceSurfaceDistance(
+                RingGeometry.SURFACE_Y, 0.0) < ordinaryFarPlane);
+    }
+
     private final RingGeometry geometry = new RingGeometry(4_096, 15_552);
 
     @Test
@@ -31,19 +46,29 @@ class RingGeometryTest {
 
     @Test
     void presentationChartsAlwaysResolveToOneCanonicalX() {
-        RingGeometry testRing = new RingGeometry(320, 1_600);
+        RingGeometry testRing = new RingGeometry(416, 2_048);
         RingPosition beforeZero = RingPosition.fromPresentationX(-0.25, testRing);
-        RingPosition firstSeam = RingPosition.fromPresentationX(1_600.0, testRing);
-        RingPosition secondSeam = RingPosition.fromPresentationX(3_200.25, testRing);
+        RingPosition firstSeam = RingPosition.fromPresentationX(2_048.0, testRing);
+        RingPosition secondSeam = RingPosition.fromPresentationX(4_096.25, testRing);
 
-        assertEquals(1_599.75, beforeZero.canonicalX(), 1.0e-9);
+        assertEquals(2_047.75, beforeZero.canonicalX(), 1.0e-9);
         assertEquals(-1, beforeZero.chartIndex());
         assertEquals(0.0, firstSeam.canonicalX(), 1.0e-9);
         assertEquals(1, firstSeam.chartIndex());
         assertEquals(0.25, secondSeam.canonicalX(), 1.0e-9);
         assertEquals(2, secondSeam.chartIndex());
-        assertEquals(0, testRing.wrapBlockX(1_600));
-        assertEquals(99, RingChunkCoordinates.wrapChunkX(-1, testRing));
+        assertEquals(0, testRing.wrapBlockX(2_048));
+        assertEquals(127, RingChunkCoordinates.wrapChunkX(-1, testRing));
+    }
+
+    @Test
+    void nextPositiveSeamFollowsTheCurrentPresentationChart() {
+        RingGeometry testRing = new RingGeometry(416, 2_048);
+
+        assertEquals(0.0, testRing.nextPositiveSeamX(-4.0), 1.0e-9);
+        assertEquals(2_048.0, testRing.nextPositiveSeamX(2_044.0), 1.0e-9);
+        assertEquals(4_096.0, testRing.nextPositiveSeamX(2_048.0), 1.0e-9);
+        assertEquals(-2_048.0, testRing.nextPositiveSeamX(-4_096.0), 1.0e-9);
     }
 
     @Test
@@ -82,6 +107,12 @@ class RingGeometryTest {
     void widthIsCentredOnVanillaSpawnCoordinates() {
         assertEquals(-2_048, geometry.minWidthZ());
         assertEquals(2_047, geometry.maxWidthZ());
+        assertEquals(-128, geometry.minChunkZ());
+        assertEquals(127, geometry.maxChunkZ());
+        assertTrue(geometry.isExteriorChunkZ(-129));
+        assertFalse(geometry.isExteriorChunkZ(-128));
+        assertFalse(geometry.isExteriorChunkZ(127));
+        assertTrue(geometry.isExteriorChunkZ(128));
         assertTrue(geometry.isInsideWidth(0));
     }
 
@@ -164,7 +195,7 @@ class RingGeometryTest {
 
     @Test
     void curvedSectionBoundsRiseIntoTheUpwardFrustum() {
-        RingGeometry smallRing = new RingGeometry(320, 1_600);
+        RingGeometry smallRing = new RingGeometry(416, 2_048);
         Vec3d camera = new Vec3d(0.0, 80.0, 0.0);
         Box flatSection = new Box(432.0, 64.0, -8.0, 448.0, 80.0, 8.0);
         Box curved = smallRing.toCameraLocalBounds(flatSection, camera);
@@ -177,60 +208,20 @@ class RingGeometryTest {
     }
 
     @Test
-    void skyProxyPreservesWidthAndCrossFadesBehindChunks() {
-        double expectedWidth = 2.0 * Math.atan2(geometry.widthBlocks() / 2.0,
-                geometry.radius() * 2.0);
-        assertEquals(expectedWidth, RingVisibility.oppositeAngularWidth(geometry, 0.0), 1.0e-9);
-        assertTrue(RingVisibility.skyScale(geometry) > 0.0);
+    void capturePitchTracksTheRenderedSurfaceAtDifferentDistances() {
+        RingGeometry smallRing = new RingGeometry(416, 2_048);
 
-        double viewBlocks = 12.0 * 16.0;
-        double startAngle = RingVisibility.handoffStartAngle(geometry, viewBlocks);
-        double endAngle = RingVisibility.handoffEndDistance(geometry, viewBlocks) / geometry.radius();
-        assertEquals(0.0, RingVisibility.proxyAlpha(geometry, startAngle, viewBlocks), 1.0e-9);
-        assertTrue(RingVisibility.proxyAlpha(geometry, (startAngle + endAngle) / 2.0,
-                viewBlocks) > 0.0);
-        assertEquals(1.0, RingVisibility.proxyAlpha(geometry, endAngle, viewBlocks), 1.0e-9);
-        assertEquals(RingVisibility.proxyAlpha(geometry, startAngle * 1.25, viewBlocks),
-                RingVisibility.proxyAlpha(geometry, Math.PI * 2.0 - startAngle * 1.25,
-                        viewBlocks), 1.0e-9);
-        assertEquals(1.0, RingVisibility.proxyAlpha(geometry,
-                viewBlocks / geometry.radius(), viewBlocks), 1.0e-9,
-                "the backdrop must be complete before the nominal chunk edge");
-        assertEquals(0.0, RingVisibility.proxyTerrainDetail(geometry,
-                viewBlocks / geometry.radius(), viewBlocks), 1.0e-9,
-                "the backdrop must match atmospheric fog at the chunk edge");
-        assertEquals(1.0, RingVisibility.proxyTerrainDetail(geometry,
-                viewBlocks * 1.8 / geometry.radius(), viewBlocks), 1.0e-9);
+        double shortViewPitch = smallRing.pitchDegreesToIntrinsic(
+                120.0, 64.0, 6 * 16.0, 0.0);
+        double longViewPitch = smallRing.pitchDegreesToIntrinsic(
+                120.0, 64.0, 28 * 16.0, 0.0);
 
-        double edgeAngle = viewBlocks / geometry.radius();
-        assertEquals(1.0, RingVisibility.handoffFog(geometry, edgeAngle, viewBlocks), 1.0e-9,
-                "the live/proxy join should be fully veiled at the nominal chunk edge");
-        assertEquals(0.0, RingVisibility.handoffFog(geometry, startAngle, viewBlocks), 1.0e-9);
-        assertEquals(RingVisibility.handoffFog(geometry, edgeAngle * 1.1, viewBlocks),
-                RingVisibility.handoffFog(geometry, Math.PI * 2.0 - edgeAngle * 1.1,
-                        viewBlocks), 1.0e-9,
-                "both apparent Arch bases need the same haze profile");
-
-        double widthDelta = 64.0;
-        double alongAtCircularEdge = Math.sqrt(viewBlocks * viewBlocks - widthDelta * widthDelta);
-        double circularEdgeAngle = alongAtCircularEdge / geometry.radius();
-        assertEquals(1.0, RingVisibility.handoffFog(geometry, circularEdgeAngle,
-                widthDelta, viewBlocks), 1.0e-9,
-                "the fog ridge must follow the circular chunk boundary across the band");
-        assertEquals(0.0, RingVisibility.proxyTerrainDetail(geometry, circularEdgeAngle,
-                widthDelta, viewBlocks), 1.0e-9,
-                "proxy detail must begin behind the same two-axis chunk boundary");
-    }
-
-    @Test
-    void distantArchTapersSymmetricallyToHalfWidth() {
-        assertEquals(1.0, RingVisibility.distantWidthScale(0.0), 1.0e-12);
-        assertEquals(0.5, RingVisibility.distantWidthScale(Math.PI), 1.0e-12);
-        assertEquals(1.0, RingVisibility.distantWidthScale(Math.PI * 2.0), 1.0e-12);
-        assertTrue(RingVisibility.distantWidthScale(Math.PI / 3.0) > 0.95,
-                "the proxy should retain nearly full width through the live chunk handoff");
-        assertEquals(RingVisibility.distantWidthScale(Math.PI / 3.0),
-                RingVisibility.distantWidthScale(Math.PI * 2.0 - Math.PI / 3.0), 1.0e-12);
+        assertTrue(shortViewPitch > 0.0,
+                "near surface is still below the elevated test camera");
+        assertTrue(longViewPitch < 0.0,
+                "curved distant surface rises above the test camera");
+        assertEquals(23.918, shortViewPitch, 0.01);
+        assertEquals(-32.843, longViewPitch, 0.02);
     }
 
     @Test

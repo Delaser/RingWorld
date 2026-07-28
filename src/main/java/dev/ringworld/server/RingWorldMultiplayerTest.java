@@ -15,6 +15,7 @@ import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.GameMode;
 import net.minecraft.world.WorldProperties;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -35,6 +36,7 @@ public final class RingWorldMultiplayerTest {
     private static boolean combatPassed;
     private static boolean interactionPassed;
     private static boolean vehiclePassed;
+    private static boolean sawVehicleHighSide;
     private static boolean sawCanonicalVehicleWrap;
     private static int vehicleId = -1;
     private static ServerPlayerEntity reconnectBaselineB;
@@ -77,6 +79,11 @@ public final class RingWorldMultiplayerTest {
             // players have joined.
             prepareSeamChunks(world, geometry);
             prepareSeamLane(world, geometry, 120);
+            List<Entity> staleTestBoats = new ArrayList<>();
+            for (Entity entity : world.iterateEntities()) {
+                if (entity instanceof BoatEntity) staleTestBoats.add(entity);
+            }
+            staleTestBoats.forEach(Entity::discard);
             world.setSpawnPoint(WorldProperties.SpawnPoint.create(
                     world.getRegistryKey(), new BlockPos(0, 120, 0), 0.0f, 0.0f));
             world.setBlockState(seamArmMarker(), Blocks.RED_CONCRETE.getDefaultState(), 3);
@@ -122,9 +129,10 @@ public final class RingWorldMultiplayerTest {
         }
 
         if (stage == 1) {
-            maximumAStep = Math.max(maximumAStep,
-                    Math.abs(geometry.shortestCircumferenceDelta(previousAX, playerA.getX())));
-            if (previousAX > geometry.circumferenceBlocks() - 1.0 && playerA.getX() < 8.0) {
+            double canonicalStep = geometry.shortestCircumferenceDelta(previousAX, playerA.getX());
+            maximumAStep = Math.max(maximumAStep, Math.abs(canonicalStep));
+            if (previousAX - playerA.getX() > geometry.circumferenceBlocks() / 2.0
+                    && canonicalStep > 0.0 && canonicalStep < 8.0) {
                 sawCanonicalPlayerWrap = true;
             }
             previousAX = playerA.getX();
@@ -192,9 +200,12 @@ public final class RingWorldMultiplayerTest {
                 if (boat != null) {
                     boat.setPosition(geometry.circumferenceBlocks() - 2.0, 120.0, 3.5);
                     boat.setNoGravity(true);
-                    boat.setVelocity(0.18, 0.0, 0.0);
+                    // Hold the fixture until both clients have acquired it.
+                    // This removes network-startup timing from the seam test.
+                    boat.setVelocity(Vec3d.ZERO);
                     world.spawnEntity(boat);
                     vehicleId = boat.getId();
+                    sawVehicleHighSide = boat.getX() > geometry.circumferenceBlocks() / 2.0;
                 }
                 RingWorldMod.LOGGER.info("[multiplayer] cross-seam interaction result=true; vehicleId={}", vehicleId);
                 stage = 4;
@@ -209,15 +220,22 @@ public final class RingWorldMultiplayerTest {
 
         if (stage == 4) {
             Entity vehicle = world.getEntityById(vehicleId);
-            if (vehicle != null && !sawCanonicalVehicleWrap) {
+            boolean clientsAcquired = clientPassed("A", "vehicle_acquired")
+                    && clientPassed("B", "vehicle_acquired");
+            if (vehicle != null && clientsAcquired && !sawCanonicalVehicleWrap) {
                 // Drive a deterministic server-owned pose. Riderless boat
                 // drag is deliberately excluded; this phase tests vehicle
                 // section reindexing and network interpolation at the seam.
-                double sourceX = vehicle.getX();
+                double sourceX = geometry.wrapX(vehicle.getX());
+                if (sourceX > geometry.circumferenceBlocks() / 2.0) {
+                    sawVehicleHighSide = true;
+                }
                 double nextX = geometry.wrapX(sourceX + 0.18);
                 vehicle.setPosition(nextX, vehicle.getY(), vehicle.getZ());
                 vehicle.setVelocity(Vec3d.ZERO);
-                if (nextX < sourceX) sawCanonicalVehicleWrap = true;
+                if (sawVehicleHighSide && nextX < 3.0) {
+                    sawCanonicalVehicleWrap = true;
+                }
             }
             if (vehicle != null && sawCanonicalVehicleWrap && vehicle.getX() < 3.0) {
                 vehiclePassed = true;
@@ -225,8 +243,11 @@ public final class RingWorldMultiplayerTest {
                 stage = 5;
                 ticks = 0;
             } else if (ticks >= 600) {
-                RingWorldMod.LOGGER.error("[multiplayer] vehicle canonical crossing result=false x={}",
-                        vehicle == null ? Double.NaN : vehicle.getX());
+                RingWorldMod.LOGGER.error(
+                        "[multiplayer] vehicle canonical crossing result=false x={} acquiredA={} acquiredB={}",
+                        vehicle == null ? Double.NaN : vehicle.getX(),
+                        clientPassed("A", "vehicle_acquired"),
+                        clientPassed("B", "vehicle_acquired"));
                 stage = 5;
                 ticks = 0;
             }
@@ -330,7 +351,7 @@ public final class RingWorldMultiplayerTest {
     }
 
     private static void prepareSeamChunks(ServerWorld world, RingGeometry geometry) {
-        int circumferenceChunks = geometry.circumferenceBlocks() / 16;
+        int circumferenceChunks = geometry.circumferenceChunks();
         // Covers the test clients' two-chunk view distance on both canonical
         // sides of the seam, with one extra column for tracking transitions.
         for (int xOffset = -3; xOffset <= 3; xOffset++) {

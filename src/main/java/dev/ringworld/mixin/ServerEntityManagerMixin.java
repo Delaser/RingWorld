@@ -37,7 +37,7 @@ abstract class ServerEntityManagerMixin<T extends EntityLike> implements RingEnt
     @Override
     public void ringworld$ensureLoaded(ChunkPos pos) {
         if (ringworld$geometry == null) return;
-        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceBlocks() / 16);
+        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceChunks());
         ChunkPos canonical = x == pos.x ? pos : new ChunkPos(x, pos.z);
         // FRESH is represented by the map's default value. Avoid changing the
         // tracking level of chunks whose read is already pending or complete.
@@ -69,7 +69,7 @@ abstract class ServerEntityManagerMixin<T extends EntityLike> implements RingEnt
             at = @At("HEAD"), argsOnly = true)
     private ChunkPos ringworld$canonicalTrackingStatus(ChunkPos pos) {
         if (ringworld$geometry == null) return pos;
-        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceBlocks() / 16);
+        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceChunks());
         return x == pos.x ? pos : new ChunkPos(x, pos.z);
     }
 
@@ -77,7 +77,7 @@ abstract class ServerEntityManagerMixin<T extends EntityLike> implements RingEnt
     private long ringworld$canonicalLoadedStatus(long packedPos) {
         if (ringworld$geometry == null) return packedPos;
         ChunkPos pos = new ChunkPos(packedPos);
-        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceBlocks() / 16);
+        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceChunks());
         return x == pos.x ? packedPos : ChunkPos.toLong(x, pos.z);
     }
 
@@ -87,7 +87,7 @@ abstract class ServerEntityManagerMixin<T extends EntityLike> implements RingEnt
     }, at = @At("HEAD"), argsOnly = true)
     private ChunkPos ringworld$canonicalTickStatus(ChunkPos pos) {
         if (ringworld$geometry == null) return pos;
-        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceBlocks() / 16);
+        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceChunks());
         return x == pos.x ? pos : new ChunkPos(x, pos.z);
     }
 

@@ -10,6 +10,8 @@ import net.minecraft.world.chunk.WorldChunk;
 /** Boundary operations performed during chunk generation, never live ticks. */
 public final class RingGenerationBoundary {
     public static final int RIM_THICKNESS = 5;
+    /** Increment when rim placement/material semantics change. */
+    public static final int RIM_STYLE_VERSION = 1;
 
     private RingGenerationBoundary() { }
 

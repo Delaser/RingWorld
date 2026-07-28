@@ -17,6 +17,9 @@ import java.nio.file.Path;
 /** Client copy of the immutable settings received during login. */
 public final class ClientRingState {
     private static volatile RingGeometry geometry;
+    private static volatile int wallHeightBlocks;
+    private static volatile int surfaceReferenceY;
+    private static volatile long layoutFingerprint;
     @Nullable private static volatile RingPosition cameraPosition;
     private static volatile long cameraSeamCrossings;
     private static volatile long seamCorrectionPackets;
@@ -30,8 +33,12 @@ public final class ClientRingState {
 
     private ClientRingState() { }
 
-    public static void set(RingGeometry newGeometry) {
+    public static void set(RingGeometry newGeometry, int newWallHeightBlocks,
+                           int newSurfaceReferenceY, long newLayoutFingerprint) {
         geometry = newGeometry;
+        wallHeightBlocks = newWallHeightBlocks;
+        surfaceReferenceY = newSurfaceReferenceY;
+        layoutFingerprint = newLayoutFingerprint;
         cameraPosition = null;
         cameraSeamCrossings = 0;
         seamCorrectionPackets = 0;
@@ -49,6 +56,10 @@ public final class ClientRingState {
                 && client.world.getRegistryKey() == World.OVERWORLD
                 ? geometry : null;
     }
+
+    public static int wallHeightBlocks() { return wallHeightBlocks; }
+    public static int surfaceReferenceY() { return surfaceReferenceY; }
+    public static long layoutFingerprint() { return layoutFingerprint; }
 
     /**
      * Tracks the continuous client presentation chart. It also protects against a canonical
@@ -171,6 +182,9 @@ public final class ClientRingState {
     public static void clear() {
         saveTerrainAtlasIfDue(true);
         geometry = null;
+        wallHeightBlocks = 0;
+        surfaceReferenceY = 0;
+        layoutFingerprint = 0L;
         cameraPosition = null;
         cameraSeamCrossings = 0;
         seamCorrectionPackets = 0;

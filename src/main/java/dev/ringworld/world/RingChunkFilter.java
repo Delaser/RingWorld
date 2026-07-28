@@ -12,9 +12,8 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
                               int viewDistance, int circumferenceChunks,
                               int minChunkZ, int maxChunkZ) implements ChunkFilter {
     public RingChunkFilter(ChunkPos logicalCenter, int viewDistance, RingGeometry geometry) {
-        this(logicalCenter, viewDistance, geometry.circumferenceBlocks() / 16,
-                Math.floorDiv(geometry.minWidthZ(), 16),
-                Math.floorDiv(geometry.maxWidthZ(), 16));
+        this(logicalCenter, viewDistance, geometry.circumferenceChunks(),
+                geometry.minChunkZ(), geometry.maxChunkZ());
     }
 
     public RingChunkFilter(ChunkPos logicalCenter, int viewDistance, int circumferenceChunks,

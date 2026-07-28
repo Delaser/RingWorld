@@ -7,6 +7,7 @@ import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingWorldGeneratorAccess;
 import dev.ringworld.world.RingWorldSettings;
+import dev.ringworld.world.RingNoiseCoordinates;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
@@ -65,6 +66,7 @@ public final class RingWorldServer {
     private RingWorldServer() { }
 
     public static void register() {
+        RingTerrainAtlasServer.registerCommands();
         ServerTickEvents.END_WORLD_TICK.register(RingWorldServer::tickRingWorld);
         ServerChunkEvents.CHUNK_LOAD.register((world, chunk) -> {
             if (!isOverworld(world)) return;
@@ -79,11 +81,15 @@ public final class RingWorldServer {
                         .putIfAbsent(chunk.getPos().toLong(), chunk);
             }
         });
-        ServerWorldEvents.LOAD.register((server, world) -> attachPersistedGeometry(world));
+        ServerWorldEvents.LOAD.register((server, world) -> {
+            attachWorldGeometry(world);
+            if (isOverworld(world)) RingTerrainAtlasServer.load(world);
+        });
         ServerWorldEvents.UNLOAD.register((server, world) -> {
             RingTerrainAtlasServer.unload(world);
             WORLD_GEOMETRY.remove(world);
             PENDING_LEGACY_RIM_MIGRATIONS.remove(world);
+            if (isOverworld(world)) RingNoiseCoordinates.clearCache();
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             RingWorldMultiplayerTest.prepareWaitingPlayer(handler.player);
@@ -96,25 +102,18 @@ public final class RingWorldServer {
         return world.getRegistryKey() == World.OVERWORLD;
     }
 
-    /** Called after ServerWorld owns its chunk manager and persistent state is available. */
-    private static void attachPersistedGeometry(ServerWorld world) {
-        if (!isOverworld(world)) return;
+    /**
+     * Installs saved geometry as soon as the constructed ServerWorld owns its
+     * persistent-state manager and chunk generator. Bootstrap config is used
+     * only when {@link RingWorldSettings#get} creates this world's first state.
+     */
+    public static RingGeometry attachWorldGeometry(ServerWorld world) {
+        if (!isOverworld(world)) return null;
         RingWorldSettings settings = RingWorldSettings.get(world);
         RingGeometry geometry = settings.geometry();
         WORLD_GEOMETRY.put(world, geometry);
-        // Ring dimensions remain immutable. Rim height and style are
-        // decorative, so existing worlds intentionally follow current config.
-        attachGeneratorSettings(world, geometry, RingWorldConfig.load().wallHeightBlocks());
-        RingTerrainAtlasServer.load(world);
-    }
-
-    /** Safe during ServerChunkManager construction: only bootstrap config may be read then. */
-    public static void attachBootstrapGeometry(ChunkGenerator generator) {
-        RingWorldConfig config = RingWorldConfig.load();
-        if (generator instanceof RingWorldGeneratorAccess access) {
-            access.ringworld$setGeometry(new RingGeometry(config.widthBlocks(), config.circumferenceBlocks()));
-            access.ringworld$setWallHeight(config.wallHeightBlocks());
-        }
+        attachGeneratorSettings(world, geometry, settings.wallHeightBlocks());
+        return geometry;
     }
 
     private static void attachGeneratorSettings(ServerWorld world, RingGeometry geometry, int wallHeightBlocks) {
@@ -127,7 +126,8 @@ public final class RingWorldServer {
 
     /** Allocation-free geometry lookup for chunk and network hot paths. */
     public static RingGeometry geometryFor(ServerWorld world) {
-        return WORLD_GEOMETRY.computeIfAbsent(world, unused -> RingWorldSettings.get(world).geometry());
+        RingGeometry geometry = WORLD_GEOMETRY.get(world);
+        return geometry != null ? geometry : attachWorldGeometry(world);
     }
 
     public static void recordNonCanonicalHolderRequest() {
@@ -189,7 +189,7 @@ public final class RingWorldServer {
 
         long started = System.nanoTime();
         boolean migrated = RingGenerationBoundary.migrateLegacyRim(entry.getValue(), geometry,
-                RingWorldConfig.load().wallHeightBlocks());
+                RingWorldSettings.get(world).wallHeightBlocks());
         if (migrated) {
             double elapsedMs = (System.nanoTime() - started) / 1_000_000.0;
             RingWorldMod.LOGGER.info("Migrated legacy rim chunk {} in {} ms ({} queued)",
@@ -330,9 +330,10 @@ public final class RingWorldServer {
                 BlockPos seamBlock = new BlockPos(2, 119, 0);
                 player.networkHandler.sendPacket(new BlockUpdateS2CPacket(world, seamBlock));
                 TEST_PROGRESS.put(player.getUuid(), new TestProgress(5, progress.ticks + 1));
-            } else if (progress.stage == 10 && progress.ticks >= 40) {
-                int crossings = PLAYER_SEAM_CROSSINGS.getOrDefault(player.getUuid(), 0);
-                RingWorldMod.LOGGER.info("[test] canonical server seam wraps={}", crossings);
+            } else if (progress.stage == 10 && progress.ticks >= 240) {
+                int packetFolds = PLAYER_SEAM_CROSSINGS.getOrDefault(player.getUuid(), 0);
+                RingWorldMod.LOGGER.info("[test] presentation packets folded into canonical plane={}",
+                        packetFolds);
                 RingWorldMod.LOGGER.info("[test] canonical server player x={}, inPlane={}", player.getX(),
                         player.getX() >= 0.0 && player.getX() < geometry.circumferenceBlocks());
                 boolean seamInteraction = world.getBlockState(new BlockPos(2, 119, 0)).isAir();
@@ -354,8 +355,19 @@ public final class RingWorldServer {
                 logGameplaySeamProbes(world, player, geometry);
                 TEST_PROGRESS.put(player.getUuid(), new TestProgress(6, 0));
             } else if (progress.stage == 6
-                    && (PLAYER_SEAM_CROSSINGS.getOrDefault(player.getUuid(), 0) >= 2
-                    || progress.ticks >= 12_000)) {
+                    && player.getX() >= geometry.circumferenceBlocks() - 16.0) {
+                // The client has traversed the actual canonical plane rather
+                // than merely sending several packets from one presentation
+                // chart. Wait for the following low-X pose before declaring a
+                // complete second circuit.
+                TEST_PROGRESS.put(player.getUuid(), new TestProgress(11, 0));
+            } else if (progress.stage == 6 && progress.ticks >= 12_000) {
+                RingWorldMod.LOGGER.warn(
+                        "[test] timed out before reaching the far side of the second circuit at x={}",
+                        player.getX());
+                TEST_PROGRESS.put(player.getUuid(), new TestProgress(11, 12_000));
+            } else if (progress.stage == 11
+                    && (player.getX() < 16.0 || progress.ticks >= 12_000)) {
                 var reloadedMovingEntities = world.getOtherEntities(player,
                         player.getBoundingBox().expand(8.0),
                         entity -> entity instanceof ItemEntity item && item.getStack().isOf(Items.EMERALD));
@@ -367,9 +379,8 @@ public final class RingWorldServer {
                         4.0, 120.0, 4.0);
                 boolean periodicBlockCollision = world.getBlockCollisions(player, wrappedBlockBox)
                         .iterator().hasNext();
-                RingWorldMod.LOGGER.info("[test] second canonical seam wrap={}, count={}, x={}, inPlane={}",
-                        PLAYER_SEAM_CROSSINGS.getOrDefault(player.getUuid(), 0) >= 2,
-                        PLAYER_SEAM_CROSSINGS.getOrDefault(player.getUuid(), 0), player.getX(),
+                RingWorldMod.LOGGER.info("[test] second canonical seam circuit={}, x={}, inPlane={}",
+                        player.getX() < 16.0, player.getX(),
                         player.getX() >= 0.0 && player.getX() < geometry.circumferenceBlocks());
                 RingWorldMod.LOGGER.info("[test] late moving entity tracking={}, count={}, reloadedX={}",
                         lateMovingEntity, reloadedMovingEntities.size(),
@@ -391,7 +402,7 @@ public final class RingWorldServer {
                         && RingGenerationBoundary.isRimMaterial(world.getBlockState(
                         new BlockPos(100, 64,
                                 geometry.minWidthZ() + RingGenerationBoundary.RIM_THICKNESS - 1)));
-                int rimTop = world.getBottomY() + RingWorldConfig.load().wallHeightBlocks();
+                int rimTop = world.getBottomY() + RingWorldSettings.get(world).wallHeightBlocks();
                 boolean shortenedRimTopClear = !RingGenerationBoundary.isRimMaterial(
                         world.getBlockState(new BlockPos(100, rimTop, geometry.minWidthZ())));
                 RingWorldMod.LOGGER.info("[test] async boundary exteriorVoid={}, texturedRimPresent={}, shortenedTopClear={}",
@@ -543,10 +554,14 @@ public final class RingWorldServer {
                 || blastItem.squaredDistanceTo(2.5, 121.0, 26.5) > 0.0001);
         RingWorldMod.LOGGER.info("[test] projectile entity collision across seam={}, targetHealth={}",
                 projectileHit, target instanceof ZombieEntity zombie ? zombie.getHealth() : Float.NaN);
-        RingWorldMod.LOGGER.info("[test] projectile state present={}, x={}, y={}, velocity={}",
+        RingWorldMod.LOGGER.info(
+                "[test] projectile state present={}, x={}, y={}, velocity={}, age={}, chunk={}, tickEligible={}",
                 projectile != null, projectile == null ? Double.NaN : projectile.getX(),
                 projectile == null ? Double.NaN : projectile.getY(),
-                projectile == null ? Vec3d.ZERO : projectile.getVelocity());
+                projectile == null ? Vec3d.ZERO : projectile.getVelocity(),
+                projectile == null ? -1 : projectile.age,
+                projectile == null ? "missing" : projectile.getChunkPos(),
+                projectile != null && world.shouldTickEntityAt(projectile.getBlockPos()));
         RingWorldMod.LOGGER.info("[test] vehicle canonical across seam={}, x={}",
                 vehicleCrossed, vehicle == null ? Double.NaN : vehicle.getX());
         RingWorldMod.LOGGER.info("[test] AI nearest-image navigation across seam={}, x={}",

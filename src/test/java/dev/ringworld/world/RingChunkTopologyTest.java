@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingChunkTopologyTest {
+    /** Pure graph fixture only; it is deliberately smaller than playable render geometry. */
     private final RingChunkTopology topology = new RingChunkTopology(100);
 
     @Test
@@ -21,6 +22,20 @@ class RingChunkTopologyTest {
         assertEquals(1, topology.distanceX(99, 0));
         assertEquals(2, topology.distanceX(99, 1));
         assertEquals(2, topology.distanceX(-1, 101));
+    }
+
+    @Test
+    void entitySimulationDistanceUsesTheNearestPeriodicChunk() {
+        RingGeometry geometry = new RingGeometry(416, 2_048);
+
+        assertTrue(RingChunkCoordinates.isWithinSimulationDistance(
+                127, 0, 0, 0, 5, geometry));
+        assertTrue(RingChunkCoordinates.isWithinSimulationDistance(
+                0, 5, 127, 0, 5, geometry));
+        assertFalse(RingChunkCoordinates.isWithinSimulationDistance(
+                0, 6, 127, 0, 5, geometry));
+        assertFalse(RingChunkCoordinates.isWithinSimulationDistance(
+                64, 0, 0, 0, 5, geometry));
     }
 
     @Test
