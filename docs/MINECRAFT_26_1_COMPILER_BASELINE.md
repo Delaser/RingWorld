@@ -119,10 +119,15 @@ lane. The first 26.1.2 client compile reported 21 source diagnostics:
 The primary branch removed the seven mechanical `ChunkPos` diagnostics, ported
 the world-creation screen to `GuiGraphicsExtractor`, and moved the frame
 sampling callback to `LevelRenderEvents.END_MAIN`. A second detached probe
-reports eight diagnostics, all in the sky/entity mixins and complete-ring
-renderer. Those remaining rendering failures require official-source
-inspection; they must not be papered over because sky order, lightmap binding,
-and the complete-ring proxy are core visual behavior.
+reported eight diagnostics in the sky/entity mixins and complete-ring
+renderer. Source inspection established the new level render-state packages,
+Overworld clock accessor, `ColorTargetState`/`DepthStencilState` pipeline
+model, exact camera far-plane formula, and `GameRenderer.levelLightmap()`.
+After applying those changes, the detached `compileClientJava` probe passes.
+
+This is a source-compile checkpoint, not runtime rendering evidence. Mixin
+application, shader ABI, sky order, depth behavior, and live/proxy alignment
+still require the runtime gates after S2 makes the main build whole.
 
 ## Next ownership split
 

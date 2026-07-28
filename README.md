@@ -15,9 +15,10 @@ The Nether and End remain vanilla.
 > 26.1.2. Its frozen compiler baseline recorded 95 common errors; the first
 > primary source pass leaves five storage-owned errors. A detached client
 > probe inventoried 21 follow-on diagnostics; client coordinate, GUI
-> extraction, and Fabric render-event updates have reduced that probe to eight
-> renderer/mixin errors. It is not playable yet. The validated server, client
-> packages, and rollback tag remain Minecraft 1.21.11
+> extraction, Fabric render-event, render-state, and complete-ring pipeline
+> updates now make that detached client compile pass. Whole-project/runtime
+> validation still depends on the storage lane. It is not playable yet. The
+> validated server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
 
 ## What it feels like to play

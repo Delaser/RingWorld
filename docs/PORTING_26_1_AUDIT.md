@@ -273,12 +273,11 @@ data renames are:
 - get/create flow -> `get`, `set`, or `computeIfAbsent` with the new
   `SavedDataType`.
 
-S2 must determine the cleanest supported way to obtain the exact Overworld
-dimension path. `MinecraftServer.getWorldPath(LevelResource)` still returns a
-root resource and is not the replacement. The `LevelStorageAccess` is supplied
-to `ServerLevel`/`ServerChunkCache` constructors but is not exposed by a
-public `ServerLevel` accessor in the inspected source. Prefer a narrow
-accessor/service established during Phase 2 over reconstructing
+The primary lane established `RingWorldStorageAccess.dimensionPath(ServerLevel)`
+as a narrow read-only bridge to
+`LevelStorageAccess.getDimensionPath(level.dimension())`.
+`MinecraftServer.getWorldPath(LevelResource)` still returns a root resource
+and is not the replacement. S2 consumes the bridge and must not reconstruct
 `DIM-1`/`DIM1`/namespaced directory strings.
 
 Migration requirements discovered for S2:

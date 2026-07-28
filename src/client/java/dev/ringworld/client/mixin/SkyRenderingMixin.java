@@ -9,7 +9,7 @@ import dev.ringworld.world.RingSkyCycle;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.SkyRenderer;
-import net.minecraft.client.renderer.state.SkyRenderState;
+import net.minecraft.client.renderer.state.level.SkyRenderState;
 import net.minecraft.world.level.MoonPhase;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Vector4f;
@@ -52,7 +52,7 @@ abstract class SkyRenderingMixin {
         state.moonAngle = RingSkyCycle.FIXED_SUN_ANGLE_RADIANS;
         state.starAngle = 0.0F;
         state.sunriseAndSunsetColor = 0;
-        ringworld$sunVisual = RingSkyCycle.sunVisual(world.getDayTime() + tickProgress);
+        ringworld$sunVisual = RingSkyCycle.sunVisual(world.getOverworldClockTime() + tickProgress);
         ringworld$cameraY = (float)camera.position().y;
         ringworld$cameraZ = (float)camera.position().z;
         ringworld$cameraX = camera.position().x;

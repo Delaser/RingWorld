@@ -3,8 +3,11 @@ package dev.ringworld.client.render;
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
 import com.mojang.blaze3d.pipeline.BlendFunction;
+import com.mojang.blaze3d.pipeline.ColorTargetState;
+import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.NativeImage;
+import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.shaders.UniformType;
 import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
@@ -54,9 +57,10 @@ public final class RingSurfaceTextureRenderer {
                     .withSampler("Sampler2")
                     .withUniform("Fog", UniformType.UNIFORM_BUFFER)
                     .withUniform("Globals", UniformType.UNIFORM_BUFFER)
-                    .withBlend(BlendFunction.TRANSLUCENT)
+                    .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
                     .withCull(false)
-                    .withDepthWrite(false)
+                    .withDepthStencilState(
+                            new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
                     .withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR,
                             VertexFormat.Mode.TRIANGLES)
                     .build());
@@ -95,7 +99,9 @@ public final class RingSurfaceTextureRenderer {
                     geometry.oppositeReferenceSurfaceDistance(camera.y);
             double oppositeWidthEdgeDistance =
                     geometry.maximumReferenceSurfaceDistance(camera.y, camera.z);
-            float vanillaFarPlane = client.gameRenderer.getDepthFar();
+            float vanillaFarPlane = Math.max(
+                    client.options.getEffectiveRenderDistance() * 64.0F,
+                    client.options.cloudRange().get() * 16.0F);
             RingWorldMod.LOGGER.info(
                     "Ring proxy projection: level far plane={} blocks, radial-up opposite "
                             + "surface={} blocks, far width edge={} blocks; "
@@ -137,7 +143,7 @@ public final class RingSurfaceTextureRenderer {
             // synchronized with time, weather, gamma, lightning, darkness,
             // and night vision instead of applying a hand-tuned grey scalar.
             pass.bindTexture("Sampler2",
-                    client.gameRenderer.lightTexture().getTextureView(),
+                    client.gameRenderer.levelLightmap(),
                     RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
             pass.setVertexBuffer(0, vertexBuffer);
             pass.draw(0, vertexCount);

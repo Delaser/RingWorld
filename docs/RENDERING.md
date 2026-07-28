@@ -201,7 +201,9 @@ Walking does not rebuild the mesh. Per frame, the renderer:
 - supplies actual view distance, circumference, camera X phase, and camera Z
   to the custom surface shader;
 - binds Minecraft's current lightmap beside the canonical terrain texture;
-- draws with culling and depth writes disabled.
+- draws with culling disabled, translucent colour blending, LEQUAL depth
+  testing, and depth writes disabled. In 26.1 these are explicit
+  `ColorTargetState` and `DepthStencilState` values.
 
 It runs during celestial rendering. `RingRenderProfile` clamps every handoff
 endpoint to the same physical half-circumference, including when a requested

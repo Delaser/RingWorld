@@ -12,8 +12,8 @@ Active port checkpoint: Minecraft 26.1.2/Java 25 compiler baseline; see
 95 common errors; the first primary source pass leaves five S2-owned storage
 errors. A detached client probe found 21 client diagnostics; the seven
 mechanical `ChunkPos` cases and six GUI/Fabric render-event cases are already
-ported, leaving eight renderer/mixin diagnostics. The port is not playable
-yet.
+ported. Source-audited render-state and complete-ring pipeline updates now
+make that detached client compile pass. The port is not playable yet.
 
 ## What this project is
 
