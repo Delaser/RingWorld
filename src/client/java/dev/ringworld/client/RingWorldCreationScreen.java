@@ -8,7 +8,7 @@ import dev.ringworld.world.RingWorldSettings;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Locale;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ConfirmScreen;
@@ -137,24 +137,23 @@ public final class RingWorldCreationScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
-        // Screen.renderWithTooltip already rendered this screen's panorama,
-        // blur, and darkening layer before dispatching here. A second
-        // renderBackground call is illegal on 1.21.11 because GuiRenderState
-        // permits only one blur layer per frame.
-        super.render(context, mouseX, mouseY, deltaTicks);
+    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
+        // Screen.extractRenderStateWithTooltipAndSubtitles already extracted
+        // this screen's panorama, blur, and darkening layer. Keep this method
+        // limited to widgets and foreground text so the frame owns one blur.
+        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
         int center = width / 2;
-        context.drawCenteredString(font, title, center, 18, 0xFFFFFF);
-        context.drawString(font, Component.literal("Circumference (blocks)"),
+        context.centeredText(font, title, center, 18, 0xFFFFFF);
+        context.text(font, Component.literal("Circumference (blocks)"),
                 center - 100, 46, 0xA0A0A0);
-        context.drawString(font, Component.literal("Finite width (blocks)"),
+        context.text(font, Component.literal("Finite width (blocks)"),
                 center - 100, 82, 0xA0A0A0);
-        context.drawString(font, Component.literal("Rim wall height (from Y=-64)"),
+        context.text(font, Component.literal("Rim wall height (from Y=-64)"),
                 center - 100, 118, 0xA0A0A0);
 
         int y = 200;
         if (inputError != null) {
-            context.drawCenteredString(font,
+            context.centeredText(font,
                     Component.literal(inputError), center, y, 0xFF6060);
         } else if (report != null) {
             RingRenderProfile renderProfile = RingRenderProfile.create(
@@ -187,20 +186,20 @@ public final class RingWorldCreationScreen extends Screen {
                                     formatMiB(renderProfile.estimatedGpuMeshBytes()),
                                     formatMiB(renderProfile.estimatedTextureBuildScratchBytes())));
             if (!report.errors().isEmpty()) {
-                context.drawCenteredString(font,
+                context.centeredText(font,
                         Component.literal(report.errors().getFirst()), center, y + 78, 0xFF6060);
             } else if (!report.warnings().isEmpty()) {
-                context.drawCenteredString(font,
+                context.centeredText(font,
                         Component.literal(report.warnings().getFirst()), center, y + 78, 0xFFD060);
             }
         }
-        context.drawCenteredString(font,
+        context.centeredText(font,
                 Component.literal("Dimensions become immutable when the Overworld is first loaded."),
                 center, height - 50, 0xFFD060);
     }
 
-    private void drawReportLine(GuiGraphics context, int y, String value) {
-        context.drawCenteredString(font, Component.literal(value),
+    private void drawReportLine(GuiGraphicsExtractor context, int y, String value) {
+        context.centeredText(font, Component.literal(value),
                 width / 2, y, 0xD0D0D0);
     }
 

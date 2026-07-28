@@ -230,10 +230,10 @@ the process lifetime; restart Minecraft after editing it manually. The
 world-creation editor updates the cache itself.
 
 When changing the creation editor, open it from Create World and leave it
-visible for multiple frames at GUI scale 4. Minecraft 1.21.11 permits only one
-menu-blur layer per frame; custom screens must not call `renderBackground`
-inside `render`, because `Screen.renderWithTooltip` already performed that
-pass.
+visible for multiple frames at GUI scale 4. Minecraft 26.1 permits only one
+menu-blur layer per frame; custom screens must not call a background
+extraction method inside `extractRenderState`, because
+`Screen.extractRenderStateWithTooltipAndSubtitles` already owns that pass.
 
 ## Non-destructive join screenshot
 

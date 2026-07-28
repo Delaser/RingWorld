@@ -30,8 +30,9 @@ The first primary common pass has reduced those 95 errors to five
 storage-owned diagnostics while preserving the Phase 2 checkpoint in history.
 A detached client probe temporarily shimmed only those five errors, exposed 21
 client diagnostics, and the primary branch has removed the seven mechanical
-`ChunkPos` cases. Direct whole-project client validation still waits for S2's
-saved-data/storage integration.
+`ChunkPos` cases plus six GUI extraction/Fabric render-event cases. Eight
+renderer/mixin diagnostics remain. Direct whole-project client validation
+still waits for S2's saved-data/storage integration.
 
 The “Implemented” sections below describe that validated 1.21.11 behavior and
 the contract the port must restore. They are not claims that the active 26.1.2

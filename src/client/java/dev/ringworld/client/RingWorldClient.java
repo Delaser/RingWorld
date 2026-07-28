@@ -16,7 +16,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -151,7 +151,7 @@ public final class RingWorldClient implements ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             clearRingSession();
         });
-        WorldRenderEvents.END_MAIN.register(context -> {
+        LevelRenderEvents.END_MAIN.register(context -> {
             recordTestFrame();
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {

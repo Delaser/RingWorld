@@ -11,7 +11,9 @@ Active port checkpoint: Minecraft 26.1.2/Java 25 compiler baseline; see
 `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`. The frozen Phase 2 checkpoint has
 95 common errors; the first primary source pass leaves five S2-owned storage
 errors. A detached client probe found 21 client diagnostics; the seven
-mechanical `ChunkPos` cases are already ported. The port is not playable yet.
+mechanical `ChunkPos` cases and six GUI/Fabric render-event cases are already
+ported, leaving eight renderer/mixin diagnostics. The port is not playable
+yet.
 
 ## What this project is
 
@@ -266,8 +268,9 @@ changing version numbers.
 - `runLayoutSwitchClient` opens two existing saves in one JVM and stops after
   logging its result. Keep it non-destructive: it may save normally, but must
   not move players or edit terrain.
-- `RingWorldCreationScreen.render` must not call `renderBackground`.
-  Minecraft 1.21.11's `Screen.renderWithTooltip` already owns the frame's
+- `RingWorldCreationScreen.extractRenderState` must not call a background
+  extraction method. Minecraft 26.1's
+  `Screen.extractRenderStateWithTooltipAndSubtitles` already owns the frame's
   single legal menu-blur pass.
 - The reusable multiplayer fixture must clear stale automated boats, wait for
   both clients to acknowledge the new boat before moving it, detect folds by

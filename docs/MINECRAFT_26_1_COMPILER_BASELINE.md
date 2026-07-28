@@ -116,8 +116,11 @@ lane. The first 26.1.2 client compile reported 21 source diagnostics:
 | client packet/chart mapping | 4 | `ChunkPos` record access |
 | debug position display | 3 | removed `ChunkPos(BlockPos)` constructor and record access |
 
-The primary branch immediately removes the seven mechanical `ChunkPos`
-diagnostics. The remaining rendering/UI diagnostics require official-source
+The primary branch removed the seven mechanical `ChunkPos` diagnostics, ported
+the world-creation screen to `GuiGraphicsExtractor`, and moved the frame
+sampling callback to `LevelRenderEvents.END_MAIN`. A second detached probe
+reports eight diagnostics, all in the sky/entity mixins and complete-ring
+renderer. Those remaining rendering failures require official-source
 inspection; they must not be papered over because sky order, lightmap binding,
 and the complete-ring proxy are core visual behavior.
 
