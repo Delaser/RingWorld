@@ -22,7 +22,7 @@ Expected artifact:
 build/libs/ringworld-0.1.0.jar
 ```
 
-The 2026-07-28 suite contains 69 unit/parameterized cases:
+The 2026-07-28 suite contains 73 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |

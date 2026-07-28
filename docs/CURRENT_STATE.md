@@ -11,7 +11,7 @@ This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
 
 Port Phase 1 is complete locally: the project now uses official Mojang
-mappings while remaining on Minecraft 1.21.11. All 69 tests, the destructive
+mappings while remaining on Minecraft 1.21.11. All 73 tests, the destructive
 safe-small harness, same-process layout switch, dedicated two-client scenario,
 and production tangent/radial projection capture passed without changing the
 wire protocol, saved formats, or topology behavior. The only

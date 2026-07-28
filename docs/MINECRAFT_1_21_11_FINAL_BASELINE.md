@@ -15,7 +15,7 @@ launcher state remain outside Git.
 
 ## Build
 
-`./gradlew test build` passed all 69 unit and parameterized cases.
+`./gradlew test build` passed all 73 unit and parameterized cases.
 
 ```text
 0c615ddb70700b666d8e72d5db7aac7d787eae1340bb6e0290accbd4f511e662  ringworld-0.1.0.jar

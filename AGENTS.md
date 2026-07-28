@@ -119,7 +119,7 @@ The expected mod artifact is:
 build/libs/ringworld-0.1.0.jar
 ```
 
-At the time of this audit there are 69 unit/parameterized cases. A green unit build does not
+At the time of this audit there are 73 unit/parameterized cases. A green unit build does not
 prove packet or rendering mixins work in-game; use the integration procedures
 in [`docs/TESTING.md`](docs/TESTING.md).
 

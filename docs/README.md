@@ -16,6 +16,8 @@ Start here:
 - [`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md): gated
   Minecraft 26.1.2 port plan, primary/secondary agent ownership, integration
   order, validation gates, and deployment criteria.
+- [`PORTING_26_1_AUDIT.md`](PORTING_26_1_AUDIT.md): official-source audit of
+  the 26.1.2 toolchain, Fabric API changes, and all 35 candidate mixin targets.
 - [`MINECRAFT_1_21_11_FINAL_BASELINE.md`](MINECRAFT_1_21_11_FINAL_BASELINE.md):
   immutable pre-port tag, test results, artifact and screenshot hashes, and
   protected rollback inventory.

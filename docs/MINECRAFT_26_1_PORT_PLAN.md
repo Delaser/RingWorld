@@ -180,7 +180,7 @@ Exit gate:
 
 Completion evidence:
 
-- `./gradlew clean test build` passed all 69 cases;
+- `./gradlew clean test build` passed all 73 cases;
 - the safe-small local harness passed terrain, two natural seam crossings,
   block/entity/projectile/vehicle/AI/fluid/explosion/collision, rim, void, and
   frame-pacing probes;
@@ -307,6 +307,9 @@ The secondary agent owns bounded tasks that can be integrated independently.
 Start: immediately
 
 Branch: `agent2/26.1-audit`
+
+Status: complete and integrated on 2026-07-28; see
+[`PORTING_26_1_AUDIT.md`](PORTING_26_1_AUDIT.md)
 
 Create `docs/PORTING_26_1_AUDIT.md` containing:
 
