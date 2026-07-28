@@ -5,7 +5,7 @@ repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
 Last code and documentation audit: 2026-07-28, covering the implementation
-published in commit `9260ace`.
+merged into `main` at commit `97f6a97`.
 
 ## What this project is
 

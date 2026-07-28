@@ -3,7 +3,7 @@
   "id": "ringworld",
   "version": "${version}",
   "name": "RingWorld",
-  "description": "A finite, looping cylindrical Overworld.",
+  "description": "Turns the Overworld into a finite, seamless cylindrical ringworld with periodic gameplay and curved rendering.",
   "authors": ["RingWorld contributors"],
   "license": "MIT",
   "environment": "*",
