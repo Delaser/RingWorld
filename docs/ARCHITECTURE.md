@@ -158,6 +158,9 @@ Clients independently verify it during login, and the terrain-atlas world hash
 adds atlas format/sample semantics. The derivation and remaining cross-size
 work are tracked in
 [`DIMENSION_SCALING_PLAN.md`](DIMENSION_SCALING_PLAN.md).
+The current embedded atlas scheduler and its planned reusable, resumable
+service API are described in
+[`ATLAS_PREGENERATION_PLAN.md`](ATLAS_PREGENERATION_PLAN.md).
 
 ## Seam movement
 

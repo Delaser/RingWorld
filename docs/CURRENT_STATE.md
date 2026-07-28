@@ -22,7 +22,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 83 unit/parameterized cases pass, and Loom produces
+temporary shims, all 89 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -55,7 +55,7 @@ with no frames above 50 ms. The full-atlas run averaged 8.41/8.37 ms and
 recorded one isolated frame above 50 ms in each measured phase while
 generation/upload work was active. The captures prove that the 26.1 complete
 ring pipeline executes; multi-size colour/handoff art review remains open.
-The current 15,552×256 default is unit/resource validated but has not yet run
+The current 16,384×256 default is unit/resource validated but has not yet run
 the full 26.1 production-size visual matrix.
 
 An isolated dedicated 2,048×416 server plus two 26.1 clients also completed the
@@ -66,7 +66,8 @@ block interaction/update, shared boat visibility, long teleport and periodic
 return, disconnect, and reconnect all passed. The server reported
 `full scenario result=true` and stopped cleanly.
 
-Multi-size visual review, UI completion, packaging, and staging gates remain.
+Multi-size visual review, automated-harness completion, packaging, and staging
+gates remain.
 The only playable implementation is still the frozen `mc-1.21.11-final` tag.
 
 The “Implemented” sections below describe validated 1.21.11 behavior and the
@@ -295,8 +296,8 @@ client/runtime gate passes.
 - Broad multi-seed structure/carver/feature coverage at the seam is incomplete.
 - Periodic density noise does not guarantee every vanilla structure placement
   seed or third-party generator treats X=0/C as adjacent.
-- The new 15,552×256 production default still requires 15,552 canonical chunks
-  and 62,208 atlas cells; its real end-to-end pregeneration benchmark remains
+- The new 16,384×256 production default still requires 16,384 canonical chunks
+  and 65,536 atlas cells; its real end-to-end pregeneration benchmark remains
   open.
 - Existing Overworld region files without RingWorld saved settings are
   explicitly rejected; no conversion tool exists.
@@ -418,7 +419,9 @@ Priorities are ordered by player-visible value and architectural leverage.
    - decide how block edits invalidate surface cells;
    - support progressive rendering safely if desired;
    - benchmark production-scale memory/network/pregeneration;
-   - expose admin status/control commands.
+   - extract the current scheduler into the resumable service and headless
+     prewarm workflow specified in `ATLAS_PREGENERATION_PLAN.md`;
+   - retain the implemented admin status/pause/resume commands.
 5. **Broaden multiplayer gameplay regression**
    - death/respawn, portals, maps, more vehicles/projectiles;
    - redstone and cross-seam block entities;

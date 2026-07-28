@@ -46,7 +46,7 @@ error do not collapse into the ring centre.
 | Geometry | Radius | Physical centre Y | Clearance to Y=320 | Opposite ring width | Canonical chunks | Atlas cells |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Retired/legacy, 1600×320 | 254.648 | 318.648 | **-1.352** | 34.88° | 2,000 | 8,000 |
-| Production default, 15552×256 | 2475.178 | 2539.178 | 2219.178 | 2.96° | 15,552 | 62,208 |
+| Production default, 16384×256 | 2607.595 | 2671.595 | 2351.595 | 2.81° | 16,384 | 65,536 |
 | Active safe-small reference, 2048×416 | 325.949 | 389.949 | 69.949 | 35.39° | 3,328 | 13,312 |
 
 The current 100-chunk circumference works at ordinary terrain elevations, but
@@ -84,7 +84,7 @@ Every value in the following registry belongs to one of four classes:
 | Variable/current source | Current behavior | Required treatment |
 | --- | --- | --- |
 | `widthBlocks`, `RingWorldSettings` / `RingWorldConfig` | Default and minimum 256; chunk aligned; persisted, validated, previewed, and sent | Authoritative. The slender default is an intentional visual choice. Upper/resource validation is enforced before new settings or atlas allocation. |
-| `circumferenceBlocks`, same classes | Default 15,552; structural minimum 1,024; playable layouts additionally require full-height radial clearance | Authoritative. The safe-small preset is 2,048; 1,600 is accepted only when already persisted as a legacy world. |
+| `circumferenceBlocks`, same classes | Default 16,384; structural minimum 1,024; playable layouts additionally require full-height radial clearance | Authoritative. The safe-small preset is 2,048; 1,600 is accepted only when already persisted as a legacy world. The default is a power of two and exactly 32 region widths, but custom layouts must remain fully supported. |
 | `wallHeightBlocks` | Default 160; persisted, validated, and used by generation, migration, clients, and clouds | Authoritative. Changing bootstrap config cannot alter an existing world's rims. |
 | `generatorSeed` | Persisted, sent, and fingerprinted | Authoritative and present in world/atlas identity. |
 | `FORMAT_VERSION` | Settings format 2 | Format 1 migrates explicitly with surface reference Y=64. |
@@ -186,7 +186,7 @@ the cloud shader; moving this final policy into the shared profile is open.
 | shader numeric precision | circumference converted to `float` | Define a supported maximum or use a high/low phase representation before block precision is lost on very large rings. |
 | proxy projection depth | physical mesh used the chunk-derived level far plane | Visual profile 4 preserves physical X/Y/W and compresses only far-out proxy clip-space Z; never solve this by increasing real chunk distance. Test tangent and radial-up views independently. |
 
-The 15,552×256 production default is 15,552 chunks and 62,208 source cells.
+The 16,384×256 production default is 16,384 chunks and 65,536 source cells.
 Dimension selection must present this as an operational cost, not only as a
 geometric choice. A complete-ring proxy currently does not appear until every
 atlas cell is present.
@@ -206,7 +206,7 @@ derived or explicitly labelled:
 | multiplayer far teleport | X=64.5 | Derive a non-seam location from C and the view window. |
 | server deployment geometry | 2048×416, wall height 160 | Safe-small public test deployment; the retired 1600×320 save exists only as a rollback backup and validation-failure fixture. |
 | server view/simulation distance | 28 / 8 chunks | Treat as deployment policy and include it in the geometry compatibility report. |
-| unit tests | include current-default 15552×256, former-wide 15552×4096, 1600×320, and atlas-only 1024 circumference cases | Keep current defaults explicit while retaining former-wide layouts as regression fixtures. Atlas math may use a tiny non-renderable fixture, but it must be named as such. |
+| unit tests | include current-default 16384×256, former-wide 15552×4096, 1600×320, and atlas-only 1024 circumference cases | Keep current defaults explicit while retaining former-wide and non-power-of-two layouts as regression fixtures. Atlas math may use a tiny non-renderable fixture, but it must be named as such. |
 | visual docs/captions | “100×20 test ring” and Y=104 clouds | Update in the same phase as the implementation and deployed fixture. |
 
 ## Target architecture
@@ -469,7 +469,7 @@ Parameterize unit, local visual, and two-client tests. At minimum cover:
 | --- | --- |
 | 2048×416, view 6/12/28 | Safe small reference; strong visible curvature |
 | 2048×256 | Minimum-width/rim/spawn/cloud stress |
-| 15552×256, view 12/28 | Production default, minimum width, and one-hour circumference |
+| 16384×256, view 12/28 | Production default, minimum width, 32-region alignment, and approximately 63-minute circumference |
 | 15552×4096, view 28 | Former-wide default retained as a sky/resource regression |
 | 32768×512 | Long, narrow ring; low local curvature and atlas aspect ratio |
 | 4096×2048 | Wide-band sky, width-edge sun tilt, and finite-Z culling |
@@ -513,7 +513,7 @@ continuous. The runtime measured a 1,024-block test far plane against roughly
 4,893 blocks to the opposite reference surface and 5,305 blocks to the far
 width edge. Authoritative real trees and terrain covered the earlier sky-pass
 proxy. This remains a useful wide-band regression, but the current
-production-default visual/resource gate is 15,552×256.
+production-default visual/resource gate is 16,384×256.
 
 The reusable dedicated 2,048×416 server and two real clients then passed the
 full seam visibility, combat, block edit, vehicle, long teleport, return, and

@@ -11,7 +11,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class RingGeometryTest {
     @Test
     void productionProxyExtendsBeyondAnOrdinaryTwentyEightChunkFarPlane() {
-        RingGeometry production = new RingGeometry(4_096, 15_552);
+        RingGeometry production = new RingGeometry(
+                RingWorldSettings.DEFAULT_WIDTH,
+                RingWorldSettings.DEFAULT_CIRCUMFERENCE);
         RingGeometry safeSmall = new RingGeometry(416, 2_048);
         double ordinaryFarPlane = 28 * 16.0 * 4.0;
 
@@ -23,6 +25,8 @@ class RingGeometryTest {
                 RingGeometry.SURFACE_Y, 0.0) < ordinaryFarPlane);
     }
 
+    // Deliberately retain a non-power-of-two custom layout so the topology
+    // suite cannot accidentally become dependent on the production default.
     private final RingGeometry geometry = new RingGeometry(4_096, 15_552);
 
     @Test
@@ -83,7 +87,18 @@ class RingGeometryTest {
     void circumferenceIsAboutOneHourOfWalking() {
         // 4.317 blocks/s is normal walking speed without sprinting or effects.
         double seconds = RingWorldSettings.DEFAULT_CIRCUMFERENCE / 4.317;
-        assertTrue(seconds > 3_550 && seconds < 3_650);
+        assertTrue(seconds > 3_750 && seconds < 3_850);
+    }
+
+    @Test
+    void productionCircumferenceAlignsPowerOfTwoAtlasChunksAndRegions() {
+        int circumference = RingWorldSettings.DEFAULT_CIRCUMFERENCE;
+
+        assertEquals(1, Integer.bitCount(circumference));
+        assertEquals(0, circumference % 512);
+        assertEquals(1_024, circumference / 16);
+        assertEquals(32, circumference / 512);
+        assertEquals(2_048, circumference / RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
     }
 
     @Test

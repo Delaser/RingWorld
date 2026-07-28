@@ -17,6 +17,8 @@ Start here:
 - [`DIMENSION_SCALING_PLAN.md`](DIMENSION_SCALING_PLAN.md): source-audited
   registry of dimension-sensitive variables, safety limits, and the staged
   custom-size implementation plan.
+- [`ATLAS_PREGENERATION_PLAN.md`](ATLAS_PREGENERATION_PLAN.md): one-click
+  complete-map UI and extraction plan for a resumable atlas-generation service.
 - [`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md): gated
   Minecraft 26.1.2 port plan, primary/secondary agent ownership, integration
   order, validation gates, and deployment criteria.

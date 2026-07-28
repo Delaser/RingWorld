@@ -24,7 +24,7 @@ public final class RingWorldSettings extends SavedData {
     public static final String LEGACY_STORAGE_KEY = RingWorldMod.MOD_ID + "_settings";
     public static final int FORMAT_VERSION = 2;
     public static final int DEFAULT_WIDTH = 256;
-    public static final int DEFAULT_CIRCUMFERENCE = 15_552;
+    public static final int DEFAULT_CIRCUMFERENCE = 16_384;
     /** 160 blocks from minimum build height: a visible top near Y=96 in vanilla terrain. */
     public static final int DEFAULT_WALL_HEIGHT = 160;
     public static final int MIN_WIDTH = 256;

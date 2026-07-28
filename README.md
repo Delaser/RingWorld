@@ -13,15 +13,15 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 83 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 89 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
 > the representative gameplay/rim matrix. A dedicated two-client seam,
 > combat, block, boat, teleport, and reconnect scenario also passes.
-> Multi-size visual review, UI completion, packaging, and staging gates are
-> still outstanding, so this is not a playable release yet. The validated
-> server, client packages, and rollback tag remain Minecraft 1.21.11
+> Multi-size visual review, automated-harness completion, packaging, and
+> staging gates are still outstanding, so this is not a playable release yet.
+> The validated server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
 
 > **Loader direction:** current builds remain Fabric-only. Future development
@@ -184,7 +184,7 @@ Dedicated servers use `config/ringworld.properties` before first world load:
 
 ```properties
 widthBlocks=256
-circumferenceBlocks=15552
+circumferenceBlocks=16384
 wallHeightBlocks=160
 testMode=false
 testViewDistanceChunks=28
@@ -198,10 +198,10 @@ checks. Saved settings always override later bootstrap configuration changes.
 
 | Layout | Circumference | Width | Purpose |
 | --- | ---: | ---: | --- |
-| Production default | 15,552 blocks / 972 chunks | 256 blocks / 16 chunks | Approximately one hour to walk a lap at normal speed; deliberately slender ring in the sky |
+| Production default | 16,384 blocks / 1,024 chunks | 256 blocks / 16 chunks | Approximately 63 minutes to walk a lap; power-of-two, atlas, chunk, and 32-region alignment |
 | Safe-small | 2,048 blocks / 128 chunks | 416 blocks / 26 chunks | Fast development, atlas, and multiplayer testing |
 
-The production atlas covers 248,832 canonical chunks and is a substantial
+The production atlas covers 16,384 canonical chunks and is a substantial
 background generation job. Administrators can inspect or control it without
 changing the saved layout:
 
@@ -296,6 +296,7 @@ measurements, and safe handling rules are in [Testing](docs/TESTING.md).
 | [Architecture](docs/ARCHITECTURE.md) | Coordinate domains and end-to-end system design |
 | [Current state](docs/CURRENT_STATE.md) | Implemented behavior, evidence, limitations, and roadmap |
 | [Dimension scaling plan](docs/DIMENSION_SCALING_PLAN.md) | Dimension-sensitive variables, budgets, and remaining matrix |
+| [Atlas pregeneration plan](docs/ATLAS_PREGENERATION_PLAN.md) | One-click complete-map generation with resumable background and headless execution |
 | [Mixin map](docs/MIXIN_MAP.md) | Ownership and risk of each Minecraft injection |
 | [Network protocol](docs/NETWORK_PROTOCOL.md) | Geometry handshake, atlas transport, and presentation mapping |
 | [Operations](docs/OPERATIONS.md) | Configuration, installation, packaging, deployment, and recovery |

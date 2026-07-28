@@ -8,14 +8,14 @@ Last playable code audit: 2026-07-28, covering the final Minecraft 1.21.11
 implementation tagged `mc-1.21.11-final` at commit `2c98650`.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 83 unit/parameterized cases pass.
+gate. Common/client compilation and all 89 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
 gameplay/rim probes. The dedicated two-client seam/combat/block/boat/teleport/
-reconnect matrix also passes. Multi-size visual review, UI completion,
-packaging, and staging remain, so the port is not playable yet. See
-`docs/CURRENT_STATE.md`.
+reconnect matrix also passes. Multi-size visual review, automated-harness
+completion, packaging, and staging remain, so the port is not playable yet.
+See `docs/CURRENT_STATE.md`.
 
 ## Codex weekly usage reserve
 
@@ -195,6 +195,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
 - `deploy/`: server and web deployment templates. These are safe to version.
 - `docs/DIMENSION_SCALING_PLAN.md`: authoritative audit and staged plan for
   removing test-world assumptions from custom dimensions.
+- `docs/ATLAS_PREGENERATION_PLAN.md`: planned **Generate Entire Ring** UI and
+  extraction of the current atlas scheduler into one resumable service.
 - `docs/MINECRAFT_26_1_PORT_PLAN.md`: authoritative Minecraft 26.1.2 port,
   agent ownership, integration, validation, and deployment plan.
 - `docs/MINECRAFT_1_21_11_FINAL_BASELINE.md`: immutable pre-port validation,
@@ -221,7 +223,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 83
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 89
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks still remain.
@@ -303,7 +305,7 @@ version numbers.
   otherwise a newly created world displays the previous world's ring.
 - `ring_surface.vsh` deliberately clamps only far-out proxy clip-space Z while
   preserving X/Y/W. Minecraft's level far plane is derived from chunk render
-  distance and clips most of a production 15,552-block cylinder, especially
+  distance and clips most of a production 16,384-block cylinder, especially
   in the tangent/along-ring view. Do not remove this as redundant sky code or
   replace it by globally increasing render distance/far depth. Re-run both the
   tangent and radial-up projection captures after changing projection,
@@ -391,10 +393,12 @@ version numbers.
   lies near Y=318.65. It may appear only as a retired deployment/rollback note
   or a required validation-failure fixture. The public server also uses the
   safe-small 2,048-by-416 preset as of 27 July 2026.
-- The production/default geometry is 15,552-by-256 (972 by 16 chunks). Width
+- The production/default geometry is 16,384-by-256 (1,024 by 16 chunks). Width
   256 is intentional: the formerly default 4,096-block band looked too broad
-  in the sky. Existing saved worlds remain immutable, and the 4,096-wide
-  layouts in historical validation evidence are not current defaults.
+  in the sky. The power-of-two circumference is exactly 32 region widths,
+  2,048 source-atlas columns, and four blocks per capped proxy texel. Existing
+  saved worlds remain immutable, and the 15,552-by-4,096 layouts in historical
+  validation evidence are not current defaults.
 - The local visual harness reads `testViewDistanceChunks` (2–32) before
   reducing to six chunks for seam/rim traversal. Use 6/12/28 for the safe-small
   capture matrix. It derives capture pitch from the physical target surface;
