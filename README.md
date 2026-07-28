@@ -12,9 +12,10 @@ world as a continuous ring across the sky.
 The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
-> 26.1.2 and currently stops at a documented 95-error compiler baseline. It is
-> not playable yet. The validated server, client packages, and rollback tag
-> remain Minecraft 1.21.11 (`mc-1.21.11-final`).
+> 26.1.2. Its frozen compiler baseline recorded 95 common errors; the first
+> primary source pass leaves five storage-owned errors. It is not playable
+> yet. The validated server, client packages, and rollback tag remain
+> Minecraft 1.21.11 (`mc-1.21.11-final`).
 
 ## What it feels like to play
 
@@ -131,8 +132,9 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ./gradlew clean compileJava --console=plain
 ```
 
-It currently fails with the 95 errors inventoried in
-[the 26.1 compiler baseline](docs/MINECRAFT_26_1_COMPILER_BASELINE.md).
+The Phase 2 checkpoint failed with the 95 errors inventoried in
+[the 26.1 compiler baseline](docs/MINECRAFT_26_1_COMPILER_BASELINE.md); current
+primary source is gated by five storage-owned errors.
 There is intentionally no 26.1 release artifact yet.
 
 Client launch and install instructions remain suspended until the 26.1 common

@@ -26,6 +26,11 @@ the client, mixins, runtime, and saved-world upgrade are not yet ported. See
 [`MINECRAFT_26_1_COMPILER_BASELINE.md`](MINECRAFT_26_1_COMPILER_BASELINE.md).
 The playable implementation remains the frozen `mc-1.21.11-final` tag.
 
+The first primary common pass has reduced those 95 errors to five
+storage-owned diagnostics while preserving the Phase 2 checkpoint in history.
+Client compilation remains gated until S2 integrates the saved-data/storage
+port.
+
 The “Implemented” sections below describe that validated 1.21.11 behavior and
 the contract the port must restore. They are not claims that the active 26.1.2
 compiler checkpoint currently launches.

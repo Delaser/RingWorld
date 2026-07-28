@@ -75,7 +75,7 @@ tag.
 | `ClientPlayConnectionEvents` | Class and `DISCONNECT` remain. |
 | `ClientPlayNetworking` | Class and global receiver/send/canSend surface remain; payload types and vanilla packet/buffer classes use Mojang names. |
 | `WorldRenderEvents` in `client.rendering.v1.world` | Renamed and moved to `LevelRenderEvents` in `client.rendering.v1.level`. `END_MAIN` remains but now receives `LevelRenderContext`; drawing/extraction phases are explicit. |
-| `PayloadTypeRegistry` | Class and `playS2C()`/`playC2S()` registries remain. Codec generic types use Mojang networking names. |
+| `PayloadTypeRegistry` | Class remains; play registries are now directional `clientboundPlay()` and `serverboundPlay()`. Codec generic types use Mojang networking names. |
 | `ServerPlayConnectionEvents` | Class and `JOIN` remain. Callback vanilla types use Mojang names. |
 | `ServerPlayNetworking` | Class and receiver/send/canSend surface remain. |
 | `ServerChunkEvents.CHUNK_LOAD` | Event remains, but the callback is now `(ServerLevel, LevelChunk, boolean generated)`. The current two-argument lambda will not compile. |

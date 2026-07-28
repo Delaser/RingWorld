@@ -80,6 +80,22 @@ still exists or has the same semantics. All 35 mixins remain subject to the
 source audit and runtime application gates in
 [`PORTING_26_1_AUDIT.md`](PORTING_26_1_AUDIT.md).
 
+## Primary follow-on progress
+
+The first primary source-port pass reduced common compilation from 95 errors
+to five without editing S2-owned storage code. It converted `ChunkPos` to its
+26.1 record/packing API, renamed Fabric server level/chunk/tick callbacks,
+renamed payload registries by wire direction, and preserved weapon-sensitive
+attack reach.
+
+The remaining five diagnostics are intentionally left to S2:
+
+- three in `RingWorldSettings`;
+- two `ChunkPos` accessor changes in `RingTerrainAtlasServer`.
+
+This reduction does not prove that any of the affected mixin injection targets
+apply at runtime.
+
 ## Next ownership split
 
 Primary work proceeds with common Fabric API/name updates, canonical topology,
@@ -89,4 +105,3 @@ The secondary agent may now begin S2 from this exact Phase 2 checkpoint:
 world storage, saved RingWorld settings, terrain-atlas storage migration, and
 copied-world tests. S2 must not change geometry fields, topology mixins, or
 wire layouts.
-

@@ -8,8 +8,9 @@ Last playable code audit: 2026-07-28, covering the final Minecraft 1.21.11
 implementation tagged `mc-1.21.11-final` at commit `2c98650`.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 compiler baseline; see
-`docs/MINECRAFT_26_1_COMPILER_BASELINE.md`. It intentionally has 95 common
-compile errors and is not playable yet.
+`docs/MINECRAFT_26_1_COMPILER_BASELINE.md`. The frozen Phase 2 checkpoint has
+95 common errors; the first primary source pass leaves five S2-owned storage
+errors. The port is not playable yet.
 
 ## What this project is
 
@@ -121,7 +122,8 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ./gradlew clean compileJava --console=plain
 ```
 
-Expected result: 95 common-source errors and no artifact. Do not treat that
+The Phase 2 commit recorded 95 common-source errors; current primary source
+leaves five storage-owned errors and no artifact. Do not treat either
 checkpoint as a release build or suppress errors/mixins to make it green.
 
 The frozen 1.21.11 tag uses Java 21 and passes 73 unit/parameterized cases plus

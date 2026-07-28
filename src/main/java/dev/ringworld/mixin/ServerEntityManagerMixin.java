@@ -37,11 +37,11 @@ abstract class ServerEntityManagerMixin<T extends EntityAccess> implements RingE
     @Override
     public void ringworld$ensureLoaded(ChunkPos pos) {
         if (ringworld$geometry == null) return;
-        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceChunks());
-        ChunkPos canonical = x == pos.x ? pos : new ChunkPos(x, pos.z);
+        int x = Math.floorMod(pos.x(), ringworld$geometry.circumferenceChunks());
+        ChunkPos canonical = x == pos.x() ? pos : new ChunkPos(x, pos.z());
         // FRESH is represented by the map's default value. Avoid changing the
         // tracking level of chunks whose read is already pending or complete.
-        if (!chunkLoadStatuses.containsKey(canonical.toLong())) {
+        if (!chunkLoadStatuses.containsKey(canonical.pack())) {
             updateChunkStatus(canonical, Visibility.TRACKED);
         }
     }
@@ -69,16 +69,16 @@ abstract class ServerEntityManagerMixin<T extends EntityAccess> implements RingE
             at = @At("HEAD"), argsOnly = true)
     private ChunkPos ringworld$canonicalTrackingStatus(ChunkPos pos) {
         if (ringworld$geometry == null) return pos;
-        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceChunks());
-        return x == pos.x ? pos : new ChunkPos(x, pos.z);
+        int x = Math.floorMod(pos.x(), ringworld$geometry.circumferenceChunks());
+        return x == pos.x() ? pos : new ChunkPos(x, pos.z());
     }
 
     @ModifyVariable(method = "areEntitiesLoaded", at = @At("HEAD"), argsOnly = true)
     private long ringworld$canonicalLoadedStatus(long packedPos) {
         if (ringworld$geometry == null) return packedPos;
-        ChunkPos pos = new ChunkPos(packedPos);
-        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceChunks());
-        return x == pos.x ? packedPos : ChunkPos.asLong(x, pos.z);
+        ChunkPos pos = ChunkPos.unpack(packedPos);
+        int x = Math.floorMod(pos.x(), ringworld$geometry.circumferenceChunks());
+        return x == pos.x() ? packedPos : ChunkPos.pack(x, pos.z());
     }
 
     @ModifyVariable(method = {
@@ -87,8 +87,8 @@ abstract class ServerEntityManagerMixin<T extends EntityAccess> implements RingE
     }, at = @At("HEAD"), argsOnly = true)
     private ChunkPos ringworld$canonicalTickStatus(ChunkPos pos) {
         if (ringworld$geometry == null) return pos;
-        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceChunks());
-        return x == pos.x ? pos : new ChunkPos(x, pos.z);
+        int x = Math.floorMod(pos.x(), ringworld$geometry.circumferenceChunks());
+        return x == pos.x() ? pos : new ChunkPos(x, pos.z());
     }
 
     @Redirect(

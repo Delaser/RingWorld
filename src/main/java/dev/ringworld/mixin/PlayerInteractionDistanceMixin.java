@@ -5,6 +5,7 @@ import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingTopology;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.AABB;
@@ -39,18 +40,19 @@ abstract class PlayerInteractionDistanceMixin {
     }
 
     /**
-     * Attacks use their own 1.21.11 reach model and never call the ordinary
+     * Attacks use their own weapon-sensitive reach model and never call the ordinary
      * interaction method above. Preserve that model, but give it the target's
      * nearest periodic image before the server validates the attack packet.
      */
     @Inject(method = "isWithinAttackRange", at = @At("HEAD"), cancellable = true)
-    private void ringworld$periodicAttackReach(AABB box, double additionalRange,
+    private void ringworld$periodicAttackReach(ItemStack weaponItem, AABB box, double additionalRange,
                                                CallbackInfoReturnable<Boolean> cir) {
         Player player = (Player) (Object) this;
         RingGeometry geometry = geometry(player);
         if (geometry == null) return;
         AABB entityImage = new RingTopology(geometry).projectBoxNear(box, player.getX());
-        cir.setReturnValue(player.entityAttackRange().isInRange(player, entityImage, additionalRange));
+        cir.setReturnValue(player.getAttackRangeWith(weaponItem)
+                .isInRange(player, entityImage, additionalRange));
     }
 
     private static RingGeometry geometry(Player player) {

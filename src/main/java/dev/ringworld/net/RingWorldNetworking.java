@@ -17,12 +17,12 @@ public final class RingWorldNetworking {
     private RingWorldNetworking() { }
 
     public static void registerPayloads() {
-        PayloadTypeRegistry.playS2C().register(RingSettingsPayload.ID, RingSettingsPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(RingSettingsAckPayload.ID, RingSettingsAckPayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(RingMultiplayerTestPayload.ID, RingMultiplayerTestPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC);
-        PayloadTypeRegistry.playS2C().register(RingTerrainAtlasTilePayload.ID, RingTerrainAtlasTilePayload.CODEC);
-        PayloadTypeRegistry.playC2S().register(RingTerrainAtlasRequestPayload.ID, RingTerrainAtlasRequestPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(RingSettingsPayload.ID, RingSettingsPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(RingSettingsAckPayload.ID, RingSettingsAckPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(RingMultiplayerTestPayload.ID, RingMultiplayerTestPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(RingTerrainAtlasTilePayload.ID, RingTerrainAtlasTilePayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(RingTerrainAtlasRequestPayload.ID, RingTerrainAtlasRequestPayload.CODEC);
     }
 
     public static void registerServer() {

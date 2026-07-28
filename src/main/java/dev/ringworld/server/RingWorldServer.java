@@ -10,7 +10,7 @@ import dev.ringworld.world.RingWorldSettings;
 import dev.ringworld.world.RingNoiseCoordinates;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
@@ -65,8 +65,8 @@ public final class RingWorldServer {
 
     public static void register() {
         RingTerrainAtlasServer.registerCommands();
-        ServerTickEvents.END_WORLD_TICK.register(RingWorldServer::tickRingWorld);
-        ServerChunkEvents.CHUNK_LOAD.register((world, chunk) -> {
+        ServerTickEvents.END_LEVEL_TICK.register(RingWorldServer::tickRingWorld);
+        ServerChunkEvents.CHUNK_LOAD.register((world, chunk, generated) -> {
             if (!isOverworld(world)) return;
             RingTerrainAtlasServer.captureLoadedChunk(world, chunk);
             // A WorldChunk is not safe to mutate from inside its own load
@@ -76,14 +76,14 @@ public final class RingWorldServer {
             if (RingGenerationBoundary.containsRim(chunk, geometryFor(world))) {
                 PENDING_LEGACY_RIM_MIGRATIONS
                         .computeIfAbsent(world, unused -> new LinkedHashMap<>())
-                        .putIfAbsent(chunk.getPos().toLong(), chunk);
+                        .putIfAbsent(chunk.getPos().pack(), chunk);
             }
         });
-        ServerWorldEvents.LOAD.register((server, world) -> {
+        ServerLevelEvents.LOAD.register((server, world) -> {
             attachWorldGeometry(world);
             if (isOverworld(world)) RingTerrainAtlasServer.load(world);
         });
-        ServerWorldEvents.UNLOAD.register((server, world) -> {
+        ServerLevelEvents.UNLOAD.register((server, world) -> {
             RingTerrainAtlasServer.unload(world);
             WORLD_GEOMETRY.remove(world);
             PENDING_LEGACY_RIM_MIGRATIONS.remove(world);

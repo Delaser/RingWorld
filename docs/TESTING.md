@@ -10,9 +10,9 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 
 ## Active port checkpoint
 
-The current `codex/minecraft-26.1-port` branch requires Java 25 and is expected
-to stop at the 95-error common-source compiler baseline until source porting
-begins:
+The current `codex/minecraft-26.1-port` branch requires Java 25. The frozen
+Phase 2 checkpoint records 95 common errors; current primary source is expected
+to stop at five S2-owned storage errors:
 
 ```sh
 JAVA_HOME=/path/to/jdk-25/Contents/Home \

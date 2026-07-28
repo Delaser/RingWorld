@@ -176,7 +176,8 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ./gradlew clean compileJava --console=plain
 ```
 
-Expected result: 95 common-source errors and no artifact. See
+The Phase 2 checkpoint produced 95 common-source errors. The first primary
+source pass leaves five S2-owned storage errors and no artifact. See
 `MINECRAFT_26_1_COMPILER_BASELINE.md`.
 
 The frozen 1.21.11 tag builds under Java 21 with:

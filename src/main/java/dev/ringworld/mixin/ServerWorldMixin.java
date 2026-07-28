@@ -48,9 +48,9 @@ abstract class ServerWorldMixin {
     private long ringworld$canonicalLoadedChunkKey(long packedPos) {
         ServerLevel world = (ServerLevel) (Object) this;
         if (world.dimension() != Level.OVERWORLD) return packedPos;
-        ChunkPos pos = new ChunkPos(packedPos);
+        ChunkPos pos = ChunkPos.unpack(packedPos);
         RingGeometry geometry = RingWorldServer.geometryFor(world);
-        return ChunkPos.asLong(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
+        return ChunkPos.pack(RingChunkCoordinates.wrapChunkX(pos.x(), geometry), pos.z());
     }
 
     @Inject(method = "waitForEntities", at = @At("HEAD"))
@@ -63,7 +63,7 @@ abstract class ServerWorldMixin {
 
         if (Boolean.getBoolean("ringworld.multiplayerTest")) {
             RingWorldMod.LOGGER.info("[multiplayer] waiting for entity chunks around {},{} radius={}",
-                    center.x, center.z, radius);
+                    center.x(), center.z(), radius);
         }
     }
 
@@ -84,10 +84,10 @@ abstract class ServerWorldMixin {
         ServerLevel world = (ServerLevel) (Object) this;
         if (world.dimension() != Level.OVERWORLD) return manager.inEntityTickingRange(packedPos);
 
-        ChunkPos pos = new ChunkPos(packedPos);
+        ChunkPos pos = ChunkPos.unpack(packedPos);
         RingGeometry geometry = RingWorldServer.geometryFor(world);
-        int canonicalX = RingChunkCoordinates.wrapChunkX(pos.x, geometry);
-        long canonicalPos = ChunkPos.asLong(canonicalX, pos.z);
+        int canonicalX = RingChunkCoordinates.wrapChunkX(pos.x(), geometry);
+        long canonicalPos = ChunkPos.pack(canonicalX, pos.z());
         if (manager.inEntityTickingRange(canonicalPos)) return true;
 
         int simulationDistance = world.getServer().getPlayerList().getSimulationDistance();
@@ -95,7 +95,7 @@ abstract class ServerWorldMixin {
             if (player.isSpectator()) continue;
             ChunkPos playerPos = player.chunkPosition();
             if (RingChunkCoordinates.isWithinSimulationDistance(
-                    canonicalX, pos.z, playerPos.x, playerPos.z,
+                    canonicalX, pos.z(), playerPos.x(), playerPos.z(),
                     simulationDistance, geometry)) {
                 return true;
             }
@@ -110,7 +110,7 @@ abstract class ServerWorldMixin {
         ServerLevel world = (ServerLevel) (Object) this;
         if (world.dimension() != Level.OVERWORLD) return pos;
         RingGeometry geometry = RingWorldServer.geometryFor(world);
-        return new ChunkPos(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
+        return new ChunkPos(RingChunkCoordinates.wrapChunkX(pos.x(), geometry), pos.z());
     }
 
     @ModifyVariable(method = "isPositionEntityTicking", at = @At("HEAD"), argsOnly = true)

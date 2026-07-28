@@ -16,7 +16,7 @@ abstract class ChunkPosDistanceLevelPropagatorMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/ChunkPos;asLong(II)J"))
     private long ringworld$periodicNeighbor(int x, int z) {
         RingGeometry geometry = RingChunkLevelContext.activeGeometry();
-        if (geometry == null) return ChunkPos.asLong(x, z);
-        return ChunkPos.asLong(Math.floorMod(x, geometry.circumferenceChunks()), z);
+        if (geometry == null) return ChunkPos.pack(x, z);
+        return ChunkPos.pack(Math.floorMod(x, geometry.circumferenceChunks()), z);
     }
 }

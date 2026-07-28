@@ -41,9 +41,9 @@ abstract class ServerChunkManagerMixin {
         if (!(world instanceof ServerLevel serverWorld) || serverWorld.dimension() != Level.OVERWORLD) {
             return packedPos;
         }
-        ChunkPos pos = new ChunkPos(packedPos);
+        ChunkPos pos = ChunkPos.unpack(packedPos);
         RingGeometry geometry = RingWorldServer.geometryFor(serverWorld);
-        return ChunkPos.asLong(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
+        return ChunkPos.pack(RingChunkCoordinates.wrapChunkX(pos.x(), geometry), pos.z());
     }
 
     /** Every external ticket source must enter the finite canonical graph. */
@@ -62,7 +62,7 @@ abstract class ServerChunkManagerMixin {
             return pos;
         }
         RingGeometry geometry = RingWorldServer.geometryFor(serverWorld);
-        return new ChunkPos(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
+        return new ChunkPos(RingChunkCoordinates.wrapChunkX(pos.x(), geometry), pos.z());
     }
 
     @Redirect(
