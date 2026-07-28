@@ -17,10 +17,11 @@ The Nether and End remain vanilla.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
-> the representative gameplay/rim matrix. Multi-size visual review,
-> two-client multiplayer, packaging, and staging gates are still outstanding,
-> so this is not a playable release yet. The validated server, client
-> packages, and rollback tag remain Minecraft 1.21.11
+> the representative gameplay/rim matrix. A dedicated two-client seam,
+> combat, block, boat, teleport, and reconnect scenario also passes.
+> Multi-size visual review, UI completion, packaging, and staging gates are
+> still outstanding, so this is not a playable release yet. The validated
+> server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
 
 ## What it feels like to play

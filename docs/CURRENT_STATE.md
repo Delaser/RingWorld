@@ -58,8 +58,16 @@ ring pipeline executes; multi-size colour/handoff art review remains open.
 The current 15,552×256 default is unit/resource validated but has not yet run
 the full 26.1 production-size visual matrix.
 
-Two-client multiplayer, packaging, and staging gates remain. The only
-playable implementation is still the frozen `mc-1.21.11-final` tag.
+An isolated dedicated 2,048×416 server plus two 26.1 clients also completed the
+full multiplayer harness on its first run. Both clients acknowledged the
+layout; a natural seam crossing stayed canonical with 0.25-block maximum
+packet/tick samples; mutual visibility/query/distance passed; real melee,
+block interaction/update, shared boat visibility, long teleport and periodic
+return, disconnect, and reconnect all passed. The server reported
+`full scenario result=true` and stopped cleanly.
+
+Multi-size visual review, UI completion, packaging, and staging gates remain.
+The only playable implementation is still the frozen `mc-1.21.11-final` tag.
 
 The “Implemented” sections below describe validated 1.21.11 behavior and the
 contract the port must restore. They are not claims that every active 26.1.2

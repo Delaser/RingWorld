@@ -1,7 +1,7 @@
 # Minecraft 26.1 port plan
 
-Status: common/client source, server storage, and integrated safe-small client
-gates pass; multiplayer/packaging port in progress
+Status: common/client source, server storage, integrated safe-small client,
+and dedicated two-client gates pass; UI/packaging port in progress
 
 Target: Minecraft Java 26.1.2
 

@@ -372,6 +372,14 @@ Success is:
 
 in `run-multiplayer/server/logs/latest.log`.
 
+The isolated Minecraft 26.1.2/Java 25 run on 2026-07-28 achieved that result
+on a fresh 2,048×416 server. Both clients acknowledged format 2; the natural
+seam crossing was canonical with 0.25-block maximum packet and tick samples;
+visibility/query/distance, real melee, block update/interaction, shared boat,
+long teleport, periodic return, planned disconnect, and reconnect all passed.
+The clients were then stopped and the server saved all dimensions and exited
+cleanly.
+
 The integrated visual/seam harness deliberately holds position for 300 client
 ticks after its first seam screenshot. This keeps the seam chunks resident
 through the server's 240-tick projectile, navigation, fluid, vehicle, and

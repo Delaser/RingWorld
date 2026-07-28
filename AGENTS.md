@@ -12,7 +12,8 @@ gate. Common/client compilation and all 83 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
-gameplay/rim probes. Multi-size visual review, two-client multiplayer,
+gameplay/rim probes. The dedicated two-client seam/combat/block/boat/teleport/
+reconnect matrix also passes. Multi-size visual review, UI completion,
 packaging, and staging remain, so the port is not playable yet. See
 `docs/CURRENT_STATE.md`.
 

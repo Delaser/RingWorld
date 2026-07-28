@@ -14,9 +14,10 @@
 
 This stack now produces a green development build and passes isolated fresh
 and copied-world dedicated-server launch gates plus the integrated safe-small
-client atlas/rendering/gameplay harness. It remains non-playable until
-multi-size visual review, multiplayer, packaging, and staging gates pass. The
-working service, packages, and rollback remain Minecraft 1.21.11 at
+client atlas/rendering/gameplay harness and dedicated two-client multiplayer
+matrix. It remains non-playable until multi-size visual review, UI completion,
+packaging, and staging gates pass. The working service, packages, and rollback
+remain Minecraft 1.21.11 at
 `mc-1.21.11-final`; do not deploy the 26.1 branch until every release gate in
 the port plan passes. The finished mod must be installed on the server and
 every client.

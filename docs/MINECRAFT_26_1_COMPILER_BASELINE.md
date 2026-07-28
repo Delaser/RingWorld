@@ -28,9 +28,11 @@ fails current validation is rebuilt safely. The first launch also caught and
 fixed the strict `ServerLevel.lambda$tick$0` entity-eligibility mixin target.
 A subsequent isolated safe-small client completed resource/shader loading,
 100% atlas-backed tangent/radial rendering, two natural seam crossings, and
-the representative gameplay/rim matrix. Multi-size visual review,
-two-client multiplayer, packaging, and staging gates remain, so this is still
-not a playable build.
+the representative gameplay/rim matrix. An isolated dedicated server and two
+real 26.1 clients then passed seam visibility, combat, block update, shared
+boat, long teleport/return, disconnect, and reconnect with
+`full scenario result=true`. Multi-size visual review, UI completion,
+packaging, and staging gates remain, so this is still not a playable build.
 
 ## Toolchain
 
