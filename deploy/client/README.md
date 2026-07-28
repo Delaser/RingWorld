@@ -3,6 +3,17 @@
 These files are the versioned source for the launchers placed in the
 credential-free bundles under `dist/`.
 
+Every outer bundle and nested Prism instance must include the current
+top-level `LICENSE`. The managed RingWorld jar must declare
+`LicenseRef-RingWorld-Evaluation-1.0` and embed `LICENSE-RINGWORLD.txt`.
+Packaging must fail if the jar still declares MIT or omits the embedded
+licence. The evaluation licence does not permit third-party mirroring,
+modpack inclusion, modification, or commercial redistribution.
+
+Validate generated artifacts with
+`scripts/verify_distribution_license.py` before copying them to the public
+host.
+
 On every start, each launcher copies the packaged RingWorld and Fabric API jars
 plus `mmc-pack.json` into the existing `RingWorld-Test` Prism instance. It
 removes superseded jars with those two managed filename prefixes. It does not

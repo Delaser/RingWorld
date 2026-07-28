@@ -64,6 +64,37 @@ The validated design turns only the Overworld into a finite band:
 
 This is an engine-level mod. Both the server and every client need it.
 
+## Licensing and distribution policy
+
+RingWorld is proprietary and source-unavailable during the current private
+development period. The authoritative terms are in [`LICENSE`](LICENSE).
+Never describe the project or an artifact as MIT, permissively licensed, or
+open source.
+
+- Source, modifications, forks, ports, redistribution, modpack inclusion, and
+  commercial use require prior written permission from the project owner.
+- Official binaries may be packaged only for the personal, noncommercial
+  evaluation grant described in `LICENSE`.
+- Every mod jar must declare
+  `LicenseRef-RingWorld-Evaluation-1.0` and contain
+  `LICENSE-RINGWORLD.txt`.
+- Every outer client or server package must include the current `LICENSE`
+  beside its launcher or primary instructions.
+- Packaging and deployment checks must inspect the nested RingWorld jar and
+  fail if `MIT`, a stale licence identifier, or a missing licence file is
+  found.
+- Do not publish the source repository, source jars, or source archives.
+- Do not accept unsolicited copyrightable contributions. Follow
+  [`CONTRIBUTING.md`](CONTRIBUTING.md) and obtain the project owner's approval
+  plus the then-current contributor agreement first.
+- A compatibility patch, modpack adaptation, loader port, or fork is possible
+  only through explicit written permission with a defined scope and
+  noncommercial terms.
+
+The unintended MIT-labelled 0.1.0 public test bundles were withdrawn on
+2026-07-28. Older copies may still exist; do not imply that a new licence
+retroactively revokes rights previously granted to a recipient.
+
 ## Loader support policy
 
 The current runnable implementation is Fabric-only, but future development

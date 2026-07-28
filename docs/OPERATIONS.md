@@ -319,10 +319,48 @@ the source instance that contains only:
 
 The web landing-page template and published checksums live under
 `deploy/web/ringworld/`. Rebuild archives and update checksums together.
+Deploy the authoritative top-level `LICENSE` beside them as
+`RingWorld-Evaluation-License.txt`; do not maintain a divergent copy under
+`deploy/`.
 The current public artifacts are `RingWorld-Test-Client.zip` and
 `RingWorld-Test-Client-Windows.zip`. Validate each outer archive, its nested
 `RingWorld-Prism-Instance.zip`, the embedded mod hash, and a download through
 HTTPS before announcing an update.
+
+RingWorld is proprietary. Before any client or server artifact is published:
+
+1. confirm `fabric.mod.json` inside every RingWorld jar declares
+   `LicenseRef-RingWorld-Evaluation-1.0`;
+2. confirm every RingWorld jar contains `LICENSE-RINGWORLD.txt`;
+3. confirm the outer archive and nested Prism instance both include the
+   current top-level `LICENSE`;
+4. scan archive names and text metadata for the stale `MIT` declaration;
+5. do not publish a sources jar, source archive, repository mirror, or
+   credential-bearing runtime directory; and
+6. state that modification, redistribution, modpack inclusion, forks, and
+   commercial use require prior written permission.
+
+Run the automated licence gate against each jar and outer bundle:
+
+```sh
+python3 scripts/verify_distribution_license.py \
+  build/libs/ringworld-0.2.0+mc26.1.2.jar \
+  dist/RingWorld-Test-Client.zip \
+  dist/RingWorld-Test-Client-Windows.zip
+
+python3 -m unittest scripts/test_verify_distribution_license.py
+```
+
+The MIT-labelled 0.1.0 universal and Windows bundles were withdrawn on
+28 July 2026. Their server-side rollback is
+`/var/backups/ringworld-web-license-correction-20260728T120000Z/`. Do not
+restore those artifacts to a public path. The corrected HTTPS-verified
+evaluation packages are:
+
+```text
+141832393128820be4917d29bec11822f3a253f50e627f3b187e673df22918ea  RingWorld-Test-Client.zip
+c92498ab3546a3ca4cd86a684eba8c37b97ef4814181aa1d686055dfc29dcc2d  RingWorld-Test-Client-Windows.zip
+```
 
 Test both package paths: a completely fresh bundle and an in-place upgrade over
 an existing `.prism-data` directory containing sentinel account, save, option,

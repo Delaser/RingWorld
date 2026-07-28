@@ -21,6 +21,13 @@ The matching public client archives and checksums are served from:
 https://andwhatnotstudio.com/ringworld/
 ```
 
+RingWorld is proprietary. The installed mod jar must declare
+`LicenseRef-RingWorld-Evaluation-1.0` and contain
+`LICENSE-RINGWORLD.txt`. The MIT-labelled server jar was withdrawn on
+28 July 2026 and retained only at
+`/opt/ringworld-server/backups/license-correction-20260728T123000Z/`.
+Do not restore or redistribute it.
+
 Meridian is a separate `meridian.service`. It is world-agnostic: its managed
 `meridian-proximity` datapack is restored into the active world's `datapacks/`
 directory when needed, then it reloads the pack and recreates its five internal
