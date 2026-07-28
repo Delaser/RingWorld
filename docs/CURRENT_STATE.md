@@ -190,8 +190,22 @@ client/runtime gate passes.
   timestamped rollback backup. The server reached `Done`, accepted RCON, and
   completed and saved the expected 13,312-cell asynchronous atlas.
 - Matching credential-free universal/macOS and Windows packages are published
-  at `https://andwhatnotstudio.com/ringworld/`. Both published downloads were
-  fetched through HTTPS and verified against the page's SHA-256 manifest.
+  through `https://andwhatnotstudio.com/ringworld/`. On 28 July 2026 the two
+  MIT-labelled 0.1.0 downloads and checksum manifest were withdrawn after the
+  project owner identified that MIT was never the intended licence. The
+  private repository has no GitHub releases. Corrected proprietary evaluation
+  packages were then rebuilt from `mc-1.21.11-final`, passed the automated
+  outer/nested/jar licence gate, and replaced the withdrawn files. The
+  universal package is
+  `141832393128820be4917d29bec11822f3a253f50e627f3b187e673df22918ea`;
+  the Windows package is
+  `c92498ab3546a3ca4cd86a684eba8c37b97ef4814181aa1d686055dfc29dcc2d`.
+  Both HTTPS downloads and the separately served licence were verified.
+- The live server jar was replaced with the gameplay-equivalent 1.21.11
+  licence-corrected build after backing up its MIT-labelled predecessor under
+  `/opt/ringworld-server/backups/license-correction-20260728T123000Z/`.
+  RingWorld reached `Done` in 0.755 seconds and both `ringworld.service` and
+  `meridian.service` remained active.
 - Meridian remained active with zero service restarts during the world
   cutover and reattached to the new Minecraft `latest.log`.
 - The first fresh public atlas exposed a dedicated-server-only colour failure:
@@ -220,12 +234,13 @@ client/runtime gate passes.
   far width edge at the test camera. Real trees and terrain remained visibly
   in front of the sky-stage proxy in both captures.
 - The visual-profile-4 client packages were published after credential and
-  archive-integrity checks. The HTTPS-verified SHA-256 values are
+  archive-integrity checks. The withdrawn MIT-labelled SHA-256 values were
   `92026aa66ff062ed44e0074ec4502f25b702b4b43c655421e3bcefeeac04ff29`
   for the universal package and
   `380b1cfc2fc112dc16487f773d5ddf543d8eb09b003ec9fd911ab7a1dc66adc5`
-  for the Windows package. The public server was not restarted because this
-  update changes only the client-side visual proxy and diagnostics.
+  for the Windows package. They remain rollback evidence only and must not be
+  restored to a public path. The public server was not restarted for that
+  historical visual-only update.
 
 ## Deliberate design decisions
 

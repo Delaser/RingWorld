@@ -93,3 +93,9 @@ java {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+tasks.withType(Jar).configureEach {
+	from(rootProject.file('LICENSE')) {
+		rename { 'LICENSE-RINGWORLD.txt' }
+	}
+}

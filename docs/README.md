@@ -8,6 +8,10 @@ Start here:
 
 - [`../AGENTS.md`](../AGENTS.md): concise operating rules for future coding
   agents.
+- [`../LICENSE`](../LICENSE): proprietary personal/noncommercial evaluation
+  terms for official binaries.
+- [`../CONTRIBUTING.md`](../CONTRIBUTING.md): future invited-contribution and
+  permission-based compatibility-fork path.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): coordinate model and end-to-end system
   design.
 - [`DIMENSION_SCALING_PLAN.md`](DIMENSION_SCALING_PLAN.md): source-audited
