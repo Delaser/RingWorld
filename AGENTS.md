@@ -94,8 +94,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   removing test-world assumptions from custom dimensions.
 - `docs/MINECRAFT_26_1_PORT_PLAN.md`: authoritative Minecraft 26.1.2 port,
   agent ownership, integration, validation, and deployment plan.
-- `docs/AGENT_COLLABORATION.md` and `scripts/agent-comms.sh`: shared-worktree
-  real-time communication and handoff protocol for parallel coding agents.
+- `docs/AGENT_COLLABORATION.md`: dedicated-PC GitHub issue coordination,
+  optional same-clone mailbox, and handoff protocol for parallel coding
+  agents.
 - `dist/`, `run/`, `run-multiplayer/`, `logs/`, `.gradle/`, and `build/`:
   generated or local runtime state; all are intentionally ignored.
 
@@ -173,9 +174,9 @@ altered test commands, known limitations, and rejected or superseded designs.
 9. Update the appropriate file under `docs/` in the same change.
 
 When two ChatGPT Desktop agents work on the 26.1 port, both must follow
-`docs/AGENT_COLLABORATION.md`, use separate worktrees, initialize their stable
-`primary` or `secondary` role, and check the shared mailbox before editing
-coordinated files, committing, or handing work off.
+`docs/AGENT_COLLABORATION.md`, use separate clones or worktrees, keep their
+stable `primary` or `secondary` role, and check the selected coordination
+channel before editing coordinated files, committing, or handing work off.
 
 Mixin method descriptors target Minecraft 1.21.11/Yarn build 6. A Minecraft,
 Yarn, Loader, Loom, or Fabric API upgrade is a porting project: audit every

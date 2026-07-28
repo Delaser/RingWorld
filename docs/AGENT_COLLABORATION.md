@@ -1,14 +1,86 @@
 # Cross-chat agent collaboration
 
 RingWorld's Minecraft 26.1 port may be developed by two ChatGPT Desktop coding
-agents at the same time. They must use separate Git worktrees but need a fast
-way to exchange task assignments, discoveries, blockers, commit hashes, and
-handoffs.
+agents at the same time. They must use separate Git checkouts and need a
+reliable way to exchange task assignments, discoveries, blockers, commit
+hashes, and handoffs.
 
-The repository provides [`scripts/agent-comms.sh`](../scripts/agent-comms.sh)
-for that purpose.
+The active arrangement uses two dedicated PCs and separate clones. GitHub
+issue [#4](https://github.com/Delaser/RingWorld/issues/4) is therefore the
+authoritative cross-PC coordination channel. The repository also provides
+[`scripts/agent-comms.sh`](../scripts/agent-comms.sh) for the optional case
+where both agents use worktrees from the same local clone.
 
-## How it works
+## Dedicated-PC workflow
+
+Both PCs need authenticated access to the private repository:
+
+```sh
+gh auth status
+gh repo view Delaser/RingWorld
+```
+
+The secondary PC uses its own clone and a task branch created from the exact
+commit named in the primary agent's assignment:
+
+```sh
+git clone https://github.com/Delaser/RingWorld.git RingWorld-agent2
+cd RingWorld-agent2
+git fetch origin
+git switch --detach <assigned-base-commit>
+git switch -c agent2/<assigned-task>
+```
+
+Read all existing coordination messages:
+
+```sh
+gh issue view 4 --repo Delaser/RingWorld --comments
+```
+
+Post an acknowledgement, finding, blocker, or handoff:
+
+```sh
+gh issue comment 4 --repo Delaser/RingWorld \
+  --body "[SECONDARY][ACK S1] base=<sha> branch=agent2/26.1-audit"
+```
+
+Use these prefixes:
+
+```text
+[PRIMARY][ASSIGN S1]
+[SECONDARY][ACK S1]
+[SECONDARY][FINDING S1]
+[SECONDARY][BLOCKED S1]
+[SECONDARY][HANDOFF S1]
+[PRIMARY][INTEGRATED S1]
+```
+
+Every substantive comment includes the task ID, base commit, branch, current
+commit, files touched, validation run, and unresolved risks where applicable.
+Long reports belong in a tracked document; the issue comment links the branch
+and commit.
+
+GitHub issue comments are durable project records, not a secret store. Never
+post passwords, tokens, account files, private keys, non-public deployment
+credentials, or player personal information.
+
+## Required roles
+
+Use these stable names:
+
+```text
+primary
+secondary
+```
+
+The primary agent owns integration, topology, networking, and rendering. The
+secondary agent owns the bounded tasks assigned in
+[`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md).
+
+## Same-clone local mailbox
+
+This section applies only when both agents use worktrees from one clone. It
+does not apply to the active dedicated-PC arrangement.
 
 The script discovers the repository's shared Git directory with:
 
@@ -35,20 +107,7 @@ agents if a fixed location is preferred.
 This is local coordination, not a secret store. Never send passwords, tokens,
 account files, private keys, or player personal information through it.
 
-## Required roles
-
-Use these stable names:
-
-```text
-primary
-secondary
-```
-
-The primary agent owns integration, topology, networking, and rendering. The
-secondary agent owns the bounded tasks assigned in
-[`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md).
-
-## Create the secondary worktree
+## Create a same-clone secondary worktree
 
 The primary agent first publishes or identifies the exact integration commit.
 From the main RingWorld checkout, create the secondary worktree:
@@ -226,32 +285,16 @@ INTEGRATED S2 as <sha>; storage gate passed
 - Never resolve a semantic conflict by keeping both implementations.
 - The primary agent owns final conflict resolution and integration tests.
 
-## If the agents use separate clones
-
-The local mailbox only works for worktrees sharing one Git common directory.
-If the second agent uses a separate clone or computer, use a dedicated GitHub
-issue as the durable mailbox:
-
-```sh
-gh issue comment <issue-number> --body "<message>"
-gh issue view <issue-number> --comments
-```
-
-In that mode, every message must include role, timestamp, base commit, task,
-and branch. Polling GitHub is slower than the local mailbox, so the shared
-worktree arrangement is preferred.
-
 ## Copy-paste bootstrap prompt for the second agent
 
 ```text
 You are the secondary RingWorld Minecraft 26.1 port agent. Read AGENTS.md,
 docs/MINECRAFT_26_1_PORT_PLAN.md, and docs/AGENT_COLLABORATION.md completely.
-Use a separate Git worktree from the primary agent. Run
-./scripts/agent-comms.sh init secondary "online; awaiting assignment", then
-receive your inbox. Work only on the explicitly assigned S-task and file
-ownership. Do not alter topology invariants, weaken mixin requirements, touch
-the live server, or stage generated/runtime files. Before editing coordinated
-files, before committing, and after committing, check or message the primary
-agent through scripts/agent-comms.sh. Finish with a clean commit and the exact
-handoff format from the port plan.
+Use a separate clone on the secondary PC. Read GitHub issue #4 and acknowledge
+the current assignment there before editing. Work only on the explicitly
+assigned S-task and file ownership. Do not alter topology invariants, weaken
+mixin requirements, touch the live server, or stage generated/runtime files.
+Before editing coordinated files, before committing, and after pushing, check
+or message the primary agent through issue #4. Finish with a clean commit,
+push the task branch, and post the exact handoff format from the port plan.
 ```

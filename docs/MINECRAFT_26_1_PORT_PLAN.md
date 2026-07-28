@@ -12,9 +12,12 @@ porting RingWorld from Minecraft Java 1.21.11 to the 26.1 release family. It
 does not authorize changing RingWorld's topology invariants merely to make the
 new game version compile.
 
-The port will be developed by two coding agents in separate Git worktrees.
-Real-time coordination uses [`AGENT_COLLABORATION.md`](AGENT_COLLABORATION.md)
-and [`scripts/agent-comms.sh`](../scripts/agent-comms.sh).
+The port will be developed by two coding agents on separate dedicated PCs and
+separate Git clones. Cross-PC coordination uses private GitHub issue
+[#4](https://github.com/Delaser/RingWorld/issues/4) under the protocol in
+[`AGENT_COLLABORATION.md`](AGENT_COLLABORATION.md). The local
+[`scripts/agent-comms.sh`](../scripts/agent-comms.sh) mailbox is only for a
+future same-clone worktree arrangement.
 
 ## Why this is a porting project
 
@@ -81,7 +84,8 @@ After the current documentation PR is resolved:
 2. run and record the complete 1.21.11 baseline;
 3. tag that state `mc-1.21.11-final`;
 4. create the integration branch `codex/minecraft-26.1-port`;
-5. give the second agent a worktree from the exact integration commit.
+5. publish the exact integration commit and assign it to the second PC through
+   coordination issue #4.
 
 Suggested secondary-agent branches:
 
@@ -94,8 +98,8 @@ agent2/26.1-packaging
 ```
 
 Each delegated task uses a fresh branch from a named integration commit. The
-secondary agent must not work in the primary agent's checkout or force-push a
-branch after handoff.
+secondary agent creates that branch in its own clone, must not work in the
+primary agent's checkout, and must not force-push a branch after handoff.
 
 ## Work graph
 
