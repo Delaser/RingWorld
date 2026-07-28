@@ -6,8 +6,11 @@ reliable way to exchange task assignments, discoveries, blockers, commit
 hashes, and handoffs.
 
 The active arrangement uses two dedicated PCs and separate clones. GitHub
-issue [#4](https://github.com/Delaser/RingWorld/issues/4) is therefore the
-authoritative cross-PC coordination channel. The repository also provides
+issue [#4](https://github.com/Delaser/RingWorld/issues/4) is the epic and
+cross-task escalation channel. Each bounded work package has its own issue:
+[#5–#13](https://github.com/Delaser/RingWorld/issues). The primary agent
+maintains assignment, dependency, and status labels; the active task issue is
+authoritative for ordinary findings, blockers, commits, and handoff. The repository also provides
 [`scripts/agent-comms.sh`](../scripts/agent-comms.sh) for the optional case
 where both agents use worktrees from the same local clone.
 
@@ -18,6 +21,56 @@ Both PCs need authenticated access to the private repository:
 ```sh
 gh auth status
 gh repo view Delaser/RingWorld
+```
+
+The two PCs use separate ChatGPT plans. Each agent is responsible for its own
+quota. On the primary Mac, run
+`python3 scripts/codex_usage_monitor.py` before substantial work and follow the
+10% reserve policy in [`CODEX_USAGE_MONITOR.md`](CODEX_USAGE_MONITOR.md).
+Never use the primary machine's result as evidence of the secondary account's
+remaining allowance.
+
+## Ten-minute secondary-response monitor
+
+The primary Mac polls repository-wide issue comments every ten minutes for the
+existing `[SECONDARY]` prefix. This covers epic #4 and each task issue without
+depending on the secondary's GitHub username, because both agents can operate
+through the same repository account.
+
+Install or refresh the macOS LaunchAgent:
+
+```sh
+python3 scripts/secondary_response_monitor.py --install-launch-agent
+```
+
+It installs:
+
+```text
+~/Library/LaunchAgents/com.andwhatnotstudio.ringworld-secondary-responses.plist
+```
+
+The executable runtime copy, status, and logs live under:
+
+```text
+~/Library/Application Support/RingWorld/
+```
+
+The first poll baselines existing comments without notifying. Later secondary
+comments remain in `RESPONSE_PENDING` state until a primary agent reads the
+linked task issue and acknowledges them:
+
+```sh
+python3 scripts/secondary_response_monitor.py
+python3 scripts/secondary_response_monitor.py --ack
+```
+
+The monitor is deliberately read-only. It sends a macOS notification and
+records the response URL, but it does not resume a ChatGPT turn, post a reply,
+change an issue, or integrate code. Background checks consume no model turns.
+Remove the service with:
+
+```sh
+python3 scripts/secondary_response_monitor.py --uninstall-launch-agent
 ```
 
 The secondary PC uses its own clone and a task branch created from the exact
@@ -31,28 +84,29 @@ git switch --detach <assigned-base-commit>
 git switch -c agent2/<assigned-task>
 ```
 
-Read all existing coordination messages:
+Read the epic and the assigned task:
 
 ```sh
 gh issue view 4 --repo Delaser/RingWorld --comments
+gh issue view <assigned-issue> --repo Delaser/RingWorld --comments
 ```
 
 Post an acknowledgement, finding, blocker, or handoff:
 
 ```sh
-gh issue comment 4 --repo Delaser/RingWorld \
-  --body "[SECONDARY][ACK S1] base=<sha> branch=agent2/26.1-audit"
+gh issue comment <assigned-issue> --repo Delaser/RingWorld \
+  --body "[SECONDARY][ACK S2] base=<sha> branch=agent2/26.1-storage"
 ```
 
-Use these prefixes:
+Use these prefixes in the assigned issue:
 
 ```text
-[PRIMARY][ASSIGN S1]
-[SECONDARY][ACK S1]
-[SECONDARY][FINDING S1]
-[SECONDARY][BLOCKED S1]
-[SECONDARY][HANDOFF S1]
-[PRIMARY][INTEGRATED S1]
+[PRIMARY][ASSIGN S2]
+[SECONDARY][ACK S2]
+[SECONDARY][FINDING S2]
+[SECONDARY][BLOCKED S2]
+[SECONDARY][HANDOFF S2]
+[PRIMARY][INTEGRATED S2]
 ```
 
 Every substantive comment includes the task ID, base commit, branch, current
@@ -60,7 +114,8 @@ commit, files touched, validation run, and unresolved risks where applicable.
 Long reports belong in a tracked document; the issue comment links the branch
 and commit.
 
-GitHub issue comments are durable project records, not a secret store. Never
+Use epic #4 only when a dependency spans issues, ownership conflicts, or the
+task issue is inaccessible. GitHub issue comments are durable project records, not a secret store. Never
 post passwords, tokens, account files, private keys, non-public deployment
 credentials, or player personal information.
 
@@ -293,11 +348,12 @@ The complete current prompt is maintained in
 ```text
 You are the secondary RingWorld Minecraft 26.1 port agent. Read AGENTS.md,
 docs/MINECRAFT_26_1_PORT_PLAN.md, and docs/AGENT_COLLABORATION.md completely.
-Use a separate clone on the secondary PC. Read GitHub issue #4 and acknowledge
-the current assignment there before editing. Work only on the explicitly
+Use a separate clone on the secondary PC. Read GitHub epic #4 and the
+individual issue carrying the current assignment; acknowledge in that task
+issue before editing. Work only on the explicitly
 assigned S-task and file ownership. Do not alter topology invariants, weaken
 mixin requirements, touch the live server, or stage generated/runtime files.
 Before editing coordinated files, before committing, and after pushing, check
-or message the primary agent through issue #4. Finish with a clean commit,
-push the task branch, and post the exact handoff format from the port plan.
+or message the primary agent through the assigned task issue. Finish with a
+clean commit, push the task branch, and post the exact handoff format there.
 ```

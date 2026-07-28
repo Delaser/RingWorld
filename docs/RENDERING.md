@@ -138,7 +138,7 @@ curved ground.
 ### Source data
 
 The server atlas contains the exposed top-face height and RGB of the actual
-highest generated surface block every eight blocks. `Chunk.sampleHeightmap`
+highest generated surface block every eight blocks. `ChunkAccess.getHeight`
 already returns that block's Y coordinate; the sampled state uses that exact Y
 and the mesh height is its top face at Y+1. Water, grass, and foliage start with
 their biome tint, then apply an average block-texture luminance so the tint is
@@ -152,7 +152,7 @@ biome tint on integrated servers where the colour maps are loaded.
 
 ### World lifecycle
 
-The visual surface is world-owned even though `SkyRendering` and its static GPU
+The visual surface is world-owned even though `SkyRenderer` and its static GPU
 resources can survive a return to the menus. On disconnect and again when a
 new settings payload is accepted, `RingWorldClient` closes the buffered texture
 and mesh before clearing/installing client state. `RingSurfaceTextureRenderer`
@@ -201,7 +201,9 @@ Walking does not rebuild the mesh. Per frame, the renderer:
 - supplies actual view distance, circumference, camera X phase, and camera Z
   to the custom surface shader;
 - binds Minecraft's current lightmap beside the canonical terrain texture;
-- draws with culling and depth writes disabled.
+- draws with culling disabled, translucent colour blending, LEQUAL depth
+  testing, and depth writes disabled. In 26.1 these are explicit
+  `ColorTargetState` and `DepthStencilState` values.
 
 It runs during celestial rendering. `RingRenderProfile` clamps every handoff
 endpoint to the same physical half-circumference, including when a requested

@@ -1,21 +1,28 @@
 # Minecraft 26.1 port plan
 
-Status: planned
+Status: common/client source, server storage, integrated safe-small client,
+and dedicated two-client gates pass; UI/packaging port in progress
 
 Target: Minecraft Java 26.1.2
 
-Baseline: the validated Minecraft 1.21.11 implementation merged into `main`
-at commit `97f6a97`
+Baseline: the validated Minecraft 1.21.11 implementation tagged
+`mc-1.21.11-final` at commit `2c98650`
+
+Baseline evidence:
+[`MINECRAFT_1_21_11_FINAL_BASELINE.md`](MINECRAFT_1_21_11_FINAL_BASELINE.md)
 
 This document is the authoritative implementation and coordination plan for
 porting RingWorld from Minecraft Java 1.21.11 to the 26.1 release family. It
 does not authorize changing RingWorld's topology invariants merely to make the
 new game version compile.
 
-The port will be developed by two coding agents on separate dedicated PCs and
-separate Git clones. Cross-PC coordination uses private GitHub issue
-[#4](https://github.com/Delaser/RingWorld/issues/4) under the protocol in
-[`AGENT_COLLABORATION.md`](AGENT_COLLABORATION.md). The local
+The port is developed by two coding agents on separate dedicated PCs and
+separate Git clones. Private GitHub issue
+[#4](https://github.com/Delaser/RingWorld/issues/4) is the epic and escalation
+channel; bounded P1–P4 and S2–S6 work uses linked issues
+[#5–#13](https://github.com/Delaser/RingWorld/issues) under the protocol in
+[`AGENT_COLLABORATION.md`](AGENT_COLLABORATION.md). The primary agent owns and
+maintains issue status, dependencies, assignments, and integration order. The local
 [`scripts/agent-comms.sh`](../scripts/agent-comms.sh) mailbox is only for a
 future same-clone worktree arrangement.
 
@@ -84,8 +91,8 @@ After the current documentation PR is resolved:
 2. run and record the complete 1.21.11 baseline;
 3. tag that state `mc-1.21.11-final`;
 4. create the integration branch `codex/minecraft-26.1-port`;
-5. publish the exact integration commit and assign it to the second PC through
-   coordination issue #4.
+5. publish the exact integration commit and assign it through the task's
+   individual GitHub issue.
 
 Suggested secondary-agent branches:
 
@@ -126,6 +133,8 @@ flowchart TD
 
 Owner: primary agent
 
+Status: complete on 2026-07-28
+
 Before changing mappings or dependencies:
 
 - merge or close outstanding documentation branches;
@@ -149,6 +158,8 @@ Exit gate:
 
 Owner: primary agent
 
+Status: complete on 2026-07-28
+
 Fabric recommends migrating Yarn projects to Mojang mappings before moving to
 26.1. Keeping Minecraft at 1.21.11 isolates naming errors from game behavior
 changes.
@@ -171,9 +182,28 @@ Exit gate:
 - no Yarn or intermediary identifiers remain in active source or descriptors;
 - every required mixin applies.
 
+Completion evidence:
+
+- `./gradlew clean test build` passed all 73 cases;
+- the safe-small local harness passed terrain, two natural seam crossings,
+  block/entity/projectile/vehicle/AI/fluid/explosion/collision, rim, void, and
+  frame-pacing probes;
+- both crossings retained yaw/pitch and emitted zero correction packets;
+- `runLayoutSwitchClient` reported `result=true`;
+- the dedicated two-client harness reported
+  `full scenario result=true`;
+- the complete 15,552×4,096 atlas produced both tangent and radial-up
+  projection captures with far-depth compression active;
+- `method_31420` is retained only for Mojang's unnamed synthetic
+  `ServerLevel` entity-tick lambda and carries an explicit `@Dynamic`
+  explanation.
+
 ## Phase 2: establish the 26.1.2 toolchain
 
 Owner: primary agent
+
+Status: complete on 2026-07-28; see
+[`MINECRAFT_26_1_COMPILER_BASELINE.md`](MINECRAFT_26_1_COMPILER_BASELINE.md)
 
 Build changes:
 
@@ -192,11 +222,15 @@ Build changes:
 The output of this phase is a compiler-error inventory and a stable commit from
 which parallel code work begins. It does not need to launch yet.
 
+The captured common-source baseline contains 95 errors. Client compilation and
+tests remain gated behind those common errors; no mixin requirement was
+lowered.
+
 ## Primary-agent lane
 
 The primary agent owns cross-cutting architectural code.
 
-### P1: canonical topology and simulation
+### P1: canonical topology and simulation ([#5](https://github.com/Delaser/RingWorld/issues/5))
 
 Primary ownership:
 
@@ -224,7 +258,7 @@ Exit gate:
 - no persistent chunk or entity owns X outside `[0, C)`;
 - seam travel produces no corrective teleport or camera discontinuity.
 
-### P2: world generation
+### P2: world generation ([#6](https://github.com/Delaser/RingWorld/issues/6))
 
 Tasks:
 
@@ -235,7 +269,7 @@ Tasks:
 - restore finite-width spawn selection;
 - extend multi-seed seam fixtures where 26.1 internals changed.
 
-### P3: network protocol
+### P3: network protocol ([#7](https://github.com/Delaser/RingWorld/issues/7))
 
 Tasks:
 
@@ -245,7 +279,7 @@ Tasks:
 - synchronize the protocol identity test;
 - ensure a stale client fails before decoding ring-specific play payloads.
 
-### P4: renderer and shaders
+### P4: renderer and shaders ([#8](https://github.com/Delaser/RingWorld/issues/8))
 
 Primary ownership:
 
@@ -285,6 +319,9 @@ Start: immediately
 
 Branch: `agent2/26.1-audit`
 
+Status: complete and integrated on 2026-07-28; see
+[`PORTING_26_1_AUDIT.md`](PORTING_26_1_AUDIT.md)
+
 Create `docs/PORTING_26_1_AUDIT.md` containing:
 
 - all dependency and toolchain changes;
@@ -302,11 +339,16 @@ Restrictions:
 - use official Mojang and Fabric sources;
 - do not mark an injection resolved without inspecting 26.1 source.
 
-### S2: world storage and saved-world migration
+### S2: world storage and saved-world migration ([#9](https://github.com/Delaser/RingWorld/issues/9))
 
 Start: after the Phase 2 baseline
 
 Branch: `agent2/26.1-storage`
+
+Status: complete and integrated on 2026-07-28. The Java 25 build passes all 83
+cases. Isolated fresh and copied-1.21.11 server launches reached `Done`; legacy
+settings were preserved byte-for-byte and an invalid legacy atlas was safely
+rebuilt at the new dimension-owned path.
 
 Secondary ownership:
 
@@ -337,7 +379,7 @@ Restrictions:
 - no topology mixin changes;
 - use world copies only.
 
-### S3: creation UI and debug screen
+### S3: creation UI and debug screen ([#10](https://github.com/Delaser/RingWorld/issues/10))
 
 Start: after common source compilation is stable
 
@@ -362,7 +404,7 @@ Tasks:
 - port canonical F3 coordinates and atlas state;
 - test invalid, safe-small, production, and custom layouts.
 
-### S4: automated harnesses
+### S4: automated harnesses ([#11](https://github.com/Delaser/RingWorld/issues/11))
 
 Start: after a 26.1 client can join a world
 
@@ -395,7 +437,7 @@ Restrictions:
 - do not weaken camera, packet, or seam tolerances without evidence;
 - coordinate before editing `RingWorldClient.java`.
 
-### S5: Java 25 packaging and deployment preparation
+### S5: Java 25 packaging and deployment preparation ([#12](https://github.com/Delaser/RingWorld/issues/12))
 
 Start: after the first successful client/server launch
 
@@ -428,7 +470,7 @@ Restrictions:
 - do not change website downloads;
 - hand artifacts and validation results to the primary agent.
 
-### S6: independent integration review
+### S6: independent integration review ([#13](https://github.com/Delaser/RingWorld/issues/13))
 
 After each major integration, the secondary agent performs a read-only audit:
 
@@ -441,7 +483,9 @@ After each major integration, the secondary agent performs a read-only audit:
 - confirm every global mixin has an Overworld guard;
 - compare documentation with implementation.
 
-Findings should arrive through the coordination mailbox before code changes.
+Findings should be posted to the active task issue before code changes. Use
+epic #4 only for cross-task dependencies, ownership conflicts, or an
+inaccessible task issue.
 
 ## Agent handoff format
 
@@ -462,8 +506,11 @@ Documentation updated:
 Recommended integration order:
 ```
 
-The secondary agent gives the primary agent commit hashes for review and
-cherry-pick. It must not rebase or force-push handed-off commits.
+The secondary agent posts the handoff and commit hashes in the active task
+issue for primary review and cherry-pick. The primary changes that issue to
+`status:review`. The secondary must not rebase or force-push handed-off
+commits, and must not begin the next issue until the primary changes it to
+`status:ready` and posts an assignment.
 
 ## Integration order
 
@@ -522,7 +569,7 @@ their corresponding runtime gates.
 
 ### Gate 5: production geometry
 
-- 15,552 × 4,096 validation passes;
+- 15,552 × 256 current-default validation passes;
 - synthetic full-ring projection passes;
 - a real atlas resource benchmark completes;
 - GPU resources remain within policy;

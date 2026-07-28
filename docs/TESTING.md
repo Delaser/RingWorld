@@ -8,6 +8,22 @@ RingWorld needs tests at three levels:
 
 Rendering and mixin behavior cannot be proven by unit tests alone.
 
+## Active port checkpoint
+
+The current `codex/minecraft-26.1-port` branch requires Java 25. Common and
+client compilation now pass together, and the development build runs all 83
+unit/parameterized cases:
+
+```sh
+JAVA_HOME=/path/to/jdk-25/Contents/Home \
+PATH="$JAVA_HOME/bin:$PATH" \
+./gradlew clean test build --console=plain
+```
+
+See `MINECRAFT_26_1_COMPILER_BASELINE.md` for the historical 95-error inventory
+and its resolution. A green build and dedicated-server launch do not establish
+client rendering, gameplay, or multiplayer compatibility.
+
 ## Unit and build validation
 
 Run:
@@ -19,10 +35,10 @@ Run:
 Expected artifact:
 
 ```text
-build/libs/ringworld-0.1.0.jar
+build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The 2026-07-28 suite contains 69 unit/parameterized cases:
+The 2026-07-28 suite contains 83 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -35,12 +51,67 @@ The 2026-07-28 suite contains 69 unit/parameterized cases:
 | `RingSkyCycleTest` | Fixed angle, reduced vanilla-sun size, noon/dawn/dusk/midnight tone keyframes, smooth interpolation, time wrapping |
 | `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, completion, cache monotonicity, world hash |
 | `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
+| `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
+| `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
 
 Inspect machine-readable results under:
 
 ```text
 build/test-results/test/
 ```
+
+After any mapping or game-version migration, also search active Java and
+descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated
+26.1 source permits no intermediary residue. `ServerLevel` entity tick
+eligibility is in the private synthetic `lambda$tick$0`; its exact descriptor
+is documented in `MIXIN_MAP.md`. A clean compile alone is not evidence that a
+required mixin still applies.
+
+## 26.1 dedicated-server storage gate
+
+Run storage migration gates only from a disposable worktree/run directory.
+Never point them at `dist/`, the public service, or the only copy of a world.
+The 2026-07-28 checkpoint demonstrated:
+
+- a fresh 2,048×416 server world reached `Done`, saved settings and atlas under
+  `dimensions/minecraft/overworld/data/ringworld/`, and stopped cleanly;
+- a copied 1.21.11 RingWorld completed Mojang's upgrade and copied its legacy
+  settings byte-for-byte into the new path without modifying the source;
+- an invalid legacy atlas was rejected and rebuilt at the authoritative new
+  path rather than being silently trusted;
+- the exact required `ServerLevel.lambda$tick$0` mixin applied at runtime.
+
+These are server/storage gates only. They do not replace `runClient`, visual,
+seam, or two-client multiplayer validation.
+
+## 26.1 integrated safe-small client gate
+
+The 2026-07-28 isolated Java 25 client gate first confirmed that every startup
+mixin and shader resource loaded to the UI. It then ran the destructive
+2,048×416 creative harness twice:
+
+- a no-pregeneration topology run completed two natural wraps and every
+  representative gameplay/rim probe with 8.37/8.41 ms seam/rim averages and
+  no frames over 50 ms;
+- a full-pregeneration run completed all 13,312 atlas cells at roughly 82
+  cells/sec, built a 2,048×416 GPU texture and 79,872-vertex surface, and saved
+  both tangent and radial-up complete-ring captures;
+- both full-atlas natural crossings preserved yaw/pitch and emitted zero
+  correction packets; canonical storage, block interaction, entities,
+  projectile collision, boat, AI, fluid, explosion, collision, rim, wall top,
+  and exterior void all passed;
+- the full-atlas run averaged 8.41/8.37 ms and recorded one isolated frame over
+  50 ms in each measured phase while generation/upload work was active.
+
+This establishes the safe-small functional renderer and gameplay gate, not
+final visual tuning. Inspect both complete-ring images for colour, live/LOD
+handoff, local proxy exclusion, and width-edge alignment. The current
+15,552×256 production default still needs its multi-size visual/resource gate.
+
+The 26.1 `--quickPlaySingleplayer` projection task did not enter the selected
+world during this checkpoint, so the successful complete-ring captures came
+from the integrated harness. Treat that task as an S4 harness-port item rather
+than weakening the visual gate.
 
 ## Local automated smoke world
 
@@ -206,10 +277,10 @@ the process lifetime; restart Minecraft after editing it manually. The
 world-creation editor updates the cache itself.
 
 When changing the creation editor, open it from Create World and leave it
-visible for multiple frames at GUI scale 4. Minecraft 1.21.11 permits only one
-menu-blur layer per frame; custom screens must not call `renderBackground`
-inside `render`, because `Screen.renderWithTooltip` already performed that
-pass.
+visible for multiple frames at GUI scale 4. Minecraft 26.1 permits only one
+menu-blur layer per frame; custom screens must not call a background
+extraction method inside `extractRenderState`, because
+`Screen.extractRenderStateWithTooltipAndSubtitles` already owns that pass.
 
 ## Non-destructive join screenshot
 
@@ -300,6 +371,14 @@ Success is:
 ```
 
 in `run-multiplayer/server/logs/latest.log`.
+
+The isolated Minecraft 26.1.2/Java 25 run on 2026-07-28 achieved that result
+on a fresh 2,048×416 server. Both clients acknowledged format 2; the natural
+seam crossing was canonical with 0.25-block maximum packet and tick samples;
+visibility/query/distance, real melee, block update/interaction, shared boat,
+long teleport, periodic return, planned disconnect, and reconnect all passed.
+The clients were then stopped and the server saved all dimensions and exited
+cleanly.
 
 The integrated visual/seam harness deliberately holds position for 300 client
 ticks after its first seam screenshot. This keeps the seam chunks resident

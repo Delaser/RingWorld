@@ -1,7 +1,7 @@
 # RingWorld
 
-RingWorld is an experimental Fabric mod for Minecraft Java 1.21.11 that turns
-the Overworld into a finite, genuinely looping cylindrical world.
+RingWorld is an experimental Fabric mod that turns the Minecraft Overworld
+into a finite, genuinely looping cylindrical world.
 
 Walk far enough around the circumference and you return to the same place
 without entering a duplicate world or crossing a corrective teleport. Players,
@@ -11,10 +11,24 @@ world as a continuous ring across the sky.
 
 The Nether and End remain vanilla.
 
-> **Development status:** playable prototype and engine-level modpack feature.
-> The mod is under active development, must be installed on both the server and
-> every client, and is not currently intended for vanilla clients or broad
-> renderer/world-generation mod compatibility.
+> **Port status:** the active development branch targets Minecraft Java
+> 26.1.2. The common and client source sets now compile together on Java 25,
+> all 83 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
+> including dimension-owned saved-data migration. A safe-small integrated
+> client has completed terrain, full-atlas rendering, two natural wraps, and
+> the representative gameplay/rim matrix. A dedicated two-client seam,
+> combat, block, boat, teleport, and reconnect scenario also passes.
+> Multi-size visual review, UI completion, packaging, and staging gates are
+> still outstanding, so this is not a playable release yet. The validated
+> server, client packages, and rollback tag remain Minecraft 1.21.11
+> (`mc-1.21.11-final`).
+
+> **Loader direction:** current builds remain Fabric-only. Future development
+> is required to keep RingWorld's core loader-agnostic and place unavoidable
+> loader integration behind Fabric and NeoForge platform adapters. Dual-loader
+> support is the intended architecture; this is not yet a claim that a tested
+> NeoForge artifact is available.
 
 ## What it feels like to play
 
@@ -111,10 +125,11 @@ handoff behavior.
 
 | Component | Version |
 | --- | --- |
-| Minecraft Java | 1.21.11 |
-| Java | 21 |
-| Fabric Loader | 0.19.3 or newer compatible release |
-| Fabric API | 0.141.4+1.21.11 |
+| Minecraft Java | 26.1.2 port target |
+| Java | 25 |
+| Fabric Loader | 0.19.3 |
+| Fabric API | 0.155.2+26.1.2 |
+| Development mappings | None; 26.1.2 is unobfuscated |
 | RingWorld | The same jar on server and clients |
 
 The server performs a required geometry/protocol handshake and rejects missing
@@ -122,27 +137,26 @@ or incompatible clients.
 
 ## Build and install
 
-Build and run the unit suite with the included wrapper:
+Build the active port with Java 25:
 
 ```sh
-./gradlew test build
+JAVA_HOME=/path/to/jdk-25/Contents/Home \
+PATH="$JAVA_HOME/bin:$PATH" \
+./gradlew clean test build --console=plain
 ```
 
-The mod artifact is:
+The expected development artifact is:
 
 ```text
-build/libs/ringworld-0.1.0.jar
+build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-For local development:
-
-```sh
-./gradlew runClient
-```
-
-Install the RingWorld jar and Fabric API in the `mods/` directory of every
-client and the Fabric server. Configure the desired layout before the first
-Overworld load.
+The historical 95-error compiler inventory and subsequent source-port
+milestones are recorded in
+[the 26.1 compiler baseline](docs/MINECRAFT_26_1_COMPILER_BASELINE.md).
+The resulting jar is for development validation only. Client launch and
+install instructions remain suspended until the 26.1 runtime gates pass. For
+the working 1.21.11 package, use the public download above or the frozen tag.
 
 Existing ordinary Overworlds cannot be converted, and existing RingWorld
 dimensions cannot be resized in place.
@@ -162,7 +176,7 @@ The editor provides:
 Dedicated servers use `config/ringworld.properties` before first world load:
 
 ```properties
-widthBlocks=4096
+widthBlocks=256
 circumferenceBlocks=15552
 wallHeightBlocks=160
 testMode=false
@@ -177,7 +191,7 @@ checks. Saved settings always override later bootstrap configuration changes.
 
 | Layout | Circumference | Width | Purpose |
 | --- | ---: | ---: | --- |
-| Production default | 15,552 blocks / 972 chunks | 4,096 blocks / 256 chunks | Approximately one hour to walk a lap at normal speed |
+| Production default | 15,552 blocks / 972 chunks | 256 blocks / 16 chunks | Approximately one hour to walk a lap at normal speed; deliberately slender ring in the sky |
 | Safe-small | 2,048 blocks / 128 chunks | 416 blocks / 26 chunks | Fast development, atlas, and multiplayer testing |
 
 The production atlas covers 248,832 canonical chunks and is a substantial
@@ -240,7 +254,9 @@ Fabric modpacks.
 
 ## Testing
 
-Pure tests and build:
+The commands below describe the green 1.21.11 baseline. Run them from a
+separate checkout of `mc-1.21.11-final`; they will be restored on this branch
+after common and client compilation succeeds:
 
 ```sh
 ./gradlew test build

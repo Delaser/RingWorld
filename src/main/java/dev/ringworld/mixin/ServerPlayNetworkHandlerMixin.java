@@ -1,16 +1,16 @@
 package dev.ringworld.mixin;
 
 import dev.ringworld.world.RingGeometry;
+import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
+import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.network.ServerGamePacketListenerImpl;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.Vec3;
 import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.server.RingWorldMultiplayerTest;
-import net.minecraft.entity.Entity;
-import net.minecraft.network.packet.c2s.play.PlayerMoveC2SPacket;
-import net.minecraft.network.packet.c2s.play.VehicleMoveC2SPacket;
-import net.minecraft.server.network.ServerPlayNetworkHandler;
-import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.Vec3d;
-import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,22 +24,22 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * The fold happens after vanilla validates the small local step and does not
  * send a corrective teleport back to the client.
  */
-@Mixin(ServerPlayNetworkHandler.class)
+@Mixin(ServerGamePacketListenerImpl.class)
 abstract class ServerPlayNetworkHandlerMixin {
-    @Shadow public ServerPlayerEntity player;
-    @Shadow private double lastTickX;
-    @Shadow private double updatedX;
-    @Shadow private double lastTickRiddenX;
-    @Shadow private double updatedRiddenX;
+    @Shadow public ServerPlayer player;
+    @Shadow private double firstGoodX;
+    @Shadow private double lastGoodX;
+    @Shadow private double vehicleFirstGoodX;
+    @Shadow private double vehicleLastGoodX;
 
     @ModifyVariable(
-            method = "onPlayerMove",
+            method = "handleMovePlayer",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/server/network/ServerPlayNetworkHandler;canInteractWithGame()Z"),
+                    target = "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;hasClientLoaded()Z"),
             argsOnly = true)
-    private PlayerMoveC2SPacket ringworld$projectPlayerMovement(PlayerMoveC2SPacket packet) {
-        ServerWorld world = player.getEntityWorld();
-        if (!packet.changesPosition() || world.getRegistryKey() != World.OVERWORLD) return packet;
+    private ServerboundMovePlayerPacket ringworld$projectPlayerMovement(ServerboundMovePlayerPacket packet) {
+        ServerLevel world = player.level();
+        if (!packet.hasPosition() || world.dimension() != Level.OVERWORLD) return packet;
         RingGeometry geometry = RingWorldServer.geometryFor(world);
         double presentationX = packet.getX(player.getX());
         double nearestX = geometry.nearestImageX(presentationX, player.getX());
@@ -56,64 +56,64 @@ abstract class ServerPlayNetworkHandlerMixin {
             double localSourceX = geometry.nearestImageX(player.getX(), canonicalTargetX);
             double sourceShift = localSourceX - player.getX();
             if (sourceShift != 0.0) {
-                player.setPosition(localSourceX, player.getY(), player.getZ());
-                lastTickX += sourceShift;
-                updatedX += sourceShift;
+                player.setPos(localSourceX, player.getY(), player.getZ());
+                firstGoodX += sourceShift;
+                lastGoodX += sourceShift;
                 RingWorldServer.recordPlayerCanonicalWrap(player);
             }
         }
 
         if (canonicalTargetX == presentationX) return packet;
-        return new PlayerMoveC2SPacket.Full(canonicalTargetX,
+        return new ServerboundMovePlayerPacket.PosRot(canonicalTargetX,
                 packet.getY(player.getY()), packet.getZ(player.getZ()),
-                packet.getYaw(player.getYaw()), packet.getPitch(player.getPitch()),
+                packet.getYRot(player.getYRot()), packet.getXRot(player.getXRot()),
                 packet.isOnGround(), packet.horizontalCollision());
     }
 
-    @Inject(method = "onPlayerMove", at = @At("TAIL"))
-    private void ringworld$foldPlayerAfterMovement(PlayerMoveC2SPacket packet, CallbackInfo ci) {
-        ServerWorld world = player.getEntityWorld();
-        if (world.getRegistryKey() != World.OVERWORLD) return;
+    @Inject(method = "handleMovePlayer", at = @At("TAIL"))
+    private void ringworld$foldPlayerAfterMovement(ServerboundMovePlayerPacket packet, CallbackInfo ci) {
+        ServerLevel world = player.level();
+        if (world.dimension() != Level.OVERWORLD) return;
         double shift = RingWorldServer.canonicalizeEntityPosition(player, RingWorldServer.geometryFor(world));
         if (shift == 0.0) return;
         RingWorldServer.recordPlayerCanonicalWrap(player);
         // Vanilla's anti-cheat baselines must move to the same coordinate
         // chart or the next perfectly ordinary packet looks C blocks long.
-        lastTickX += shift;
-        updatedX += shift;
+        firstGoodX += shift;
+        lastGoodX += shift;
     }
 
-    @ModifyVariable(method = "onVehicleMove", at = @At("HEAD"), argsOnly = true)
-    private VehicleMoveC2SPacket ringworld$projectVehicleMovement(VehicleMoveC2SPacket packet) {
-        ServerWorld world = player.getEntityWorld();
+    @ModifyVariable(method = "handleMoveVehicle", at = @At("HEAD"), argsOnly = true)
+    private ServerboundMoveVehiclePacket ringworld$projectVehicleMovement(ServerboundMoveVehiclePacket packet) {
+        ServerLevel world = player.level();
         Entity vehicle = player.getRootVehicle();
-        if (world.getRegistryKey() != World.OVERWORLD || vehicle == player) return packet;
+        if (world.dimension() != Level.OVERWORLD || vehicle == player) return packet;
         RingGeometry geometry = RingWorldServer.geometryFor(world);
-        Vec3d position = packet.position();
+        Vec3 position = packet.position();
         double nearestX = geometry.nearestImageX(position.x, vehicle.getX());
         if (nearestX == position.x) return packet;
-        return new VehicleMoveC2SPacket(
-                new Vec3d(nearestX, position.y, position.z),
-                packet.yaw(), packet.pitch(), packet.onGround());
+        return new ServerboundMoveVehiclePacket(
+                new Vec3(nearestX, position.y, position.z),
+                packet.yRot(), packet.xRot(), packet.onGround());
     }
 
-    @Inject(method = "onVehicleMove", at = @At("TAIL"))
-    private void ringworld$foldVehicleAfterMovement(VehicleMoveC2SPacket packet, CallbackInfo ci) {
-        ServerWorld world = player.getEntityWorld();
+    @Inject(method = "handleMoveVehicle", at = @At("TAIL"))
+    private void ringworld$foldVehicleAfterMovement(ServerboundMoveVehiclePacket packet, CallbackInfo ci) {
+        ServerLevel world = player.level();
         Entity vehicle = player.getRootVehicle();
-        if (world.getRegistryKey() != World.OVERWORLD || vehicle == player) return;
+        if (world.dimension() != Level.OVERWORLD || vehicle == player) return;
         RingGeometry geometry = RingWorldServer.geometryFor(world);
         double vehicleShift = RingWorldServer.canonicalizeEntityPosition(vehicle, geometry);
         if (vehicleShift != 0.0) {
-            lastTickRiddenX += vehicleShift;
-            updatedRiddenX += vehicleShift;
+            vehicleFirstGoodX += vehicleShift;
+            vehicleLastGoodX += vehicleShift;
         }
         // Passenger poses were calculated before the vehicle folded.
-        vehicle.streamSelfAndPassengers().skip(1).forEach(passenger -> {
+        vehicle.getSelfAndPassengers().skip(1).forEach(passenger -> {
             double passengerShift = RingWorldServer.canonicalizeEntityPosition(passenger, geometry);
             if (passenger == player && passengerShift != 0.0) {
-                lastTickX += passengerShift;
-                updatedX += passengerShift;
+                firstGoodX += passengerShift;
+                lastGoodX += passengerShift;
             }
         });
     }

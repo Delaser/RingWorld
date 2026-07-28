@@ -16,9 +16,20 @@ Start here:
 - [`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md): gated
   Minecraft 26.1.2 port plan, primary/secondary agent ownership, integration
   order, validation gates, and deployment criteria.
+- [`PORTING_26_1_AUDIT.md`](PORTING_26_1_AUDIT.md): official-source audit of
+  the 26.1.2 toolchain, Fabric API changes, and all 35 candidate mixin targets.
+- [`MINECRAFT_1_21_11_FINAL_BASELINE.md`](MINECRAFT_1_21_11_FINAL_BASELINE.md):
+  immutable pre-port tag, test results, artifact and screenshot hashes, and
+  protected rollback inventory.
+- [`MINECRAFT_26_1_COMPILER_BASELINE.md`](MINECRAFT_26_1_COMPILER_BASELINE.md):
+  historical Java 25/26.1.2 95-error inventory and the subsequent green
+  build/dedicated-server checkpoint.
 - [`AGENT_COLLABORATION.md`](AGENT_COLLABORATION.md): cross-PC GitHub issue
   coordination, optional same-clone mailbox, file ownership, and handoff
   protocol for two ChatGPT Desktop coding agents.
+- [`CODEX_USAGE_MONITOR.md`](CODEX_USAGE_MONITOR.md): primary-account weekly
+  quota reserve policy, supported app-server check, and macOS background
+  monitor.
 - [`SECONDARY_AGENT_BOOTSTRAP_PROMPT.txt`](SECONDARY_AGENT_BOOTSTRAP_PROMPT.txt):
   copy-paste setup and first-task prompt for the secondary dedicated-PC agent.
 - [`NETWORK_PROTOCOL.md`](NETWORK_PROTOCOL.md): login handshake, atlas

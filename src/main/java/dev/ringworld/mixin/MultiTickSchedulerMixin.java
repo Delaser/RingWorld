@@ -2,16 +2,16 @@ package dev.ringworld.mixin;
 
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingTickSchedulerAccess;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.tick.MultiTickScheduler;
-import net.minecraft.world.tick.OrderedTick;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.ticks.ScheduledTick;
+import net.minecraft.world.ticks.WorldGenTickAccess;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 /** Canonicalizes block and fluid ticks recorded during periodic worldgen. */
-@Mixin(MultiTickScheduler.class)
+@Mixin(WorldGenTickAccess.class)
 abstract class MultiTickSchedulerMixin<T> implements RingTickSchedulerAccess {
     @Unique private RingGeometry ringworld$geometry;
 
@@ -21,24 +21,24 @@ abstract class MultiTickSchedulerMixin<T> implements RingTickSchedulerAccess {
     }
 
     @ModifyArg(
-            method = "scheduleTick",
+            method = "schedule",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/world/tick/BasicTickScheduler;scheduleTick(Lnet/minecraft/world/tick/OrderedTick;)V"),
+                    target = "Lnet/minecraft/world/ticks/TickContainerAccess;schedule(Lnet/minecraft/world/ticks/ScheduledTick;)V"),
             index = 0)
-    private OrderedTick<T> ringworld$canonicalScheduledTick(OrderedTick<T> tick) {
+    private ScheduledTick<T> ringworld$canonicalScheduledTick(ScheduledTick<T> tick) {
         RingGeometry geometry = ringworld$geometry;
         if (geometry == null) return tick;
         BlockPos pos = tick.pos();
         int x = geometry.wrapBlockX(pos.getX());
         if (x == pos.getX()) return tick;
-        return new OrderedTick<>(tick.type(), new BlockPos(x, pos.getY(), pos.getZ()),
+        return new ScheduledTick<>(tick.type(), new BlockPos(x, pos.getY(), pos.getZ()),
                 tick.triggerTick(), tick.priority(), tick.subTickOrder());
     }
 
     @ModifyArg(
-            method = "isQueued",
+            method = "hasScheduledTick",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/world/tick/BasicTickScheduler;isQueued(Lnet/minecraft/util/math/BlockPos;Ljava/lang/Object;)Z"),
+                    target = "Lnet/minecraft/world/ticks/TickContainerAccess;hasScheduledTick(Lnet/minecraft/core/BlockPos;Ljava/lang/Object;)Z"),
             index = 0)
     private BlockPos ringworld$canonicalQueuedPosition(BlockPos pos) {
         RingGeometry geometry = ringworld$geometry;

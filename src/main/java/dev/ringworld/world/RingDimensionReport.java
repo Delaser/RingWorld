@@ -145,7 +145,7 @@ public record RingDimensionReport(
         }
 
         double angularWidth = geometry.oppositeAngularWidthDegrees(0.0);
-        if (angularWidth < 10.0) {
+        if (angularWidth < 2.5) {
             warnings.add("opposite ring width is only " + format(angularWidth)
                     + " degrees and may look unusually narrow");
         } else if (angularWidth > 120.0) {

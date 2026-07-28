@@ -3,13 +3,13 @@ package dev.ringworld.mixin;
 import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingTickSchedulerAccess;
-import net.minecraft.entity.Entity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.ChunkRegion;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.Chunk;
-import net.minecraft.world.tick.MultiTickScheduler;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.ticks.WorldGenTickAccess;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -20,25 +20,25 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /** Canonicalizes positions committed by a seam-crossing worldgen region. */
-@Mixin(ChunkRegion.class)
+@Mixin(WorldGenRegion.class)
 abstract class ChunkRegionMixin {
-    @Shadow @Final private ServerWorld world;
-    @Shadow @Final private Chunk centerPos;
-    @Shadow @Final private MultiTickScheduler<?> blockTickScheduler;
-    @Shadow @Final private MultiTickScheduler<?> fluidTickScheduler;
+    @Shadow @Final private ServerLevel level;
+    @Shadow @Final private ChunkAccess center;
+    @Shadow @Final private WorldGenTickAccess<?> blockTicks;
+    @Shadow @Final private WorldGenTickAccess<?> fluidTicks;
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void ringworld$attachGenerationSchedulers(CallbackInfo ci) {
         RingGeometry geometry = geometry();
         if (geometry == null) return;
-        ((RingTickSchedulerAccess) blockTickScheduler).ringworld$setGeometry(geometry);
-        ((RingTickSchedulerAccess) fluidTickScheduler).ringworld$setGeometry(geometry);
+        ((RingTickSchedulerAccess) blockTicks).ringworld$setGeometry(geometry);
+        ((RingTickSchedulerAccess) fluidTicks).ringworld$setGeometry(geometry);
     }
 
     @ModifyVariable(
             method = "getBlockEntity",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/world/ChunkRegion;getChunk(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/chunk/Chunk;",
+                    target = "Lnet/minecraft/server/level/WorldGenRegion;getChunk(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/chunk/ChunkAccess;",
                     shift = At.Shift.AFTER),
             argsOnly = true)
     private BlockPos ringworld$canonicalReadPosition(BlockPos pos) {
@@ -52,9 +52,9 @@ abstract class ChunkRegionMixin {
      * feature writes through the -1 alias, for example.
      */
     @ModifyVariable(
-            method = "setBlockState",
+            method = "setBlock",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/world/ChunkRegion;getChunk(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/chunk/Chunk;",
+                    target = "Lnet/minecraft/server/level/WorldGenRegion;getChunk(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/chunk/ChunkAccess;",
                     shift = At.Shift.AFTER),
             argsOnly = true)
     private BlockPos ringworld$canonicalWritePosition(BlockPos pos) {
@@ -63,22 +63,22 @@ abstract class ChunkRegionMixin {
 
     /** Select the holder through its nearby alias while retaining canonical NBT coordinates. */
     @Redirect(
-            method = "markBlockForPostProcessing",
+            method = "markPosForPostprocessing",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/world/ChunkRegion;getChunk(Lnet/minecraft/util/math/BlockPos;)Lnet/minecraft/world/chunk/Chunk;"))
-    private Chunk ringworld$getPostProcessingChunkThroughLocalAlias(ChunkRegion region, BlockPos canonicalPos) {
+                    target = "Lnet/minecraft/server/level/WorldGenRegion;getChunk(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/chunk/ChunkAccess;"))
+    private ChunkAccess ringworld$getPostProcessingChunkThroughLocalAlias(WorldGenRegion region, BlockPos canonicalPos) {
         RingGeometry geometry = geometry();
         if (geometry == null) return region.getChunk(canonicalPos);
-        double referenceX = centerPos.getPos().getCenterX();
+        double referenceX = center.getPos().getMiddleBlockX();
         int aliasX = (int) Math.floor(geometry.nearestImageX(canonicalPos.getX(), referenceX));
         return region.getChunk(new BlockPos(aliasX, canonicalPos.getY(), canonicalPos.getZ()));
     }
 
-    @ModifyVariable(method = "spawnEntity", at = @At("HEAD"), argsOnly = true)
+    @ModifyVariable(method = "addFreshEntity", at = @At("HEAD"), argsOnly = true)
     private Entity ringworld$canonicalGeneratedEntity(Entity entity) {
         RingGeometry geometry = geometry();
         if (geometry != null) {
-            entity.setPosition(geometry.wrapX(entity.getX()), entity.getY(), entity.getZ());
+            entity.setPos(geometry.wrapX(entity.getX()), entity.getY(), entity.getZ());
         }
         return entity;
     }
@@ -91,6 +91,6 @@ abstract class ChunkRegionMixin {
     }
 
     private RingGeometry geometry() {
-        return world.getRegistryKey() == World.OVERWORLD ? RingWorldServer.geometryFor(world) : null;
+        return level.dimension() == Level.OVERWORLD ? RingWorldServer.geometryFor(level) : null;
     }
 }

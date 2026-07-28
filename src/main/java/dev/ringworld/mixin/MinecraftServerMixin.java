@@ -2,22 +2,36 @@ package dev.ringworld.mixin;
 
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingWorldConfig;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.biome.source.util.MultiNoiseUtil;
+import dev.ringworld.world.RingWorldStorageAccess;
+import java.nio.file.Path;
+import net.minecraft.core.BlockPos;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.biome.Climate;
+import net.minecraft.world.level.storage.LevelStorageSource;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-/** Keeps vanilla's first-world spawn search inside the finite ring band. */
+/** Owns first-world spawn bounds and the read-only dimension-storage bridge. */
 @Mixin(MinecraftServer.class)
-abstract class MinecraftServerMixin {
+abstract class MinecraftServerMixin implements RingWorldStorageAccess {
+    @Shadow @Final protected LevelStorageSource.LevelStorageAccess storageSource;
+
+    @Override
+    public Path ringworld$getDimensionPath(ResourceKey<Level> dimension) {
+        return storageSource.getDimensionPath(dimension);
+    }
+
     @Redirect(
-            method = "setupSpawn",
+            method = "setInitialSpawn",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/world/biome/source/util/MultiNoiseUtil$MultiNoiseSampler;findBestSpawnPosition()Lnet/minecraft/util/math/BlockPos;"))
-    private static BlockPos ringworld$constrainInitialSpawn(MultiNoiseUtil.MultiNoiseSampler sampler) {
-        BlockPos vanilla = sampler.findBestSpawnPosition();
+                    target = "Lnet/minecraft/world/level/biome/Climate$Sampler;findSpawnPosition()Lnet/minecraft/core/BlockPos;"))
+    private static BlockPos ringworld$constrainInitialSpawn(Climate.Sampler sampler) {
+        BlockPos vanilla = sampler.findSpawnPosition();
         RingWorldConfig config = RingWorldConfig.load();
         RingGeometry geometry = new RingGeometry(config.widthBlocks(), config.circumferenceBlocks());
 

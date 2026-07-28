@@ -8,12 +8,11 @@ import dev.ringworld.client.ClientRingState;
 import dev.ringworld.world.RingDimensionReport;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingRenderProfile;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.GlobalSettings;
-import net.minecraft.client.render.Camera;
-import net.minecraft.client.render.RenderTickCounter;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GlobalSettingsUniform;
+import net.minecraft.util.Mth;
+import net.minecraft.world.phys.Vec3;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,7 +27,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * layout. All overridden terrain/cloud shaders consume the same values, while
  * non-RingWorld shaders simply ignore the trailing fields.
  */
-@Mixin(GlobalSettings.class)
+@Mixin(GlobalSettingsUniform.class)
 abstract class GlobalSettingsMixin {
     private static final int RINGWORLD_GLOBALS_SIZE = new Std140SizeCalculator()
             .putIVec3().putVec3().putVec2().putFloat().putFloat().putInt().putInt()
@@ -40,34 +39,31 @@ abstract class GlobalSettingsMixin {
     @ModifyArg(
             method = "<init>",
             at = @At(value = "INVOKE",
-                    target = "Lcom/mojang/blaze3d/systems/GpuDevice;createBuffer("
-                            + "Ljava/util/function/Supplier;IJ)"
-                            + "Lcom/mojang/blaze3d/buffers/GpuBuffer;"),
+                    target = "Lcom/mojang/blaze3d/systems/GpuDevice;createBuffer(Ljava/util/function/Supplier;IJ)Lcom/mojang/blaze3d/buffers/GpuBuffer;"),
             index = 2)
     private long ringworld$extendGlobalsBuffer(long vanillaSize) {
         return RINGWORLD_GLOBALS_SIZE;
     }
 
-    @Inject(method = "set", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "update", at = @At("HEAD"), cancellable = true)
     private void ringworld$publishLayout(int width, int height, double glintStrength,
-                                         long time, RenderTickCounter tickCounter,
-                                         int menuBackgroundBlurriness, Camera camera,
+                                         long time, DeltaTracker tickCounter,
+                                         int menuBackgroundBlurriness, Vec3 cameraPosition,
                                          boolean useRgss, CallbackInfo ci) {
-        Vec3d cameraPosition = camera.getCameraPos();
-        int cameraX = MathHelper.floor(cameraPosition.x);
-        int cameraY = MathHelper.floor(cameraPosition.y);
-        int cameraZ = MathHelper.floor(cameraPosition.z);
+        int cameraX = Mth.floor(cameraPosition.x);
+        int cameraY = Mth.floor(cameraPosition.y);
+        int cameraZ = Mth.floor(cameraPosition.z);
 
         RingGeometry geometry = ClientRingState.geometry();
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         int active = geometry == null ? 0 : 1;
         int circumference = geometry == null ? 0 : geometry.circumferenceBlocks();
         int ringWidth = geometry == null ? 0 : geometry.widthBlocks();
         int wallHeight = geometry == null ? 0 : ClientRingState.wallHeightBlocks();
 
         float surfaceReferenceY = geometry == null ? 0.0F : ClientRingState.surfaceReferenceY();
-        int worldBottomY = active == 1 && client.world != null
-                ? client.world.getBottomY()
+        int worldBottomY = active == 1 && client.level != null
+                ? client.level.getMinY()
                 : RingDimensionReport.VANILLA_OVERWORLD_BOTTOM_Y;
         float wallTopY = active == 1 ? worldBottomY + wallHeight : 0.0F;
         float cloudBaseY = active == 1
@@ -80,7 +76,7 @@ abstract class GlobalSettingsMixin {
         float halfCircumference = geometry == null ? 0.0F
                 : geometry.circumferenceBlocks() * 0.5F;
         float viewDistanceBlocks = active == 1
-                ? client.options.getClampedViewDistance() * 16.0F
+                ? client.options.getEffectiveRenderDistance() * 16.0F
                 : 0.0F;
         RingRenderProfile profile = geometry == null
                 ? null
@@ -94,7 +90,7 @@ abstract class GlobalSettingsMixin {
                             (float)(cameraZ - cameraPosition.z))
                     .putVec2(width, height)
                     .putFloat((float)glintStrength)
-                    .putFloat(((float)(time % 24_000L) + tickCounter.getTickProgress(false))
+                    .putFloat(((float)(time % 24_000L) + tickCounter.getGameTimeDeltaPartialTick(false))
                             / 24_000.0F)
                     .putInt(menuBackgroundBlurriness)
                     .putInt(useRgss ? 1 : 0)

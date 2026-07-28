@@ -279,8 +279,44 @@ public final class RingTerrainAtlas {
                 atlas.colors[index] = input.readInt() & 0xFFFFFF;
                 if (atlas.present[index]) atlas.presentCount++;
             }
+            if (input.read() != -1) throw new IOException("trailing terrain atlas data");
             return atlas;
         }
+    }
+
+    /**
+     * Loads the authoritative dimension-owned atlas or migrates a validated
+     * legacy root atlas exactly once. An invalid authoritative file never
+     * falls back to legacy state, and a legacy file is copied only after its
+     * geometry and world hash have passed {@link #load}.
+     */
+    public static StorageLoad loadStorage(Path currentPath, Path legacyPath,
+                                          RingGeometry expectedGeometry, long expectedHash) {
+        if (Files.exists(currentPath)) {
+            try {
+                return new StorageLoad(
+                        load(currentPath, expectedGeometry, expectedHash),
+                        StorageStatus.CURRENT);
+            } catch (IOException | IllegalArgumentException | ArithmeticException exception) {
+                return new StorageLoad(
+                        new RingTerrainAtlas(expectedGeometry, expectedHash),
+                        StorageStatus.INVALID_CURRENT);
+            }
+        }
+        if (Files.isRegularFile(legacyPath)) {
+            try {
+                RingTerrainAtlas migrated = load(legacyPath, expectedGeometry, expectedHash);
+                migrated.save(currentPath);
+                return new StorageLoad(migrated, StorageStatus.MIGRATED_LEGACY);
+            } catch (IOException | IllegalArgumentException | ArithmeticException exception) {
+                return new StorageLoad(
+                        new RingTerrainAtlas(expectedGeometry, expectedHash),
+                        StorageStatus.INVALID_LEGACY);
+            }
+        }
+        return new StorageLoad(
+                new RingTerrainAtlas(expectedGeometry, expectedHash),
+                StorageStatus.FRESH);
     }
 
     public long firstMissingChunkIndex() {
@@ -334,5 +370,15 @@ public final class RingTerrainAtlas {
     public record SurfaceSample(double height, int color, double coverage) {
         public static final SurfaceSample MISSING = new SurfaceSample(RingGeometry.SURFACE_Y, -1, 0.0);
         public boolean present() { return color >= 0 && coverage > 0.0; }
+    }
+
+    public record StorageLoad(RingTerrainAtlas atlas, StorageStatus status) { }
+
+    public enum StorageStatus {
+        CURRENT,
+        MIGRATED_LEGACY,
+        FRESH,
+        INVALID_CURRENT,
+        INVALID_LEGACY
     }
 }

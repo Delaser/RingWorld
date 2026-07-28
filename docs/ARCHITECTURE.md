@@ -24,6 +24,28 @@ The implementation spans five coupled layers:
 | Network/client charts | Required settings handshake and canonical-to-nearest-image packet mapping |
 | Rendering | Curved chunks/entities/clouds, fixed sky, complete-ring LOD texture, and culling |
 
+## Loader boundary
+
+The currently runnable platform is Fabric, but the architecture targets a
+loader-neutral core with thin Fabric and NeoForge adapters. Geometry,
+topology, persistent settings, atlas formats, coordinate transforms, protocol
+models, renderer math, mixin behavior that is valid on both loaders, and their
+tests belong to shared code.
+
+Platform-owned code is limited to:
+
+- mod metadata and entrypoints;
+- lifecycle, command, connection, tick, chunk, and render event registration;
+- custom-payload registration, sending, and handler scheduling;
+- game/configuration directory discovery;
+- loader dependency declarations, packaging, and launch fixtures.
+
+New features should depend on small RingWorld-owned platform interfaces rather
+than importing a loader API into shared domain code. Both adapters must
+preserve the same saved-data and network formats. Until equivalent NeoForge
+runtime and multiplayer gates pass, documentation must continue to describe
+the distributed implementation as Fabric-only.
+
 ## The three coordinate domains
 
 Most difficult bugs in this project are caused by using a valid coordinate in
@@ -111,9 +133,9 @@ camera or custom controls.
 
 ```mermaid
 flowchart TD
-    A["Fabric common initialization"] --> B["Load bootstrap ringworld.properties"]
+    A["Loader platform initialization"] --> B["Load bootstrap ringworld.properties"]
     A --> C["Register payload codecs and server hooks"]
-    D["Overworld ServerWorld load"] --> E["Load or create RingWorldSettings"]
+    D["Overworld ServerLevel load"] --> E["Load or create RingWorldSettings"]
     E --> F["Attach geometry to the Overworld noise generator"]
     E --> G["Load terrain atlas cache"]
     H["Player joins"] --> I["Server sends immutable geometry"]
@@ -144,8 +166,8 @@ Natural movement deliberately avoids a teleport.
 ```mermaid
 sequenceDiagram
     participant C as Client presentation chart
-    participant N as ClientConnection
-    participant S as ServerPlayNetworkHandler
+    participant N as Connection
+    participant S as ServerGamePacketListenerImpl
     participant E as Canonical server entity
     C->>N: small move from C-ε to C+ε
     N->>S: continuous presentation X
@@ -263,7 +285,7 @@ Y is unchanged.
 `RingNoiseCoordinates` precomputes these values when `C <= 1,048,576`.
 `RingNoiseRouter` applies them only to density functions tagged as actual
 horizontal-coordinate consumers. Vanilla caches, interpolation wrappers,
-aquifer-local coordinates, and the identity of `ChunkNoiseSampler` remain
+aquifer-local coordinates, and the identity of `NoiseChunk` remain
 intact. The router override is carried through `RingNoiseSamplingContext` only
 for the Overworld generator.
 
@@ -303,10 +325,11 @@ maximum of one loaded boundary chunk per tick.
 
 ### World settings
 
-Minecraft persistent state key:
+Minecraft 26.1 namespaced saved-data identifier and dimension-owned file:
 
 ```text
-ringworld_settings
+ringworld:settings
+<world>/dimensions/minecraft/overworld/data/ringworld/settings.dat
 ```
 
 Serialized fields:
@@ -321,10 +344,23 @@ format
 layoutFingerprint (derived, not serialized)
 ```
 
+For a copied 1.21.11 RingWorld, the legacy file is:
+
+```text
+<world>/data/ringworld_settings.dat
+```
+
+When the namespaced file is absent, startup copies that legacy state
+atomically into the authoritative Overworld data directory before
+`SavedDataStorage` reads it. The decoded saved values continue to win over
+bootstrap configuration, preserving immutable geometry. A world with
+26.1 Overworld region files but no readable RingWorld settings is rejected
+rather than converted in place.
+
 ### Server terrain atlas
 
 ```text
-<world>/data/ringworld-terrain-atlas.rwat.gz
+<world>/dimensions/minecraft/overworld/data/ringworld/terrain-atlas.rwat.gz
 ```
 
 The world hash includes the complete layout fingerprint plus atlas format and
@@ -335,6 +371,14 @@ Because a dedicated server never resource-loads Minecraft's client-owned
 grass/foliage colour maps, a zero lookup falls back to the sampled block map
 colour. Other blocks always use map colour. Older atlas formats are ignored
 and rebuilt.
+
+The copied-1.21.11 legacy atlas remains at
+`<world>/data/ringworld-terrain-atlas.rwat.gz`. It is consulted only when the
+new dimension-owned file is absent, and migrates only after format, geometry,
+sample layout, and world-hash validation. Once the new file exists it is
+authoritative: a corrupt or mismatched new file rebuilds from canonical chunks
+without falling back to possibly stale legacy data. Atomic `.tmp` replacement
+makes an interrupted save recoverable on the next save or validated migration.
 
 ### Client terrain atlas
 
@@ -350,9 +394,9 @@ incomplete server tiles never erase more complete local cells.
 `dev.ringworld.api.RingWorldApi` currently exposes:
 
 ```java
-boolean isRingWorld(ServerWorld world)
-RingWorldSettings settings(ServerWorld world)
-RingGeometry geometry(ServerWorld world)
+boolean isRingWorld(ServerLevel world)
+RingWorldSettings settings(ServerLevel world)
+RingGeometry geometry(ServerLevel world)
 ```
 
 It is server-world only and read-only. `settings` returns `null` outside the

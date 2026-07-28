@@ -1,7 +1,7 @@
 package dev.ringworld.world;
 
-import net.minecraft.util.math.Box;
-import net.minecraft.util.math.Vec3d;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Pure coordinate mathematics shared by client, server, and compatibility
@@ -125,18 +125,18 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
     }
 
     /** Position in physical ring space: X is lateral width; Y/Z form the ring. */
-    public Vec3d toPhysical(double x, double y, double z) {
+    public Vec3 toPhysical(double x, double y, double z) {
         double angle = angleAt(x);
         double radialDistance = physicalRadiusAt(y);
-        return new Vec3d(z, radialDistance * Math.cos(angle), radialDistance * Math.sin(angle));
+        return new Vec3(z, radialDistance * Math.cos(angle), radialDistance * Math.sin(angle));
     }
 
     /** Returns ring-space coordinates in the supplied camera's local Minecraft axes. */
-    public Vec3d toCameraLocal(Vec3d canonicalPosition, Vec3d cameraCanonicalPosition) {
+    public Vec3 toCameraLocal(Vec3 canonicalPosition, Vec3 cameraCanonicalPosition) {
         double deltaAngle = tangentFrameAngle(cameraCanonicalPosition.x, canonicalPosition.x);
         double positionRadius = physicalRadiusAt(canonicalPosition.y);
         double cameraRadius = physicalRadiusAt(cameraCanonicalPosition.y);
-        return new Vec3d(
+        return new Vec3(
                 positionRadius * Math.sin(deltaAngle),
                 cameraRadius - positionRadius * Math.cos(deltaAngle),
                 canonicalPosition.z - cameraCanonicalPosition.z);
@@ -147,8 +147,8 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
      * axes. The centre has zero radial distance and lies on the band-width
      * midline, so this remains one authoritative point for every client X chart.
      */
-    public Vec3d ringCenterInCameraFrame(Vec3d cameraCanonicalPosition) {
-        Vec3d centerAtCameraAngle = new Vec3d(
+    public Vec3 ringCenterInCameraFrame(Vec3 cameraCanonicalPosition) {
+        Vec3 centerAtCameraAngle = new Vec3(
                 cameraCanonicalPosition.x,
                 physicalCenterY(),
                 0.0);
@@ -156,10 +156,10 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
     }
 
     /** Unit view direction from the camera to the physical ring centre. */
-    public Vec3d directionToRingCenter(Vec3d cameraCanonicalPosition) {
-        Vec3d center = ringCenterInCameraFrame(cameraCanonicalPosition);
-        return center.lengthSquared() < 1.0e-12
-                ? new Vec3d(0.0, 1.0, 0.0)
+    public Vec3 directionToRingCenter(Vec3 cameraCanonicalPosition) {
+        Vec3 center = ringCenterInCameraFrame(cameraCanonicalPosition);
+        return center.lengthSqr() < 1.0e-12
+                ? new Vec3(0.0, 1.0, 0.0)
                 : center.normalize();
     }
 
@@ -169,7 +169,7 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
      * culling before the terrain vertex shader runs, so the renderer uses
      * this exact cylindrical envelope instead of the original flat box.
      */
-    public Box toCameraLocalBounds(Box canonicalBounds, Vec3d cameraCanonicalPosition) {
+    public AABB toCameraLocalBounds(AABB canonicalBounds, Vec3 cameraCanonicalPosition) {
         double startAngle = tangentFrameAngle(cameraCanonicalPosition.x, canonicalBounds.minX);
         double endAngle = startAngle + Math.PI * 2.0
                 * (canonicalBounds.maxX - canonicalBounds.minX) / circumferenceBlocks;
@@ -202,7 +202,7 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
             }
         }
 
-        return new Box(minX, minY,
+        return new AABB(minX, minY,
                 canonicalBounds.minZ - cameraCanonicalPosition.z,
                 maxX, maxY,
                 canonicalBounds.maxZ - cameraCanonicalPosition.z);
@@ -222,9 +222,9 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
      * Physical outward direction for renderers and compatibility integrations.
      * Gameplay gravity remains vanilla -Y in intrinsic surface coordinates.
      */
-    public Vec3d gravityAt(double canonicalX) {
+    public Vec3 gravityAt(double canonicalX) {
         double angle = angleAt(canonicalX);
-        return new Vec3d(0.0, Math.cos(angle), Math.sin(angle));
+        return new Vec3(0.0, Math.cos(angle), Math.sin(angle));
     }
 
     public double shortestCircumferenceDelta(double fromX, double toX) {

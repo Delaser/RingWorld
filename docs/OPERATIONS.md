@@ -1,18 +1,26 @@
 # Configuration and operations
 
-## Supported stack
+## Active port stack
 
 | Component | Version |
 | --- | --- |
-| Minecraft Java | 1.21.11 |
-| Java | 21 |
+| Minecraft Java | 26.1.2 |
+| Java | 25 |
 | Fabric Loader | 0.19.3 |
-| Fabric API | 0.141.4+1.21.11 |
-| Yarn mappings | 1.21.11+build.6 |
+| Fabric API | 0.155.2+26.1.2 |
+| Mappings | None; Minecraft 26.1.2 is unobfuscated |
 | Fabric Loom | 1.17 snapshot used by `gradle.properties` |
-| Gradle wrapper | 9.5.0 |
+| Gradle wrapper | 9.5.1 |
 
-The mod must be installed on the server and every client.
+This stack now produces a green development build and passes isolated fresh
+and copied-world dedicated-server launch gates plus the integrated safe-small
+client atlas/rendering/gameplay harness and dedicated two-client multiplayer
+matrix. It remains non-playable until multi-size visual review, UI completion,
+packaging, and staging gates pass. The working service, packages, and rollback
+remain Minecraft 1.21.11 at
+`mc-1.21.11-final`; do not deploy the 26.1 branch until every release gate in
+the port plan passes. The finished mod must be installed on the server and
+every client.
 
 ## Bootstrap configuration
 
@@ -26,7 +34,7 @@ If absent, the mod creates it at startup.
 
 | Property | Default | Validation/meaning |
 | --- | ---: | --- |
-| `widthBlocks` | 4096 | At least 256, divisible by 16, sufficient rim interior, and within atlas/axis budgets |
+| `widthBlocks` | 256 | At least 256, divisible by 16, sufficient rim interior, and within atlas/axis budgets |
 | `circumferenceBlocks` | 15552 | Divisible by 16 and large enough for 64 blocks of radial clearance above the build top (2,016 minimum for vanilla bounds) |
 | `wallHeightBlocks` | 160 | At least 32; measured from world minimum Y; wall and cloud top must fit the build range |
 | `testMode` | false | Enables destructive local automated harness |
@@ -64,9 +72,22 @@ Every saved layout field takes precedence on subsequent loads. Changing
 bootstrap dimensions or wall height does not resize or redecorate an existing
 RingWorld. Format-1 saves migrate to format 2 with surface reference Y=64.
 
+Minecraft 26.1 stores RingWorld settings at:
+
+```text
+<world>/dimensions/minecraft/overworld/data/ringworld/settings.dat
+```
+
+On the first load of a copied 1.21.11 RingWorld, the old
+`<world>/data/ringworld_settings.dat` is atomically copied to that namespaced
+dimension-owned path before decoding. The saved geometry remains authoritative;
+the original legacy file is left untouched as part of the world copy.
+
 Back up a world before changing any RingWorld version or decorative setting.
-An Overworld with existing `.mca` region files but no RingWorld settings is
-explicitly rejected. There is no supported flat-world conversion path.
+An Overworld with existing `.mca` files under
+`<world>/dimensions/minecraft/overworld/region` but no readable RingWorld
+settings is explicitly rejected. There is no supported flat-world conversion
+path.
 
 ## Ring sizes
 
@@ -74,7 +95,7 @@ explicitly rejected. There is no supported flat-world conversion path.
 
 ```text
 circumference: 15552 blocks = 972 chunks
-width:          4096 blocks = 256 chunks
+width:           256 blocks = 16 chunks
 radius:         about 2475 blocks
 ```
 
@@ -104,7 +125,7 @@ normal server chunk queue has fewer than 64 pending tasks.
 | Geometry | Canonical chunks | Source cells at 8-block step |
 | --- | ---: | ---: |
 | 2048×416 safe-small | 3,328 | 13,312 |
-| 15552×4096 default | 248,832 | 995,328 |
+| 15552×256 default | 15,552 | 62,208 |
 
 Production-default atlas completion is therefore a large world-generation
 operation. Monitor disk use, server tick time, and progress logs. Set
@@ -113,14 +134,14 @@ complete-ring texture will not build until a complete atlas is available.
 Progress logs report captured cells, cells per second, and an ETA once a rate
 can be measured.
 
-The production-default static resource envelope is approximately 6.6 MiB of
-raw atlas arrays/wire payload, 21.3 MiB for the RGBA8 GPU texture including its
-mip chain, 9.0 MiB for the maximum-detail mesh, and 48.0 MiB of conservative
-texture-build scratch. Gzip disk size depends on terrain but cannot be used as
-the memory budget. The creation editor reports these calculated values. The
-technical 16-million-cell atlas ceiling represents about 106.8 MiB of raw
-atlas arrays and is a hard allocation limit, not a recommended production
-target.
+The 15,552×256 production-default static resource envelope is approximately
+0.42 MiB of raw atlas arrays/wire payload, 5.33 MiB for the RGBA8 GPU texture
+including its mip chain, 2.25 MiB for the maximum-detail mesh, and 12.0 MiB of
+conservative texture-build scratch. Gzip disk size depends on terrain but
+cannot be used as the memory budget. The creation editor reports these
+calculated values. The technical 16-million-cell atlas ceiling represents
+about 106.8 MiB of raw atlas arrays and is a hard allocation limit, not a
+recommended production target.
 
 Operators with gamemaster permission can inspect or control background
 pregeneration without changing immutable world layout:
@@ -140,7 +161,7 @@ state, so a server restart returns to the configured
 Server atlas:
 
 ```text
-<world>/data/ringworld-terrain-atlas.rwat.gz
+<world>/dimensions/minecraft/overworld/data/ringworld/terrain-atlas.rwat.gz
 ```
 
 Client atlas:
@@ -153,6 +174,15 @@ Deleting an atlas cache is recoverable but forces regeneration or
 retransmission. Do not delete the world settings state unless intentionally
 invalidating the world.
 
+Copied 1.21.11 worlds may also contain the legacy server atlas at
+`<world>/data/ringworld-terrain-atlas.rwat.gz`. It migrates once only when the
+new path is absent and its format, geometry, sampling layout, and world hash
+match the saved RingWorld settings. A corrupt, old-format, or different-world
+legacy atlas is left in place and rebuilt at the new path. If a new-path atlas
+already exists but is invalid, it is authoritative and rebuilt without legacy
+fallback. A leftover `.tmp` file from an interrupted write is safe: the next
+successful save or validated migration replaces it atomically.
+
 The current disk atlas format is 5. Upgrading from an older format
 automatically invalidates and rebuilds both server and client caches so the
 renderer samples the actual highest block rather than the block below it,
@@ -164,13 +194,33 @@ format.
 
 ## Build
 
-From the repository root:
+Build the active branch under Java 25:
+
+```sh
+JAVA_HOME=/path/to/jdk-25/Contents/Home \
+PATH="$JAVA_HOME/bin:$PATH" \
+./gradlew clean test build --console=plain
+```
+
+Expected development artifacts:
+
+```text
+build/libs/ringworld-0.2.0+mc26.1.2.jar
+build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
+```
+
+The current suite contains 83 unit/parameterized cases. The historical Phase 2
+95-error inventory and the subsequent source-port checkpoint are recorded in
+`MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
+release candidates until the remaining runtime gates pass.
+
+The frozen 1.21.11 tag builds under Java 21 with:
 
 ```sh
 ./gradlew clean test build
 ```
 
-Artifacts:
+Frozen artifacts:
 
 ```text
 build/libs/ringworld-0.1.0.jar
@@ -179,7 +229,10 @@ build/libs/ringworld-0.1.0-sources.jar
 
 `clean` is optional for normal development but useful before a release.
 
-## Server installation
+## Frozen 1.21.11 server installation
+
+These instructions describe the active public/rollback service, not the
+non-playable 26.1 port branch.
 
 Install:
 
@@ -233,7 +286,7 @@ Before replacing the jar:
 6. validate geometry acknowledgement and atlas cache;
 7. perform a seam interaction test.
 
-## Client installation
+## Frozen 1.21.11 client installation
 
 Clients need:
 
@@ -331,7 +384,8 @@ F3 replaces the normal position section in the Overworld with:
 
 - An embedded player on join is moved upward only when their actual collision
   box is obstructed.
-- Invalid/mismatched atlas files are ignored and rebuilt.
+- Invalid/mismatched atlas files are ignored and rebuilt; a wrong-world hash
+  is never accepted or migrated.
 - A stale complete client atlas is protected by world hash.
 - Legacy stone-brick boundary chunks migrate gradually, one loaded chunk per
   tick.

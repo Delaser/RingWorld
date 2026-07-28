@@ -3,58 +3,60 @@ package dev.ringworld.mixin;
 import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingTopology;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Box;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /** Applies periodic distance to server-authoritative block/entity reach. */
-@Mixin(PlayerEntity.class)
+@Mixin(Player.class)
 abstract class PlayerInteractionDistanceMixin {
-    @Inject(method = "canInteractWithBlockAt", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "isWithinBlockInteractionRange", at = @At("HEAD"), cancellable = true)
     private void ringworld$periodicBlockReach(BlockPos pos, double additionalRange,
                                               CallbackInfoReturnable<Boolean> cir) {
-        PlayerEntity player = (PlayerEntity) (Object) this;
+        Player player = (Player) (Object) this;
         RingGeometry geometry = geometry(player);
         if (geometry == null) return;
-        double range = player.getBlockInteractionRange() + additionalRange;
-        Box blockImage = new RingTopology(geometry).projectBoxNear(new Box(pos), player.getX());
-        cir.setReturnValue(blockImage.squaredMagnitude(player.getEyePos()) < range * range);
+        double range = player.blockInteractionRange() + additionalRange;
+        AABB blockImage = new RingTopology(geometry).projectBoxNear(new AABB(pos), player.getX());
+        cir.setReturnValue(blockImage.distanceToSqr(player.getEyePosition()) < range * range);
     }
 
-    @Inject(method = "canInteractWithEntityIn", at = @At("HEAD"), cancellable = true)
-    private void ringworld$periodicEntityReach(Box box, double additionalRange,
+    @Inject(method = "isWithinEntityInteractionRange(Lnet/minecraft/world/phys/AABB;D)Z", at = @At("HEAD"), cancellable = true)
+    private void ringworld$periodicEntityReach(AABB box, double additionalRange,
                                                CallbackInfoReturnable<Boolean> cir) {
-        PlayerEntity player = (PlayerEntity) (Object) this;
+        Player player = (Player) (Object) this;
         RingGeometry geometry = geometry(player);
         if (geometry == null) return;
-        double range = player.getEntityInteractionRange() + additionalRange;
-        Box entityImage = new RingTopology(geometry).projectBoxNear(box, player.getX());
-        cir.setReturnValue(entityImage.squaredMagnitude(player.getEyePos()) < range * range);
+        double range = player.entityInteractionRange() + additionalRange;
+        AABB entityImage = new RingTopology(geometry).projectBoxNear(box, player.getX());
+        cir.setReturnValue(entityImage.distanceToSqr(player.getEyePosition()) < range * range);
     }
 
     /**
-     * Attacks use their own 1.21.11 reach model and never call the ordinary
+     * Attacks use their own weapon-sensitive reach model and never call the ordinary
      * interaction method above. Preserve that model, but give it the target's
      * nearest periodic image before the server validates the attack packet.
      */
-    @Inject(method = "canAttackEntityIn", at = @At("HEAD"), cancellable = true)
-    private void ringworld$periodicAttackReach(Box box, double additionalRange,
+    @Inject(method = "isWithinAttackRange", at = @At("HEAD"), cancellable = true)
+    private void ringworld$periodicAttackReach(ItemStack weaponItem, AABB box, double additionalRange,
                                                CallbackInfoReturnable<Boolean> cir) {
-        PlayerEntity player = (PlayerEntity) (Object) this;
+        Player player = (Player) (Object) this;
         RingGeometry geometry = geometry(player);
         if (geometry == null) return;
-        Box entityImage = new RingTopology(geometry).projectBoxNear(box, player.getX());
-        cir.setReturnValue(player.getAttackRange().isWithinRange(player, entityImage, additionalRange));
+        AABB entityImage = new RingTopology(geometry).projectBoxNear(box, player.getX());
+        cir.setReturnValue(player.getAttackRangeWith(weaponItem)
+                .isInRange(player, entityImage, additionalRange));
     }
 
-    private static RingGeometry geometry(PlayerEntity player) {
-        return player.getEntityWorld() instanceof ServerWorld world && world.getRegistryKey() == World.OVERWORLD
+    private static RingGeometry geometry(Player player) {
+        return player.level() instanceof ServerLevel world && world.dimension() == Level.OVERWORLD
                 ? RingWorldServer.geometryFor(world) : null;
     }
 }

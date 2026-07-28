@@ -2,15 +2,14 @@ package dev.ringworld.world;
 
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
-import net.minecraft.server.network.ChunkFilter;
-import net.minecraft.util.math.ChunkPos;
-
 import java.util.function.Consumer;
+import net.minecraft.server.level.ChunkTrackingView;
+import net.minecraft.world.level.ChunkPos;
 
 /** A vanilla-shaped view window whose X axis is a finite periodic graph. */
 public record RingChunkFilter(ChunkPos center, int logicalCenterX,
                               int viewDistance, int circumferenceChunks,
-                              int minChunkZ, int maxChunkZ) implements ChunkFilter {
+                              int minChunkZ, int maxChunkZ) implements ChunkTrackingView {
     public RingChunkFilter(ChunkPos logicalCenter, int viewDistance, RingGeometry geometry) {
         this(logicalCenter, viewDistance, geometry.circumferenceChunks(),
                 geometry.minChunkZ(), geometry.maxChunkZ());
@@ -18,19 +17,19 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
 
     public RingChunkFilter(ChunkPos logicalCenter, int viewDistance, int circumferenceChunks,
                            int minChunkZ, int maxChunkZ) {
-        this(new ChunkPos(Math.floorMod(logicalCenter.x, circumferenceChunks), logicalCenter.z),
-                logicalCenter.x, viewDistance, circumferenceChunks, minChunkZ, maxChunkZ);
+        this(new ChunkPos(Math.floorMod(logicalCenter.x(), circumferenceChunks), logicalCenter.z()),
+                logicalCenter.x(), viewDistance, circumferenceChunks, minChunkZ, maxChunkZ);
     }
 
     public RingChunkFilter {
         if (circumferenceChunks <= 0) throw new IllegalArgumentException("circumferenceChunks must be positive");
         if (minChunkZ > maxChunkZ) throw new IllegalArgumentException("invalid width chunk bounds");
-        center = new ChunkPos(Math.floorMod(center.x, circumferenceChunks), center.z);
+        center = new ChunkPos(Math.floorMod(center.x(), circumferenceChunks), center.z());
     }
 
     @Override
-    public boolean isWithinDistance(int x, int z, boolean includeEdge) {
-        return isWithinRingDistance(circumferenceChunks, center.x, center.z,
+    public boolean contains(int x, int z, boolean includeEdge) {
+        return isWithinRingDistance(circumferenceChunks, center.x(), center.z(),
                 viewDistance, minChunkZ, maxChunkZ, x, z, includeEdge);
     }
 
@@ -47,23 +46,23 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
         LongSet emitted = new LongOpenHashSet();
         int extent = viewDistance + 1;
         for (int dx = -extent; dx <= extent; dx++) {
-            int x = Math.floorMod(center.x + dx, circumferenceChunks);
-            int firstZ = Math.max(minChunkZ, center.z - extent);
-            int lastZ = Math.min(maxChunkZ, center.z + extent);
+            int x = Math.floorMod(center.x() + dx, circumferenceChunks);
+            int firstZ = Math.max(minChunkZ, center.z() - extent);
+            int lastZ = Math.min(maxChunkZ, center.z() + extent);
             for (int z = firstZ; z <= lastZ; z++) {
-                if (!isWithinDistance(x, z)) continue;
-                long packed = ChunkPos.toLong(x, z);
-                if (emitted.add(packed)) consumer.accept(new ChunkPos(packed));
+                if (!contains(x, z)) continue;
+                long packed = ChunkPos.pack(x, z);
+                if (emitted.add(packed)) consumer.accept(ChunkPos.unpack(packed));
             }
         }
     }
 
     /** Diffs any two filters without relying on vanilla's flat-cylinder fast path. */
-    public static void forEachChanged(ChunkFilter oldFilter, ChunkFilter newFilter,
+    public static void forEachChanged(ChunkTrackingView oldFilter, ChunkTrackingView newFilter,
                                       Consumer<ChunkPos> newlyIncluded, Consumer<ChunkPos> justRemoved) {
         if (oldFilter.equals(newFilter)) return;
         if (oldFilter instanceof RingChunkFilter oldRing && newFilter instanceof RingChunkFilter newRing) {
-            if (requiresFullRekey(oldRing.center.x, newRing.center.x,
+            if (requiresFullRekey(oldRing.center.x(), newRing.center.x(),
                     oldRing.viewDistance, newRing.viewDistance,
                     oldRing.circumferenceChunks, newRing.circumferenceChunks,
                     oldRing.minChunkZ, oldRing.maxChunkZ,
@@ -79,10 +78,10 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
         LongSet oldChunks = collect(oldFilter);
         LongSet newChunks = collect(newFilter);
         for (long packed : oldChunks) {
-            if (!newChunks.contains(packed)) justRemoved.accept(new ChunkPos(packed));
+            if (!newChunks.contains(packed)) justRemoved.accept(ChunkPos.unpack(packed));
         }
         for (long packed : newChunks) {
-            if (!oldChunks.contains(packed)) newlyIncluded.accept(new ChunkPos(packed));
+            if (!oldChunks.contains(packed)) newlyIncluded.accept(ChunkPos.unpack(packed));
         }
     }
 
@@ -99,9 +98,9 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
         return periodicDistance > overlapDiameter;
     }
 
-    private static LongSet collect(ChunkFilter filter) {
+    private static LongSet collect(ChunkTrackingView filter) {
         LongSet chunks = new LongOpenHashSet();
-        filter.forEach(pos -> chunks.add(pos.toLong()));
+        filter.forEach(pos -> chunks.add(pos.pack()));
         return chunks;
     }
 }

@@ -8,18 +8,18 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import java.util.List;
 import java.util.Locale;
-import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gui.hud.debug.DebugHudLines;
-import net.minecraft.client.gui.hud.debug.PlayerPositionDebugHudEntry;
-import net.minecraft.entity.Entity;
-import net.minecraft.server.world.ServerWorld;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.ChunkPos;
-import net.minecraft.util.math.ChunkSectionPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.WorldChunk;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.debug.DebugEntryPosition;
+import net.minecraft.client.gui.components.debug.DebugScreenDisplayer;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.core.SectionPos;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.chunk.LevelChunk;
 import org.jspecify.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -27,27 +27,29 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /** Presents the server's single canonical ring coordinate plane. */
-@Mixin(PlayerPositionDebugHudEntry.class)
+@Mixin(DebugEntryPosition.class)
 abstract class PlayerPositionDebugHudEntryMixin {
-    @Inject(method = "render", at = @At("HEAD"), cancellable = true)
-    private void ringworld$renderCanonicalPosition(DebugHudLines lines, @Nullable World world,
-                                                   @Nullable WorldChunk clientChunk,
-                                                   @Nullable WorldChunk chunk,
+    @Inject(method = "display", at = @At("HEAD"), cancellable = true)
+    private void ringworld$renderCanonicalPosition(DebugScreenDisplayer lines, @Nullable Level world,
+                                                   @Nullable LevelChunk clientChunk,
+                                                   @Nullable LevelChunk chunk,
                                                    CallbackInfo ci) {
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null) return;
 
-        MinecraftClient client = MinecraftClient.getInstance();
+        Minecraft client = Minecraft.getInstance();
         Entity entity = client.getCameraEntity();
         if (entity == null) return;
 
         RingPosition ringPosition = RingPosition.fromPresentationX(entity.getX(), geometry);
         double canonicalX = ringPosition.canonicalX() == 0.0 ? 0.0 : ringPosition.canonicalX();
-        BlockPos rawBlockPos = entity.getBlockPos();
+        BlockPos rawBlockPos = entity.blockPosition();
         BlockPos blockPos = new BlockPos(geometry.wrapBlockX(rawBlockPos.getX()),
                 rawBlockPos.getY(), rawBlockPos.getZ());
-        ChunkPos chunkPos = new ChunkPos(blockPos);
-        Direction direction = entity.getHorizontalFacing();
+        ChunkPos chunkPos = new ChunkPos(
+                SectionPos.blockToSectionCoord(blockPos.getX()),
+                SectionPos.blockToSectionCoord(blockPos.getZ()));
+        Direction direction = entity.getDirection();
         String directionDescription = switch (direction) {
             case NORTH -> "Towards negative Z";
             case SOUTH -> "Towards positive Z";
@@ -55,33 +57,33 @@ abstract class PlayerPositionDebugHudEntryMixin {
             case EAST -> "Towards increasing Ring X";
             default -> "Invalid";
         };
-        LongSet forcedChunks = world instanceof ServerWorld serverWorld
-                ? serverWorld.getForcedChunks() : LongSets.EMPTY_SET;
+        LongSet forcedChunks = world instanceof ServerLevel serverWorld
+                ? serverWorld.getForceLoadedChunks() : LongSets.EMPTY_SET;
         RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
         String atlasStatus = atlas == null ? "not received"
                 : String.format(Locale.ROOT, "%d/%d cells (%.1f%%), step %d",
                 atlas.presentCount(), atlas.cellCount(), atlas.completion() * 100.0, atlas.sampleStep());
 
-        lines.addLinesToSection(PlayerPositionDebugHudEntry.SECTION_ID, List.of(
+        lines.addToGroup(DebugEntryPosition.GROUP, List.of(
                 String.format(Locale.ROOT, "Ring XYZ: %.3f / %.5f / %.3f",
                         canonicalX, entity.getY(), entity.getZ()),
                 String.format(Locale.ROOT, "Ring Block: %d %d %d",
                         blockPos.getX(), blockPos.getY(), blockPos.getZ()),
                 String.format(Locale.ROOT,
                         "Ring Chunk: %d %d %d [%d %d in r.%d.%d.mca]",
-                        chunkPos.x, ChunkSectionPos.getSectionCoord(blockPos.getY()), chunkPos.z,
-                        chunkPos.getRegionRelativeX(), chunkPos.getRegionRelativeZ(),
+                        chunkPos.x(), SectionPos.blockToSectionCoord(blockPos.getY()), chunkPos.z(),
+                        chunkPos.getRegionLocalX(), chunkPos.getRegionLocalZ(),
                         chunkPos.getRegionX(), chunkPos.getRegionZ()),
                 String.format(Locale.ROOT, "Facing: %s (%s) (%.1f / %.1f)",
                         direction, directionDescription,
-                        MathHelper.wrapDegrees(entity.getYaw()),
-                        MathHelper.wrapDegrees(entity.getPitch())),
+                        Mth.wrapDegrees(entity.getYRot()),
+                        Mth.wrapDegrees(entity.getXRot())),
                 String.format(Locale.ROOT, "Loop: X 0-%d, %d blocks / %d chunks",
                         geometry.circumferenceBlocks() - 1,
                         geometry.circumferenceBlocks(),
                         geometry.circumferenceChunks()),
                 "Ring Atlas: " + atlasStatus,
-                client.world.getRegistryKey().getValue() + " FC: " + forcedChunks.size()
+                client.level.dimension().identifier() + " FC: " + forcedChunks.size()
         ));
         ci.cancel();
     }

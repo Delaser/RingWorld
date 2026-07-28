@@ -1,10 +1,77 @@
 # Current state
 
-Last audited: 2026-07-28 against the implementation merged into `main` at
-commit `97f6a97`.
+Last audited: 2026-07-28 against the final Minecraft 1.21.11 implementation
+tagged `mc-1.21.11-final` at commit `2c98650`.
+
+The Minecraft 26.1.2 port is active on `codex/minecraft-26.1-port`; see
+[`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md) and the
+[`final baseline`](MINECRAFT_1_21_11_FINAL_BASELINE.md).
 
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
+
+Port Phase 1 is complete: the project moved to official Mojang mappings while
+remaining on Minecraft 1.21.11. All 73 tests, the destructive
+safe-small harness, same-process layout switch, dedicated two-client scenario,
+and production tangent/radial projection capture passed without changing the
+wire protocol, saved formats, or topology behavior. At that checkpoint the only
+intermediary-looking source identifier was Mojang's still-unnamed
+`ServerLevel.method_31420` synthetic entity-tick lambda, documented in
+`MIXIN_MAP.md`.
+
+Phase 2 and the first integrated source/runtime gate are established. The
+active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
+under Java 25 and Gradle 9.5.1. Common and client compilation passes without
+temporary shims, all 83 unit/parameterized cases pass, and Loom produces
+`ringworld-0.2.0+mc26.1.2.jar`.
+
+The S2 storage migration is integrated. RingWorld settings and the server
+terrain atlas now live under the Overworld's 26.1 dimension-owned data
+directory. An isolated fresh-world dedicated server created that layout and
+stopped cleanly. A disposable copy of an actual 1.21.11 RingWorld completed
+Mojang's world upgrade, copied the legacy immutable settings byte-for-byte,
+left both source and copied legacy files unchanged, rejected an invalid legacy
+atlas, rebuilt it at the new authoritative path, reached `Done`, and stopped
+cleanly.
+
+The first dedicated-server launch exposed a strict runtime mixin failure that
+compilation could not detect: entity tick eligibility moved into
+`ServerLevel.lambda$tick$0`. The redirect now names the exact 26.1 synthetic
+descriptor, retains its required injection count, and the fresh and copied
+server launches pass with it.
+
+The first real client launch similarly caught a callback-descriptor mismatch:
+`GlobalSettingsUniform.update` receives extracted camera `Vec3`, not `Camera`.
+After that strict fix, the 2,048×416 integrated creative harness completed
+resource/shader loading, terrain generation, a 100% 13,312-cell atlas, a
+2,048×416 GPU surface with 79,872 vertices, and tangent plus radial-up
+complete-ring captures. Two natural seam crossings retained yaw/pitch with
+zero correction packets and no non-canonical chunk-holder requests. Block,
+entity, projectile, vehicle, AI, fluid, explosion, collision, late tracking,
+rim, shortened-wall, and exterior-void probes passed.
+
+The first topology run averaged 8.37 ms at the seam and 8.41 ms by the rim
+with no frames above 50 ms. The full-atlas run averaged 8.41/8.37 ms and
+recorded one isolated frame above 50 ms in each measured phase while
+generation/upload work was active. The captures prove that the 26.1 complete
+ring pipeline executes; multi-size colour/handoff art review remains open.
+The current 15,552×256 default is unit/resource validated but has not yet run
+the full 26.1 production-size visual matrix.
+
+An isolated dedicated 2,048×416 server plus two 26.1 clients also completed the
+full multiplayer harness on its first run. Both clients acknowledged the
+layout; a natural seam crossing stayed canonical with 0.25-block maximum
+packet/tick samples; mutual visibility/query/distance passed; real melee,
+block interaction/update, shared boat visibility, long teleport and periodic
+return, disconnect, and reconnect all passed. The server reported
+`full scenario result=true` and stopped cleanly.
+
+Multi-size visual review, UI completion, packaging, and staging gates remain.
+The only playable implementation is still the frozen `mc-1.21.11-final` tag.
+
+The “Implemented” sections below describe validated 1.21.11 behavior and the
+contract the port must restore. They are not claims that every active 26.1.2
+client/runtime gate passes.
 
 ## Implemented
 
@@ -204,15 +271,18 @@ work. It should be updated after every substantial milestone.
   tuning.
 - Custom shaders replace vanilla assets and can conflict with renderer/shader
   mods.
-- Boundary rendering redirects a private `ChunkBuilder.BuiltChunk` readiness
-  check and must be re-audited on Minecraft/Yarn upgrades.
+- Boundary rendering redirects a private
+  `SectionRenderDispatcher.RenderSection` readiness check and must be
+  re-audited on Minecraft or mappings upgrades.
 
 ### Worldgen
 
 - Broad multi-seed structure/carver/feature coverage at the seam is incomplete.
 - Periodic density noise does not guarantee every vanilla structure placement
   seed or third-party generator treats X=0/C as adjacent.
-- Production default atlas pregeneration is very large: 248,832 chunks.
+- The new 15,552×256 production default still requires 15,552 canonical chunks
+  and 62,208 atlas cells; its real end-to-end pregeneration benchmark remains
+  open.
 - Existing Overworld region files without RingWorld saved settings are
   explicitly rejected; no conversion tool exists.
 - Decorative wall-height changes can produce mixed old/new boundary chunks.

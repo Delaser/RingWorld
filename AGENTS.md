@@ -4,13 +4,57 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
-Last code and documentation audit: 2026-07-28, covering the implementation
-merged into `main` at commit `97f6a97`.
+Last playable code audit: 2026-07-28, covering the final Minecraft 1.21.11
+implementation tagged `mc-1.21.11-final` at commit `2c98650`.
+
+Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
+gate. Common/client compilation and all 83 unit/parameterized cases pass.
+Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
+storage. A real client completes resource/shader loading, a 100% atlas-backed
+ring, tangent/radial captures, two natural wraps, and representative
+gameplay/rim probes. The dedicated two-client seam/combat/block/boat/teleport/
+reconnect matrix also passes. Multi-size visual review, UI completion,
+packaging, and staging remain, so the port is not playable yet. See
+`docs/CURRENT_STATE.md`.
+
+## Codex weekly usage reserve
+
+Protect at least 10% of the primary ChatGPT-backed Codex weekly allowance for
+handoff and recovery. Before substantial work and after a long tool-heavy
+milestone, run:
+
+```sh
+python3 scripts/codex_usage_monitor.py
+```
+
+More than 15% remaining is `OK`. At 10–15% (`HOLD`), finish only the current
+bounded handoff and do not start substantial new agent work. At 10% or less
+(`BLOCK`), stop agent work. Do not infer the weekly allowance from context
+tokens or a shorter quota window. The optional five-minute macOS monitor and
+its non-secret status file are documented in
+[`docs/CODEX_USAGE_MONITOR.md`](docs/CODEX_USAGE_MONITOR.md). The secondary
+agent uses a separate account and must monitor its own allowance.
+
+## Secondary response check
+
+The dedicated-PC secondary agent reports through GitHub issue comments using
+the `[SECONDARY]` protocol prefix. Check for a pending response with:
+
+```sh
+python3 scripts/secondary_response_monitor.py
+```
+
+The primary Mac also runs this check every ten minutes. A response stays
+`RESPONSE_PENDING` until the primary agent reads the linked issue comment and
+runs `python3 scripts/secondary_response_monitor.py --ack`. The monitor is
+read-only and never replies automatically. Installation and status-file
+details are in
+[`docs/AGENT_COLLABORATION.md`](docs/AGENT_COLLABORATION.md).
 
 ## What this project is
 
-RingWorld is a Fabric mod for Minecraft Java 1.21.11. It turns only the
-Overworld into a finite band:
+RingWorld is a Fabric mod being ported from Minecraft Java 1.21.11 to 26.1.2.
+The validated design turns only the Overworld into a finite band:
 
 - canonical X runs around the circumference and is periodic;
 - Z runs across a finite width;
@@ -19,6 +63,34 @@ Overworld into a finite band:
 - Nether and End remain vanilla.
 
 This is an engine-level mod. Both the server and every client need it.
+
+## Loader support policy
+
+The current runnable implementation is Fabric-only, but future development
+must not deepen that coupling. Design new gameplay, topology, persistence,
+worldgen, rendering math, protocol models, and tests as loader-agnostic common
+code. When a loader API is unavoidable, isolate it behind a narrow platform
+adapter and provide, or leave a documented implementation path for, both
+Fabric and NeoForge.
+
+In particular:
+
+- do not add Fabric event, networking, path, registry, or entrypoint calls to
+  otherwise loader-neutral classes;
+- keep wire formats, saved-data formats, coordinate rules, shader contracts,
+  and compatibility APIs identical across loaders;
+- prefer shared mixins against Minecraft internals when their targets and
+  behavior are valid on both platforms;
+- put loader metadata, lifecycle registration, payload plumbing, environment
+  lookup, packaging, and launch fixtures in platform-owned code;
+- add platform-parity tests for any behavior that crosses an adapter;
+- document a deliberate single-loader exception before merging it, including
+  why shared or dual support is not currently practical.
+
+Dual Fabric/NeoForge support is the intended architecture, not a claim about
+the artifacts currently released. Do not advertise NeoForge compatibility
+until its client, dedicated server, topology, rendering, and multiplayer gates
+pass.
 
 ## The invariants
 
@@ -94,6 +166,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   removing test-world assumptions from custom dimensions.
 - `docs/MINECRAFT_26_1_PORT_PLAN.md`: authoritative Minecraft 26.1.2 port,
   agent ownership, integration, validation, and deployment plan.
+- `docs/MINECRAFT_1_21_11_FINAL_BASELINE.md`: immutable pre-port validation,
+  hashes, performance evidence, and protected rollback inventory.
+- `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`: historical Java 25/26.1.2
+  compiler inventory and the subsequent green build/server checkpoint.
 - `docs/AGENT_COLLABORATION.md`: dedicated-PC GitHub issue coordination,
   optional same-clone mailbox, and handoff protocol for parallel coding
   agents.
@@ -105,21 +181,23 @@ The complete mixin ownership table is in
 
 ## Build and fast validation
 
-Java 21 is required. Use the checked-in wrapper:
+The active port requires Java 25:
 
 ```sh
-./gradlew test build
+JAVA_HOME=/path/to/jdk-25/Contents/Home \
+PATH="$JAVA_HOME/bin:$PATH" \
+./gradlew clean test build --console=plain
 ```
 
-The expected mod artifact is:
+The expected development artifact is
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 83
+unit/parameterized cases. A green source build and dedicated-server launch are
+not a release gate: required client, rendering, gameplay, multiplayer,
+packaging, and staging checks still remain.
 
-```text
-build/libs/ringworld-0.1.0.jar
-```
-
-At the time of this audit there are 69 unit/parameterized cases. A green unit build does not
-prove packet or rendering mixins work in-game; use the integration procedures
-in [`docs/TESTING.md`](docs/TESTING.md).
+The frozen 1.21.11 tag uses Java 21 and passes 73 unit/parameterized cases plus
+the runtime suites recorded in
+[`docs/MINECRAFT_1_21_11_FINAL_BASELINE.md`](docs/MINECRAFT_1_21_11_FINAL_BASELINE.md).
 
 ## Local packaged client
 
@@ -166,7 +244,9 @@ altered test commands, known limitations, and rejected or superseded designs.
 4. Inspect every call path on both sides of the seam: server storage, packet
    encoding, client projection, renderer, and reconnect/save.
 5. Add or extend a pure unit test where possible.
-6. Run `./gradlew test build`.
+6. Run the validation appropriate to the current port gate. The active Java 25
+   branch requires `./gradlew test build`; runtime-sensitive changes also
+   require the relevant isolated server or client launch.
 7. For topology or packet changes, run the two-client multiplayer harness.
 8. For rendering changes, launch a real world and inspect upward views, the
    live/LOD handoff, the seam, both width rims, day/dusk/night, and movement
@@ -178,9 +258,10 @@ When two ChatGPT Desktop agents work on the 26.1 port, both must follow
 stable `primary` or `secondary` role, and check the selected coordination
 channel before editing coordinated files, committing, or handing work off.
 
-Mixin method descriptors target Minecraft 1.21.11/Yarn build 6. A Minecraft,
-Yarn, Loader, Loom, or Fabric API upgrade is a porting project: audit every
-injection target and shader ABI rather than only changing version numbers.
+Mixin method descriptors on the active branch target unobfuscated Minecraft
+26.1.2. A Minecraft, mappings, Loader, Loom, or Fabric API upgrade is a porting
+project: audit every injection target and shader ABI rather than only changing
+version numbers.
 
 ## Current implementation cautions
 
@@ -210,7 +291,7 @@ injection target and shader ABI rather than only changing version numbers.
   Pause is process-local and does not alter immutable saved layout.
 - Atlas format 5 represents exposed top-face height and
   texture-luminance-corrected, biome-tinted colour from the actual highest
-  surface block at eight-block source resolution. `Chunk.sampleHeightmap`
+  surface block at eight-block source resolution. `ChunkAccess.getHeight`
   already returns that block's Y; subtracting one samples dirt beneath grass.
   Dedicated servers do not load Minecraft's grass/foliage colormap textures,
   so their zero tint lookup must fall back to the sampled block's map colour;
@@ -248,13 +329,14 @@ injection target and shader ABI rather than only changing version numbers.
   profile. Its std140 field order, `GlobalSettings` allocation, and every
   custom program that declares Globals must change together.
 - The dedicated multiplayer clients must not connect before
-  `MinecraftClient.isFinishedLoading()`. Joining during the initial resource
+  `Minecraft.isGameLoadFinished()`. Joining during the initial resource
   reload can run leaf display ticks against unprepared particle sprites.
 - `runLayoutSwitchClient` opens two existing saves in one JVM and stops after
   logging its result. Keep it non-destructive: it may save normally, but must
   not move players or edit terrain.
-- `RingWorldCreationScreen.render` must not call `renderBackground`.
-  Minecraft 1.21.11's `Screen.renderWithTooltip` already owns the frame's
+- `RingWorldCreationScreen.extractRenderState` must not call a background
+  extraction method. Minecraft 26.1's
+  `Screen.extractRenderStateWithTooltipAndSubtitles` already owns the frame's
   single legal menu-blur pass.
 - The reusable multiplayer fixture must clear stale automated boats, wait for
   both clients to acknowledge the new boat before moving it, detect folds by
@@ -278,6 +360,10 @@ injection target and shader ABI rather than only changing version numbers.
   lies near Y=318.65. It may appear only as a retired deployment/rollback note
   or a required validation-failure fixture. The public server also uses the
   safe-small 2,048-by-416 preset as of 27 July 2026.
+- The production/default geometry is 15,552-by-256 (972 by 16 chunks). Width
+  256 is intentional: the formerly default 4,096-block band looked too broad
+  in the sky. Existing saved worlds remain immutable, and the 4,096-wide
+  layouts in historical validation evidence are not current defaults.
 - The local visual harness reads `testViewDistanceChunks` (2–32) before
   reducing to six chunks for seam/rim traversal. Use 6/12/28 for the safe-small
   capture matrix. It derives capture pitch from the physical target surface;
@@ -298,6 +384,10 @@ injection target and shader ABI rather than only changing version numbers.
   visibility graph can hide sections that cylindrical rendering bends back
   into view. Curved frustum and render-distance culling must remain enabled to
   bound the performance cost.
+- The frozen 1.21.11 Mojang baseline targeted the unnamed
+  `ServerLevel.method_31420` entity-tick lambda. Minecraft 26.1 exposes the
+  same call inside named `ServerLevel.tick`; the active mixin targets `tick`
+  and must not regress to a synthetic or optional target.
 
 The detailed current status and open risks are maintained in
 [`docs/CURRENT_STATE.md`](docs/CURRENT_STATE.md).
