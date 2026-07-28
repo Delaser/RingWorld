@@ -24,6 +24,28 @@ The implementation spans five coupled layers:
 | Network/client charts | Required settings handshake and canonical-to-nearest-image packet mapping |
 | Rendering | Curved chunks/entities/clouds, fixed sky, complete-ring LOD texture, and culling |
 
+## Loader boundary
+
+The currently runnable platform is Fabric, but the architecture targets a
+loader-neutral core with thin Fabric and NeoForge adapters. Geometry,
+topology, persistent settings, atlas formats, coordinate transforms, protocol
+models, renderer math, mixin behavior that is valid on both loaders, and their
+tests belong to shared code.
+
+Platform-owned code is limited to:
+
+- mod metadata and entrypoints;
+- lifecycle, command, connection, tick, chunk, and render event registration;
+- custom-payload registration, sending, and handler scheduling;
+- game/configuration directory discovery;
+- loader dependency declarations, packaging, and launch fixtures.
+
+New features should depend on small RingWorld-owned platform interfaces rather
+than importing a loader API into shared domain code. Both adapters must
+preserve the same saved-data and network formats. Until equivalent NeoForge
+runtime and multiplayer gates pass, documentation must continue to describe
+the distributed implementation as Fabric-only.
+
 ## The three coordinate domains
 
 Most difficult bugs in this project are caused by using a valid coordinate in
@@ -111,7 +133,7 @@ camera or custom controls.
 
 ```mermaid
 flowchart TD
-    A["Fabric common initialization"] --> B["Load bootstrap ringworld.properties"]
+    A["Loader platform initialization"] --> B["Load bootstrap ringworld.properties"]
     A --> C["Register payload codecs and server hooks"]
     D["Overworld ServerLevel load"] --> E["Load or create RingWorldSettings"]
     E --> F["Attach geometry to the Overworld noise generator"]

@@ -24,6 +24,12 @@ The Nether and End remain vanilla.
 > server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
 
+> **Loader direction:** current builds remain Fabric-only. Future development
+> is required to keep RingWorld's core loader-agnostic and place unavoidable
+> loader integration behind Fabric and NeoForge platform adapters. Dual-loader
+> support is the intended architecture; this is not yet a claim that a tested
+> NeoForge artifact is available.
+
 ## What it feels like to play
 
 - **One real loop.** Canonical Overworld X runs from `0` to

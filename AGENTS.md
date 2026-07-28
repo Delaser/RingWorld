@@ -64,6 +64,34 @@ The validated design turns only the Overworld into a finite band:
 
 This is an engine-level mod. Both the server and every client need it.
 
+## Loader support policy
+
+The current runnable implementation is Fabric-only, but future development
+must not deepen that coupling. Design new gameplay, topology, persistence,
+worldgen, rendering math, protocol models, and tests as loader-agnostic common
+code. When a loader API is unavoidable, isolate it behind a narrow platform
+adapter and provide, or leave a documented implementation path for, both
+Fabric and NeoForge.
+
+In particular:
+
+- do not add Fabric event, networking, path, registry, or entrypoint calls to
+  otherwise loader-neutral classes;
+- keep wire formats, saved-data formats, coordinate rules, shader contracts,
+  and compatibility APIs identical across loaders;
+- prefer shared mixins against Minecraft internals when their targets and
+  behavior are valid on both platforms;
+- put loader metadata, lifecycle registration, payload plumbing, environment
+  lookup, packaging, and launch fixtures in platform-owned code;
+- add platform-parity tests for any behavior that crosses an adapter;
+- document a deliberate single-loader exception before merging it, including
+  why shared or dual support is not currently practical.
+
+Dual Fabric/NeoForge support is the intended architecture, not a claim about
+the artifacts currently released. Do not advertise NeoForge compatibility
+until its client, dedicated server, topology, rendering, and multiplayer gates
+pass.
+
 ## The invariants
 
 Do not violate these without deliberately redesigning the architecture and
