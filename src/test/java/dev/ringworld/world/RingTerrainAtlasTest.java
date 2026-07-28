@@ -3,7 +3,11 @@ package dev.ringworld.world;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.BufferedOutputStream;
+import java.io.DataOutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.zip.GZIPOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -113,5 +117,128 @@ class RingTerrainAtlasTest {
                         new RingGeometry(1_048_576, 1_048_576), HASH));
 
         assertTrue(exception.getMessage().contains("terrain atlas requires"));
+    }
+
+    @Test
+    void freshStorageStartsEmptyWithoutCreatingAFile(@TempDir Path directory) {
+        Path current = directory.resolve("dimension/data/ringworld/atlas.rwat.gz");
+        Path legacy = directory.resolve("data/atlas.rwat.gz");
+
+        RingTerrainAtlas.StorageLoad storage =
+                RingTerrainAtlas.loadStorage(current, legacy, GEOMETRY, HASH);
+
+        assertEquals(RingTerrainAtlas.StorageStatus.FRESH, storage.status());
+        assertEquals(0, storage.atlas().presentCount());
+        assertFalse(Files.exists(current));
+    }
+
+    @Test
+    void validLegacyAtlasMigratesOnceToDimensionStorage(@TempDir Path directory)
+            throws Exception {
+        Path current = directory.resolve("dimension/data/ringworld/atlas.rwat.gz");
+        Path legacy = directory.resolve("data/atlas.rwat.gz");
+        RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH);
+        int z = GEOMETRY.minWidthZ() + 4;
+        source.putBlockSample(4, z, 88, 0x778899);
+        source.save(legacy);
+
+        RingTerrainAtlas.StorageLoad migrated =
+                RingTerrainAtlas.loadStorage(current, legacy, GEOMETRY, HASH);
+        RingTerrainAtlas.StorageLoad reloaded =
+                RingTerrainAtlas.loadStorage(current, legacy, GEOMETRY, HASH);
+
+        assertEquals(RingTerrainAtlas.StorageStatus.MIGRATED_LEGACY, migrated.status());
+        assertEquals(88.0, migrated.atlas().sample(4, z).height(), 1.0e-9);
+        assertTrue(Files.isRegularFile(current));
+        assertEquals(RingTerrainAtlas.StorageStatus.CURRENT, reloaded.status());
+    }
+
+    @Test
+    void corruptLegacyAtlasIsRejectedWithoutCreatingCurrentState(@TempDir Path directory)
+            throws Exception {
+        Path current = directory.resolve("dimension/data/ringworld/atlas.rwat.gz");
+        Path legacy = directory.resolve("data/atlas.rwat.gz");
+        Files.createDirectories(legacy.getParent());
+        Files.write(legacy, new byte[] {1, 2, 3});
+
+        RingTerrainAtlas.StorageLoad storage =
+                RingTerrainAtlas.loadStorage(current, legacy, GEOMETRY, HASH);
+
+        assertEquals(RingTerrainAtlas.StorageStatus.INVALID_LEGACY, storage.status());
+        assertEquals(0, storage.atlas().presentCount());
+        assertFalse(Files.exists(current));
+    }
+
+    @Test
+    void interruptedWriteDoesNotBlockValidatedLegacyMigration(@TempDir Path directory)
+            throws Exception {
+        Path current = directory.resolve("dimension/data/ringworld/atlas.rwat.gz");
+        Path temporary = current.resolveSibling(current.getFileName() + ".tmp");
+        Path legacy = directory.resolve("data/atlas.rwat.gz");
+        RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH);
+        source.putCell(0, 0, 70, 0x123456);
+        source.save(legacy);
+        Files.createDirectories(temporary.getParent());
+        Files.write(temporary, new byte[] {9, 9, 9});
+
+        RingTerrainAtlas.StorageLoad storage =
+                RingTerrainAtlas.loadStorage(current, legacy, GEOMETRY, HASH);
+
+        assertEquals(RingTerrainAtlas.StorageStatus.MIGRATED_LEGACY, storage.status());
+        assertTrue(Files.isRegularFile(current));
+        assertFalse(Files.exists(temporary));
+    }
+
+    @Test
+    void invalidCurrentAtlasNeverFallsBackToLegacy(@TempDir Path directory)
+            throws Exception {
+        Path current = directory.resolve("dimension/data/ringworld/atlas.rwat.gz");
+        Path legacy = directory.resolve("data/atlas.rwat.gz");
+        RingTerrainAtlas legacyAtlas = new RingTerrainAtlas(GEOMETRY, HASH);
+        legacyAtlas.putCell(0, 0, 70, 0x123456);
+        legacyAtlas.save(legacy);
+        Files.createDirectories(current.getParent());
+        Files.write(current, new byte[] {4, 5, 6});
+
+        RingTerrainAtlas.StorageLoad storage =
+                RingTerrainAtlas.loadStorage(current, legacy, GEOMETRY, HASH);
+
+        assertEquals(RingTerrainAtlas.StorageStatus.INVALID_CURRENT, storage.status());
+        assertEquals(0, storage.atlas().presentCount());
+    }
+
+    @Test
+    void legacyAtlasWithDifferentWorldHashIsNeverMigrated(@TempDir Path directory)
+            throws Exception {
+        Path current = directory.resolve("dimension/data/ringworld/atlas.rwat.gz");
+        Path legacy = directory.resolve("data/atlas.rwat.gz");
+        new RingTerrainAtlas(GEOMETRY, HASH + 1).save(legacy);
+
+        RingTerrainAtlas.StorageLoad storage =
+                RingTerrainAtlas.loadStorage(current, legacy, GEOMETRY, HASH);
+
+        assertEquals(RingTerrainAtlas.StorageStatus.INVALID_LEGACY, storage.status());
+        assertEquals(HASH, storage.atlas().worldHash());
+        assertFalse(Files.exists(current));
+    }
+
+    @Test
+    void oldFormatLegacyAtlasIsInvalidatedInsteadOfMigrated(@TempDir Path directory)
+            throws Exception {
+        Path current = directory.resolve("dimension/data/ringworld/atlas.rwat.gz");
+        Path legacy = directory.resolve("data/atlas.rwat.gz");
+        Files.createDirectories(legacy.getParent());
+        try (DataOutputStream output = new DataOutputStream(new GZIPOutputStream(
+                new BufferedOutputStream(Files.newOutputStream(legacy))))) {
+            output.writeInt(0x52574154);
+            output.writeInt(RingTerrainAtlas.FORMAT_VERSION - 1);
+        }
+
+        RingTerrainAtlas.StorageLoad storage =
+                RingTerrainAtlas.loadStorage(current, legacy, GEOMETRY, HASH);
+
+        assertEquals(RingTerrainAtlas.StorageStatus.INVALID_LEGACY, storage.status());
+        assertEquals(0, storage.atlas().presentCount());
+        assertFalse(Files.exists(current));
     }
 }

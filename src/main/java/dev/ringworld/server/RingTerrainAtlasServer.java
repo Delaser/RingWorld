@@ -8,6 +8,7 @@ import dev.ringworld.world.RingSurfaceLod;
 import dev.ringworld.world.RingTerrainAtlas;
 import dev.ringworld.world.RingWorldConfig;
 import dev.ringworld.world.RingWorldSettings;
+import dev.ringworld.world.RingWorldStorageAccess;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.commands.Commands;
@@ -28,7 +29,6 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.storage.LevelResource;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayDeque;
 import java.util.HashMap;
@@ -45,7 +45,9 @@ public final class RingTerrainAtlasServer {
     private static final double WATER_TEXTURE_LUMINANCE = 0.58;
     private static final double GRASS_TEXTURE_LUMINANCE = 0.68;
     private static final double FOLIAGE_TEXTURE_LUMINANCE = 0.52;
-    private static final String CACHE_FILE = "ringworld-terrain-atlas.rwat.gz";
+    private static final String CACHE_FILE = "terrain-atlas.rwat.gz";
+    private static final String LEGACY_CACHE_FILE = "ringworld-terrain-atlas.rwat.gz";
+    private static final String CACHE_DIRECTORY = RingWorldMod.MOD_ID;
     private static final int SAVE_INTERVAL_TICKS = 200;
     private static final int TILE_BROADCAST_INTERVAL_TICKS = 20;
     private static final int STREAM_TILES_PER_TICK = 8;
@@ -88,18 +90,30 @@ public final class RingTerrainAtlasServer {
         RingGeometry geometry = settings.geometry();
         long hash = RingTerrainAtlas.worldHash(settings);
         Path path = cachePath(world);
-        RingTerrainAtlas atlas = null;
-        if (Files.exists(path)) {
-            try {
-                atlas = RingTerrainAtlas.load(path, geometry, hash);
-                RingWorldMod.LOGGER.info("Loaded RingWorld terrain atlas {} ({}/{} cells, {}%)",
-                        path, atlas.presentCount(), atlas.cellCount(), percent(atlas.completion()));
-            } catch (IOException exception) {
-                RingWorldMod.LOGGER.warn("Ignoring invalid RingWorld terrain atlas {}", path, exception);
-            }
+        Path legacyPath = legacyCachePath(world);
+        RingTerrainAtlas.StorageLoad storage =
+                RingTerrainAtlas.loadStorage(path, legacyPath, geometry, hash);
+        RingTerrainAtlas atlas = storage.atlas();
+        switch (storage.status()) {
+            case CURRENT -> RingWorldMod.LOGGER.info(
+                    "Loaded RingWorld terrain atlas {} ({}/{} cells, {}%)",
+                    path, atlas.presentCount(), atlas.cellCount(), percent(atlas.completion()));
+            case MIGRATED_LEGACY -> RingWorldMod.LOGGER.info(
+                    "Migrated legacy RingWorld terrain atlas from {} to {} ({}/{} cells, {}%)",
+                    legacyPath, path, atlas.presentCount(), atlas.cellCount(),
+                    percent(atlas.completion()));
+            case INVALID_CURRENT -> RingWorldMod.LOGGER.warn(
+                    "Ignoring invalid RingWorld terrain atlas {}; rebuilding without legacy fallback",
+                    path);
+            case INVALID_LEGACY -> RingWorldMod.LOGGER.warn(
+                    "Legacy RingWorld terrain atlas {} failed geometry/world-hash validation; rebuilding",
+                    legacyPath);
+            case FRESH -> RingWorldMod.LOGGER.info(
+                    "Creating fresh RingWorld terrain atlas {}", path);
         }
-        if (atlas == null) atlas = new RingTerrainAtlas(geometry, hash);
         State state = new State(atlas, path);
+        state.dirty = storage.status() == RingTerrainAtlas.StorageStatus.INVALID_CURRENT
+                || storage.status() == RingTerrainAtlas.StorageStatus.INVALID_LEGACY;
         state.nextChunkIndex = atlas.firstMissingChunkIndex();
         STATES.put(world, state);
     }
@@ -247,8 +261,8 @@ public final class RingTerrainAtlasServer {
 
     private static void captureChunk(ServerLevel world, LevelChunk chunk, State state) {
         RingTerrainAtlas atlas = state.atlas;
-        int chunkX = chunk.getPos().x;
-        int chunkZ = chunk.getPos().z;
+        int chunkX = chunk.getPos().x();
+        int chunkZ = chunk.getPos().z();
         int minChunkZ = atlas.geometry().minWidthZ() >> 4;
         int chunksAlong = atlas.geometry().circumferenceChunks();
         int chunksAcross = atlas.geometry().widthChunks();
@@ -359,7 +373,24 @@ public final class RingTerrainAtlasServer {
     }
 
     private static Path cachePath(ServerLevel world) {
-        return world.getServer().getWorldPath(LevelResource.ROOT).resolve("data").resolve(CACHE_FILE);
+        return cachePath(RingWorldStorageAccess.dimensionPath(world));
+    }
+
+    static Path cachePath(Path dimensionPath) {
+        return dimensionPath
+                .resolve("data")
+                .resolve(CACHE_DIRECTORY)
+                .resolve(CACHE_FILE);
+    }
+
+    private static Path legacyCachePath(ServerLevel world) {
+        return legacyCachePath(world.getServer().getWorldPath(LevelResource.ROOT));
+    }
+
+    static Path legacyCachePath(Path worldRoot) {
+        return worldRoot
+                .resolve("data")
+                .resolve(LEGACY_CACHE_FILE);
     }
 
     private static String percent(double completion) { return String.format(java.util.Locale.ROOT, "%.1f", completion * 100.0); }

@@ -4,18 +4,24 @@ import dev.ringworld.RingWorldMod;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.io.IOException;
+import java.nio.file.AtomicMoveNotSupportedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
 import net.minecraft.world.level.saveddata.SavedDataType;
-import net.minecraft.world.level.storage.DimensionDataStorage;
+import net.minecraft.world.level.storage.SavedDataStorage;
 import net.minecraft.world.level.storage.LevelResource;
 
 /** Immutable ring dimensions stored alongside a world once it is created. */
 public final class RingWorldSettings extends SavedData {
-    public static final String STORAGE_KEY = RingWorldMod.MOD_ID + "_settings";
+    public static final Identifier STORAGE_ID =
+            Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "settings");
+    public static final String LEGACY_STORAGE_KEY = RingWorldMod.MOD_ID + "_settings";
     public static final int FORMAT_VERSION = 2;
     public static final int DEFAULT_WIDTH = 4_096;
     public static final int DEFAULT_CIRCUMFERENCE = 15_552;
@@ -33,7 +39,7 @@ public final class RingWorldSettings extends SavedData {
             Codec.INT.fieldOf("format").forGetter(RingWorldSettings::formatVersion)
     ).apply(instance, RingWorldSettings::new));
     private static final SavedDataType<RingWorldSettings> TYPE = new SavedDataType<>(
-            STORAGE_KEY, RingWorldSettings::new, CODEC, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
+            STORAGE_ID, RingWorldSettings::new, CODEC, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
 
     private final int widthBlocks;
     private final int circumferenceBlocks;
@@ -76,7 +82,8 @@ public final class RingWorldSettings extends SavedData {
     }
 
     public static RingWorldSettings get(ServerLevel world) {
-        DimensionDataStorage manager = world.getDataStorage();
+        migrateLegacySettings(world);
+        SavedDataStorage manager = world.getDataStorage();
         RingWorldSettings saved = manager.get(TYPE);
         if (saved != null) {
             if (saved.formatVersion() == FORMAT_VERSION) return saved;
@@ -129,7 +136,7 @@ public final class RingWorldSettings extends SavedData {
     public RingGeometry geometry() { return new RingGeometry(widthBlocks, circumferenceBlocks); }
 
     private static boolean hasExistingOverworldRegions(ServerLevel world) {
-        Path regionDirectory = world.getServer().getWorldPath(LevelResource.ROOT).resolve("region");
+        Path regionDirectory = RingWorldStorageAccess.dimensionPath(world).resolve("region");
         if (!Files.isDirectory(regionDirectory)) return false;
         try (var files = Files.list(regionDirectory)) {
             return files.anyMatch(path -> path.getFileName().toString().endsWith(".mca"));
@@ -138,5 +145,58 @@ public final class RingWorldSettings extends SavedData {
                     "Could not inspect existing Overworld region directory " + regionDirectory,
                     exception);
         }
+    }
+
+    private static void migrateLegacySettings(ServerLevel world) {
+        Path current = settingsPath(RingWorldStorageAccess.dimensionPath(world));
+        if (Files.exists(current)) return;
+        Path legacy = legacySettingsPath(world.getServer().getWorldPath(LevelResource.ROOT));
+        if (!Files.isRegularFile(legacy)) return;
+        try {
+            if (copyAtomicallyIfAbsent(legacy, current)) {
+                RingWorldMod.LOGGER.info(
+                        "Migrated legacy RingWorld settings from {} to {}", legacy, current);
+            }
+        } catch (IOException exception) {
+            throw new IllegalStateException(
+                    "Could not migrate legacy RingWorld settings from " + legacy
+                            + " to " + current,
+                    exception);
+        }
+    }
+
+    static Path settingsPath(Path dimensionPath) {
+        return dimensionPath.resolve("data")
+                .resolve(STORAGE_ID.getNamespace())
+                .resolve(STORAGE_ID.getPath() + ".dat");
+    }
+
+    static Path legacySettingsPath(Path worldRoot) {
+        return worldRoot.resolve("data").resolve(LEGACY_STORAGE_KEY + ".dat");
+    }
+
+    static boolean copyAtomicallyIfAbsent(Path source, Path destination) throws IOException {
+        if (Files.exists(destination)) return false;
+        Files.createDirectories(destination.getParent());
+        Path temporary = destination.resolveSibling(destination.getFileName() + ".tmp");
+        Files.copy(source, temporary, StandardCopyOption.REPLACE_EXISTING);
+        if (Files.exists(destination)) {
+            Files.deleteIfExists(temporary);
+            return false;
+        }
+        try {
+            Files.move(temporary, destination, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException ignored) {
+            try {
+                Files.move(temporary, destination);
+            } catch (FileAlreadyExistsException race) {
+                Files.deleteIfExists(temporary);
+                return false;
+            }
+        } catch (FileAlreadyExistsException race) {
+            Files.deleteIfExists(temporary);
+            return false;
+        }
+        return true;
     }
 }

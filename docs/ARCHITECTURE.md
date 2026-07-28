@@ -303,10 +303,11 @@ maximum of one loaded boundary chunk per tick.
 
 ### World settings
 
-Minecraft persistent state key:
+Minecraft 26.1 namespaced saved-data identifier and dimension-owned file:
 
 ```text
-ringworld_settings
+ringworld:settings
+<world>/dimensions/minecraft/overworld/data/ringworld/settings.dat
 ```
 
 Serialized fields:
@@ -321,10 +322,23 @@ format
 layoutFingerprint (derived, not serialized)
 ```
 
+For a copied 1.21.11 RingWorld, the legacy file is:
+
+```text
+<world>/data/ringworld_settings.dat
+```
+
+When the namespaced file is absent, startup copies that legacy state
+atomically into the authoritative Overworld data directory before
+`SavedDataStorage` reads it. The decoded saved values continue to win over
+bootstrap configuration, preserving immutable geometry. A world with
+26.1 Overworld region files but no readable RingWorld settings is rejected
+rather than converted in place.
+
 ### Server terrain atlas
 
 ```text
-<world>/data/ringworld-terrain-atlas.rwat.gz
+<world>/dimensions/minecraft/overworld/data/ringworld/terrain-atlas.rwat.gz
 ```
 
 The world hash includes the complete layout fingerprint plus atlas format and
@@ -335,6 +349,14 @@ Because a dedicated server never resource-loads Minecraft's client-owned
 grass/foliage colour maps, a zero lookup falls back to the sampled block map
 colour. Other blocks always use map colour. Older atlas formats are ignored
 and rebuilt.
+
+The copied-1.21.11 legacy atlas remains at
+`<world>/data/ringworld-terrain-atlas.rwat.gz`. It is consulted only when the
+new dimension-owned file is absent, and migrates only after format, geometry,
+sample layout, and world-hash validation. Once the new file exists it is
+authoritative: a corrupt or mismatched new file rebuilds from canonical chunks
+without falling back to possibly stale legacy data. Atomic `.tmp` replacement
+makes an interrupted save recoverable on the next save or validated migration.
 
 ### Client terrain atlas
 
