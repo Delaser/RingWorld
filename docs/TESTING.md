@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The current `codex/minecraft-26.1-port` branch requires Java 25. Common and
-client compilation now pass together, and the development build runs all 83
+client compilation now pass together, and the development build runs all 89
 unit/parameterized cases:
 
 ```sh
@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The 2026-07-28 suite contains 83 unit/parameterized cases:
+The 2026-07-28 suite contains 89 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -106,7 +106,7 @@ mixin and shader resource loaded to the UI. It then ran the destructive
 This establishes the safe-small functional renderer and gameplay gate, not
 final visual tuning. Inspect both complete-ring images for colour, live/LOD
 handoff, local proxy exclusion, and width-edge alignment. The current
-15,552×256 production default still needs its multi-size visual/resource gate.
+16,384×256 production default still needs its multi-size visual/resource gate.
 
 The 26.1 `--quickPlaySingleplayer` projection task did not enter the selected
 world during this checkpoint, so the successful complete-ring captures came

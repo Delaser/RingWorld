@@ -15,7 +15,7 @@ out float intrinsicDistance;
 const float TAU = 6.28318530717958647692;
 // The complete-ring surface is visual sky LOD, not ordinary world geometry.
 // Keep its physical X/Y perspective, but prevent Minecraft's chunk-derived
-// far plane from clipping large rings. A 15,552-block circumference has an
+// far plane from clipping large rings. A 16,384-block circumference has an
 // approximately 4,950-block diameter while the normal 28-chunk level far
 // plane is only about 1,792 blocks. Clamping clip-space Z leaves X/Y/W (and
 // therefore apparent curvature) untouched. Vertices behind the eye retain

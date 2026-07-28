@@ -210,9 +210,9 @@ endpoint to the same physical half-circumference, including when a requested
 view distance reaches the whole ring. The fragment shader derives shortest
 periodic intrinsic surface distance from the global cylinder vertex angle.
 Minecraft's normal level projection cannot contain the production cylinder:
-at 28 chunks its far plane is about 1,792 blocks, while the 15,552-block
-circumference has a roughly 4,950-block surface diameter and a centre-camera
-distance of more than 5,300 blocks to the far width edge. This appears most
+at 28 chunks its far plane is about 1,792 blocks, while the 16,384-block
+circumference has a roughly 5,215-block surface diameter and a centre-camera
+distance of more than 5,200 blocks to the far width edge. This appears most
 aggressively while looking tangentially along the ring; looking radially
 straight up exercises a different projection extreme.
 

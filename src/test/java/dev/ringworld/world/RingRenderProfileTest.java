@@ -36,7 +36,7 @@ class RingRenderProfileTest {
     }
 
     @Test
-    void productionProfileReportsDownsampledTextureAndBoundedMesh() {
+    void formerWideNonPowerOfTwoProfileRemainsSupported() {
         RingRenderProfile profile = RingRenderProfile.create(
                 new RingGeometry(4_096, 15_552), 28 * 16.0);
 
@@ -50,6 +50,26 @@ class RingRenderProfileTest {
         assertEquals(22_369_616L, profile.estimatedGpuTextureBytes());
         assertEquals(9_437_184L, profile.estimatedGpuMeshBytes());
         assertEquals(50_331_648L, profile.estimatedTextureBuildScratchBytes());
+    }
+
+    @Test
+    void productionProfileAlignsExactlyWithTextureAndMeshBudgets() {
+        RingRenderProfile profile = RingRenderProfile.create(
+                new RingGeometry(
+                        RingWorldSettings.DEFAULT_WIDTH,
+                        RingWorldSettings.DEFAULT_CIRCUMFERENCE),
+                28 * 16.0);
+
+        assertEquals(4_096, profile.textureColumns());
+        assertEquals(256, profile.textureRows());
+        assertEquals(512, profile.circumferenceSegments());
+        assertEquals(32, profile.widthBands());
+        assertEquals(98_304L, profile.vertexCount());
+        assertEquals(4.0, profile.textureBlocksPerTexelX());
+        assertEquals(1.0, profile.textureBlocksPerTexelZ());
+        assertEquals(5_592_384L, profile.estimatedGpuTextureBytes());
+        assertEquals(2_359_296L, profile.estimatedGpuMeshBytes());
+        assertEquals(12_582_912L, profile.estimatedTextureBuildScratchBytes());
     }
 
     @Test

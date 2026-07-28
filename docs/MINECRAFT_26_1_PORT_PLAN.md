@@ -569,7 +569,7 @@ their corresponding runtime gates.
 
 ### Gate 5: production geometry
 
-- 15,552 × 256 current-default validation passes;
+- 16,384 × 256 current-default validation passes;
 - synthetic full-ring projection passes;
 - a real atlas resource benchmark completes;
 - GPU resources remain within policy;

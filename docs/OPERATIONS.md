@@ -15,9 +15,9 @@
 This stack now produces a green development build and passes isolated fresh
 and copied-world dedicated-server launch gates plus the integrated safe-small
 client atlas/rendering/gameplay harness and dedicated two-client multiplayer
-matrix. It remains non-playable until multi-size visual review, UI completion,
-packaging, and staging gates pass. The working service, packages, and rollback
-remain Minecraft 1.21.11 at
+matrix. It remains non-playable until multi-size visual review,
+automated-harness completion, packaging, and staging gates pass. The working
+service, packages, and rollback remain Minecraft 1.21.11 at
 `mc-1.21.11-final`; do not deploy the 26.1 branch until every release gate in
 the port plan passes. The finished mod must be installed on the server and
 every client.
@@ -35,7 +35,7 @@ If absent, the mod creates it at startup.
 | Property | Default | Validation/meaning |
 | --- | ---: | --- |
 | `widthBlocks` | 256 | At least 256, divisible by 16, sufficient rim interior, and within atlas/axis budgets |
-| `circumferenceBlocks` | 15552 | Divisible by 16 and large enough for 64 blocks of radial clearance above the build top (2,016 minimum for vanilla bounds) |
+| `circumferenceBlocks` | 16384 | Power-of-two; exactly 1,024 chunks and 32 region widths; large enough for 64 blocks of radial clearance above the build top (2,016 minimum for vanilla bounds) |
 | `wallHeightBlocks` | 160 | At least 32; measured from world minimum Y; wall and cloud top must fit the build range |
 | `testMode` | false | Enables destructive local automated harness |
 | `testViewDistanceChunks` | 28 | Initial live/LOD capture distance for the local harness; 2–32 |
@@ -94,13 +94,15 @@ path.
 ### Production defaults
 
 ```text
-circumference: 15552 blocks = 972 chunks
+circumference: 16384 blocks = 1024 chunks
 width:           256 blocks = 16 chunks
-radius:         about 2475 blocks
+radius:         about 2607.59 blocks
 ```
 
-The walking circumference was selected to be approximately one hour at normal
-Minecraft walking speed.
+The walking circumference is approximately 63 minutes at normal Minecraft
+walking speed. Its power-of-two length aligns exactly with chunks, 32 complete
+region-file widths, the eight-block atlas sample grid, and the capped proxy
+texture and mesh budgets.
 
 ### Development geometry
 
@@ -125,7 +127,7 @@ normal server chunk queue has fewer than 64 pending tasks.
 | Geometry | Canonical chunks | Source cells at 8-block step |
 | --- | ---: | ---: |
 | 2048×416 safe-small | 3,328 | 13,312 |
-| 15552×256 default | 15,552 | 62,208 |
+| 16384×256 default | 16,384 | 65,536 |
 
 Production-default atlas completion is therefore a large world-generation
 operation. Monitor disk use, server tick time, and progress logs. Set
@@ -134,8 +136,8 @@ complete-ring texture will not build until a complete atlas is available.
 Progress logs report captured cells, cells per second, and an ETA once a rate
 can be measured.
 
-The 15,552×256 production-default static resource envelope is approximately
-0.42 MiB of raw atlas arrays/wire payload, 5.33 MiB for the RGBA8 GPU texture
+The 16,384×256 production-default static resource envelope is approximately
+0.44 MiB of raw atlas arrays/wire payload, 5.33 MiB for the RGBA8 GPU texture
 including its mip chain, 2.25 MiB for the maximum-detail mesh, and 12.0 MiB of
 conservative texture-build scratch. Gzip disk size depends on terrain but
 cannot be used as the memory budget. The creation editor reports these
@@ -174,6 +176,14 @@ Deleting an atlas cache is recoverable but forces regeneration or
 retransmission. Do not delete the world settings state unless intentionally
 invalidating the world.
 
+The current release performs this work automatically through its background
+server-tick scheduler, so walking a lap is not required, but it lacks a clear
+player control and progress UI. A **Generate Entire Ring** button, reusable
+function, and explicit operator and headless `prewarm-and-stop` workflows are
+planned in [`ATLAS_PREGENERATION_PLAN.md`](ATLAS_PREGENERATION_PLAN.md); those
+commands and launch modes must not be advertised as implemented until their
+integration gates pass.
+
 Copied 1.21.11 worlds may also contain the legacy server atlas at
 `<world>/data/ringworld-terrain-atlas.rwat.gz`. It migrates once only when the
 new path is absent and its format, geometry, sampling layout, and world hash
@@ -209,7 +219,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite contains 83 unit/parameterized cases. The historical Phase 2
+The current suite contains 89 unit/parameterized cases. The historical Phase 2
 95-error inventory and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.
