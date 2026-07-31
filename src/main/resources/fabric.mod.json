@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "ringworld",
+  "version": "${version}",
+  "name": "RingWorld",
+  "description": "Turns the Overworld into a finite, seamless cylindrical ringworld with periodic gameplay and curved rendering.",
+  "authors": ["RingWorld contributors"],
+  "license": "MPL-2.0",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["dev.ringworld.RingWorldMod"],
+    "client": ["dev.ringworld.client.RingWorldClient"]
+  },
+  "mixins": [
+    "ringworld.mixins.json",
+    {"config": "ringworld.client.mixins.json", "environment": "client"}
+  ],
+  "depends": {
+    "fabricloader": ">=0.19.3",
+    "minecraft": "26.1.2",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}

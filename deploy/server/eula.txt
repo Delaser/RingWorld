@@ -1,0 +1,2 @@
+# Accepted by the server owner for this RingWorld test deployment.
+eula=true

@@ -1,0 +1,55 @@
+name: Bug report
+description: Report a reproducible RingWorld defect
+title: "[BUG] "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: Do not post credentials or undisclosed security vulnerabilities here. Use the Security tab for private vulnerability reports.
+  - type: input
+    id: ringworld-version
+    attributes:
+      label: RingWorld version or commit
+    validations:
+      required: true
+  - type: input
+    id: minecraft-version
+    attributes:
+      label: Minecraft version
+    validations:
+      required: true
+  - type: dropdown
+    id: loader
+    attributes:
+      label: Loader
+      options:
+        - Fabric
+        - NeoForge
+        - Other or unknown
+    validations:
+      required: true
+  - type: textarea
+    id: dimensions
+    attributes:
+      label: Ring dimensions
+      description: Circumference, width, wall height, and whether this is a new or existing world.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      placeholder: Describe the smallest repeatable sequence and what happened instead of the expected result.
+    validations:
+      required: true
+  - type: textarea
+    id: mods
+    attributes:
+      label: Other installed mods
+      description: Include versions and say whether the problem reproduces with only RingWorld and its required loader dependencies.
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Logs, crash report, or screenshots
+      description: Remove tokens, account data, passwords, player personal data, and unrelated world data first.

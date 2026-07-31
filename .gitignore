@@ -1,0 +1,40 @@
+.gradle/
+build/
+run/
+run-multiplayer/
+logs/
+dist/
+.codex-tmp/
+ringworld-*.jar
+.DS_Store
+.idea/
+*.iml
+
+# Local scratch and staging output
+work/
+deploy/meridian-regeneration-staging/
+
+# Minecraft and launcher runtime state
+.prism-data/
+accounts.json
+crash-reports/
+saves/
+world/
+world-*/
+*.log
+hs_err_pid*
+
+# Local credentials and signing material
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# A deployed server.properties may contain an RCON password. Version only the
+# blank example under deploy/server/.
+deploy/server/server.properties
