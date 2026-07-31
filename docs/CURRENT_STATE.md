@@ -84,12 +84,18 @@ The same dedicated two-client scenario has now passed on the production
 cold run completed the server gameplay and reconnect probes, but its aggregate
 result was false solely because client B observed a 1.333-block remote step
 while the server still received 0.25-block packets but accumulated a 4-block
-per-tick sample under cold resource pressure. The repeat reported server
+per-tick sample under cold resource pressure. The warmed repeat reported server
 `maxTickSample=0.25`, client B `maxRemoteStep=0.2498857`, no missing ticks, lag
-warnings, or crashes, and true seam, combat, block, vehicle, teleport, and
-reconnect probes. Cold-start performance/repeatability work and Nether/End
-lifecycle coverage remain open; this is not completion of the full production
-gate.
+warnings, or crashes.
+
+A later fresh-process cold run against a copied complete atlas passed the full
+scenario in about 2 minutes 51 seconds: `maxPacketStep=0.25`,
+`maxTickSample=2.75`, client A/B `maxRemoteStep=0.0/1.25`, zero missing client
+ticks, and true seam, combat, block, vehicle, teleport, and reconnect probes.
+It also logged 3.816-second initial-connect and 39.402-second reconnect server
+stalls. This is a repeatable functional cold-start pass, but not acceptable
+showcase frame/tick performance; cold resource-pressure diagnosis and the
+remaining resource benchmark matrix stay open.
 
 Multi-size visual review, automated-harness completion, packaging, and staging
 gates remain.

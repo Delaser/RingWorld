@@ -449,8 +449,18 @@ world/configuration produced
 `result=true`: server `maxTickSample=0.25`, client B
 `maxRemoteStep=0.2498857`, no missing ticks, lag warnings, or crashes, and all
 seam/combat/block/vehicle/teleport/reconnect probes true. Keep cold-start
-performance and repeatability validation open, along with Nether/End lifecycle
-coverage; this evidence does not certify the entire production matrix.
+performance validation open; this evidence does not certify the entire
+production matrix.
+
+A later fresh-process cold run copied the complete production checkpoint into
+the ignored multiplayer server slot and preserved the source hash. It reached
+`full scenario result=true` in about 2 minutes 51 seconds with a 65,536-cell
+atlas, `maxPacketStep=0.25`, `maxTickSample=2.75`, client A/B
+`maxRemoteStep=0.0/1.25`, zero missing client ticks, and no crashes. The server
+still reported 3.816-second initial-connect and 39.402-second reconnect stalls.
+Treat this as functional repeatability evidence, not a cold-start performance
+pass. All three processes were stopped after the result; the local logs remain
+under the ignored multiplayer run directories.
 
 The integrated visual/seam harness deliberately holds position for 300 client
 ticks after its first seam screenshot. This keeps the seam chunks resident
