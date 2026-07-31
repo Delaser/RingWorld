@@ -1,3 +1,5 @@
+# Copy this blank public template to server.properties on the server. Never
+# commit a deployed copy containing an RCON password or other local settings.
 accepts-transfers=false
 allow-flight=true
 allow-nether=true

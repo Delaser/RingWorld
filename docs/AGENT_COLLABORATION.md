@@ -16,7 +16,7 @@ where both agents use worktrees from the same local clone.
 
 ## Dedicated-PC workflow
 
-Both PCs need authenticated access to the private repository:
+Both PCs need authenticated write access to the repository:
 
 ```sh
 gh auth status
@@ -173,7 +173,7 @@ git worktree add ../RingWorld-agent2 \
   <integration-commit>
 ```
 
-Open `/Users/chris/Documents/RingWorld-agent2` as the workspace for the second
+Open `~/RingWorld-agent2` as the workspace for the second
 ChatGPT Desktop task. Both folders remain separate checkouts but share one Git
 common directory and therefore derive the same mailbox identity.
 

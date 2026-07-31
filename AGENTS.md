@@ -66,34 +66,38 @@ This is an engine-level mod. Both the server and every client need it.
 
 ## Licensing and distribution policy
 
-RingWorld is proprietary and source-unavailable during the current private
-development period. The authoritative terms are in [`LICENSE`](LICENSE).
-Never describe the project or an artifact as MIT, permissively licensed, or
-open source.
+RingWorld is open-source software licensed under the Mozilla Public License
+2.0. The authoritative terms are in [`LICENSE`](LICENSE), with practical
+distribution guidance in [`docs/LICENSING.md`](docs/LICENSING.md). Never
+describe the project or an artifact as MIT, proprietary, source-unavailable,
+or noncommercial-only.
 
-- Source, modifications, forks, ports, redistribution, modpack inclusion, and
-  commercial use require prior written permission from the project owner.
-- Official binaries may be packaged only for the personal, noncommercial
-  evaluation grant described in `LICENSE`.
-- Every mod jar must declare
-  `LicenseRef-RingWorld-Evaluation-1.0` and contain
+- Existing RingWorld source files and modifications to them remain MPL-2.0
+  when distributed. Separate files in a larger work may use other licences.
+- Redistribution, commercial use, forks, ports, and modpack inclusion are
+  permitted subject to the MPL-2.0. Do not add restrictions that contradict
+  the licence.
+- Every mod jar must declare `MPL-2.0` and contain
   `LICENSE-RINGWORLD.txt`.
 - Every outer client or server package must include the current `LICENSE`
   beside its launcher or primary instructions.
+- Distribution of an executable must also make the MPL-covered Source Code
+  Form available by reasonable means and tell recipients how to obtain it.
 - Packaging and deployment checks must inspect the nested RingWorld jar and
-  fail if `MIT`, a stale licence identifier, or a missing licence file is
-  found.
-- Do not publish the source repository, source jars, or source archives.
-- Do not accept unsolicited copyrightable contributions. Follow
-  [`CONTRIBUTING.md`](CONTRIBUTING.md) and obtain the project owner's approval
-  plus the then-current contributor agreement first.
-- A compatibility patch, modpack adaptation, loader port, or fork is possible
-  only through explicit written permission with a defined scope and
-  noncommercial terms.
+  fail if `MIT`, `LicenseRef-RingWorld-Evaluation-1.0`, another stale licence
+  identifier, or a missing licence file is found.
+- Contributions are accepted under MPL-2.0 subject to
+  [`CONTRIBUTING.md`](CONTRIBUTING.md). Do not accept code the contributor is
+  not entitled to license, including decompiled Minecraft source.
+- MPL-2.0 does not grant rights to project trademarks or branding. Do not
+  imply that a fork or compatibility build is an official RingWorld release.
 
 The unintended MIT-labelled 0.1.0 public test bundles were withdrawn on
 2026-07-28. Older copies may still exist; do not imply that a new licence
-retroactively revokes rights previously granted to a recipient.
+retroactively revokes rights previously granted to a recipient. Likewise,
+copies distributed under the former RingWorld Evaluation License retain the
+terms attached to those copies; MPL-2.0 applies to repository versions released
+under it.
 
 ## Loader support policy
 

@@ -5,7 +5,7 @@
   "name": "RingWorld",
   "description": "Turns the Overworld into a finite, seamless cylindrical ringworld with periodic gameplay and curved rendering.",
   "authors": ["RingWorld contributors"],
-  "license": "LicenseRef-RingWorld-Evaluation-1.0",
+  "license": "MPL-2.0",
   "environment": "*",
   "entrypoints": {
     "main": ["dev.ringworld.RingWorldMod"],

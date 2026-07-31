@@ -15,18 +15,25 @@ under `/opt/ringworld-server/backups/cutover-20260727T055423Z/`; it must not be
 resized in place. Future geometry changes still require an explicit backup and
 a fresh world because saved dimensions are immutable.
 
+`server.properties.example` is the versioned blank template. Copy it to
+`server.properties` only on the server and keep the deployed file untracked;
+it may contain an RCON password or other local operational settings.
+
 The matching public client archives and checksums are served from:
 
 ```text
 https://andwhatnotstudio.com/ringworld/
 ```
 
-RingWorld is proprietary. The installed mod jar must declare
-`LicenseRef-RingWorld-Evaluation-1.0` and contain
-`LICENSE-RINGWORLD.txt`. The MIT-labelled server jar was withdrawn on
-28 July 2026 and retained only at
+New RingWorld builds are MPL-2.0. The installed mod jar must declare
+`MPL-2.0` and contain `LICENSE-RINGWORLD.txt`, and its exact corresponding
+source revision must be available as described in
+[`docs/LICENSING.md`](../../docs/LICENSING.md). The
+MIT-labelled server jar was withdrawn on 28 July 2026 and retained only at
 `/opt/ringworld-server/backups/license-correction-20260728T123000Z/`.
-Do not restore or redistribute it.
+Do not restore it to the active service. The currently deployed legacy test
+binary remains governed by the licence attached to that copy until an MPL
+build is deliberately staged and deployed.
 
 Meridian is a separate `meridian.service`. It is world-agnostic: its managed
 `meridian-proximity` datapack is restored into the active world's `datapacks/`

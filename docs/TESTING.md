@@ -53,6 +53,8 @@ The 2026-07-28 suite contains 89 unit/parameterized cases:
 | `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
 | `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
+| `RingWorldCreationUiModelTest` | Safe-small, production, custom, and invalid world-creation cost previews |
+| `RingProtocolIdentityTest` | Settings and acknowledgement channel names remain synchronized with their wire layout |
 
 Inspect machine-readable results under:
 

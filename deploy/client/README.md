@@ -5,10 +5,11 @@ credential-free bundles under `dist/`.
 
 Every outer bundle and nested Prism instance must include the current
 top-level `LICENSE`. The managed RingWorld jar must declare
-`LicenseRef-RingWorld-Evaluation-1.0` and embed `LICENSE-RINGWORLD.txt`.
-Packaging must fail if the jar still declares MIT or omits the embedded
-licence. The evaluation licence does not permit third-party mirroring,
-modpack inclusion, modification, or commercial redistribution.
+`MPL-2.0` and embed `LICENSE-RINGWORLD.txt`. Packaging must fail if the jar
+declares MIT, the retired evaluation identifier, or omits the embedded
+licence. Every published build must identify a timely, reasonable way for
+recipients to obtain the corresponding MPL-covered source at the exact release
+revision. See [`docs/LICENSING.md`](../../docs/LICENSING.md).
 
 Validate generated artifacts with
 `scripts/verify_distribution_license.py` before copying them to the public

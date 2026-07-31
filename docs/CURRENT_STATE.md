@@ -202,6 +202,13 @@ client/runtime gate passes.
   the Windows package is
   `c92498ab3546a3ca4cd86a684eba8c37b97ef4814181aa1d686055dfc29dcc2d`.
   Both HTTPS downloads and the separately served licence were verified.
+- The repository subsequently adopted MPL-2.0 for versions released under the
+  new licence. The existing public 1.21.11 evaluation packages and live server
+  binary were not silently relicensed or redeployed: they retain the terms
+  attached to those copies. The next MPL binary release is blocked until its
+  exact corresponding source revision is publicly available or supplied by
+  another compliant method, and all package metadata has passed the updated
+  `MPL-2.0` licence gate.
 - The live server jar was replaced with the gameplay-equivalent 1.21.11
   licence-corrected build after backing up its MIT-labelled predecessor under
   `/opt/ringworld-server/backups/license-correction-20260728T123000Z/`.

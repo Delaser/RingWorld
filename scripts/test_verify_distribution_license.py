@@ -70,12 +70,16 @@ class DistributionLicenceVerificationTest(unittest.TestCase):
             write_bundle(path)
             verify_bundle(path, LICENSE_BYTES)
 
-    def test_rejects_stale_mit_metadata(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            path = Path(directory, "client.zip")
-            write_bundle(path, identifier="MIT")
-            with self.assertRaisesRegex(VerificationError, "expected licence"):
-                verify_bundle(path, LICENSE_BYTES)
+    def test_rejects_stale_metadata(self) -> None:
+        for identifier in ("MIT", "LicenseRef-RingWorld-Evaluation-1.0"):
+            with (
+                self.subTest(identifier=identifier),
+                tempfile.TemporaryDirectory() as directory,
+            ):
+                path = Path(directory, "client.zip")
+                write_bundle(path, identifier=identifier)
+                with self.assertRaisesRegex(VerificationError, "expected licence"):
+                    verify_bundle(path, LICENSE_BYTES)
 
     def test_rejects_missing_outer_licence(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

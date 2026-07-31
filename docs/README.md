@@ -8,10 +8,11 @@ Start here:
 
 - [`../AGENTS.md`](../AGENTS.md): concise operating rules for future coding
   agents.
-- [`../LICENSE`](../LICENSE): proprietary personal/noncommercial evaluation
-  terms for official binaries.
-- [`../CONTRIBUTING.md`](../CONTRIBUTING.md): future invited-contribution and
-  permission-based compatibility-fork path.
+- [`../LICENSE`](../LICENSE): authoritative Mozilla Public License 2.0 terms.
+- [`LICENSING.md`](LICENSING.md): practical source, binary, modpack, fork, and
+  historical-version licensing guidance.
+- [`../CONTRIBUTING.md`](../CONTRIBUTING.md): contribution requirements and
+  inbound MPL-2.0 terms.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): coordinate model and end-to-end system
   design.
 - [`DIMENSION_SCALING_PLAN.md`](DIMENSION_SCALING_PLAN.md): source-audited

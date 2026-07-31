@@ -11,7 +11,7 @@ import sys
 import zipfile
 
 
-EXPECTED_IDENTIFIER = "LicenseRef-RingWorld-Evaluation-1.0"
+EXPECTED_IDENTIFIER = "MPL-2.0"
 EMBEDDED_LICENSE = "LICENSE-RINGWORLD.txt"
 
 

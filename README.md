@@ -30,11 +30,11 @@ The Nether and End remain vanilla.
 > support is the intended architecture; this is not yet a claim that a tested
 > NeoForge artifact is available.
 
-> **Licence status:** RingWorld is proprietary and under private development.
-> Official test binaries are available only for personal, noncommercial
-> evaluation under the [RingWorld Evaluation License](LICENSE). Modification,
-> redistribution, forks, modpack inclusion, and commercial use require prior
-> written permission. The source repository is not currently published.
+> **Licence status:** RingWorld is open-source software licensed under the
+> [Mozilla Public License 2.0](LICENSE). Changes to existing RingWorld source
+> files remain MPL-2.0 when distributed, while separate compatibility and
+> modpack code may use other licences. See the practical
+> [licensing guide](docs/LICENSING.md).
 
 ## What it feels like to play
 
@@ -70,8 +70,8 @@ available from:
 
 **[andwhatnotstudio.com/ringworld](https://andwhatnotstudio.com/ringworld/)**
 
-The download page includes the proprietary evaluation terms and SHA-256
-checksums. The launcher installs the
+The download page includes licence information and SHA-256 checksums. The
+launcher installs the
 packaged instance into its own Prism data directory and can update the managed
 RingWorld and Fabric files without replacing an existing login, save, options,
 or local RingWorld configuration.
@@ -316,13 +316,13 @@ broad third-party compatibility contracts are not yet stable.
 
 ## License
 
-Copyright © 2026 Delaser. All rights reserved.
+Copyright © 2026 Delaser and RingWorld contributors.
 
-RingWorld is proprietary software distributed under the
-[RingWorld Evaluation License 1.0](LICENSE). Official unmodified binaries may
-be used for personal, noncommercial gameplay and testing. Modification,
-redistribution, commercial use, modpack inclusion, compatibility forks, and
-ports require prior written permission.
+RingWorld is licensed under the [Mozilla Public License 2.0](LICENSE).
+MPL-2.0 permits use, modification, redistribution, commercial distribution,
+modpack inclusion, compatibility forks, and ports. Modified RingWorld files
+must remain available under MPL-2.0 when distributed; separate files in a
+larger work may use other licences.
 
-RingWorld is not currently open source. See [Contributing](CONTRIBUTING.md) for
-the planned invited-contribution and permission-based compatibility path.
+See [Licensing](docs/LICENSING.md) for practical distribution guidance and
+[Contributing](CONTRIBUTING.md) for the contribution process.

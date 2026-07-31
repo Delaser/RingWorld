@@ -256,11 +256,15 @@ contains templates under `deploy/server/`:
 ```text
 DEPLOYMENT.md
 config/ringworld.properties
-server.properties
+server.properties.example
 ringworld.service
 rcon-send.py
 eula.txt
 ```
+
+Copy `server.properties.example` to the installed `server.properties` and
+apply local values there. The deployed file is intentionally ignored and must
+never be committed because it may contain an RCON password.
 
 The current AndWhatNot template assumes:
 
@@ -329,26 +333,34 @@ the source instance that contains only:
 
 The web landing-page template and published checksums live under
 `deploy/web/ringworld/`. Rebuild archives and update checksums together.
-Deploy the authoritative top-level `LICENSE` beside them as
-`RingWorld-Evaluation-License.txt`; do not maintain a divergent copy under
-`deploy/`.
+Deploy the authoritative top-level `LICENSE` beside them as `LICENSE.txt`; do
+not maintain a divergent copy under `deploy/`. The download page must also
+link to the exact public source revision for the released build.
 The current public artifacts are `RingWorld-Test-Client.zip` and
 `RingWorld-Test-Client-Windows.zip`. Validate each outer archive, its nested
 `RingWorld-Prism-Instance.zip`, the embedded mod hash, and a download through
 HTTPS before announcing an update.
 
-RingWorld is proprietary. Before any client or server artifact is published:
+RingWorld is licensed under MPL-2.0. Before any client or server artifact is
+published:
 
 1. confirm `fabric.mod.json` inside every RingWorld jar declares
-   `LicenseRef-RingWorld-Evaluation-1.0`;
+   `MPL-2.0`;
 2. confirm every RingWorld jar contains `LICENSE-RINGWORLD.txt`;
 3. confirm the outer archive and nested Prism instance both include the
    current top-level `LICENSE`;
-4. scan archive names and text metadata for the stale `MIT` declaration;
-5. do not publish a sources jar, source archive, repository mirror, or
-   credential-bearing runtime directory; and
-6. state that modification, redistribution, modpack inclusion, forks, and
-   commercial use require prior written permission.
+4. scan metadata for stale `MIT` or
+   `LicenseRef-RingWorld-Evaluation-1.0` declarations;
+5. make the MPL-covered Source Code Form for the exact release revision
+   available by reasonable means and tell recipients where to obtain it;
+6. never publish a credential-bearing runtime directory; and
+7. state accurately that modified RingWorld files remain MPL-2.0 when
+   distributed, while separate files in a larger work may use other terms.
+
+The planned official source-delivery method is a public Git tag matching the
+artifact. If the repository is still private, publishing a newly built MPL
+executable is blocked unless a different compliant source-delivery method is
+included. See [`LICENSING.md`](LICENSING.md).
 
 Run the automated licence gate against each jar and outer bundle:
 
@@ -365,7 +377,8 @@ The MIT-labelled 0.1.0 universal and Windows bundles were withdrawn on
 28 July 2026. Their server-side rollback is
 `/var/backups/ringworld-web-license-correction-20260728T120000Z/`. Do not
 restore those artifacts to a public path. The corrected HTTPS-verified
-evaluation packages are:
+evaluation packages below are historical, pre-MPL artifacts and retain the
+licence attached to those copies:
 
 ```text
 141832393128820be4917d29bec11822f3a253f50e627f3b187e673df22918ea  RingWorld-Test-Client.zip
