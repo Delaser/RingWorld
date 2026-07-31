@@ -2,7 +2,10 @@
 
 import unittest
 
-import codex_usage_monitor as monitor
+try:
+    from . import codex_usage_monitor as monitor
+except ImportError:
+    import codex_usage_monitor as monitor
 
 
 class CodexUsageMonitorTest(unittest.TestCase):
