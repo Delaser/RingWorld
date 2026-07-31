@@ -66,6 +66,7 @@ public final class RingWorldServer {
     public static void register() {
         RingTerrainAtlasServer.registerCommands();
         ServerTickEvents.END_LEVEL_TICK.register(RingWorldServer::tickRingWorld);
+        ServerTickEvents.END_SERVER_TICK.register(RingWorldProductionLifecycleTest::tick);
         ServerChunkEvents.CHUNK_LOAD.register((world, chunk, generated) -> {
             if (!isOverworld(world)) return;
             RingTerrainAtlasServer.captureLoadedChunk(world, chunk);

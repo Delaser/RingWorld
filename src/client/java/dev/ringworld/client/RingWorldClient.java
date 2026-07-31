@@ -41,6 +41,8 @@ public final class RingWorldClient implements ClientModInitializer {
     private static final int FULL_TEST_CIRCUIT_MAX_BLOCKS = 4_096;
     private final MultiplayerTestClient multiplayerTest = new MultiplayerTestClient();
     private final LayoutSwitchTestClient layoutSwitchTest = new LayoutSwitchTestClient();
+    private final ProductionLifecycleTestClient productionLifecycleTest =
+            new ProductionLifecycleTestClient();
     private final RingProjectionCaptureClient projectionCapture =
             new RingProjectionCaptureClient();
     private boolean testScreenOpened;
@@ -157,6 +159,7 @@ public final class RingWorldClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player != null) ClientRingState.updateCameraPosition(client.player.getX());
             ClientRingState.saveTerrainAtlasIfDue(false);
+            if (productionLifecycleTest.tick(client)) return;
             if (layoutSwitchTest.tick(client)) return;
             if (multiplayerTest.tick(client)) return;
             if (projectionCapture.tick(client)) return;
@@ -165,7 +168,13 @@ public final class RingWorldClient implements ClientModInitializer {
         });
     }
 
-    private static void clearRingSession() {
+    /**
+     * Releases all client-owned state for the previous RingWorld session.
+     * Called from both Fabric's network lifecycle and Minecraft's local-world
+     * teardown path because an integrated-server exit does not always deliver
+     * the play-connection disconnect event before the next world is opened.
+     */
+    public static void clearRingSession() {
         RingSurfaceTextureRenderer.clear();
         ClientRingState.clear();
     }

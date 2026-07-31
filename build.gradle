@@ -67,6 +67,17 @@ loom {
 			vmArg "-Dringworld.projectionWorld=" + providers.gradleProperty("ringProjectionDestination")
 					.orElse("RingWorld Production Projection").get()
 		}
+		productionLifecycleClient {
+			client()
+			name "RingWorld Production Lifecycle Regression"
+			// The client opens only the disposable copied world prepared below.
+			// Do not use quick-play: its macOS launch path is nondeterministic.
+			runDir "run-production-lifecycle"
+			vmArg "-Dringworld.productionLifecycleTest=true"
+			vmArg("-Dringworld.productionLifecycleWorld="
+					+ providers.gradleProperty("ringProductionLifecycleDestination")
+							.orElse("RingWorld Production Lifecycle").get())
+		}
 	}
 }
 
@@ -92,6 +103,7 @@ def requireSave = { String value, String propertyName, File savesDirectory ->
 def sourceSavesDirectory = file("run/saves")
 def layoutSwitchSavesDirectory = file("run-layout-switch/saves")
 def projectionSavesDirectory = file("run-production-projection/saves")
+def lifecycleSavesDirectory = file("run-production-lifecycle/saves")
 
 tasks.register("prepareCopiedLayoutSwitchWorlds") {
 	group = "ringworld verification"
@@ -146,6 +158,38 @@ tasks.register("verifyProductionProjectionSave") {
 	}
 }
 
+tasks.register("prepareCopiedProductionLifecycleWorld") {
+	group = "ringworld verification"
+	description = "Copies the named production save into the isolated lifecycle run directory."
+	inputs.property("ringProductionLifecycleSource",
+			providers.gradleProperty("ringProductionLifecycleSource").orElse(""))
+	inputs.property("ringProductionLifecycleDestination",
+			providers.gradleProperty("ringProductionLifecycleDestination")
+					.orElse("RingWorld Production Lifecycle"))
+	outputs.dir(lifecycleSavesDirectory)
+	// A saved world can change between runs; always refresh only the ignored copy.
+	outputs.upToDateWhen { false }
+	doLast {
+		def source = requireSave(providers.gradleProperty("ringProductionLifecycleSource").orNull,
+				"ringProductionLifecycleSource", sourceSavesDirectory)
+		def destinationId = checkedSaveId(
+				providers.gradleProperty("ringProductionLifecycleDestination")
+						.orElse("RingWorld Production Lifecycle").get(),
+				"ringProductionLifecycleDestination")
+		def destination = new File(lifecycleSavesDirectory, destinationId)
+		delete(destination)
+		copy {
+			from(source.directory)
+			into(destination)
+		}
+		if (!new File(destination, "level.dat").isFile()) {
+			throw new GradleException("copied lifecycle save is missing level.dat: " + destination)
+		}
+		logger.lifecycle("[production-lifecycle] copied source={} destination={}",
+				source.directory, destination)
+	}
+}
+
 tasks.register("prepareCopiedProductionProjectionWorld") {
 	group = "ringworld verification"
 	description = "Copies the named production-projection source save into its isolated run directory."
@@ -184,6 +228,10 @@ tasks.named("runLayoutSwitchClient") {
 
 tasks.named("runProductionProjectionClient") {
 	dependsOn(tasks.named("prepareCopiedProductionProjectionWorld"))
+}
+
+tasks.named("runProductionLifecycleClient") {
+	dependsOn(tasks.named("prepareCopiedProductionLifecycleWorld"))
 }
 
 dependencies {

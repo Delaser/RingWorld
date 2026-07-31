@@ -162,6 +162,24 @@ The current embedded atlas scheduler and its planned reusable, resumable
 service API are described in
 [`ATLAS_PREGENERATION_PLAN.md`](ATLAS_PREGENERATION_PLAN.md).
 
+### Production lifecycle regression
+
+`runProductionLifecycleClient` is an opt-in, isolated integrated-client
+regression. Before launch, its Gradle preparation task copies a named
+production save from `run/saves/` into `run-production-lifecycle/saves/`; the
+source save is only read. A test-only server coordinator uses Minecraft 26.1's
+`TeleportTransition` path for Nether → Overworld → End → Overworld (after an
+initial Overworld-to-Nether setup transition). The client opens the copy through
+Minecraft's in-process world-open flow and arms that coordinator only after it
+has received a complete production baseline. The client
+asserts that RingWorld rendering is inactive in the non-Overworld dimensions,
+then that the exact original geometry, layout fingerprint, and complete atlas
+are available again after the Overworld return. It uses Minecraft's normal
+integrated-server save-and-disconnect path, reopens the copied world, and
+repeats the restoration assertion. This is separate from
+the destructive smoke, cross-world layout-switch, and dedicated multiplayer
+harnesses.
+
 ## Seam movement
 
 Natural movement deliberately avoids a teleport.
