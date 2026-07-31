@@ -23,6 +23,7 @@ import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.vehicle.boat.Boat;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.util.Mth;
 
 /** A real-network, two-process client driver. It is dormant outside its JVM test flag. */
 final class MultiplayerTestClient {
@@ -50,8 +51,15 @@ final class MultiplayerTestClient {
 
     private boolean vehicleSeen;
     private double previousVehicleX = Double.NaN;
+    private float previousVehicleYaw;
+    private float previousVehiclePitch;
     private double maximumVehicleStep;
+    private float maximumVehicleRotationStep;
+    private double maximumVehicleSpeed;
     private int vehicleMissingTicks;
+    private int vehicleStateFailures;
+    private int vehicleId = -1;
+    private int vehiclePassengerId = -1;
 
     private boolean sawFarTeleport;
     private boolean sawRemoteFarTeleport;
@@ -310,23 +318,52 @@ final class MultiplayerTestClient {
             return;
         }
         if (!vehicleSeen) {
+            if (boat.getPassengers().size() != 1) return;
+            Entity passenger = boat.getPassengers().getFirst();
             vehicleSeen = true;
+            vehicleId = boat.getId();
+            vehiclePassengerId = passenger.getId();
             previousVehicleX = boat.getX();
+            previousVehicleYaw = boat.getYRot();
+            previousVehiclePitch = boat.getXRot();
             sendResult("vehicle_acquired", true, boat.getX());
-            RingWorldMod.LOGGER.info("[multiplayer:{}] acquired seam vehicle at x={}", role, boat.getX());
+            RingWorldMod.LOGGER.info(
+                    "[multiplayer:{}] acquired seam vehicle id={} passengerId={} x={} yaw={} pitch={} velocity={}",
+                    role, vehicleId, vehiclePassengerId, boat.getX(),
+                    boat.getYRot(), boat.getXRot(), boat.getDeltaMovement());
             return;
         } else {
             maximumVehicleStep = Math.max(maximumVehicleStep, Math.abs(boat.getX() - previousVehicleX));
+            maximumVehicleRotationStep = Math.max(maximumVehicleRotationStep,
+                    Math.max(Math.abs(Mth.wrapDegrees(boat.getYRot() - previousVehicleYaw)),
+                            Math.abs(Mth.wrapDegrees(boat.getXRot() - previousVehiclePitch))));
+            maximumVehicleSpeed = Math.max(maximumVehicleSpeed, boat.getDeltaMovement().length());
             previousVehicleX = boat.getX();
+            previousVehicleYaw = boat.getYRot();
+            previousVehiclePitch = boat.getXRot();
+            Entity passenger = boat.getPassengers().size() == 1
+                    ? boat.getPassengers().getFirst()
+                    : null;
+            if (boat.getId() != vehicleId || passenger == null
+                    || passenger.getId() != vehiclePassengerId
+                    || passenger.getVehicle() != boat) {
+                vehicleStateFailures++;
+            }
         }
         double observedSeam = geometry.nearestImageX(0.0, client.player.getX());
         boolean crossed = boat.getX() >= observedSeam;
         if (crossed) {
-            boolean passed = vehicleMissingTicks == 0 && maximumVehicleStep <= 1.0;
+            boolean passed = vehicleMissingTicks == 0
+                    && vehicleStateFailures == 0
+                    && maximumVehicleStep <= 1.0
+                    && maximumVehicleRotationStep <= 1.0f
+                    && maximumVehicleSpeed <= 0.05;
             RingWorldMod.LOGGER.info(
-                    "[multiplayer:{}] vehicle visibility result={} x={} localSeam={} maxStep={} missingTicks={}",
-                    role, passed, boat.getX(), observedSeam,
-                    maximumVehicleStep, vehicleMissingTicks);
+                    "[multiplayer:{}] vehicle visibility result={} id={} passengerId={} x={} localSeam={} "
+                            + "maxStep={} missingTicks={} stateFailures={} maxRotationStep={} maxSpeed={}",
+                    role, passed, vehicleId, vehiclePassengerId, boat.getX(), observedSeam,
+                    maximumVehicleStep, vehicleMissingTicks, vehicleStateFailures,
+                    maximumVehicleRotationStep, maximumVehicleSpeed);
             sendResult("vehicle_visibility", passed, maximumVehicleStep);
             stage = 4;
             stageTicks = 0;

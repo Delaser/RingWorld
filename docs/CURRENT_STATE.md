@@ -22,7 +22,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 89 unit/parameterized cases pass, and Loom produces
+temporary shims, all 93 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -163,10 +163,12 @@ client/runtime gate passes.
   identifies that circuit from high-X then low-X canonical poses rather than
   counting repeated packets from one presentation chart.
 - Dedicated two-client seam/combat/block/vehicle/teleport/reconnect harness.
-- The reusable multiplayer fixture removes stale automated boats, waits for
-  both clients to acquire the new vehicle, detects canonical folds across
-  overloaded server ticks, and treats periodic teleport targets as equivalent
-  client-chart images.
+- The reusable multiplayer fixture removes stale automated boats and their
+  passengers, waits for both clients to acquire the new vehicle identities,
+  detects canonical folds across overloaded server ticks, and treats periodic
+  teleport targets as equivalent client-chart images. Its vehicle gate rejects
+  a missing/replaced root or passenger, lost mount, rotation jump, excess
+  motion, or non-canonical post-fold ownership.
 - Gradle wrapper, parameterized pure dimension tests, server deployment templates, and private
   GitHub source repository.
 - Latest profile-3 safe-small runtime (2,048×416 at 28-chunk capture) passed two

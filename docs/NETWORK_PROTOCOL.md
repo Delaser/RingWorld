@@ -148,6 +148,12 @@ presentation image nearest its current camera, then ensures its chunk-array
 chart is compatible with that image. This prevents a seam-adjacent explicit
 teleport from clearing chunks which remain continuously watched by the server.
 
+When a canonical fold changes an already-tracked entity's chunk section, the
+server retains that pairing only for a pending destination chunk that remains
+inside the recipient's periodic watch window. It does not send a replacement
+entity or grant initial visibility before normal chunk readiness; the client
+therefore continues to receive the same root-vehicle and passenger identities.
+
 ### Client-to-server mappings
 
 `ClientConnectionMixin` canonicalizes outbound:
