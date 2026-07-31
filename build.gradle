@@ -60,11 +60,12 @@ loom {
 		productionProjectionClient {
 			client()
 			name "RingWorld Production Projection Capture"
-			runDir "run"
+			// The projection run opens only the disposable copied world prepared
+			// below. It must never open a source checkpoint in place.
+			runDir "run-production-projection"
 			vmArg "-Dringworld.captureRingProjection=true"
-			programArgs "--quickPlaySingleplayer",
-					providers.gradleProperty("ringProjectionWorld")
-							.orElse("").get()
+			vmArg "-Dringworld.projectionWorld=" + providers.gradleProperty("ringProjectionDestination")
+					.orElse("RingWorld Production Projection").get()
 		}
 	}
 }
@@ -90,6 +91,7 @@ def requireSave = { String value, String propertyName, File savesDirectory ->
 
 def sourceSavesDirectory = file("run/saves")
 def layoutSwitchSavesDirectory = file("run-layout-switch/saves")
+def projectionSavesDirectory = file("run-production-projection/saves")
 
 tasks.register("prepareCopiedLayoutSwitchWorlds") {
 	group = "ringworld verification"
@@ -137,10 +139,42 @@ tasks.register("prepareCopiedLayoutSwitchWorlds") {
 
 tasks.register("verifyProductionProjectionSave") {
 	group = "ringworld verification"
-	description = "Checks that ringProjectionWorld names an existing run/saves folder."
+	description = "Checks that ringProjectionWorld names an existing source save under run/saves."
 	doLast {
 		requireSave(providers.gradleProperty("ringProjectionWorld").orNull,
 				"ringProjectionWorld", sourceSavesDirectory)
+	}
+}
+
+tasks.register("prepareCopiedProductionProjectionWorld") {
+	group = "ringworld verification"
+	description = "Copies the named production-projection source save into its isolated run directory."
+	inputs.property("ringProjectionWorld",
+			providers.gradleProperty("ringProjectionWorld").orElse(""))
+	inputs.property("ringProjectionDestination",
+			providers.gradleProperty("ringProjectionDestination")
+					.orElse("RingWorld Production Projection"))
+	outputs.dir(projectionSavesDirectory)
+	// World state can change between runs; refresh only the ignored destination copy.
+	outputs.upToDateWhen { false }
+	doLast {
+		def source = requireSave(providers.gradleProperty("ringProjectionWorld").orNull,
+				"ringProjectionWorld", sourceSavesDirectory)
+		def destinationId = checkedSaveId(
+				providers.gradleProperty("ringProjectionDestination")
+						.orElse("RingWorld Production Projection").get(),
+				"ringProjectionDestination")
+		def destination = new File(projectionSavesDirectory, destinationId)
+		delete(destination)
+		copy {
+			from(source.directory)
+			into(destination)
+		}
+		if (!new File(destination, "level.dat").isFile()) {
+			throw new GradleException("copied projection save is missing level.dat: " + destination)
+		}
+		logger.lifecycle("[projection-capture] copied source={} destination={}",
+				source.directory, destination)
 	}
 }
 
@@ -149,10 +183,7 @@ tasks.named("runLayoutSwitchClient") {
 }
 
 tasks.named("runProductionProjectionClient") {
-	doFirst {
-		requireSave(providers.gradleProperty("ringProjectionWorld").orNull,
-				"ringProjectionWorld", sourceSavesDirectory)
-	}
+	dependsOn(tasks.named("prepareCopiedProductionProjectionWorld"))
 }
 
 dependencies {

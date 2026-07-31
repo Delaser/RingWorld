@@ -110,12 +110,12 @@ final visual tuning. Inspect both complete-ring images for colour, live/LOD
 handoff, local proxy exclusion, and width-edge alignment. The current
 16,384×256 production default still needs its multi-size visual/resource gate.
 
-The 26.1 projection task uses Minecraft's supported `--quickPlaySingleplayer`
-path. Its value is the save-folder identifier, not the world-list display
-name. The task preflights `run/saves/<identifier>/level.dat` before it starts,
-so a missing or display-name value fails clearly instead of leaving a client at
-the menu. This is a non-destructive existing-save join; it resumes the selected
-world and its atlas rather than creating another world.
+The 26.1 projection task uses Minecraft's in-process world-open flow. Its
+source value is the save-folder identifier, not the world-list display name.
+The task preflights `run/saves/<identifier>/level.dat` before it starts, then
+opens only an ignored copy. A missing or display-name value fails clearly
+instead of leaving a client at the menu. This is a non-destructive existing-save
+join; it resumes the copied world's atlas rather than creating another world.
 
 ## Local automated smoke world
 
@@ -251,8 +251,19 @@ world under `run/saves/`, use:
 The client waits for the current atlas to reach 100%, then writes:
 
 ```text
-run/screenshots/ringworld-projection-tangent.png
-run/screenshots/ringworld-projection-up.png
+run-production-projection/screenshots/ringworld-projection-tangent.png
+run-production-projection/screenshots/ringworld-projection-up.png
+```
+
+The Gradle task validates that `ringProjectionWorld` is an exact source
+save-folder ID containing `level.dat`, then copies that save into the ignored
+`run-production-projection/saves/` directory. It opens the copied destination
+in-process via Minecraft's world-open flow, rather than relying on
+`--quickPlaySingleplayer`; the source save is never opened or changed. Override
+the destination (also a single folder ID) with:
+
+```sh
+-PringProjectionDestination="projection-copy-folder"
 ```
 
 The tangent capture looks horizontally along canonical +X, where the cylinder
@@ -270,7 +281,9 @@ contain `level.dat`. It is intentionally required: do not substitute the
 world's display name or point this task at a Prism/packaged instance. For an
 interrupted 16,384×256 validation world, place or retain that isolated world
 under `run/saves/`, pass its exact folder name, and preserve the resulting
-`run/logs/` and screenshot evidence locally.
+`run-production-projection/logs/` and screenshot evidence locally. The task
+logs both the selected copy ID and the point at which that copied world is
+ready; it never enables the destructive test-mode/create-world automation.
 
 When the projectile probe fails, its diagnostic includes position, velocity,
 age, cached chunk, and current `shouldTickEntityAt` result. A folded position

@@ -12,15 +12,25 @@ import net.minecraft.client.gui.screens.PauseScreen;
  */
 final class RingProjectionCaptureClient {
     private static final String ENABLE_PROPERTY = "ringworld.captureRingProjection";
+    private static final String WORLD_PROPERTY = "ringworld.projectionWorld";
+    private static final int WORLD_OPEN_TIMEOUT_TICKS = 2_400;
     private int stage;
     private int settleTicks;
     private int atlasWaitTicks;
     private boolean waitingLogged;
+    private int worldOpenTicks;
+    private boolean worldOpenRequested;
+    private boolean worldReadyLogged;
+    private int completionTicks;
 
     boolean tick(Minecraft client) {
         if (!Boolean.getBoolean(ENABLE_PROPERTY)) return false;
-        if (stage >= 2) return true;
-        if (client.player == null || client.level == null) return true;
+        if (stage >= 3) return true;
+        if (!ensureWorldOpen(client)) return true;
+        if (stage == 2) {
+            if (++completionTicks >= 20) finish(client, true, "captures complete");
+            return true;
+        }
         if (client.screen instanceof PauseScreen) client.setScreen(null);
         if (client.screen != null) return true;
 
@@ -71,5 +81,40 @@ final class RingProjectionCaptureClient {
                 geometry.circumferenceBlocks(), geometry.radius() * 2.0);
         stage = 2;
         return true;
+    }
+
+    private boolean ensureWorldOpen(Minecraft client) {
+        if (client.player != null && client.level != null) {
+            if (!worldReadyLogged) {
+                RingWorldMod.LOGGER.info("[projection-capture] world '{}' ready", projectionWorld());
+                worldReadyLogged = true;
+            }
+            return true;
+        }
+        if (++worldOpenTicks > WORLD_OPEN_TIMEOUT_TICKS) {
+            finish(client, false, "timed out opening save '" + projectionWorld() + "'");
+            return false;
+        }
+        if (!worldOpenRequested && client.isGameLoadFinished()
+                && client.getSingleplayerServer() == null) {
+            worldOpenRequested = true;
+            RingWorldMod.LOGGER.info("[projection-capture] opening copied save '{}' in-process",
+                    projectionWorld());
+            client.createWorldOpenFlows().openWorld(projectionWorld(),
+                    () -> finish(client, false,
+                            "save load cancelled for '" + projectionWorld() + "'"));
+        }
+        return false;
+    }
+
+    private String projectionWorld() {
+        return System.getProperty(WORLD_PROPERTY, "").trim();
+    }
+
+    private void finish(Minecraft client, boolean passed, String detail) {
+        if (stage >= 3) return;
+        stage = 3;
+        RingWorldMod.LOGGER.info("[projection-capture] result={}, {}", passed, detail);
+        client.stop();
     }
 }

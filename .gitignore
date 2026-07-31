@@ -2,6 +2,8 @@
 build/
 run/
 run-multiplayer/
+run-layout-switch/
+run-production-projection/
 logs/
 dist/
 .codex-tmp/
