@@ -176,8 +176,8 @@ client/runtime gate passes.
   both clients to acquire the new vehicle, detects canonical folds across
   overloaded server ticks, and treats periodic teleport targets as equivalent
   client-chart images.
-- Gradle wrapper, parameterized pure dimension tests, server deployment templates, and private
-  GitHub source repository.
+- Gradle wrapper, parameterized pure dimension tests, server deployment templates, and public
+  MPL-2.0 GitHub source repository.
 - Latest profile-3 safe-small runtime (2,048×416 at 28-chunk capture) passed two
   natural wraps with zero camera delta/correction packets and passed block,
   entity, projectile, vehicle, AI, fluid, explosion, collision, rim, and
