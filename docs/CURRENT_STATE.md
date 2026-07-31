@@ -110,6 +110,18 @@ server `maxTickSample` from 2.75 to 0.75, and client B `maxRemoteStep` from
 remaining 2.020-second/40-tick initial-connect warning and no crash. The extra
 cold mesh rebuild and broader memory/resource matrix remain open.
 
+An instrumented third cold run also passed. After both clients were armed, the
+full seam-to-reconnect scenario took about 18 seconds with server
+`maxPacketStep=0.25`/`maxTickSample=0.25`, client A/B
+`maxRemoteStep=0.0/0.2499238`, zero missing ticks, no overload warning, and no
+crash. Each client logged one completion; client A built one complete mesh and
+client B built two. One-second sampling observed lower bounds of about 591 MiB
+server RSS, 871 MiB client A, 941 MiB client B, and 2.15 GiB combined. Existing
+system swap stayed flat during retained samples. Full process start-to-result
+was about 2 minutes 22 seconds, dominated by offline Mojang/Realms timeouts.
+The intermittent second client mesh build and repeated atlas-generation/disk
+benchmark remain in the resource inventory.
+
 Multi-size visual review, automated-harness completion, packaging, and staging
 gates remain.
 The only playable implementation is still the frozen `mc-1.21.11-final` tag.

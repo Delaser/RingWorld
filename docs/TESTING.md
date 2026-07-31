@@ -482,6 +482,17 @@ copy of the same complete source, and unchanged source hashes. One additional
 post-completion mesh build remains visible per cold client and should stay in
 the resource-performance inventory.
 
+A third cold run added one-second process sampling. The active scenario from
+arm to final result took about 18 seconds and passed with server packet/tick
+maxima `0.25/0.25`, client A/B remote maxima `0.0/0.2499238`, zero missing
+ticks, no overload warning, and no crash. Client A logged one completion and
+one mesh build; client B logged one completion and two mesh builds. Observed
+RSS lower bounds were 591 MiB for the server, 871 MiB for client A, 941 MiB for
+client B, and 2.15 GiB simultaneously. The sampler output was not persisted,
+so these are lower bounds rather than exact peak claims. Existing swap use was
+flat in retained samples. Full process start-to-result was about 2 minutes 22
+seconds because offline Mojang/Realms requests delayed initial connection.
+
 The integrated visual/seam harness deliberately holds position for 300 client
 ticks after its first seam screenshot. This keeps the seam chunks resident
 through the server's 240-tick projectile, navigation, fluid, vehicle, and
