@@ -62,6 +62,25 @@ and production-geometry validation gates. State untested renderer, shader,
 gravity, world-generation, chunk, and networking combinations as compatibility
 risks, not support claims.
 
+### Non-graphical dedicated-server smoke
+
+Before a release, create a disposable empty server directory containing only
+Fabric's 26.1.2/Loader 0.19.3 server launcher, `eula.txt`,
+`server.properties`, `config/ringworld.properties`, Fabric API
+0.155.2+26.1.2, and the staged `ringworld-*.jar`. Verify the staged jar with
+`scripts/verify_distribution_license.py` and compare its SHA-256 with
+`SHA256SUMS.txt` before copying it. Launch the directory with Java 25 and
+`nogui`, wait for the normal server-ready message, then issue `stop` and
+require a clean exit. The launcher may subsequently create its normal
+`libraries/`, `logs/`, and world data; these are generated state and not
+release files.
+
+The 2026-07-31 clean-server smoke passed with the staged
+`0.2.0+mc26.1.2` artifact, Fabric API 0.155.2+26.1.2, and Java 25. It loaded
+RingWorld's 2048-by-416 bootstrap layout, reached the ready state, and stopped
+cleanly. Graphical clean-client and existing-modded-instance smoke tests remain
+pending and must not be inferred from this server-only evidence.
+
 The Modrinth page must give installation and world-creation guidance, exact
 client/server requirements, the MPL-2.0 statement, a current alpha changelog,
 and a public route to the corresponding source revision. Do not store a token
