@@ -107,8 +107,7 @@ comparison reduced completion notices from seven to one and mesh builds from
 three to two per client, total scenario time from about 171 to 69 seconds,
 server `maxTickSample` from 2.75 to 0.75, and client B `maxRemoteStep` from
 1.25 to 0.4167. Reconnect passed without its former warning; the run had one
-remaining 2.020-second/40-tick initial-connect warning and no crash. The extra
-cold mesh rebuild and broader memory/resource matrix remain open.
+remaining 2.020-second/40-tick initial-connect warning and no crash.
 
 An instrumented third cold run also passed. After both clients were armed, the
 full seam-to-reconnect scenario took about 18 seconds with server
@@ -119,8 +118,12 @@ client B built two. One-second sampling observed lower bounds of about 591 MiB
 server RSS, 871 MiB client A, 941 MiB client B, and 2.15 GiB combined. Existing
 system swap stayed flat during retained samples. Full process start-to-result
 was about 2 minutes 22 seconds, dominated by offline Mojang/Realms timeouts.
-The intermittent second client mesh build and repeated atlas-generation/disk
-benchmark remain in the resource inventory.
+The second Client B build occurred one second after its first completed atlas,
+while newly loaded server chunks were still reconciling the atlas, and before
+Client A requested the already-updated snapshot. That is a legitimate changed
+surface revision rather than the duplicate-packet churn fixed above. The
+repeated full atlas-generation/disk benchmark remains in the resource
+inventory.
 
 Multi-size visual review, automated-harness completion, packaging, and staging
 gates remain.

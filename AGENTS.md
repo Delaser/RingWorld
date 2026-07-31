@@ -271,7 +271,9 @@ version numbers.
 - Atlas tile application is idempotent. Duplicate dirty tiles must not advance
   the client atlas revision, force another cache save, or rebuild the complete
   texture/mesh. Only the actual incomplete-to-complete transition bypasses the
-  normal publish/save coalescing windows.
+  normal publish/save coalescing windows. A genuinely changed tile captured
+  after completion still advances the coalesced revision and may rebuild the
+  surface once; do not mistake that expected refresh for duplicate churn.
 - `ring_surface.vsh` deliberately clamps only far-out proxy clip-space Z while
   preserving X/Y/W. Minecraft's level far plane is derived from chunk render
   distance and clips most of a production 16,384-block cylinder, especially

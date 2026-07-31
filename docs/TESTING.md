@@ -478,9 +478,7 @@ reported:
 - true seam/combat/block/vehicle/teleport/reconnect results and no crash.
 
 Both comparison runs used renamed cold client caches, a fresh ignored server
-copy of the same complete source, and unchanged source hashes. One additional
-post-completion mesh build remains visible per cold client and should stay in
-the resource-performance inventory.
+copy of the same complete source, and unchanged source hashes.
 
 A third cold run added one-second process sampling. The active scenario from
 arm to final result took about 18 seconds and passed with server packet/tick
@@ -492,6 +490,12 @@ client B, and 2.15 GiB simultaneously. The sampler output was not persisted,
 so these are lower bounds rather than exact peak claims. Existing swap use was
 flat in retained samples. Full process start-to-result was about 2 minutes 22
 seconds because offline Mojang/Realms requests delayed initial connection.
+Client B's second build was logged at 00:54:24, one second after its first
+complete build and before Client A requested the atlas at 00:54:26. During
+that interval the server captured newly loaded chunks and saved changed atlas
+data. Client A then built only the updated snapshot. Treat this single rebuild
+as a legitimate changed surface revision; the defect was repeated rebuilds for
+identical tile payloads.
 
 The integrated visual/seam harness deliberately holds position for 300 client
 ticks after its first seam screenshot. This keeps the seam chunks resident
