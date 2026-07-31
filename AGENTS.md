@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 89 unit/parameterized cases pass.
+gate. Common/client compilation and all 90 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -193,7 +193,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 89
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 90
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks still remain.
@@ -268,6 +268,10 @@ version numbers.
   effects are available. Session disconnect/settings handlers must clear the
   static GPU texture and mesh, and the renderer must reject incomplete atlases;
   otherwise a newly created world displays the previous world's ring.
+- Atlas tile application is idempotent. Duplicate dirty tiles must not advance
+  the client atlas revision, force another cache save, or rebuild the complete
+  texture/mesh. Only the actual incomplete-to-complete transition bypasses the
+  normal publish/save coalescing windows.
 - `ring_surface.vsh` deliberately clamps only far-out proxy clip-space Z while
   preserving X/Y/W. Minecraft's level far plane is derived from chunk render
   distance and clips most of a production 16,384-block cylinder, especially

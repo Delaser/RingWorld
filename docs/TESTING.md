@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The current `codex/minecraft-26.1-port` branch requires Java 25. Common and
-client compilation now pass together, and the development build runs all 89
+client compilation now pass together, and the development build runs all 90
 unit/parameterized cases:
 
 ```sh
@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The 2026-07-28 suite contains 89 unit/parameterized cases:
+The active suite contains 90 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -49,7 +49,7 @@ The 2026-07-28 suite contains 89 unit/parameterized cases:
 | `RingLayoutFingerprintTest` | Immutable layout and rim semantic identity |
 | `RingRenderProfileTest` | Shared handoff values, texture/mesh budgets, and whole-ring clamping |
 | `RingSkyCycleTest` | Fixed angle, reduced vanilla-sun size, noon/dawn/dusk/midnight tone keyframes, smooth interpolation, time wrapping |
-| `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, completion, cache monotonicity, world hash |
+| `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, idempotent duplicate-tile detection, completion, cache monotonicity, world hash |
 | `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
 | `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
@@ -457,10 +457,30 @@ the ignored multiplayer server slot and preserved the source hash. It reached
 `full scenario result=true` in about 2 minutes 51 seconds with a 65,536-cell
 atlas, `maxPacketStep=0.25`, `maxTickSample=2.75`, client A/B
 `maxRemoteStep=0.0/1.25`, zero missing client ticks, and no crashes. The server
-still reported 3.816-second initial-connect and 39.402-second reconnect stalls.
+still reported 3.816-second initial-connect and 39.402-second reconnect
+server-behind warnings.
 Treat this as functional repeatability evidence, not a cold-start performance
 pass. All three processes were stopped after the result; the local logs remain
 under the ignored multiplayer run directories.
+
+That trace revealed repeated client completion work from identical dirty tiles.
+After making tile application idempotent and reserving forced publish/save for
+the actual incomplete-to-complete transition, an equally cold comparison
+reported:
+
+- one completion notice per client instead of seven;
+- two complete-ring mesh builds per client instead of three;
+- about 69 seconds to the full result instead of 171;
+- server `maxTickSample=0.75` instead of `2.75`;
+- client B `maxRemoteStep=0.4167` instead of `1.25`, with zero missing ticks;
+- one 2.020-second/40-tick initial-connect warning instead of the previous
+  3.816-second initial warning plus 39.402-second reconnect warning;
+- true seam/combat/block/vehicle/teleport/reconnect results and no crash.
+
+Both comparison runs used renamed cold client caches, a fresh ignored server
+copy of the same complete source, and unchanged source hashes. One additional
+post-completion mesh build remains visible per cold client and should stay in
+the resource-performance inventory.
 
 The integrated visual/seam harness deliberately holds position for 300 client
 ticks after its first seam screenshot. This keeps the seam chunks resident

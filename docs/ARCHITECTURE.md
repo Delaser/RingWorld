@@ -403,7 +403,11 @@ makes an interrupted save recoverable on the next save or validated migration.
 ```
 
 A complete matching client cache avoids retransmission on reconnect. Incoming
-incomplete server tiles never erase more complete local cells.
+incomplete server tiles never erase more complete local cells. Tile application
+also reports whether any present height/colour actually changed. Identical
+dirty-tile repeats are ignored, and only the first incomplete-to-complete
+transition forces an immediate cache save and GPU surface build; later real
+changes use the normal coalescing windows.
 
 ## Read-only compatibility API
 

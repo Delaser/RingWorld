@@ -22,7 +22,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 89 unit/parameterized cases pass, and Loom produces
+temporary shims, all 90 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -92,10 +92,23 @@ A later fresh-process cold run against a copied complete atlas passed the full
 scenario in about 2 minutes 51 seconds: `maxPacketStep=0.25`,
 `maxTickSample=2.75`, client A/B `maxRemoteStep=0.0/1.25`, zero missing client
 ticks, and true seam, combat, block, vehicle, teleport, and reconnect probes.
-It also logged 3.816-second initial-connect and 39.402-second reconnect server
-stalls. This is a repeatable functional cold-start pass, but not acceptable
-showcase frame/tick performance; cold resource-pressure diagnosis and the
-remaining resource benchmark matrix stay open.
+It also logged 3.816-second initial-connect and 39.402-second reconnect
+server-behind warnings. This is a repeatable functional cold-start pass, but
+not acceptable showcase frame/tick performance; cold resource-pressure
+diagnosis and the remaining resource benchmark matrix stay open.
+
+The cold trace then exposed duplicate atlas completion work: identical dirty
+tiles arriving after the first complete snapshot repeatedly forced a full
+4,096×256 texture build, 98,304-vertex mesh build, and cache save. Tile apply
+now reports actual cell changes, ignores identical repeats, and forces an
+immediate publish and save only on the real incomplete-to-complete transition.
+An equally cold A/B
+comparison reduced completion notices from seven to one and mesh builds from
+three to two per client, total scenario time from about 171 to 69 seconds,
+server `maxTickSample` from 2.75 to 0.75, and client B `maxRemoteStep` from
+1.25 to 0.4167. Reconnect passed without its former warning; the run had one
+remaining 2.020-second/40-tick initial-connect warning and no crash. The extra
+cold mesh rebuild and broader memory/resource matrix remain open.
 
 Multi-size visual review, automated-harness completion, packaging, and staging
 gates remain.
