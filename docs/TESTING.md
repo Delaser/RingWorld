@@ -497,6 +497,18 @@ data. Client A then built only the updated snapshot. Treat this single rebuild
 as a legitimate changed surface revision; the defect was repeated rebuilds for
 identical tile payloads.
 
+A separate clean-atlas benchmark removed the atlas only from a disposable copy
+of the production world and let the normal dedicated scheduler rebuild it. It
+created the fresh atlas at 01:01:32, reached 65,536/65,536 cells at 01:15:09,
+and saved 100% at 01:15:12: 13 minutes 37 seconds and about 80.2 cells per
+second. The completed gzip was 76 KiB. The copy grew from 210,024 to 383,376
+KiB (+169.3 MiB), chiefly from generated chunks, while 15-second process
+sampling observed a 1.06 GiB server RSS peak. There were no server-behind
+warnings, generation errors, RingWorld exceptions, crash reports, or observed
+swap growth. Source `level.dat` and atlas hashes were unchanged, and every
+benchmark process was stopped afterward. Runtime logs and artifacts stay in
+the ignored multiplayer directories.
+
 The integrated visual/seam harness deliberately holds position for 300 client
 ticks after its first seam screenshot. This keeps the seam chunks resident
 through the server's 240-tick projectile, navigation, fluid, vehicle, and

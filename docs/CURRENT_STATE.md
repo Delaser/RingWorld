@@ -122,8 +122,15 @@ The second Client B build occurred one second after its first completed atlas,
 while newly loaded server chunks were still reconciling the atlas, and before
 Client A requested the already-updated snapshot. That is a legitimate changed
 surface revision rather than the duplicate-packet churn fixed above. The
-repeated full atlas-generation/disk benchmark remains in the resource
-inventory.
+full atlas-generation/disk benchmark is recorded below.
+
+A clean-atlas run on another disposable copy completed 65,536/65,536 cells in
+13 minutes 37 seconds, averaging about 80.2 cells per second. The final gzip
+atlas was 76 KiB; the copied world grew by about 169.3 MiB, chiefly from chunk
+generation. Fifteen-second sampling observed a server RSS peak of about
+1.06 GiB and no swap growth. The run logged no server-behind warning,
+generation error, RingWorld exception, or crash, stopped cleanly, and left the
+source save hashes unchanged.
 
 Multi-size visual review, automated-harness completion, packaging, and staging
 gates remain.
@@ -334,8 +341,11 @@ client/runtime gate passes.
   seed or third-party generator treats X=0/C as adjacent.
 - The new 16,384×256 production default requires 16,384 canonical chunks and
   65,536 atlas cells. One copied-world atlas resume completed its remaining
-  32,636 cells in about 13 minutes 22 seconds; dedicated-server, transfer,
-  disk, GPU, and repeated frame-pacing benchmarks remain open.
+  32,636 cells in about 13 minutes 22 seconds. A clean-atlas copied-world run
+  completed all cells in 13 minutes 37 seconds at about 80.2 cells per second,
+  with a 76 KiB compressed atlas, about 169.3 MiB copied-world growth, and a
+  1.06 GiB sampled server RSS peak. Multi-size visual and repeated
+  frame-pacing review remain open.
 - Existing Overworld region files without RingWorld saved settings are
   explicitly rejected; no conversion tool exists.
 - Decorative wall-height changes can produce mixed old/new boundary chunks.
@@ -438,9 +448,9 @@ Priorities are ordered by player-visible value and architectural leverage.
      also passes twice with both seam chunks ticking;
    - capture complete-atlas live/LOD comparisons on production, long/narrow,
      and wide/medium worlds;
-   - parameterize the dedicated two-client test beyond the safe-small size;
-   - benchmark full production-default atlas pregeneration, disk, transfer,
-     and GPU build cost before deploying it.
+   - complete the 6/12/28-chunk visual and frame-pacing comparison matrix;
+   - retain the measured production atlas, transfer, memory, and GPU resource
+     envelope as the deployment baseline.
 2. **Tune and validate the texture LOD transition**
    - capture matched upward screenshots for clear/rain, day/dusk/night, and
      water-heavy terrain;

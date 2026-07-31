@@ -185,8 +185,10 @@ checks. Saved settings always override later bootstrap configuration changes.
 | Safe-small | 2,048 blocks / 128 chunks | 416 blocks / 26 chunks | Fast development, atlas, and multiplayer testing |
 
 The production atlas covers 16,384 canonical chunks and is a substantial
-background generation job. Administrators can inspect or control it without
-changing the saved layout:
+background generation job. A clean-atlas copied-world benchmark completed it
+in 13 minutes 37 seconds at about 80.2 cells per second on the development
+machine. Administrators can inspect or control it without changing the saved
+layout:
 
 ```text
 /ringworld atlas status
@@ -225,9 +227,9 @@ For demonstrated results, open risks, and the prioritized roadmap, see
 ## Known limitations
 
 - The complete distant ring appears only after its terrain atlas reaches 100%.
-- One copied-world production atlas resume and its two projection captures pass;
-  the full repeated generation, disk, transfer, GPU, gameplay, and frame-pacing
-  benchmark matrix remains open.
+- Production clean-atlas generation, projection, transfer, multiplayer,
+  lifecycle, memory, and static GPU resource gates pass; the 6/12/28 visual and
+  repeated frame-pacing comparison matrix remains open.
 - Broad multi-seed structures, carvers, portals, redstone, block entities,
   fluids, death/respawn, vehicles, and projectiles still need more seam
   coverage.
