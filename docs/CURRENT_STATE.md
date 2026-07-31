@@ -79,6 +79,18 @@ block interaction/update, shared boat visibility, long teleport and periodic
 return, disconnect, and reconnect all passed. The server reported
 `full scenario result=true` and stopped cleanly.
 
+The same dedicated two-client scenario has now passed on the production
+16,384×256 layout after warming the saved world and resource state. The first
+cold run completed the server gameplay and reconnect probes, but its aggregate
+result was false solely because client B observed a 1.333-block remote step
+while the server still received 0.25-block packets but accumulated a 4-block
+per-tick sample under cold resource pressure. The repeat reported server
+`maxTickSample=0.25`, client B `maxRemoteStep=0.2498857`, no missing ticks, lag
+warnings, or crashes, and true seam, combat, block, vehicle, teleport, and
+reconnect probes. Cold-start performance/repeatability work and Nether/End
+lifecycle coverage remain open; this is not completion of the full production
+gate.
+
 Multi-size visual review, automated-harness completion, packaging, and staging
 gates remain.
 The only playable implementation is still the frozen `mc-1.21.11-final` tag.

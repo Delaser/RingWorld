@@ -440,6 +440,18 @@ long teleport, periodic return, planned disconnect, and reconnect all passed.
 The clients were then stopped and the server saved all dimensions and exited
 cleanly.
 
+Production-layout evidence is narrower but now real: on 16,384×256, the first
+cold dedicated run passed the server gameplay and reconnect probes but produced
+`result=false` only because client B measured `maxRemoteStep=1.333` while the
+server still received `maxPacketStep=0.25` but accumulated
+`maxTickSample=4` under cold resource pressure. Re-running the same warmed
+world/configuration produced
+`result=true`: server `maxTickSample=0.25`, client B
+`maxRemoteStep=0.2498857`, no missing ticks, lag warnings, or crashes, and all
+seam/combat/block/vehicle/teleport/reconnect probes true. Keep cold-start
+performance and repeatability validation open, along with Nether/End lifecycle
+coverage; this evidence does not certify the entire production matrix.
+
 The integrated visual/seam harness deliberately holds position for 300 client
 ticks after its first seam screenshot. This keeps the seam chunks resident
 through the server's 240-tick projectile, navigation, fluid, vehicle, and
