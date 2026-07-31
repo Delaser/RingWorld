@@ -55,8 +55,21 @@ with no frames above 50 ms. The full-atlas run averaged 8.41/8.37 ms and
 recorded one isolated frame above 50 ms in each measured phase while
 generation/upload work was active. The captures prove that the 26.1 complete
 ring pipeline executes; multi-size colour/handoff art review remains open.
-The current 16,384×256 default is unit/resource validated but has not yet run
-the full 26.1 production-size visual matrix.
+The current 16,384×256 default has now resumed a real copied 26.1 atlas from
+32,900 to 65,536 cells without a player lap, taking about 13 minutes 22 seconds
+for the remaining 32,636 cells (about 41 cells/sec), then emitted non-empty
+tangent and radial-up captures with a clean projection result. This establishes
+one production atlas/projection gate, not the full production-size gameplay,
+lifecycle, transfer, GPU, or frame-pacing matrix.
+
+The same production harness exposed an intermittent post-fold simulation
+failure: a `PersistentEntitySectionManager` seam load request routed through
+its visibility updater could lower an already-ticking seam chunk to tracked.
+Entity reads now queue directly without changing visibility. In addition, a
+folded mob now shifts its active navigation path/target and stuck/timeout caches
+by the exact canonical delta. Two consecutive 16,384×256 runs then passed the
+projectile hit, moving-item (X≈6), navigation (X≈1.29), and both-seam-chunks-
+ticking probes.
 
 An isolated dedicated 2,048×416 server plus two 26.1 clients also completed the
 full multiplayer harness on its first run. Both clients acknowledged the
@@ -87,9 +100,9 @@ client/runtime gate passes.
 - Natural player and vehicle seam folding without a corrective teleport.
 - Explicit same-world teleports project their canonical X target into the
   nearest client presentation image, avoiding seam-adjacent chart eviction.
-- Canonical entity indexing, save/load, and tick eligibility; seam-crossing
-  non-player entities no longer depend solely on the asynchronously propagated
-  side of the player ticket.
+- Canonical entity indexing, save/load, and tick eligibility; seam entity
+  reads queue without mutating an already-ticking chunk's visibility, and
+  folded mobs shift active paths and raw-coordinate navigation caches.
 - Periodic entity queries, distances, tracking, reach, projectiles,
   explosions, AI targets, and proximity effects.
 - Canonical block/fluid scheduled ticks.
@@ -273,9 +286,10 @@ client/runtime gate passes.
 - Broad multi-seed structure/carver/feature coverage at the seam is incomplete.
 - Periodic density noise does not guarantee every vanilla structure placement
   seed or third-party generator treats X=0/C as adjacent.
-- The new 16,384×256 production default still requires 16,384 canonical chunks
-  and 65,536 atlas cells; its real end-to-end pregeneration benchmark remains
-  open.
+- The new 16,384×256 production default requires 16,384 canonical chunks and
+  65,536 atlas cells. One copied-world atlas resume completed its remaining
+  32,636 cells in about 13 minutes 22 seconds; dedicated-server, transfer,
+  disk, GPU, and repeated frame-pacing benchmarks remain open.
 - Existing Overworld region files without RingWorld saved settings are
   explicitly rejected; no conversion tool exists.
 - Decorative wall-height changes can produce mixed old/new boundary chunks.
@@ -374,7 +388,8 @@ Priorities are ordered by player-visible value and architectural leverage.
 1. **Complete the large-layout visual/resource matrix**
    - topology, gameplay, rims, and same-process resource replacement now pass
      on safe-small, minimum-width, production, long/narrow, and wide/medium
-     layouts;
+     layouts; the production post-fold item/projectile/navigation regression
+     also passes twice with both seam chunks ticking;
    - capture complete-atlas live/LOD comparisons on production, long/narrow,
      and wide/medium worlds;
    - parameterize the dedicated two-client test beyond the safe-small size;

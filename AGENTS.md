@@ -347,6 +347,14 @@ version numbers.
   the configured nearest-periodic chunk distance. Do not broaden this into
   global forced ticking or replace the configured simulation distance with a
   hard-coded radius.
+- `PersistentEntitySectionManager` seam load requests must call
+  `ensureChunkQueuedForLoad` directly. Routing that request through
+  `updateChunkStatus` can downgrade an already-`TICKING` seam chunk to
+  `TRACKED`, intermittently freezing items, projectiles, and mobs just after
+  X folds through zero.
+- A mob fold must shift its active navigation path, target, and raw-coordinate
+  stuck/timeout caches by the exact canonical X delta. Recomputing only the
+  target leaves the old-chart path behind and can stop navigation at the seam.
 - `RingRenderProfile` visual-policy version 4 owns the live/proxy/detail
   transitions, reveal, haze, and local cloud fade. Keep Java profile fields
   and the seven appended RingWorld Globals vectors synchronized.

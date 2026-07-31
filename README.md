@@ -225,8 +225,9 @@ For demonstrated results, open risks, and the prioritized roadmap, see
 ## Known limitations
 
 - The complete distant ring appears only after its terrain atlas reaches 100%.
-- The production-default atlas has not yet completed the full end-to-end
-  generation, disk, transfer, and GPU benchmark matrix.
+- One copied-world production atlas resume and its two projection captures pass;
+  the full repeated generation, disk, transfer, GPU, gameplay, and frame-pacing
+  benchmark matrix remains open.
 - Broad multi-seed structures, carvers, portals, redstone, block entities,
   fluids, death/respawn, vehicles, and projectiles still need more seam
   coverage.

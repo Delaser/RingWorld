@@ -179,6 +179,14 @@ entity simulation eligibility as well as individual gameplay systems. A
 failure where several stop around X=0 while retaining velocity indicates a
 stale chunk-level simulation graph, not four unrelated collision failures.
 
+For the 16,384×256 production seam probe, log both canonical seam chunks as
+manager-loaded, distance-ticking, and position-ticking at arm and result. Two
+consecutive automated passes must record a projectile hit, a moving item near
+canonical X≈6, and the navigator near X≈1.29. This specifically guards the
+former post-fold failures where an entity-load request downgraded a seam chunk
+from `TICKING` to `TRACKED`, or a mob retained path/stuck state from its old
+presentation image.
+
 The second circuit keeps both seam approaches at quarter-block motion in the
 cleared Y=120 seam lane. Up to a 4,096-block circumference, its non-seam middle
 flies near the build ceiling with a circumference-derived step clamped to 4–8
@@ -287,6 +295,13 @@ ready; it never enables the destructive test-mode/create-world automation.
 While active it also disables pause-on-focus-loss and uses the test-client
 inactive-frame policy, so moving the Gradle client behind another app cannot
 pause the integrated server during atlas completion.
+
+Production evidence recorded on the 26.1 branch: a copied 16,384×256 world
+resumed from 32,900/65,536 atlas cells to 100% without a player lap, completing
+the remaining 32,636 cells in about 13 minutes 22 seconds (about 41 cells/s
+over the resumed interval). It emitted both tangent and radial-up captures and
+reported a clean capture result. This is one atlas/projection gate, not the
+complete production gameplay, lifecycle, transfer, GPU, or frame-pacing matrix.
 
 When the projectile probe fails, its diagnostic includes position, velocity,
 age, cached chunk, and current `shouldTickEntityAt` result. A folded position
