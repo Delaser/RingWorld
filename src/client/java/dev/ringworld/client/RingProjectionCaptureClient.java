@@ -2,6 +2,7 @@ package dev.ringworld.client;
 
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
+import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.PauseScreen;
@@ -22,9 +23,11 @@ final class RingProjectionCaptureClient {
     private boolean worldOpenRequested;
     private boolean worldReadyLogged;
     private int completionTicks;
+    private boolean focusPolicyApplied;
 
     boolean tick(Minecraft client) {
         if (!Boolean.getBoolean(ENABLE_PROPERTY)) return false;
+        applyFocusPolicy(client);
         if (stage >= 3) return true;
         if (!ensureWorldOpen(client)) return true;
         if (stage == 2) {
@@ -105,6 +108,20 @@ final class RingProjectionCaptureClient {
                             "save load cancelled for '" + projectionWorld() + "'"));
         }
         return false;
+    }
+
+    /**
+     * Projection capture is an unattended harness run. Gradle and the desktop
+     * can move its window behind another application while atlas work is still
+     * server-driven, so do not pause the integrated server merely for losing
+     * focus. Keep the same inactive-frame policy as the other test clients.
+     */
+    private void applyFocusPolicy(Minecraft client) {
+        if (focusPolicyApplied) return;
+        client.options.inactivityFpsLimit().set(InactivityFpsLimit.MINIMIZED);
+        client.options.pauseOnLostFocus = false;
+        focusPolicyApplied = true;
+        RingWorldMod.LOGGER.info("[projection-capture] applied unattended focus policy");
     }
 
     private String projectionWorld() {

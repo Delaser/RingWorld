@@ -284,6 +284,9 @@ under `run/saves/`, pass its exact folder name, and preserve the resulting
 `run-production-projection/logs/` and screenshot evidence locally. The task
 logs both the selected copy ID and the point at which that copied world is
 ready; it never enables the destructive test-mode/create-world automation.
+While active it also disables pause-on-focus-loss and uses the test-client
+inactive-frame policy, so moving the Gradle client behind another app cannot
+pause the integrated server during atlas completion.
 
 When the projectile probe fails, its diagnostic includes position, velocity,
 age, cached chunk, and current `shouldTickEntityAt` result. A folded position
