@@ -20,9 +20,8 @@ The Nether and End remain vanilla.
 > the representative gameplay/rim matrix. A dedicated two-client seam,
 > combat, block, boat, teleport, and reconnect scenario also passes.
 > Multi-size visual review, automated-harness completion, packaging, and
-> staging gates are still outstanding, so this is not a playable release yet.
-> The validated server, client packages, and rollback tag remain Minecraft 1.21.11
-> (`mc-1.21.11-final`).
+> staging gates are still outstanding. The first 26.1.2 Fabric alpha is an
+> early test build, not a stable or broadly compatible release.
 
 > **Loader direction:** current builds remain Fabric-only. Future development
 > is required to keep RingWorld's core loader-agnostic and place unavoidable
@@ -35,6 +34,14 @@ The Nether and End remain vanilla.
 > files remain MPL-2.0 when distributed, while separate compatibility and
 > modpack code may use other licences. See the practical
 > [licensing guide](docs/LICENSING.md).
+
+## Distribution
+
+The first Fabric alpha, `0.2.0+mc26.1.2`, has been submitted to
+[Modrinth](https://modrinth.com/mod/ringworld) for moderation. It will become
+publicly downloadable after approval. The alpha targets Minecraft 26.1.2 and
+Java 25, requires Fabric API, and must be installed on both the client and
+server.
 
 > **Public history:** this repository intentionally begins with a clean
 > MPL-2.0 root commit. Pre-public tag names and commit hashes retained in the

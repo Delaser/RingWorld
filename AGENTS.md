@@ -16,8 +16,10 @@ storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
 gameplay/rim probes. The dedicated two-client seam/combat/block/boat/teleport/
 reconnect matrix also passes. Multi-size visual review, automated-harness
-completion, packaging, and staging remain, so the port is not playable yet.
-See `docs/CURRENT_STATE.md`.
+completion, packaged-client/server staging, and broader compatibility remain.
+The Fabric alpha `0.2.0+mc26.1.2` was submitted to Modrinth moderation on
+2026-07-31; this does not make the remaining port gates complete. See
+`docs/CURRENT_STATE.md`.
 
 ## What this project is
 
