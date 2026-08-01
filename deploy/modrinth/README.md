@@ -14,8 +14,6 @@ runtime jar, and writes an ignored review directory under `dist/modrinth/`.
 Run it only from a clean, pushed public branch commit with the standard HTTPS
 `origin`: the manifest records that checkout's `HEAD`, rather than a circular
 hash embedded in source.
-Run it only from a clean, pushed public branch commit: the manifest records
-that checkout's `HEAD`, rather than a circular hash embedded in source.
 Only the staged `ringworld-*.jar` is a potential upload file. The checksum,
 manifest, and Markdown are review material and must not be uploaded as extra
 version files. Staging never uploads, publishes, changes a listing, or accepts

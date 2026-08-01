@@ -1,6 +1,6 @@
 # Modrinth release workflow
 
-Last updated: 2026-07-31. Issue [#33](https://github.com/Delaser/RingWorld/issues/33)
+Last updated: 2026-08-01. Issue [#33](https://github.com/Delaser/RingWorld/issues/33)
 tracks this workflow.
 
 RingWorld is distributed as a normal Fabric runtime jar, not as a Prism
@@ -85,8 +85,26 @@ release files.
 The 2026-07-31 clean-server smoke passed with the staged
 `0.2.0+mc26.1.2` artifact, Fabric API 0.155.2+26.1.2, and Java 25. It loaded
 RingWorld's 2048-by-416 bootstrap layout, reached the ready state, and stopped
-cleanly. Graphical clean-client and existing-modded-instance smoke tests remain
-pending and must not be inferred from this server-only evidence.
+cleanly.
+
+### Graphical installation smokes
+
+On 2026-08-01, a fresh ignored Fabric client fixture with no RingWorld source
+outputs, no account data, and no saved world loaded only Fabric Loader, Fabric
+API, and the staged runtime jar. It reached the complete resource/shader and
+texture-atlas initialization path, remained stable at the title screen with
+`testMode=false`, produced no crash report, and was stopped cleanly. The log is
+retained locally at `/tmp/ringworld-release-title/run/logs/latest.log`.
+
+The separate ignored existing-instance fixture first loaded a disposable
+`release-probe` companion Fabric client mod alone. RingWorld's exact staged jar
+was then added in-place without replacing the fixture state. The second launch
+reported both `[release-probe] companion initialized` and RingWorld's bootstrap
+settings before completing the same resource/shader initialization, with no
+crash report. Its local evidence is
+`/tmp/ringworld-release-modded/run/logs/latest.log`. The probe and both
+fixtures are test instrumentation only and are not source, stage, or release
+artifacts.
 
 The Modrinth page must give installation and world-creation guidance, exact
 client/server requirements, the MPL-2.0 statement, a current alpha changelog,

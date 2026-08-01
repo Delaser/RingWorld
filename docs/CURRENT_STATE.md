@@ -21,8 +21,12 @@ manual Fabric upload. It builds and validates exactly one runtime jar, records
 SHA-256/SHA-512 and the clean pushed public-source revision, and rejects stale
 licensing, inconsistent Fabric metadata, source/development jars, unsafe
 archive paths, and common credential/runtime-state names. It has no upload or
-listing mutation path. The clean dedicated-server smoke is documented; clean
-client and existing-modded-instance smoke evidence remains a release gate.
+listing mutation path. The clean dedicated-server smoke is documented. On
+2026-08-01, clean and in-place-modified graphical Fabric fixtures loaded the
+staged jar through complete resource/shader initialization without a crash;
+the latter retained a disposable companion mod across the staged-jar install.
+The ignored local evidence and exact procedures are recorded in
+`MODRINTH_RELEASE.md`.
 
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
