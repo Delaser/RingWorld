@@ -113,8 +113,8 @@ a canonical seam fold. Run again with
 `-x prepareStrongholdTestWorld` to verify saved-policy and structure reload.
 
 Evidence on 2026-08-01 passed eight production seeds with complete piece-graph
-bounds, including `height-query-production`, whose unadjusted
-terrain-adjusted bounds reached Z=-132 and were fitted to Z=-128. It also
+bounds, including `height-query-production`, whose pre-fit terrain-adjusted
+bounds reached Z=-132 and were fitted to Z=-128. It also
 passed 2,048×416 safe-small, 15,552×4,096 non-power-of-two geometry,
 activation, and save/reload. The
 1,024-block circumference is a geometry-helper fixture only; full-height
