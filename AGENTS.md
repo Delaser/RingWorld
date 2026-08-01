@@ -26,9 +26,11 @@ tangent/radial visual handoff review and repeatable Fabric release staging also
 pass. The complete production atlas regression gate passes generation/recovery,
 live revisions, layout/lifecycle switching, two-client synchronization, and
 resource/frame-pacing review. The P1–P4 topology, worldgen, protocol, and
-renderer architecture parents are closed. Optional convenience packaging,
-independent release-candidate review, broader gameplay compatibility, and
-compatibility work remain, so
+renderer architecture parents are closed. Optional convenience packaging now
+has a frozen exact candidate with passing
+macOS in-place and dedicated-server smokes. Empty-data macOS first-run, a real
+graphical Windows launch, independent release-candidate review, broader
+gameplay compatibility, and compatibility work remain, so
 the Fabric alpha is not a stable release yet. See
 `docs/CURRENT_STATE.md` and `docs/VISUAL_HANDOFF_REVIEW_2026-08-01.md`.
 The Fabric alpha `0.2.0+mc26.1.2` is currently **Under review** on Modrinth;
