@@ -420,10 +420,11 @@ version numbers.
 - Shareable launcher templates live in `deploy/client/`. Every launch must
   refresh the bundle-managed RingWorld/Fabric jars in an existing Prism
   instance while preserving accounts, saves, options, resource packs, local
-  configuration, and unrelated instance settings. The launchers may change
-  only `AutomaticJava` and `OverrideJavaLocation` so an old Java 21 override
-  cannot block 26.1.2. Test both fresh and in-place upgrade paths before
-  publishing.
+  configuration, and unrelated instance settings. The macOS launcher may
+  change only Java selection keys after validating an executable as Java 25;
+  its search locations must remain portable and credential-free. When Java 25
+  is absent, preserve Prism automatic selection. Test both paths with an
+  isolated `HOME`, plus fresh and in-place upgrade paths, before publishing.
 - Optional packages must be built with `scripts/prepare_release_packages.py`
   from an exact 40-character public source revision. The builder emits no web
   content and has no publish/deploy path. Keep its reproducible ZIPs and

@@ -41,9 +41,8 @@ if [[ ! -f "$INSTANCE/.minecraft/config/ringworld.properties" ]]; then
     cp "$SOURCE/.minecraft/config/ringworld.properties" \
         "$INSTANCE/.minecraft/config/ringworld.properties"
 fi
-# Minecraft 26.1.2 requires Java 25. Preserve every other instance setting,
-# but let Prism replace a stale Java 21 path from an older RingWorld bundle.
-for setting in "AutomaticJava=true" "OverrideJavaLocation=false"; do
+set_instance_setting() {
+    setting="$1"
     key="${setting%%=*}"
     value="${setting#*=}"
     temporary="$INSTANCE/instance.cfg.ringworld.tmp"
@@ -54,7 +53,40 @@ for setting in "AutomaticJava=true" "OverrideJavaLocation=false"; do
         END { if (!found) print key "=" value }
     ' "$INSTANCE/instance.cfg" > "$temporary"
     mv "$temporary" "$INSTANCE/instance.cfg"
+}
+
+# Minecraft 26.1.2 requires Java 25. Prefer an existing valid Java 25 runtime
+# so a fresh portable Prism data tree does not stall at first-run Java
+# selection. Fall back to Prism's automatic Java management when none is
+# installed in a standard macOS, Homebrew, SDK, or prior-instance location.
+CONFIGURED_JAVA="$(awk -F= '$1 == "JavaPath" { sub(/^JavaPath=/, ""); print; exit }' \
+    "$INSTANCE/instance.cfg")"
+JAVA_HOME_25="$(/usr/libexec/java_home -v 25 2>/dev/null || true)"
+JAVA25=""
+for candidate in \
+    "$CONFIGURED_JAVA" \
+    "$(command -v java 2>/dev/null || true)" \
+    "$JAVA_HOME_25/bin/java" \
+    "$HOME"/.local/jdks/*/Contents/Home/bin/java \
+    /Library/Java/JavaVirtualMachines/*/Contents/Home/bin/java \
+    /opt/homebrew/opt/openjdk@25/libexec/openjdk.jdk/Contents/Home/bin/java; do
+    if [[ -x "$candidate" ]] && "$candidate" -version 2>&1 | head -n 1 | \
+            grep -Eq '(java|openjdk) version "25([."]|$)'; then
+        JAVA25="$candidate"
+        break
+    fi
 done
+
+if [[ -n "$JAVA25" ]]; then
+    set_instance_setting "JavaPath=$JAVA25"
+    set_instance_setting "AutomaticJava=false"
+    set_instance_setting "OverrideJavaLocation=true"
+    echo "Using detected Java 25 runtime."
+else
+    set_instance_setting "AutomaticJava=true"
+    set_instance_setting "OverrideJavaLocation=false"
+    echo "Java 25 was not found locally; Prism will install or select it."
+fi
 echo "RingWorld client files are current."
 
 PRISM=""

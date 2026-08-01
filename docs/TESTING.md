@@ -900,9 +900,13 @@ outer licences, exact public-source manifests, checksums, nested Prism shape,
 and the absence of website output. Negative cases cover credentials/runtime
 state, source artifacts, POSIX and Windows path traversal, stale MIT metadata,
 stale Minecraft/Fabric/compatibility-API versions, auto-join, and a non-exact
-source revision. The POSIX upgrade case executes the macOS launcher against fresh and existing
-disposable Prism data trees and verifies that saves, options, config, and
-user-edited instance settings survive while managed jars update.
+source revision. The POSIX upgrade case executes the macOS launcher against
+fresh and existing disposable Prism data trees and verifies that saves,
+options, config, and user-edited instance settings survive while managed jars
+update. Its isolated home first verifies the Prism-managed fallback with no
+Java, then supplies a fake Java 25 runtime in the supported user-local layout
+and requires the launcher to replace a stale Java 21 override with that exact
+validated path.
 
 Pull requests touching package inputs also run `.github/workflows/package-windows.yml`
 on a real Windows runner. Its platform-specific case executes

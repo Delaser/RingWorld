@@ -153,12 +153,22 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             prism.chmod(0o755)
             launcher = bundle / "Launch RingWorld.command"
             launcher.chmod(0o755)
-            fresh = subprocess.run([str(launcher)], capture_output=True, text=True, check=False)
+            home = temporary / "home"
+            home.mkdir()
+            environment = os.environ | {"HOME": str(home)}
+            fresh = subprocess.run(
+                [str(launcher)], capture_output=True, text=True, check=False,
+                env=environment,
+            )
             self.assertEqual(fresh.returncode, 0, fresh.stderr)
 
             installed = bundle / ".prism-data" / "instances" / "RingWorld-Test"
             mods = installed / ".minecraft" / "mods"
             self.assertTrue((mods / f"ringworld-{VERSION}.jar").is_file())
+            fresh_config = (installed / "instance.cfg").read_text(encoding="utf-8")
+            self.assertIn("AutomaticJava=true", fresh_config)
+            self.assertIn("OverrideJavaLocation=false", fresh_config)
+            self.assertIn("Prism will install or select it", fresh.stdout)
             (installed / ".minecraft" / "saves" / "sentinel").mkdir(parents=True)
             (installed / "mmc-pack.json").write_text("old\n", encoding="utf-8")
             (installed / "instance.cfg").write_text(
@@ -172,7 +182,18 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             (mods / "ringworld-old.jar").write_bytes(b"old")
             (mods / "fabric-api-old.jar").write_bytes(b"old")
 
-            launched = subprocess.run([str(launcher)], capture_output=True, text=True, check=False)
+            java25 = home / ".local" / "jdks" / "jdk-25-test" / "Contents" / "Home" / "bin" / "java"
+            java25.parent.mkdir(parents=True)
+            java25.write_text(
+                "#!/bin/sh\necho 'openjdk version \"25.0.4\"' >&2\n",
+                encoding="utf-8",
+            )
+            java25.chmod(0o755)
+
+            launched = subprocess.run(
+                [str(launcher)], capture_output=True, text=True, check=False,
+                env=environment,
+            )
             self.assertEqual(launched.returncode, 0, launched.stderr)
             self.assertTrue((mods / f"ringworld-{VERSION}.jar").is_file())
             self.assertFalse((mods / "ringworld-old.jar").exists())
@@ -185,9 +206,9 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             self.assertTrue((installed / ".minecraft" / "saves" / "sentinel").is_dir())
             instance_config = (installed / "instance.cfg").read_text(encoding="utf-8")
             self.assertIn("user-edited=true", instance_config)
-            self.assertIn("AutomaticJava=true", instance_config)
-            self.assertIn("OverrideJavaLocation=false", instance_config)
-            self.assertIn("JavaPath=/old/java-21/bin/java", instance_config)
+            self.assertIn("AutomaticJava=false", instance_config)
+            self.assertIn("OverrideJavaLocation=true", instance_config)
+            self.assertIn(f"JavaPath={java25}", instance_config)
 
     @unittest.skipUnless(os.name == "nt", "Windows launcher fixture")
     def test_windows_launcher_fresh_and_upgrade_preserve_existing_user_state(self) -> None:
