@@ -8,4 +8,3 @@
 
 This alpha is for compatibility and pre-launch testing. Install it on both the
 server and every client. See the project page for known compatibility limits.
-

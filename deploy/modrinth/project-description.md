@@ -32,4 +32,3 @@ RingWorld is open-source software under the Mozilla Public License 2.0. The
 exact corresponding source revision is recorded with every release manifest.
 Minecraft is a trademark of Microsoft; RingWorld is not affiliated with Mojang
 or Microsoft.
-
