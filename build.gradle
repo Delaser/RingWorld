@@ -327,6 +327,14 @@ tasks.named("runAtlasUiClient") {
 	finalizedBy("verifyAtlasUiClient")
 }
 
+tasks.register("runAtlasFidelityBenchmark", JavaExec) {
+	group = "ringworld verification"
+	description = "Benchmarks production atlas sample-step candidates without launching Minecraft."
+	dependsOn("testClasses")
+	classpath = sourceSets.test.runtimeClasspath
+	mainClass = "dev.ringworld.world.RingAtlasFidelityBenchmark"
+}
+
 tasks.register("verifyAtlasUiClient") {
 	group = "ringworld verification"
 	description = "Fails unless the isolated GUI-scale-4 atlas-map client completed every required capture."

@@ -58,7 +58,7 @@ chart without creating an alias chunk. A second dedicated-server process
 loaded the same candidate/start and correctly treated its prior unexplored
 reference as used.
 
-Atlas-priority work is integrated through #67 and implemented for #68. #66
+Atlas-priority work is integrated through #68 and measured for #69. #66
 records the production and safe-small 6/12/28 visual/performance baseline. #67
 renders trustworthy partial cells immediately with transparent missing sky and
 performs one full-detail transition at completion. #68 introduces disk format
@@ -67,7 +67,13 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite now contains 215 unit/parameterized cases.
+The active suite now contains 219 unit/parameterized cases.
+
+#69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
+repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
+4×/16×/64× the source cells and cold tile bytes while the current 4,096×256
+GPU texture and 393,216-vertex mesh stay fixed. The release therefore retains
+the single eight-block profile and makes no saved-format or protocol change.
 
 The P1–P4 architecture parents (#5–#8) are now closed after final review of
 the integrated 26.1 topology, worldgen, protocol, renderer, lifecycle, and
@@ -127,7 +133,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 215 unit/parameterized cases pass, and Loom produces
+temporary shims, all 219 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -639,8 +645,7 @@ retaining the fixed pose and continuous dimming/colour cycle.
 Priorities are ordered by player-visible value and architectural leverage.
 
 1. **Finish the atlas priority phase**
-   - #69 retunes live/proxy handoff against the locked visual baseline;
-   - #70 adds bounded operational telemetry and profiling evidence.
+   - #70 runs the complete production atlas regression gate.
 2. **Run the stability phase**
    - #71 broader gameplay and multiplayer regression;
    - #72 worldgen/structure seam matrix;

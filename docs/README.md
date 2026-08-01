@@ -45,6 +45,12 @@ Start here:
 - [`PROGRESSIVE_ATLAS_RENDERING_2026-08-01.md`](PROGRESSIVE_ATLAS_RENDERING_2026-08-01.md):
   partial-atlas transparency, bounded GPU update policy, and the fresh-client
   partial-to-complete runtime gate.
+- [`ATLAS_REVISIONED_UPDATES_2026-08-01.md`](ATLAS_REVISIONED_UPDATES_2026-08-01.md):
+  bounded terrain invalidation, durable revisions, ordered tile commits, and
+  exact reconnect-cache reuse.
+- [`ATLAS_FIDELITY_BENCHMARK_2026-08-01.md`](ATLAS_FIDELITY_BENCHMARK_2026-08-01.md):
+  production step 8/4/2/1 resource comparison and the retained fixed-profile
+  decision.
 - [`SUN_RENDERING_SNAPSHOT_2026-07-26.md`](SUN_RENDERING_SNAPSHOT_2026-07-26.md):
   frozen rollback description of the removed ring-centred sun and panel array.
 - [`MIXIN_MAP.md`](MIXIN_MAP.md): ownership and risk map for every mixin.

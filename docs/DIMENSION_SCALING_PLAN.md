@@ -170,7 +170,7 @@ the cloud shader; moving this final policy into the shared profile is open.
 
 | Variable/current source | Current value/limit | Scaling risk and required treatment |
 | --- | --- | --- |
-| `SAMPLE_STEP_BLOCKS` | 8 | Source quality is fixed while total cells grow as `C×W/64`. Persist the chosen step if it becomes adaptive. |
+| `SAMPLE_STEP_BLOCKS` | 8 | #69 retains one fixed profile: finer 4/2/1 candidates cost 4×/16×/64× cells and transfer without changing current GPU output. Persist and version the chosen step before any future adaptive experiment. |
 | atlas columns/rows | `ceil(C/step)`, `ceil(W/step)` with checked `long` cost | Allocation is rejected above 16,000,000 cells. |
 | atlas arrays | Checked cell count before Java allocation | Creation UI/log reports raw memory estimate. |
 | `TILE_SIZE` | 16 cells, 128 blocks at step 8 | Fixed transport unit is acceptable. Validate metadata before allocation. |

@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 215 unit/parameterized cases pass.
+gate. Common/client compilation and all 219 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -201,6 +201,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   removing test-world assumptions from custom dimensions.
 - `docs/ATLAS_PREGENERATION_PLAN.md`: planned **Generate Entire Ring** UI and
   extraction of the current atlas scheduler into one resumable service.
+- `docs/ATLAS_FIDELITY_BENCHMARK_2026-08-01.md`: production step 8/4/2/1
+  resource comparison and the decision to retain fixed eight-block sampling.
 - `docs/MINECRAFT_26_1_PORT_PLAN.md`: authoritative Minecraft 26.1.2 port,
   agent ownership, integration, validation, and deployment plan.
 - `docs/MINECRAFT_1_21_11_FINAL_BASELINE.md`: immutable pre-port validation,
@@ -224,7 +226,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 215
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 219
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
@@ -330,6 +332,11 @@ version numbers.
   sole writer, processes at most 64 recaptures per tick, and collapses more
   than 4,096 exact pending cells into tile work. Do not sample inline in the
   mixin or create another edit listener/writer.
+- Issue #69 retains one supported eight-block atlas sample step. Finer 4/2/1
+  candidates multiply production cells and cold tile traffic by 4/16/64 while
+  leaving the capped GPU texture and mesh unchanged. Do not make the step
+  adaptive or configurable without matched visual evidence plus a persisted,
+  versioned identity and deliberate cache rebuild.
 - `RingAtlasPregenerationCursor` is shared, loader-neutral traversal state for
   the future atlas service. It is X-major, derives finite Z from
   `RingGeometry.minChunkZ()`, resumes from present atlas cells, and never uses
