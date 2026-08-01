@@ -1,9 +1,8 @@
 # Mixin ownership map
 
-The active branch is compiling against Minecraft 26.1.2, but the mixin source
-still represents the validated Minecraft 1.21.11 behavior under official
-Mojang mappings until each row is explicitly ported. Candidate 26.1.2 targets
-and confidence are tracked in `PORTING_26_1_AUDIT.md`. Use this map to locate
+The active mixins target Minecraft 26.1.2 under official Mojang mappings. The
+frozen 1.21.11 implementation remains available at `mc-1.21.11-final`; port
+audit evidence is tracked in `PORTING_26_1_AUDIT.md`. Use this map to locate
 the owner of a behavior before adding another injection.
 
 The authoritative mixin lists are:
@@ -69,6 +68,7 @@ the same change.
 | `ClientChunkMapMixin` | `ClientChunkCache.Storage` | Exposes centre and full clear for disjoint chart re-keying | Clearing on small moves causes visible reload churn |
 | `ClientConnectionMixin` | `Connection` | Canonicalizes outbound block break/use packets | Missing a packet type makes visible seam blocks non-interactive |
 | `ClientPlayNetworkHandlerMixin` | `ClientPacketListener` | Projects canonical chunks, entities, blocks, effects, and explicit teleport targets into the nearest chart | Largest client packet surface; new positional packets need an audit |
+| `ConfirmScreenAccessor` | `ConfirmScreen` | Exposes the affirmative button only to the opt-in atlas UI acceptance fixture so it exercises the real confirmation callback | Test-only accessor; production code must not use it to bypass player confirmation |
 | `CreateWorldScreenMixin` | `CreateWorldScreen.init`, redirect of `HeaderAndFooterLayout.addToFooter(LayoutElement)` | Adds the immutable RingWorld layout editor and current C×W summary to the managed Create/Cancel footer row; the editor invokes its UI-local refresh hook after saving | The exact 26.1 layout call is required; a separately positioned button overlaps vanilla controls at GUI scale 4. The reused parent screen must refresh without reinitializing its layout. Changes bootstrap defaults for the next new world only; saved settings remain authoritative |
 | `CreateWorldScreenInvoker` | `CreateWorldScreen` | Invokes level creation for the opt-in local automated harness | Test-only; must not auto-create when `testMode=false` |
 | `EntityRenderManagerMixin` | `EntityRenderDispatcher` | Curved translation and tangent rotation for entity models | Transform must match terrain and leave local camera controls unchanged |
@@ -76,6 +76,7 @@ the same change.
 | `GlobalSettingsMixin` | `GlobalSettingsUniform.<init>` and `update(..., Vec3, ...)` | Extends Globals with named layout, vertical, render-distance, handoff, detail/reveal, haze, cloud-fade, and visual-profile fields | Shader ABI extension; std140 field order, buffer sizing, and the 26.1 extracted camera-position parameter are version-sensitive |
 | `LivingEntitySleepingPositionMixin` | `LivingEntity.getSleepingPos()` | Projects only the local player's replicated canonical bed position into the nearest presentation chart before vanilla's client sleeping callback, wake-up, orientation, and bed lookup consume it | Mapping server data or another entity's bed would violate the single canonical storage plane; this must remain a client-only local-player return mapping |
 | `MinecraftMixin` | `Minecraft.disconnect(Screen, boolean, boolean)` and `clearClientLevel` | Clears geometry, atlas, and GPU surface state on both integrated and remote world teardown paths | Missing either path can leak the previous world's static client state into an in-process reopen |
+| `PauseScreenMixin` | `PauseScreen.init` | Adds a separate top-right `RingWorld Map` entry only after RingWorld geometry and atlas identity are acknowledged | Adding another row to vanilla's centre stack overlaps Save and Quit at GUI scale 4; ordinary worlds and other dimensions must expose no button |
 | `PlayerPositionDebugHudEntryMixin` | `DebugEntryPosition` | Replaces F3 position section with canonical Ring coordinates and atlas state | Debug display only; never use it as storage logic |
 | `SkyRenderingMixin` | `SkyRenderer` | Small fixed ring-centred sun, time-based sun tint/intensity, no moon, stationary stars, and complete-ring texture invocation | `renderSun` constants and dynamic colour arguments are version-sensitive |
 

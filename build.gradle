@@ -90,7 +90,8 @@ loom {
 			name "RingWorld Atlas UI Regression"
 			runDir "run-atlas-ui"
 			vmArg "-Dringworld.atlasUiTest=true"
-			programArgs "--username", "RingAtlasUiTester"
+			// Minecraft login names are limited to 16 characters.
+			programArgs "--username", "AtlasUiTester"
 		}
 		strongholdTestServer {
 			server()

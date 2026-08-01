@@ -99,10 +99,19 @@ public final class AtlasPregenerationUiTestClient {
                 ((ConfirmScreenAccessor)confirm).ringworld$yesButton().onPress(new TestInput()); arm(); stage++;
             }
             case 11 -> {
-                if (status == null || status.progress().state() != AtlasPregenerationState.COMPLETE || !settled()) return true;
-                capture(client, "atlas-ui-10-complete", true); arm(); stage++;
+                if (status == null || status.progress().state() != AtlasPregenerationState.COMPLETE) return true;
+                // Let RingWorldMapScreen consume the new status and rebuild
+                // its widgets before accepting the completed-state capture.
+                arm(); stage++;
             }
             case 12 -> {
+                if (!(client.screen instanceof RingWorldMapScreen) || !settled()) return true;
+                if (!hasOnlyButton(client, "Done")) {
+                    return fail(client, "completed screen retained an invalid action button");
+                }
+                capture(client, "atlas-ui-10-complete", true); arm(); stage++;
+            }
+            case 13 -> {
                 if (!settled() || !finalCaptureSaved) return true;
                 RingWorldMod.LOGGER.info("[atlas-ui-test] PASS: GUI scale 4 confirmation/running/background/reopen/pause/resume/cancel/retry/complete");
                 client.stop();
@@ -119,6 +128,14 @@ public final class AtlasPregenerationUiTestClient {
         RingWorldMod.LOGGER.error("[atlas-ui-test] FAIL: {}", reason);
         client.stop();
         return true;
+    }
+    private static boolean hasOnlyButton(Minecraft client, String label) {
+        if (client.screen == null) return false;
+        var buttons = client.screen.children().stream()
+                .filter(Button.class::isInstance)
+                .map(Button.class::cast)
+                .toList();
+        return buttons.size() == 1 && buttons.getFirst().getMessage().getString().equals(label);
     }
     private void capture(Minecraft client, String name, boolean finalCapture) {
         Screenshot.grab(client.gameDirectory, name + ".png", client.getMainRenderTarget(), 1,

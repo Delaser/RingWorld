@@ -82,7 +82,8 @@ with `testMode=true` and `pregenerateTerrainAtlas=false`, run:
 ```
 
 The opt-in client resets its own saves/cache/log/screenshots, sets GUI scale 4,
-waits three rendered frames after every screen change, and records pause-menu,
+hides the development coordinate overlay, waits three rendered frames after
+every screen change, and records an unobstructed pause-menu,
 map, confirmation, running, background close/reopen, pause/resume,
 cancel/retry, and complete screens as `atlas-ui-*.png`. It presses the actual
 confirmation widget, stops after `[atlas-ui-test] PASS`, and its finalizer

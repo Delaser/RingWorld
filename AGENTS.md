@@ -294,8 +294,10 @@ version numbers.
 - The complete-ring texture is generated only after the terrain atlas is
   complete. Before that, only real chunks and the remaining atmospheric
   effects are available. Session disconnect/settings handlers must clear the
-  static GPU texture and mesh, and the renderer must reject incomplete atlases;
-  otherwise a newly created world displays the previous world's ring.
+  static GPU texture and mesh, and the renderer must reject incomplete atlases.
+  Fabric disconnect callbacks may arrive on a network thread, so they must
+  enqueue cache saves and GPU teardown onto the client thread. Failing to clear
+  that state lets a newly created world display the previous world's ring.
 - `NoiseBasedChunkGenerator.iterateNoiseColumn` is the shared vanilla
   base-height/base-column path used to anchor structures before their chunks
   exist. Canonicalize its X argument exactly once at that method boundary

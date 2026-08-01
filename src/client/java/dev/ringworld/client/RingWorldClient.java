@@ -167,9 +167,12 @@ public final class RingWorldClient implements ClientModInitializer {
                         payload.worldHash(), payload.tileX(), payload.tileZ(), payload.data())));
         ClientPlayNetworking.registerGlobalReceiver(RingAtlasPregenerationStatusPayload.ID, (payload, context) ->
                 context.client().execute(() -> AtlasPregenerationClientState.install(context.client(), payload)));
-        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
-            clearRingSession();
-        });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
+                // Fabric may fire this callback on Netty's local I/O thread.
+                // Cache saves and GPU teardown must stay on the client thread;
+                // otherwise disconnect can race the normal teardown mixin's
+                // final atlas save over the same temporary file.
+                client.execute(RingWorldClient::clearRingSession));
         LevelRenderEvents.END_MAIN.register(context -> {
             recordTestFrame();
             atlasPregenerationUiTest.frameRendered();
@@ -235,8 +238,10 @@ public final class RingWorldClient implements ClientModInitializer {
             client.options.simulationDistance().set(5);
             client.options.inactivityFpsLimit().set(InactivityFpsLimit.MINIMIZED);
             client.options.pauseOnLostFocus = false;
-            client.debugEntries.setStatus(
-                    DebugScreenEntries.PLAYER_POSITION, DebugScreenEntryStatus.ALWAYS_ON);
+            client.debugEntries.setStatus(DebugScreenEntries.PLAYER_POSITION,
+                    atlasPregenerationUiTest.enabled()
+                            ? DebugScreenEntryStatus.IN_OVERLAY
+                            : DebugScreenEntryStatus.ALWAYS_ON);
             testPerformanceProfileApplied = true;
         }
         if (client.level != null) {

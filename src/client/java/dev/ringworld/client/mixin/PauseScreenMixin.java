@@ -20,6 +20,9 @@ abstract class PauseScreenMixin extends Screen {
         if (!RingWorldMapScreen.canOpen()) return;
         addRenderableWidget(Button.builder(Component.literal("RingWorld Map"),
                         button -> minecraft.setScreen(new RingWorldMapScreen((Screen)(Object)this)))
-                .bounds(width / 2 - 102, Math.max(24, height / 4 + 96), 204, 20).build());
+                // Keep this independent of vanilla's vertically packed menu.
+                // At GUI scale 4, adding another full-width row to that stack
+                // overlaps Save and Quit on a 1080p window.
+                .bounds(Math.max(4, width - 108), 6, 102, 20).build());
     }
 }
