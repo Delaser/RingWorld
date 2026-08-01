@@ -26,8 +26,9 @@ The implementation spans five coupled layers:
 
 ## Loader boundary
 
-Fabric has the validated client/runtime implementation, and NeoForge has the
-dedicated-server bootstrap checkpoint. The architecture targets a
+Fabric has the validated client/runtime implementation, and NeoForge has a
+dedicated-server bootstrap plus complete-atlas graphical-client projection checkpoint.
+The architecture targets a
 loader-neutral core with thin Fabric and NeoForge adapters. Geometry,
 topology, persistent settings, atlas formats, atlas-pregeneration model and
 cursor, coordinate transforms, protocol models, renderer math, mixin behavior
@@ -45,19 +46,23 @@ The active source boundary makes this enforceable: shared code lives under
 `src/main/java` and `src/client/java`. `verifyLoaderBoundary` rejects either
 loader API namespace in those shared trees. Fabric adapters live in
 `src/platform/fabric` and
-`src/platform/fabricClient`; NeoForge adapters live in
-`src/platform/neoforge` and are built by the `neoforge` ModDevGradle module.
-NeoForge receives parallel platform trees rather than copies of shared domain
-behavior.
+`src/platform/fabricClient`; NeoForge adapters live in `src/platform/neoforge`
+and `src/platform/neoforgeClient` and are built by the `neoforge` ModDevGradle
+module. NeoForge receives parallel platform trees rather than copies of shared
+domain behavior.
 
 New features should depend on small RingWorld-owned platform interfaces rather
 than importing a loader API into shared domain code. Both adapters must
-preserve the same saved-data and network formats. NeoForge's 26.1.2.87
-dedicated server reaches `Done` and starts/progresses the shared atlas, but no
-NeoForge graphical client is integrated or tested yet. Until its client,
-rendering, gameplay, multiplayer, and package gates pass, documentation must
-continue to describe distributed artifacts as Fabric-only. A monitor-unavailable
-launch attempt is not runtime evidence.
+preserve the same saved-data and network formats. The shared client
+`RingClientPayloadTransport` and `RingWorldClientSession` keep payload
+sends/capability checks and teardown loader-neutral; each loader supplies its
+own narrow transport and lifecycle registration. NeoForge also registers the
+shared ring-surface render pipeline in its client event and packages the shared
+client mixins and resources. Its 26.1.2.87 client has loaded those resources,
+acknowledged format 2, and passed a complete-atlas tangent/handoff/radial
+projection gate in a copied production integrated world. This does not
+establish seam/rim, time/weather, lifecycle, gameplay, multiplayer, or package parity; distributed artifacts remain
+Fabric-only until those gates pass.
 
 ## The three coordinate domains
 

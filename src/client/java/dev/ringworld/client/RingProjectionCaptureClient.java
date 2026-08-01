@@ -13,7 +13,7 @@ import net.minecraft.client.gui.screens.PauseScreen;
  * Opt-in, non-destructive visual probe for the projection directions and
  * live/proxy handoff that expose complete-ring regressions on large layouts.
  */
-final class RingProjectionCaptureClient {
+public final class RingProjectionCaptureClient {
     private static final String ENABLE_PROPERTY = "ringworld.captureRingProjection";
     private static final String WORLD_PROPERTY = "ringworld.projectionWorld";
     private static final String VIEW_DISTANCE_PROPERTY =
@@ -43,7 +43,7 @@ final class RingProjectionCaptureClient {
     private int frameSamples;
     private int slowFrames;
 
-    boolean tick(Minecraft client) {
+    public boolean tick(Minecraft client) {
         if (!Boolean.getBoolean(ENABLE_PROPERTY)) return false;
         applyFocusPolicy(client);
         if (stage >= 4) return true;
@@ -123,7 +123,7 @@ final class RingProjectionCaptureClient {
         return true;
     }
 
-    void frameRendered() {
+    public void frameRendered() {
         if (!Boolean.getBoolean(ENABLE_PROPERTY) || !captureStageArmed) return;
         long now = System.nanoTime();
         if (lastFrameNanos != 0L) {

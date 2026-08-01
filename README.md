@@ -2,7 +2,8 @@
 
 RingWorld is an experimental Minecraft mod that turns the Overworld into a
 finite, genuinely looping cylindrical world. Fabric is the validated client
-platform; NeoForge has reached the dedicated-server bootstrap checkpoint.
+platform; NeoForge has server bootstrap plus an initial graphical-client
+diagnostic checkpoint.
 
 Walk far enough around the circumference and you return to the same place
 without entering a duplicate world or crossing a corrective teleport. Players,
@@ -47,10 +48,14 @@ The Nether and End remain vanilla.
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
 > Java 25 module builds with the same 233 tests; its dedicated server reaches
-> `Done` and starts/progresses an atlas. Its graphical client has not yet been
-> integrated or tested. A monitor-unavailable launch attempt is not a code
-> pass. Gameplay, visual, multiplayer, and packaging parity remain required
-> before a NeoForge artifact can be described as tested or released.
+> `Done` and starts/progresses an atlas. Its client now loads the shared
+> resources/shaders and mixins, acknowledges settings format 2, streams atlas
+> metadata/tiles, and renders the complete textured surface in a copied
+> 16,384×256 integrated world. The verified gate captures tangent, live/LOD
+> handoff, and radial views with measured frame pacing. Full seam/rim,
+> time/weather, lifecycle, gameplay,
+> multiplayer, and packaging parity remain required before a NeoForge artifact
+> can be described as tested or released.
 
 > **Licence status:** RingWorld is open-source software licensed under the
 > [Mozilla Public License 2.0](LICENSE). Changes to existing RingWorld source
@@ -185,7 +190,7 @@ handoff behavior.
 | Java | 25 |
 | Fabric Loader | 0.19.3 |
 | Fabric API | 0.155.2+26.1.2 |
-| NeoForge bootstrap | 26.1.2.87 / ModDevGradle 2.0.143 (dedicated server checkpoint only) |
+| NeoForge checkpoint | 26.1.2.87 / ModDevGradle 2.0.143 (server bootstrap plus complete-atlas projection gate) |
 | Development mappings | None; 26.1.2 is unobfuscated |
 | RingWorld | The same jar on server and clients |
 
@@ -219,6 +224,19 @@ cases. When launching a dedicated development server, use the qualified task
 for the intended loader: `./gradlew :runServer` for Fabric or
 `./gradlew :neoforge:runServer` for NeoForge. Do not use an unqualified
 `runServer` now that both tasks exist.
+
+For the NeoForge graphical-client diagnostic fixture, use:
+
+```sh
+./gradlew :neoforge:runProductionProjectionClient \
+  -PringNeoForgeProjectionSource="NeoForge Test"
+```
+
+It copies the named ignored save from `neoforge/run-client/saves/` into a
+disposable run directory, waits for a complete atlas, captures tangent,
+live/LOD handoff, and radial views, verifies the outputs, then exits. The
+production 16,384×256 noon gate passes. Seam/rim, time/weather, lifecycle,
+gameplay, and multiplayer parity remain separate gates.
 
 The historical 95-error compiler inventory and subsequent source-port
 milestones are recorded in

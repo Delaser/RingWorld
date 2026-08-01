@@ -46,12 +46,25 @@ Issue #91 adds the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 Java 25 module,
 metadata, bootstrap, lifecycle, command, payload-transport, and atlas
 adapters. The Fabric and NeoForge builds each pass all 233 unit/parameterized
 cases. Fresh dedicated servers for both loaders reach `Done`; the NeoForge
-server also starts and progresses its terrain atlas. NeoForge graphical-client
-adapters, curved rendering, shaders, client atlas handling, gameplay, and
-multiplayer validation remain unintegrated or untested. One graphical launch
-attempt could not obtain a monitor; that environment failure is not a code
-pass and does not advance the client gate. Use `:runServer` for Fabric and
-`:neoforge:runServer` for NeoForge rather than an ambiguous unqualified task.
+server also starts and progresses its terrain atlas.
+
+Issue #92 reaches the first NeoForge graphical-client checkpoint. Shared
+client payload transport and session teardown now serve both loaders; NeoForge
+includes the shared client sources, client mixins, shaders, and resources while
+its adapter owns payload-handler, client lifecycle, cache-path, and render
+pipeline registration. A real NeoForge client completed resource/shader
+loading, opened a copied production 16,384×256 world through its integrated
+server, acknowledged settings format 2, streamed atlas metadata and tiles, and
+rendered a progressive textured ring surface. The replacement
+`:neoforge:runProductionProjectionClient` task copies a named source save into
+an isolated run directory, waits for atlas completion, captures tangent,
+handoff, and radial views, verifies them, and exits. Its production 16,384×256
+noon run passes; the settled stages averaged 10.7, 8.4, and 8.4 ms per frame,
+respectively. Seam/rim and time/weather visual review, world-switch/lifecycle
+coverage, gameplay, two-client multiplayer, packaging, and full Fabric parity
+remain open. Use `:runServer`
+for Fabric and `:neoforge:runServer` for NeoForge rather than an ambiguous
+unqualified task.
 
 Issue #24 expands the loader-neutral dimension matrix to 200
 unit/parameterized cases. It covers the safe-small, aligned playable-minimum,

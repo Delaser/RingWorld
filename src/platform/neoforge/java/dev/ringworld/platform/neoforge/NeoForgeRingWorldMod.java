@@ -6,6 +6,7 @@ import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.ModList;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.fml.loading.FMLEnvironment;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.common.NeoForge;
 
@@ -18,6 +19,9 @@ public final class NeoForgeRingWorldMod {
         RingWorldConfig.load();
         NeoForgeTerrainAtlasPlatform.configure();
         modEventBus.addListener(NeoForgeRingWorldNetworking::registerPayloads);
+        if (FMLEnvironment.getDist().isClient()) {
+            NeoForgeRingWorldClient.register(modEventBus);
+        }
         NeoForge.EVENT_BUS.register(new NeoForgeRingWorldServer());
         RingWorldMod.LOGGER.info("RingWorld NeoForge platform bootstrap active");
     }

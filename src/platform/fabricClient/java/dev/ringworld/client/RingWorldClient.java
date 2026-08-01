@@ -26,6 +26,7 @@ import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
+import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.gui.components.debug.DebugScreenEntries;
 import net.minecraft.client.gui.components.debug.DebugScreenEntryStatus;
 import net.minecraft.client.gui.screens.PauseScreen;
@@ -113,6 +114,8 @@ public final class RingWorldClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        RenderPipelines.register(RingSurfaceTextureRenderer.pipeline());
+        RingClientPayloadTransport.configure(new FabricRingClientPayloadTransport());
         ClientRingState.configureCacheDirectory(
                 FabricLoader.getInstance().getGameDir().resolve("ringworld-cache"));
         ClientPlayNetworking.registerGlobalReceiver(RingSettingsPayload.ID, (payload, context) ->
@@ -139,10 +142,10 @@ public final class RingWorldClient implements ClientModInitializer {
                         }
                         return;
                     }
-                    if (!ClientPlayNetworking.canSend(RingSettingsAckPayload.ID)
-                            || !ClientPlayNetworking.canSend(RingTerrainAtlasRequestPayload.ID)
-                            || !ClientPlayNetworking.canSend(RingAtlasPregenerationStatusRequestPayload.ID)
-                            || !ClientPlayNetworking.canSend(RingAtlasPregenerationControlPayload.ID)) {
+                    if (!RingClientPayloadTransport.canSend(RingSettingsAckPayload.ID)
+                            || !RingClientPayloadTransport.canSend(RingTerrainAtlasRequestPayload.ID)
+                            || !RingClientPayloadTransport.canSend(RingAtlasPregenerationStatusRequestPayload.ID)
+                            || !RingClientPayloadTransport.canSend(RingAtlasPregenerationControlPayload.ID)) {
                         var handler = context.client().getConnection();
                         if (handler != null) {
                             handler.getConnection().disconnect(Component.literal(
@@ -154,7 +157,7 @@ public final class RingWorldClient implements ClientModInitializer {
                     ClientRingState.set(
                             new RingGeometry(payload.width(), payload.circumference()),
                             payload.wallHeight(), payload.surfaceReferenceY(), fingerprint);
-                    ClientPlayNetworking.send(RingSettingsHandshake.acknowledgementFor(payload));
+                    RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
                 }));
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasMetadataPayload.ID, (payload, context) ->
                 context.client().execute(() -> {
@@ -163,7 +166,7 @@ public final class RingWorldClient implements ClientModInitializer {
                     // alignment and intentionally does not download the LOD
                     // atlas while its two frames are settling.
                     if (Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) return;
-                    if (!ClientPlayNetworking.canSend(RingTerrainAtlasRequestPayload.ID)) {
+                    if (!RingClientPayloadTransport.canSend(RingTerrainAtlasRequestPayload.ID)) {
                         var handler = context.client().getConnection();
                         if (handler != null) {
                             handler.getConnection().disconnect(Component.literal(
@@ -171,7 +174,7 @@ public final class RingWorldClient implements ClientModInitializer {
                         }
                         return;
                     }
-                    ClientPlayNetworking.send(new RingTerrainAtlasRequestPayload(
+                    RingClientPayloadTransport.send(new RingTerrainAtlasRequestPayload(
                             payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete));
                 }));
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasTilePayload.ID, (payload, context) ->
@@ -219,9 +222,7 @@ public final class RingWorldClient implements ClientModInitializer {
      * the play-connection disconnect event before the next world is opened.
      */
     public static void clearRingSession() {
-        RingSurfaceTextureRenderer.clear();
-        AtlasPregenerationClientState.clear();
-        ClientRingState.clear();
+        RingWorldClientSession.clear();
     }
 
     /**

@@ -3,7 +3,6 @@ package dev.ringworld.client;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.net.RingMultiplayerTestPayload;
 import dev.ringworld.world.RingGeometry;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
@@ -598,8 +597,8 @@ final class MultiplayerTestClient {
     }
 
     private void sendResult(String phase, boolean passed, double value) {
-        if (ClientPlayNetworking.canSend(RingMultiplayerTestPayload.ID)) {
-            ClientPlayNetworking.send(new RingMultiplayerTestPayload(role, phase, passed, value));
+        if (RingClientPayloadTransport.canSend(RingMultiplayerTestPayload.ID)) {
+            RingClientPayloadTransport.send(new RingMultiplayerTestPayload(role, phase, passed, value));
         }
     }
 
