@@ -9,8 +9,9 @@ import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -24,6 +25,7 @@ import net.minecraft.world.level.levelgen.DensityFunctions;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseChunk;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
+import net.minecraft.world.level.levelgen.NoiseSettings;
 import net.minecraft.world.level.levelgen.NoiseRouter;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.blending.Blender;
@@ -127,5 +129,36 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
                 : ringworld$getOrCreatePeriodicRouter(noiseConfig, noiseConfig.router());
         return RingNoiseSamplingContext.withRouter(override,
                 () -> NoiseChunk.forChunk(chunk, noiseConfig, beardifying, settings, fluidLevelSampler, blender));
+    }
+
+    /**
+     * Height queries used to anchor structures take a separate vanilla path:
+     * {@code getBaseHeight} and {@code getBaseColumn} share
+     * {@code iterateNoiseColumn}, which constructs its sampler directly
+     * instead of calling {@code createNoiseChunk}. Canonicalize X at this
+     * private ownership boundary before vanilla derives its cell/cache and
+     * interpolation coordinates, then keep the sampler in the same
+     * Overworld-only router context as real chunk terrain. Otherwise a
+     * village can choose its Y from flat or alias-chart noise while the
+     * terrain beneath it is generated from cylindrical noise.
+     */
+    @ModifyVariable(method = "iterateNoiseColumn", at = @At("HEAD"), argsOnly = true, ordinal = 0, require = 1)
+    private int ringworld$canonicalizeHeightQueryX(int blockX) {
+        return ringworld$geometry == null ? blockX : ringworld$geometry.wrapBlockX(blockX);
+    }
+
+    @Redirect(
+            method = "iterateNoiseColumn",
+            at = @At(value = "NEW", target = "(ILnet/minecraft/world/level/levelgen/RandomState;IILnet/minecraft/world/level/levelgen/NoiseSettings;Lnet/minecraft/world/level/levelgen/DensityFunctions$BeardifierOrMarker;Lnet/minecraft/world/level/levelgen/NoiseGeneratorSettings;Lnet/minecraft/world/level/levelgen/Aquifer$FluidPicker;Lnet/minecraft/world/level/levelgen/blending/Blender;)Lnet/minecraft/world/level/levelgen/NoiseChunk;"))
+    private NoiseChunk ringworld$createPeriodicHeightSampler(
+            int cellCountXZ, RandomState noiseConfig, int firstBlockX, int firstBlockZ,
+            NoiseSettings noiseSettings, DensityFunctions.BeardifierOrMarker beardifying,
+            NoiseGeneratorSettings settings, Aquifer.FluidPicker fluidLevelSampler,
+            Blender blender) {
+        NoiseRouter override = ringworld$geometry == null ? null
+                : ringworld$getOrCreatePeriodicRouter(noiseConfig, noiseConfig.router());
+        return RingNoiseSamplingContext.withRouter(override,
+                () -> new NoiseChunk(cellCountXZ, noiseConfig, firstBlockX, firstBlockZ,
+                        noiseSettings, beardifying, settings, fluidLevelSampler, blender));
     }
 }

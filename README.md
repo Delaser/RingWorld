@@ -228,7 +228,8 @@ The current build includes:
   chunk transition and local-client bed positions projected into the current
   presentation chart;
 - continuous client charts and natural player/vehicle seam folding;
-- periodic density-noise sampling and canonical seam-crossing worldgen writes;
+- periodic density-noise sampling, including canonicalized structure
+  base-height/base-column queries, and canonical seam-crossing worldgen writes;
 - finite exterior void and five-block textured, breakable rims;
 - curved terrain, entity, block-entity, interaction-overlay, cloud, frustum,
   and section-visibility handling;
