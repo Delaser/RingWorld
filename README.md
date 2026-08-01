@@ -344,7 +344,7 @@ measurements, and safe handling rules are in [Testing](docs/TESTING.md).
 | [Documentation index](docs/README.md) | Entry point for the technical documentation |
 | [Architecture](docs/ARCHITECTURE.md) | Coordinate domains and end-to-end system design |
 | [Current state](docs/CURRENT_STATE.md) | Implemented behavior, evidence, limitations, and roadmap |
-| [Dimension scaling plan](docs/DIMENSION_SCALING_PLAN.md) | Dimension-sensitive variables, budgets, and remaining matrix |
+| [Dimension scaling plan](docs/DIMENSION_SCALING_PLAN.md) | Dimension-sensitive variables, budgets, completed #24 matrix evidence, and remaining production visual/benchmark gates |
 | [Atlas pregeneration plan](docs/ATLAS_PREGENERATION_PLAN.md) | One-click complete-map generation with resumable background and headless execution |
 | [Mixin map](docs/MIXIN_MAP.md) | Ownership and risk of each Minecraft injection |
 | [Network protocol](docs/NETWORK_PROTOCOL.md) | Geometry handshake, atlas transport, and presentation mapping |

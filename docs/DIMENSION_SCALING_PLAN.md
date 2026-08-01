@@ -1,11 +1,12 @@
 # Dimension scaling audit and implementation plan
 
-Status: implementation in progress, source- and runtime-audited on 2026-07-27.
-Phases 1–6 are implemented. Phase 7 has completed pure validation, the
+Status: issue #24 custom-dimension matrix completed, source- and runtime-audited
+on 2026-08-01. Phases 1–6 are implemented. Phase 7 has completed pure validation, the
 safe-small view-distance matrix, minimum-width stress, dedicated two-client
 coverage, production/long/wide topology and rim runs, and a same-process saved
-layout switch. Complete-atlas visual capture and the end-to-end production
-atlas benchmark remain open as marked below.
+layout switch. The production full-atlas throughput/transfer benchmark and
+broader cross-size complete-atlas visual/frame-pacing gates remain open as
+marked below.
 
 ## Goal
 

@@ -59,7 +59,7 @@ resume, and verified-final-save completion are retained. The Fabric pause-menu
 map, confirmation/progress controls, cancel lifecycle, versioned payloads,
 permissions, and completion toast share that same handle; the suite now has
 196 unit/parameterized cases and the real GUI-scale-4 fixture passes. The
-The Fabric headless prewarm adapter is now implemented as that thin
+Fabric headless prewarm adapter is now implemented as that thin
 launch/report/save/stop coordinator: a fresh safe-small run checkpointed on
 SIGTERM at 1,200 durable chunks/4,800 cells, resumed to 3,328/3,328 chunks and
 13,312/13,312 cells, then verified, saved, emitted atomic JSON evidence, and

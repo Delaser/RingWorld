@@ -10,8 +10,8 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 
 ## Active port checkpoint
 
-The current `codex/minecraft-26.1-port` branch requires Java 25. Common and
-client compilation now pass together, and the development build runs all 196
+The active public `main` integration line requires Java 25. Common and client
+compilation now pass together, and the development build runs all 196
 unit/parameterized cases:
 
 ```sh
