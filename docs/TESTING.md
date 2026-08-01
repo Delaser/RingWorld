@@ -10,9 +10,9 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 
 ## Active port checkpoint
 
-The active public `main` integration line requires Java 25. Common and client
-compilation now pass together, and the development build runs all 233
-unit/parameterized cases:
+The active public `main` integration line requires Java 25. The Fabric build
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 233
+unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
 JAVA_HOME=/path/to/jdk-25/Contents/Home \
@@ -23,6 +23,23 @@ PATH="$JAVA_HOME/bin:$PATH" \
 See `MINECRAFT_26_1_COMPILER_BASELINE.md` for the historical 95-error inventory
 and its resolution. A green build and dedicated-server launch do not establish
 client rendering, gameplay, or multiplayer compatibility.
+
+The NeoForge build uses the same Java 25 toolchain:
+
+```sh
+./gradlew :neoforge:test :neoforge:build --console=plain
+```
+
+Both projects expose `runServer`. Launch the intended dedicated server with
+`./gradlew :runServer` (Fabric) or `./gradlew :neoforge:runServer` (NeoForge),
+not an unqualified `runServer` task.
+
+Fresh Fabric and NeoForge dedicated-server launches reach `Done`; the NeoForge
+launch also starts and progresses atlas generation. This is a server bootstrap
+checkpoint, not NeoForge graphical-client validation: client adapters,
+curved rendering, shaders, atlas display, gameplay, and multiplayer still
+need their dedicated gates. A graphical launch blocked by monitor unavailability
+is not a code pass.
 
 ## Unit and build validation
 
@@ -42,6 +59,9 @@ Expected artifact:
 ```text
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
+
+The NeoForge development artifact is
+`neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
 The active suite contains 233 unit/parameterized cases:
 
@@ -140,6 +160,11 @@ is documented in `MIXIN_MAP.md`. A clean compile alone is not evidence that a
 required mixin still applies.
 
 ## 26.1 dedicated-server storage gate
+
+The detailed storage evidence below is Fabric evidence. The #91 NeoForge
+bootstrap separately proves a fresh dedicated server reaches `Done` and begins
+atlas work; it has not yet repeated the storage, topology, worldgen, or
+two-client gates.
 
 Run storage migration gates only from a disposable worktree/run directory.
 Never point them at `dist/`, the public service, or the only copy of a world.

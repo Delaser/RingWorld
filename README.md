@@ -1,7 +1,8 @@
 # RingWorld
 
-RingWorld is an experimental Fabric mod that turns the Minecraft Overworld
-into a finite, genuinely looping cylindrical world.
+RingWorld is an experimental Minecraft mod that turns the Overworld into a
+finite, genuinely looping cylindrical world. Fabric is the validated client
+platform; NeoForge has reached the dedicated-server bootstrap checkpoint.
 
 Walk far enough around the circumference and you return to the same place
 without entering a duplicate world or crossing a corrective teleport. Players,
@@ -43,12 +44,13 @@ The Nether and End remain vanilla.
 > The validated server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
 
-> **Loader direction:** current builds remain Fabric-only while NeoForge is the
-> active next phase. Shared Minecraft code and Fabric-owned adapters now live
-> in separate source trees, with a build check preventing loader APIs from
-> leaking back into shared code. A tested NeoForge artifact is not available
-> yet; gameplay/visual polish and release follow its standalone parity gate,
-> while broad third-party compatibility is deliberately deferred.
+> **Loader direction:** shared Minecraft code now has separate Fabric and
+> NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
+> Java 25 module builds with the same 233 tests; its dedicated server reaches
+> `Done` and starts/progresses an atlas. Its graphical client has not yet been
+> integrated or tested. A monitor-unavailable launch attempt is not a code
+> pass. Gameplay, visual, multiplayer, and packaging parity remain required
+> before a NeoForge artifact can be described as tested or released.
 
 > **Licence status:** RingWorld is open-source software licensed under the
 > [Mozilla Public License 2.0](LICENSE). Changes to existing RingWorld source
@@ -183,6 +185,7 @@ handoff behavior.
 | Java | 25 |
 | Fabric Loader | 0.19.3 |
 | Fabric API | 0.155.2+26.1.2 |
+| NeoForge bootstrap | 26.1.2.87 / ModDevGradle 2.0.143 (dedicated server checkpoint only) |
 | Development mappings | None; 26.1.2 is unobfuscated |
 | RingWorld | The same jar on server and clients |
 
@@ -204,6 +207,18 @@ The expected development artifact is:
 ```text
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
+
+The parallel NeoForge module uses the same Java 25 toolchain:
+
+```sh
+./gradlew :neoforge:test :neoforge:build --console=plain
+```
+
+Both Fabric and NeoForge builds currently pass the 233 unit/parameterized
+cases. When launching a dedicated development server, use the qualified task
+for the intended loader: `./gradlew :runServer` for Fabric or
+`./gradlew :neoforge:runServer` for NeoForge. Do not use an unqualified
+`runServer` now that both tasks exist.
 
 The historical 95-error compiler inventory and subsequent source-port
 milestones are recorded in

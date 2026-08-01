@@ -10,7 +10,11 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 233 unit/parameterized cases pass.
+gate. The Fabric and NeoForge builds each pass all 233 unit/parameterized
+cases. Fabric has completed the client/runtime gates described below. NeoForge
+26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and its
+atlas starts and progresses, but its graphical client is not integrated or
+tested. A monitor-unavailable launch attempt is not a NeoForge code pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -63,7 +67,8 @@ agent uses a separate account and must monitor its own allowance.
 
 ## What this project is
 
-RingWorld is a Fabric mod being ported from Minecraft Java 1.21.11 to 26.1.2.
+RingWorld is a Fabric-first mod being ported from Minecraft Java 1.21.11 to
+26.1.2, with a NeoForge dedicated-server bootstrap now underway.
 The validated design turns only the Overworld into a finite band:
 
 - canonical X runs around the circumference and is periodic;
@@ -111,8 +116,9 @@ under it.
 
 ## Loader support policy
 
-The current runnable implementation is Fabric-only, but future development
-must not deepen that coupling. Design new gameplay, topology, persistence,
+Fabric is the validated graphical/runtime implementation; NeoForge currently
+has only the dedicated-server bootstrap checkpoint. Future development must
+not deepen Fabric coupling. Design new gameplay, topology, persistence,
 worldgen, rendering math, protocol models, and tests as loader-agnostic common
 code. When a loader API is unavoidable, isolate it behind a narrow platform
 adapter and provide, or leave a documented implementation path for, both
@@ -197,6 +203,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   networking, path, command, and discovery adapters.
 - `src/platform/fabricClient/java/`: Fabric client entrypoint, networking,
   lifecycle, cache-path, and automated-client adapters.
+- `src/platform/neoforge/java/`: NeoForge bootstrap, dedicated-server
+  lifecycle, command, and payload-transport adapters. Its graphical client
+  adapter has not been integrated yet.
+- `neoforge/`: NeoForge 26.1.2.87 ModDevGradle 2.0.143 Java 25 module and its
+  isolated development run directories.
 - `src/main/java/dev/ringworld/mixin/`: authoritative server/worldgen patches.
 - `src/main/java/dev/ringworld/server/`: lifecycle, canonical entity folding,
   atlas pregeneration, local smoke fixtures, and multiplayer harness.
@@ -250,6 +261,19 @@ The expected development artifact is
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
+
+The NeoForge module uses the same Java 25 toolchain and also passes all 233
+unit/parameterized cases:
+
+```sh
+./gradlew :neoforge:test :neoforge:build --console=plain
+```
+
+Both loaders now provide a task named `runServer`; always select the loader
+explicitly: `./gradlew :runServer` for Fabric or
+`./gradlew :neoforge:runServer` for NeoForge. The NeoForge dedicated launch
+has reached `Done` and observed atlas progress, but is not evidence of a
+graphical-client, rendering, gameplay, or multiplayer pass.
 
 `scripts/stage_modrinth_release.py --build` checks the active Java generation
 before it invokes Gradle. Keep that fail-closed Java 25 preflight synchronized

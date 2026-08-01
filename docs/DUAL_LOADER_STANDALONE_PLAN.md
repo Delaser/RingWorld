@@ -16,7 +16,11 @@ one shader contract, and the same gameplay behavior.
    code. Keep the Fabric candidate green at every step.
 2. [#91](https://github.com/Delaser/RingWorld/issues/91): add the NeoForge
    metadata, entrypoints, lifecycle adapters, networking transport, commands,
-   and development launches.
+   and development launches. **Checkpoint reached:** the Java 25 NeoForge
+   26.1.2.87 / ModDevGradle 2.0.143 module shares the core sources, passes all
+   233 unit/parameterized cases, and its dedicated server reaches `Done` with
+   atlas startup/progress. Graphical-client integration and testing remain
+   #92 work; a monitor-unavailable launch attempt is not a code pass.
 3. [#92](https://github.com/Delaser/RingWorld/issues/92): make the NeoForge
    client pass the curved-renderer, atlas, shader, sky, world-switch, and frame
    pacing gates.
@@ -69,5 +73,7 @@ contracts between loaders.
   Fabric-owned entrypoints and adapters.
 - `verifyLoaderBoundary` fails the build if Fabric or NeoForge API references
   enter either shared source tree.
-- NeoForge platform source trees and its own build module are added by #91;
-  they consume the same shared sources rather than copying domain logic.
+- `src/platform/neoforge/java` and the `neoforge` ModDevGradle module now
+  consume the same shared sources rather than copying domain logic. Use
+  `:runServer` for Fabric and `:neoforge:runServer` for NeoForge; an
+  unqualified `runServer` is ambiguous.

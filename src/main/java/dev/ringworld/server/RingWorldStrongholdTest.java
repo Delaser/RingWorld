@@ -51,13 +51,13 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** Disposable dedicated-server gate for the guaranteed stronghold and portal room. */
-final class RingWorldStrongholdTest {
+public final class RingWorldStrongholdTest {
     private static int ticks;
     private static boolean finished;
 
     private RingWorldStrongholdTest() { }
 
-    static void tick(MinecraftServer server) {
+    public static void tick(MinecraftServer server) {
         if (!Boolean.getBoolean("ringworld.strongholdTest") || finished || ++ticks < 20) return;
         finished = true;
         try {

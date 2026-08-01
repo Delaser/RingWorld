@@ -1,5 +1,7 @@
 .gradle/
 build/
+neoforge/build/
+neoforge/run-*/
 run/
 run-multiplayer/
 run-layout-switch/

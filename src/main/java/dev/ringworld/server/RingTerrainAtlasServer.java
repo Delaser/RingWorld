@@ -14,10 +14,11 @@ import dev.ringworld.world.AtlasPregenerationState;
 import dev.ringworld.world.AtlasPregenerationStatus;
 import dev.ringworld.world.RingAtlasPregenerationCursor;
 import dev.ringworld.world.RingTerrainAtlas;
-import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permission;
@@ -36,18 +37,28 @@ import java.util.Queue;
 import java.util.Set;
 import java.util.UUID;
 
-/** Fabric command, lifecycle, and network adapter for the authoritative atlas service. */
+/** Loader-neutral command and streaming coordinator for the authoritative atlas service. */
 public final class RingTerrainAtlasServer {
     private static final int STREAM_TILES_PER_TICK = 8;
     private static final int PROGRESS_INTERVAL_TICKS = 20;
     private static final Map<UUID, ClientStream> STREAMS = new HashMap<>();
     private static final Map<UUID, ProgressObserver> PROGRESS_OBSERVERS = new HashMap<>();
+    private static PayloadTransport transport = new PayloadTransport() {
+        @Override public boolean canSend(ServerPlayer player, CustomPacketPayload.Type<?> type) { return false; }
+        @Override public void send(ServerPlayer player, CustomPacketPayload payload) {
+            throw new IllegalStateException("RingWorld server payload transport is not configured");
+        }
+    };
 
     private RingTerrainAtlasServer() { }
 
-    public static void registerCommands() {
-        CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-                dispatcher.register(Commands.literal("ringworld")
+    public static void configureTransport(PayloadTransport adapter) {
+        if (adapter == null) throw new IllegalArgumentException("payload transport is required");
+        transport = adapter;
+    }
+
+    public static void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register(Commands.literal("ringworld")
                         .requires(source -> source.permissions().hasPermission(
                                 new Permission.HasCommandLevel(PermissionLevel.GAMEMASTERS)))
                         .then(Commands.literal("atlas")
@@ -61,7 +72,7 @@ public final class RingTerrainAtlasServer {
                                 .then(Commands.literal("pause").executes(context -> control(
                                         context.getSource().getServer().getLevel(Level.OVERWORLD), true, context.getSource())))
                                 .then(Commands.literal("resume").executes(context -> control(
-                                        context.getSource().getServer().getLevel(Level.OVERWORLD), false, context.getSource()))))));
+                                        context.getSource().getServer().getLevel(Level.OVERWORLD), false, context.getSource())))));
     }
 
     public static void load(ServerLevel world) { RingAtlasPregenerationService.load(world); }
@@ -90,9 +101,9 @@ public final class RingTerrainAtlasServer {
     public static void sendMetadata(ServerPlayer player) {
         ServerLevel overworld = player.level().getServer().getLevel(Level.OVERWORLD);
         if (overworld == null) return;
-        if (!ServerPlayNetworking.canSend(player, RingTerrainAtlasMetadataPayload.ID)
-                || !ServerPlayNetworking.canSend(player, RingTerrainAtlasTilePayload.ID)
-                || !ServerPlayNetworking.canSend(player, RingTerrainAtlasRevisionPayload.ID)) {
+        if (!transport.canSend(player, RingTerrainAtlasMetadataPayload.ID)
+                || !transport.canSend(player, RingTerrainAtlasTilePayload.ID)
+                || !transport.canSend(player, RingTerrainAtlasRevisionPayload.ID)) {
             player.connection.disconnect(Component.literal(
                     "RingWorld client terrain-atlas protocol is missing or out of date."));
             return;
@@ -100,7 +111,7 @@ public final class RingTerrainAtlasServer {
         RingTerrainAtlas atlas;
         try { atlas = RingAtlasPregenerationService.atlas(overworld); }
         catch (IllegalStateException ignored) { return; }
-        ServerPlayNetworking.send(player, new RingTerrainAtlasMetadataPayload(atlas.worldHash(), atlas.sampleStep(),
+        transport.send(player, new RingTerrainAtlasMetadataPayload(atlas.worldHash(), atlas.sampleStep(),
                 atlas.columns(), atlas.rows(), RingTerrainAtlas.TILE_SIZE, atlas.presentCount(), atlas.isComplete(),
                 atlas.revision()));
         // Geometry acknowledgement is the first point at which a client can
@@ -245,7 +256,7 @@ public final class RingTerrainAtlasServer {
     }
 
     private static void sendPregenerationStatus(ServerPlayer player, ServerLevel world, Optional<String> message) {
-        if (!ServerPlayNetworking.canSend(player, RingAtlasPregenerationStatusPayload.ID)) return;
+        if (!transport.canSend(player, RingAtlasPregenerationStatusPayload.ID)) return;
         RingTerrainAtlas atlas;
         try { atlas = RingAtlasPregenerationService.atlas(world); }
         catch (IllegalStateException ignored) { return; }
@@ -259,7 +270,7 @@ public final class RingTerrainAtlasServer {
         AtlasPregenerationStatus status = new AtlasPregenerationStatus(atlas.worldHash(),
                 atlas.geometry().circumferenceBlocks(), atlas.geometry().widthBlocks(), RingTerrainAtlas.FORMAT_VERSION,
                 atlas.sampleStep(), chunks, atlas.presentChunkCount(), progress, canControl(player), message);
-        ServerPlayNetworking.send(player, new RingAtlasPregenerationStatusPayload(status));
+        transport.send(player, new RingAtlasPregenerationStatusPayload(status));
         ProgressObserver observer = PROGRESS_OBSERVERS.get(player.getUUID());
         if (observer != null && observer.world == world) {
             observer.lastSentTick = world.getGameTime();
@@ -305,17 +316,17 @@ public final class RingTerrainAtlasServer {
         catch (IllegalStateException ignored) { return; }
         for (ServerPlayer player : world.players()) {
             ClientStream stream = STREAMS.get(player.getUUID());
-            if (stream == null || stream.world != world || !ServerPlayNetworking.canSend(player, RingTerrainAtlasTilePayload.ID)) continue;
+            if (stream == null || stream.world != world || !transport.canSend(player, RingTerrainAtlasTilePayload.ID)) continue;
             for (int count = 0; count < STREAM_TILES_PER_TICK && !stream.tiles.isEmpty(); count++) {
                 RingAtlasPregenerationService.TileCoordinate tile = stream.tiles.remove();
                 stream.known.remove(tile);
-                ServerPlayNetworking.send(player, new RingTerrainAtlasTilePayload(atlas.worldHash(), tile.x(), tile.z(), atlas.encodeTile(tile.x(), tile.z())));
+                transport.send(player, new RingTerrainAtlasTilePayload(atlas.worldHash(), tile.x(), tile.z(), atlas.encodeTile(tile.x(), tile.z())));
             }
             if (stream.tiles.isEmpty() && atlas.isComplete()
                     && !RingAtlasPregenerationService.hasPendingDirtyTiles(world)) {
                 if (stream.committedRevision != atlas.revision()
-                        && ServerPlayNetworking.canSend(player, RingTerrainAtlasRevisionPayload.ID)) {
-                    ServerPlayNetworking.send(player, new RingTerrainAtlasRevisionPayload(
+                        && transport.canSend(player, RingTerrainAtlasRevisionPayload.ID)) {
+                    transport.send(player, new RingTerrainAtlasRevisionPayload(
                             atlas.worldHash(), atlas.revision()));
                     stream.committedRevision = atlas.revision();
                 }
@@ -342,5 +353,11 @@ public final class RingTerrainAtlasServer {
         private long lastSentTick = Long.MIN_VALUE / 2;
         private AtlasPregenerationState state;
         private ProgressObserver(ServerLevel world) { this.world = world; }
+    }
+
+    /** Narrow loader-owned payload capability and delivery adapter. */
+    public interface PayloadTransport {
+        boolean canSend(ServerPlayer player, CustomPacketPayload.Type<?> type);
+        void send(ServerPlayer player, CustomPacketPayload payload);
     }
 }

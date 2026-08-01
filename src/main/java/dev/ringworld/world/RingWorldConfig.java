@@ -1,8 +1,6 @@
 package dev.ringworld.world;
 
 import dev.ringworld.RingWorldMod;
-import net.fabricmc.loader.api.FabricLoader;
-
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
@@ -19,11 +17,26 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
                               boolean pregenerateTerrainAtlas,
                               boolean requestOceanMonument) {
     private static final String FILE_NAME = "ringworld.properties";
+    private static Path configDirectory = Path.of("config");
     private static RingWorldConfig loaded;
+
+    /** Platform bootstrap must provide its authoritative configuration directory before loading. */
+    public static synchronized void configureDirectory(Path directory) {
+        if (directory == null) throw new IllegalArgumentException("config directory is required");
+        Path normalized = directory.toAbsolutePath().normalize();
+        if (loaded != null && !configDirectory.toAbsolutePath().normalize().equals(normalized)) {
+            throw new IllegalStateException("RingWorld config was already loaded from " + configDirectory);
+        }
+        configDirectory = normalized;
+    }
+
+    private static Path configPath() {
+        return configDirectory.resolve(FILE_NAME);
+    }
 
     public static synchronized RingWorldConfig load() {
         if (loaded != null) return loaded;
-        Path path = FabricLoader.getInstance().getConfigDir().resolve(FILE_NAME);
+        Path path = configPath();
         Properties properties = new Properties();
         if (Files.exists(path)) {
             try (Reader reader = Files.newBufferedReader(path)) {
@@ -96,7 +109,7 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
         properties.setProperty("pregenerateTerrainAtlas",
                 Boolean.toString(current.pregenerateTerrainAtlas()));
         properties.setProperty("requestOceanMonument", Boolean.toString(requestOceanMonument));
-        Path path = FabricLoader.getInstance().getConfigDir().resolve(FILE_NAME);
+        Path path = configPath();
         try {
             Files.createDirectories(path.getParent());
             try (Writer writer = Files.newBufferedWriter(path)) {

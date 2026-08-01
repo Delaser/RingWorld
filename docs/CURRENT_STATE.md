@@ -40,9 +40,18 @@ runtime identity. Shared main/client trees now contain no Fabric or NeoForge
 API references, enforced by `verifyLoaderBoundary` as part of `check`. The
 Java 25 test/build gate passed all 233 cases, the rebuilt jar retained its
 entrypoints and licence, a fresh Fabric dedicated server reached `Done`, and a
-Fabric client completed resource/shader initialization. NeoForge metadata and
-runtime adapters are still pending in #91–#93, so this checkpoint remains
-Fabric-only.
+Fabric client completed resource/shader initialization.
+
+Issue #91 adds the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 Java 25 module,
+metadata, bootstrap, lifecycle, command, payload-transport, and atlas
+adapters. The Fabric and NeoForge builds each pass all 233 unit/parameterized
+cases. Fresh dedicated servers for both loaders reach `Done`; the NeoForge
+server also starts and progresses its terrain atlas. NeoForge graphical-client
+adapters, curved rendering, shaders, client atlas handling, gameplay, and
+multiplayer validation remain unintegrated or untested. One graphical launch
+attempt could not obtain a monitor; that environment failure is not a code
+pass and does not advance the client gate. Use `:runServer` for Fabric and
+`:neoforge:runServer` for NeoForge rather than an ambiguous unqualified task.
 
 Issue #24 expands the loader-neutral dimension matrix to 200
 unit/parameterized cases. It covers the safe-small, aligned playable-minimum,
