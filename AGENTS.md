@@ -473,12 +473,15 @@ version numbers.
 - A mob fold must shift its active navigation path, target, and raw-coordinate
   stuck/timeout caches by the exact canonical X delta. Recomputing only the
   target leaves the old-chart path behind and can stop navigation at the seam.
-- `RingRenderProfile` visual-policy version 4 owns the live/proxy/detail
+- `RingRenderProfile` visual-policy version 5 owns the live/proxy/detail
   transitions, reveal, haze, and local cloud fade. Keep Java profile fields
   and the seven appended RingWorld Globals vectors synchronized. The 2026-08-01
   6/12/28 review retained its deterministic interleaved-gradient dither; an
   unordered pixel-hash experiment produced worse salt-and-pepper grain and was
-  rejected.
+  rejected. Profile 5 also raises the circumference mesh cap to 2,048 so the
+  16,384-block default retains the atlas's eight-block height spacing; do not
+  reduce it to the old visibly faceted 512-segment production mesh without a
+  replacement visual/resource review.
 - Cloud base is synchronized as saved wall top plus eight blocks. Do not
   reintroduce a literal Y=104; custom wall height must move both.
 - The active local development geometry is the safe-small 2,048-by-416 preset

@@ -151,13 +151,13 @@ split between Java and GLSL.
 | terrain shader surface reference | `RingWorldVertical.x` | Synchronized from the saved format-2 layout. |
 | terrain fog distance scale | `1.02` in `terrain.vsh` | Profile constant; calibrate across curvature ratios `viewDistance/C`. |
 | live-terrain dither | `RingRenderProfile`: 78% to 102% of effective view | Shared with proxy values and clamped at `C/2`. |
-| proxy opacity | `RingRenderProfile`: 68% to 98% in visual profile 4 | Centralized and clamped at `C/2`; reaches opacity before the live edge so dither cannot expose translucent sky. |
+| proxy opacity | `RingRenderProfile`: 68% to 98% in visual profile 5 | Centralized and clamped at `C/2`; reaches opacity before the live edge so dither cannot expose translucent sky. |
 | proxy detail | `RingRenderProfile`: 76% to 125% with a 16-block minimum span | Centralized and clamped at `C/2`. |
-| proxy reveal | 0.52 to 0.98 in visual profile 4 | Profile/art constant; raised after derived-pitch 6/12/28 captures exposed a blue handoff band. |
-| far haze | 0.04 to 0.16 with exponent 1.35 in visual profile 4 | Profile/art constant; use normalized half-ring distance from the shared layout. |
+| proxy reveal | 0.52 to 0.98 in visual profile 5 | Profile/art constant; raised after derived-pitch 6/12/28 captures exposed a blue handoff band. |
+| far haze | 0.04 to 0.16 with exponent 1.35 in visual profile 5 | Profile/art constant; use normalized half-ring distance from the shared layout. |
 | short-ring behavior | Effective view and every endpoint clamp to `C/2` | Whole-ring requests are explicit and unit-tested. |
 | predecessor visibility/taper | Deleted | The active exact-width texture path is the only distant-ring renderer. |
-| active mesh sizing | One segment/band per eight blocks, capped at 512×128 | Calculated by `RingRenderProfile`; cross-size visual alignment remains to validate. |
+| active mesh sizing | One segment/band per eight blocks, capped at 2,048×128 | Profile 5 retains eight-block height spacing for the 16,384×256 default; larger/wider layouts remain budget-capped. |
 | active surface model offset | Camera angle/Z remain dynamic transform values; layout/profile use named Globals fields | Keep camera-local values per draw; do not duplicate immutable geometry there. |
 | sun quad internals | half-width 3, visible fraction 0.2625, nominal render distance 100 | Fixed angular design. Use the named render-distance constant in the calculation or delete it if redundant; do not derive sun angle from C/W. |
 
@@ -177,7 +177,7 @@ the cloud shader; moving this final policy into the shared profile is open.
 | tile coordinates | `TileCoordinate` record | No 16-bit packing limit or collision. |
 | tile payload cap | 4,096 bytes; actual full tile about 1,794 bytes including dimensions | Fixed safety cap; keep and test edge tiles. |
 | GPU texture cap | 4,096×1,024 | Treat as a quality budget, not geometry. Report effective blocks/texel and avoid pretending oversampling adds atlas detail. |
-| mesh cap | 512 circumference segments × 128 width bands, 393,216 vertices | Derive segment counts from angular and height-error tolerances within a vertex budget. Very small rings need enough angular subdivisions; very large rings should not waste vertices. |
+| mesh cap | 2,048 circumference segments × 128 width bands, 1,572,864 vertices | Profile 5 raised the old 512-segment cap after production six-chunk captures exposed 32-block triangles. Issue #69 still owns adaptive quality/resource tiers for larger layouts. |
 | mip count | stops when the smaller texture axis reaches one | Keep, but test very narrow and non-power-of-two widths. |
 | pregeneration work | Checked `long (C/16)×(W/16)` chunks, one in flight | Creation UI reports total; server status logs cells/s and ETA. Large-ring benchmarking remains open. |
 | pregeneration queue gate | fewer than 64 pending tasks | Operational profile; benchmark rather than scale linearly from geometry. |
@@ -186,7 +186,7 @@ the cloud shader; moving this final policy into the shared profile is open.
 | atlas world hash | Layout fingerprint plus atlas format/sample semantics | Seed, C/W, wall, surface, format, rim thickness/style, and atlas meaning invalidate cache. |
 | noise coordinate precompute | two `int[C]` arrays up to C=1,048,576 | About 8 bytes per circumference block and cached per geometry. Add lifecycle/budget handling; the trigonometric fallback above the threshold is a performance cliff that must be benchmarked. |
 | shader numeric precision | circumference converted to `float` | Define a supported maximum or use a high/low phase representation before block precision is lost on very large rings. |
-| proxy projection depth | physical mesh used the chunk-derived level far plane | Visual profile 4 preserves physical X/Y/W and compresses only far-out proxy clip-space Z; never solve this by increasing real chunk distance. Test tangent and radial-up views independently. |
+| proxy projection depth | physical mesh used the chunk-derived level far plane | Visual profile 5 preserves profile 4's physical X/Y/W correction and compresses only far-out proxy clip-space Z; never solve this by increasing real chunk distance. Test tangent and radial-up views independently. |
 
 The 16,384×256 production default is 16,384 chunks and 65,536 source cells.
 Dimension selection must present this as an operational cost, not only as a
@@ -393,15 +393,16 @@ Implemented:
   detail reveal strength, haze endpoints/exponent, curved-cloud fade, texture
   resolution, mesh subdivisions, and whole-ring `C/2` clamping.
 - Java publishes the calculated endpoints directly to both active shaders.
-- GPU resources are bounded at 4,096×1,024 texels and 512×128 mesh cells, and
+- GPU resources are bounded at 4,096×1,024 texels and 2,048×128 mesh cells, and
   the creation editor reports effective blocks per texel, vertex count, GPU
   texture/mesh bytes, and conservative build scratch.
 - Unit tests cover safe-small, production, and whole-ring profiles.
 
 Open:
 
-- Capture cross-size live/LOD alignment before treating current ratios as
-  production tuning.
+- Finish issue #66's safe-small profile-5 and weather/translucency review. The
+  production 6/12/28 alignment and mesh comparison are recorded in
+  `ATLAS_VISUAL_BASELINE_2026-08-01.md`.
 
 ### Phase 5: atlas and operational scaling
 

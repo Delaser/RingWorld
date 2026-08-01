@@ -171,6 +171,7 @@ public final class RingWorldClient implements ClientModInitializer {
                 client.execute(RingWorldClient::clearRingSession));
         LevelRenderEvents.END_MAIN.register(context -> {
             recordTestFrame();
+            projectionCapture.frameRendered();
             atlasPregenerationUiTest.frameRendered();
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {

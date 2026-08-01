@@ -408,18 +408,21 @@ six chunks. A skipped capture is not LOD evidence for that matrix case.
 
 ## Large-ring projection capture
 
-For a non-destructive two-direction capture of an existing complete-atlas
+For a non-destructive three-direction capture of an existing complete-atlas
 world under `run/saves/`, use:
 
 ```sh
 ./gradlew runProductionProjectionClient \
-  -PringProjectionWorld="production-ring-save-folder"
+  -PringProjectionWorld="production-ring-save-folder" \
+  -PringProjectionViewDistanceChunks=16 \
+  -PringProjectionEnvironment=noon
 ```
 
 The client waits for the current atlas to reach 100%, then writes:
 
 ```text
 run-production-projection/screenshots/ringworld-projection-tangent.png
+run-production-projection/screenshots/ringworld-projection-handoff.png
 run-production-projection/screenshots/ringworld-projection-up.png
 ```
 
@@ -434,12 +437,20 @@ the destination (also a single folder ID) with:
 -PringProjectionDestination="projection-copy-folder"
 ```
 
-The tangent capture looks horizontally along canonical +X, where the cylinder
-most visibly encountered the old chunk-derived far cutoff. The radial capture
-looks straight up through the largest surface diameter. The log records the
-active level far plane, opposite reference-surface distance, far width-edge
-distance, geometry, texture size, and mesh vertex count. The probe changes
-camera yaw/pitch only; it does not move the player or edit the world.
+`ringProjectionViewDistanceChunks` defaults to 16 and is clamped to Minecraft's
+supported 2–32 test range. `ringProjectionEnvironment` accepts `noon` (the
+default), `dusk`, `night`, or `rain`; non-noon captures include that name in
+their screenshot filename. The tangent capture looks horizontally along
+canonical +X, where the cylinder most visibly encountered the old chunk-derived
+far cutoff. The handoff capture derives its pitch from the atlas height at the
+nominal live-distance edge. The radial capture looks straight up through the
+largest surface diameter. The disposable copy is normalized to the selected
+time/weather mode with a frozen clock. The log records the active level far
+plane, opposite
+reference-surface distance, far width-edge distance, geometry, texture size,
+mesh vertex count, and per-view average/maximum/over-50-ms frame metrics. The
+probe changes options, time, weather, and camera pose only in the copy; it does
+not move the player or edit blocks.
 
 The harness logs individual probes rather than one final aggregate boolean, so
 review the complete group.
@@ -460,7 +471,10 @@ Production evidence recorded on the 26.1 branch: a copied 16,384×256 world
 resumed from 32,900/65,536 atlas cells to 100% without a player lap, completing
 the remaining 32,636 cells in about 13 minutes 22 seconds (about 41 cells/s
 over the resumed interval). It emitted both tangent and radial-up captures and
-reported a clean capture result. This is one atlas/projection gate, not the
+reported a clean capture result. The enhanced harness then reused that complete
+copy for reproducible 6/12/28 tangent, handoff, and radial-up captures with
+frame metrics. The profile-4/profile-5 comparison is recorded in
+`ATLAS_VISUAL_BASELINE_2026-08-01.md`. This is one atlas/projection gate, not the
 complete production gameplay, lifecycle, transfer, GPU, or frame-pacing matrix.
 
 When the projectile probe fails, its diagnostic includes position, velocity,

@@ -192,14 +192,17 @@ The mesh targets one segment or band per eight intrinsic blocks and applies
 fixed quality caps:
 
 ```text
-segments = min(ceil(circumference / 8), 512)
+segments = min(ceil(circumference / 8), 2048)
 bands = min(ceil(width / 8), 128)
 vertices = segments * bands * 6
 ```
 
 Each vertex uses the sampled terrain height to vary its radius. Texture U is
 canonical X/circumference; V is the finite width coordinate. The mesh exists
-in one global ring-centred model.
+in one global ring-centred model. Visual profile 5 raised the circumference
+cap from 512 to 2,048 so the default 16,384-block ring no longer stretches
+eight-block atlas heights across 32-block triangles. That production mesh is
+393,216 vertices (about 9 MiB at the declared 24-byte vertex stride).
 
 Walking does not rebuild the mesh. Per frame, the renderer:
 
@@ -246,9 +249,10 @@ and exponent, and the curved-cloud fade are named values in versioned
 `RingRenderProfile` policy rather than shader literals. Real chunks remain
 authoritative geometry.
 
-Visual profile 4 retains profile 3's terrain reveal of 0.52 toward 0.98 and
+Visual profile 5 retains profile 4's terrain reveal of 0.52 toward 0.98 and
 distance haze of 0.04–0.16, keeps proxy opacity at 68%–98% of effective view
-distance, and adds complete-cylinder far-depth handling. Geometry-derived
+distance, and retains complete-cylinder far-depth handling. Its policy change
+is the higher production circumference-mesh cap described above. Geometry-derived
 matrix captures showed that the older
 0.32 reveal/0.07–0.22 haze policy produced a conspicuous fog-colour belt, and
 that the profile-2 72%–118% opacity span still composited too much sky through
@@ -260,6 +264,9 @@ replacement for the deterministic interleaved-gradient terrain threshold, but
 its salt-and-pepper grain was more visible than the existing fine dither and
 was reverted. The accepted comparison and performance measurements are in
 [`VISUAL_HANDOFF_REVIEW_2026-08-01.md`](VISUAL_HANDOFF_REVIEW_2026-08-01.md).
+The later production 6/12/28 matrix and profile-5 mesh comparison are recorded
+separately in
+[`ATLAS_VISUAL_BASELINE_2026-08-01.md`](ATLAS_VISUAL_BASELINE_2026-08-01.md).
 
 ### Lighting and colour matching
 

@@ -21,9 +21,11 @@ The Nether and End remain vanilla.
 > combat, block, boat, teleport, and reconnect scenario also passes.
 > A copied 16,384×256 world also passes Nether/End transfers, normal save and
 > disconnect, client-state clearing, and an in-process reopen with the exact
-> layout and complete atlas restored. The safe-small 6/12/28-chunk visual
-> matrix and a complete production-size tangent/radial projection review now
-> pass, and the repeatable Fabric release-staging workflow is complete.
+> layout and complete atlas restored. The safe-small and production
+> 6/12/28-chunk visual matrices now include tangent, live/atlas handoff, and
+> radial projection review; the production proxy retains the atlas's
+> eight-block height spacing. The repeatable Fabric release-staging workflow
+> is also complete.
 > Remaining automated-harness and pre-release compatibility gates are still
 > outstanding, so this is not a stable release yet. The first 26.1.2 Fabric
 > alpha is an early test build, not a stable or broadly compatible release.
@@ -364,6 +366,7 @@ measurements, and safe handling rules are in [Testing](docs/TESTING.md).
 | [Network protocol](docs/NETWORK_PROTOCOL.md) | Geometry handshake, atlas transport, and presentation mapping |
 | [Operations](docs/OPERATIONS.md) | Configuration, installation, packaging, deployment, and recovery |
 | [Rendering](docs/RENDERING.md) | Curvature, visibility, terrain proxy, sky, clouds, and handoff |
+| [Atlas visual baseline](docs/ATLAS_VISUAL_BASELINE_2026-08-01.md) | Production and safe-small 6/12/28 profile-5 captures, frame pacing, and resource evidence |
 | [Testing](docs/TESTING.md) | Unit, local, visual, layout-switch, and multiplayer procedures |
 | [Sun renderer snapshot](docs/SUN_RENDERING_SNAPSHOT_2026-07-26.md) | Rollback record for the removed shadow-panel experiment |
 

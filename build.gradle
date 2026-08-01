@@ -66,6 +66,12 @@ loom {
 			vmArg "-Dringworld.captureRingProjection=true"
 			vmArg "-Dringworld.projectionWorld=" + providers.gradleProperty("ringProjectionDestination")
 					.orElse("RingWorld Production Projection").get()
+			vmArg("-Dringworld.projectionViewDistanceChunks="
+					+ providers.gradleProperty("ringProjectionViewDistanceChunks")
+							.orElse("16").get())
+			vmArg("-Dringworld.projectionEnvironment="
+					+ providers.gradleProperty("ringProjectionEnvironment")
+							.orElse("noon").get())
 		}
 		productionLifecycleClient {
 			client()
