@@ -247,6 +247,13 @@ matrix captures showed that the older
 that the profile-2 72%–118% opacity span still composited too much sky through
 the proxy at the nominal chunk edge.
 
+The 2026-08-01 port review retained profile 4 after matched 6/12/28-chunk and
+production-size captures. An unordered screen-pixel hash was tested as a
+replacement for the deterministic interleaved-gradient terrain threshold, but
+its salt-and-pepper grain was more visible than the existing fine dither and
+was reverted. The accepted comparison and performance measurements are in
+[`VISUAL_HANDOFF_REVIEW_2026-08-01.md`](VISUAL_HANDOFF_REVIEW_2026-08-01.md).
+
 ### Lighting and colour matching
 
 The atlas stores terrain albedo rather than a permanently lit screenshot. The

@@ -81,6 +81,10 @@ public final class RingWorldClient implements ClientModInitializer {
     private boolean testSkyDuskScreenshotSaved;
     private boolean testSkyNightCommandSent;
     private boolean testSkyNightScreenshotSaved;
+    private boolean testSkyRainCommandSent;
+    private boolean testSkyRainScreenshotSaved;
+    private boolean testSkyClearCommandSent;
+    private boolean testSkyCycleComplete;
     private boolean testRingVisibilityCaptureArmed;
     private boolean testRingVisibilityTangentScreenshotSaved;
     private boolean testRingVisibilityUpCaptureArmed;
@@ -522,9 +526,9 @@ public final class RingWorldClient implements ClientModInitializer {
                 message -> RingWorldMod.LOGGER.info("[test] boundary renderer screenshot: {}", message.getString()));
     }
 
-    /** Captures the fixed sun's noon, dusk, and midnight tone states. */
+    /** Captures fixed-sun tone states plus rainy-noon lightmap exposure. */
     private void runAutomatedSkyCycle(Minecraft client) {
-        if (!testScreenshotSaved || testSkyNightScreenshotSaved || client.player == null
+        if (!testScreenshotSaved || testSkyCycleComplete || client.player == null
                 || client.getConnection() == null) return;
 
         // Keep the celestial test camera deterministic even if the integrated
@@ -577,11 +581,43 @@ public final class RingWorldClient implements ClientModInitializer {
             RingWorldMod.LOGGER.info("[test] cool dimming midnight capture armed");
             return;
         }
-        if (++testSkySettleTicks < 80) return;
-        testSkyNightScreenshotSaved = true;
-        Screenshot.grab(client.gameDirectory, "ringworld-tone-night.png",
-                client.getMainRenderTarget(), 1,
-                message -> RingWorldMod.LOGGER.info("[test] midnight tone screenshot: {}", message.getString()));
+        if (!testSkyNightScreenshotSaved) {
+            if (++testSkySettleTicks < 80) return;
+            testSkyNightScreenshotSaved = true;
+            Screenshot.grab(client.gameDirectory, "ringworld-tone-night.png",
+                    client.getMainRenderTarget(), 1,
+                    message -> RingWorldMod.LOGGER.info(
+                            "[test] midnight tone screenshot: {}", message.getString()));
+            return;
+        }
+        if (!testSkyRainCommandSent) {
+            client.getConnection().sendCommand("time set 6000");
+            client.getConnection().sendCommand("weather rain");
+            testSkyRainCommandSent = true;
+            testSkySettleTicks = 0;
+            RingWorldMod.LOGGER.info("[test] rainy-noon lightmap capture armed");
+            return;
+        }
+        if (!testSkyRainScreenshotSaved) {
+            if (++testSkySettleTicks < 100) return;
+            testSkyRainScreenshotSaved = true;
+            Screenshot.grab(client.gameDirectory, "ringworld-weather-rain.png",
+                    client.getMainRenderTarget(), 1,
+                    message -> RingWorldMod.LOGGER.info(
+                            "[test] rainy-noon screenshot: {}", message.getString()));
+            return;
+        }
+        if (!testSkyClearCommandSent) {
+            client.getConnection().sendCommand("weather clear");
+            testSkyClearCommandSent = true;
+            testSkySettleTicks = 0;
+            RingWorldMod.LOGGER.info("[test] clear-weather restore armed after sky captures");
+            return;
+        }
+        if (++testSkySettleTicks < 100) return;
+        testSkyCycleComplete = true;
+        testSkySettleTicks = 0;
+        RingWorldMod.LOGGER.info("[test] clear weather settled after sky captures");
     }
 
     /**
@@ -589,7 +625,7 @@ public final class RingWorldClient implements ClientModInitializer {
      * tangentially along the intrinsic circumference and radially straight up.
      */
     private void runAutomatedRingVisibility(Minecraft client) {
-        if (!testSkyNightScreenshotSaved || testRingVisibilityScreenshotSaved
+        if (!testSkyCycleComplete || testRingVisibilityScreenshotSaved
                 || client.player == null || client.getConnection() == null) return;
         var atlas = ClientRingState.terrainAtlas();
         if (atlas == null || !atlas.isComplete()) {
