@@ -15,6 +15,19 @@ public final class RingGenerationBoundary {
 
     private RingGenerationBoundary() { }
 
+    /**
+     * Exclusive intrinsic Y immediately above the generated rim, clamped to
+     * the owning world's vertical extent. Terrain above this bound remains
+     * vanilla terrain; rim installation deliberately does not erase it.
+     */
+    public static int wallTopExclusive(int worldMinY, int worldHeight, int wallHeightBlocks) {
+        if (worldHeight <= 0) throw new IllegalArgumentException("world height must be positive");
+        if (wallHeightBlocks < 0) throw new IllegalArgumentException("wall height must be non-negative");
+        long worldTopExclusive = (long)worldMinY + worldHeight;
+        long requestedTopExclusive = (long)worldMinY + wallHeightBlocks;
+        return (int)Math.min(requestedTopExclusive, worldTopExclusive);
+    }
+
     public static boolean isExterior(ChunkAccess chunk, RingGeometry geometry) {
         ChunkPos pos = chunk.getPos();
         return pos.getMaxBlockZ() < geometry.minWidthZ() || pos.getMinBlockZ() > geometry.maxWidthZ();
@@ -55,8 +68,8 @@ public final class RingGenerationBoundary {
     public static void installRim(ChunkAccess chunk, RingGeometry geometry, int wallHeightBlocks) {
         if (wallHeightBlocks <= 0 || !containsRim(chunk, geometry)) return;
         ChunkPos pos = chunk.getPos();
-        int wallTopExclusive = Math.min(chunk.getMinY() + wallHeightBlocks,
-                chunk.getMinY() + chunk.getHeight());
+        int wallTopExclusive = wallTopExclusive(
+                chunk.getMinY(), chunk.getHeight(), wallHeightBlocks);
         BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
         int[] rimZs = {geometry.minWidthZ(), geometry.maxWidthZ()};
         for (int rimZ : rimZs) {
@@ -84,8 +97,8 @@ public final class RingGenerationBoundary {
                                            int wallHeightBlocks) {
         if (!containsRim(chunk, geometry)) return false;
         ChunkPos pos = chunk.getPos();
-        int wallTopExclusive = Math.min(chunk.getMinY() + wallHeightBlocks,
-                chunk.getMinY() + chunk.getHeight());
+        int wallTopExclusive = wallTopExclusive(
+                chunk.getMinY(), chunk.getHeight(), wallHeightBlocks);
         int chunkTopExclusive = chunk.getMinY() + chunk.getHeight();
         int[] rimZs = {geometry.minWidthZ(), geometry.maxWidthZ()};
         BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();

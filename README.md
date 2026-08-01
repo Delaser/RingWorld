@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 127 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 200 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -209,7 +209,9 @@ pregenerateTerrainAtlas=true
 ```
 
 Width and circumference must be multiples of 16 and pass the creation safety
-checks. Saved settings always override later bootstrap configuration changes.
+checks. The smallest structurally valid circumference is 1,024 blocks, but a
+playable vanilla-height world needs at least 2,016 blocks for radial clearance.
+Saved settings always override later bootstrap configuration changes.
 
 ### Reference layouts
 
@@ -342,7 +344,7 @@ measurements, and safe handling rules are in [Testing](docs/TESTING.md).
 | [Documentation index](docs/README.md) | Entry point for the technical documentation |
 | [Architecture](docs/ARCHITECTURE.md) | Coordinate domains and end-to-end system design |
 | [Current state](docs/CURRENT_STATE.md) | Implemented behavior, evidence, limitations, and roadmap |
-| [Dimension scaling plan](docs/DIMENSION_SCALING_PLAN.md) | Dimension-sensitive variables, budgets, and remaining matrix |
+| [Dimension scaling plan](docs/DIMENSION_SCALING_PLAN.md) | Dimension-sensitive variables, budgets, completed #24 matrix evidence, and remaining production visual/benchmark gates |
 | [Atlas pregeneration plan](docs/ATLAS_PREGENERATION_PLAN.md) | One-click complete-map generation with resumable background and headless execution |
 | [Mixin map](docs/MIXIN_MAP.md) | Ownership and risk of each Minecraft injection |
 | [Network protocol](docs/NETWORK_PROTOCOL.md) | Geometry handshake, atlas transport, and presentation mapping |

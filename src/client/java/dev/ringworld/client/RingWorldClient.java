@@ -5,13 +5,13 @@ import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import dev.ringworld.client.render.RingSurfaceTextureRenderer;
 import dev.ringworld.net.RingSettingsPayload;
 import dev.ringworld.net.RingSettingsAckPayload;
+import dev.ringworld.net.RingSettingsHandshake;
 import dev.ringworld.net.RingAtlasPregenerationStatusPayload;
 import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRequestPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
 import dev.ringworld.world.RingWorldConfig;
 import dev.ringworld.world.RingGeometry;
-import dev.ringworld.world.RingLayoutFingerprint;
 import dev.ringworld.world.RingRenderProfile;
 import java.util.Optional;
 import net.fabricmc.api.ClientModInitializer;
@@ -124,11 +124,8 @@ public final class RingWorldClient implements ClientModInitializer {
                     // the menus. Destroy the previous world's static GPU ring
                     // before installing another session, even when both worlds
                     // happen to use identical dimensions.
-                    long fingerprint = RingLayoutFingerprint.compute(
-                            payload.width(), payload.circumference(), payload.seed(),
-                            payload.wallHeight(), payload.surfaceReferenceY(),
-                            payload.formatVersion());
-                    if (fingerprint != payload.fingerprint()) {
+                    long fingerprint = RingSettingsHandshake.fingerprintFor(payload);
+                    if (!RingSettingsHandshake.hasMatchingPayloadFingerprint(payload)) {
                         var handler = context.client().getConnection();
                         if (handler != null) {
                             handler.getConnection().disconnect(Component.literal(
@@ -148,8 +145,7 @@ public final class RingWorldClient implements ClientModInitializer {
                         }
                         return;
                     }
-                    ClientPlayNetworking.send(new RingSettingsAckPayload(
-                            payload.formatVersion(), fingerprint));
+                    ClientPlayNetworking.send(RingSettingsHandshake.acknowledgementFor(payload));
                 }));
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasMetadataPayload.ID, (payload, context) ->
                 context.client().execute(() -> {

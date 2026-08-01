@@ -67,10 +67,7 @@ public final class RingWorldNetworking {
             return;
         }
         RingWorldSettings settings = RingWorldSettings.get(overworld);
-        ServerPlayNetworking.send(handler.player, new RingSettingsPayload(
-                settings.widthBlocks(), settings.circumferenceBlocks(), settings.generatorSeed(),
-                settings.wallHeightBlocks(), settings.surfaceReferenceY(),
-                settings.formatVersion(), settings.layoutFingerprint()));
+        ServerPlayNetworking.send(handler.player, RingSettingsHandshake.payloadFor(settings));
     }
 
     private static void validateAcknowledgement(RingSettingsAckPayload payload,
@@ -78,8 +75,7 @@ public final class RingWorldNetworking {
         ServerLevel overworld = handler.player.level().getServer().getLevel(Level.OVERWORLD);
         if (overworld == null) return;
         RingWorldSettings settings = RingWorldSettings.get(overworld);
-        if (payload.formatVersion() != settings.formatVersion()
-                || payload.fingerprint() != settings.layoutFingerprint()) {
+        if (!RingSettingsHandshake.accepts(settings, payload)) {
             handler.disconnect(Component.literal("RingWorld geometry/protocol acknowledgement mismatch."));
             return;
         }

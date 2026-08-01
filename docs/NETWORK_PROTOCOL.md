@@ -32,7 +32,11 @@ The layout fingerprint covers the seed, width, circumference, saved wall
 height, surface reference, settings format, rim thickness, and rim style
 version. The client recomputes it from the decoded fields instead of merely
 echoing the server-provided value. The same layout fields feed worldgen, shader
-globals, terrain-atlas identity, and cache invalidation.
+globals, terrain-atlas identity, and cache invalidation. The common
+`RingSettingsHandshake` helper owns payload construction, independent
+fingerprint derivation, acknowledgement construction, and server comparison so
+the two endpoints cannot silently diverge on a layout class that is not the
+safe-small fixture.
 
 ## Login sequence
 

@@ -35,7 +35,7 @@ If absent, the mod creates it at startup.
 | Property | Default | Validation/meaning |
 | --- | ---: | --- |
 | `widthBlocks` | 256 | At least 256, divisible by 16, sufficient rim interior, and within atlas/axis budgets |
-| `circumferenceBlocks` | 16384 | Power-of-two; exactly 1,024 chunks and 32 region widths; large enough for 64 blocks of radial clearance above the build top (2,016 minimum for vanilla bounds) |
+| `circumferenceBlocks` | 16384 | Power-of-two; exactly 1,024 chunks and 32 region widths; large enough for 64 blocks of radial clearance above the build top (2,016 aligned playable minimum for vanilla bounds; 1,024 is structural-only) |
 | `wallHeightBlocks` | 160 | At least 32; measured from world minimum Y; wall and cloud top must fit the build range |
 | `testMode` | false | Enables destructive local automated harness |
 | `testViewDistanceChunks` | 28 | Initial live/LOD capture distance for the local harness; 2–32 |
@@ -277,7 +277,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite contains 117 unit/parameterized cases. The historical Phase 2
+The current suite contains 200 unit/parameterized cases. The historical Phase 2
 95-error inventory and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.

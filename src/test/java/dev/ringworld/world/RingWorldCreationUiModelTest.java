@@ -1,6 +1,5 @@
 package dev.ringworld.world;
 
-import java.util.stream.Stream;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -14,18 +13,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * screen. Minecraft-owned widget rendering remains a client runtime check.
  */
 class RingWorldCreationUiModelTest {
-    private static Stream<Arguments> validLayouts() {
-        return Stream.of(
-                Arguments.of("safe-small", 2_048, 416, 160),
-                Arguments.of("production",
-                        RingWorldSettings.DEFAULT_CIRCUMFERENCE,
-                        RingWorldSettings.DEFAULT_WIDTH,
-                        RingWorldSettings.DEFAULT_WALL_HEIGHT),
-                Arguments.of("custom", 4_096, 640, 192));
-    }
-
     @ParameterizedTest(name = "{0} produces a valid cost preview")
-    @MethodSource("validLayouts")
+    @MethodSource("dev.ringworld.world.RingDimensionFixtures#playableLayouts")
     void validCreationLayoutsProduceBoundedCostPreviews(
             String name, int circumference, int width, int wallHeight) {
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(

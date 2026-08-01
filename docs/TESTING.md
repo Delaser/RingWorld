@@ -10,8 +10,8 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 
 ## Active port checkpoint
 
-The current `codex/minecraft-26.1-port` branch requires Java 25. Common and
-client compilation now pass together, and the development build runs all 110
+The active public `main` integration line requires Java 25. Common and client
+compilation now pass together, and the development build runs all 200
 unit/parameterized cases:
 
 ```sh
@@ -38,15 +38,17 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 127 unit/parameterized cases:
+The active suite contains 200 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
 | `RingGeometryTest` | Seam continuity, presentation charts and sleeping-position images, default walking length, physical/tangent transforms, noise seam, culling envelope, visibility math, query windows |
 | `RingObjectTransformTest` | Exact curved rigid-anchor pose, tangent orientation, and presentation-seam continuity |
 | `RingChunkTopologyTest` | Canonical chunk images, joined-edge distance, periodic entity simulation distance, watch windows, incremental seam diff, long teleport, finite whole-ring filter |
-| `RingDimensionReportTest` | Full-height radial safety, rims, walls/clouds, allocation bounds, safe-small and production costs |
-| `RingDimensionMatrixTest` | Safe-small, narrow, production, long/narrow, and wide/medium layouts at 6/12/28/64 chunk views |
+| `RingDimensionReportTest` | Full-height radial safety, aligned playable minimum, structural-only/unsafe curvature, walls/clouds, allocation bounds, and maximum technical warning envelope |
+| `RingGenerationBoundaryTest` | Shared generated-rim top bound for default/custom wall heights and world-top clamping |
+| `RingDimensionMatrixTest` | Safe-small, aligned playable minimum, narrow, production, former-wide, long/narrow, wide/medium, and custom-wall layouts across topology, spawn, worldgen coordinate seams/finite-band limits, atlas and 6/12/28/64 render budgets |
+| `RingSettingsHandshakeTest` | Immutable safe-small/production/wide/custom-wall payload identity, acknowledgement, and mismatch rejection |
 | `RingLayoutFingerprintTest` | Immutable layout and rim semantic identity |
 | `RingRenderProfileTest` | Shared handoff values, texture/mesh budgets, and whole-ring clamping |
 | `RingEntityTrackingTest` | Existing pairing is retained only for a watched pending canonical destination; initial and out-of-window pairings remain rejected |
@@ -172,7 +174,8 @@ After reviewing and accepting the EULA in the ignored
 ./gradlew runStrongholdTestServer --console=plain \
   -PringStrongholdTestSeed=ringworld-regression-1 \
   -PringStrongholdTestCircumference=16384 \
-  -PringStrongholdTestWidth=256
+  -PringStrongholdTestWidth=256 \
+  -PringStrongholdTestWallHeight=160
 ```
 
 The preparation task deletes only the disposable test world and stale result
@@ -189,7 +192,10 @@ height placement). It deliberately excludes X=0 from the terrain-height
 comparison because spawn preparation may have already advanced that chunk
 beyond noise generation, and rejects either selected remote chunk if it is
 already fully loaded. The gate also verifies a nearest-periodic locate target
-and Eye target continuity after a canonical seam fold. Run again with
+and Eye target continuity after a canonical seam fold, then generates both
+exterior neighbour rows before requiring textured rim material through the
+saved wall top and void immediately beyond both rims. Terrain at or above the
+top remains vanilla and is intentionally not asserted. Run again with
 `-x prepareStrongholdTestWorld` to verify saved-policy and structure reload.
 
 Evidence on 2026-08-01 passed eight production seeds with complete piece-graph
@@ -200,6 +206,15 @@ activation, and save/reload. The
 1,024-block circumference is a geometry-helper fixture only; full-height
 dimension validation correctly rejects it, and 2,048 is the smallest active
 safe preset.
+
+Issue #24 added two fresh isolated dimension cases to this gate with atlas
+pregeneration disabled: the aligned playable minimum `2016×256` (126×16
+chunks, 8,064 atlas cells) and wide/custom-wall `4096×2048`, wall height 192
+(256×128 chunks, 131,072 atlas cells, saved wall top Y=128). Both logged
+`[stronghold-test] PASS`, matching canonical/periodic
+height queries, bounded stronghold and portal-room geometry, an activatable
+portal, folded Eye continuity, both textured rims through their saved height,
+and generated exterior void.
 
 ## 26.1 integrated safe-small client gate
 

@@ -1,11 +1,12 @@
 # Dimension scaling audit and implementation plan
 
-Status: implementation in progress, source- and runtime-audited on 2026-07-27.
-Phases 1–6 are implemented. Phase 7 has completed pure validation, the
+Status: issue #24 custom-dimension matrix completed, source- and runtime-audited
+on 2026-08-01. Phases 1–6 are implemented. Phase 7 has completed pure validation, the
 safe-small view-distance matrix, minimum-width stress, dedicated two-client
 coverage, production/long/wide topology and rim runs, and a same-process saved
-layout switch. Complete-atlas visual capture and the end-to-end production
-atlas benchmark remain open as marked below.
+layout switch. The production full-atlas throughput/transfer benchmark and
+broader cross-size complete-atlas visual/frame-pacing gates remain open as
+marked below.
 
 ## Goal
 
@@ -92,6 +93,7 @@ Every value in the following registry belongs to one of four classes:
 | rim thickness/style version | Thickness 5 and about 30% mossy remain code constants | Fixed design included in layout and atlas fingerprints. |
 | `testMode` | Process-local destructive harness switch | Keep operational, never persist as world geometry. |
 | `pregenerateTerrainAtlas` | Process-local administration switch | Keep operational. It may pause work but must not change atlas identity or dimensions. |
+| initial-spawn Z clamp | `RingSpawnBounds` receives validated bootstrap geometry before saved data exists | Deliberate creation-time exception only. Keep the finite-rim margin loader-neutral and do not read bootstrap configuration from saved-world runtime paths. |
 
 The earlier lifecycle race is removed. `ServerWorldMixin` loads or creates
 persisted settings and attaches the Overworld generator at the constructor
@@ -108,7 +110,7 @@ longer installs bootstrap geometry.
 | radius | `C / 2π` | Keep one double-precision Java source and synchronize shader inputs. |
 | physical centre Y | `radius + surfaceReferenceY` | Add as a named derived value and use it for vertical-safety validation and the star direction. |
 | physical radius at Y | `radius + surfaceReferenceY - Y` | Require a positive safety margin through the top rendered plane. Test the bottom, terrain, wall top, cloud base, and build top. |
-| wall top | `worldBottomY + wallHeightBlocks` | Derive from saved wall height and actual Overworld bounds. Clamp or reject a wall above the build ceiling. |
+| wall top | `RingGenerationBoundary.wallTopExclusive(worldMinY, worldHeight, wallHeightBlocks)` | Derive from saved wall height and actual Overworld bounds. The rim stops at this exclusive bound without erasing naturally generated terrain above it. |
 | playable interior width | `width - 2 × rimThickness` | Validate enough interior remains for spawn and normal terrain. Do not let rims overlap on narrow bands. |
 | spawn-safe width range | current margin `min(32, max(1, W/4))` | Include rim thickness and a named safety clearance. Test minimum and narrow widths. |
 | opposite apparent width | `2 atan((W/2)/(2R))` at the midline | Show in the creation UI. Use warnings/presets, not an implicit width rewrite. |
@@ -477,9 +479,16 @@ Parameterize unit, local visual, and two-client tests. At minimum cover:
 | C=1600 with full vanilla height | Required validation failure |
 | misaligned, overlapping-rim, excessive-atlas inputs | Required validation failures |
 
-The pure unit matrix covers all five playable geometries above, render
-distances 6/12/28/64, whole-ring clamping, the legacy 1,600 rejection, and
-invalid allocation/wall inputs. The local harness capture distance is
+The pure unit matrix covers safe-small, the aligned 2,016×256 playable
+minimum, 2,048×256 narrow stress, the 16,384×256 production default,
+15,552×4,096 former-wide regression, 32,768×512 long/narrow, 4,096×2,048
+wide/medium, and a 4,096×640 custom-wall layout. It parameterizes render
+distances 6/12/28/64, whole-ring clamping, atlas dimensions/GPU budgets,
+worldgen seam coordinates and finite-band limits, spawn bounds, settings payload
+identity/acknowledgement rejection, the 1,024 structural-only and 1,600 unsafe
+curvature cases, misalignment, custom wall/cloud elevation, excessive atlas
+input, and the maximum technical circumference warning envelope. The local
+harness capture distance is
 parameterized by `testViewDistanceChunks` for 6/12/28 runs, and its pitch is
 derived from the physical target surface at that distance.
 
@@ -490,6 +499,17 @@ entity, projectile, vehicle, AI, fluid, explosion, late tracking, collision,
 rim, and exterior-void checks passed. The first crossing averaged 19.5 ms per
 rendered frame under the destructive harness load; the rim interval averaged
 16.9 ms.
+
+Issue #24 also ran the isolated dedicated stronghold/worldgen gate against the
+aligned 2,016×256 playable minimum and a 4,096×2,048 wide layout with custom
+192-block wall height, with atlas pregeneration disabled. Both passed periodic
+base-height/base-column queries, canonical stronghold/portal-room bounds,
+portal activation, folded Eye target, both textured rim rows through their
+saved wall height, and generated exterior void. The minimum run reported
+126×16 chunks and 8,064 atlas cells; the wide/custom-wall run reported 256×128
+chunks, 131,072 cells, wall top Y=128, and cloud base Y=136. These targeted
+server checks complement, rather than replace, existing
+safe-small/production client and multiplayer evidence.
 
 The derived-pitch 6-chunk case then completed on 2026-07-27. It aimed directly
 at the 96-block handoff (pitch 18.30° for the sampled Y=76.41 surface), retained
