@@ -5,6 +5,7 @@ run-multiplayer/
 run-layout-switch/
 run-production-projection/
 run-production-lifecycle/
+run-curved-object-capture/
 logs/
 dist/
 .codex-tmp/

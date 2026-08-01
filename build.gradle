@@ -78,6 +78,13 @@ loom {
 					+ providers.gradleProperty("ringProductionLifecycleDestination")
 							.orElse("RingWorld Production Lifecycle").get())
 		}
+		curvedObjectCaptureClient {
+			client()
+			name "RingWorld Curved Object Capture"
+			runDir "run-curved-object-capture"
+			vmArg "-Dringworld.curvedObjectCapture=true"
+			programArgs "--username", "RingObjectTester"
+		}
 	}
 }
 
@@ -232,6 +239,32 @@ tasks.named("runProductionProjectionClient") {
 
 tasks.named("runProductionLifecycleClient") {
 	dependsOn(tasks.named("prepareCopiedProductionLifecycleWorld"))
+}
+
+tasks.register("prepareCurvedObjectCapture") {
+	group = "ringworld verification"
+	description = "Creates a clean safe-small test configuration for curved object captures."
+	outputs.dir(file("run-curved-object-capture/config"))
+	outputs.upToDateWhen { false }
+	doLast {
+		delete(file("run-curved-object-capture/saves"))
+		delete(file("run-curved-object-capture/screenshots"))
+		delete(file("run-curved-object-capture/ringworld-cache"))
+		def configDirectory = file("run-curved-object-capture/config")
+		configDirectory.mkdirs()
+		new File(configDirectory, "ringworld.properties").text = """\
+widthBlocks=416
+circumferenceBlocks=2048
+wallHeightBlocks=160
+testMode=true
+testViewDistanceChunks=12
+pregenerateTerrainAtlas=false
+"""
+	}
+}
+
+tasks.named("runCurvedObjectCaptureClient") {
+	dependsOn(tasks.named("prepareCurvedObjectCapture"))
 }
 
 dependencies {

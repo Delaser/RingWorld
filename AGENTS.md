@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 95 unit/parameterized cases pass.
+gate. Common/client compilation and all 97 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -18,8 +18,9 @@ gameplay/rim probes. The dedicated two-client seam/combat/block/boat/teleport/
 reconnect matrix also passes. A copied 16,384×256 world now passes the
 Overworld/Nether/End transfer, save/disconnect, client-state cleanup, and
 same-process reopen gate. Safe-small 6/12/28-chunk and production-size
-tangent/radial visual handoff review also passes. Remaining automated-harness,
-packaging, and staging work means the port is not a release yet. See
+tangent/radial visual handoff review and repeatable Fabric release staging also
+pass. Remaining automated-harness and compatibility work means the port is not
+a stable release yet. See
 `docs/CURRENT_STATE.md` and `docs/VISUAL_HANDOFF_REVIEW_2026-08-01.md`.
 The Fabric alpha `0.2.0+mc26.1.2` is currently **Under review** on Modrinth;
 that submission does not make the remaining port gates complete.
@@ -183,8 +184,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   payloads.
 - `src/client/java/dev/ringworld/client/`: client state and automated clients.
 - `src/client/java/dev/ringworld/client/mixin/`: presentation packet mapping,
-  finite-edge meshing, curved culling, entity rendering, shader globals, and
-  sky rendering.
+  finite-edge meshing, curved culling, entity/block-entity rendering,
+  interaction overlays, shader globals, and sky rendering.
 - `src/client/java/dev/ringworld/client/render/`: curved frustum and the
   complete-ring texture prototype.
 - `src/client/resources/assets/minecraft/shaders/`: vanilla shader overrides
@@ -220,10 +221,10 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 94
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 97
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
-packaging, and staging checks still remain.
+packaging, and staging checks must remain green together.
 
 The frozen 1.21.11 tag uses Java 21 and passes 73 unit/parameterized cases plus
 the runtime suites recorded in
@@ -441,6 +442,12 @@ version numbers.
   replace this with a server-side sleeping offset or map other entities' beds:
   vanilla's client callback, wake-up, orientation, and bed-existence paths
   must all use the same nearby local copy.
+- Rigid models submitted outside the terrain shader must use
+  `RingObjectTransform`: embed the anchor with `toCameraLocal`, then rotate
+  the model into that anchor's tangent frame. `EntityRenderManagerMixin` and
+  `LevelRendererMixin` deliberately share it. A flat camera-relative
+  translation makes chests, lectern books, breaking overlays, and outlines
+  rise out of curved ground as the player approaches.
 - The frozen 1.21.11 Mojang baseline targeted the unnamed
   `ServerLevel.method_31420` entity-tick lambda. Minecraft 26.1 exposes the
   same call inside named `ServerLevel.tick`; the active mixin targets `tick`

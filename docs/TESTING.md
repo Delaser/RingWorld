@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The current `codex/minecraft-26.1-port` branch requires Java 25. Common and
-client compilation now pass together, and the development build runs all 94
+client compilation now pass together, and the development build runs all 97
 unit/parameterized cases:
 
 ```sh
@@ -38,11 +38,12 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 95 unit/parameterized cases:
+The active suite contains 97 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
 | `RingGeometryTest` | Seam continuity, presentation charts and sleeping-position images, default walking length, physical/tangent transforms, noise seam, culling envelope, visibility math, query windows |
+| `RingObjectTransformTest` | Exact curved rigid-anchor pose, tangent orientation, and presentation-seam continuity |
 | `RingChunkTopologyTest` | Canonical chunk images, joined-edge distance, periodic entity simulation distance, watch windows, incremental seam diff, long teleport, finite whole-ring filter |
 | `RingDimensionReportTest` | Full-height radial safety, rims, walls/clouds, allocation bounds, safe-small and production costs |
 | `RingDimensionMatrixTest` | Safe-small, narrow, production, long/narrow, and wide/medium layouts at 6/12/28/64 chunk views |
@@ -117,6 +118,23 @@ The task preflights `run/saves/<identifier>/level.dat` before it starts, then
 opens only an ignored copy. A missing or display-name value fails clearly
 instead of leaving a client at the menu. This is a non-destructive existing-save
 join; it resumes the copied world's atlas rather than creating another world.
+
+## Curved rigid-object capture
+
+Run the isolated live-renderer regression with Java 25:
+
+```sh
+./gradlew runCurvedObjectCaptureClient --console=plain --no-daemon
+```
+
+The preparation task deletes only its ignored `run-curved-object-capture/`
+world, screenshots, and atlas cache, then creates a safe-small creative world.
+It builds a curved stone-brick strip with a chest, lectern book, ender chest,
+copper golem, item, and boat, captures them from X=0.5 and X=32.5, and exits.
+Both frames must show the rigid models seated on the same curved surface; the
+nearer frame must not show them rising from the platform. The run also strictly
+applies the `LevelRendererMixin` descriptors. Evidence is written under
+`run-curved-object-capture/screenshots/` and remains ignored.
 
 ## Local automated smoke world
 

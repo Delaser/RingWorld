@@ -118,18 +118,25 @@ use vanilla's full-chunk and lighting test. The renderer region then receives
 Minecraft's empty client chunk for the exterior side and emits the exposed rim
 faces normally.
 
-## Entity models
+## Rigid objects and interaction overlays
 
-`EntityRenderManagerMixin` replaces the common entity translation:
+Terrain vertices bend continuously in the chunk shader. Entity models, block
+entities, block-breaking overlays, and selection outlines are separate rigid
+render passes, so leaving their vanilla camera-relative translation unchanged
+makes them rise out of the ground as the player approaches.
 
-1. recover the entity's intrinsic position from camera position plus vanilla
+`RingObjectTransform` owns their shared loader-neutral pose:
+
+1. recover the object's intrinsic anchor from camera position plus vanilla
    render delta;
 2. map that position through `RingGeometry.toCameraLocal`;
 3. rotate the model about local Z by its tangent-frame angle.
 
-The local player has zero tangent delta, so controls and camera orientation
-remain vanilla. Distant entities stand perpendicular to their local section of
-curved ground.
+`EntityRenderManagerMixin` applies it at the common entity submission point.
+`LevelRendererMixin` applies the same pose to block-entity submission,
+block-destruction overlays, and hit outlines. The local player has zero tangent
+delta, so controls and camera orientation remain vanilla. Nether, End, and
+non-RingWorld sessions retain the untouched flat transforms.
 
 ## Complete-ring texture
 
