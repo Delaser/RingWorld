@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 101 unit/parameterized cases pass.
+gate. Common/client compilation and all 103 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -367,6 +367,12 @@ version numbers.
 - Structure placement and arbitrary third-party mods have not received broad
   seam coverage. Coordinate-sensitive mods, renderers, gravity systems, and
   chunk internals are likely incompatible.
+- New-world strongholds carry a saved guarantee bit into both the placement
+  state and noise generator. After vanilla builds the complete piece graph,
+  `StrongholdStructureMixin` applies the smallest X/Z translation needed to
+  keep the terrain-adjusted bounds inside canonical X and finite Z. Keep the
+  policy flag `volatile`: generation runs on worker threads. Missing-policy
+  legacy worlds must remain untouched.
 - The extended Globals UBO publishes the complete format-2 layout and render
   profile. Its std140 field order, `GlobalSettings` allocation, and every
   custom program that declares Globals must change together.

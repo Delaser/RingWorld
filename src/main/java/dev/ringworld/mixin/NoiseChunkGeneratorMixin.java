@@ -35,6 +35,7 @@ import net.minecraft.world.level.levelgen.blending.Blender;
 abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     @Unique private @Nullable RingGeometry ringworld$geometry;
     @Unique private int ringworld$wallHeight;
+    @Unique private volatile boolean ringworld$guaranteeStronghold;
     @Unique private @Nullable RandomState ringworld$cachedNoiseConfig;
     @Unique private @Nullable NoiseRouter ringworld$cachedRouter;
 
@@ -58,6 +59,16 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     @Override
     public int ringworld$getWallHeight() {
         return ringworld$wallHeight;
+    }
+
+    @Override
+    public void ringworld$setGuaranteeStronghold(boolean guaranteeStronghold) {
+        ringworld$guaranteeStronghold = guaranteeStronghold;
+    }
+
+    @Override
+    public boolean ringworld$guaranteesStronghold() {
+        return ringworld$guaranteeStronghold;
     }
 
     @Inject(method = "fillFromNoise", at = @At("HEAD"), cancellable = true)

@@ -174,8 +174,11 @@ release. The frozen `mc-1.21.11-final` tag remains the rollback baseline.
 
 New RingWorlds now persist a mandatory structure policy and replace vanilla's
 unbounded stronghold rings with one deterministic canonical start centred
-across the finite width. A dedicated Java 25 gate passed seven production
-seeds plus 2,048×416 and 15,552×4,096 layouts: each complete piece graph and
+across the finite width. If vanilla's completed terrain-adjusted graph reaches
+past a boundary, every piece receives one minimal X/Z translation before the
+start is built. A dedicated Java 25 gate passed eight production seeds,
+including a regression whose unadjusted bounds reached Z=-132, plus 2,048×416
+and 15,552×4,096 layouts: each complete piece graph and
 portal room stayed inside the band, generated all 12 End portal frames, matched vanilla's
 activation pattern, and returned the nearest periodic locator from the
 opposite chart. A saved-world rerun passed with the same start and portal.
@@ -392,8 +395,9 @@ client/runtime gate passes.
 ### Worldgen
 
 - The mandatory stronghold is deterministic and validated across several
-  seeds and supported layouts. Other structures, carvers, and features still
-  lack broad seam coverage.
+  seeds and supported layouts. Its post-generation fit uses the complete
+  terrain-adjusted bounds and is gated by immutable saved policy. Other
+  structures, carvers, and features still lack broad seam coverage.
 - Vanilla Overworld structure height queries canonicalize X before their
   internal cell/cache interpolation and use the same cylindrical sampler as
   generated terrain. The stronghold gate compares periodic aliases at X=0 and
