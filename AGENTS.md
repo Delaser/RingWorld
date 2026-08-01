@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 221 unit/parameterized cases pass.
+gate. Common/client compilation and all 224 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -233,7 +233,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 221
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 224
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
@@ -393,6 +393,11 @@ version numbers.
   reusing an old identifier; old clients crash on unread bytes before a useful
   rejection can be sent. Advance the channel generation and keep the
   `RingProtocolIdentityTest` expectation synchronized.
+- The mandatory play handshake is exact-version and exact-required-channel,
+  not feature-bit negotiation. `RingHandshakeTracker` gives each join 300
+  ticks to acknowledge, gates every RingWorld request, treats duplicate
+  acknowledgement idempotently, and clears on disconnect. Keep its state
+  loader-neutral and server-thread-owned; never let an atlas request bypass it.
 - Atlas-generation payloads are separately versioned (`atlas_pregen_*_v1`).
   Preserve their explicit action/state wire values and complete immutable
   status snapshot; never append to atlas/settings codecs. The pause-menu map

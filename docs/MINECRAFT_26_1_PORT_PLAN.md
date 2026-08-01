@@ -1,9 +1,9 @@
 # Minecraft 26.1 port plan
 
 Status: P1–P4 architecture, the atlas production release gate, expanded seam
-gameplay, and the multi-seed worldgen/structure matrix are integrated and
-reviewed. Stability issues #73–#74, optional convenience packaging, and
-independent release-candidate review remain.
+gameplay, the multi-seed worldgen/structure matrix, and protocol hardening are
+integrated and reviewed. Stability issue #74, optional convenience packaging,
+and independent release-candidate review remain.
 
 Target: Minecraft Java 26.1.2
 

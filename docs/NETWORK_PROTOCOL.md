@@ -67,6 +67,8 @@ sequenceDiagram
                 end
                 S->>C: terrain_atlas_revision_v1 after queued changes
             end
+        else No acknowledgement within 300 ticks
+            S-->>C: Disconnect: handshake timed out
         end
     end
 ```
@@ -74,9 +76,12 @@ sequenceDiagram
 Current geometry protocol compatibility is `RingWorldSettings.FORMAT_VERSION`
 (currently 2). Format 1 saved settings migrate explicitly to format 2 with the
 vanilla Overworld surface reference Y=64; format 1 network peers are not
-accepted. There is no additional feature-bit negotiation. A semantic change to
-coordinate meaning or required packet behavior must increment the format,
-update both ends, and add mismatch tests.
+accepted. There is no feature-bit negotiation: compatibility requires the
+exact settings format and the complete current settings, revisioned-atlas, and
+map-control channel generations. Those behaviors are a single engine contract,
+not independently optional features. A semantic change to coordinate meaning
+or required packet behavior must increment the format, update both ends, and
+add mismatch tests.
 
 Payload channel identifiers also name their byte-layout generation. The
 complete-layout protocol uses `settings_v2`/`settings_ack_v2`. A breaking codec
@@ -86,12 +91,15 @@ trailing bytes before RingWorld can show a useful mismatch message. With a new
 identifier, `ServerPlayNetworking.canSend` fails cleanly and the server directs
 the player to the current package.
 
-The server rejects a client that cannot receive the settings payload or the
-complete revisioned atlas payload suite. The client likewise rejects a server
-that cannot receive `terrain_atlas_request_v2`. This prevents an older build
-with the same geometry format from joining without live atlas revisions. The
-server validates any acknowledgement it receives, but there is no independent
-acknowledgement timeout state machine.
+The server rejects a client that cannot receive the settings payload, complete
+revisioned-atlas suite, or map status payload before starting the handshake.
+The client likewise requires acknowledgement, atlas request, map-status
+request, and map-control channels before installing session state. This
+prevents an older build with the same geometry format from joining without
+current atlas semantics. A loader-neutral tracker gives every join a 300-tick
+deadline, treats duplicate acknowledgement as idempotent, rejects unexpected
+or mismatched acknowledgement, gates all RingWorld requests until success,
+and clears state on disconnect.
 
 Atlas-pregeneration status is independent from settings and atlas tile codecs:
 its `_v1` identifiers must advance on any layout change. Status observers are
@@ -173,6 +181,9 @@ periodic image nearest its local player.
 | Block/chunk delta update | Canonical block X → nearest image block |
 | Block entity/breaking/block/world event | Project event position |
 | Particle, explosion, sound | Project effect X |
+| Damage source, `/look` target | Project damage around the hurt entity and look targets around the player |
+| Minecart interpolation batch | Project each absolute step into one continuous chart |
+| Open sign editor | Project block position before resolving its block entity |
 
 Player position/rotation packets are authoritative explicit teleports,
 respawns, or portal-like moves. They are not used for natural seam folding.
@@ -193,6 +204,7 @@ therefore continues to receive the same root-vehicle and passenger identities.
 
 - block action positions;
 - block interaction positions and hit vectors.
+- sign updates, pick-block-with-data, and block-entity tag queries.
 
 Player and vehicle movement packets remain continuous presentation-space
 steps until `ServerPlayNetworkHandlerMixin` selects the nearest image and
@@ -234,6 +246,14 @@ When adding a new packet-backed gameplay feature, audit both:
 
 Fixing only one side produces features that work from one direction or are
 simulated correctly but appear in the wrong place.
+
+Maps, compasses, saved spawn pointers, and locator-bar waypoints require
+dynamic nearest-image semantics rather than a one-time packet rewrite and are
+not yet supported across the seam. GameTest/debug overlays and operator-only
+structure, jigsaw, command-block, and test-block packets are outside the
+gameplay contract. Third-party payloads are opaque; compatible mods must use
+the public geometry API and own their coordinate conversion. The complete
+26.1.2 audit is recorded in `PROTOCOL_HARDENING_2026-08-01.md`.
 
 ## Reconnect and cache behavior
 

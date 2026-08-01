@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. Common and client
-compilation now pass together, and the development build runs all 221
+compilation now pass together, and the development build runs all 224
 unit/parameterized cases:
 
 ```sh
@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 221 unit/parameterized cases:
+The active suite contains 224 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -49,6 +49,7 @@ The active suite contains 221 unit/parameterized cases:
 | `RingGenerationBoundaryTest` | Shared generated-rim top bound for default/custom wall heights and world-top clamping |
 | `RingDimensionMatrixTest` | Safe-small, aligned playable minimum, narrow, production, former-wide, long/narrow, wide/medium, and custom-wall layouts across topology, spawn, worldgen coordinate seams/finite-band limits, atlas and 6/12/28/64 render budgets |
 | `RingSettingsHandshakeTest` | Immutable safe-small/production/wide/custom-wall payload identity, acknowledgement, and mismatch rejection |
+| `RingHandshakeTrackerTest` | Correct, duplicate, missing/expired, unexpected, disconnect, and reconnect acknowledgement state |
 | `RingLayoutFingerprintTest` | Immutable layout and rim semantic identity |
 | `RingRenderProfileTest` | Shared handoff values, texture/mesh budgets, and whole-ring clamping |
 | `RingEntityTrackingTest` | Existing pairing is retained only for a watched pending canonical destination; initial and out-of-window pairings remain rejected |
@@ -694,7 +695,8 @@ does not have to sample the player inside the final one-block interval.
 
 The scenario verifies:
 
-- both clients connect and acknowledge geometry;
+- both clients expose the complete required channel set, acknowledge geometry
+  before the 300-tick deadline, and repeat the handshake on reconnect;
 - canonical players remain one short periodic distance apart;
 - client presentation movement is smooth through the seam;
 - server player query and tracking cross the seam;

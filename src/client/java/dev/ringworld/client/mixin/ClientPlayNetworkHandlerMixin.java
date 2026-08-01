@@ -24,6 +24,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundChunksBiomesPacket;
+import net.minecraft.network.protocol.game.ClientboundDamageEventPacket;
 import net.minecraft.network.protocol.game.ClientboundEntityPositionSyncPacket;
 import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 import net.minecraft.network.protocol.game.ClientboundForgetLevelChunkPacket;
@@ -32,6 +33,9 @@ import net.minecraft.network.protocol.game.ClientboundLevelEventPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
 import net.minecraft.network.protocol.game.ClientboundLightUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundMoveVehiclePacket;
+import net.minecraft.network.protocol.game.ClientboundMoveMinecartPacket;
+import net.minecraft.network.protocol.game.ClientboundOpenSignEditorPacket;
+import net.minecraft.network.protocol.game.ClientboundPlayerLookAtPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
 import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSetChunkCacheCenterPacket;
@@ -39,11 +43,14 @@ import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
 import net.minecraft.world.entity.PositionMoveRotation;
 import net.minecraft.world.entity.Relative;
+import net.minecraft.world.entity.vehicle.minecart.NewMinecartBehavior;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import java.util.EnumSet;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -146,6 +153,28 @@ abstract class ClientPlayNetworkHandlerMixin {
         return new ClientboundMoveVehiclePacket(
                 new Vec3(logicalX, position.y, position.z),
                 packet.yRot(), packet.xRot());
+    }
+
+    /** Project the absolute positions in 26.1's minecart interpolation batch. */
+    @ModifyVariable(method = "handleMinecartAlongTrack", at = @At("HEAD"), argsOnly = true)
+    private ClientboundMoveMinecartPacket ringworld$projectMinecartSteps(ClientboundMoveMinecartPacket packet) {
+        RingGeometry geometry = ClientRingState.geometry();
+        Minecraft client = Minecraft.getInstance();
+        if (geometry == null || client.level == null || client.player == null) return packet;
+        var entity = packet.getEntity(client.level);
+        double referenceX = entity == null ? client.player.getX() : entity.getX();
+        List<NewMinecartBehavior.MinecartStep> projected = new ArrayList<>(packet.lerpSteps().size());
+        boolean changed = false;
+        for (NewMinecartBehavior.MinecartStep step : packet.lerpSteps()) {
+            Vec3 position = step.position();
+            double logicalX = geometry.nearestImageX(position.x, referenceX);
+            changed |= logicalX != position.x;
+            projected.add(new NewMinecartBehavior.MinecartStep(
+                    new Vec3(logicalX, position.y, position.z), step.movement(),
+                    step.yRot(), step.xRot(), step.weight()));
+            referenceX = logicalX;
+        }
+        return changed ? new ClientboundMoveMinecartPacket(packet.entityId(), projected) : packet;
     }
 
     /** Keep the client chunk chart aligned with explicit server teleports. */
@@ -277,6 +306,15 @@ abstract class ClientPlayNetworkHandlerMixin {
         return mapBlockPos(packet.getPos());
     }
 
+    /** The sign screen immediately resolves this position back to its block entity. */
+    @Redirect(
+            method = "handleOpenSignEditor",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/network/protocol/game/ClientboundOpenSignEditorPacket;getPos()Lnet/minecraft/core/BlockPos;"))
+    private BlockPos ringworld$mapOpenSignEditor(ClientboundOpenSignEditorPacket packet) {
+        return mapBlockPos(packet.getPos());
+    }
+
     @Redirect(
             method = "handleBlockDestruction",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/game/ClientboundBlockDestructionPacket;getPos()Lnet/minecraft/core/BlockPos;"))
@@ -324,6 +362,36 @@ abstract class ClientPlayNetworkHandlerMixin {
         if (x == packet.getX()) return packet;
         return new ClientboundSoundPacket(packet.getSound(), packet.getSource(), x, packet.getY(), packet.getZ(),
                 packet.getVolume(), packet.getPitch(), packet.getSeed());
+    }
+
+    /** Preserve the apparent source direction for position-only damage sources. */
+    @ModifyVariable(method = "handleDamageEvent", at = @At("HEAD"), argsOnly = true)
+    private ClientboundDamageEventPacket ringworld$mapDamageSource(ClientboundDamageEventPacket packet) {
+        Optional<Vec3> source = packet.sourcePosition();
+        if (source.isEmpty()) return packet;
+        Minecraft client = Minecraft.getInstance();
+        RingGeometry geometry = ClientRingState.geometry();
+        if (geometry == null || client.level == null || client.player == null) return packet;
+        Vec3 position = source.get();
+        var damagedEntity = client.level.getEntity(packet.entityId());
+        double referenceX = damagedEntity == null ? client.player.getX() : damagedEntity.getX();
+        double logicalX = geometry.nearestImageX(position.x, referenceX);
+        if (logicalX == position.x) return packet;
+        return new ClientboundDamageEventPacket(packet.entityId(), packet.sourceType(),
+                packet.sourceCauseId(), packet.sourceDirectId(),
+                Optional.of(new Vec3(logicalX, position.y, position.z)));
+    }
+
+    /** `/look` coordinate targets and entity anchors share this resolved position path. */
+    @Redirect(
+            method = "handleLookAt",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/network/protocol/game/ClientboundPlayerLookAtPacket;getPosition(Lnet/minecraft/world/level/Level;)Lnet/minecraft/world/phys/Vec3;"))
+    private Vec3 ringworld$mapLookTarget(ClientboundPlayerLookAtPacket packet,
+                                         net.minecraft.world.level.Level level) {
+        Vec3 position = packet.getPosition(level);
+        double logicalX = mapX(position.x);
+        return logicalX == position.x ? position : new Vec3(logicalX, position.y, position.z);
     }
 
     private BlockPos mapBlockPos(BlockPos canonicalPos) {
