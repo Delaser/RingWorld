@@ -110,10 +110,12 @@ final visual tuning. Inspect both complete-ring images for colour, live/LOD
 handoff, local proxy exclusion, and width-edge alignment. The current
 16,384×256 production default still needs its multi-size visual/resource gate.
 
-The 26.1 `--quickPlaySingleplayer` projection task did not enter the selected
-world during this checkpoint, so the successful complete-ring captures came
-from the integrated harness. Treat that task as an S4 harness-port item rather
-than weakening the visual gate.
+The 26.1 projection task uses Minecraft's in-process world-open flow. Its
+source value is the save-folder identifier, not the world-list display name.
+The task preflights `run/saves/<identifier>/level.dat` before it starts, then
+opens only an ignored copy. A missing or display-name value fails clearly
+instead of leaving a client at the menu. This is a non-destructive existing-save
+join; it resumes the copied world's atlas rather than creating another world.
 
 ## Local automated smoke world
 
@@ -243,14 +245,25 @@ world under `run/saves/`, use:
 
 ```sh
 ./gradlew runProductionProjectionClient \
-  -PringProjectionWorld="RingWorld Automated Test (3)"
+  -PringProjectionWorld="production-ring-save-folder"
 ```
 
 The client waits for the current atlas to reach 100%, then writes:
 
 ```text
-run/screenshots/ringworld-projection-tangent.png
-run/screenshots/ringworld-projection-up.png
+run-production-projection/screenshots/ringworld-projection-tangent.png
+run-production-projection/screenshots/ringworld-projection-up.png
+```
+
+The Gradle task validates that `ringProjectionWorld` is an exact source
+save-folder ID containing `level.dat`, then copies that save into the ignored
+`run-production-projection/saves/` directory. It opens the copied destination
+in-process via Minecraft's world-open flow, rather than relying on
+`--quickPlaySingleplayer`; the source save is never opened or changed. Override
+the destination (also a single folder ID) with:
+
+```sh
+-PringProjectionDestination="projection-copy-folder"
 ```
 
 The tangent capture looks horizontally along canonical +X, where the cylinder
@@ -262,6 +275,18 @@ camera yaw/pitch only; it does not move the player or edit the world.
 
 The harness logs individual probes rather than one final aggregate boolean, so
 review the complete group.
+
+`ringProjectionWorld` must be the folder directly below `run/saves/` and must
+contain `level.dat`. It is intentionally required: do not substitute the
+world's display name or point this task at a Prism/packaged instance. For an
+interrupted 16,384×256 validation world, place or retain that isolated world
+under `run/saves/`, pass its exact folder name, and preserve the resulting
+`run-production-projection/logs/` and screenshot evidence locally. The task
+logs both the selected copy ID and the point at which that copied world is
+ready; it never enables the destructive test-mode/create-world automation.
+While active it also disables pause-on-focus-loss and uses the test-client
+inactive-frame policy, so moving the Gradle client behind another app cannot
+pause the integrated server during atlas completion.
 
 When the projectile probe fails, its diagnostic includes position, velocity,
 age, cached chunk, and current `shouldTickEntityAt` result. A folded position
@@ -420,27 +445,38 @@ client charts.
 
 ## Same-process saved-layout switch
 
-The deterministic layout-switch client opens two existing local saves in one
-JVM. It verifies the first layout and atlas, disconnects, confirms geometry and
-atlas state were cleared, opens the differently sized second save, and checks
-that the new handshake and atlas agree:
+The deterministic layout-switch client opens two copied existing saves in one
+JVM. It copies explicit source folders from `run/saves/` into the ignored
+`run-layout-switch/saves/` directory before launch, so the source worlds are
+never opened or modified. It verifies the first layout, dimension-owned
+settings and atlas storage, disconnects, confirms geometry and atlas state
+were cleared, opens the differently sized second copy, and checks that the new
+handshake, atlas, and storage agree:
 
 ```sh
-./gradlew runLayoutSwitchClient
+./gradlew runLayoutSwitchClient \
+  -PringLayoutSwitchFirstSource="safe-small-save-folder" \
+  -PringLayoutSwitchSecondSource="production-save-folder"
 ```
 
-The checked-in development run expects `run/saves/RingWorld Automated Test
-(10)` to be 4,096×2,048 and `RingWorld Automated Test (6)` to be 32,768×512.
-The harness does not assume those numeric values in code; it requires the two
-loaded geometries and fingerprints to differ. Search `run/logs/latest.log` for:
+Without overrides, the task retains the two historical source folder defaults
+(`RingWorld Automated Test (10)` and `RingWorld Automated Test (6)`). The
+harness does not assume their numeric layouts in code; it requires the two
+loaded geometries and fingerprints to differ. Override destinations with
+`ringLayoutSwitchFirstDestination` and `ringLayoutSwitchSecondDestination` if
+needed; they must be distinct folder identifiers under `run-layout-switch/saves/`.
+Search `run-layout-switch/logs/latest.log` for:
 
 ```text
 [layout-switch] result=true
+[layout-switch] result-json={"passed":true,...}
 ```
 
-Override `ringworld.layoutSwitchFirst` and `ringworld.layoutSwitchSecond` in a
-custom Loom run when using other existing save folders. This harness opens and
-saves both worlds but does not move the player or edit terrain.
+The source and destination IDs must be single folder names containing no path
+separators. The copied worlds may save normally while their own dimension-owned
+settings and atlas paths are materialized; the harness does not move players or
+edit terrain. Its source-copy stage replaces only prior copies beneath ignored
+`run-layout-switch/`, never a source save.
 
 ## Manual playability checklist
 

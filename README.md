@@ -264,7 +264,7 @@ Additional automated runs:
 
 ```sh
 ./gradlew runLayoutSwitchClient
-./gradlew runProductionProjectionClient
+./gradlew runProductionProjectionClient -PringProjectionWorld="save-folder-id"
 ```
 
 The complete fixtures, expected log markers, screenshots, performance
