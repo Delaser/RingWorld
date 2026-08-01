@@ -42,6 +42,9 @@ Start here:
 - [`ATLAS_VISUAL_BASELINE_2026-08-01.md`](ATLAS_VISUAL_BASELINE_2026-08-01.md):
   production 6/12/28-chunk handoff automation, profile-4 baseline, and the
   profile-5 mesh-fidelity comparison.
+- [`PROGRESSIVE_ATLAS_RENDERING_2026-08-01.md`](PROGRESSIVE_ATLAS_RENDERING_2026-08-01.md):
+  partial-atlas transparency, bounded GPU update policy, and the fresh-client
+  partial-to-complete runtime gate.
 - [`SUN_RENDERING_SNAPSHOT_2026-07-26.md`](SUN_RENDERING_SNAPSHOT_2026-07-26.md):
   frozen rollback description of the removed ring-centred sun and panel array.
 - [`MIXIN_MAP.md`](MIXIN_MAP.md): ownership and risk map for every mixin.

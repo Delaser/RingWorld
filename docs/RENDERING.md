@@ -13,7 +13,7 @@ The active rendering stack is:
 flowchart TD
     A["Canonical real chunks"] --> B["Terrain vertex shader bends vertices"]
     B --> C["Curved section frustum keeps visible chunks"]
-    D["Complete terrain atlas"] --> E["Static cylindrical GPU mesh"]
+    D["Partial or complete terrain atlas"] --> E["Static cylindrical GPU mesh"]
     E --> F["Texture-backed far ring in celestial pass"]
     F --> G["Real chunks draw over near portions"]
     I["Vanilla world clock"] --> J["Small fixed sun tone and intensity"]
@@ -150,7 +150,8 @@ already returns that block's Y coordinate; the sampled state uses that exact Y
 and the mesh height is its top face at Y+1. Water, grass, and foliage start with
 their biome tint, then apply an average block-texture luminance so the tint is
 not mistaken for the finished lit pixel colour. Other blocks use their map
-colour. Rendering waits for the client atlas to be complete. Atlas format 4
+colour. Rendering begins after the first trustworthy client atlas cells arrive;
+missing cells remain transparent. Atlas format 4
 records the original highest-block tint semantics. Atlas format 5 additionally
 falls back to the sampled block's map colour when a dedicated server's
 client-owned grass/foliage colormap lookup returns zero. This invalidates the
@@ -163,16 +164,21 @@ The visual surface is world-owned even though `SkyRenderer` and its static GPU
 resources can survive a return to the menus. On disconnect and again when a
 new settings payload is accepted, `RingWorldClient` closes the buffered texture
 and mesh before clearing/installing client state. `RingSurfaceTextureRenderer`
-also refuses to draw unless the current session's atlas exists and is complete.
+also refuses to draw unless the current session's atlas exists and contains at
+least one trustworthy cell.
 
-A newly generated world therefore shows real chunks and atmospheric effects
-while its own atlas is built. It must never display the previous world's
-complete-ring texture during that interval. Once the new world-hash atlas is
-complete, the renderer builds a new texture and mesh normally.
+A newly generated world therefore shows real chunks, atmospheric effects, and
+only its own available atlas regions while generation runs. It must never
+display the previous world's ring. Once the new world-hash atlas is complete,
+the renderer upgrades exactly once to the full-detail texture and mesh.
 
 ### GPU texture
 
-The client bilinearly samples the source atlas into the dimension-aware,
+While generation is incomplete, the client keeps the GPU texture at bounded
+source-atlas resolution and reuses the allocation on coalesced updates. Missing
+samples have zero alpha, partial bilinear coverage fades naturally, and mip
+colours are alpha-weighted so transparent neighbours do not darken known
+terrain. At completion the client bilinearly expands into the dimension-aware,
 quality-bounded size:
 
 ```text
@@ -197,7 +203,10 @@ bands = min(ceil(width / 8), 128)
 vertices = segments * bands * 6
 ```
 
-Each vertex uses the sampled terrain height to vary its radius. Texture U is
+During generation one reference-height mesh is reused while alpha reveals new
+cells; tile arrival does not rebuild it. Completion replaces it once with the
+detailed mesh. Each final vertex uses the sampled terrain height to vary its
+radius. Texture U is
 canonical X/circumference; V is the finite width coordinate. The mesh exists
 in one global ring-centred model. Visual profile 5 raised the circumference
 cap from 512 to 2,048 so the default 16,384-block ring no longer stretches

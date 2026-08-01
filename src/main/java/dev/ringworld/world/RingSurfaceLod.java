@@ -10,6 +10,16 @@ package dev.ringworld.world;
 public final class RingSurfaceLod {
     private RingSurfaceLod() { }
 
+    /** Encodes atlas coverage as transparency without inventing missing terrain. */
+    public static int surfaceArgb(int rgb, double coverage) {
+        if (!Double.isFinite(coverage)) {
+            throw new IllegalArgumentException("surface coverage must be finite");
+        }
+        if (rgb < 0 || coverage <= 0.0) return 0;
+        int alpha = clampChannel(clamp(coverage, 0.0, 1.0) * 255.0);
+        return alpha << 24 | rgb & 0xFFFFFF;
+    }
+
     /**
      * Applies the average luminance contributed by a block texture to a biome
      * tint. Vanilla multiplies grass, foliage, and water tint by textured
@@ -93,12 +103,24 @@ public final class RingSurfaceLod {
     private static int averageArgb(int first, int second, int third, int fourth) {
         int alpha = ((first >>> 24) + (second >>> 24)
                 + (third >>> 24) + (fourth >>> 24) + 2) >> 2;
-        int red = ((first >> 16 & 0xFF) + (second >> 16 & 0xFF)
-                + (third >> 16 & 0xFF) + (fourth >> 16 & 0xFF) + 2) >> 2;
-        int green = ((first >> 8 & 0xFF) + (second >> 8 & 0xFF)
-                + (third >> 8 & 0xFF) + (fourth >> 8 & 0xFF) + 2) >> 2;
-        int blue = ((first & 0xFF) + (second & 0xFF)
-                + (third & 0xFF) + (fourth & 0xFF) + 2) >> 2;
+        int alphaTotal = (first >>> 24) + (second >>> 24)
+                + (third >>> 24) + (fourth >>> 24);
+        if (alphaTotal == 0) return 0;
+        int red = ((first >> 16 & 0xFF) * (first >>> 24)
+                + (second >> 16 & 0xFF) * (second >>> 24)
+                + (third >> 16 & 0xFF) * (third >>> 24)
+                + (fourth >> 16 & 0xFF) * (fourth >>> 24)
+                + alphaTotal / 2) / alphaTotal;
+        int green = ((first >> 8 & 0xFF) * (first >>> 24)
+                + (second >> 8 & 0xFF) * (second >>> 24)
+                + (third >> 8 & 0xFF) * (third >>> 24)
+                + (fourth >> 8 & 0xFF) * (fourth >>> 24)
+                + alphaTotal / 2) / alphaTotal;
+        int blue = ((first & 0xFF) * (first >>> 24)
+                + (second & 0xFF) * (second >>> 24)
+                + (third & 0xFF) * (third >>> 24)
+                + (fourth & 0xFF) * (fourth >>> 24)
+                + alphaTotal / 2) / alphaTotal;
         return alpha << 24 | red << 16 | green << 8 | blue;
     }
 

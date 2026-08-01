@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. Common and client
-compilation now pass together, and the development build runs all 206
+compilation now pass together, and the development build runs all 208
 unit/parameterized cases:
 
 ```sh
@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 206 unit/parameterized cases:
+The active suite contains 208 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -62,7 +62,7 @@ The active suite contains 206 unit/parameterized cases:
 | `AtlasPregenerationHeadlessPolicyTest` | Explicit headless startup suppresses normal background autostart and replaces only the unstarted config-disabled `IDLE` handle |
 | `AtlasPregenerationReportTest` | Loader-neutral terminal report validation requires complete evidence or documented unavailable-identity sentinels |
 | `HeadlessPrewarmEvidenceFilesTest` | Direct dedicated launch removes stale terminal/progress evidence before publishing a new headless job |
-| `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
+| `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, explicit missing-cell alpha, alpha-weighted periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
 | `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
 | `RingWorldCreationUiModelTest` | Safe-small, production, custom, and invalid world-creation cost previews |
@@ -90,10 +90,11 @@ with `testMode=true` and `pregenerateTerrainAtlas=false`, run:
 The opt-in client resets its own saves/cache/log/screenshots, sets GUI scale 4,
 hides the development coordinate overlay, waits three rendered frames after
 every screen change, and records an unobstructed pause-menu,
-map, confirmation, running, background close/reopen, pause/resume,
-cancel/retry, and complete screens as `atlas-ui-*.png`. It presses the actual
-confirmation widget, stops after `[atlas-ui-test] PASS`, and its finalizer
-verifies the marker plus all ten PNGs. It is a real integrated-server test:
+map, confirmation, running, a partial-atlas gameplay view, background
+close/reopen, pause/resume, cancel/retry, and complete screens as
+`atlas-ui-*.png`. It presses the actual confirmation widget, stops after
+`[atlas-ui-test] PASS`, and its finalizer verifies the marker plus all eleven
+PNGs. It is a real integrated-server test:
 generation remains active because `RingWorldMapScreen` is explicitly
 non-pausing. Keep its run directory ignored and do not point it at a personal
 Prism instance or a production world.

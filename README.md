@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 206 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 208 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -122,9 +122,10 @@ entities, lighting, and simulation. RingWorld does not force the client to load
 the entire circumference as vanilla chunks.
 
 Instead, the server incrementally samples generated surface height and colour
-into a periodic terrain atlas. After that atlas is complete, the client builds
-a bounded GPU texture and mesh covering the whole cylinder. Real terrain
-cross-fades into this proxy near the configured render distance.
+into a periodic terrain atlas. The client progressively reveals trustworthy
+atlas cells while generation runs, leaving missing regions transparent, then
+upgrades once to the full-detail texture and terrain-height mesh at completion.
+Real terrain cross-fades into this proxy near the configured render distance.
 
 On the server, one Overworld-owned pregeneration service is the only atlas
 writer. It preserves canonical X-major traversal, gives ordinary player chunk
@@ -286,7 +287,8 @@ For demonstrated results, open risks, and the prioritized roadmap, see
 
 ## Known limitations
 
-- The complete distant ring appears only after its terrain atlas reaches 100%.
+- The distant ring fills in progressively as atlas cells arrive; only generated
+  regions are shown until the atlas reaches 100%.
 - Production clean-atlas generation, projection, transfer, multiplayer,
   lifecycle, memory, and static GPU resource gates pass; the 6/12/28 visual and
   repeated frame-pacing comparison matrix remains open.

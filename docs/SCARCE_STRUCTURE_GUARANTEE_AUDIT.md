@@ -83,7 +83,7 @@ query's presentation chart. It never loads an alias chunk.
 
 ## Validation evidence
 
-The Java 25 suite contains 206 unit/parameterized cases. Monument tests cover
+The Java 25 suite contains 208 unit/parameterized cases. Monument tests cover
 deterministic order, no repeated/alias candidates, supported dimensions,
 bounded exhaustion, seed variation, and policy v1/v2 states.
 

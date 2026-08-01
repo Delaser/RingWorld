@@ -16,6 +16,7 @@ import net.minecraft.client.input.InputWithModifiers;
 public final class AtlasPregenerationUiTestClient {
     public static final String ENABLE_PROPERTY = "ringworld.atlasUiTest";
     private static final int SETTLE_FRAMES = 3;
+    private static final double PROGRESSIVE_CAPTURE_COMPLETION = 0.25;
     private static final int TIMEOUT_TICKS = 14_400;
     private long renderedFrames;
     private long readyAfterFrame;
@@ -64,27 +65,35 @@ public final class AtlasPregenerationUiTestClient {
                 client.setScreen(null); arm(); stage++;
             }
             case 5 -> {
+                if (!settled() || status == null || status.progress().totalCells() == 0
+                        || (double)status.progress().presentCells() / status.progress().totalCells()
+                        < PROGRESSIVE_CAPTURE_COMPLETION) return true;
+                client.player.setYRot(90.0F);
+                client.player.setXRot(-65.0F);
+                capture(client, "atlas-ui-05-progressive-world", false); arm(); stage++;
+            }
+            case 6 -> {
                 if (!settled()) return true;
                 client.setScreen(new RingWorldMapScreen(new PauseScreen(true))); arm(); stage++;
             }
-            case 6 -> {
+            case 7 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.RUNNING || !settled()) return true;
-                capture(client, "atlas-ui-05-reopened", false);
+                capture(client, "atlas-ui-06-reopened", false);
                 AtlasPregenerationClientState.control(status.worldHash(), AtlasPregenerationAction.PAUSE); arm(); stage++;
             }
-            case 7 -> {
+            case 8 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.PAUSED || !settled()) return true;
-                capture(client, "atlas-ui-06-paused", false);
+                capture(client, "atlas-ui-07-paused", false);
                 AtlasPregenerationClientState.control(status.worldHash(), AtlasPregenerationAction.RESUME); arm(); stage++;
             }
-            case 8 -> {
+            case 9 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.RUNNING || !settled()) return true;
-                capture(client, "atlas-ui-07-resumed", false);
+                capture(client, "atlas-ui-08-resumed", false);
                 AtlasPregenerationClientState.control(status.worldHash(), AtlasPregenerationAction.CANCEL); arm(); stage++;
             }
-            case 9 -> {
+            case 10 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.CANCELLED || !settled()) return true;
-                capture(client, "atlas-ui-08-cancelled", false);
+                capture(client, "atlas-ui-09-cancelled", false);
                 if (!(client.screen instanceof RingWorldMapScreen screen)) return true;
                 Button retry = screen.children().stream().filter(Button.class::isInstance)
                         .map(Button.class::cast)
@@ -93,27 +102,30 @@ public final class AtlasPregenerationUiTestClient {
                 if (retry == null) return fail(client, "retry button was not present after cancellation");
                 retry.onPress(new TestInput()); arm(); stage++;
             }
-            case 10 -> {
+            case 11 -> {
                 if (!(client.screen instanceof ConfirmScreen confirm) || !settled()) return true;
-                capture(client, "atlas-ui-09-retry-confirm", false);
+                capture(client, "atlas-ui-10-retry-confirm", false);
                 ((ConfirmScreenAccessor)confirm).ringworld$yesButton().onPress(new TestInput()); arm(); stage++;
             }
-            case 11 -> {
-                if (status == null || status.progress().state() != AtlasPregenerationState.COMPLETE) return true;
+            case 12 -> {
+                if (status == null || status.progress().state() != AtlasPregenerationState.COMPLETE
+                        || ClientRingState.terrainAtlas() == null
+                        || !ClientRingState.terrainAtlas().isComplete()) return true;
                 // Let RingWorldMapScreen consume the new status and rebuild
-                // its widgets before accepting the completed-state capture.
+                // its widgets, and let the renderer perform its one detailed
+                // texture/mesh transition, before accepting completion.
                 arm(); stage++;
             }
-            case 12 -> {
+            case 13 -> {
                 if (!(client.screen instanceof RingWorldMapScreen) || !settled()) return true;
                 if (!hasOnlyButton(client, "Done")) {
                     return fail(client, "completed screen retained an invalid action button");
                 }
-                capture(client, "atlas-ui-10-complete", true); arm(); stage++;
+                capture(client, "atlas-ui-11-complete", true); arm(); stage++;
             }
-            case 13 -> {
+            case 14 -> {
                 if (!settled() || !finalCaptureSaved) return true;
-                RingWorldMod.LOGGER.info("[atlas-ui-test] PASS: GUI scale 4 confirmation/running/background/reopen/pause/resume/cancel/retry/complete");
+                RingWorldMod.LOGGER.info("[atlas-ui-test] PASS: GUI scale 4 progressive-world/confirmation/running/background/reopen/pause/resume/cancel/retry/complete");
                 client.stop();
                 stage++;
             }

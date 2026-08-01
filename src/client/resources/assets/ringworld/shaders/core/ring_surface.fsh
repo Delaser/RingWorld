@@ -71,5 +71,8 @@ void main() {
     const vec2 fullSkyNoBlockLight = vec2(0.5 / 16.0, 15.5 / 16.0);
     vec3 surfaceLight = texture(Sampler2, fullSkyNoBlockLight).rgb;
     vec3 litTerrain = sampled.rgb * surfaceLight;
-    fragColor = vec4(mix(FogColor.rgb, litTerrain, reveal), proxyAlpha);
+    // Atlas alpha is authoritative availability. Missing cells remain sky;
+    // partial bilinear coverage fades at the generated boundary rather than
+    // fabricating a base-height strip around it.
+    fragColor = vec4(mix(FogColor.rgb, litTerrain, reveal), proxyAlpha * sampled.a);
 }
