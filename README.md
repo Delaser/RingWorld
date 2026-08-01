@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 101 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 110 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -235,6 +235,9 @@ The current build includes:
   and section-visibility handling;
 - a fixed ring-centred sun with smooth global tone and intensity changes;
 - persistent tiled terrain-atlas transfer and client cache;
+- a loader-neutral atlas-pregeneration job model and deterministic canonical
+  cursor, ready for a future shared server service without changing the
+  current background scheduler;
 - atlas-backed full-ring rendering at normal chunk distance;
 - configurable immutable dimensions with creation-time validation and cost
   preview;
