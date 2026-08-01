@@ -40,7 +40,7 @@ Before substantial RingWorld work and after a long tool-heavy milestone, run:
 python3 scripts/codex_usage_monitor.py
 ```
 
-Above 50% remaining, `OK` permits normal operation. At exactly 50% remaining
+Above 20% remaining, `OK` permits normal operation. At exactly 20% remaining
 or below, `PAUSE` means pause all RingWorld work: do not dispatch new tasks,
 stop active work at the next safe handoff, and do not resume below the
 threshold without explicit owner authorization. Do not infer the weekly
