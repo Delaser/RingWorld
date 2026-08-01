@@ -21,7 +21,8 @@ public final class RingGenerationBoundary {
      * vanilla terrain; rim installation deliberately does not erase it.
      */
     public static int wallTopExclusive(int worldMinY, int worldHeight, int wallHeightBlocks) {
-        if (worldHeight < 0) throw new IllegalArgumentException("world height must be non-negative");
+        if (worldHeight <= 0) throw new IllegalArgumentException("world height must be positive");
+        if (wallHeightBlocks < 0) throw new IllegalArgumentException("wall height must be non-negative");
         long worldTopExclusive = (long)worldMinY + worldHeight;
         long requestedTopExclusive = (long)worldMinY + wallHeightBlocks;
         return (int)Math.min(requestedTopExclusive, worldTopExclusive);

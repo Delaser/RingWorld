@@ -22,8 +22,12 @@ class RingGenerationBoundaryTest {
     }
 
     @Test
-    void negativeWorldHeightIsRejected() {
+    void invalidCoordinateDomainInputsAreRejected() {
+        assertThrows(IllegalArgumentException.class,
+                () -> RingGenerationBoundary.wallTopExclusive(-64, 0, 160));
         assertThrows(IllegalArgumentException.class,
                 () -> RingGenerationBoundary.wallTopExclusive(-64, -1, 160));
+        assertThrows(IllegalArgumentException.class,
+                () -> RingGenerationBoundary.wallTopExclusive(-64, 384, -1));
     }
 }
