@@ -935,7 +935,7 @@ do not substitute for those platform runtime gates. Generated packages and
 test runtime state stay under ignored local directories and are never used as
 deployment inputs without separate owner approval.
 
-The frozen `729537d` candidate now passes the exact-archive in-place macOS and
+The frozen `9b77326` candidate now passes the exact-archive in-place macOS and
 fresh production-layout dedicated-server gates. Its jar and optional archive
 hashes are recorded in `FABRIC_RELEASE_CANDIDATE_2026-08-01.md`. The empty-data
 macOS first-run and real graphical Windows launch remain open; do not infer

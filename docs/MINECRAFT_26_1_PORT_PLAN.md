@@ -454,7 +454,7 @@ Windows launcher CI, exact macOS in-place launch, exact production-layout
 server smoke, and frozen hashes are complete. Empty-data macOS first-run and a
 real graphical Windows Minecraft launch remain.
 
-Frozen source: `729537d711b6e793d7ba7df877d4cbf768e68455`; see
+Frozen source: `9b77326d1ec7fba7e2e12e06d89adfceae0ffeb5`; see
 `FABRIC_RELEASE_CANDIDATE_2026-08-01.md`.
 
 Secondary ownership:
