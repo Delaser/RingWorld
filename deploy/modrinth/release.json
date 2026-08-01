@@ -1,0 +1,35 @@
+{
+  "project": {
+    "slug": "ringworld",
+    "title": "RingWorld",
+    "summary": "A finite, seamless cylindrical Overworld with true periodic gameplay and curved rendering.",
+    "project_type": "mod",
+    "categories": ["worldgen", "game-mechanics", "adventure"],
+    "client_side": "required",
+    "server_side": "required",
+    "license_id": "MPL-2.0"
+  },
+  "version": {
+    "name": "RingWorld 0.2.0 for Minecraft 26.1.2 (Fabric alpha)",
+    "version_number": "0.2.0+mc26.1.2",
+    "version_type": "alpha",
+    "game_versions": ["26.1.2"],
+    "loaders": ["fabric"],
+    "environment": "client_and_server",
+    "dependencies": [{"project_id": "P7dR8mSH", "dependency_type": "required"}],
+    "featured": false
+  },
+  "fabric": {
+    "mod_id": "ringworld",
+    "author": "Delaser",
+    "homepage": "https://andwhatnotstudio.com/ringworld/",
+    "environment": "*",
+    "fabric_loader": ">=0.19.3",
+    "minecraft": "26.1.2",
+    "java": ">=25",
+    "fabric_api": "*"
+  },
+  "source": {
+    "repository": "https://github.com/Delaser/RingWorld"
+  }
+}

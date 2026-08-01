@@ -24,6 +24,11 @@ packaging, and staging work means the port is not a release yet. See
 The Fabric alpha `0.2.0+mc26.1.2` is currently **Under review** on Modrinth;
 that submission does not make the remaining port gates complete.
 
+For any later Modrinth build, use the fail-closed local staging procedure in
+[`docs/MODRINTH_RELEASE.md`](docs/MODRINTH_RELEASE.md). It stages only the
+runtime jar and records a checksum plus the exact clean, pushed public branch
+revision. It never uploads or changes the listing.
+
 ## Codex weekly usage pause
 
 Before substantial RingWorld work and after a long tool-heavy milestone, run:
