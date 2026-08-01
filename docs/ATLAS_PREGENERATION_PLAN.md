@@ -364,10 +364,19 @@ same payload layouts and call the loader-neutral model/service.
   separately named `generatedChunksThisRun`, rate, ETA, and error. A result
   filename of `progress.json` is rejected so progress and terminal paths cannot
   collide.
+- Every launch deletes its selected terminal result and `progress.json` before
+  the server starts, including direct JVM launches and `Resume`; the Gradle
+  fixture repeats that cleanup as defense in depth. The verifier parses the new
+  JSON schema rather than accepting a text substring. A stale `COMPLETE` report
+  therefore cannot pass a crashed later launch.
   `result.json` records `COMPLETE`, `FAILED`, `INTERRUPTED`, or `REJECTED`,
   elapsed time, exact durable canonical chunks/cells, atlas path, and failure
   reason. Rejected startup declares `identityAvailable:false` and documented
   zero/null identity sentinels rather than inventing a layout.
+- The JSON writer is Gson-backed, including explicit `null` fields and complete
+  escaping for control characters in an error message; a report-write failure
+  is a controlled checkpoint/failure/halt path rather than an uncaught server
+  tick exception.
 - SIGTERM/server stop first consumes any completed selected future, checkpoints
   the same service, then reports `INTERRUPTED`; restart resumes from atlas
   cells. Existing region worlds without RingWorld settings are rejected by the

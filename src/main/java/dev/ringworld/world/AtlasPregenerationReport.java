@@ -30,9 +30,15 @@ public record AtlasPregenerationReport(
                 || elapsed.isNegative()) {
             throw new IllegalArgumentException("invalid atlas pregeneration report totals");
         }
-        if ((status == AtlasPregenerationReportStatus.FAILED || status == AtlasPregenerationReportStatus.REJECTED)
-                && failureReason.isEmpty()) {
-            throw new IllegalArgumentException("failed or rejected reports require a reason");
+        if (status == AtlasPregenerationReportStatus.COMPLETE) {
+            if (!identityAvailable || atlasPath.isEmpty() || failureReason.isPresent()
+                    || totalChunks == 0L || totalCells == 0
+                    || completedChunks != totalChunks || completedCells != totalCells) {
+                throw new IllegalArgumentException(
+                        "complete reports require identity, atlas path, exact totals, and no failure reason");
+            }
+        } else if (failureReason.isEmpty()) {
+            throw new IllegalArgumentException("non-complete reports require a failure or interruption reason");
         }
         if (!identityAvailable && (worldHash != 0L || layoutFingerprint != 0L
                 || completedChunks != 0L || totalChunks != 0L || completedCells != 0

@@ -20,4 +20,17 @@ class AtlasPregenerationReportTest {
         assertDoesNotThrow(() -> new AtlasPregenerationReport(1, AtlasPregenerationReportStatus.REJECTED, false,
                 0L, 0L, 0L, 0L, 0, 0, Duration.ZERO, Optional.empty(), Optional.of("missing settings")));
     }
+
+    @Test
+    void completeReportsRequireVerifiedCompleteIdentityAndEveryOtherStatusRequiresReason() {
+        assertThrows(IllegalArgumentException.class, () -> new AtlasPregenerationReport(1,
+                AtlasPregenerationReportStatus.COMPLETE, true, 1L, 2L, 2L, 3L, 12, 12,
+                Duration.ZERO, Optional.of(Path.of("atlas.rwat.gz")), Optional.empty()));
+        assertThrows(IllegalArgumentException.class, () -> new AtlasPregenerationReport(1,
+                AtlasPregenerationReportStatus.COMPLETE, false, 0L, 0L, 0L, 0L, 0, 0,
+                Duration.ZERO, Optional.empty(), Optional.empty()));
+        assertThrows(IllegalArgumentException.class, () -> new AtlasPregenerationReport(1,
+                AtlasPregenerationReportStatus.INTERRUPTED, true, 1L, 2L, 1L, 3L, 4, 12,
+                Duration.ZERO, Optional.of(Path.of("atlas.rwat.gz")), Optional.empty()));
+    }
 }

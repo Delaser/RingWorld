@@ -92,6 +92,7 @@ ordinary helpers:
 | `RingWorldStorageAccess` | Read-only bridge from a `ServerLevel` to Minecraft's authoritative per-dimension storage root |
 | `RingWorldNetworking` | Payload registration and mandatory handshake |
 | `RingTerrainAtlasServer` | Atlas generation, persistence, and tile streams |
+| `RingWorldHeadlessPrewarm` / `HeadlessPrewarmEvidenceFiles` | Fabric/dedicated lifecycle adapter and evidence hygiene for explicit headless prewarm; observes the shared service, gates joins, checkpoints/reports/saves/stops, but never owns another scheduler or atlas writer |
 | `RingWorldClient` | Client handshake receivers, atlas cache, visual/test hooks |
 | `ClientRingState` | Immutable geometry, continuous chart, atlas cache/revision |
 | `RingSurfaceTextureRenderer` | Active complete-ring LOD |

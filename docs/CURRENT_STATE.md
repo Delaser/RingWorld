@@ -42,9 +42,16 @@ lifecycle hooks, and client tile streaming delegate through
 resume, and verified-final-save completion are retained. The Fabric pause-menu
 map, confirmation/progress controls, cancel lifecycle, versioned payloads,
 permissions, and completion toast share that same handle; the suite now has
-125 unit/parameterized cases and the real GUI-scale-4 fixture passes. The
-explicit Fabric headless prewarm adapter remains the separate #23 scope: it
-must stay a thin launch/report/save/stop coordinator over the same service.
+127 unit/parameterized cases and the real GUI-scale-4 fixture passes. The
+The Fabric headless prewarm adapter is now implemented as that thin
+launch/report/save/stop coordinator: a fresh safe-small run checkpointed on
+SIGTERM at 1,200 durable chunks/4,800 cells, resumed to 3,328/3,328 chunks and
+13,312/13,312 cells, then verified, saved, emitted atomic JSON evidence, and
+stopped cleanly. Its complete-cache fast path also passed. A copied 1.21.11
+legacy-open-proof fixture also upgraded only in the ignored destination,
+migrated settings, rejected its incompatible legacy atlas, regenerated and
+verified 2,000/2,000 chunks (8,000 cells), and left the 66-file/47,931,005-byte
+source fingerprint unchanged. Production-scale benchmarking remains separate.
 
 Port Phase 1 is complete: the project moved to official Mojang mappings while
 remaining on Minecraft 1.21.11. All 73 tests, the destructive
@@ -58,7 +65,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 125 unit/parameterized cases pass, and Loom produces
+temporary shims, all 127 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server

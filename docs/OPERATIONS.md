@@ -227,7 +227,11 @@ sentinels. An external SIGTERM consumes completed work and checkpoints before
 writing `INTERRUPTED`; rerun with `-PringHeadlessPrewarmResume=true` to retain
 the disposable runtime world and resume from saved atlas cells. The Gradle
 finalizer fails unless the terminal result is `COMPLETE`, because Minecraft can
-exit zero after a failed run. Do not add the headless JVM option to an ordinary
+exit zero after a failed run. Both the dedicated coordinator and Gradle fixture
+delete the selected old result/progress files before every launch (including
+resume), then parse schema version, identity, atlas path, and exact complete
+totals rather than trusting stale text. Do not
+add the headless JVM option to an ordinary
 service unit or point it at a production/source world.
 
 Copied 1.21.11 worlds may also contain the legacy server atlas at

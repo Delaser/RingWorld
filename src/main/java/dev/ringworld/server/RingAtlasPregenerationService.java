@@ -159,10 +159,7 @@ public final class RingAtlasPregenerationService {
         WorldState state = WORLDS.get(world);
         if (state == null) return;
         state.ticks++;
-        if (AtlasPregenerationHeadlessPolicy.mustConsumeCompletedFutureBeforeCheckpoint(
-                state.job.future != null && state.job.future.isDone())) {
-            consumeFuture(world, state);
-        }
+        consumeFuture(world, state);
         Job job = state.job;
         if (job != null) {
             job.tick();

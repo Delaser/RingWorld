@@ -15,7 +15,5 @@ class AtlasPregenerationHeadlessPolicyTest {
         assertFalse(AtlasPregenerationHeadlessPolicy.mayReplaceIdleHandle(AtlasPregenerationState.RUNNING, headless));
         assertFalse(AtlasPregenerationHeadlessPolicy.mayReplaceIdleHandle(AtlasPregenerationState.IDLE,
                 AtlasPregenerationOptions.backgroundDefaults()));
-        assertTrue(AtlasPregenerationHeadlessPolicy.mustConsumeCompletedFutureBeforeCheckpoint(true));
-        assertFalse(AtlasPregenerationHeadlessPolicy.mustConsumeCompletedFutureBeforeCheckpoint(false));
     }
 }

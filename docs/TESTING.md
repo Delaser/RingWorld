@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 125 unit/parameterized cases:
+The active suite contains 127 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -59,6 +59,7 @@ The active suite contains 125 unit/parameterized cases:
 | `RingAtlasPregenerationSchedulingPolicyTest` | Config-disabled `IDLE`, paused, saving, and cancelled handles cannot schedule chunks; only a running handle may request work |
 | `AtlasPregenerationHeadlessPolicyTest` | Explicit headless startup suppresses normal background autostart and replaces only the unstarted config-disabled `IDLE` handle |
 | `AtlasPregenerationReportTest` | Loader-neutral terminal report validation requires complete evidence or documented unavailable-identity sentinels |
+| `HeadlessPrewarmEvidenceFilesTest` | Direct dedicated launch removes stale terminal/progress evidence before publishing a new headless job |
 | `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
 | `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
@@ -147,6 +148,12 @@ Minecraft exits zero. Stop during generation to verify checkpoint/restart: the
 first result is `INTERRUPTED` and the next run resumes from durable atlas cells.
 Use `-PringHeadlessPrewarmResume=true` for that second run; the default fresh
 task deliberately deletes its disposable world.
+
+The 2026-08-01 copied legacy-open-proof gate copied a 66-file, 47,931,005-byte
+1.21.11 source into the ignored fixture, recorded SHA-256 aggregate
+`f9e61702b230423b05c94b609cc8d4a4451d6c0ed3bd701e7b9479078b3fa265` before
+and after, migrated settings only in the destination, rejected its incompatible
+legacy atlas, and completed 2,000 chunks / 8,000 cells at about 80 cells/s.
 
 ## Guaranteed stronghold dedicated-server gate
 

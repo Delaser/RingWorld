@@ -221,6 +221,12 @@ tasks.register("prepareHeadlessPrewarmWorld") {
 			}
 			logger.lifecycle("[headless-prewarm] copied source={} destination={}", source.directory, world)
 		}
+		// A prewarm may crash before it can write new evidence. Never let the
+		// finalizer mistake an older COMPLETE result for this launch, including
+		// a deliberate resume of the same disposable runtime world.
+		def reportDirectory = new File(world, "ringworld-prewarm")
+		delete(new File(reportDirectory, reportName))
+		delete(new File(reportDirectory, "progress.json"))
 		def properties = new Properties()
 		def propertiesFile = new File(headlessPrewarmDirectory, "server.properties")
 		if (propertiesFile.isFile()) propertiesFile.withInputStream { properties.load(it) }
@@ -251,10 +257,23 @@ tasks.register("verifyHeadlessPrewarm") {
 	description = "Converts a non-complete headless prewarm JSON result into a failing Gradle result."
 	mustRunAfter("runHeadlessPrewarmServer")
 	doLast {
-		def resultName = providers.gradleProperty("ringHeadlessPrewarmResult").orElse("result.json").get()
+		def resultName = providers.gradleProperty("ringHeadlessPrewarmResult").orElse("result.json").get().trim()
 		def result = new File(headlessPrewarmDirectory, "world/ringworld-prewarm/" + resultName)
-		def content = result.isFile() ? result.text : ""
-		if (!content.contains('"status": "COMPLETE"')) {
+		if (!result.isFile()) {
+			throw new GradleException("Headless prewarm did not write a terminal result; inspect " + result)
+		}
+		def report
+		try {
+			report = new groovy.json.JsonSlurper().parse(result)
+		} catch (Exception failure) {
+			throw new GradleException("Headless prewarm result is not valid JSON: " + result, failure)
+		}
+		if (!(report instanceof Map) || report.schemaVersion != 1 || report.status != "COMPLETE" || report.identityAvailable != true
+				|| !report.containsKey("atlasPath") || !report.atlasPath || !report.containsKey("failureReason") || report.failureReason != null
+				|| !(report.totalChunks instanceof Number) || !(report.completedChunks instanceof Number)
+				|| !(report.totalCells instanceof Number) || !(report.completedCells instanceof Number)
+				|| report.totalChunks <= 0 || report.totalCells <= 0
+				|| report.completedChunks != report.totalChunks || report.completedCells != report.totalCells) {
 			throw new GradleException("Headless prewarm did not complete; inspect " + result)
 		}
 	}

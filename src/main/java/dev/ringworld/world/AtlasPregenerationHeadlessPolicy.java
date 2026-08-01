@@ -14,9 +14,4 @@ public final class AtlasPregenerationHeadlessPolicy {
                 && Objects.requireNonNull(replacement, "replacement").mode()
                 == AtlasPregenerationMode.HEADLESS_PREWARM;
     }
-
-    /** A completed selected future must be consumed before an interrupt checkpoint. */
-    public static boolean mustConsumeCompletedFutureBeforeCheckpoint(boolean selectedFutureDone) {
-        return selectedFutureDone;
-    }
 }
