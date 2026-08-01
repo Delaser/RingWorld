@@ -53,8 +53,13 @@ rim, shortened-wall, and exterior-void probes passed.
 The first topology run averaged 8.37 ms at the seam and 8.41 ms by the rim
 with no frames above 50 ms. The full-atlas run averaged 8.41/8.37 ms and
 recorded one isolated frame above 50 ms in each measured phase while
-generation/upload work was active. The captures prove that the 26.1 complete
-ring pipeline executes; multi-size colour/handoff art review remains open.
+generation/upload work was active. The later safe-small 6/12/28-chunk visual
+matrix retained full-loop tangent/up coverage and measured seam averages of
+12.389/8.673/9.015 ms respectively. A final 28-chunk weather run added a
+rainy-noon lightmap capture and waited for clear weather before the handoff
+frames. Profile 4 was retained after an alternate pixel hash produced worse
+salt-and-pepper transition noise. The complete review is in
+`VISUAL_HANDOFF_REVIEW_2026-08-01.md`.
 The current 16,384×256 default has now resumed a real copied 26.1 atlas from
 32,900 to 65,536 cells without a player lap, taking about 13 minutes 22 seconds
 for the remaining 32,636 cells (about 41 cells/sec), then emitted non-empty
@@ -142,8 +147,7 @@ in-process reopen, which restored the same layout and complete atlas. The final
 marker was `result=true`; this is transfer-path evidence, not proof of vanilla
 portal construction or linking.
 
-Multi-size visual review, automated-harness completion, packaging, and staging
-gates remain.
+Automated-harness completion, packaging, and staging gates remain.
 The only playable implementation is still the frozen `mc-1.21.11-final` tag.
 
 The “Implemented” sections below describe validated 1.21.11 behavior and the
@@ -461,55 +465,41 @@ retaining the fixed pose and continuous dimming/colour cycle.
 
 Priorities are ordered by player-visible value and architectural leverage.
 
-1. **Complete the large-layout visual/resource matrix**
-   - topology, gameplay, rims, and same-process resource replacement now pass
-     on safe-small, minimum-width, production, long/narrow, and wide/medium
-     layouts; the production post-fold item/projectile/navigation regression
-     also passes twice with both seam chunks ticking;
-   - capture complete-atlas live/LOD comparisons on production, long/narrow,
-     and wide/medium worlds;
-   - complete the 6/12/28-chunk visual and frame-pacing comparison matrix;
-   - retain the measured production atlas, transfer, memory, and GPU resource
-     envelope as the deployment baseline.
-2. **Tune and validate the texture LOD transition**
-   - capture matched upward screenshots for clear/rain, day/dusk/night, and
-     water-heavy terrain;
-   - tune detail reveal and far haze from those comparisons;
-   - validate exact seam UV behavior and mip stability while moving;
-   - add structure/vertical/transparent representation only if the remaining
-     atlas mismatch is still visible through the transition.
-3. **Finish the adaptive visual profile**
-   - tune the now-centralized cloud fade, reveal, and haze policy against the
-     multi-size capture matrix;
-   - increment visual-policy semantics when comparison captures would change;
-   - derive automated screenshot targets from geometry instead of fixed pitch.
-4. **Harden atlas lifecycle**
+1. **Finish the remaining automated client gate**
+   - complete the open automated-harness issue from the integrated visual,
+     production lifecycle, and multiplayer baseline;
+   - keep test-only setup separate from canonical gameplay and saved worlds.
+2. **Finish repeatable Fabric packaging and staging**
+   - stage exactly one runtime jar with source revision, checksum, licence,
+     dependency, environment, and forbidden-content validation;
+   - test clean client, existing modded instance, and dedicated-server paths.
+3. **Harden atlas lifecycle**
    - decide how block edits invalidate surface cells;
    - support progressive rendering safely if desired;
    - benchmark production-scale memory/network/pregeneration;
    - extract the current scheduler into the resumable service and headless
      prewarm workflow specified in `ATLAS_PREGENERATION_PLAN.md`;
    - retain the implemented admin status/pause/resume commands.
-5. **Broaden multiplayer gameplay regression**
+4. **Broaden multiplayer gameplay regression**
    - death/respawn, portals, maps, more vehicles/projectiles;
    - redstone and cross-seam block entities;
    - fluid networks and explosions with terrain destruction.
-6. **Worldgen seam matrix**
+5. **Worldgen seam matrix**
    - multiple seeds;
    - every major biome;
    - structures deliberately forced across X=0/C;
    - loot, mobs, portals, and locate commands.
-7. **Configuration UX follow-up**
+6. **Configuration UX follow-up**
    - add an explicit second confirmation if user testing shows the current
      immutability notice is insufficient;
    - add dedicated-server admin status/pause/resume controls;
    - improve creation cost warnings with measured production benchmarks.
-8. **Day/night visual polish**
+7. **Day/night visual polish**
    - capture the new small sun at all four tone keyframes;
    - tune keyframe colours only against matched sky, live-terrain, and
      distant-ring screenshots;
    - keep the single authoritative vanilla gameplay clock.
-9. **Compatibility API**
+8. **Compatibility API**
    - expand the read-only API for canonical/presentation/physical poses;
    - document compatibility contracts and failure detection.
 
@@ -520,6 +510,6 @@ Priorities are ordered by player-visible value and architectural leverage.
 - Complete two-client test matrix on a dedicated server.
 - Multi-seed worldgen/structure continuity.
 - Save/reconnect/death/portal lifecycle coverage.
-- Clean live/LOD transition in clear and rainy day/night captures.
+- Manual gamma, night-vision, lightning, and close cloud-height visual checks.
 - Production-size atlas benchmark or a scalable alternative.
 - Explicit supported/incompatible mod list.

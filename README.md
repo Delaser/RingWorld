@@ -21,9 +21,10 @@ The Nether and End remain vanilla.
 > combat, block, boat, teleport, and reconnect scenario also passes.
 > A copied 16,384×256 world also passes Nether/End transfers, normal save and
 > disconnect, client-state clearing, and an in-process reopen with the exact
-> layout and complete atlas restored. Multi-size visual review, remaining
-> automated-harness work, packaging, and staging gates are still outstanding,
-> so this is not a playable release yet.
+> layout and complete atlas restored. The safe-small 6/12/28-chunk visual
+> matrix and a complete production-size tangent/radial projection review now
+> pass. Remaining automated-harness, packaging, and staging gates are still
+> outstanding, so this is not a playable release yet.
 > The validated server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
 

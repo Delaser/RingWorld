@@ -677,6 +677,17 @@ Use creative mode and an ordinary render distance (the current test profile is
 - Look at clouds from ground and near wall height.
 - Check both wall edges and exterior void.
 
+The automated safe-small sky sequence now captures noon, dusk, midnight, and
+rainy noon. It sends `weather clear` after the rain frame and waits 100 client
+ticks for Minecraft's weather interpolation to settle before arming the
+tangent and radial-up handoff captures. This prevents a nominally clear
+comparison from retaining the previous run's rain overlay.
+
+The 2026-08-01 matrix reviewed complete-atlas tangent/up frames at 6, 12, and
+28 chunks plus a complete 16,384×256 projection copy. Results, resource sizes,
+frame measurements, and the rejected dither experiment are recorded in
+[`VISUAL_HANDOFF_REVIEW_2026-08-01.md`](VISUAL_HANDOFF_REVIEW_2026-08-01.md).
+
 ### World lifecycle
 
 - Save/quit/rejoin at the seam.

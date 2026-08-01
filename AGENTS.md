@@ -17,9 +17,10 @@ ring, tangent/radial captures, two natural wraps, and representative
 gameplay/rim probes. The dedicated two-client seam/combat/block/boat/teleport/
 reconnect matrix also passes. A copied 16,384×256 world now passes the
 Overworld/Nether/End transfer, save/disconnect, client-state cleanup, and
-same-process reopen gate. Multi-size visual review, remaining automated
-harness work, packaging, and staging remain, so the port is not playable yet.
-See `docs/CURRENT_STATE.md`.
+same-process reopen gate. Safe-small 6/12/28-chunk and production-size
+tangent/radial visual handoff review also passes. Remaining automated-harness,
+packaging, and staging work means the port is not a release yet. See
+`docs/CURRENT_STATE.md` and `docs/VISUAL_HANDOFF_REVIEW_2026-08-01.md`.
 
 ## What this project is
 
@@ -372,7 +373,10 @@ version numbers.
   target leaves the old-chart path behind and can stop navigation at the seam.
 - `RingRenderProfile` visual-policy version 4 owns the live/proxy/detail
   transitions, reveal, haze, and local cloud fade. Keep Java profile fields
-  and the seven appended RingWorld Globals vectors synchronized.
+  and the seven appended RingWorld Globals vectors synchronized. The 2026-08-01
+  6/12/28 review retained its deterministic interleaved-gradient dither; an
+  unordered pixel-hash experiment produced worse salt-and-pepper grain and was
+  rejected.
 - Cloud base is synchronized as saved wall top plus eight blocks. Do not
   reintroduce a literal Y=104; custom wall height must move both.
 - The active local development geometry is the safe-small 2,048-by-416 preset
