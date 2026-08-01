@@ -5,7 +5,6 @@ import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingPosition;
 import dev.ringworld.world.RingTerrainAtlas;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
@@ -34,8 +33,15 @@ public final class ClientRingState {
     private static long lastTerrainAtlasPublishMillis;
     private static long terrainAtlasPendingSinceMillis;
     private static long lastTerrainAtlasChangeMillis;
+    private static Path cacheDirectory = Path.of("ringworld-cache");
 
     private ClientRingState() { }
+
+    /** Platform bootstrap supplies its game-local cache directory before login. */
+    public static synchronized void configureCacheDirectory(Path directory) {
+        if (directory == null) throw new IllegalArgumentException("cache directory is required");
+        cacheDirectory = directory.toAbsolutePath().normalize();
+    }
 
     public static void set(RingGeometry newGeometry, int newWallHeightBlocks,
                            int newSurfaceReferenceY, long newLayoutFingerprint) {
@@ -104,8 +110,8 @@ public final class ClientRingState {
         RingGeometry current = geometry;
         if (current == null || metadata.tileSize() != RingTerrainAtlas.TILE_SIZE) return false;
         RingTerrainAtlas replacement = null;
-        Path cache = FabricLoader.getInstance().getGameDir().resolve("ringworld-cache")
-                .resolve("terrain-" + Long.toUnsignedString(metadata.worldHash(), 16) + ".rwat.gz");
+        Path cache = cacheDirectory.resolve(
+                "terrain-" + Long.toUnsignedString(metadata.worldHash(), 16) + ".rwat.gz");
         if (metadata.revision() < 0L) return false;
         if (Files.exists(cache)) {
             try {
