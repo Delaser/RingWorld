@@ -107,8 +107,9 @@ log, writes the selected layout and seed, and disables atlas pregeneration. The 
 log `[stronghold-test] PASS`; a missing marker or a logged failure makes the
 Gradle verification task fail. The gate verifies the deterministic canonical
 start, complete piece-graph and portal-room bounds, all 12 generated frame
-blocks, an activatable frame
-orientation, a nearest-periodic locate target, and Eye target continuity after
+blocks, an activatable frame, periodic `getBaseHeight` and full
+`getBaseColumn` equality at canonical X and X+C (the shared sampler path used
+by structure height placement), a nearest-periodic locate target, and Eye target continuity after
 a canonical seam fold. Run again with
 `-x prepareStrongholdTestWorld` to verify saved-policy and structure reload.
 

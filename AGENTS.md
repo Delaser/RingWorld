@@ -296,6 +296,14 @@ version numbers.
   effects are available. Session disconnect/settings handlers must clear the
   static GPU texture and mesh, and the renderer must reject incomplete atlases;
   otherwise a newly created world displays the previous world's ring.
+- `NoiseBasedChunkGenerator.iterateNoiseColumn` is the shared vanilla
+  base-height/base-column path used to anchor structures before their chunks
+  exist. Its `NoiseChunk` construction must run under the same
+  `RingNoiseSamplingContext` as real terrain whenever the generator has
+  Overworld geometry. Do not patch individual structures or let this path use
+  the flat router: villages and other surface structures then choose a Y that
+  disagrees with the cylindrical terrain below them. Keep the null-geometry
+  path vanilla for Nether and End.
 - Atlas tile application is idempotent. Duplicate dirty tiles must not advance
   the client atlas revision, force another cache save, or rebuild the complete
   texture/mesh. Only the actual incomplete-to-complete transition bypasses the

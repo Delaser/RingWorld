@@ -12,11 +12,15 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.tags.StructureTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EndPortalFrameBlock;
 import net.minecraft.world.level.block.state.pattern.BlockPattern;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
+import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.level.levelgen.structure.BuiltinStructures;
 import net.minecraft.world.level.levelgen.structure.Structure;
@@ -50,6 +54,7 @@ final class RingWorldStrongholdTest {
         ServerLevel world = server.getLevel(Level.OVERWORLD);
         if (world == null) throw new IllegalStateException("Overworld is unavailable");
         RingGeometry geometry = RingWorldServer.geometryFor(world);
+        verifyPeriodicHeightQueries(world, geometry);
         if (!RingStructurePolicy.get(world).guaranteesStronghold()) {
             throw new IllegalStateException("Fresh test world did not persist its stronghold policy");
         }
@@ -153,5 +158,41 @@ final class RingWorldStrongholdTest {
                 "[stronghold-test] startChunk={}, pieces={}, strongholdBox={}, portalBox={}, frames={}, origin={}, located={}, eyeFoldVx={}",
                 expected, start.getPieces().size(), strongholdBox, portalBox, frames, origin, located,
                 eye.getDeltaMovement().x);
+    }
+
+    /**
+     * Structure placement reaches {@link ChunkGenerator#getBaseHeight} and
+     * {@link ChunkGenerator#getBaseColumn} before a chunk exists. Both query
+     * paths must see the same cylindrical sampler at canonical X and its
+     * periodic alias; this is intentionally a real-server assertion because
+     * the router is installed by required mixins.
+     */
+    private static void verifyPeriodicHeightQueries(ServerLevel world, RingGeometry geometry) {
+        ChunkGenerator generator = world.getChunkSource().getGenerator();
+        RandomState randomState = world.getChunkSource().randomState();
+        int circumference = geometry.circumferenceBlocks();
+        int[] canonicalXs = {0, circumference / 4 + 7, circumference / 2 + 3};
+        int z = 0;
+        for (int canonicalX : canonicalXs) {
+            int aliasX = canonicalX + circumference;
+            int canonicalHeight = generator.getBaseHeight(
+                    canonicalX, z, Heightmap.Types.WORLD_SURFACE_WG, world, randomState);
+            int aliasHeight = generator.getBaseHeight(
+                    aliasX, z, Heightmap.Types.WORLD_SURFACE_WG, world, randomState);
+            if (canonicalHeight != aliasHeight) {
+                throw new IllegalStateException("Periodic base-height mismatch at canonicalX="
+                        + canonicalX + ", aliasX=" + aliasX + ": "
+                        + canonicalHeight + " != " + aliasHeight);
+            }
+
+            NoiseColumn canonicalColumn = generator.getBaseColumn(canonicalX, z, world, randomState);
+            NoiseColumn aliasColumn = generator.getBaseColumn(aliasX, z, world, randomState);
+            for (int y = world.getMinY(); y < world.getMaxY(); y++) {
+                if (!canonicalColumn.getBlock(y).equals(aliasColumn.getBlock(y))) {
+                    throw new IllegalStateException("Periodic base-column mismatch at canonicalX="
+                            + canonicalX + ", aliasX=" + aliasX + ", y=" + y);
+                }
+            }
+        }
     }
 }

@@ -336,7 +336,11 @@ Y is unchanged.
 horizontal-coordinate consumers. Vanilla caches, interpolation wrappers,
 aquifer-local coordinates, and the identity of `NoiseChunk` remain
 intact. The router override is carried through `RingNoiseSamplingContext` only
-for the Overworld generator.
+for the Overworld generator. The same context wraps both real-chunk sampler
+creation and `NoiseBasedChunkGenerator.iterateNoiseColumn`, the shared vanilla
+base-height/base-column query path used to anchor structures before terrain
+chunks exist. A structure's canonical intrinsic X/Z therefore samples the same
+cylindrical noise column as the eventual terrain beneath it.
 
 This makes density meet at X=0/C while retaining vanilla terrain machinery.
 It does not automatically prove every coordinate-sensitive structure
