@@ -113,6 +113,7 @@ public final class RingWorldSettings extends SavedData {
                 config.wallHeightBlocks(), (int)RingGeometry.SURFACE_Y, FORMAT_VERSION);
         created.setDirty();
         manager.set(TYPE, created);
+        RingStructurePolicy.createForNewWorld(manager);
         RingWorldMod.LOGGER.info(
                 "Created RingWorld layout: {}x{} blocks ({}x{} chunks), radius={}, centreY={}, "
                         + "wallTopY={}, cloudBaseY={}, atlasCells={}",

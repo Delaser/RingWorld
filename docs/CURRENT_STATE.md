@@ -43,7 +43,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 97 unit/parameterized cases pass, and Loom produces
+temporary shims, all 101 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -171,6 +171,16 @@ portal construction or linking.
 Automated-harness completion and broader compatibility gates remain. Repeatable
 Fabric staging is complete, but the active 26.1.2 alpha is not yet a stable
 release. The frozen `mc-1.21.11-final` tag remains the rollback baseline.
+
+New RingWorlds now persist a mandatory structure policy and replace vanilla's
+unbounded stronghold rings with one deterministic canonical start centred
+across the finite width. A dedicated Java 25 gate passed seven production
+seeds plus 2,048×416 and 15,552×4,096 layouts: each complete piece graph and
+portal room stayed inside the band, generated all 12 End portal frames, matched vanilla's
+activation pattern, and returned the nearest periodic locator from the
+opposite chart. A saved-world rerun passed with the same start and portal.
+Older RingWorlds with no structure-policy state retain their old placement;
+the guarantee is not silently retrofitted.
 
 The “Implemented” sections below describe validated 1.21.11 behavior and the
 contract the port must restore. They are not claims that every active 26.1.2
@@ -379,7 +389,9 @@ client/runtime gate passes.
 
 ### Worldgen
 
-- Broad multi-seed structure/carver/feature coverage at the seam is incomplete.
+- The mandatory stronghold is deterministic and validated across several
+  seeds and supported layouts. Other structures, carvers, and features still
+  lack broad seam coverage.
 - Periodic density noise does not guarantee every vanilla structure placement
   seed or third-party generator treats X=0/C as adjacent.
 - The new 16,384×256 production default requires 16,384 canonical chunks and
@@ -522,8 +534,9 @@ Priorities are ordered by player-visible value and architectural leverage.
 5. **Worldgen seam matrix**
    - multiple seeds;
    - every major biome;
-   - structures deliberately forced across X=0/C;
-   - loot, mobs, portals, and locate commands.
+   - non-stronghold structures deliberately forced across X=0/C;
+   - loot, mobs, and structure-specific locate commands;
+   - manual Eye-of-Ender flight and physical End-portal travel/return.
 6. **Configuration UX follow-up**
    - add an explicit second confirmation if user testing shows the current
      immutability notice is insufficient;

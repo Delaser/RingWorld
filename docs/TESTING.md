@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The current `codex/minecraft-26.1-port` branch requires Java 25. Common and
-client compilation now pass together, and the development build runs all 97
+client compilation now pass together, and the development build runs all 101
 unit/parameterized cases:
 
 ```sh
@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 97 unit/parameterized cases:
+The active suite contains 101 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -57,6 +57,8 @@ The active suite contains 97 unit/parameterized cases:
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
 | `RingWorldCreationUiModelTest` | Safe-small, production, custom, and invalid world-creation cost previews |
 | `RingProtocolIdentityTest` | Settings and acknowledgement channel names remain synchronized with their wire layout |
+| `RingStrongholdPlacementTest` | Deterministic canonical placement, seam clearance, seed variation, and supported circumference shapes |
+| `RingStructurePolicyTest` | Explicit mandatory-stronghold policy bit and legacy-disabled behavior |
 
 Inspect machine-readable results under:
 
@@ -87,6 +89,35 @@ The 2026-07-28 checkpoint demonstrated:
 
 These are server/storage gates only. They do not replace `runClient`, visual,
 seam, or two-client multiplayer validation.
+
+## Guaranteed stronghold dedicated-server gate
+
+After reviewing and accepting the EULA in the ignored
+`run-stronghold-test/eula.txt`, run:
+
+```sh
+./gradlew runStrongholdTestServer --console=plain \
+  -PringStrongholdTestSeed=ringworld-regression-1 \
+  -PringStrongholdTestCircumference=16384 \
+  -PringStrongholdTestWidth=256
+```
+
+The preparation task deletes only the disposable test world and stale result
+log, writes the selected layout and seed, and disables atlas pregeneration. The server must
+log `[stronghold-test] PASS`; a missing marker or a logged failure makes the
+Gradle verification task fail. The gate verifies the deterministic canonical
+start, complete piece-graph and portal-room bounds, all 12 generated frame
+blocks, an activatable frame
+orientation, a nearest-periodic locate target, and Eye target continuity after
+a canonical seam fold. Run again with
+`-x prepareStrongholdTestWorld` to verify saved-policy and structure reload.
+
+Evidence on 2026-08-01 passed seven production seeds with complete piece-graph
+bounds, plus 2,048×416 safe-small, 15,552×4,096 non-power-of-two geometry,
+activation, and save/reload. The
+1,024-block circumference is a geometry-helper fixture only; full-height
+dimension validation correctly rejects it, and 2,048 is the smallest active
+safe preset.
 
 ## 26.1 integrated safe-small client gate
 

@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 97 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 101 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -237,6 +237,8 @@ The current build includes:
 - atlas-backed full-ring rendering at normal chunk distance;
 - configurable immutable dimensions with creation-time validation and cost
   preview;
+- a deterministic in-band stronghold with a complete, activatable End portal
+  room for every newly created RingWorld;
 - automated local, layout-switch, production-projection, production-lifecycle,
   and two-client multiplayer harnesses.
 
@@ -253,7 +255,7 @@ For demonstrated results, open risks, and the prioritized roadmap, see
 - Production clean-atlas generation, projection, transfer, multiplayer,
   lifecycle, memory, and static GPU resource gates pass; the 6/12/28 visual and
   repeated frame-pacing comparison matrix remains open.
-- Broad multi-seed structures, carvers, portals, redstone, block entities,
+- Structures other than the guaranteed stronghold, carvers, redstone,
   fluids, death/respawn, vehicles, and projectiles still need more seam
   coverage.
 - The atlas is refreshed when surface chunks are captured or loaded, not

@@ -85,6 +85,13 @@ loom {
 			vmArg "-Dringworld.curvedObjectCapture=true"
 			programArgs "--username", "RingObjectTester"
 		}
+		strongholdTestServer {
+			server()
+			name "RingWorld Stronghold Test Server"
+			runDir "run-stronghold-test"
+			vmArg "-Dringworld.strongholdTest=true"
+			programArg "nogui"
+		}
 	}
 }
 
@@ -111,6 +118,63 @@ def sourceSavesDirectory = file("run/saves")
 def layoutSwitchSavesDirectory = file("run-layout-switch/saves")
 def projectionSavesDirectory = file("run-production-projection/saves")
 def lifecycleSavesDirectory = file("run-production-lifecycle/saves")
+def strongholdTestDirectory = file("run-stronghold-test")
+
+tasks.register("prepareStrongholdTestWorld") {
+	group = "ringworld verification"
+	description = "Creates a fresh disposable stronghold world for the selected test seed."
+	inputs.property("ringStrongholdTestSeed",
+			providers.gradleProperty("ringStrongholdTestSeed").orElse("ringworld-regression-0"))
+	inputs.property("ringStrongholdTestCircumference",
+			providers.gradleProperty("ringStrongholdTestCircumference").orElse("16384"))
+	inputs.property("ringStrongholdTestWidth",
+			providers.gradleProperty("ringStrongholdTestWidth").orElse("256"))
+	outputs.upToDateWhen { false }
+	doLast {
+		def eula = new File(strongholdTestDirectory, "eula.txt")
+		if (!eula.isFile() || !eula.text.readLines().any { it.trim() == "eula=true" }) {
+			throw new GradleException("Run the stronghold server once, review its eula.txt, then set eula=true")
+		}
+		delete(new File(strongholdTestDirectory, "world"))
+		delete(new File(strongholdTestDirectory, "logs/latest.log"))
+		def propertiesFile = new File(strongholdTestDirectory, "server.properties")
+		def properties = new Properties()
+		if (propertiesFile.isFile()) propertiesFile.withInputStream { properties.load(it) }
+		properties.setProperty("level-seed",
+				providers.gradleProperty("ringStrongholdTestSeed").orElse("ringworld-regression-0").get())
+		propertiesFile.parentFile.mkdirs()
+		propertiesFile.withOutputStream { properties.store(it, "Disposable RingWorld stronghold test") }
+
+		def configFile = new File(strongholdTestDirectory, "config/ringworld.properties")
+		def config = new Properties()
+		if (configFile.isFile()) configFile.withInputStream { config.load(it) }
+		config.setProperty("circumferenceBlocks",
+				providers.gradleProperty("ringStrongholdTestCircumference").orElse("16384").get())
+		config.setProperty("widthBlocks",
+				providers.gradleProperty("ringStrongholdTestWidth").orElse("256").get())
+		config.setProperty("pregenerateTerrainAtlas", "false")
+		configFile.parentFile.mkdirs()
+		configFile.withOutputStream { config.store(it, "Disposable RingWorld stronghold test") }
+	}
+}
+
+tasks.named("runStrongholdTestServer") {
+	dependsOn("prepareStrongholdTestWorld")
+	finalizedBy("verifyStrongholdTestServer")
+}
+
+tasks.register("verifyStrongholdTestServer") {
+	group = "ringworld verification"
+	description = "Fails unless the disposable server logged a complete stronghold PASS."
+	mustRunAfter("runStrongholdTestServer")
+	doLast {
+		def logFile = new File(strongholdTestDirectory, "logs/latest.log")
+		def log = logFile.isFile() ? logFile.text : ""
+		if (!log.contains("[stronghold-test] PASS") || log.contains("[stronghold-test] FAILED")) {
+			throw new GradleException("Stronghold runtime gate did not pass; inspect " + logFile)
+		}
+	}
+}
 
 tasks.register("prepareCopiedLayoutSwitchWorlds") {
 	group = "ringworld verification"
