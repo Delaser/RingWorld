@@ -449,9 +449,13 @@ Restrictions:
 
 ### S5: Java 25 packaging and deployment preparation ([#12](https://github.com/Delaser/RingWorld/issues/12))
 
-Status: in progress on `codex/issue-12-release-packages` after the stability gate.
+Status: in progress on `main`. The builder, reproducibility/licence tests,
+Windows launcher CI, exact macOS in-place launch, exact production-layout
+server smoke, and frozen hashes are complete. Empty-data macOS first-run and a
+real graphical Windows Minecraft launch remain.
 
-Branch: `codex/issue-12-release-packages`
+Frozen source: `729537d711b6e793d7ba7df877d4cbf768e68455`; see
+`FABRIC_RELEASE_CANDIDATE_2026-08-01.md`.
 
 Secondary ownership:
 

@@ -56,6 +56,9 @@ Start here:
 - [`ATLAS_RELEASE_GATE_2026-08-01.md`](ATLAS_RELEASE_GATE_2026-08-01.md):
   complete production generation/recovery, GUI, lifecycle, multiplayer,
   visual, resource, hash, and frame-pacing evidence.
+- [`FABRIC_RELEASE_CANDIDATE_2026-08-01.md`](FABRIC_RELEASE_CANDIDATE_2026-08-01.md):
+  frozen Fabric candidate hashes, package/server/macOS runtime evidence, and
+  the remaining graphical platform gates.
 - [`SEAM_GAMEPLAY_REGRESSION_2026-08-01.md`](SEAM_GAMEPLAY_REGRESSION_2026-08-01.md):
   expanded dedicated-client stateful-block, bed/death, and physical-portal
   seam evidence plus the remaining manual/unsupported matrix.

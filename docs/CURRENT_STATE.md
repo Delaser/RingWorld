@@ -138,7 +138,8 @@ runtime evidence. This records that the ported architecture meets those work
 packages; it does not erase the broader release-hardening and compatibility
 limits documented below.
 
-Issue #12 package preparation is the next release-candidate gate. The local
+Issue #12 package preparation has a frozen candidate at public source revision
+`729537d711b6e793d7ba7df877d4cbf768e68455`. The local
 builder produces reproducible macOS/universal and Windows Prism ZIPs plus a server overlay from
 one verified Fabric jar, matching Fabric API jar, clean instance template, and
 exact public source commit. It writes MPL/source manifests and checksums, has
@@ -152,8 +153,11 @@ upgrade path with a harmless Prism stand-in; it does not replace the pending
 graphical Windows Minecraft gate. A real in-place macOS client selected Java 25, loaded Minecraft,
 RingWorld, and all resources/shaders with the exact staged jar. A fresh
 16,384-by-256 dedicated server built from the overlay reached `Done`, started
-atlas pregeneration, then saved and stopped cleanly. Real fresh-client and
-Windows runtime gates remain before #12 can close.
+with bounded-test atlas pregeneration disabled, then saved and stopped cleanly.
+Empty-data macOS first-run
+and graphical Windows runtime gates remain before
+#12 can close. The exact candidate hashes and runtime record are in
+`FABRIC_RELEASE_CANDIDATE_2026-08-01.md`.
 
 Atlas-pregeneration Phases 1b and 2 are landed through #55, #56, and #59:
 the loader-neutral job-model foundation
