@@ -61,6 +61,31 @@ final class RingWorldHeadlessPrewarm {
 
     static boolean rejectPlayerJoins(MinecraftServer server) { return RUNS.containsKey(server); }
 
+    /**
+     * Captures failures that occur while the Overworld is still being
+     * constructed, before Fabric can dispatch {@code ServerLevelEvents.LOAD}.
+     * There is intentionally no synthetic atlas identity in this report: the
+     * immutable settings were unavailable, so no RingWorld run was started.
+     */
+    static void recordPreLoadRejection(MinecraftServer server, Throwable failure) {
+        if (!requested(server)) return;
+        Path resultPath = reportPathUnchecked(server);
+        try {
+            HeadlessPrewarmEvidenceFiles.resetForNewRun(resultPath);
+        } catch (IOException resetFailure) {
+            failure.addSuppressed(resetFailure);
+            RingWorldMod.LOGGER.error("[headless-prewarm] could not clear stale startup evidence", resetFailure);
+        }
+        Run run = Run.rejected(resultPath);
+        try {
+            run.finish(AtlasPregenerationReportStatus.REJECTED, Optional.of(message(failure)));
+        } catch (Throwable reportFailure) {
+            RingWorldMod.LOGGER.error("[headless-prewarm] failed to construct pre-load rejected report", reportFailure);
+        } finally {
+            RingWorldMod.LOGGER.error("[headless-prewarm] REJECTED before Overworld load", failure);
+        }
+    }
+
     static void start(ServerLevel world) {
         MinecraftServer server = world.getServer();
         if (!requested(server) || RUNS.containsKey(server)) return;
@@ -90,7 +115,7 @@ final class RingWorldHeadlessPrewarm {
     static void failStartup(MinecraftServer server, ServerLevel world, Throwable failure) {
         if (!requested(server)) return;
         Run run = RUNS.remove(server);
-        if (run == null) run = Run.rejected(world, reportPathUnchecked(world));
+        if (run == null) run = Run.rejected(reportPathUnchecked(server));
         try {
             run.finish(AtlasPregenerationReportStatus.REJECTED, Optional.of(message(failure)));
         } catch (Throwable reportFailure) {
@@ -167,22 +192,26 @@ final class RingWorldHeadlessPrewarm {
     }
 
     private static Path reportPath(ServerLevel world) {
+        return reportPath(world.getServer());
+    }
+
+    private static Path reportPath(MinecraftServer server) {
         String filename = System.getProperty(REPORT_PROPERTY, "result.json");
         Path candidate = Path.of(filename);
         if (candidate.isAbsolute() || candidate.getNameCount() != 1 || !filename.endsWith(".json")
                 || filename.equals("progress.json")) {
             throw new IllegalArgumentException("-D" + REPORT_PROPERTY + " must be one relative .json filename");
         }
-        return world.getServer().getWorldPath(LevelResource.ROOT).resolve("ringworld-prewarm").resolve(filename);
+        return server.getWorldPath(LevelResource.ROOT).resolve("ringworld-prewarm").resolve(filename);
     }
 
-    private static Path reportPathUnchecked(ServerLevel world) {
+    private static Path reportPathUnchecked(MinecraftServer server) {
         try {
-            return reportPath(world);
+            return reportPath(server);
         } catch (RuntimeException ignored) {
             // Startup rejection must still write evidence even when the caller
             // supplied an unsafe report-name option; use the safe default.
-            return world.getServer().getWorldPath(LevelResource.ROOT)
+            return server.getWorldPath(LevelResource.ROOT)
                     .resolve("ringworld-prewarm").resolve("result.json");
         }
     }
@@ -214,8 +243,8 @@ final class RingWorldHeadlessPrewarm {
             this.resultPath = resultPath;
         }
 
-        private static Run rejected(ServerLevel world, Path resultPath) {
-            return new Run(world, null, null, resultPath);
+        private static Run rejected(Path resultPath) {
+            return new Run(null, null, null, resultPath);
         }
 
         private void writeProgress() {

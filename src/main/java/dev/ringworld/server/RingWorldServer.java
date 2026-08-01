@@ -140,6 +140,21 @@ public final class RingWorldServer {
         return geometry;
     }
 
+    /**
+     * Constructor-tail bridge for tick schedulers. A copied ordinary world can
+     * be rejected before Fabric publishes a level-load event; explicit
+     * headless mode records that rejection before rethrowing the original
+     * failure. Ordinary launches take the same failure path unchanged.
+     */
+    public static RingGeometry attachTickSchedulerGeometry(ServerLevel world) {
+        try {
+            return attachWorldGeometry(world);
+        } catch (Throwable failure) {
+            RingWorldHeadlessPrewarm.recordPreLoadRejection(world.getServer(), failure);
+            throw failure;
+        }
+    }
+
     private static void attachGeneratorSettings(ServerLevel world, RingGeometry geometry, int wallHeightBlocks) {
         boolean guaranteeStronghold = RingStructurePolicy.get(world).guaranteesStronghold();
         ChunkGenerator generator = world.getChunkSource().getGenerator();

@@ -334,6 +334,12 @@ version numbers.
   the Gradle wrapper, not Minecraft's process exit code, converts a non-
   `COMPLETE` terminal report to failure. Use only `run-headless-prewarm/` or a
   separately prepared disposable runtime directory; never open a copy source.
+- An explicit headless launch can reject an ordinary copied Overworld before
+  `ServerLevelEvents.LOAD`, while `ServerLevel` attaches its tick schedulers.
+  That narrow constructor-tail bridge writes `REJECTED` evidence with
+  unavailable identity sentinels, then rethrows the unchanged settings error.
+  Do not let the invalid world continue with bootstrap geometry or add hot-path
+  topology exceptions to mask this intentional rejection.
 - `ring_surface.vsh` deliberately clamps only far-out proxy clip-space Z while
   preserving X/Y/W. Minecraft's level far plane is derived from chunk render
   distance and clips most of a production 16,384-block cylinder, especially

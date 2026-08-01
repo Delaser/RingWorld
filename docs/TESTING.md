@@ -149,6 +149,14 @@ first result is `INTERRUPTED` and the next run resumes from durable atlas cells.
 Use `-PringHeadlessPrewarmResume=true` for that second run; the default fresh
 task deliberately deletes its disposable world.
 
+The copied `ordinary-world-rejection` fixture is expected to fail its Gradle
+finalizer and retain Minecraft's original startup error. Its acceptance
+evidence is `result.json` with `"status": "REJECTED"`,
+`"identityAvailable": false`, all identity/totals zero, a null atlas path,
+and the immutable-settings rejection reason. This occurs at the
+`ServerLevel` constructor tail before Fabric level-load events; it must not
+create settings or use bootstrap geometry to continue the invalid world.
+
 The 2026-08-01 copied legacy-open-proof gate copied a 66-file, 47,931,005-byte
 1.21.11 source into the ignored fixture, recorded SHA-256 aggregate
 `f9e61702b230423b05c94b609cc8d4a4451d6c0ed3bd701e7b9479078b3fa265` before

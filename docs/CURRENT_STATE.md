@@ -52,6 +52,11 @@ legacy-open-proof fixture also upgraded only in the ignored destination,
 migrated settings, rejected its incompatible legacy atlas, regenerated and
 verified 2,000/2,000 chunks (8,000 cells), and left the 66-file/47,931,005-byte
 source fingerprint unchanged. Production-scale benchmarking remains separate.
+The independent copied ordinary-world fixture now also reaches the
+pre-`ServerLevelEvents.LOAD` constructor-tail rejection seam: it writes an
+atomic `REJECTED` report with unavailable identity sentinels and the original
+immutable-settings reason, then preserves the original startup failure rather
+than manufacturing a RingWorld identity or continuing the invalid world.
 
 Port Phase 1 is complete: the project moved to official Mojang mappings while
 remaining on Minecraft 1.21.11. All 73 tests, the destructive

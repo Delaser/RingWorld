@@ -263,6 +263,12 @@ development Gradle task. The launch:
 9. stops the Minecraft server; the Gradle wrapper converts a non-`COMPLETE`
    report into the non-zero failure result.
 
+If immutable settings reject a copied ordinary world while `ServerLevel` is
+still under construction, before the lifecycle load event, the adapter writes
+a `REJECTED` report with unavailable identity sentinels and rethrows the
+original startup error. It does not synthesize bootstrap geometry or convert
+the world in place.
+
 The source world for a copied-world fixture is always read-only. Runtime
 worlds, logs, screenshots, reports, account data, and atlas caches remain
 ignored and must never enter a client package or private source history.

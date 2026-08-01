@@ -234,6 +234,14 @@ totals rather than trusting stale text. Do not
 add the headless JVM option to an ordinary
 service unit or point it at a production/source world.
 
+An ordinary copied world with existing region files and no RingWorld settings
+is rejected during `ServerLevel` construction, before the normal Fabric level
+load hook. In explicit headless mode the constructor-tail bridge clears stale
+evidence and writes `REJECTED` with `identityAvailable:false`, zero totals and
+identity values, a null atlas path, and the original failure reason; it then
+rethrows that original startup failure. This is an intentional failed run, not
+a conversion path or a successful clean server halt.
+
 Copied 1.21.11 worlds may also contain the legacy server atlas at
 `<world>/data/ringworld-terrain-atlas.rwat.gz`. It migrates once only when the
 new path is absent and its format, geometry, sampling layout, and world hash

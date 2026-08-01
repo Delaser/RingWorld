@@ -325,6 +325,11 @@ result. To prepare a read-only source copy, use
 `-PringHeadlessPrewarmSource="save-folder-id"`; it reads only `run/saves` and
 never launches that source in place. After an interrupted disposable run, add
 `-PringHeadlessPrewarmResume=true` to retain that runtime world and resume it.
+If a copied ordinary flat world is rejected before the normal level-load
+callback, the dedicated adapter still writes a terminal `REJECTED` result with
+`identityAvailable:false` and zero/null identity fields, then preserves
+Minecraft's original startup failure. It never creates RingWorld settings for
+that source or copy.
 
 The complete fixtures, expected log markers, screenshots, performance
 measurements, and safe handling rules are in [Testing](docs/TESTING.md).
