@@ -1,0 +1,30 @@
+name: Windows package launcher
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/package-windows.yml"
+      - "deploy/client/**"
+      - "deploy/server/**"
+      - "scripts/prepare_release_packages.py"
+      - "scripts/test_prepare_release_packages.py"
+      - "scripts/test_verify_distribution_license.py"
+      - "scripts/verify_distribution_license.py"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package-launcher:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Test package assembly and Windows launcher updates
+        run: >-
+          python -m unittest
+          scripts/test_verify_distribution_license.py
+          scripts/test_prepare_release_packages.py

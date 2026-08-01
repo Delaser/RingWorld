@@ -54,6 +54,7 @@ echo RingWorld client files are current.
 set "PRISM="
 if exist "%ProgramFiles%\PrismLauncher\prismlauncher.exe" set "PRISM=%ProgramFiles%\PrismLauncher\prismlauncher.exe"
 if exist "%LocalAppData%\Programs\PrismLauncher\prismlauncher.exe" set "PRISM=%LocalAppData%\Programs\PrismLauncher\prismlauncher.exe"
+if exist "%LAUNCHER_DIR%" for /R "%LAUNCHER_DIR%" %%F in (prismlauncher.exe) do if exist "%%F" if not defined PRISM set "PRISM=%%F"
 
 if not defined PRISM (
     if /I "%PROCESSOR_ARCHITECTURE%"=="ARM64" (

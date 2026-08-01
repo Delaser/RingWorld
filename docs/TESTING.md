@@ -892,16 +892,24 @@ python3 -m unittest \
   scripts/test_prepare_release_packages.py
 ```
 
-The suite currently contains eight top-level package/licence cases. It builds
+The package/licence suite contains nine top-level cases on each platform, with
+the opposite platform's launcher case skipped. It builds
 both client ZIPs and the server overlay twice and requires
 byte-identical reproducible archives. It validates MPL metadata, embedded and
 outer licences, exact public-source manifests, checksums, nested Prism shape,
 and the absence of website output. Negative cases cover credentials/runtime
 state, source artifacts, POSIX and Windows path traversal, stale MIT metadata,
-stale Minecraft/Fabric versions, auto-join, and a non-exact source revision.
-The macOS upgrade case executes the launcher against fresh and existing
+stale Minecraft/Fabric/compatibility-API versions, auto-join, and a non-exact
+source revision. The POSIX upgrade case executes the macOS launcher against fresh and existing
 disposable Prism data trees and verifies that saves, options, config, and
 user-edited instance settings survive while managed jars update.
+
+Pull requests touching package inputs also run `.github/workflows/package-windows.yml`
+on a real Windows runner. Its platform-specific case executes
+`Launch RingWorld.bat` twice with a harmless local Prism executable stand-in,
+covering Windows `cmd`, PowerShell settings migration, fresh installation, and
+in-place state preservation without downloading software or launching the
+game. This is a launcher/update gate, not the final graphical Minecraft gate.
 
 The 1 August issue #12 checkpoint also launched the actual package jar in an
 isolated existing macOS Prism instance: Prism selected Java 25, Minecraft

@@ -465,6 +465,10 @@ version numbers.
   `fabric.mod.json`'s `ringworld:compatibility_api`, public API documentation,
   and tests synchronized. Detection logs high-confidence unsupported mod IDs;
   it must not silently claim that unlisted combinations are supported.
+- Package and Modrinth staging must reject a jar whose
+  `ringworld:compatibility_api` metadata differs from the Java contract. The
+  Windows launcher/update path has a real-Windows CI fixture, but that fixture
+  uses a harmless Prism stand-in and is not graphical Minecraft evidence.
 - New-world strongholds carry a saved guarantee bit into both the placement
   state and noise generator. After vanilla builds the complete piece graph,
   `StrongholdStructureMixin` applies the smallest X/Z translation needed to

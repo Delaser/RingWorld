@@ -29,8 +29,8 @@ def release_config() -> dict:
     }
 
 
-def write_jar(path: Path, *, minecraft: str = "26.1.2", identifier: str = "MPL-2.0", environment: str = "*", sensitive: str | None = None, sensitive_content: str = "secret", embedded_license: bytes = LICENSE) -> None:
-    metadata = {"schemaVersion": 1, "id": "ringworld", "version": VERSION, "authors": ["Delaser"], "contact": {"homepage": "https://andwhatnotstudio.com/ringworld/"}, "license": identifier, "environment": environment, "depends": {"fabricloader": ">=0.19.3", "minecraft": minecraft, "java": ">=25", "fabric-api": "*"}}
+def write_jar(path: Path, *, minecraft: str = "26.1.2", identifier: str = "MPL-2.0", environment: str = "*", compatibility_api: int = 1, sensitive: str | None = None, sensitive_content: str = "secret", embedded_license: bytes = LICENSE) -> None:
+    metadata = {"schemaVersion": 1, "id": "ringworld", "version": VERSION, "authors": ["Delaser"], "contact": {"homepage": "https://andwhatnotstudio.com/ringworld/"}, "custom": {"ringworld:compatibility_api": compatibility_api}, "license": identifier, "environment": environment, "depends": {"fabricloader": ">=0.19.3", "minecraft": minecraft, "java": ">=25", "fabric-api": "*"}}
     with zipfile.ZipFile(path, "w") as archive:
         archive.writestr("fabric.mod.json", json.dumps(metadata))
         archive.writestr("LICENSE-RINGWORLD.txt", embedded_license)
@@ -91,13 +91,18 @@ class ModrinthStagingTest(unittest.TestCase):
         with self.assertRaisesRegex(VerificationError, "environment"):
             self.stage()
 
+    def test_rejects_stale_compatibility_api_metadata(self) -> None:
+        write_jar(self.jar, compatibility_api=0)
+        with self.assertRaisesRegex(VerificationError, "compatibility_api"):
+            self.stage()
+
     def test_rejects_credentials_and_source_content(self) -> None:
         for name, expected, content in (
-                ("accounts.json", "sensitive runtime", "secret"),
-                ("credentials.json", "sensitive runtime", "secret"),
-                ("token.txt", "sensitive runtime", "secret"),
-                ("keys/release.p12", "sensitive runtime", "secret"),
-                ("dev/ringworld/Source.java", "source file", "secret"),
+                ("accounts.json", "credential/runtime|sensitive runtime", "secret"),
+                ("credentials.json", "credential/runtime|sensitive runtime", "secret"),
+                ("token.txt", "credential/runtime|sensitive runtime", "secret"),
+                ("keys/release.p12", "credential/runtime|sensitive runtime", "secret"),
+                ("dev/ringworld/Source.java", "source (?:artifact|file)", "secret"),
                 ("META-INF/private.pem", "private-key", "-----BEGIN PRIVATE KEY-----\\nsecret")):
             with self.subTest(name=name):
                 write_jar(self.jar, sensitive=name, sensitive_content=content)

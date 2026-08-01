@@ -33,6 +33,7 @@ SOURCE_URL = "https://github.com/Delaser/RingWorld"
 MINECRAFT_VERSION = "26.1.2"
 FABRIC_LOADER_VERSION = "0.19.3"
 FABRIC_API_VERSION = "0.155.2+26.1.2"
+COMPATIBILITY_API_VERSION = 1
 
 
 class PackageError(RuntimeError):
@@ -123,6 +124,13 @@ def validate_inputs(
     if release_metadata.get("version") != version:
         raise PackageError(
             f"release jar version {release_metadata.get('version')!r} does not match {version!r}"
+        )
+    custom = release_metadata.get("custom")
+    if not isinstance(custom, dict) or custom.get("ringworld:compatibility_api") \
+            != COMPATIBILITY_API_VERSION:
+        raise PackageError(
+            "RingWorld jar does not advertise compatibility API version "
+            f"{COMPATIBILITY_API_VERSION}"
         )
     fabric_metadata = read_fabric_metadata(fabric_api, label="Fabric API jar")
     if not fabric_api.name.startswith("fabric-api-"):

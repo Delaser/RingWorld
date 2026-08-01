@@ -144,9 +144,12 @@ one verified Fabric jar, matching Fabric API jar, clean instance template, and
 exact public source commit. It writes MPL/source manifests and checksums, has
 no website or deployment path, and rejects account/runtime state, source jars,
 unsafe archive paths, stale licence metadata, and managed jars in the template.
-Eight Python package/licence tests pass, including an executed fresh and
+Nine cross-platform Python package/licence cases pass on each platform (with
+the opposite launcher case skipped), including an executed fresh and
 in-place macOS launcher path with preserved save/config/options/instance
-sentinels. A real in-place macOS client selected Java 25, loaded Minecraft,
+sentinels. A Windows Actions gate now executes the batch/PowerShell fresh and
+upgrade path with a harmless Prism stand-in; it does not replace the pending
+graphical Windows Minecraft gate. A real in-place macOS client selected Java 25, loaded Minecraft,
 RingWorld, and all resources/shaders with the exact staged jar. A fresh
 16,384-by-256 dedicated server built from the overlay reached `Done`, started
 atlas pregeneration, then saved and stopped cleanly. Real fresh-client and

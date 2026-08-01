@@ -442,7 +442,8 @@ python3 scripts/prepare_release_packages.py \
 
 python3 -m unittest \
   scripts/test_verify_distribution_license.py \
-  scripts/test_prepare_release_packages.py
+  scripts/test_prepare_release_packages.py \
+  scripts/test_stage_modrinth_release.py
 ```
 
 Test both package paths: a completely fresh bundle and an in-place upgrade over
@@ -451,10 +452,12 @@ and configuration files. A new ZIP whose launcher only initializes a missing
 instance does not update existing users and can leave a stale network codec.
 
 The builder fails closed on stale MIT/evaluation metadata, a missing or
-mismatched licence, source jars, archive traversal, accounts, saves, logs,
-options, screenshots, resource packs, existing managed jars, or a non-exact
-source revision. It emits no website content and cannot publish, deploy,
-restart a service, or touch a live world.
+mismatched licence, a stale compatibility API version, source jars, archive
+traversal, accounts, saves, logs, options, screenshots, resource packs,
+existing managed jars, or a non-exact source revision. The Windows launcher
+update path runs on a Windows GitHub Actions runner when package inputs change.
+It emits no website content and cannot publish, deploy, restart a service, or
+touch a live world.
 
 ## Local macOS launch
 
