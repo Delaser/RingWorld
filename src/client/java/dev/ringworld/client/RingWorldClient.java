@@ -12,6 +12,7 @@ import dev.ringworld.world.RingWorldConfig;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingLayoutFingerprint;
 import dev.ringworld.world.RingRenderProfile;
+import java.util.Optional;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
@@ -50,6 +51,7 @@ public final class RingWorldClient implements ClientModInitializer {
     private boolean testPerformanceProfileApplied;
     private int testWorldTicks;
     private boolean testScreenshotSaved;
+    private boolean testBedPresentationProbeComplete;
     private boolean testSeamMoveSent;
     private boolean testSeamScreenshotSaved;
     private boolean testSeamBlockActionSent;
@@ -224,6 +226,7 @@ public final class RingWorldClient implements ClientModInitializer {
             if (client.screen instanceof PauseScreen) client.setScreen(null);
             if (client.screen != null) return;
             saveAutomatedScreenshot(client);
+            runAutomatedBedPresentationProbe(client);
             runAutomatedSeamTraversal(client);
             runAutomatedSecondCircuit(client);
             runAutomatedBoundaryStress(client);
@@ -283,6 +286,34 @@ public final class RingWorldClient implements ClientModInitializer {
                 client.player.getYRot(), client.player.getXRot());
         Screenshot.grab(client.gameDirectory, "ringworld-automated.png", client.getMainRenderTarget(), 1,
                 message -> RingWorldMod.LOGGER.info("[test] renderer screenshot: {}", message.getString()));
+    }
+
+    /**
+     * Exercises the exact local getter used by vanilla's sleeping-data
+     * callback without writing a bed position to the integrated server or
+     * changing the player's pose. The full sleep/wake lifecycle remains a
+     * manual multiplayer check because it requires a real night and damage
+     * source, while this probe catches the client-chart regression that used
+     * to place a seam traveller at raw canonical X.
+     */
+    private void runAutomatedBedPresentationProbe(Minecraft client) {
+        if (!testScreenshotSaved || testBedPresentationProbeComplete || client.player == null) return;
+        RingGeometry geometry = ClientRingState.geometry();
+        if (geometry == null) return;
+
+        BlockPos canonicalBed = new BlockPos(geometry.circumferenceBlocks() - 2,
+                (int) Math.floor(client.player.getY()), (int) Math.floor(client.player.getZ()));
+        int expectedPresentationX = (int) Math.round(geometry.nearestImageX(
+                canonicalBed.getX(), client.player.getX()));
+        client.player.setSleepingPos(canonicalBed);
+        Optional<BlockPos> projectedBed = client.player.getSleepingPos();
+        boolean passed = expectedPresentationX != canonicalBed.getX()
+                && projectedBed.map(BlockPos::getX).filter(x -> x == expectedPresentationX).isPresent();
+        client.player.clearSleepingPos();
+        testBedPresentationProbeComplete = true;
+        RingWorldMod.LOGGER.info(
+                "[test] seam bed presentation result={} canonical={} projected={} expectedX={}",
+                passed, canonicalBed, projectedBed.orElse(null), expectedPresentationX);
     }
 
     /** Drives one small, packet-backed crossing after the server arms the seam test. */

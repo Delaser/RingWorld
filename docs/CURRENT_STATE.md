@@ -43,7 +43,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 94 unit/parameterized cases pass, and Loom produces
+temporary shims, all 95 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -438,6 +438,13 @@ client/runtime gate passes.
 - The 26.1 F3 position group reports presentation and canonical Ring
   coordinates, canonical block/chunk/region positions, loop index, and atlas
   state without feeding any debug value back into storage or chart state.
+- Sleeping positions remain canonical on the server and in saves. The client
+  maps only its own replicated bed position to the nearest presentation image
+  before vanilla applies the sleeping pose, so sleeping, waking, bed
+  orientation, and bed lookup cannot snap a seam-side player to the raw
+  canonical copy or into the void. The automated integrated harness exercises
+  that client getter across the seam; a real night/damage/destruction/rejoin
+  bed lifecycle remains in the manual multiplayer matrix.
 - The source-audited variable registry and correction plan are maintained in
   `DIMENSION_SCALING_PLAN.md`.
 

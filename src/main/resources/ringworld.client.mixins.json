@@ -2,6 +2,6 @@
   "required": true,
   "package": "dev.ringworld.client.mixin",
   "compatibilityLevel": "JAVA_25",
-  "client": ["CreateWorldScreenInvoker", "CreateWorldScreenMixin", "EntityRenderManagerMixin", "ClientChunkMapMixin", "ClientConnectionMixin", "ClientPlayNetworkHandlerMixin", "ChunkBuilderBuiltChunkMixin", "ChunkRenderingDataPreparerMixin", "GlobalSettingsMixin", "MinecraftMixin", "PlayerPositionDebugHudEntryMixin", "SkyRenderingMixin"],
+  "client": ["CreateWorldScreenInvoker", "CreateWorldScreenMixin", "EntityRenderManagerMixin", "ClientChunkMapMixin", "ClientConnectionMixin", "ClientPlayNetworkHandlerMixin", "ChunkBuilderBuiltChunkMixin", "ChunkRenderingDataPreparerMixin", "GlobalSettingsMixin", "LivingEntitySleepingPositionMixin", "MinecraftMixin", "PlayerPositionDebugHudEntryMixin", "SkyRenderingMixin"],
   "injectors": {"defaultRequire": 1}
 }
