@@ -52,11 +52,10 @@ class CodexUsageMonitorTest(unittest.TestCase):
         }
         self.assertEqual("two", monitor.select_weekly_window(result)["limitId"])
 
-    def test_threshold_states_protect_ten_percent_reserve(self):
-        self.assertEqual("OK", monitor.classify_remaining(16, 10, 5))
-        self.assertEqual("HOLD", monitor.classify_remaining(15, 10, 5))
-        self.assertEqual("HOLD", monitor.classify_remaining(11, 10, 5))
-        self.assertEqual("BLOCK", monitor.classify_remaining(10, 10, 5))
+    def test_pause_threshold_is_inclusive(self):
+        self.assertEqual("OK", monitor.classify_remaining(50.01, 50))
+        self.assertEqual("PAUSE", monitor.classify_remaining(50, 50))
+        self.assertEqual("PAUSE", monitor.classify_remaining(0, 50))
 
     def test_missing_weekly_window_is_not_mislabelled(self):
         result = {
@@ -71,7 +70,7 @@ class CodexUsageMonitorTest(unittest.TestCase):
         with self.assertRaises(monitor.MonitorError):
             monitor.select_weekly_window(result)
 
-    def test_build_status_calculates_remaining(self):
+    def test_build_status_calculates_remaining_and_pause_state(self):
         status = monitor.build_status(
             {
                 "limitId": "codex",
@@ -80,11 +79,14 @@ class CodexUsageMonitorTest(unittest.TestCase):
                 "usedPercent": 46,
                 "resetsAt": 123,
             },
-            reserve_percent=10,
-            safety_margin_percent=5,
+            pause_threshold_percent=50,
         )
         self.assertEqual(54, status["remainingPercent"])
         self.assertEqual("OK", status["state"])
+        self.assertIn("normal operation", monitor.format_status(status))
+
+    def test_parse_args_defaults_to_fifty_percent_pause_threshold(self):
+        self.assertEqual(50, monitor.parse_args([]).pause_threshold)
 
 
 if __name__ == "__main__":

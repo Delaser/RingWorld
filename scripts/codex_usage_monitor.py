@@ -16,8 +16,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
 WEEKLY_WINDOW_MINUTES = 7 * 24 * 60
-DEFAULT_RESERVE_PERCENT = 10.0
-DEFAULT_SAFETY_MARGIN_PERCENT = 5.0
+DEFAULT_PAUSE_THRESHOLD_PERCENT = 50.0
 DEFAULT_INTERVAL_SECONDS = 300
 LAUNCH_AGENT_LABEL = "com.andwhatnotstudio.ringworld-codex-usage"
 
@@ -198,27 +197,21 @@ def select_weekly_window(
 
 def classify_remaining(
     remaining_percent: float,
-    reserve_percent: float,
-    safety_margin_percent: float,
+    pause_threshold_percent: float,
 ) -> str:
-    if remaining_percent <= reserve_percent:
-        return "BLOCK"
-    if remaining_percent <= reserve_percent + safety_margin_percent:
-        return "HOLD"
-    return "OK"
+    return "PAUSE" if remaining_percent <= pause_threshold_percent else "OK"
 
 
 def build_status(
     window: Dict[str, Any],
-    reserve_percent: float,
-    safety_margin_percent: float,
+    pause_threshold_percent: float,
 ) -> Dict[str, Any]:
     used = max(0.0, min(100.0, float(window["usedPercent"])))
     remaining = 100.0 - used
     return {
         "observedAt": int(time.time()),
         "state": classify_remaining(
-            remaining, reserve_percent, safety_margin_percent
+            remaining, pause_threshold_percent
         ),
         "limitId": window["limitId"],
         "limitName": window.get("limitName"),
@@ -228,8 +221,7 @@ def build_status(
         "remainingPercent": remaining,
         "resetsAt": window.get("resetsAt"),
         "planType": window.get("planType"),
-        "reservePercent": reserve_percent,
-        "safetyMarginPercent": safety_margin_percent,
+        "pauseThresholdPercent": pause_threshold_percent,
     }
 
 
@@ -242,14 +234,20 @@ def format_timestamp(timestamp: Optional[int]) -> str:
 
 
 def format_status(status: Dict[str, Any]) -> str:
+    policy = (
+        "normal operation"
+        if status["state"] == "OK"
+        else "PAUSE ALL RINGWORLD WORK"
+    )
     return (
         "Codex weekly quota: {remaining:g}% remaining ({used:g}% used); "
-        "resets {reset}; state {state}."
+        "resets {reset}; state {state} — {policy}."
     ).format(
         remaining=status["remainingPercent"],
         used=status["usedPercent"],
         reset=format_timestamp(status.get("resetsAt")),
         state=status["state"],
+        policy=policy,
     )
 
 
@@ -292,13 +290,12 @@ def notify_macos(title: str, body: str) -> None:
     )
 
 
-def error_status(message: str, reserve: float, margin: float) -> Dict[str, Any]:
+def error_status(message: str, pause_threshold: float) -> Dict[str, Any]:
     return {
         "observedAt": int(time.time()),
         "state": "ERROR",
         "error": message,
-        "reservePercent": reserve,
-        "safetyMarginPercent": margin,
+        "pauseThresholdPercent": pause_threshold,
     }
 
 
@@ -310,11 +307,11 @@ def run_check(args: argparse.Namespace) -> Tuple[Dict[str, Any], int]:
             find_codex_binary(args.codex_bin), args.timeout
         )
         window = select_weekly_window(result, args.weekly_window_minutes)
-        status = build_status(window, args.reserve, args.safety_margin)
-        exit_code = {"OK": 0, "HOLD": 10, "BLOCK": 20}[status["state"]]
+        status = build_status(window, args.pause_threshold)
+        exit_code = {"OK": 0, "PAUSE": 20}[status["state"]]
         message = format_status(status)
     except MonitorError as exc:
-        status = error_status(str(exc), args.reserve, args.safety_margin)
+        status = error_status(str(exc), args.pause_threshold)
         exit_code = 2
         message = "Codex weekly quota monitor error: {}".format(exc)
 
@@ -324,7 +321,7 @@ def run_check(args: argparse.Namespace) -> Tuple[Dict[str, Any], int]:
     if args.json:
         print(json.dumps(status, indent=2, sort_keys=True))
     if args.notify and status["state"] != "OK" and status["state"] != previous_state:
-        notify_macos("RingWorld usage reserve", message)
+        notify_macos("RingWorld usage pause", message)
     return status, exit_code
 
 
@@ -367,10 +364,8 @@ def install_launch_agent(args: argparse.Namespace) -> int:
             "--launch-agent-run",
             "--status-file",
             str(status_path),
-            "--reserve",
-            str(args.reserve),
-            "--safety-margin",
-            str(args.safety_margin),
+            "--pause-threshold",
+            str(args.pause_threshold),
             "--weekly-window-minutes",
             str(args.weekly_window_minutes),
         ],
@@ -440,16 +435,10 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         help="Machine-readable status output (default: project .codex-tmp).",
     )
     parser.add_argument(
-        "--reserve",
+        "--pause-threshold",
         type=float,
-        default=DEFAULT_RESERVE_PERCENT,
-        help="Protected remaining percentage; at or below this is BLOCK.",
-    )
-    parser.add_argument(
-        "--safety-margin",
-        type=float,
-        default=DEFAULT_SAFETY_MARGIN_PERCENT,
-        help="Extra remaining percentage where new substantial work is held.",
+        default=DEFAULT_PAUSE_THRESHOLD_PERCENT,
+        help="Remaining percentage at or below which RingWorld work pauses.",
     )
     parser.add_argument(
         "--weekly-window-minutes",
@@ -467,7 +456,7 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         help="Seconds between watch/LaunchAgent checks.",
     )
     parser.add_argument("--watch", action="store_true", help="Check continuously.")
-    parser.add_argument("--notify", action="store_true", help="Notify on HOLD/BLOCK.")
+    parser.add_argument("--notify", action="store_true", help="Notify on PAUSE or ERROR.")
     parser.add_argument("--quiet", action="store_true", help="Suppress text status.")
     parser.add_argument("--json", action="store_true", help="Also print status JSON.")
     parser.add_argument("--launch-agent-run", action="store_true", help=argparse.SUPPRESS)
@@ -483,12 +472,8 @@ def parse_args(argv: Optional[List[str]] = None) -> argparse.Namespace:
         help="Remove the macOS background monitor.",
     )
     args = parser.parse_args(argv)
-    if not 0 <= args.reserve <= 100:
-        parser.error("--reserve must be between 0 and 100")
-    if not 0 <= args.safety_margin <= 100:
-        parser.error("--safety-margin must be between 0 and 100")
-    if args.reserve + args.safety_margin > 100:
-        parser.error("--reserve plus --safety-margin cannot exceed 100")
+    if not 0 <= args.pause_threshold <= 100:
+        parser.error("--pause-threshold must be between 0 and 100")
     if args.interval < 60:
         parser.error("--interval must be at least 60 seconds")
     if args.weekly_window_minutes <= 0 or args.timeout <= 0:

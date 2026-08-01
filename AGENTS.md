@@ -17,21 +17,20 @@ reconnect matrix also passes. Multi-size visual review, automated-harness
 completion, packaging, and staging remain, so the port is not playable yet.
 See `docs/CURRENT_STATE.md`.
 
-## Codex weekly usage reserve
+## Codex weekly usage pause
 
-Protect at least 10% of the primary ChatGPT-backed Codex weekly allowance for
-handoff and recovery. Before substantial work and after a long tool-heavy
-milestone, run:
+Before substantial RingWorld work and after a long tool-heavy milestone, run:
 
 ```sh
 python3 scripts/codex_usage_monitor.py
 ```
 
-More than 15% remaining is `OK`. At 10–15% (`HOLD`), finish only the current
-bounded handoff and do not start substantial new agent work. At 10% or less
-(`BLOCK`), stop agent work. Do not infer the weekly allowance from context
-tokens or a shorter quota window. The optional five-minute macOS monitor and
-its non-secret status file are documented in
+Above 50% remaining, `OK` permits normal operation. At exactly 50% remaining
+or below, `PAUSE` means pause all RingWorld work: do not dispatch new tasks,
+stop active work at the next safe handoff, and do not resume below the
+threshold without explicit owner authorization. Do not infer the weekly
+allowance from context tokens or a shorter quota window. The optional
+five-minute macOS monitor and its non-secret status file are documented in
 [`docs/CODEX_USAGE_MONITOR.md`](docs/CODEX_USAGE_MONITOR.md). The secondary
 agent uses a separate account and must monitor its own allowance.
 

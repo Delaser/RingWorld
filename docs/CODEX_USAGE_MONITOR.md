@@ -1,17 +1,14 @@
-# Codex usage reserve monitor
+# Codex usage pause monitor
 
 The primary RingWorld development machine monitors the ChatGPT-backed Codex
 weekly quota through the supported local Codex app-server. The monitor never
 opens `~/.codex/auth.json`, reads tokens, or prints credentials.
 
-The project protects a 10% weekly reserve. A five-point safety margin prevents
-a large turn from starting immediately above that floor:
-
-- `OK`: more than 15% remains;
-- `HOLD`: 10–15% remains; finish only the current bounded handoff and do not
-  start substantial new agent work;
-- `BLOCK`: 10% or less remains; stop agent work and wait for the reset or
-  explicit user direction.
+RingWorld has one allowance guardrail: at **50% remaining or below**, the
+monitor reports `PAUSE` and all RingWorld work pauses. Do not dispatch new
+tasks at or below that threshold. Active work stops at the next safe handoff;
+do not resume below the threshold without explicit owner authorization. Above
+50%, the monitor reports `OK` and normal operation may continue.
 
 The app-server reports `usedPercent`, `windowDurationMins`, and `resetsAt`.
 The monitor accepts only the exact 10,080-minute weekly window and fails
@@ -24,6 +21,12 @@ From the repository root:
 
 ```sh
 python3 scripts/codex_usage_monitor.py
+```
+
+At the threshold, the concise text output includes:
+
+```text
+state PAUSE — PAUSE ALL RINGWORLD WORK.
 ```
 
 The generated machine-readable status is:
@@ -44,7 +47,7 @@ python3 scripts/test_codex_usage_monitor.py
 ## macOS background check
 
 Install a per-user LaunchAgent that checks every five minutes and sends a
-notification when the state changes to `HOLD`, `BLOCK`, or `ERROR`:
+notification when the state changes to `PAUSE` or `ERROR`:
 
 ```sh
 python3 scripts/codex_usage_monitor.py --install-launch-agent
