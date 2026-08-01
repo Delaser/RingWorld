@@ -557,8 +557,8 @@ their corresponding runtime gates.
 
 - both clients acknowledge the same layout;
 - players remain visible and interactive through the seam;
-- combat, block update, vehicle, projectile, fluid, explosion, teleport, and
-  reconnect pass;
+- combat, block update, vehicle/passenger identity and mount continuity,
+  projectile, fluid, explosion, teleport, and reconnect pass;
 - natural movement remains a local packet step.
 
 ### Gate 5: production geometry

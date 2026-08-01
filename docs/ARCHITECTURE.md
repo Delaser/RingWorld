@@ -190,6 +190,13 @@ packet looks one circumference long and causes rubber-banding.
 Vehicles follow the same rule. After the root vehicle folds, its passengers
 are canonicalized and the player's baselines are adjusted.
 
+Entity tracking keeps an already-established pairing for the one delivery
+transition in which a folded entity's canonical destination chunk is still
+pending. The entity must remain inside the player's periodic watch window;
+vanilla chunk readiness still controls every initial pairing and removal after
+the entity leaves that window. This prevents a stationary folded vehicle and
+its passengers from disappearing without creating a second server-side image.
+
 ## Canonical chunk graph
 
 The server must never create one chunk holder for X=-1 and another for the
