@@ -122,6 +122,13 @@ loom {
 	}
 }
 
+// Loader-neutral Minecraft code remains in the conventional main/client
+// trees. Fabric-owned entrypoints, lifecycle hooks, networking transports,
+// environment lookup, and launch adapters live in explicit platform trees so
+// the same common sources can be compiled by the future NeoForge module.
+sourceSets.main.java.srcDir 'src/platform/fabric/java'
+sourceSets.client.java.srcDir 'src/platform/fabricClient/java'
+
 def checkedSaveId = { String value, String propertyName ->
 	def saveId = value == null ? "" : value.trim()
 	if (saveId.isEmpty() || saveId == "." || saveId == ".."
@@ -553,6 +560,32 @@ java {
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+tasks.register('verifyLoaderBoundary') {
+	group = 'verification'
+	description = 'Fails when loader API imports leak into loader-neutral source trees.'
+	inputs.files(fileTree('src/main/java') { include '**/*.java' },
+			fileTree('src/client/java') { include '**/*.java' })
+	doLast {
+		def forbidden = ['net.fabricmc', 'net.neoforged']
+		def violations = []
+		inputs.files.files.sort().each { source ->
+			def text = source.getText('UTF-8')
+			forbidden.each { namespace ->
+				if (text.contains('import ' + namespace) || text.contains(namespace + '.')) {
+					violations << rootProject.relativePath(source) + ': references ' + namespace
+				}
+			}
+		}
+		if (!violations.isEmpty()) {
+			throw new GradleException('Loader APIs leaked into shared sources:\n' + violations.join('\n'))
+		}
+	}
+}
+
+tasks.named('check') {
+	dependsOn tasks.named('verifyLoaderBoundary')
 }
 
 tasks.withType(Jar).configureEach {

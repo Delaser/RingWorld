@@ -43,11 +43,12 @@ The Nether and End remain vanilla.
 > The validated server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
 
-> **Loader direction:** current builds remain Fabric-only. Future development
-> is required to keep RingWorld's core loader-agnostic and place unavoidable
-> loader integration behind Fabric and NeoForge platform adapters. Dual-loader
-> support is the intended architecture; this is not yet a claim that a tested
-> NeoForge artifact is available.
+> **Loader direction:** current builds remain Fabric-only while NeoForge is the
+> active next phase. Shared Minecraft code and Fabric-owned adapters now live
+> in separate source trees, with a build check preventing loader APIs from
+> leaking back into shared code. A tested NeoForge artifact is not available
+> yet; gameplay/visual polish and release follow its standalone parity gate,
+> while broad third-party compatibility is deliberately deferred.
 
 > **Licence status:** RingWorld is open-source software licensed under the
 > [Mozilla Public License 2.0](LICENSE). Changes to existing RingWorld source

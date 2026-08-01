@@ -32,6 +32,11 @@ Run:
 ./gradlew test build
 ```
 
+`check` also runs `verifyLoaderBoundary`. That task scans the shared
+`src/main/java` and `src/client/java` trees and fails if either Fabric or
+NeoForge API namespaces leak into them. Loader integrations belong in their
+corresponding `src/platform/` trees.
+
 Expected artifact:
 
 ```text
