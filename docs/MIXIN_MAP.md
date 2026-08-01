@@ -20,6 +20,8 @@ the same change.
 | --- | --- | --- | --- |
 | `BoundedRegionArrayMixin` | `StaticCache2D` | Projects seam aliases into a local worldgen region while retaining canonical holders | Wrong bounds logic can break all feature neighbour access |
 | `ChunkGeneratorMixin` | `ChunkGenerator` | Skips exterior features, clears spillover, and installs the finite rim after features | Mutating live chunks or building the rim before features causes hangs/overwrites |
+| `ChunkGeneratorLocateMixin` | `ChunkGenerator` | Projects stronghold locate results into the periodic image nearest the query origin | Returning the flat canonical image makes Eyes point around the long side of the ring |
+| `ChunkGeneratorStructureStateMixin` | `ChunkGeneratorStructureState` | Replaces stronghold concentric-ring positions with one deterministic canonical in-band start when the saved new-world policy enables it | Enabling this without saved policy changes old worlds; duplicating the start across the seam violates single-plane ownership |
 | `ChunkNoiseSamplerMixin` | `NoiseChunk` | Substitutes the Overworld periodic noise router during sampler construction | Global substitution would curve Nether/End or break aquifers |
 | `ChunkPosDistanceLevelPropagatorMixin` | `ChunkTracker` | Joins chunk ticket/simulation propagation at the two X edges | A missed context leaks non-canonical holders or unloads seam neighbours |
 | `ChunkRegionMixin` | `WorldGenRegion` | Canonicalizes worldgen block/entity/tick writes and selects local holder aliases | Canonicalizing before vanilla radius validation changes feature locality |
@@ -28,6 +30,7 @@ the same change.
 | `EntityNavigationMixin` | `PathNavigation` | Projects AI path targets into the image nearest the mob and shifts active paths/timeout caches by the exact canonical fold delta | Canonical targets without local projection cause full-ring paths; stale old-chart nodes stop a mob after wrapping |
 | `EntityTrackingSectionMixin` | `EntitySection` | Compares canonicalized entity bounds during section queries | Duplicate/missing entity results at seam |
 | `ExplosionImplMixin` | `ServerExplosion` | Projects exposure rays and knockback direction to nearest entity image | Visual explosion can work while damage/impulse remains wrong |
+| `EyeOfEnderMixin` | `EyeOfEnder` | Shifts the Eye's transient guidance target by the exact canonical entity-fold delta | A stale target makes a seam-crossing Eye fly beyond its intended local signal point |
 | `MinecraftServerMixin` | `MinecraftServer` | Constrains first-world spawn search to the finite Z interior and exposes the authoritative read-only dimension storage path | Spawn redirection must remain scoped; storage consumers must not reconstruct dimension folders |
 | `MultiTickSchedulerMixin` | `WorldGenTickAccess` | Canonicalizes generation-time block/fluid scheduled ticks | Tick key must match canonical block storage |
 | `NoiseChunkGeneratorMixin` | `NoiseBasedChunkGenerator` | Attaches geometry, skips exterior density/surface/carvers, scopes the periodic router to biome and terrain sampler construction | The private sampler factory and biome climate call must remain paired without intercepting unrelated router consumers |

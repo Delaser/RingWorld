@@ -136,7 +136,9 @@ flowchart TD
     A["Loader platform initialization"] --> B["Load bootstrap ringworld.properties"]
     A --> C["Register payload codecs and server hooks"]
     D["Overworld ServerLevel load"] --> E["Load or create RingWorldSettings"]
+    E --> P["Load saved structure policy"]
     E --> F["Attach geometry to the Overworld noise generator"]
+    P --> Q["Attach placement policy to structure state"]
     E --> G["Load terrain atlas cache"]
     H["Player joins"] --> I["Server sends immutable geometry"]
     I --> J["Client installs RingGeometry and acknowledges"]
@@ -161,6 +163,12 @@ work are tracked in
 The current embedded atlas scheduler and its planned reusable, resumable
 service API are described in
 [`ATLAS_PREGENERATION_PLAN.md`](ATLAS_PREGENERATION_PLAN.md).
+
+`RingStructurePolicy` is separate server-only saved state. A newly created
+world persists the mandatory stronghold bit. If an existing RingWorld has no
+policy file, the bit remains disabled so upgrading the mod cannot silently
+move that world's structure layout. The policy is not client rendering state
+and therefore is not added to the geometry handshake.
 
 ### Production lifecycle regression
 
@@ -334,6 +342,21 @@ This makes density meet at X=0/C while retaining vanilla terrain machinery.
 It does not automatically prove every coordinate-sensitive structure
 placement algorithm is periodic; structure seam coverage remains incomplete.
 
+### Guaranteed stronghold
+
+New RingWorlds replace vanilla's unbounded concentric stronghold positions
+with exactly one deterministic seed-derived canonical start. Its Z chunk is
+the centre of the finite band. Its X chunk retains eight chunks of seam
+clearance, covering vanilla's 112-block piece-anchor limit without creating a
+second seam image. Vanilla `StrongholdStructure` still creates every piece,
+loot container, spawner, portal frame, and reference; RingWorld changes only
+the placement list.
+
+`/locate` and Eyes of Ender receive the stronghold locator in the periodic
+image nearest their origin. An Eye's transient target moves by the same exact
+X delta when the entity folds back into canonical storage. Saved chunks and
+structure starts remain canonical.
+
 ### Seam-crossing writes
 
 `ChunkRegionMixin` canonicalizes block-entity reads, block writes, generated
@@ -397,6 +420,17 @@ atomically into the authoritative Overworld data directory before
 bootstrap configuration, preserving immutable geometry. A world with
 26.1 Overworld region files but no readable RingWorld settings is rejected
 rather than converted in place.
+
+New-world structure policy is stored independently at:
+
+```text
+ringworld:structure_policy
+<world>/dimensions/minecraft/overworld/data/ringworld/structure_policy.dat
+```
+
+Absence means a pre-policy RingWorld and leaves its old structure placement
+unchanged. This fail-closed rule is intentional existing-world compatibility,
+not a missing-data migration.
 
 ### Server terrain atlas
 

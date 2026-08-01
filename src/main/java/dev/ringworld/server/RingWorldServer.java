@@ -7,6 +7,9 @@ import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingWorldGeneratorAccess;
 import dev.ringworld.world.RingWorldSettings;
+import dev.ringworld.world.RingEntityFoldAccess;
+import dev.ringworld.world.RingStructureStateAccess;
+import dev.ringworld.world.RingStructurePolicy;
 import dev.ringworld.world.RingNoiseCoordinates;
 import dev.ringworld.world.RingNavigationAccess;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
@@ -70,6 +73,7 @@ public final class RingWorldServer {
         RingTerrainAtlasServer.registerCommands();
         ServerTickEvents.END_LEVEL_TICK.register(RingWorldServer::tickRingWorld);
         ServerTickEvents.END_SERVER_TICK.register(RingWorldProductionLifecycleTest::tick);
+        ServerTickEvents.END_SERVER_TICK.register(RingWorldStrongholdTest::tick);
         ServerChunkEvents.CHUNK_LOAD.register((world, chunk, generated) -> {
             if (!isOverworld(world)) return;
             RingTerrainAtlasServer.captureLoadedChunk(world, chunk);
@@ -124,6 +128,10 @@ public final class RingWorldServer {
             access.ringworld$setGeometry(geometry);
             access.ringworld$setWallHeight(wallHeightBlocks);
         }
+        if (world.getChunkSource().getGeneratorState() instanceof RingStructureStateAccess access) {
+            access.ringworld$setStructurePolicy(
+                    geometry, RingStructurePolicy.get(world).guaranteesStronghold());
+        }
     }
 
     /** Allocation-free geometry lookup for chunk and network hot paths. */
@@ -173,6 +181,9 @@ public final class RingWorldServer {
         if (canonicalX == sourceX) return 0.0;
         entity.setPos(canonicalX, entity.getY(), entity.getZ());
         double shift = canonicalX - sourceX;
+        if (entity instanceof RingEntityFoldAccess access) {
+            access.ringworld$onCanonicalFold(shift);
+        }
         if (entity instanceof Mob mob && mob.getNavigation() instanceof RingNavigationAccess navigation) {
             navigation.ringworld$foldPath((int)Math.rint(shift));
         }

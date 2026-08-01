@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 97 unit/parameterized cases pass.
+gate. Common/client compilation and all 101 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -221,7 +221,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 97
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 101
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
@@ -377,6 +377,10 @@ version numbers.
   extraction method. Minecraft 26.1's
   `Screen.extractRenderStateWithTooltipAndSubtitles` already owns the frame's
   single legal menu-blur pass.
+- New worlds persist `RingStructurePolicy` with the mandatory stronghold bit.
+  A missing policy identifies an older world and deliberately retains its
+  previous vanilla structure placement. Do not infer or enable the guarantee
+  from geometry alone; that silently changes an immutable existing world.
 - The reusable multiplayer fixture must clear stale automated boats, wait for
   both clients to acknowledge the new boat before moving it, detect folds by
   periodic motion rather than a one-block sample window, and compare explicit

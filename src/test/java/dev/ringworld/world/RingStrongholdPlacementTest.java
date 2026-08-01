@@ -1,0 +1,47 @@
+package dev.ringworld.world;
+
+import java.util.HashSet;
+import java.util.Set;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class RingStrongholdPlacementTest {
+    @Test
+    void placementIsDeterministicCanonicalAndCentredAcrossWidth() {
+        RingGeometry geometry = new RingGeometry(256, 16_384);
+        RingStrongholdPlacement.StartChunk first =
+                RingStrongholdPlacement.guaranteedStart(123456789L, geometry);
+
+        assertEquals(first, RingStrongholdPlacement.guaranteedStart(123456789L, geometry));
+        assertEquals(0, first.chunkZ());
+        assertTrue(first.chunkX() >= 0 && first.chunkX() < geometry.circumferenceChunks());
+        assertTrue(RingStrongholdPlacement.hasSafeSeamClearance(first, geometry));
+    }
+
+    @Test
+    void placementSupportsMinimumAndNonPowerOfTwoCircumferences() {
+        for (RingGeometry geometry : new RingGeometry[]{
+                new RingGeometry(256, 1_024),
+                new RingGeometry(416, 2_048),
+                new RingGeometry(4_096, 15_552)}) {
+            RingStrongholdPlacement.StartChunk start =
+                    RingStrongholdPlacement.guaranteedStart(-42L, geometry);
+            assertTrue(RingStrongholdPlacement.hasSafeSeamClearance(start, geometry));
+            assertEquals(0, start.chunkZ());
+        }
+    }
+
+    @Test
+    void worldSeedActuallySelectsTheCircumferencePosition() {
+        RingGeometry geometry = new RingGeometry(256, 16_384);
+        Set<Integer> starts = new HashSet<>();
+        for (long seed = 0; seed < 32; seed++) {
+            starts.add(RingStrongholdPlacement.guaranteedStart(seed, geometry).chunkX());
+        }
+
+        assertNotEquals(1, starts.size());
+    }
+}
