@@ -32,6 +32,18 @@ The ignored local evidence and exact procedures are recorded in
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
 
+On 2026-08-02, Phase 4 began with issue #90. The eleven Fabric-owned
+entrypoint, lifecycle, networking, environment-path, and automated-client
+classes moved into explicit `src/platform/fabric` and
+`src/platform/fabricClient` source trees without changing their packages or
+runtime identity. Shared main/client trees now contain no Fabric or NeoForge
+API references, enforced by `verifyLoaderBoundary` as part of `check`. The
+Java 25 test/build gate passed all 233 cases, the rebuilt jar retained its
+entrypoints and licence, a fresh Fabric dedicated server reached `Done`, and a
+Fabric client completed resource/shader initialization. NeoForge metadata and
+runtime adapters are still pending in #91–#93, so this checkpoint remains
+Fabric-only.
+
 Issue #24 expands the loader-neutral dimension matrix to 200
 unit/parameterized cases. It covers the safe-small, aligned playable-minimum,
 production, former-wide, long/narrow, wide/medium, and custom-wall layouts;
@@ -721,21 +733,24 @@ retaining the fixed pose and continuous dimming/colour cycle.
 
 ## Recommended next work
 
-Priorities are ordered by player-visible value and architectural leverage.
+The owner-approved order is recorded in
+`DUAL_LOADER_STANDALONE_PLAN.md` and GitHub epic #4.
 
-1. **Prepare the Fabric release candidate**
-   - finish #12 macOS/Windows Prism and dedicated-server packages;
-   - run #13 independent review against one exact clean pushed revision.
-2. **Approve and publish only with owner authorization**
-   - do not replace the staged Modrinth artifact or live server implicitly.
-3. **Begin NeoForge parity only after Fabric RC approval**
-   - implement #34 through narrow platform adapters while keeping common code
-     loader-neutral.
-4. **Day/night visual polish**
-   - capture the new small sun at all four tone keyframes;
-   - tune keyframe colours only against matched sky, live-terrain, and
-     distant-ring screenshots;
-   - keep the single authoritative vanilla gameplay clock.
+1. **NeoForge standalone parity (#34, #90–#94)**
+   - preserve the green Fabric candidate while separating loader adapters;
+   - pass equivalent client, server, renderer, topology, multiplayer, atlas,
+     save, and package gates on NeoForge.
+2. **Standalone gameplay and visual polish (#95–#96)**
+   - fix remaining first-party playability defects;
+   - sign off the production ring, live/atlas handoff, sky, weather, curved
+     objects, supported sizes, and performance budgets on both loaders.
+3. **Exact-candidate release (#12, #13, #97)**
+   - complete remaining Windows evidence and independent review;
+   - freeze hashes, stage loader-specific Modrinth versions, and keep a final
+     owner go/no-go before publication.
+4. **Third-party compatibility later (#98)**
+   - return to modpack compatibility only after standalone owner sign-off;
+   - start with Create without changing shared topology or file/wire formats.
 
 ## Evidence required before calling the mod stable and broadly compatible
 

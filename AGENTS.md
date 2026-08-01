@@ -34,7 +34,10 @@ gameplay compatibility, and compatibility work remain, so
 the Fabric alpha is not a stable release yet. See
 `docs/CURRENT_STATE.md` and `docs/VISUAL_HANDOFF_REVIEW_2026-08-01.md`.
 The Fabric alpha `0.2.0+mc26.1.2` is currently **Under review** on Modrinth;
-that submission does not make the remaining port gates complete.
+that submission does not make the remaining port gates complete. The approved
+next order is NeoForge standalone parity, standalone gameplay/visual polish,
+then exact-candidate release preparation. Broad third-party compatibility is
+deferred until owner sign-off; see `docs/DUAL_LOADER_STANDALONE_PLAN.md`.
 
 For any later Modrinth build, use the fail-closed local staging procedure in
 [`docs/MODRINTH_RELEASE.md`](docs/MODRINTH_RELEASE.md). It stages only the
@@ -190,8 +193,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   atlas format, and sky-cycle math.
 - `src/main/java/dev/ringworld/api/`: versioned read-only coordinate/pose API
   and loader-neutral compatibility inventory.
-- `src/main/java/dev/ringworld/platform/fabric/`: narrow Fabric discovery and
-  lifecycle adapters that must not own common coordinate semantics.
+- `src/platform/fabric/java/`: Fabric server/common entrypoint, lifecycle,
+  networking, path, command, and discovery adapters.
+- `src/platform/fabricClient/java/`: Fabric client entrypoint, networking,
+  lifecycle, cache-path, and automated-client adapters.
 - `src/main/java/dev/ringworld/mixin/`: authoritative server/worldgen patches.
 - `src/main/java/dev/ringworld/server/`: lifecycle, canonical entity folding,
   atlas pregeneration, local smoke fixtures, and multiplayer harness.
@@ -214,6 +219,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   removing test-world assumptions from custom dimensions.
 - `docs/ATLAS_PREGENERATION_PLAN.md`: planned **Generate Entire Ring** UI and
   extraction of the current atlas scheduler into one resumable service.
+- `docs/DUAL_LOADER_STANDALONE_PLAN.md`: approved NeoForge-first execution,
+  standalone polish, release, and deferred-compatibility order.
 - `docs/ATLAS_FIDELITY_BENCHMARK_2026-08-01.md`: production step 8/4/2/1
   resource comparison and the decision to retain fixed eight-block sampling.
 - `docs/MINECRAFT_26_1_PORT_PLAN.md`: authoritative Minecraft 26.1.2 port,

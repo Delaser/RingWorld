@@ -40,6 +40,13 @@ Platform-owned code is limited to:
 - game/configuration directory discovery;
 - loader dependency declarations, packaging, and launch fixtures.
 
+The active source boundary makes this enforceable: shared code lives under
+`src/main/java` and `src/client/java`; Fabric adapters live under
+`src/platform/fabric/java` and `src/platform/fabricClient/java`.
+`verifyLoaderBoundary` rejects either loader API namespace in the shared
+trees. NeoForge receives parallel platform trees rather than copies of shared
+domain behavior.
+
 New features should depend on small RingWorld-owned platform interfaces rather
 than importing a loader API into shared domain code. Both adapters must
 preserve the same saved-data and network formats. Until equivalent NeoForge
