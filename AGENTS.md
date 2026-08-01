@@ -24,6 +24,23 @@ packaging, and staging work means the port is not a release yet. See
 The Fabric alpha `0.2.0+mc26.1.2` is currently **Under review** on Modrinth;
 that submission does not make the remaining port gates complete.
 
+## Codex weekly usage pause
+
+Before substantial RingWorld work and after a long tool-heavy milestone, run:
+
+```sh
+python3 scripts/codex_usage_monitor.py
+```
+
+Above 50% remaining, `OK` permits normal operation. At exactly 50% remaining
+or below, `PAUSE` means pause all RingWorld work: do not dispatch new tasks,
+stop active work at the next safe handoff, and do not resume below the
+threshold without explicit owner authorization. Do not infer the weekly
+allowance from context tokens or a shorter quota window. The optional
+five-minute macOS monitor and its non-secret status file are documented in
+[`docs/CODEX_USAGE_MONITOR.md`](docs/CODEX_USAGE_MONITOR.md). The secondary
+agent uses a separate account and must monitor its own allowance.
+
 ## What this project is
 
 RingWorld is a Fabric mod being ported from Minecraft Java 1.21.11 to 26.1.2.
