@@ -45,8 +45,8 @@ save, option, server, log, or runtime-state files; private-key material;
 unsafe or duplicate archive paths; and replacement of an unrecognized stage.
 It also rejects missing or stale MPL-2.0 metadata, a missing or different
 embedded `LICENSE-RINGWORLD.txt`, inconsistent version, Minecraft, Fabric
-Loader, Java, Fabric API, author/contact, environment, or Modrinth dependency
-metadata. It refuses a dirty checkout, an origin other than the exact public
+Loader, Java, Fabric API, compatibility API, author/contact, environment, or
+Modrinth dependency metadata. It refuses a dirty checkout, an origin other than the exact public
 HTTPS repository URL, a missing branch upstream, or an unpushed/different
 upstream revision; the generated revision is a full SHA with its canonical
 public GitHub commit URL.

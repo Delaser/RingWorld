@@ -49,3 +49,8 @@ without requiring another Microsoft login or deleting user state.
 Keep the three templates synchronized with their copies in the generated
 bundles. Validate both a fresh directory and an existing instance containing
 sentinel account/save/config files before publishing.
+
+`package-windows.yml` executes the Windows batch/PowerShell update path on a
+Windows runner whenever package inputs change. It uses a local harmless Prism
+stand-in and makes no account, network-login, or Minecraft launch claim; an
+actual graphical Windows client remains a release-candidate runtime gate.

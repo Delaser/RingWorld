@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -22,12 +24,15 @@ REVISION = "a" * 40
 class ReleasePackagePreparationTest(unittest.TestCase):
     def make_jar(
         self, path: Path, *, mod_id: str, license_id: str = "MPL-2.0",
-        version: str = VERSION,
+        version: str = VERSION, compatibility_api: int = 1,
     ) -> None:
         with zipfile.ZipFile(path, "w") as archive:
             metadata: dict[str, object] = {"id": mod_id, "version": version}
             if mod_id == "ringworld":
                 metadata["license"] = license_id
+                metadata["custom"] = {
+                    "ringworld:compatibility_api": compatibility_api
+                }
             archive.writestr("fabric.mod.json", json.dumps(metadata))
             if mod_id == "ringworld":
                 archive.writestr("LICENSE-RINGWORLD.txt", (ROOT / "LICENSE").read_bytes())
@@ -129,6 +134,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                 self.assertIn("config/ringworld.properties", contents)
                 self.assertNotIn("RingWorld-Prism-Instance.zip", contents)
 
+    @unittest.skipIf(os.name == "nt", "POSIX launcher fixture")
     def test_mac_launcher_upgrade_preserves_existing_user_state(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             temporary = Path(directory)
@@ -182,6 +188,58 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             self.assertIn("AutomaticJava=true", instance_config)
             self.assertIn("OverrideJavaLocation=false", instance_config)
             self.assertIn("JavaPath=/old/java-21/bin/java", instance_config)
+
+    @unittest.skipUnless(os.name == "nt", "Windows launcher fixture")
+    def test_windows_launcher_fresh_and_upgrade_preserve_existing_user_state(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            jar, fabric, instance = self.inputs(temporary)
+            result = self.run_prepare(temporary, jar, fabric, instance)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            bundle = temporary / "bundle"
+            with zipfile.ZipFile(
+                temporary / "out" / f"RingWorld-{VERSION}-Client-Windows.zip"
+            ) as archive:
+                archive.extractall(bundle)
+
+            prism = bundle / ".launcher" / "windows" / "prismlauncher.exe"
+            prism.parent.mkdir(parents=True)
+            shutil.copy2(shutil.which("where.exe"), prism)
+            launcher = bundle / "Launch RingWorld.bat"
+            fresh = subprocess.run(
+                ["cmd.exe", "/d", "/c", str(launcher)],
+                cwd=bundle, capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(fresh.returncode, 0, fresh.stderr + fresh.stdout)
+
+            installed = bundle / ".prism-data" / "instances" / "RingWorld-Test"
+            mods = installed / ".minecraft" / "mods"
+            self.assertTrue((mods / f"ringworld-{VERSION}.jar").is_file())
+            (installed / ".minecraft" / "saves" / "sentinel").mkdir(parents=True)
+            (installed / ".minecraft" / "options.txt").write_text(
+                "keep=true\n", encoding="utf-8"
+            )
+            config = installed / ".minecraft" / "config" / "ringworld.properties"
+            config.write_text("widthBlocks=416\n", encoding="utf-8")
+            (mods / "ringworld-old.jar").write_bytes(b"old")
+            (mods / "fabric-api-old.jar").write_bytes(b"old")
+
+            upgraded = subprocess.run(
+                ["cmd.exe", "/d", "/c", str(launcher)],
+                cwd=bundle, capture_output=True, text=True, check=False,
+            )
+            self.assertEqual(upgraded.returncode, 0, upgraded.stderr + upgraded.stdout)
+            self.assertFalse((mods / "ringworld-old.jar").exists())
+            self.assertFalse((mods / "fabric-api-old.jar").exists())
+            self.assertTrue((installed / ".minecraft" / "saves" / "sentinel").is_dir())
+            self.assertEqual(config.read_text(encoding="utf-8"), "widthBlocks=416\n")
+            self.assertEqual(
+                (installed / ".minecraft" / "options.txt").read_text(encoding="utf-8"),
+                "keep=true\n",
+            )
+            instance_config = (installed / "instance.cfg").read_text(encoding="utf-8")
+            self.assertIn("AutomaticJava=true", instance_config)
+            self.assertIn("OverrideJavaLocation=false", instance_config)
 
     def test_rejects_runtime_source_stale_licence_and_bad_revision(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -256,6 +314,14 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             result = self.run_prepare(temporary, jar, fabric, instance)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("JoinServerOnLaunch=false", result.stderr)
+
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            jar, fabric, instance = self.inputs(temporary)
+            self.make_jar(jar, mod_id="ringworld", compatibility_api=0)
+            result = self.run_prepare(temporary, jar, fabric, instance)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("compatibility API version", result.stderr)
 
 
 if __name__ == "__main__":

@@ -39,6 +39,7 @@ PRIVATE_KEY_PATTERN = re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY
 SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 GITHUB_COMMIT_PREFIX = "https://github.com/Delaser/RingWorld/commit/"
 PUBLIC_REPOSITORY = "https://github.com/Delaser/RingWorld"
+COMPATIBILITY_API_VERSION = 1
 
 
 def read_json(path: Path) -> dict:
@@ -158,6 +159,11 @@ def validate_runtime_jar(jar_path: Path, config: dict, expected_license: bytes) 
         raise VerificationError("fabric.mod.json contact object is required")
     require_equal("fabric.mod.json contact.homepage", contact.get("homepage"), fabric["homepage"])
     require_equal("fabric.mod.json environment", metadata.get("environment"), fabric["environment"])
+    custom = metadata.get("custom")
+    if not isinstance(custom, dict):
+        raise VerificationError("fabric.mod.json custom object is required")
+    require_equal("fabric.mod.json custom.ringworld:compatibility_api",
+                  custom.get("ringworld:compatibility_api"), COMPATIBILITY_API_VERSION)
     depends = metadata.get("depends")
     if not isinstance(depends, dict):
         raise VerificationError("fabric.mod.json depends object is required")

@@ -449,9 +449,9 @@ Restrictions:
 
 ### S5: Java 25 packaging and deployment preparation ([#12](https://github.com/Delaser/RingWorld/issues/12))
 
-Status: in progress on `codex/issue-12-packaging` after P1–P4 closure.
+Status: in progress on `codex/issue-12-release-packages` after the stability gate.
 
-Branch: `codex/issue-12-packaging`
+Branch: `codex/issue-12-release-packages`
 
 Secondary ownership:
 
