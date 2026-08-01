@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. Common and client
-compilation now pass together, and the development build runs all 215
+compilation now pass together, and the development build runs all 219
 unit/parameterized cases:
 
 ```sh
@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 215 unit/parameterized cases:
+The active suite contains 219 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -79,6 +79,21 @@ Inspect machine-readable results under:
 ```text
 build/test-results/test/
 ```
+
+## Atlas fidelity benchmark
+
+Run the production step 8/4/2/1 cost comparison under Java 25:
+
+```sh
+./gradlew runAtlasFidelityBenchmark --console=plain
+```
+
+This does not launch Minecraft. It exercises real format-6 save/load and tile
+encoding plus the renderer-equivalent CPU texture, relief, and mip pipeline.
+The ignored report is written to
+`build/reports/ringworld/atlas-fidelity.md`; interpretation and the retained-
+profile decision are in
+[`ATLAS_FIDELITY_BENCHMARK_2026-08-01.md`](ATLAS_FIDELITY_BENCHMARK_2026-08-01.md).
 
 ## Atlas map GUI-scale regression
 

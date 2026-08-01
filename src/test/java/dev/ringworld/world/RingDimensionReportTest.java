@@ -56,6 +56,31 @@ class RingDimensionReportTest {
         assertTrue(report.radialClearanceAtHighestPlane() > 2_350.0);
     }
 
+    private static Stream<Arguments> productionAtlasFidelityCandidates() {
+        return Stream.of(
+                Arguments.of(8, 65_536L, 458_752L),
+                Arguments.of(4, 262_144L, 1_835_008L),
+                Arguments.of(2, 1_048_576L, 7_340_032L),
+                Arguments.of(1, 4_194_304L, 29_360_128L));
+    }
+
+    @ParameterizedTest(name = "production step {0} has checked atlas budgets")
+    @MethodSource("productionAtlasFidelityCandidates")
+    void productionAtlasFidelityCandidatesHaveCheckedCosts(
+            int sampleStep, long expectedCells, long expectedRawBytes) {
+        RingDimensionReport report = RingDimensionReport.evaluate(
+                new RingGeometry(256, 16_384), 160,
+                RingDimensionReport.VANILLA_OVERWORLD_BOTTOM_Y,
+                RingDimensionReport.VANILLA_OVERWORLD_TOP_Y_EXCLUSIVE,
+                RingGenerationBoundary.RIM_THICKNESS, sampleStep);
+
+        assertTrue(report.isValid(), report.errors().toString());
+        assertEquals(expectedCells, report.atlasCellCount());
+        assertEquals(expectedRawBytes, report.estimatedAtlasBytes());
+        assertEquals(sampleStep == 1, report.warnings().stream()
+                .anyMatch(warning -> warning.contains("terrain atlas")));
+    }
+
     @Test
     void minimumCircumferenceIsChunkAlignedAndIncludesClearance() {
         assertEquals(2_016, RingDimensionReport.minimumCircumferenceBlocks(

@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 215 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 219 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -377,6 +377,7 @@ measurements, and safe handling rules are in [Testing](docs/TESTING.md).
 | [Operations](docs/OPERATIONS.md) | Configuration, installation, packaging, deployment, and recovery |
 | [Rendering](docs/RENDERING.md) | Curvature, visibility, terrain proxy, sky, clouds, and handoff |
 | [Atlas visual baseline](docs/ATLAS_VISUAL_BASELINE_2026-08-01.md) | Production and safe-small 6/12/28 profile-5 captures, frame pacing, and resource evidence |
+| [Atlas fidelity decision](docs/ATLAS_FIDELITY_BENCHMARK_2026-08-01.md) | Production step 8/4/2/1 costs and the evidence-based decision to retain eight-block sampling |
 | [Revisioned atlas updates](docs/ATLAS_REVISIONED_UPDATES_2026-08-01.md) | Bounded terrain invalidation, durable revisions, tile broadcast, and reconnect rules |
 | [Testing](docs/TESTING.md) | Unit, local, visual, layout-switch, and multiplayer procedures |
 | [Sun renderer snapshot](docs/SUN_RENDERING_SNAPSHOT_2026-07-26.md) | Rollback record for the removed shadow-panel experiment |

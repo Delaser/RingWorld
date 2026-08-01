@@ -134,6 +134,13 @@ normal server chunk queue has fewer than 64 pending tasks.
 | 2048×416 safe-small | 3,328 | 13,312 |
 | 16384×256 default | 16,384 | 65,536 |
 
+The supported sample step remains fixed at eight blocks. The production atlas
+uses 458,752 raw primitive-array bytes and about 459,264 encoded full-stream
+bytes. The #69 benchmark rejected adaptive 4/2/1-block profiles for this
+release because they multiply source/cache/transfer cost by 4/16/64 without
+changing the capped GPU texture or mesh. See
+[`ATLAS_FIDELITY_BENCHMARK_2026-08-01.md`](ATLAS_FIDELITY_BENCHMARK_2026-08-01.md).
+
 Production-default atlas completion is therefore a large world-generation
 operation. Monitor disk use, server tick time, and progress logs. Set
 `pregenerateTerrainAtlas=false` to postpone background generation. The distant
@@ -152,7 +159,7 @@ these as one-machine reference measurements rather than resource guarantees.
 
 The 16,384×256 production-default static resource envelope is approximately
 0.44 MiB of raw atlas arrays/wire payload, 5.33 MiB for the RGBA8 GPU texture
-including its mip chain, 2.25 MiB for the maximum-detail mesh, and 12.0 MiB of
+including its mip chain, 9.0 MiB for the maximum-detail mesh, and 12.0 MiB of
 conservative texture-build scratch. Gzip disk size depends on terrain but
 cannot be used as the memory budget. The creation editor reports these
 calculated values. The technical 16-million-cell atlas ceiling represents
@@ -286,7 +293,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite contains 215 unit/parameterized cases. The historical Phase 2
+The current suite contains 219 unit/parameterized cases. The historical Phase 2
 95-error inventory and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.
