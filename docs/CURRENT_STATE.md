@@ -67,7 +67,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite now contains 220 unit/parameterized cases.
+The active suite now contains 221 unit/parameterized cases.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
@@ -86,6 +86,20 @@ snapshot off the render thread, and already-complete revision bursts publish
 once after a three-second quiet period or ten-second maximum delay. Exact
 resource numbers, hashes, commands, frame metrics, and residual cold-start
 spikes are recorded in `ATLAS_RELEASE_GATE_2026-08-01.md`.
+
+#71 completes the expanded safe-small seam gameplay gate. The dedicated
+server now waits for two fully loaded clients, then passes the original
+movement/combat/block/boat/teleport/reconnect matrix plus synchronized chest
+and lectern block entities, a real cross-seam redstone neighbour update,
+fluid-source state, a destructive explosion, survival bed sleep/damage wake/
+destruction, death/client respawn, linked Nether portal travel and return, and
+End portal travel and return. Canonical server ownership and nearest client
+images remain intact, Nether/End client RingWorld state clears and restores,
+and the final run emitted neither flat-distance movement warning. The fixes
+are a nearest-periodic server bed-reach box, movement-baseline realignment
+after server-owned sleep poses, monotonic 26.1 clock setup, and explicit
+client-ready gating. Exact automated, manual, and unsupported coverage is in
+`SEAM_GAMEPLAY_REGRESSION_2026-08-01.md`.
 
 The P1–P4 architecture parents (#5–#8) are now closed after final review of
 the integrated 26.1 topology, worldgen, protocol, renderer, lifecycle, and
@@ -146,7 +160,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 220 unit/parameterized cases pass, and Loom produces
+temporary shims, all 221 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -554,13 +568,16 @@ and compatibility claims.
 ### Gameplay coverage
 
 - Representative arrows, a boat, one navigator, water, explosions, effects,
-  blocks, and melee are tested; arbitrary redstone, fluids, projectiles,
-  vehicles, portals, raids, maps, commands, and modded systems are not.
+  blocks, block entities, redstone, melee, beds, death/respawn, and physical
+  Nether/End portal transfers are tested. Arbitrary redstone/fluid networks,
+  additional projectile/vehicle variants, raids, maps, command families, and
+  modded systems are not.
 - Explicit teleport and reconnect have harness coverage. The isolated
   copied-production lifecycle runner covers Nether → Overworld → End →
   Overworld, normal save/disconnect, and same-process reopen at 16,384×256.
-  Death/respawn, vanilla portal construction, and other portal routes still
-  need broader regression testing.
+  The safe-small two-client runner adds actual `PortalForcer`-created Nether
+  blocks/linking/return and End portal block travel. Normal stand-in-portal
+  delays, sleeping-player reconnect, maps, and raids remain manual coverage.
 - No global compatibility layer catches every new positional Minecraft packet
   or mod packet.
 
@@ -602,8 +619,10 @@ and compatibility claims.
   before vanilla applies the sleeping pose, so sleeping, waking, bed
   orientation, and bed lookup cannot snap a seam-side player to the raw
   canonical copy or into the void. The automated integrated harness exercises
-  that client getter across the seam; a real night/damage/destruction/rejoin
-  bed lifecycle remains in the manual multiplayer matrix.
+  that client getter across the seam, and the dedicated two-client harness now
+  exercises real night sleep, canonical server state, damage interruption,
+  destruction, and death/respawn. Rejoining while still asleep remains in the
+  manual multiplayer matrix.
 - Block entities and interaction overlays now use the same exact cylindrical
   anchor and tangent frame as ordinary entity models. An isolated safe-small
   client capture shows a chest, lectern book, ender chest, copper golem, item,
@@ -659,7 +678,6 @@ retaining the fixed pose and continuous dimming/colour cycle.
 Priorities are ordered by player-visible value and architectural leverage.
 
 1. **Run the stability phase**
-   - #71 broader gameplay and multiplayer regression;
    - #72 worldgen/structure seam matrix;
    - #73 custom-dimension runtime matrix;
    - #74 compatibility and fault-isolation pass.
@@ -674,7 +692,8 @@ Priorities are ordered by player-visible value and architectural leverage.
    - every major biome;
    - non-stronghold structures deliberately forced across X=0/C;
    - loot, mobs, and structure-specific locate commands;
-   - manual Eye-of-Ender flight and physical End-portal travel/return.
+   - manual Eye-of-Ender flight from ordinary play (automated folded Eye
+     motion and physical End-portal travel/return already pass).
 5. **Configuration UX follow-up**
    - improve creation cost warnings with measured production benchmarks;
    - continue custom-size runtime coverage without weakening immutable layout
@@ -694,8 +713,8 @@ Priorities are ordered by player-visible value and architectural leverage.
 
 - Broader multi-seed worldgen/structure continuity beyond the guaranteed
   stronghold and optional monument fixtures.
-- Death/respawn and physical portal construction/linking coverage in addition
-  to the passing save/reconnect and dimension-transfer lifecycle gate.
+- Manual sleeping-player reconnect, map, raid, and ordinary portal-delay
+  playthroughs beyond the passing automated bed/death/linked-portal gate.
 - Manual gamma, night-vision, lightning, and close cloud-height visual checks.
 - Optional package fresh/upgrade launch checks and an independent final review.
 - Explicit supported/incompatible mod list.

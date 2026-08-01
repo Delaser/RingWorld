@@ -42,6 +42,7 @@ public final class RingWorldMultiplayerTest {
     private static int vehiclePassengerId = -1;
     private static ServerPlayer reconnectBaselineB;
     private static boolean sawReconnectDisconnect;
+    private static boolean baselineScenarioPassed;
 
     private RingWorldMultiplayerTest() { }
 
@@ -93,6 +94,13 @@ public final class RingWorldMultiplayerTest {
             tickReconnect(playerA, playerB);
             return;
         }
+        if (stage == 8) {
+            if (RingWorldExtendedMultiplayerTest.tick(world, geometry, playerA, playerB,
+                    baselineScenarioPassed)) {
+                stage = 9;
+            }
+            return;
+        }
         if (playerA == null || playerB == null) {
             if (!loggedWaiting) {
                 RingWorldMod.LOGGER.info("[multiplayer] waiting for RingTesterA and RingTesterB");
@@ -102,6 +110,11 @@ public final class RingWorldMultiplayerTest {
         }
 
         ticks++;
+        if (stage == 0 && (!clientPassed("A", "client_ready")
+                || !clientPassed("B", "client_ready"))) {
+            ticks = 0;
+            return;
+        }
         if (stage == 0 && ticks == 1) {
             // Reused-world boats can finish loading only when the automated
             // clients begin watching the seam chunks. Clear them again here,
@@ -336,26 +349,30 @@ public final class RingWorldMultiplayerTest {
                     && clientPassed("B", "reconnect");
             boolean passed = playerA != null && serverSeamPassed && combatPassed && interactionPassed
                     && vehiclePassed && clientMatrix;
+            baselineScenarioPassed = passed;
             RingWorldMod.LOGGER.info(
-                    "[multiplayer] full scenario result={} (serverSeam={}, combat={}, interaction={}, vehicle={}, reconnect={}, clientMatrix={})",
+                    "[multiplayer] baseline scenario result={} (serverSeam={}, combat={}, interaction={}, vehicle={}, reconnect={}, clientMatrix={})",
                     passed, serverSeamPassed, combatPassed, interactionPassed, vehiclePassed,
                     newConnection, clientMatrix);
             stage = 8;
+            ticks = 0;
         } else if (ticks >= 2_400) {
             RingWorldMod.LOGGER.error(
-                    "[multiplayer] full scenario result=false (disconnectSeen={}, newConnection={}, results={})",
+                    "[multiplayer] baseline scenario result=false (disconnectSeen={}, newConnection={}, results={})",
                     sawReconnectDisconnect, newConnection, CLIENT_RESULTS);
+            baselineScenarioPassed = false;
             stage = 8;
+            ticks = 0;
         }
     }
 
-    private static boolean clientPassed(String role, String phase) {
+    static boolean clientPassed(String role, String phase) {
         return Boolean.TRUE.equals(CLIENT_RESULTS.get(role + ':' + phase));
     }
 
     private static ServerPlayer playerNamed(ServerLevel world, String name) {
-        for (ServerPlayer player : world.players()) {
-            if (player.getName().getString().equals(name)) return player;
+        for (ServerPlayer player : world.getServer().getPlayerList().getPlayers()) {
+            if (player.level() == world && player.getName().getString().equals(name)) return player;
         }
         return null;
     }

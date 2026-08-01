@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. Common and client
-compilation now pass together, and the development build runs all 220
+compilation now pass together, and the development build runs all 221
 unit/parameterized cases:
 
 ```sh
@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 220 unit/parameterized cases:
+The active suite contains 221 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -638,7 +638,9 @@ clients: -Dringworld.multiplayerTestPort=25566
 ```
 
 The automated clients wait for Minecraft's initial resource reload to report
-`isFinishedLoading()` before connecting. Do not remove that gate: a world may
+`isFinishedLoading()` before connecting, then both explicitly acknowledge
+`isGameLoadFinished()` before the server applies any fixture teleport. Do not
+remove either gate: a world may
 otherwise begin random display ticks while particle sprite providers are still
 unprepared. The harness uses the supported minimum simulation distance of five
 chunks. Client A derives its next positive seam from its current presentation
@@ -672,6 +674,18 @@ The scenario verifies:
   zero fixture velocity, visibility, and canonical ownership through the fold;
 - an intentional long teleport re-keys the client chart;
 - client B disconnects and reconnects cleanly;
+- a chest and book-bearing lectern synchronize on their nearest seam images;
+- a real neighbour update powers a redstone lamp across X=`C-1`/`0`;
+- a seam-side water source and destructive explosion synchronize to both
+  clients (the integrated harness separately verifies actual flowing water);
+- a real survival bed spanning canonical X=`0`/`1` accepts a player beside
+  `C`, stays canonical, wakes on damage, and disappears cleanly when broken;
+- the death screen, client respawn request, replacement server player, and
+  canonical respawn all complete;
+- real Nether portal blocks and `PortalForcer` linking carry the player to the
+  vanilla Nether and back near the periodic source image;
+- a real End portal block carries the player to the vanilla End and an End
+  return portal restores the Overworld with client RingWorld state reattached;
 - both clients report their phase matrix.
 
 Success is:
@@ -682,7 +696,12 @@ Success is:
 
 in `run-multiplayer/server/logs/latest.log`.
 
-The isolated Minecraft 26.1.2/Java 25 run on 2026-07-31 achieved that result
+The expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01 achieved that
+result on the reused 2,048×416 server with no `moved too quickly` or `moved
+wrongly` warning. Detailed scope and residual manual coverage are recorded in
+[`SEAM_GAMEPLAY_REGRESSION_2026-08-01.md`](SEAM_GAMEPLAY_REGRESSION_2026-08-01.md).
+
+The original run on 2026-07-31 achieved the baseline result
 on a reused 2,048×416 server whose seam crossed an ocean. Both clients
 acknowledged format 2; the natural seam crossing was canonical with a
 0.25-block maximum packet step; visibility/query/distance, real melee, block

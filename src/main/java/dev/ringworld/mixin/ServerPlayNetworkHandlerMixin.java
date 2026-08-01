@@ -1,6 +1,7 @@
 package dev.ringworld.mixin;
 
 import dev.ringworld.world.RingGeometry;
+import dev.ringworld.world.RingPlayerMovementAccess;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.network.protocol.game.ServerboundMoveVehiclePacket;
 import net.minecraft.server.level.ServerLevel;
@@ -25,12 +26,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  * send a corrective teleport back to the client.
  */
 @Mixin(ServerGamePacketListenerImpl.class)
-abstract class ServerPlayNetworkHandlerMixin {
+abstract class ServerPlayNetworkHandlerMixin implements RingPlayerMovementAccess {
     @Shadow public ServerPlayer player;
     @Shadow private double firstGoodX;
     @Shadow private double lastGoodX;
     @Shadow private double vehicleFirstGoodX;
     @Shadow private double vehicleLastGoodX;
+
+    @Override
+    public void ringworld$resetPlayerMovementBaselines() {
+        firstGoodX = player.getX();
+        lastGoodX = player.getX();
+    }
 
     @ModifyVariable(
             method = "handleMovePlayer",
@@ -45,6 +52,17 @@ abstract class ServerPlayNetworkHandlerMixin {
         double nearestX = geometry.nearestImageX(presentationX, player.getX());
         RingWorldMultiplayerTest.recordPlayerMovementPacket(player, nearestX, geometry);
         double canonicalTargetX = geometry.wrapX(nearestX);
+
+        // Server-owned pose changes such as entering a bed can choose the
+        // adjacent canonical image without passing through this packet path.
+        // Bring vanilla's anti-cheat baselines back to the image nearest the
+        // authoritative pose before it computes a flat-space displacement.
+        double alignedFirstGoodX = geometry.nearestImageX(firstGoodX, player.getX());
+        double baselineShift = alignedFirstGoodX - firstGoodX;
+        if (baselineShift != 0.0) {
+            firstGoodX += baselineShift;
+            lastGoodX += baselineShift;
+        }
 
         // Validate a seam crossing entirely within the destination chart.
         // Letting vanilla move the bounding box from C-epsilon to C makes its
