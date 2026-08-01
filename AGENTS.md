@@ -15,7 +15,10 @@ Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
 gameplay/rim probes. The dedicated two-client seam/combat/stateful-block/bed/
-death/physical-portal/boat/teleport/reconnect matrix also passes. A copied
+death/physical-portal/boat/teleport/reconnect matrix also passes. The
+multi-seed worldgen matrix covers all 14 major biome families, deliberate
+seam-crossing structures, caves, ores, trees, loot, saved scarce-structure
+outcomes, and exact reload evidence. A copied
 16,384×256 world now passes the
 Overworld/Nether/End transfer, save/disconnect, client-state cleanup, and
 same-process reopen gate. Safe-small 6/12/28-chunk and production-size
@@ -24,7 +27,7 @@ pass. The complete production atlas regression gate passes generation/recovery,
 live revisions, layout/lifecycle switching, two-client synchronization, and
 resource/frame-pacing review. The P1–P4 topology, worldgen, protocol, and
 renderer architecture parents are closed. Optional convenience packaging,
-independent release-candidate review, broader gameplay/worldgen coverage, and
+independent release-candidate review, broader gameplay compatibility, and
 compatibility work remain, so
 the Fabric alpha is not a stable release yet. See
 `docs/CURRENT_STATE.md` and `docs/VISUAL_HANDOFF_REVIEW_2026-08-01.md`.

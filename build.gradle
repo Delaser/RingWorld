@@ -104,6 +104,8 @@ loom {
 			name "RingWorld Stronghold Test Server"
 			runDir "run-stronghold-test"
 			vmArg "-Dringworld.strongholdTest=true"
+			vmArg "-Dringworld.worldgenMatrix=" + providers.gradleProperty("ringWorldgenMatrix")
+					.orElse("false").get()
 			programArg "nogui"
 		}
 		headlessPrewarmServer {
@@ -159,6 +161,8 @@ tasks.register("prepareStrongholdTestWorld") {
 			providers.gradleProperty("ringStrongholdTestWallHeight").orElse("160"))
 	inputs.property("ringStrongholdTestResume",
 			providers.gradleProperty("ringStrongholdTestResume").orElse("false"))
+	inputs.property("ringWorldgenMatrix",
+			providers.gradleProperty("ringWorldgenMatrix").orElse("false"))
 	outputs.upToDateWhen { false }
 	doLast {
 		def eula = new File(strongholdTestDirectory, "eula.txt")

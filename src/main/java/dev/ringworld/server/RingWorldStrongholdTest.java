@@ -7,6 +7,7 @@ import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingStrongholdPlacement;
 import dev.ringworld.world.RingMonumentResolution;
 import dev.ringworld.world.RingStructurePolicy;
+import dev.ringworld.world.RingWorldGeneratorAccess;
 import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -15,14 +16,20 @@ import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.tags.BiomeTags;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.StructureTags;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.NoiseColumn;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.EndPortalFrameBlock;
+import net.minecraft.world.level.block.entity.RandomizableContainerBlockEntity;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.block.state.pattern.BlockPattern;
 import net.minecraft.world.level.chunk.ChunkAccess;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -35,6 +42,13 @@ import net.minecraft.world.level.levelgen.structure.StructureStart;
 import net.minecraft.world.level.levelgen.structure.structures.StrongholdPieces;
 import net.minecraft.world.entity.projectile.EyeOfEnder;
 import net.minecraft.world.phys.Vec3;
+
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 /** Disposable dedicated-server gate for the guaranteed stronghold and portal room. */
 final class RingWorldStrongholdTest {
@@ -60,12 +74,14 @@ final class RingWorldStrongholdTest {
         ServerLevel world = server.getLevel(Level.OVERWORLD);
         if (world == null) throw new IllegalStateException("Overworld is unavailable");
         RingGeometry geometry = RingWorldServer.geometryFor(world);
+        boolean worldgenMatrix = Boolean.getBoolean("ringworld.worldgenMatrix");
         verifyPeriodicHeightQueries(world, geometry);
+        if (worldgenMatrix) verifySeamWorldgenSample(world, geometry);
         verifyFiniteRims(world, geometry);
         if (!RingStructurePolicy.get(world).guaranteesStronghold()) {
             throw new IllegalStateException("Fresh test world did not persist its stronghold policy");
         }
-        verifyGuaranteedMonument(world, geometry);
+        verifyGuaranteedMonument(world, geometry, worldgenMatrix);
         RingStrongholdPlacement.StartChunk expected =
                 RingStrongholdPlacement.guaranteedStart(world.getSeed(), geometry);
 
@@ -168,11 +184,204 @@ final class RingWorldStrongholdTest {
                 eye.getDeltaMovement().x);
     }
 
+    /**
+     * Generates a bounded strip on both canonical sides of the seam and
+     * audits ordinary biome, carver, feature, structure, reference, loot, and
+     * structure-spawn metadata without claiming that every finite seed must
+     * contain every vanilla structure.
+     */
+    private static void verifySeamWorldgenSample(ServerLevel world, RingGeometry geometry) {
+        Map<String, net.minecraft.tags.TagKey<Biome>> families = new LinkedHashMap<>();
+        families.put("ocean", BiomeTags.IS_OCEAN);
+        families.put("beach", BiomeTags.IS_BEACH);
+        families.put("river", BiomeTags.IS_RIVER);
+        families.put("mountain", BiomeTags.IS_MOUNTAIN);
+        families.put("badlands", BiomeTags.IS_BADLANDS);
+        families.put("taiga", BiomeTags.IS_TAIGA);
+        families.put("jungle", BiomeTags.IS_JUNGLE);
+        families.put("forest", BiomeTags.IS_FOREST);
+        families.put("savanna", BiomeTags.IS_SAVANNA);
+
+        Set<String> sampledFamilies = new HashSet<>();
+        Set<String> sampledBiomes = new HashSet<>();
+        ChunkGenerator generator = world.getChunkSource().getGenerator();
+        BiomeSource biomeSource = generator.getBiomeSource();
+        var sampler = ((RingWorldGeneratorAccess) generator)
+                .ringworld$getPeriodicClimateSampler(world.getChunkSource().randomState());
+        int sampleStep = 32;
+        for (int x = 0; x < geometry.circumferenceBlocks(); x += sampleStep) {
+            for (int z = geometry.minWidthZ() + 8; z <= geometry.maxWidthZ(); z += sampleStep) {
+                for (int y : new int[]{0, 64, 128}) {
+                    Holder<Biome> canonical = biomeSource.getNoiseBiome(
+                            Math.floorDiv(x, 4), Math.floorDiv(y, 4), Math.floorDiv(z, 4), sampler);
+                    Holder<Biome> alias = biomeSource.getNoiseBiome(
+                            Math.floorDiv(x + geometry.circumferenceBlocks(), 4),
+                            Math.floorDiv(y, 4), Math.floorDiv(z, 4), sampler);
+                    if (!canonical.equals(alias)) {
+                        throw new IllegalStateException("Periodic biome mismatch at "
+                                + new BlockPos(x, y, z));
+                    }
+                    if (!canonical.is(BiomeTags.IS_OVERWORLD)) {
+                        throw new IllegalStateException("Non-Overworld biome sampled in ring: "
+                                + canonical.unwrapKey().orElse(null));
+                    }
+                    String biomeId = canonical.unwrapKey()
+                            .map(key -> key.identifier().toString())
+                            .orElse("unregistered");
+                    sampledBiomes.add(biomeId);
+                    classifyBiome(biomeId, sampledFamilies);
+                    families.forEach((name, tag) -> {
+                        if (canonical.is(tag)) sampledFamilies.add(name);
+                    });
+                }
+            }
+        }
+        if (sampledFamilies.isEmpty()) {
+            throw new IllegalStateException("Biome family sampling found no recognized Overworld family");
+        }
+
+        int circumferenceChunks = geometry.circumferenceChunks();
+        int seamDepthChunks = Math.min(4, circumferenceChunks / 2);
+        Set<Integer> sampleChunkXs = new LinkedHashSet<>();
+        for (int offset = 0; offset < seamDepthChunks; offset++) {
+            sampleChunkXs.add(offset);
+            sampleChunkXs.add(circumferenceChunks - 1 - offset);
+        }
+
+        AtomicLong caveAir = new AtomicLong();
+        AtomicLong ores = new AtomicLong();
+        AtomicLong logs = new AtomicLong();
+        int sampledChunks = 0;
+        int validStarts = 0;
+        int seamCrossingStarts = 0;
+        int references = 0;
+        int lootContainers = 0;
+        int structuresWithSpawnOverrides = 0;
+        Set<String> startKeys = new HashSet<>();
+        Set<String> structureIds = new HashSet<>();
+        Set<String> crossingStructureIds = new HashSet<>();
+        Set<String> spawnOverrideStructureIds = new HashSet<>();
+        Set<String> lootPositions = new HashSet<>();
+        Set<String> referenceKeys = new HashSet<>();
+        var structureRegistry = world.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+
+        for (int chunkX : sampleChunkXs) {
+            for (int chunkZ = geometry.minChunkZ(); chunkZ <= geometry.maxChunkZ(); chunkZ++) {
+                LevelChunk chunk = world.getChunk(chunkX, chunkZ);
+                sampledChunks++;
+                chunk.findBlocks(state -> state.isAir() || state.is(BlockTags.LOGS) || isOre(state),
+                        (position, state) -> {
+                            if (state.isAir() && position.getY() < world.getSeaLevel() - 8
+                                    && position.getY() > world.getMinY() + 8) caveAir.incrementAndGet();
+                            if (state.is(BlockTags.LOGS)) logs.incrementAndGet();
+                            if (isOre(state)) ores.incrementAndGet();
+                        });
+                for (BlockPos position : chunk.getBlockEntitiesPos()) {
+                    if (chunk.getBlockEntity(position) instanceof RandomizableContainerBlockEntity container
+                            && container.getLootTable() != null) {
+                        String lootKey = geometry.wrapBlockX(position.getX()) + ","
+                                + position.getY() + "," + position.getZ();
+                        if (!lootPositions.add(lootKey)) {
+                            throw new IllegalStateException("Duplicate seam loot ownership: " + lootKey);
+                        }
+                        lootContainers++;
+                    }
+                }
+                for (Map.Entry<Structure, StructureStart> entry : chunk.getAllStarts().entrySet()) {
+                    StructureStart start = entry.getValue();
+                    if (!start.isValid()) continue;
+                    validStarts++;
+                    String structureId = String.valueOf(structureRegistry.getKey(entry.getKey()));
+                    structureIds.add(structureId);
+                    String startKey = structureId + '@' + start.getChunkPos().x() + ',' + start.getChunkPos().z();
+                    if (!startKeys.add(startKey)) {
+                        throw new IllegalStateException("Duplicate seam structure start ownership: " + startKey);
+                    }
+                    if (start.getChunkPos().x() < 0 || start.getChunkPos().x() >= circumferenceChunks) {
+                        throw new IllegalStateException("Non-canonical seam structure start: " + startKey);
+                    }
+                    BoundingBox box = start.getBoundingBox();
+                    if (box.minX() < 0 || box.maxX() >= geometry.circumferenceBlocks()) {
+                        seamCrossingStarts++;
+                        crossingStructureIds.add(structureId);
+                    }
+                    if (!entry.getKey().spawnOverrides().isEmpty()) {
+                        structuresWithSpawnOverrides++;
+                        spawnOverrideStructureIds.add(structureId);
+                    }
+                }
+                for (var referenceEntry : chunk.getAllReferences().entrySet()) {
+                    String structureId = String.valueOf(structureRegistry.getKey(referenceEntry.getKey()));
+                    for (long reference : referenceEntry.getValue()) {
+                        int referenceX = ChunkPos.getX(reference);
+                        if (referenceX < 0 || referenceX >= circumferenceChunks) {
+                            throw new IllegalStateException("Non-canonical seam structure reference X="
+                                    + referenceX + " from " + chunk.getPos());
+                        }
+                        String referenceKey = chunk.getPos().x() + "," + chunk.getPos().z()
+                                + ':' + structureId + '@' + referenceX + ',' + ChunkPos.getZ(reference);
+                        if (!referenceKeys.add(referenceKey)) {
+                            throw new IllegalStateException("Duplicate seam structure reference: " + referenceKey);
+                        }
+                        references++;
+                    }
+                }
+            }
+        }
+        if (caveAir.get() == 0 || ores.get() == 0) {
+            throw new IllegalStateException("Seam strip lacks ordinary carver/ore evidence: caveAir="
+                    + caveAir + ", ores=" + ores);
+        }
+        RingWorldMod.LOGGER.info(
+                "[worldgen-matrix] seed={} layout={}x{} biomeFamilies={} biomeIds={} chunks={} caveAir={} ores={} logs={} starts={} structureIds={} crossingStarts={} crossingStructureIds={} references={} lootContainers={} structuresWithSpawnOverrides={} spawnOverrideStructureIds={}",
+                world.getSeed(), geometry.circumferenceBlocks(), geometry.widthBlocks(),
+                sampledFamilies.stream().sorted().toList(), sampledBiomes.stream().sorted().toList(),
+                sampledChunks, caveAir, ores, logs,
+                validStarts, structureIds.stream().sorted().toList(), seamCrossingStarts,
+                crossingStructureIds.stream().sorted().toList(), references, lootContainers,
+                structuresWithSpawnOverrides, spawnOverrideStructureIds.stream().sorted().toList());
+    }
+
+    private static void classifyBiome(String biomeId, Set<String> families) {
+        String path = biomeId.startsWith("minecraft:") ? biomeId.substring("minecraft:".length()) : biomeId;
+        if (path.equals("plains") || path.equals("sunflower_plains") || path.equals("snowy_plains")) {
+            families.add("plains");
+        }
+        if (path.equals("desert")) families.add("desert");
+        if (path.equals("swamp") || path.equals("mangrove_swamp")) families.add("swamp");
+        if (path.equals("mushroom_fields")) families.add("mushroom");
+        if (path.equals("dripstone_caves") || path.equals("lush_caves") || path.equals("deep_dark")) {
+            families.add("cave");
+        }
+        if (path.startsWith("snowy_") || path.startsWith("frozen_") || path.equals("ice_spikes")
+                || path.equals("grove") || path.equals("frozen_ocean")
+                || path.equals("deep_frozen_ocean")) {
+            families.add("snowy");
+        }
+    }
+
+    private static boolean isOre(net.minecraft.world.level.block.state.BlockState state) {
+        return state.is(BlockTags.COAL_ORES) || state.is(BlockTags.COPPER_ORES)
+                || state.is(BlockTags.IRON_ORES) || state.is(BlockTags.GOLD_ORES)
+                || state.is(BlockTags.REDSTONE_ORES) || state.is(BlockTags.LAPIS_ORES)
+                || state.is(BlockTags.DIAMOND_ORES) || state.is(BlockTags.EMERALD_ORES);
+    }
+
     /** Runtime proof for policy persistence, forced placement, bounds, and periodic locate. */
-    private static void verifyGuaranteedMonument(ServerLevel world, RingGeometry geometry) {
+    private static void verifyGuaranteedMonument(
+            ServerLevel world, RingGeometry geometry, boolean allowUnsatisfied) {
         RingMonumentResolution resolution = RingStructurePolicy.get(world).oceanMonument();
         RingMonumentResolution.Candidate candidate = resolution.candidate();
         if (resolution.status() != RingMonumentResolution.Status.SATISFIED || candidate == null) {
+            if (allowUnsatisfied
+                    && resolution.status() == RingMonumentResolution.Status.UNSATISFIED
+                    && candidate == null
+                    && resolution.reason() != null) {
+                RingWorldMod.LOGGER.info(
+                        "[worldgen-matrix] monumentStatus={} monumentReason={} monumentCandidate=null",
+                        resolution.status(), resolution.reason());
+                return;
+            }
             throw new IllegalStateException("Test seed did not satisfy its requested monument: " + resolution);
         }
 
@@ -180,6 +389,9 @@ final class RingWorldStrongholdTest {
         Holder.Reference<Structure> monumentHolder = structures.get(BuiltinStructures.OCEAN_MONUMENT)
                 .orElseThrow(() -> new IllegalStateException("Built-in ocean monument holder is unavailable"));
         Structure monument = monumentHolder.value();
+        if (monument.spawnOverrides().isEmpty()) {
+            throw new IllegalStateException("Ocean monument has no guardian spawn override metadata");
+        }
         int canonicalLocateX = candidate.chunkX() * 16;
         // Query from the adjacent presentation chart so vanilla's flat
         // random-spread scan cannot discover this arbitrary forced candidate.
@@ -225,6 +437,12 @@ final class RingWorldStrongholdTest {
                 "[stronghold-test] monumentCandidate={}, box={}, pieces={}, origin={}, located={}, referenceableBefore={}, unexplored={}",
                 candidate, box, start.getPieces().size(), origin, located.getFirst(), referenceableBeforeLocate,
                 unexplored == null ? null : unexplored.getFirst());
+        if (allowUnsatisfied) {
+            RingWorldMod.LOGGER.info(
+                    "[worldgen-matrix] monumentStatus={} monumentReason={} monumentCandidate={},{} spawnOverrideEntries={}",
+                    resolution.status(), resolution.reason(), candidate.chunkX(), candidate.chunkZ(),
+                    monument.spawnOverrides().size());
+        }
     }
 
     /** Runtime-only check: generated boundary/exterior chunks honour saved rim height. */

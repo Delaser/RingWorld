@@ -29,7 +29,10 @@ The Nether and End remain vanilla.
 > passes interrupted resume, complete-cache reuse, live revisions, layout
 > switching, lifecycle, two-client synchronization, and measured resource
 > budgets. The repeatable Fabric release-staging workflow is also complete.
-> Remaining automated-harness and pre-release compatibility gates are still
+> A dedicated multi-seed worldgen matrix now covers all 14 major biome
+> families, caves, ores, trees, loot, canonical structure ownership, actual
+> seam-crossing mineshafts, saved scarce-structure outcomes, and exact reload.
+> Remaining protocol and pre-release compatibility gates are still
 > outstanding, so this is not a stable release yet. The first 26.1.2 Fabric
 > alpha is an early test build, not a stable or broadly compatible release.
 > The validated server, client packages, and rollback tag remain Minecraft 1.21.11
@@ -302,11 +305,12 @@ For demonstrated results, open risks, and the prioritized roadmap, see
 - The distant ring fills in progressively as atlas cells arrive; only generated
   regions are shown until the atlas reaches 100%.
 - Production clean-atlas generation, projection, transfer, multiplayer,
-  lifecycle, memory, and static GPU resource gates pass; the 6/12/28 visual and
-  repeated frame-pacing comparison matrix remains open.
-- Structures other than the guaranteed stronghold and opt-in ocean monument,
-  carvers, complex redstone/fluid networks, maps, raids, and additional
-  vehicle/projectile variants still need more seam coverage. Other scarce
+  lifecycle, memory, static GPU resources, and 6/12/28 visual/frame-pacing
+  gates pass.
+- The multi-seed matrix covers ordinary biome, carver, ore, tree, loot, and
+  mineshaft seam generation, but does not claim exhaustive seam coverage for
+  every vanilla structure. Maps, raids, complex redstone/fluid networks, and
+  additional vehicle/projectile variants still need more coverage. Other scarce
   random-spread structures are not yet selectable; see
   the [scarce-structure audit](docs/SCARCE_STRUCTURE_GUARANTEE_AUDIT.md).
 - The atlas is an eight-block surface sample: edits between sample points may
@@ -324,9 +328,7 @@ Fabric modpacks.
 
 ## Testing
 
-The commands below describe the green 1.21.11 baseline. Run them from a
-separate checkout of `mc-1.21.11-final`; they will be restored on this branch
-after common and client compilation succeeds:
+The active 26.1.2 build uses Java 25:
 
 ```sh
 ./gradlew test build
@@ -347,6 +349,7 @@ Additional automated runs:
 ./gradlew runProductionProjectionClient -PringProjectionWorld="save-folder-id"
 ./gradlew runProductionLifecycleClient -PringProductionLifecycleSource="save-folder-id"
 ./gradlew runHeadlessPrewarmServer
+python3 scripts/run_worldgen_structure_matrix.py
 ```
 
 `runHeadlessPrewarmServer` works only in its ignored disposable run directory.
