@@ -356,6 +356,17 @@ public final class RingTerrainAtlas {
         return true;
     }
 
+    /** Exact durable count used for progress reporting after restart/resume. */
+    public long presentChunkCount() {
+        long count = 0;
+        for (int chunkX = 0; chunkX < geometry.circumferenceChunks(); chunkX++) {
+            for (int chunkRow = 0; chunkRow < geometry.widthChunks(); chunkRow++) {
+                if (isChunkPresent(chunkX, chunkRow)) count++;
+            }
+        }
+        return count;
+    }
+
     public void clear() {
         Arrays.fill(heights, (short)0);
         Arrays.fill(colors, 0);

@@ -24,6 +24,8 @@ public final class ClientRingState {
     private static volatile long cameraSeamCrossings;
     private static volatile long seamCorrectionPackets;
     @Nullable private static volatile RingTerrainAtlas terrainAtlas;
+    private static volatile long serverAtlasWorldHash;
+    private static volatile boolean hasServerAtlasWorldHash;
     @Nullable private static Path terrainAtlasCachePath;
     private static int terrainAtlasRevision;
     private static boolean terrainAtlasDirty;
@@ -43,6 +45,8 @@ public final class ClientRingState {
         cameraSeamCrossings = 0;
         seamCorrectionPackets = 0;
         terrainAtlas = null;
+        serverAtlasWorldHash = 0L;
+        hasServerAtlasWorldHash = false;
         terrainAtlasCachePath = null;
         terrainAtlasRevision++;
         terrainAtlasDirty = false;
@@ -111,6 +115,8 @@ public final class ClientRingState {
             return false;
         }
         terrainAtlas = replacement;
+        serverAtlasWorldHash = metadata.worldHash();
+        hasServerAtlasWorldHash = true;
         terrainAtlasCachePath = cache;
         terrainAtlasRevision++;
         terrainAtlasDirty = false;
@@ -148,6 +154,8 @@ public final class ClientRingState {
     @Nullable
     public static RingTerrainAtlas terrainAtlas() { return terrainAtlas; }
     public static int terrainAtlasRevision() { return terrainAtlasRevision; }
+    public static long serverAtlasWorldHash() { return serverAtlasWorldHash; }
+    public static boolean hasServerAtlasWorldHash() { return hasServerAtlasWorldHash; }
 
     /** Coalesces partial-cache writes while saving a newly completed atlas immediately. */
     public static void saveTerrainAtlasIfDue(boolean force) {
@@ -195,6 +203,8 @@ public final class ClientRingState {
         cameraSeamCrossings = 0;
         seamCorrectionPackets = 0;
         terrainAtlas = null;
+        serverAtlasWorldHash = 0L;
+        hasServerAtlasWorldHash = false;
         terrainAtlasCachePath = null;
         terrainAtlasDirty = false;
         terrainAtlasPendingRender = false;

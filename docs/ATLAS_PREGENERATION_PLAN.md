@@ -1,11 +1,12 @@
 # Atlas pregeneration service plan
 
-Status: Phase 1b's authoritative server-thread service landed on 2026-08-01.
+Status: Phases 1b and 2's player-facing Fabric workflow landed on 2026-08-01.
 `RingAtlasPregenerationService` now owns one Overworld atlas writer, its
 cursor/selected future/retry state, process-local controls, checkpointing, and
 verified completion. Fabric commands, lifecycle hooks, and client tile streams
-remain in `RingTerrainAtlasServer`. UI, new payloads, and headless prewarm
-remain follow-up work.
+remain in `RingTerrainAtlasServer`. The pause-menu map, versioned status/control
+payloads, server-side authority checks, and completion toast now reuse that
+same service; headless prewarm remains follow-up work.
 
 ## Outcome
 
@@ -313,7 +314,7 @@ Exit gate: safe-small atlas bytes, colours, heights, completion order, client
 streaming, pause/resume, restart resume, and runtime frame pacing match the
 current implementation.
 
-### Phase 2: one-click UI and explicit completion contract
+### Phase 2: one-click UI and explicit completion contract (implemented on Fabric)
 
 - Publish the server façade and handle.
 - Add idempotent start calls: a matching active job returns its handle;
@@ -330,6 +331,15 @@ Exit gate: one click in a fresh safe-small singleplayer world completes the
 whole atlas without player movement, the UI remains responsive and resumable,
 the complete ring appears, and an interrupted/restarted dedicated server
 proves exactly-once completion and no lost cells.
+
+The Fabric adapter uses `atlas_pregen_status_request_v1`,
+`atlas_pregen_control_v1`, and `atlas_pregen_status_v1`. Its snapshot contains
+immutable atlas/world identity, geometry, exact durable completed canonical
+chunks, cells, rate/ETA/error, and a server-computed `canControl`. It sends at
+most once per 20 ticks per observer except immediate request/action/state
+replies. Any RingWorld player may observe; only the integrated owner or a
+dedicated-server gamemaster can control. A NeoForge adapter can register these
+same payload layouts and call the loader-neutral model/service.
 
 ### Phase 3: headless prewarm
 

@@ -5,13 +5,22 @@ import java.util.Set;
 
 /** Lifecycle states shared by every pregeneration adapter. */
 public enum AtlasPregenerationState {
-    IDLE,
-    RUNNING,
-    PAUSED,
-    SAVING,
-    COMPLETE,
-    CANCELLED,
-    FAILED;
+    IDLE(1),
+    RUNNING(2),
+    PAUSED(3),
+    SAVING(4),
+    COMPLETE(5),
+    CANCELLED(6),
+    FAILED(7);
+
+    private final int wireValue;
+    AtlasPregenerationState(int wireValue) { this.wireValue = wireValue; }
+    public int wireValue() { return wireValue; }
+
+    public static AtlasPregenerationState fromWireValue(int wireValue) {
+        for (AtlasPregenerationState value : values()) if (value.wireValue == wireValue) return value;
+        throw new IllegalArgumentException("unknown atlas state wire value: " + wireValue);
+    }
 
     /** Returns whether a job may make this direct state transition. */
     public boolean canTransitionTo(AtlasPregenerationState target) {

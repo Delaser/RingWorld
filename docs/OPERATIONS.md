@@ -162,6 +162,13 @@ pregeneration without changing immutable world layout:
 /ringworld atlas resume
 ```
 
+Players in a RingWorld Overworld can instead open **RingWorld Map** from the
+pause menu. Its generation actions require an integrated-world owner or a
+dedicated gamemaster; other players see read-only status. **Generate Entire
+Ring** confirms the exact canonical chunk count and warns that it generates
+and saves real terrain/region files. Closing the map does not pause or cancel
+the job; reopening attaches to the same dimension-owned handle.
+
 Pause stops scheduling new atlas chunks after any one in-flight chunk
 completes. Player-driven chunk capture, cache saving, and client tile streaming
 continue. The pause is operational process state rather than saved layout

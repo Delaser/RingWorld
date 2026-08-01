@@ -6,6 +6,7 @@ run-layout-switch/
 run-production-projection/
 run-production-lifecycle/
 run-curved-object-capture/
+run-atlas-ui/
 run-stronghold-test/
 logs/
 dist/

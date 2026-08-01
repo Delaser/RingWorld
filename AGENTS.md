@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 117 unit/parameterized cases pass.
+gate. Common/client compilation and all 123 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -204,7 +204,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   hashes, performance evidence, and protected rollback inventory.
 - `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`: historical Java 25/26.1.2
   compiler inventory and the subsequent green build/server checkpoint.
-- `dist/`, `run/`, `run-multiplayer/`, `logs/`, `.gradle/`, and `build/`:
+- `dist/`, `run/`, `run-multiplayer/`, `run-atlas-ui/`, `logs/`, `.gradle/`, and `build/`:
   generated or local runtime state; all are intentionally ignored.
 
 The complete mixin ownership table is in
@@ -221,7 +221,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 117
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 123
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
@@ -294,8 +294,10 @@ version numbers.
 - The complete-ring texture is generated only after the terrain atlas is
   complete. Before that, only real chunks and the remaining atmospheric
   effects are available. Session disconnect/settings handlers must clear the
-  static GPU texture and mesh, and the renderer must reject incomplete atlases;
-  otherwise a newly created world displays the previous world's ring.
+  static GPU texture and mesh, and the renderer must reject incomplete atlases.
+  Fabric disconnect callbacks may arrive on a network thread, so they must
+  enqueue cache saves and GPU teardown onto the client thread. Failing to clear
+  that state lets a newly created world display the previous world's ring.
 - `NoiseBasedChunkGenerator.iterateNoiseColumn` is the shared vanilla
   base-height/base-column path used to anchor structures before their chunks
   exist. Canonicalize its X argument exactly once at that method boundary
@@ -336,6 +338,14 @@ version numbers.
   reusing an old identifier; old clients crash on unread bytes before a useful
   rejection can be sent. Advance the channel generation and keep the
   `RingProtocolIdentityTest` expectation synchronized.
+- Atlas-generation payloads are separately versioned (`atlas_pregen_*_v1`).
+  Preserve their explicit action/state wire values and complete immutable
+  status snapshot; never append to atlas/settings codecs. The pause-menu map
+  is Overworld-and-acknowledgement guarded, non-pausing so integrated-server
+  generation continues, read-only for non-owners, and clears its status/toast
+  state on disconnect or layout switch. Server adapters must rate-limit
+  observers to 20 ticks plus transitions and recheck every control request on
+  the server thread.
 - Shareable launcher templates live in `deploy/client/`. Every launch must
   refresh the bundle-managed RingWorld/Fabric jars in an existing Prism
   instance while preserving accounts, saves, options, resource packs, local

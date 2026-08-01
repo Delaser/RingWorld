@@ -63,6 +63,21 @@ public record AtlasPregenerationOptions(
                 mode == AtlasPregenerationMode.HEADLESS_PREWARM);
     }
 
+    /**
+     * Whether two callers can safely share the one world-owned writer. Mode is
+     * an intent label for UI/headless adapters; it must not manufacture a
+     * second scheduler when background and interactive callers use the same
+     * conservative execution policy.
+     */
+    public boolean sharesExecutionPolicyWith(AtlasPregenerationOptions other) {
+        Objects.requireNonNull(other, "other");
+        return maxInFlightChunks == other.maxInFlightChunks
+                && pendingTaskSoftLimit == other.pendingTaskSoftLimit
+                && checkpointIntervalChunks == other.checkpointIntervalChunks
+                && progressIntervalTicks == other.progressIntervalTicks
+                && stopServerWhenComplete == other.stopServerWhenComplete;
+    }
+
     private static void requireRange(String name, int value, int minimum, int maximum) {
         if (value < minimum || value > maximum) {
             throw new IllegalArgumentException(name + " must be in [" + minimum + ", "
