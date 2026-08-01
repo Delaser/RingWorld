@@ -13,6 +13,7 @@ try:
     from scripts.verify_distribution_license import (
         EMBEDDED_LICENSE,
         EXPECTED_IDENTIFIER,
+        OUTER_LICENSE,
         VerificationError,
         verify_bundle,
     )
@@ -20,6 +21,7 @@ except ModuleNotFoundError:
     from verify_distribution_license import (
         EMBEDDED_LICENSE,
         EXPECTED_IDENTIFIER,
+        OUTER_LICENSE,
         VerificationError,
         verify_bundle,
     )
@@ -42,7 +44,7 @@ def jar_bytes(identifier: str = EXPECTED_IDENTIFIER) -> bytes:
 def nested_instance_bytes(identifier: str = EXPECTED_IDENTIFIER) -> bytes:
     output = io.BytesIO()
     with zipfile.ZipFile(output, "w") as archive:
-        archive.writestr(EMBEDDED_LICENSE, LICENSE_BYTES)
+        archive.writestr(OUTER_LICENSE, LICENSE_BYTES)
         archive.writestr("minecraft/mods/ringworld-1.0.0.jar", jar_bytes(identifier))
     return output.getvalue()
 
@@ -52,15 +54,18 @@ def write_bundle(
     *,
     identifier: str = EXPECTED_IDENTIFIER,
     include_outer_license: bool = True,
+    unsafe_path: str | None = None,
 ) -> None:
     with zipfile.ZipFile(path, "w") as archive:
         if include_outer_license:
-            archive.writestr(EMBEDDED_LICENSE, LICENSE_BYTES)
+            archive.writestr(OUTER_LICENSE, LICENSE_BYTES)
         archive.writestr("instance/mods/ringworld-1.0.0.jar", jar_bytes(identifier))
         archive.writestr(
             "RingWorld-Prism-Instance.zip",
             nested_instance_bytes(identifier),
         )
+        if unsafe_path:
+            archive.writestr(unsafe_path, "forbidden")
 
 
 class DistributionLicenceVerificationTest(unittest.TestCase):
@@ -85,8 +90,22 @@ class DistributionLicenceVerificationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory, "client.zip")
             write_bundle(path, include_outer_license=False)
-            with self.assertRaisesRegex(VerificationError, "outer bundle missing"):
+            with self.assertRaisesRegex(VerificationError, "outer package missing"):
                 verify_bundle(path, LICENSE_BYTES)
+
+    def test_rejects_runtime_state_source_and_traversal(self) -> None:
+        for unsafe, message in (
+            ("instance/.minecraft/saves/world/level.dat", "forbidden runtime directory"),
+            ("instance/.minecraft/mods/ringworld-sources.jar", "source artifact"),
+            ("../accounts.json", "unsafe archive path"),
+            ("..\\accounts.json", "unsafe archive path"),
+            ("C:\\accounts.json", "unsafe archive path"),
+        ):
+            with self.subTest(path=unsafe), tempfile.TemporaryDirectory() as directory:
+                path = Path(directory, "client.zip")
+                write_bundle(path, unsafe_path=unsafe)
+                with self.assertRaisesRegex(VerificationError, message):
+                    verify_bundle(path, LICENSE_BYTES)
 
 
 if __name__ == "__main__":

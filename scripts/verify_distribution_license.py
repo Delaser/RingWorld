@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Verify RingWorld licence metadata in jars and shareable client bundles."""
+"""Verify RingWorld licence metadata and safe package contents."""
 
 from __future__ import annotations
 
@@ -13,6 +13,24 @@ import zipfile
 
 EXPECTED_IDENTIFIER = "MPL-2.0"
 EMBEDDED_LICENSE = "LICENSE-RINGWORLD.txt"
+OUTER_LICENSE = "LICENSE"
+CLIENT_NESTED_INSTANCE = "RingWorld-Prism-Instance.zip"
+RUNTIME_PATH_PARTS = {
+    ".prism-data",
+    "accounts.json",
+    "launcher_accounts.json",
+    "usercache.json",
+    "usernamecache.json",
+    "options.txt",
+}
+RUNTIME_DIRECTORIES = {
+    "saves",
+    "screenshots",
+    "logs",
+    "crash-reports",
+    "serverconfig",
+    "resourcepacks",
+}
 
 
 class VerificationError(RuntimeError):
@@ -20,6 +38,7 @@ class VerificationError(RuntimeError):
 
 
 def verify_jar(archive: zipfile.ZipFile, label: str, expected_license: bytes) -> None:
+    verify_names(archive.namelist(), label)
     try:
         metadata = json.loads(archive.read("fabric.mod.json"))
     except KeyError as exc:
@@ -61,58 +80,77 @@ def ringworld_jars(names: list[str]) -> list[str]:
     ]
 
 
-def verify_bundle(path: Path, expected_license: bytes) -> None:
+def verify_names(names: list[str], label: str) -> None:
+    for name in names:
+        path = Path(name.replace("\\", "/"))
+        if path.is_absolute() or (len(path.as_posix()) >= 2 and path.as_posix()[1] == ":") \
+                or ".." in path.parts:
+            raise VerificationError(f"{label}: unsafe archive path {name}")
+        parts = {part.lower() for part in path.parts}
+        if parts & RUNTIME_PATH_PARTS:
+            raise VerificationError(f"{label}: forbidden credential/runtime path {name}")
+        if parts & RUNTIME_DIRECTORIES:
+            raise VerificationError(f"{label}: forbidden runtime directory {name}")
+        if path.name.lower().endswith(("-sources.jar", ".java", ".kt", ".groovy")):
+            raise VerificationError(f"{label}: source artifact is not distributable: {name}")
+
+
+def verify_outer_license(archive: zipfile.ZipFile, label: str, expected_license: bytes) -> None:
+    if OUTER_LICENSE not in archive.namelist():
+        raise VerificationError(f"{label}: outer package missing {OUTER_LICENSE}")
+    if archive.read(OUTER_LICENSE) != expected_license:
+        raise VerificationError(f"{label}: outer licence does not match LICENSE")
+
+
+def verify_jars_in_archive(archive: zipfile.ZipFile, label: str, expected_license: bytes) -> None:
+    jars = ringworld_jars(archive.namelist())
+    if len(jars) != 1:
+        raise VerificationError(f"{label}: expected one RingWorld jar, found {len(jars)}")
+    for jar_name in jars:
+        verify_jar_bytes(archive.read(jar_name), f"{label}!/{jar_name}", expected_license)
+
+
+def verify_bundle(path: Path, expected_license: bytes, *, kind: str = "auto") -> None:
     with zipfile.ZipFile(path) as outer:
         outer_names = outer.namelist()
-        if EMBEDDED_LICENSE not in outer_names:
-            raise VerificationError(f"{path}: outer bundle missing {EMBEDDED_LICENSE}")
-        if outer.read(EMBEDDED_LICENSE) != expected_license:
-            raise VerificationError(f"{path}: outer licence does not match LICENSE")
-
-        outer_jars = ringworld_jars(outer_names)
-        if not outer_jars:
-            raise VerificationError(f"{path}: no RingWorld jar found")
-        for jar_name in outer_jars:
-            verify_jar_bytes(
-                outer.read(jar_name),
-                f"{path}!/{jar_name}",
-                expected_license,
-            )
+        verify_names(outer_names, str(path))
+        verify_outer_license(outer, str(path), expected_license)
+        verify_jars_in_archive(outer, str(path), expected_license)
 
         nested_names = [
             name
             for name in outer_names
-            if Path(name).name == "RingWorld-Prism-Instance.zip"
+            if Path(name).name == CLIENT_NESTED_INSTANCE
         ]
+        is_client = kind == "client" or (kind == "auto" and bool(nested_names))
+        if not is_client:
+            if kind == "server" and nested_names:
+                raise VerificationError(
+                    f"{path}: server overlay must not contain {CLIENT_NESTED_INSTANCE}"
+                )
+            return
         if len(nested_names) != 1:
             raise VerificationError(
-                f"{path}: expected one RingWorld-Prism-Instance.zip, "
-                f"found {len(nested_names)}"
+                f"{path}: expected one {CLIENT_NESTED_INSTANCE}, found {len(nested_names)}"
             )
 
         nested_name = nested_names[0]
         with zipfile.ZipFile(io.BytesIO(outer.read(nested_name))) as nested:
-            names = nested.namelist()
-            if EMBEDDED_LICENSE not in names:
-                raise VerificationError(
-                    f"{path}!/{nested_name}: missing {EMBEDDED_LICENSE}"
-                )
-            if nested.read(EMBEDDED_LICENSE) != expected_license:
-                raise VerificationError(
-                    f"{path}!/{nested_name}: licence does not match LICENSE"
-                )
+            label = f"{path}!/{nested_name}"
+            verify_names(nested.namelist(), label)
+            verify_outer_license(nested, label, expected_license)
+            verify_jars_in_archive(nested, label, expected_license)
 
-            nested_jars = ringworld_jars(names)
-            if not nested_jars:
-                raise VerificationError(
-                    f"{path}!/{nested_name}: no RingWorld jar found"
-                )
-            for jar_name in nested_jars:
-                verify_jar_bytes(
-                    nested.read(jar_name),
-                    f"{path}!/{nested_name}!/{jar_name}",
-                    expected_license,
-                )
+
+def verify_artifact(path: Path, expected_license: bytes, *, kind: str = "auto") -> None:
+    if kind not in {"auto", "jar", "client", "server"}:
+        raise VerificationError(f"unknown artifact kind {kind!r}")
+    if kind == "jar" or (kind == "auto" and path.suffix == ".jar"):
+        verify_jar_path(path, expected_license)
+    elif path.suffix == ".zip":
+        verify_bundle(path, expected_license, kind=kind)
+    else:
+        raise VerificationError(f"{path}: expected a .jar or .zip")
 
 
 def main() -> int:
@@ -129,19 +167,18 @@ def main() -> int:
         default=Path("LICENSE"),
         help="authoritative RingWorld licence file",
     )
+    parser.add_argument(
+        "--kind",
+        choices=("auto", "jar", "client", "server"),
+        default="auto",
+        help="expected artifact layout (default: infer from extension/layout)",
+    )
     args = parser.parse_args()
 
     expected_license = args.license.read_bytes()
     try:
         for artifact in args.artifacts:
-            if artifact.suffix == ".jar":
-                verify_jar_path(artifact, expected_license)
-            elif artifact.suffix == ".zip":
-                verify_bundle(artifact, expected_license)
-            else:
-                raise VerificationError(
-                    f"{artifact}: expected a .jar or shareable .zip"
-                )
+            verify_artifact(artifact, expected_license, kind=args.kind)
             print(f"PASS {artifact}")
     except (OSError, ValueError, zipfile.BadZipFile, VerificationError) as exc:
         print(f"FAIL {exc}", file=sys.stderr)

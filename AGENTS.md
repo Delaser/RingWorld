@@ -194,8 +194,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   and the extended Globals include for terrain and clouds.
 - `src/test/`: pure unit tests for geometry, topology, dimensions, rendering
   profiles, atlas, and sky timing.
-- `deploy/`: generic client-launcher and dedicated-server templates. Generated
-  packages and publication infrastructure are intentionally not versioned.
+- `deploy/`: generic client-launcher, dedicated-server, and Modrinth staging
+  templates. `scripts/prepare_release_packages.py` assembles optional local
+  client/server packages from them; generated archives remain ignored.
 - `docs/DIMENSION_SCALING_PLAN.md`: authoritative audit and staged plan for
   removing test-world assumptions from custom dimensions.
 - `docs/ATLAS_PREGENERATION_PLAN.md`: planned **Generate Entire Ring** UI and
@@ -369,8 +370,14 @@ version numbers.
 - Shareable launcher templates live in `deploy/client/`. Every launch must
   refresh the bundle-managed RingWorld/Fabric jars in an existing Prism
   instance while preserving accounts, saves, options, resource packs, local
-  configuration, and instance settings. Test both fresh and in-place upgrade
-  paths before publishing.
+  configuration, and unrelated instance settings. The launchers may change
+  only `AutomaticJava` and `OverrideJavaLocation` so an old Java 21 override
+  cannot block 26.1.2. Test both fresh and in-place upgrade paths before
+  publishing.
+- Optional packages must be built with `scripts/prepare_release_packages.py`
+  from an exact 40-character public source revision. The builder emits no web
+  content and has no publish/deploy path. Keep its reproducible ZIPs and
+  checksum manifests under ignored local staging only.
 - `/ringworld atlas status|pause|resume` controls background pregeneration.
   Pause is process-local and does not alter immutable saved layout.
 - Atlas format 5 represents exposed top-face height and

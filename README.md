@@ -56,6 +56,13 @@ branch. It produces one reviewed runtime jar, checksums, and an exact source
 revision; it does not upload or change the listing. See
 [the release procedure](docs/MODRINTH_RELEASE.md).
 
+Optional Prism client bundles and a dedicated-server overlay can be assembled
+locally with `scripts/prepare_release_packages.py`. They are convenience
+artifacts only: the standalone Modrinth jar remains the normal installation
+path. The builder requires an exact public source commit, excludes account and
+runtime state, creates reproducible archives and checksums, and has no website,
+upload, deployment, or service-control capability.
+
 > **Public history:** this repository intentionally begins with a clean
 > MPL-2.0 root commit. Pre-public tag names and commit hashes retained in the
 > engineering documents are provenance references to the private development

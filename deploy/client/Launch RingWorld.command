@@ -41,6 +41,20 @@ if [[ ! -f "$INSTANCE/.minecraft/config/ringworld.properties" ]]; then
     cp "$SOURCE/.minecraft/config/ringworld.properties" \
         "$INSTANCE/.minecraft/config/ringworld.properties"
 fi
+# Minecraft 26.1.2 requires Java 25. Preserve every other instance setting,
+# but let Prism replace a stale Java 21 path from an older RingWorld bundle.
+for setting in "AutomaticJava=true" "OverrideJavaLocation=false"; do
+    key="${setting%%=*}"
+    value="${setting#*=}"
+    temporary="$INSTANCE/instance.cfg.ringworld.tmp"
+    awk -v key="$key" -v value="$value" '
+        BEGIN { found = 0 }
+        index($0, key "=") == 1 { print key "=" value; found = 1; next }
+        { print }
+        END { if (!found) print key "=" value }
+    ' "$INSTANCE/instance.cfg" > "$temporary"
+    mv "$temporary" "$INSTANCE/instance.cfg"
+done
 echo "RingWorld client files are current."
 
 PRISM=""

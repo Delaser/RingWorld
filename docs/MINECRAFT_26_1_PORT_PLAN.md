@@ -447,9 +447,9 @@ Restrictions:
 
 ### S5: Java 25 packaging and deployment preparation ([#12](https://github.com/Delaser/RingWorld/issues/12))
 
-Start: after the first successful client/server launch
+Status: in progress on `codex/issue-12-packaging` after P1–P4 closure.
 
-Branch: `agent2/26.1-packaging`
+Branch: `codex/issue-12-packaging`
 
 Secondary ownership:
 
@@ -466,13 +466,14 @@ Tasks:
 - preserve account, save, option, and local configuration state during
   launcher updates;
 - retain the 1.21.11 package as a separately labelled rollback;
-- prepare staging, publication, checksum, and rollback checklists;
+- prepare reproducible local staging, checksum, and rollback checklists;
 - scan packages for credentials and runtime state.
 
 Restrictions:
 
 - do not publish packages;
 - do not restart the public server;
+- do not add website or live-service material to this source repository;
 - hand artifacts and validation results to the primary agent.
 
 ### S6: independent integration review ([#13](https://github.com/Delaser/RingWorld/issues/13))

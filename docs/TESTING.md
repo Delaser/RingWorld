@@ -778,6 +778,42 @@ settings and atlas paths are materialized; the harness does not move players or
 edit terrain. Its source-copy stage replaces only prior copies beneath ignored
 `run-layout-switch/`, never a source save.
 
+## Optional package safety and upgrade gate
+
+Run the package/licence tests independently of Minecraft:
+
+```sh
+python3 -m unittest \
+  scripts/test_verify_distribution_license.py \
+  scripts/test_prepare_release_packages.py
+```
+
+The suite currently contains eight top-level package/licence cases. It builds
+both client ZIPs and the server overlay twice and requires
+byte-identical reproducible archives. It validates MPL metadata, embedded and
+outer licences, exact public-source manifests, checksums, nested Prism shape,
+and the absence of website output. Negative cases cover credentials/runtime
+state, source artifacts, POSIX and Windows path traversal, stale MIT metadata,
+stale Minecraft/Fabric versions, auto-join, and a non-exact source revision.
+The macOS upgrade case executes the launcher against fresh and existing
+disposable Prism data trees and verifies that saves, options, config, and
+user-edited instance settings survive while managed jars update.
+
+The 1 August issue #12 checkpoint also launched the actual package jar in an
+isolated existing macOS Prism instance: Prism selected Java 25, Minecraft
+loaded RingWorld plus all resources/shaders, and the installed jar hash matched
+the clean-build input. A fresh production-default 16,384-by-256 server assembled
+from the overlay and official Fabric server launcher reached `Done`, began
+atlas pregeneration, and saved/stopped cleanly. The distributable overlay keeps
+`eula=false`; acceptance was changed only in the isolated test directory.
+
+Before closing package issue #12, also assemble the actual release-candidate
+jar and perform isolated fresh and in-place macOS launches, a real Windows
+launch, and a dedicated-server launch from the overlay. Static archive tests
+do not substitute for those platform runtime gates. Generated packages and
+test runtime state stay under ignored local directories and are never used as
+deployment inputs without separate owner approval.
+
 ## Manual playability checklist
 
 Use creative mode and an ordinary render distance (the current test profile is
