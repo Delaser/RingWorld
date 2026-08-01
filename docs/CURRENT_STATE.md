@@ -209,7 +209,8 @@ client/runtime gate passes.
 ### World generation
 
 - Cylindrical coordinate sampling for terrain and vanilla structure
-  base-height/base-column queries.
+  base-height/base-column queries, with query X canonicalized before vanilla
+  cell/cache interpolation.
 - Vanilla sampler/cache/aquifer identity preserved.
 - Canonical seam-crossing worldgen writes and neighbour aliases.
 - Finite Z band with exterior void.
@@ -393,11 +394,14 @@ client/runtime gate passes.
 - The mandatory stronghold is deterministic and validated across several
   seeds and supported layouts. Other structures, carvers, and features still
   lack broad seam coverage.
-- Vanilla Overworld structure height queries use the same cylindrical sampler
-  as generated terrain, preventing the flat-noise Y mismatch that could float
-  villages and other heightmap-projected structures. This fixes height
-  sampling only; it does not certify every structure's seam placement,
-  footprint, loot, mob, or reload behavior.
+- Vanilla Overworld structure height queries canonicalize X before their
+  internal cell/cache interpolation and use the same cylindrical sampler as
+  generated terrain. The stronghold gate compares periodic aliases and the
+  canonical query against a noise-complete `WORLD_SURFACE_WG` terrain height,
+  preventing raw-alias or flat-noise Y mismatches that could float villages and
+  other heightmap-projected structures. This fixes height sampling only; it
+  does not certify every structure's seam placement, footprint, loot, mob, or
+  reload behavior.
 - Periodic density noise does not guarantee every vanilla structure placement
   seed or third-party generator treats X=0/C as adjacent.
 - The new 16,384×256 production default requires 16,384 canonical chunks and

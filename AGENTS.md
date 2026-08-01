@@ -298,12 +298,14 @@ version numbers.
   otherwise a newly created world displays the previous world's ring.
 - `NoiseBasedChunkGenerator.iterateNoiseColumn` is the shared vanilla
   base-height/base-column path used to anchor structures before their chunks
-  exist. Its `NoiseChunk` construction must run under the same
-  `RingNoiseSamplingContext` as real terrain whenever the generator has
-  Overworld geometry. Do not patch individual structures or let this path use
-  the flat router: villages and other surface structures then choose a Y that
-  disagrees with the cylindrical terrain below them. Keep the null-geometry
-  path vanilla for Nether and End.
+  exist. Canonicalize its X argument exactly once at that method boundary
+  before vanilla derives cell/cache/interpolation positions, and run its
+  `NoiseChunk` construction under the same `RingNoiseSamplingContext` as real
+  terrain whenever the generator has Overworld geometry. Do not patch
+  individual structures or let this path use a raw alias or flat router:
+  villages and other surface structures then choose a Y that disagrees with
+  the cylindrical terrain below them. Leave Z and the null-geometry Nether/End
+  path vanilla.
 - Atlas tile application is idempotent. Duplicate dirty tiles must not advance
   the client atlas revision, force another cache save, or rebuild the complete
   texture/mesh. Only the actual incomplete-to-complete transition bypasses the

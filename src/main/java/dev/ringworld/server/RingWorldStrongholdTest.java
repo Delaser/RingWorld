@@ -164,8 +164,9 @@ final class RingWorldStrongholdTest {
      * Structure placement reaches {@link ChunkGenerator#getBaseHeight} and
      * {@link ChunkGenerator#getBaseColumn} before a chunk exists. Both query
      * paths must see the same cylindrical sampler at canonical X and its
-     * periodic alias; this is intentionally a real-server assertion because
-     * the router is installed by required mixins.
+     * periodic alias, and the canonical height must match the generated
+     * noise-complete terrain. This is intentionally a real-server assertion
+     * because the router is installed by required mixins.
      */
     private static void verifyPeriodicHeightQueries(ServerLevel world, RingGeometry geometry) {
         ChunkGenerator generator = world.getChunkSource().getGenerator();
@@ -183,6 +184,21 @@ final class RingWorldStrongholdTest {
                 throw new IllegalStateException("Periodic base-height mismatch at canonicalX="
                         + canonicalX + ", aliasX=" + aliasX + ": "
                         + canonicalHeight + " != " + aliasHeight);
+            }
+
+            ChunkAccess terrain = world.getChunkSource().getChunk(
+                    SectionPos.blockToSectionCoord(canonicalX), SectionPos.blockToSectionCoord(z),
+                    ChunkStatus.NOISE, true);
+            if (terrain == null) {
+                throw new IllegalStateException("Canonical terrain did not load for base-height check at X="
+                        + canonicalX + ", Z=" + z);
+            }
+            int terrainHeight = terrain.getHeight(Heightmap.Types.WORLD_SURFACE_WG,
+                    Math.floorMod(canonicalX, 16), Math.floorMod(z, 16)) + 1;
+            if (canonicalHeight != terrainHeight) {
+                throw new IllegalStateException("Base-height differs from canonical generated terrain at X="
+                        + canonicalX + ", Z=" + z + ": query=" + canonicalHeight
+                        + ", terrain=" + terrainHeight);
             }
 
             NoiseColumn canonicalColumn = generator.getBaseColumn(canonicalX, z, world, randomState);

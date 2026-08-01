@@ -339,8 +339,11 @@ intact. The router override is carried through `RingNoiseSamplingContext` only
 for the Overworld generator. The same context wraps both real-chunk sampler
 creation and `NoiseBasedChunkGenerator.iterateNoiseColumn`, the shared vanilla
 base-height/base-column query path used to anchor structures before terrain
-chunks exist. A structure's canonical intrinsic X/Z therefore samples the same
-cylindrical noise column as the eventual terrain beneath it.
+chunks exist. That private query method canonicalizes its X exactly once before
+vanilla derives cell/cache/interpolation positions; Z remains unchanged. A
+structure's canonical intrinsic X/Z therefore samples the same cylindrical
+noise column as the eventual terrain beneath it, including when a caller asks
+through an X+C presentation alias.
 
 This makes density meet at X=0/C while retaining vanilla terrain machinery.
 It does not automatically prove every coordinate-sensitive structure
