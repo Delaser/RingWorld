@@ -28,9 +28,9 @@ The implementation spans five coupled layers:
 
 The currently runnable platform is Fabric, but the architecture targets a
 loader-neutral core with thin Fabric and NeoForge adapters. Geometry,
-topology, persistent settings, atlas formats, coordinate transforms, protocol
-models, renderer math, mixin behavior that is valid on both loaders, and their
-tests belong to shared code.
+topology, persistent settings, atlas formats, atlas-pregeneration model and
+cursor, coordinate transforms, protocol models, renderer math, mixin behavior
+that is valid on both loaders, and their tests belong to shared code.
 
 Platform-owned code is limited to:
 

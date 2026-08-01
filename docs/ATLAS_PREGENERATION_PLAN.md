@@ -1,7 +1,8 @@
 # Atlas pregeneration service plan
 
-Status: planned on 2026-07-28. The current background implementation remains
-authoritative until these phases are implemented and validated.
+Status: Phase 1a's loader-neutral job contracts and deterministic cursor landed
+on 2026-08-01. The current background implementation remains authoritative
+until scheduler extraction and its runtime validation land.
 
 ## Outcome
 
@@ -65,7 +66,7 @@ Add loader-neutral records and state under `dev.ringworld.world`:
 
 ```java
 record AtlasPregenerationOptions(
-        Mode mode,
+        AtlasPregenerationMode mode,
         int maxInFlightChunks,
         int pendingTaskSoftLimit,
         int checkpointIntervalChunks,
@@ -73,7 +74,7 @@ record AtlasPregenerationOptions(
         boolean stopServerWhenComplete) {}
 
 record AtlasPregenerationProgress(
-        State state,
+        AtlasPregenerationState state,
         long completedChunks,
         long totalChunks,
         int presentCells,
@@ -113,6 +114,14 @@ resume logic:
 The current X-major, finite-Z-row order remains initially. Changing ordering is
 a performance experiment and requires before/after region-I/O and tick-time
 evidence.
+
+Phase 1a implements these records/interfaces, `AtlasPregenerationMode`,
+`AtlasPregenerationState`, and the cursor without introducing a scheduler or
+changing atlas bytes. State transitions are explicit so a future server-thread
+owner can enforce pause, resume, save, cancellation, completion, and failure
+consistently. The cursor begins from the atlas's first missing chunk, skips
+newly present chunks while it advances, and derives finite Z from
+`RingGeometry.minChunkZ()`; the present cells remain the resume journal.
 
 ### Server execution façade
 

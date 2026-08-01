@@ -31,6 +31,12 @@ The ignored local evidence and exact procedures are recorded in
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
 
+Atlas-pregeneration Phase 1a now has a loader-neutral job-model foundation:
+validated options/modes, explicit lifecycle states, typed progress/result and
+handle/listener contracts, and an X-major canonical cursor that resumes from
+present format-5 atlas cells. This does not replace the current scheduler or
+add UI, commands, networking, headless prewarm, or an atlas-format change.
+
 Port Phase 1 is complete: the project moved to official Mojang mappings while
 remaining on Minecraft 1.21.11. All 73 tests, the destructive
 safe-small harness, same-process layout switch, dedicated two-client scenario,
@@ -43,7 +49,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 101 unit/parameterized cases pass, and Loom produces
+temporary shims, all 109 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -266,7 +272,8 @@ client/runtime gate passes.
   preventing an early-connect particle-sprite initialization race.
 - Tiled atlas transfer and world-hash client cache.
 - Checked atlas allocation, typed tile coordinates, long pregeneration
-  counters, transfer estimates, progress rate, and ETA.
+  counters, transfer estimates, progress rate, ETA, and a loader-neutral
+  pregeneration model/cursor.
 - Gamemaster-level atlas status/pause/resume commands.
 - Local destructive smoke harness.
 - Same-JVM saved-layout switch harness that verifies disconnect clearing and

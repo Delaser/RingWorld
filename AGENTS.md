@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 103 unit/parameterized cases pass.
+gate. Common/client compilation and all 109 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -312,6 +312,11 @@ version numbers.
   normal publish/save coalescing windows. A genuinely changed tile captured
   after completion still advances the coalesced revision and may rebuild the
   surface once; do not mistake that expected refresh for duplicate churn.
+- `RingAtlasPregenerationCursor` is shared, loader-neutral traversal state for
+  the future atlas service. It is X-major, derives finite Z from
+  `RingGeometry.minChunkZ()`, resumes from present atlas cells, and never uses
+  a power-of-two shortcut for canonical X. Keep scheduler, command, lifecycle,
+  and loader concerns out of this model until the service extraction lands.
 - `ring_surface.vsh` deliberately clamps only far-out proxy clip-space Z while
   preserving X/Y/W. Minecraft's level far plane is derived from chunk render
   distance and clips most of a production 16,384-block cylinder, especially
