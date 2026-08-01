@@ -34,7 +34,7 @@ public record RingRenderProfile(
      * Increment when visual-policy semantics change enough that comparison
      * captures need to identify a different profile.
      */
-    public static final int VISUAL_PROFILE_VERSION = 4;
+    public static final int VISUAL_PROFILE_VERSION = 5;
     public static final double LIVE_FADE_START_FACTOR = 0.78;
     public static final double LIVE_FADE_END_FACTOR = 1.02;
     public static final double PROXY_FADE_START_FACTOR = 0.68;
@@ -43,7 +43,13 @@ public record RingRenderProfile(
     public static final double DETAIL_END_FACTOR = 1.25;
     public static final int MAX_TEXTURE_COLUMNS = 4_096;
     public static final int MAX_TEXTURE_ROWS = 1_024;
-    public static final int MAX_CIRCUMFERENCE_SEGMENTS = 512;
+    /**
+     * Retains the atlas's eight-block height sampling around the default
+     * 16,384-block ring. The former 512-segment cap stretched each production
+     * triangle across 32 blocks and exposed a visibly faceted proxy at short
+     * render distances.
+     */
+    public static final int MAX_CIRCUMFERENCE_SEGMENTS = 2_048;
     public static final int MAX_WIDTH_BANDS = 128;
     public static final int TARGET_MESH_STEP_BLOCKS = RingTerrainAtlas.SAMPLE_STEP_BLOCKS;
     public static final int POSITION_TEXTURE_COLOR_VERTEX_BYTES = 24;

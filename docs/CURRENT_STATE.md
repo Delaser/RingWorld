@@ -160,6 +160,15 @@ for the remaining 32,636 cells (about 41 cells/sec), then emitted non-empty
 tangent and radial-up captures with a clean projection result. This establishes
 one production atlas/projection gate, not the full production-size gameplay,
 lifecycle, transfer, GPU, or frame-pacing matrix.
+The projection harness now also normalizes clear noon and a requested 2–32
+chunk view distance, captures the geometry-derived live/proxy handoff between
+the tangent and radial views, and logs per-view frame metrics. Its production
+6/12/28 comparison exposed the old 512-segment mesh cap at six chunks. Visual
+profile 5 raises that cap to 2,048, retaining the default atlas's eight-block
+height spacing at 393,216 vertices/9,437,184 estimated mesh bytes. Settled
+handoff averages remained 8.590/8.513/10.954 ms at 6/12/28 chunks. See
+`ATLAS_VISUAL_BASELINE_2026-08-01.md` for the scoped evidence and remaining
+issue-66 work.
 
 The same production harness exposed an intermittent post-fold simulation
 failure: a `PersistentEntitySectionManager` seam load request routed through
@@ -459,10 +468,11 @@ and compatibility claims.
 ### Rendering maintenance
 
 - The extended Globals UBO and custom shader include are version-sensitive.
-- `RingRenderProfile` visual-policy version 4 owns live/proxy/detail distances,
-  near/far reveal, haze endpoints/exponent, and local cloud fade. Cross-size
-  captures are still required before treating those values as production art
-  tuning.
+- `RingRenderProfile` visual-policy version 5 owns live/proxy/detail distances,
+  near/far reveal, haze endpoints/exponent, local cloud fade, and the higher
+  production mesh cap. Safe-small and 16,384×256 6/12/28 captures plus
+  production dusk/night/rain comparisons pass. Broader adaptive fidelity and
+  custom-size resource tiers remain issue #69.
 - Custom shaders replace vanilla assets and can conflict with renderer/shader
   mods.
 - Boundary rendering redirects a private

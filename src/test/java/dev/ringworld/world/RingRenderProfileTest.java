@@ -42,13 +42,13 @@ class RingRenderProfileTest {
 
         assertEquals(4_096, profile.textureColumns());
         assertEquals(1_024, profile.textureRows());
-        assertEquals(512, profile.circumferenceSegments());
+        assertEquals(1_944, profile.circumferenceSegments());
         assertEquals(128, profile.widthBands());
-        assertEquals(393_216L, profile.vertexCount());
+        assertEquals(1_492_992L, profile.vertexCount());
         assertEquals(3.796875, profile.textureBlocksPerTexelX());
         assertEquals(4.0, profile.textureBlocksPerTexelZ());
         assertEquals(22_369_616L, profile.estimatedGpuTextureBytes());
-        assertEquals(9_437_184L, profile.estimatedGpuMeshBytes());
+        assertEquals(35_831_808L, profile.estimatedGpuMeshBytes());
         assertEquals(50_331_648L, profile.estimatedTextureBuildScratchBytes());
     }
 
@@ -62,13 +62,13 @@ class RingRenderProfileTest {
 
         assertEquals(4_096, profile.textureColumns());
         assertEquals(256, profile.textureRows());
-        assertEquals(512, profile.circumferenceSegments());
+        assertEquals(2_048, profile.circumferenceSegments());
         assertEquals(32, profile.widthBands());
-        assertEquals(98_304L, profile.vertexCount());
+        assertEquals(393_216L, profile.vertexCount());
         assertEquals(4.0, profile.textureBlocksPerTexelX());
         assertEquals(1.0, profile.textureBlocksPerTexelZ());
         assertEquals(5_592_384L, profile.estimatedGpuTextureBytes());
-        assertEquals(2_359_296L, profile.estimatedGpuMeshBytes());
+        assertEquals(9_437_184L, profile.estimatedGpuMeshBytes());
         assertEquals(12_582_912L, profile.estimatedTextureBuildScratchBytes());
     }
 
