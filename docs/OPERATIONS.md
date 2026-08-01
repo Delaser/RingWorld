@@ -360,18 +360,11 @@ Before replacing the jar:
 6. validate geometry acknowledgement and atlas cache;
 7. perform a seam interaction test.
 
-## Frozen 1.21.11 client installation
+## Optional client and server package staging
 
-Clients need:
-
-- Minecraft Java 1.21.11;
-- Fabric Loader 0.19.3;
-- Fabric API;
-- RingWorld jar.
-
-Server join fails for a client that cannot receive the required settings
-payload. A mismatched settings format or geometry acknowledgement is also
-rejected.
+The standalone Modrinth jar is the normal installation path. Optional Prism
+client bundles and a dedicated-server overlay are built locally from the same
+verified runtime jar; they do not replace or hide that jar.
 
 The active local development bundle is under `dist/client-bundle/`, but
 `dist/` is deliberately not versioned. It contains generated launcher/runtime
@@ -381,7 +374,9 @@ Versioned launcher sources live under `deploy/client/`. Copy them into each
 generated bundle before publishing. On every start they refresh only the
 packaged RingWorld jar, Fabric API jar, and `mmc-pack.json` in an existing
 instance. They preserve accounts, saves, options, screenshots, resource packs,
-existing RingWorld configuration, and `instance.cfg`.
+existing RingWorld configuration, and unrelated `instance.cfg` values. The
+only intentional instance-settings migration enables automatic Java selection
+and clears an explicit Java-location override so Prism can select Java 25.
 
 Never distribute a used `.prism-data` directory. Create a fresh package from
 the source instance that contains only:
@@ -391,9 +386,9 @@ the source instance that contains only:
 - instance metadata;
 - launcher scripts/instructions.
 
-Publication infrastructure and generated archives are intentionally outside
-this source repository. Validate every outer archive, nested Prism instance,
-and embedded mod hash before distribution.
+Generated archives are intentionally ignored. Validate every outer archive,
+nested Prism instance, embedded mod hash, checksum, and exact public source
+revision before distribution.
 
 RingWorld is licensed under MPL-2.0. Before any client or server artifact is
 published:
@@ -411,32 +406,25 @@ published:
 7. state accurately that modified RingWorld files remain MPL-2.0 when
    distributed, while separate files in a larger work may use other terms.
 
-The planned official source-delivery method is a public Git tag matching the
-artifact. If the repository is still private, publishing a newly built MPL
-executable is blocked unless a different compliant source-delivery method is
-included. See [`LICENSING.md`](LICENSING.md).
+Each package manifest links the full public commit used for the artifact. A
+release tag may additionally identify an approved build. See
+[`LICENSING.md`](LICENSING.md).
 
-Run the automated licence gate against each jar and outer bundle:
+Build optional packages from a clean instance template and an exact public
+source revision:
 
 ```sh
-python3 scripts/verify_distribution_license.py \
-  build/libs/ringworld-0.2.0+mc26.1.2.jar \
-  dist/RingWorld-Test-Client.zip \
-  dist/RingWorld-Test-Client-Windows.zip
+python3 scripts/prepare_release_packages.py \
+  --jar build/libs/ringworld-0.2.0+mc26.1.2.jar \
+  --fabric-api /path/to/fabric-api-0.155.2+26.1.2.jar \
+  --instance-template /path/to/clean-prism-instance \
+  --output dist/release-candidate \
+  --version 0.2.0+mc26.1.2 \
+  --source-revision "$(git rev-parse HEAD)"
 
-python3 -m unittest scripts/test_verify_distribution_license.py
-```
-
-The MIT-labelled 0.1.0 universal and Windows bundles were withdrawn on
-28 July 2026. Their server-side rollback is
-`/var/backups/ringworld-web-license-correction-20260728T120000Z/`. Do not
-restore those artifacts to a public path. The corrected HTTPS-verified
-evaluation packages below are historical, pre-MPL artifacts and retain the
-licence attached to those copies:
-
-```text
-141832393128820be4917d29bec11822f3a253f50e627f3b187e673df22918ea  RingWorld-Test-Client.zip
-c92498ab3546a3ca4cd86a684eba8c37b97ef4814181aa1d686055dfc29dcc2d  RingWorld-Test-Client-Windows.zip
+python3 -m unittest \
+  scripts/test_verify_distribution_license.py \
+  scripts/test_prepare_release_packages.py
 ```
 
 Test both package paths: a completely fresh bundle and an in-place upgrade over
@@ -444,10 +432,11 @@ an existing `.prism-data` directory containing sentinel account, save, option,
 and configuration files. A new ZIP whose launcher only initializes a missing
 instance does not update existing users and can leave a stale network codec.
 
-On the public host, replace the page and archives only after copying the
-existing files to a timestamped directory under `/var/backups/`. The current
-27 July 2026 publication rollback, taken immediately before publishing visual
-profile 4, is `/var/backups/ringworld-web-20260727T132653Z/`.
+The builder fails closed on stale MIT/evaluation metadata, a missing or
+mismatched licence, source jars, archive traversal, accounts, saves, logs,
+options, screenshots, resource packs, existing managed jars, or a non-exact
+source revision. It emits no website content and cannot publish, deploy,
+restart a service, or touch a live world.
 
 ## Local macOS launch
 

@@ -46,6 +46,9 @@ if not exist "%INSTANCE%\.minecraft\config\ringworld.properties" (
     copy /Y "%SOURCE%\.minecraft\config\ringworld.properties" ^
         "%INSTANCE%\.minecraft\config\ringworld.properties" >nul || goto :error
 )
+rem Minecraft 26.1.2 requires Java 25. Preserve every other instance setting,
+rem but let Prism replace a stale Java 21 path from an older RingWorld bundle.
+powershell -NoProfile -Command "$p=Join-Path $env:INSTANCE 'instance.cfg'; $c=[IO.File]::ReadAllText($p); foreach($e in @(@('AutomaticJava','true'),@('OverrideJavaLocation','false'))){ $pattern='(?m)^'+[regex]::Escape($e[0])+'=.*$'; if([regex]::IsMatch($c,$pattern)){ $c=[regex]::Replace($c,$pattern,$e[0]+'='+$e[1]) } else { $c += [Environment]::NewLine+$e[0]+'='+$e[1] } }; [IO.File]::WriteAllText($p,$c)" || goto :error
 echo RingWorld client files are current.
 
 set "PRISM="

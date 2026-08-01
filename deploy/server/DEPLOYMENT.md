@@ -48,6 +48,18 @@ Every distributed RingWorld jar must declare `MPL-2.0`, embed
 revision. Run `scripts/verify_distribution_license.py` against generated
 packages before distribution.
 
+## Optional server overlay
+
+`scripts/prepare_release_packages.py` creates a reproducible
+`Server-Overlay.zip` containing the verified RingWorld and Fabric API jars,
+these generic templates, the current `LICENSE`, and an exact public-source
+manifest. It deliberately excludes Minecraft/Fabric server binaries, worlds,
+player data, logs, credentials, and live configuration. Treat it as a staging
+input, not a deployment: obtain the server runtime from official sources and
+perform isolated Java 25 launch tests before any owner-approved release. The
+overlay ships with `eula=false`; each server operator must read Mojang's EULA
+and record their own acceptance before the first real start.
+
 Atlas administration commands are:
 
 ```text

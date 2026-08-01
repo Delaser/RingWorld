@@ -1,2 +1,2 @@
-# Accepted by the server owner for this RingWorld test deployment.
-eula=true
+# Read https://aka.ms/MinecraftEULA before starting the server.
+eula=false

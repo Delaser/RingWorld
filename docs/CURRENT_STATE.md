@@ -64,6 +64,20 @@ runtime evidence. This records that the ported architecture meets those work
 packages; it does not erase the broader release-hardening and compatibility
 limits documented below.
 
+Issue #12 package preparation is now active. The local builder produces
+reproducible macOS/universal and Windows Prism ZIPs plus a server overlay from
+one verified Fabric jar, matching Fabric API jar, clean instance template, and
+exact public source commit. It writes MPL/source manifests and checksums, has
+no website or deployment path, and rejects account/runtime state, source jars,
+unsafe archive paths, stale licence metadata, and managed jars in the template.
+Eight Python package/licence tests pass, including an executed fresh and
+in-place macOS launcher path with preserved save/config/options/instance
+sentinels. A real in-place macOS client selected Java 25, loaded Minecraft,
+RingWorld, and all resources/shaders with the exact staged jar. A fresh
+16,384-by-256 dedicated server built from the overlay reached `Done`, started
+atlas pregeneration, then saved and stopped cleanly. Real fresh-client and
+Windows runtime gates remain before #12 can close.
+
 Atlas-pregeneration Phases 1b and 2 are landed through #55, #56, and #59:
 the loader-neutral job-model foundation
 plus `RingAtlasPregenerationService`, the sole world-owned server atlas writer.

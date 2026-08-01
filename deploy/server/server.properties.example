@@ -1,4 +1,4 @@
-# Copy this blank public template to server.properties on the server. Never
+# Copy this generic template to server.properties in an isolated server. Never
 # commit a deployed copy containing an RCON password or other local settings.
 accepts-transfers=false
 allow-flight=true
@@ -6,7 +6,7 @@ allow-nether=true
 broadcast-console-to-ops=true
 broadcast-rcon-to-ops=true
 bug-report-link=
-difficulty=peaceful
+difficulty=normal
 enable-command-block=false
 enable-jmx-monitoring=false
 enable-query=false
@@ -32,7 +32,7 @@ max-chained-neighbor-updates=1000000
 max-players=20
 max-tick-time=60000
 max-world-size=29999984
-motd=AndWhatNot True RingWorld Test — Fabric 26.1.2
+motd=RingWorld — Fabric 26.1.2
 network-compression-threshold=256
 online-mode=true
 op-permission-level=4
@@ -54,7 +54,7 @@ server-ip=
 server-port=25565
 simulation-distance=8
 spawn-animals=true
-spawn-monsters=false
+spawn-monsters=true
 spawn-npcs=true
 spawn-protection=0
 sync-chunk-writes=true
