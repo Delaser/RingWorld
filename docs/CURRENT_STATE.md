@@ -56,7 +56,7 @@ fixture generated one valid canonical monument at chunk `(606, 3)`, bounded at
 X=9667..9724 and Z=19..76, then located it from the adjacent presentation
 chart without creating an alias chunk. A second dedicated-server process
 loaded the same candidate/start and correctly treated its prior unexplored
-reference as used. The active suite now contains 206 unit/parameterized cases.
+reference as used. The active suite now contains 208 unit/parameterized cases.
 
 The P1–P4 architecture parents (#5–#8) are now closed after final review of
 the integrated 26.1 topology, worldgen, protocol, renderer, lifecycle, and
@@ -116,7 +116,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 206 unit/parameterized cases pass, and Loom produces
+temporary shims, all 208 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -262,7 +262,7 @@ across the finite width. If vanilla's completed terrain-adjusted graph reaches
 past a boundary, every piece receives one minimal X/Z translation before the
 start is built. A dedicated Java 25 gate passed eight production seeds,
 including a regression whose unadjusted bounds reached Z=-132, plus 2,048×416
-and 15,552×4,096 layouts: each complete piece graph and
+  and 15,552×4,096 layouts: each complete piece graph and
 portal room stayed inside the band, generated all 12 End portal frames, matched vanilla's
 activation pattern, and returned the nearest periodic locator from the
 opposite chart. A saved-world rerun passed with the same start and portal.
@@ -330,8 +330,10 @@ and compatibility claims.
   texture-corrected biome colour sampled from the actual highest surface block.
   Dedicated servers fall back to the sampled block's map colour when their
   unloaded client-only grass/foliage colormaps return zero.
-- Relief-shaded, mipmapped complete-ring GPU texture/mesh at normal real-chunk
-  render distance.
+- Relief-shaded, mipmapped progressive/complete-ring GPU texture and bounded
+  mesh at normal real-chunk render distance. Partial atlases expose only known
+  cells through alpha and use one reference-height mesh; completion upgrades
+  exactly once to the expanded terrain-height surface.
 - Live RGB lightmap exposure for the distant surface using the
   full-skylight/no-block-light texel, matching client day/night, weather,
   gamma, lightning, darkness, and night-vision state.
@@ -446,10 +448,11 @@ and compatibility claims.
 
 ### Distant surface
 
-- The active far ring appears only after the atlas is complete.
+- The active far ring fills in from the first trustworthy atlas cells. Missing
+  cells remain transparent rather than fabricating a base-height surface.
 - Disconnect and settings-reception paths clear the previous world's GPU mesh
-  and texture. The renderer independently rejects absent/incomplete current
-  atlases, preventing stale terrain while a new world is pregenerated.
+  and texture. The renderer independently rejects absent, zero-cell, corrupt,
+  and wrong-world atlases, preventing stale terrain during a new world.
 - Source resolution is one height/surface-colour sample per eight blocks.
 - The client expands colour data but cannot recreate blocks, transparent
   layers, trees, buildings, mobs, or weather volumes.

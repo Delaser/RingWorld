@@ -59,6 +59,14 @@ path and does not synthesize atlas colour from noise. Samples continue to come
 from real `ChunkStatus.FULL` Overworld chunks using the existing heightmap,
 biome tint, texture-luminance correction, and exposed-top-face height rules.
 
+The client now renders the same stream progressively. It never treats an
+absent cell as terrain: missing samples encode zero alpha, known boundaries
+fade by bilinear coverage, and mipmaps weight colour by alpha. Coalesced tile
+updates reuse a source-resolution GPU texture and one reference-height mesh;
+the expanded texture and sampled terrain-height mesh are built exactly once
+when verified completion arrives. The final complete-atlas fast path and all
+server-side generation/persistence rules are unchanged.
+
 ## Required interfaces
 
 ### Pure job model

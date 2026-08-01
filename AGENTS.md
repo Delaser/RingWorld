@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 206 unit/parameterized cases pass.
+gate. Common/client compilation and all 208 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -224,7 +224,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 206
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 208
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
@@ -294,10 +294,13 @@ version numbers.
 
 ## Current implementation cautions
 
-- The complete-ring texture is generated only after the terrain atlas is
-  complete. Before that, only real chunks and the remaining atmospheric
-  effects are available. Session disconnect/settings handlers must clear the
-  static GPU texture and mesh, and the renderer must reject incomplete atlases.
+- The complete-ring renderer accepts a current-world partial atlas once it has
+  at least one trustworthy cell. Missing cells stay transparent; progressive
+  updates reuse a source-resolution texture and one reference-height mesh,
+  then completion upgrades exactly once to the expanded texture and detailed
+  terrain-height mesh. Session disconnect/settings handlers must still clear
+  the static GPU texture and mesh, and the renderer must reject absent,
+  zero-cell, corrupt, or wrong-world atlases.
   Fabric disconnect callbacks may arrive on a network thread, so they must
   enqueue cache saves and GPU teardown onto the client thread. Failing to clear
   that state lets a newly created world display the previous world's ring.

@@ -51,6 +51,8 @@ public final class ClientRingState {
         terrainAtlasRevision++;
         terrainAtlasDirty = false;
         terrainAtlasPendingRender = false;
+        lastTerrainAtlasSaveMillis = 0L;
+        lastTerrainAtlasPublishMillis = 0L;
     }
 
     @Nullable
@@ -208,6 +210,8 @@ public final class ClientRingState {
         terrainAtlasCachePath = null;
         terrainAtlasDirty = false;
         terrainAtlasPendingRender = false;
+        lastTerrainAtlasSaveMillis = 0L;
+        lastTerrainAtlasPublishMillis = 0L;
         terrainAtlasRevision++;
     }
 }

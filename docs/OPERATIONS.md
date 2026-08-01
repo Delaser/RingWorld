@@ -136,8 +136,9 @@ normal server chunk queue has fewer than 64 pending tasks.
 
 Production-default atlas completion is therefore a large world-generation
 operation. Monitor disk use, server tick time, and progress logs. Set
-`pregenerateTerrainAtlas=false` to postpone background generation; the
-complete-ring texture will not build until a complete atlas is available.
+`pregenerateTerrainAtlas=false` to postpone background generation. The distant
+surface progressively reveals only trustworthy cells from player-loaded or
+pregenerated chunks; missing cells remain transparent until generated.
 Progress logs report captured cells, cells per second, and an ETA once a rate
 can be measured.
 
@@ -282,7 +283,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite contains 206 unit/parameterized cases. The historical Phase 2
+The current suite contains 208 unit/parameterized cases. The historical Phase 2
 95-error inventory and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.

@@ -75,4 +75,22 @@ class RingSurfaceLodTest {
         assertThrows(IllegalArgumentException.class,
                 () -> RingSurfaceLod.buildNextMipArgb(new int[3], 2, 2));
     }
+
+    @Test
+    void missingSurfaceSamplesRemainTransparent() {
+        assertEquals(0, RingSurfaceLod.surfaceArgb(-1, 0.0));
+        assertEquals(0xFF336699, RingSurfaceLod.surfaceArgb(0x336699, 1.0));
+        assertEquals(0x80336699, RingSurfaceLod.surfaceArgb(0x336699, 0.5));
+    }
+
+    @Test
+    void transparentMipCellsDoNotDarkenKnownTerrain() {
+        int[] source = {
+                0xFF4080C0, 0,
+                0, 0
+        };
+
+        assertEquals(0x404080C0,
+                RingSurfaceLod.buildNextMipArgb(source, 2, 2)[0]);
+    }
 }
