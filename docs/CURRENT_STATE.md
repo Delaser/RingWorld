@@ -56,7 +56,18 @@ fixture generated one valid canonical monument at chunk `(606, 3)`, bounded at
 X=9667..9724 and Z=19..76, then located it from the adjacent presentation
 chart without creating an alias chunk. A second dedicated-server process
 loaded the same candidate/start and correctly treated its prior unexplored
-reference as used. The active suite now contains 208 unit/parameterized cases.
+reference as used.
+
+Atlas-priority work is integrated through #67 and implemented for #68. #66
+records the production and safe-small 6/12/28 visual/performance baseline. #67
+renders trustworthy partial cells immediately with transparent missing sky and
+performs one full-detail transition at completion. #68 introduces disk format
+6, bounded post-edit cell recapture, monotonic durable revisions, persistent
+complete-client tile subscriptions, ordered revision commits, and exact-
+revision reconnect reuse. The real safe-small atlas UI fixture completed all
+13,312 cells, committed revision 1, then placed and removed a sampled high
+surface block and observed revisions 2 and 3 plus matching client heights.
+The active suite now contains 215 unit/parameterized cases.
 
 The P1–P4 architecture parents (#5–#8) are now closed after final review of
 the integrated 26.1 topology, worldgen, protocol, renderer, lifecycle, and
@@ -84,7 +95,7 @@ plus `RingAtlasPregenerationService`, the sole world-owned server atlas writer.
 It owns cursor/future/retry/control/save/completion state; Fabric commands,
 lifecycle hooks, and client tile streaming delegate through
 `RingTerrainAtlasServer`. One in-flight chunk, the 64-task player-work guard,
-200-tick checkpoints, 20-tick tile publication, format-5 bytes, partial
+200-tick checkpoints, 20-tick tile publication, format-6 bytes, partial
 resume, and verified-final-save completion are retained. The Fabric pause-menu
 map, confirmation/progress controls, cancel lifecycle, versioned payloads,
 permissions, and completion toast share that same handle; the real GUI-scale-4
@@ -116,7 +127,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 208 unit/parameterized cases pass, and Loom produces
+temporary shims, all 215 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -326,7 +337,7 @@ and compatibility claims.
   diameter and hidden moon.
 - Smooth global noon/dawn/dusk/midnight sun intensity and colour tone driven
   by vanilla time; the former shadow-panel mesh is removed.
-- Persistent periodic format-5 atlas of exposed top-face height and
+- Persistent periodic format-6 atlas of exposed top-face height and
   texture-corrected biome colour sampled from the actual highest surface block.
   Dedicated servers fall back to the sampled block's map colour when their
   unloaded client-only grass/foliage colormaps return zero.
@@ -627,27 +638,21 @@ retaining the fixed pose and continuous dimming/colour cycle.
 
 Priorities are ordered by player-visible value and architectural leverage.
 
-1. **Prepare optional convenience packages**
-   - assemble macOS/Windows Prism and dedicated-server packages under #12;
-   - preserve user state, validate licences/credentials, and keep the normal
-     Modrinth jar independently installable.
-2. **Run the independent release-candidate review**
-   - activate #13 against one exact clean, pushed source revision;
-   - audit mixins, topology, protocol, worldgen, rendering, storage, packaging,
-     documentation, and remaining release claims without changing production
-     code during the review.
-3. **Broaden automated gameplay regression**
-   - death/respawn, portals, maps, more vehicles/projectiles;
-   - redstone and cross-seam block entities;
-   - fluid networks and explosions with terrain destruction.
-4. **Harden atlas lifecycle**
-   - decide how block edits invalidate surface cells;
-   - support progressive rendering safely if desired;
-   - benchmark production-scale memory/network/pregeneration;
-   - run the new headless prewarm recovery fixtures and production benchmark;
-   - retain the implemented service, map controls, and admin status/pause/resume
-     commands without introducing another writer.
-5. **Worldgen seam matrix**
+1. **Finish the atlas priority phase**
+   - #69 retunes live/proxy handoff against the locked visual baseline;
+   - #70 adds bounded operational telemetry and profiling evidence.
+2. **Run the stability phase**
+   - #71 broader gameplay and multiplayer regression;
+   - #72 worldgen/structure seam matrix;
+   - #73 custom-dimension runtime matrix;
+   - #74 compatibility and fault-isolation pass.
+3. **Prepare the Fabric release candidate**
+   - finish #12 macOS/Windows Prism and dedicated-server packages;
+   - run #13 independent review against one exact clean pushed revision.
+4. **Begin NeoForge parity only after Fabric RC approval**
+   - implement #34 through narrow platform adapters while keeping common code
+     loader-neutral.
+5. **Worldgen seam matrix details**
    - multiple seeds;
    - every major biome;
    - non-stronghold structures deliberately forced across X=0/C;

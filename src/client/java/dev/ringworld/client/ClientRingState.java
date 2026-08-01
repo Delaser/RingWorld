@@ -102,9 +102,11 @@ public final class ClientRingState {
         RingTerrainAtlas replacement = null;
         Path cache = FabricLoader.getInstance().getGameDir().resolve("ringworld-cache")
                 .resolve("terrain-" + Long.toUnsignedString(metadata.worldHash(), 16) + ".rwat.gz");
+        if (metadata.revision() < 0L) return false;
         if (Files.exists(cache)) {
             try {
                 replacement = RingTerrainAtlas.load(cache, current, metadata.worldHash());
+                if (replacement.revision() != metadata.revision()) replacement = null;
             } catch (IOException exception) {
                 RingWorldMod.LOGGER.warn("Ignoring invalid client RingWorld terrain cache {}", cache, exception);
             }
@@ -126,7 +128,7 @@ public final class ClientRingState {
         RingWorldMod.LOGGER.info("RingWorld terrain atlas ready: {}/{} cached cells ({}%)",
                 replacement.presentCount(), replacement.cellCount(),
                 Math.round(replacement.completion() * 1000.0) / 10.0);
-        return replacement.isComplete();
+        return replacement.isComplete() && replacement.revision() == metadata.revision();
     }
 
     public static void applyTerrainAtlasTile(long worldHash, int tileX, int tileZ, byte[] data) {
@@ -153,9 +155,28 @@ public final class ClientRingState {
         }
     }
 
+    /** Durably acknowledges an ordered server tile batch only after it is complete. */
+    public static void commitTerrainAtlasRevision(long worldHash, long revision) {
+        RingTerrainAtlas atlas = terrainAtlas;
+        if (atlas == null || atlas.worldHash() != worldHash) return;
+        try {
+            if (!atlas.commitRevision(revision)) return;
+            terrainAtlasDirty = true;
+            terrainAtlasPendingRender = true;
+            saveTerrainAtlasIfDue(true);
+            RingWorldMod.LOGGER.info("RingWorld terrain atlas revision {} committed", revision);
+        } catch (IOException exception) {
+            RingWorldMod.LOGGER.warn("Rejected invalid RingWorld terrain atlas revision {}", revision, exception);
+        }
+    }
+
     @Nullable
     public static RingTerrainAtlas terrainAtlas() { return terrainAtlas; }
     public static int terrainAtlasRevision() { return terrainAtlasRevision; }
+    public static long terrainAtlasDurableRevision() {
+        RingTerrainAtlas atlas = terrainAtlas;
+        return atlas == null ? 0L : atlas.revision();
+    }
     public static long serverAtlasWorldHash() { return serverAtlasWorldHash; }
     public static boolean hasServerAtlasWorldHash() { return hasServerAtlasWorldHash; }
 

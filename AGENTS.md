@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 208 unit/parameterized cases pass.
+gate. Common/client compilation and all 215 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -224,7 +224,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 208
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 215
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
@@ -315,11 +315,21 @@ version numbers.
   the cylindrical terrain below them. Leave Z and the null-geometry Nether/End
   path vanilla.
 - Atlas tile application is idempotent. Duplicate dirty tiles must not advance
-  the client atlas revision, force another cache save, or rebuild the complete
+  the client render revision, force another cache save, or rebuild the complete
   texture/mesh. Only the actual incomplete-to-complete transition bypasses the
   normal publish/save coalescing windows. A genuinely changed tile captured
   after completion still advances the coalesced revision and may rebuild the
   surface once; do not mistake that expected refresh for duplicate churn.
+- Atlas format 6 adds a durable monotonic surface revision. Tiles never commit
+  that revision individually: `terrain_atlas_revision_v1` arrives only after
+  all preceding tiles for the batch. Complete clients stay subscribed after
+  their initial transfer. Reconnect cache reuse requires exact world hash,
+  geometry, completeness, and revision; a mismatch receives a full snapshot.
+- `LevelMixin` observes successful server `Level.setBlock` mutations and only
+  enqueues canonical atlas cells. `RingAtlasPregenerationService` remains the
+  sole writer, processes at most 64 recaptures per tick, and collapses more
+  than 4,096 exact pending cells into tile work. Do not sample inline in the
+  mixin or create another edit listener/writer.
 - `RingAtlasPregenerationCursor` is shared, loader-neutral traversal state for
   the future atlas service. It is X-major, derives finite Z from
   `RingGeometry.minChunkZ()`, resumes from present atlas cells, and never uses
@@ -383,9 +393,10 @@ version numbers.
   checksum manifests under ignored local staging only.
 - `/ringworld atlas status|pause|resume` controls background pregeneration.
   Pause is process-local and does not alter immutable saved layout.
-- Atlas format 5 represents exposed top-face height and
+- Atlas format 6 represents exposed top-face height and
   texture-luminance-corrected, biome-tinted colour from the actual highest
-  surface block at eight-block source resolution. `ChunkAccess.getHeight`
+  surface block at eight-block source resolution, plus the durable surface
+  revision used for reconnect validation. `ChunkAccess.getHeight`
   already returns that block's Y; subtracting one samples dirt beneath grass.
   Dedicated servers do not load Minecraft's grass/foliage colormap textures,
   so their zero tint lookup must fall back to the sampled block's map colour;

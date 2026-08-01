@@ -17,9 +17,10 @@ All identifiers use the `ringworld` namespace.
 | --- | --- | --- | --- |
 | S2C | `ringworld:settings_v2` | width, circumference, seed, wallHeight, surfaceReferenceY, formatVersion, layoutFingerprint | Install the complete immutable world layout |
 | C2S | `ringworld:settings_ack_v2` | formatVersion, independently recomputed layoutFingerprint | Prove the client installed and verified the same layout |
-| S2C | `ringworld:terrain_atlas_metadata` | worldHash, sampleStep, columns, rows, tileSize, presentCells, complete | Describe server atlas/cache identity |
-| C2S | `ringworld:terrain_atlas_request` | worldHash, cacheComplete | Request tiles or declare a reusable complete cache |
-| S2C | `ringworld:terrain_atlas_tile` | worldHash, tileX, tileZ, byte array | Transfer one height/colour tile |
+| S2C | `ringworld:terrain_atlas_metadata_v2` | worldHash, sampleStep, columns, rows, tileSize, presentCells, complete, revision | Describe server atlas/cache identity and durable surface generation |
+| C2S | `ringworld:terrain_atlas_request_v2` | worldHash, revision, cacheComplete | Request a full snapshot or subscribe an exact complete cache |
+| S2C | `ringworld:terrain_atlas_tile_v2` | worldHash, tileX, tileZ, byte array | Transfer one height/colour tile |
+| S2C | `ringworld:terrain_atlas_revision_v1` | worldHash, revision | Commit all earlier ordered tile changes as one durable revision |
 | C2S | `ringworld:atlas_pregen_status_request_v1` | worldHash | Observe the authoritative Generate Entire Ring status |
 | C2S | `ringworld:atlas_pregen_control_v1` | worldHash, stable action value | Request start, pause, resume, or cancel; server rechecks authority |
 | S2C | `ringworld:atlas_pregen_status_v1` | atlas identity, geometry, durable chunks, complete progress, canControl, message | Authoritative player-map status/progress |
@@ -58,12 +59,13 @@ sequenceDiagram
             alt Mismatch
                 S-->>C: Disconnect: acknowledgement mismatch
             else Match
-                S->>C: terrain_atlas_metadata
-                C->>C: Load cache by world hash if valid
-                C->>S: terrain_atlas_request(cacheComplete)
-                opt Cache is incomplete
+                S->>C: terrain_atlas_metadata_v2(revision)
+                C->>C: Load only an exact-revision cache
+                C->>S: terrain_atlas_request_v2(revision,cacheComplete)
+                opt Cache is stale or incomplete
                     S->>C: Up to 8 atlas tiles per server tick
                 end
+                S->>C: terrain_atlas_revision_v1 after queued changes
             end
         end
     end
@@ -84,8 +86,11 @@ trailing bytes before RingWorld can show a useful mismatch message. With a new
 identifier, `ServerPlayNetworking.canSend` fails cleanly and the server directs
 the player to the current package.
 
-The server rejects a client that cannot receive the settings payload. It
-validates any acknowledgement it receives, but there is no independent
+The server rejects a client that cannot receive the settings payload or the
+complete revisioned atlas payload suite. The client likewise rejects a server
+that cannot receive `terrain_atlas_request_v2`. This prevents an older build
+with the same geometry format from joining without live atlas revisions. The
+server validates any acknowledgement it receives, but there is no independent
 acknowledgement timeout state machine.
 
 Atlas-pregeneration status is independent from settings and atlas tile codecs:
@@ -111,7 +116,8 @@ block. RGB is sampled from that highest block, applies representative texture
 luminance to biome water, grass, and foliage tint, and uses block map colour
 otherwise. These semantics are stored as terrain-atlas disk format 4; the
 format-5 disk semantics add a dedicated-server map-colour fallback for
-zero/unloaded grass and foliage tint. The packet byte layout is unchanged.
+zero/unloaded grass and foliage tint. Format 6 adds the persisted monotonic
+surface revision; it changes atlas identity and rebuilds older caches.
 
 The first two tile bytes are its actual width and height. Tile decoding checks:
 
@@ -130,10 +136,16 @@ the ordinary publish/save coalescing intervals.
 The server:
 
 - streams at most 8 tiles per player per tick;
-- queues dirty tiles for connected incomplete clients every 20 ticks;
+- queues dirty tiles for every connected atlas subscriber every 20 ticks;
 - persists dirty atlas state every 200 ticks;
-- removes a stream only after the atlas is complete and the final dirty tile
-  has been queued.
+- retains complete subscriptions for later terrain edits;
+- commits a new revision only after all preceding changed tiles are queued on
+  that player's ordered connection.
+
+Clients never advance the durable atlas revision per tile. This avoids
+mistaking a disconnected half-batch for a valid complete cache. Exact revision
+and completeness permit reconnect reuse; any mismatch starts from a fresh
+client atlas and receives the authoritative full tile snapshot.
 
 ## Canonical and presentation packet mapping
 

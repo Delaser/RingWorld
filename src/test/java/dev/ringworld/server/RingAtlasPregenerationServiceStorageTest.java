@@ -45,7 +45,7 @@ class RingAtlasPregenerationServiceStorageTest {
         RingTerrainAtlas reloaded = RingTerrainAtlas.load(path, GEOMETRY, HASH);
 
         assertTrue(reloaded.isComplete());
-        assertEquals(5, RingTerrainAtlas.FORMAT_VERSION);
+        assertEquals(6, RingTerrainAtlas.FORMAT_VERSION);
         assertArrayEquals(expected, Files.readAllBytes(path));
     }
 

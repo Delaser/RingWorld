@@ -327,7 +327,7 @@ concurrency, and other server load require a real end-to-end benchmark.
   selected canonical chunk for bounded retry; they cannot advance the cursor.
 - Completed: existing commands and automatic background mode delegate to the
   job. Completion exposes final dirty tiles, atomically saves, reopens and
-  verifies format-5 identity/completeness, then resolves success.
+  verifies format-6 identity/completeness, then resolves success.
 
 Exit gate: safe-small atlas bytes, colours, heights, completion order, client
 streaming, pause/resume, restart resume, and runtime frame pacing match the
@@ -439,6 +439,8 @@ Integration tests:
 - player-loaded chunks racing the scheduler without duplicate writers;
 - queue backpressure while normal chunk work is busy;
 - final dirty tile delivery to connected clients;
+- revisioned post-completion block placement/removal delivery and exact-cache
+  reconnect reuse;
 - no canonical chunk request outside X `[0, C)` or finite Z;
 - source-copy immutability and dimension-owned output paths;
 - Nether and End unchanged;

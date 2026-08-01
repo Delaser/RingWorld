@@ -257,13 +257,16 @@ already exists but is invalid, it is authoritative and rebuilt without legacy
 fallback. A leftover `.tmp` file from an interrupted write is safe: the next
 successful save or validated migration replaces it atomically.
 
-The current disk atlas format is 5. Upgrading from an older format
+The current disk atlas format is 6. Upgrading from an older format
 automatically invalidates and rebuilds both server and client caches so the
 renderer samples the actual highest block rather than the block below it,
 records its exposed top-face height, and receives texture-luminance-corrected
 biome surface colours. Format 5 also replaces zero grass/foliage tint from a
 dedicated server's unloaded client-only colour maps with the sampled block map
-colour. This is independent of the persisted RingWorld settings/protocol
+colour. Format 6 also persists a monotonic surface revision. Connected clients
+receive bounded changed tiles after exposed terrain edits; reconnect reuse is
+allowed only when the complete client cache revision exactly matches the
+server. This is independent of the persisted RingWorld settings/protocol
 format.
 
 ## Build
@@ -283,7 +286,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite contains 208 unit/parameterized cases. The historical Phase 2
+The current suite contains 215 unit/parameterized cases. The historical Phase 2
 95-error inventory and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.

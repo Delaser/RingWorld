@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. Common and client
-compilation now pass together, and the development build runs all 208
+compilation now pass together, and the development build runs all 215
 unit/parameterized cases:
 
 ```sh
@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 208 unit/parameterized cases:
+The active suite contains 215 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -53,11 +53,13 @@ The active suite contains 208 unit/parameterized cases:
 | `RingRenderProfileTest` | Shared handoff values, texture/mesh budgets, and whole-ring clamping |
 | `RingEntityTrackingTest` | Existing pairing is retained only for a watched pending canonical destination; initial and out-of-window pairings remain rejected |
 | `RingSkyCycleTest` | Fixed angle, reduced vanilla-sun size, noon/dawn/dusk/midnight tone keyframes, smooth interpolation, time wrapping |
-| `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, idempotent duplicate-tile detection, completion, cache monotonicity, world hash |
+| `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, durable revision persistence/rollback rejection, idempotent duplicate-tile detection, completion, cache monotonicity, world hash |
+| `RingAtlasSurfaceInvalidationTest` | Presentation-X canonicalization, finite-Z exclusion, and stored-top relevance for terrain mutations |
+| `RingAtlasRecaptureQueueTest` | Exact-cell deduplication, 64-cell bounded drain, and bulk overflow collapse into tile work |
 | `RingAtlasPregenerationCursorTest` | X-major canonical enumeration, finite-Z coordinates, non-power-of-two circumference, atlas-backed resume/skip, checked totals, options, state transitions, and zero-work/restarted rate/ETA |
 | `RingAtlasPregenerationSelectionTest` | Server-service retry seam: a failed selected canonical chunk remains selected through bounded retry, partial storage resumes at its first missing chunk, and retry exhaustion is explicit without a `ServerLevel` fixture |
 | `RingAtlasDirtyTileQueueTest` | Final dirty tile stays published until the Fabric adapter drains it, including a completion transition in the same server tick |
-| `RingAtlasPregenerationServiceStorageTest` | Fresh/partial/complete/corrupt format-5 service persistence seams: interrupted partial checkpoints resume without a byte rewrite, complete reload is idempotent, and corrupt current input is rejected |
+| `RingAtlasPregenerationServiceStorageTest` | Fresh/partial/complete/corrupt format-6 service persistence seams: interrupted partial checkpoints resume without a byte rewrite, complete reload is idempotent, and corrupt current input is rejected |
 | `RingAtlasPregenerationSchedulingPolicyTest` | Config-disabled `IDLE`, paused, saving, and cancelled handles cannot schedule chunks; only a running handle may request work |
 | `AtlasPregenerationHeadlessPolicyTest` | Explicit headless startup suppresses normal background autostart and replaces only the unstarted config-disabled `IDLE` handle |
 | `AtlasPregenerationReportTest` | Loader-neutral terminal report validation requires complete evidence or documented unavailable-identity sentinels |
@@ -66,7 +68,7 @@ The active suite contains 208 unit/parameterized cases:
 | `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
 | `RingWorldCreationUiModelTest` | Safe-small, production, custom, and invalid world-creation cost previews |
-| `RingProtocolIdentityTest` | Settings and acknowledgement channel names remain synchronized with their wire layout |
+| `RingProtocolIdentityTest` | Settings, acknowledgement, revisioned terrain-atlas, and pregeneration channel names remain synchronized with their wire layouts |
 | `AtlasPregenerationUiModelTest` | Status-total validation, durable chunk presentation, state-aware controls, permissions, and explicit action/state wire values |
 | `RingStrongholdPlacementTest` | Deterministic canonical placement, seam clearance, seed variation, and supported circumference shapes |
 | `RingStructurePolicyTest` | Stronghold bit plus monument request, pending/terminal result, and legacy-v1 disabled behavior |
@@ -94,7 +96,9 @@ map, confirmation, running, a partial-atlas gameplay view, background
 close/reopen, pause/resume, cancel/retry, and complete screens as
 `atlas-ui-*.png`. It presses the actual confirmation widget, stops after
 `[atlas-ui-test] PASS`, and its finalizer verifies the marker plus all eleven
-PNGs. It is a real integrated-server test:
+PNGs. After completion it also places and removes a sampled high surface block,
+requiring two changed tile broadcasts and ordered durable revision commits
+before passing. It is a real integrated-server test:
 generation remains active because `RingWorldMapScreen` is explicitly
 non-pausing. Keep its run directory ignored and do not point it at a personal
 Prism instance or a production world.

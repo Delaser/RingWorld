@@ -17,4 +17,12 @@ class RingProtocolIdentityTest {
         assertEquals("ringworld:atlas_pregen_status_request_v1", RingAtlasPregenerationStatusRequestPayload.ID.id().toString());
         assertEquals("ringworld:atlas_pregen_status_v1", RingAtlasPregenerationStatusPayload.ID.id().toString());
     }
+
+    @Test
+    void terrainAtlasChannelsNameTheirRevisionedWireLayout() {
+        assertEquals("ringworld:terrain_atlas_metadata_v2", RingTerrainAtlasMetadataPayload.ID.id().toString());
+        assertEquals("ringworld:terrain_atlas_request_v2", RingTerrainAtlasRequestPayload.ID.id().toString());
+        assertEquals("ringworld:terrain_atlas_tile_v2", RingTerrainAtlasTilePayload.ID.id().toString());
+        assertEquals("ringworld:terrain_atlas_revision_v1", RingTerrainAtlasRevisionPayload.ID.id().toString());
+    }
 }

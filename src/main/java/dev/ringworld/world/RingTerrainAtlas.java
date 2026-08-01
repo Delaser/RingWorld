@@ -25,7 +25,7 @@ import java.util.zip.GZIPOutputStream;
  * lets the sky mesh bilinearly sample exactly the same tiled cache.</p>
  */
 public final class RingTerrainAtlas {
-    public static final int FORMAT_VERSION = 5;
+    public static final int FORMAT_VERSION = 6;
     public static final int SAMPLE_STEP_BLOCKS = 8;
     public static final int TILE_SIZE = 16;
     private static final int MAGIC = 0x52574154; // RWAT
@@ -40,6 +40,7 @@ public final class RingTerrainAtlas {
     private final int[] colors;
     private final boolean[] present;
     private int presentCount;
+    private long revision;
 
     public RingTerrainAtlas(RingGeometry geometry, long worldHash) {
         this(geometry, worldHash, SAMPLE_STEP_BLOCKS);
@@ -79,6 +80,7 @@ public final class RingTerrainAtlas {
     public int tileColumns() { return divideCeil(columns, TILE_SIZE); }
     public int tileRows() { return divideCeil(rows, TILE_SIZE); }
     public int presentCount() { return presentCount; }
+    public long revision() { return revision; }
     public int cellCount() { return present.length; }
     public long estimatedMemoryBytes() { return (long)present.length * 7L; }
     public long estimatedWireBytes() {
@@ -86,6 +88,21 @@ public final class RingTerrainAtlas {
     }
     public boolean isComplete() { return presentCount == present.length; }
     public double completion() { return present.length == 0 ? 1.0 : (double)presentCount / present.length; }
+
+    /** Advances one coalesced authoritative surface-change generation. */
+    public long advanceRevision() {
+        revision = Math.addExact(revision, 1L);
+        return revision;
+    }
+
+    /** Commits a fully received authoritative revision without allowing rollback. */
+    public boolean commitRevision(long incomingRevision) throws IOException {
+        if (incomingRevision < 0L) throw new IOException("negative terrain atlas revision");
+        if (incomingRevision < revision) return false;
+        boolean changed = incomingRevision > revision;
+        revision = incomingRevision;
+        return changed;
+    }
 
     /** Stores a sample selected by canonical block coordinates. */
     public boolean putBlockSample(int blockX, int blockZ, int surfaceY, int mapColor) {
@@ -256,6 +273,7 @@ public final class RingTerrainAtlas {
             output.writeInt(sampleStep);
             output.writeInt(columns);
             output.writeInt(rows);
+            output.writeLong(revision);
             for (int index = 0; index < present.length; index++) {
                 output.writeBoolean(present[index]);
                 output.writeShort(heights[index]);
@@ -285,6 +303,8 @@ public final class RingTerrainAtlas {
                     || input.readInt() != atlas.columns || input.readInt() != atlas.rows) {
                 throw new IOException("terrain atlas does not match this ring world");
             }
+            atlas.revision = input.readLong();
+            if (atlas.revision < 0L) throw new IOException("negative terrain atlas revision");
             for (int index = 0; index < atlas.present.length; index++) {
                 atlas.present[index] = input.readBoolean();
                 atlas.heights[index] = input.readShort();

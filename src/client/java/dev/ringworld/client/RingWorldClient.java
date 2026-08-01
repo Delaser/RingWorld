@@ -9,6 +9,7 @@ import dev.ringworld.net.RingSettingsHandshake;
 import dev.ringworld.net.RingAtlasPregenerationStatusPayload;
 import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRequestPayload;
+import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
 import dev.ringworld.world.RingWorldConfig;
 import dev.ringworld.world.RingGeometry;
@@ -154,13 +155,23 @@ public final class RingWorldClient implements ClientModInitializer {
                     // alignment and intentionally does not download the LOD
                     // atlas while its two frames are settling.
                     if (Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) return;
-                    if (!ClientPlayNetworking.canSend(RingTerrainAtlasRequestPayload.ID)) return;
+                    if (!ClientPlayNetworking.canSend(RingTerrainAtlasRequestPayload.ID)) {
+                        var handler = context.client().getConnection();
+                        if (handler != null) {
+                            handler.getConnection().disconnect(Component.literal(
+                                    "Server RingWorld terrain-atlas protocol is missing or out of date."));
+                        }
+                        return;
+                    }
                     ClientPlayNetworking.send(new RingTerrainAtlasRequestPayload(
-                            payload.worldHash(), cacheComplete));
+                            payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete));
                 }));
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasTilePayload.ID, (payload, context) ->
                 context.client().execute(() -> ClientRingState.applyTerrainAtlasTile(
                         payload.worldHash(), payload.tileX(), payload.tileZ(), payload.data())));
+        ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasRevisionPayload.ID, (payload, context) ->
+                context.client().execute(() -> ClientRingState.commitTerrainAtlasRevision(
+                        payload.worldHash(), payload.revision())));
         ClientPlayNetworking.registerGlobalReceiver(RingAtlasPregenerationStatusPayload.ID, (payload, context) ->
                 context.client().execute(() -> AtlasPregenerationClientState.install(context.client(), payload)));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
