@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 110 unit/parameterized cases:
+The active suite contains 117 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -53,6 +53,10 @@ The active suite contains 110 unit/parameterized cases:
 | `RingSkyCycleTest` | Fixed angle, reduced vanilla-sun size, noon/dawn/dusk/midnight tone keyframes, smooth interpolation, time wrapping |
 | `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, idempotent duplicate-tile detection, completion, cache monotonicity, world hash |
 | `RingAtlasPregenerationCursorTest` | X-major canonical enumeration, finite-Z coordinates, non-power-of-two circumference, atlas-backed resume/skip, checked totals, options, state transitions, and zero-work/restarted rate/ETA |
+| `RingAtlasPregenerationSelectionTest` | Server-service retry seam: a failed selected canonical chunk remains selected through bounded retry, partial storage resumes at its first missing chunk, and retry exhaustion is explicit without a `ServerLevel` fixture |
+| `RingAtlasDirtyTileQueueTest` | Final dirty tile stays published until the Fabric adapter drains it, including a completion transition in the same server tick |
+| `RingAtlasPregenerationServiceStorageTest` | Fresh/partial/complete/corrupt format-5 service persistence seams: interrupted partial checkpoints resume without a byte rewrite, complete reload is idempotent, and corrupt current input is rejected |
+| `RingAtlasPregenerationSchedulingPolicyTest` | Config-disabled `IDLE`, paused, saving, and cancelled handles cannot schedule chunks; only a running handle may request work |
 | `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
 | `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |

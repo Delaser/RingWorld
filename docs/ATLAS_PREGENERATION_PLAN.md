@@ -1,8 +1,11 @@
 # Atlas pregeneration service plan
 
-Status: Phase 1a's loader-neutral job contracts and deterministic cursor landed
-on 2026-08-01. The current background implementation remains authoritative
-until scheduler extraction and its runtime validation land.
+Status: Phase 1b's authoritative server-thread service landed on 2026-08-01.
+`RingAtlasPregenerationService` now owns one Overworld atlas writer, its
+cursor/selected future/retry state, process-local controls, checkpointing, and
+verified completion. Fabric commands, lifecycle hooks, and client tile streams
+remain in `RingTerrainAtlasServer`. UI, new payloads, and headless prewarm
+remain follow-up work.
 
 ## Outcome
 
@@ -36,7 +39,7 @@ service also supports:
 
 ## Current implementation
 
-`RingTerrainAtlasServer` already has a proven baseline:
+The extracted `RingAtlasPregenerationService` preserves the proven baseline:
 
 - it loads or resumes the atlas identified by immutable geometry, seed, layout
   fingerprint, format, and sample step;
@@ -48,12 +51,7 @@ service also supports:
 - new tiles stream incrementally to connected clients;
 - pause/resume affects process state without changing saved layout.
 
-The missing abstraction is orchestration. Pregeneration state is embedded in
-static maps and private tick methods, so a caller cannot start a bounded job,
-observe typed progress, await verified completion, select a background or
-headless policy, or stop a preparation server automatically.
-
-This plan extracts that scheduler. It does not create an independent worldgen
+The completed extraction does not create an independent worldgen
 path and does not synthesize atlas colour from noise. Samples continue to come
 from real `ChunkStatus.FULL` Overworld chunks using the existing heightmap,
 biome tint, texture-luminance correction, and exposed-top-face height rules.
@@ -154,6 +152,24 @@ state instead of competing with it.
 `cancel` stops scheduling new chunks and checkpoints current progress; it does
 not delete atlas cells or generated terrain. A later call resumes from the
 persisted atlas.
+
+When `pregenerateTerrainAtlas=false`, the service still creates the same
+`BACKGROUND` handle in `IDLE` so status and legacy pause/resume commands stay
+defined and player-loaded chunks use the authoritative writer. It does not
+schedule chunks until a future explicit matching start; resume alone preserves
+the disabled-background policy.
+
+The initial server implementation accepts only the conservative execution
+policy (one in-flight chunk and 64 pending-task limit). Non-default model
+policy fields are rejected: `checkpointIntervalChunks=200` remains reserved
+for a later policy implementation, while the active runtime preserves the
+legacy 200-server-tick save cadence; the model's 20-tick progress setting is
+likewise reserved while publication stays on its existing cadence. It rejects
+`stopServerWhenComplete`:
+headless stop is Phase 3 work. `BACKGROUND` and `INTERACTIVE` are scheduling
+intent labels at this stage and use the same conservative execution path.
+`completedChunks` reports chunks completed by the current handle; durable
+overall completion is represented by the atlas present-cell count and total.
 
 ### Loader adapters
 
@@ -283,12 +299,15 @@ concurrency, and other server load require a real end-to-end benchmark.
 
 ### Phase 1: extract and preserve behavior
 
-- Introduce the pure cursor, options, progress, result, and state tests.
-- Move `nextChunkIndex`, in-flight future, rates, pause state, and completion
-  into a world-owned job.
-- Keep one chunk in flight, the queue threshold of 64, current save cadence,
-  current sampling, and current traversal order.
-- Make existing commands and automatic background mode delegate to the job.
+- Completed: introduced the pure cursor, options, progress, result, and state
+  tests, then moved cursor, selected in-flight future, rates, pause/cancel
+  state, saves, and completion into a world-owned job.
+- Completed: one in-flight chunk, queue threshold 64, 200-tick saves, current
+  sampling and X-major traversal are retained. Failed futures retain their
+  selected canonical chunk for bounded retry; they cannot advance the cursor.
+- Completed: existing commands and automatic background mode delegate to the
+  job. Completion exposes final dirty tiles, atomically saves, reopens and
+  verifies format-5 identity/completeness, then resolves success.
 
 Exit gate: safe-small atlas bytes, colours, heights, completion order, client
 streaming, pause/resume, restart resume, and runtime frame pacing match the
