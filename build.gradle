@@ -85,6 +85,13 @@ loom {
 			vmArg "-Dringworld.curvedObjectCapture=true"
 			programArgs "--username", "RingObjectTester"
 		}
+		atlasUiClient {
+			client()
+			name "RingWorld Atlas UI Regression"
+			runDir "run-atlas-ui"
+			vmArg "-Dringworld.atlasUiTest=true"
+			programArgs "--username", "RingAtlasUiTester"
+		}
 		strongholdTestServer {
 			server()
 			name "RingWorld Stronghold Test Server"
@@ -161,6 +168,51 @@ tasks.register("prepareStrongholdTestWorld") {
 tasks.named("runStrongholdTestServer") {
 	dependsOn("prepareStrongholdTestWorld")
 	finalizedBy("verifyStrongholdTestServer")
+}
+
+tasks.register("prepareAtlasUiRun") {
+	group = "ringworld verification"
+	description = "Writes an isolated safe-small configuration for the atlas-map GUI regression."
+	doLast {
+		delete(file("run-atlas-ui/saves"))
+		delete(file("run-atlas-ui/screenshots"))
+		delete(file("run-atlas-ui/ringworld-cache"))
+		delete(file("run-atlas-ui/logs"))
+		def configFile = file("run-atlas-ui/config/ringworld.properties")
+		configFile.parentFile.mkdirs()
+		def config = new Properties()
+		config.setProperty("widthBlocks", "416")
+		config.setProperty("circumferenceBlocks", "2048")
+		config.setProperty("wallHeightBlocks", "160")
+		config.setProperty("testMode", "true")
+		config.setProperty("testViewDistanceChunks", "6")
+		config.setProperty("pregenerateTerrainAtlas", "false")
+		configFile.withOutputStream { config.store(it, "Isolated RingWorld atlas UI regression") }
+	}
+}
+
+tasks.named("runAtlasUiClient") {
+	dependsOn("prepareAtlasUiRun")
+	finalizedBy("verifyAtlasUiClient")
+}
+
+tasks.register("verifyAtlasUiClient") {
+	group = "ringworld verification"
+	description = "Fails unless the isolated GUI-scale-4 atlas-map client completed every required capture."
+	mustRunAfter("runAtlasUiClient")
+	doLast {
+		def logFile = file("run-atlas-ui/logs/latest.log")
+		def log = logFile.isFile() ? logFile.text : ""
+		if (!log.contains("[atlas-ui-test] PASS") || log.contains("[atlas-ui-test] FAIL")) {
+			throw new GradleException("Atlas UI client did not pass; inspect " + logFile)
+		}
+		(1..10).each { index ->
+			def prefix = String.format("atlas-ui-%02d-", index)
+			if (fileTree("run-atlas-ui/screenshots").matching { include prefix + "*.png" }.isEmpty()) {
+				throw new GradleException("Atlas UI client is missing screenshot " + prefix + "*.png")
+			}
+		}
+	}
 }
 
 tasks.register("verifyStrongholdTestServer") {

@@ -5,6 +5,7 @@ import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import dev.ringworld.client.render.RingSurfaceTextureRenderer;
 import dev.ringworld.net.RingSettingsPayload;
 import dev.ringworld.net.RingSettingsAckPayload;
+import dev.ringworld.net.RingAtlasPregenerationStatusPayload;
 import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRequestPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
@@ -48,6 +49,8 @@ public final class RingWorldClient implements ClientModInitializer {
             new RingProjectionCaptureClient();
     private final CurvedObjectCaptureClient curvedObjectCapture =
             new CurvedObjectCaptureClient();
+    private final AtlasPregenerationUiTestClient atlasPregenerationUiTest =
+            new AtlasPregenerationUiTestClient();
     private boolean testScreenOpened;
     private boolean testWorldStarted;
     private boolean testPerformanceProfileApplied;
@@ -162,11 +165,14 @@ public final class RingWorldClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasTilePayload.ID, (payload, context) ->
                 context.client().execute(() -> ClientRingState.applyTerrainAtlasTile(
                         payload.worldHash(), payload.tileX(), payload.tileZ(), payload.data())));
+        ClientPlayNetworking.registerGlobalReceiver(RingAtlasPregenerationStatusPayload.ID, (payload, context) ->
+                context.client().execute(() -> AtlasPregenerationClientState.install(context.client(), payload)));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
             clearRingSession();
         });
         LevelRenderEvents.END_MAIN.register(context -> {
             recordTestFrame();
+            atlasPregenerationUiTest.frameRendered();
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player != null) ClientRingState.updateCameraPosition(client.player.getX());
@@ -181,6 +187,7 @@ public final class RingWorldClient implements ClientModInitializer {
             if (multiplayerTest.tick(client)) return;
             if (projectionCapture.tick(client)) return;
             if (curvedObjectCapture.tick(client)) return;
+            if (atlasPregenerationUiTest.tick(client)) return;
             saveDiagnosticJoinScreenshot(client);
             startAutomatedTestWorld(client);
         });
@@ -194,6 +201,7 @@ public final class RingWorldClient implements ClientModInitializer {
      */
     public static void clearRingSession() {
         RingSurfaceTextureRenderer.clear();
+        AtlasPregenerationClientState.clear();
         ClientRingState.clear();
     }
 
@@ -215,7 +223,7 @@ public final class RingWorldClient implements ClientModInitializer {
     }
 
     private void startAutomatedTestWorld(Minecraft client) {
-        if (!RingWorldConfig.load().testMode()) return;
+        if (!RingWorldConfig.load().testMode() && !atlasPregenerationUiTest.enabled()) return;
         if (!testPerformanceProfileApplied) {
             // A representative, stable local profile. Production play still
             // follows the user's own options because this is test-mode only.

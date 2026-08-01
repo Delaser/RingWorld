@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 117 unit/parameterized cases:
+The active suite contains 123 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -62,6 +62,7 @@ The active suite contains 117 unit/parameterized cases:
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
 | `RingWorldCreationUiModelTest` | Safe-small, production, custom, and invalid world-creation cost previews |
 | `RingProtocolIdentityTest` | Settings and acknowledgement channel names remain synchronized with their wire layout |
+| `AtlasPregenerationUiModelTest` | Status-total validation, durable chunk presentation, state-aware controls, permissions, and explicit action/state wire values |
 | `RingStrongholdPlacementTest` | Deterministic canonical placement, seam clearance, seed variation, and supported circumference shapes |
 | `RingStructurePolicyTest` | Explicit mandatory-stronghold policy bit and legacy-disabled behavior |
 
@@ -70,6 +71,25 @@ Inspect machine-readable results under:
 ```text
 build/test-results/test/
 ```
+
+## Atlas map GUI-scale regression
+
+From an isolated `run-atlas-ui` directory configured for a safe-small world
+with `testMode=true` and `pregenerateTerrainAtlas=false`, run:
+
+```sh
+./gradlew runAtlasUiClient --console=plain
+```
+
+The opt-in client resets its own saves/cache/log/screenshots, sets GUI scale 4,
+waits three rendered frames after every screen change, and records pause-menu,
+map, confirmation, running, background close/reopen, pause/resume,
+cancel/retry, and complete screens as `atlas-ui-*.png`. It presses the actual
+confirmation widget, stops after `[atlas-ui-test] PASS`, and its finalizer
+verifies the marker plus all ten PNGs. It is a real integrated-server test:
+generation remains active because `RingWorldMapScreen` is explicitly
+non-pausing. Keep its run directory ignored and do not point it at a personal
+Prism instance or a production world.
 
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated

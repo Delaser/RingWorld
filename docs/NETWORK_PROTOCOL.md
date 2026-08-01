@@ -20,6 +20,9 @@ All identifiers use the `ringworld` namespace.
 | S2C | `ringworld:terrain_atlas_metadata` | worldHash, sampleStep, columns, rows, tileSize, presentCells, complete | Describe server atlas/cache identity |
 | C2S | `ringworld:terrain_atlas_request` | worldHash, cacheComplete | Request tiles or declare a reusable complete cache |
 | S2C | `ringworld:terrain_atlas_tile` | worldHash, tileX, tileZ, byte array | Transfer one height/colour tile |
+| C2S | `ringworld:atlas_pregen_status_request_v1` | worldHash | Observe the authoritative Generate Entire Ring status |
+| C2S | `ringworld:atlas_pregen_control_v1` | worldHash, stable action value | Request start, pause, resume, or cancel; server rechecks authority |
+| S2C | `ringworld:atlas_pregen_status_v1` | atlas identity, geometry, durable chunks, complete progress, canControl, message | Authoritative player-map status/progress |
 | C2S | `ringworld:multiplayer_test` | role, phase, passed, value | Opt-in automated test reporting only |
 
 Payload registration occurs in `RingWorldNetworking.registerPayloads` during
@@ -80,6 +83,13 @@ the player to the current package.
 The server rejects a client that cannot receive the settings payload. It
 validates any acknowledgement it receives, but there is no independent
 acknowledgement timeout state machine.
+
+Atlas-pregeneration status is independent from settings and atlas tile codecs:
+its `_v1` identifiers must advance on any layout change. Status observers are
+cleared on disconnect/world unload, receive periodic snapshots no more than
+once per 20 ticks plus immediate transitions, and cannot mutate atlas state
+from the network thread. Control actions and lifecycle states use explicit
+stable numeric wire values rather than enum ordinals.
 
 ## Atlas wire format
 

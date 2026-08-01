@@ -84,6 +84,7 @@ public final class RingAtlasPregenerationService {
             // IDLE. Player chunk capture still mutates this atlas, while a
             // later explicit matching start can transition the handle once.
             state.job = new Job(world, state, AtlasPregenerationOptions.backgroundDefaults(), NOOP_LISTENER);
+            if (state.atlas.isComplete() && !state.dirty) state.job.completeAlreadyVerified();
         }
     }
 
@@ -111,7 +112,7 @@ public final class RingAtlasPregenerationService {
         WorldState state = requireState(world);
         Job active = state.job;
         if (active != null && !active.state.isTerminal()) {
-            if (!active.options.equals(options)) {
+            if (!active.options.sharesExecutionPolicyWith(options)) {
                 throw new IllegalStateException("a RingWorld atlas pregeneration job is already active with different options");
             }
             active.addListener(listener);

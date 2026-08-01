@@ -23,6 +23,12 @@ public final class RingWorldNetworking {
         PayloadTypeRegistry.clientboundPlay().register(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(RingTerrainAtlasTilePayload.ID, RingTerrainAtlasTilePayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(RingTerrainAtlasRequestPayload.ID, RingTerrainAtlasRequestPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(RingAtlasPregenerationStatusRequestPayload.ID,
+                RingAtlasPregenerationStatusRequestPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(RingAtlasPregenerationControlPayload.ID,
+                RingAtlasPregenerationControlPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(RingAtlasPregenerationStatusPayload.ID,
+                RingAtlasPregenerationStatusPayload.CODEC);
     }
 
     public static void registerServer() {
@@ -42,6 +48,14 @@ public final class RingWorldNetworking {
         ServerPlayNetworking.registerGlobalReceiver(RingTerrainAtlasRequestPayload.ID, (payload, context) ->
                 context.server().execute(() -> RingTerrainAtlasServer.requestTiles(
                         context.player(), payload.worldHash(), payload.cacheComplete())));
+        ServerPlayNetworking.registerGlobalReceiver(RingAtlasPregenerationStatusRequestPayload.ID, (payload, context) ->
+                context.server().execute(() -> RingTerrainAtlasServer.requestPregenerationStatus(
+                        context.player(), payload.worldHash())));
+        ServerPlayNetworking.registerGlobalReceiver(RingAtlasPregenerationControlPayload.ID, (payload, context) ->
+                context.server().execute(() -> RingTerrainAtlasServer.controlPregeneration(
+                        context.player(), payload.worldHash(), payload.action())));
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+                RingTerrainAtlasServer.clearPlayer(handler.player));
     }
 
     private static void sendSettings(ServerGamePacketListenerImpl handler) {

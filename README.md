@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 117 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 123 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -122,6 +122,14 @@ writer. It preserves canonical X-major traversal, gives ordinary player chunk
 work priority, resumes from saved format-5 cells, and verifies the final
 atomic atlas save before declaring completion. Existing atlas status, pause,
 and resume commands control that same background job.
+
+In a loaded RingWorld Overworld, the pause menu includes **RingWorld Map**.
+It shows authoritative atlas progress and lets the integrated-world owner or a
+dedicated-server gamemaster confirm **Generate Entire Ring**, pause, resume, or
+cancel it. Closing the map returns to play while generation continues. Other
+players receive read-only status; complete atlases cannot be regenerated from
+the UI. Generation creates real canonical chunks and region files, so the
+confirmation calls out its disk/time cost.
 
 The proxy:
 

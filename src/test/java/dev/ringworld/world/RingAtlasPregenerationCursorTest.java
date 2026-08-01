@@ -95,6 +95,14 @@ class RingAtlasPregenerationCursorTest {
     }
 
     @Test
+    void backgroundAndInteractiveDefaultsShareOneExecutionPolicy() {
+        assertTrue(AtlasPregenerationOptions.backgroundDefaults().sharesExecutionPolicyWith(
+                AtlasPregenerationOptions.interactiveDefaults()));
+        assertFalse(AtlasPregenerationOptions.backgroundDefaults().sharesExecutionPolicyWith(
+                AtlasPregenerationOptions.headlessPrewarmDefaults()));
+    }
+
+    @Test
     void stateTransitionsAndZeroWorkProgressAreExplicit() {
         assertTrue(AtlasPregenerationState.IDLE.canTransitionTo(AtlasPregenerationState.RUNNING));
         assertTrue(AtlasPregenerationState.RUNNING.canTransitionTo(AtlasPregenerationState.PAUSED));
@@ -122,6 +130,16 @@ class RingAtlasPregenerationCursorTest {
 
         assertEquals(0.0, progress.cellsPerSecond());
         assertTrue(progress.eta().isEmpty());
+    }
+
+    @Test
+    void atlasReportsDurableCompletedChunkCountIndependentlyOfCurrentRunProgress() {
+        RingGeometry geometry = new RingGeometry(256, 1_024);
+        RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, HASH);
+        completeChunk(atlas, 0, 0);
+        completeChunk(atlas, 1, 3);
+
+        assertEquals(2, atlas.presentChunkCount());
     }
 
     private static RingAtlasPregenerationCursor cursor(RingGeometry geometry) {
