@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 219 unit/parameterized cases pass.
+gate. Common/client compilation and all 220 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -19,9 +19,12 @@ reconnect matrix also passes. A copied 16,384×256 world now passes the
 Overworld/Nether/End transfer, save/disconnect, client-state cleanup, and
 same-process reopen gate. Safe-small 6/12/28-chunk and production-size
 tangent/radial visual handoff review and repeatable Fabric release staging also
-pass. The P1–P4 topology, worldgen, protocol, and renderer architecture parents
-are closed. Optional convenience packaging, independent release-candidate
-review, broader gameplay/worldgen coverage, and compatibility work remain, so
+pass. The complete production atlas regression gate passes generation/recovery,
+live revisions, layout/lifecycle switching, two-client synchronization, and
+resource/frame-pacing review. The P1–P4 topology, worldgen, protocol, and
+renderer architecture parents are closed. Optional convenience packaging,
+independent release-candidate review, broader gameplay/worldgen coverage, and
+compatibility work remain, so
 the Fabric alpha is not a stable release yet. See
 `docs/CURRENT_STATE.md` and `docs/VISUAL_HANDOFF_REVIEW_2026-08-01.md`.
 The Fabric alpha `0.2.0+mc26.1.2` is currently **Under review** on Modrinth;
@@ -226,7 +229,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 219
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 220
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
@@ -319,9 +322,16 @@ version numbers.
 - Atlas tile application is idempotent. Duplicate dirty tiles must not advance
   the client render revision, force another cache save, or rebuild the complete
   texture/mesh. Only the actual incomplete-to-complete transition bypasses the
-  normal publish/save coalescing windows. A genuinely changed tile captured
-  after completion still advances the coalesced revision and may rebuild the
-  surface once; do not mistake that expected refresh for duplicate churn.
+  normal publish/save coalescing windows. Incomplete visual updates publish at
+  most once per second. A genuinely changed complete atlas publishes after
+  three quiet seconds or at a ten-second maximum delay; the later ordered
+  revision commit saves durable cache state but must not request a second
+  identical render build.
+- Complete-ring texture pixels, relief, mips, and `NativeImage` levels are
+  prepared asynchronously from `RingTerrainAtlas.snapshot()`. The render
+  thread alone validates world hash/geometry/revision and uploads the result.
+  Session clear must invalidate the build generation and close both completed
+  and abandoned images; do not sample the mutable live atlas on that worker.
 - Atlas format 6 adds a durable monotonic surface revision. Tiles never commit
   that revision individually: `terrain_atlas_revision_v1` arrives only after
   all preceding tiles for the batch. Complete clients stay subscribed after

@@ -1,8 +1,8 @@
 # Minecraft 26.1 port plan
 
-Status: P1–P4 architecture and the core Fabric 26.1.2 runtime gates are
-integrated and reviewed. Optional convenience packaging and independent
-release-candidate review remain.
+Status: P1–P4 architecture and the atlas production release gate are integrated
+and reviewed. Stability issues #71–#74, optional convenience packaging, and
+independent release-candidate review remain.
 
 Target: Minecraft Java 26.1.2
 

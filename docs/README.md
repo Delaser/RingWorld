@@ -51,6 +51,9 @@ Start here:
 - [`ATLAS_FIDELITY_BENCHMARK_2026-08-01.md`](ATLAS_FIDELITY_BENCHMARK_2026-08-01.md):
   production step 8/4/2/1 resource comparison and the retained fixed-profile
   decision.
+- [`ATLAS_RELEASE_GATE_2026-08-01.md`](ATLAS_RELEASE_GATE_2026-08-01.md):
+  complete production generation/recovery, GUI, lifecycle, multiplayer,
+  visual, resource, hash, and frame-pacing evidence.
 - [`SUN_RENDERING_SNAPSHOT_2026-07-26.md`](SUN_RENDERING_SNAPSHOT_2026-07-26.md):
   frozen rollback description of the removed ring-centred sun and panel array.
 - [`MIXIN_MAP.md`](MIXIN_MAP.md): ownership and risk map for every mixin.

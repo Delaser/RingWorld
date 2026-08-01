@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. Common and client
-compilation now pass together, and the development build runs all 219
+compilation now pass together, and the development build runs all 220
 unit/parameterized cases:
 
 ```sh
@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 219 unit/parameterized cases:
+The active suite contains 220 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -53,7 +53,7 @@ The active suite contains 219 unit/parameterized cases:
 | `RingRenderProfileTest` | Shared handoff values, texture/mesh budgets, and whole-ring clamping |
 | `RingEntityTrackingTest` | Existing pairing is retained only for a watched pending canonical destination; initial and out-of-window pairings remain rejected |
 | `RingSkyCycleTest` | Fixed angle, reduced vanilla-sun size, noon/dawn/dusk/midnight tone keyframes, smooth interpolation, time wrapping |
-| `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, durable revision persistence/rollback rejection, idempotent duplicate-tile detection, completion, cache monotonicity, world hash |
+| `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, durable revision persistence/rollback rejection, idempotent duplicate-tile detection, independent render snapshots, completion, cache monotonicity, world hash |
 | `RingAtlasSurfaceInvalidationTest` | Presentation-X canonicalization, finite-Z exclusion, and stored-top relevance for terrain mutations |
 | `RingAtlasRecaptureQueueTest` | Exact-cell deduplication, 64-cell bounded drain, and bulk overflow collapse into tile work |
 | `RingAtlasPregenerationCursorTest` | X-major canonical enumeration, finite-Z coordinates, non-power-of-two circumference, atlas-backed resume/skip, checked totals, options, state transitions, and zero-work/restarted rate/ETA |
@@ -494,8 +494,9 @@ over the resumed interval). It emitted both tangent and radial-up captures and
 reported a clean capture result. The enhanced harness then reused that complete
 copy for reproducible 6/12/28 tangent, handoff, and radial-up captures with
 frame metrics. The profile-4/profile-5 comparison is recorded in
-`ATLAS_VISUAL_BASELINE_2026-08-01.md`. This is one atlas/projection gate, not the
-complete production gameplay, lifecycle, transfer, GPU, or frame-pacing matrix.
+`ATLAS_VISUAL_BASELINE_2026-08-01.md`. The later complete production generation,
+recovery, lifecycle, multiplayer, resource, and safe-small/production 6/12/28
+matrix is recorded in `ATLAS_RELEASE_GATE_2026-08-01.md`.
 
 When the projectile probe fails, its diagnostic includes position, velocity,
 age, cached chunk, and current `shouldTickEntityAt` result. A folded position
@@ -746,6 +747,16 @@ that interval the server captured newly loaded chunks and saved changed atlas
 data. Client A then built only the updated snapshot. Treat this single rebuild
 as a legitimate changed surface revision; the defect was repeated rebuilds for
 identical tile payloads.
+
+Issue #70 strengthens that policy. A complete-atlas tile burst now waits for
+three quiet seconds, bounded to ten seconds, and its later ordered commit saves
+the durable cache without requesting an identical texture build. Expensive
+pixel, relief, mip, and native-image preparation runs from an immutable atlas
+snapshot off the render thread. In the final dedicated two-client rerun both
+clients observed the identical revision sequence 11/17/24/31/36/40, completed
+the full gameplay matrix, and reused the complete cache on reconnect without
+rebuild churn. Exact logs, frame metrics, and residual cold-start spikes are in
+`ATLAS_RELEASE_GATE_2026-08-01.md`.
 
 A separate clean-atlas benchmark removed the atlas only from a disposable copy
 of the production world and let the normal dedicated scheduler rebuild it. It

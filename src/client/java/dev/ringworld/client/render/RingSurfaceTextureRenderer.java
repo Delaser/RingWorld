@@ -35,6 +35,7 @@ import org.joml.Vector4f;
 
 import java.util.OptionalDouble;
 import java.util.OptionalInt;
+import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
@@ -76,6 +77,10 @@ public final class RingSurfaceTextureRenderer {
     private static long projectionDiagnosticWorldHash = Long.MIN_VALUE;
     private static int textureColumns;
     private static int textureRows;
+    private static CompletableFuture<TextureImages> pendingTextureBuild;
+    private static int pendingTextureRevision = -1;
+    private static long pendingTextureWorldHash;
+    private static long textureBuildGeneration;
 
     private RingSurfaceTextureRenderer() { }
 
@@ -162,7 +167,7 @@ public final class RingSurfaceTextureRenderer {
                 && vertexBuffer != null && surfaceTexture != null
                 && surfaceTextureView != null) return;
 
-        buildTexture(atlas);
+        if (!finishOrScheduleTextureBuild(geometry, atlas, revision)) return;
         boolean detailed = atlas.isComplete();
         // During generation the availability mask changes frequently but the
         // cylinder does not. Keep one conservative reference-height mesh and
@@ -184,7 +189,42 @@ public final class RingSurfaceTextureRenderer {
                 detailed ? "terrain-height" : "progressive-reference-height");
     }
 
-    private static void buildTexture(RingTerrainAtlas atlas) {
+    private static boolean finishOrScheduleTextureBuild(RingGeometry geometry,
+                                                        RingTerrainAtlas atlas,
+                                                        int revision) {
+        if (pendingTextureBuild != null) {
+            if (!pendingTextureBuild.isDone()) return false;
+            TextureImages images;
+            try {
+                images = pendingTextureBuild.join();
+            } catch (RuntimeException exception) {
+                RingWorldMod.LOGGER.error("Could not build RingWorld surface texture", exception);
+                pendingTextureBuild = null;
+                pendingTextureRevision = -1;
+                return false;
+            }
+            int completedRevision = pendingTextureRevision;
+            long completedWorldHash = pendingTextureWorldHash;
+            pendingTextureBuild = null;
+            pendingTextureRevision = -1;
+            if (completedRevision == revision && completedWorldHash == atlas.worldHash()
+                    && geometry.equals(atlas.geometry())) {
+                uploadTexture(images);
+                return true;
+            }
+            images.close();
+        }
+
+        RingTerrainAtlas snapshot = atlas.snapshot();
+        long generation = textureBuildGeneration;
+        pendingTextureRevision = revision;
+        pendingTextureWorldHash = atlas.worldHash();
+        pendingTextureBuild = CompletableFuture.supplyAsync(
+                () -> buildTexturePixels(snapshot, generation));
+        return false;
+    }
+
+    private static TextureImages buildTexturePixels(RingTerrainAtlas atlas, long generation) {
         RingGeometry geometry = atlas.geometry();
         RingRenderProfile profile = RingRenderProfile.create(geometry, 16.0);
         // A partial atlas never needs the expanded final texture: its source
@@ -195,47 +235,82 @@ public final class RingSurfaceTextureRenderer {
                 ? profile.textureColumns() : Math.min(atlas.columns(), profile.textureColumns());
         int targetRows = atlas.isComplete()
                 ? profile.textureRows() : Math.min(atlas.rows(), profile.textureRows());
-        boolean allocateTexture = surfaceTexture == null || surfaceTextureView == null
-                || textureColumns != targetColumns || textureRows != targetRows;
-        textureColumns = targetColumns;
-        textureRows = targetRows;
-        int[] pixels = new int[textureColumns * textureRows];
+        int[] pixels = new int[targetColumns * targetRows];
         float[] heights = new float[pixels.length];
-        double spacingX = (double)geometry.circumferenceBlocks() / textureColumns;
-        double spacingZ = (double)geometry.widthBlocks() / textureRows;
-        for (int row = 0; row < textureRows; row++) {
+        double spacingX = (double)geometry.circumferenceBlocks() / targetColumns;
+        double spacingZ = (double)geometry.widthBlocks() / targetRows;
+        for (int row = 0; row < targetRows; row++) {
             double z = geometry.minWidthZ()
                     + (row + 0.5) * spacingZ;
-            for (int column = 0; column < textureColumns; column++) {
+            for (int column = 0; column < targetColumns; column++) {
                 double x = (column + 0.5) * spacingX;
                 RingTerrainAtlas.SurfaceSample sample = atlas.sample(x, z);
-                int index = row * textureColumns + column;
+                int index = row * targetColumns + column;
                 heights[index] = (float)sample.height();
                 pixels[index] = RingSurfaceLod.surfaceArgb(sample.color(), sample.coverage());
             }
         }
-        for (int row = 0; row < textureRows; row++) {
+        for (int row = 0; row < targetRows; row++) {
             int lowerRow = Math.max(0, row - 1);
-            int upperRow = Math.min(textureRows - 1, row + 1);
-            for (int column = 0; column < textureColumns; column++) {
-                int leftColumn = Math.floorMod(column - 1, textureColumns);
-                int rightColumn = Math.floorMod(column + 1, textureColumns);
-                int index = row * textureColumns + column;
+            int upperRow = Math.min(targetRows - 1, row + 1);
+            for (int column = 0; column < targetColumns; column++) {
+                int leftColumn = Math.floorMod(column - 1, targetColumns);
+                int rightColumn = Math.floorMod(column + 1, targetColumns);
+                int index = row * targetColumns + column;
                 int alpha = pixels[index] >>> 24;
                 if (alpha == 0) continue;
                 float centerHeight = heights[index];
                 int shaded = RingSurfaceLod.shadeSurfaceColor(
                         pixels[index], centerHeight,
-                        presentHeightOr(heights, pixels, row * textureColumns + leftColumn, centerHeight),
-                        presentHeightOr(heights, pixels, row * textureColumns + rightColumn, centerHeight),
-                        presentHeightOr(heights, pixels, lowerRow * textureColumns + column, centerHeight),
-                        presentHeightOr(heights, pixels, upperRow * textureColumns + column, centerHeight),
+                        presentHeightOr(heights, pixels, row * targetColumns + leftColumn, centerHeight),
+                        presentHeightOr(heights, pixels, row * targetColumns + rightColumn, centerHeight),
+                        presentHeightOr(heights, pixels, lowerRow * targetColumns + column, centerHeight),
+                        presentHeightOr(heights, pixels, upperRow * targetColumns + column, centerHeight),
                         spacingX, spacingZ);
                 pixels[index] = alpha << 24 | shaded;
             }
         }
 
-        int mipLevels = mipLevels(textureColumns, textureRows);
+        int mipLevels = mipLevels(targetColumns, targetRows);
+        NativeImage[] images = new NativeImage[mipLevels];
+        int[] levelPixels = pixels;
+        int levelWidth = targetColumns;
+        int levelHeight = targetRows;
+        try {
+            for (int level = 0; level < mipLevels; level++) {
+                NativeImage image = new NativeImage(levelWidth, levelHeight, false);
+                images[level] = image;
+                for (int y = 0; y < levelHeight; y++) {
+                    for (int x = 0; x < levelWidth; x++) {
+                        image.setPixel(x, y, levelPixels[y * levelWidth + x]);
+                    }
+                }
+                if (level + 1 < mipLevels) {
+                    levelPixels = RingSurfaceLod.buildNextMipArgb(
+                            levelPixels, levelWidth, levelHeight);
+                    levelWidth = Math.max(1, levelWidth >> 1);
+                    levelHeight = Math.max(1, levelHeight >> 1);
+                }
+            }
+            return new TextureImages(generation, targetColumns, targetRows, images);
+        } catch (RuntimeException | Error exception) {
+            for (NativeImage image : images) {
+                if (image != null) image.close();
+            }
+            throw exception;
+        }
+    }
+
+    private static void uploadTexture(TextureImages images) {
+        if (images.generation() != textureBuildGeneration) {
+            images.close();
+            return;
+        }
+        boolean allocateTexture = surfaceTexture == null || surfaceTextureView == null
+                || textureColumns != images.columns() || textureRows != images.rows();
+        textureColumns = images.columns();
+        textureRows = images.rows();
+        int mipLevels = images.levels().length;
         GpuTexture targetTexture = surfaceTexture;
         GpuTextureView targetView = surfaceTextureView;
         if (allocateTexture) {
@@ -245,32 +320,41 @@ public final class RingSurfaceTextureRenderer {
                     TextureFormat.RGBA8, textureColumns, textureRows, 1, mipLevels);
             targetView = RenderSystem.getDevice().createTextureView(targetTexture);
         }
-        int[] levelPixels = pixels;
         int levelWidth = textureColumns;
         int levelHeight = textureRows;
-        for (int level = 0; level < mipLevels; level++) {
-            try (NativeImage image = new NativeImage(levelWidth, levelHeight, false)) {
-                for (int y = 0; y < levelHeight; y++) {
-                    for (int x = 0; x < levelWidth; x++) {
-                        image.setPixel(x, y, levelPixels[y * levelWidth + x]);
-                    }
-                }
+        try {
+            for (int level = 0; level < mipLevels; level++) {
+                NativeImage image = images.levels()[level];
                 RenderSystem.getDevice().createCommandEncoder().writeToTexture(
                         targetTexture, image, level, 0, 0, 0,
                         levelWidth, levelHeight, 0, 0);
-            }
-            if (level + 1 < mipLevels) {
-                levelPixels = RingSurfaceLod.buildNextMipArgb(
-                        levelPixels, levelWidth, levelHeight);
                 levelWidth = Math.max(1, levelWidth >> 1);
                 levelHeight = Math.max(1, levelHeight >> 1);
             }
+        } catch (RuntimeException | Error exception) {
+            if (allocateTexture) {
+                targetView.close();
+                targetTexture.close();
+            }
+            throw exception;
+        } finally {
+            images.close();
         }
 
         if (allocateTexture) {
             destroySurfaceTexture();
             surfaceTexture = targetTexture;
             surfaceTextureView = targetView;
+        }
+    }
+
+    private record TextureImages(long generation, int columns, int rows,
+                                 NativeImage[] levels) implements AutoCloseable {
+        @Override
+        public void close() {
+            for (NativeImage image : levels) {
+                if (image != null) image.close();
+            }
         }
     }
 
@@ -347,6 +431,12 @@ public final class RingSurfaceTextureRenderer {
     }
 
     public static void clear() {
+        textureBuildGeneration++;
+        CompletableFuture<TextureImages> abandonedBuild = pendingTextureBuild;
+        if (abandonedBuild != null) abandonedBuild.thenAccept(TextureImages::close);
+        pendingTextureBuild = null;
+        pendingTextureRevision = -1;
+        pendingTextureWorldHash = 0L;
         if (vertexBuffer != null) vertexBuffer.close();
         vertexBuffer = null;
         vertexCount = 0;

@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 219 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 220 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -24,8 +24,10 @@ The Nether and End remain vanilla.
 > layout and complete atlas restored. The safe-small and production
 > 6/12/28-chunk visual matrices now include tangent, live/atlas handoff, and
 > radial projection review; the production proxy retains the atlas's
-> eight-block height spacing. The repeatable Fabric release-staging workflow
-> is also complete.
+> eight-block height spacing. The complete atlas production gate now also
+> passes interrupted resume, complete-cache reuse, live revisions, layout
+> switching, lifecycle, two-client synchronization, and measured resource
+> budgets. The repeatable Fabric release-staging workflow is also complete.
 > Remaining automated-harness and pre-release compatibility gates are still
 > outstanding, so this is not a stable release yet. The first 26.1.2 Fabric
 > alpha is an early test build, not a stable or broadly compatible release.

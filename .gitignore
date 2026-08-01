@@ -7,6 +7,7 @@ run-production-projection/
 run-production-lifecycle/
 run-curved-object-capture/
 run-atlas-ui/
+run-atlas-release-gate/
 run-stronghold-test/
 run-headless-prewarm/
 logs/
