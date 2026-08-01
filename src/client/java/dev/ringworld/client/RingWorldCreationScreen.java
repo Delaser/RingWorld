@@ -22,6 +22,8 @@ public final class RingWorldCreationScreen extends Screen {
     private EditBox circumferenceField;
     private EditBox widthField;
     private EditBox wallHeightField;
+    private boolean requestOceanMonument;
+    private Button monumentButton;
     private Button applyButton;
     @Nullable private RingDimensionReport report;
     @Nullable private String inputError;
@@ -46,6 +48,7 @@ public final class RingWorldCreationScreen extends Screen {
         wallHeightField = numericField(left, firstFieldY + fieldStep * 2,
                 "Wall height blocks",
                 config.wallHeightBlocks());
+        requestOceanMonument = config.requestOceanMonument();
 
         addRenderableWidget(Button.builder(Component.literal("Safe small"),
                 button -> setPreset(2_048, 416, 160))
@@ -62,6 +65,12 @@ public final class RingWorldCreationScreen extends Screen {
                         config.widthBlocks(),
                         config.wallHeightBlocks()))
                 .bounds(this.width / 2 + 54, presetY, 100, 20).build());
+        monumentButton = addRenderableWidget(Button.builder(monumentMessage(),
+                button -> {
+                    requestOceanMonument = !requestOceanMonument;
+                    button.setMessage(monumentMessage());
+                })
+                .bounds(this.width / 2 - 100, presetY + 26, 200, 20).build());
 
         applyButton = addRenderableWidget(Button.builder(Component.literal("Use for new world"),
                 button -> apply())
@@ -86,6 +95,10 @@ public final class RingWorldCreationScreen extends Screen {
         widthField.setValue(Integer.toString(width));
         wallHeightField.setValue(Integer.toString(wallHeight));
         updateReport();
+    }
+
+    private Component monumentMessage() {
+        return Component.literal("Ocean monument guarantee: " + (requestOceanMonument ? "On" : "Off"));
     }
 
     private void updateReport() {
@@ -120,6 +133,8 @@ public final class RingWorldCreationScreen extends Screen {
                         + confirmedReport.geometry().widthBlocks()
                         + " blocks with wall height "
                         + confirmedReport.wallHeightBlocks()
+                        + " and ocean monument guarantee "
+                        + (requestOceanMonument ? "enabled" : "disabled")
                         + ". Existing worlds are not changed."),
                 Component.literal("Lock and use"), Component.literal("Go back")));
     }
@@ -129,7 +144,7 @@ public final class RingWorldCreationScreen extends Screen {
             RingWorldConfig.saveBootstrapLayout(
                     confirmedReport.geometry().widthBlocks(),
                     confirmedReport.geometry().circumferenceBlocks(),
-                    confirmedReport.wallHeightBlocks());
+                    confirmedReport.wallHeightBlocks(), requestOceanMonument);
             if (parent instanceof LayoutButtonOwner owner) {
                 owner.ringworld$refreshLayoutButton();
             }
@@ -167,7 +182,7 @@ public final class RingWorldCreationScreen extends Screen {
                 compact ? "Rim wall height" : "Rim wall height (from Y=-64)",
                 firstFieldY + fieldStep * 2, compact);
 
-        int y = compact ? 128 : 200;
+        int y = compact ? 154 : 226;
         int lineStep = compact ? 10 : 12;
         if (inputError != null) {
             context.centeredText(font,
@@ -214,7 +229,7 @@ public final class RingWorldCreationScreen extends Screen {
             }
         }
         context.centeredText(font,
-                Component.literal("Dimensions become immutable when the Overworld is first loaded."),
+                Component.literal("Dimensions and monument choice become immutable when the Overworld is first loaded."),
                 center, height - 50, 0xFFFFD060);
     }
 

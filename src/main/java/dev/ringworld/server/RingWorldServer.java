@@ -10,6 +10,7 @@ import dev.ringworld.world.RingWorldSettings;
 import dev.ringworld.world.RingEntityFoldAccess;
 import dev.ringworld.world.RingStructureStateAccess;
 import dev.ringworld.world.RingStructurePolicy;
+import dev.ringworld.world.RingMonumentResolution;
 import dev.ringworld.world.RingNoiseCoordinates;
 import dev.ringworld.world.RingNavigationAccess;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
@@ -23,6 +24,7 @@ import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
@@ -156,18 +158,46 @@ public final class RingWorldServer {
     }
 
     private static void attachGeneratorSettings(ServerLevel world, RingGeometry geometry, int wallHeightBlocks) {
-        boolean guaranteeStronghold = RingStructurePolicy.get(world).guaranteesStronghold();
+        RingStructurePolicy policy = RingStructurePolicy.get(world);
+        boolean guaranteeStronghold = policy.guaranteesStronghold();
         ChunkGenerator generator = world.getChunkSource().getGenerator();
+        Climate.Sampler periodicClimateSampler = null;
+        java.util.function.IntBinaryOperator oceanFloorHeight = null;
+        var generatorState = world.getChunkSource().getGeneratorState();
         if (generator instanceof RingWorldGeneratorAccess access) {
             access.ringworld$setGeometry(geometry);
             access.ringworld$setWallHeight(wallHeightBlocks);
             access.ringworld$setGuaranteeStronghold(guaranteeStronghold);
+            periodicClimateSampler = access.ringworld$getPeriodicClimateSampler(
+                    generatorState.randomState());
+            oceanFloorHeight = (x, z) -> generator.getFirstOccupiedHeight(
+                    x, z, Heightmap.Types.OCEAN_FLOOR_WG, world, generatorState.randomState());
         }
-        if (world.getChunkSource().getGeneratorState() instanceof RingStructureStateAccess access) {
-            access.ringworld$setStructurePolicy(geometry, guaranteeStronghold);
+        if (generatorState instanceof RingStructureStateAccess access) {
+            access.ringworld$setStructurePolicy(geometry, policy, generator.getSeaLevel(),
+                    periodicClimateSampler, oceanFloorHeight);
+            if (policy.oceanMonument().status() == RingMonumentResolution.Status.PENDING) {
+                RingMonumentResolution resolution = access.ringworld$resolvePendingOceanMonument();
+                policy = RingStructurePolicy.resolvePendingOceanMonument(world, resolution);
+                // New-world PENDING must become durable before any structure-start work can observe it.
+                world.getDataStorage().saveAndJoin();
+                access.ringworld$setStructurePolicy(geometry, policy, generator.getSeaLevel(),
+                        periodicClimateSampler, oceanFloorHeight);
+                if (resolution.status() == RingMonumentResolution.Status.SATISFIED) {
+                    RingWorldMod.LOGGER.info(
+                            "Resolved requested RingWorld ocean monument: status={}, candidate={}",
+                            resolution.status(), resolution.candidate());
+                } else {
+                    RingWorldMod.LOGGER.warn(
+                            "RingWorld ocean monument request could not be satisfied: status={}, reason={}",
+                            resolution.status(), resolution.reason());
+                }
+            } else if (!access.ringworld$hasCompatibleSavedOceanMonument()) {
+                RingWorldMod.LOGGER.error("Saved RingWorld ocean-monument candidate is incompatible with the current built-in registry or biome data; it will not be moved or regenerated");
+            }
         }
-        RingWorldMod.LOGGER.debug("Attached RingWorld generator policy: guaranteeStronghold={}",
-                guaranteeStronghold);
+        RingWorldMod.LOGGER.debug("Attached RingWorld generator policy: guaranteeStronghold={}, monumentStatus={}",
+                guaranteeStronghold, policy.oceanMonument().status());
     }
 
     /** Allocation-free geometry lookup for chunk and network hot paths. */

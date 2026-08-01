@@ -142,7 +142,7 @@ def headlessPrewarmDirectory = file("run-headless-prewarm")
 
 tasks.register("prepareStrongholdTestWorld") {
 	group = "ringworld verification"
-	description = "Creates a fresh disposable stronghold world for the selected test seed."
+	description = "Creates or resumes the disposable guaranteed-structure world."
 	inputs.property("ringStrongholdTestSeed",
 			providers.gradleProperty("ringStrongholdTestSeed").orElse("ringworld-regression-0"))
 	inputs.property("ringStrongholdTestCircumference",
@@ -151,13 +151,19 @@ tasks.register("prepareStrongholdTestWorld") {
 			providers.gradleProperty("ringStrongholdTestWidth").orElse("256"))
 	inputs.property("ringStrongholdTestWallHeight",
 			providers.gradleProperty("ringStrongholdTestWallHeight").orElse("160"))
+	inputs.property("ringStrongholdTestResume",
+			providers.gradleProperty("ringStrongholdTestResume").orElse("false"))
 	outputs.upToDateWhen { false }
 	doLast {
 		def eula = new File(strongholdTestDirectory, "eula.txt")
 		if (!eula.isFile() || !eula.text.readLines().any { it.trim() == "eula=true" }) {
 			throw new GradleException("Run the stronghold server once, review its eula.txt, then set eula=true")
 		}
-		delete(new File(strongholdTestDirectory, "world"))
+		def resume = providers.gradleProperty("ringStrongholdTestResume").orElse("false").get().toBoolean()
+		if (resume && !new File(strongholdTestDirectory, "world/level.dat").isFile()) {
+			throw new GradleException("-PringStrongholdTestResume=true requires the existing disposable world")
+		}
+		if (!resume) delete(new File(strongholdTestDirectory, "world"))
 		delete(new File(strongholdTestDirectory, "logs/latest.log"))
 		def propertiesFile = new File(strongholdTestDirectory, "server.properties")
 		def properties = new Properties()
@@ -177,6 +183,7 @@ tasks.register("prepareStrongholdTestWorld") {
 		config.setProperty("wallHeightBlocks",
 				providers.gradleProperty("ringStrongholdTestWallHeight").orElse("160").get())
 		config.setProperty("pregenerateTerrainAtlas", "false")
+		config.setProperty("requestOceanMonument", "true")
 		configFile.parentFile.mkdirs()
 		configFile.withOutputStream { config.store(it, "Disposable RingWorld stronghold test") }
 	}

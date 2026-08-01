@@ -1,12 +1,15 @@
 package dev.ringworld.mixin;
 
 import dev.ringworld.world.RingGeometry;
+import dev.ringworld.world.RingClimateSampler;
 import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingNoiseRouter;
 import dev.ringworld.world.RingNoiseSamplingContext;
 import dev.ringworld.world.RingWorldGeneratorAccess;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -17,7 +20,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.server.level.WorldGenRegion;
+import net.minecraft.core.Holder;
 import net.minecraft.world.level.StructureManager;
+import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Aquifer;
@@ -33,17 +38,22 @@ import net.minecraft.world.level.levelgen.blending.Blender;
 /** Supplies a periodic density router only to the Overworld's registered generator. */
 @Mixin(NoiseBasedChunkGenerator.class)
 abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
+    @Shadow @Final private Holder<NoiseGeneratorSettings> settings;
     @Unique private @Nullable RingGeometry ringworld$geometry;
     @Unique private int ringworld$wallHeight;
     @Unique private volatile boolean ringworld$guaranteeStronghold;
     @Unique private @Nullable RandomState ringworld$cachedNoiseConfig;
     @Unique private @Nullable NoiseRouter ringworld$cachedRouter;
+    @Unique private @Nullable RandomState ringworld$cachedClimateNoiseConfig;
+    @Unique private @Nullable Climate.Sampler ringworld$cachedClimateSampler;
 
     @Override
     public void ringworld$setGeometry(RingGeometry geometry) {
         this.ringworld$geometry = geometry;
         this.ringworld$cachedNoiseConfig = null;
         this.ringworld$cachedRouter = null;
+        this.ringworld$cachedClimateNoiseConfig = null;
+        this.ringworld$cachedClimateSampler = null;
     }
 
     @Override
@@ -69,6 +79,17 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     @Override
     public boolean ringworld$guaranteesStronghold() {
         return ringworld$guaranteeStronghold;
+    }
+
+    @Override
+    public synchronized Climate.Sampler ringworld$getPeriodicClimateSampler(RandomState noiseConfig) {
+        if (ringworld$geometry == null) return noiseConfig.sampler();
+        NoiseRouter router = ringworld$getOrCreatePeriodicRouter(noiseConfig, noiseConfig.router());
+        if (ringworld$cachedClimateNoiseConfig != noiseConfig || ringworld$cachedClimateSampler == null) {
+            ringworld$cachedClimateNoiseConfig = noiseConfig;
+            ringworld$cachedClimateSampler = RingClimateSampler.create(router, settings.value().spawnTarget());
+        }
+        return ringworld$cachedClimateSampler;
     }
 
     @Inject(method = "fillFromNoise", at = @At("HEAD"), cancellable = true)
@@ -104,10 +125,12 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     }
 
     @Unique
-    private NoiseRouter ringworld$getOrCreatePeriodicRouter(RandomState noiseConfig, NoiseRouter vanilla) {
+    private synchronized NoiseRouter ringworld$getOrCreatePeriodicRouter(RandomState noiseConfig, NoiseRouter vanilla) {
         if (ringworld$cachedNoiseConfig != noiseConfig || ringworld$cachedRouter == null) {
             ringworld$cachedNoiseConfig = noiseConfig;
             ringworld$cachedRouter = RingNoiseRouter.wrap(vanilla, ringworld$geometry);
+            ringworld$cachedClimateNoiseConfig = null;
+            ringworld$cachedClimateSampler = null;
         }
         return ringworld$cachedRouter;
     }

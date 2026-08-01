@@ -16,7 +16,8 @@ import java.util.Properties;
  */
 public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wallHeightBlocks,
                               boolean testMode, int testViewDistanceChunks,
-                              boolean pregenerateTerrainAtlas) {
+                              boolean pregenerateTerrainAtlas,
+                              boolean requestOceanMonument) {
     private static final String FILE_NAME = "ringworld.properties";
     private static RingWorldConfig loaded;
 
@@ -37,6 +38,7 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
             properties.setProperty("testMode", "false");
             properties.setProperty("testViewDistanceChunks", "28");
             properties.setProperty("pregenerateTerrainAtlas", "true");
+            properties.setProperty("requestOceanMonument", "false");
             try {
                 Files.createDirectories(path.getParent());
                 try (Writer writer = Files.newBufferedWriter(path)) {
@@ -53,6 +55,8 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
         int testViewDistance = integer(properties, "testViewDistanceChunks", 28);
         boolean pregenerateTerrainAtlas = Boolean.parseBoolean(
                 properties.getProperty("pregenerateTerrainAtlas", "true"));
+        boolean requestOceanMonument = Boolean.parseBoolean(
+                properties.getProperty("requestOceanMonument", "false"));
         // Centralise validation so a malformed bootstrap file fails before chunks are generated.
         new RingGeometry(width, circumference);
         if (wallHeight < 32) throw new IllegalArgumentException("wallHeightBlocks must be at least 32");
@@ -61,10 +65,10 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
                     "testViewDistanceChunks must be between 2 and 32");
         }
         loaded = new RingWorldConfig(width, circumference, wallHeight, testMode, testViewDistance,
-                pregenerateTerrainAtlas);
-        RingWorldMod.LOGGER.info("RingWorld bootstrap settings: width={}, circumference={}, wallHeight={}, testMode={}, testViewDistance={}, pregenerateTerrainAtlas={}",
+                pregenerateTerrainAtlas, requestOceanMonument);
+        RingWorldMod.LOGGER.info("RingWorld bootstrap settings: width={}, circumference={}, wallHeight={}, testMode={}, testViewDistance={}, pregenerateTerrainAtlas={}, requestOceanMonument={}",
                 width, circumference, wallHeight, testMode, testViewDistance,
-                pregenerateTerrainAtlas);
+                pregenerateTerrainAtlas, requestOceanMonument);
         return loaded;
     }
 
@@ -74,14 +78,14 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
      * bootstrap state.
      */
     public static synchronized RingWorldConfig saveBootstrapLayout(
-            int widthBlocks, int circumferenceBlocks, int wallHeightBlocks) {
+            int widthBlocks, int circumferenceBlocks, int wallHeightBlocks, boolean requestOceanMonument) {
         RingGeometry geometry = new RingGeometry(widthBlocks, circumferenceBlocks);
         RingDimensionReport.forVanillaOverworld(geometry, wallHeightBlocks).requireValid();
         RingWorldConfig current = load();
         RingWorldConfig replacement = new RingWorldConfig(
                 widthBlocks, circumferenceBlocks, wallHeightBlocks,
                 current.testMode(), current.testViewDistanceChunks(),
-                current.pregenerateTerrainAtlas());
+                current.pregenerateTerrainAtlas(), requestOceanMonument);
         Properties properties = new Properties();
         properties.setProperty("widthBlocks", Integer.toString(widthBlocks));
         properties.setProperty("circumferenceBlocks", Integer.toString(circumferenceBlocks));
@@ -91,6 +95,7 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
                 Integer.toString(current.testViewDistanceChunks()));
         properties.setProperty("pregenerateTerrainAtlas",
                 Boolean.toString(current.pregenerateTerrainAtlas()));
+        properties.setProperty("requestOceanMonument", Boolean.toString(requestOceanMonument));
         Path path = FabricLoader.getInstance().getConfigDir().resolve(FILE_NAME);
         try {
             Files.createDirectories(path.getParent());
@@ -102,8 +107,8 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
             throw new IllegalStateException("Could not update " + path, exception);
         }
         loaded = replacement;
-        RingWorldMod.LOGGER.info("Updated first-world RingWorld layout: {}x{}, wallHeight={}",
-                circumferenceBlocks, widthBlocks, wallHeightBlocks);
+        RingWorldMod.LOGGER.info("Updated first-world RingWorld layout: {}x{}, wallHeight={}, requestOceanMonument={}",
+                circumferenceBlocks, widthBlocks, wallHeightBlocks, requestOceanMonument);
         return replacement;
     }
 

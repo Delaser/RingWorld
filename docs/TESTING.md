@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. Common and client
-compilation now pass together, and the development build runs all 200
+compilation now pass together, and the development build runs all 206
 unit/parameterized cases:
 
 ```sh
@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 200 unit/parameterized cases:
+The active suite contains 206 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -69,7 +69,8 @@ The active suite contains 200 unit/parameterized cases:
 | `RingProtocolIdentityTest` | Settings and acknowledgement channel names remain synchronized with their wire layout |
 | `AtlasPregenerationUiModelTest` | Status-total validation, durable chunk presentation, state-aware controls, permissions, and explicit action/state wire values |
 | `RingStrongholdPlacementTest` | Deterministic canonical placement, seam clearance, seed variation, and supported circumference shapes |
-| `RingStructurePolicyTest` | Explicit mandatory-stronghold policy bit and legacy-disabled behavior |
+| `RingStructurePolicyTest` | Stronghold bit plus monument request, pending/terminal result, and legacy-v1 disabled behavior |
+| `RingMonumentPlacementTest` | Deterministic bounded candidate walk, canonical/finite bounds, seam/rim envelope, seed variation, and search exhaustion |
 
 Inspect machine-readable results under:
 
@@ -165,7 +166,7 @@ The 2026-08-01 copied legacy-open-proof gate copied a 66-file, 47,931,005-byte
 and after, migrated settings only in the destination, rejected its incompatible
 legacy atlas, and completed 2,000 chunks / 8,000 cells at about 80 cells/s.
 
-## Guaranteed stronghold dedicated-server gate
+## Guaranteed-structure dedicated-server gate
 
 After reviewing and accepting the EULA in the ignored
 `run-stronghold-test/eula.txt`, run:
@@ -179,7 +180,8 @@ After reviewing and accepting the EULA in the ignored
 ```
 
 The preparation task deletes only the disposable test world and stale result
-log, writes the selected layout and seed, and disables atlas pregeneration. The server must
+log, writes the selected layout and seed, enables the ocean-monument request,
+and disables atlas pregeneration. The server must
 log `[stronghold-test] PASS`; a missing marker or a logged failure makes the
 Gradle verification task fail. The gate verifies the deterministic canonical
 start, complete piece-graph and portal-room bounds, all 12 generated frame
@@ -192,11 +194,16 @@ height placement). It deliberately excludes X=0 from the terrain-height
 comparison because spawn preparation may have already advanced that chunk
 beyond noise generation, and rejects either selected remote chunk if it is
 already fully loaded. The gate also verifies a nearest-periodic locate target
-and Eye target continuity after a canonical seam fold, then generates both
+and Eye target continuity after a canonical seam fold. It also requires the
+saved monument request to resolve to a canonical valid start, verifies its
+complete bounds, forces it without an alias chunk, locates it from an adjacent
+presentation chart, and exercises unexplored-reference semantics. It then generates both
 exterior neighbour rows before requiring textured rim material through the
 saved wall top and void immediately beyond both rims. Terrain at or above the
 top remains vanilla and is intentionally not asserted. Run again with
-`-x prepareStrongholdTestWorld` to verify saved-policy and structure reload.
+`-PringStrongholdTestResume=true` to retain the disposable world and verify the
+same terminal policy, structure start, periodic locate, and used-reference
+behavior after a process restart.
 
 Evidence on 2026-08-01 passed eight production seeds with complete piece-graph
 bounds, including `height-query-production`, whose pre-fit terrain-adjusted

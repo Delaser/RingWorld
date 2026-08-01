@@ -49,6 +49,15 @@ including periodic base-height/base-column agreement, canonical structure
 bounds, folded Eye continuity, both rims through their saved height, their
 generated exterior void; atlas pregeneration was disabled.
 
+Issue #51 adds a new-world-only ocean-monument guarantee. Policy format 2
+persists the request and one deterministic terminal result before generation;
+legacy/missing policy stays monument-disabled. The satisfied production-seed
+fixture generated one valid canonical monument at chunk `(606, 3)`, bounded at
+X=9667..9724 and Z=19..76, then located it from the adjacent presentation
+chart without creating an alias chunk. A second dedicated-server process
+loaded the same candidate/start and correctly treated its prior unexplored
+reference as used. The active suite now contains 206 unit/parameterized cases.
+
 Atlas-pregeneration Phases 1b and 2 are landed through #55, #56, and #59:
 the loader-neutral job-model foundation
 plus `RingAtlasPregenerationService`, the sole world-owned server atlas writer.
@@ -58,8 +67,8 @@ lifecycle hooks, and client tile streaming delegate through
 200-tick checkpoints, 20-tick tile publication, format-5 bytes, partial
 resume, and verified-final-save completion are retained. The Fabric pause-menu
 map, confirmation/progress controls, cancel lifecycle, versioned payloads,
-permissions, and completion toast share that same handle; the suite now has
-200 unit/parameterized cases and the real GUI-scale-4 fixture passes. The
+permissions, and completion toast share that same handle; the real GUI-scale-4
+fixture passes. The
 Fabric headless prewarm adapter is now implemented as that thin
 launch/report/save/stop coordinator: a fresh safe-small run checkpointed on
 SIGTERM at 1,200 durable chunks/4,800 cells, resumed to 3,328/3,328 chunks and
@@ -87,7 +96,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 200 unit/parameterized cases pass, and Loom produces
+temporary shims, all 206 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -443,6 +452,14 @@ client/runtime gate passes.
   seeds and supported layouts. Its post-generation fit uses the complete
   terrain-adjusted bounds and is gated by immutable saved policy. Other
   structures, carvers, and features still lack broad seam coverage.
+- Ocean monuments are now an opt-in new-world guarantee. Candidate selection
+  is bounded, canonical, registry-bound, and validated with the same periodic
+  climate sampler as generated biomes; invalid or exhausted searches persist
+  a typed unsatisfied result. Forced placement and locate/reference handling
+  are restricted to the saved candidate, and fresh/reload dedicated-server
+  gates pass. Other random-spread scarce structures remain unsupported; their
+  source/registry audit and required state-design gate are in
+  [`SCARCE_STRUCTURE_GUARANTEE_AUDIT.md`](SCARCE_STRUCTURE_GUARANTEE_AUDIT.md).
 - Vanilla Overworld structure height queries canonicalize X before their
   internal cell/cache interpolation and use the same cylindrical sampler as
   generated terrain. The stronghold gate compares periodic aliases at X=0 and

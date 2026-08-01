@@ -42,6 +42,9 @@ Start here:
 - [`SUN_RENDERING_SNAPSHOT_2026-07-26.md`](SUN_RENDERING_SNAPSHOT_2026-07-26.md):
   frozen rollback description of the removed ring-centred sun and panel array.
 - [`MIXIN_MAP.md`](MIXIN_MAP.md): ownership and risk map for every mixin.
+- [`SCARCE_STRUCTURE_GUARANTEE_AUDIT.md`](SCARCE_STRUCTURE_GUARANTEE_AUDIT.md):
+  Minecraft 26.1.2 monument guarantee design/evidence and the approval boundary
+  for any additional scarce finite-ring structure.
 - [`TESTING.md`](TESTING.md): unit, local smoke, visual, copied-world
   lifecycle, and two-client multiplayer procedures.
 - [`OPERATIONS.md`](OPERATIONS.md): configuration, persistence, build,

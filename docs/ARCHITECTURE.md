@@ -172,10 +172,23 @@ service API are described in
 [`ATLAS_PREGENERATION_PLAN.md`](ATLAS_PREGENERATION_PLAN.md).
 
 `RingStructurePolicy` is separate server-only saved state. A newly created
-world persists the mandatory stronghold bit. If an existing RingWorld has no
-policy file, the bit remains disabled so upgrading the mod cannot silently
-move that world's structure layout. The policy is not client rendering state
-and therefore is not added to the geometry handshake.
+world persists the mandatory stronghold bit and may opt into an ocean-monument
+request. Policy format 2 resolves that request once, before structure-start
+generation, to either one canonical candidate or a typed unsatisfied result;
+the terminal result is synchronously saved and never moved on reload. If an
+existing RingWorld has no policy file, both guarantees remain disabled so an
+upgrade cannot silently change its structure layout. Version-1 policy remains
+stronghold-only. The policy is not client rendering state and is not added to
+the geometry handshake.
+
+The monument adapter binds exact built-in structure-set and structure holder
+identities. It checks a bounded seed-derived candidate walk, a 64-block
+seam/rim envelope, placement frequency/exclusion rules, the anchor biome, and
+every vanilla 29-block surrounding-biome sample using the same periodic
+climate router as generated chunks. Other scarce structures remain
+unsupported until their type-specific predicates and generated graphs pass
+the gate in
+[`SCARCE_STRUCTURE_GUARANTEE_AUDIT.md`](SCARCE_STRUCTURE_GUARANTEE_AUDIT.md).
 
 ### Production lifecycle regression
 
@@ -356,6 +369,14 @@ This makes density meet at X=0/C while retaining vanilla terrain machinery.
 It does not automatically prove every coordinate-sensitive structure
 placement algorithm is periodic; structure seam coverage remains incomplete.
 
+Vanilla also bypasses `NoiseChunk` twice during structure validation:
+`OceanMonumentStructure.findGenerationPoint` and the base
+`Structure.isValidBiome` path call the flat `RandomState.sampler()`. RingWorld
+redirects only those validation calls when their generation context owns the
+RingWorld Overworld generator. They receive a cached sampler built from the
+same wrapped climate functions and spawn targets as chunk biome generation;
+Nether, End, and ordinary generators retain vanilla sampling.
+
 ### Guaranteed stronghold
 
 New RingWorlds replace vanilla's unbounded concentric stronghold positions
@@ -374,6 +395,24 @@ flag on the generator is published across worldgen worker threads.
 image nearest their origin. An Eye's transient target moves by the same exact
 X delta when the entity folds back into canonical storage. Saved chunks and
 structure starts remain canonical.
+
+### Optional guaranteed ocean monument
+
+When selected before first world load, `RingMonumentPlacement` walks at most
+512 deterministic canonical chunks whose complete conservative monument
+envelope stays clear of X=0/C and both finite rims. The registry adapter
+persists `SATISFIED` only after the built-in placement restrictions and exact
+periodic monument biome predicates pass. `StructurePlacementMixin` admits
+only that saved candidate for only the bound built-in placement; vanilla may
+still generate its ordinary monuments elsewhere. An exhausted or impossible
+search persists a typed `UNSATISFIED` result rather than placing invalid
+terrain or searching again on reload.
+
+The forced candidate is not necessarily on vanilla's random-spread candidate
+grid, so vanilla locate cannot discover it. `ChunkGeneratorLocateMixin`
+mirrors vanilla's canonical `STRUCTURE_STARTS` presence/reference path for the
+saved candidate, compares periodic distance against any vanilla result, and
+returns the nearest presentation image. It never requests an alias chunk.
 
 ### Seam-crossing writes
 

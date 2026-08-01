@@ -40,6 +40,7 @@ If absent, the mod creates it at startup.
 | `testMode` | false | Enables destructive local automated harness |
 | `testViewDistanceChunks` | 28 | Initial live/LOD capture distance for the local harness; 2–32 |
 | `pregenerateTerrainAtlas` | true | Generates missing canonical surface chunks in background |
+| `requestOceanMonument` | false | New-world-only opt-in guarantee; saves a deterministic satisfied/unsatisfied result before generation |
 
 The config record is cached for the process lifetime. Restart after manually
 editing the file. The in-game editor updates both the file and process cache
@@ -47,7 +48,8 @@ immediately.
 
 The Create World screen has a bottom-left `RingWorld C×W` button. Its editor
 provides safe-small (2,048×416), production-default, and current presets plus
-custom circumference, width, and wall-height fields. It previews:
+custom circumference, width, wall-height, and new-world ocean-monument
+controls. It previews:
 
 - chunks around/across and total canonical chunks;
 - radius, physical centre, and apparent opposite width;
@@ -58,7 +60,9 @@ custom circumference, width, and wall-height fields. It previews:
 Invalid layouts cannot be applied. The chosen values are bootstrap defaults
 for the next new world; they do not mutate any save already created. Applying
 a valid layout opens a second confirmation that names the dimensions and wall
-height before those immutable first-load defaults are written.
+height before those immutable first-load defaults are written. The monument
+choice is persisted separately in `ringworld:structure_policy`; existing
+worlds never gain it from a later config edit.
 
 ## Persistence and immutability
 
@@ -277,7 +281,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite contains 200 unit/parameterized cases. The historical Phase 2
+The current suite contains 206 unit/parameterized cases. The historical Phase 2
 95-error inventory and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.
