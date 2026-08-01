@@ -32,7 +32,7 @@ The ignored local evidence and exact procedures are recorded in
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
 
-Issue #24 expands the loader-neutral dimension matrix to 196
+Issue #24 expands the loader-neutral dimension matrix to 200
 unit/parameterized cases. It covers the safe-small, aligned playable-minimum,
 production, former-wide, long/narrow, wide/medium, and custom-wall layouts;
 the corresponding topology/spawn/worldgen seam-and-rim/atlas/render/UI and
@@ -47,7 +47,7 @@ Its two new isolated stronghold/worldgen runtime cases passed at the aligned
 2,016×256 playable minimum and 4,096×2,048 wide/custom-wall-192 layout,
 including periodic base-height/base-column agreement, canonical structure
 bounds, folded Eye continuity, both rims through their saved height, their
-air boundary, and generated exterior void; atlas pregeneration was disabled.
+generated exterior void; atlas pregeneration was disabled.
 
 Atlas-pregeneration Phases 1b and 2 are landed through #55, #56, and #59:
 the loader-neutral job-model foundation
@@ -59,7 +59,7 @@ lifecycle hooks, and client tile streaming delegate through
 resume, and verified-final-save completion are retained. The Fabric pause-menu
 map, confirmation/progress controls, cancel lifecycle, versioned payloads,
 permissions, and completion toast share that same handle; the suite now has
-196 unit/parameterized cases and the real GUI-scale-4 fixture passes. The
+200 unit/parameterized cases and the real GUI-scale-4 fixture passes. The
 Fabric headless prewarm adapter is now implemented as that thin
 launch/report/save/stop coordinator: a fresh safe-small run checkpointed on
 SIGTERM at 1,200 durable chunks/4,800 cells, resumed to 3,328/3,328 chunks and
@@ -87,7 +87,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 196 unit/parameterized cases pass, and Loom produces
+temporary shims, all 200 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server

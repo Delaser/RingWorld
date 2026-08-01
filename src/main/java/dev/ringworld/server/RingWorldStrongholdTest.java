@@ -169,7 +169,9 @@ final class RingWorldStrongholdTest {
         int chunkX = SectionPos.blockToSectionCoord(x);
         int lowerRimZ = geometry.minWidthZ();
         int upperRimZ = geometry.maxWidthZ();
-        int wallTopExclusive = world.getMinY() + RingWorldSettings.get(world).wallHeightBlocks();
+        int wallTopExclusive = RingGenerationBoundary.wallTopExclusive(
+                world.getMinY(), world.getMaxY() - world.getMinY(),
+                RingWorldSettings.get(world).wallHeightBlocks());
         world.getChunk(chunkX, geometry.minChunkZ());
         world.getChunk(chunkX, geometry.maxChunkZ());
         world.getChunk(chunkX, geometry.minChunkZ() - 1);
@@ -179,12 +181,6 @@ final class RingWorldStrongholdTest {
                     || !RingGenerationBoundary.isRimMaterial(world.getBlockState(new BlockPos(x, y, upperRimZ)))) {
                 throw new IllegalStateException("Finite rim material is missing at Y=" + y);
             }
-        }
-        if (wallTopExclusive < world.getMaxY()
-                && (!world.getBlockState(new BlockPos(x, wallTopExclusive, lowerRimZ)).isAir()
-                || !world.getBlockState(new BlockPos(x, wallTopExclusive, upperRimZ)).isAir())) {
-            throw new IllegalStateException("Finite rim continues above saved wall top Y="
-                    + wallTopExclusive);
         }
         if (!world.getBlockState(new BlockPos(x, world.getMinY(), lowerRimZ - 1)).isAir()
                 || !world.getBlockState(new BlockPos(x, world.getMinY(), upperRimZ + 1)).isAir()) {

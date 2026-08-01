@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 196 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 200 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and

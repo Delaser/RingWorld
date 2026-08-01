@@ -110,7 +110,7 @@ longer installs bootstrap geometry.
 | radius | `C / 2π` | Keep one double-precision Java source and synchronize shader inputs. |
 | physical centre Y | `radius + surfaceReferenceY` | Add as a named derived value and use it for vertical-safety validation and the star direction. |
 | physical radius at Y | `radius + surfaceReferenceY - Y` | Require a positive safety margin through the top rendered plane. Test the bottom, terrain, wall top, cloud base, and build top. |
-| wall top | `worldBottomY + wallHeightBlocks` | Derive from saved wall height and actual Overworld bounds. Clamp or reject a wall above the build ceiling. |
+| wall top | `RingGenerationBoundary.wallTopExclusive(worldMinY, worldHeight, wallHeightBlocks)` | Derive from saved wall height and actual Overworld bounds. The rim stops at this exclusive bound without erasing naturally generated terrain above it. |
 | playable interior width | `width - 2 × rimThickness` | Validate enough interior remains for spawn and normal terrain. Do not let rims overlap on narrow bands. |
 | spawn-safe width range | current margin `min(32, max(1, W/4))` | Include rim thickness and a named safety clearance. Test minimum and narrow widths. |
 | opposite apparent width | `2 atan((W/2)/(2R))` at the midline | Show in the creation UI. Use warnings/presets, not an implicit width rewrite. |
