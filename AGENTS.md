@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 200 unit/parameterized cases pass.
+gate. Common/client compilation and all 206 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -221,7 +221,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 200
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 206
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
@@ -437,6 +437,14 @@ version numbers.
   A missing policy identifies an older world and deliberately retains its
   previous vanilla structure placement. Do not infer or enable the guarantee
   from geometry alone; that silently changes an immutable existing world.
+- The optional ocean-monument request is also new-world-only. Policy format 2
+  persists `PENDING` and then one terminal `SATISFIED` canonical candidate or
+  typed `UNSATISFIED` result before structure generation. Bind only the exact
+  built-in structure-set/structure holders, keep the 64-block seam/rim
+  envelope, and never recompute or move a saved result after a datapack change.
+  Candidate selection and both monument biome gates must use the generator's
+  periodic climate sampler; `RandomState.sampler()` is flat. Forced placement,
+  locate, references, and reload must remain canonical and use no alias chunk.
 - The reusable multiplayer fixture must clear stale automated boats, wait for
   both clients to acknowledge the new boat before moving it, detect folds by
   periodic motion rather than a one-block sample window, and compare explicit

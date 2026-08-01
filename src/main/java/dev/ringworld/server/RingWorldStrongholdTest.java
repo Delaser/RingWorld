@@ -1,12 +1,16 @@
 package dev.ringworld.server;
 
+import com.mojang.datafixers.util.Pair;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingStrongholdPlacement;
+import dev.ringworld.world.RingMonumentResolution;
 import dev.ringworld.world.RingStructurePolicy;
 import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Holder;
+import net.minecraft.core.HolderSet;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.server.MinecraftServer;
@@ -61,6 +65,7 @@ final class RingWorldStrongholdTest {
         if (!RingStructurePolicy.get(world).guaranteesStronghold()) {
             throw new IllegalStateException("Fresh test world did not persist its stronghold policy");
         }
+        verifyGuaranteedMonument(world, geometry);
         RingStrongholdPlacement.StartChunk expected =
                 RingStrongholdPlacement.guaranteedStart(world.getSeed(), geometry);
 
@@ -161,6 +166,65 @@ final class RingWorldStrongholdTest {
                 "[stronghold-test] startChunk={}, pieces={}, strongholdBox={}, portalBox={}, frames={}, origin={}, located={}, eyeFoldVx={}",
                 expected, start.getPieces().size(), strongholdBox, portalBox, frames, origin, located,
                 eye.getDeltaMovement().x);
+    }
+
+    /** Runtime proof for policy persistence, forced placement, bounds, and periodic locate. */
+    private static void verifyGuaranteedMonument(ServerLevel world, RingGeometry geometry) {
+        RingMonumentResolution resolution = RingStructurePolicy.get(world).oceanMonument();
+        RingMonumentResolution.Candidate candidate = resolution.candidate();
+        if (resolution.status() != RingMonumentResolution.Status.SATISFIED || candidate == null) {
+            throw new IllegalStateException("Test seed did not satisfy its requested monument: " + resolution);
+        }
+
+        var structures = world.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        Holder.Reference<Structure> monumentHolder = structures.get(BuiltinStructures.OCEAN_MONUMENT)
+                .orElseThrow(() -> new IllegalStateException("Built-in ocean monument holder is unavailable"));
+        Structure monument = monumentHolder.value();
+        int canonicalLocateX = candidate.chunkX() * 16;
+        // Query from the adjacent presentation chart so vanilla's flat
+        // random-spread scan cannot discover this arbitrary forced candidate.
+        int originX = canonicalLocateX - geometry.circumferenceBlocks() + 1;
+        BlockPos origin = new BlockPos(originX, world.getSeaLevel(), candidate.chunkZ() * 16);
+        Pair<BlockPos, Holder<Structure>> located = world.getChunkSource().getGenerator()
+                .findNearestMapStructure(world, HolderSet.direct(monumentHolder), origin, 0, false);
+        if (located == null) throw new IllegalStateException("Monument locate returned no result");
+        int expectedImageX = (int) Math.round(geometry.nearestImageX(canonicalLocateX, originX));
+        if (located.getFirst().getX() != expectedImageX
+                || geometry.wrapBlockX(located.getFirst().getX()) != geometry.wrapBlockX(canonicalLocateX)) {
+            throw new IllegalStateException("Monument locate returned wrong periodic image: expectedX="
+                    + expectedImageX + ", actual=" + located.getFirst());
+        }
+
+        // On a fresh fixture the locate call above must generate this
+        // canonical STRUCTURE_STARTS chunk; on resume it must reuse it.
+        ChunkAccess startChunk = world.getChunkSource().getChunk(
+                candidate.chunkX(), candidate.chunkZ(), ChunkStatus.STRUCTURE_STARTS, true);
+        if (startChunk == null) throw new IllegalStateException("Monument start chunk did not load");
+        StructureStart start = world.structureManager().getStartForStructure(
+                SectionPos.bottomOf(startChunk), monument, startChunk);
+        if (start == null || !start.isValid() || start.getPieces().isEmpty()) {
+            throw new IllegalStateException("Guaranteed monument did not generate at " + candidate);
+        }
+        BoundingBox box = start.getBoundingBox();
+        if (box.minX() < 0 || box.maxX() >= geometry.circumferenceBlocks()
+                || box.minZ() < geometry.minWidthZ() || box.maxZ() > geometry.maxWidthZ()) {
+            throw new IllegalStateException("Monument leaves canonical ring bounds: " + box);
+        }
+
+        boolean referenceableBeforeLocate = start.canBeReferenced();
+        Pair<BlockPos, Holder<Structure>> unexplored = world.getChunkSource().getGenerator()
+                .findNearestMapStructure(world, HolderSet.direct(monumentHolder), origin, 0, true);
+        if (referenceableBeforeLocate
+                && (unexplored == null || !unexplored.getSecond().is(BuiltinStructures.OCEAN_MONUMENT))) {
+            throw new IllegalStateException("Unexplored monument locate/reference path failed");
+        }
+        if (!referenceableBeforeLocate && unexplored != null) {
+            throw new IllegalStateException("Already-referenced monument was returned as unexplored");
+        }
+        RingWorldMod.LOGGER.info(
+                "[stronghold-test] monumentCandidate={}, box={}, pieces={}, origin={}, located={}, referenceableBefore={}, unexplored={}",
+                candidate, box, start.getPieces().size(), origin, located.getFirst(), referenceableBeforeLocate,
+                unexplored == null ? null : unexplored.getFirst());
     }
 
     /** Runtime-only check: generated boundary/exterior chunks honour saved rim height. */
