@@ -108,11 +108,14 @@ log `[stronghold-test] PASS`; a missing marker or a logged failure makes the
 Gradle verification task fail. The gate verifies the deterministic canonical
 start, complete piece-graph and portal-room bounds, all 12 generated frame
 blocks, an activatable frame, periodic `getBaseHeight` and full
-`getBaseColumn` equality at canonical X and X+C, and canonical
-`getBaseHeight` agreement with the noise-complete `WORLD_SURFACE_WG` terrain
-height (the shared sampler path used by structure height placement), a
-nearest-periodic locate target, and Eye target continuity after a canonical
-seam fold. Run again with
+`getBaseColumn` equality at canonical X and X+C (including X=0), and canonical
+`getBaseHeight` agreement with noise-complete `WORLD_SURFACE_WG` terrain at two
+remote deterministic positions (the shared sampler path used by structure
+height placement). It deliberately excludes X=0 from the terrain-height
+comparison because spawn preparation may have already advanced that chunk
+beyond noise generation, and rejects either selected remote chunk if it is
+already fully loaded. The gate also verifies a nearest-periodic locate target
+and Eye target continuity after a canonical seam fold. Run again with
 `-x prepareStrongholdTestWorld` to verify saved-policy and structure reload.
 
 Evidence on 2026-08-01 passed seven production seeds with complete piece-graph

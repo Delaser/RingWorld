@@ -164,15 +164,18 @@ final class RingWorldStrongholdTest {
      * Structure placement reaches {@link ChunkGenerator#getBaseHeight} and
      * {@link ChunkGenerator#getBaseColumn} before a chunk exists. Both query
      * paths must see the same cylindrical sampler at canonical X and its
-     * periodic alias, and the canonical height must match the generated
-     * noise-complete terrain. This is intentionally a real-server assertion
-     * because the router is installed by required mixins.
+     * periodic alias. The remote canonical positions must also match their
+     * generated noise-complete terrain. X=0 remains an alias test because the
+     * server's spawn preparation may have already advanced that chunk past
+     * noise generation. This is intentionally a real-server assertion because
+     * the router is installed by required mixins.
      */
     private static void verifyPeriodicHeightQueries(ServerLevel world, RingGeometry geometry) {
         ChunkGenerator generator = world.getChunkSource().getGenerator();
         RandomState randomState = world.getChunkSource().randomState();
         int circumference = geometry.circumferenceBlocks();
         int[] canonicalXs = {0, circumference / 4 + 7, circumference / 2 + 3};
+        int[] remoteTerrainXs = {circumference / 4 + 7, circumference / 2 + 3};
         int z = 0;
         for (int canonicalX : canonicalXs) {
             int aliasX = canonicalX + circumference;
@@ -186,9 +189,27 @@ final class RingWorldStrongholdTest {
                         + canonicalHeight + " != " + aliasHeight);
             }
 
+            NoiseColumn canonicalColumn = generator.getBaseColumn(canonicalX, z, world, randomState);
+            NoiseColumn aliasColumn = generator.getBaseColumn(aliasX, z, world, randomState);
+            for (int y = world.getMinY(); y < world.getMaxY(); y++) {
+                if (!canonicalColumn.getBlock(y).equals(aliasColumn.getBlock(y))) {
+                    throw new IllegalStateException("Periodic base-column mismatch at canonicalX="
+                            + canonicalX + ", aliasX=" + aliasX + ", y=" + y);
+                }
+            }
+        }
+
+        for (int canonicalX : remoteTerrainXs) {
+            int chunkX = SectionPos.blockToSectionCoord(canonicalX);
+            int chunkZ = SectionPos.blockToSectionCoord(z);
+            if (world.getChunkSource().getChunkNow(chunkX, chunkZ) != null) {
+                throw new IllegalStateException("Remote base-height terrain chunk was already fully loaded at X="
+                        + canonicalX + ", Z=" + z);
+            }
+            int canonicalHeight = generator.getBaseHeight(
+                    canonicalX, z, Heightmap.Types.WORLD_SURFACE_WG, world, randomState);
             ChunkAccess terrain = world.getChunkSource().getChunk(
-                    SectionPos.blockToSectionCoord(canonicalX), SectionPos.blockToSectionCoord(z),
-                    ChunkStatus.NOISE, true);
+                    chunkX, chunkZ, ChunkStatus.NOISE, true);
             if (terrain == null) {
                 throw new IllegalStateException("Canonical terrain did not load for base-height check at X="
                         + canonicalX + ", Z=" + z);
@@ -201,14 +222,6 @@ final class RingWorldStrongholdTest {
                         + ", terrain=" + terrainHeight);
             }
 
-            NoiseColumn canonicalColumn = generator.getBaseColumn(canonicalX, z, world, randomState);
-            NoiseColumn aliasColumn = generator.getBaseColumn(aliasX, z, world, randomState);
-            for (int y = world.getMinY(); y < world.getMaxY(); y++) {
-                if (!canonicalColumn.getBlock(y).equals(aliasColumn.getBlock(y))) {
-                    throw new IllegalStateException("Periodic base-column mismatch at canonicalX="
-                            + canonicalX + ", aliasX=" + aliasX + ", y=" + y);
-                }
-            }
         }
     }
 }

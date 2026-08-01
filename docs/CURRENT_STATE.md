@@ -396,12 +396,15 @@ client/runtime gate passes.
   lack broad seam coverage.
 - Vanilla Overworld structure height queries canonicalize X before their
   internal cell/cache interpolation and use the same cylindrical sampler as
-  generated terrain. The stronghold gate compares periodic aliases and the
-  canonical query against a noise-complete `WORLD_SURFACE_WG` terrain height,
-  preventing raw-alias or flat-noise Y mismatches that could float villages and
-  other heightmap-projected structures. This fixes height sampling only; it
-  does not certify every structure's seam placement, footprint, loot, mob, or
-  reload behavior.
+  generated terrain. The stronghold gate compares periodic aliases at X=0 and
+  two remote positions, then compares those remote canonical queries against a
+  noise-complete `WORLD_SURFACE_WG` terrain height. X=0 is intentionally not a
+  terrain-height comparison because spawn preparation can advance that chunk
+  beyond noise generation. The runtime gate rejects either selected remote
+  chunk if it was already fully loaded. This prevents raw-alias or flat-noise
+  Y mismatches that could float villages and other heightmap-projected
+  structures. It fixes height sampling only; it does not certify every
+  structure's seam placement, footprint, loot, mob, or reload behavior.
 - Periodic density noise does not guarantee every vanilla structure placement
   seed or third-party generator treats X=0/C as adjacent.
 - The new 16,384×256 production default requires 16,384 canonical chunks and
