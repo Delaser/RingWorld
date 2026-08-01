@@ -170,6 +170,17 @@ state, so a server restart returns to the configured
 
 Server atlas:
 
+The background setting starts one idempotent `BACKGROUND` handle per loaded
+RingWorld Overworld. `/ringworld atlas status|pause|resume` observes or
+controls that same process-local handle. Cancel and explicit headless prewarm
+are not exposed by the current command adapter. Cancellation during the
+service phase checkpoints durable cells rather than deleting terrain; a failed
+checkpoint is reported as failure rather than a misleading successful cancel.
+With `pregenerateTerrainAtlas=false`, that handle is intentionally `IDLE` and
+continues to sample player-loaded chunks; its legacy pause/resume commands
+report that background generation remains disabled rather than creating a
+second scheduler.
+
 ```text
 <world>/dimensions/minecraft/overworld/data/ringworld/terrain-atlas.rwat.gz
 ```
@@ -227,7 +238,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite contains 110 unit/parameterized cases. The historical Phase 2
+The current suite contains 117 unit/parameterized cases. The historical Phase 2
 95-error inventory and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.

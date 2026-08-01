@@ -449,6 +449,16 @@ not a missing-data migration.
 <world>/dimensions/minecraft/overworld/data/ringworld/terrain-atlas.rwat.gz
 ```
 
+`RingAtlasPregenerationService` is the sole server-side atlas writer for one
+RingWorld Overworld. It consumes completed chunk futures only on the server
+thread, gives player-loaded chunks priority, retains a failed selected cursor
+chunk for retry, checkpoints every 200 ticks, and verifies the final atomic
+save by reopening format-5 storage before reporting completion.
+`RingTerrainAtlasServer` is only the Fabric command/lifecycle/network adapter:
+it drains service-published dirty tiles at the existing 20-tick cadence and
+streams them to clients. This division keeps platform registration out of the
+atlas lifecycle and prevents duplicate writers.
+
 The world hash includes the complete layout fingerprint plus atlas format and
 sample semantics. The atlas file has its own format version. Atlas format 5
 samples the highest surface block, stores its exposed top-face height, and

@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 110 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 117 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -116,6 +116,12 @@ Instead, the server incrementally samples generated surface height and colour
 into a periodic terrain atlas. After that atlas is complete, the client builds
 a bounded GPU texture and mesh covering the whole cylinder. Real terrain
 cross-fades into this proxy near the configured render distance.
+
+On the server, one Overworld-owned pregeneration service is the only atlas
+writer. It preserves canonical X-major traversal, gives ordinary player chunk
+work priority, resumes from saved format-5 cells, and verifies the final
+atomic atlas save before declaring completion. Existing atlas status, pause,
+and resume commands control that same background job.
 
 The proxy:
 
