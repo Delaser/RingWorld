@@ -37,7 +37,9 @@ public final class RingWorldMultiplayerTest {
     private static boolean vehiclePassed;
     private static boolean sawVehicleHighSide;
     private static boolean sawCanonicalVehicleWrap;
+    private static boolean vehicleStateContinuous = true;
     private static int vehicleId = -1;
+    private static int vehiclePassengerId = -1;
     private static ServerPlayer reconnectBaselineB;
     private static boolean sawReconnectDisconnect;
 
@@ -78,11 +80,7 @@ public final class RingWorldMultiplayerTest {
             // players have joined.
             prepareSeamChunks(world, geometry);
             prepareSeamLane(world, geometry, 120);
-            List<Entity> staleTestBoats = new ArrayList<>();
-            for (Entity entity : world.getAllEntities()) {
-                if (entity instanceof Boat) staleTestBoats.add(entity);
-            }
-            staleTestBoats.forEach(Entity::discard);
+            clearStaleTestVehicles(world);
             world.setRespawnData(LevelData.RespawnData.of(
                     world.dimension(), new BlockPos(0, 120, 0), 0.0f, 0.0f));
             world.setBlock(seamArmMarker(), Blocks.RED_CONCRETE.defaultBlockState(), 3);
@@ -105,6 +103,10 @@ public final class RingWorldMultiplayerTest {
 
         ticks++;
         if (stage == 0 && ticks == 1) {
+            // Reused-world boats can finish loading only when the automated
+            // clients begin watching the seam chunks. Clear them again here,
+            // before either client is allowed to acquire the new fixture.
+            clearStaleTestVehicles(world);
             prepareCreativePlayer(playerA);
             prepareCreativePlayer(playerB);
         }
@@ -198,15 +200,34 @@ public final class RingWorldMultiplayerTest {
                 Boat boat = EntityType.OAK_BOAT.create(world, EntitySpawnReason.COMMAND);
                 if (boat != null) {
                     boat.setPos(geometry.circumferenceBlocks() - 2.0, 120.0, 3.5);
+                    boat.setYRot(37.0f);
+                    boat.setXRot(0.0f);
                     boat.setNoGravity(true);
                     // Hold the fixture until both clients have acquired it.
                     // This removes network-startup timing from the seam test.
                     boat.setDeltaMovement(Vec3.ZERO);
                     world.addFreshEntity(boat);
                     vehicleId = boat.getId();
+                    Entity passenger = EntityType.ARMOR_STAND.create(world, EntitySpawnReason.COMMAND);
+                    if (passenger != null) {
+                        passenger.setPos(boat.getX(), boat.getY(), boat.getZ());
+                        passenger.setYRot(boat.getYRot());
+                        passenger.setNoGravity(true);
+                        world.addFreshEntity(passenger);
+                        if (passenger.startRiding(boat)) {
+                            vehiclePassengerId = passenger.getId();
+                        } else {
+                            passenger.discard();
+                            vehicleStateContinuous = false;
+                        }
+                    } else {
+                        vehicleStateContinuous = false;
+                    }
                     sawVehicleHighSide = boat.getX() > geometry.circumferenceBlocks() / 2.0;
                 }
-                RingWorldMod.LOGGER.info("[multiplayer] cross-seam interaction result=true; vehicleId={}", vehicleId);
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer] cross-seam interaction result=true; vehicleId={} passengerId={}",
+                        vehicleId, vehiclePassengerId);
                 stage = 4;
                 ticks = 0;
             } else if (ticks >= 600) {
@@ -219,6 +240,13 @@ public final class RingWorldMultiplayerTest {
 
         if (stage == 4) {
             Entity vehicle = world.getEntity(vehicleId);
+            Entity passenger = world.getEntity(vehiclePassengerId);
+            vehicleStateContinuous &= vehicle != null && passenger != null
+                    && passenger.getVehicle() == vehicle
+                    && vehicle.getPassengers().contains(passenger)
+                    && vehicle.getDeltaMovement().equals(Vec3.ZERO)
+                    && vehicle.getYRot() == 37.0f
+                    && vehicle.getXRot() == 0.0f;
             boolean clientsAcquired = clientPassed("A", "vehicle_acquired")
                     && clientPassed("B", "vehicle_acquired");
             if (vehicle != null && clientsAcquired && !sawCanonicalVehicleWrap) {
@@ -237,8 +265,19 @@ public final class RingWorldMultiplayerTest {
                 }
             }
             if (vehicle != null && sawCanonicalVehicleWrap && vehicle.getX() < 3.0) {
-                vehiclePassed = true;
-                RingWorldMod.LOGGER.info("[multiplayer] vehicle canonical crossing result=true x={}", vehicle.getX());
+                boolean canonicalOwnership = passenger != null
+                        && vehicle.getX() >= 0.0
+                        && vehicle.getX() < geometry.circumferenceBlocks()
+                        && passenger.getX() >= 0.0
+                        && passenger.getX() < geometry.circumferenceBlocks();
+                vehiclePassed = vehicleStateContinuous && canonicalOwnership;
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer] vehicle canonical crossing result={} x={} passengerX={} "
+                                + "mountContinuous={} canonicalOwnership={} yaw={} pitch={} velocity={}",
+                        vehiclePassed, vehicle.getX(),
+                        passenger == null ? Double.NaN : passenger.getX(),
+                        vehicleStateContinuous, canonicalOwnership,
+                        vehicle.getYRot(), vehicle.getXRot(), vehicle.getDeltaMovement());
                 stage = 5;
                 ticks = 0;
             } else if (ticks >= 600) {
@@ -336,14 +375,26 @@ public final class RingWorldMultiplayerTest {
         player.setDeltaMovement(Vec3.ZERO);
     }
 
+    private static void clearStaleTestVehicles(ServerLevel world) {
+        List<Entity> staleTestVehicles = new ArrayList<>();
+        for (Entity entity : world.getAllEntities()) {
+            if (entity instanceof Boat || entity.getVehicle() instanceof Boat) {
+                staleTestVehicles.add(entity);
+            }
+        }
+        staleTestVehicles.forEach(Entity::discard);
+    }
+
     private static void prepareSeamLane(ServerLevel world, RingGeometry geometry, int y) {
         int circumference = geometry.circumferenceBlocks();
-        for (int offset = -16; offset <= 16; offset++) {
+        for (int offset = -17; offset <= 17; offset++) {
             int x = geometry.wrapBlockX(circumference + offset);
-            for (int z = -5; z <= 5; z++) {
-                world.setBlock(new BlockPos(x, y - 1, z), Blocks.GLASS.defaultBlockState(), 2);
-                for (int clearY = y; clearY <= y + 4; clearY++) {
-                    world.setBlock(new BlockPos(x, clearY, z), Blocks.AIR.defaultBlockState(), 2);
+            for (int z = -6; z <= 6; z++) {
+                for (int laneY = y - 1; laneY <= y + 5; laneY++) {
+                    boolean shell = Math.abs(offset) == 17 || Math.abs(z) == 6
+                            || laneY == y - 1 || laneY == y + 5;
+                    world.setBlock(new BlockPos(x, laneY, z),
+                            shell ? Blocks.GLASS.defaultBlockState() : Blocks.AIR.defaultBlockState(), 2);
                 }
             }
         }

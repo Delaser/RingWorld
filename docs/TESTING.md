@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The current `codex/minecraft-26.1-port` branch requires Java 25. Common and
-client compilation now pass together, and the development build runs all 89
+client compilation now pass together, and the development build runs all 94
 unit/parameterized cases:
 
 ```sh
@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The 2026-07-28 suite contains 89 unit/parameterized cases:
+The active suite contains 94 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -48,8 +48,9 @@ The 2026-07-28 suite contains 89 unit/parameterized cases:
 | `RingDimensionMatrixTest` | Safe-small, narrow, production, long/narrow, and wide/medium layouts at 6/12/28/64 chunk views |
 | `RingLayoutFingerprintTest` | Immutable layout and rim semantic identity |
 | `RingRenderProfileTest` | Shared handoff values, texture/mesh budgets, and whole-ring clamping |
+| `RingEntityTrackingTest` | Existing pairing is retained only for a watched pending canonical destination; initial and out-of-window pairings remain rejected |
 | `RingSkyCycleTest` | Fixed angle, reduced vanilla-sun size, noon/dawn/dusk/midnight tone keyframes, smooth interpolation, time wrapping |
-| `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, completion, cache monotonicity, world hash |
+| `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, idempotent duplicate-tile detection, completion, cache monotonicity, world hash |
 | `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
 | `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
@@ -110,10 +111,12 @@ final visual tuning. Inspect both complete-ring images for colour, live/LOD
 handoff, local proxy exclusion, and width-edge alignment. The current
 16,384×256 production default still needs its multi-size visual/resource gate.
 
-The 26.1 `--quickPlaySingleplayer` projection task did not enter the selected
-world during this checkpoint, so the successful complete-ring captures came
-from the integrated harness. Treat that task as an S4 harness-port item rather
-than weakening the visual gate.
+The 26.1 projection task uses Minecraft's in-process world-open flow. Its
+source value is the save-folder identifier, not the world-list display name.
+The task preflights `run/saves/<identifier>/level.dat` before it starts, then
+opens only an ignored copy. A missing or display-name value fails clearly
+instead of leaving a client at the menu. This is a non-destructive existing-save
+join; it resumes the copied world's atlas rather than creating another world.
 
 ## Local automated smoke world
 
@@ -176,6 +179,14 @@ side and continue into canonical chunk zero. They are a shared regression for
 entity simulation eligibility as well as individual gameplay systems. A
 failure where several stop around X=0 while retaining velocity indicates a
 stale chunk-level simulation graph, not four unrelated collision failures.
+
+For the 16,384×256 production seam probe, log both canonical seam chunks as
+manager-loaded, distance-ticking, and position-ticking at arm and result. Two
+consecutive automated passes must record a projectile hit, a moving item near
+canonical X≈6, and the navigator near X≈1.29. This specifically guards the
+former post-fold failures where an entity-load request downgraded a seam chunk
+from `TICKING` to `TRACKED`, or a mob retained path/stuck state from its old
+presentation image.
 
 The second circuit keeps both seam approaches at quarter-block motion in the
 cleared Y=120 seam lane. Up to a 4,096-block circumference, its non-seam middle
@@ -243,14 +254,25 @@ world under `run/saves/`, use:
 
 ```sh
 ./gradlew runProductionProjectionClient \
-  -PringProjectionWorld="RingWorld Automated Test (3)"
+  -PringProjectionWorld="production-ring-save-folder"
 ```
 
 The client waits for the current atlas to reach 100%, then writes:
 
 ```text
-run/screenshots/ringworld-projection-tangent.png
-run/screenshots/ringworld-projection-up.png
+run-production-projection/screenshots/ringworld-projection-tangent.png
+run-production-projection/screenshots/ringworld-projection-up.png
+```
+
+The Gradle task validates that `ringProjectionWorld` is an exact source
+save-folder ID containing `level.dat`, then copies that save into the ignored
+`run-production-projection/saves/` directory. It opens the copied destination
+in-process via Minecraft's world-open flow, rather than relying on
+`--quickPlaySingleplayer`; the source save is never opened or changed. Override
+the destination (also a single folder ID) with:
+
+```sh
+-PringProjectionDestination="projection-copy-folder"
 ```
 
 The tangent capture looks horizontally along canonical +X, where the cylinder
@@ -263,10 +285,79 @@ camera yaw/pitch only; it does not move the player or edit the world.
 The harness logs individual probes rather than one final aggregate boolean, so
 review the complete group.
 
+`ringProjectionWorld` must be the folder directly below `run/saves/` and must
+contain `level.dat`. It is intentionally required: do not substitute the
+world's display name or point this task at a Prism/packaged instance. For an
+interrupted 16,384×256 validation world, place or retain that isolated world
+under `run/saves/`, pass its exact folder name, and preserve the resulting
+`run-production-projection/logs/` and screenshot evidence locally. The task
+logs both the selected copy ID and the point at which that copied world is
+ready; it never enables the destructive test-mode/create-world automation.
+While active it also disables pause-on-focus-loss and uses the test-client
+inactive-frame policy, so moving the Gradle client behind another app cannot
+pause the integrated server during atlas completion.
+
+Production evidence recorded on the 26.1 branch: a copied 16,384×256 world
+resumed from 32,900/65,536 atlas cells to 100% without a player lap, completing
+the remaining 32,636 cells in about 13 minutes 22 seconds (about 41 cells/s
+over the resumed interval). It emitted both tangent and radial-up captures and
+reported a clean capture result. This is one atlas/projection gate, not the
+complete production gameplay, lifecycle, transfer, GPU, or frame-pacing matrix.
+
 When the projectile probe fails, its diagnostic includes position, velocity,
 age, cached chunk, and current `shouldTickEntityAt` result. A folded position
 alone is not a pass: the projectile must remain tick-eligible and actually hit
 the seam-adjacent target.
+
+## Copied production lifecycle regression
+
+This isolated integrated-client runner exercises actual dimension transfers
+without altering the source world. It first copies a complete production
+16,384×256 save from `run/saves/` into the ignored
+`run-production-lifecycle/saves/` directory, then opens only that copy:
+
+```sh
+./gradlew runProductionLifecycleClient \
+  -PringProductionLifecycleSource="production-save-folder" \
+  -PringProductionLifecycleDestination="RingWorld Production Lifecycle"
+```
+
+The source property must be one existing save-folder identifier beneath
+`run/saves/`; the destination is the isolated copy and may be changed for
+concurrent local work. Both identifiers reject path traversal. The preparation
+task fails before launch when `level.dat` is absent, never writes to the source,
+and refreshes only the ignored destination. The client opens that copy through
+Minecraft's in-process world-open flow rather than the unreliable quick-play
+argument. Runtime directories must not be committed or packaged.
+
+The server coordinator uses the Minecraft 26.1 `TeleportTransition` API. After
+an initial Overworld-to-Nether setup move, the asserted sequence is Nether →
+Overworld → End → Overworld. The client independently records a complete
+production atlas and immutable layout baseline, proves
+`ClientRingState.geometry()` is inactive in both non-Overworld dimensions,
+verifies the exact geometry/fingerprint/complete atlas on both Overworld
+returns, uses Minecraft's normal integrated-server save-and-disconnect path,
+reopens the same copy, and verifies the baseline again. The client arms the
+server transfer only after its complete baseline is ready, and the final
+save/reopen waits for the server's full transfer result.
+Search the client log for the bounded machine-readable completion marker:
+
+```text
+[production-lifecycle] result=true ...
+```
+
+`result=false` records the failing phase or state. This test does not replace
+the dedicated two-client seam matrix, the layout-switch world replacement test,
+or manual portal/respawn playtesting.
+
+The production 16,384×256 checkpoint passes with a complete 65,536-cell atlas.
+It logged inactive client geometry in Nether and End, exact baseline restoration
+after both Overworld returns, `client state cleared=true` before reopen, and a
+final `result=true` after the same geometry, fingerprint, and atlas world hash
+were restored. An earlier harness revision called `saveEverything` from the
+render thread and raced server chunk/entity collections; the active runner
+deliberately relies on Minecraft's normal integrated-server save-and-disconnect
+path instead.
 
 If the client reaches the presentation side of the seam but its interaction
 fixture has not arrived, it logs presentation X, camera chart/crossing count,
@@ -360,14 +451,18 @@ chunks. Client A derives its next positive seam from its current presentation
 chart; canonical X=2044 may correctly arrive as presentation X=-4, so the
 driver must never aim at one hard-coded presentation seam. The vehicle probe
 likewise compares the boat against the seam image nearest each observer rather
-than canonical `C`. The server holds the boat on the high side until both
-clients acknowledge that they have acquired the entity, then advances it
-through deterministic canonical samples. That separates actual seam
-reindexing/interpolation failures from client-startup packet timing.
+than canonical `C`. The server holds the boat and its armor-stand passenger on
+the high side until both clients acknowledge the same identities, then
+advances it through deterministic canonical samples. Both sides reject any
+missing tick, replacement identity, lost mount, rotation discontinuity, or
+motion beyond the fixture's one-block/0.05-speed limits. That separates actual
+seam reindexing/interpolation failures from client-startup packet timing.
 Intentional-teleport return checks likewise compare periodic positions rather
 than requiring canonical `C-4` to appear in one particular client chart.
 Fixture initialization removes stale automated boats from a reused harness
-world. The server detects a fold from the large canonical-coordinate
+world, repeats that cleanup after the clients load the seam chunks, and seals
+the seam lane so an ocean seed cannot refill it during the test. The server
+detects a fold from the large canonical-coordinate
 discontinuity plus its small positive periodic step, so an overloaded tick
 does not have to sample the player inside the final one-block interval.
 
@@ -379,7 +474,8 @@ The scenario verifies:
 - server player query and tracking cross the seam;
 - real melee damage crosses the seam;
 - a block interaction/update crosses the seam;
-- a server-owned boat stays visible and canonical;
+- a server-owned boat and its passenger retain identity, mount, orientation,
+  zero fixture velocity, visibility, and canonical ownership through the fold;
 - an intentional long teleport re-keys the client chart;
 - client B disconnects and reconnects cleanly;
 - both clients report their phase matrix.
@@ -392,13 +488,83 @@ Success is:
 
 in `run-multiplayer/server/logs/latest.log`.
 
-The isolated Minecraft 26.1.2/Java 25 run on 2026-07-28 achieved that result
-on a fresh 2,048×416 server. Both clients acknowledged format 2; the natural
-seam crossing was canonical with 0.25-block maximum packet and tick samples;
-visibility/query/distance, real melee, block update/interaction, shared boat,
-long teleport, periodic return, planned disconnect, and reconnect all passed.
-The clients were then stopped and the server saved all dimensions and exited
-cleanly.
+The isolated Minecraft 26.1.2/Java 25 run on 2026-07-31 achieved that result
+on a reused 2,048×416 server whose seam crossed an ocean. Both clients
+acknowledged format 2; the natural seam crossing was canonical with a
+0.25-block maximum packet step; visibility/query/distance, real melee, block
+update/interaction, boat and passenger identity/mount continuity, long
+teleport, periodic return, planned disconnect, and reconnect all passed. The
+seed-independent sealed lane remained dry, and stale persisted boats that
+loaded only after login were removed before the new fixture was acquired.
+
+Production-layout evidence is narrower but now real: on 16,384×256, the first
+cold dedicated run passed the server gameplay and reconnect probes but produced
+`result=false` only because client B measured `maxRemoteStep=1.333` while the
+server still received `maxPacketStep=0.25` but accumulated
+`maxTickSample=4` under cold resource pressure. Re-running the same warmed
+world/configuration produced
+`result=true`: server `maxTickSample=0.25`, client B
+`maxRemoteStep=0.2498857`, no missing ticks, lag warnings, or crashes, and all
+seam/combat/block/vehicle/teleport/reconnect probes true. Keep cold-start
+performance validation open; this evidence does not certify the entire
+production matrix.
+
+A later fresh-process cold run copied the complete production checkpoint into
+the ignored multiplayer server slot and preserved the source hash. It reached
+`full scenario result=true` in about 2 minutes 51 seconds with a 65,536-cell
+atlas, `maxPacketStep=0.25`, `maxTickSample=2.75`, client A/B
+`maxRemoteStep=0.0/1.25`, zero missing client ticks, and no crashes. The server
+still reported 3.816-second initial-connect and 39.402-second reconnect
+server-behind warnings.
+Treat this as functional repeatability evidence, not a cold-start performance
+pass. All three processes were stopped after the result; the local logs remain
+under the ignored multiplayer run directories.
+
+That trace revealed repeated client completion work from identical dirty tiles.
+After making tile application idempotent and reserving forced publish/save for
+the actual incomplete-to-complete transition, an equally cold comparison
+reported:
+
+- one completion notice per client instead of seven;
+- two complete-ring mesh builds per client instead of three;
+- about 69 seconds to the full result instead of 171;
+- server `maxTickSample=0.75` instead of `2.75`;
+- client B `maxRemoteStep=0.4167` instead of `1.25`, with zero missing ticks;
+- one 2.020-second/40-tick initial-connect warning instead of the previous
+  3.816-second initial warning plus 39.402-second reconnect warning;
+- true seam/combat/block/vehicle/teleport/reconnect results and no crash.
+
+Both comparison runs used renamed cold client caches, a fresh ignored server
+copy of the same complete source, and unchanged source hashes.
+
+A third cold run added one-second process sampling. The active scenario from
+arm to final result took about 18 seconds and passed with server packet/tick
+maxima `0.25/0.25`, client A/B remote maxima `0.0/0.2499238`, zero missing
+ticks, no overload warning, and no crash. Client A logged one completion and
+one mesh build; client B logged one completion and two mesh builds. Observed
+RSS lower bounds were 591 MiB for the server, 871 MiB for client A, 941 MiB for
+client B, and 2.15 GiB simultaneously. The sampler output was not persisted,
+so these are lower bounds rather than exact peak claims. Existing swap use was
+flat in retained samples. Full process start-to-result was about 2 minutes 22
+seconds because offline Mojang/Realms requests delayed initial connection.
+Client B's second build was logged at 00:54:24, one second after its first
+complete build and before Client A requested the atlas at 00:54:26. During
+that interval the server captured newly loaded chunks and saved changed atlas
+data. Client A then built only the updated snapshot. Treat this single rebuild
+as a legitimate changed surface revision; the defect was repeated rebuilds for
+identical tile payloads.
+
+A separate clean-atlas benchmark removed the atlas only from a disposable copy
+of the production world and let the normal dedicated scheduler rebuild it. It
+created the fresh atlas at 01:01:32, reached 65,536/65,536 cells at 01:15:09,
+and saved 100% at 01:15:12: 13 minutes 37 seconds and about 80.2 cells per
+second. The completed gzip was 76 KiB. The copy grew from 210,024 to 383,376
+KiB (+169.3 MiB), chiefly from generated chunks, while 15-second process
+sampling observed a 1.06 GiB server RSS peak. There were no server-behind
+warnings, generation errors, RingWorld exceptions, crash reports, or observed
+swap growth. Source `level.dat` and atlas hashes were unchanged, and every
+benchmark process was stopped afterward. Runtime logs and artifacts stay in
+the ignored multiplayer directories.
 
 The integrated visual/seam harness deliberately holds position for 300 client
 ticks after its first seam screenshot. This keeps the seam chunks resident
@@ -420,27 +586,38 @@ client charts.
 
 ## Same-process saved-layout switch
 
-The deterministic layout-switch client opens two existing local saves in one
-JVM. It verifies the first layout and atlas, disconnects, confirms geometry and
-atlas state were cleared, opens the differently sized second save, and checks
-that the new handshake and atlas agree:
+The deterministic layout-switch client opens two copied existing saves in one
+JVM. It copies explicit source folders from `run/saves/` into the ignored
+`run-layout-switch/saves/` directory before launch, so the source worlds are
+never opened or modified. It verifies the first layout, dimension-owned
+settings and atlas storage, disconnects, confirms geometry and atlas state
+were cleared, opens the differently sized second copy, and checks that the new
+handshake, atlas, and storage agree:
 
 ```sh
-./gradlew runLayoutSwitchClient
+./gradlew runLayoutSwitchClient \
+  -PringLayoutSwitchFirstSource="safe-small-save-folder" \
+  -PringLayoutSwitchSecondSource="production-save-folder"
 ```
 
-The checked-in development run expects `run/saves/RingWorld Automated Test
-(10)` to be 4,096×2,048 and `RingWorld Automated Test (6)` to be 32,768×512.
-The harness does not assume those numeric values in code; it requires the two
-loaded geometries and fingerprints to differ. Search `run/logs/latest.log` for:
+Without overrides, the task retains the two historical source folder defaults
+(`RingWorld Automated Test (10)` and `RingWorld Automated Test (6)`). The
+harness does not assume their numeric layouts in code; it requires the two
+loaded geometries and fingerprints to differ. Override destinations with
+`ringLayoutSwitchFirstDestination` and `ringLayoutSwitchSecondDestination` if
+needed; they must be distinct folder identifiers under `run-layout-switch/saves/`.
+Search `run-layout-switch/logs/latest.log` for:
 
 ```text
 [layout-switch] result=true
+[layout-switch] result-json={"passed":true,...}
 ```
 
-Override `ringworld.layoutSwitchFirst` and `ringworld.layoutSwitchSecond` in a
-custom Loom run when using other existing save folders. This harness opens and
-saves both worlds but does not move the player or edit terrain.
+The source and destination IDs must be single folder names containing no path
+separators. The copied worlds may save normally while their own dimension-owned
+settings and atlas paths are materialized; the harness does not move players or
+edit terrain. Its source-copy stage replaces only prior copies beneath ignored
+`run-layout-switch/`, never a source save.
 
 ## Manual playability checklist
 
@@ -499,6 +676,17 @@ Use creative mode and an ordinary render distance (the current test profile is
   flash when practical.
 - Look at clouds from ground and near wall height.
 - Check both wall edges and exterior void.
+
+The automated safe-small sky sequence now captures noon, dusk, midnight, and
+rainy noon. It sends `weather clear` after the rain frame and waits 100 client
+ticks for Minecraft's weather interpolation to settle before arming the
+tangent and radial-up handoff captures. This prevents a nominally clear
+comparison from retaining the previous run's rain overlay.
+
+The 2026-08-01 matrix reviewed complete-atlas tangent/up frames at 6, 12, and
+28 chunks plus a complete 16,384×256 projection copy. Results, resource sizes,
+frame measurements, and the rejected dither experiment are recorded in
+[`VISUAL_HANDOFF_REVIEW_2026-08-01.md`](VISUAL_HANDOFF_REVIEW_2026-08-01.md).
 
 ### World lifecycle
 

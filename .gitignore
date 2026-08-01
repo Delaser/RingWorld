@@ -2,6 +2,9 @@
 build/
 run/
 run-multiplayer/
+run-layout-switch/
+run-production-projection/
+run-production-lifecycle/
 logs/
 dist/
 .codex-tmp/
@@ -17,10 +20,10 @@ deploy/meridian-regeneration-staging/
 # Minecraft and launcher runtime state
 .prism-data/
 accounts.json
-crash-reports/
-saves/
-world/
-world-*/
+/crash-reports/
+/saves/
+/world/
+/world-*/
 *.log
 hs_err_pid*
 

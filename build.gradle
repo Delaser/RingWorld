@@ -49,20 +49,189 @@ loom {
 		layoutSwitchClient {
 			client()
 			name "RingWorld Layout Switch Client"
-			runDir "run"
-			vmArg "-Dringworld.layoutSwitchFirst=RingWorld Automated Test (10)"
-			vmArg "-Dringworld.layoutSwitchSecond=RingWorld Automated Test (6)"
+			// Never open the source saves in-place: this run receives disposable
+			// copies from prepareCopiedLayoutSwitchWorlds below.
+			runDir "run-layout-switch"
+			vmArg "-Dringworld.layoutSwitchFirst=" + providers.gradleProperty("ringLayoutSwitchFirstDestination")
+					.orElse("RingWorld Layout Switch A").get()
+			vmArg "-Dringworld.layoutSwitchSecond=" + providers.gradleProperty("ringLayoutSwitchSecondDestination")
+					.orElse("RingWorld Layout Switch B").get()
 		}
 		productionProjectionClient {
 			client()
 			name "RingWorld Production Projection Capture"
-			runDir "run"
+			// The projection run opens only the disposable copied world prepared
+			// below. It must never open a source checkpoint in place.
+			runDir "run-production-projection"
 			vmArg "-Dringworld.captureRingProjection=true"
-			programArgs "--quickPlaySingleplayer",
-					providers.gradleProperty("ringProjectionWorld")
-							.orElse("RingWorld Automated Test (3)").get()
+			vmArg "-Dringworld.projectionWorld=" + providers.gradleProperty("ringProjectionDestination")
+					.orElse("RingWorld Production Projection").get()
+		}
+		productionLifecycleClient {
+			client()
+			name "RingWorld Production Lifecycle Regression"
+			// The client opens only the disposable copied world prepared below.
+			// Do not use quick-play: its macOS launch path is nondeterministic.
+			runDir "run-production-lifecycle"
+			vmArg "-Dringworld.productionLifecycleTest=true"
+			vmArg("-Dringworld.productionLifecycleWorld="
+					+ providers.gradleProperty("ringProductionLifecycleDestination")
+							.orElse("RingWorld Production Lifecycle").get())
 		}
 	}
+}
+
+def checkedSaveId = { String value, String propertyName ->
+	def saveId = value == null ? "" : value.trim()
+	if (saveId.isEmpty() || saveId == "." || saveId == ".."
+				|| saveId.contains("/") || saveId.indexOf(92) >= 0) {
+		throw new GradleException("-${propertyName} must be a single existing save-folder identifier")
+	}
+	return saveId
+}
+
+def requireSave = { String value, String propertyName, File savesDirectory ->
+	def saveId = checkedSaveId(value, propertyName)
+	def worldDirectory = new File(savesDirectory, saveId)
+	if (!new File(worldDirectory, "level.dat").isFile()) {
+		throw new GradleException("-${propertyName}='${saveId}' is not an existing save under "
+				+ savesDirectory + " (expected " + new File(worldDirectory, "level.dat") + ")")
+	}
+	return [id: saveId, directory: worldDirectory]
+}
+
+def sourceSavesDirectory = file("run/saves")
+def layoutSwitchSavesDirectory = file("run-layout-switch/saves")
+def projectionSavesDirectory = file("run-production-projection/saves")
+def lifecycleSavesDirectory = file("run-production-lifecycle/saves")
+
+tasks.register("prepareCopiedLayoutSwitchWorlds") {
+	group = "ringworld verification"
+	description = "Copies two explicit saved worlds into the isolated layout-switch run directory."
+	inputs.property("ringLayoutSwitchFirstSource",
+			providers.gradleProperty("ringLayoutSwitchFirstSource").orElse("RingWorld Automated Test (10)"))
+	inputs.property("ringLayoutSwitchSecondSource",
+			providers.gradleProperty("ringLayoutSwitchSecondSource").orElse("RingWorld Automated Test (6)"))
+	inputs.property("ringLayoutSwitchFirstDestination",
+			providers.gradleProperty("ringLayoutSwitchFirstDestination").orElse("RingWorld Layout Switch A"))
+	inputs.property("ringLayoutSwitchSecondDestination",
+			providers.gradleProperty("ringLayoutSwitchSecondDestination").orElse("RingWorld Layout Switch B"))
+	outputs.dir(layoutSwitchSavesDirectory)
+	// A saved world can change between runs; always refresh only the isolated copies.
+	outputs.upToDateWhen { false }
+	doLast {
+		def copies = [
+			[providers.gradleProperty("ringLayoutSwitchFirstSource").orElse("RingWorld Automated Test (10)").get(),
+					providers.gradleProperty("ringLayoutSwitchFirstDestination").orElse("RingWorld Layout Switch A").get(),
+					"ringLayoutSwitchFirstSource", "ringLayoutSwitchFirstDestination"],
+			[providers.gradleProperty("ringLayoutSwitchSecondSource").orElse("RingWorld Automated Test (6)").get(),
+					providers.gradleProperty("ringLayoutSwitchSecondDestination").orElse("RingWorld Layout Switch B").get(),
+					"ringLayoutSwitchSecondSource", "ringLayoutSwitchSecondDestination"]
+		]
+		def destinations = [] as Set
+		copies.each { copySpec ->
+			def source = requireSave(copySpec[0], copySpec[2], sourceSavesDirectory)
+			def destinationId = checkedSaveId(copySpec[1], copySpec[3])
+			if (!destinations.add(destinationId)) {
+				throw new GradleException("layout-switch destinations must be distinct")
+			}
+			def destination = new File(layoutSwitchSavesDirectory, destinationId)
+			delete(destination)
+			copy {
+				from(source.directory)
+				into(destination)
+			}
+			if (!new File(destination, "level.dat").isFile()) {
+				throw new GradleException("copied layout-switch save is missing level.dat: " + destination)
+			}
+			logger.lifecycle("[layout-switch] copied source={} destination={}", source.directory, destination)
+		}
+	}
+}
+
+tasks.register("verifyProductionProjectionSave") {
+	group = "ringworld verification"
+	description = "Checks that ringProjectionWorld names an existing source save under run/saves."
+	doLast {
+		requireSave(providers.gradleProperty("ringProjectionWorld").orNull,
+				"ringProjectionWorld", sourceSavesDirectory)
+	}
+}
+
+tasks.register("prepareCopiedProductionLifecycleWorld") {
+	group = "ringworld verification"
+	description = "Copies the named production save into the isolated lifecycle run directory."
+	inputs.property("ringProductionLifecycleSource",
+			providers.gradleProperty("ringProductionLifecycleSource").orElse(""))
+	inputs.property("ringProductionLifecycleDestination",
+			providers.gradleProperty("ringProductionLifecycleDestination")
+					.orElse("RingWorld Production Lifecycle"))
+	outputs.dir(lifecycleSavesDirectory)
+	// A saved world can change between runs; always refresh only the ignored copy.
+	outputs.upToDateWhen { false }
+	doLast {
+		def source = requireSave(providers.gradleProperty("ringProductionLifecycleSource").orNull,
+				"ringProductionLifecycleSource", sourceSavesDirectory)
+		def destinationId = checkedSaveId(
+				providers.gradleProperty("ringProductionLifecycleDestination")
+						.orElse("RingWorld Production Lifecycle").get(),
+				"ringProductionLifecycleDestination")
+		def destination = new File(lifecycleSavesDirectory, destinationId)
+		delete(destination)
+		copy {
+			from(source.directory)
+			into(destination)
+		}
+		if (!new File(destination, "level.dat").isFile()) {
+			throw new GradleException("copied lifecycle save is missing level.dat: " + destination)
+		}
+		logger.lifecycle("[production-lifecycle] copied source={} destination={}",
+				source.directory, destination)
+	}
+}
+
+tasks.register("prepareCopiedProductionProjectionWorld") {
+	group = "ringworld verification"
+	description = "Copies the named production-projection source save into its isolated run directory."
+	inputs.property("ringProjectionWorld",
+			providers.gradleProperty("ringProjectionWorld").orElse(""))
+	inputs.property("ringProjectionDestination",
+			providers.gradleProperty("ringProjectionDestination")
+					.orElse("RingWorld Production Projection"))
+	outputs.dir(projectionSavesDirectory)
+	// World state can change between runs; refresh only the ignored destination copy.
+	outputs.upToDateWhen { false }
+	doLast {
+		def source = requireSave(providers.gradleProperty("ringProjectionWorld").orNull,
+				"ringProjectionWorld", sourceSavesDirectory)
+		def destinationId = checkedSaveId(
+				providers.gradleProperty("ringProjectionDestination")
+						.orElse("RingWorld Production Projection").get(),
+				"ringProjectionDestination")
+		def destination = new File(projectionSavesDirectory, destinationId)
+		delete(destination)
+		copy {
+			from(source.directory)
+			into(destination)
+		}
+		if (!new File(destination, "level.dat").isFile()) {
+			throw new GradleException("copied projection save is missing level.dat: " + destination)
+		}
+		logger.lifecycle("[projection-capture] copied source={} destination={}",
+				source.directory, destination)
+	}
+}
+
+tasks.named("runLayoutSwitchClient") {
+	dependsOn(tasks.named("prepareCopiedLayoutSwitchWorlds"))
+}
+
+tasks.named("runProductionProjectionClient") {
+	dependsOn(tasks.named("prepareCopiedProductionProjectionWorld"))
+}
+
+tasks.named("runProductionLifecycleClient") {
+	dependsOn(tasks.named("prepareCopiedProductionLifecycleWorld"))
 }
 
 dependencies {

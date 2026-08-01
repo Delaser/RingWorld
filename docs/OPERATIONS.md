@@ -136,6 +136,14 @@ complete-ring texture will not build until a complete atlas is available.
 Progress logs report captured cells, cells per second, and an ETA once a rate
 can be measured.
 
+A clean-atlas benchmark on a disposable copy of the production 16,384×256
+world completed all 65,536 cells in 13 minutes 37 seconds, or about 80.2 cells
+per second. The generating server peaked at about 1.06 GiB RSS in 15-second
+samples, the completed compressed atlas was 76 KiB, and the copied world grew
+by about 169.3 MiB, chiefly from generated chunk data. It produced no
+server-behind warning, generator error, RingWorld exception, or crash. Treat
+these as one-machine reference measurements rather than resource guarantees.
+
 The 16,384×256 production-default static resource envelope is approximately
 0.44 MiB of raw atlas arrays/wire payload, 5.33 MiB for the RGBA8 GPU texture
 including its mip chain, 2.25 MiB for the maximum-detail mesh, and 12.0 MiB of
@@ -219,7 +227,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite contains 89 unit/parameterized cases. The historical Phase 2
+The current suite contains 94 unit/parameterized cases. The historical Phase 2
 95-error inventory and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.

@@ -13,15 +13,21 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 89 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 94 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
 > the representative gameplay/rim matrix. A dedicated two-client seam,
 > combat, block, boat, teleport, and reconnect scenario also passes.
-> Multi-size visual review, automated-harness completion, packaging, and
-> staging gates are still outstanding. The first 26.1.2 Fabric alpha is an
-> early test build, not a stable or broadly compatible release.
+> A copied 16,384×256 world also passes Nether/End transfers, normal save and
+> disconnect, client-state clearing, and an in-process reopen with the exact
+> layout and complete atlas restored. The safe-small 6/12/28-chunk visual
+> matrix and a complete production-size tangent/radial projection review now
+> pass. Remaining automated-harness, packaging, and staging gates are still
+> outstanding, so this is not a playable release yet. The first 26.1.2 Fabric
+> alpha is an early test build, not a stable or broadly compatible release.
+> The validated server, client packages, and rollback tag remain Minecraft 1.21.11
+> (`mc-1.21.11-final`).
 
 > **Loader direction:** current builds remain Fabric-only. Future development
 > is required to keep RingWorld's core loader-agnostic and place unavoidable
@@ -37,10 +43,10 @@ The Nether and End remain vanilla.
 
 ## Distribution
 
-The first Fabric alpha, `0.2.0+mc26.1.2`, has been submitted to
-[Modrinth](https://modrinth.com/mod/ringworld) for moderation. It will become
-publicly downloadable after approval. The alpha targets Minecraft 26.1.2 and
-Java 25, requires Fabric API, and must be installed on both the client and
+The first Fabric alpha, `0.2.0+mc26.1.2`, is currently **Under review** on
+[Modrinth](https://modrinth.com/mod/ringworld) as version `1MhIDQ2h`. It will
+become publicly downloadable after approval. The alpha targets Minecraft 26.1.2
+and Java 25, requires Fabric API, and must be installed on both the client and
 server.
 
 > **Public history:** this repository intentionally begins with a clean
@@ -192,8 +198,10 @@ checks. Saved settings always override later bootstrap configuration changes.
 | Safe-small | 2,048 blocks / 128 chunks | 416 blocks / 26 chunks | Fast development, atlas, and multiplayer testing |
 
 The production atlas covers 16,384 canonical chunks and is a substantial
-background generation job. Administrators can inspect or control it without
-changing the saved layout:
+background generation job. A clean-atlas copied-world benchmark completed it
+in 13 minutes 37 seconds at about 80.2 cells per second on the development
+machine. Administrators can inspect or control it without changing the saved
+layout:
 
 ```text
 /ringworld atlas status
@@ -209,7 +217,8 @@ Detailed sizing, persistence, deployment, and recovery guidance lives in
 The current build includes:
 
 - canonical periodic chunk, entity, tick, query, tracking, and interaction
-  paths;
+  paths, including retained entity pairing across one pending canonical seam
+  chunk transition;
 - continuous client charts and natural player/vehicle seam folding;
 - periodic density-noise sampling and canonical seam-crossing worldgen writes;
 - finite exterior void and five-block textured, breakable rims;
@@ -219,8 +228,8 @@ The current build includes:
 - atlas-backed full-ring rendering at normal chunk distance;
 - configurable immutable dimensions with creation-time validation and cost
   preview;
-- automated local, layout-switch, production-projection, and two-client
-  multiplayer harnesses.
+- automated local, layout-switch, production-projection, production-lifecycle,
+  and two-client multiplayer harnesses.
 
 Representative automated coverage includes repeated seam crossings, combat,
 block updates, an arrow, a boat, a ground navigator, water flow, an explosion,
@@ -232,8 +241,9 @@ For demonstrated results, open risks, and the prioritized roadmap, see
 ## Known limitations
 
 - The complete distant ring appears only after its terrain atlas reaches 100%.
-- The production-default atlas has not yet completed the full end-to-end
-  generation, disk, transfer, and GPU benchmark matrix.
+- Production clean-atlas generation, projection, transfer, multiplayer,
+  lifecycle, memory, and static GPU resource gates pass; the 6/12/28 visual and
+  repeated frame-pacing comparison matrix remains open.
 - Broad multi-seed structures, carvers, portals, redstone, block entities,
   fluids, death/respawn, vehicles, and projectiles still need more seam
   coverage.
@@ -271,7 +281,8 @@ Additional automated runs:
 
 ```sh
 ./gradlew runLayoutSwitchClient
-./gradlew runProductionProjectionClient
+./gradlew runProductionProjectionClient -PringProjectionWorld="save-folder-id"
+./gradlew runProductionLifecycleClient -PringProductionLifecycleSource="save-folder-id"
 ```
 
 The complete fixtures, expected log markers, screenshots, performance

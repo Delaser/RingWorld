@@ -25,7 +25,7 @@ the same change.
 | `ChunkRegionMixin` | `WorldGenRegion` | Canonicalizes worldgen block/entity/tick writes and selects local holder aliases | Canonicalizing before vanilla radius validation changes feature locality |
 | `DensityCoordinateConsumerMixin` | Noise/shift density leaf implementations | Tags density functions that truly consume horizontal coordinates | Tagging caches/interpolators breaks sampler identity and terrain |
 | `EntityDistanceMixin` | `Entity` | Uses shortest periodic X for entity distance overloads | Must remain Overworld-only and preserve Y/Z |
-| `EntityNavigationMixin` | `PathNavigation` | Projects AI path targets into the image nearest the mob | Canonical targets without local projection cause full-ring paths |
+| `EntityNavigationMixin` | `PathNavigation` | Projects AI path targets into the image nearest the mob and shifts active paths/timeout caches by the exact canonical fold delta | Canonical targets without local projection cause full-ring paths; stale old-chart nodes stop a mob after wrapping |
 | `EntityTrackingSectionMixin` | `EntitySection` | Compares canonicalized entity bounds during section queries | Duplicate/missing entity results at seam |
 | `ExplosionImplMixin` | `ServerExplosion` | Projects exposure rays and knockback direction to nearest entity image | Visual explosion can work while damage/impulse remains wrong |
 | `MinecraftServerMixin` | `MinecraftServer` | Constrains first-world spawn search to the finite Z interior and exposes the authoritative read-only dimension storage path | Spawn redirection must remain scoped; storage consumers must not reconstruct dimension folders |
@@ -36,14 +36,27 @@ the same change.
 | `ServerChunkLoadingManagerMixin` | `ChunkMap` | Canonical generation regions, periodic watch filters, watch diffs, tracking/tick distance | Central chunk lifecycle patch; regressions cause hangs or duplicate holders |
 | `ServerChunkManagerMixin` | `ServerChunkCache` | Canonical chunk gets, holders, tickets, forced chunks, and propagation context | Lowest shared ownership boundary for the finite chunk graph |
 | `ServerEntityManagerListenerMixin` | `PersistentEntitySectionManager.Callback` | Keeps moving entities indexed in canonical sections | A seam-crossing entity can become unqueryable if its section key is stale |
-| `ServerEntityManagerMixin` | `PersistentEntitySectionManager` | Canonicalizes new/disk entities, tracking status, loaded/tick keys, and initial section | Save/reconnect and entity ticking depend on this |
-| `ServerEntityTrackerMixin` | `ChunkMap.TrackedEntity` | Uses periodic distance when deciding player tracking | Remote players/entities vanish across seam without it |
+| `ServerEntityManagerMixin` | `PersistentEntitySectionManager` | Canonicalizes new/disk entities, tracking status, loaded/tick keys, and initial section, and queues missing seam entity reads directly | Save/reconnect and ticking depend on this; `updateChunkStatus` can downgrade a `TICKING` seam chunk to `TRACKED`, freezing entities after a fold |
+| `ServerEntityTrackerMixin` | `ChunkMap.TrackedEntity` | Uses periodic distance and retains an existing pairing through one pending canonical-fold chunk delivery transition | Initial pairing must still require chunk readiness; retaining outside the periodic watch window leaks entities |
 | `ServerPlayNetworkHandlerMixin` | `ServerGamePacketListenerImpl` | Validates continuous player/vehicle seam movement and folds canonical without correction | Anti-cheat baselines and passengers must shift with the source chart |
 | `ServerWorldMixin` | `ServerLevel` | Canonical loaded/tick checks, nearest-periodic simulation eligibility fallback in the private 26.1 `lambda$tick$0(TickRateManager,ProfilerFiller,Entity)` entity consumer, entity region load, proximity delivery | Several unrelated world-facing ownership checks converge here; the entity eligibility call is inside the synthetic tick consumer rather than `tick` itself, and the fallback must never become global forced ticking |
 | `WorldEntityLookupMixin` | `Level` | Splits seam-crossing entity query boxes into canonical windows | Must suppress duplicates and scan full-circumference boxes once |
 | `WorldTickSchedulerMixin` | `LevelTicks` | Canonicalizes runtime block/fluid tick positions | A tick stored under an alias can never find its canonical block |
 
 ## Client mixins
+
+### `MinecraftMixin`
+
+- Targets: `Minecraft.disconnect(Screen, boolean, boolean)` and
+  `Minecraft.clearClientLevel`.
+- Purpose: clears static RingWorld geometry, atlas, and GPU surface state when
+  a local or remote world is torn down. The three-argument disconnect path
+  owns integrated-world exit; `clearClientLevel` covers the separate remote
+  teardown path. Fabric's play-connection event remains a redundant network
+  lifecycle hook.
+- Coordinate domain: session ownership boundary; no coordinate conversion.
+- Loader note: the target is a Minecraft lifecycle method rather than a
+  Fabric event, so the same mixin is intended to remain valid on NeoForge.
 
 | Mixin | Vanilla target | Owned behavior | Main risk |
 | --- | --- | --- | --- |
@@ -56,6 +69,7 @@ the same change.
 | `CreateWorldScreenInvoker` | `CreateWorldScreen` | Invokes level creation for the opt-in local automated harness | Test-only; must not auto-create when `testMode=false` |
 | `EntityRenderManagerMixin` | `EntityRenderDispatcher` | Curved translation and tangent rotation for entity models | Transform must match terrain and leave local camera controls unchanged |
 | `GlobalSettingsMixin` | `GlobalSettingsUniform.<init>` and `update(..., Vec3, ...)` | Extends Globals with named layout, vertical, render-distance, handoff, detail/reveal, haze, cloud-fade, and visual-profile fields | Shader ABI extension; std140 field order, buffer sizing, and the 26.1 extracted camera-position parameter are version-sensitive |
+| `MinecraftMixin` | `Minecraft.disconnect(Screen, boolean, boolean)` and `clearClientLevel` | Clears geometry, atlas, and GPU surface state on both integrated and remote world teardown paths | Missing either path can leak the previous world's static client state into an in-process reopen |
 | `PlayerPositionDebugHudEntryMixin` | `DebugEntryPosition` | Replaces F3 position section with canonical Ring coordinates and atlas state | Debug display only; never use it as storage logic |
 | `SkyRenderingMixin` | `SkyRenderer` | Small fixed ring-centred sun, time-based sun tint/intensity, no moon, stationary stars, and complete-ring texture invocation | `renderSun` constants and dynamic colour arguments are version-sensitive |
 

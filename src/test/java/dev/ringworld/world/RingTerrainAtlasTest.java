@@ -57,7 +57,8 @@ class RingTerrainAtlasTest {
         source.putBlockSample(4, z, 77, 0xABCDEF);
 
         RingTerrainAtlas tiled = new RingTerrainAtlas(GEOMETRY, HASH);
-        tiled.applyTile(0, 0, source.encodeTile(0, 0));
+        assertTrue(tiled.applyTile(0, 0, source.encodeTile(0, 0)));
+        assertFalse(tiled.applyTile(0, 0, source.encodeTile(0, 0)));
         assertEquals(1, tiled.presentCount());
         assertEquals(0xABCDEF, tiled.sample(4, z).color());
         assertFalse(tiled.isComplete());
@@ -91,11 +92,27 @@ class RingTerrainAtlasTest {
         cached.putBlockSample(4, z, 91, 0x123456);
         RingTerrainAtlas emptyServer = new RingTerrainAtlas(GEOMETRY, HASH);
 
-        cached.applyTile(0, 0, emptyServer.encodeTile(0, 0));
+        assertFalse(cached.applyTile(0, 0, emptyServer.encodeTile(0, 0)));
 
         assertEquals(1, cached.presentCount());
         assertEquals(91.0, cached.sample(4, z).height(), 1.0e-9);
         assertEquals(0x123456, cached.sample(4, z).color());
+    }
+
+    @Test
+    void tileApplyReportsChangedPresentCells() throws Exception {
+        RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas client = new RingTerrainAtlas(GEOMETRY, HASH);
+        int z = GEOMETRY.minWidthZ() + 4;
+        source.putBlockSample(4, z, 80, 0x112233);
+
+        assertTrue(client.applyTile(0, 0, source.encodeTile(0, 0)));
+        assertFalse(client.applyTile(0, 0, source.encodeTile(0, 0)));
+
+        source.putBlockSample(4, z, 81, 0x445566);
+        assertTrue(client.applyTile(0, 0, source.encodeTile(0, 0)));
+        assertEquals(81.0, client.sample(4, z).height());
+        assertEquals(0x445566, client.sample(4, z).color());
     }
 
     @Test

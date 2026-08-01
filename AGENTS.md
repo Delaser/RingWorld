@@ -10,16 +10,19 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 89 unit/parameterized cases pass.
+gate. Common/client compilation and all 94 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
 gameplay/rim probes. The dedicated two-client seam/combat/block/boat/teleport/
-reconnect matrix also passes. Multi-size visual review, automated-harness
-completion, packaged-client/server staging, and broader compatibility remain.
-The Fabric alpha `0.2.0+mc26.1.2` was submitted to Modrinth moderation on
-2026-07-31; this does not make the remaining port gates complete. See
-`docs/CURRENT_STATE.md`.
+reconnect matrix also passes. A copied 16,384×256 world now passes the
+Overworld/Nether/End transfer, save/disconnect, client-state cleanup, and
+same-process reopen gate. Safe-small 6/12/28-chunk and production-size
+tangent/radial visual handoff review also passes. Remaining automated-harness,
+packaging, and staging work means the port is not a release yet. See
+`docs/CURRENT_STATE.md` and `docs/VISUAL_HANDOFF_REVIEW_2026-08-01.md`.
+The Fabric alpha `0.2.0+mc26.1.2` is currently **Under review** on Modrinth;
+that submission does not make the remaining port gates complete.
 
 ## What this project is
 
@@ -195,7 +198,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 89
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 94
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks still remain.
@@ -270,6 +273,12 @@ version numbers.
   effects are available. Session disconnect/settings handlers must clear the
   static GPU texture and mesh, and the renderer must reject incomplete atlases;
   otherwise a newly created world displays the previous world's ring.
+- Atlas tile application is idempotent. Duplicate dirty tiles must not advance
+  the client atlas revision, force another cache save, or rebuild the complete
+  texture/mesh. Only the actual incomplete-to-complete transition bypasses the
+  normal publish/save coalescing windows. A genuinely changed tile captured
+  after completion still advances the coalesced revision and may rebuild the
+  surface once; do not mistake that expected refresh for duplicate churn.
 - `ring_surface.vsh` deliberately clamps only far-out proxy clip-space Z while
   preserving X/Y/W. Minecraft's level far plane is derived from chunk render
   distance and clips most of a production 16,384-block cylinder, especially
@@ -334,6 +343,13 @@ version numbers.
 - `runLayoutSwitchClient` opens two existing saves in one JVM and stops after
   logging its result. Keep it non-destructive: it may save normally, but must
   not move players or edit terrain.
+- `runProductionLifecycleClient` first copies a named production save into its
+  own ignored run directory. Its test-only coordinator must use the 26.1
+  `TeleportTransition` API, stay separate from smoke/layout-switch/multiplayer,
+  and leave the source save untouched. The client, not the coordinator, owns
+  non-Overworld inactivity and exact restored-layout/atlas assertions. Let
+  Minecraft's integrated-server disconnect path own saving; never call
+  `MinecraftServer.saveEverything` from the render thread.
 - `RingWorldCreationScreen.extractRenderState` must not call a background
   extraction method. Minecraft 26.1's
   `Screen.extractRenderStateWithTooltipAndSubtitles` already owns the frame's
@@ -349,9 +365,20 @@ version numbers.
   the configured nearest-periodic chunk distance. Do not broaden this into
   global forced ticking or replace the configured simulation distance with a
   hard-coded radius.
+- `PersistentEntitySectionManager` seam load requests must call
+  `ensureChunkQueuedForLoad` directly. Routing that request through
+  `updateChunkStatus` can downgrade an already-`TICKING` seam chunk to
+  `TRACKED`, intermittently freezing items, projectiles, and mobs just after
+  X folds through zero.
+- A mob fold must shift its active navigation path, target, and raw-coordinate
+  stuck/timeout caches by the exact canonical X delta. Recomputing only the
+  target leaves the old-chart path behind and can stop navigation at the seam.
 - `RingRenderProfile` visual-policy version 4 owns the live/proxy/detail
   transitions, reveal, haze, and local cloud fade. Keep Java profile fields
-  and the seven appended RingWorld Globals vectors synchronized.
+  and the seven appended RingWorld Globals vectors synchronized. The 2026-08-01
+  6/12/28 review retained its deterministic interleaved-gradient dither; an
+  unordered pixel-hash experiment produced worse salt-and-pepper grain and was
+  rejected.
 - Cloud base is synchronized as saved wall top plus eight blocks. Do not
   reintroduce a literal Y=104; custom wall height must move both.
 - The active local development geometry is the safe-small 2,048-by-416 preset

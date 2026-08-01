@@ -557,13 +557,16 @@ their corresponding runtime gates.
 
 - both clients acknowledge the same layout;
 - players remain visible and interactive through the seam;
-- combat, block update, vehicle, projectile, fluid, explosion, teleport, and
-  reconnect pass;
+- combat, block update, vehicle/passenger identity and mount continuity,
+  projectile, fluid, explosion, teleport, and reconnect pass;
 - natural movement remains a local packet step.
 
 ### Gate 5: production geometry
 
 - 16,384 × 256 current-default validation passes;
+- an isolated copied-production client passes Nether → Overworld → End →
+  Overworld, then save/disconnect/reopen with RingWorld inactive outside the
+  Overworld and the exact layout/atlas restored on return;
 - synthetic full-ring projection passes;
 - a real atlas resource benchmark completes;
 - GPU resources remain within policy;
