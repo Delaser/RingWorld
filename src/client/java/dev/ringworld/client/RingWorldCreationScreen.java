@@ -203,10 +203,11 @@ public final class RingWorldCreationScreen extends Screen {
                     report.wallTopYExclusive(), report.cloudBaseY(),
                     report.radialClearanceAtHighestPlane()));
             drawReportLine(context, y + lineStep * 3,
-                    "Atlas %s cells (~%s MiB); noise lookup ~%s MiB"
-                    .formatted(formatLong(report.atlasCellCount()),
-                            formatMiB(report.estimatedAtlasBytes()),
-                            formatMiB(report.estimatedNoiseCoordinateBytes())));
+                    "Build ref ~%s / %s MiB; atlas %s cells (%s MiB)"
+                    .formatted(formatDuration(report.costEstimate().estimatedPregenerationSeconds()),
+                            formatMiB(report.costEstimate().estimatedGeneratedWorldBytes()),
+                            formatLong(report.atlasCellCount()),
+                            formatMiB(report.estimatedAtlasBytes())));
             drawReportLine(context, y + lineStep * 4, String.format(Locale.ROOT,
                     "GPU %d×%d; %.2f×%.2f blocks/texel; %s vertices",
                     renderProfile.textureColumns(), renderProfile.textureRows(),
@@ -253,6 +254,14 @@ public final class RingWorldCreationScreen extends Screen {
 
     private static String formatMiB(long bytes) {
         return String.format(Locale.ROOT, "%.1f", bytes / (1024.0 * 1024.0));
+    }
+
+    private static String formatDuration(long seconds) {
+        long hours = seconds / 3_600L;
+        long minutes = seconds % 3_600L / 60L;
+        long remainder = seconds % 60L;
+        return hours > 0L ? "%dh %02dm".formatted(hours, minutes)
+                : "%dm %02ds".formatted(minutes, remainder);
     }
 
     /** Parent-screen hook kept UI-local so accepting a layout refreshes its summary. */

@@ -2,8 +2,9 @@
 
 Status: P1–P4 architecture, the atlas production release gate, expanded seam
 gameplay, the multi-seed worldgen/structure matrix, and protocol hardening are
-integrated and reviewed. Stability issue #74, optional convenience packaging,
-and independent release-candidate review remain.
+integrated and reviewed. Stability issue #74 now supplies measured custom-size
+cost guidance plus compatibility contract/API version 1. Optional convenience
+packaging and independent release-candidate review remain.
 
 Target: Minecraft Java 26.1.2
 

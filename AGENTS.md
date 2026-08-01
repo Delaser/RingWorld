@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 224 unit/parameterized cases pass.
+gate. Common/client compilation and all 233 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -186,6 +186,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
 - `src/main/java/dev/ringworld/world/`: pure geometry, topology, settings,
   validation/cost reports, render profiles, worldgen coordinate transforms,
   atlas format, and sky-cycle math.
+- `src/main/java/dev/ringworld/api/`: versioned read-only coordinate/pose API
+  and loader-neutral compatibility inventory.
+- `src/main/java/dev/ringworld/platform/fabric/`: narrow Fabric discovery and
+  lifecycle adapters that must not own common coordinate semantics.
 - `src/main/java/dev/ringworld/mixin/`: authoritative server/worldgen patches.
 - `src/main/java/dev/ringworld/server/`: lifecycle, canonical entity folding,
   atlas pregeneration, local smoke fixtures, and multiplayer harness.
@@ -233,7 +237,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 224
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 233
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
@@ -456,6 +460,11 @@ version numbers.
 - Structure placement and arbitrary third-party mods have not received broad
   seam coverage. Coordinate-sensitive mods, renderers, gravity systems, and
   chunk internals are likely incompatible.
+- Compatibility contract/API version 1 is documented in
+  `docs/COMPATIBILITY.md`. Keep `RingCompatibilityContract`, the Fabric probe,
+  `fabric.mod.json`'s `ringworld:compatibility_api`, public API documentation,
+  and tests synchronized. Detection logs high-confidence unsupported mod IDs;
+  it must not silently claim that unlisted combinations are supported.
 - New-world strongholds carry a saved guarantee bit into both the placement
   state and noise generator. After vanilla builds the complete piece graph,
   `StrongholdStructureMixin` applies the smallest X/Z translation needed to

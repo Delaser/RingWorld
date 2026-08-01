@@ -35,6 +35,8 @@ Start here:
   build/dedicated-server checkpoint.
 - [`NETWORK_PROTOCOL.md`](NETWORK_PROTOCOL.md): login handshake, atlas
   transport, and canonical/presentation packet mapping.
+- [`COMPATIBILITY.md`](COMPATIBILITY.md): versioned read-only API, supported
+  baseline, known unsupported mods/shaders, and loader boundary.
 - [`RENDERING.md`](RENDERING.md): terrain curvature, culling, distant texture,
   fog, clouds, and the small fixed tone-shifting sun.
 - [`VISUAL_HANDOFF_REVIEW_2026-08-01.md`](VISUAL_HANDOFF_REVIEW_2026-08-01.md):

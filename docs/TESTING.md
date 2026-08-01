@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. Common and client
-compilation now pass together, and the development build runs all 224
+compilation now pass together, and the development build runs all 233
 unit/parameterized cases:
 
 ```sh
@@ -38,14 +38,15 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 224 unit/parameterized cases:
+The active suite contains 233 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
 | `RingGeometryTest` | Seam continuity, presentation charts and sleeping-position images, default walking length, physical/tangent transforms, noise seam, culling envelope, visibility math, query windows |
 | `RingObjectTransformTest` | Exact curved rigid-anchor pose, tangent orientation, and presentation-seam continuity |
 | `RingChunkTopologyTest` | Canonical chunk images, joined-edge distance, periodic entity simulation distance, watch windows, incremental seam diff, long teleport, finite whole-ring filter |
-| `RingDimensionReportTest` | Full-height radial safety, aligned playable minimum, structural-only/unsafe curvature, walls/clouds, allocation bounds, and maximum technical warning envelope |
+| `RingDimensionReportTest` | Full-height radial safety, aligned playable minimum, structural-only/unsafe curvature, walls/clouds, allocation bounds, measured-reference cost warnings, and maximum technical warning envelope |
+| `RingDimensionCostEstimateTest` | Exact production benchmark retention, atlas wire/tick calculation, checked scaling, and supported-maximum arithmetic |
 | `RingGenerationBoundaryTest` | Shared generated-rim top bound for default/custom wall heights and world-top clamping |
 | `RingDimensionMatrixTest` | Safe-small, aligned playable minimum, narrow, production, former-wide, long/narrow, wide/medium, and custom-wall layouts across topology, spawn, worldgen coordinate seams/finite-band limits, atlas and 6/12/28/64 render budgets |
 | `RingSettingsHandshakeTest` | Immutable safe-small/production/wide/custom-wall payload identity, acknowledgement, and mismatch rejection |
@@ -69,6 +70,8 @@ The active suite contains 224 unit/parameterized cases:
 | `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
 | `RingWorldCreationUiModelTest` | Safe-small, production, custom, and invalid world-creation cost previews |
+| `RingPhysicalPoseTest` | Cardinal physical position/basis, vanilla yaw/pitch conversion, and rendered local-up direction |
+| `RingCompatibilityContractTest` | Versioned API/contract, baseline stack, case-normalized exact conflict matching, and immutable inventory |
 | `RingProtocolIdentityTest` | Settings, acknowledgement, revisioned terrain-atlas, and pregeneration channel names remain synchronized with their wire layouts |
 | `AtlasPregenerationUiModelTest` | Status-total validation, durable chunk presentation, state-aware controls, permissions, and explicit action/state wire values |
 | `RingStrongholdPlacementTest` | Deterministic canonical placement, seam clearance, seed variation, and supported circumference shapes |
@@ -80,6 +83,11 @@ Inspect machine-readable results under:
 ```text
 build/test-results/test/
 ```
+
+Compatibility contract changes must also launch one baseline client through
+resource/shader initialization and inspect `latest.log` for false conflict
+matches. Positive matching stays a pure test; do not install an unsupported
+third-party renderer into a release fixture solely to prove the warning.
 
 ## Atlas fidelity benchmark
 

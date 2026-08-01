@@ -24,6 +24,7 @@ public record RingDimensionReport(
         long atlasCellCount,
         long estimatedAtlasBytes,
         long estimatedNoiseCoordinateBytes,
+        RingDimensionCostEstimate costEstimate,
         List<String> errors,
         List<String> warnings) {
 
@@ -43,6 +44,8 @@ public record RingDimensionReport(
     public static final long WARN_CANONICAL_CHUNKS = 500_000L;
     public static final long WARN_ATLAS_CELLS = 4_000_000L;
     public static final long MAX_ATLAS_CELLS = 16_000_000L;
+    public static final long WARN_PREGENERATION_SECONDS = 30L * 60L;
+    public static final long WARN_GENERATED_WORLD_BYTES = 512L * 1_024L * 1_024L;
 
     public RingDimensionReport {
         errors = List.copyOf(errors);
@@ -133,6 +136,8 @@ public record RingDimensionReport(
         long atlasBytes = Math.multiplyExact(atlasCells, 7L);
         long noiseCoordinateBytes = Math.multiplyExact(
                 (long)geometry.circumferenceBlocks(), 8L);
+        RingDimensionCostEstimate costEstimate = RingDimensionCostEstimate.estimate(
+                geometry, atlasSampleStepBlocks);
         if (atlasCells > MAX_ATLAS_CELLS) {
             errors.add("terrain atlas requires " + atlasCells + " cells; current limit is "
                     + MAX_ATLAS_CELLS);
@@ -142,6 +147,13 @@ public record RingDimensionReport(
         }
         if (chunks > WARN_CANONICAL_CHUNKS) {
             warnings.add("complete-ring pregeneration requires " + chunks + " canonical chunks");
+        }
+        if (costEstimate.estimatedPregenerationSeconds() > WARN_PREGENERATION_SECONDS
+                || costEstimate.estimatedGeneratedWorldBytes() > WARN_GENERATED_WORLD_BYTES) {
+            warnings.add("measured-reference full generation is about "
+                    + formatDuration(costEstimate.estimatedPregenerationSeconds())
+                    + " and " + formatGiB(costEstimate.estimatedGeneratedWorldBytes())
+                    + " GiB of generated world data");
         }
 
         double angularWidth = geometry.oppositeAngularWidthDegrees(0.0);
@@ -156,7 +168,8 @@ public record RingDimensionReport(
         return new RingDimensionReport(
                 geometry, worldBottomY, worldTopYExclusive, wallHeightBlocks,
                 wallTopYExclusive, cloudBaseY, radialClearance, angularWidth,
-                chunks, atlasCells, atlasBytes, noiseCoordinateBytes, errors, warnings);
+                chunks, atlasCells, atlasBytes, noiseCoordinateBytes, costEstimate,
+                errors, warnings);
     }
 
     public boolean isValid() {
@@ -193,5 +206,15 @@ public record RingDimensionReport(
 
     private static String format(double value) {
         return String.format(java.util.Locale.ROOT, "%.2f", value);
+    }
+
+    private static String formatDuration(long seconds) {
+        long hours = seconds / 3_600L;
+        long minutes = seconds % 3_600L / 60L;
+        return hours > 0L ? hours + "h " + minutes + "m" : minutes + "m";
+    }
+
+    private static String formatGiB(long bytes) {
+        return String.format(java.util.Locale.ROOT, "%.1f", bytes / (1024.0 * 1024.0 * 1024.0));
     }
 }

@@ -65,8 +65,8 @@ authorization and must use the reviewed staged jar only. First inspect the
 archive and checksum; install into a clean Fabric client; test installation in
 an existing modded instance; launch a clean dedicated server; then run the
 two-client handshake, seam, combat, block, boat, teleport, reconnect, atlas,
-and production-geometry validation gates. State untested renderer, shader,
-gravity, world-generation, chunk, and networking combinations as compatibility
+and production-geometry validation gates. Link `docs/COMPATIBILITY.md` and
+state untested renderer, shader, gravity, world-generation, chunk, and networking combinations as compatibility
 risks, not support claims.
 
 ### Non-graphical dedicated-server smoke

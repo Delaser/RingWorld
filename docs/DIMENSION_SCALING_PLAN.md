@@ -1,12 +1,10 @@
 # Dimension scaling audit and implementation plan
 
-Status: issue #24 custom-dimension matrix completed, source- and runtime-audited
-on 2026-08-01. Phases 1–6 are implemented. Phase 7 has completed pure validation, the
-safe-small view-distance matrix, minimum-width stress, dedicated two-client
-coverage, production/long/wide topology and rim runs, and a same-process saved
-layout switch. The production full-atlas throughput/transfer benchmark and
-broader cross-size complete-atlas visual/frame-pacing gates remain open as
-marked below.
+Status: completed through issues #24, #66–#70, #72, and #74 on 2026-08-01.
+Phases 1–7 now include pure and runtime dimension matrices, production atlas
+generation/resource evidence, safe-small and production 6/12/28 visual gates,
+same-process layout switching, multi-seed worldgen, and measured-reference
+creation cost guidance.
 
 ## Goal
 
@@ -177,9 +175,9 @@ the cloud shader; moving this final policy into the shared profile is open.
 | tile coordinates | `TileCoordinate` record | No 16-bit packing limit or collision. |
 | tile payload cap | 4,096 bytes; actual full tile about 1,794 bytes including dimensions | Fixed safety cap; keep and test edge tiles. |
 | GPU texture cap | 4,096×1,024 | Treat as a quality budget, not geometry. Report effective blocks/texel and avoid pretending oversampling adds atlas detail. |
-| mesh cap | 2,048 circumference segments × 128 width bands, 1,572,864 vertices | Profile 5 raised the old 512-segment cap after production six-chunk captures exposed 32-block triangles. Issue #69 still owns adaptive quality/resource tiers for larger layouts. |
+| mesh cap | 2,048 circumference segments × 128 width bands, 1,572,864 vertices | Profile 5 raised the old 512-segment cap after production six-chunk captures exposed 32-block triangles. #69 retained one fixed profile; larger layouts report their capped detail. |
 | mip count | stops when the smaller texture axis reaches one | Keep, but test very narrow and non-power-of-two widths. |
-| pregeneration work | Checked `long (C/16)×(W/16)` chunks, one in flight | Creation UI reports total; server status logs cells/s and ETA. Large-ring benchmarking remains open. |
+| pregeneration work | Checked `long (C/16)×(W/16)` chunks, one in flight | Creation UI reports measured-reference time/world growth; server status logs live cells/s and ETA. Production benchmarking is complete. |
 | pregeneration queue gate | fewer than 64 pending tasks | Operational profile; benchmark rather than scale linearly from geometry. |
 | stream rate | 8 tiles/tick | Operational profile; add byte/time estimates and avoid login bursts for large atlases. |
 | save/broadcast cadence | 200/20 ticks | Operational profile; benchmark dirty-set and save cost at large atlas sizes. |
@@ -286,6 +284,8 @@ wall top and cloud base Y
 radial clearance at build top
 canonical chunks to pregenerate
 atlas source cells / estimated memory
+measured-reference full-generation time / generated-world growth
+exact cold atlas wire bytes / minimum throttled transfer time
 GPU texture dimensions / blocks per texel
 maximum tested view distance
 ```
@@ -429,13 +429,11 @@ Implemented:
 - Gamemaster-level `/ringworld atlas status|pause|resume` commands expose and
   control background pregeneration without mutating saved layout.
 - Noise-coordinate caches are cleared when the Overworld unloads.
-
-Open:
-
-- Benchmark the production default end to end and decide whether a fixed
-  eight-block sample step remains operationally acceptable.
-- Measure compressed disk size and wall-clock completion in the production
-  benchmark; static raw/GPU/scratch budgets are now explicit.
+- The fixed eight-block production profile completed in 13 minutes 37 seconds
+  on the reference machine, produced about 169.3 MiB of generated world data,
+  and retained the tested memory/frame envelope.
+- `RingDimensionCostEstimate` scales that measured reference with checked
+  integers and calculates atlas wire/tile-throttle bounds exactly.
 
 ### Phase 6: world-creation and dedicated-server UX
 
@@ -455,8 +453,10 @@ Implemented:
 - The Create World screen opens a RingWorld editor for circumference, width,
   and wall height with safe-small, production, and current presets.
 - The editor previews chunks, physical dimensions, wall/cloud elevation,
-  clearance, atlas memory, GPU resolution, blocks per texel, and vertex count;
-  invalid layouts cannot be applied.
+  clearance, atlas memory, measured-reference full-generation time/world-data
+  growth, GPU resolution, blocks per texel, and vertex count; invalid layouts
+  cannot be applied. Layouts beyond the measured 30-minute or 512-MiB planning
+  envelope receive a visible warning.
 - Applying a valid layout opens an explicit confirmation that repeats the
   immutable circumference, width, and wall height.
 - Dedicated first-world properties pass through the same validator and startup
@@ -566,11 +566,11 @@ one JVM. Disconnect cleared the first client geometry/atlas, and the second
 handshake installed a different fingerprint with the expected 4,096×64 atlas
 instead of retaining the first world's 512×256 atlas.
 
-Remaining Phase 7 work is visual/resource evidence: actual-terrain
-complete-atlas live/LOD captures on the production, long/narrow, and wide
-layouts, plus measured
-production atlas pregeneration, compressed size, transfer, and build cost
-before any deployment decision.
+Phase 7's production resource and complete-atlas visual gate is recorded in
+`ATLAS_RELEASE_GATE_2026-08-01.md`. The long/narrow and wide cases retain
+topology, worldgen, rim, layout-switch, and calculated render-budget evidence;
+they are supported custom inputs but do not claim the same per-size visual
+certification as the safe-small and production presets.
 
 For each playable case, verify:
 

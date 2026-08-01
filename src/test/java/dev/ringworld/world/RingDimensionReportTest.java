@@ -21,6 +21,7 @@ class RingDimensionReportTest {
         assertTrue(report.isValid(), report.errors().toString());
         assertEquals(3_328L, report.canonicalChunkCount());
         assertEquals(13_312L, report.atlasCellCount());
+        assertEquals(8L, report.costEstimate().minimumAtlasTransferTicks());
         assertTrue(report.radialClearanceAtHighestPlane() > 69.0);
         assertTrue(report.oppositeAngularWidthDegrees() > 35.0
                 && report.oppositeAngularWidthDegrees() < 36.0);
@@ -50,6 +51,10 @@ class RingDimensionReportTest {
         assertEquals(256, report.geometry().widthBlocks());
         assertEquals(16_384L, report.canonicalChunkCount());
         assertEquals(65_536L, report.atlasCellCount());
+        assertEquals(817L, report.costEstimate().estimatedPregenerationSeconds());
+        assertEquals(177_523_917L, report.costEstimate().estimatedGeneratedWorldBytes());
+        assertEquals(459_264L, report.costEstimate().estimatedAtlasWireBytes());
+        assertEquals(32L, report.costEstimate().minimumAtlasTransferTicks());
         assertTrue(report.oppositeAngularWidthDegrees() > 2.8
                 && report.oppositeAngularWidthDegrees() < 2.9);
         assertTrue(report.warnings().isEmpty(), report.warnings().toString());
@@ -137,6 +142,19 @@ class RingDimensionReportTest {
         assertEquals(4_194_304L, report.atlasCellCount());
         assertTrue(report.warnings().stream().anyMatch(error -> error.contains("pregeneration")));
         assertTrue(report.warnings().stream().anyMatch(error -> error.contains("terrain atlas")));
+    }
+
+    @Test
+    void broadCustomRingWarnsFromMeasuredGenerationAndDiskCosts() {
+        RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
+                new RingGeometry(4_096, 16_384), 160);
+
+        assertTrue(report.isValid(), report.errors().toString());
+        assertEquals(262_144L, report.canonicalChunkCount());
+        assertTrue(report.costEstimate().estimatedPregenerationSeconds() > 3L * 3_600L);
+        assertTrue(report.costEstimate().estimatedGeneratedWorldBytes() > 2L * 1_024L * 1_024L * 1_024L);
+        assertTrue(report.warnings().stream().anyMatch(
+                warning -> warning.contains("measured-reference full generation")));
     }
 
     @Test

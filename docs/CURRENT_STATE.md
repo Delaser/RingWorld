@@ -67,7 +67,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite now contains 224 unit/parameterized cases.
+The active suite now contains 233 unit/parameterized cases.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
@@ -121,14 +121,25 @@ maps/compasses/locator pointers, operator debug packets, and opaque mod
 payloads unsupported. The complete two-client seam/gameplay/reconnect matrix
 still passes. See `PROTOCOL_HARDENING_2026-08-01.md`.
 
+#74 completes the stability configuration and compatibility contract. The
+creation preview now scales the measured 16,384-chunk production run into a
+checked reference estimate for full-generation time and generated-world
+growth, while atlas wire bytes and minimum transfer ticks remain exact. API
+version 1 adds read-only canonical, nearest-presentation, physical-position,
+and physical-pose conversion. Compatibility contract version 1 publishes the
+supported Fabric/vanilla-renderer baseline and eleven high-confidence
+unsupported renderer, LOD, topology, gravity, and chunk-pipeline mod IDs. A
+narrow Fabric adapter logs those conflicts at initialization; unlisted mods
+remain untested rather than implicitly supported. See `COMPATIBILITY.md`.
+
 The P1–P4 architecture parents (#5–#8) are now closed after final review of
 the integrated 26.1 topology, worldgen, protocol, renderer, lifecycle, and
 runtime evidence. This records that the ported architecture meets those work
 packages; it does not erase the broader release-hardening and compatibility
 limits documented below.
 
-Issue #12 package preparation is now active. The local builder produces
-reproducible macOS/universal and Windows Prism ZIPs plus a server overlay from
+Issue #12 package preparation is the next release-candidate gate. The local
+builder produces reproducible macOS/universal and Windows Prism ZIPs plus a server overlay from
 one verified Fabric jar, matching Fabric API jar, clean instance template, and
 exact public source commit. It writes MPL/source manifests and checksums, has
 no website or deployment path, and rejects account/runtime state, source jars,
@@ -180,7 +191,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 224 unit/parameterized cases pass, and Loom produces
+temporary shims, all 233 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -607,9 +618,10 @@ and compatibility claims.
 - The handshake uses an exact settings format plus the complete required
   channel generations. It deliberately does not negotiate partial features.
 - Vanilla clients are intentionally unsupported.
-- Mods assuming a flat renderer, ordinary unbounded chunk X, global Euclidean
-  distance, different gravity, or unchanged shader/worldgen internals are
-  likely incompatible.
+- Compatibility contract/API version 1 defines the tested vanilla-renderer
+  Fabric baseline, read-only coordinate/pose helpers, and eleven explicit
+  unsupported mod IDs. The Fabric probe logs a clear error for a detected
+  match; unlisted combinations remain untested.
 
 ### Configuration/user experience
 
@@ -629,6 +641,10 @@ and compatibility claims.
   budget before settings are created. The active 2,048-by-416 development
   preset passes with about 70 radial blocks above Y=320; the retired
   1,600-block circumference is a required validation failure.
+- The preview scales the measured production generation into a reference time
+  and generated-world size, and warns above 30 minutes or 512 MiB. These are
+  planning figures rather than performance guarantees; atlas transport bounds
+  are calculated exactly.
 - Saved format-2 settings win before generation; format 1 migrates explicitly.
 - The full immutable layout is sent to clients and used for walls, clouds,
   shaders, and atlas identity.
@@ -698,28 +714,19 @@ retaining the fixed pose and continuous dimming/colour cycle.
 
 Priorities are ordered by player-visible value and architectural leverage.
 
-1. **Finish the stability phase**
-   - #74 configuration UX, compatibility contracts, and fault isolation.
-2. **Prepare the Fabric release candidate**
+1. **Prepare the Fabric release candidate**
    - finish #12 macOS/Windows Prism and dedicated-server packages;
    - run #13 independent review against one exact clean pushed revision.
+2. **Approve and publish only with owner authorization**
+   - do not replace the staged Modrinth artifact or live server implicitly.
 3. **Begin NeoForge parity only after Fabric RC approval**
    - implement #34 through narrow platform adapters while keeping common code
      loader-neutral.
-4. **Configuration UX follow-up**
-   - improve creation cost warnings with measured production benchmarks;
-   - continue custom-size runtime coverage without weakening immutable layout
-     validation.
-5. **Day/night visual polish**
+4. **Day/night visual polish**
    - capture the new small sun at all four tone keyframes;
    - tune keyframe colours only against matched sky, live-terrain, and
      distant-ring screenshots;
    - keep the single authoritative vanilla gameplay clock.
-6. **Compatibility API and dual-loader preparation**
-   - expand the read-only API for canonical/presentation/physical poses;
-   - document compatibility contracts and failure detection.
-   - begin #34 only after the Fabric release candidate is approved, keeping
-     common code loader-neutral and platform adapters narrow.
 
 ## Evidence required before calling the mod stable and broadly compatible
 
@@ -727,4 +734,5 @@ Priorities are ordered by player-visible value and architectural leverage.
   playthroughs beyond the passing automated bed/death/linked-portal gate.
 - Manual gamma, night-vision, lightning, and close cloud-height visual checks.
 - Optional package fresh/upgrade launch checks and an independent final review.
-- Explicit supported/incompatible mod list.
+- Real compatibility testing beyond the published baseline and explicit
+  unsupported list.

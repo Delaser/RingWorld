@@ -157,6 +157,13 @@ by about 169.3 MiB, chiefly from generated chunk data. It produced no
 server-behind warning, generator error, RingWorld exception, or crash. Treat
 these as one-machine reference measurements rather than resource guarantees.
 
+The creation editor scales that measured 16,384-chunk, 817-second,
+177,523,917-byte reference with checked integer arithmetic. It reports the
+result as a planning estimate, not a promise: seed, storage, CPU, JVM, and other
+mods can change real cost. Layouts estimated above 30 minutes or 512 MiB add a
+warning. Atlas wire size and the minimum eight-tiles-per-tick transfer duration
+are calculated exactly from the selected geometry.
+
 The 16,384×256 production-default static resource envelope is approximately
 0.44 MiB of raw atlas arrays/wire payload, 5.33 MiB for the RGBA8 GPU texture
 including its mip chain, 9.0 MiB for the maximum-detail mesh, and 12.0 MiB of
@@ -293,7 +300,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite contains 224 unit/parameterized cases. The historical Phase 2
+The current suite contains 233 unit/parameterized cases. The historical Phase 2
 95-error inventory and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.
