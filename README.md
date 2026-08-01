@@ -24,7 +24,8 @@ The Nether and End remain vanilla.
 > layout and complete atlas restored. The safe-small 6/12/28-chunk visual
 > matrix and a complete production-size tangent/radial projection review now
 > pass. Remaining automated-harness, packaging, and staging gates are still
-> outstanding, so this is not a playable release yet.
+> outstanding, so this is not a playable release yet. The first 26.1.2 Fabric
+> alpha is an early test build, not a stable or broadly compatible release.
 > The validated server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
 
@@ -39,6 +40,14 @@ The Nether and End remain vanilla.
 > files remain MPL-2.0 when distributed, while separate compatibility and
 > modpack code may use other licences. See the practical
 > [licensing guide](docs/LICENSING.md).
+
+## Distribution
+
+The first Fabric alpha, `0.2.0+mc26.1.2`, is currently **Under review** on
+[Modrinth](https://modrinth.com/mod/ringworld) as version `1MhIDQ2h`. It will
+become publicly downloadable after approval. The alpha targets Minecraft 26.1.2
+and Java 25, requires Fabric API, and must be installed on both the client and
+server.
 
 > **Public history:** this repository intentionally begins with a clean
 > MPL-2.0 root commit. Pre-public tag names and commit hashes retained in the

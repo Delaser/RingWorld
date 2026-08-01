@@ -21,6 +21,8 @@ same-process reopen gate. Safe-small 6/12/28-chunk and production-size
 tangent/radial visual handoff review also passes. Remaining automated-harness,
 packaging, and staging work means the port is not a release yet. See
 `docs/CURRENT_STATE.md` and `docs/VISUAL_HANDOFF_REVIEW_2026-08-01.md`.
+The Fabric alpha `0.2.0+mc26.1.2` is currently **Under review** on Modrinth;
+that submission does not make the remaining port gates complete.
 
 ## Codex weekly usage pause
 

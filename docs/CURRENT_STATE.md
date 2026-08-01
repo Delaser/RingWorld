@@ -7,6 +7,15 @@ The Minecraft 26.1.2 port is active on `codex/minecraft-26.1-port`; see
 [`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md) and the
 [`final baseline`](MINECRAFT_1_21_11_FINAL_BASELINE.md).
 
+On 2026-07-31, the Fabric alpha `0.2.0+mc26.1.2` was uploaded to Modrinth as
+version `1MhIDQ2h`; it is currently **Under review**. Modrinth detected Fabric
+and Minecraft 26.1.2; the release declares Fabric API as required and requires
+the mod on both client and server. The uploaded jar has SHA-256
+`cddba0f0654c0b82c451670f4c9afb477c997b379aa33bbbd173aa3651e5ce60`
+and points to public source revision `3f6cb9e`. It is explicitly an alpha test
+build; submission does not close the remaining automated-harness, packaging,
+staging, scaling, or compatibility gates below.
+
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
 
@@ -255,7 +264,7 @@ client/runtime gate passes.
   a missing/replaced root or passenger, lost mount, rotation jump, excess
   motion, or non-canonical post-fold ownership.
 - Gradle wrapper, parameterized pure dimension tests, server deployment templates, and public
-  GitHub source repository.
+  MPL-2.0 GitHub source repository.
 - Latest profile-3 safe-small runtime (2,048×416 at 28-chunk capture) passed two
   natural wraps with zero camera delta/correction packets and passed block,
   entity, projectile, vehicle, AI, fluid, explosion, collision, rim, and
