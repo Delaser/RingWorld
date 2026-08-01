@@ -20,10 +20,10 @@ deploy/meridian-regeneration-staging/
 # Minecraft and launcher runtime state
 .prism-data/
 accounts.json
-crash-reports/
-saves/
-world/
-world-*/
+/crash-reports/
+/saves/
+/world/
+/world-*/
 *.log
 hs_err_pid*
 

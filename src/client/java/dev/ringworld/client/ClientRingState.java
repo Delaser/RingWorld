@@ -125,12 +125,18 @@ public final class ClientRingState {
         RingTerrainAtlas atlas = terrainAtlas;
         if (atlas == null || atlas.worldHash() != worldHash) return;
         try {
-            atlas.applyTile(tileX, tileZ, data);
+            boolean wasComplete = atlas.isComplete();
+            if (!atlas.applyTile(tileX, tileZ, data)) return;
+            boolean becameComplete = !wasComplete && atlas.isComplete();
             terrainAtlasDirty = true;
             terrainAtlasPendingRender = true;
-            publishTerrainAtlasIfDue(atlas.isComplete());
-            saveTerrainAtlasIfDue(atlas.isComplete());
-            if (atlas.isComplete()) {
+            // Force the first complete surface immediately. Later updates to
+            // an already-complete atlas use the normal coalescing windows so
+            // a dirty-tile burst cannot rebuild the full texture and mesh for
+            // every packet.
+            publishTerrainAtlasIfDue(becameComplete);
+            saveTerrainAtlasIfDue(becameComplete);
+            if (becameComplete) {
                 RingWorldMod.LOGGER.info("RingWorld terrain atlas download complete: {} cells",
                         atlas.presentCount());
             }

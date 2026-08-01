@@ -22,7 +22,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 89 unit/parameterized cases pass, and Loom produces
+temporary shims, all 94 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -55,8 +55,21 @@ with no frames above 50 ms. The full-atlas run averaged 8.41/8.37 ms and
 recorded one isolated frame above 50 ms in each measured phase while
 generation/upload work was active. The captures prove that the 26.1 complete
 ring pipeline executes; multi-size colour/handoff art review remains open.
-The current 16,384×256 default is unit/resource validated but has not yet run
-the full 26.1 production-size visual matrix.
+The current 16,384×256 default has now resumed a real copied 26.1 atlas from
+32,900 to 65,536 cells without a player lap, taking about 13 minutes 22 seconds
+for the remaining 32,636 cells (about 41 cells/sec), then emitted non-empty
+tangent and radial-up captures with a clean projection result. This establishes
+one production atlas/projection gate, not the full production-size gameplay,
+lifecycle, transfer, GPU, or frame-pacing matrix.
+
+The same production harness exposed an intermittent post-fold simulation
+failure: a `PersistentEntitySectionManager` seam load request routed through
+its visibility updater could lower an already-ticking seam chunk to tracked.
+Entity reads now queue directly without changing visibility. In addition, a
+folded mob now shifts its active navigation path/target and stuck/timeout caches
+by the exact canonical delta. Two consecutive 16,384×256 runs then passed the
+projectile hit, moving-item (X≈6), navigation (X≈1.29), and both-seam-chunks-
+ticking probes.
 
 An isolated dedicated 2,048×416 server plus two 26.1 clients also completed the
 full multiplayer harness on its first run. Both clients acknowledged the
@@ -66,7 +79,60 @@ block interaction/update, shared boat visibility, long teleport and periodic
 return, disconnect, and reconnect all passed. The server reported
 `full scenario result=true` and stopped cleanly.
 
-An isolated copy of a complete 16,384×256 production world now passes the
+The same dedicated two-client scenario has now passed on the production
+16,384×256 layout after warming the saved world and resource state. The first
+cold run completed the server gameplay and reconnect probes, but its aggregate
+result was false solely because client B observed a 1.333-block remote step
+while the server still received 0.25-block packets but accumulated a 4-block
+per-tick sample under cold resource pressure. The warmed repeat reported server
+`maxTickSample=0.25`, client B `maxRemoteStep=0.2498857`, no missing ticks, lag
+warnings, or crashes.
+
+A later fresh-process cold run against a copied complete atlas passed the full
+scenario in about 2 minutes 51 seconds: `maxPacketStep=0.25`,
+`maxTickSample=2.75`, client A/B `maxRemoteStep=0.0/1.25`, zero missing client
+ticks, and true seam, combat, block, vehicle, teleport, and reconnect probes.
+It also logged 3.816-second initial-connect and 39.402-second reconnect
+server-behind warnings. This is a repeatable functional cold-start pass, but
+not acceptable showcase frame/tick performance; cold resource-pressure
+diagnosis and the remaining resource benchmark matrix stay open.
+
+The cold trace then exposed duplicate atlas completion work: identical dirty
+tiles arriving after the first complete snapshot repeatedly forced a full
+4,096×256 texture build, 98,304-vertex mesh build, and cache save. Tile apply
+now reports actual cell changes, ignores identical repeats, and forces an
+immediate publish and save only on the real incomplete-to-complete transition.
+An equally cold A/B
+comparison reduced completion notices from seven to one and mesh builds from
+three to two per client, total scenario time from about 171 to 69 seconds,
+server `maxTickSample` from 2.75 to 0.75, and client B `maxRemoteStep` from
+1.25 to 0.4167. Reconnect passed without its former warning; the run had one
+remaining 2.020-second/40-tick initial-connect warning and no crash.
+
+An instrumented third cold run also passed. After both clients were armed, the
+full seam-to-reconnect scenario took about 18 seconds with server
+`maxPacketStep=0.25`/`maxTickSample=0.25`, client A/B
+`maxRemoteStep=0.0/0.2499238`, zero missing ticks, no overload warning, and no
+crash. Each client logged one completion; client A built one complete mesh and
+client B built two. One-second sampling observed lower bounds of about 591 MiB
+server RSS, 871 MiB client A, 941 MiB client B, and 2.15 GiB combined. Existing
+system swap stayed flat during retained samples. Full process start-to-result
+was about 2 minutes 22 seconds, dominated by offline Mojang/Realms timeouts.
+The second Client B build occurred one second after its first completed atlas,
+while newly loaded server chunks were still reconciling the atlas, and before
+Client A requested the already-updated snapshot. That is a legitimate changed
+surface revision rather than the duplicate-packet churn fixed above. The
+full atlas-generation/disk benchmark is recorded below.
+
+A clean-atlas run on another disposable copy completed 65,536/65,536 cells in
+13 minutes 37 seconds, averaging about 80.2 cells per second. The final gzip
+atlas was 76 KiB; the copied world grew by about 169.3 MiB, chiefly from chunk
+generation. Fifteen-second sampling observed a server RSS peak of about
+1.06 GiB and no swap growth. The run logged no server-behind warning,
+generation error, RingWorld exception, or crash, stopped cleanly, and left the
+source save hashes unchanged.
+
+An isolated copy of a complete 16,384×256 production world also passes the
 single-client lifecycle gate. The server used real 26.1 `TeleportTransition`
 moves through Overworld → Nether → Overworld → End → Overworld. The client
 proved RingWorld state inactive in Nether and End, restored the exact geometry,
@@ -97,9 +163,9 @@ client/runtime gate passes.
 - Natural player and vehicle seam folding without a corrective teleport.
 - Explicit same-world teleports project their canonical X target into the
   nearest client presentation image, avoiding seam-adjacent chart eviction.
-- Canonical entity indexing, save/load, and tick eligibility; seam-crossing
-  non-player entities no longer depend solely on the asynchronously propagated
-  side of the player ticket.
+- Canonical entity indexing, save/load, and tick eligibility; seam entity
+  reads queue without mutating an already-ticking chunk's visibility, and
+  folded mobs shift active paths and raw-coordinate navigation caches.
 - Periodic entity queries, distances, tracking, reach, projectiles,
   explosions, AI targets, and proximity effects.
 - Canonical block/fluid scheduled ticks.
@@ -178,10 +244,12 @@ client/runtime gate passes.
   identifies that circuit from high-X then low-X canonical poses rather than
   counting repeated packets from one presentation chart.
 - Dedicated two-client seam/combat/block/vehicle/teleport/reconnect harness.
-- The reusable multiplayer fixture removes stale automated boats, waits for
-  both clients to acquire the new vehicle, detects canonical folds across
-  overloaded server ticks, and treats periodic teleport targets as equivalent
-  client-chart images.
+- The reusable multiplayer fixture removes stale automated boats and their
+  passengers, waits for both clients to acquire the new vehicle identities,
+  detects canonical folds across overloaded server ticks, and treats periodic
+  teleport targets as equivalent client-chart images. Its vehicle gate rejects
+  a missing/replaced root or passenger, lost mount, rotation jump, excess
+  motion, or non-canonical post-fold ownership.
 - Gradle wrapper, parameterized pure dimension tests, server deployment templates, and public
   GitHub source repository.
 - Latest profile-3 safe-small runtime (2,048×416 at 28-chunk capture) passed two
@@ -288,9 +356,13 @@ client/runtime gate passes.
 - Broad multi-seed structure/carver/feature coverage at the seam is incomplete.
 - Periodic density noise does not guarantee every vanilla structure placement
   seed or third-party generator treats X=0/C as adjacent.
-- The new 16,384×256 production default still requires 16,384 canonical chunks
-  and 65,536 atlas cells; its real end-to-end pregeneration benchmark remains
-  open.
+- The new 16,384×256 production default requires 16,384 canonical chunks and
+  65,536 atlas cells. One copied-world atlas resume completed its remaining
+  32,636 cells in about 13 minutes 22 seconds. A clean-atlas copied-world run
+  completed all cells in 13 minutes 37 seconds at about 80.2 cells per second,
+  with a 76 KiB compressed atlas, about 169.3 MiB copied-world growth, and a
+  1.06 GiB sampled server RSS peak. Multi-size visual and repeated
+  frame-pacing review remain open.
 - Existing Overworld region files without RingWorld saved settings are
   explicitly rejected; no conversion tool exists.
 - Decorative wall-height changes can produce mixed old/new boundary chunks.
@@ -392,12 +464,13 @@ Priorities are ordered by player-visible value and architectural leverage.
 1. **Complete the large-layout visual/resource matrix**
    - topology, gameplay, rims, and same-process resource replacement now pass
      on safe-small, minimum-width, production, long/narrow, and wide/medium
-     layouts;
+     layouts; the production post-fold item/projectile/navigation regression
+     also passes twice with both seam chunks ticking;
    - capture complete-atlas live/LOD comparisons on production, long/narrow,
      and wide/medium worlds;
-   - parameterize the dedicated two-client test beyond the safe-small size;
-   - benchmark full production-default atlas pregeneration, disk, transfer,
-     and GPU build cost before deploying it.
+   - complete the 6/12/28-chunk visual and frame-pacing comparison matrix;
+   - retain the measured production atlas, transfer, memory, and GPU resource
+     envelope as the deployment baseline.
 2. **Tune and validate the texture LOD transition**
    - capture matched upward screenshots for clear/rain, day/dusk/night, and
      water-heavy terrain;

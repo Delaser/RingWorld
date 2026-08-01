@@ -208,6 +208,13 @@ packet looks one circumference long and causes rubber-banding.
 Vehicles follow the same rule. After the root vehicle folds, its passengers
 are canonicalized and the player's baselines are adjusted.
 
+Entity tracking keeps an already-established pairing for the one delivery
+transition in which a folded entity's canonical destination chunk is still
+pending. The entity must remain inside the player's periodic watch window;
+vanilla chunk readiness still controls every initial pairing and removal after
+the entity leaves that window. This prevents a stationary folded vehicle and
+its passengers from disappearing without creating a second server-side image.
+
 ## Canonical chunk graph
 
 The server must never create one chunk holder for X=-1 and another for the
@@ -239,6 +246,13 @@ At the end of every Overworld tick, `RingWorldServer` canonicalizes any entity
 that escaped `[0,C)`. Additional mixins ensure the entity manager indexes new,
 loaded, and moving entities in canonical sections.
 
+When a seam query needs an entity section that is not yet resident,
+`ServerEntityManagerMixin` canonicalizes its chunk and calls the manager's
+load-queue operation directly. It must not route this through vanilla's
+visibility updater: doing so can change an already-`TICKING` seam chunk to
+`TRACKED`, producing an intermittent post-fold freeze even though the player
+and chunk-distance graph are otherwise correct.
+
 The vanilla entity loop normally trusts an asynchronously propagated
 simulation-level graph. Its lookup is canonicalized, and
 `ServerWorldMixin` supplies a nearest-periodic-player fallback when that graph
@@ -247,6 +261,12 @@ server's configured square simulation distance, excludes spectators, and only
 affects entities already resident in the world's loaded entity list. This
 prevents arrows, mobs, items, and unoccupied vehicles from freezing just after
 X folds from `C` to zero without globally forcing entity ticks.
+
+Mob navigation has one additional chart-local state boundary. At a canonical
+fold, `RingWorldServer` shifts an active `PathNavigation` target and every path
+node by the exact fold delta, then resets the raw-coordinate stuck and timeout
+caches. The path therefore continues toward its already-selected nearest-image
+target instead of retaining nodes on the departing chart.
 
 Relationships use periodic images rather than canonical subtraction:
 
@@ -408,7 +428,11 @@ makes an interrupted save recoverable on the next save or validated migration.
 ```
 
 A complete matching client cache avoids retransmission on reconnect. Incoming
-incomplete server tiles never erase more complete local cells.
+incomplete server tiles never erase more complete local cells. Tile application
+also reports whether any present height/colour actually changed. Identical
+dirty-tile repeats are ignored, and only the first incomplete-to-complete
+transition forces an immediate cache save and GPU surface build; later real
+changes use the normal coalescing windows.
 
 ## Read-only compatibility API
 

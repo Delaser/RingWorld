@@ -196,9 +196,15 @@ public final class RingTerrainAtlas {
         }
     }
 
-    public void applyTile(int tileX, int tileZ, byte[] data) throws IOException {
+    /**
+     * Applies a server tile without erasing more-complete cached cells.
+     *
+     * @return true only when at least one present cell changed
+     */
+    public boolean applyTile(int tileX, int tileZ, byte[] data) throws IOException {
         checkTile(tileX, tileZ);
         if (data.length > MAX_TILE_BYTES + 2) throw new IOException("oversized terrain atlas tile");
+        boolean changed = false;
         try (DataInputStream input = new DataInputStream(new ByteArrayInputStream(data))) {
             int firstX = tileX * TILE_SIZE;
             int firstZ = tileZ * TILE_SIZE;
@@ -220,15 +226,21 @@ public final class RingTerrainAtlas {
                     // still-pregenerating server snapshot, so an absent wire
                     // cell must never erase valid cached terrain.
                     if (incomingPresent) {
+                        short incomingHeight = (short)height;
+                        int incomingColor = color & 0xFFFFFF;
+                        changed |= !present[index]
+                                || heights[index] != incomingHeight
+                                || colors[index] != incomingColor;
                         if (!present[index]) presentCount++;
                         present[index] = true;
-                        heights[index] = (short)height;
-                        colors[index] = color & 0xFFFFFF;
+                        heights[index] = incomingHeight;
+                        colors[index] = incomingColor;
                     }
                 }
             }
             if (input.available() != 0) throw new IOException("trailing terrain atlas tile data");
         }
+        return changed;
     }
 
     public void save(Path path) throws IOException {
