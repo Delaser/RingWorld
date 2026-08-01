@@ -173,7 +173,8 @@ After reviewing and accepting the EULA in the ignored
 ./gradlew runStrongholdTestServer --console=plain \
   -PringStrongholdTestSeed=ringworld-regression-1 \
   -PringStrongholdTestCircumference=16384 \
-  -PringStrongholdTestWidth=256
+  -PringStrongholdTestWidth=256 \
+  -PringStrongholdTestWallHeight=160
 ```
 
 The preparation task deletes only the disposable test world and stale result
@@ -190,8 +191,9 @@ height placement). It deliberately excludes X=0 from the terrain-height
 comparison because spawn preparation may have already advanced that chunk
 beyond noise generation, and rejects either selected remote chunk if it is
 already fully loaded. The gate also verifies a nearest-periodic locate target
-and Eye target continuity after a canonical seam fold, then requires textured
-rim material at both finite-Z edges and void immediately beyond them. Run again with
+and Eye target continuity after a canonical seam fold, then generates both
+exterior neighbour rows before requiring textured rim material through the
+saved wall top, air at that top, and void immediately beyond both rims. Run again with
 `-x prepareStrongholdTestWorld` to verify saved-policy and structure reload.
 
 Evidence on 2026-08-01 passed eight production seeds with complete piece-graph
@@ -205,10 +207,12 @@ safe preset.
 
 Issue #24 added two fresh isolated dimension cases to this gate with atlas
 pregeneration disabled: the aligned playable minimum `2016×256` (126×16
-chunks, 8,064 atlas cells) and wide `4096×2048` (256×128 chunks, 131,072 atlas
-cells). Both logged `[stronghold-test] PASS`, matching canonical/periodic
+chunks, 8,064 atlas cells) and wide/custom-wall `4096×2048`, wall height 192
+(256×128 chunks, 131,072 atlas cells, saved wall top Y=128). Both logged
+`[stronghold-test] PASS`, matching canonical/periodic
 height queries, bounded stronghold and portal-room geometry, an activatable
-portal, folded Eye continuity, both textured rims, and exterior void.
+portal, folded Eye continuity, both textured rims through their saved height,
+and generated exterior void.
 
 ## 26.1 integrated safe-small client gate
 

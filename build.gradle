@@ -149,6 +149,8 @@ tasks.register("prepareStrongholdTestWorld") {
 			providers.gradleProperty("ringStrongholdTestCircumference").orElse("16384"))
 	inputs.property("ringStrongholdTestWidth",
 			providers.gradleProperty("ringStrongholdTestWidth").orElse("256"))
+	inputs.property("ringStrongholdTestWallHeight",
+			providers.gradleProperty("ringStrongholdTestWallHeight").orElse("160"))
 	outputs.upToDateWhen { false }
 	doLast {
 		def eula = new File(strongholdTestDirectory, "eula.txt")
@@ -172,6 +174,8 @@ tasks.register("prepareStrongholdTestWorld") {
 				providers.gradleProperty("ringStrongholdTestCircumference").orElse("16384").get())
 		config.setProperty("widthBlocks",
 				providers.gradleProperty("ringStrongholdTestWidth").orElse("256").get())
+		config.setProperty("wallHeightBlocks",
+				providers.gradleProperty("ringStrongholdTestWallHeight").orElse("160").get())
 		config.setProperty("pregenerateTerrainAtlas", "false")
 		configFile.parentFile.mkdirs()
 		configFile.withOutputStream { config.store(it, "Disposable RingWorld stronghold test") }

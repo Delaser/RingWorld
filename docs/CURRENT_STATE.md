@@ -44,9 +44,10 @@ exercises structural-only and unsafe-curvature rejection, invalid alignment,
 and the maximum technical warning envelope. This improves pure coverage; it
 does not replace the isolated client, copied-world, or dedicated runtime gates.
 Its two new isolated stronghold/worldgen runtime cases passed at the aligned
-2,016×256 playable minimum and 4,096×2,048 wide layout, including periodic
-base-height/base-column agreement, canonical structure bounds, folded Eye
-continuity, both rims, and exterior void; atlas pregeneration was disabled.
+2,016×256 playable minimum and 4,096×2,048 wide/custom-wall-192 layout,
+including periodic base-height/base-column agreement, canonical structure
+bounds, folded Eye continuity, both rims through their saved height, their
+air boundary, and generated exterior void; atlas pregeneration was disabled.
 
 Atlas-pregeneration Phases 1b and 2 are landed through #55, #56, and #59:
 the loader-neutral job-model foundation

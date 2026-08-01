@@ -5,6 +5,7 @@ import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingStrongholdPlacement;
 import dev.ringworld.world.RingStructurePolicy;
+import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.SectionPos;
 import net.minecraft.core.registries.Registries;
@@ -162,24 +163,36 @@ final class RingWorldStrongholdTest {
                 eye.getDeltaMovement().x);
     }
 
-    /** Runtime-only check: actual generated boundary chunks own both rims and no exterior terrain. */
+    /** Runtime-only check: generated boundary/exterior chunks honour saved rim height. */
     private static void verifyFiniteRims(ServerLevel world, RingGeometry geometry) {
         int x = 0;
-        int y = world.getMinY();
+        int chunkX = SectionPos.blockToSectionCoord(x);
         int lowerRimZ = geometry.minWidthZ();
         int upperRimZ = geometry.maxWidthZ();
-        world.getChunk(SectionPos.blockToSectionCoord(x), geometry.minChunkZ());
-        world.getChunk(SectionPos.blockToSectionCoord(x), geometry.maxChunkZ());
-        if (!RingGenerationBoundary.isRimMaterial(world.getBlockState(new BlockPos(x, y, lowerRimZ)))
-                || !RingGenerationBoundary.isRimMaterial(world.getBlockState(new BlockPos(x, y, upperRimZ)))) {
-            throw new IllegalStateException("Finite rim material is missing at one or both width edges");
+        int wallTopExclusive = world.getMinY() + RingWorldSettings.get(world).wallHeightBlocks();
+        world.getChunk(chunkX, geometry.minChunkZ());
+        world.getChunk(chunkX, geometry.maxChunkZ());
+        world.getChunk(chunkX, geometry.minChunkZ() - 1);
+        world.getChunk(chunkX, geometry.maxChunkZ() + 1);
+        for (int y = world.getMinY(); y < wallTopExclusive; y++) {
+            if (!RingGenerationBoundary.isRimMaterial(world.getBlockState(new BlockPos(x, y, lowerRimZ)))
+                    || !RingGenerationBoundary.isRimMaterial(world.getBlockState(new BlockPos(x, y, upperRimZ)))) {
+                throw new IllegalStateException("Finite rim material is missing at Y=" + y);
+            }
         }
-        if (!world.getBlockState(new BlockPos(x, y, lowerRimZ - 1)).isAir()
-                || !world.getBlockState(new BlockPos(x, y, upperRimZ + 1)).isAir()) {
+        if (wallTopExclusive < world.getMaxY()
+                && (!world.getBlockState(new BlockPos(x, wallTopExclusive, lowerRimZ)).isAir()
+                || !world.getBlockState(new BlockPos(x, wallTopExclusive, upperRimZ)).isAir())) {
+            throw new IllegalStateException("Finite rim continues above saved wall top Y="
+                    + wallTopExclusive);
+        }
+        if (!world.getBlockState(new BlockPos(x, world.getMinY(), lowerRimZ - 1)).isAir()
+                || !world.getBlockState(new BlockPos(x, world.getMinY(), upperRimZ + 1)).isAir()) {
             throw new IllegalStateException("Exterior finite-width terrain is not void");
         }
-        RingWorldMod.LOGGER.info("[stronghold-test] rims lowerZ={} upperZ={} exteriorVoid=true",
-                lowerRimZ, upperRimZ);
+        RingWorldMod.LOGGER.info(
+                "[stronghold-test] rims lowerZ={} upperZ={} wallTopY={} exteriorVoid=true",
+                lowerRimZ, upperRimZ, wallTopExclusive);
     }
 
     /**

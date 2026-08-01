@@ -501,12 +501,14 @@ rendered frame under the destructive harness load; the rim interval averaged
 16.9 ms.
 
 Issue #24 also ran the isolated dedicated stronghold/worldgen gate against the
-aligned 2,016×256 playable minimum and a 4,096×2,048 wide layout, with atlas
-pregeneration disabled. Both passed periodic base-height/base-column queries,
-canonical stronghold/portal-room bounds, portal activation, folded Eye target,
-both textured rim rows, and exterior void. The minimum run reported 126×16
-chunks and 8,064 atlas cells; the wide run reported 256×128 chunks and 131,072
-cells. These targeted server checks complement, rather than replace, existing
+aligned 2,016×256 playable minimum and a 4,096×2,048 wide layout with custom
+192-block wall height, with atlas pregeneration disabled. Both passed periodic
+base-height/base-column queries, canonical stronghold/portal-room bounds,
+portal activation, folded Eye target, both textured rim rows through their
+saved wall height, and generated exterior void. The minimum run reported
+126×16 chunks and 8,064 atlas cells; the wide/custom-wall run reported 256×128
+chunks, 131,072 cells, wall top Y=128, and cloud base Y=136. These targeted
+server checks complement, rather than replace, existing
 safe-small/production client and multiplayer evidence.
 
 The derived-pitch 6-chunk case then completed on 2026-07-27. It aimed directly
