@@ -123,15 +123,18 @@ public final class RingWorldServer {
     }
 
     private static void attachGeneratorSettings(ServerLevel world, RingGeometry geometry, int wallHeightBlocks) {
+        boolean guaranteeStronghold = RingStructurePolicy.get(world).guaranteesStronghold();
         ChunkGenerator generator = world.getChunkSource().getGenerator();
         if (generator instanceof RingWorldGeneratorAccess access) {
             access.ringworld$setGeometry(geometry);
             access.ringworld$setWallHeight(wallHeightBlocks);
+            access.ringworld$setGuaranteeStronghold(guaranteeStronghold);
         }
         if (world.getChunkSource().getGeneratorState() instanceof RingStructureStateAccess access) {
-            access.ringworld$setStructurePolicy(
-                    geometry, RingStructurePolicy.get(world).guaranteesStronghold());
+            access.ringworld$setStructurePolicy(geometry, guaranteeStronghold);
         }
+        RingWorldMod.LOGGER.debug("Attached RingWorld generator policy: guaranteeStronghold={}",
+                guaranteeStronghold);
     }
 
     /** Allocation-free geometry lookup for chunk and network hot paths. */
