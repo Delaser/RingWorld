@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 224 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 233 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -34,8 +34,11 @@ The Nether and End remain vanilla.
 > seam-crossing mineshafts, saved scarce-structure outcomes, and exact reload.
 > The mandatory handshake now has an explicit deadline and exact channel-set
 > compatibility, and the 26.1 positional packet surface has a documented
-> support boundary. Remaining pre-release compatibility gates are still
-> outstanding, so this is not a stable release yet. The first 26.1.2 Fabric
+> support boundary. Custom-size previews now use the measured production
+> generation/disk reference, and compatibility API/contract version 1 lists
+> known unsupported renderer and topology combinations. Release-candidate
+> packaging and independent review remain, so this is not a stable release
+> yet. The first 26.1.2 Fabric
 > alpha is an early test build, not a stable or broadly compatible release.
 > The validated server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
@@ -218,7 +221,8 @@ The editor provides:
 - an optional guaranteed ocean monument for the new world;
 - validation of chunk alignment, radial/build-height safety, finite-rim
   interior, coordinate bounds, and atlas resource limits;
-- estimates for chunks, radius, atlas size, GPU texture, and mesh cost;
+- estimates for chunks, radius, atlas/GPU cost, and measured-reference full
+  generation time and world-data growth;
 - a final confirmation because the saved dimensions are immutable.
 
 Dedicated servers use `config/ringworld.properties` before first world load:
@@ -384,6 +388,7 @@ measurements, and safe handling rules are in [Testing](docs/TESTING.md).
 | [Atlas pregeneration plan](docs/ATLAS_PREGENERATION_PLAN.md) | One-click complete-map generation with resumable background and headless execution |
 | [Mixin map](docs/MIXIN_MAP.md) | Ownership and risk of each Minecraft injection |
 | [Network protocol](docs/NETWORK_PROTOCOL.md) | Geometry handshake, atlas transport, and presentation mapping |
+| [Compatibility contract](docs/COMPATIBILITY.md) | Supported baseline, known conflicts, versioned API, and loader boundary |
 | [Operations](docs/OPERATIONS.md) | Configuration, installation, packaging, deployment, and recovery |
 | [Rendering](docs/RENDERING.md) | Curvature, visibility, terrain proxy, sky, clouds, and handoff |
 | [Atlas visual baseline](docs/ATLAS_VISUAL_BASELINE_2026-08-01.md) | Production and safe-small 6/12/28 profile-5 captures, frame pacing, and resource evidence |
@@ -398,9 +403,12 @@ relevant document in the same commit.
 ## Compatibility API
 
 `dev.ringworld.api.RingWorldApi` exposes read-only helpers for detecting a
-RingWorld and converting canonical coordinates into physical ring-space
-positions. The API is intentionally small; presentation-chart negotiation and
-broad third-party compatibility contracts are not yet stable.
+RingWorld and converting canonical, nearest-presentation, and physical
+ring-space positions and poses. `RingWorldApi.API_VERSION` and
+`RingCompatibilityContract.VERSION` are both 1. The API never mutates world or
+chart state. See the explicit [compatibility contract](docs/COMPATIBILITY.md)
+for the supported baseline, known unsupported mods/shaders, and integration
+rules.
 
 ## License
 

@@ -554,12 +554,26 @@ only a still-current world/revision result and owns the final GPU upload.
 boolean isRingWorld(ServerLevel world)
 RingWorldSettings settings(ServerLevel world)
 RingGeometry geometry(ServerLevel world)
+Vec3 canonicalPosition(ServerLevel world, Vec3 intrinsicPosition)
+Vec3 nearestPresentationPosition(ServerLevel world, Vec3 canonicalPosition,
+                                 double referencePresentationX)
+Vec3 physicalPosition(ServerLevel world, Vec3 intrinsicPosition)
+RingPhysicalPose physicalPose(ServerLevel world, Vec3 intrinsicPosition,
+                              float yawDegrees, float pitchDegrees)
 ```
 
-It is server-world only and read-only. `settings` returns `null` outside the
-Overworld; `geometry` throws for a non-ring world. Mods needing pose conversion
-can use the returned `RingGeometry` helpers, but there is not yet a formal
-client presentation-chart API or negotiated compatibility capability.
+It is server-world only, read-only, and explicitly versioned by
+`RingWorldApi.API_VERSION == 1`. `settings` returns `null` outside the
+Overworld; all conversion helpers require a RingWorld Overworld. Canonical
+positions are suitable for server ownership, nearest-presentation positions
+are transient observer-local images, and `RingPhysicalPose` provides physical
+position, tangent/up/width basis, and view direction for rendering without
+changing gameplay physics. It does not expose mutable client-chart ownership.
+
+`RingCompatibilityContract.VERSION == 1` contains the loader-neutral inventory
+of high-confidence unsupported mod IDs. The Fabric adapter only discovers
+loaded IDs and logs matches. See [`COMPATIBILITY.md`](COMPATIBILITY.md) for the
+supported baseline and integration contract.
 
 ## Gravity model
 

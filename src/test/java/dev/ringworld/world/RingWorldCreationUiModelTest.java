@@ -26,6 +26,10 @@ class RingWorldCreationUiModelTest {
         assertTrue(report.canonicalChunkCount() > 0);
         assertTrue(report.atlasCellCount() > 0);
         assertTrue(report.estimatedAtlasBytes() > 0);
+        assertTrue(report.costEstimate().estimatedPregenerationSeconds() > 0);
+        assertTrue(report.costEstimate().estimatedGeneratedWorldBytes() > 0);
+        assertTrue(report.costEstimate().estimatedAtlasWireBytes() > 0);
+        assertTrue(report.costEstimate().minimumAtlasTransferTicks() > 0);
         assertTrue(profile.textureColumns() > 0);
         assertTrue(profile.textureRows() > 0);
         assertTrue(profile.estimatedGpuTextureBytes() > 0);
