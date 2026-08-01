@@ -456,6 +456,13 @@ an existing `.prism-data` directory containing sentinel account, save, option,
 and configuration files. A new ZIP whose launcher only initializes a missing
 instance does not update existing users and can leave a stale network codec.
 
+The macOS launcher validates Java rather than trusting a configured path. It
+selects a detected Java 25 runtime from the prior instance or common macOS,
+Homebrew, SDK, and user-local locations. If none exists it leaves Java
+selection to Prism. Package tests isolate `HOME` so both the no-runtime
+fallback and replacement of a stale Java 21 path by a discovered Java 25 path
+are deterministic.
+
 The builder fails closed on stale MIT/evaluation metadata, a missing or
 mismatched licence, a stale compatibility API version, source jars, archive
 traversal, accounts, saves, logs, options, screenshots, resource packs,

@@ -73,7 +73,9 @@ and an exact source revision; it does not upload or change the listing. See
 Optional Prism client bundles and a dedicated-server overlay can be assembled
 locally with `scripts/prepare_release_packages.py`. They are convenience
 artifacts only: the standalone Modrinth jar remains the normal installation
-path. The builder requires an exact public source commit, excludes account and
+path. The macOS launcher selects an already-installed Java 25 when it can and
+otherwise delegates Java installation to Prism. The builder requires an exact
+public source commit, excludes account and
 runtime state, creates reproducible archives and checksums, and has no website,
 upload, deployment, or service-control capability.
 

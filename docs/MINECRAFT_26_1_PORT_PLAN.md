@@ -469,6 +469,8 @@ packaging-only build changes after coordination
 Tasks:
 
 - define a clean 26.1.2 Prism instance with Java 25;
+- discover and validate an existing macOS Java 25 runtime before falling back
+  to Prism's automatic Java installation;
 - preserve account, save, option, and local configuration state during
   launcher updates;
 - retain the 1.21.11 package as a separately labelled rollback;

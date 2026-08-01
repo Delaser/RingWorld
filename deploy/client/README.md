@@ -33,9 +33,12 @@ On every start, each launcher copies the packaged RingWorld and Fabric API jars
 plus `mmc-pack.json` into the existing `RingWorld-Test` Prism instance. It
 removes superseded jars with those two managed filename prefixes. It does not
 replace Prism accounts, saves, options, screenshots, resource packs, an
-existing RingWorld config, or unrelated `instance.cfg` values. It deliberately
-sets only `AutomaticJava=true` and `OverrideJavaLocation=false`, allowing Prism
-to replace an incompatible Java 21 override with Java 25.
+existing RingWorld config, or unrelated `instance.cfg` values. On macOS it
+validates the existing Java path plus common system, Homebrew, SDK, and
+user-local locations. A detected Java 25 runtime is selected explicitly; an
+older override is never reused. If no Java 25 runtime is found, it sets
+`AutomaticJava=true` and `OverrideJavaLocation=false` so Prism can install or
+select one. The Windows launcher retains that automatic Prism path.
 
 This makes an in-place bundle update safe:
 
