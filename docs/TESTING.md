@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The current `codex/minecraft-26.1-port` branch requires Java 25. Common and
-client compilation now pass together, and the development build runs all 89
+client compilation now pass together, and the development build runs all 93
 unit/parameterized cases:
 
 ```sh
@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The 2026-07-28 suite contains 89 unit/parameterized cases:
+The 2026-07-29 suite contains 93 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -48,6 +48,7 @@ The 2026-07-28 suite contains 89 unit/parameterized cases:
 | `RingDimensionMatrixTest` | Safe-small, narrow, production, long/narrow, and wide/medium layouts at 6/12/28/64 chunk views |
 | `RingLayoutFingerprintTest` | Immutable layout and rim semantic identity |
 | `RingRenderProfileTest` | Shared handoff values, texture/mesh budgets, and whole-ring clamping |
+| `RingEntityTrackingTest` | Existing pairing is retained only for a watched pending canonical destination; initial and out-of-window pairings remain rejected |
 | `RingSkyCycleTest` | Fixed angle, reduced vanilla-sun size, noon/dawn/dusk/midnight tone keyframes, smooth interpolation, time wrapping |
 | `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, completion, cache monotonicity, world hash |
 | `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
@@ -385,14 +386,18 @@ chunks. Client A derives its next positive seam from its current presentation
 chart; canonical X=2044 may correctly arrive as presentation X=-4, so the
 driver must never aim at one hard-coded presentation seam. The vehicle probe
 likewise compares the boat against the seam image nearest each observer rather
-than canonical `C`. The server holds the boat on the high side until both
-clients acknowledge that they have acquired the entity, then advances it
-through deterministic canonical samples. That separates actual seam
-reindexing/interpolation failures from client-startup packet timing.
+than canonical `C`. The server holds the boat and its armor-stand passenger on
+the high side until both clients acknowledge the same identities, then
+advances it through deterministic canonical samples. Both sides reject any
+missing tick, replacement identity, lost mount, rotation discontinuity, or
+motion beyond the fixture's one-block/0.05-speed limits. That separates actual
+seam reindexing/interpolation failures from client-startup packet timing.
 Intentional-teleport return checks likewise compare periodic positions rather
 than requiring canonical `C-4` to appear in one particular client chart.
 Fixture initialization removes stale automated boats from a reused harness
-world. The server detects a fold from the large canonical-coordinate
+world, repeats that cleanup after the clients load the seam chunks, and seals
+the seam lane so an ocean seed cannot refill it during the test. The server
+detects a fold from the large canonical-coordinate
 discontinuity plus its small positive periodic step, so an overloaded tick
 does not have to sample the player inside the final one-block interval.
 
@@ -404,7 +409,8 @@ The scenario verifies:
 - server player query and tracking cross the seam;
 - real melee damage crosses the seam;
 - a block interaction/update crosses the seam;
-- a server-owned boat stays visible and canonical;
+- a server-owned boat and its passenger retain identity, mount, orientation,
+  zero fixture velocity, visibility, and canonical ownership through the fold;
 - an intentional long teleport re-keys the client chart;
 - client B disconnects and reconnects cleanly;
 - both clients report their phase matrix.
@@ -417,13 +423,14 @@ Success is:
 
 in `run-multiplayer/server/logs/latest.log`.
 
-The isolated Minecraft 26.1.2/Java 25 run on 2026-07-28 achieved that result
-on a fresh 2,048×416 server. Both clients acknowledged format 2; the natural
-seam crossing was canonical with 0.25-block maximum packet and tick samples;
-visibility/query/distance, real melee, block update/interaction, shared boat,
-long teleport, periodic return, planned disconnect, and reconnect all passed.
-The clients were then stopped and the server saved all dimensions and exited
-cleanly.
+The isolated Minecraft 26.1.2/Java 25 run on 2026-07-31 achieved that result
+on a reused 2,048×416 server whose seam crossed an ocean. Both clients
+acknowledged format 2; the natural seam crossing was canonical with a
+0.25-block maximum packet step; visibility/query/distance, real melee, block
+update/interaction, boat and passenger identity/mount continuity, long
+teleport, periodic return, planned disconnect, and reconnect all passed. The
+seed-independent sealed lane remained dry, and stale persisted boats that
+loaded only after login were removed before the new fixture was acquired.
 
 The integrated visual/seam harness deliberately holds position for 300 client
 ticks after its first seam screenshot. This keeps the seam chunks resident
