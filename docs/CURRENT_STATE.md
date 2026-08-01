@@ -13,8 +13,8 @@ and Minecraft 26.1.2; the release declares Fabric API as required and requires
 the mod on both client and server. The uploaded jar has SHA-256
 `cddba0f0654c0b82c451670f4c9afb477c997b379aa33bbbd173aa3651e5ce60`
 and points to public source revision `3f6cb9e`. It is explicitly an alpha test
-build; submission does not close the visual, packaging, staging, scaling, or
-compatibility gates below.
+build; submission does not close the remaining automated-harness, packaging,
+staging, scaling, or compatibility gates below.
 
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
