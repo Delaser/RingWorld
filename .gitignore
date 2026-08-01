@@ -8,6 +8,7 @@ run-production-lifecycle/
 run-curved-object-capture/
 run-atlas-ui/
 run-stronghold-test/
+run-headless-prewarm/
 logs/
 dist/
 .codex-tmp/

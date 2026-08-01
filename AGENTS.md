@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 123 unit/parameterized cases pass.
+gate. Common/client compilation and all 125 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -204,7 +204,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   hashes, performance evidence, and protected rollback inventory.
 - `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`: historical Java 25/26.1.2
   compiler inventory and the subsequent green build/server checkpoint.
-- `dist/`, `run/`, `run-multiplayer/`, `run-atlas-ui/`, `logs/`, `.gradle/`, and `build/`:
+- `dist/`, `run/`, `run-multiplayer/`, `run-atlas-ui/`, `run-headless-prewarm/`, `logs/`, `.gradle/`, and `build/`:
   generated or local runtime state; all are intentionally ignored.
 
 The complete mixin ownership table is in
@@ -326,6 +326,14 @@ version numbers.
   atlas from the Fabric adapter. Retain a selected canonical chunk until a
   full result is captured, including retry/cancel/unload paths, or a failed
   future can skip terrain permanently.
+- `-Dringworld.headlessPrewarm=true` is an explicit dedicated-server-only
+  adapter mode. It suppresses normal background autostart, safely replaces
+  only the unstarted config-disabled `IDLE` handle, rejects joins, and waits
+  for the service's verified atlas completion before normal world save, atomic
+  JSON result write, and halt. SIGTERM writes `INTERRUPTED` after checkpoint;
+  the Gradle wrapper, not Minecraft's process exit code, converts a non-
+  `COMPLETE` terminal report to failure. Use only `run-headless-prewarm/` or a
+  separately prepared disposable runtime directory; never open a copy source.
 - `ring_surface.vsh` deliberately clamps only far-out proxy clip-space Z while
   preserving X/Y/W. Minecraft's level far plane is derived from chunk render
   distance and clips most of a production 16,384-block cylinder, especially

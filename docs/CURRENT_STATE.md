@@ -1,9 +1,10 @@
 # Current state
 
-Last audited: 2026-07-28 against the final Minecraft 1.21.11 implementation
-tagged `mc-1.21.11-final` at commit `2c98650`.
+Last audited: 2026-08-01 on the public `main` integration line. The final
+Minecraft 1.21.11 implementation remains historical provenance at
+`mc-1.21.11-final` / `2c98650`.
 
-The Minecraft 26.1.2 port is active on `codex/minecraft-26.1-port`; see
+The Minecraft 26.1.2 port is integrated on `main`; see
 [`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md) and the
 [`final baseline`](MINECRAFT_1_21_11_FINAL_BASELINE.md).
 
@@ -31,14 +32,19 @@ The ignored local evidence and exact procedures are recorded in
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
 
-Atlas-pregeneration Phase 1b now has the loader-neutral job-model foundation
+Atlas-pregeneration Phases 1b and 2 are landed through #55, #56, and #59:
+the loader-neutral job-model foundation
 plus `RingAtlasPregenerationService`, the sole world-owned server atlas writer.
 It owns cursor/future/retry/control/save/completion state; Fabric commands,
 lifecycle hooks, and client tile streaming delegate through
 `RingTerrainAtlasServer`. One in-flight chunk, the 64-task player-work guard,
 200-tick checkpoints, 20-tick tile publication, format-5 bytes, partial
-resume, and verified-final-save completion are retained. UI, new payloads,
-cancel command exposure, and headless prewarm remain follow-up work.
+resume, and verified-final-save completion are retained. The Fabric pause-menu
+map, confirmation/progress controls, cancel lifecycle, versioned payloads,
+permissions, and completion toast share that same handle; the suite now has
+125 unit/parameterized cases and the real GUI-scale-4 fixture passes. The
+explicit Fabric headless prewarm adapter remains the separate #23 scope: it
+must stay a thin launch/report/save/stop coordinator over the same service.
 
 Port Phase 1 is complete: the project moved to official Mojang mappings while
 remaining on Minecraft 1.21.11. All 73 tests, the destructive
@@ -52,7 +58,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 123 unit/parameterized cases pass, and Loom produces
+temporary shims, all 125 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -551,9 +557,9 @@ Priorities are ordered by player-visible value and architectural leverage.
    - decide how block edits invalidate surface cells;
    - support progressive rendering safely if desired;
    - benchmark production-scale memory/network/pregeneration;
-   - extract the current scheduler into the resumable service and headless
-     prewarm workflow specified in `ATLAS_PREGENERATION_PLAN.md`;
-   - retain the implemented admin status/pause/resume commands.
+   - run the new headless prewarm recovery fixtures and production benchmark;
+   - retain the implemented service, map controls, and admin status/pause/resume
+     commands without introducing another writer.
 4. **Broaden multiplayer gameplay regression**
    - death/respawn, portals, maps, more vehicles/projectiles;
    - redstone and cross-seam block entities;

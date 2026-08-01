@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 123 unit/parameterized cases:
+The active suite contains 125 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -57,6 +57,8 @@ The active suite contains 123 unit/parameterized cases:
 | `RingAtlasDirtyTileQueueTest` | Final dirty tile stays published until the Fabric adapter drains it, including a completion transition in the same server tick |
 | `RingAtlasPregenerationServiceStorageTest` | Fresh/partial/complete/corrupt format-5 service persistence seams: interrupted partial checkpoints resume without a byte rewrite, complete reload is idempotent, and corrupt current input is rejected |
 | `RingAtlasPregenerationSchedulingPolicyTest` | Config-disabled `IDLE`, paused, saving, and cancelled handles cannot schedule chunks; only a running handle may request work |
+| `AtlasPregenerationHeadlessPolicyTest` | Explicit headless startup suppresses normal background autostart and replaces only the unstarted config-disabled `IDLE` handle |
+| `AtlasPregenerationReportTest` | Loader-neutral terminal report validation requires complete evidence or documented unavailable-identity sentinels |
 | `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
 | `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
@@ -115,6 +117,36 @@ The 2026-07-28 checkpoint demonstrated:
 
 These are server/storage gates only. They do not replace `runClient`, visual,
 seam, or two-client multiplayer validation.
+
+## Headless atlas prewarm dedicated-server gate
+
+After reviewing the ignored `run-headless-prewarm/eula.txt` and setting
+`eula=true`, run a fresh safe-small prewarm:
+
+```sh
+./gradlew runHeadlessPrewarmServer --console=plain
+```
+
+For a copied fixture, first place the source save under ignored `run/saves/`,
+then run:
+
+```sh
+./gradlew runHeadlessPrewarmServer --console=plain \
+  -PringHeadlessPrewarmSource="save-folder-id"
+```
+
+The preparation task deletes and writes only `run-headless-prewarm/world`; it
+checks the source identifier, reads the source only to copy it, and never
+launches the source. The dedicated adapter suppresses ordinary background
+autostart, disables empty-server pausing, immediately disconnects accepted
+player joins, and uses normal
+server ticks. Inspect `world/ringworld-prewarm/progress.json` and
+`result.json`. The finalizer accepts only `"status": "COMPLETE"`, so corrupt,
+incompatible, ordinary-existing, interrupted, and failed fixtures fail even if
+Minecraft exits zero. Stop during generation to verify checkpoint/restart: the
+first result is `INTERRUPTED` and the next run resumes from durable atlas cells.
+Use `-PringHeadlessPrewarmResume=true` for that second run; the default fresh
+task deliberately deletes its disposable world.
 
 ## Guaranteed stronghold dedicated-server gate
 

@@ -6,7 +6,9 @@ cursor/selected future/retry state, process-local controls, checkpointing, and
 verified completion. Fabric commands, lifecycle hooks, and client tile streams
 remain in `RingTerrainAtlasServer`. The pause-menu map, versioned status/control
 payloads, server-side authority checks, and completion toast now reuse that
-same service; headless prewarm remains follow-up work.
+same service. Phase 3's Fabric-only dedicated-server adapter is implemented:
+it owns launch gating, JSON evidence, world save, and stop after the service's
+verified completion, without adding another scheduler or writer.
 
 ## Outcome
 
@@ -165,10 +167,11 @@ policy (one in-flight chunk and 64 pending-task limit). Non-default model
 policy fields are rejected: `checkpointIntervalChunks=200` remains reserved
 for a later policy implementation, while the active runtime preserves the
 legacy 200-server-tick save cadence; the model's 20-tick progress setting is
-likewise reserved while publication stays on its existing cadence. It rejects
-`stopServerWhenComplete`:
-headless stop is Phase 3 work. `BACKGROUND` and `INTERACTIVE` are scheduling
-intent labels at this stage and use the same conservative execution path.
+likewise reserved while publication stays on its existing cadence.
+`stopServerWhenComplete` is accepted only as `HEADLESS_PREWARM` intent; the
+Fabric coordinator, rather than the service, owns the later world save, report,
+and halt. `BACKGROUND` and `INTERACTIVE` are scheduling intent labels at this
+stage and use the same conservative execution path.
 `completedChunks` reports chunks completed by the current handle; durable
 overall completion is represented by the atlas present-cell count and total.
 
@@ -246,7 +249,8 @@ in-flight count, queue pressure, checkpoint age, and last error.
 
 ### Headless prewarm-and-stop
 
-Add an explicit server launch option and development Gradle task. The launch:
+The Fabric implementation provides the explicit server launch option and
+development Gradle task. The launch:
 
 1. opens or creates only the selected RingWorld copy;
 2. validates immutable settings and atlas world hash;
@@ -256,7 +260,8 @@ Add an explicit server launch option and development Gradle task. The launch:
 6. waits through normal server ticks rather than blocking;
 7. atomically saves the complete atlas and world;
 8. verifies the saved atlas by reopening its header, identity, and completion;
-9. stops the server with success or a non-zero failure result.
+9. stops the Minecraft server; the Gradle wrapper converts a non-`COMPLETE`
+   report into the non-zero failure result.
 
 The source world for a copied-world fixture is always read-only. Runtime
 worlds, logs, screenshots, reports, account data, and atlas caches remain
@@ -341,12 +346,33 @@ replies. Any RingWorld player may observe; only the integrated owner or a
 dedicated-server gamemaster can control. A NeoForge adapter can register these
 same payload layouts and call the loader-neutral model/service.
 
-### Phase 3: headless prewarm
+### Phase 3: headless prewarm (implemented on Fabric)
 
-- Add copied-world preparation and `prewarm-and-stop`.
-- Emit machine-readable result and failure files.
-- Verify no source-world mutation and no credentials/runtime state in output.
-- Document operational commands, disk implications, backup, and recovery.
+- `runHeadlessPrewarmServer` starts the explicit opt-in
+  `-Dringworld.headlessPrewarm=true` mode after preparing only
+  `run-headless-prewarm/world`; `-PringHeadlessPrewarmSource=<save-folder-id>`
+  copies an ignored source from `run/saves` without opening it in place.
+  `-PringHeadlessPrewarmResume=true` retains only the existing disposable
+  runtime world, rejects a copy source, and resumes from its atlas cells.
+- The adapter suppresses normal background autostart, safely replaces only the
+  unstarted disabled-background `IDLE` handle, rejects accepted joins
+  immediately, disables vanilla empty-server pausing in its disposable fixture,
+  and uses the one-in-flight service. It saves the world only
+  after the service atomically saves and reopens the complete atlas.
+- `world/ringworld-prewarm/progress.json` is atomically refreshed every 20
+  ticks with schema version, identity, exact durable `completedChunks`,
+  separately named `generatedChunksThisRun`, rate, ETA, and error. A result
+  filename of `progress.json` is rejected so progress and terminal paths cannot
+  collide.
+  `result.json` records `COMPLETE`, `FAILED`, `INTERRUPTED`, or `REJECTED`,
+  elapsed time, exact durable canonical chunks/cells, atlas path, and failure
+  reason. Rejected startup declares `identityAvailable:false` and documented
+  zero/null identity sentinels rather than inventing a layout.
+- SIGTERM/server stop first consumes any completed selected future, checkpoints
+  the same service, then reports `INTERRUPTED`; restart resumes from atlas
+  cells. Existing region worlds without RingWorld settings are rejected by the
+  immutable-settings guard. The Gradle finalizer turns any non-`COMPLETE`
+  terminal JSON into a nonzero command result.
 
 Exit gate: fresh and copied safe-small worlds prewarm, reopen, serve the
 complete atlas to a clean client, and stop cleanly.

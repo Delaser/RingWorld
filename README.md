@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 123 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 125 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -250,8 +250,8 @@ The current build includes:
 - a fixed ring-centred sun with smooth global tone and intensity changes;
 - persistent tiled terrain-atlas transfer and client cache;
 - a loader-neutral atlas-pregeneration job model and deterministic canonical
-  cursor, ready for a future shared server service without changing the
-  current background scheduler;
+  cursor plus one world-owned service shared by background, map, and explicit
+  headless prewarm runs;
 - atlas-backed full-ring rendering at normal chunk distance;
 - configurable immutable dimensions with creation-time validation and cost
   preview;
@@ -313,7 +313,18 @@ Additional automated runs:
 ./gradlew runLayoutSwitchClient
 ./gradlew runProductionProjectionClient -PringProjectionWorld="save-folder-id"
 ./gradlew runProductionLifecycleClient -PringProductionLifecycleSource="save-folder-id"
+./gradlew runHeadlessPrewarmServer
 ```
+
+`runHeadlessPrewarmServer` works only in its ignored disposable run directory.
+After the server owner accepts its local EULA, it creates or copies only that
+runtime world, rejects player joins, resumes from atlas cells after a stop, and
+writes `world/ringworld-prewarm/progress.json` plus `result.json`. The Gradle
+finalizer turns any non-`COMPLETE` terminal report into a nonzero command
+result. To prepare a read-only source copy, use
+`-PringHeadlessPrewarmSource="save-folder-id"`; it reads only `run/saves` and
+never launches that source in place. After an interrupted disposable run, add
+`-PringHeadlessPrewarmResume=true` to retain that runtime world and resume it.
 
 The complete fixtures, expected log markers, screenshots, performance
 measurements, and safe handling rules are in [Testing](docs/TESTING.md).

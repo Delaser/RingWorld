@@ -202,13 +202,33 @@ Deleting an atlas cache is recoverable but forces regeneration or
 retransmission. Do not delete the world settings state unless intentionally
 invalidating the world.
 
-The current release performs this work automatically through its background
-server-tick scheduler, so walking a lap is not required, but it lacks a clear
-player control and progress UI. A **Generate Entire Ring** button, reusable
-function, and explicit operator and headless `prewarm-and-stop` workflows are
-planned in [`ATLAS_PREGENERATION_PLAN.md`](ATLAS_PREGENERATION_PLAN.md); those
-commands and launch modes must not be advertised as implemented until their
-integration gates pass.
+For an explicit non-interactive preparation run, use the checked-in Gradle
+fixture only after accepting its disposable EULA:
+
+```sh
+./gradlew runHeadlessPrewarmServer --console=plain
+./gradlew runHeadlessPrewarmServer --console=plain \
+  -PringHeadlessPrewarmSource="save-folder-id"
+./gradlew runHeadlessPrewarmServer --console=plain \
+  -PringHeadlessPrewarmResume=true
+```
+
+The second form copies `run/saves/<save-folder-id>` to the ignored
+`run-headless-prewarm/world`; it never opens or modifies the source. The first
+form creates only that selected disposable world. Both use the normal dedicated
+server world directory, disable empty-server pausing, reject an accepted join
+immediately, and write atomic
+JSON under `world/ringworld-prewarm/`: `progress.json` every 20 ticks and
+`result.json` on `COMPLETE`, `FAILED`, `INTERRUPTED`, or `REJECTED`. Reports
+carry schema version, elapsed time, exact durable chunks/cells, world hash,
+layout fingerprint, atlas path, rate/ETA/error where relevant, and a failure
+reason. A rejected startup has `identityAvailable:false` and zero/null identity
+sentinels. An external SIGTERM consumes completed work and checkpoints before
+writing `INTERRUPTED`; rerun with `-PringHeadlessPrewarmResume=true` to retain
+the disposable runtime world and resume from saved atlas cells. The Gradle
+finalizer fails unless the terminal result is `COMPLETE`, because Minecraft can
+exit zero after a failed run. Do not add the headless JVM option to an ordinary
+service unit or point it at a production/source world.
 
 Copied 1.21.11 worlds may also contain the legacy server atlas at
 `<world>/data/ringworld-terrain-atlas.rwat.gz`. It migrates once only when the

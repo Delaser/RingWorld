@@ -55,3 +55,12 @@ Atlas administration commands are:
 /ringworld atlas pause
 /ringworld atlas resume
 ```
+
+For offline preparation, use a separately prepared disposable server directory
+and add `-Dringworld.headlessPrewarm=true` only for that one launch. It rejects
+accepted joins immediately, writes `world/ringworld-prewarm/progress.json` and
+`result.json`, then stops after the atlas is verified and the world is saved.
+Do not put this JVM flag into `ringworld.service`, and do not point it at an
+authoritative source or live world. The development wrapper
+`./gradlew runHeadlessPrewarmServer` checks the terminal JSON because Minecraft
+may return exit code zero after a recorded prewarm failure.

@@ -64,6 +64,9 @@ public final class RingTerrainAtlasServer {
     }
 
     public static void load(ServerLevel world) { RingAtlasPregenerationService.load(world); }
+    public static void load(ServerLevel world, boolean allowBackgroundAutostart) {
+        RingAtlasPregenerationService.load(world, allowBackgroundAutostart);
+    }
     public static void unload(ServerLevel world) {
         RingAtlasPregenerationService.unload(world);
         STREAMS.entrySet().removeIf(entry -> entry.getValue().world == world);
