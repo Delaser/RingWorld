@@ -3,6 +3,7 @@ package dev.ringworld.server;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.net.RingAtlasPregenerationStatusPayload;
 import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
+import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
 import dev.ringworld.world.AtlasPregenerationAccess;
 import dev.ringworld.world.AtlasPregenerationAction;
@@ -88,36 +89,47 @@ public final class RingTerrainAtlasServer {
     /** Sent after geometry acknowledgement, before the client asks for missing tiles. */
     public static void sendMetadata(ServerPlayer player) {
         ServerLevel overworld = player.level().getServer().getLevel(Level.OVERWORLD);
-        if (overworld == null || !ServerPlayNetworking.canSend(player, RingTerrainAtlasMetadataPayload.ID)) return;
+        if (overworld == null) return;
+        if (!ServerPlayNetworking.canSend(player, RingTerrainAtlasMetadataPayload.ID)
+                || !ServerPlayNetworking.canSend(player, RingTerrainAtlasTilePayload.ID)
+                || !ServerPlayNetworking.canSend(player, RingTerrainAtlasRevisionPayload.ID)) {
+            player.connection.disconnect(Component.literal(
+                    "RingWorld client terrain-atlas protocol is missing or out of date."));
+            return;
+        }
         RingTerrainAtlas atlas;
         try { atlas = RingAtlasPregenerationService.atlas(overworld); }
         catch (IllegalStateException ignored) { return; }
         ServerPlayNetworking.send(player, new RingTerrainAtlasMetadataPayload(atlas.worldHash(), atlas.sampleStep(),
-                atlas.columns(), atlas.rows(), RingTerrainAtlas.TILE_SIZE, atlas.presentCount(), atlas.isComplete()));
+                atlas.columns(), atlas.rows(), RingTerrainAtlas.TILE_SIZE, atlas.presentCount(), atlas.isComplete(),
+                atlas.revision()));
         // Geometry acknowledgement is the first point at which a client can
         // safely bind this status to a RingWorld layout.
         PROGRESS_OBSERVERS.put(player.getUUID(), new ProgressObserver(overworld));
         sendPregenerationStatus(player, overworld, Optional.empty());
     }
 
-    public static void requestTiles(ServerPlayer player, long worldHash, boolean cacheComplete) {
+    public static void requestTiles(ServerPlayer player, long worldHash, long clientRevision,
+                                    boolean cacheComplete) {
         ServerLevel overworld = player.level().getServer().getLevel(Level.OVERWORLD);
         if (overworld == null) return;
         RingTerrainAtlas atlas;
         try { atlas = RingAtlasPregenerationService.atlas(overworld); }
         catch (IllegalStateException ignored) { return; }
-        if (atlas.worldHash() != worldHash) return;
-        if (cacheComplete) {
-            STREAMS.remove(player.getUUID());
-            return;
-        }
+        if (atlas.worldHash() != worldHash || clientRevision < 0L) return;
         Queue<RingAtlasPregenerationService.TileCoordinate> tiles = new ArrayDeque<>();
-        for (int z = 0; z < atlas.tileRows(); z++) for (int x = 0; x < atlas.tileColumns(); x++) {
-            tiles.add(new RingAtlasPregenerationService.TileCoordinate(x, z));
+        boolean exactCompleteCache = cacheComplete && clientRevision == atlas.revision();
+        if (!exactCompleteCache) {
+            for (int z = 0; z < atlas.tileRows(); z++) for (int x = 0; x < atlas.tileColumns(); x++) {
+                tiles.add(new RingAtlasPregenerationService.TileCoordinate(x, z));
+            }
         }
-        STREAMS.put(player.getUUID(), new ClientStream(overworld, tiles));
-        RingWorldMod.LOGGER.info("Streaming {} RingWorld terrain atlas tiles (~{} KiB) to {}", tiles.size(),
-                Math.max(1L, atlas.estimatedWireBytes() / 1_024L), player.getName().getString());
+        STREAMS.put(player.getUUID(), new ClientStream(overworld, tiles,
+                exactCompleteCache ? clientRevision : -1L));
+        if (!tiles.isEmpty()) {
+            RingWorldMod.LOGGER.info("Streaming {} RingWorld terrain atlas tiles (~{} KiB) to {}", tiles.size(),
+                    Math.max(1L, atlas.estimatedWireBytes() / 1_024L), player.getName().getString());
+        }
     }
 
     /** Starts observing status; the request is ignored outside the loaded RingWorld Overworld. */
@@ -299,12 +311,14 @@ public final class RingTerrainAtlasServer {
                 stream.known.remove(tile);
                 ServerPlayNetworking.send(player, new RingTerrainAtlasTilePayload(atlas.worldHash(), tile.x(), tile.z(), atlas.encodeTile(tile.x(), tile.z())));
             }
-            // Completion may occur between 20-tick publication epochs. Keep
-            // this stream alive until the service has exposed those final
-            // dirty tiles to this adapter queue.
             if (stream.tiles.isEmpty() && atlas.isComplete()
                     && !RingAtlasPregenerationService.hasPendingDirtyTiles(world)) {
-                STREAMS.remove(player.getUUID());
+                if (stream.committedRevision != atlas.revision()
+                        && ServerPlayNetworking.canSend(player, RingTerrainAtlasRevisionPayload.ID)) {
+                    ServerPlayNetworking.send(player, new RingTerrainAtlasRevisionPayload(
+                            atlas.worldHash(), atlas.revision()));
+                    stream.committedRevision = atlas.revision();
+                }
             }
         }
     }
@@ -313,9 +327,12 @@ public final class RingTerrainAtlasServer {
         private final ServerLevel world;
         private final Queue<RingAtlasPregenerationService.TileCoordinate> tiles;
         private final Set<RingAtlasPregenerationService.TileCoordinate> known = new HashSet<>();
-        private ClientStream(ServerLevel world, Queue<RingAtlasPregenerationService.TileCoordinate> tiles) {
+        private long committedRevision;
+        private ClientStream(ServerLevel world, Queue<RingAtlasPregenerationService.TileCoordinate> tiles,
+                             long committedRevision) {
             this.world = world;
             this.tiles = tiles;
+            this.committedRevision = committedRevision;
             this.known.addAll(tiles);
         }
     }

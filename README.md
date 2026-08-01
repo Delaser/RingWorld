@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 208 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 215 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -129,9 +129,14 @@ Real terrain cross-fades into this proxy near the configured render distance.
 
 On the server, one Overworld-owned pregeneration service is the only atlas
 writer. It preserves canonical X-major traversal, gives ordinary player chunk
-work priority, resumes from saved format-5 cells, and verifies the final
+work priority, resumes from saved format-6 cells, and verifies the final
 atomic atlas save before declaring completion. Existing atlas status, pause,
 and resume commands control that same background job.
+
+After completion, exposed terrain edits are recaptured in bounded batches.
+Changed tiles are pushed to every connected client and committed under one
+durable monotonic revision, so an exact reconnect reuses its cache while a
+stale reconnect safely downloads the authoritative surface again.
 
 In a loaded RingWorld Overworld, the pause menu includes **RingWorld Map**.
 It shows authoritative atlas progress and lets the integrated-world owner or a
@@ -263,6 +268,8 @@ The current build includes:
   and section-visibility handling;
 - a fixed ring-centred sun with smooth global tone and intensity changes;
 - persistent tiled terrain-atlas transfer and client cache;
+- bounded live atlas refresh after block, fluid, explosion, and bulk terrain
+  changes, with revision-safe reconnects;
 - a loader-neutral atlas-pregeneration job model and deterministic canonical
   cursor plus one world-owned service shared by background, map, and explicit
   headless prewarm runs;
@@ -297,8 +304,9 @@ For demonstrated results, open risks, and the prioritized roadmap, see
   fluids, death/respawn, vehicles, and projectiles still need more seam
   coverage. Other scarce random-spread structures are not yet selectable; see
   the [scarce-structure audit](docs/SCARCE_STRUCTURE_GUARANTEE_AUDIT.md).
-- The atlas is refreshed when surface chunks are captured or loaded, not
-  immediately after every player block edit.
+- The atlas is an eight-block surface sample: edits between sample points may
+  not be visible in the distant proxy even though their affected cell is
+  recaptured.
 - Shader packs and mods that assume a flat Overworld, unbounded chunk X,
   ordinary global Euclidean distance, different gravity, or unchanged
   renderer/worldgen internals are likely incompatible.
@@ -369,6 +377,7 @@ measurements, and safe handling rules are in [Testing](docs/TESTING.md).
 | [Operations](docs/OPERATIONS.md) | Configuration, installation, packaging, deployment, and recovery |
 | [Rendering](docs/RENDERING.md) | Curvature, visibility, terrain proxy, sky, clouds, and handoff |
 | [Atlas visual baseline](docs/ATLAS_VISUAL_BASELINE_2026-08-01.md) | Production and safe-small 6/12/28 profile-5 captures, frame pacing, and resource evidence |
+| [Revisioned atlas updates](docs/ATLAS_REVISIONED_UPDATES_2026-08-01.md) | Bounded terrain invalidation, durable revisions, tile broadcast, and reconnect rules |
 | [Testing](docs/TESTING.md) | Unit, local, visual, layout-switch, and multiplayer procedures |
 | [Sun renderer snapshot](docs/SUN_RENDERING_SNAPSHOT_2026-07-26.md) | Rollback record for the removed shadow-panel experiment |
 

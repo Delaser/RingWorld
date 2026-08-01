@@ -157,6 +157,10 @@ falls back to the sampled block's map colour when a dedicated server's
 client-owned grass/foliage colormap lookup returns zero. This invalidates the
 black format-4 dedicated-server caches automatically while retaining true
 biome tint on integrated servers where the colour maps are loaded.
+Atlas format 6 retains those colour/height semantics and adds a durable
+surface revision. Changed tiles update the same texture/mesh through the
+existing one-second renderer coalescing window; the revision is committed only
+after the ordered tile batch arrives.
 
 ### World lifecycle
 

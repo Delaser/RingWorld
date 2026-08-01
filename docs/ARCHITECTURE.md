@@ -499,16 +499,24 @@ not a missing-data migration.
 RingWorld Overworld. It consumes completed chunk futures only on the server
 thread, gives player-loaded chunks priority, retains a failed selected cursor
 chunk for retry, checkpoints every 200 ticks, and verifies the final atomic
-save by reopening format-5 storage before reporting completion.
+save by reopening format-6 storage before reporting completion. Successful
+server block mutations enqueue affected canonical sample cells; the service
+recaptures at most 64 cells per tick and collapses extreme exact-cell queues
+into atlas tiles before they can become an unbounded server-thread storm.
 `RingTerrainAtlasServer` is only the Fabric command/lifecycle/network adapter:
 it drains service-published dirty tiles at the existing 20-tick cadence and
-streams them to clients. This division keeps platform registration out of the
-atlas lifecycle and prevents duplicate writers.
+streams them to persistent client subscriptions. It sends a revision commit
+only after all earlier tiles have entered that player's ordered connection.
+This division keeps platform registration out of the atlas lifecycle and
+prevents duplicate writers.
 
 The world hash includes the complete layout fingerprint plus atlas format and
-sample semantics. The atlas file has its own format version. Atlas format 5
+sample semantics. The atlas file has its own format version. Atlas format 6
 samples the highest surface block, stores its exposed top-face height, and
 records texture-luminance-corrected biome RGB for water, grass, and foliage.
+It also stores a monotonic surface revision advanced once per coalesced changed
+recapture batch. Tiles do not advance a client revision independently; only
+the ordered batch-commit payload does so after every changed tile.
 Because a dedicated server never resource-loads Minecraft's client-owned
 grass/foliage colour maps, a zero lookup falls back to the sampled block map
 colour. Other blocks always use map colour. Older atlas formats are ignored

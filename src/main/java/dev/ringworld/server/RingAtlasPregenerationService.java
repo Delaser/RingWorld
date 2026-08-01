@@ -9,6 +9,7 @@ import dev.ringworld.world.AtlasPregenerationProgress;
 import dev.ringworld.world.AtlasPregenerationResult;
 import dev.ringworld.world.AtlasPregenerationState;
 import dev.ringworld.world.RingAtlasPregenerationCursor;
+import dev.ringworld.world.RingAtlasSurfaceInvalidation;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingSurfaceLod;
 import dev.ringworld.world.RingTerrainAtlas;
@@ -52,6 +53,7 @@ import java.util.concurrent.CompletableFuture;
 public final class RingAtlasPregenerationService {
     public static final int SAVE_INTERVAL_TICKS = 200;
     public static final int TILE_PUBLICATION_INTERVAL_TICKS = 20;
+    public static final int RECAPTURE_CELLS_PER_TICK = 64;
     private static final double WATER_TEXTURE_LUMINANCE = 0.58;
     private static final double GRASS_TEXTURE_LUMINANCE = 0.68;
     private static final double FOLIAGE_TEXTURE_LUMINANCE = 0.52;
@@ -160,6 +162,8 @@ public final class RingAtlasPregenerationService {
         if (state == null) return;
         state.ticks++;
         consumeFuture(world, state);
+        processRecaptures(world, state);
+        commitPendingRevision(state);
         Job job = state.job;
         if (job != null) {
             job.tick();
@@ -172,7 +176,27 @@ public final class RingAtlasPregenerationService {
     public static void captureLoadedChunk(ServerLevel world, LevelChunk chunk) {
         requireServerThread(world);
         WorldState state = WORLDS.get(world);
-        if (state != null) captureChunk(world, chunk, state);
+        if (state != null) {
+            boolean wasComplete = state.atlas.isComplete();
+            CaptureResult result = captureChunk(world, chunk, state);
+            if (wasComplete && result.changed()) state.revisionPending = true;
+        }
+    }
+
+    /** Queues one potentially surface-affecting block mutation without rescanning inline. */
+    public static void blockChanged(ServerLevel world, BlockPos position) {
+        if (world.dimension() != Level.OVERWORLD) return;
+        requireServerThread(world);
+        WorldState state = WORLDS.get(world);
+        if (state == null) return;
+        RingTerrainAtlas atlas = state.atlas;
+        RingAtlasSurfaceInvalidation.Cell cell = RingAtlasSurfaceInvalidation.cellFor(
+                atlas.geometry(), atlas.sampleStep(), position.getX(), position.getZ()).orElse(null);
+        if (cell == null || !atlas.hasCell(cell.column(), cell.row())) return;
+        if (RingAtlasSurfaceInvalidation.mayAffectSurface(
+                position.getY(), atlas.cellHeight(cell.column(), cell.row()))) {
+            state.recaptures.enqueue(cell);
+        }
     }
 
     /** Atomically transfers changed tile coordinates to the Fabric streamer. */
@@ -223,7 +247,8 @@ public final class RingAtlasPregenerationService {
                 throw new IllegalStateException("pregeneration returned unexpected chunk " + levelChunk.getPos()
                         + " for " + job.selection.selected());
             }
-            if (!captureChunk(world, levelChunk, state)
+            CaptureResult capture = captureChunk(world, levelChunk, state);
+            if (!capture.valid()
                     || !state.atlas.isChunkPresent(job.selection.selected().chunkX(),
                     job.selection.selected().chunkRow())) {
                 throw new IllegalStateException("pregeneration did not capture selected chunk " + job.selection.selected());
@@ -239,14 +264,16 @@ public final class RingAtlasPregenerationService {
         }
     }
 
-    private static boolean captureChunk(ServerLevel world, LevelChunk chunk, WorldState state) {
+    private static CaptureResult captureChunk(ServerLevel world, LevelChunk chunk, WorldState state) {
         RingTerrainAtlas atlas = state.atlas;
         int chunkX = chunk.getPos().x();
         int chunkZ = chunk.getPos().z();
         int minChunkZ = atlas.geometry().minChunkZ();
         int chunksAlong = atlas.geometry().circumferenceChunks();
         int chunksAcross = atlas.geometry().widthChunks();
-        if (chunkX < 0 || chunkX >= chunksAlong || chunkZ < minChunkZ || chunkZ >= minChunkZ + chunksAcross) return false;
+        if (chunkX < 0 || chunkX >= chunksAlong || chunkZ < minChunkZ || chunkZ >= minChunkZ + chunksAcross) {
+            return CaptureResult.OUTSIDE;
+        }
         boolean changed = false;
         int step = atlas.sampleStep();
         for (int localZ = step / 2; localZ < 16; localZ += step) {
@@ -270,7 +297,44 @@ public final class RingAtlasPregenerationService {
             state.dirty = true;
             if (state.job != null) state.job.refreshProgress();
         }
-        return true;
+        return new CaptureResult(true, changed);
+    }
+
+    private static void processRecaptures(ServerLevel world, WorldState state) {
+        RingTerrainAtlas atlas = state.atlas;
+        boolean changed = false;
+        for (RingAtlasSurfaceInvalidation.Cell cell : state.recaptures.drain(
+                RECAPTURE_CELLS_PER_TICK, atlas.columns(), atlas.rows())) {
+            int blockX = cell.column() * atlas.sampleStep() + atlas.sampleStep() / 2;
+            int blockZ = atlas.geometry().minWidthZ()
+                    + cell.row() * atlas.sampleStep() + atlas.sampleStep() / 2;
+            BlockPos sample = new BlockPos(blockX, 0, blockZ);
+            if (!world.hasChunkAt(sample)) {
+                state.recaptures.enqueue(cell);
+                continue;
+            }
+            LevelChunk chunk = world.getChunkAt(sample);
+            int localX = Math.floorMod(blockX, 16);
+            int localZ = Math.floorMod(blockZ, 16);
+            int surfaceY = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, localX, localZ);
+            BlockPos surface = new BlockPos(blockX, surfaceY, blockZ);
+            int color = surfaceColor(world, surface, chunk.getBlockState(surface));
+            if (atlas.putCell(cell.column(), cell.row(), surfaceY + 1, color)) {
+                changed = true;
+                state.dirtyTiles.publish(new TileCoordinate(
+                        cell.column() / RingTerrainAtlas.TILE_SIZE,
+                        cell.row() / RingTerrainAtlas.TILE_SIZE));
+            }
+        }
+        if (changed) state.revisionPending = true;
+    }
+
+    private static void commitPendingRevision(WorldState state) {
+        if (!state.revisionPending) return;
+        state.revisionPending = false;
+        state.atlas.advanceRevision();
+        state.dirty = true;
+        if (state.job != null) state.job.refreshProgress();
     }
 
     private static int surfaceColor(ServerLevel world, BlockPos surface, BlockState state) {
@@ -292,6 +356,7 @@ public final class RingAtlasPregenerationService {
     }
 
     private static boolean save(WorldState state, boolean log) {
+        commitPendingRevision(state);
         if (!state.dirty) return true;
         try {
             state.atlas.save(state.path);
@@ -308,6 +373,9 @@ public final class RingAtlasPregenerationService {
     private static void verifyComplete(WorldState state) throws IOException {
         RingTerrainAtlas reopened = RingTerrainAtlas.load(state.path, state.atlas.geometry(), state.atlas.worldHash());
         if (!reopened.isComplete()) throw new IOException("reopened atlas is incomplete");
+        if (reopened.revision() != state.atlas.revision()) {
+            throw new IOException("reopened atlas revision does not match saved state");
+        }
     }
 
     static Path cachePath(ServerLevel world) { return cachePath(RingWorldStorageAccess.dimensionPath(world)); }
@@ -374,11 +442,17 @@ public final class RingAtlasPregenerationService {
         }
     }
 
+    private record CaptureResult(boolean valid, boolean changed) {
+        private static final CaptureResult OUTSIDE = new CaptureResult(false, false);
+    }
+
     private static final class WorldState {
         private final RingTerrainAtlas atlas;
         private final Path path;
         private final RingAtlasDirtyTileQueue dirtyTiles = new RingAtlasDirtyTileQueue();
+        private final RingAtlasRecaptureQueue recaptures = new RingAtlasRecaptureQueue();
         private boolean dirty;
+        private boolean revisionPending;
         private long ticks;
         private Job job;
         private WorldState(RingTerrainAtlas atlas, Path path, boolean dirty) {

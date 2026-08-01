@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.util.zip.GZIPOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,6 +70,41 @@ class RingTerrainAtlasTest {
         assertEquals(tiled.presentCount(), loaded.presentCount());
         assertEquals(77.0, loaded.sample(4, z).height(), 1.0e-9);
         assertFalse(loaded.hasCell(1, 0));
+    }
+
+    @Test
+    void committedRevisionSurvivesDiskAndRejectsRollback(@TempDir Path directory) throws Exception {
+        RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH);
+        assertTrue(atlas.commitRevision(4L));
+        assertFalse(atlas.commitRevision(4L));
+        assertFalse(atlas.commitRevision(3L));
+
+        Path cache = directory.resolve("revisioned.rwat.gz");
+        atlas.save(cache);
+        RingTerrainAtlas loaded = RingTerrainAtlas.load(cache, GEOMETRY, HASH);
+
+        assertEquals(4L, loaded.revision());
+        assertThrows(java.io.IOException.class, () -> loaded.commitRevision(-1L));
+    }
+
+    @Test
+    void revisionedTileBatchConvergesIdenticallyOnMultipleClients() throws Exception {
+        RingTerrainAtlas server = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas first = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas second = new RingTerrainAtlas(GEOMETRY, HASH);
+        int z = GEOMETRY.minWidthZ() + 4;
+        server.putBlockSample(4, z, 201, 0xF6D03D);
+        server.advanceRevision();
+        byte[] tile = server.encodeTile(0, 0);
+
+        assertTrue(first.applyTile(0, 0, tile));
+        assertTrue(second.applyTile(0, 0, tile));
+        assertTrue(first.commitRevision(server.revision()));
+        assertTrue(second.commitRevision(server.revision()));
+
+        assertEquals(server.revision(), first.revision());
+        assertEquals(first.revision(), second.revision());
+        assertArrayEquals(first.encodeTile(0, 0), second.encodeTile(0, 0));
     }
 
     @Test

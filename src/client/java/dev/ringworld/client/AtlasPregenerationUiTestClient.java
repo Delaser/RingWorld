@@ -24,6 +24,11 @@ public final class AtlasPregenerationUiTestClient {
     private int ticks;
     private boolean capturedInitial;
     private boolean finalCaptureSaved;
+    private long revisionBeforeEdit;
+    private int editedCellColumn;
+    private int editedCellRow;
+    private int editedBlockX;
+    private int editedBlockZ;
 
     public boolean enabled() { return Boolean.getBoolean(ENABLE_PROPERTY); }
     public void frameRendered() { renderedFrames++; }
@@ -125,7 +130,38 @@ public final class AtlasPregenerationUiTestClient {
             }
             case 14 -> {
                 if (!settled() || !finalCaptureSaved) return true;
-                RingWorldMod.LOGGER.info("[atlas-ui-test] PASS: GUI scale 4 progressive-world/confirmation/running/background/reopen/pause/resume/cancel/retry/complete");
+                var atlas = ClientRingState.terrainAtlas();
+                if (atlas == null) return fail(client, "complete atlas disappeared before revision test");
+                client.setScreen(null);
+                int step = atlas.sampleStep();
+                editedCellColumn = atlas.geometry().wrapBlockX(client.player.getBlockX()) / step;
+                editedCellRow = Math.floorDiv(client.player.getBlockZ() - atlas.geometry().minWidthZ(), step);
+                editedCellRow = Math.max(0, Math.min(atlas.rows() - 1, editedCellRow));
+                editedBlockX = editedCellColumn * step + step / 2;
+                editedBlockZ = atlas.geometry().minWidthZ() + editedCellRow * step + step / 2;
+                revisionBeforeEdit = atlas.revision();
+                client.getConnection().sendCommand("setblock " + editedBlockX + " 200 " + editedBlockZ
+                        + " minecraft:gold_block");
+                stage++;
+            }
+            case 15 -> {
+                var atlas = ClientRingState.terrainAtlas();
+                if (atlas == null || atlas.revision() <= revisionBeforeEdit) return true;
+                if (atlas.cellHeight(editedCellColumn, editedCellRow) != 201) {
+                    return fail(client, "placed surface block did not reach the client atlas");
+                }
+                revisionBeforeEdit = atlas.revision();
+                client.getConnection().sendCommand("setblock " + editedBlockX + " 200 " + editedBlockZ
+                        + " minecraft:air");
+                stage++;
+            }
+            case 16 -> {
+                var atlas = ClientRingState.terrainAtlas();
+                if (atlas == null || atlas.revision() <= revisionBeforeEdit) return true;
+                if (atlas.cellHeight(editedCellColumn, editedCellRow) == 201) {
+                    return fail(client, "removed surface block remained in the client atlas");
+                }
+                RingWorldMod.LOGGER.info("[atlas-ui-test] PASS: GUI scale 4 progressive-world/confirmation/running/background/reopen/pause/resume/cancel/retry/complete/revisioned-edit");
                 client.stop();
                 stage++;
             }
