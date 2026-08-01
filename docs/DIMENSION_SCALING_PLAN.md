@@ -92,6 +92,7 @@ Every value in the following registry belongs to one of four classes:
 | rim thickness/style version | Thickness 5 and about 30% mossy remain code constants | Fixed design included in layout and atlas fingerprints. |
 | `testMode` | Process-local destructive harness switch | Keep operational, never persist as world geometry. |
 | `pregenerateTerrainAtlas` | Process-local administration switch | Keep operational. It may pause work but must not change atlas identity or dimensions. |
+| initial-spawn Z clamp | `RingSpawnBounds` receives validated bootstrap geometry before saved data exists | Deliberate creation-time exception only. Keep the finite-rim margin loader-neutral and do not read bootstrap configuration from saved-world runtime paths. |
 
 The earlier lifecycle race is removed. `ServerWorldMixin` loads or creates
 persisted settings and attaches the Overworld generator at the constructor
@@ -477,9 +478,16 @@ Parameterize unit, local visual, and two-client tests. At minimum cover:
 | C=1600 with full vanilla height | Required validation failure |
 | misaligned, overlapping-rim, excessive-atlas inputs | Required validation failures |
 
-The pure unit matrix covers all five playable geometries above, render
-distances 6/12/28/64, whole-ring clamping, the legacy 1,600 rejection, and
-invalid allocation/wall inputs. The local harness capture distance is
+The pure unit matrix covers safe-small, the aligned 2,016×256 playable
+minimum, 2,048×256 narrow stress, the 16,384×256 production default,
+15,552×4,096 former-wide regression, 32,768×512 long/narrow, 4,096×2,048
+wide/medium, and a 4,096×640 custom-wall layout. It parameterizes render
+distances 6/12/28/64, whole-ring clamping, atlas dimensions/GPU budgets,
+worldgen seam coordinates and finite-band limits, spawn bounds, settings payload
+identity/acknowledgement rejection, the 1,024 structural-only and 1,600 unsafe
+curvature cases, misalignment, custom wall/cloud elevation, excessive atlas
+input, and the maximum technical circumference warning envelope. The local
+harness capture distance is
 parameterized by `testViewDistanceChunks` for 6/12/28 runs, and its pitch is
 derived from the physical target surface at that distance.
 
@@ -490,6 +498,15 @@ entity, projectile, vehicle, AI, fluid, explosion, late tracking, collision,
 rim, and exterior-void checks passed. The first crossing averaged 19.5 ms per
 rendered frame under the destructive harness load; the rim interval averaged
 16.9 ms.
+
+Issue #24 also ran the isolated dedicated stronghold/worldgen gate against the
+aligned 2,016×256 playable minimum and a 4,096×2,048 wide layout, with atlas
+pregeneration disabled. Both passed periodic base-height/base-column queries,
+canonical stronghold/portal-room bounds, portal activation, folded Eye target,
+both textured rim rows, and exterior void. The minimum run reported 126×16
+chunks and 8,064 atlas cells; the wide run reported 256×128 chunks and 131,072
+cells. These targeted server checks complement, rather than replace, existing
+safe-small/production client and multiplayer evidence.
 
 The derived-pitch 6-chunk case then completed on 2026-07-27. It aimed directly
 at the 96-block handoff (pitch 18.30° for the sampled Y=76.41 surface), retained

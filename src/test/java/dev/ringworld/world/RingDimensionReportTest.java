@@ -1,9 +1,15 @@
 package dev.ringworld.world;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingDimensionReportTest {
@@ -82,5 +88,53 @@ class RingDimensionReportTest {
 
         assertFalse(report.isValid());
         assertTrue(report.errors().stream().anyMatch(error -> error.contains("cloud base")));
+    }
+
+    @Test
+    void alignedMinimumPlayableCircumferenceIsAcceptedButTheStructuralMinimumIsNot() {
+        RingDimensionReport playable = RingDimensionReport.forVanillaOverworld(
+                new RingGeometry(256, 2_016), 160);
+        RingDimensionReport structuralOnly = RingDimensionReport.forVanillaOverworld(
+                new RingGeometry(256, RingWorldSettings.MIN_CIRCUMFERENCE), 160);
+
+        assertTrue(playable.isValid(), playable.errors().toString());
+        assertFalse(structuralOnly.isValid());
+        assertTrue(structuralOnly.errors().stream().anyMatch(error -> error.contains("radial blocks")));
+    }
+
+    @Test
+    void maximumTechnicalCircumferenceWithMinimumWidthRemainsAValidatedWarningCase() {
+        RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
+                new RingGeometry(RingWorldSettings.MIN_WIDTH, RingDimensionReport.MAX_AXIS_BLOCKS),
+                160);
+
+        assertTrue(report.isValid(), report.errors().toString());
+        assertEquals(4_194_304L, report.atlasCellCount());
+        assertTrue(report.warnings().stream().anyMatch(error -> error.contains("pregeneration")));
+        assertTrue(report.warnings().stream().anyMatch(error -> error.contains("terrain atlas")));
+    }
+
+    @Test
+    void customWallHeightMovesBothWallAndCloudBase() {
+        RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
+                new RingGeometry(640, 4_096), 192);
+
+        assertTrue(report.isValid(), report.errors().toString());
+        assertEquals(128, report.wallTopYExclusive());
+        assertEquals(136, report.cloudBaseY());
+    }
+
+    private static Stream<Arguments> invalidStructuralLayouts() {
+        return Stream.of(
+                Arguments.of("width alignment", 2_048, 257),
+                Arguments.of("circumference alignment", 2_017, 256),
+                Arguments.of("width below supported minimum", 2_048, 240));
+    }
+
+    @ParameterizedTest(name = "{0} is rejected before creating a layout")
+    @MethodSource("invalidStructuralLayouts")
+    void invalidStructuralLayoutsAreRejected(String name, int circumference, int width) {
+        assertThrows(IllegalArgumentException.class,
+                () -> new RingGeometry(width, circumference));
     }
 }

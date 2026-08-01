@@ -2,6 +2,7 @@ package dev.ringworld.server;
 
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
+import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingStrongholdPlacement;
 import dev.ringworld.world.RingStructurePolicy;
 import net.minecraft.core.BlockPos;
@@ -55,6 +56,7 @@ final class RingWorldStrongholdTest {
         if (world == null) throw new IllegalStateException("Overworld is unavailable");
         RingGeometry geometry = RingWorldServer.geometryFor(world);
         verifyPeriodicHeightQueries(world, geometry);
+        verifyFiniteRims(world, geometry);
         if (!RingStructurePolicy.get(world).guaranteesStronghold()) {
             throw new IllegalStateException("Fresh test world did not persist its stronghold policy");
         }
@@ -158,6 +160,26 @@ final class RingWorldStrongholdTest {
                 "[stronghold-test] startChunk={}, pieces={}, strongholdBox={}, portalBox={}, frames={}, origin={}, located={}, eyeFoldVx={}",
                 expected, start.getPieces().size(), strongholdBox, portalBox, frames, origin, located,
                 eye.getDeltaMovement().x);
+    }
+
+    /** Runtime-only check: actual generated boundary chunks own both rims and no exterior terrain. */
+    private static void verifyFiniteRims(ServerLevel world, RingGeometry geometry) {
+        int x = 0;
+        int y = world.getMinY();
+        int lowerRimZ = geometry.minWidthZ();
+        int upperRimZ = geometry.maxWidthZ();
+        world.getChunk(SectionPos.blockToSectionCoord(x), geometry.minChunkZ());
+        world.getChunk(SectionPos.blockToSectionCoord(x), geometry.maxChunkZ());
+        if (!RingGenerationBoundary.isRimMaterial(world.getBlockState(new BlockPos(x, y, lowerRimZ)))
+                || !RingGenerationBoundary.isRimMaterial(world.getBlockState(new BlockPos(x, y, upperRimZ)))) {
+            throw new IllegalStateException("Finite rim material is missing at one or both width edges");
+        }
+        if (!world.getBlockState(new BlockPos(x, y, lowerRimZ - 1)).isAir()
+                || !world.getBlockState(new BlockPos(x, y, upperRimZ + 1)).isAir()) {
+            throw new IllegalStateException("Exterior finite-width terrain is not void");
+        }
+        RingWorldMod.LOGGER.info("[stronghold-test] rims lowerZ={} upperZ={} exteriorVoid=true",
+                lowerRimZ, upperRimZ);
     }
 
     /**

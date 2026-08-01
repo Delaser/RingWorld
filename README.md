@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 127 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 196 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -209,7 +209,9 @@ pregenerateTerrainAtlas=true
 ```
 
 Width and circumference must be multiples of 16 and pass the creation safety
-checks. Saved settings always override later bootstrap configuration changes.
+checks. The smallest structurally valid circumference is 1,024 blocks, but a
+playable vanilla-height world needs at least 2,016 blocks for radial clearance.
+Saved settings always override later bootstrap configuration changes.
 
 ### Reference layouts
 

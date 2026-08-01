@@ -1,6 +1,7 @@
 package dev.ringworld.mixin;
 
 import dev.ringworld.world.RingGeometry;
+import dev.ringworld.world.RingSpawnBounds;
 import dev.ringworld.world.RingWorldConfig;
 import dev.ringworld.world.RingWorldStorageAccess;
 import java.nio.file.Path;
@@ -40,10 +41,7 @@ abstract class MinecraftServerMixin implements RingWorldStorageAccess {
         // noise sampler selected the exterior or the rim's immediate margin.
         // The following vanilla spawn-locating spiral is then free to find a
         // safe surface while staying well away from either edge.
-        int safeMargin = Math.min(32, Math.max(1, geometry.widthBlocks() / 4));
-        int minSafeZ = geometry.minWidthZ() + safeMargin;
-        int maxSafeZ = geometry.maxWidthZ() - safeMargin;
-        int z = vanilla.getZ() >= minSafeZ && vanilla.getZ() <= maxSafeZ ? vanilla.getZ() : 0;
+        int z = RingSpawnBounds.constrainInitialSpawnZ(vanilla.getZ(), geometry);
         return new BlockPos(vanilla.getX(), vanilla.getY(), z);
     }
 }

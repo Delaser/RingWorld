@@ -155,6 +155,13 @@ format. `ServerWorldMixin` loads or creates it before attaching geometry to the
 Overworld generator, so a changed bootstrap file cannot briefly shape an
 existing world. Format 1 migrates explicitly with surface reference Y=64.
 
+The one deliberate bootstrap-time geometry use is initial spawn selection:
+Minecraft asks for a new world's spawn before an Overworld has saved data.
+The platform redirect supplies the already-validated new-world bootstrap
+geometry to the loader-neutral `RingSpawnBounds` helper, which only constrains
+Z away from the two finite rims. It does not read configuration itself and is
+not a runtime policy for saved worlds.
+
 `RingLayoutFingerprint` covers those fields plus rim thickness/style.
 Clients independently verify it during login, and the terrain-atlas world hash
 adds atlas format/sample semantics. The derivation and remaining cross-size
