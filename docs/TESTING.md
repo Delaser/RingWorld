@@ -242,10 +242,13 @@ mixin and shader resource loaded to the UI. It then ran the destructive
 - the full-atlas run averaged 8.41/8.37 ms and recorded one isolated frame over
   50 ms in each measured phase while generation/upload work was active.
 
-This establishes the safe-small functional renderer and gameplay gate, not
-final visual tuning. Inspect both complete-ring images for colour, live/LOD
-handoff, local proxy exclusion, and width-edge alignment. The current
-16,384×256 production default still needs its multi-size visual/resource gate.
+This establishes the safe-small functional renderer and gameplay gate. The
+subsequent 6/12/28 safe-small matrix and complete 16,384×256 tangent/radial
+projection gate are reviewed in
+`VISUAL_HANDOFF_REVIEW_2026-08-01.md`; colour, live/LOD handoff, local proxy
+exclusion, width-edge alignment, and ordinary-distance far-depth coverage pass.
+Cold-start resource pressure and broader manual visual compatibility remain
+separate release-hardening work.
 
 The 26.1 projection task uses Minecraft's in-process world-open flow. Its
 source value is the save-folder identifier, not the world-list display name.

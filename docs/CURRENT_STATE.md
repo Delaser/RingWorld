@@ -14,8 +14,8 @@ and Minecraft 26.1.2; the release declares Fabric API as required and requires
 the mod on both client and server. The uploaded jar has SHA-256
 `cddba0f0654c0b82c451670f4c9afb477c997b379aa33bbbd173aa3651e5ce60`
 and points to public source revision `3f6cb9e`. It is explicitly an alpha test
-build; submission does not close the remaining automated-harness, packaging,
-staging, scaling, or compatibility gates below.
+build; submission does not close the optional convenience-package,
+independent-review, broader regression, or compatibility gates below.
 
 Issue #33 now supplies a local fail-closed staging workflow for any later
 manual Fabric upload. It builds and validates exactly one runtime jar, records
@@ -57,6 +57,12 @@ X=9667..9724 and Z=19..76, then located it from the adjacent presentation
 chart without creating an alias chunk. A second dedicated-server process
 loaded the same candidate/start and correctly treated its prior unexplored
 reference as used. The active suite now contains 206 unit/parameterized cases.
+
+The P1–P4 architecture parents (#5–#8) are now closed after final review of
+the integrated 26.1 topology, worldgen, protocol, renderer, lifecycle, and
+runtime evidence. This records that the ported architecture meets those work
+packages; it does not erase the broader release-hardening and compatibility
+limits documented below.
 
 Atlas-pregeneration Phases 1b and 2 are landed through #55, #56, and #59:
 the loader-neutral job-model foundation
@@ -221,9 +227,11 @@ in-process reopen, which restored the same layout and complete atlas. The final
 marker was `result=true`; this is transfer-path evidence, not proof of vanilla
 portal construction or linking.
 
-Automated-harness completion and broader compatibility gates remain. Repeatable
-Fabric staging is complete, but the active 26.1.2 alpha is not yet a stable
-release. The frozen `mc-1.21.11-final` tag remains the rollback baseline.
+Broader gameplay/worldgen automation and compatibility gates remain. Repeatable
+Fabric staging is complete, but optional convenience packages and independent
+release-candidate review are still pending, so the active 26.1.2 alpha is not
+yet a stable release. The frozen `mc-1.21.11-final` tag remains the rollback
+baseline.
 
 New RingWorlds now persist a mandatory structure policy and replace vanilla's
 unbounded stronghold rings with one deterministic canonical start centred
@@ -238,9 +246,10 @@ opposite chart. A saved-world rerun passed with the same start and portal.
 Older RingWorlds with no structure-policy state retain their old placement;
 the guarantee is not silently retrofitted.
 
-The “Implemented” sections below describe validated 1.21.11 behavior and the
-contract the port must restore. They are not claims that every active 26.1.2
-client/runtime gate passes.
+The “Implemented” sections below describe the reviewed 26.1.2 architecture on
+the active public integration line. Historical 1.21.11 evidence remains in its
+frozen baseline document; the known limitations below still constrain release
+and compatibility claims.
 
 ## Implemented
 
@@ -591,25 +600,26 @@ retaining the fixed pose and continuous dimming/colour cycle.
 
 Priorities are ordered by player-visible value and architectural leverage.
 
-1. **Finish the remaining automated client gate**
-   - complete the open automated-harness issue from the integrated visual,
-     production lifecycle, and multiplayer baseline;
-   - keep test-only setup separate from canonical gameplay and saved worlds.
-2. **Finish repeatable Fabric packaging and staging**
-   - stage exactly one runtime jar with source revision, checksum, licence,
-     dependency, environment, and forbidden-content validation;
-   - test clean client, existing modded instance, and dedicated-server paths.
-3. **Harden atlas lifecycle**
+1. **Prepare optional convenience packages**
+   - assemble macOS/Windows Prism and dedicated-server packages under #12;
+   - preserve user state, validate licences/credentials, and keep the normal
+     Modrinth jar independently installable.
+2. **Run the independent release-candidate review**
+   - activate #13 against one exact clean, pushed source revision;
+   - audit mixins, topology, protocol, worldgen, rendering, storage, packaging,
+     documentation, and remaining release claims without changing production
+     code during the review.
+3. **Broaden automated gameplay regression**
+   - death/respawn, portals, maps, more vehicles/projectiles;
+   - redstone and cross-seam block entities;
+   - fluid networks and explosions with terrain destruction.
+4. **Harden atlas lifecycle**
    - decide how block edits invalidate surface cells;
    - support progressive rendering safely if desired;
    - benchmark production-scale memory/network/pregeneration;
    - run the new headless prewarm recovery fixtures and production benchmark;
    - retain the implemented service, map controls, and admin status/pause/resume
      commands without introducing another writer.
-4. **Broaden multiplayer gameplay regression**
-   - death/respawn, portals, maps, more vehicles/projectiles;
-   - redstone and cross-seam block entities;
-   - fluid networks and explosions with terrain destruction.
 5. **Worldgen seam matrix**
    - multiple seeds;
    - every major biome;
@@ -617,26 +627,26 @@ Priorities are ordered by player-visible value and architectural leverage.
    - loot, mobs, and structure-specific locate commands;
    - manual Eye-of-Ender flight and physical End-portal travel/return.
 6. **Configuration UX follow-up**
-   - add an explicit second confirmation if user testing shows the current
-     immutability notice is insufficient;
-   - add dedicated-server admin status/pause/resume controls;
-   - improve creation cost warnings with measured production benchmarks.
+   - improve creation cost warnings with measured production benchmarks;
+   - continue custom-size runtime coverage without weakening immutable layout
+     validation.
 7. **Day/night visual polish**
    - capture the new small sun at all four tone keyframes;
    - tune keyframe colours only against matched sky, live-terrain, and
      distant-ring screenshots;
    - keep the single authoritative vanilla gameplay clock.
-8. **Compatibility API**
+8. **Compatibility API and dual-loader preparation**
    - expand the read-only API for canonical/presentation/physical poses;
    - document compatibility contracts and failure detection.
+   - begin #34 only after the Fabric release candidate is approved, keeping
+     common code loader-neutral and platform adapters narrow.
 
-## Evidence required before calling the mod broadly playable
+## Evidence required before calling the mod stable and broadly compatible
 
-- Stable frame pacing during ordinary movement at practical render distance.
-- No camera or chunk pop at repeated seam crossings.
-- Complete two-client test matrix on a dedicated server.
-- Multi-seed worldgen/structure continuity.
-- Save/reconnect/death/portal lifecycle coverage.
+- Broader multi-seed worldgen/structure continuity beyond the guaranteed
+  stronghold and optional monument fixtures.
+- Death/respawn and physical portal construction/linking coverage in addition
+  to the passing save/reconnect and dimension-transfer lifecycle gate.
 - Manual gamma, night-vision, lightning, and close cloud-height visual checks.
-- Production-size atlas benchmark or a scalable alternative.
+- Optional package fresh/upgrade launch checks and an independent final review.
 - Explicit supported/incompatible mod list.

@@ -1,7 +1,8 @@
 # Minecraft 26.1 port plan
 
-Status: common/client source, server storage, integrated safe-small client,
-and dedicated two-client gates pass; UI/packaging port in progress
+Status: P1–P4 architecture and the core Fabric 26.1.2 runtime gates are
+integrated and reviewed. Optional convenience packaging and independent
+release-candidate review remain.
 
 Target: Minecraft Java 26.1.2
 
@@ -229,6 +230,8 @@ The primary agent owns cross-cutting architectural code.
 
 ### P1: canonical topology and simulation ([#5](https://github.com/Delaser/RingWorld/issues/5))
 
+Status: closed after final 26.1 source/runtime review on 2026-08-01.
+
 Primary ownership:
 
 ```text
@@ -257,6 +260,8 @@ Exit gate:
 
 ### P2: world generation ([#6](https://github.com/Delaser/RingWorld/issues/6))
 
+Status: closed after final 26.1 source/runtime review on 2026-08-01.
+
 Tasks:
 
 - port coordinate-consuming density tagging;
@@ -268,6 +273,8 @@ Tasks:
 
 ### P3: network protocol ([#7](https://github.com/Delaser/RingWorld/issues/7))
 
+Status: closed after final 26.1 source/runtime review on 2026-08-01.
+
 Tasks:
 
 - port Fabric payload registration and codec APIs;
@@ -277,6 +284,10 @@ Tasks:
 - ensure a stale client fails before decoding ring-specific play payloads.
 
 ### P4: renderer and shaders ([#8](https://github.com/Delaser/RingWorld/issues/8))
+
+Status: closed after the safe-small 6/12/28 and production tangent/radial
+visual review on 2026-08-01. See
+[`VISUAL_HANDOFF_REVIEW_2026-08-01.md`](VISUAL_HANDOFF_REVIEW_2026-08-01.md).
 
 Primary ownership:
 

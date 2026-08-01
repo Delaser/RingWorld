@@ -15,12 +15,13 @@
 This stack now produces a green development build and passes isolated fresh
 and copied-world dedicated-server launch gates plus the integrated safe-small
 client atlas/rendering/gameplay harness and dedicated two-client multiplayer
-matrix. It remains non-playable until multi-size visual review,
-automated-harness completion, packaging, and staging gates pass. The working
-service, packages, and rollback remain Minecraft 1.21.11 at
-`mc-1.21.11-final`; do not deploy the 26.1 branch until every release gate in
-the port plan passes. The finished mod must be installed on the server and
-every client.
+matrix. Safe-small 6/12/28 and production tangent/radial visual review passes,
+as does the fail-closed Fabric/Modrinth staging workflow. The 26.1.2 Fabric
+alpha is playable but not yet a stable release: optional convenience packages,
+independent release-candidate review, broader regression coverage, and
+compatibility work remain. Deployment and live-world changes still require
+explicit owner approval. The mod must be installed on the server and every
+client. The historical 1.21.11 rollback is `mc-1.21.11-final`.
 
 ## Bootstrap configuration
 
