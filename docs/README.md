@@ -60,6 +60,9 @@ Start here:
 - [`WORLDGEN_STRUCTURE_MATRIX_2026-08-01.md`](WORLDGEN_STRUCTURE_MATRIX_2026-08-01.md):
   multi-seed biome, carver, feature, loot, structure-seam, saved-policy, and
   reload evidence.
+- [`PROTOCOL_HARDENING_2026-08-01.md`](PROTOCOL_HARDENING_2026-08-01.md):
+  acknowledgement deadline, exact-version capability policy, positional
+  packet audit, runtime evidence, and explicit unsupported boundary.
 - [`SUN_RENDERING_SNAPSHOT_2026-07-26.md`](SUN_RENDERING_SNAPSHOT_2026-07-26.md):
   frozen rollback description of the removed ring-centred sun and panel array.
 - [`MIXIN_MAP.md`](MIXIN_MAP.md): ownership and risk map for every mixin.

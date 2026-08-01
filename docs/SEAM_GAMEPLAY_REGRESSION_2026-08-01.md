@@ -66,8 +66,9 @@ Nether exit cannot return the player before the harness observes it.
 - The portal gate invokes the real portal blocks, destination calculation,
   linking, and transition, but skips the normal player wait inside the portal.
 - Arbitrary structure seeds, placements, and loot belong to #72.
-- Arbitrary custom dimensions belong to #73; mod compatibility and controlled
-  failure behavior belong to #74.
+- The multi-size runtime matrix is covered by #24 and worldgen/structures by
+  #72. Dynamic map/locator semantics and broader mod compatibility remain
+  outside this gameplay gate.
 
 ## Unsupported claims
 

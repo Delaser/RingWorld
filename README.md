@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 221 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 224 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -32,7 +32,9 @@ The Nether and End remain vanilla.
 > A dedicated multi-seed worldgen matrix now covers all 14 major biome
 > families, caves, ores, trees, loot, canonical structure ownership, actual
 > seam-crossing mineshafts, saved scarce-structure outcomes, and exact reload.
-> Remaining protocol and pre-release compatibility gates are still
+> The mandatory handshake now has an explicit deadline and exact channel-set
+> compatibility, and the 26.1 positional packet surface has a documented
+> support boundary. Remaining pre-release compatibility gates are still
 > outstanding, so this is not a stable release yet. The first 26.1.2 Fabric
 > alpha is an early test build, not a stable or broadly compatible release.
 > The validated server, client packages, and rollback tag remain Minecraft 1.21.11

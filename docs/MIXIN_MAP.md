@@ -71,8 +71,8 @@ the same change.
 | `ChunkRenderingDataPreparerMixin` | `SectionOcclusionGraph` | Wraps terrain collection/update frusta in `CurvedRingFrustum` and disables flat six-face section occlusion in the RingWorld Overworld | Restoring smart occlusion hides terrain that curvature bends into view; disabling other frustum/distance checks would be too broad |
 | `ChunkBuilderBuiltChunkMixin` | `SectionRenderDispatcher.RenderSection` | Treats intentionally absent exterior-Z neighbours as ready so finite rim sections can mesh | Private renderer method; never bypass readiness for an interior neighbour |
 | `ClientChunkMapMixin` | `ClientChunkCache.Storage` | Exposes centre and full clear for disjoint chart re-keying | Clearing on small moves causes visible reload churn |
-| `ClientConnectionMixin` | `Connection` | Canonicalizes outbound block break/use packets | Missing a packet type makes visible seam blocks non-interactive |
-| `ClientPlayNetworkHandlerMixin` | `ClientPacketListener` | Projects canonical chunks, entities, blocks, effects, and explicit teleport targets into the nearest chart | Largest client packet surface; new positional packets need an audit |
+| `ClientConnectionMixin` | `Connection` | Canonicalizes outbound block break/use, sign update, pick-block, and block-entity tag-query packets | Missing a packet type makes visible seam blocks non-interactive or edits the wrong canonical block |
+| `ClientPlayNetworkHandlerMixin` | `ClientPacketListener` | Projects canonical chunks, entities, minecart steps, blocks/sign screens, damage/look/effects, and explicit teleport targets into the nearest chart | Largest client packet surface; every Minecraft update must repeat the positional-packet audit |
 | `ConfirmScreenAccessor` | `ConfirmScreen` | Exposes the affirmative button only to the opt-in atlas UI acceptance fixture so it exercises the real confirmation callback | Test-only accessor; production code must not use it to bypass player confirmation |
 | `CreateWorldScreenMixin` | `CreateWorldScreen.init`, redirect of `HeaderAndFooterLayout.addToFooter(LayoutElement)` | Adds the immutable RingWorld layout editor and current C×W summary to the managed Create/Cancel footer row; the editor invokes its UI-local refresh hook after saving | The exact 26.1 layout call is required; a separately positioned button overlaps vanilla controls at GUI scale 4. The reused parent screen must refresh without reinitializing its layout. Changes bootstrap defaults for the next new world only; saved settings remain authoritative |
 | `CreateWorldScreenInvoker` | `CreateWorldScreen` | Invokes level creation for the opt-in local automated harness | Test-only; must not auto-create when `testMode=false` |
@@ -95,7 +95,7 @@ ordinary helpers:
 | `RingWorldMod` | Common initialization |
 | `RingWorldServer` | World lifecycle, end-tick canonical folding, boundary migration, smoke fixtures |
 | `RingWorldStorageAccess` | Read-only bridge from a `ServerLevel` to Minecraft's authoritative per-dimension storage root |
-| `RingWorldNetworking` | Payload registration and mandatory handshake |
+| `RingWorldNetworking` / `RingHandshakeTracker` | Payload registration, exact required-channel contract, mandatory acknowledgement deadline, request gating, and disconnect cleanup |
 | `RingTerrainAtlasServer` | Atlas generation, persistence, and tile streams |
 | `RingWorldHeadlessPrewarm` / `HeadlessPrewarmEvidenceFiles` | Fabric/dedicated lifecycle adapter and evidence hygiene for explicit headless prewarm; observes the shared service, records constructor-tail `REJECTED` evidence without identity when settings are unavailable, gates joins, checkpoints/reports/saves/stops, but never owns another scheduler or atlas writer |
 | `RingWorldClient` | Client handshake receivers, atlas cache, visual/test hooks |

@@ -5,7 +5,10 @@ import dev.ringworld.world.RingGeometry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
+import net.minecraft.network.protocol.game.ServerboundBlockEntityTagQueryPacket;
+import net.minecraft.network.protocol.game.ServerboundPickItemFromBlockPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -34,6 +37,18 @@ abstract class ClientConnectionMixin {
                     hit.getDirection(), canonical(hit.getBlockPos(), geometry),
                     hit.isInside(), hit.isWorldBorderHit());
             return new ServerboundUseItemOnPacket(interaction.getHand(), canonicalHit, interaction.getSequence());
+        }
+        if (packet instanceof ServerboundSignUpdatePacket sign) {
+            String[] lines = sign.getLines();
+            return new ServerboundSignUpdatePacket(canonical(sign.getPos(), geometry), sign.isFrontText(),
+                    lines[0], lines[1], lines[2], lines[3]);
+        }
+        if (packet instanceof ServerboundPickItemFromBlockPacket pick) {
+            return new ServerboundPickItemFromBlockPacket(canonical(pick.pos(), geometry), pick.includeData());
+        }
+        if (packet instanceof ServerboundBlockEntityTagQueryPacket query) {
+            return new ServerboundBlockEntityTagQueryPacket(
+                    query.getTransactionId(), canonical(query.getPos(), geometry));
         }
         return packet;
     }

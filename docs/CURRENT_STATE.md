@@ -67,7 +67,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite now contains 221 unit/parameterized cases.
+The active suite now contains 224 unit/parameterized cases.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
@@ -111,6 +111,15 @@ sampled biome, terrain, structure, loot, and policy record. Every case also
 passes generated stronghold frames, activation, periodic locate, and folded-
 Eye checks; the separate #71 client gate supplies physical End travel. Exact
 counts and honest limits are in `WORLDGEN_STRUCTURE_MATRIX_2026-08-01.md`.
+
+#73 hardens the mandatory play-phase protocol. Each join now has a 300-tick
+acknowledgement deadline, exact required-channel capability checks on both
+peers, idempotent duplicate handling, request gating, and disconnect cleanup.
+The 26.1 positional audit adds minecart-step, damage-source, `/look`, sign,
+pick-block, and block-tag-query conversions and explicitly leaves dynamic
+maps/compasses/locator pointers, operator debug packets, and opaque mod
+payloads unsupported. The complete two-client seam/gameplay/reconnect matrix
+still passes. See `PROTOCOL_HARDENING_2026-08-01.md`.
 
 The P1–P4 architecture parents (#5–#8) are now closed after final review of
 the integrated 26.1 topology, worldgen, protocol, renderer, lifecycle, and
@@ -171,7 +180,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 221 unit/parameterized cases pass, and Loom produces
+temporary shims, all 224 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -589,13 +598,14 @@ and compatibility claims.
   The safe-small two-client runner adds actual `PortalForcer`-created Nether
   blocks/linking/return and End portal block travel. Normal stand-in-portal
   delays, sleeping-player reconnect, maps, and raids remain manual coverage.
-- No global compatibility layer catches every new positional Minecraft packet
-  or mod packet.
+- Minecraft 26.1.2's gameplay positional packets have an explicit audit, but
+  dynamic maps/compasses/locator pointers, operator debug packets, future
+  Minecraft packets, and opaque third-party payloads are not globally caught.
 
 ### Protocol and compatibility
 
-- The handshake has no explicit acknowledgement timeout after settings send.
-- Protocol compatibility is one format integer, not feature negotiation.
+- The handshake uses an exact settings format plus the complete required
+  channel generations. It deliberately does not negotiate partial features.
 - Vanilla clients are intentionally unsupported.
 - Mods assuming a flat renderer, ordinary unbounded chunk X, global Euclidean
   distance, different gravity, or unchanged shader/worldgen internals are
@@ -689,8 +699,7 @@ retaining the fixed pose and continuous dimming/colour cycle.
 Priorities are ordered by player-visible value and architectural leverage.
 
 1. **Finish the stability phase**
-   - #73 protocol negotiation and positional-packet hardening;
-   - #74 compatibility and fault-isolation pass.
+   - #74 configuration UX, compatibility contracts, and fault isolation.
 2. **Prepare the Fabric release candidate**
    - finish #12 macOS/Windows Prism and dedicated-server packages;
    - run #13 independent review against one exact clean pushed revision.

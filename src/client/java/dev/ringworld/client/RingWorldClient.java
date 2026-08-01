@@ -6,7 +6,9 @@ import dev.ringworld.client.render.RingSurfaceTextureRenderer;
 import dev.ringworld.net.RingSettingsPayload;
 import dev.ringworld.net.RingSettingsAckPayload;
 import dev.ringworld.net.RingSettingsHandshake;
+import dev.ringworld.net.RingAtlasPregenerationControlPayload;
 import dev.ringworld.net.RingAtlasPregenerationStatusPayload;
+import dev.ringworld.net.RingAtlasPregenerationStatusRequestPayload;
 import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRequestPayload;
 import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
@@ -134,18 +136,21 @@ public final class RingWorldClient implements ClientModInitializer {
                         }
                         return;
                     }
+                    if (!ClientPlayNetworking.canSend(RingSettingsAckPayload.ID)
+                            || !ClientPlayNetworking.canSend(RingTerrainAtlasRequestPayload.ID)
+                            || !ClientPlayNetworking.canSend(RingAtlasPregenerationStatusRequestPayload.ID)
+                            || !ClientPlayNetworking.canSend(RingAtlasPregenerationControlPayload.ID)) {
+                        var handler = context.client().getConnection();
+                        if (handler != null) {
+                            handler.getConnection().disconnect(Component.literal(
+                                    "Server RingWorld feature channels are missing or out of date."));
+                        }
+                        return;
+                    }
                     clearRingSession();
                     ClientRingState.set(
                             new RingGeometry(payload.width(), payload.circumference()),
                             payload.wallHeight(), payload.surfaceReferenceY(), fingerprint);
-                    if (!ClientPlayNetworking.canSend(RingSettingsAckPayload.ID)) {
-                        var handler = context.client().getConnection();
-                        if (handler != null) {
-                            handler.getConnection().disconnect(Component.literal(
-                                    "Server does not support the RingWorld settings acknowledgement."));
-                        }
-                        return;
-                    }
                     ClientPlayNetworking.send(RingSettingsHandshake.acknowledgementFor(payload));
                 }));
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasMetadataPayload.ID, (payload, context) ->
