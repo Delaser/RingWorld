@@ -57,6 +57,9 @@ Start here:
 - [`SEAM_GAMEPLAY_REGRESSION_2026-08-01.md`](SEAM_GAMEPLAY_REGRESSION_2026-08-01.md):
   expanded dedicated-client stateful-block, bed/death, and physical-portal
   seam evidence plus the remaining manual/unsupported matrix.
+- [`WORLDGEN_STRUCTURE_MATRIX_2026-08-01.md`](WORLDGEN_STRUCTURE_MATRIX_2026-08-01.md):
+  multi-seed biome, carver, feature, loot, structure-seam, saved-policy, and
+  reload evidence.
 - [`SUN_RENDERING_SNAPSHOT_2026-07-26.md`](SUN_RENDERING_SNAPSHOT_2026-07-26.md):
   frozen rollback description of the removed ring-centred sun and panel array.
 - [`MIXIN_MAP.md`](MIXIN_MAP.md): ownership and risk map for every mixin.

@@ -243,6 +243,36 @@ height queries, bounded stronghold and portal-room geometry, an activatable
 portal, folded Eye continuity, both textured rims through their saved height,
 and generated exterior void.
 
+## Multi-seed worldgen and structure seam matrix
+
+After accepting the ignored stronghold test server's local EULA, run:
+
+```sh
+python3 scripts/run_worldgen_structure_matrix.py
+```
+
+The runner executes production and safe-small seeds, reloads the production
+save before another case can replace it, and checks the emitted record against
+the requested immutable layout. It samples canonical X and X+C through the
+installed periodic climate sampler, generates four complete chunk columns on
+both sides of the seam across the finite width, and audits caves, ores, logs,
+structure starts/bounds, references, loot containers, and structure spawn
+overrides. It requires all 14 defined major biome families in aggregate, at
+least one actual seam-crossing structure, both satisfied and bounded-
+unsatisfied monument policy outcomes, and exact stable evidence after reload.
+
+Parser and aggregate-policy tests run separately with:
+
+```sh
+python3 scripts/test_run_worldgen_structure_matrix.py
+```
+
+Machine-readable results are ignored under
+`build/reports/ringworld-worldgen-matrix/`. Exact evidence and limits are in
+`WORLDGEN_STRUCTURE_MATRIX_2026-08-01.md`. The normal
+`runStrongholdTestServer` remains strict: without
+`-PringWorldgenMatrix=true`, a requested but unsatisfied monument fails it.
+
 ## 26.1 integrated safe-small client gate
 
 The 2026-07-28 isolated Java 25 client gate first confirmed that every startup

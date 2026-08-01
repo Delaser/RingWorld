@@ -101,6 +101,17 @@ after server-owned sleep poses, monotonic 26.1 clock setup, and explicit
 client-ready gating. Exact automated, manual, and unsupported coverage is in
 `SEAM_GAMEPLAY_REGRESSION_2026-08-01.md`.
 
+#72 completes the multi-seed worldgen and structure seam matrix. Three fresh
+dedicated worlds plus one exact production-save reload cover all 14 defined
+major Overworld biome families, 544 fresh fully generated seam-strip chunks,
+caves, ores, trees, loot containers, canonical starts/references, six
+deliberately seam-crossing mineshafts, and both satisfied and bounded-
+unsatisfied saved monument outcomes. The production reload preserves the exact
+sampled biome, terrain, structure, loot, and policy record. Every case also
+passes generated stronghold frames, activation, periodic locate, and folded-
+Eye checks; the separate #71 client gate supplies physical End travel. Exact
+counts and honest limits are in `WORLDGEN_STRUCTURE_MATRIX_2026-08-01.md`.
+
 The P1–P4 architecture parents (#5–#8) are now closed after final review of
 the integrated 26.1 topology, worldgen, protocol, renderer, lifecycle, and
 runtime evidence. This records that the ported architecture meets those work
@@ -295,7 +306,7 @@ in-process reopen, which restored the same layout and complete atlas. The final
 marker was `result=true`; this is transfer-path evidence, not proof of vanilla
 portal construction or linking.
 
-Broader gameplay/worldgen automation and compatibility gates remain. Repeatable
+Broader gameplay and compatibility gates remain. Repeatable
 Fabric staging is complete, but optional convenience packages and independent
 release-candidate review are still pending, so the active 26.1.2 alpha is not
 yet a stable release. The frozen `mc-1.21.11-final` tag remains the rollback
@@ -677,9 +688,8 @@ retaining the fixed pose and continuous dimming/colour cycle.
 
 Priorities are ordered by player-visible value and architectural leverage.
 
-1. **Run the stability phase**
-   - #72 worldgen/structure seam matrix;
-   - #73 custom-dimension runtime matrix;
+1. **Finish the stability phase**
+   - #73 protocol negotiation and positional-packet hardening;
    - #74 compatibility and fault-isolation pass.
 2. **Prepare the Fabric release candidate**
    - finish #12 macOS/Windows Prism and dedicated-server packages;
@@ -687,23 +697,16 @@ Priorities are ordered by player-visible value and architectural leverage.
 3. **Begin NeoForge parity only after Fabric RC approval**
    - implement #34 through narrow platform adapters while keeping common code
      loader-neutral.
-4. **Worldgen seam matrix details**
-   - multiple seeds;
-   - every major biome;
-   - non-stronghold structures deliberately forced across X=0/C;
-   - loot, mobs, and structure-specific locate commands;
-   - manual Eye-of-Ender flight from ordinary play (automated folded Eye
-     motion and physical End-portal travel/return already pass).
-5. **Configuration UX follow-up**
+4. **Configuration UX follow-up**
    - improve creation cost warnings with measured production benchmarks;
    - continue custom-size runtime coverage without weakening immutable layout
      validation.
-6. **Day/night visual polish**
+5. **Day/night visual polish**
    - capture the new small sun at all four tone keyframes;
    - tune keyframe colours only against matched sky, live-terrain, and
      distant-ring screenshots;
    - keep the single authoritative vanilla gameplay clock.
-7. **Compatibility API and dual-loader preparation**
+6. **Compatibility API and dual-loader preparation**
    - expand the read-only API for canonical/presentation/physical poses;
    - document compatibility contracts and failure detection.
    - begin #34 only after the Fabric release candidate is approved, keeping
@@ -711,8 +714,6 @@ Priorities are ordered by player-visible value and architectural leverage.
 
 ## Evidence required before calling the mod stable and broadly compatible
 
-- Broader multi-seed worldgen/structure continuity beyond the guaranteed
-  stronghold and optional monument fixtures.
 - Manual sleeping-player reconnect, map, raid, and ordinary portal-delay
   playthroughs beyond the passing automated bed/death/linked-portal gate.
 - Manual gamma, night-vision, lightning, and close cloud-height visual checks.
