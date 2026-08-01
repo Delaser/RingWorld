@@ -1,0 +1,102 @@
+plugins {
+    id 'java-library'
+    id 'net.neoforged.moddev' version "${moddevgradle_version}"
+}
+
+version = rootProject.mod_version
+group = rootProject.maven_group
+
+base {
+    archivesName = rootProject.archives_base_name + '-neoforge'
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(25)
+    withSourcesJar()
+}
+
+sourceSets.main.java.setSrcDirs([
+        rootProject.file('src/main/java'),
+        rootProject.file('src/platform/neoforge/java')
+])
+sourceSets.main.resources.setSrcDirs([
+        rootProject.file('src/main/resources')
+])
+sourceSets.main.resources.exclude('fabric.mod.json')
+sourceSets.main.resources.exclude('ringworld.client.mixins.json')
+
+// Run the same loader-neutral contract suite against the NeoForge-compiled
+// common sources. Platform-specific runtime gates remain separate.
+sourceSets.test.java.setSrcDirs([
+        rootProject.file('src/test/java')
+])
+sourceSets.test.resources.setSrcDirs([
+        rootProject.file('src/test/resources'),
+        rootProject.file('src/main/resources')
+])
+
+neoForge {
+    version = rootProject.neoforge_version
+
+    runs {
+        client {
+            client()
+            gameDirectory = project.file('run-client')
+        }
+        server {
+            server()
+            gameDirectory = project.file('run-server')
+            programArgument '--nogui'
+        }
+    }
+
+    mods {
+        ringworld {
+            sourceSet sourceSets.main
+        }
+    }
+
+    unitTest {
+        enable()
+        testedMod = mods.ringworld
+    }
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
+    inputs.properties([
+        mod_version: project.version,
+        minecraft_version: rootProject.minecraft_version,
+        neoforge_version: rootProject.neoforge_version
+    ])
+    expand([
+        mod_version: project.version,
+        minecraft_version: rootProject.minecraft_version,
+        neoforge_version: rootProject.neoforge_version
+    ])
+    from 'src/main/templates'
+    into layout.buildDirectory.dir('generated/sources/modMetadata')
+}
+
+sourceSets.main.resources.srcDir generateModMetadata
+neoForge.ideSyncTask generateModMetadata
+
+tasks.withType(JavaCompile).configureEach {
+    options.release = 25
+    options.encoding = 'UTF-8'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
+tasks.withType(Jar).configureEach {
+    from(rootProject.file('LICENSE')) {
+        rename { 'LICENSE-RINGWORLD.txt' }
+    }
+}

@@ -14,7 +14,7 @@
   "license": "MPL-2.0",
   "environment": "*",
   "entrypoints": {
-    "main": ["dev.ringworld.RingWorldMod"],
+    "main": ["dev.ringworld.platform.fabric.FabricRingWorldMod"],
     "client": ["dev.ringworld.client.RingWorldClient"]
   },
   "mixins": [

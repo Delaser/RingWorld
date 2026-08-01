@@ -13,6 +13,13 @@ The authoritative mixin lists are:
 If a mixin is added, removed, or renamed, update those files and this table in
 the same change.
 
+The shared server mixin configuration is packaged by both Fabric and the
+NeoForge 26.1.2.87 module. NeoForge's dedicated server reaches `Done` and
+starts/progresses the shared atlas; that is not graphical-client or rendering
+validation. `ringworld.client.mixins.json` remains Fabric-client-only until
+the NeoForge graphical client is integrated and tested. A monitor-unavailable
+launch attempt does not validate a mixin or client path.
+
 ## Common/server mixins
 
 | Mixin | Vanilla target | Owned behavior | Main risk |

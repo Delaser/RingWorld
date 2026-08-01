@@ -52,7 +52,10 @@ abstract class ServerEntityManagerMixin<T extends EntityAccess> implements RingE
 
     /** Canonicalize newly spawned and disk-loaded entities before indexing. */
     @Inject(
-            method = "addEntity(Lnet/minecraft/world/level/entity/EntityAccess;Z)Z",
+            method = {
+                    "addEntity(Lnet/minecraft/world/level/entity/EntityAccess;Z)Z",
+                    "addEntityWithoutEvent(Lnet/minecraft/world/level/entity/EntityAccess;Z)Z"
+            },
             at = @At("HEAD"))
     private void ringworld$canonicalEntityPosition(T entity, boolean existing,
                                                    CallbackInfoReturnable<Boolean> cir) {
@@ -96,7 +99,10 @@ abstract class ServerEntityManagerMixin<T extends EntityAccess> implements RingE
     }
 
     @Redirect(
-            method = "addEntity(Lnet/minecraft/world/level/entity/EntityAccess;Z)Z",
+            method = {
+                    "addEntity(Lnet/minecraft/world/level/entity/EntityAccess;Z)Z",
+                    "addEntityWithoutEvent(Lnet/minecraft/world/level/entity/EntityAccess;Z)Z"
+            },
             at = @At(value = "INVOKE", target = "Lnet/minecraft/core/SectionPos;asLong(Lnet/minecraft/core/BlockPos;)J"))
     private long ringworld$canonicalInitialSection(BlockPos pos, T entity, boolean existing) {
         if (!(entity instanceof Entity minecraftEntity)

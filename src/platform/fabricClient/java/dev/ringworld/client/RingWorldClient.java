@@ -18,6 +18,7 @@ import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingRenderProfile;
 import java.util.Optional;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -112,6 +113,8 @@ public final class RingWorldClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        ClientRingState.configureCacheDirectory(
+                FabricLoader.getInstance().getGameDir().resolve("ringworld-cache"));
         ClientPlayNetworking.registerGlobalReceiver(RingSettingsPayload.ID, (payload, context) ->
                 context.client().execute(() -> {
                     if (payload.formatVersion() != dev.ringworld.world.RingWorldSettings.FORMAT_VERSION) {

@@ -1,7 +1,6 @@
 package dev.ringworld.server;
 
 import dev.ringworld.RingWorldMod;
-import dev.ringworld.net.RingWorldNetworking;
 import dev.ringworld.world.RingWorldConfig;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingGenerationBoundary;
@@ -13,12 +12,7 @@ import dev.ringworld.world.RingStructurePolicy;
 import dev.ringworld.world.RingMonumentResolution;
 import dev.ringworld.world.RingNoiseCoordinates;
 import dev.ringworld.world.RingNavigationAccess;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents;
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.core.BlockPos;
-import net.minecraft.network.chat.Component;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.server.level.ServerLevel;
@@ -50,6 +44,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.concurrent.atomic.AtomicLong;
 
 /** Server-authoritative seam and boundary behaviour. */
@@ -68,64 +63,43 @@ public final class RingWorldServer {
     private static final Map<ServerLevel, LinkedHashMap<Long, net.minecraft.world.level.chunk.LevelChunk>>
             PENDING_LEGACY_RIM_MIGRATIONS = new IdentityHashMap<>();
     private static final AtomicLong NON_CANONICAL_HOLDER_REQUESTS = new AtomicLong();
+    private static BiConsumer<net.minecraft.server.MinecraftServer, Throwable> PRE_LOAD_REJECTION_HANDLER =
+            (server, failure) -> { };
 
     private record TestProgress(int stage, int ticks) { }
     private RingWorldServer() { }
 
-    public static void register() {
-        RingWorldHeadlessPrewarm.register();
-        RingTerrainAtlasServer.registerCommands();
-        ServerTickEvents.END_LEVEL_TICK.register(RingWorldServer::tickRingWorld);
-        ServerTickEvents.END_SERVER_TICK.register(RingWorldProductionLifecycleTest::tick);
-        ServerTickEvents.END_SERVER_TICK.register(RingWorldStrongholdTest::tick);
-        ServerChunkEvents.CHUNK_LOAD.register((world, chunk, generated) -> {
-            if (!isOverworld(world)) return;
-            RingTerrainAtlasServer.captureLoadedChunk(world, chunk);
-            // A WorldChunk is not safe to mutate from inside its own load
-            // callback. Doing so can re-enter ServerChunkCache and park the
-            // server thread waiting for the future that is currently firing
-            // this callback. Queue it for the end of a later world tick.
-            if (RingGenerationBoundary.containsRim(chunk, geometryFor(world))) {
-                PENDING_LEGACY_RIM_MIGRATIONS
-                        .computeIfAbsent(world, unused -> new LinkedHashMap<>())
-                        .putIfAbsent(chunk.getPos().pack(), chunk);
-            }
-        });
-        ServerLevelEvents.LOAD.register((server, world) -> {
-            try {
-                attachWorldGeometry(world);
-                if (isOverworld(world)) {
-                    boolean headless = RingWorldHeadlessPrewarm.suppressesBackgroundAutostart(server);
-                    RingTerrainAtlasServer.load(world, !headless);
-                    if (headless) RingWorldHeadlessPrewarm.start(world);
-                }
-            } catch (Throwable failure) {
-                if (isOverworld(world) && RingWorldHeadlessPrewarm.requested(server)) {
-                    RingWorldHeadlessPrewarm.failStartup(server, world, failure);
-                    return;
-                }
-                throw failure;
-            }
-        });
-        ServerLevelEvents.UNLOAD.register((server, world) -> {
-            RingTerrainAtlasServer.unload(world);
-            WORLD_GEOMETRY.remove(world);
-            PENDING_LEGACY_RIM_MIGRATIONS.remove(world);
-            if (isOverworld(world)) RingNoiseCoordinates.clearCache();
-        });
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            if (RingWorldHeadlessPrewarm.rejectPlayerJoins(server)) {
-                handler.disconnect(Component.literal("RingWorld headless atlas preparation is active; player joins are disabled."));
-                return;
-            }
-            RingWorldMultiplayerTest.prepareWaitingPlayer(handler.player);
-            server.execute(() -> rescueEmbeddedPlayer(handler.player));
-        });
-        RingWorldNetworking.registerServer();
+    /** Installs the loader-owned headless-startup evidence hook. */
+    public static void configurePreLoadRejectionHandler(
+            BiConsumer<net.minecraft.server.MinecraftServer, Throwable> handler) {
+        PRE_LOAD_REJECTION_HANDLER = handler == null ? (server, failure) -> { } : handler;
     }
 
-    private static boolean isOverworld(ServerLevel world) {
+    public static boolean isOverworld(ServerLevel world) {
         return world.dimension() == Level.OVERWORLD;
+    }
+
+    /** Queues safe deferred rim migration from a loader-owned chunk-load callback. */
+    public static void onChunkLoaded(ServerLevel world, net.minecraft.world.level.chunk.LevelChunk chunk) {
+        if (!isOverworld(world)) return;
+        if (RingGenerationBoundary.containsRim(chunk, geometryFor(world))) {
+            PENDING_LEGACY_RIM_MIGRATIONS
+                    .computeIfAbsent(world, unused -> new LinkedHashMap<>())
+                    .putIfAbsent(chunk.getPos().pack(), chunk);
+        }
+    }
+
+    /** Clears loader-neutral state after a platform level-unload callback. */
+    public static void onLevelUnloaded(ServerLevel world) {
+        WORLD_GEOMETRY.remove(world);
+        PENDING_LEGACY_RIM_MIGRATIONS.remove(world);
+        if (isOverworld(world)) RingNoiseCoordinates.clearCache();
+    }
+
+    /** Loader-owned join callbacks call this after their own admission policy. */
+    public static void onPlayerJoined(ServerPlayer player) {
+        RingWorldMultiplayerTest.prepareWaitingPlayer(player);
+        player.level().getServer().execute(() -> rescueEmbeddedPlayer(player));
     }
 
     /**
@@ -152,7 +126,7 @@ public final class RingWorldServer {
         try {
             return attachWorldGeometry(world);
         } catch (Throwable failure) {
-            RingWorldHeadlessPrewarm.recordPreLoadRejection(world.getServer(), failure);
+            PRE_LOAD_REJECTION_HANDLER.accept(world.getServer(), failure);
             throw failure;
         }
     }
@@ -219,7 +193,7 @@ public final class RingWorldServer {
         PLAYER_SEAM_CROSSINGS.merge(player.getUUID(), 1, Integer::sum);
     }
 
-    private static void tickRingWorld(ServerLevel world) {
+    public static void tickRingWorld(ServerLevel world) {
         if (!isOverworld(world)) return;
         RingGeometry geometry = geometryFor(world);
         // The server owns exactly one circumference plane. Clients may keep a
@@ -229,7 +203,6 @@ public final class RingWorldServer {
             canonicalizeEntityPosition(entity, geometry);
         }
         migrateOneLegacyRimChunk(world, geometry);
-        RingTerrainAtlasServer.tick(world);
         RingWorldMultiplayerTest.tick(world, geometry);
         runAutomatedTest(world, geometry);
     }
@@ -288,7 +261,7 @@ public final class RingWorldServer {
      * solid block. Validate the join pose once, and only move players whose
      * actual collision box is obstructed.
      */
-    private static void rescueEmbeddedPlayer(ServerPlayer player) {
+    public static void rescueEmbeddedPlayer(ServerPlayer player) {
         ServerLevel world = player.level();
         if (!isOverworld(world)) return;
         RingWorldSettings settings = RingWorldSettings.get(world);
