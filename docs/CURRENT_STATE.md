@@ -152,12 +152,12 @@ sentinels. A Windows Actions gate now executes the batch/PowerShell fresh and
 upgrade path with a harmless Prism stand-in; it does not replace the pending
 graphical Windows Minecraft gate. The macOS launcher now validates a detected
 Java 25 path before using it, with a tested Prism-managed fallback when none is
-installed. A real in-place macOS client selected Java 25, loaded Minecraft,
-RingWorld, and all resources/shaders with the exact staged jar. A fresh
+installed. Both a real in-place macOS client and an empty-data first-run client
+selected Java 25, loaded Minecraft, RingWorld, and all resources/shaders with
+the exact staged jar. A fresh
 16,384-by-256 dedicated server built from the overlay reached `Done`, started
 with bounded-test atlas pregeneration disabled, then saved and stopped cleanly.
-The locked desktop prevented completing Prism's empty-data first-run setup;
-that graphical macOS gate and the graphical Windows runtime gate remain before
+The graphical Windows runtime gate remains before
 #12 can close. The exact candidate hashes and runtime record are in
 `FABRIC_RELEASE_CANDIDATE_2026-08-01.md`.
 

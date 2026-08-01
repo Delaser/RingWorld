@@ -52,15 +52,21 @@ runtime, installed the exact candidate jar, authenticated, and loaded
 Minecraft, RingWorld, resources, shaders, sound, and all texture atlases
 without a crash. It was then terminated without opening or modifying a world.
 
+The same exact ZIP also passed from an empty Prism data directory after the Mac
+was unlocked. Only the official Prism app and the test account record were
+supplied; Minecraft libraries, assets, settings, and instance runtime state
+were absent. The package installed its instance, detected the user-local Java
+25 runtime, preserved the queued `-l RingWorld-Test` launch through Prism's
+language/appearance wizard, downloaded Minecraft 26.1.2, authenticated, and
+completed RingWorld resource, shader, sound, and texture-atlas initialization.
+The installed jar hash matched the staged candidate and no crash report or
+error was produced.
+
 ## Remaining issue-#12 gates
 
 - Launch the actual ZIP in a graphical Windows Minecraft session and confirm
   Java 25, authentication, resources/shaders, and title-screen stability.
-- Complete the clean, empty macOS-data launch interactively. The package
-  installed the instance and correctly selected the detected Java 25 runtime,
-  but Prism retained a first-run graphical setup step while the Mac desktop was
-  locked. This is no longer a Java-discovery failure.
 
-Do not close #12 or call these convenience packages release-ready until those
-two platform gates are recorded. Issue #13 then performs the independent
+Do not close #12 or call these convenience packages release-ready until that
+platform gate is recorded. Issue #13 then performs the independent
 review of this frozen source and artifact set.

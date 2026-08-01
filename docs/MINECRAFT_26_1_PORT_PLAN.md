@@ -451,8 +451,8 @@ Restrictions:
 
 Status: in progress on `main`. The builder, reproducibility/licence tests,
 Windows launcher CI, exact macOS in-place launch, exact production-layout
-server smoke, and frozen hashes are complete. Empty-data macOS first-run and a
-real graphical Windows Minecraft launch remain.
+server smoke, empty-data macOS first-run, and frozen hashes are complete. A
+real graphical Windows Minecraft launch remains.
 
 Frozen source: `9b77326d1ec7fba7e2e12e06d89adfceae0ffeb5`; see
 `FABRIC_RELEASE_CANDIDATE_2026-08-01.md`.
