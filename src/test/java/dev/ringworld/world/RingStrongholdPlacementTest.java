@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingStrongholdPlacementTest {
@@ -43,5 +44,24 @@ class RingStrongholdPlacementTest {
         }
 
         assertNotEquals(1, starts.size());
+    }
+
+    @Test
+    void completedPieceGraphIsShiftedInsideBothFiniteAxes() {
+        RingGeometry geometry = new RingGeometry(256, 16_384);
+
+        assertEquals(new RingStrongholdPlacement.BlockShift(0, 4),
+                RingStrongholdPlacement.fitShift(6760, 6917, -132, 18, geometry));
+        assertEquals(new RingStrongholdPlacement.BlockShift(-5, 0),
+                RingStrongholdPlacement.fitShift(16_230, 16_388, -80, 80, geometry));
+        assertEquals(new RingStrongholdPlacement.BlockShift(0, 0),
+                RingStrongholdPlacement.fitShift(100, 250, -90, 90, geometry));
+    }
+
+    @Test
+    void pieceGraphWiderThanBandFailsExplicitly() {
+        RingGeometry geometry = new RingGeometry(256, 16_384);
+        assertThrows(IllegalArgumentException.class,
+                () -> RingStrongholdPlacement.fitShift(100, 250, -130, 130, geometry));
     }
 }

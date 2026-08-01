@@ -350,7 +350,11 @@ the centre of the finite band. Its X chunk retains eight chunks of seam
 clearance, covering vanilla's 112-block piece-anchor limit without creating a
 second seam image. Vanilla `StrongholdStructure` still creates every piece,
 loot container, spawner, portal frame, and reference; RingWorld changes only
-the placement list.
+the placement list and, when the completed terrain-adjusted graph touches a
+finite boundary, translates every piece together by the smallest required X/Z
+offset. The translation is enabled only by the saved new-world policy, so a
+legacy world without that policy retains its old structure layout. The policy
+flag on the generator is published across worldgen worker threads.
 
 `/locate` and Eyes of Ender receive the stronghold locator in the periodic
 image nearest their origin. An Eye's transient target moves by the same exact

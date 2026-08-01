@@ -237,8 +237,9 @@ The current build includes:
 - atlas-backed full-ring rendering at normal chunk distance;
 - configurable immutable dimensions with creation-time validation and cost
   preview;
-- a deterministic in-band stronghold with a complete, activatable End portal
-  room for every newly created RingWorld;
+- a deterministic stronghold whose complete terrain-adjusted piece graph is
+  fitted inside the band, with an activatable End portal room, for every newly
+  created RingWorld;
 - automated local, layout-switch, production-projection, production-lifecycle,
   and two-client multiplayer harnesses.
 

@@ -107,13 +107,15 @@ log, writes the selected layout and seed, and disables atlas pregeneration. The 
 log `[stronghold-test] PASS`; a missing marker or a logged failure makes the
 Gradle verification task fail. The gate verifies the deterministic canonical
 start, complete piece-graph and portal-room bounds, all 12 generated frame
-blocks, an activatable frame
+blocks, any minimal whole-graph boundary fit, an activatable frame
 orientation, a nearest-periodic locate target, and Eye target continuity after
 a canonical seam fold. Run again with
 `-x prepareStrongholdTestWorld` to verify saved-policy and structure reload.
 
-Evidence on 2026-08-01 passed seven production seeds with complete piece-graph
-bounds, plus 2,048×416 safe-small, 15,552×4,096 non-power-of-two geometry,
+Evidence on 2026-08-01 passed eight production seeds with complete piece-graph
+bounds, including `height-query-production`, whose unadjusted
+terrain-adjusted bounds reached Z=-132 and were fitted to Z=-128. It also
+passed 2,048×416 safe-small, 15,552×4,096 non-power-of-two geometry,
 activation, and save/reload. The
 1,024-block circumference is a geometry-helper fixture only; full-height
 dimension validation correctly rejects it, and 2,048 is the smallest active

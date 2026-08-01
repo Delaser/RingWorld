@@ -6,4 +6,6 @@ public interface RingWorldGeneratorAccess {
     RingGeometry ringworld$getGeometry();
     void ringworld$setWallHeight(int wallHeightBlocks);
     int ringworld$getWallHeight();
+    void ringworld$setGuaranteeStronghold(boolean guaranteeStronghold);
+    boolean ringworld$guaranteesStronghold();
 }
