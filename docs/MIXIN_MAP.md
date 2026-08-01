@@ -45,6 +45,19 @@ the same change.
 
 ## Client mixins
 
+### `MinecraftMixin`
+
+- Targets: `Minecraft.disconnect(Screen, boolean, boolean)` and
+  `Minecraft.clearClientLevel`.
+- Purpose: clears static RingWorld geometry, atlas, and GPU surface state when
+  a local or remote world is torn down. The three-argument disconnect path
+  owns integrated-world exit; `clearClientLevel` covers the separate remote
+  teardown path. Fabric's play-connection event remains a redundant network
+  lifecycle hook.
+- Coordinate domain: session ownership boundary; no coordinate conversion.
+- Loader note: the target is a Minecraft lifecycle method rather than a
+  Fabric event, so the same mixin is intended to remain valid on NeoForge.
+
 | Mixin | Vanilla target | Owned behavior | Main risk |
 | --- | --- | --- | --- |
 | `ChunkRenderingDataPreparerMixin` | `SectionOcclusionGraph` | Wraps terrain collection/update frusta in `CurvedRingFrustum` and disables flat six-face section occlusion in the RingWorld Overworld | Restoring smart occlusion hides terrain that curvature bends into view; disabling other frustum/distance checks would be too broad |
@@ -56,6 +69,7 @@ the same change.
 | `CreateWorldScreenInvoker` | `CreateWorldScreen` | Invokes level creation for the opt-in local automated harness | Test-only; must not auto-create when `testMode=false` |
 | `EntityRenderManagerMixin` | `EntityRenderDispatcher` | Curved translation and tangent rotation for entity models | Transform must match terrain and leave local camera controls unchanged |
 | `GlobalSettingsMixin` | `GlobalSettingsUniform.<init>` and `update(..., Vec3, ...)` | Extends Globals with named layout, vertical, render-distance, handoff, detail/reveal, haze, cloud-fade, and visual-profile fields | Shader ABI extension; std140 field order, buffer sizing, and the 26.1 extracted camera-position parameter are version-sensitive |
+| `MinecraftMixin` | `Minecraft.disconnect(Screen, boolean, boolean)` and `clearClientLevel` | Clears geometry, atlas, and GPU surface state on both integrated and remote world teardown paths | Missing either path can leak the previous world's static client state into an in-process reopen |
 | `PlayerPositionDebugHudEntryMixin` | `DebugEntryPosition` | Replaces F3 position section with canonical Ring coordinates and atlas state | Debug display only; never use it as storage logic |
 | `SkyRenderingMixin` | `SkyRenderer` | Small fixed ring-centred sun, time-based sun tint/intensity, no moon, stationary stars, and complete-ring texture invocation | `renderSun` constants and dynamic colour arguments are version-sensitive |
 

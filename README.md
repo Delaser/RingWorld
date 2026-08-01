@@ -19,8 +19,11 @@ The Nether and End remain vanilla.
 > client has completed terrain, full-atlas rendering, two natural wraps, and
 > the representative gameplay/rim matrix. A dedicated two-client seam,
 > combat, block, boat, teleport, and reconnect scenario also passes.
-> Multi-size visual review, automated-harness completion, packaging, and
-> staging gates are still outstanding, so this is not a playable release yet.
+> A copied 16,384×256 world also passes Nether/End transfers, normal save and
+> disconnect, client-state clearing, and an in-process reopen with the exact
+> layout and complete atlas restored. Multi-size visual review, remaining
+> automated-harness work, packaging, and staging gates are still outstanding,
+> so this is not a playable release yet.
 > The validated server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
 
@@ -215,8 +218,8 @@ The current build includes:
 - atlas-backed full-ring rendering at normal chunk distance;
 - configurable immutable dimensions with creation-time validation and cost
   preview;
-- automated local, layout-switch, production-projection, and two-client
-  multiplayer harnesses.
+- automated local, layout-switch, production-projection, production-lifecycle,
+  and two-client multiplayer harnesses.
 
 Representative automated coverage includes repeated seam crossings, combat,
 block updates, an arrow, a boat, a ground navigator, water flow, an explosion,
@@ -269,6 +272,7 @@ Additional automated runs:
 ```sh
 ./gradlew runLayoutSwitchClient
 ./gradlew runProductionProjectionClient -PringProjectionWorld="save-folder-id"
+./gradlew runProductionLifecycleClient -PringProductionLifecycleSource="save-folder-id"
 ```
 
 The complete fixtures, expected log markers, screenshots, performance

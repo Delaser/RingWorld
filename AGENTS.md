@@ -15,8 +15,10 @@ Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
 gameplay/rim probes. The dedicated two-client seam/combat/block/boat/teleport/
-reconnect matrix also passes. Multi-size visual review, automated-harness
-completion, packaging, and staging remain, so the port is not playable yet.
+reconnect matrix also passes. A copied 16,384×256 world now passes the
+Overworld/Nether/End transfer, save/disconnect, client-state cleanup, and
+same-process reopen gate. Multi-size visual review, remaining automated
+harness work, packaging, and staging remain, so the port is not playable yet.
 See `docs/CURRENT_STATE.md`.
 
 ## What this project is
@@ -338,6 +340,13 @@ version numbers.
 - `runLayoutSwitchClient` opens two existing saves in one JVM and stops after
   logging its result. Keep it non-destructive: it may save normally, but must
   not move players or edit terrain.
+- `runProductionLifecycleClient` first copies a named production save into its
+  own ignored run directory. Its test-only coordinator must use the 26.1
+  `TeleportTransition` API, stay separate from smoke/layout-switch/multiplayer,
+  and leave the source save untouched. The client, not the coordinator, owns
+  non-Overworld inactivity and exact restored-layout/atlas assertions. Let
+  Minecraft's integrated-server disconnect path own saving; never call
+  `MinecraftServer.saveEverything` from the render thread.
 - `RingWorldCreationScreen.extractRenderState` must not call a background
   extraction method. Minecraft 26.1's
   `Screen.extractRenderStateWithTooltipAndSubtitles` already owns the frame's

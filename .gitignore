@@ -4,6 +4,7 @@ run/
 run-multiplayer/
 run-layout-switch/
 run-production-projection/
+run-production-lifecycle/
 logs/
 dist/
 .codex-tmp/

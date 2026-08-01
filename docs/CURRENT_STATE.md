@@ -132,6 +132,16 @@ generation. Fifteen-second sampling observed a server RSS peak of about
 generation error, RingWorld exception, or crash, stopped cleanly, and left the
 source save hashes unchanged.
 
+An isolated copy of a complete 16,384×256 production world also passes the
+single-client lifecycle gate. The server used real 26.1 `TeleportTransition`
+moves through Overworld → Nether → Overworld → End → Overworld. The client
+proved RingWorld state inactive in Nether and End, restored the exact geometry,
+layout fingerprint, and 65,536-cell atlas on both Overworld returns, then used
+Minecraft's normal save/disconnect path. Static client state cleared before an
+in-process reopen, which restored the same layout and complete atlas. The final
+marker was `result=true`; this is transfer-path evidence, not proof of vanilla
+portal construction or linking.
+
 Multi-size visual review, automated-harness completion, packaging, and staging
 gates remain.
 The only playable implementation is still the frozen `mc-1.21.11-final` tag.
@@ -220,6 +230,11 @@ client/runtime gate passes.
 - Local destructive smoke harness.
 - Same-JVM saved-layout switch harness that verifies disconnect clearing and
   second-world geometry/atlas replacement.
+- Isolated copied-production lifecycle harness that drives 26.1
+  `TeleportTransition` transfers through Nether, Overworld, End, and Overworld, then
+  saves/disconnects/reopens the copy while independently checking inactive
+  non-Overworld rendering and exact geometry/fingerprint/complete-atlas
+  restoration. The complete 16,384×256 runtime gate passes.
 - The automated upward live/LOD capture waits for the current world's atlas to
   be complete before reducing view distance for seam traversal. With
   pregeneration explicitly disabled and no cache, it records a skipped LOD
@@ -235,7 +250,7 @@ client/runtime gate passes.
   teleport targets as equivalent client-chart images. Its vehicle gate rejects
   a missing/replaced root or passenger, lost mount, rotation jump, excess
   motion, or non-canonical post-fold ownership.
-- Gradle wrapper, parameterized pure dimension tests, server deployment templates, and private
+- Gradle wrapper, parameterized pure dimension tests, server deployment templates, and public
   GitHub source repository.
 - Latest profile-3 safe-small runtime (2,048×416 at 28-chunk capture) passed two
   natural wraps with zero camera delta/correction packets and passed block,
@@ -357,8 +372,11 @@ client/runtime gate passes.
 - Representative arrows, a boat, one navigator, water, explosions, effects,
   blocks, and melee are tested; arbitrary redstone, fluids, projectiles,
   vehicles, portals, raids, maps, commands, and modded systems are not.
-- Explicit teleport and reconnect have harness coverage, but death/respawn and
-  every portal route need broader regression testing.
+- Explicit teleport and reconnect have harness coverage. The isolated
+  copied-production lifecycle runner covers Nether → Overworld → End →
+  Overworld, normal save/disconnect, and same-process reopen at 16,384×256.
+  Death/respawn, vanilla portal construction, and other portal routes still
+  need broader regression testing.
 - No global compatibility layer catches every new positional Minecraft packet
   or mod packet.
 

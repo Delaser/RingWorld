@@ -40,8 +40,8 @@ Start here:
 - [`SUN_RENDERING_SNAPSHOT_2026-07-26.md`](SUN_RENDERING_SNAPSHOT_2026-07-26.md):
   frozen rollback description of the removed ring-centred sun and panel array.
 - [`MIXIN_MAP.md`](MIXIN_MAP.md): ownership and risk map for every mixin.
-- [`TESTING.md`](TESTING.md): unit, local smoke, visual, and two-client
-  multiplayer procedures.
+- [`TESTING.md`](TESTING.md): unit, local smoke, visual, copied-world
+  lifecycle, and two-client multiplayer procedures.
 - [`OPERATIONS.md`](OPERATIONS.md): configuration, persistence, build,
   installation, packaging, and deployment.
 - [`CURRENT_STATE.md`](CURRENT_STATE.md): implemented features, deliberate

@@ -309,6 +309,56 @@ age, cached chunk, and current `shouldTickEntityAt` result. A folded position
 alone is not a pass: the projectile must remain tick-eligible and actually hit
 the seam-adjacent target.
 
+## Copied production lifecycle regression
+
+This isolated integrated-client runner exercises actual dimension transfers
+without altering the source world. It first copies a complete production
+16,384×256 save from `run/saves/` into the ignored
+`run-production-lifecycle/saves/` directory, then opens only that copy:
+
+```sh
+./gradlew runProductionLifecycleClient \
+  -PringProductionLifecycleSource="production-save-folder" \
+  -PringProductionLifecycleDestination="RingWorld Production Lifecycle"
+```
+
+The source property must be one existing save-folder identifier beneath
+`run/saves/`; the destination is the isolated copy and may be changed for
+concurrent local work. Both identifiers reject path traversal. The preparation
+task fails before launch when `level.dat` is absent, never writes to the source,
+and refreshes only the ignored destination. The client opens that copy through
+Minecraft's in-process world-open flow rather than the unreliable quick-play
+argument. Runtime directories must not be committed or packaged.
+
+The server coordinator uses the Minecraft 26.1 `TeleportTransition` API. After
+an initial Overworld-to-Nether setup move, the asserted sequence is Nether →
+Overworld → End → Overworld. The client independently records a complete
+production atlas and immutable layout baseline, proves
+`ClientRingState.geometry()` is inactive in both non-Overworld dimensions,
+verifies the exact geometry/fingerprint/complete atlas on both Overworld
+returns, uses Minecraft's normal integrated-server save-and-disconnect path,
+reopens the same copy, and verifies the baseline again. The client arms the
+server transfer only after its complete baseline is ready, and the final
+save/reopen waits for the server's full transfer result.
+Search the client log for the bounded machine-readable completion marker:
+
+```text
+[production-lifecycle] result=true ...
+```
+
+`result=false` records the failing phase or state. This test does not replace
+the dedicated two-client seam matrix, the layout-switch world replacement test,
+or manual portal/respawn playtesting.
+
+The production 16,384×256 checkpoint passes with a complete 65,536-cell atlas.
+It logged inactive client geometry in Nether and End, exact baseline restoration
+after both Overworld returns, `client state cleared=true` before reopen, and a
+final `result=true` after the same geometry, fingerprint, and atlas world hash
+were restored. An earlier harness revision called `saveEverything` from the
+render thread and raced server chunk/entity collections; the active runner
+deliberately relies on Minecraft's normal integrated-server save-and-disconnect
+path instead.
+
 If the client reaches the presentation side of the seam but its interaction
 fixture has not arrived, it logs presentation X, camera chart/crossing count,
 and both logical/canonical client block states every 200 ticks. This turns a

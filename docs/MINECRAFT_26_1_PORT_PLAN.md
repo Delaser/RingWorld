@@ -564,6 +564,9 @@ their corresponding runtime gates.
 ### Gate 5: production geometry
 
 - 16,384 × 256 current-default validation passes;
+- an isolated copied-production client passes Nether → Overworld → End →
+  Overworld, then save/disconnect/reopen with RingWorld inactive outside the
+  Overworld and the exact layout/atlas restored on return;
 - synthetic full-ring projection passes;
 - a real atlas resource benchmark completes;
 - GPU resources remain within policy;
