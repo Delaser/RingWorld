@@ -8,6 +8,7 @@ import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.ConnectScreen;
+import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ServerData;
@@ -22,7 +23,12 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.vehicle.boat.Boat;
 import net.minecraft.world.level.GameType;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.LecternBlock;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
+import net.minecraft.world.level.block.entity.LecternBlockEntity;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.util.Mth;
 
 /** A real-network, two-process client driver. It is dormant outside its JVM test flag. */
@@ -35,6 +41,7 @@ final class MultiplayerTestClient {
     private int stalledConnectionTicks;
     private int stage;
     private int stageTicks;
+    private boolean readySent;
 
     private int positionedTicks;
     private boolean seamArmed;
@@ -64,6 +71,18 @@ final class MultiplayerTestClient {
     private boolean sawFarTeleport;
     private boolean sawRemoteFarTeleport;
     private boolean reconnectResultSent;
+    private boolean extendedFixtureSent;
+    private boolean bedSleepSent;
+    private boolean sawSleeping;
+    private boolean bedDamageWakeSent;
+    private boolean bedDestroyedSent;
+    private boolean deathSeenSent;
+    private boolean respawnRequested;
+    private boolean deathRespawnSent;
+    private boolean netherEnterSent;
+    private boolean netherReturnSent;
+    private boolean endEnterSent;
+    private boolean endReturnSent;
 
     boolean tick(Minecraft client) {
         if (role.isEmpty()) return false;
@@ -81,6 +100,12 @@ final class MultiplayerTestClient {
             return true;
         }
         if (client.screen instanceof PauseScreen) client.setScreen(null);
+        if (!readySent && client.isGameLoadFinished()) {
+            readySent = true;
+            sendResult("client_ready", true, client.player.getX());
+            RingWorldMod.LOGGER.info("[multiplayer:{}] client world fully loaded x={}",
+                    role, client.player.getX());
+        }
         stageTicks++;
         switch (stage) {
             case 0 -> runSeamScenario(client);
@@ -89,6 +114,7 @@ final class MultiplayerTestClient {
             case 3 -> runVehicleScenario(client);
             case 4 -> runTeleportScenario(client);
             case 5 -> runReconnectResult(client);
+            case 6 -> runExtendedScenario(client);
             default -> { }
         }
         return true;
@@ -416,7 +442,14 @@ final class MultiplayerTestClient {
     }
 
     private void runReconnectResult(Minecraft client) {
-        if (!role.equals("B") || reconnectResultSent || stageTicks < 40) return;
+        if (role.equals("A")) {
+            if (stageTicks >= 40) {
+                stage = 6;
+                stageTicks = 0;
+            }
+            return;
+        }
+        if (reconnectResultSent || stageTicks < 40) return;
         RingGeometry geometry = ClientRingState.geometry();
         AbstractClientPlayer remote = findRemotePlayer(client);
         if ((geometry == null || remote == null) && stageTicks < 600) return;
@@ -427,6 +460,141 @@ final class MultiplayerTestClient {
         sendResult("reconnect", passed, remote == null ? Double.NaN : remote.getX());
         reconnectResultSent = true;
         stage = 6;
+        stageTicks = 0;
+    }
+
+    private void runExtendedScenario(Minecraft client) {
+        if (role.equals("A") && deathRespawnSent) {
+            if (client.level.dimension() == Level.NETHER && !netherEnterSent) {
+                netherEnterSent = true;
+                sendResult("nether_enter", ClientRingState.geometry() == null, client.player.getX());
+                RingWorldMod.LOGGER.info("[multiplayer:A] physical Nether portal entered x={} ringStateCleared={}",
+                        client.player.getX(), ClientRingState.geometry() == null);
+            } else if (netherEnterSent && client.level.dimension() == Level.OVERWORLD
+                    && !netherReturnSent) {
+                netherReturnSent = true;
+                sendResult("nether_return", ClientRingState.geometry() != null, client.player.getX());
+                RingWorldMod.LOGGER.info("[multiplayer:A] physical Nether portal return x={} ringStateReady={}",
+                        client.player.getX(), ClientRingState.geometry() != null);
+            } else if (netherReturnSent && client.level.dimension() == Level.END && !endEnterSent) {
+                endEnterSent = true;
+                sendResult("end_enter", ClientRingState.geometry() == null, client.player.getX());
+                RingWorldMod.LOGGER.info("[multiplayer:A] physical End portal entered x={} ringStateCleared={}",
+                        client.player.getX(), ClientRingState.geometry() == null);
+            } else if (endEnterSent && client.level.dimension() == Level.OVERWORLD && !endReturnSent) {
+                endReturnSent = true;
+                RingGeometry returnedGeometry = ClientRingState.geometry();
+                boolean canonical = returnedGeometry != null
+                        && returnedGeometry.wrapX(client.player.getX()) >= 0.0
+                        && returnedGeometry.wrapX(client.player.getX())
+                        < returnedGeometry.circumferenceBlocks();
+                sendResult("end_return", canonical, client.player.getX());
+                RingWorldMod.LOGGER.info("[multiplayer:A] physical End portal return={} x={} ringStateReady={}",
+                        canonical, client.player.getX(), returnedGeometry != null);
+            }
+        }
+
+        RingGeometry geometry = ClientRingState.geometry();
+        if (geometry == null) return;
+
+        if (!extendedFixtureSent) {
+            int chestX = presentationX(geometry, client, 0);
+            int lecternX = presentationX(geometry, client, 1);
+            BlockPos chest = new BlockPos(chestX, 120, -3);
+            BlockPos lectern = new BlockPos(lecternX, 120, -3);
+            BlockPos lamp = new BlockPos(chestX, 120, -5);
+            BlockPos fluid = new BlockPos(presentationX(
+                    geometry, client, geometry.circumferenceBlocks() - 1.0), 120, 6);
+            BlockPos blast = new BlockPos(chestX, 124, 9);
+            boolean chestReady = client.level.getBlockEntity(chest) instanceof ChestBlockEntity;
+            boolean lecternReady = client.level.getBlockEntity(lectern) instanceof LecternBlockEntity
+                    && client.level.getBlockState(lectern).getValue(LecternBlock.HAS_BOOK);
+            boolean lampLit = client.level.getBlockState(lamp)
+                    .getOptionalValue(BlockStateProperties.LIT).orElse(false);
+            boolean fluidCrossed = !client.level.getFluidState(fluid).isEmpty();
+            boolean explosionCrossed = client.level.getBlockState(blast).isAir();
+            if (stageTicks % 200 == 0) {
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:{}] waiting for extended fixture chest={} lectern={} lamp={} fluid={} blast={}",
+                        role, chestReady, lecternReady, lampLit, fluidCrossed, explosionCrossed);
+            }
+            if (chestReady && lecternReady && lampLit && fluidCrossed && explosionCrossed) {
+                extendedFixtureSent = true;
+                sendResult("extended_fixture", true, stageTicks);
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:{}] extended seam fixture=true chest={} lectern={} lamp={} fluid={} blast={}",
+                        role, chest, lectern, lamp, fluid, blast);
+            } else if (stageTicks >= 1_200) {
+                extendedFixtureSent = true;
+                sendResult("extended_fixture", false, stageTicks);
+                RingWorldMod.LOGGER.error(
+                        "[multiplayer:{}] extended seam fixture=false chest={} lectern={} lamp={} fluid={} blast={}",
+                        role, chestReady, lecternReady, lampLit, fluidCrossed, explosionCrossed);
+            }
+        }
+
+        if (!role.equals("A")) return;
+        if (client.player.isSleeping()) {
+            sawSleeping = true;
+            if (!bedSleepSent) {
+                BlockPos canonicalBed = new BlockPos(1, 120, -1);
+                int expectedX = presentationX(geometry, client, canonicalBed.getX());
+                boolean nearestBed = client.player.getSleepingPos()
+                        .map(pos -> pos.equals(new BlockPos(expectedX, 120, -1)))
+                        .orElse(false);
+                bedSleepSent = true;
+                sendResult("bed_sleep", nearestBed, expectedX);
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:A] seam bed sleep={} sleepingPos={} expectedX={} playerX={}",
+                        nearestBed, client.player.getSleepingPos().orElse(null), expectedX,
+                        client.player.getX());
+            }
+        } else if (sawSleeping && !bedDamageWakeSent
+                && (client.player.hurtTime > 0 || client.player.getHealth() < client.player.getMaxHealth())) {
+            bedDamageWakeSent = true;
+            boolean adjacent = Math.abs(geometry.shortestCircumferenceDelta(
+                    client.player.getX(), 1.0)) < 4.0;
+            sendResult("bed_damage_wake", adjacent, client.player.getX());
+            RingWorldMod.LOGGER.info("[multiplayer:A] seam bed damage wake={} x={} hurtTime={}",
+                    adjacent, client.player.getX(), client.player.hurtTime);
+        }
+
+        if (bedDamageWakeSent && !bedDestroyedSent) {
+            BlockPos foot = new BlockPos(presentationX(geometry, client, 0), 120, -1);
+            BlockPos head = new BlockPos(presentationX(geometry, client, 1), 120, -1);
+            if (client.level.getBlockState(foot).isAir()
+                    && client.level.getBlockState(head).isAir()
+                    && client.player.getSleepingPos().isEmpty()) {
+                bedDestroyedSent = true;
+                sendResult("bed_destroyed", true, client.player.getX());
+                RingWorldMod.LOGGER.info("[multiplayer:A] seam bed destruction=true x={}",
+                        client.player.getX());
+            }
+        }
+
+        if (client.screen instanceof DeathScreen && !respawnRequested) {
+            deathSeenSent = true;
+            respawnRequested = true;
+            sendResult("death_seen", true, client.player.getX());
+            RingWorldMod.LOGGER.info("[multiplayer:A] death screen observed at x={}; requesting respawn",
+                    client.player.getX());
+            client.player.respawn();
+            return;
+        }
+        if (respawnRequested && !deathRespawnSent && !(client.screen instanceof DeathScreen)
+                && client.player.isAlive() && client.player.getHealth() > 0.0F) {
+            double canonicalX = geometry.wrapX(client.player.getX());
+            boolean canonical = canonicalX >= 0.0
+                    && canonicalX < geometry.circumferenceBlocks();
+            deathRespawnSent = true;
+            sendResult("death_respawn", deathSeenSent && canonical, client.player.getX());
+            RingWorldMod.LOGGER.info("[multiplayer:A] death respawn={} x={} health={}",
+                    deathSeenSent && canonical, client.player.getX(), client.player.getHealth());
+        }
+    }
+
+    private static int presentationX(RingGeometry geometry, Minecraft client, double canonicalX) {
+        return (int)Math.floor(geometry.nearestImageX(canonicalX, client.player.getX()));
     }
 
     private void sendResult(String phase, boolean passed, double value) {

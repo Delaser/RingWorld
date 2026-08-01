@@ -60,6 +60,24 @@ class RingGeometryTest {
     }
 
     @Test
+    void periodicReachTreatsASeamAdjacentBedAsLocal() {
+        RingGeometry safeSmall = new RingGeometry(416, 2_048);
+
+        assertTrue(safeSmall.isWithinPeriodicBox(
+                2_046.5, 120.0, -1.5,
+                1.5, 120.0, -0.5,
+                3.0, 2.0, 3.0));
+        assertFalse(safeSmall.isWithinPeriodicBox(
+                2_046.49, 120.0, -1.5,
+                1.5, 120.0, -0.5,
+                3.0, 2.0, 3.0));
+        assertFalse(safeSmall.isWithinPeriodicBox(
+                2_046.5, 122.01, -1.5,
+                1.5, 120.0, -0.5,
+                3.0, 2.0, 3.0));
+    }
+
+    @Test
     void presentationChartsAlwaysResolveToOneCanonicalX() {
         RingGeometry testRing = new RingGeometry(416, 2_048);
         RingPosition beforeZero = RingPosition.fromPresentationX(-0.25, testRing);

@@ -10,12 +10,13 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 220 unit/parameterized cases pass.
+gate. Common/client compilation and all 221 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
-gameplay/rim probes. The dedicated two-client seam/combat/block/boat/teleport/
-reconnect matrix also passes. A copied 16,384×256 world now passes the
+gameplay/rim probes. The dedicated two-client seam/combat/stateful-block/bed/
+death/physical-portal/boat/teleport/reconnect matrix also passes. A copied
+16,384×256 world now passes the
 Overworld/Nether/End transfer, save/disconnect, client-state cleanup, and
 same-process reopen gate. Safe-small 6/12/28-chunk and production-size
 tangent/radial visual handoff review and repeatable Fabric release staging also
@@ -229,7 +230,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 220
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 221
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
@@ -553,6 +554,15 @@ version numbers.
   replace this with a server-side sleeping offset or map other entities' beds:
   vanilla's client callback, wake-up, orientation, and bed-existence paths
   must all use the same nearby local copy.
+- `ServerPlayerSleepMixin` replaces only the private vanilla bed-reach box in
+  the RingWorld Overworld with the equivalent nearest-periodic X test. It also
+  realigns the connection movement baselines after the server moves a player
+  into a sleeping pose. Keep the bed position canonical, retain vanilla Y/Z
+  limits, and do not apply either path in Nether or End.
+- The reusable multiplayer harness waits for both real clients to report a
+  fully loaded world before setup teleports. Its night fixture advances the
+  26.1 `WorldClock` monotonically to the next 13,000-tick phase; rewinding to
+  absolute day-zero time makes reused-world bed tests nondeterministic.
 - Rigid models submitted outside the terrain shader must use
   `RingObjectTransform`: embed the anchor with `toCameraLocal`, then rotate
   the model into that anchor's tangent frame. `EntityRenderManagerMixin` and

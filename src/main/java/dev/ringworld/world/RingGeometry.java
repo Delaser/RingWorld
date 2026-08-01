@@ -234,6 +234,15 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
         return delta;
     }
 
+    /** Axis-aligned reach test whose X component uses the nearest periodic image. */
+    public boolean isWithinPeriodicBox(double sourceX, double sourceY, double sourceZ,
+                                       double targetX, double targetY, double targetZ,
+                                       double maxX, double maxY, double maxZ) {
+        return Math.abs(shortestCircumferenceDelta(sourceX, targetX)) <= maxX
+                && Math.abs(sourceY - targetY) <= maxY
+                && Math.abs(sourceZ - targetZ) <= maxZ;
+    }
+
     /** Angular width of the opposite band surface from the supplied width coordinate. */
     public double oppositeAngularWidthRadians(double cameraZ) {
         double distance = radius() * 2.0;

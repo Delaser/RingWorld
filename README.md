@@ -13,12 +13,13 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 220 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 221 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
 > the representative gameplay/rim matrix. A dedicated two-client seam,
-> combat, block, boat, teleport, and reconnect scenario also passes.
+> combat, stateful block, bed/death lifecycle, physical portal, boat,
+> teleport, and reconnect scenario also passes.
 > A copied 16,384×256 world also passes Nether/End transfers, normal save and
 > disconnect, client-state clearing, and an in-process reopen with the exact
 > layout and complete atlas restored. The safe-small and production
@@ -288,8 +289,10 @@ The current build includes:
   and two-client multiplayer harnesses.
 
 Representative automated coverage includes repeated seam crossings, combat,
-block updates, an arrow, a boat, a ground navigator, water flow, an explosion,
-effects, reconnects, long teleports, rims, and exterior void behavior.
+block and block-entity updates, redstone, an arrow, a boat, a ground navigator,
+water flow, an explosion, beds, death/respawn, physical Nether/End portal
+transfers, effects, reconnects, long teleports, rims, and exterior void
+behavior.
 
 For demonstrated results, open risks, and the prioritized roadmap, see
 [Current state](docs/CURRENT_STATE.md).
@@ -302,9 +305,9 @@ For demonstrated results, open risks, and the prioritized roadmap, see
   lifecycle, memory, and static GPU resource gates pass; the 6/12/28 visual and
   repeated frame-pacing comparison matrix remains open.
 - Structures other than the guaranteed stronghold and opt-in ocean monument,
-  carvers, redstone,
-  fluids, death/respawn, vehicles, and projectiles still need more seam
-  coverage. Other scarce random-spread structures are not yet selectable; see
+  carvers, complex redstone/fluid networks, maps, raids, and additional
+  vehicle/projectile variants still need more seam coverage. Other scarce
+  random-spread structures are not yet selectable; see
   the [scarce-structure audit](docs/SCARCE_STRUCTURE_GUARANTEE_AUDIT.md).
 - The atlas is an eight-block surface sample: edits between sample points may
   not be visible in the distant proxy even though their affected cell is

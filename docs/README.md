@@ -54,6 +54,9 @@ Start here:
 - [`ATLAS_RELEASE_GATE_2026-08-01.md`](ATLAS_RELEASE_GATE_2026-08-01.md):
   complete production generation/recovery, GUI, lifecycle, multiplayer,
   visual, resource, hash, and frame-pacing evidence.
+- [`SEAM_GAMEPLAY_REGRESSION_2026-08-01.md`](SEAM_GAMEPLAY_REGRESSION_2026-08-01.md):
+  expanded dedicated-client stateful-block, bed/death, and physical-portal
+  seam evidence plus the remaining manual/unsupported matrix.
 - [`SUN_RENDERING_SNAPSHOT_2026-07-26.md`](SUN_RENDERING_SNAPSHOT_2026-07-26.md):
   frozen rollback description of the removed ring-centred sun and panel array.
 - [`MIXIN_MAP.md`](MIXIN_MAP.md): ownership and risk map for every mixin.
