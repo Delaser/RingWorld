@@ -16,6 +16,14 @@ and points to public source revision `3f6cb9e`. It is explicitly an alpha test
 build; submission does not close the remaining automated-harness, packaging,
 staging, scaling, or compatibility gates below.
 
+Issue #33 now supplies a local fail-closed staging workflow for any later
+manual Fabric upload. It builds and validates exactly one runtime jar, records
+SHA-256/SHA-512 and the clean pushed public-source revision, and rejects stale
+licensing, inconsistent Fabric metadata, source/development jars, unsafe
+archive paths, and common credential/runtime-state names. It has no upload or
+listing mutation path. The clean dedicated-server smoke is documented; clean
+client and existing-modded-instance smoke evidence remains a release gate.
+
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
 

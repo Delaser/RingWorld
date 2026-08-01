@@ -46,6 +46,8 @@ Start here:
   lifecycle, and two-client multiplayer procedures.
 - [`OPERATIONS.md`](OPERATIONS.md): configuration, persistence, build,
   installation, packaging, and deployment.
+- [`MODRINTH_RELEASE.md`](MODRINTH_RELEASE.md): fail-closed local staging,
+  source provenance, and manual-release gates for the Fabric alpha.
 - [`CURRENT_STATE.md`](CURRENT_STATE.md): implemented features, deliberate
   boundaries, known defects, and recommended next work.
 

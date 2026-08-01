@@ -4,7 +4,10 @@
   "version": "${version}",
   "name": "RingWorld",
   "description": "Turns the Overworld into a finite, seamless cylindrical ringworld with periodic gameplay and curved rendering.",
-  "authors": ["RingWorld contributors"],
+  "authors": ["Delaser"],
+  "contact": {
+    "homepage": "https://andwhatnotstudio.com/ringworld/"
+  },
   "license": "MPL-2.0",
   "environment": "*",
   "entrypoints": {

@@ -49,6 +49,12 @@ become publicly downloadable after approval. The alpha targets Minecraft 26.1.2
 and Java 25, requires Fabric API, and must be installed on both the client and
 server.
 
+Maintainers stage a later manual upload with
+`python3 scripts/stage_modrinth_release.py --build` from a clean, pushed public
+branch. It produces one reviewed runtime jar, checksums, and an exact source
+revision; it does not upload or change the listing. See
+[the release procedure](docs/MODRINTH_RELEASE.md).
+
 > **Public history:** this repository intentionally begins with a clean
 > MPL-2.0 root commit. Pre-public tag names and commit hashes retained in the
 > engineering documents are provenance references to the private development
