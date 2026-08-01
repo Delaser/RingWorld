@@ -50,7 +50,7 @@ import net.minecraft.world.phys.Vec3;
  * mesh or allocates distant vanilla chunk sections.</p>
  */
 public final class RingSurfaceTextureRenderer {
-    private static final RenderPipeline PIPELINE = RenderPipelines.register(
+    private static final RenderPipeline PIPELINE =
             RenderPipeline.builder(RenderPipelines.GUI_TEXTURED_SNIPPET)
                     .withLocation(Identifier.fromNamespaceAndPath("ringworld", "pipeline/textured_ring_surface"))
                     .withVertexShader(Identifier.fromNamespaceAndPath("ringworld", "core/ring_surface"))
@@ -64,7 +64,7 @@ public final class RingSurfaceTextureRenderer {
                             new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
                     .withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR,
                             VertexFormat.Mode.TRIANGLES)
-                    .build());
+                    .build();
 
     private static GpuBuffer vertexBuffer;
     private static int vertexCount;
@@ -83,6 +83,9 @@ public final class RingSurfaceTextureRenderer {
     private static long textureBuildGeneration;
 
     private RingSurfaceTextureRenderer() { }
+
+    /** Loader adapters register this pipeline during their client setup event. */
+    public static RenderPipeline pipeline() { return PIPELINE; }
 
     public static void render(PoseStack matrices, RingGeometry geometry, Vec3 camera,
                               float alpha) {

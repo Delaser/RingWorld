@@ -23,7 +23,15 @@ one shader contract, and the same gameplay behavior.
    #92 work; a monitor-unavailable launch attempt is not a code pass.
 3. [#92](https://github.com/Delaser/RingWorld/issues/92): make the NeoForge
    client pass the curved-renderer, atlas, shader, sky, world-switch, and frame
-   pacing gates.
+   pacing gates. **Initial checkpoint reached:** shared client payload/session
+   state plus NeoForge lifecycle, payload, and render-pipeline adapters load
+   the shared client mixins/shaders/resources; a copied 16,384×256 integrated
+   world acknowledged format 2, streamed an incomplete atlas, and rendered
+   progressive tangent/radial diagnostics. The replacement
+   `:neoforge:runProductionProjectionClient` gate uses a disposable save copy,
+   waits for completion, captures tangent/handoff/radial views, verifies them,
+   and exits. Its production 16,384×256 noon run passes. Seam/rim,
+   time/weather, lifecycle, and gameplay/multiplayer parity remain open.
 4. [#93](https://github.com/Delaser/RingWorld/issues/93): make the NeoForge
    server pass topology, worldgen, storage, atlas, structure, and two-client
    gameplay gates.

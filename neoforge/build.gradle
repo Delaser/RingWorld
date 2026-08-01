@@ -17,13 +17,15 @@ java {
 
 sourceSets.main.java.setSrcDirs([
         rootProject.file('src/main/java'),
-        rootProject.file('src/platform/neoforge/java')
+        rootProject.file('src/client/java'),
+        rootProject.file('src/platform/neoforge/java'),
+        rootProject.file('src/platform/neoforgeClient/java')
 ])
 sourceSets.main.resources.setSrcDirs([
-        rootProject.file('src/main/resources')
+        rootProject.file('src/main/resources'),
+        rootProject.file('src/client/resources')
 ])
 sourceSets.main.resources.exclude('fabric.mod.json')
-sourceSets.main.resources.exclude('ringworld.client.mixins.json')
 
 // Run the same loader-neutral contract suite against the NeoForge-compiled
 // common sources. Platform-specific runtime gates remain separate.
@@ -42,6 +44,17 @@ neoForge {
         client {
             client()
             gameDirectory = project.file('run-client')
+        }
+        productionProjectionClient {
+            client()
+            gameDirectory = project.file('run-production-projection')
+            systemProperty 'ringworld.captureRingProjection', 'true'
+            systemProperty 'ringworld.projectionWorld', providers.gradleProperty('ringNeoForgeProjectionDestination')
+                    .orElse('RingWorld NeoForge Projection').get()
+            systemProperty 'ringworld.projectionViewDistanceChunks',
+                    providers.gradleProperty('ringNeoForgeProjectionViewDistanceChunks').orElse('16').get()
+            systemProperty 'ringworld.projectionEnvironment',
+                    providers.gradleProperty('ringNeoForgeProjectionEnvironment').orElse('noon').get()
         }
         server {
             server()
@@ -99,4 +112,83 @@ tasks.withType(Jar).configureEach {
     from(rootProject.file('LICENSE')) {
         rename { 'LICENSE-RINGWORLD.txt' }
     }
+}
+
+def checkedProjectionSaveId = { String value, String propertyName ->
+    def saveId = value == null ? '' : value.trim()
+    if (saveId.isEmpty() || saveId == '.' || saveId == '..'
+            || saveId.contains('/') || saveId.contains('\\')) {
+        throw new GradleException("${propertyName} must be one save-directory name")
+    }
+    saveId
+}
+
+def neoForgeProjectionSourceSaves = project.file('run-client/saves')
+def neoForgeProjectionRun = project.file('run-production-projection')
+def neoForgeProjectionSaves = new File(neoForgeProjectionRun, 'saves')
+
+tasks.register('prepareCopiedNeoForgeProductionProjectionWorld') {
+    group = 'ringworld verification'
+    description = 'Copies a NeoForge source save into the isolated projection-client run directory.'
+    inputs.property('ringNeoForgeProjectionSource',
+            providers.gradleProperty('ringNeoForgeProjectionSource').orElse('NeoForge Test'))
+    inputs.property('ringNeoForgeProjectionDestination',
+            providers.gradleProperty('ringNeoForgeProjectionDestination')
+                    .orElse('RingWorld NeoForge Projection'))
+    outputs.dir(neoForgeProjectionSaves)
+    outputs.upToDateWhen { false }
+    doLast {
+        def sourceId = checkedProjectionSaveId(
+                providers.gradleProperty('ringNeoForgeProjectionSource').orElse('NeoForge Test').get(),
+                'ringNeoForgeProjectionSource')
+        def destinationId = checkedProjectionSaveId(
+                providers.gradleProperty('ringNeoForgeProjectionDestination')
+                        .orElse('RingWorld NeoForge Projection').get(),
+                'ringNeoForgeProjectionDestination')
+        def source = new File(neoForgeProjectionSourceSaves, sourceId)
+        if (!new File(source, 'level.dat').isFile()) {
+            throw new GradleException(
+                    "ringNeoForgeProjectionSource must name a save under ${neoForgeProjectionSourceSaves}: ${sourceId}")
+        }
+        def destination = new File(neoForgeProjectionSaves, destinationId)
+        delete(destination)
+        delete(new File(neoForgeProjectionRun, 'screenshots'))
+        delete(new File(neoForgeProjectionRun, 'ringworld-cache'))
+        delete(new File(neoForgeProjectionRun, 'logs'))
+        copy {
+            from(source)
+            into(destination)
+        }
+        if (!new File(destination, 'level.dat').isFile()) {
+            throw new GradleException("copied NeoForge projection save is missing level.dat: ${destination}")
+        }
+        logger.lifecycle('[neoforge-projection] copied source={} destination={}', source, destination)
+    }
+}
+
+tasks.register('verifyNeoForgeProductionProjectionClient') {
+    group = 'ringworld verification'
+    description = 'Fails unless the NeoForge projection client completed all three captures.'
+    mustRunAfter('runProductionProjectionClient')
+    doLast {
+        def logFile = new File(neoForgeProjectionRun, 'logs/latest.log')
+        def log = logFile.isFile() ? logFile.text : ''
+        if (!log.contains('[projection-capture] result=true, captures complete')) {
+            throw new GradleException("NeoForge projection capture did not pass; inspect ${logFile}")
+        }
+        def environment = providers.gradleProperty('ringNeoForgeProjectionEnvironment')
+                .orElse('noon').get().trim().toLowerCase(Locale.ROOT)
+        def prefix = environment == 'noon' ? 'ringworld-projection-' : "ringworld-projection-${environment}-"
+        ['tangent', 'handoff', 'up'].each { view ->
+            def screenshot = new File(neoForgeProjectionRun, "screenshots/${prefix}${view}.png")
+            if (!screenshot.isFile()) {
+                throw new GradleException("NeoForge projection capture is missing ${screenshot}")
+            }
+        }
+    }
+}
+
+tasks.named('runProductionProjectionClient') {
+    dependsOn('prepareCopiedNeoForgeProductionProjectionWorld')
+    finalizedBy('verifyNeoForgeProductionProjectionClient')
 }

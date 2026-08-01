@@ -7,12 +7,11 @@ import dev.ringworld.world.AtlasPregenerationAction;
 import dev.ringworld.world.AtlasPregenerationState;
 import dev.ringworld.world.AtlasPregenerationStatus;
 import java.util.Optional;
-import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.network.chat.Component;
 
-/** Fabric client session cache for authoritative atlas-generation snapshots. */
+/** Client session cache for authoritative atlas-generation snapshots. */
 public final class AtlasPregenerationClientState {
     private static AtlasPregenerationStatus status;
 
@@ -44,28 +43,28 @@ public final class AtlasPregenerationClientState {
     }
 
     public static void request(long worldHash) {
-        if (ClientPlayNetworking.canSend(RingAtlasPregenerationStatusRequestPayload.ID)) {
-            ClientPlayNetworking.send(new RingAtlasPregenerationStatusRequestPayload(worldHash));
+        if (RingClientPayloadTransport.canSend(RingAtlasPregenerationStatusRequestPayload.ID)) {
+            RingClientPayloadTransport.send(new RingAtlasPregenerationStatusRequestPayload(worldHash));
         }
     }
 
-    /** Fabric adapter entrypoint used by the loader-neutral map screen. */
+    /** Shared client entrypoint used by the loader-neutral map screen. */
     public static boolean requestCurrent() {
         long hash = status == null ? ClientRingState.serverAtlasWorldHash() : status.worldHash();
         if ((status == null && !ClientRingState.hasServerAtlasWorldHash())
-                || !ClientPlayNetworking.canSend(RingAtlasPregenerationStatusRequestPayload.ID)) return false;
+                || !RingClientPayloadTransport.canSend(RingAtlasPregenerationStatusRequestPayload.ID)) return false;
         request(hash);
         return true;
     }
 
     public static boolean canRequestCurrent() {
         return (status != null || ClientRingState.hasServerAtlasWorldHash())
-                && ClientPlayNetworking.canSend(RingAtlasPregenerationStatusRequestPayload.ID);
+                && RingClientPayloadTransport.canSend(RingAtlasPregenerationStatusRequestPayload.ID);
     }
 
     public static void control(long worldHash, AtlasPregenerationAction action) {
-        if (ClientPlayNetworking.canSend(RingAtlasPregenerationControlPayload.ID)) {
-            ClientPlayNetworking.send(new RingAtlasPregenerationControlPayload(worldHash, action));
+        if (RingClientPayloadTransport.canSend(RingAtlasPregenerationControlPayload.ID)) {
+            RingClientPayloadTransport.send(new RingAtlasPregenerationControlPayload(worldHash, action));
         }
     }
 

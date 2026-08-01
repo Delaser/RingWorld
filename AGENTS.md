@@ -12,9 +12,17 @@ and is intentionally not present in the clean public Git history.
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
 gate. The Fabric and NeoForge builds each pass all 233 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
-26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and its
-atlas starts and progresses, but its graphical client is not integrated or
-tested. A monitor-unavailable launch attempt is not a NeoForge code pass.
+26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
+a client checkpoint: shared client payload/session state, mixins, shaders, and
+resources load through NeoForge adapters; its render pipeline registers; and a
+copied production 16,384×256 world opens through the integrated server with a
+format-2 settings acknowledgement and streaming atlas metadata/tiles. The
+`:neoforge:runProductionProjectionClient` copies a named
+source save into an isolated run directory, waits for a complete atlas, writes
+tangent/handoff/radial captures, records frame pacing, verifies the outputs,
+and exits. Its production 16,384×256 noon run passes; settled stages averaged
+8.4–10.7 ms per frame. Seam/rim, time/weather, lifecycle, gameplay, and
+multiplayer parity remain open.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -68,7 +76,8 @@ agent uses a separate account and must monitor its own allowance.
 ## What this project is
 
 RingWorld is a Fabric-first mod being ported from Minecraft Java 1.21.11 to
-26.1.2, with a NeoForge dedicated-server bootstrap now underway.
+26.1.2, with NeoForge server bootstrap and an initial graphical-client
+checkpoint underway.
 The validated design turns only the Overworld into a finite band:
 
 - canonical X runs around the circumference and is periodic;
@@ -116,9 +125,10 @@ under it.
 
 ## Loader support policy
 
-Fabric is the validated graphical/runtime implementation; NeoForge currently
-has only the dedicated-server bootstrap checkpoint. Future development must
-not deepen Fabric coupling. Design new gameplay, topology, persistence,
+Fabric is the validated graphical/runtime implementation. NeoForge has a
+dedicated-server bootstrap and complete-atlas graphical-client projection
+checkpoint, not full visual or multiplayer parity. Future development must not
+deepen Fabric coupling. Design new gameplay, topology, persistence,
 worldgen, rendering math, protocol models, and tests as loader-agnostic common
 code. When a loader API is unavoidable, isolate it behind a narrow platform
 adapter and provide, or leave a documented implementation path for, both
@@ -204,8 +214,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
 - `src/platform/fabricClient/java/`: Fabric client entrypoint, networking,
   lifecycle, cache-path, and automated-client adapters.
 - `src/platform/neoforge/java/`: NeoForge bootstrap, dedicated-server
-  lifecycle, command, and payload-transport adapters. Its graphical client
-  adapter has not been integrated yet.
+  lifecycle, command, and payload-transport adapters.
+- `src/platform/neoforgeClient/java/`: NeoForge client lifecycle, payload,
+  render-pipeline, cache-path, and diagnostic-world adapters.
 - `neoforge/`: NeoForge 26.1.2.87 ModDevGradle 2.0.143 Java 25 module and its
   isolated development run directories.
 - `src/main/java/dev/ringworld/mixin/`: authoritative server/worldgen patches.
@@ -272,8 +283,12 @@ unit/parameterized cases:
 Both loaders now provide a task named `runServer`; always select the loader
 explicitly: `./gradlew :runServer` for Fabric or
 `./gradlew :neoforge:runServer` for NeoForge. The NeoForge dedicated launch
-has reached `Done` and observed atlas progress, but is not evidence of a
-graphical-client, rendering, gameplay, or multiplayer pass.
+has reached `Done` and observed atlas progress. `./gradlew
+:neoforge:runProductionProjectionClient -PringNeoForgeProjectionSource="NeoForge Test"`
+copies the named ignored source save into an isolated run, waits for atlas
+completion, produces tangent/handoff/radial diagnostics, verifies them, and
+exits. The production noon gate passes; it is not yet seam/rim, time/weather,
+lifecycle, gameplay, or multiplayer evidence.
 
 `scripts/stage_modrinth_release.py --build` checks the active Java generation
 before it invokes Gradle. Keep that fail-closed Java 25 preflight synchronized

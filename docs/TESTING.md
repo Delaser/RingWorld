@@ -35,11 +35,22 @@ Both projects expose `runServer`. Launch the intended dedicated server with
 not an unqualified `runServer` task.
 
 Fresh Fabric and NeoForge dedicated-server launches reach `Done`; the NeoForge
-launch also starts and progresses atlas generation. This is a server bootstrap
-checkpoint, not NeoForge graphical-client validation: client adapters,
-curved rendering, shaders, atlas display, gameplay, and multiplayer still
-need their dedicated gates. A graphical launch blocked by monitor unavailability
-is not a code pass.
+launch also starts and progresses atlas generation. The NeoForge client now
+also has a focused diagnostic gate:
+
+```sh
+./gradlew :neoforge:runProductionProjectionClient \
+  -PringNeoForgeProjectionSource="NeoForge Test"
+```
+
+It copies the named source save from `neoforge/run-client/saves/` into
+`neoforge/run-production-projection/saves/`, opens only that disposable copy,
+waits for resource/shader loading, format-2 acknowledgement, and a complete
+atlas, records tangent/handoff/radial screenshots plus frame metrics, verifies
+the evidence, and exits. The production 16,384×256 noon run passes with settled
+tangent/handoff/radial averages of 10.7/8.4/8.4 ms per frame. Seam/rim and
+time/weather captures, lifecycle and world-switch coverage, gameplay,
+two-client multiplayer, and package parity remain dedicated open gates.
 
 ## Unit and build validation
 
@@ -163,8 +174,9 @@ required mixin still applies.
 
 The detailed storage evidence below is Fabric evidence. The #91 NeoForge
 bootstrap separately proves a fresh dedicated server reaches `Done` and begins
-atlas work; it has not yet repeated the storage, topology, worldgen, or
-two-client gates.
+atlas work, while #92 supplies an integrated copied-world client diagnostic;
+NeoForge has not yet repeated the storage, topology, worldgen, or two-client
+gates.
 
 Run storage migration gates only from a disposable worktree/run directory.
 Never point them at `dist/`, the public service, or the only copy of a world.

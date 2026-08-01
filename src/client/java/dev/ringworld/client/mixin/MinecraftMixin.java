@@ -1,6 +1,6 @@
 package dev.ringworld.client.mixin;
 
-import dev.ringworld.client.RingWorldClient;
+import dev.ringworld.client.RingWorldClientSession;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import org.spongepowered.asm.mixin.Mixin;
@@ -18,11 +18,11 @@ abstract class MinecraftMixin {
                                                   boolean keepResourcePacks,
                                                   boolean showDisconnectScreen,
                                                   CallbackInfo ci) {
-        RingWorldClient.clearRingSession();
+        RingWorldClientSession.clear();
     }
 
     @Inject(method = "clearClientLevel", at = @At("HEAD"))
     private void ringworld$clearClientSession(Screen nextScreen, CallbackInfo ci) {
-        RingWorldClient.clearRingSession();
+        RingWorldClientSession.clear();
     }
 }
