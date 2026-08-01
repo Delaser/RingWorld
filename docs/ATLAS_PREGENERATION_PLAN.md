@@ -311,9 +311,11 @@ The 16,384×256 default contains:
 - exactly four intrinsic X blocks per capped 4,096-column proxy texel.
 
 The safe-small 2,048×416 full-atlas run measured roughly 82 cells per second.
-Linear extrapolation would be about 13 minutes for 65,536 cells, but this is
-not a production promise: region writes, biome/worldgen cost, CPU, storage,
-concurrency, and other server load require a real end-to-end benchmark.
+The completed #70 production gate then interrupted at 1,825 chunks, resumed,
+and finished all 65,536 cells in a combined 13m39.7s on the test Mac. Its
+77,540-byte atlas, memory/resource envelope, visual matrix, and caveats are
+recorded in `ATLAS_RELEASE_GATE_2026-08-01.md`; this remains measured evidence,
+not a promise for other hardware or server load.
 
 ## Implementation phases
 
@@ -400,7 +402,7 @@ same payload layouts and call the loader-neutral model/service.
 Exit gate: fresh and copied safe-small worlds prewarm, reopen, serve the
 complete atlas to a clean client, and stop cleanly.
 
-### Phase 4: production benchmark and tuning
+### Phase 4: production benchmark and tuning (complete for the Fabric atlas gate)
 
 - Run the complete 16,384×256 job on representative hardware.
 - Record chunks/cells per second, TPS/MSPT, peak heap, region growth, atlas
@@ -414,6 +416,13 @@ complete atlas to a clean client, and stop cleanly.
 Exit gate: the production atlas completes, survives restart, matches live
 terrain at sampled points and the seam, passes tangent/radial visual review,
 and has documented capacity and rollback guidance.
+
+Completed by #69 and #70 on 2026-08-01. Step 8 remains the fixed source
+profile; the production interrupted/resume and complete-cache paths, resource
+budgets, two-client revision/cache behavior, lifecycle/layout switching, and
+safe-small/production 6/12/28 captures pass. See
+`ATLAS_FIDELITY_BENCHMARK_2026-08-01.md` and
+`ATLAS_RELEASE_GATE_2026-08-01.md`.
 
 ## Test matrix
 

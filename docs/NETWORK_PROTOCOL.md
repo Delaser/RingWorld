@@ -131,7 +131,11 @@ client with a previously complete cache to reconnect while a restored server
 atlas is temporarily less complete. Applying an identical present tile is
 idempotent: it does not advance the client revision, save the cache, or rebuild
 the full GPU ring. Only the actual incomplete-to-complete transition bypasses
-the ordinary publish/save coalescing intervals.
+the ordinary publish/save coalescing intervals. A revision commit is the
+durable transaction marker and forces a cache save, but changed tiles are the
+only events that request a visual publication. Complete-atlas tile bursts wait
+for three quiet seconds, bounded to ten seconds, and therefore do not upload an
+identical full texture again for the later commit packet.
 
 The server:
 

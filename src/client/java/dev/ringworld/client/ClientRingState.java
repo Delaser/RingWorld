@@ -32,6 +32,8 @@ public final class ClientRingState {
     private static boolean terrainAtlasPendingRender;
     private static long lastTerrainAtlasSaveMillis;
     private static long lastTerrainAtlasPublishMillis;
+    private static long terrainAtlasPendingSinceMillis;
+    private static long lastTerrainAtlasChangeMillis;
 
     private ClientRingState() { }
 
@@ -51,6 +53,8 @@ public final class ClientRingState {
         terrainAtlasRevision++;
         terrainAtlasDirty = false;
         terrainAtlasPendingRender = false;
+        terrainAtlasPendingSinceMillis = 0L;
+        lastTerrainAtlasChangeMillis = 0L;
         lastTerrainAtlasSaveMillis = 0L;
         lastTerrainAtlasPublishMillis = 0L;
     }
@@ -139,7 +143,10 @@ public final class ClientRingState {
             if (!atlas.applyTile(tileX, tileZ, data)) return;
             boolean becameComplete = !wasComplete && atlas.isComplete();
             terrainAtlasDirty = true;
+            long now = System.currentTimeMillis();
+            if (!terrainAtlasPendingRender) terrainAtlasPendingSinceMillis = now;
             terrainAtlasPendingRender = true;
+            lastTerrainAtlasChangeMillis = now;
             // Force the first complete surface immediately. Later updates to
             // an already-complete atlas use the normal coalescing windows so
             // a dirty-tile burst cannot rebuild the full texture and mesh for
@@ -162,8 +169,11 @@ public final class ClientRingState {
         try {
             if (!atlas.commitRevision(revision)) return;
             terrainAtlasDirty = true;
-            terrainAtlasPendingRender = true;
-            saveTerrainAtlasIfDue(true);
+            // Changed tiles already request a visual publication. A revision
+            // commit is a durable transaction marker, not a texture change;
+            // forcing another render generation here rebuilt an identical
+            // complete-ring texture after every tile batch.
+            saveTerrainAtlasCacheIfDue(true);
             RingWorldMod.LOGGER.info("RingWorld terrain atlas revision {} committed", revision);
         } catch (IOException exception) {
             RingWorldMod.LOGGER.warn("Rejected invalid RingWorld terrain atlas revision {}", revision, exception);
@@ -182,9 +192,13 @@ public final class ClientRingState {
 
     /** Coalesces partial-cache writes while saving a newly completed atlas immediately. */
     public static void saveTerrainAtlasIfDue(boolean force) {
+        publishTerrainAtlasIfDue(force);
+        saveTerrainAtlasCacheIfDue(force);
+    }
+
+    private static void saveTerrainAtlasCacheIfDue(boolean force) {
         RingTerrainAtlas atlas = terrainAtlas;
         Path cache = terrainAtlasCachePath;
-        publishTerrainAtlasIfDue(force);
         if (!terrainAtlasDirty || atlas == null || cache == null) return;
         long now = System.currentTimeMillis();
         if (!force && now - lastTerrainAtlasSaveMillis < 10_000L) return;
@@ -197,14 +211,28 @@ public final class ClientRingState {
         }
     }
 
-    /** Avoids rebuilding the 110k-vertex Arch once per incoming network tile. */
+    /** Avoids rebuilding the complete-ring texture once per incoming network tile. */
     private static void publishTerrainAtlasIfDue(boolean force) {
         if (!terrainAtlasPendingRender) return;
         long now = System.currentTimeMillis();
-        if (!force && now - lastTerrainAtlasPublishMillis < 1_000L) return;
+        if (!force) {
+            RingTerrainAtlas atlas = terrainAtlas;
+            if (atlas != null && atlas.isComplete()) {
+                // Distant LOD may trail authoritative block state briefly.
+                // Batch natural leaf/fluid/terrain settling into one upload
+                // after three quiet seconds, while bounding continuous churn
+                // to a ten-second maximum delay.
+                boolean quiet = now - lastTerrainAtlasChangeMillis >= 3_000L;
+                boolean maximumDelayReached = now - terrainAtlasPendingSinceMillis >= 10_000L;
+                if (!quiet && !maximumDelayReached) return;
+            } else if (now - lastTerrainAtlasPublishMillis < 1_000L) {
+                return;
+            }
+        }
         terrainAtlasRevision++;
         terrainAtlasPendingRender = false;
         lastTerrainAtlasPublishMillis = now;
+        terrainAtlasPendingSinceMillis = 0L;
     }
 
     /** Starts a fresh track after an intentional test-only long teleport. */
@@ -233,6 +261,8 @@ public final class ClientRingState {
         terrainAtlasPendingRender = false;
         lastTerrainAtlasSaveMillis = 0L;
         lastTerrainAtlasPublishMillis = 0L;
+        terrainAtlasPendingSinceMillis = 0L;
+        lastTerrainAtlasChangeMillis = 0L;
         terrainAtlasRevision++;
     }
 }

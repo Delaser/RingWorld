@@ -540,8 +540,11 @@ A complete matching client cache avoids retransmission on reconnect. Incoming
 incomplete server tiles never erase more complete local cells. Tile application
 also reports whether any present height/colour actually changed. Identical
 dirty-tile repeats are ignored, and only the first incomplete-to-complete
-transition forces an immediate cache save and GPU surface build; later real
-changes use the normal coalescing windows.
+transition forces an immediate cache save and GPU surface build. Later changes
+to a complete atlas publish after three quiet seconds or a ten-second maximum
+delay. Texture pixels, relief, mips, and native images are prepared
+asynchronously from an independent atlas snapshot; the render thread accepts
+only a still-current world/revision result and owns the final GPU upload.
 
 ## Read-only compatibility API
 

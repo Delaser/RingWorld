@@ -58,7 +58,7 @@ chart without creating an alias chunk. A second dedicated-server process
 loaded the same candidate/start and correctly treated its prior unexplored
 reference as used.
 
-Atlas-priority work is integrated through #68 and measured for #69. #66
+The atlas-priority phase is complete through #70. #66
 records the production and safe-small 6/12/28 visual/performance baseline. #67
 renders trustworthy partial cells immediately with transparent missing sky and
 performs one full-detail transition at completion. #68 introduces disk format
@@ -67,13 +67,25 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite now contains 219 unit/parameterized cases.
+The active suite now contains 220 unit/parameterized cases.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
 4×/16×/64× the source cells and cold tile bytes while the current 4,096×256
 GPU texture and 393,216-vertex mesh stay fixed. The release therefore retains
 the single eight-block profile and makes no saved-format or protocol change.
+
+#70 completes the production regression gate. A 16,384×256 format-6 atlas
+resumed after interruption and finished all 16,384 chunks/65,536 cells in a
+combined 13m39.7s; a complete-cache rerun performed no generation. The real
+GUI pause/resume/cancel/retry and revisioned-edit path, safe-small-to-production
+layout switch, Overworld/Nether/End/save/reopen lifecycle, dedicated two-client
+seam/gameplay/cache scenario, and safe-small plus production 6/12/28 projection
+matrix all pass. Complete texture preparation now runs from an immutable
+snapshot off the render thread, and already-complete revision bursts publish
+once after a three-second quiet period or ten-second maximum delay. Exact
+resource numbers, hashes, commands, frame metrics, and residual cold-start
+spikes are recorded in `ATLAS_RELEASE_GATE_2026-08-01.md`.
 
 The P1–P4 architecture parents (#5–#8) are now closed after final review of
 the integrated 26.1 topology, worldgen, protocol, renderer, lifecycle, and
@@ -114,7 +126,8 @@ stopped cleanly. Its complete-cache fast path also passed. A copied 1.21.11
 legacy-open-proof fixture also upgraded only in the ignored destination,
 migrated settings, rejected its incompatible legacy atlas, regenerated and
 verified 2,000/2,000 chunks (8,000 cells), and left the 66-file/47,931,005-byte
-source fingerprint unchanged. Production-scale benchmarking remains separate.
+source fingerprint unchanged. The later #70 gate supplies the production-scale
+benchmark and recovery evidence.
 The independent copied ordinary-world fixture now also reaches the
 pre-`ServerLevelEvents.LOAD` constructor-tail rejection seam: it writes an
 atomic `REJECTED` report with unavailable identity sentinels and the original
@@ -133,7 +146,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 219 unit/parameterized cases pass, and Loom produces
+temporary shims, all 220 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -175,8 +188,9 @@ The current 16,384×256 default has now resumed a real copied 26.1 atlas from
 32,900 to 65,536 cells without a player lap, taking about 13 minutes 22 seconds
 for the remaining 32,636 cells (about 41 cells/sec), then emitted non-empty
 tangent and radial-up captures with a clean projection result. This establishes
-one production atlas/projection gate, not the full production-size gameplay,
-lifecycle, transfer, GPU, or frame-pacing matrix.
+the earlier production atlas/projection checkpoint; #70 subsequently adds the
+production lifecycle, multiplayer synchronization, resource, and full
+safe-small/production 6/12/28 frame-pacing matrix.
 The projection harness now also normalizes clear noon and a requested 2–32
 chunk view distance, captures the geometry-derived live/proxy handoff between
 the tangent and radial views, and logs per-view frame metrics. Its production
@@ -185,7 +199,7 @@ profile 5 raises that cap to 2,048, retaining the default atlas's eight-block
 height spacing at 393,216 vertices/9,437,184 estimated mesh bytes. Settled
 handoff averages remained 8.590/8.513/10.954 ms at 6/12/28 chunks. See
 `ATLAS_VISUAL_BASELINE_2026-08-01.md` for the scoped evidence and remaining
-issue-66 work.
+historical issue-66 tuning context.
 
 The same production harness exposed an intermittent post-fold simulation
 failure: a `PersistentEntitySectionManager` seam load request routed through
@@ -644,35 +658,33 @@ retaining the fixed pose and continuous dimming/colour cycle.
 
 Priorities are ordered by player-visible value and architectural leverage.
 
-1. **Finish the atlas priority phase**
-   - #70 runs the complete production atlas regression gate.
-2. **Run the stability phase**
+1. **Run the stability phase**
    - #71 broader gameplay and multiplayer regression;
    - #72 worldgen/structure seam matrix;
    - #73 custom-dimension runtime matrix;
    - #74 compatibility and fault-isolation pass.
-3. **Prepare the Fabric release candidate**
+2. **Prepare the Fabric release candidate**
    - finish #12 macOS/Windows Prism and dedicated-server packages;
    - run #13 independent review against one exact clean pushed revision.
-4. **Begin NeoForge parity only after Fabric RC approval**
+3. **Begin NeoForge parity only after Fabric RC approval**
    - implement #34 through narrow platform adapters while keeping common code
      loader-neutral.
-5. **Worldgen seam matrix details**
+4. **Worldgen seam matrix details**
    - multiple seeds;
    - every major biome;
    - non-stronghold structures deliberately forced across X=0/C;
    - loot, mobs, and structure-specific locate commands;
    - manual Eye-of-Ender flight and physical End-portal travel/return.
-6. **Configuration UX follow-up**
+5. **Configuration UX follow-up**
    - improve creation cost warnings with measured production benchmarks;
    - continue custom-size runtime coverage without weakening immutable layout
      validation.
-7. **Day/night visual polish**
+6. **Day/night visual polish**
    - capture the new small sun at all four tone keyframes;
    - tune keyframe colours only against matched sky, live-terrain, and
      distant-ring screenshots;
    - keep the single authoritative vanilla gameplay clock.
-8. **Compatibility API and dual-loader preparation**
+7. **Compatibility API and dual-loader preparation**
    - expand the read-only API for canonical/presentation/physical poses;
    - document compatibility contracts and failure detection.
    - begin #34 only after the Fabric release candidate is approved, keeping

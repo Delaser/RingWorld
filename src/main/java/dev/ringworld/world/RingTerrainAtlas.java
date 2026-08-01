@@ -89,6 +89,21 @@ public final class RingTerrainAtlas {
     public boolean isComplete() { return presentCount == present.length; }
     public double completion() { return present.length == 0 ? 1.0 : (double)presentCount / present.length; }
 
+    /**
+     * Returns an independent point-in-time copy suitable for loader-neutral
+     * background work. Network updates and server recaptures may continue to
+     * mutate the live atlas without racing consumers of this snapshot.
+     */
+    public RingTerrainAtlas snapshot() {
+        RingTerrainAtlas copy = new RingTerrainAtlas(geometry, worldHash, sampleStep);
+        System.arraycopy(heights, 0, copy.heights, 0, heights.length);
+        System.arraycopy(colors, 0, copy.colors, 0, colors.length);
+        System.arraycopy(present, 0, copy.present, 0, present.length);
+        copy.presentCount = presentCount;
+        copy.revision = revision;
+        return copy;
+    }
+
     /** Advances one coalesced authoritative surface-change generation. */
     public long advanceRevision() {
         revision = Math.addExact(revision, 1L);

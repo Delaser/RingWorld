@@ -108,6 +108,24 @@ class RingTerrainAtlasTest {
     }
 
     @Test
+    void snapshotIsIndependentFromLaterLiveUpdates() {
+        RingTerrainAtlas live = new RingTerrainAtlas(GEOMETRY, HASH);
+        int z = GEOMETRY.minWidthZ() + 4;
+        live.putBlockSample(4, z, 80, 0x123456);
+        live.advanceRevision();
+
+        RingTerrainAtlas snapshot = live.snapshot();
+        live.putBlockSample(4, z, 96, 0xABCDEF);
+        live.advanceRevision();
+
+        assertEquals(80, snapshot.cellHeight(0, 0));
+        assertEquals(0x123456, snapshot.cellColor(0, 0));
+        assertEquals(1L, snapshot.revision());
+        assertEquals(96, live.cellHeight(0, 0));
+        assertEquals(2L, live.revision());
+    }
+
+    @Test
     void chunkCoverageAdvancesOnlyAfterEveryCellArrives() {
         RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH);
         int firstZ = GEOMETRY.minWidthZ();

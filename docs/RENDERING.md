@@ -158,9 +158,11 @@ client-owned grass/foliage colormap lookup returns zero. This invalidates the
 black format-4 dedicated-server caches automatically while retaining true
 biome tint on integrated servers where the colour maps are loaded.
 Atlas format 6 retains those colour/height semantics and adds a durable
-surface revision. Changed tiles update the same texture/mesh through the
-existing one-second renderer coalescing window; the revision is committed only
-after the ordered tile batch arrives.
+surface revision. Changed tiles update the same texture/mesh; the revision is
+committed only after the ordered tile batch arrives. Incomplete atlas updates
+publish at most once per second. Changes to an already-complete atlas publish
+after three quiet seconds, or after a ten-second maximum delay under continuous
+churn, so a revision burst causes one GPU refresh rather than one per tile.
 
 ### World lifecycle
 
@@ -177,6 +179,13 @@ display the previous world's ring. Once the new world-hash atlas is complete,
 the renderer upgrades exactly once to the full-detail texture and mesh.
 
 ### GPU texture
+
+Texture sampling, relief shading, mip construction, and `NativeImage` filling
+run asynchronously from an independent atlas snapshot. The render thread only
+accepts a result whose geometry, world hash, and visual revision still match,
+then performs the GPU upload; stale or abandoned images are closed. A session
+clear invalidates in-flight generations before destroying the previous GPU
+resources.
 
 While generation is incomplete, the client keeps the GPU texture at bounded
 source-atlas resolution and reuses the allocation on coalesced updates. Missing

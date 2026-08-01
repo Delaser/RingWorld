@@ -56,6 +56,14 @@ the client starts a fresh atlas and receives a full authoritative snapshot.
 - The same run exercises the real Fabric payload path, integrated server,
   renderer rebuild coalescing, format-6 save, and final unload checkpoint.
 
+The later #70 production gate moved expensive texture/mip/native-image
+preparation to an immutable asynchronous atlas snapshot. Incomplete coverage
+still publishes at most once per second; already-complete edits publish after
+three quiet seconds or a ten-second maximum delay. The ordered revision commit
+forces the durable cache save but no longer requests a second identical GPU
+build. See `ATLAS_RELEASE_GATE_2026-08-01.md` for two-client revision sequences,
+resource budgets, and the final frame matrix.
+
 The eight-block atlas is intentionally an LOD sample. An edit between sample
 points queues and recaptures the correct cell, but may not change that cell's
 representative height or colour.
