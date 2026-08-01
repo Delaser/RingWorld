@@ -21,14 +21,14 @@ class CodexUsageMonitorTest(unittest.TestCase):
         self.assertEqual("two", monitor.select_weekly_window(result)["limitId"])
 
     def test_pause_threshold_is_inclusive(self):
-        self.assertEqual("OK", monitor.classify_remaining(50.01, 50))
-        self.assertEqual("PAUSE", monitor.classify_remaining(50, 50))
-        self.assertEqual("PAUSE", monitor.classify_remaining(0, 50))
+        self.assertEqual("OK", monitor.classify_remaining(20.01, 20))
+        self.assertEqual("PAUSE", monitor.classify_remaining(20, 20))
+        self.assertEqual("PAUSE", monitor.classify_remaining(0, 20))
 
     def test_build_status_calculates_remaining_and_pause_state(self):
-        window = {"limitId": "codex", "slot": "primary", "windowDurationMins": 10080, "usedPercent": 50, "resetsAt": 123}
-        status = monitor.build_status(window, pause_threshold_percent=50)
-        self.assertEqual(50, status["remainingPercent"])
+        window = {"limitId": "codex", "slot": "primary", "windowDurationMins": 10080, "usedPercent": 80, "resetsAt": 123}
+        status = monitor.build_status(window, pause_threshold_percent=20)
+        self.assertEqual(20, status["remainingPercent"])
         self.assertEqual("PAUSE", status["state"])
         self.assertIn("PAUSE ALL RINGWORLD WORK", monitor.format_status(status))
 
@@ -37,8 +37,8 @@ class CodexUsageMonitorTest(unittest.TestCase):
         with self.assertRaises(monitor.MonitorError):
             monitor.select_weekly_window(result)
 
-    def test_parse_args_defaults_to_fifty_percent_pause_threshold(self):
-        self.assertEqual(50, monitor.parse_args([]).pause_threshold)
+    def test_parse_args_defaults_to_twenty_percent_pause_threshold(self):
+        self.assertEqual(20, monitor.parse_args([]).pause_threshold)
 
 
 if __name__ == "__main__":
