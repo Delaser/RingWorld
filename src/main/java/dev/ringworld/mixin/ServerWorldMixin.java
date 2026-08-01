@@ -37,7 +37,7 @@ abstract class ServerWorldMixin {
     private void ringworld$attachTickSchedulerGeometry(CallbackInfo ci) {
         ServerLevel world = (ServerLevel) (Object) this;
         if (world.dimension() != Level.OVERWORLD) return;
-        RingGeometry geometry = RingWorldServer.attachWorldGeometry(world);
+        RingGeometry geometry = RingWorldServer.attachTickSchedulerGeometry(world);
         ((RingEntityManagerAccess) entityManager).ringworld$setGeometry(geometry);
         ((RingTickSchedulerAccess) blockTicks).ringworld$setGeometry(geometry);
         ((RingTickSchedulerAccess) fluidTicks).ringworld$setGeometry(geometry);

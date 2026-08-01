@@ -17,6 +17,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.server.level.ServerLevel;
@@ -70,6 +71,7 @@ public final class RingWorldServer {
     private RingWorldServer() { }
 
     public static void register() {
+        RingWorldHeadlessPrewarm.register();
         RingTerrainAtlasServer.registerCommands();
         ServerTickEvents.END_LEVEL_TICK.register(RingWorldServer::tickRingWorld);
         ServerTickEvents.END_SERVER_TICK.register(RingWorldProductionLifecycleTest::tick);
@@ -88,8 +90,20 @@ public final class RingWorldServer {
             }
         });
         ServerLevelEvents.LOAD.register((server, world) -> {
-            attachWorldGeometry(world);
-            if (isOverworld(world)) RingTerrainAtlasServer.load(world);
+            try {
+                attachWorldGeometry(world);
+                if (isOverworld(world)) {
+                    boolean headless = RingWorldHeadlessPrewarm.suppressesBackgroundAutostart(server);
+                    RingTerrainAtlasServer.load(world, !headless);
+                    if (headless) RingWorldHeadlessPrewarm.start(world);
+                }
+            } catch (Throwable failure) {
+                if (isOverworld(world) && RingWorldHeadlessPrewarm.requested(server)) {
+                    RingWorldHeadlessPrewarm.failStartup(server, world, failure);
+                    return;
+                }
+                throw failure;
+            }
         });
         ServerLevelEvents.UNLOAD.register((server, world) -> {
             RingTerrainAtlasServer.unload(world);
@@ -98,6 +112,10 @@ public final class RingWorldServer {
             if (isOverworld(world)) RingNoiseCoordinates.clearCache();
         });
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            if (RingWorldHeadlessPrewarm.rejectPlayerJoins(server)) {
+                handler.disconnect(Component.literal("RingWorld headless atlas preparation is active; player joins are disabled."));
+                return;
+            }
             RingWorldMultiplayerTest.prepareWaitingPlayer(handler.player);
             server.execute(() -> rescueEmbeddedPlayer(handler.player));
         });
@@ -120,6 +138,21 @@ public final class RingWorldServer {
         WORLD_GEOMETRY.put(world, geometry);
         attachGeneratorSettings(world, geometry, settings.wallHeightBlocks());
         return geometry;
+    }
+
+    /**
+     * Constructor-tail bridge for tick schedulers. A copied ordinary world can
+     * be rejected before Fabric publishes a level-load event; explicit
+     * headless mode records that rejection before rethrowing the original
+     * failure. Ordinary launches take the same failure path unchanged.
+     */
+    public static RingGeometry attachTickSchedulerGeometry(ServerLevel world) {
+        try {
+            return attachWorldGeometry(world);
+        } catch (Throwable failure) {
+            RingWorldHeadlessPrewarm.recordPreLoadRejection(world.getServer(), failure);
+            throw failure;
+        }
     }
 
     private static void attachGeneratorSettings(ServerLevel world, RingGeometry geometry, int wallHeightBlocks) {

@@ -2,6 +2,7 @@ package dev.ringworld.server;
 
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.AtlasPregenerationHandle;
+import dev.ringworld.world.AtlasPregenerationHeadlessPolicy;
 import dev.ringworld.world.AtlasPregenerationListener;
 import dev.ringworld.world.AtlasPregenerationOptions;
 import dev.ringworld.world.AtlasPregenerationProgress;
@@ -62,7 +63,14 @@ public final class RingAtlasPregenerationService {
 
     private RingAtlasPregenerationService() { }
 
-    public static void load(ServerLevel world) {
+    public static void load(ServerLevel world) { load(world, true); }
+
+    /**
+     * Loads the one authoritative atlas state. The Fabric headless adapter
+     * passes {@code false} so it can attach the stop-on-complete intent before
+     * a normal background writer is allowed to start.
+     */
+    public static void load(ServerLevel world, boolean allowBackgroundAutostart) {
         if (world.dimension() != Level.OVERWORLD) return;
         requireServerThread(world);
         RingWorldSettings settings = RingWorldSettings.get(world);
@@ -77,7 +85,7 @@ public final class RingAtlasPregenerationService {
                 storage.status() == RingTerrainAtlas.StorageStatus.INVALID_CURRENT
                         || storage.status() == RingTerrainAtlas.StorageStatus.INVALID_LEGACY);
         WORLDS.put(world, state);
-        if (RingWorldConfig.load().pregenerateTerrainAtlas()) {
+        if (allowBackgroundAutostart && RingWorldConfig.load().pregenerateTerrainAtlas()) {
             pregenerate(world, AtlasPregenerationOptions.backgroundDefaults(), NOOP_LISTENER);
         } else {
             // Config false deliberately leaves the same observable handle in
@@ -111,6 +119,12 @@ public final class RingAtlasPregenerationService {
         requireSupportedPolicy(options);
         WorldState state = requireState(world);
         Job active = state.job;
+        if (active != null && AtlasPregenerationHeadlessPolicy.mayReplaceIdleHandle(active.state, options)) {
+            // Config-disabled startup creates an observable IDLE background
+            // handle. It has no selected future or writes, so replacing it is
+            // safe and preserves the single world-owned writer invariant.
+            active = null;
+        }
         if (active != null && !active.state.isTerminal()) {
             if (!active.options.sharesExecutionPolicyWith(options)) {
                 throw new IllegalStateException("a RingWorld atlas pregeneration job is already active with different options");
@@ -316,14 +330,27 @@ public final class RingAtlasPregenerationService {
                 || options.progressIntervalTicks() != AtlasPregenerationOptions.DEFAULT_PROGRESS_INTERVAL_TICKS) {
             throw new IllegalArgumentException("the initial RingWorld atlas service supports only the conservative default execution policy");
         }
-        if (options.stopServerWhenComplete()) {
-            throw new IllegalArgumentException("headless stop-on-complete is not implemented by the atlas server service");
-        }
+        // stopServerWhenComplete is an adapter intent. This service still owns
+        // only atlas scheduling/capture/save/verification; a platform
+        // coordinator performs world save, report write, and process halt.
     }
     private static WorldState requireState(ServerLevel world) {
         WorldState state = WORLDS.get(world);
         if (state == null) throw new IllegalStateException("RingWorld terrain atlas is unavailable");
         return state;
+    }
+
+    /** Checkpoints an interrupted headless run without waiting on its future. */
+    public static void interruptForServerStop(ServerLevel world) {
+        requireServerThread(world);
+        WorldState state = WORLDS.get(world);
+        if (state == null || state.job == null || state.job.completion.isDone()) return;
+        // A completed future may already contain a fully generated canonical
+        // chunk. Capture it before cancellation/checkpoint, exactly as unload
+        // does, so restart never loses durable work from the final tick.
+        consumeFuture(world, state);
+        if (state.job.completion.isDone()) return;
+        state.job.cancelForUnload();
     }
     private static String percent(double completion) { return String.format(java.util.Locale.ROOT, "%.1f", completion * 100.0); }
     private static String formatDuration(long seconds) {

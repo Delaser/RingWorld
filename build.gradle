@@ -100,6 +100,17 @@ loom {
 			vmArg "-Dringworld.strongholdTest=true"
 			programArg "nogui"
 		}
+		headlessPrewarmServer {
+			server()
+			name "RingWorld Headless Atlas Prewarm"
+			// This is the only launch directory accepted by the checked-in
+			// disposable fixture. Never point this launch at a source save.
+			runDir "run-headless-prewarm"
+			vmArg "-Dringworld.headlessPrewarm=true"
+			vmArg "-Dringworld.headlessPrewarmReport=" + providers.gradleProperty("ringHeadlessPrewarmResult")
+					.orElse("result.json").get()
+			programArg "nogui"
+		}
 	}
 }
 
@@ -127,6 +138,7 @@ def layoutSwitchSavesDirectory = file("run-layout-switch/saves")
 def projectionSavesDirectory = file("run-production-projection/saves")
 def lifecycleSavesDirectory = file("run-production-lifecycle/saves")
 def strongholdTestDirectory = file("run-stronghold-test")
+def headlessPrewarmDirectory = file("run-headless-prewarm")
 
 tasks.register("prepareStrongholdTestWorld") {
 	group = "ringworld verification"
@@ -169,6 +181,107 @@ tasks.register("prepareStrongholdTestWorld") {
 tasks.named("runStrongholdTestServer") {
 	dependsOn("prepareStrongholdTestWorld")
 	finalizedBy("verifyStrongholdTestServer")
+}
+
+tasks.register("prepareHeadlessPrewarmWorld") {
+	group = "ringworld verification"
+	description = "Prepares a fresh or copied disposable world for headless atlas prewarm."
+	inputs.property("ringHeadlessPrewarmSource",
+			providers.gradleProperty("ringHeadlessPrewarmSource").orElse(""))
+	inputs.property("ringHeadlessPrewarmResult",
+			providers.gradleProperty("ringHeadlessPrewarmResult").orElse("result.json"))
+	inputs.property("ringHeadlessPrewarmResume",
+			providers.gradleProperty("ringHeadlessPrewarmResume").orElse("false"))
+	outputs.upToDateWhen { false }
+	doLast {
+		def sourceName = providers.gradleProperty("ringHeadlessPrewarmSource").orElse("").get().trim()
+		def resume = providers.gradleProperty("ringHeadlessPrewarmResume").orElse("false").get().toBoolean()
+		def reportName = providers.gradleProperty("ringHeadlessPrewarmResult").orElse("result.json").get().trim()
+		if (reportName.isEmpty() || reportName == "progress.json" || reportName.contains("/") || reportName.indexOf(92) >= 0 || !reportName.endsWith(".json")) {
+			throw new GradleException("-PringHeadlessPrewarmResult must be one .json filename")
+		}
+		def eula = new File(headlessPrewarmDirectory, "eula.txt")
+		if (!eula.isFile() || !eula.text.readLines().any { it.trim() == "eula=true" }) {
+			throw new GradleException("Run the disposable headless server once, review its eula.txt, then set eula=true")
+		}
+		def world = new File(headlessPrewarmDirectory, "world")
+		if (resume) {
+			if (!sourceName.isEmpty() || !new File(world, "level.dat").isFile()) {
+				throw new GradleException("-PringHeadlessPrewarmResume=true requires the existing disposable world and no copy source")
+			}
+		} else {
+			delete(world)
+			delete(new File(headlessPrewarmDirectory, "logs"))
+		}
+		if (!sourceName.isEmpty()) {
+			def source = requireSave(sourceName, "ringHeadlessPrewarmSource", sourceSavesDirectory)
+			copy { from source.directory; into world }
+			if (!new File(world, "level.dat").isFile()) {
+				throw new GradleException("copied headless world is missing level.dat: " + world)
+			}
+			logger.lifecycle("[headless-prewarm] copied source={} destination={}", source.directory, world)
+		}
+		// A prewarm may crash before it can write new evidence. Never let the
+		// finalizer mistake an older COMPLETE result for this launch, including
+		// a deliberate resume of the same disposable runtime world.
+		def reportDirectory = new File(world, "ringworld-prewarm")
+		delete(new File(reportDirectory, reportName))
+		delete(new File(reportDirectory, "progress.json"))
+		def properties = new Properties()
+		def propertiesFile = new File(headlessPrewarmDirectory, "server.properties")
+		if (propertiesFile.isFile()) propertiesFile.withInputStream { properties.load(it) }
+		properties.setProperty("level-name", "world")
+		properties.setProperty("online-mode", "false")
+		properties.setProperty("server-port", "0")
+		// A non-interactive job has no players, so vanilla's empty-server pause
+		// would otherwise stop normal ticks partway through pregeneration.
+		properties.setProperty("pause-when-empty-seconds", "-1")
+		propertiesFile.withOutputStream { properties.store(it, "Disposable RingWorld headless prewarm") }
+		def config = new Properties()
+		def configFile = new File(headlessPrewarmDirectory, "config/ringworld.properties")
+		config.setProperty("widthBlocks", "416")
+		config.setProperty("circumferenceBlocks", "2048")
+		config.setProperty("wallHeightBlocks", "160")
+		config.setProperty("testMode", "false")
+		config.setProperty("testViewDistanceChunks", "6")
+		// The launch adapter supplies HEADLESS_PREWARM itself and suppresses
+		// background autostart even if an existing copied config says true.
+		config.setProperty("pregenerateTerrainAtlas", "false")
+		configFile.parentFile.mkdirs()
+		configFile.withOutputStream { config.store(it, "Disposable RingWorld headless prewarm") }
+	}
+}
+
+tasks.register("verifyHeadlessPrewarm") {
+	group = "ringworld verification"
+	description = "Converts a non-complete headless prewarm JSON result into a failing Gradle result."
+	mustRunAfter("runHeadlessPrewarmServer")
+	doLast {
+		def resultName = providers.gradleProperty("ringHeadlessPrewarmResult").orElse("result.json").get().trim()
+		def result = new File(headlessPrewarmDirectory, "world/ringworld-prewarm/" + resultName)
+		if (!result.isFile()) {
+			throw new GradleException("Headless prewarm did not write a terminal result; inspect " + result)
+		}
+		def report
+		try {
+			report = new groovy.json.JsonSlurper().parse(result)
+		} catch (Exception failure) {
+			throw new GradleException("Headless prewarm result is not valid JSON: " + result, failure)
+		}
+		if (!(report instanceof Map) || report.schemaVersion != 1 || report.status != "COMPLETE" || report.identityAvailable != true
+				|| !report.containsKey("atlasPath") || !report.atlasPath || !report.containsKey("failureReason") || report.failureReason != null
+				|| !(report.totalChunks instanceof Number) || !(report.completedChunks instanceof Number)
+				|| !(report.totalCells instanceof Number) || !(report.completedCells instanceof Number)
+				|| report.totalChunks <= 0 || report.totalCells <= 0
+				|| report.completedChunks != report.totalChunks || report.completedCells != report.totalCells) {
+			throw new GradleException("Headless prewarm did not complete; inspect " + result)
+		}
+	}
+}
+
+tasks.named("runHeadlessPrewarmServer") {
+	dependsOn("prepareHeadlessPrewarmWorld")
+	finalizedBy("verifyHeadlessPrewarm")
 }
 
 tasks.register("prepareAtlasUiRun") {

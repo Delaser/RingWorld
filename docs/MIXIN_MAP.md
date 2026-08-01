@@ -42,7 +42,7 @@ the same change.
 | `ServerEntityManagerMixin` | `PersistentEntitySectionManager` | Canonicalizes new/disk entities, tracking status, loaded/tick keys, and initial section, and queues missing seam entity reads directly | Save/reconnect and ticking depend on this; `updateChunkStatus` can downgrade a `TICKING` seam chunk to `TRACKED`, freezing entities after a fold |
 | `ServerEntityTrackerMixin` | `ChunkMap.TrackedEntity` | Uses periodic distance and retains an existing pairing through one pending canonical-fold chunk delivery transition | Initial pairing must still require chunk readiness; retaining outside the periodic watch window leaks entities |
 | `ServerPlayNetworkHandlerMixin` | `ServerGamePacketListenerImpl` | Validates continuous player/vehicle seam movement and folds canonical without correction | Anti-cheat baselines and passengers must shift with the source chart |
-| `ServerWorldMixin` | `ServerLevel` | Canonical loaded/tick checks, nearest-periodic simulation eligibility fallback in the private 26.1 `lambda$tick$0(TickRateManager,ProfilerFiller,Entity)` entity consumer, entity region load, proximity delivery | Several unrelated world-facing ownership checks converge here; the entity eligibility call is inside the synthetic tick consumer rather than `tick` itself, and the fallback must never become global forced ticking |
+| `ServerWorldMixin` | `ServerLevel` | Canonical loaded/tick checks, constructor-tail scheduler geometry attachment, nearest-periodic simulation eligibility fallback in the private 26.1 `lambda$tick$0(TickRateManager,ProfilerFiller,Entity)` entity consumer, entity region load, proximity delivery | The constructor bridge records an explicit-headless pre-load rejection and rethrows its original settings failure; it must never create bootstrap geometry for an ordinary copied world. The entity eligibility call is inside the synthetic tick consumer rather than `tick` itself, and the fallback must never become global forced ticking |
 | `WorldEntityLookupMixin` | `Level` | Splits seam-crossing entity query boxes into canonical windows | Must suppress duplicates and scan full-circumference boxes once |
 | `WorldTickSchedulerMixin` | `LevelTicks` | Canonicalizes runtime block/fluid tick positions | A tick stored under an alias can never find its canonical block |
 
@@ -92,6 +92,7 @@ ordinary helpers:
 | `RingWorldStorageAccess` | Read-only bridge from a `ServerLevel` to Minecraft's authoritative per-dimension storage root |
 | `RingWorldNetworking` | Payload registration and mandatory handshake |
 | `RingTerrainAtlasServer` | Atlas generation, persistence, and tile streams |
+| `RingWorldHeadlessPrewarm` / `HeadlessPrewarmEvidenceFiles` | Fabric/dedicated lifecycle adapter and evidence hygiene for explicit headless prewarm; observes the shared service, records constructor-tail `REJECTED` evidence without identity when settings are unavailable, gates joins, checkpoints/reports/saves/stops, but never owns another scheduler or atlas writer |
 | `RingWorldClient` | Client handshake receivers, atlas cache, visual/test hooks |
 | `ClientRingState` | Immutable geometry, continuous chart, atlas cache/revision |
 | `RingSurfaceTextureRenderer` | Active complete-ring LOD |
