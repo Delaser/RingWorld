@@ -446,6 +446,11 @@ python3 -m unittest \
   scripts/test_stage_modrinth_release.py
 ```
 
+For the single-command Modrinth build/stage path, put Java 25 first on the
+environment before running `python3 scripts/stage_modrinth_release.py
+--build`. The staging script rejects any other active Java generation with a
+direct setup message before invoking Gradle.
+
 Test both package paths: a completely fresh bundle and an in-place upgrade over
 an existing `.prism-data` directory containing sentinel account, save, option,
 and configuration files. A new ZIP whose launcher only initializes a missing

@@ -10,9 +10,9 @@ import subprocess
 import zipfile
 
 try:
-    from scripts.stage_modrinth_release import VerificationError, current_public_source, stage_release
+    from scripts.stage_modrinth_release import VerificationError, current_public_source, java_major, require_build_java, stage_release
 except ModuleNotFoundError:
-    from stage_modrinth_release import VerificationError, current_public_source, stage_release
+    from stage_modrinth_release import VerificationError, current_public_source, java_major, require_build_java, stage_release
 
 
 VERSION = "0.2.0+mc26.1.2"
@@ -178,6 +178,20 @@ class ModrinthStagingTest(unittest.TestCase):
         (target / "user-file").write_text("keep", encoding="utf-8")
         with self.assertRaisesRegex(VerificationError, "unrecognized directory"):
             self.stage()
+
+    def test_build_preflight_requires_java_25(self) -> None:
+        def result(version: str, returncode: int = 0):
+            return subprocess.CompletedProcess(["java", "-version"], returncode, "", version)
+
+        self.assertEqual(java_major('openjdk version "25.0.4" 2026-07-21 LTS'), 25)
+        self.assertEqual(java_major('java version "1.8.0_472"'), 8)
+        self.assertIn("25.0.4", require_build_java(lambda *args, **kwargs: result('openjdk version "25.0.4"')))
+        with self.assertRaisesRegex(VerificationError, "Java 25 is required.*active runtime"):
+            require_build_java(lambda *args, **kwargs: result('openjdk version "21.0.11"'))
+        with self.assertRaisesRegex(VerificationError, "could not identify"):
+            require_build_java(lambda *args, **kwargs: result("unexpected output"))
+        with self.assertRaisesRegex(VerificationError, "java -version failed"):
+            require_build_java(lambda *args, **kwargs: result("", 1))
 
 
 if __name__ == "__main__":

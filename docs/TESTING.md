@@ -919,6 +919,11 @@ from the overlay and official Fabric server launcher reached `Done`, began
 atlas pregeneration, and saved/stopped cleanly. The distributable overlay keeps
 `eula=false`; acceptance was changed only in the isolated test directory.
 
+The Modrinth staging suite also covers the `--build` Java preflight: Java 25
+is accepted, Java 21 and legacy Java 8 are identified correctly, malformed
+version output fails closed, and a failed `java -version` produces a direct
+setup error without starting Gradle.
+
 Before closing package issue #12, also assemble the actual release-candidate
 jar and perform isolated fresh and in-place macOS launches, a real Windows
 launch, and a dedicated-server launch from the overlay. Static archive tests
