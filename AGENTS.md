@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. Common/client compilation and all 94 unit/parameterized cases pass.
+gate. Common/client compilation and all 95 unit/parameterized cases pass.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -435,6 +435,12 @@ version numbers.
   visibility graph can hide sections that cylindrical rendering bends back
   into view. Curved frustum and render-distance culling must remain enabled to
   bound the performance cost.
+- `LivingEntitySleepingPositionMixin` maps only the local client's replicated
+  sleeping `BlockPos` to its nearest presentation image. Bed positions remain
+  canonical in synchronized entity data, saves, and all server logic. Do not
+  replace this with a server-side sleeping offset or map other entities' beds:
+  vanilla's client callback, wake-up, orientation, and bed-existence paths
+  must all use the same nearby local copy.
 - The frozen 1.21.11 Mojang baseline targeted the unnamed
   `ServerLevel.method_31420` entity-tick lambda. Minecraft 26.1 exposes the
   same call inside named `ServerLevel.tick`; the active mixin targets `tick`

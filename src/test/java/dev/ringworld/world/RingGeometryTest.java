@@ -49,6 +49,17 @@ class RingGeometryTest {
     }
 
     @Test
+    void canonicalBedPositionUsesTheNearestPresentationImage() {
+        RingGeometry safeSmall = new RingGeometry(416, 2_048);
+
+        // A bed at canonical X=2 is the same physical bed as the image at
+        // X=2,050. A traveller just past that seam must not be snapped to X=2.
+        assertEquals(2_050.0, safeSmall.nearestImageX(2.0, 2_047.75), 1.0e-9);
+        assertEquals(-2.0, safeSmall.nearestImageX(2_046.0, -1.0), 1.0e-9);
+        assertEquals(2.0, safeSmall.nearestImageX(2.0, 4.0), 1.0e-9);
+    }
+
+    @Test
     void presentationChartsAlwaysResolveToOneCanonicalX() {
         RingGeometry testRing = new RingGeometry(416, 2_048);
         RingPosition beforeZero = RingPosition.fromPresentationX(-0.25, testRing);

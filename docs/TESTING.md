@@ -38,11 +38,11 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The active suite contains 94 unit/parameterized cases:
+The active suite contains 95 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
-| `RingGeometryTest` | Seam continuity, presentation charts, default walking length, physical/tangent transforms, noise seam, culling envelope, visibility math, query windows |
+| `RingGeometryTest` | Seam continuity, presentation charts and sleeping-position images, default walking length, physical/tangent transforms, noise seam, culling envelope, visibility math, query windows |
 | `RingChunkTopologyTest` | Canonical chunk images, joined-edge distance, periodic entity simulation distance, watch windows, incremental seam diff, long teleport, finite whole-ring filter |
 | `RingDimensionReportTest` | Full-height radial safety, rims, walls/clouds, allocation bounds, safe-small and production costs |
 | `RingDimensionMatrixTest` | Safe-small, narrow, production, long/narrow, and wide/medium layouts at 6/12/28/64 chunk views |
@@ -155,6 +155,9 @@ fixed seed `-2162056627494116761`.
 The harness exercises:
 
 - ordinary terrain generation;
+- a client-only canonical-bed getter probe across the seam; it verifies the
+  replicated sleeping position resolves to the nearest presentation image
+  without writing a sleeping position to the integrated server;
 - creative/flying test setup;
 - two natural seam crossings;
 - camera yaw/pitch continuity and corrective-packet count;
@@ -691,6 +694,13 @@ frame measurements, and the rejected dither experiment are recorded in
 ### World lifecycle
 
 - Save/quit/rejoin at the seam.
+- Sleep at both ordinary and seam-adjacent beds. For the seam case, put a
+  survival player just below canonical `C`, use a bed whose canonical X is
+  just above zero, and confirm that sleep, a normal wake-up, damage
+  interruption, bed destruction, and reconnect all remain beside the visible
+  bed in the same presentation chart. The server/save value must remain in
+  `[0,C)` throughout; a player appearing at raw canonical X or in the void is
+  a regression in `LivingEntitySleepingPositionMixin`.
 - Leave a world with a complete atlas, create a different-seed world with the
   same dimensions, and watch the entire atlas-generation interval. The old
   ring must disappear immediately; no complete-ring surface should render
@@ -726,6 +736,7 @@ Do not compare the removed forced-100-chunk experiment with the active
 | Seam pop/rubber-band | Player packet steps, correction count, yaw/pitch, server canonical X |
 | Missing remote entity | Server tracker result and client projected X |
 | Block visible but unusable | Outbound action packet canonical position and reach result |
+| Sleeping player appears in the void | Local `getSleepingPos()` presentation image, client chart, and canonical server/saved bed position |
 | Upward chunk disappearance | Curved frustum envelope, RingWorld section-occlusion override, and terrain shader camera origin |
 | Texture follows player | Atlas world hash, U/V mapping, global mesh model transform |
 | Hard LOD seam | Actual view distance, proxy alpha/reveal curves, atlas/live alignment |
