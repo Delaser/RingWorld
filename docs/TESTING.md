@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The current `codex/minecraft-26.1-port` branch requires Java 25. Common and
-client compilation now pass together, and the development build runs all 93
+client compilation now pass together, and the development build runs all 94
 unit/parameterized cases:
 
 ```sh
@@ -38,7 +38,7 @@ Expected artifact:
 build/libs/ringworld-0.2.0+mc26.1.2.jar
 ```
 
-The 2026-07-29 suite contains 93 unit/parameterized cases:
+The active suite contains 94 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
@@ -50,7 +50,7 @@ The 2026-07-29 suite contains 93 unit/parameterized cases:
 | `RingRenderProfileTest` | Shared handoff values, texture/mesh budgets, and whole-ring clamping |
 | `RingEntityTrackingTest` | Existing pairing is retained only for a watched pending canonical destination; initial and out-of-window pairings remain rejected |
 | `RingSkyCycleTest` | Fixed angle, reduced vanilla-sun size, noon/dawn/dusk/midnight tone keyframes, smooth interpolation, time wrapping |
-| `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, completion, cache monotonicity, world hash |
+| `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, idempotent duplicate-tile detection, completion, cache monotonicity, world hash |
 | `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
 | `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
@@ -180,6 +180,14 @@ entity simulation eligibility as well as individual gameplay systems. A
 failure where several stop around X=0 while retaining velocity indicates a
 stale chunk-level simulation graph, not four unrelated collision failures.
 
+For the 16,384×256 production seam probe, log both canonical seam chunks as
+manager-loaded, distance-ticking, and position-ticking at arm and result. Two
+consecutive automated passes must record a projectile hit, a moving item near
+canonical X≈6, and the navigator near X≈1.29. This specifically guards the
+former post-fold failures where an entity-load request downgraded a seam chunk
+from `TICKING` to `TRACKED`, or a mob retained path/stuck state from its old
+presentation image.
+
 The second circuit keeps both seam approaches at quarter-block motion in the
 cleared Y=120 seam lane. Up to a 4,096-block circumference, its non-seam middle
 flies near the build ceiling with a circumference-derived step clamped to 4–8
@@ -288,6 +296,13 @@ ready; it never enables the destructive test-mode/create-world automation.
 While active it also disables pause-on-focus-loss and uses the test-client
 inactive-frame policy, so moving the Gradle client behind another app cannot
 pause the integrated server during atlas completion.
+
+Production evidence recorded on the 26.1 branch: a copied 16,384×256 world
+resumed from 32,900/65,536 atlas cells to 100% without a player lap, completing
+the remaining 32,636 cells in about 13 minutes 22 seconds (about 41 cells/s
+over the resumed interval). It emitted both tangent and radial-up captures and
+reported a clean capture result. This is one atlas/projection gate, not the
+complete production gameplay, lifecycle, transfer, GPU, or frame-pacing matrix.
 
 When the projectile probe fails, its diagnostic includes position, velocity,
 age, cached chunk, and current `shouldTickEntityAt` result. A folded position
@@ -431,6 +446,75 @@ update/interaction, boat and passenger identity/mount continuity, long
 teleport, periodic return, planned disconnect, and reconnect all passed. The
 seed-independent sealed lane remained dry, and stale persisted boats that
 loaded only after login were removed before the new fixture was acquired.
+
+Production-layout evidence is narrower but now real: on 16,384×256, the first
+cold dedicated run passed the server gameplay and reconnect probes but produced
+`result=false` only because client B measured `maxRemoteStep=1.333` while the
+server still received `maxPacketStep=0.25` but accumulated
+`maxTickSample=4` under cold resource pressure. Re-running the same warmed
+world/configuration produced
+`result=true`: server `maxTickSample=0.25`, client B
+`maxRemoteStep=0.2498857`, no missing ticks, lag warnings, or crashes, and all
+seam/combat/block/vehicle/teleport/reconnect probes true. Keep cold-start
+performance validation open; this evidence does not certify the entire
+production matrix.
+
+A later fresh-process cold run copied the complete production checkpoint into
+the ignored multiplayer server slot and preserved the source hash. It reached
+`full scenario result=true` in about 2 minutes 51 seconds with a 65,536-cell
+atlas, `maxPacketStep=0.25`, `maxTickSample=2.75`, client A/B
+`maxRemoteStep=0.0/1.25`, zero missing client ticks, and no crashes. The server
+still reported 3.816-second initial-connect and 39.402-second reconnect
+server-behind warnings.
+Treat this as functional repeatability evidence, not a cold-start performance
+pass. All three processes were stopped after the result; the local logs remain
+under the ignored multiplayer run directories.
+
+That trace revealed repeated client completion work from identical dirty tiles.
+After making tile application idempotent and reserving forced publish/save for
+the actual incomplete-to-complete transition, an equally cold comparison
+reported:
+
+- one completion notice per client instead of seven;
+- two complete-ring mesh builds per client instead of three;
+- about 69 seconds to the full result instead of 171;
+- server `maxTickSample=0.75` instead of `2.75`;
+- client B `maxRemoteStep=0.4167` instead of `1.25`, with zero missing ticks;
+- one 2.020-second/40-tick initial-connect warning instead of the previous
+  3.816-second initial warning plus 39.402-second reconnect warning;
+- true seam/combat/block/vehicle/teleport/reconnect results and no crash.
+
+Both comparison runs used renamed cold client caches, a fresh ignored server
+copy of the same complete source, and unchanged source hashes.
+
+A third cold run added one-second process sampling. The active scenario from
+arm to final result took about 18 seconds and passed with server packet/tick
+maxima `0.25/0.25`, client A/B remote maxima `0.0/0.2499238`, zero missing
+ticks, no overload warning, and no crash. Client A logged one completion and
+one mesh build; client B logged one completion and two mesh builds. Observed
+RSS lower bounds were 591 MiB for the server, 871 MiB for client A, 941 MiB for
+client B, and 2.15 GiB simultaneously. The sampler output was not persisted,
+so these are lower bounds rather than exact peak claims. Existing swap use was
+flat in retained samples. Full process start-to-result was about 2 minutes 22
+seconds because offline Mojang/Realms requests delayed initial connection.
+Client B's second build was logged at 00:54:24, one second after its first
+complete build and before Client A requested the atlas at 00:54:26. During
+that interval the server captured newly loaded chunks and saved changed atlas
+data. Client A then built only the updated snapshot. Treat this single rebuild
+as a legitimate changed surface revision; the defect was repeated rebuilds for
+identical tile payloads.
+
+A separate clean-atlas benchmark removed the atlas only from a disposable copy
+of the production world and let the normal dedicated scheduler rebuild it. It
+created the fresh atlas at 01:01:32, reached 65,536/65,536 cells at 01:15:09,
+and saved 100% at 01:15:12: 13 minutes 37 seconds and about 80.2 cells per
+second. The completed gzip was 76 KiB. The copy grew from 210,024 to 383,376
+KiB (+169.3 MiB), chiefly from generated chunks, while 15-second process
+sampling observed a 1.06 GiB server RSS peak. There were no server-behind
+warnings, generation errors, RingWorld exceptions, crash reports, or observed
+swap growth. Source `level.dat` and atlas hashes were unchanged, and every
+benchmark process was stopped afterward. Runtime logs and artifacts stay in
+the ignored multiplayer directories.
 
 The integrated visual/seam harness deliberately holds position for 300 client
 ticks after its first seam screenshot. This keeps the seam chunks resident

@@ -8,6 +8,7 @@ import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingWorldGeneratorAccess;
 import dev.ringworld.world.RingWorldSettings;
 import dev.ringworld.world.RingNoiseCoordinates;
+import dev.ringworld.world.RingNavigationAccess;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLevelEvents;
@@ -17,9 +18,11 @@ import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.monster.zombie.Zombie;
@@ -168,7 +171,11 @@ public final class RingWorldServer {
         double canonicalX = geometry.wrapX(sourceX);
         if (canonicalX == sourceX) return 0.0;
         entity.setPos(canonicalX, entity.getY(), entity.getZ());
-        return canonicalX - sourceX;
+        double shift = canonicalX - sourceX;
+        if (entity instanceof Mob mob && mob.getNavigation() instanceof RingNavigationAccess navigation) {
+            navigation.ringworld$foldPath((int)Math.rint(shift));
+        }
+        return shift;
     }
 
     /**
@@ -446,6 +453,21 @@ public final class RingWorldServer {
     private static void armGameplaySeamProbes(ServerLevel world, ServerPlayer player,
                                                RingGeometry geometry) {
         int circumference = geometry.circumferenceBlocks();
+        ChunkPos firstChunk = new ChunkPos(0, 0);
+        ChunkPos lastChunk = new ChunkPos(geometry.circumferenceChunks() - 1, 0);
+        RingWorldMod.LOGGER.info(
+                "[test] seam simulation at arm: playerChunk={}, firstManagerTicking={}, "
+                        + "firstDistanceTicking={}, firstPositionTicking={}, lastManagerTicking={}, "
+                        + "lastDistanceTicking={}, lastPositionTicking={}",
+                player.chunkPosition() + "/last=" + player.getLastSectionPos().chunk(),
+                world.areEntitiesActuallyLoadedAndTicking(firstChunk),
+                world.getChunkSource().chunkMap.getDistanceManager()
+                        .inEntityTickingRange(firstChunk.pack()),
+                world.isPositionEntityTicking(firstChunk.getMiddleBlockPosition(120)),
+                world.areEntitiesActuallyLoadedAndTicking(lastChunk),
+                world.getChunkSource().chunkMap.getDistanceManager()
+                        .inEntityTickingRange(lastChunk.pack()),
+                world.isPositionEntityTicking(lastChunk.getMiddleBlockPosition(120)));
 
         // Projectile -> entity collision. The target stays in canonical chunk
         // zero while the arrow crosses into the same canonical plane.
@@ -500,7 +522,13 @@ public final class RingWorldServer {
         // requesting the path.
         navigator.setOnGround(true);
         boolean navigationStarted = navigator.getNavigation().moveTo(2.5, 120.0, 12.5, 1.0);
-        RingWorldMod.LOGGER.info("[test] AI periodic path created={}", navigationStarted);
+        var navigationPath = navigator.getNavigation().getPath();
+        RingWorldMod.LOGGER.info(
+                "[test] AI periodic path created={}, navigationTarget={}, pathTarget={}, nextNode={}, nodeCount={}",
+                navigationStarted, navigator.getNavigation().getTargetPos(),
+                navigationPath == null ? null : navigationPath.getTarget(),
+                navigationPath == null ? null : navigationPath.getNextNodePos(),
+                navigationPath == null ? -1 : navigationPath.getNodeCount());
         TEST_AI_MOBS.put(player.getUUID(), navigator.getId());
 
         // A water source has one open outlet through the canonical seam. Its
@@ -535,6 +563,21 @@ public final class RingWorldServer {
 
     private static void logGameplaySeamProbes(ServerLevel world, ServerPlayer player,
                                                RingGeometry geometry) {
+        ChunkPos firstChunk = new ChunkPos(0, 0);
+        ChunkPos lastChunk = new ChunkPos(geometry.circumferenceChunks() - 1, 0);
+        RingWorldMod.LOGGER.info(
+                "[test] seam simulation at result: playerChunk={}, firstManagerTicking={}, "
+                        + "firstDistanceTicking={}, firstPositionTicking={}, lastManagerTicking={}, "
+                        + "lastDistanceTicking={}, lastPositionTicking={}",
+                player.chunkPosition() + "/last=" + player.getLastSectionPos().chunk(),
+                world.areEntitiesActuallyLoadedAndTicking(firstChunk),
+                world.getChunkSource().chunkMap.getDistanceManager()
+                        .inEntityTickingRange(firstChunk.pack()),
+                world.isPositionEntityTicking(firstChunk.getMiddleBlockPosition(120)),
+                world.areEntitiesActuallyLoadedAndTicking(lastChunk),
+                world.getChunkSource().chunkMap.getDistanceManager()
+                        .inEntityTickingRange(lastChunk.pack()),
+                world.isPositionEntityTicking(lastChunk.getMiddleBlockPosition(120)));
         Entity target = world.getEntity(TEST_PROJECTILE_TARGETS.getOrDefault(player.getUUID(), -1));
         Entity projectile = world.getEntity(TEST_PROJECTILES.getOrDefault(player.getUUID(), -1));
         boolean projectileHit = target instanceof Zombie zombie

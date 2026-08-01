@@ -108,7 +108,10 @@ The first two tile bytes are its actual width and height. Tile decoding checks:
 
 Cells received as absent do not erase present client-cache cells. This allows a
 client with a previously complete cache to reconnect while a restored server
-atlas is temporarily less complete.
+atlas is temporarily less complete. Applying an identical present tile is
+idempotent: it does not advance the client revision, save the cache, or rebuild
+the full GPU ring. Only the actual incomplete-to-complete transition bypasses
+the ordinary publish/save coalescing intervals.
 
 The server:
 

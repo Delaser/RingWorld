@@ -16,6 +16,7 @@ import net.minecraft.world.level.entity.Visibility;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.gen.Invoker;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -26,7 +27,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(PersistentEntitySectionManager.class)
 abstract class ServerEntityManagerMixin<T extends EntityAccess> implements RingEntityManagerAccess {
     @Shadow @Final private Long2ObjectMap<?> chunkLoadStatuses;
-    @Shadow public abstract void updateChunkStatus(ChunkPos pos, Visibility trackingStatus);
+    @Invoker("ensureChunkQueuedForLoad")
+    protected abstract void ringworld$queueChunkEntityLoad(long packedPos);
     private RingGeometry ringworld$geometry;
 
     @Override
@@ -39,10 +41,12 @@ abstract class ServerEntityManagerMixin<T extends EntityAccess> implements RingE
         if (ringworld$geometry == null) return;
         int x = Math.floorMod(pos.x(), ringworld$geometry.circumferenceChunks());
         ChunkPos canonical = x == pos.x() ? pos : new ChunkPos(x, pos.z());
-        // FRESH is represented by the map's default value. Avoid changing the
-        // tracking level of chunks whose read is already pending or complete.
-        if (!chunkLoadStatuses.containsKey(canonical.pack())) {
-            updateChunkStatus(canonical, Visibility.TRACKED);
+        // FRESH is represented by the load map's default value. Queue its
+        // entity read directly: updateChunkStatus also changes visibility and
+        // can downgrade an already-ticking seam chunk to merely TRACKED.
+        long key = canonical.pack();
+        if (!chunkLoadStatuses.containsKey(key)) {
+            ringworld$queueChunkEntityLoad(key);
         }
     }
 

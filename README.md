@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 93 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 94 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -185,8 +185,10 @@ checks. Saved settings always override later bootstrap configuration changes.
 | Safe-small | 2,048 blocks / 128 chunks | 416 blocks / 26 chunks | Fast development, atlas, and multiplayer testing |
 
 The production atlas covers 16,384 canonical chunks and is a substantial
-background generation job. Administrators can inspect or control it without
-changing the saved layout:
+background generation job. A clean-atlas copied-world benchmark completed it
+in 13 minutes 37 seconds at about 80.2 cells per second on the development
+machine. Administrators can inspect or control it without changing the saved
+layout:
 
 ```text
 /ringworld atlas status
@@ -226,8 +228,9 @@ For demonstrated results, open risks, and the prioritized roadmap, see
 ## Known limitations
 
 - The complete distant ring appears only after its terrain atlas reaches 100%.
-- The production-default atlas has not yet completed the full end-to-end
-  generation, disk, transfer, and GPU benchmark matrix.
+- Production clean-atlas generation, projection, transfer, multiplayer,
+  lifecycle, memory, and static GPU resource gates pass; the 6/12/28 visual and
+  repeated frame-pacing comparison matrix remains open.
 - Broad multi-seed structures, carvers, portals, redstone, block entities,
   fluids, death/respawn, vehicles, and projectiles still need more seam
   coverage.
