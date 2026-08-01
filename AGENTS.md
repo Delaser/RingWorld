@@ -242,6 +242,11 @@ unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
+`scripts/stage_modrinth_release.py --build` checks the active Java generation
+before it invokes Gradle. Keep that fail-closed Java 25 preflight synchronized
+with the active Minecraft toolchain; do not replace its direct setup error
+with the compiler failure produced by an older Gradle JVM.
+
 The frozen 1.21.11 tag uses Java 21 and passes 73 unit/parameterized cases plus
 the runtime suites recorded in
 [`docs/MINECRAFT_1_21_11_FINAL_BASELINE.md`](docs/MINECRAFT_1_21_11_FINAL_BASELINE.md).

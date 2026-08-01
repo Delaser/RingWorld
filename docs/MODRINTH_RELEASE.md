@@ -15,6 +15,8 @@ same Modrinth project as a separately validated loader-specific version.
 Run the following single command at the repository root:
 
 ```sh
+JAVA_HOME=/path/to/jdk-25 \
+PATH="$JAVA_HOME/bin:$PATH" \
 python3 scripts/stage_modrinth_release.py --build
 ```
 
@@ -22,7 +24,9 @@ It runs `./gradlew clean test build --console=plain`, validates the expected
 runtime jar, and creates the ignored review directory
 `dist/modrinth/0.2.0+mc26.1.2/fabric/`. The script has no upload implementation,
 does not make network requests, has no token option, and must never change a
-Modrinth listing. To validate an already-built exact file, use
+Modrinth listing. The `--build` path checks the active runtime first and gives
+a direct Java 25/JAVA_HOME error before Gradle if the shell is using another
+Java generation. To validate an already-built exact file, use
 `--jar path/to/ringworld-0.2.0+mc26.1.2.jar` instead.
 
 The generated directory contains exactly one jar. That jar alone is the

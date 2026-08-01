@@ -64,9 +64,10 @@ and Java 25, requires Fabric API, and must be installed on both the client and
 server.
 
 Maintainers stage a later manual upload with
-`python3 scripts/stage_modrinth_release.py --build` from a clean, pushed public
-branch. It produces one reviewed runtime jar, checksums, and an exact source
-revision; it does not upload or change the listing. See
+`python3 scripts/stage_modrinth_release.py --build` under Java 25 from a clean,
+pushed public branch. The command fails early with Java setup guidance if the
+active runtime is not Java 25. It produces one reviewed runtime jar, checksums,
+and an exact source revision; it does not upload or change the listing. See
 [the release procedure](docs/MODRINTH_RELEASE.md).
 
 Optional Prism client bundles and a dedicated-server overlay can be assembled

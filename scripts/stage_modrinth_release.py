@@ -40,6 +40,8 @@ SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 GITHUB_COMMIT_PREFIX = "https://github.com/Delaser/RingWorld/commit/"
 PUBLIC_REPOSITORY = "https://github.com/Delaser/RingWorld"
 COMPATIBILITY_API_VERSION = 1
+REQUIRED_BUILD_JAVA = 25
+JAVA_VERSION_PATTERN = re.compile(r'\b(?:java|openjdk) version "(?:1\.)?(\d+)')
 
 
 def read_json(path: Path) -> dict:
@@ -76,6 +78,36 @@ def command_output(arguments: list[str], root: Path) -> str:
     return subprocess.run(
         arguments, cwd=root, check=True, text=True, capture_output=True
     ).stdout.strip()
+
+
+def java_major(version_output: str) -> int:
+    match = JAVA_VERSION_PATTERN.search(version_output)
+    if match is None:
+        raise VerificationError(f"could not identify the active Java version from: {version_output.strip()!r}")
+    return int(match.group(1))
+
+
+def require_build_java(runner=subprocess.run) -> str:
+    """Require the exact JVM generation used by Minecraft 26.1.2 builds."""
+    try:
+        result = runner(["java", "-version"], text=True, capture_output=True, check=False)
+    except OSError as exc:
+        raise VerificationError(
+            "Java 25 is required for --build, but java could not be started; set JAVA_HOME and PATH to a JDK 25 installation"
+        ) from exc
+    output = "\n".join(part for part in (result.stdout, result.stderr) if part).strip()
+    if result.returncode != 0:
+        raise VerificationError(
+            "Java 25 is required for --build, but java -version failed; set JAVA_HOME and PATH to a JDK 25 installation"
+        )
+    major = java_major(output)
+    if major != REQUIRED_BUILD_JAVA:
+        first_line = output.splitlines()[0] if output else "unknown Java"
+        raise VerificationError(
+            f"Java 25 is required for --build; active runtime is {first_line}. "
+            "Set JAVA_HOME and put $JAVA_HOME/bin first on PATH."
+        )
+    return output.splitlines()[0]
 
 
 def current_public_source(root: Path, runner=command_output) -> dict:
@@ -241,6 +273,7 @@ def main() -> int:
     args = parse_args()
     try:
         if args.build:
+            require_build_java()
             subprocess.run(["./gradlew", "clean", "test", "build", "--console=plain"], check=True)
         jar = args.jar or Path("build/libs/ringworld-0.2.0+mc26.1.2.jar")
         source = current_public_source(Path.cwd())
