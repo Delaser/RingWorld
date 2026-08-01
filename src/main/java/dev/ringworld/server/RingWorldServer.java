@@ -247,6 +247,10 @@ public final class RingWorldServer {
     /** Local-only smoke test, activated solely by testMode=true in ringworld.properties. */
     private static void runAutomatedTest(ServerLevel world, RingGeometry geometry) {
         if (!RingWorldConfig.load().testMode()) return;
+        // The isolated curved-object capture owns its camera and fixture. It
+        // still uses the normal creative-world creator, but not the long-form
+        // traversal sequence below.
+        if (Boolean.getBoolean("ringworld.curvedObjectCapture")) return;
         for (ServerPlayer player : world.players()) {
             TestProgress progress = TEST_PROGRESS.getOrDefault(player.getUUID(), new TestProgress(0, 0));
             if (progress.stage == 0) {

@@ -13,7 +13,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 95 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 97 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -23,8 +23,9 @@ The Nether and End remain vanilla.
 > disconnect, client-state clearing, and an in-process reopen with the exact
 > layout and complete atlas restored. The safe-small 6/12/28-chunk visual
 > matrix and a complete production-size tangent/radial projection review now
-> pass. Remaining automated-harness, packaging, and staging gates are still
-> outstanding, so this is not a playable release yet. The first 26.1.2 Fabric
+> pass, and the repeatable Fabric release-staging workflow is complete.
+> Remaining automated-harness and pre-release compatibility gates are still
+> outstanding, so this is not a stable release yet. The first 26.1.2 Fabric
 > alpha is an early test build, not a stable or broadly compatible release.
 > The validated server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
@@ -229,7 +230,8 @@ The current build includes:
 - continuous client charts and natural player/vehicle seam folding;
 - periodic density-noise sampling and canonical seam-crossing worldgen writes;
 - finite exterior void and five-block textured, breakable rims;
-- curved terrain, entity, cloud, frustum, and section-visibility handling;
+- curved terrain, entity, block-entity, interaction-overlay, cloud, frustum,
+  and section-visibility handling;
 - a fixed ring-centred sun with smooth global tone and intensity changes;
 - persistent tiled terrain-atlas transfer and client cache;
 - atlas-backed full-ring rendering at normal chunk distance;

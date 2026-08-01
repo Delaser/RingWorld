@@ -46,6 +46,8 @@ public final class RingWorldClient implements ClientModInitializer {
             new ProductionLifecycleTestClient();
     private final RingProjectionCaptureClient projectionCapture =
             new RingProjectionCaptureClient();
+    private final CurvedObjectCaptureClient curvedObjectCapture =
+            new CurvedObjectCaptureClient();
     private boolean testScreenOpened;
     private boolean testWorldStarted;
     private boolean testPerformanceProfileApplied;
@@ -149,6 +151,10 @@ public final class RingWorldClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasMetadataPayload.ID, (payload, context) ->
                 context.client().execute(() -> {
                     boolean cacheComplete = ClientRingState.installTerrainAtlas(payload);
+                    // This short-lived capture validates live object/terrain
+                    // alignment and intentionally does not download the LOD
+                    // atlas while its two frames are settling.
+                    if (Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) return;
                     if (!ClientPlayNetworking.canSend(RingTerrainAtlasRequestPayload.ID)) return;
                     ClientPlayNetworking.send(new RingTerrainAtlasRequestPayload(
                             payload.worldHash(), cacheComplete));
@@ -164,11 +170,17 @@ public final class RingWorldClient implements ClientModInitializer {
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             if (client.player != null) ClientRingState.updateCameraPosition(client.player.getX());
-            ClientRingState.saveTerrainAtlasIfDue(false);
+            // This short-lived renderer capture deliberately postpones its
+            // cache write until disconnect so a periodic async save cannot
+            // race the forced teardown save over the same temporary file.
+            if (!Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) {
+                ClientRingState.saveTerrainAtlasIfDue(false);
+            }
             if (productionLifecycleTest.tick(client)) return;
             if (layoutSwitchTest.tick(client)) return;
             if (multiplayerTest.tick(client)) return;
             if (projectionCapture.tick(client)) return;
+            if (curvedObjectCapture.tick(client)) return;
             saveDiagnosticJoinScreenshot(client);
             startAutomatedTestWorld(client);
         });

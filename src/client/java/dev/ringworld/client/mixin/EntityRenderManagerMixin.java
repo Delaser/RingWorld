@@ -4,6 +4,7 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import dev.ringworld.client.ClientRingState;
 import dev.ringworld.world.RingGeometry;
+import dev.ringworld.world.RingObjectTransform;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.EntityRenderDispatcher;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
@@ -28,14 +29,14 @@ abstract class EntityRenderManagerMixin {
             matrices.translate(x, y, z);
             return;
         }
-        Vec3 canonicalEntityPosition = cameraState.pos.add(x, y, z);
-        Vec3 localPosition = geometry.toCameraLocal(canonicalEntityPosition, cameraState.pos);
+        RingObjectTransform transform = RingObjectTransform.fromCameraRelative(
+                geometry, cameraState.pos, x, y, z);
+        Vec3 localPosition = transform.cameraLocalPosition();
         matrices.translate(localPosition.x, localPosition.y, localPosition.z);
         // Entity renderers apply their normal yaw/pose transforms after this
         // common translation. Rotating here makes those transforms operate in
         // the entity's own tangent frame while the local player remains at a
         // zero-angle frame and therefore keeps vanilla controls unchanged.
-        double tangentAngle = geometry.tangentFrameAngle(cameraState.pos.x, canonicalEntityPosition.x);
-        matrices.mulPose(Axis.ZP.rotation((float)tangentAngle));
+        matrices.mulPose(Axis.ZP.rotation((float)transform.tangentAngleRadians()));
     }
 }

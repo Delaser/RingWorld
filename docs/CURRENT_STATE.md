@@ -43,7 +43,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 95 unit/parameterized cases pass, and Loom produces
+temporary shims, all 97 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -168,8 +168,9 @@ in-process reopen, which restored the same layout and complete atlas. The final
 marker was `result=true`; this is transfer-path evidence, not proof of vanilla
 portal construction or linking.
 
-Automated-harness completion, packaging, and staging gates remain.
-The only playable implementation is still the frozen `mc-1.21.11-final` tag.
+Automated-harness completion and broader compatibility gates remain. Repeatable
+Fabric staging is complete, but the active 26.1.2 alpha is not yet a stable
+release. The frozen `mc-1.21.11-final` tag remains the rollback baseline.
 
 The “Implemented” sections below describe validated 1.21.11 behavior and the
 contract the port must restore. They are not claims that every active 26.1.2
@@ -445,6 +446,12 @@ client/runtime gate passes.
   canonical copy or into the void. The automated integrated harness exercises
   that client getter across the seam; a real night/damage/destruction/rejoin
   bed lifecycle remains in the manual multiplayer matrix.
+- Block entities and interaction overlays now use the same exact cylindrical
+  anchor and tangent frame as ordinary entity models. An isolated safe-small
+  client capture shows a chest, lectern book, ender chest, copper golem, item,
+  and boat seated on the curved live-terrain strip from both X=0.5 and X=32.5,
+  with strict `LevelRenderer` mixin application and no distance-dependent
+  vertical slide.
 - The source-audited variable registry and correction plan are maintained in
   `DIMENSION_SCALING_PLAN.md`.
 
