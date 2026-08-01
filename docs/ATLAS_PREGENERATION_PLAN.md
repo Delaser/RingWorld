@@ -121,7 +121,9 @@ changing atlas bytes. State transitions are explicit so a future server-thread
 owner can enforce pause, resume, save, cancellation, completion, and failure
 consistently. The cursor begins from the atlas's first missing chunk, skips
 newly present chunks while it advances, and derives finite Z from
-`RingGeometry.minChunkZ()`; the present cells remain the resume journal.
+`RingGeometry.minChunkZ()`; the present cells remain the resume journal. Rate
+snapshots subtract the present-cell count captured at each start/resume, so a
+partial restarted atlas reports no rate or ETA until that run adds cells.
 
 ### Server execution façade
 

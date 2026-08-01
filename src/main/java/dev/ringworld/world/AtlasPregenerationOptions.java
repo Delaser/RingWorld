@@ -30,7 +30,7 @@ public record AtlasPregenerationOptions(
     public AtlasPregenerationOptions {
         Objects.requireNonNull(mode, "mode");
         requireRange("maxInFlightChunks", maxInFlightChunks, 1, MAX_IN_FLIGHT_CHUNKS);
-        requireRange("pendingTaskSoftLimit", pendingTaskSoftLimit, 0, MAX_PENDING_TASK_SOFT_LIMIT);
+        requireRange("pendingTaskSoftLimit", pendingTaskSoftLimit, 1, MAX_PENDING_TASK_SOFT_LIMIT);
         requireRange("checkpointIntervalChunks", checkpointIntervalChunks, 1,
                 MAX_CHECKPOINT_INTERVAL_CHUNKS);
         requireRange("progressIntervalTicks", progressIntervalTicks, 1,

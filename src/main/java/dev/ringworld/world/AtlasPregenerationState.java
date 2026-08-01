@@ -26,7 +26,7 @@ public enum AtlasPregenerationState {
     private Set<AtlasPregenerationState> allowedTransitions() {
         return switch (this) {
             case IDLE -> EnumSet.of(RUNNING, CANCELLED, FAILED);
-            case RUNNING -> EnumSet.of(PAUSED, SAVING, COMPLETE, CANCELLED, FAILED);
+            case RUNNING -> EnumSet.of(PAUSED, SAVING, CANCELLED, FAILED);
             case PAUSED -> EnumSet.of(RUNNING, CANCELLED, FAILED);
             case SAVING -> EnumSet.of(RUNNING, COMPLETE, CANCELLED, FAILED);
             case COMPLETE, CANCELLED, FAILED -> EnumSet.noneOf(AtlasPregenerationState.class);

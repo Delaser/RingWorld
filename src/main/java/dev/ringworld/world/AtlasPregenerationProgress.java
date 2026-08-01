@@ -37,17 +37,25 @@ public record AtlasPregenerationProgress(
 
     /**
      * Creates a rate and ETA snapshot without producing an invalid infinity
-     * before the first cell has been captured or after a restarted job.
+     * before the first cell has been captured or after a restarted job. The
+     * service supplies {@code startingPresentCells} once when it starts or
+     * resumes a job, so only cells captured during this run affect the rate.
      */
     public static AtlasPregenerationProgress snapshot(AtlasPregenerationState state,
                                                        long completedChunks, long totalChunks,
+                                                       int startingPresentCells,
                                                        int presentCells, int totalCells,
                                                        Duration elapsed,
                                                        Optional<String> lastError) {
         Objects.requireNonNull(elapsed, "elapsed");
         Objects.requireNonNull(lastError, "lastError");
+        if (startingPresentCells < 0 || startingPresentCells > presentCells
+                || presentCells > totalCells) {
+            throw new IllegalArgumentException(
+                    "starting present cells must be in [0, presentCells] within totalCells");
+        }
         double seconds = elapsed.toNanos() / 1_000_000_000.0;
-        double rate = seconds > 0.0 ? presentCells / seconds : 0.0;
+        double rate = seconds > 0.0 ? (presentCells - startingPresentCells) / seconds : 0.0;
         Optional<Duration> eta = estimateEta(presentCells, totalCells, rate);
         return new AtlasPregenerationProgress(state, completedChunks, totalChunks,
                 presentCells, totalCells, rate, elapsed, eta, lastError);

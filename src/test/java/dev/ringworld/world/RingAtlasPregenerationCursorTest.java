@@ -87,6 +87,9 @@ class RingAtlasPregenerationCursorTest {
                 () -> new AtlasPregenerationOptions(AtlasPregenerationMode.BACKGROUND,
                         0, 64, 200, 20, false));
         assertThrows(IllegalArgumentException.class,
+                () -> new AtlasPregenerationOptions(AtlasPregenerationMode.BACKGROUND,
+                        1, 0, 200, 20, false));
+        assertThrows(IllegalArgumentException.class,
                 () -> new AtlasPregenerationOptions(AtlasPregenerationMode.INTERACTIVE,
                         1, 64, 200, 20, true));
     }
@@ -97,17 +100,28 @@ class RingAtlasPregenerationCursorTest {
         assertTrue(AtlasPregenerationState.RUNNING.canTransitionTo(AtlasPregenerationState.PAUSED));
         assertTrue(AtlasPregenerationState.PAUSED.canTransitionTo(AtlasPregenerationState.RUNNING));
         assertTrue(AtlasPregenerationState.RUNNING.canTransitionTo(AtlasPregenerationState.CANCELLED));
+        assertFalse(AtlasPregenerationState.RUNNING.canTransitionTo(AtlasPregenerationState.COMPLETE));
         assertTrue(AtlasPregenerationState.SAVING.canTransitionTo(AtlasPregenerationState.COMPLETE));
         assertTrue(AtlasPregenerationState.FAILED.isTerminal());
         assertFalse(AtlasPregenerationState.COMPLETE.canTransitionTo(AtlasPregenerationState.RUNNING));
 
         AtlasPregenerationProgress progress = AtlasPregenerationProgress.snapshot(
-                AtlasPregenerationState.RUNNING, 0, 32, 0, 128,
+                AtlasPregenerationState.RUNNING, 0, 32, 0, 0, 128,
                 Duration.ZERO, Optional.empty());
         assertEquals(0.0, progress.cellsPerSecond());
         assertTrue(progress.eta().isEmpty());
         assertEquals(Optional.of(Duration.ZERO),
                 AtlasPregenerationProgress.estimateEta(128, 128, 0.0));
+    }
+
+    @Test
+    void restartedPartialAtlasHasNoRateOrEtaUntilThisRunCapturesNewCells() {
+        AtlasPregenerationProgress progress = AtlasPregenerationProgress.snapshot(
+                AtlasPregenerationState.RUNNING, 8, 32, 64, 64, 128,
+                Duration.ofSeconds(10), Optional.empty());
+
+        assertEquals(0.0, progress.cellsPerSecond());
+        assertTrue(progress.eta().isEmpty());
     }
 
     private static RingAtlasPregenerationCursor cursor(RingGeometry geometry) {
