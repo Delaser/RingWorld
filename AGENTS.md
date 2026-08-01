@@ -19,8 +19,10 @@ reconnect matrix also passes. A copied 16,384×256 world now passes the
 Overworld/Nether/End transfer, save/disconnect, client-state cleanup, and
 same-process reopen gate. Safe-small 6/12/28-chunk and production-size
 tangent/radial visual handoff review and repeatable Fabric release staging also
-pass. Remaining automated-harness and compatibility work means the port is not
-a stable release yet. See
+pass. The P1–P4 topology, worldgen, protocol, and renderer architecture parents
+are closed. Optional convenience packaging, independent release-candidate
+review, broader gameplay/worldgen coverage, and compatibility work remain, so
+the Fabric alpha is not a stable release yet. See
 `docs/CURRENT_STATE.md` and `docs/VISUAL_HANDOFF_REVIEW_2026-08-01.md`.
 The Fabric alpha `0.2.0+mc26.1.2` is currently **Under review** on Modrinth;
 that submission does not make the remaining port gates complete.
