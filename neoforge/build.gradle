@@ -23,7 +23,8 @@ sourceSets.main.java.setSrcDirs([
 ])
 sourceSets.main.resources.setSrcDirs([
         rootProject.file('src/main/resources'),
-        rootProject.file('src/client/resources')
+        rootProject.file('src/client/resources'),
+        rootProject.file('src/platform/neoforge/resources')
 ])
 sourceSets.main.resources.exclude('fabric.mod.json')
 
@@ -58,6 +59,13 @@ neoForge {
             systemProperty 'ringworld.captureMapCompass', 'true'
             programArgument '--username'
             programArgument 'MapCompassTester'
+        }
+        curvedObjectCaptureClient {
+            client()
+            gameDirectory = project.file('run-curved-object-capture')
+            systemProperty 'ringworld.curvedObjectCapture', 'true'
+            programArgument '--username'
+            programArgument 'RingObjectTester'
         }
         productionProjectionClient {
             client()
@@ -252,6 +260,7 @@ def neoForgeProjectionRun = project.file('run-production-projection')
 def neoForgeProjectionSaves = new File(neoForgeProjectionRun, 'saves')
 def neoForgeVisualParityRun = project.file('run-production-visual-parity')
 def neoForgeVisualParitySaves = new File(neoForgeVisualParityRun, 'saves')
+def neoForgeCurvedObjectRun = project.file('run-curved-object-capture')
 def neoForgeLayoutSwitchRun = project.file('run-layout-switch')
 def neoForgeLayoutSwitchSaves = new File(neoForgeLayoutSwitchRun, 'saves')
 def neoForgeProductionLifecycleRun = project.file('run-production-lifecycle')
@@ -767,6 +776,49 @@ tasks.register('verifyNeoForgeProductionVisualParityClient') {
     }
 }
 
+tasks.register('prepareNeoForgeCurvedObjectCapture') {
+    group = 'ringworld verification'
+    description = 'Creates a clean safe-small NeoForge world for curved rigid-object captures.'
+    outputs.dir(new File(neoForgeCurvedObjectRun, 'config'))
+    outputs.upToDateWhen { false }
+    doLast {
+        ['saves', 'screenshots', 'ringworld-cache', 'logs'].each {
+            delete(new File(neoForgeCurvedObjectRun, it))
+        }
+        def configDirectory = new File(neoForgeCurvedObjectRun, 'config')
+        configDirectory.mkdirs()
+        new File(configDirectory, 'ringworld.properties').text = '''\
+widthBlocks=416
+circumferenceBlocks=2048
+wallHeightBlocks=160
+testMode=false
+testViewDistanceChunks=12
+pregenerateTerrainAtlas=false
+'''
+    }
+}
+
+tasks.register('verifyNeoForgeCurvedObjectCaptureClient') {
+    group = 'ringworld verification'
+    description = 'Fails unless both NeoForge curved rigid-object captures completed.'
+    mustRunAfter('runCurvedObjectCaptureClient')
+    doLast {
+        def logFile = new File(neoForgeCurvedObjectRun, 'logs/latest.log')
+        def log = logFile.isFile() ? logFile.text : ''
+        if (!log.contains('[curved-object-capture] result=PASS, captures complete')
+                || log.contains('[curved-object-capture] result=FAIL')) {
+            throw new GradleException("NeoForge curved-object capture did not pass; inspect ${logFile}")
+        }
+        ['far', 'near'].each { distance ->
+            def screenshot = new File(neoForgeCurvedObjectRun,
+                    "screenshots/ringworld-curved-objects-${distance}.png")
+            if (!screenshot.isFile()) {
+                throw new GradleException("NeoForge curved-object capture is missing ${screenshot}")
+            }
+        }
+    }
+}
+
 tasks.register('prepareCopiedNeoForgeLayoutSwitchWorlds') {
     group = 'ringworld verification'
     description = 'Copies two distinct NeoForge source saves into the isolated layout-switch run directory.'
@@ -917,6 +969,11 @@ tasks.named('runProductionProjectionClient') {
 tasks.named('runProductionVisualParityClient') {
     dependsOn('prepareCopiedNeoForgeProductionVisualParityWorld')
     finalizedBy('verifyNeoForgeProductionVisualParityClient')
+}
+
+tasks.named('runCurvedObjectCaptureClient') {
+    dependsOn('prepareNeoForgeCurvedObjectCapture')
+    finalizedBy('verifyNeoForgeCurvedObjectCaptureClient')
 }
 
 tasks.named('runLayoutSwitchClient') {

@@ -1,10 +1,13 @@
 package dev.ringworld.client;
 
 import dev.ringworld.RingWorldMod;
+import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
+import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
@@ -22,22 +25,54 @@ import net.minecraft.world.level.block.entity.LecternBlockEntity;
  * Isolated real-renderer proof that block entities share the curved terrain
  * pose instead of sliding vertically as their flat distance changes.
  */
-final class CurvedObjectCaptureClient {
-    static final String ENABLE_PROPERTY = "ringworld.curvedObjectCapture";
+public final class CurvedObjectCaptureClient {
+    public static final String ENABLE_PROPERTY = "ringworld.curvedObjectCapture";
     private static final int SETTLE_TICKS = 160;
+    private static final int MAX_CAPTURE_TICKS = 1_200;
     private boolean focusPolicyApplied;
     private boolean fixtureRequested;
     private int stage;
     private int settleTicks;
     private int completionTicks;
+    private boolean worldScreenOpened;
+    private boolean worldStarted;
+    private int captureTicks;
 
-    boolean tick(Minecraft client) {
+    public boolean startWorldIfEnabled(Minecraft client) {
+        if (!Boolean.getBoolean(ENABLE_PROPERTY) || client.level != null || worldStarted) {
+            return false;
+        }
+        if (!worldScreenOpened) {
+            CreateWorldScreen.openFresh(client, () -> worldScreenOpened = false);
+            worldScreenOpened = true;
+            return true;
+        }
+        if (client.screen instanceof CreateWorldScreen screen) {
+            WorldCreationUiState creator = screen.getUiState();
+            creator.setName("RingWorld Curved Object Capture");
+            creator.setGameMode(WorldCreationUiState.SelectedGameMode.CREATIVE);
+            creator.setAllowCommands(true);
+            creator.setSeed("-2162056627494116761");
+            ((CreateWorldScreenInvoker) screen).ringworld$createLevel();
+            worldStarted = true;
+        }
+        return true;
+    }
+
+    public boolean tick(Minecraft client) {
         if (!Boolean.getBoolean(ENABLE_PROPERTY)) return false;
+        if (startWorldIfEnabled(client)) return true;
         applyFocusPolicy(client);
-        // Let the ordinary test-mode creator build the isolated world first.
-        if (client.player == null || client.level == null) return false;
+        if (client.player == null || client.level == null) return true;
         if (client.screen instanceof PauseScreen) client.setScreen(null);
         if (client.screen != null) return true;
+
+        if (++captureTicks > MAX_CAPTURE_TICKS) {
+            RingWorldMod.LOGGER.error(
+                    "[curved-object-capture] result=FAIL, fixture chunks never became render-ready");
+            client.stop();
+            return true;
+        }
 
         if (!fixtureRequested) {
             fixtureRequested = true;
@@ -55,7 +90,8 @@ final class CurvedObjectCaptureClient {
         if (stage == 0 && client.player.getX() < 2.0) {
             client.player.setYRot(-90.0F);
             client.player.setXRot(0.0F);
-            if (++settleTicks < SETTLE_TICKS || !client.levelRenderer.hasRenderedAllSections()) return true;
+            if (++settleTicks < SETTLE_TICKS || !fixtureIsPresent(client)
+                    || !client.levelRenderer.hasRenderedAllSections()) return true;
             capture(client, "ringworld-curved-objects-far.png", "far");
             settleTicks = 0;
             stage = 1;
@@ -65,11 +101,21 @@ final class CurvedObjectCaptureClient {
         if (stage == 1 && client.player.getX() > 31.0) {
             client.player.setYRot(-90.0F);
             client.player.setXRot(8.0F);
-            if (++settleTicks < SETTLE_TICKS || !client.levelRenderer.hasRenderedAllSections()) return true;
+            if (++settleTicks < SETTLE_TICKS || !fixtureIsPresent(client)
+                    || !client.levelRenderer.hasRenderedAllSections()) return true;
             capture(client, "ringworld-curved-objects-near.png", "near");
             stage = 2;
         }
         return true;
+    }
+
+    private static boolean fixtureIsPresent(Minecraft client) {
+        return client.level.getBlockState(new BlockPos(40, 120, -2)).is(Blocks.CHEST)
+                && client.level.getBlockEntity(new BlockPos(40, 120, -2)) != null
+                && client.level.getBlockState(new BlockPos(48, 120, 0)).is(Blocks.LECTERN)
+                && client.level.getBlockEntity(new BlockPos(48, 120, 0)) != null
+                && client.level.getBlockState(new BlockPos(56, 120, 2)).is(Blocks.ENDER_CHEST)
+                && client.level.getBlockEntity(new BlockPos(56, 120, 2)) != null;
     }
 
     private static void requestFixture(Minecraft client) {

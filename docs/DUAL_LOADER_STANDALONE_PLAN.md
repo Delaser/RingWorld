@@ -67,7 +67,10 @@ not an initial release requirement.
   transition, colour, fog, ring alignment, sky, sun, clouds, walls, curved
   entities, supported-size captures, and performance budgets. Safe-small
   6/12/28 plus centered production tangent/handoff/radial, seam, and both-rim
-  evidence now passes on both loaders; object/exposure/motion review remains.
+  evidence pass on both loaders;
+  the shared fresh-world rigid-object fixture also passes its chest,
+  lectern/book, ender-chest, copper-golem, item, and boat subset. Exposure,
+  close-cloud, broader-object, and motion sign-off remain.
 
 These passes may run together once both loader clients and servers function.
 No known blocker or high-severity standalone defect may remain at sign-off.

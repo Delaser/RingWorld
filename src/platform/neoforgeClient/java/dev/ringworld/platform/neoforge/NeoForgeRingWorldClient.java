@@ -4,6 +4,7 @@ import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.AtlasPregenerationClientState;
 import dev.ringworld.client.AtlasPregenerationUiTestClient;
 import dev.ringworld.client.ClientRingState;
+import dev.ringworld.client.CurvedObjectCaptureClient;
 import dev.ringworld.client.LayoutSwitchTestClient;
 import dev.ringworld.client.MultiplayerTestClient;
 import dev.ringworld.client.ProductionLifecycleTestClient;
@@ -41,7 +42,6 @@ import net.neoforged.neoforge.network.registration.NetworkRegistry;
 /** NeoForge client lifecycle, payload handlers, and cache/network adapters. */
 @EventBusSubscriber(modid = RingWorldMod.MOD_ID, value = Dist.CLIENT)
 public final class NeoForgeRingWorldClient {
-    private static final String CURVED_OBJECT_CAPTURE_PROPERTY = "ringworld.curvedObjectCapture";
     private static final ProductionLifecycleTestClient PRODUCTION_LIFECYCLE =
             new ProductionLifecycleTestClient();
     private static final LayoutSwitchTestClient LAYOUT_SWITCH = new LayoutSwitchTestClient();
@@ -50,6 +50,8 @@ public final class NeoForgeRingWorldClient {
             new RingProjectionCaptureClient();
     private static final RingVisualParityCaptureClient VISUAL_PARITY_CAPTURE =
             new RingVisualParityCaptureClient();
+    private static final CurvedObjectCaptureClient CURVED_OBJECT_CAPTURE =
+            new CurvedObjectCaptureClient();
     private static final AtlasPregenerationUiTestClient ATLAS_PREGENERATION_UI_TEST =
             new AtlasPregenerationUiTestClient();
     private static final RingMapCompassCaptureClient MAP_COMPASS_CAPTURE =
@@ -112,7 +114,7 @@ public final class NeoForgeRingWorldClient {
     private static void handleAtlasMetadata(
             RingTerrainAtlasMetadataPayload payload, IPayloadContext context) {
         boolean cacheComplete = ClientRingState.installTerrainAtlas(payload);
-        if (Boolean.getBoolean(CURVED_OBJECT_CAPTURE_PROPERTY)) return;
+        if (Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) return;
         if (!RingClientPayloadTransport.canSend(RingTerrainAtlasRequestPayload.ID)) {
             context.disconnect(Component.literal(
                     "Server RingWorld terrain-atlas protocol is missing or out of date."));
@@ -140,10 +142,11 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft client = Minecraft.getInstance();
+        if (CURVED_OBJECT_CAPTURE.startWorldIfEnabled(client)) return;
         if (MAP_COMPASS_CAPTURE.startWorldIfEnabled(client)) return;
         if (ATLAS_PREGENERATION_UI_TEST.startWorldIfEnabled(client)) return;
         if (client.player != null) ClientRingState.updateCameraPosition(client.player.getX());
-        if (!Boolean.getBoolean(CURVED_OBJECT_CAPTURE_PROPERTY)) {
+        if (!Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) {
             ClientRingState.saveTerrainAtlasIfDue(false);
         }
         if (PRODUCTION_LIFECYCLE.tick(client)) return;
@@ -151,6 +154,7 @@ public final class NeoForgeRingWorldClient {
         if (MULTIPLAYER_TEST.tick(client)) return;
         if (PROJECTION_CAPTURE.tick(client)) return;
         if (VISUAL_PARITY_CAPTURE.tick(client)) return;
+        if (CURVED_OBJECT_CAPTURE.tick(client)) return;
         if (MAP_COMPASS_CAPTURE.tick(client)) return;
         ATLAS_PREGENERATION_UI_TEST.tick(client);
     }

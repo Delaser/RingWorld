@@ -9,6 +9,7 @@ The authoritative mixin lists are:
 
 - `src/main/resources/ringworld.mixins.json`
 - `src/main/resources/ringworld.client.mixins.json`
+- `src/platform/neoforge/resources/ringworld.neoforge.mixins.json`
 
 If a mixin is added, removed, or renamed, update those files and this table in
 the same change.
@@ -18,6 +19,12 @@ client mixin configurations. NeoForge passes the graphical projection,
 seam/rim, layout/lifecycle, dedicated multiplayer, worldgen/structure, and
 headless-atlas runtime gates. Shared mixin changes still require both-loader
 review because one loader's runtime success does not validate the other.
+
+NeoForge also owns one narrow platform mixin. `NeoForgePlayerListMixin` queues
+immutable settings immediately after the vanilla play-login packet and before
+buffered position/chunk data. NeoForge's ordinary logged-in event fires after
+that initial buffer is flushed, which is too late for a fresh periodic chunk
+chart.
 
 ## Common/server mixins
 

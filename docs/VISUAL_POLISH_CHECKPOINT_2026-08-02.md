@@ -76,3 +76,23 @@ captures also passed on Fabric and NeoForge at 12 chunks. Natural seam motion
 used 0.25-block steps without a position or camera pop, and the proxy remained
 excluded from both local walls. Object/block-entity, changed-gamma/night-
 vision, broader weather/exposure, and motion review remain open.
+
+## Curved rigid objects and fresh NeoForge login
+
+Fresh 2,048×416 Fabric and NeoForge worlds rendered the same curved fixture
+from X=0.5 and X=32.5. Visual inspection confirmed the chest, lectern/book,
+ender chest, copper golem, dropped item, and boat remain seated on the curved
+stone-brick surface as the camera approaches. The two loaders' final captures
+match.
+
+The first NeoForge retry exposed an invalid empty-sky PASS: its settings packet
+was sent by `PlayerLoggedInEvent`, after NeoForge flushed the initial chunk
+buffer. Canonical edge chunks therefore reached a fresh client before ring
+geometry and were rejected. A NeoForge-only `PlayerList` adapter now queues
+settings directly after vanilla's play-login packet and before all world
+packets. The rerun rendered the complete fixture. The verifier now also waits
+for the expected client block entities and fails after 1,200 ticks, so this
+regression cannot pass on screenshots alone.
+
+Changed-gamma/night-vision, close cloud-height, broader object classes, and
+motion review remain open.
