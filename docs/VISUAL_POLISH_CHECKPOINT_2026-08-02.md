@@ -77,6 +77,11 @@ used 0.25-block steps without a position or camera pop, and the proxy remained
 excluded from both local walls. Object/block-entity, changed-gamma/night-
 vision, broader weather/exposure, and motion review remain open.
 
+The exact-current NeoForge environment rerun also corrected the projection
+harness's dusk timestamp from 14,008 (already night) to the actual warm dusk
+keyframe at tick 12,000. Environment labels must match the fixed-sun tone
+cycle before their screenshots count as visual evidence.
+
 ## Curved rigid objects and fresh NeoForge login
 
 Fresh 2,048×416 Fabric and NeoForge worlds rendered the same curved fixture
