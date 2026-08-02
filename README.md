@@ -22,7 +22,8 @@ The Nether and End remain vanilla.
 > client has completed terrain, full-atlas rendering, two natural wraps, and
 > the representative gameplay/rim matrix. A dedicated two-client seam,
 > combat, stateful block, bed/death lifecycle, physical portal, boat,
-> teleport, and reconnect scenario also passes.
+> teleport, reconnect, ordinary survival Nether-portal delay, and seam
+> thunder/lightning scenario also passes on both loaders.
 > A copied 16,384×256 world also passes Nether/End transfers, normal save and
 > disconnect, client-state clearing, and an in-process reopen with the exact
 > layout and complete atlas restored. The safe-small and production

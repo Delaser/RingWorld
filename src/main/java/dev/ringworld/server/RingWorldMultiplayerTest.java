@@ -34,6 +34,7 @@ public final class RingWorldMultiplayerTest {
     private static boolean loggedWaiting;
     private static boolean combatPassed;
     private static boolean interactionPassed;
+    private static boolean interactionArmed;
     private static boolean vehiclePassed;
     private static boolean sawVehicleHighSide;
     private static boolean sawCanonicalVehicleWrap;
@@ -204,11 +205,23 @@ public final class RingWorldMultiplayerTest {
             // Keep the damaged health visible long enough for B's real client
             // to observe the result independently of the server assertion.
             if (ticks == 20) playerB.setHealth(playerB.getMaxHealth());
-            if (ticks == 40) {
+            boolean clientsReady = clientPassed("A", "interaction_chunk_ready")
+                    && clientPassed("B", "interaction_chunk_ready");
+            if (!interactionArmed && clientsReady) {
                 world.setBlock(target, Blocks.GOLD_BLOCK.defaultBlockState(), 3);
+                interactionArmed = true;
                 RingWorldMod.LOGGER.info("[multiplayer] cross-seam interaction armed at canonical {}", target);
             }
-            if (ticks > 40 && world.getBlockState(target).isAir()) {
+            if (interactionArmed && ticks % 40 == 0 && world.getBlockState(target).is(Blocks.GOLD_BLOCK)) {
+                // A cold client can re-key its seam chart just after the first
+                // packet. Repeat the authoritative state until A performs the
+                // real interaction; this still requires both delivery and a
+                // genuine client break packet, while removing one-frame
+                // startup timing from the acceptance gate.
+                var state = world.getBlockState(target);
+                world.sendBlockUpdated(target, state, state, 3);
+            }
+            if (interactionArmed && world.getBlockState(target).isAir()) {
                 interactionPassed = true;
                 Boat boat = EntityType.OAK_BOAT.create(world, EntitySpawnReason.COMMAND);
                 if (boat != null) {
@@ -244,7 +257,10 @@ public final class RingWorldMultiplayerTest {
                 stage = 4;
                 ticks = 0;
             } else if (ticks >= 600) {
-                RingWorldMod.LOGGER.error("[multiplayer] cross-seam interaction result=false (timeout)");
+                RingWorldMod.LOGGER.error(
+                        "[multiplayer] cross-seam interaction result=false (timeout, armed={}, clientAReady={}, clientBReady={})",
+                        interactionArmed, clientPassed("A", "interaction_chunk_ready"),
+                        clientPassed("B", "interaction_chunk_ready"));
                 stage = 4;
                 ticks = 0;
             }

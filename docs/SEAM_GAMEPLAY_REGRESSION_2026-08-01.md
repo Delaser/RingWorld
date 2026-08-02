@@ -6,6 +6,20 @@ behavior separate. The runtime directories and logs are ignored local state.
 
 ## Passing automated coverage
 
+### Strengthened dual-loader checkpoint — 2026-08-02
+
+Fresh-process Fabric and NeoForge 2,048×416 runs passed the current complete
+matrix. In addition to the destination-water and hostile-navigation checks,
+the player remained inside the real Nether portal for at least vanilla's
+80-tick survival delay (84 ticks on Fabric, 83 on NeoForge). The final stage
+then placed the clients on opposite seam charts, enabled full rain and thunder,
+and required each to observe a real visual-only lightning entity. Both clients
+acknowledged the storm and produced labelled screenshots. The fixture clears
+saved weather on startup and waits for each client's target chunk before the
+cross-seam block is placed, preventing reused-world and cold-start false
+results. Both server logs ended with `weather=true` and
+`full scenario result=true`; NeoForge's evidence verifier passed.
+
 The reused 2,048×416 dedicated fixture ran one server and two independent real
 clients. Both clients reported a fully loaded world before setup. The terminal
 server line was:
@@ -79,8 +93,10 @@ Nether exit cannot return the player before the harness observes it.
 - Maps, raids, command families, complex redstone/fluid networks, and more
   projectile/vehicle types remain manual sampling rather than exhaustive
   automation.
-- The portal gate invokes the real portal blocks, destination calculation,
-  linking, and transition, but skips the normal player wait inside the portal.
+- The portal gate invokes real portal blocks, destination calculation and
+  linking, and now requires the normal survival wait for outbound Nether
+  travel. The automated return remains a direct real-portal destination
+  transition after the outbound behavior has passed.
 - Arbitrary structure seeds, placements, and loot belong to #72.
 - The multi-size runtime matrix is covered by #24 and worldgen/structures by
   #72. Dynamic map/locator semantics and broader mod compatibility remain
