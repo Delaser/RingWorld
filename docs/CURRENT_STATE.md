@@ -204,20 +204,20 @@ after server-owned sleep poses, monotonic 26.1 clock setup, and explicit
 client-ready gating. Exact automated, manual, and unsupported coverage is in
 `SEAM_GAMEPLAY_REGRESSION_2026-08-01.md`.
 
-The current extended fixture strengthens only future dedicated runs: it seals
+The current extended fixture seals
 a two-cell trough, clears canonical X=0, places its sole water source at C-1,
 and requires the server and both clients to observe water at X=0. The
-2026-08-01 record above observed the
-source state and is retained as historical evidence, not as a pass of this new
-destination assertion.
+2026-08-02 fresh Fabric and NeoForge 2,048x416 runs both passed this stricter
+destination assertion as part of the complete two-client matrix. The
+2026-08-01 source-only record remains historical evidence only.
 
-The current fixture also adds a server-only hostile navigation probe: a tagged,
+The current fixture also includes a server-only hostile navigation probe: a tagged,
 persistent Zombie starts near canonical C-5 in a bounded clear lane, receives a
 vanilla navigation target near X=2, and must naturally fold into low canonical
 X and finish the path within target tolerance before the fixture can advance.
 It removes only prior tagged fixture Zombies from reused worlds. This is
-pending a fresh dedicated run and is not retroactive evidence for the
-2026-08-01 matrix.
+covered by the same fresh 2026-08-02 Fabric and NeoForge passes and is not
+retroactive evidence for the 2026-08-01 matrix.
 
 #72 completes the multi-seed worldgen and structure seam matrix. Three fresh
 dedicated worlds plus one exact production-save reload cover all 14 defined
@@ -241,13 +241,21 @@ locator bar, operator debug packets, and opaque mod payloads remain
 unsupported. The complete two-client seam/gameplay/reconnect matrix still
 passes. See `PROTOCOL_HARDENING_2026-08-01.md`.
 
-The #95 navigation slice now routes filled-map sampling and decorations plus
+The #95 navigation slice routes filled-map sampling and decorations plus
 spawn/lodestone/recovery compass bearings through the nearest periodic image.
 Its two-direction pure rules pass, both dedicated-server loaders reach `Done`
 with the required server mixins, and a Fabric client completes resource/model
 loading with the compass mixin. Direct in-game map-pixel/marker/needle review
 and a fresh NeoForge graphical run remain exact-candidate checks rather than
 being inferred from the pure test.
+
+The strengthened general #95 two-client acceptance matrix now passes from
+fresh 2,048x416 fixtures on both Fabric and NeoForge. Both runs reached
+`full scenario result=true`; NeoForge also passed its evidence verifier. This
+freshly covers natural seam travel, tracking, combat, blocks, boat/passenger,
+teleport, reconnect, chest/lectern, cross-seam redstone and destination water,
+hostile Zombie path completion, beds, death/respawn, and physical Nether/End
+round trips on each loader.
 
 #74 completes the stability configuration and compatibility contract. The
 creation preview now scales the measured 16,384-chunk production run into a
@@ -727,15 +735,16 @@ and compatibility claims.
   blocks, block entities, redstone, melee, beds, death/respawn, physical
   Nether/End portal transfers, and map/compass nearest-image rules are tested.
   Arbitrary redstone/fluid networks, additional projectile/vehicle variants,
-  raids, full map-mode playthroughs, command families, and modded systems are
-  not.
+  full map-mode playthroughs, command families, and modded systems are not.
 - Explicit teleport and reconnect have harness coverage. The isolated
   copied-production lifecycle runner covers Nether → Overworld → End →
   Overworld, normal save/disconnect, and same-process reopen at 16,384×256.
   The safe-small two-client runner adds actual `PortalForcer`-created Nether
   blocks/linking/return and End portal block travel. Normal stand-in-portal
-  delays, sleeping-player reconnect, full map-mode playthroughs, and raids
-  remain manual coverage.
+  delays, sleeping-player reconnect, and full map-mode playthroughs remain
+  manual coverage. A dedicated two-phase Fabric/NeoForge fixture now covers
+  raid creation, saved POIs/raid/raider reload, natural raider seam folding,
+  victory, and Hero rewards.
 - Minecraft 26.1.2's gameplay positional packets have an explicit audit, but
   the 26.1 locator bar, operator debug packets, future Minecraft packets, and
   opaque third-party payloads are not globally caught.
@@ -851,10 +860,10 @@ The owner-approved order is recorded in
    - sign off the production ring, live/atlas handoff, sky, weather, curved
      objects, supported sizes, and performance budgets on both loaders.
    - use the exact dual-loader manual checklist and candidate evidence record
-     in `TESTING.md`; the strengthened natural seam-water and hostile-mob
-     fixtures are merged but still need fresh Fabric and NeoForge two-client
-     runs, and direct maps/compasses, raids, weather, structures, block
-     entities, and atlas controls still need inspection.
+     in `TESTING.md`; the strengthened Fabric and NeoForge two-client and raid
+     fixtures pass, while direct maps/compasses, weather, structures, ordinary
+     play sampling, block entities, and final-candidate atlas controls still
+     need inspection.
 3. **Exact-candidate release (#12, #13, #97)**
    - complete remaining Windows evidence and independent review;
    - freeze hashes, stage loader-specific Modrinth versions, and keep a final
@@ -865,7 +874,7 @@ The owner-approved order is recorded in
 
 ## Evidence required before calling the mod stable and broadly compatible
 
-- Manual sleeping-player reconnect, map, raid, and ordinary portal-delay
+- Manual sleeping-player reconnect, map, and ordinary portal-delay
   playthroughs beyond the passing automated bed/death/linked-portal gate.
 - Manual gamma, night-vision, lightning, and close cloud-height visual checks.
 - Optional package fresh/upgrade launch checks and an independent final review.
