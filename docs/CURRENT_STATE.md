@@ -264,12 +264,13 @@ entity visible to both clients across the seam. Client interaction now waits
 for both target chunks before the server places its block, and fixture startup
 clears saved weather so reused worlds cannot satisfy the new evidence early.
 
-The first #96 refresh on public `main` `8f7bc80` completed fresh Fabric
-safe-small 6/12/28 tangent and radial-up captures. Average frame times were
-8.636/8.646/11.915 ms with 0/1/2 frames over 50 ms; complete-ring alignment,
-the broad live/LOD handoff, sky phases, and the inspected rim remained intact.
-The Mac then locked, so the exact matching NeoForge run and remaining
-production/object/exposure review stay open. See
+The #96 refresh completed Fabric and NeoForge safe-small 6/12/28 tangent,
+handoff, and radial-up captures. Fabric average frame times were
+8.636/8.646/11.915 ms with 0/1/2 frames over 50 ms. NeoForge's tangent
+averages were 8.446/9.904/11.253 ms, its handoff and radial averages remained
+below 9.4 ms, and all nine measured views had zero frames over 50 ms.
+Complete-ring alignment, the broad live/LOD handoff, sky phases, and the
+inspected rim remained intact. Production/object/exposure review stays open. See
 `VISUAL_POLISH_CHECKPOINT_2026-08-02.md`.
 
 #74 completes the stability configuration and compatibility contract. The
