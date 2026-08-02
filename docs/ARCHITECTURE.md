@@ -339,6 +339,16 @@ circumference wide scans canonical storage once.
 The server sends canonical chunk and entity coordinates. The client maps each
 packet into the image nearest the local player.
 
+Vanilla maps retain one immutable saved map centre and canonical marker
+positions. A centre may be seam-equivalent to the circumference after vanilla
+grid rounding; it remains a reference coordinate, not another world copy. Server
+sampling projects the holder and decoration X through the image nearest that
+map centre before selecting canonical chunks; player, banner, and frame marker
+coordinates therefore remain local across the seam without another saved map
+copy. Spawn, lodestone, and recovery compass needles use the client holder's
+nearest target image. These paths are Overworld-only; the locator bar remains a
+separate unsupported dynamic-pointer surface.
+
 `ClientPlayNetworkHandlerMixin` covers:
 
 - full chunk data, light, biome-only data, unloads, and chunk centres;
