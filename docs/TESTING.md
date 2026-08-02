@@ -160,6 +160,16 @@ loading with the compass mixin. This is a target-application gate, not a
 substitute for direct in-game map-pixel, decoration, and needle review on the
 final candidates.
 
+After PR #110, clean public `main` commit `8bb17914` again passed all 235 cases
+on each loader and both explicit dedicated-server launches reached `Done`.
+The resulting local runtime-jar SHA-256 values were
+`5804931222db74590835f978084e6987da88f5bf40eecfe4d2289d9365c441ff`
+for Fabric and
+`53c5786dea95f75f46350ce6e4d77aa5a8ee0f9c75f49cdccc615b309accc277`
+for NeoForge. These are headless development-build identities, not frozen
+release candidates. Graphical and strengthened two-client acceptance remains
+open.
+
 Inspect machine-readable results under:
 
 ```text
