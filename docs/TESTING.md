@@ -70,8 +70,9 @@ disconnect clears client geometry and atlas state. The third proves inactive
 RingWorld state in Nether/End, exact Overworld restoration, normal save and
 disconnect, then reopen. All three pass. Every source must be an ignored save
 under `neoforge/run-client/saves/`; the tasks mutate only freshly copied
-destinations. The server/runtime gates below also pass; package parity remains
-open.
+destinations. The server/runtime gates below also pass, and local package
+parity is complete. Hosted NeoForge publication remains gated on final
+candidate review and owner approval.
 
 NeoForge's dedicated multiplayer gate uses three isolated processes below
 `neoforge/run-multiplayer/`: one server and clients A/B. Prepare the fixture,
@@ -180,13 +181,15 @@ profile decision are in
 ## Atlas map GUI-scale regression
 
 From an isolated `run-atlas-ui` directory configured for a safe-small world
-with `testMode=true` and `pregenerateTerrainAtlas=false`, run:
+with `testMode=true` and `pregenerateTerrainAtlas=false`, run one loader's
+fixture:
 
 ```sh
 ./gradlew runAtlasUiClient --console=plain
+./gradlew :neoforge:runAtlasUiClient --console=plain
 ```
 
-The opt-in client resets its own saves/cache/log/screenshots, sets GUI scale 4,
+The loader-specific opt-in client resets its own saves/cache/log/screenshots, sets GUI scale 4,
 hides the development coordinate overlay, waits three rendered frames after
 every screen change, and records an unobstructed pause-menu,
 map, confirmation, running, a partial-atlas gameplay view, background
@@ -199,6 +202,13 @@ before passing. It is a real integrated-server test:
 generation remains active because `RingWorldMapScreen` is explicitly
 non-pausing. Keep its run directory ignored and do not point it at a personal
 Prism instance or a production world.
+
+The 2026-08-02 NeoForge 26.1.2.87 run completed in 2m32s. It produced all
+eleven required screenshots, generated and durably verified 13,312/13,312
+atlas cells, then committed the gold-block placement and removal as ordered
+atlas revisions 12 and 13 before reporting `[atlas-ui-test] PASS`. Fabric and
+NeoForge therefore exercise the same player-facing atlas workflow; only their
+fixture startup and lifecycle registration are loader-owned.
 
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated

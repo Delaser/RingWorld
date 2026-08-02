@@ -246,7 +246,8 @@ public final class RingWorldClient implements ClientModInitializer {
     }
 
     private void startAutomatedTestWorld(Minecraft client) {
-        if (!RingWorldConfig.load().testMode() && !atlasPregenerationUiTest.enabled()) return;
+        if (atlasPregenerationUiTest.startWorldIfEnabled(client)) return;
+        if (!RingWorldConfig.load().testMode()) return;
         if (!testPerformanceProfileApplied) {
             // A representative, stable local profile. Production play still
             // follows the user's own options because this is test-mode only.

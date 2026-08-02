@@ -62,8 +62,9 @@ client mixins and resources. Its 26.1.2.87 client has loaded those resources,
 acknowledged format 2, and passed a complete-atlas tangent/handoff/radial
 projection gate in a copied production integrated world. The seam/rim,
 time/weather, lifecycle, worldgen/structure, headless-atlas, and dedicated
-two-client gameplay gates also pass. Package parity remains open; distributed
-artifacts remain Fabric-only until that final loader gate passes.
+two-client gameplay gates also pass. Local Fabric and NeoForge package parity
+is complete; distributed artifacts remain Fabric-only until final candidate
+review and owner-approved NeoForge publication.
 
 ## The three coordinate domains
 

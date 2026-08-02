@@ -60,7 +60,8 @@ The Nether and End remain vanilla.
 > headless atlas completion, and the dedicated two-client seam/combat/block/
 > bed/death/portal/boat/teleport/reconnect matrix. Loader-labelled packages,
 > strict metadata/licence verification, a same-commit shared-contract gate,
-> and a real packaged macOS NeoForge client smoke also pass. A hosted NeoForge
+> a real packaged macOS NeoForge client smoke, and the shared eleven-step
+> pause-menu atlas generation/control fixture also pass. A hosted NeoForge
 > release still requires the final release review and owner go/no-go.
 
 > **Licence status:** RingWorld is open-source software licensed under the
