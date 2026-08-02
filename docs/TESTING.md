@@ -1284,6 +1284,12 @@ The 2026-08-01 matrix reviewed complete-atlas tangent/up frames at 6, 12, and
 frame measurements, and the rejected dither experiment are recorded in
 [`VISUAL_HANDOFF_REVIEW_2026-08-01.md`](VISUAL_HANDOFF_REVIEW_2026-08-01.md).
 
+The post-gameplay Fabric refresh at public `main` `8f7bc80` regenerated the
+safe-small world and complete atlas independently at 6/12/28 chunks. Its
+captures and frame figures pass the Fabric half of #96; the Mac display locked
+before matching NeoForge execution, so this is explicitly partial evidence.
+See [`VISUAL_POLISH_CHECKPOINT_2026-08-02.md`](VISUAL_POLISH_CHECKPOINT_2026-08-02.md).
+
 ### World lifecycle
 
 - Save/quit/rejoin at the seam.
