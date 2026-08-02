@@ -2,6 +2,7 @@ package dev.ringworld.client;
 
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.net.RingMultiplayerTestPayload;
+import dev.ringworld.client.chunk.RingClientChunkMaps;
 import dev.ringworld.world.RingGeometry;
 import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
@@ -20,6 +21,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.vehicle.boat.Boat;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
@@ -51,6 +53,7 @@ public final class MultiplayerTestClient {
     private boolean remoteCrossedZero;
 
     private boolean blockSeen;
+    private boolean interactionChunkReadySent;
     private boolean interactionSent;
     private int interactionAge;
     private int attacksSent;
@@ -82,6 +85,8 @@ public final class MultiplayerTestClient {
     private boolean netherReturnSent;
     private boolean endEnterSent;
     private boolean endReturnSent;
+    private boolean sawSeamLightning;
+    private boolean seamWeatherSent;
 
     public boolean tick(Minecraft client) {
         if (role.isEmpty()) return false;
@@ -297,6 +302,24 @@ public final class MultiplayerTestClient {
         if (geometry == null || client.gameMode == null) return;
         int logicalX = (int)Math.floor(geometry.nearestImageX(1.0, client.player.getX()));
         BlockPos target = new BlockPos(logicalX, 119, 0);
+        if (!interactionChunkReadySent
+                && client.level.getChunkSource().hasChunk(target.getX() >> 4, target.getZ() >> 4)) {
+            interactionChunkReadySent = true;
+            sendResult("interaction_chunk_ready", true, target.getX());
+            RingWorldMod.LOGGER.info("[multiplayer:{}] interaction chunk ready at {}", role, target);
+        }
+        if (!interactionChunkReadySent) {
+            if (stageTicks % 100 == 0) {
+                var storage = RingClientChunkMaps.get(client.level.getChunkSource());
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:{}] interaction chunk waiting targetChunk={},{} playerChunk={},{} cacheCenter={},{}",
+                        role, target.getX() >> 4, target.getZ() >> 4,
+                        client.player.chunkPosition().x(), client.player.chunkPosition().z(),
+                        storage == null ? Integer.MIN_VALUE : storage.ringworld$centerChunkX(),
+                        storage == null ? Integer.MIN_VALUE : storage.ringworld$centerChunkZ());
+            }
+            return;
+        }
         boolean targetPresent = client.level.getBlockState(target).is(Blocks.GOLD_BLOCK);
         blockSeen |= targetPresent;
         if (stageTicks % 100 == 0) {
@@ -496,6 +519,30 @@ public final class MultiplayerTestClient {
 
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null) return;
+
+        if (!seamWeatherSent && client.level.dimension() == Level.OVERWORLD) {
+            for (Entity entity : client.level.entitiesForRendering()) {
+                if (entity instanceof LightningBolt) {
+                    sawSeamLightning = true;
+                    break;
+                }
+            }
+            boolean storm = client.level.getRainLevel(1.0F) >= 0.95F
+                    && client.level.getThunderLevel(1.0F) >= 0.95F;
+            if (storm && sawSeamLightning) {
+                seamWeatherSent = true;
+                sendResult("seam_weather", true, client.player.getX());
+                Screenshot.grab(client.gameDirectory,
+                        "ringworld-multiplayer-weather-" + role.toLowerCase() + ".png",
+                        client.getMainRenderTarget(), 1,
+                        message -> RingWorldMod.LOGGER.info(
+                                "[multiplayer:{}] weather screenshot: {}", role, message.getString()));
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:{}] seam thunder/lightning result=true rain={} thunder={} x={}",
+                        role, client.level.getRainLevel(1.0F),
+                        client.level.getThunderLevel(1.0F), client.player.getX());
+            }
+        }
 
         if (!extendedFixtureSent) {
             int chestX = presentationX(geometry, client, 0);

@@ -438,6 +438,10 @@ tasks.register('verifyNeoForgeMultiplayerHarness') {
                 || serverText.contains('[multiplayer] full scenario result=false')) {
             throw new GradleException("NeoForge multiplayer server matrix did not pass; inspect ${serverLog}")
         }
+        if (!serverText.contains('[multiplayer-extended] ordinary Nether portal wait result=true')
+                || !serverText.contains('[multiplayer-extended] seam thunder/lightning result=true')) {
+            throw new GradleException("NeoForge multiplayer portal-delay/weather evidence is incomplete; inspect ${serverLog}")
+        }
         [
                 [clientALog, clientAText, '[multiplayer:A] client world fully loaded'],
                 [clientBLog, clientBText, '[multiplayer:B] client world fully loaded']
@@ -448,7 +452,9 @@ tasks.register('verifyNeoForgeMultiplayerHarness') {
         }
         [
                 new File(neoForgeMultiplayerClientARun, 'screenshots/ringworld-multiplayer-a.png'),
-                new File(neoForgeMultiplayerClientBRun, 'screenshots/ringworld-multiplayer-b.png')
+                new File(neoForgeMultiplayerClientBRun, 'screenshots/ringworld-multiplayer-b.png'),
+                new File(neoForgeMultiplayerClientARun, 'screenshots/ringworld-multiplayer-weather-a.png'),
+                new File(neoForgeMultiplayerClientBRun, 'screenshots/ringworld-multiplayer-weather-b.png')
         ].each { screenshot ->
             if (!screenshot.isFile()) {
                 throw new GradleException("NeoForge multiplayer harness is missing ${screenshot}")

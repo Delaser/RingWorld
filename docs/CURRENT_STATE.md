@@ -257,7 +257,12 @@ fresh 2,048x416 fixtures on both Fabric and NeoForge. Both runs reached
 freshly covers natural seam travel, tracking, combat, blocks, boat/passenger,
 teleport, reconnect, chest/lectern, cross-seam redstone and destination water,
 hostile Zombie path completion, beds, death/respawn, and physical Nether/End
-round trips on each loader.
+round trips on each loader. A subsequent 2026-08-02 dual-loader run retained
+that matrix while requiring the normal 80-tick survival Nether-portal wait
+(83–84 ticks on Fabric, 83 on NeoForge), full rain/thunder state, and a real lightning
+entity visible to both clients across the seam. Client interaction now waits
+for both target chunks before the server places its block, and fixture startup
+clears saved weather so reused worlds cannot satisfy the new evidence early.
 
 #74 completes the stability configuration and compatibility contract. The
 creation preview now scales the measured 16,384-chunk production run into a
@@ -863,9 +868,10 @@ The owner-approved order is recorded in
      objects, supported sizes, and performance budgets on both loaders.
    - use the exact dual-loader manual checklist and candidate evidence record
      in `TESTING.md`; the strengthened Fabric and NeoForge two-client and raid
-     fixtures plus the direct map/compass gate pass, while weather, structures,
-     ordinary play sampling, block entities, and final-candidate atlas controls
-     still need inspection.
+     fixtures plus the direct map/compass gate pass, while structures,
+     ordinary play sampling, block entities, and final-candidate
+     atlas controls still need inspection. Automated seam weather/lightning
+     and ordinary portal-delay coverage now pass on both loaders.
 3. **Exact-candidate release (#12, #13, #97)**
    - complete remaining Windows evidence and independent review;
    - freeze hashes, stage loader-specific Modrinth versions, and keep a final
@@ -876,9 +882,10 @@ The owner-approved order is recorded in
 
 ## Evidence required before calling the mod stable and broadly compatible
 
-- Manual sleeping-player reconnect, map, and ordinary portal-delay
-  playthroughs beyond the passing automated bed/death/linked-portal gate.
-- Manual gamma, night-vision, lightning, and close cloud-height visual checks.
+- Manual sleeping-player reconnect and longer map playthroughs beyond the
+  passing automated bed/death/map/portal-delay gates.
+- Manual gamma, night-vision, and close cloud-height visual checks; automated
+  seam thunder/lightning passes but is not final visual sign-off.
 - Optional package fresh/upgrade launch checks and an independent final review.
 - Real compatibility testing beyond the published baseline and explicit
   unsupported list.

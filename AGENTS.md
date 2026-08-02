@@ -43,7 +43,8 @@ storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
 gameplay/rim probes. The dedicated two-client seam/combat/stateful-block/bed/
 death/physical-portal/boat/teleport/reconnect matrix also passes, including
-the strict destination-water and hostile-navigation assertions. The
+the strict destination-water, hostile-navigation, ordinary survival
+Nether-portal delay, and two-client seam thunder/lightning assertions. The
 multi-seed worldgen matrix covers all 14 major biome families, deliberate
 seam-crossing structures, caves, ores, trees, loot, saved scarce-structure
 outcomes, and exact reload evidence. A copied
@@ -602,6 +603,11 @@ version numbers.
   periodic motion rather than a one-block sample window, and compare explicit
   return positions and teleport targets independently of the current
   presentation chart.
+- The reusable multiplayer fixture must also clear saved rain/thunder before
+  it starts and wait for both clients' target interaction chunk before placing
+  the cross-seam test block. Its terminal gate requires the ordinary survival
+  Nether-portal wait and an actual lightning entity observed by both seam-side
+  clients; do not replace either with a direct-transition-only assertion.
 - The vanilla entity loop's asynchronous simulation graph can retain the old
   side of a natural seam crossing. `ServerWorldMixin` first checks the
   canonical graph key, then falls back only to non-spectator players within

@@ -938,16 +938,21 @@ The scenario verifies:
 - the death screen, client respawn request, replacement server player, and
   canonical respawn all complete;
 - real Nether portal blocks and `PortalForcer` linking carry the player to the
-  vanilla Nether and back near the periodic source image;
+  vanilla Nether only after the normal survival wait, then back near the
+  periodic source image;
 - a real End portal block carries the player to the vanilla End and an End
   return portal restores the Overworld with client RingWorld state reattached;
 - both clients report their phase matrix.
+- both seam-side clients observe full rain/thunder and an actual lightning
+  entity, with one labelled weather screenshot per client.
 
 The historical 2026-08-01 dedicated result predates the X=`0` destination
 assertion and observed only the seam-side source state. Fresh 2,048x416 runs
 on 2026-08-02 passed the complete strengthened matrix on both Fabric and
-NeoForge, including destination water and the tagged hostile-Zombie fold/path
-completion. NeoForge's standalone evidence verifier also passed. Keep the
+NeoForge, including destination water, the tagged hostile-Zombie fold/path
+completion, the ordinary 80-tick survival portal delay, and seam
+thunder/lightning. NeoForge's standalone evidence verifier also requires both
+weather screenshots and the explicit portal/weather server markers. Keep the
 older source-only result labelled as historical rather than conflating it
 with the stricter gate.
 
