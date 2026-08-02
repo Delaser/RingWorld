@@ -545,16 +545,28 @@ Run the isolated live-renderer regression with Java 25:
 
 ```sh
 ./gradlew runCurvedObjectCaptureClient --console=plain --no-daemon
+./gradlew :neoforge:runCurvedObjectCaptureClient --console=plain --no-daemon
 ```
 
-The preparation task deletes only its ignored `run-curved-object-capture/`
+Each loader's preparation task deletes only its ignored curved-object runtime
 world, screenshots, and atlas cache, then creates a safe-small creative world.
 It builds a curved stone-brick strip with a chest, lectern book, ender chest,
 copper golem, item, and boat, captures them from X=0.5 and X=32.5, and exits.
 Both frames must show the rigid models seated on the same curved surface; the
 nearer frame must not show them rising from the platform. The run also strictly
-applies the `LevelRendererMixin` descriptors. Evidence is written under
-`run-curved-object-capture/screenshots/` and remains ignored.
+applies the `LevelRendererMixin` descriptors. Before either frame can pass, the
+client must contain the expected chest, lectern, and ender-chest block entities
+and report all visible sections rendered; a 1,200-tick deadline turns missing
+chunks into `result=FAIL` instead of accepting an empty-sky screenshot.
+Evidence is written under `run-curved-object-capture/screenshots/` for Fabric
+and `neoforge/run-curved-object-capture/screenshots/` for NeoForge; both remain
+ignored.
+
+NeoForge queues RingWorld settings immediately behind the vanilla play-login
+packet. Its normal player-login event occurs after the initial packet buffer is
+flushed, which is too late: canonical edge chunks can otherwise be rejected by
+a fresh client before it knows the periodic geometry. The capture deliberately
+starts from a fresh world and therefore guards this packet-ordering boundary.
 
 ## Local automated smoke world
 

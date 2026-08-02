@@ -82,7 +82,6 @@ public final class NeoForgeRingWorldServer {
                 return;
             }
             RingWorldServer.onPlayerJoined(player);
-            NeoForgeRingWorldNetworking.sendSettings(player);
         }
     }
 

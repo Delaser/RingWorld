@@ -736,7 +736,7 @@ tasks.register("prepareCurvedObjectCapture") {
 widthBlocks=416
 circumferenceBlocks=2048
 wallHeightBlocks=160
-testMode=true
+testMode=false
 testViewDistanceChunks=12
 pregenerateTerrainAtlas=false
 """
@@ -745,6 +745,27 @@ pregenerateTerrainAtlas=false
 
 tasks.named("runCurvedObjectCaptureClient") {
 	dependsOn(tasks.named("prepareCurvedObjectCapture"))
+	finalizedBy("verifyCurvedObjectCaptureClient")
+}
+
+tasks.register("verifyCurvedObjectCaptureClient") {
+	group = "ringworld verification"
+	description = "Fails unless both Fabric curved rigid-object captures completed."
+	mustRunAfter("runCurvedObjectCaptureClient")
+	doLast {
+		def logFile = file("run-curved-object-capture/logs/latest.log")
+		def log = logFile.isFile() ? logFile.text : ""
+		if (!log.contains("[curved-object-capture] result=PASS, captures complete")
+				|| log.contains("[curved-object-capture] result=FAIL")) {
+			throw new GradleException("Fabric curved-object capture did not pass; inspect " + logFile)
+		}
+		["far", "near"].each { distance ->
+			def screenshot = file("run-curved-object-capture/screenshots/ringworld-curved-objects-${distance}.png")
+			if (!screenshot.isFile()) {
+				throw new GradleException("Fabric curved-object capture is missing " + screenshot)
+			}
+		}
+	}
 }
 
 dependencies {

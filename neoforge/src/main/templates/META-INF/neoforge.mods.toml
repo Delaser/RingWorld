@@ -17,6 +17,9 @@ config="ringworld.mixins.json"
 [[mixins]]
 config="ringworld.client.mixins.json"
 
+[[mixins]]
+config="ringworld.neoforge.mixins.json"
+
 [[dependencies.ringworld]]
 modId="neoforge"
 type="required"
