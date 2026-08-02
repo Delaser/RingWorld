@@ -821,6 +821,11 @@ The owner-approved order is recorded in
    - fix remaining first-party playability defects;
    - sign off the production ring, live/atlas handoff, sky, weather, curved
      objects, supported sizes, and performance budgets on both loaders.
+   - use the exact dual-loader manual checklist and candidate evidence record
+     in `TESTING.md`; the strengthened natural seam-water and hostile-mob
+     fixtures are merged but still need fresh Fabric and NeoForge two-client
+     runs, and direct maps/compasses, raids, weather, structures, block
+     entities, and atlas controls still need inspection.
 3. **Exact-candidate release (#12, #13, #97)**
    - complete remaining Windows evidence and independent review;
    - freeze hashes, stage loader-specific Modrinth versions, and keep a final

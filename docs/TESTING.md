@@ -1102,6 +1102,51 @@ Use creative mode and an ordinary render distance (the current test profile is
 - Break/place a block while the other player watches.
 - Reconnect both sides of the seam.
 
+### Gameplay systems
+
+- Run ordinary survival and creative sessions on the exact Fabric and
+  NeoForge candidates. Mine, build, eat, take damage, collect drops, and use
+  inventories without commands or automation masking normal behavior.
+- Have a hostile mob acquire and naturally navigate to a player through the
+  seam. Confirm its canonical X folds naturally, it reaches the target, and no
+  teleport correction is involved.
+- Build a sealed two-cell water channel from canonical `C-1` into `0`. Place
+  the only source at `C-1` and confirm the destination at `0` receives water on
+  the server and both clients.
+- Exercise a piston, hopper, redstone signal, explosion, projectile, boat with
+  passenger, swimming, and elytra across or immediately beside the seam.
+- Inspect chests, lecterns with books, signs, beds, and representative animated
+  or entity-backed blocks while approaching from both directions. They must
+  follow the same curve as ordinary block geometry without rising through the
+  ground.
+
+### Maps, compasses, weather, and structures
+
+- Fill a map across the seam in both directions. Verify pixels plus player,
+  banner, and item-frame markers; then scale, lock, save/rejoin, teleport away,
+  and return. Adding and removing a banner must use nearest-image range rather
+  than raw X distance.
+- Check spawn, lodestone, and recovery compasses from both sides of the seam,
+  including standing exactly on the target. Nether and End behavior must stay
+  vanilla. Locator-bar seam support is not part of this gate.
+- Start and complete a real raid near the seam. Confirm its center, raider
+  navigation, wave completion, and rewards remain local through the wrap.
+- Inspect clear, rain, thunder, and a lightning strike near the seam. Also
+  check clouds and the full day/dusk/night dimming cycle.
+- Locate and enter representative structures near the seam, including their
+  loot. Verify the guaranteed stronghold/end portal and optional monument
+  controls in a fresh world; record floating structures separately as the
+  known height-placement polish issue rather than silently accepting them.
+
+### Atlas controls
+
+- On each loader, use the real **Generate Entire Ring** confirmation flow as
+  the owner and as a dedicated-server gamemaster. Verify progress, pause,
+  resume, cancel/retry, close/reopen, and disconnect/reconnect.
+- A non-owner must receive read-only status, and controls must lock once the
+  atlas is complete. A different-seed world must never reuse the previous
+  world's completed surface.
+
 ### Rendering
 
 - Look upward with high but practical render distance.
@@ -1183,6 +1228,22 @@ Record:
 
 Do not compare the removed forced-100-chunk experiment with the active
 28-chunk+texture path as if they load the same amount of real geometry.
+
+## Exact candidate evidence record
+
+Record Fabric and NeoForge separately. Shared-source unit tests do not replace
+candidate runtime evidence.
+
+| Field | Required value |
+| --- | --- |
+| Candidate identity | Clean commit, jar filename, and SHA-256 |
+| Runtime | Loader/version, Minecraft, Java, OS, and GPU |
+| World | Seed, circumference, width, wall height, fresh or upgraded |
+| Reproduction | Exact build, launch, and harness commands |
+| Automated result | Terminal PASS marker and relevant log excerpt |
+| Visual result | Screenshots or video for seam, atlas handoff, rims, sky, maps, and block entities |
+| Diagnostics | Warnings, crashes, disconnects, and any `moved too quickly` messages reviewed |
+| Verdict | Pass/fail, tester, date, and linked follow-up issue for every failure |
 
 ## Failure triage
 
