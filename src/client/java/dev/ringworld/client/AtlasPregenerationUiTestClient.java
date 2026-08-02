@@ -2,6 +2,7 @@ package dev.ringworld.client;
 
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.mixin.ConfirmScreenAccessor;
+import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import dev.ringworld.world.AtlasPregenerationAction;
 import dev.ringworld.world.AtlasPregenerationState;
 import dev.ringworld.world.AtlasPregenerationStatus;
@@ -10,6 +11,8 @@ import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
+import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.client.input.InputWithModifiers;
 
 /** Opt-in real-client GUI-scale-4 acceptance fixture for the player atlas map. */
@@ -29,9 +32,34 @@ public final class AtlasPregenerationUiTestClient {
     private int editedCellRow;
     private int editedBlockX;
     private int editedBlockZ;
+    private boolean worldScreenOpened;
+    private boolean worldStarted;
 
     public boolean enabled() { return Boolean.getBoolean(ENABLE_PROPERTY); }
     public void frameRendered() { renderedFrames++; }
+
+    /**
+     * Opens one disposable creative world for either loader's isolated UI
+     * fixture. The map assertion itself never creates a second generation job.
+     */
+    public boolean startWorldIfEnabled(Minecraft client) {
+        if (!enabled() || client.level != null || worldStarted) return false;
+        if (!worldScreenOpened) {
+            CreateWorldScreen.openFresh(client, () -> worldScreenOpened = false);
+            worldScreenOpened = true;
+            return true;
+        }
+        if (client.screen instanceof CreateWorldScreen screen) {
+            WorldCreationUiState creator = screen.getUiState();
+            creator.setName("RingWorld Atlas UI Regression");
+            creator.setGameMode(WorldCreationUiState.SelectedGameMode.CREATIVE);
+            creator.setAllowCommands(true);
+            creator.setSeed("-2162056627494116761");
+            ((CreateWorldScreenInvoker) screen).ringworld$createLevel();
+            worldStarted = true;
+        }
+        return true;
+    }
 
     public boolean tick(Minecraft client) {
         if (!enabled() || client.player == null) return false;

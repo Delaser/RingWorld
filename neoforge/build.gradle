@@ -45,6 +45,13 @@ neoForge {
             client()
             gameDirectory = project.file('run-client')
         }
+        atlasUiClient {
+            client()
+            gameDirectory = project.file('run-atlas-ui')
+            systemProperty 'ringworld.atlasUiTest', 'true'
+            programArgument '--username'
+            programArgument 'AtlasUiTester'
+        }
         productionProjectionClient {
             client()
             gameDirectory = project.file('run-production-projection')
@@ -201,6 +208,7 @@ def checkedProjectionSaveId = { String value, String propertyName ->
 }
 
 def neoForgeProjectionSourceSaves = project.file('run-client/saves')
+def neoForgeAtlasUiRun = project.file('run-atlas-ui')
 def neoForgeProjectionRun = project.file('run-production-projection')
 def neoForgeProjectionSaves = new File(neoForgeProjectionRun, 'saves')
 def neoForgeVisualParityRun = project.file('run-production-visual-parity')
@@ -225,6 +233,50 @@ def neoForgeMultiplayerPort = {
     } catch (NumberFormatException ignored) {
         throw new GradleException('ringNeoForgeMultiplayerPort must be an integer from 1 to 65535')
     }
+}
+
+tasks.register('prepareNeoForgeAtlasUiRun') {
+    group = 'ringworld verification'
+    description = 'Writes an isolated safe-small configuration for the NeoForge atlas-map GUI regression.'
+    outputs.upToDateWhen { false }
+    doLast {
+        [new File(neoForgeAtlasUiRun, 'saves'), new File(neoForgeAtlasUiRun, 'screenshots'),
+         new File(neoForgeAtlasUiRun, 'ringworld-cache'), new File(neoForgeAtlasUiRun, 'logs')].each { delete(it) }
+        def configFile = new File(neoForgeAtlasUiRun, 'config/ringworld.properties')
+        configFile.parentFile.mkdirs()
+        def config = new Properties()
+        config.setProperty('widthBlocks', '416')
+        config.setProperty('circumferenceBlocks', '2048')
+        config.setProperty('wallHeightBlocks', '160')
+        config.setProperty('testMode', 'true')
+        config.setProperty('testViewDistanceChunks', '6')
+        config.setProperty('pregenerateTerrainAtlas', 'false')
+        configFile.withOutputStream { config.store(it, 'Isolated NeoForge RingWorld atlas UI regression') }
+    }
+}
+
+tasks.register('verifyNeoForgeAtlasUiClient') {
+    group = 'ringworld verification'
+    description = 'Fails unless the isolated NeoForge GUI-scale-4 atlas-map client completed every required capture.'
+    mustRunAfter('runAtlasUiClient')
+    doLast {
+        def logFile = new File(neoForgeAtlasUiRun, 'logs/latest.log')
+        def log = logFile.isFile() ? logFile.text : ''
+        if (!log.contains('[atlas-ui-test] PASS') || log.contains('[atlas-ui-test] FAIL')) {
+            throw new GradleException("NeoForge atlas UI client did not pass; inspect ${logFile}")
+        }
+        (1..11).each { index ->
+            def prefix = String.format('atlas-ui-%02d-', index)
+            if (fileTree(new File(neoForgeAtlasUiRun, 'screenshots')).matching { include prefix + '*.png' }.isEmpty()) {
+                throw new GradleException("NeoForge atlas UI client is missing screenshot ${prefix}*.png")
+            }
+        }
+    }
+}
+
+tasks.named('runAtlasUiClient') {
+    dependsOn('prepareNeoForgeAtlasUiRun')
+    finalizedBy('verifyNeoForgeAtlasUiClient')
 }
 
 tasks.register('prepareNeoForgeMultiplayerHarness') {

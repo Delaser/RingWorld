@@ -227,10 +227,13 @@ It owns cursor/future/retry/control/save/completion state; Fabric commands,
 lifecycle hooks, and client tile streaming delegate through
 `RingTerrainAtlasServer`. One in-flight chunk, the 64-task player-work guard,
 200-tick checkpoints, 20-tick tile publication, format-6 bytes, partial
-resume, and verified-final-save completion are retained. The Fabric pause-menu
+resume, and verified-final-save completion are retained. The shared pause-menu
 map, confirmation/progress controls, cancel lifecycle, versioned payloads,
-permissions, and completion toast share that same handle; the real GUI-scale-4
-fixture passes. The
+permissions, completion toast, and disconnect cleanup share that same handle
+on Fabric and NeoForge. Both isolated GUI-scale-4 fixtures pass the complete
+11-capture flow through start, progressive view, pause/resume, cancel/retry,
+completion, and revisioned block edit; NeoForge uses
+`:neoforge:runAtlasUiClient`. The
 Fabric headless prewarm adapter is now implemented as that thin
 launch/report/save/stop coordinator: a fresh safe-small run checkpointed on
 SIGTERM at 1,200 durable chunks/4,800 cells, resumed to 3,328/3,328 chunks and

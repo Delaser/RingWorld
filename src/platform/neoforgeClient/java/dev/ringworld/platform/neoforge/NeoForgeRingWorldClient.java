@@ -2,6 +2,7 @@ package dev.ringworld.platform.neoforge;
 
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.AtlasPregenerationClientState;
+import dev.ringworld.client.AtlasPregenerationUiTestClient;
 import dev.ringworld.client.ClientRingState;
 import dev.ringworld.client.LayoutSwitchTestClient;
 import dev.ringworld.client.MultiplayerTestClient;
@@ -48,6 +49,8 @@ public final class NeoForgeRingWorldClient {
             new RingProjectionCaptureClient();
     private static final RingVisualParityCaptureClient VISUAL_PARITY_CAPTURE =
             new RingVisualParityCaptureClient();
+    private static final AtlasPregenerationUiTestClient ATLAS_PREGENERATION_UI_TEST =
+            new AtlasPregenerationUiTestClient();
 
     private NeoForgeRingWorldClient() { }
 
@@ -134,6 +137,7 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft client = Minecraft.getInstance();
+        if (ATLAS_PREGENERATION_UI_TEST.startWorldIfEnabled(client)) return;
         if (client.player != null) ClientRingState.updateCameraPosition(client.player.getX());
         if (!Boolean.getBoolean(CURVED_OBJECT_CAPTURE_PROPERTY)) {
             ClientRingState.saveTerrainAtlasIfDue(false);
@@ -142,12 +146,14 @@ public final class NeoForgeRingWorldClient {
         if (LAYOUT_SWITCH.tick(client)) return;
         if (MULTIPLAYER_TEST.tick(client)) return;
         if (PROJECTION_CAPTURE.tick(client)) return;
-        VISUAL_PARITY_CAPTURE.tick(client);
+        if (VISUAL_PARITY_CAPTURE.tick(client)) return;
+        ATLAS_PREGENERATION_UI_TEST.tick(client);
     }
 
     @SubscribeEvent
     public static void onAfterLevel(RenderLevelStageEvent.AfterLevel event) {
         PROJECTION_CAPTURE.frameRendered();
+        ATLAS_PREGENERATION_UI_TEST.frameRendered();
     }
 
     @SubscribeEvent

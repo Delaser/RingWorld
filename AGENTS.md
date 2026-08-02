@@ -30,8 +30,9 @@ headless atlas prewarm, and the dedicated two-client seam/combat/block/bed/
 death/physical-portal/boat/teleport/reconnect matrix. Loader-labelled Fabric
 and NeoForge client/server packages, strict jar verification, same-commit
 shared-contract comparison, and a real packaged macOS NeoForge client smoke
-also pass. A real graphical Windows run, exact-candidate review, and owner
-release go/no-go remain.
+also pass. The shared GUI-scale-4 atlas map/control fixture passes all eleven
+captures and its ordered live-revision probe on both loaders. A real graphical
+Windows run, exact-candidate review, and owner release go/no-go remain.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -300,7 +301,9 @@ exits. Noon, dusk, night, and rain pass. The qualified NeoForge visual-parity,
 layout-switch, production-lifecycle, stronghold/worldgen, headless-prewarm,
 and dedicated two-client gates also pass on isolated fixtures. Local
 dual-loader packaging and the packaged macOS NeoForge client smoke also pass;
-the remaining release gates are tracked under #12, #13, and #97.
+a qualified `:neoforge:runAtlasUiClient` additionally verifies the shared
+pause-menu atlas workflow and all eleven screenshots. The remaining release
+gates are tracked under #12, #13, and #97.
 
 `scripts/stage_modrinth_release.py --loader both --build` checks the active
 Java generation, always performs a fresh dual build, pair-validates the known

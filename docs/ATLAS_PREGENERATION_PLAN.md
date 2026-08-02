@@ -1,6 +1,7 @@
 # Atlas pregeneration service plan
 
-Status: Phases 1b and 2's player-facing Fabric workflow landed on 2026-08-01.
+Status: Phases 1b and 2's player-facing workflow landed on 2026-08-01 and its
+shared Fabric/NeoForge UI parity gate passed on 2026-08-02.
 `RingAtlasPregenerationService` now owns one Overworld atlas writer, its
 cursor/selected future/retry state, process-local controls, checkpointing, and
 verified completion. Fabric commands, lifecycle hooks, and client tile streams
@@ -8,7 +9,9 @@ remain in `RingTerrainAtlasServer`. The pause-menu map, versioned status/control
 payloads, server-side authority checks, and completion toast now reuse that
 same service. Phase 3's Fabric-only dedicated-server adapter is implemented:
 it owns launch gating, JSON evidence, world save, and stop after the service's
-verified completion, without adding another scheduler or writer.
+verified completion, without adding another scheduler or writer. Both loaders
+now run the same disposable GUI-scale-4 fixture through all eleven map/control
+captures and the post-completion live-revision probe.
 
 ## Outcome
 
@@ -197,7 +200,8 @@ Do not expose Fabric event types through the public service interface.
 ### One-click player experience
 
 Add a **RingWorld Map** button to the in-game pause menu while the player is in
-a RingWorld Overworld. It opens a screen with:
+a RingWorld Overworld. It opens the same shared screen on Fabric and NeoForge,
+with loader-specific payload/lifecycle adapters, and shows:
 
 - immutable world dimensions and atlas identity;
 - generated canonical chunks and total chunks;
@@ -459,7 +463,7 @@ Integration tests:
 - no canonical chunk request outside X `[0, C)` or finite Z;
 - source-copy immutability and dimension-owned output paths;
 - Nether and End unchanged;
-- Fabric behavior parity with the future NeoForge adapter.
+- identical shared UI behavior through the Fabric and NeoForge adapters.
 
 ## Definition of done
 
