@@ -4,6 +4,7 @@ import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.AtlasPregenerationClientState;
 import dev.ringworld.client.ClientRingState;
 import dev.ringworld.client.LayoutSwitchTestClient;
+import dev.ringworld.client.MultiplayerTestClient;
 import dev.ringworld.client.ProductionLifecycleTestClient;
 import dev.ringworld.client.RingClientPayloadTransport;
 import dev.ringworld.client.RingProjectionCaptureClient;
@@ -42,6 +43,7 @@ public final class NeoForgeRingWorldClient {
     private static final ProductionLifecycleTestClient PRODUCTION_LIFECYCLE =
             new ProductionLifecycleTestClient();
     private static final LayoutSwitchTestClient LAYOUT_SWITCH = new LayoutSwitchTestClient();
+    private static final MultiplayerTestClient MULTIPLAYER_TEST = new MultiplayerTestClient();
     private static final RingProjectionCaptureClient PROJECTION_CAPTURE =
             new RingProjectionCaptureClient();
     private static final RingVisualParityCaptureClient VISUAL_PARITY_CAPTURE =
@@ -138,6 +140,7 @@ public final class NeoForgeRingWorldClient {
         }
         if (PRODUCTION_LIFECYCLE.tick(client)) return;
         if (LAYOUT_SWITCH.tick(client)) return;
+        if (MULTIPLAYER_TEST.tick(client)) return;
         if (PROJECTION_CAPTURE.tick(client)) return;
         VISUAL_PARITY_CAPTURE.tick(client);
     }

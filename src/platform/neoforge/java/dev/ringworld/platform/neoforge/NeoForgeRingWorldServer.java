@@ -1,9 +1,11 @@
 package dev.ringworld.platform.neoforge;
 
 import dev.ringworld.server.RingWorldProductionLifecycleTest;
+import dev.ringworld.server.HeadlessPrewarmCoordinator;
 import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.server.RingWorldStrongholdTest;
 import dev.ringworld.server.RingTerrainAtlasServer;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -11,6 +13,7 @@ import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -19,8 +22,20 @@ public final class NeoForgeRingWorldServer {
     @SubscribeEvent
     public void onLevelLoad(LevelEvent.Load event) {
         if (event.getLevel() instanceof ServerLevel world) {
-            RingWorldServer.attachWorldGeometry(world);
-            if (RingWorldServer.isOverworld(world)) RingTerrainAtlasServer.load(world);
+            try {
+                RingWorldServer.attachWorldGeometry(world);
+                if (RingWorldServer.isOverworld(world)) {
+                    boolean headless = HeadlessPrewarmCoordinator.suppressesBackgroundAutostart(world.getServer());
+                    RingTerrainAtlasServer.load(world, !headless);
+                    if (headless) HeadlessPrewarmCoordinator.start(world);
+                }
+            } catch (Throwable failure) {
+                if (RingWorldServer.isOverworld(world) && HeadlessPrewarmCoordinator.requested(world.getServer())) {
+                    HeadlessPrewarmCoordinator.failStartup(world.getServer(), world, failure);
+                    return;
+                }
+                throw failure;
+            }
         }
     }
 
@@ -52,6 +67,7 @@ public final class NeoForgeRingWorldServer {
 
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
+        HeadlessPrewarmCoordinator.tick(event.getServer());
         NeoForgeRingWorldNetworking.expireAcknowledgements(event.getServer());
         RingWorldProductionLifecycleTest.tick(event.getServer());
         RingWorldStrongholdTest.tick(event.getServer());
@@ -60,9 +76,19 @@ public final class NeoForgeRingWorldServer {
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
+            if (HeadlessPrewarmCoordinator.rejectPlayerJoins(player.level().getServer())) {
+                player.connection.disconnect(Component.literal(
+                        "RingWorld headless atlas preparation is active; player joins are disabled."));
+                return;
+            }
             RingWorldServer.onPlayerJoined(player);
             NeoForgeRingWorldNetworking.sendSettings(player);
         }
+    }
+
+    @SubscribeEvent
+    public void onServerStopping(ServerStoppingEvent event) {
+        HeadlessPrewarmCoordinator.serverStopping(event.getServer());
     }
 
     @SubscribeEvent

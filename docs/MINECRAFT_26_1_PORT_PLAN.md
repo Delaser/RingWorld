@@ -575,6 +575,11 @@ their corresponding runtime gates.
 
 ### Gate 4: multiplayer
 
+Completed on both Fabric and NeoForge. NeoForge's isolated server plus two
+real clients pass natural seam movement, visibility/combat, stateful blocks,
+explosions, bed/death lifecycle, physical Nether/End portals, vehicles,
+teleport, reconnect, and canonical storage. See `TESTING.md` and issue #93.
+
 - both clients acknowledge the same layout;
 - players remain visible and interactive through the seam;
 - combat, block update, vehicle/passenger identity and mount continuity,

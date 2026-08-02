@@ -33,9 +33,13 @@ one shader contract, and the same gameplay behavior.
    and exits. Production noon/dusk/night/rain, seam/both-rim, layout-switch,
    and Overworld/Nether/End/save/reopen lifecycle gates pass. Gameplay and
    multiplayer parity continue under #93.
-4. [#93](https://github.com/Delaser/RingWorld/issues/93): make the NeoForge
-   server pass topology, worldgen, storage, atlas, structure, and two-client
-   gameplay gates.
+4. [#93](https://github.com/Delaser/RingWorld/issues/93): **complete.** The
+   NeoForge server passes topology, worldgen, storage, atlas, structure,
+   headless-prewarm, and dedicated two-client gameplay gates. The shared
+   multiplayer matrix covers natural seam travel, visibility, combat, blocks,
+   explosions, beds, death/respawn, physical Nether/End portals, boats,
+   teleports, and reconnect; the loader-selectable worldgen matrix covers
+   fresh/reload production and safe-small policy cases.
 5. [#94](https://github.com/Delaser/RingWorld/issues/94): freeze matching
    Fabric and NeoForge standalone candidates and verify clean packaging on
    macOS and Windows.

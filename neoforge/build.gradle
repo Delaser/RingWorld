@@ -88,6 +88,51 @@ neoForge {
                     providers.gradleProperty('ringNeoForgeProductionLifecycleDestination')
                             .orElse('RingWorld NeoForge Production Lifecycle').get()
         }
+        strongholdTestServer {
+            server()
+            gameDirectory = project.file('run-stronghold-test')
+            systemProperty 'ringworld.strongholdTest', 'true'
+            systemProperty 'ringworld.worldgenMatrix',
+                    providers.gradleProperty('ringWorldgenMatrix').orElse('false').get()
+            programArgument '--nogui'
+        }
+        headlessPrewarmServer {
+            server()
+            gameDirectory = project.file('run-headless-prewarm')
+            systemProperty 'ringworld.headlessPrewarm', 'true'
+            systemProperty 'ringworld.headlessPrewarmReport',
+                    providers.gradleProperty('ringNeoForgeHeadlessPrewarmResult').orElse('result.json').get()
+            programArgument '--nogui'
+        }
+        multiplayerServer {
+            server()
+            // This intentionally lives below the NeoForge subproject so it
+            // never shares a world, logs, or port configuration with Fabric's
+            // run-multiplayer harness.
+            gameDirectory = project.file('run-multiplayer/server')
+            systemProperty 'ringworld.multiplayerTest', 'true'
+            programArgument '--nogui'
+        }
+        multiplayerClientA {
+            client()
+            gameDirectory = project.file('run-multiplayer/client-a')
+            systemProperty 'ringworld.multiplayerTestRole', 'A'
+            systemProperty 'ringworld.multiplayerTestPort',
+                    providers.gradleProperty('ringNeoForgeMultiplayerPort').orElse('25566').get()
+            systemProperty 'ringworld.multiplayerTestViewDistanceChunks', '5'
+            programArgument '--username'
+            programArgument 'RingTesterA'
+        }
+        multiplayerClientB {
+            client()
+            gameDirectory = project.file('run-multiplayer/client-b')
+            systemProperty 'ringworld.multiplayerTestRole', 'B'
+            systemProperty 'ringworld.multiplayerTestPort',
+                    providers.gradleProperty('ringNeoForgeMultiplayerPort').orElse('25566').get()
+            systemProperty 'ringworld.multiplayerTestViewDistanceChunks', '5'
+            programArgument '--username'
+            programArgument 'RingTesterB'
+        }
         server {
             server()
             gameDirectory = project.file('run-server')
@@ -164,6 +209,299 @@ def neoForgeLayoutSwitchRun = project.file('run-layout-switch')
 def neoForgeLayoutSwitchSaves = new File(neoForgeLayoutSwitchRun, 'saves')
 def neoForgeProductionLifecycleRun = project.file('run-production-lifecycle')
 def neoForgeProductionLifecycleSaves = new File(neoForgeProductionLifecycleRun, 'saves')
+def neoForgeStrongholdTestRun = project.file('run-stronghold-test')
+def neoForgeHeadlessPrewarmRun = project.file('run-headless-prewarm')
+def neoForgeMultiplayerRun = project.file('run-multiplayer')
+def neoForgeMultiplayerServerRun = new File(neoForgeMultiplayerRun, 'server')
+def neoForgeMultiplayerClientARun = new File(neoForgeMultiplayerRun, 'client-a')
+def neoForgeMultiplayerClientBRun = new File(neoForgeMultiplayerRun, 'client-b')
+
+def neoForgeMultiplayerPort = {
+    def raw = providers.gradleProperty('ringNeoForgeMultiplayerPort').orElse('25566').get().trim()
+    try {
+        def port = Integer.parseInt(raw)
+        if (port < 1 || port > 65535) throw new NumberFormatException(raw)
+        return port
+    } catch (NumberFormatException ignored) {
+        throw new GradleException('ringNeoForgeMultiplayerPort must be an integer from 1 to 65535')
+    }
+}
+
+tasks.register('prepareNeoForgeMultiplayerHarness') {
+    group = 'ringworld verification'
+    description = 'Creates clean, isolated NeoForge server and client-A/client-B multiplayer harness directories.'
+    inputs.property('ringNeoForgeMultiplayerPort',
+            providers.gradleProperty('ringNeoForgeMultiplayerPort').orElse('25566'))
+    outputs.dir(neoForgeMultiplayerRun)
+    outputs.upToDateWhen { false }
+    doLast {
+        def port = neoForgeMultiplayerPort()
+        // The harness is fully disposable and subproject-local. Do not touch
+        // the root Fabric run-multiplayer directory or any user save. Keep a
+        // previously accepted EULA file, though: launching the server again
+        // must not silently discard that explicit acknowledgement.
+        [new File(neoForgeMultiplayerServerRun, 'world'),
+         new File(neoForgeMultiplayerServerRun, 'logs'),
+         new File(neoForgeMultiplayerServerRun, 'ringworld-cache'),
+         new File(neoForgeMultiplayerServerRun, 'crash-reports'),
+         new File(neoForgeMultiplayerClientARun, 'logs'),
+         new File(neoForgeMultiplayerClientARun, 'screenshots'),
+         new File(neoForgeMultiplayerClientARun, 'ringworld-cache'),
+         new File(neoForgeMultiplayerClientARun, 'crash-reports'),
+         new File(neoForgeMultiplayerClientBRun, 'logs'),
+         new File(neoForgeMultiplayerClientBRun, 'screenshots'),
+         new File(neoForgeMultiplayerClientBRun, 'ringworld-cache'),
+         new File(neoForgeMultiplayerClientBRun, 'crash-reports')].each { delete(it) }
+        [neoForgeMultiplayerServerRun, neoForgeMultiplayerClientARun,
+         neoForgeMultiplayerClientBRun].each { it.mkdirs() }
+
+        def configDirectory = new File(neoForgeMultiplayerServerRun, 'config')
+        configDirectory.mkdirs()
+        new File(configDirectory, 'ringworld.properties').text = '''\
+widthBlocks=416
+circumferenceBlocks=2048
+wallHeightBlocks=160
+testMode=false
+testViewDistanceChunks=2
+pregenerateTerrainAtlas=false
+'''
+
+        def serverProperties = new Properties()
+        serverProperties.setProperty('server-port', Integer.toString(port))
+        serverProperties.setProperty('online-mode', 'false')
+        serverProperties.setProperty('gamemode', 'creative')
+        serverProperties.setProperty('difficulty', 'normal')
+        serverProperties.setProperty('level-name', 'world')
+        serverProperties.setProperty('level-seed', '-2162056627494116761')
+        serverProperties.setProperty('view-distance', '5')
+        serverProperties.setProperty('simulation-distance', '5')
+        serverProperties.setProperty('motd', 'RingWorld NeoForge automated multiplayer harness')
+        new File(neoForgeMultiplayerServerRun, 'server.properties').withOutputStream {
+            serverProperties.store(it, 'Disposable RingWorld NeoForge multiplayer harness')
+        }
+
+        // Deliberately do not write eula=true: the owner must accept Mojang's
+        // EULA once in this isolated directory before starting the server.
+        logger.lifecycle('[neoforge-multiplayer] prepared isolated server/client runs at {} on port {}',
+                neoForgeMultiplayerRun, port)
+    }
+}
+
+tasks.register('verifyNeoForgeMultiplayerHarness') {
+    group = 'ringworld verification'
+    description = 'Fails unless the isolated NeoForge two-client seam matrix completed successfully.'
+    doLast {
+        def serverLog = new File(neoForgeMultiplayerServerRun, 'logs/latest.log')
+        def clientALog = new File(neoForgeMultiplayerClientARun, 'logs/latest.log')
+        def clientBLog = new File(neoForgeMultiplayerClientBRun, 'logs/latest.log')
+        def serverText = serverLog.isFile() ? serverLog.text : ''
+        def clientAText = clientALog.isFile() ? clientALog.text : ''
+        def clientBText = clientBLog.isFile() ? clientBLog.text : ''
+        if (!serverText.contains('[multiplayer] full scenario result=true')
+                || serverText.contains('[multiplayer] full scenario result=false')) {
+            throw new GradleException("NeoForge multiplayer server matrix did not pass; inspect ${serverLog}")
+        }
+        [
+                [clientALog, clientAText, '[multiplayer:A] client world fully loaded'],
+                [clientBLog, clientBText, '[multiplayer:B] client world fully loaded']
+        ].each { entry ->
+            if (!entry[1].contains(entry[2])) {
+                throw new GradleException("NeoForge multiplayer client did not complete startup; inspect ${entry[0]}")
+            }
+        }
+        [
+                new File(neoForgeMultiplayerClientARun, 'screenshots/ringworld-multiplayer-a.png'),
+                new File(neoForgeMultiplayerClientBRun, 'screenshots/ringworld-multiplayer-b.png')
+        ].each { screenshot ->
+            if (!screenshot.isFile()) {
+                throw new GradleException("NeoForge multiplayer harness is missing ${screenshot}")
+            }
+        }
+        logger.lifecycle('[neoforge-multiplayer] verified full server and client-A/client-B seam matrix')
+    }
+}
+
+tasks.register('prepareNeoForgeStrongholdTestWorld') {
+    group = 'ringworld verification'
+    description = 'Creates or resumes the disposable NeoForge guaranteed-structure world.'
+    inputs.property('ringStrongholdTestSeed',
+            providers.gradleProperty('ringStrongholdTestSeed').orElse('ringworld-regression-0'))
+    inputs.property('ringStrongholdTestCircumference',
+            providers.gradleProperty('ringStrongholdTestCircumference').orElse('16384'))
+    inputs.property('ringStrongholdTestWidth',
+            providers.gradleProperty('ringStrongholdTestWidth').orElse('256'))
+    inputs.property('ringStrongholdTestWallHeight',
+            providers.gradleProperty('ringStrongholdTestWallHeight').orElse('160'))
+    inputs.property('ringStrongholdTestResume',
+            providers.gradleProperty('ringStrongholdTestResume').orElse('false'))
+    inputs.property('ringWorldgenMatrix',
+            providers.gradleProperty('ringWorldgenMatrix').orElse('false'))
+    outputs.upToDateWhen { false }
+    doLast {
+        def eula = new File(neoForgeStrongholdTestRun, 'eula.txt')
+        if (!eula.isFile()) {
+            eula.parentFile.mkdirs()
+            eula.text = '# Review https://aka.ms/MinecraftEULA before changing this value.\neula=false\n'
+        }
+        if (!eula.isFile() || !eula.text.readLines().any { it.trim() == 'eula=true' }) {
+            throw new GradleException("Review ${eula}, then set eula=true to run this disposable server")
+        }
+        def resume = providers.gradleProperty('ringStrongholdTestResume').orElse('false').get().toBoolean()
+        if (resume && !new File(neoForgeStrongholdTestRun, 'world/level.dat').isFile()) {
+            throw new GradleException('-PringStrongholdTestResume=true requires the existing disposable NeoForge world')
+        }
+        if (!resume) delete(new File(neoForgeStrongholdTestRun, 'world'))
+        delete(new File(neoForgeStrongholdTestRun, 'logs/latest.log'))
+
+        def propertiesFile = new File(neoForgeStrongholdTestRun, 'server.properties')
+        def properties = new Properties()
+        if (propertiesFile.isFile()) propertiesFile.withInputStream { properties.load(it) }
+        properties.setProperty('level-seed',
+                providers.gradleProperty('ringStrongholdTestSeed').orElse('ringworld-regression-0').get())
+        properties.setProperty('level-name', 'world')
+        properties.setProperty('online-mode', 'false')
+        properties.setProperty('server-port', '0')
+        propertiesFile.parentFile.mkdirs()
+        propertiesFile.withOutputStream { properties.store(it, 'Disposable RingWorld NeoForge stronghold test') }
+
+        def configFile = new File(neoForgeStrongholdTestRun, 'config/ringworld.properties')
+        def config = new Properties()
+        if (configFile.isFile()) configFile.withInputStream { config.load(it) }
+        config.setProperty('circumferenceBlocks',
+                providers.gradleProperty('ringStrongholdTestCircumference').orElse('16384').get())
+        config.setProperty('widthBlocks',
+                providers.gradleProperty('ringStrongholdTestWidth').orElse('256').get())
+        config.setProperty('wallHeightBlocks',
+                providers.gradleProperty('ringStrongholdTestWallHeight').orElse('160').get())
+        config.setProperty('pregenerateTerrainAtlas', 'false')
+        config.setProperty('requestOceanMonument', 'true')
+        configFile.parentFile.mkdirs()
+        configFile.withOutputStream { config.store(it, 'Disposable RingWorld NeoForge stronghold test') }
+    }
+}
+
+tasks.register('verifyNeoForgeStrongholdTestServer') {
+    group = 'ringworld verification'
+    description = 'Fails unless the disposable NeoForge server logged a complete stronghold PASS.'
+    mustRunAfter('runStrongholdTestServer')
+    doLast {
+        def logFile = new File(neoForgeStrongholdTestRun, 'logs/latest.log')
+        def log = logFile.isFile() ? logFile.text : ''
+        if (!log.contains('[stronghold-test] PASS') || log.contains('[stronghold-test] FAILED')) {
+            throw new GradleException("NeoForge stronghold runtime gate did not pass; inspect ${logFile}")
+        }
+    }
+}
+
+tasks.named('runStrongholdTestServer') {
+    dependsOn('prepareNeoForgeStrongholdTestWorld')
+    finalizedBy('verifyNeoForgeStrongholdTestServer')
+}
+
+tasks.register('prepareNeoForgeHeadlessPrewarmWorld') {
+    group = 'ringworld verification'
+    description = 'Prepares a fresh or copied disposable NeoForge world for headless atlas prewarm.'
+    inputs.property('ringNeoForgeHeadlessPrewarmSource',
+            providers.gradleProperty('ringNeoForgeHeadlessPrewarmSource').orElse(''))
+    inputs.property('ringNeoForgeHeadlessPrewarmResult',
+            providers.gradleProperty('ringNeoForgeHeadlessPrewarmResult').orElse('result.json'))
+    inputs.property('ringNeoForgeHeadlessPrewarmResume',
+            providers.gradleProperty('ringNeoForgeHeadlessPrewarmResume').orElse('false'))
+    outputs.upToDateWhen { false }
+    doLast {
+        def sourceName = providers.gradleProperty('ringNeoForgeHeadlessPrewarmSource').orElse('').get().trim()
+        def resume = providers.gradleProperty('ringNeoForgeHeadlessPrewarmResume').orElse('false').get().toBoolean()
+        def reportName = providers.gradleProperty('ringNeoForgeHeadlessPrewarmResult').orElse('result.json').get().trim()
+        if (reportName.isEmpty() || reportName == 'progress.json' || reportName.contains('/')
+                || reportName.contains('\\') || !reportName.endsWith('.json')) {
+            throw new GradleException('-PringNeoForgeHeadlessPrewarmResult must be one .json filename')
+        }
+        def eula = new File(neoForgeHeadlessPrewarmRun, 'eula.txt')
+        if (!eula.isFile()) {
+            eula.parentFile.mkdirs()
+            eula.text = '# Review https://aka.ms/MinecraftEULA before changing this value.\neula=false\n'
+        }
+        if (!eula.isFile() || !eula.text.readLines().any { it.trim() == 'eula=true' }) {
+            throw new GradleException("Review ${eula}, then set eula=true to run this disposable server")
+        }
+        def world = new File(neoForgeHeadlessPrewarmRun, 'world')
+        if (resume) {
+            if (!sourceName.isEmpty() || !new File(world, 'level.dat').isFile()) {
+                throw new GradleException('-PringNeoForgeHeadlessPrewarmResume=true requires the existing disposable world and no copy source')
+            }
+        } else {
+            delete(world)
+            delete(new File(neoForgeHeadlessPrewarmRun, 'logs'))
+        }
+        if (!sourceName.isEmpty()) {
+            def sourceId = checkedProjectionSaveId(sourceName, 'ringNeoForgeHeadlessPrewarmSource')
+            def source = new File(neoForgeProjectionSourceSaves, sourceId)
+            if (!new File(source, 'level.dat').isFile()) {
+                throw new GradleException("ringNeoForgeHeadlessPrewarmSource must name a save under ${neoForgeProjectionSourceSaves}: ${sourceId}")
+            }
+            copy { from source; into world }
+            if (!new File(world, 'level.dat').isFile()) {
+                throw new GradleException("copied NeoForge headless world is missing level.dat: ${world}")
+            }
+        }
+        def reportDirectory = new File(world, 'ringworld-prewarm')
+        delete(new File(reportDirectory, reportName))
+        delete(new File(reportDirectory, 'progress.json'))
+
+        def propertiesFile = new File(neoForgeHeadlessPrewarmRun, 'server.properties')
+        def properties = new Properties()
+        if (propertiesFile.isFile()) propertiesFile.withInputStream { properties.load(it) }
+        properties.setProperty('level-name', 'world')
+        properties.setProperty('online-mode', 'false')
+        properties.setProperty('server-port', '0')
+        properties.setProperty('pause-when-empty-seconds', '-1')
+        propertiesFile.parentFile.mkdirs()
+        propertiesFile.withOutputStream { properties.store(it, 'Disposable RingWorld NeoForge headless prewarm') }
+
+        def configFile = new File(neoForgeHeadlessPrewarmRun, 'config/ringworld.properties')
+        def config = new Properties()
+        config.setProperty('widthBlocks', '416')
+        config.setProperty('circumferenceBlocks', '2048')
+        config.setProperty('wallHeightBlocks', '160')
+        config.setProperty('testMode', 'false')
+        config.setProperty('testViewDistanceChunks', '6')
+        config.setProperty('pregenerateTerrainAtlas', 'false')
+        configFile.parentFile.mkdirs()
+        configFile.withOutputStream { config.store(it, 'Disposable RingWorld NeoForge headless prewarm') }
+    }
+}
+
+tasks.register('verifyNeoForgeHeadlessPrewarm') {
+    group = 'ringworld verification'
+    description = 'Fails unless NeoForge headless prewarm wrote a complete, identity-bearing atlas report.'
+    mustRunAfter('runHeadlessPrewarmServer')
+    doLast {
+        def resultName = providers.gradleProperty('ringNeoForgeHeadlessPrewarmResult').orElse('result.json').get().trim()
+        def result = new File(neoForgeHeadlessPrewarmRun, "world/ringworld-prewarm/${resultName}")
+        if (!result.isFile()) {
+            throw new GradleException("NeoForge headless prewarm did not write a terminal result; inspect ${result}")
+        }
+        def report
+        try {
+            report = new groovy.json.JsonSlurper().parse(result)
+        } catch (Exception failure) {
+            throw new GradleException("NeoForge headless prewarm result is not valid JSON: ${result}", failure)
+        }
+        if (!(report instanceof Map) || report.schemaVersion != 1 || report.status != 'COMPLETE'
+                || report.identityAvailable != true || !report.atlasPath || report.failureReason != null
+                || !(report.totalChunks instanceof Number) || !(report.completedChunks instanceof Number)
+                || !(report.totalCells instanceof Number) || !(report.completedCells instanceof Number)
+                || report.totalChunks <= 0 || report.totalCells <= 0
+                || report.completedChunks != report.totalChunks || report.completedCells != report.totalCells) {
+            throw new GradleException("NeoForge headless prewarm did not complete; inspect ${result}")
+        }
+    }
+}
+
+tasks.named('runHeadlessPrewarmServer') {
+    dependsOn('prepareNeoForgeHeadlessPrewarmWorld')
+    finalizedBy('verifyNeoForgeHeadlessPrewarm')
+}
 
 tasks.register('prepareCopiedNeoForgeProductionProjectionWorld') {
     group = 'ringworld verification'
@@ -446,4 +784,8 @@ tasks.named('runLayoutSwitchClient') {
 tasks.named('runProductionLifecycleClient') {
     dependsOn('prepareCopiedNeoForgeProductionLifecycleWorld')
     finalizedBy('verifyNeoForgeProductionLifecycleClient')
+}
+
+tasks.named('runMultiplayerServer') {
+    dependsOn('prepareNeoForgeMultiplayerHarness')
 }

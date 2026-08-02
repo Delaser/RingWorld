@@ -2,7 +2,7 @@
 
 import unittest
 
-from run_worldgen_structure_matrix import parse_log, validate_aggregate, validate_reload
+from run_worldgen_structure_matrix import ROOT, loader_runtime, parse_log, validate_aggregate, validate_reload
 
 
 def record(**overrides):
@@ -28,6 +28,16 @@ def record(**overrides):
 
 
 class WorldgenStructureMatrixTest(unittest.TestCase):
+    def test_selects_isolated_loader_runtime(self):
+        fabric = loader_runtime("fabric")
+        neoforge = loader_runtime("neoforge")
+        self.assertEqual("runStrongholdTestServer", fabric.task)
+        self.assertEqual(":neoforge:runStrongholdTestServer", neoforge.task)
+        self.assertEqual(ROOT / "run-stronghold-test" / "logs" / "latest.log", fabric.run_log)
+        self.assertEqual(ROOT / "neoforge" / "run-stronghold-test" / "logs" / "latest.log",
+                         neoforge.run_log)
+        self.assertNotEqual(fabric.report_dir, neoforge.report_dir)
+
     def test_parses_complete_runtime_record(self):
         log = """
 [worldgen-matrix] seed=-12 layout=2048x416 biomeFamilies=[forest, ocean] biomeIds=[minecraft:forest, minecraft:ocean] chunks=208 caveAir=3 ores=4 logs=5 starts=2 structureIds=[minecraft:mineshaft] crossingStarts=1 crossingStructureIds=[minecraft:mineshaft] references=6 lootContainers=7 structuresWithSpawnOverrides=0 spawnOverrideStructureIds=[]

@@ -71,6 +71,10 @@ abstract class ClientPlayNetworkHandlerMixin {
     private void ringworld$evictPreviousChunkChart(ClientboundSetChunkCacheCenterPacket packet,
                                                     CallbackInfo ci) {
         Minecraft client = Minecraft.getInstance();
+        // This injection runs before vanilla's packet-thread guard. NeoForge
+        // exposes that ordering because its block-entity model-data teardown
+        // rejects work from Netty. The main-thread replay performs the re-key.
+        if (!client.isSameThread()) return;
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null || client.player == null || client.level == null) return;
 
@@ -181,6 +185,10 @@ abstract class ClientPlayNetworkHandlerMixin {
     @ModifyVariable(method = "handleMovePlayer", at = @At("HEAD"), argsOnly = true)
     private ClientboundPlayerPositionPacket ringworld$logicalTeleport(ClientboundPlayerPositionPacket packet) {
         Minecraft client = Minecraft.getInstance();
+        // @ModifyVariable(HEAD) precedes PacketUtils.ensureRunningOnSameThread.
+        // Leave the network-thread packet untouched; vanilla queues it, then
+        // this hook projects and re-keys it on the render thread.
+        if (!client.isSameThread()) return packet;
         LocalPlayer player = client.player;
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null || player == null) return packet;

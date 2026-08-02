@@ -31,7 +31,7 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.util.Mth;
 
 /** A real-network, two-process client driver. It is dormant outside its JVM test flag. */
-final class MultiplayerTestClient {
+public final class MultiplayerTestClient {
     private final String role = System.getProperty("ringworld.multiplayerTestRole", "").trim();
     private boolean optionsApplied;
     private boolean connectionRequested;
@@ -83,10 +83,11 @@ final class MultiplayerTestClient {
     private boolean endEnterSent;
     private boolean endReturnSent;
 
-    boolean tick(Minecraft client) {
+    public boolean tick(Minecraft client) {
         if (role.isEmpty()) return false;
         if (!optionsApplied) {
-            client.options.renderDistance().set(2);
+            client.options.renderDistance().set(Math.clamp(Integer.getInteger(
+                    "ringworld.multiplayerTestViewDistanceChunks", 2), 2, 32));
             client.options.simulationDistance().set(5);
             client.options.enableVsync().set(false);
             client.options.inactivityFpsLimit().set(InactivityFpsLimit.MINIMIZED);

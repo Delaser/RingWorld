@@ -35,7 +35,11 @@ abstract class ExplosionImplMixin {
     }
 
     @Redirect(
-            method = "hurtEntities",
+            // NeoForge patches vanilla's no-argument method into a wrapper and
+            // moves the entity loop into hurtEntities(List<BlockPos>). Match
+            // both layouts while requiring the eye-position call in whichever
+            // implementation actually owns the loop.
+            method = {"hurtEntities()V", "hurtEntities(Ljava/util/List;)V"},
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/world/entity/Entity;getEyePosition()Lnet/minecraft/world/phys/Vec3;"))
     private Vec3 ringworld$periodicKnockbackOrigin(Entity entity) {
