@@ -362,7 +362,7 @@ replies. Any RingWorld player may observe; only the integrated owner or a
 dedicated-server gamemaster can control. A NeoForge adapter can register these
 same payload layouts and call the loader-neutral model/service.
 
-### Phase 3: headless prewarm (implemented on Fabric)
+### Phase 3: headless prewarm (implemented on Fabric and NeoForge)
 
 - `runHeadlessPrewarmServer` starts the explicit opt-in
   `-Dringworld.headlessPrewarm=true` mode after preparing only
@@ -398,6 +398,12 @@ same payload layouts and call the loader-neutral model/service.
   cells. Existing region worlds without RingWorld settings are rejected by the
   immutable-settings guard. The Gradle finalizer turns any non-`COMPLETE`
   terminal JSON into a nonzero command result.
+- `HeadlessPrewarmCoordinator` owns this behavior in loader-neutral common
+  code. Thin Fabric and NeoForge adapters supply their lifecycle callbacks and
+  join rejection. NeoForge's isolated equivalent is
+  `:neoforge:runHeadlessPrewarmServer`, with loader-prefixed copy/resume/result
+  properties and the same schema and completion requirements. A fresh
+  2,048×416 NeoForge gate completed all 3,328 chunks/13,312 cells.
 
 Exit gate: fresh and copied safe-small worlds prewarm, reopen, serve the
 complete atlas to a clean client, and stop cleanly.

@@ -1,6 +1,8 @@
 package dev.ringworld.platform.neoforge;
 
 import dev.ringworld.RingWorldMod;
+import dev.ringworld.server.HeadlessPrewarmCoordinator;
+import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.world.RingWorldConfig;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -18,6 +20,7 @@ public final class NeoForgeRingWorldMod {
         logLoadedConflicts();
         RingWorldConfig.load();
         NeoForgeTerrainAtlasPlatform.configure();
+        RingWorldServer.configurePreLoadRejectionHandler(HeadlessPrewarmCoordinator::recordPreLoadRejection);
         modEventBus.addListener(NeoForgeRingWorldNetworking::registerPayloads);
         if (FMLEnvironment.getDist().isClient()) {
             NeoForgeRingWorldClient.register(modEventBus);

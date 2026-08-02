@@ -14,11 +14,10 @@ If a mixin is added, removed, or renamed, update those files and this table in
 the same change.
 
 Both Fabric and the NeoForge 26.1.2.87 module package the shared server and
-client mixin configurations. NeoForge's dedicated server reaches `Done` and
-starts/progresses the shared atlas; its graphical client also completes
-resource/shader loading and a disposable projection-capture world. That is not
-complete visual, gameplay, or multiplayer validation, so each shared client
-mixin still requires the same loader-parity review.
+client mixin configurations. NeoForge passes the graphical projection,
+seam/rim, layout/lifecycle, dedicated multiplayer, worldgen/structure, and
+headless-atlas runtime gates. Shared mixin changes still require both-loader
+review because one loader's runtime success does not validate the other.
 
 ## Common/server mixins
 
@@ -104,7 +103,7 @@ ordinary helpers:
 | `RingWorldStorageAccess` | Read-only bridge from a `ServerLevel` to Minecraft's authoritative per-dimension storage root |
 | `RingWorldNetworking` / `RingHandshakeTracker` | Payload registration, exact required-channel contract, mandatory acknowledgement deadline, request gating, and disconnect cleanup |
 | `RingTerrainAtlasServer` | Atlas generation, persistence, and tile streams |
-| `RingWorldHeadlessPrewarm` / `HeadlessPrewarmEvidenceFiles` | Fabric/dedicated lifecycle adapter and evidence hygiene for explicit headless prewarm; observes the shared service, records constructor-tail `REJECTED` evidence without identity when settings are unavailable, gates joins, checkpoints/reports/saves/stops, but never owns another scheduler or atlas writer |
+| `HeadlessPrewarmCoordinator` / `HeadlessPrewarmEvidenceFiles` / loader adapters | Loader-neutral explicit headless-prewarm orchestration and evidence hygiene with thin Fabric/NeoForge lifecycle bridges; records constructor-tail `REJECTED` evidence without identity when settings are unavailable, gates joins, checkpoints/reports/saves/stops, but never owns another scheduler or atlas writer |
 | `RingWorldClient` / `NeoForgeRingWorldClient` | Loader client lifecycle and payload receivers; Fabric and NeoForge respectively configure the shared transport/session, cache path, test hooks, and render-pipeline registration |
 | `RingClientPayloadTransport` / `RingWorldClientSession` | Shared client outbound-payload capability/delivery boundary and per-session atlas/GPU/geometry teardown |
 | `RingProjectionCaptureClient` / `RingVisualParityCaptureClient` / `LayoutSwitchTestClient` / `ProductionLifecycleTestClient` | Loader-neutral graphical projection, seam/rim, stale-session, dimension-transition, and reopen gates driven by loader-owned client tick/render events |

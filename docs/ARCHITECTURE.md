@@ -61,9 +61,9 @@ shared ring-surface render pipeline in its client event and packages the shared
 client mixins and resources. Its 26.1.2.87 client has loaded those resources,
 acknowledged format 2, and passed a complete-atlas tangent/handoff/radial
 projection gate in a copied production integrated world. The seam/rim,
-time/weather, and lifecycle gates also pass. This does not
-establish gameplay, multiplayer, or package parity; distributed artifacts remain
-Fabric-only until those gates pass.
+time/weather, lifecycle, worldgen/structure, headless-atlas, and dedicated
+two-client gameplay gates also pass. Package parity remains open; distributed
+artifacts remain Fabric-only until that final loader gate passes.
 
 ## The three coordinate domains
 

@@ -51,8 +51,8 @@ the evidence, and exits. The production 16,384×256 noon run passes with settled
 tangent/handoff/radial averages of 10.7/8.4/8.4 ms per frame. The dusk, night,
 and rain variants also pass.
 
-The remaining NeoForge #92 visual and lifecycle gates use separate disposable
-run directories:
+The NeoForge visual and lifecycle gates use separate disposable run
+directories:
 
 ```sh
 ./gradlew :neoforge:runProductionVisualParityClient \
@@ -70,7 +70,24 @@ disconnect clears client geometry and atlas state. The third proves inactive
 RingWorld state in Nether/End, exact Overworld restoration, normal save and
 disconnect, then reopen. All three pass. Every source must be an ignored save
 under `neoforge/run-client/saves/`; the tasks mutate only freshly copied
-destinations. Gameplay, two-client multiplayer, and package parity remain open.
+destinations. The server/runtime gates below also pass; package parity remains
+open.
+
+NeoForge's dedicated multiplayer gate uses three isolated processes below
+`neoforge/run-multiplayer/`: one server and clients A/B. Prepare the fixture,
+start `:neoforge:runMultiplayerServer` and both qualified client runs, then
+verify after all three exit:
+
+```sh
+./gradlew :neoforge:verifyNeoForgeMultiplayerHarness --console=plain
+```
+
+The passing matrix covers natural seam travel with a maximum 0.25-block tick
+step, nearest-image visibility/combat, blocks, explosions, bed/death state,
+physical Nether and End portals, boats/passengers, explicit teleport,
+reconnect, and canonical player storage. The NeoForge clients intentionally
+use five chunks for this cold-start fixture; that is a harness setting, not a
+forced gameplay render distance.
 
 ## Unit and build validation
 
@@ -192,11 +209,10 @@ required mixin still applies.
 
 ## 26.1 dedicated-server storage gate
 
-The detailed storage evidence below is Fabric evidence. The #91 NeoForge
-bootstrap separately proves a fresh dedicated server reaches `Done` and begins
-atlas work, while #92 supplies the completed copied-world client visual and
-lifecycle suite; NeoForge has not yet repeated the storage, topology, worldgen,
-or two-client gates.
+The detailed historical storage evidence below began as Fabric evidence.
+NeoForge now separately passes fresh dimension-owned storage, copied-world
+layout/atlas restoration, the loader-selectable worldgen/reload matrix,
+headless completion, and the dedicated topology/two-client gate.
 
 Run storage migration gates only from a disposable worktree/run directory.
 Never point them at `dist/`, the public service, or the only copy of a world.
@@ -215,8 +231,9 @@ seam, or two-client multiplayer validation.
 
 ## Headless atlas prewarm dedicated-server gate
 
-After reviewing the ignored `run-headless-prewarm/eula.txt` and setting
-`eula=true`, run a fresh safe-small prewarm:
+On first use the preparation task creates an ignored
+`run-headless-prewarm/eula.txt` with `eula=false` and stops. Review Mojang's
+EULA, set `eula=true`, then run a fresh safe-small prewarm:
 
 ```sh
 ./gradlew runHeadlessPrewarmServer --console=plain
@@ -243,6 +260,34 @@ first result is `INTERRUPTED` and the next run resumes from durable atlas cells.
 Use `-PringHeadlessPrewarmResume=true` for that second run; the default fresh
 task deliberately deletes its disposable world.
 
+NeoForge provides the same contract through its own isolated directory and
+loader lifecycle adapter:
+
+```sh
+./gradlew :neoforge:runHeadlessPrewarmServer --console=plain
+```
+
+On first use the task creates
+`neoforge/run-headless-prewarm/eula.txt` with `eula=false` and stops. Review
+Mojang's EULA, then set `eula=true` once.
+Use `-PringNeoForgeHeadlessPrewarmSource=<save-folder-id>`,
+`-PringNeoForgeHeadlessPrewarmResume=true`, and
+`-PringNeoForgeHeadlessPrewarmResult=<filename.json>` for copy, resume, and
+terminal-result variants. A fresh 2,048×416 NeoForge run completed all 3,328
+chunks/13,312 cells and the verifier accepted only its identity-bearing
+`COMPLETE` report.
+
+The structure matrix is also loader-selectable:
+
+```sh
+python3 scripts/run_worldgen_structure_matrix.py --loader fabric
+python3 scripts/run_worldgen_structure_matrix.py --loader neoforge
+```
+
+Each loader uses separate worlds, logs, and report directories. The NeoForge
+matrix passes fresh and exact-reload production 16,384×256 plus the two
+safe-small policy cases.
+
 The copied `ordinary-world-rejection` fixture is expected to fail its Gradle
 finalizer and retain Minecraft's original startup error. Its acceptance
 evidence is `result.json` with `"status": "REJECTED"`,
@@ -259,8 +304,9 @@ legacy atlas, and completed 2,000 chunks / 8,000 cells at about 80 cells/s.
 
 ## Guaranteed-structure dedicated-server gate
 
-After reviewing and accepting the EULA in the ignored
-`run-stronghold-test/eula.txt`, run:
+On first use the preparation task creates ignored
+`run-stronghold-test/eula.txt` (or NeoForge's corresponding subproject path)
+with `eula=false` and stops. Review Mojang's EULA, set `eula=true`, then run:
 
 ```sh
 ./gradlew runStrongholdTestServer --console=plain \

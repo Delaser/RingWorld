@@ -34,6 +34,7 @@ final class RingWorldExtendedMultiplayerTest {
     private static int ticks;
     private static boolean baselinePassed;
     private static boolean serverFixturePassed;
+    private static boolean sleepAttempted;
     private static boolean sleepStarted;
     private static boolean damageWakePassed;
     private static boolean bedDestroyedPassed;
@@ -166,6 +167,16 @@ final class RingWorldExtendedMultiplayerTest {
         prepareSurvivalPlayer(playerA);
         playerA.teleportTo(world, geometry.circumferenceBlocks() - 1.5, 120.0, -1.5,
                 Set.<Relative>of(), 90.0f, 10.0f, false);
+        // NeoForge asks the environment-attribute system whether sleeping is
+        // allowed before vanilla performs the same check. Let the clock change
+        // advance through one server tick so both loaders observe the new
+        // night phase instead of a same-tick cached daytime BedRule.
+        RingWorldMod.LOGGER.info("[multiplayer-extended] seam bed prepared for next-tick sleep");
+    }
+
+    private static void attemptSleep(ServerPlayer playerA) {
+        sleepAttempted = true;
+        BlockPos head = bedHead();
         Either<Player.BedSleepingProblem, net.minecraft.util.Unit> result = playerA.startSleepInBed(head);
         sleepStarted = result.right().isPresent();
         RingWorldMod.LOGGER.info("[multiplayer-extended] seam bed sleep start={} problem={} canonicalBed={}",
@@ -174,6 +185,10 @@ final class RingWorldExtendedMultiplayerTest {
 
     private static void awaitSleep(ServerLevel world, RingGeometry geometry, ServerPlayer playerA) {
         if (playerA == null) return;
+        if (!sleepAttempted) {
+            attemptSleep(playerA);
+            return;
+        }
         boolean canonicalBed = playerA.getSleepingPos()
                 .map(pos -> pos.equals(bedHead()) && pos.getX() >= 0
                         && pos.getX() < geometry.circumferenceBlocks())

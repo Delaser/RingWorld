@@ -15,8 +15,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-RUN_LOG = ROOT / "run-stronghold-test" / "logs" / "latest.log"
-REPORT_DIR = ROOT / "build" / "reports" / "ringworld-worldgen-matrix"
+DEFAULT_REPORT_DIR = ROOT / "build" / "reports" / "ringworld-worldgen-matrix"
 
 MATRIX_RE = re.compile(
     r"\[worldgen-matrix] seed=(?P<numeric_seed>-?\d+) "
@@ -50,6 +49,29 @@ class Case:
     circumference: int
     width: int
     wall_height: int = 160
+
+
+@dataclass(frozen=True)
+class LoaderRuntime:
+    task: str
+    run_log: Path
+    report_dir: Path
+
+
+def loader_runtime(loader: str) -> LoaderRuntime:
+    if loader == "fabric":
+        return LoaderRuntime(
+            "runStrongholdTestServer",
+            ROOT / "run-stronghold-test" / "logs" / "latest.log",
+            DEFAULT_REPORT_DIR,
+        )
+    if loader == "neoforge":
+        return LoaderRuntime(
+            ":neoforge:runStrongholdTestServer",
+            ROOT / "neoforge" / "run-stronghold-test" / "logs" / "latest.log",
+            ROOT / "neoforge" / "build" / "reports" / "ringworld-worldgen-matrix",
+        )
+    raise ValueError(f"unsupported loader: {loader}")
 
 
 DEFAULT_CASES = (
@@ -115,10 +137,11 @@ def validate_reload(fresh: dict[str, object], resumed: dict[str, object]) -> Non
         raise ValueError("fresh/reload worldgen evidence changed: " + ", ".join(changed))
 
 
-def run_case(case: Case, resume: bool, report_dir: Path) -> dict[str, object]:
+def run_case(case: Case, resume: bool, report_dir: Path,
+             runtime: LoaderRuntime) -> dict[str, object]:
     phase = "resume" if resume else "fresh"
     command = [
-        "./gradlew", "runStrongholdTestServer", "--console=plain",
+        "./gradlew", runtime.task, "--console=plain",
         f"-PringStrongholdTestSeed={case.seed}",
         f"-PringStrongholdTestCircumference={case.circumference}",
         f"-PringStrongholdTestWidth={case.width}",
@@ -130,9 +153,9 @@ def run_case(case: Case, resume: bool, report_dir: Path) -> dict[str, object]:
     completed = subprocess.run(command, cwd=ROOT, env=os.environ.copy(), check=False)
     if completed.returncode != 0:
         raise RuntimeError(f"{case.name} {phase} failed with exit code {completed.returncode}")
-    text = RUN_LOG.read_text(encoding="utf-8")
+    text = runtime.run_log.read_text(encoding="utf-8")
     destination = report_dir / f"{case.name}-{phase}.log"
-    shutil.copy2(RUN_LOG, destination)
+    shutil.copy2(runtime.run_log, destination)
     record = parse_log(text)
     if record["circumference"] != case.circumference or record["width"] != case.width:
         raise RuntimeError(
@@ -145,7 +168,10 @@ def run_case(case: Case, resume: bool, report_dir: Path) -> dict[str, object]:
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--report-dir", type=Path, default=REPORT_DIR)
+    parser.add_argument("--loader", choices=("fabric", "neoforge"), default="fabric",
+                        help="Loader runtime to exercise (default: fabric).")
+    parser.add_argument("--report-dir", type=Path,
+                        help="Override the selected loader's report directory.")
     parser.add_argument("--skip-resume", action="store_true",
                         help="Skip the production save/reload pass (discovery only).")
     parser.add_argument("--allow-incomplete-coverage", action="store_true",
@@ -155,23 +181,25 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    report_dir = args.report_dir.resolve()
+    runtime = loader_runtime(args.loader)
+    report_dir = (args.report_dir or runtime.report_dir).resolve()
     report_dir.mkdir(parents=True, exist_ok=True)
     records: list[dict[str, object]] = []
-    production_fresh = run_case(DEFAULT_CASES[0], False, report_dir)
+    production_fresh = run_case(DEFAULT_CASES[0], False, report_dir, runtime)
     records.append(production_fresh)
     if not args.skip_resume:
-        production_resume = run_case(DEFAULT_CASES[0], True, report_dir)
+        production_resume = run_case(DEFAULT_CASES[0], True, report_dir, runtime)
         validate_reload(production_fresh, production_resume)
         records.append(production_resume)
-    records.extend(run_case(case, False, report_dir) for case in DEFAULT_CASES[1:])
+    records.extend(run_case(case, False, report_dir, runtime) for case in DEFAULT_CASES[1:])
     try:
         if not args.allow_incomplete_coverage:
             validate_aggregate(records)
-        result = {"status": "PASS", "cases": records}
+        result = {"status": "PASS", "loader": args.loader, "cases": records}
         exit_code = 0
     except ValueError as failure:
-        result = {"status": "FAIL", "reason": str(failure), "cases": records}
+        result = {"status": "FAIL", "loader": args.loader,
+                  "reason": str(failure), "cases": records}
         exit_code = 1
     summary = report_dir / "summary.json"
     summary.write_text(json.dumps(result, indent=2, sort_keys=True) + "\n", encoding="utf-8")

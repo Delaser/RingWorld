@@ -1,9 +1,9 @@
 # RingWorld
 
 RingWorld is an experimental Minecraft mod that turns the Overworld into a
-finite, genuinely looping cylindrical world. Fabric is the validated client
-platform; NeoForge now has server bootstrap plus graphical-client parity, with
-gameplay, multiplayer, and packaging parity still in progress.
+finite, genuinely looping cylindrical world. Fabric is the released-test
+platform; NeoForge now has full client, server, topology, worldgen, atlas, and
+multiplayer runtime parity, with packaging parity still in progress.
 
 Walk far enough around the circumference and you return to the same place
 without entering a duplicate world or crossing a corrective teleport. Players,
@@ -54,9 +54,11 @@ The Nether and End remain vanilla.
 > 16,384×256 integrated world. The verified gate captures tangent, live/LOD
 > handoff, and radial views with measured frame pacing at noon, dusk, night,
 > and rain. Seam and both textured-rim captures, same-process layout switching,
-> and the Overworld/Nether/End/save/reopen lifecycle also pass. Gameplay,
-> multiplayer, and packaging parity remain required before a NeoForge artifact
-> can be described as tested or released.
+> and the Overworld/Nether/End/save/reopen lifecycle also pass. NeoForge also
+> passes the production and multi-seed worldgen/structure gates, unattended
+> headless atlas completion, and the dedicated two-client seam/combat/block/
+> bed/death/portal/boat/teleport/reconnect matrix. Packaging remains required
+> before a NeoForge artifact can be released.
 
 > **Licence status:** RingWorld is open-source software licensed under the
 > [Mozilla Public License 2.0](LICENSE). Changes to existing RingWorld source
@@ -191,7 +193,7 @@ handoff behavior.
 | Java | 25 |
 | Fabric Loader | 0.19.3 |
 | Fabric API | 0.155.2+26.1.2 |
-| NeoForge checkpoint | 26.1.2.87 / ModDevGradle 2.0.143 (server bootstrap plus graphical-client parity gate) |
+| NeoForge | 26.1.2.87 / ModDevGradle 2.0.143 (runtime parity; packaging pending) |
 | Development mappings | None; 26.1.2 is unobfuscated |
 | RingWorld | The same jar on server and clients |
 
@@ -237,8 +239,9 @@ It copies the named ignored save from `neoforge/run-client/saves/` into a
 disposable run directory, waits for a complete atlas, captures tangent,
 live/LOD handoff, and radial views, verifies the outputs, then exits. The
 production 16,384×256 noon, dusk, night, and rain gates pass. The additional
-seam/rim, same-process layout-switch, and production-lifecycle gates also pass
-on disposable copies; gameplay and multiplayer remain separate gates.
+seam/rim, same-process layout-switch, production-lifecycle, worldgen,
+headless-atlas, and dedicated two-client gameplay gates also pass on isolated
+fixtures. Packaging remains a separate gate.
 
 The historical 95-error compiler inventory and subsequent source-port
 milestones are recorded in

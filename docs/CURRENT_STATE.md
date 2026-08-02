@@ -1,6 +1,6 @@
 # Current state
 
-Last audited: 2026-08-01 on the public `main` integration line. The final
+Last audited: 2026-08-02 on the public `main` integration line. The final
 Minecraft 1.21.11 implementation remains historical provenance at
 `mc-1.21.11-final` / `2c98650`.
 
@@ -65,10 +65,28 @@ disposable visual-parity gate captures a continuous seam and both correctly
 textured rims. Same-process switching between 16,384×256 and 15,552×256 clears
 the old geometry/atlas, and the production lifecycle passes Nether, End, both
 Overworld returns, save/disconnect, and reopen with the original complete
-atlas and fingerprint. This completes #92; gameplay, two-client multiplayer,
-packaging, and full standalone parity remain open. Use `:runServer`
+atlas and fingerprint. This completes #92; #93 below completes the server and
+multiplayer runtime gates, leaving packaging and full standalone parity open.
+Use `:runServer`
 for Fabric and `:neoforge:runServer` for NeoForge rather than an ambiguous
 unqualified task.
+
+Issue #93 completes NeoForge server/runtime parity. The shared headless prewarm
+coordinator now owns scheduling, terminal JSON evidence, join gating,
+checkpointing, save, and shutdown while thin Fabric and NeoForge adapters own
+loader lifecycle events. A fresh NeoForge 2,048×416 unattended run completed
+all 3,328 chunks/13,312 atlas cells and shut down with verified `COMPLETE`
+evidence. The loader-selectable worldgen runner passed fresh/reload production
+16,384×256 plus both 2,048×416 policy cases, covering all 14 biome families,
+caves, ores, trees, loot, seam-crossing structures, satisfied/unsatisfied
+monument policy, strongholds, and complete End portals. The dedicated
+two-client NeoForge fixture passes natural 0.25-block seam travel, periodic
+visibility and combat, stateful blocks, explosions, bed/death lifecycle,
+physical Nether and End portals, boats/passengers, teleports, reconnect, and
+canonical storage. Runtime review also fixed NeoForge's changed explosion
+method target, a same-tick bed-rule cache difference, and a client network-
+thread chunk reset during portal travel. Packaging is now the remaining
+NeoForge standalone gate under #94.
 
 Issue #24 expands the loader-neutral dimension matrix to 200
 unit/parameterized cases. It covers the safe-small, aligned playable-minimum,
@@ -762,10 +780,10 @@ retaining the fixed pose and continuous dimming/colour cycle.
 The owner-approved order is recorded in
 `DUAL_LOADER_STANDALONE_PLAN.md` and GitHub epic #4.
 
-1. **NeoForge standalone parity (#34, #90–#94)**
-   - preserve the green Fabric candidate while separating loader adapters;
-   - pass equivalent client, server, renderer, topology, multiplayer, atlas,
-     save, and package gates on NeoForge.
+1. **NeoForge standalone packaging (#34, #94)**
+   - runtime parity is complete through #93;
+   - freeze matching Fabric/NeoForge candidates and pass clean macOS/Windows
+     package gates.
 2. **Standalone gameplay and visual polish (#95–#96)**
    - fix remaining first-party playability defects;
    - sign off the production ring, live/atlas handoff, sky, weather, curved

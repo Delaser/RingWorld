@@ -173,8 +173,12 @@ tasks.register("prepareStrongholdTestWorld") {
 	outputs.upToDateWhen { false }
 	doLast {
 		def eula = new File(strongholdTestDirectory, "eula.txt")
+		if (!eula.isFile()) {
+			eula.parentFile.mkdirs()
+			eula.text = "# Review https://aka.ms/MinecraftEULA before changing this value.\neula=false\n"
+		}
 		if (!eula.isFile() || !eula.text.readLines().any { it.trim() == "eula=true" }) {
-			throw new GradleException("Run the stronghold server once, review its eula.txt, then set eula=true")
+			throw new GradleException("Review ${eula}, then set eula=true to run this disposable server")
 		}
 		def resume = providers.gradleProperty("ringStrongholdTestResume").orElse("false").get().toBoolean()
 		if (resume && !new File(strongholdTestDirectory, "world/level.dat").isFile()) {
@@ -229,8 +233,12 @@ tasks.register("prepareHeadlessPrewarmWorld") {
 			throw new GradleException("-PringHeadlessPrewarmResult must be one .json filename")
 		}
 		def eula = new File(headlessPrewarmDirectory, "eula.txt")
+		if (!eula.isFile()) {
+			eula.parentFile.mkdirs()
+			eula.text = "# Review https://aka.ms/MinecraftEULA before changing this value.\neula=false\n"
+		}
 		if (!eula.isFile() || !eula.text.readLines().any { it.trim() == "eula=true" }) {
-			throw new GradleException("Run the disposable headless server once, review its eula.txt, then set eula=true")
+			throw new GradleException("Review ${eula}, then set eula=true to run this disposable server")
 		}
 		def world = new File(headlessPrewarmDirectory, "world")
 		if (resume) {
