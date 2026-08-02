@@ -37,8 +37,8 @@ class CodexUsageMonitorTest(unittest.TestCase):
         with self.assertRaises(monitor.MonitorError):
             monitor.select_weekly_window(result)
 
-    def test_parse_args_defaults_to_twenty_percent_pause_threshold(self):
-        self.assertEqual(20, monitor.parse_args([]).pause_threshold)
+    def test_parse_args_defaults_to_five_percent_pause_threshold(self):
+        self.assertEqual(5, monitor.parse_args([]).pause_threshold)
 
 
 if __name__ == "__main__":
