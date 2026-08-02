@@ -106,6 +106,20 @@ loom {
 					+ providers.gradleProperty("ringProjectionEnvironment")
 							.orElse("noon").get())
 		}
+		productionVisualParityClient {
+			client()
+			name "RingWorld Production Visual Parity"
+			// This run receives a fresh copied save and uses server-authoritative
+			// poses for the natural seam and both finite-width rims.
+			runDir "run-production-visual-parity"
+			vmArg "-Dringworld.captureRingVisualParity=true"
+			vmArg("-Dringworld.visualParityWorld="
+					+ providers.gradleProperty("ringVisualParityDestination")
+							.orElse("RingWorld Fabric Visual Parity").get())
+			vmArg("-Dringworld.visualParityViewDistanceChunks="
+					+ providers.gradleProperty("ringVisualParityViewDistanceChunks")
+							.orElse("16").get())
+		}
 		productionLifecycleClient {
 			client()
 			name "RingWorld Production Lifecycle Regression"
@@ -191,6 +205,7 @@ def requireSave = { String value, String propertyName, File savesDirectory ->
 def sourceSavesDirectory = file("run/saves")
 def layoutSwitchSavesDirectory = file("run-layout-switch/saves")
 def projectionSavesDirectory = file("run-production-projection/saves")
+def visualParitySavesDirectory = file("run-production-visual-parity/saves")
 def lifecycleSavesDirectory = file("run-production-lifecycle/saves")
 def strongholdTestDirectory = file("run-stronghold-test")
 def headlessPrewarmDirectory = file("run-headless-prewarm")
@@ -636,12 +651,70 @@ tasks.register("prepareCopiedProductionProjectionWorld") {
 	}
 }
 
+tasks.register("prepareCopiedProductionVisualParityWorld") {
+	group = "ringworld verification"
+	description = "Copies the named production save into the isolated Fabric seam-and-rim visual-parity run."
+	inputs.property("ringVisualParitySource",
+			providers.gradleProperty("ringVisualParitySource").orElse(""))
+	inputs.property("ringVisualParityDestination",
+			providers.gradleProperty("ringVisualParityDestination")
+					.orElse("RingWorld Fabric Visual Parity"))
+	outputs.dir(visualParitySavesDirectory)
+	outputs.upToDateWhen { false }
+	doLast {
+		def source = requireSave(providers.gradleProperty("ringVisualParitySource").orNull,
+				"ringVisualParitySource", sourceSavesDirectory)
+		def destinationId = checkedSaveId(
+				providers.gradleProperty("ringVisualParityDestination")
+						.orElse("RingWorld Fabric Visual Parity").get(),
+				"ringVisualParityDestination")
+		def destination = new File(visualParitySavesDirectory, destinationId)
+		delete(destination)
+		delete(file("run-production-visual-parity/screenshots"))
+		delete(file("run-production-visual-parity/ringworld-cache"))
+		delete(file("run-production-visual-parity/logs"))
+		copy {
+			from(source.directory)
+			into(destination)
+		}
+		if (!new File(destination, "level.dat").isFile()) {
+			throw new GradleException("copied Fabric visual-parity save is missing level.dat: " + destination)
+		}
+		logger.lifecycle("[fabric-visual-parity] copied source={} destination={}",
+				source.directory, destination)
+	}
+}
+
+tasks.register("verifyProductionVisualParityClient") {
+	group = "ringworld verification"
+	description = "Fails unless the Fabric seam and both finite-width rim captures completed."
+	mustRunAfter("runProductionVisualParityClient")
+	doLast {
+		def logFile = file("run-production-visual-parity/logs/latest.log")
+		def log = logFile.isFile() ? logFile.text : ""
+		if (!log.contains("[visual-parity-capture] result=true, captures complete")) {
+			throw new GradleException("Fabric visual-parity capture did not pass; inspect " + logFile)
+		}
+		["seam", "min-rim", "max-rim"].each { view ->
+			def screenshot = file("run-production-visual-parity/screenshots/ringworld-visual-parity-${view}.png")
+			if (!screenshot.isFile()) {
+				throw new GradleException("Fabric visual-parity capture is missing " + screenshot)
+			}
+		}
+	}
+}
+
 tasks.named("runLayoutSwitchClient") {
 	dependsOn(tasks.named("prepareCopiedLayoutSwitchWorlds"))
 }
 
 tasks.named("runProductionProjectionClient") {
 	dependsOn(tasks.named("prepareCopiedProductionProjectionWorld"))
+}
+
+tasks.named("runProductionVisualParityClient") {
+	dependsOn(tasks.named("prepareCopiedProductionVisualParityWorld"))
+	finalizedBy(tasks.named("verifyProductionVisualParityClient"))
 }
 
 tasks.named("runProductionLifecycleClient") {

@@ -273,6 +273,14 @@ Complete-ring alignment, the broad live/LOD handoff, sky phases, and the
 inspected rim remained intact. Production/object/exposure review stays open. See
 `VISUAL_POLISH_CHECKPOINT_2026-08-02.md`.
 
+The next #96 checkpoint adds an exact production 16,384×256 dual-loader pass.
+The projection runner now uses a centered server-authoritative spectator pose
+instead of inheriting the save's stale rim-adjacent player position. Fabric
+and NeoForge passed loader-identical tangent/handoff/radial captures at 12
+chunks, and their shared production visual-parity runner passed a natural seam
+plus both textured rims. Object/block-entity, broader exposure/weather, and
+motion review remain.
+
 #74 completes the stability configuration and compatibility contract. The
 creation preview now scales the measured 16,384-chunk production run into a
 checked reference estimate for full-generation time and generated-world

@@ -69,7 +69,9 @@ then exact-candidate release preparation. Broad third-party compatibility is
 deferred until owner sign-off; see `docs/DUAL_LOADER_STANDALONE_PLAN.md`.
 The post-gameplay #96 refresh has current Fabric and NeoForge safe-small
 6/12/28 tangent, handoff, radial-up, and frame evidence. All NeoForge measured
-views completed with zero frames over 50 ms. See
+views completed with zero frames over 50 ms. The exact production 16,384×256
+centered projection and server-authoritative seam/both-rim gates also pass on
+both loaders. See
 `docs/VISUAL_POLISH_CHECKPOINT_2026-08-02.md`.
 
 For any later Modrinth build, use the fail-closed local staging procedure in

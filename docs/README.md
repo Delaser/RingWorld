@@ -45,7 +45,8 @@ Start here:
 - [`VISUAL_HANDOFF_REVIEW_2026-08-01.md`](VISUAL_HANDOFF_REVIEW_2026-08-01.md):
   approved 6/12/28-chunk and production-size live/proxy comparison evidence.
 - [`VISUAL_POLISH_CHECKPOINT_2026-08-02.md`](VISUAL_POLISH_CHECKPOINT_2026-08-02.md):
-  exact post-gameplay Fabric and NeoForge safe-small 6/12/28 refresh.
+  exact post-gameplay dual-loader safe-small 6/12/28 and production-size
+  centered projection/seam/rim refresh.
 - [`ATLAS_VISUAL_BASELINE_2026-08-01.md`](ATLAS_VISUAL_BASELINE_2026-08-01.md):
   production 6/12/28-chunk handoff automation, profile-4 baseline, and the
   profile-5 mesh-fidelity comparison.

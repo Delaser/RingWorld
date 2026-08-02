@@ -34,7 +34,8 @@ The Nether and End remain vanilla.
 > switching, lifecycle, two-client synchronization, and measured resource
 > budgets. The repeatable dual-loader release-staging workflow is also complete.
 > A post-gameplay Fabric and NeoForge 6/12/28 visual refresh also passes;
-> final production/object visual sign-off remains open.
+> centered production tangent/handoff/radial and seam/both-rim gates now pass
+> on both loaders. Final object/exposure/motion visual sign-off remains open.
 > A dedicated multi-seed worldgen matrix now covers all 14 major biome
 > families, caves, ores, trees, loot, canonical structure ownership, actual
 > seam-crossing mineshafts, saved scarce-structure outcomes, and exact reload.
