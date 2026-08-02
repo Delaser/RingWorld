@@ -23,7 +23,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
-      - name: Test package assembly and Windows launcher updates
+      - name: Test Fabric and NeoForge package assembly and Windows launcher updates
         run: >-
           python -m unittest
           scripts/test_verify_distribution_license.py

@@ -428,17 +428,22 @@ Each package manifest links the full public commit used for the artifact. A
 release tag may additionally identify an approved build. See
 [`LICENSING.md`](LICENSING.md).
 
-Build optional packages from a clean instance template and an exact public
-source revision:
+First create the dual-loader review stages from a clean, pushed public commit,
+then build optional packages from the generated provenance manifest:
 
 ```sh
+python3 scripts/stage_modrinth_release.py --loader both --build
+
 python3 scripts/prepare_release_packages.py \
-  --jar build/libs/ringworld-0.2.0+mc26.1.2.jar \
+  --loader fabric \
+  --stage-manifest dist/modrinth/0.2.0+mc26.1.2/fabric/STAGING-MANIFEST.json \
   --fabric-api /path/to/fabric-api-0.155.2+26.1.2.jar \
-  --instance-template /path/to/clean-prism-instance \
-  --output dist/release-candidate \
-  --version 0.2.0+mc26.1.2 \
-  --source-revision "$(git rev-parse HEAD)"
+  --output dist/release-candidate-fabric
+
+python3 scripts/prepare_release_packages.py \
+  --loader neoforge \
+  --stage-manifest dist/modrinth/0.2.0+mc26.1.2/neoforge/STAGING-MANIFEST.json \
+  --output dist/release-candidate-neoforge
 
 python3 -m unittest \
   scripts/test_verify_distribution_license.py \
@@ -446,10 +451,11 @@ python3 -m unittest \
   scripts/test_stage_modrinth_release.py
 ```
 
-For the single-command Modrinth build/stage path, put Java 25 first on the
-environment before running `python3 scripts/stage_modrinth_release.py
---build`. The staging script rejects any other active Java generation with a
-direct setup message before invoking Gradle.
+Put Java 25 first on the environment before staging. The staging script always
+runs a clean dual build and rejects any other active Java generation with a
+direct setup message before invoking Gradle. Package assembly derives the jar,
+version, hash, loader, and source revision from that generated stage; it has no
+free-form artifact or source-revision argument.
 
 Test both package paths: a completely fresh bundle and an in-place upgrade over
 an existing `.prism-data` directory containing sentinel account, save, option,

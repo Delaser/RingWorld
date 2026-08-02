@@ -2,8 +2,9 @@
 
 RingWorld is an experimental Minecraft mod that turns the Overworld into a
 finite, genuinely looping cylindrical world. Fabric is the released-test
-platform; NeoForge now has full client, server, topology, worldgen, atlas, and
-multiplayer runtime parity, with packaging parity still in progress.
+platform; NeoForge now has matching client, server, topology, worldgen, atlas,
+multiplayer, and local packaging gates. A NeoForge file has not been published
+yet.
 
 Walk far enough around the circumference and you return to the same place
 without entering a duplicate world or crossing a corrective teleport. Players,
@@ -30,7 +31,7 @@ The Nether and End remain vanilla.
 > eight-block height spacing. The complete atlas production gate now also
 > passes interrupted resume, complete-cache reuse, live revisions, layout
 > switching, lifecycle, two-client synchronization, and measured resource
-> budgets. The repeatable Fabric release-staging workflow is also complete.
+> budgets. The repeatable dual-loader release-staging workflow is also complete.
 > A dedicated multi-seed worldgen matrix now covers all 14 major biome
 > families, caves, ores, trees, loot, canonical structure ownership, actual
 > seam-crossing mineshafts, saved scarce-structure outcomes, and exact reload.
@@ -57,8 +58,10 @@ The Nether and End remain vanilla.
 > and the Overworld/Nether/End/save/reopen lifecycle also pass. NeoForge also
 > passes the production and multi-seed worldgen/structure gates, unattended
 > headless atlas completion, and the dedicated two-client seam/combat/block/
-> bed/death/portal/boat/teleport/reconnect matrix. Packaging remains required
-> before a NeoForge artifact can be released.
+> bed/death/portal/boat/teleport/reconnect matrix. Loader-labelled packages,
+> strict metadata/licence verification, a same-commit shared-contract gate,
+> and a real packaged macOS NeoForge client smoke also pass. A hosted NeoForge
+> release still requires the final release review and owner go/no-go.
 
 > **Licence status:** RingWorld is open-source software licensed under the
 > [Mozilla Public License 2.0](LICENSE). Changes to existing RingWorld source
@@ -74,21 +77,26 @@ become publicly downloadable after approval. The alpha targets Minecraft 26.1.2
 and Java 25, requires Fabric API, and must be installed on both the client and
 server.
 
-Maintainers stage a later manual upload with
-`python3 scripts/stage_modrinth_release.py --build` under Java 25 from a clean,
-pushed public branch. The command fails early with Java setup guidance if the
-active runtime is not Java 25. It produces one reviewed runtime jar, checksums,
-and an exact source revision; it does not upload or change the listing. See
+Maintainers stage matching Fabric and NeoForge candidates with
+`python3 scripts/stage_modrinth_release.py --loader both --build` under Java 25
+from a clean, pushed public branch. The command fails early with Java setup
+guidance if the active runtime is not Java 25. It produces one reviewed runtime
+jar per loader, checksums, and the same exact source revision; it verifies the
+shared gameplay/protocol/shader contract before writing either stage. It does
+not upload or change the listing. See
 [the release procedure](docs/MODRINTH_RELEASE.md).
 
-Optional Prism client bundles and a dedicated-server overlay can be assembled
-locally with `scripts/prepare_release_packages.py`. They are convenience
-artifacts only: the standalone Modrinth jar remains the normal installation
-path. The macOS launcher selects an already-installed Java 25 when it can and
+Optional loader-labelled Prism client bundles and dedicated-server overlays
+can be assembled locally with `scripts/prepare_release_packages.py --loader
+fabric|neoforge`. They are convenience artifacts only: the standalone Modrinth
+jar remains the normal installation path. Fabric and NeoForge use separate
+managed Prism instance IDs so a loader change cannot carry incompatible
+third-party mods into the other runtime.
+The macOS launcher selects an already-installed Java 25 when it can and
 otherwise delegates Java installation to Prism. The builder requires an exact
-public source commit, excludes account and
-runtime state, creates reproducible archives and checksums, and has no website,
-upload, deployment, or service-control capability.
+public source commit, excludes account and runtime state, creates reproducible
+archives and checksums, and has no website, upload, deployment, or
+service-control capability.
 
 > **Public history:** this repository intentionally begins with a clean
 > MPL-2.0 root commit. Pre-public tag names and commit hashes retained in the
@@ -193,7 +201,7 @@ handoff behavior.
 | Java | 25 |
 | Fabric Loader | 0.19.3 |
 | Fabric API | 0.155.2+26.1.2 |
-| NeoForge | 26.1.2.87 / ModDevGradle 2.0.143 (runtime parity; packaging pending) |
+| NeoForge | 26.1.2.87 / ModDevGradle 2.0.143 (runtime and local packaging parity) |
 | Development mappings | None; 26.1.2 is unobfuscated |
 | RingWorld | The same jar on server and clients |
 

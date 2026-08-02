@@ -1,0 +1,26 @@
+[Unit]
+Description=RingWorld NeoForge Minecraft Server
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=minecraftuser
+Group=minecraftuser
+WorkingDirectory=/opt/ringworld-server
+Environment=HOME=/opt/ringworld-server
+ExecStart=/opt/ringworld-server/runtime/bin/java -Xms1G -Xmx4G -XX:+UseG1GC -XX:+ParallelRefProcEnabled -XX:MaxGCPauseMillis=200 -jar neoforge-server-launch.jar nogui
+Restart=on-failure
+RestartSec=10
+KillSignal=SIGINT
+TimeoutStopSec=120
+SuccessExitStatus=0 130 143
+LimitNOFILE=65535
+UMask=0027
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

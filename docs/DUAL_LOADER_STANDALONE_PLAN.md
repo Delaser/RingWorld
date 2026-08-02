@@ -40,9 +40,15 @@ one shader contract, and the same gameplay behavior.
    explosions, beds, death/respawn, physical Nether/End portals, boats,
    teleports, and reconnect; the loader-selectable worldgen matrix covers
    fresh/reload production and safe-small policy cases.
-5. [#94](https://github.com/Delaser/RingWorld/issues/94): freeze matching
-   Fabric and NeoForge standalone candidates and verify clean packaging on
-   macOS and Windows.
+5. [#94](https://github.com/Delaser/RingWorld/issues/94): **complete.** Fabric
+   and NeoForge produce loader-labelled, reproducible client/server packages
+   and local Modrinth stages from one clean pushed commit. The gate validates
+   each loader's metadata and licence, compares shared mixins, API, protocol,
+   settings, geometry, and shaders before writing either stage. Loader-specific
+   Prism instances preserve user data and prevent third-party mods from being
+   carried across loaders while refreshing their own managed jars. Focused tests
+   and a real packaged macOS NeoForge client launch pass. The Windows launcher
+   executes in CI; the final graphical Windows Minecraft run remains #12.
 
 The renderer and server ports may proceed independently after the shared build
 and platform contracts are stable. Cross-loader client/server connections are

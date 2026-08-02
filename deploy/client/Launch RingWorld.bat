@@ -5,39 +5,62 @@ cd /d "%~dp0"
 set "ROOT=%CD%"
 set "DATA=%ROOT%\.prism-data"
 set "SOURCE=%ROOT%\instance"
-set "INSTANCE=%DATA%\instances\RingWorld-Test"
-set "MODS=%INSTANCE%\.minecraft\mods"
 set "LAUNCHER_DIR=%ROOT%\.launcher\windows"
 set "VERSION=11.0.3"
+set "LOADER_FILE=%ROOT%\RINGWORLD-LOADER.txt"
+if not exist "%LOADER_FILE%" goto :error
+set /p LOADER=<"%LOADER_FILE%"
+if /I "%LOADER%"=="fabric" set "INSTANCE_ID=RingWorld-Test"
+if /I "%LOADER%"=="neoforge" set "INSTANCE_ID=RingWorld-NeoForge"
+if not defined INSTANCE_ID goto :error
+set "INSTANCE=%DATA%\instances\%INSTANCE_ID%"
+set "MODS=%INSTANCE%\.minecraft\mods"
 
 if not exist "%DATA%\logs" mkdir "%DATA%\logs"
 
+set "FRESH_INSTANCE=0"
 if not exist "%INSTANCE%\mmc-pack.json" (
     if exist "%INSTANCE%" rmdir /S /Q "%INSTANCE%"
     mkdir "%DATA%\instances" 2>nul
     xcopy "%SOURCE%" "%INSTANCE%\" /E /I /H /Y >nul
+    set "FRESH_INSTANCE=1"
 )
 
 rem Refresh only bundle-managed files. Accounts, saves, options, screenshots,
 rem resource packs, and user-edited instance settings remain untouched.
 if not exist "%MODS%" mkdir "%MODS%"
-if not exist "%SOURCE%\.minecraft\mods\ringworld-*.jar" goto :error
-if not exist "%SOURCE%\.minecraft\mods\fabric-api-*.jar" goto :error
-
-for %%F in ("%SOURCE%\.minecraft\mods\ringworld-*.jar") do (
-    set "RINGWORLD_JAR=%%~nxF"
-    copy /Y "%%~fF" "%MODS%\%%~nxF" >nul || goto :error
+set "RINGWORLD_JAR="
+if /I "%LOADER%"=="fabric" (
+    for %%F in ("%SOURCE%\.minecraft\mods\ringworld-*.jar") do (
+        set "CANDIDATE=%%~nxF"
+        if /I not "!CANDIDATE:~0,19!"=="ringworld-neoforge-" set "RINGWORLD_JAR=%%~nxF"
+    )
+) else (
+    for %%F in ("%SOURCE%\.minecraft\mods\ringworld-neoforge-*.jar") do (
+        set "RINGWORLD_JAR=%%~nxF"
+    )
 )
+if not defined RINGWORLD_JAR goto :error
+
+copy /Y "%SOURCE%\.minecraft\mods\!RINGWORLD_JAR!" "%MODS%\!RINGWORLD_JAR!" >nul || goto :error
 for %%F in ("%MODS%\ringworld-*.jar") do (
     if /I not "%%~nxF"=="!RINGWORLD_JAR!" del /Q "%%~fF"
 )
 
-for %%F in ("%SOURCE%\.minecraft\mods\fabric-api-*.jar") do (
-    set "FABRIC_API_JAR=%%~nxF"
-    copy /Y "%%~fF" "%MODS%\%%~nxF" >nul || goto :error
-)
-for %%F in ("%MODS%\fabric-api-*.jar") do (
-    if /I not "%%~nxF"=="!FABRIC_API_JAR!" del /Q "%%~fF"
+if /I "%LOADER%"=="fabric" (
+    if not exist "%SOURCE%\.minecraft\mods\fabric-api-*.jar" goto :error
+    for %%F in ("%SOURCE%\.minecraft\mods\fabric-api-*.jar") do (
+        set "FABRIC_API_JAR=%%~nxF"
+        copy /Y "%%~fF" "%MODS%\%%~nxF" >nul || goto :error
+    )
+    for %%F in ("%MODS%\fabric-api-*.jar") do (
+        if /I not "%%~nxF"=="!FABRIC_API_JAR!" del /Q "%%~fF"
+    )
+) else if "!FRESH_INSTANCE!"=="1" (
+    rem A different-loader bundle may have been extracted over this outer
+    rem directory. Clear its stale Fabric API only from the new NeoForge
+    rem instance; later launches leave user-installed mods alone.
+    for %%F in ("%MODS%\fabric-api-*.jar") do del /Q "%%~fF"
 )
 
 copy /Y "%SOURCE%\mmc-pack.json" "%INSTANCE%\mmc-pack.json" >nul || goto :error
@@ -71,7 +94,7 @@ if not defined PRISM (
 )
 
 if not defined PRISM goto :error
-start "" "!PRISM!" -d "%DATA%" -l RingWorld-Test
+start "" "!PRISM!" -d "%DATA%" -l "%INSTANCE_ID%"
 exit /b 0
 
 :error

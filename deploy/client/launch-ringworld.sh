@@ -4,36 +4,61 @@ set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 DATA="$ROOT/.prism-data"
 SOURCE="$ROOT/instance"
-INSTANCE="$DATA/instances/RingWorld-Test"
-MODS="$INSTANCE/.minecraft/mods"
 LAUNCHER_DIR="$ROOT/.launcher/linux"
 VERSION="11.0.3"
+LOADER_FILE="$ROOT/RINGWORLD-LOADER.txt"
+LOADER=$(tr -d '\r\n' < "$LOADER_FILE" 2>/dev/null || true)
+case "$LOADER" in
+    fabric) INSTANCE_ID="RingWorld-Test" ;;
+    neoforge) INSTANCE_ID="RingWorld-NeoForge" ;;
+    *) echo "The RingWorld bundle is incomplete. Download a fresh package."; exit 1 ;;
+esac
+INSTANCE="$DATA/instances/$INSTANCE_ID"
+MODS="$INSTANCE/.minecraft/mods"
 
 mkdir -p "$DATA/logs"
 
+FRESH_INSTANCE=false
 if [ ! -f "$INSTANCE/mmc-pack.json" ]; then
     rm -rf "$INSTANCE"
     mkdir -p "$DATA/instances"
     cp -R "$SOURCE" "$INSTANCE"
+    FRESH_INSTANCE=true
 fi
 
 # Refresh only bundle-managed files. Accounts, saves, options, screenshots,
 # resource packs, and user-edited instance settings remain untouched.
 mkdir -p "$MODS" "$INSTANCE/.minecraft/config"
-RINGWORLD_JAR=$(find "$SOURCE/.minecraft/mods" -maxdepth 1 -type f \
-    -name 'ringworld-*.jar' -print -quit)
-FABRIC_API_JAR=$(find "$SOURCE/.minecraft/mods" -maxdepth 1 -type f \
-    -name 'fabric-api-*.jar' -print -quit)
-if [ -z "$RINGWORLD_JAR" ] || [ -z "$FABRIC_API_JAR" ]; then
+if [ "$LOADER" = "fabric" ]; then
+    RINGWORLD_JAR=$(find "$SOURCE/.minecraft/mods" -maxdepth 1 -type f \
+        -name 'ringworld-*.jar' ! -name 'ringworld-neoforge-*.jar' -print -quit)
+else
+    RINGWORLD_JAR=$(find "$SOURCE/.minecraft/mods" -maxdepth 1 -type f \
+        -name 'ringworld-neoforge-*.jar' -print -quit)
+fi
+if [ -z "$RINGWORLD_JAR" ]; then
     echo "The RingWorld bundle is incomplete. Download a fresh package."
     exit 1
 fi
 cp -f "$RINGWORLD_JAR" "$MODS/"
-cp -f "$FABRIC_API_JAR" "$MODS/"
 find "$MODS" -maxdepth 1 -type f -name 'ringworld-*.jar' \
     ! -name "$(basename "$RINGWORLD_JAR")" -delete
-find "$MODS" -maxdepth 1 -type f -name 'fabric-api-*.jar' \
-    ! -name "$(basename "$FABRIC_API_JAR")" -delete
+if [ "$LOADER" = "fabric" ]; then
+    FABRIC_API_JAR=$(find "$SOURCE/.minecraft/mods" -maxdepth 1 -type f \
+        -name 'fabric-api-*.jar' -print -quit)
+    if [ -z "$FABRIC_API_JAR" ]; then
+        echo "The Fabric RingWorld bundle is incomplete. Download a fresh package."
+        exit 1
+    fi
+    cp -f "$FABRIC_API_JAR" "$MODS/"
+    find "$MODS" -maxdepth 1 -type f -name 'fabric-api-*.jar' \
+        ! -name "$(basename "$FABRIC_API_JAR")" -delete
+elif [ "$FRESH_INSTANCE" = true ]; then
+    # A different-loader bundle may have been extracted over the same outer
+    # directory. Remove that stale packaged dependency only from a newly
+    # created NeoForge instance; never manage user mods on later launches.
+    find "$MODS" -maxdepth 1 -type f -name 'fabric-api-*.jar' -delete
+fi
 cp -f "$SOURCE/mmc-pack.json" "$INSTANCE/mmc-pack.json"
 if [ ! -f "$INSTANCE/.minecraft/config/ringworld.properties" ]; then
     cp "$SOURCE/.minecraft/config/ringworld.properties" \
@@ -71,4 +96,4 @@ if [ ! -x "$PRISM" ]; then
     chmod +x "$PRISM"
 fi
 
-APPIMAGE_EXTRACT_AND_RUN=1 exec "$PRISM" -d "$DATA" -l RingWorld-Test
+APPIMAGE_EXTRACT_AND_RUN=1 exec "$PRISM" -d "$DATA" -l "$INSTANCE_ID"

@@ -27,8 +27,11 @@ layout switching clears stale state, and the production lifecycle passes
 Overworld/Nether/End transitions, save/disconnect, and reopen. NeoForge also
 passes the production/multi-seed structure matrix, a complete unattended
 headless atlas prewarm, and the dedicated two-client seam/combat/block/bed/
-death/physical-portal/boat/teleport/reconnect matrix. Packaging parity remains
-open.
+death/physical-portal/boat/teleport/reconnect matrix. Loader-labelled Fabric
+and NeoForge client/server packages, strict jar verification, same-commit
+shared-contract comparison, and a real packaged macOS NeoForge client smoke
+also pass. A real graphical Windows run, exact-candidate review, and owner
+release go/no-go remain.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -82,8 +85,8 @@ agent uses a separate account and must monitor its own allowance.
 ## What this project is
 
 RingWorld is a dual-loader mod ported from Minecraft Java 1.21.11 to 26.1.2.
-Fabric is the current test release; NeoForge runtime parity is complete and
-its packaging parity is underway.
+Fabric is the current test release; NeoForge runtime and local packaging parity
+are complete. No NeoForge artifact has been published yet.
 The validated design turns only the Overworld into a finite band:
 
 - canonical X runs around the circumference and is periodic;
@@ -132,9 +135,9 @@ under it.
 ## Loader support policy
 
 Fabric is the current released-test implementation. NeoForge has full
-graphical, dedicated-server, topology, worldgen, atlas, storage, and
-multiplayer runtime parity; packaging is not yet complete. Future development
-must not deepen Fabric coupling. Design new gameplay, topology, persistence,
+graphical, dedicated-server, topology, worldgen, atlas, storage, multiplayer,
+and local packaging parity; hosted publication is not yet authorized. Future
+development must not deepen Fabric coupling. Design new gameplay, topology, persistence,
 worldgen, rendering math, protocol models, and tests as loader-agnostic common
 code. When a loader API is unavoidable, isolate it behind a narrow platform
 adapter and provide, or leave a documented implementation path for, both
@@ -295,13 +298,16 @@ copies the named ignored source save into an isolated run, waits for atlas
 completion, produces tangent/handoff/radial diagnostics, verifies them, and
 exits. Noon, dusk, night, and rain pass. The qualified NeoForge visual-parity,
 layout-switch, production-lifecycle, stronghold/worldgen, headless-prewarm,
-and dedicated two-client gates also pass on isolated fixtures. Packaging is
-the remaining NeoForge standalone gate.
+and dedicated two-client gates also pass on isolated fixtures. Local
+dual-loader packaging and the packaged macOS NeoForge client smoke also pass;
+the remaining release gates are tracked under #12, #13, and #97.
 
-`scripts/stage_modrinth_release.py --build` checks the active Java generation
-before it invokes Gradle. Keep that fail-closed Java 25 preflight synchronized
-with the active Minecraft toolchain; do not replace its direct setup error
-with the compiler failure produced by an older Gradle JVM.
+`scripts/stage_modrinth_release.py --loader both --build` checks the active
+Java generation, always performs a fresh dual build, pair-validates the known
+outputs, and writes provenance manifests consumed by optional packaging. It
+accepts no alternate jar path. Keep that fail-closed Java 25 preflight
+synchronized with the active Minecraft toolchain; do not replace its direct
+setup error with the compiler failure produced by an older Gradle JVM.
 
 The frozen 1.21.11 tag uses Java 21 and passes 73 unit/parameterized cases plus
 the runtime suites recorded in
@@ -471,18 +477,20 @@ version numbers.
   state on disconnect or layout switch. Server adapters must rate-limit
   observers to 20 ticks plus transitions and recheck every control request on
   the server thread.
-- Shareable launcher templates live in `deploy/client/`. Every launch must
-  refresh the bundle-managed RingWorld/Fabric jars in an existing Prism
-  instance while preserving accounts, saves, options, resource packs, local
-  configuration, and unrelated instance settings. The macOS launcher may
+- Shareable launcher templates live in `deploy/client/`. Fabric and NeoForge
+  use separate managed Prism instance IDs. Every launch must refresh only that
+  instance's RingWorld jar and, for Fabric, Fabric API while preserving
+  accounts, saves, options, resource packs, local configuration, unrelated
+  mods, and unrelated instance settings. The macOS launcher may
   change only Java selection keys after validating an executable as Java 25;
   its search locations must remain portable and credential-free. When Java 25
   is absent, preserve Prism automatic selection. Test both paths with an
   isolated `HOME`, plus fresh and in-place upgrade paths, before publishing.
 - Optional packages must be built with `scripts/prepare_release_packages.py`
-  from an exact 40-character public source revision. The builder emits no web
-  content and has no publish/deploy path. Keep its reproducible ZIPs and
-  checksum manifests under ignored local staging only.
+  from a format-2 staging manifest created by the mandatory clean dual-build
+  release gate. Never restore free-form jar or source-revision inputs. The
+  builder emits no web content and has no publish/deploy path. Keep its
+  reproducible ZIPs and checksum manifests under ignored local staging only.
 - `/ringworld atlas status|pause|resume` controls background pregeneration.
   Pause is process-local and does not alter immutable saved layout.
 - Atlas format 6 represents exposed top-face height and

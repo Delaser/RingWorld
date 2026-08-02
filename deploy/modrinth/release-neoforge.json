@@ -1,0 +1,32 @@
+{
+  "project": {
+    "slug": "ringworld",
+    "title": "RingWorld",
+    "summary": "A finite, seamless cylindrical Overworld with true periodic gameplay and curved rendering.",
+    "project_type": "mod",
+    "categories": ["worldgen", "game-mechanics", "adventure"],
+    "client_side": "required",
+    "server_side": "required",
+    "license_id": "MPL-2.0"
+  },
+  "version": {
+    "name": "RingWorld 0.2.0 for Minecraft 26.1.2 (NeoForge alpha)",
+    "version_number": "0.2.0+mc26.1.2",
+    "version_type": "alpha",
+    "game_versions": ["26.1.2"],
+    "loaders": ["neoforge"],
+    "environment": "client_and_server",
+    "dependencies": [],
+    "featured": false
+  },
+  "neoforge": {
+    "mod_id": "ringworld",
+    "author": "Delaser",
+    "homepage": "https://modrinth.com/mod/ringworld",
+    "minecraft": "26.1.2",
+    "neoforge": "[26.1.2.87,)"
+  },
+  "source": {
+    "repository": "https://github.com/Delaser/RingWorld"
+  }
+}

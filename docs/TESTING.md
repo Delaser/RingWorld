@@ -997,31 +997,32 @@ Run the package/licence tests independently of Minecraft:
 ```sh
 python3 -m unittest \
   scripts/test_verify_distribution_license.py \
+  scripts/test_stage_modrinth_release.py \
   scripts/test_prepare_release_packages.py
 ```
 
-The package/licence suite contains nine top-level cases on each platform, with
-the opposite platform's launcher case skipped. It builds
-both client ZIPs and the server overlay twice and requires
-byte-identical reproducible archives. It validates MPL metadata, embedded and
-outer licences, exact public-source manifests, checksums, nested Prism shape,
-and the absence of website output. Negative cases cover credentials/runtime
-state, source artifacts, POSIX and Windows path traversal, stale MIT metadata,
-stale Minecraft/Fabric/compatibility-API versions, auto-join, and a non-exact
-source revision. The POSIX upgrade case executes the macOS launcher against
-fresh and existing disposable Prism data trees and verifies that saves,
-options, config, and user-edited instance settings survive while managed jars
-update. Its isolated home first verifies the Prism-managed fallback with no
-Java, then supplies a fake Java 25 runtime in the supported user-local layout
-and requires the launcher to replace a stale Java 21 override with that exact
-validated path.
+The package/licence suite covers Fabric and NeoForge runtime metadata,
+dual-candidate shared-contract comparison, staging provenance, reproducible
+client/server archives, and loader-specific launcher updates. Package assembly
+accepts only a generated format-2 staging manifest whose recorded SHA-256,
+SHA-512, size, loader, release config, and public source revision match the
+strictly validated staged jar; it cannot relabel an arbitrary jar with a
+caller-supplied commit. Negative cases cover empty/non-runtime jars, decoy or
+malformed NeoForge TOML, credentials/runtime state, source artifacts, path
+traversal, stale licence/version/API metadata, auto-join, and altered
+provenance. The POSIX launcher cases execute fresh and in-place macOS paths,
+verify that saves/options/config/user settings and unrelated mods survive, and
+prove Fabric and NeoForge remain in separate `RingWorld-Test` and
+`RingWorld-NeoForge` instances. The isolated home also checks Prism-managed
+Java fallback and replacement of a stale Java 21 override with Java 25.
 
 Pull requests touching package inputs also run `.github/workflows/package-windows.yml`
 on a real Windows runner. Its platform-specific case executes
-`Launch RingWorld.bat` twice with a harmless local Prism executable stand-in,
-covering Windows `cmd`, PowerShell settings migration, fresh installation, and
-in-place state preservation without downloading software or launching the
-game. This is a launcher/update gate, not the final graphical Minecraft gate.
+`Launch RingWorld.bat` twice for each loader with a harmless local Prism
+executable stand-in, covering Windows `cmd`, PowerShell settings migration,
+fresh installation, loader-specific instance selection, and in-place state
+preservation without downloading software or launching the game. This is a
+launcher/update gate, not the final graphical Minecraft gate.
 
 The 1 August issue #12 checkpoint also launched the actual package jar in an
 isolated existing macOS Prism instance: Prism selected Java 25, Minecraft
@@ -1031,10 +1032,11 @@ from the overlay and official Fabric server launcher reached `Done`, began
 atlas pregeneration, and saved/stopped cleanly. The distributable overlay keeps
 `eula=false`; acceptance was changed only in the isolated test directory.
 
-The Modrinth staging suite also covers the `--build` Java preflight: Java 25
-is accepted, Java 21 and legacy Java 8 are identified correctly, malformed
-version output fails closed, and a failed `java -version` produces a direct
-setup error without starting Gradle.
+The Modrinth staging CLI always performs a fresh dual build after its Java 25
+preflight; `--build` remains only as a harmless compatibility spelling. Java
+21 and legacy Java 8 are identified correctly, malformed version output fails
+closed, and a failed `java -version` produces a direct setup error without
+starting Gradle. Custom cached jar paths are not a release provenance path.
 
 Before closing package issue #12, also assemble the actual release-candidate
 jar and perform isolated fresh and in-place macOS launches, a real Windows

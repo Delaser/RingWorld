@@ -8,12 +8,14 @@ beyond normal chunk distance.
 
 ## Requirements and installation
 
-Install this Fabric mod in Minecraft Java 26.1.2 with Java 25, Fabric Loader
-0.19.3 or newer, and Fabric API 0.155.2+26.1.2. RingWorld is required on the
-dedicated server and on every connecting client; all must use the same version.
-Add the jar to an existing Fabric instance like any other mod. Create a new
-RingWorld world from the Create World screen, or configure a dedicated server
-before its first Overworld load. Saved RingWorld dimensions are immutable.
+Install the matching Fabric or NeoForge artifact in Minecraft Java 26.1.2 with
+Java 25. Fabric requires Fabric Loader 0.19.3 or newer and Fabric API
+0.155.2+26.1.2; NeoForge requires NeoForge 26.1.2.87 or newer. RingWorld is
+required on the dedicated server and on every connecting client; all must use
+the same loader and RingWorld version. Add the jar to an existing matching
+loader instance like any other mod. Create a new RingWorld world from the
+Create World screen, or configure a dedicated server before its first
+Overworld load. Saved RingWorld dimensions are immutable.
 
 ## Alpha compatibility
 
@@ -23,8 +25,8 @@ internals, entity tracking, distance rules, or networking may conflict. Do not
 assume Sodium, Iris, large world-generation suites, or another loader are
 compatible unless that exact combination is explicitly tested.
 
-RingWorld is Fabric-only today. A future NeoForge version may use this project
-as a separate loader-specific release after its runtime validation passes.
+Fabric and NeoForge files are separate loader-specific releases. Do not put
+both files in one instance, and do not assume cross-loader multiplayer works.
 
 ## Licence and source
 

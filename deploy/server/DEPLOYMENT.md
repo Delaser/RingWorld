@@ -1,7 +1,9 @@
 # RingWorld dedicated server template
 
-The checked-in files are generic deployment examples for a Minecraft 26.1.2
-Fabric server. They do not describe or manage any particular hosted service.
+The checked-in files are generic deployment examples for Minecraft 26.1.2
+Fabric and NeoForge servers. They do not describe or manage any particular
+hosted service. Package assembly selects the loader-specific deployment and
+systemd templates; this source file is only the shared reference.
 
 Current development versions:
 
@@ -51,11 +53,12 @@ packages before distribution.
 ## Optional server overlay
 
 `scripts/prepare_release_packages.py` creates a reproducible
-`Server-Overlay.zip` containing the verified RingWorld and Fabric API jars,
-these generic templates, the current `LICENSE`, and an exact public-source
-manifest. It deliberately excludes Minecraft/Fabric server binaries, worlds,
-player data, logs, credentials, and live configuration. Treat it as a staging
-input, not a deployment: obtain the server runtime from official sources and
+loader-labelled `Server-Overlay.zip` containing the verified RingWorld jar and,
+only for Fabric, its required Fabric API jar. It selects matching loader
+deployment and systemd templates, records the loader in its manifest, and
+deliberately excludes Minecraft server binaries, worlds, player data, logs,
+credentials, and live configuration. Treat it as a staging input, not a
+deployment: obtain the matching loader runtime from official sources and
 perform isolated Java 25 launch tests before any owner-approved release. The
 overlay ships with `eula=false`; each server operator must read Mojang's EULA
 and record their own acceptance before the first real start.
