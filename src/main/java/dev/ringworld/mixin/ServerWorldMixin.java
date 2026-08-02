@@ -4,12 +4,14 @@ import dev.ringworld.RingWorldMod;
 import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.world.RingChunkCoordinates;
 import dev.ringworld.world.RingGeometry;
+import dev.ringworld.world.RingRaidSupport;
 import dev.ringworld.world.RingTickSchedulerAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Position;
 import net.minecraft.server.level.DistanceManager;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -25,6 +27,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /** Canonicalizes world-facing loaded-chunk checks such as spawn preparation. */
 @Mixin(ServerLevel.class)
@@ -120,6 +123,34 @@ abstract class ServerWorldMixin {
         RingGeometry geometry = RingWorldServer.geometryFor(world);
         int x = geometry.wrapBlockX(pos.getX());
         return x == pos.getX() ? pos : new BlockPos(x, pos.getY(), pos.getZ());
+    }
+
+    /**
+     * Vanilla chooses an active raid with flat BlockPos distance. Select from
+     * the same saved collection using the shortest periodic X delta so omen,
+     * bossbar, villager-state, and reconnect lookups cross the joined edge.
+     */
+    @Inject(method = "getRaidAt", at = @At("HEAD"), cancellable = true)
+    private void ringworld$nearestPeriodicRaid(BlockPos pos, CallbackInfoReturnable<Raid> cir) {
+        ServerLevel world = (ServerLevel) (Object) this;
+        if (world.dimension() != Level.OVERWORLD) return;
+
+        RingGeometry geometry = RingWorldServer.geometryFor(world);
+        Raid nearest = null;
+        double nearestDistance = 9_216.0;
+        for (Raid raid : ((RaidsAccessor) world.getRaids()).ringworld$getRaidMap().values()) {
+            if (!raid.isActive()) continue;
+            BlockPos center = raid.getCenter();
+            double distance = RingRaidSupport.periodicDistanceSquared(
+                    geometry,
+                    center.getX(), center.getY(), center.getZ(),
+                    pos.getX(), pos.getY(), pos.getZ());
+            if (distance < nearestDistance) {
+                nearest = raid;
+                nearestDistance = distance;
+            }
+        }
+        cir.setReturnValue(nearest);
     }
 
     /** Particle and other proximity packets must cross the joined edge too. */

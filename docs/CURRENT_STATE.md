@@ -120,8 +120,10 @@ Issue #111 tracks the remaining raid/POI seam defect. Its first loader-neutral
 foundation defines periodic raid distance/selection, three-image POI query
 origins, nearest-image village-centre averaging with canonical persistence,
 and split canonical block/chunk readiness windows for wave spawning. Pure
-tests cover the `C-1/0` cases. This foundation does not alter Minecraft raid
-behavior by itself; targeted shared mixins and a deterministic Fabric/NeoForge
+tests cover the `C-1/0` cases. `ServerWorldMixin` now applies that distance to
+the saved active-raid lookup used by omen extension, bossbars, villager state,
+commands, and reconnect. Periodic POI discovery/averaging, centre relocation,
+wave spawn checks, raider goals/retention, and a deterministic Fabric/NeoForge
 raid fixture remain required before the defect is fixed.
 
 Issue #24 expands the loader-neutral dimension matrix to 200
