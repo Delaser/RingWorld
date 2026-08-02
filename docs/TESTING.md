@@ -544,9 +544,14 @@ join; it resumes the copied world's atlas rather than creating another world.
 Run the isolated live-renderer regression with Java 25:
 
 ```sh
-./gradlew runCurvedObjectCaptureClient --console=plain --no-daemon
+./gradlew :runCurvedObjectCaptureClient --console=plain --no-daemon
 ./gradlew :neoforge:runCurvedObjectCaptureClient --console=plain --no-daemon
 ```
+
+Keep the leading `:` on the Fabric task. Without it, Gradle selects identically
+named tasks in every project and may launch the Fabric and NeoForge graphical
+clients concurrently; macOS can then stall one client during resource loading.
+Run the two commands sequentially.
 
 Each loader's preparation task deletes only its ignored curved-object runtime
 world, screenshots, and atlas cache, then creates a safe-small creative world.
