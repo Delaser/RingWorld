@@ -12,6 +12,7 @@ run-atlas-ui/
 run-atlas-release-gate/
 run-stronghold-test/
 run-headless-prewarm/
+run-raid-seam/
 logs/
 dist/
 .codex-tmp/

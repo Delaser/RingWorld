@@ -140,6 +140,37 @@ neoForge {
             programArgument '--username'
             programArgument 'RingTesterB'
         }
+        raidSeamArmServer {
+            server()
+            gameDirectory = project.file('run-raid-seam/server')
+            systemProperty 'ringworld.raidSeamTest', 'true'
+            systemProperty 'ringworld.raidSeamTestPhase', 'arm'
+            systemProperty 'ringworld.raidSeamTestStopAfterSave', 'true'
+            programArgument '--nogui'
+        }
+        raidSeamReloadServer {
+            server()
+            gameDirectory = project.file('run-raid-seam/server')
+            systemProperty 'ringworld.raidSeamTest', 'true'
+            systemProperty 'ringworld.raidSeamTestPhase', 'reload'
+            programArgument '--nogui'
+        }
+        raidSeamClientA {
+            client()
+            gameDirectory = project.file('run-raid-seam/client-a')
+            systemProperty 'ringworld.multiplayerTestRole', 'A'
+            systemProperty 'ringworld.multiplayerTestPort', '25567'
+            programArgument '--username'
+            programArgument 'RingTesterA'
+        }
+        raidSeamClientB {
+            client()
+            gameDirectory = project.file('run-raid-seam/client-b')
+            systemProperty 'ringworld.multiplayerTestRole', 'B'
+            systemProperty 'ringworld.multiplayerTestPort', '25567'
+            programArgument '--username'
+            programArgument 'RingTesterB'
+        }
         server {
             server()
             gameDirectory = project.file('run-server')

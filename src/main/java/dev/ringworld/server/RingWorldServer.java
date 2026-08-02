@@ -203,7 +203,13 @@ public final class RingWorldServer {
             canonicalizeEntityPosition(entity, geometry);
         }
         migrateOneLegacyRimChunk(world, geometry);
-        RingWorldMultiplayerTest.tick(world, geometry);
+        // The raid proof owns a separate disposable server run and deliberately
+        // does not share the long baseline multiplayer state machine.
+        if (RingWorldRaidSeamTest.enabled()) {
+            RingWorldRaidSeamTest.tick(world, geometry);
+        } else {
+            RingWorldMultiplayerTest.tick(world, geometry);
+        }
         runAutomatedTest(world, geometry);
     }
 

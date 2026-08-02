@@ -180,8 +180,60 @@ discovery and village tests, canonical centre creation/relocation, split
 canonical wave-spawn readiness, periodic raider retention, and nearest-image
 goal targets. Both loader builds and dedicated servers reach `Done` with all
 four new mixins registered. This proves target application and startup only;
-the deterministic dual-loader seam-raid fixture and a completed raid remain
-required.
+the opt-in deterministic dual-loader seam-raid fixture below must still be run
+and its real completion evidence recorded.
+
+### Two-phase seam-raid regression
+
+This disposable dedicated fixture uses two real clients named `RingTesterA` and
+`RingTesterB`. Its arm process creates two occupied HOME POIs at `C-2` and
+`4`, starts a real omen raid, shortens only its pre-wave countdown, and saves
+after its first vanilla wave. Its reload process opens the same world, checks
+the saved raid/bossbar/raider state, makes a real raider navigate naturally
+through the seam, then completes the real victory path and verifies Hero of
+the Village.
+
+Prepare one isolated loader directory. For each phase, leave the server running
+in terminal 1 and start one client in each of terminals 2 and 3; restart the
+clients between phases:
+
+```sh
+scripts/prepare_raid_seam_fixture.sh fabric
+# terminal 1
+./gradlew :runRaidSeamArmServer
+# terminal 2
+./gradlew :runRaidSeamClientA
+# terminal 3
+./gradlew :runRaidSeamClientB
+# after the arm server exits, stop its two clients
+# terminal 1
+./gradlew :runRaidSeamReloadServer
+# terminal 2
+./gradlew :runRaidSeamClientA
+# terminal 3
+./gradlew :runRaidSeamClientB
+```
+
+The leading `:` is required because both loader projects own identically named
+run profiles. For NeoForge, replace the commands with `:neoforge:runRaidSeamArmServer`,
+`:neoforge:runRaidSeamReloadServer`, `:neoforge:runRaidSeamClientA`, and
+`:neoforge:runRaidSeamClientB`, after
+`scripts/prepare_raid_seam_fixture.sh neoforge`.
+The NeoForge preparation disables only its separate early splash window in the
+two disposable clients; Minecraft's real game windows still launch and render.
+
+The arm server must log `[raid-seam] arm-save-ready=true`; the reload server
+must log `[raid-seam] PASS` and no `[raid-seam] FAIL`. The fixture is opt-in
+only (`-Dringworld.raidSeamTest=true`) and never runs in ordinary worlds.
+
+The 2026-08-02 acceptance run passed both phases on Fabric and NeoForge. Each
+arm phase created canonical centre `X=1`, retained both seam-side players in
+the bossbar, spawned and saved a real first wave, and logged
+`arm-save-ready=true`. Each reload first verified both occupied POIs survived
+from disk, then restored the same raid and tagged raider,
+observed a natural high-to-low canonical fold, completed vanilla victory, gave
+RingTesterA Hero of the Village, and logged `[raid-seam] PASS` with no final
+`FAIL`.
 
 Inspect machine-readable results under:
 

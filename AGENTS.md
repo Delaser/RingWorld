@@ -261,7 +261,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   hashes, performance evidence, and protected rollback inventory.
 - `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`: historical Java 25/26.1.2
   compiler inventory and the subsequent green build/server checkpoint.
-- `dist/`, `run/`, `run-multiplayer/`, `run-atlas-ui/`, `run-headless-prewarm/`, `logs/`, `.gradle/`, and `build/`:
+- `dist/`, `run/`, `run-multiplayer/`, `run-atlas-ui/`, `run-headless-prewarm/`,
+  `run-raid-seam/`, `logs/`, `.gradle/`, and `build/`:
   generated or local runtime state; all are intentionally ignored.
 
 The complete mixin ownership table is in
@@ -537,9 +538,12 @@ version numbers.
   canonical while projecting only transient queries and path targets to their
   nearest periodic images. `ServerWorldMixin`, `RaidsMixin`, `RaidMixin`,
   `PathfindToRaidGoalMixin`, and `RaiderMoveThroughVillageGoalMixin` form one
-  contract; keep `RaidsAccessor` read-only and update them together. Loader
-  startup is not completion evidence: issue #111 still needs the deterministic
-  two-loader seam-raid fixture and a real completed raid.
+  contract; keep `RaidsAccessor` read-only and update them together. The
+  opt-in two-phase `RingWorldRaidSeamTest` saves a real first wave, then
+  restarts to prove restored state, natural raider folding, victory, and Hero
+  of the Village. The 2026-08-02 Fabric and NeoForge runs completed both
+  phases with `[raid-seam] PASS`; keep those two-loader results as the minimum
+  evidence when changing raid or POI behavior.
 - Compatibility contract/API version 1 is documented in
   `docs/COMPATIBILITY.md`. Keep `RingCompatibilityContract`, the Fabric probe,
   `fabric.mod.json`'s `ringworld:compatibility_api`, public API documentation,

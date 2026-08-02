@@ -378,7 +378,8 @@ For demonstrated results, open risks, and the prioritized roadmap, see
   gates pass.
 - The multi-seed matrix covers ordinary biome, carver, ore, tree, loot, and
   mineshaft seam generation, but does not claim exhaustive seam coverage for
-  every vanilla structure. Full map-mode playthroughs, completed seam raids, complex
+  every vanilla structure. The two-phase seam-raid fixture passes on Fabric
+  and NeoForge. Full map-mode playthroughs, complex
   redstone/fluid networks, and additional vehicle/projectile variants still
   need more coverage. Other scarce
   random-spread structures are not yet selectable; see
