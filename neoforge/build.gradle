@@ -56,6 +56,38 @@ neoForge {
             systemProperty 'ringworld.projectionEnvironment',
                     providers.gradleProperty('ringNeoForgeProjectionEnvironment').orElse('noon').get()
         }
+        productionVisualParityClient {
+            client()
+            // This run receives a fresh copied save for every invocation.
+            // Keep it separate from the projection checkpoint so its seam and
+            // rim screenshots are disposable, unambiguous gate evidence.
+            gameDirectory = project.file('run-production-visual-parity')
+            systemProperty 'ringworld.captureRingVisualParity', 'true'
+            systemProperty 'ringworld.visualParityWorld',
+                    providers.gradleProperty('ringNeoForgeVisualParityDestination')
+                            .orElse('RingWorld NeoForge Visual Parity').get()
+            systemProperty 'ringworld.visualParityViewDistanceChunks',
+                    providers.gradleProperty('ringNeoForgeVisualParityViewDistanceChunks')
+                            .orElse('16').get()
+        }
+        layoutSwitchClient {
+            client()
+            gameDirectory = project.file('run-layout-switch')
+            systemProperty 'ringworld.layoutSwitchFirst',
+                    providers.gradleProperty('ringNeoForgeLayoutSwitchFirstDestination')
+                            .orElse('RingWorld NeoForge Layout A').get()
+            systemProperty 'ringworld.layoutSwitchSecond',
+                    providers.gradleProperty('ringNeoForgeLayoutSwitchSecondDestination')
+                            .orElse('RingWorld NeoForge Layout B').get()
+        }
+        productionLifecycleClient {
+            client()
+            gameDirectory = project.file('run-production-lifecycle')
+            systemProperty 'ringworld.productionLifecycleTest', 'true'
+            systemProperty 'ringworld.productionLifecycleWorld',
+                    providers.gradleProperty('ringNeoForgeProductionLifecycleDestination')
+                            .orElse('RingWorld NeoForge Production Lifecycle').get()
+        }
         server {
             server()
             gameDirectory = project.file('run-server')
@@ -126,6 +158,12 @@ def checkedProjectionSaveId = { String value, String propertyName ->
 def neoForgeProjectionSourceSaves = project.file('run-client/saves')
 def neoForgeProjectionRun = project.file('run-production-projection')
 def neoForgeProjectionSaves = new File(neoForgeProjectionRun, 'saves')
+def neoForgeVisualParityRun = project.file('run-production-visual-parity')
+def neoForgeVisualParitySaves = new File(neoForgeVisualParityRun, 'saves')
+def neoForgeLayoutSwitchRun = project.file('run-layout-switch')
+def neoForgeLayoutSwitchSaves = new File(neoForgeLayoutSwitchRun, 'saves')
+def neoForgeProductionLifecycleRun = project.file('run-production-lifecycle')
+def neoForgeProductionLifecycleSaves = new File(neoForgeProductionLifecycleRun, 'saves')
 
 tasks.register('prepareCopiedNeoForgeProductionProjectionWorld') {
     group = 'ringworld verification'
@@ -188,7 +226,224 @@ tasks.register('verifyNeoForgeProductionProjectionClient') {
     }
 }
 
+tasks.register('prepareCopiedNeoForgeProductionVisualParityWorld') {
+    group = 'ringworld verification'
+    description = 'Copies a NeoForge source save into the isolated seam-and-rim visual-parity run directory.'
+    inputs.property('ringNeoForgeVisualParitySource',
+            providers.gradleProperty('ringNeoForgeVisualParitySource').orElse('NeoForge Test'))
+    inputs.property('ringNeoForgeVisualParityDestination',
+            providers.gradleProperty('ringNeoForgeVisualParityDestination')
+                    .orElse('RingWorld NeoForge Visual Parity'))
+    outputs.dir(neoForgeVisualParitySaves)
+    outputs.upToDateWhen { false }
+    doLast {
+        def sourceId = checkedProjectionSaveId(
+                providers.gradleProperty('ringNeoForgeVisualParitySource').orElse('NeoForge Test').get(),
+                'ringNeoForgeVisualParitySource')
+        def destinationId = checkedProjectionSaveId(
+                providers.gradleProperty('ringNeoForgeVisualParityDestination')
+                        .orElse('RingWorld NeoForge Visual Parity').get(),
+                'ringNeoForgeVisualParityDestination')
+        def source = new File(neoForgeProjectionSourceSaves, sourceId)
+        if (!new File(source, 'level.dat').isFile()) {
+            throw new GradleException(
+                    "ringNeoForgeVisualParitySource must name a save under ${neoForgeProjectionSourceSaves}: ${sourceId}")
+        }
+        def destination = new File(neoForgeVisualParitySaves, destinationId)
+        delete(destination)
+        delete(new File(neoForgeVisualParityRun, 'screenshots'))
+        delete(new File(neoForgeVisualParityRun, 'ringworld-cache'))
+        delete(new File(neoForgeVisualParityRun, 'logs'))
+        copy {
+            from(source)
+            into(destination)
+        }
+        if (!new File(destination, 'level.dat').isFile()) {
+            throw new GradleException(
+                    "copied NeoForge visual-parity save is missing level.dat: ${destination}")
+        }
+        logger.lifecycle('[neoforge-visual-parity] copied source={} destination={}', source, destination)
+    }
+}
+
+tasks.register('verifyNeoForgeProductionVisualParityClient') {
+    group = 'ringworld verification'
+    description = 'Fails unless the NeoForge seam and both finite-width rim captures completed.'
+    mustRunAfter('runProductionVisualParityClient')
+    doLast {
+        def logFile = new File(neoForgeVisualParityRun, 'logs/latest.log')
+        def log = logFile.isFile() ? logFile.text : ''
+        if (!log.contains('[visual-parity-capture] result=true, captures complete')) {
+            throw new GradleException("NeoForge visual-parity capture did not pass; inspect ${logFile}")
+        }
+        ['seam', 'min-rim', 'max-rim'].each { view ->
+            def screenshot = new File(neoForgeVisualParityRun,
+                    "screenshots/ringworld-visual-parity-${view}.png")
+            if (!screenshot.isFile()) {
+                throw new GradleException("NeoForge visual-parity capture is missing ${screenshot}")
+            }
+        }
+    }
+}
+
+tasks.register('prepareCopiedNeoForgeLayoutSwitchWorlds') {
+    group = 'ringworld verification'
+    description = 'Copies two distinct NeoForge source saves into the isolated layout-switch run directory.'
+    inputs.property('ringNeoForgeLayoutSwitchFirstSource',
+            providers.gradleProperty('ringNeoForgeLayoutSwitchFirstSource').orElse(''))
+    inputs.property('ringNeoForgeLayoutSwitchSecondSource',
+            providers.gradleProperty('ringNeoForgeLayoutSwitchSecondSource').orElse(''))
+    inputs.property('ringNeoForgeLayoutSwitchFirstDestination',
+            providers.gradleProperty('ringNeoForgeLayoutSwitchFirstDestination')
+                    .orElse('RingWorld NeoForge Layout A'))
+    inputs.property('ringNeoForgeLayoutSwitchSecondDestination',
+            providers.gradleProperty('ringNeoForgeLayoutSwitchSecondDestination')
+                    .orElse('RingWorld NeoForge Layout B'))
+    outputs.dir(neoForgeLayoutSwitchSaves)
+    outputs.upToDateWhen { false }
+    doLast {
+        def copies = [
+                [providers.gradleProperty('ringNeoForgeLayoutSwitchFirstSource').orElse('').get(),
+                 providers.gradleProperty('ringNeoForgeLayoutSwitchFirstDestination')
+                         .orElse('RingWorld NeoForge Layout A').get(),
+                 'ringNeoForgeLayoutSwitchFirstSource', 'ringNeoForgeLayoutSwitchFirstDestination'],
+                [providers.gradleProperty('ringNeoForgeLayoutSwitchSecondSource').orElse('').get(),
+                 providers.gradleProperty('ringNeoForgeLayoutSwitchSecondDestination')
+                         .orElse('RingWorld NeoForge Layout B').get(),
+                 'ringNeoForgeLayoutSwitchSecondSource', 'ringNeoForgeLayoutSwitchSecondDestination']
+        ]
+        def destinations = [] as Set
+        delete(new File(neoForgeLayoutSwitchRun, 'screenshots'))
+        delete(new File(neoForgeLayoutSwitchRun, 'ringworld-cache'))
+        delete(new File(neoForgeLayoutSwitchRun, 'logs'))
+        copies.each { copySpec ->
+            def sourceId = checkedProjectionSaveId(copySpec[0], copySpec[2])
+            def destinationId = checkedProjectionSaveId(copySpec[1], copySpec[3])
+            if (!destinations.add(destinationId)) {
+                throw new GradleException('NeoForge layout-switch destinations must be distinct')
+            }
+            def source = new File(neoForgeProjectionSourceSaves, sourceId)
+            if (!new File(source, 'level.dat').isFile()) {
+                throw new GradleException("${copySpec[2]} must name a save under ${neoForgeProjectionSourceSaves}: ${sourceId}")
+            }
+            def destination = new File(neoForgeLayoutSwitchSaves, destinationId)
+            delete(destination)
+            copy {
+                from(source)
+                into(destination)
+            }
+            if (!new File(destination, 'level.dat').isFile()) {
+                throw new GradleException("copied NeoForge layout-switch save is missing level.dat: ${destination}")
+            }
+            logger.lifecycle('[neoforge-layout-switch] copied source={} destination={}', source, destination)
+        }
+    }
+}
+
+tasks.register('verifyNeoForgeLayoutSwitchClient') {
+    group = 'ringworld verification'
+    description = 'Fails unless the NeoForge same-process layout switch clears and restores client state.'
+    mustRunAfter('runLayoutSwitchClient')
+    doLast {
+        def logFile = new File(neoForgeLayoutSwitchRun, 'logs/latest.log')
+        def log = logFile.isFile() ? logFile.text : ''
+        if (!log.contains('[layout-switch] result-json={"passed":true,')
+                || log.contains('[layout-switch] result-json={"passed":false,')) {
+            throw new GradleException("NeoForge layout-switch client did not pass; inspect ${logFile}")
+        }
+        [
+                providers.gradleProperty('ringNeoForgeLayoutSwitchFirstDestination')
+                        .orElse('RingWorld NeoForge Layout A').get(),
+                providers.gradleProperty('ringNeoForgeLayoutSwitchSecondDestination')
+                        .orElse('RingWorld NeoForge Layout B').get()
+        ].each { destinationId ->
+            def destination = new File(neoForgeLayoutSwitchSaves,
+                    checkedProjectionSaveId(destinationId, 'ringNeoForgeLayoutSwitchDestination'))
+            if (!new File(destination, 'level.dat').isFile()) {
+                throw new GradleException("NeoForge layout-switch output is missing level.dat: ${destination}")
+            }
+        }
+    }
+}
+
+tasks.register('prepareCopiedNeoForgeProductionLifecycleWorld') {
+    group = 'ringworld verification'
+    description = 'Copies a production NeoForge source save into the isolated lifecycle run directory.'
+    inputs.property('ringNeoForgeProductionLifecycleSource',
+            providers.gradleProperty('ringNeoForgeProductionLifecycleSource').orElse('NeoForge Test'))
+    inputs.property('ringNeoForgeProductionLifecycleDestination',
+            providers.gradleProperty('ringNeoForgeProductionLifecycleDestination')
+                    .orElse('RingWorld NeoForge Production Lifecycle'))
+    outputs.dir(neoForgeProductionLifecycleSaves)
+    outputs.upToDateWhen { false }
+    doLast {
+        def sourceId = checkedProjectionSaveId(
+                providers.gradleProperty('ringNeoForgeProductionLifecycleSource')
+                        .orElse('NeoForge Test').get(),
+                'ringNeoForgeProductionLifecycleSource')
+        def destinationId = checkedProjectionSaveId(
+                providers.gradleProperty('ringNeoForgeProductionLifecycleDestination')
+                        .orElse('RingWorld NeoForge Production Lifecycle').get(),
+                'ringNeoForgeProductionLifecycleDestination')
+        def source = new File(neoForgeProjectionSourceSaves, sourceId)
+        if (!new File(source, 'level.dat').isFile()) {
+            throw new GradleException(
+                    "ringNeoForgeProductionLifecycleSource must name a save under ${neoForgeProjectionSourceSaves}: ${sourceId}")
+        }
+        def destination = new File(neoForgeProductionLifecycleSaves, destinationId)
+        delete(destination)
+        delete(new File(neoForgeProductionLifecycleRun, 'screenshots'))
+        delete(new File(neoForgeProductionLifecycleRun, 'ringworld-cache'))
+        delete(new File(neoForgeProductionLifecycleRun, 'logs'))
+        copy {
+            from(source)
+            into(destination)
+        }
+        if (!new File(destination, 'level.dat').isFile()) {
+            throw new GradleException("copied NeoForge lifecycle save is missing level.dat: ${destination}")
+        }
+        logger.lifecycle('[neoforge-production-lifecycle] copied source={} destination={}', source, destination)
+    }
+}
+
+tasks.register('verifyNeoForgeProductionLifecycleClient') {
+    group = 'ringworld verification'
+    description = 'Fails unless the NeoForge production dimension and reopen lifecycle passes.'
+    mustRunAfter('runProductionLifecycleClient')
+    doLast {
+        def logFile = new File(neoForgeProductionLifecycleRun, 'logs/latest.log')
+        def log = logFile.isFile() ? logFile.text : ''
+        if (!log.contains('[production-lifecycle] result=true')
+                || log.contains('[production-lifecycle] result=false')) {
+            throw new GradleException("NeoForge production lifecycle did not pass; inspect ${logFile}")
+        }
+        def destinationId = checkedProjectionSaveId(
+                providers.gradleProperty('ringNeoForgeProductionLifecycleDestination')
+                        .orElse('RingWorld NeoForge Production Lifecycle').get(),
+                'ringNeoForgeProductionLifecycleDestination')
+        def destination = new File(neoForgeProductionLifecycleSaves, destinationId)
+        if (!new File(destination, 'level.dat').isFile()) {
+            throw new GradleException("NeoForge lifecycle output is missing level.dat: ${destination}")
+        }
+    }
+}
+
 tasks.named('runProductionProjectionClient') {
     dependsOn('prepareCopiedNeoForgeProductionProjectionWorld')
     finalizedBy('verifyNeoForgeProductionProjectionClient')
+}
+
+tasks.named('runProductionVisualParityClient') {
+    dependsOn('prepareCopiedNeoForgeProductionVisualParityWorld')
+    finalizedBy('verifyNeoForgeProductionVisualParityClient')
+}
+
+tasks.named('runLayoutSwitchClient') {
+    dependsOn('prepareCopiedNeoForgeLayoutSwitchWorlds')
+    finalizedBy('verifyNeoForgeLayoutSwitchClient')
+}
+
+tasks.named('runProductionLifecycleClient') {
+    dependsOn('prepareCopiedNeoForgeProductionLifecycleWorld')
+    finalizedBy('verifyNeoForgeProductionLifecycleClient')
 }

@@ -3,8 +3,11 @@ package dev.ringworld.platform.neoforge;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.AtlasPregenerationClientState;
 import dev.ringworld.client.ClientRingState;
+import dev.ringworld.client.LayoutSwitchTestClient;
+import dev.ringworld.client.ProductionLifecycleTestClient;
 import dev.ringworld.client.RingClientPayloadTransport;
 import dev.ringworld.client.RingProjectionCaptureClient;
+import dev.ringworld.client.RingVisualParityCaptureClient;
 import dev.ringworld.client.RingWorldClientSession;
 import dev.ringworld.net.RingAtlasPregenerationStatusPayload;
 import dev.ringworld.net.RingSettingsHandshake;
@@ -36,8 +39,13 @@ import net.neoforged.neoforge.network.registration.NetworkRegistry;
 @EventBusSubscriber(modid = RingWorldMod.MOD_ID, value = Dist.CLIENT)
 public final class NeoForgeRingWorldClient {
     private static final String CURVED_OBJECT_CAPTURE_PROPERTY = "ringworld.curvedObjectCapture";
+    private static final ProductionLifecycleTestClient PRODUCTION_LIFECYCLE =
+            new ProductionLifecycleTestClient();
+    private static final LayoutSwitchTestClient LAYOUT_SWITCH = new LayoutSwitchTestClient();
     private static final RingProjectionCaptureClient PROJECTION_CAPTURE =
             new RingProjectionCaptureClient();
+    private static final RingVisualParityCaptureClient VISUAL_PARITY_CAPTURE =
+            new RingVisualParityCaptureClient();
 
     private NeoForgeRingWorldClient() { }
 
@@ -128,7 +136,10 @@ public final class NeoForgeRingWorldClient {
         if (!Boolean.getBoolean(CURVED_OBJECT_CAPTURE_PROPERTY)) {
             ClientRingState.saveTerrainAtlasIfDue(false);
         }
-        PROJECTION_CAPTURE.tick(client);
+        if (PRODUCTION_LIFECYCLE.tick(client)) return;
+        if (LAYOUT_SWITCH.tick(client)) return;
+        if (PROJECTION_CAPTURE.tick(client)) return;
+        VISUAL_PARITY_CAPTURE.tick(client);
     }
 
     @SubscribeEvent

@@ -27,7 +27,7 @@ The implementation spans five coupled layers:
 ## Loader boundary
 
 Fabric has the validated client/runtime implementation, and NeoForge has a
-dedicated-server bootstrap plus complete-atlas graphical-client projection checkpoint.
+dedicated-server bootstrap plus complete graphical-client parity checkpoint.
 The architecture targets a
 loader-neutral core with thin Fabric and NeoForge adapters. Geometry,
 topology, persistent settings, atlas formats, atlas-pregeneration model and
@@ -60,8 +60,9 @@ own narrow transport and lifecycle registration. NeoForge also registers the
 shared ring-surface render pipeline in its client event and packages the shared
 client mixins and resources. Its 26.1.2.87 client has loaded those resources,
 acknowledged format 2, and passed a complete-atlas tangent/handoff/radial
-projection gate in a copied production integrated world. This does not
-establish seam/rim, time/weather, lifecycle, gameplay, multiplayer, or package parity; distributed artifacts remain
+projection gate in a copied production integrated world. The seam/rim,
+time/weather, and lifecycle gates also pass. This does not
+establish gameplay, multiplayer, or package parity; distributed artifacts remain
 Fabric-only until those gates pass.
 
 ## The three coordinate domains

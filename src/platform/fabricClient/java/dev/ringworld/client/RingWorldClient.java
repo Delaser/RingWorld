@@ -52,6 +52,8 @@ public final class RingWorldClient implements ClientModInitializer {
             new ProductionLifecycleTestClient();
     private final RingProjectionCaptureClient projectionCapture =
             new RingProjectionCaptureClient();
+    private final RingVisualParityCaptureClient visualParityCapture =
+            new RingVisualParityCaptureClient();
     private final CurvedObjectCaptureClient curvedObjectCapture =
             new CurvedObjectCaptureClient();
     private final AtlasPregenerationUiTestClient atlasPregenerationUiTest =
@@ -208,6 +210,7 @@ public final class RingWorldClient implements ClientModInitializer {
             if (layoutSwitchTest.tick(client)) return;
             if (multiplayerTest.tick(client)) return;
             if (projectionCapture.tick(client)) return;
+            if (visualParityCapture.tick(client)) return;
             if (curvedObjectCapture.tick(client)) return;
             if (atlasPregenerationUiTest.tick(client)) return;
             saveDiagnosticJoinScreenshot(client);

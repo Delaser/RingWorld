@@ -20,9 +20,12 @@ format-2 settings acknowledgement and streaming atlas metadata/tiles. The
 `:neoforge:runProductionProjectionClient` copies a named
 source save into an isolated run directory, waits for a complete atlas, writes
 tangent/handoff/radial captures, records frame pacing, verifies the outputs,
-and exits. Its production 16,384×256 noon run passes; settled stages averaged
-8.4–10.7 ms per frame. Seam/rim, time/weather, lifecycle, gameplay, and
-multiplayer parity remain open.
+and exits. Its production 16,384×256 noon, dusk, night, and rain runs pass;
+settled stages averaged 8.3–10.7 ms per frame. The disposable visual-parity
+gate also passes a natural seam view and both textured rims. Same-process
+layout switching clears stale state, and the production lifecycle passes
+Overworld/Nether/End transitions, save/disconnect, and reopen. Gameplay,
+two-client multiplayer, and packaging parity remain open.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -76,8 +79,8 @@ agent uses a separate account and must monitor its own allowance.
 ## What this project is
 
 RingWorld is a Fabric-first mod being ported from Minecraft Java 1.21.11 to
-26.1.2, with NeoForge server bootstrap and an initial graphical-client
-checkpoint underway.
+26.1.2, with NeoForge server bootstrap and graphical-client parity complete;
+gameplay, multiplayer, and packaging parity are underway.
 The validated design turns only the Overworld into a finite band:
 
 - canonical X runs around the circumference and is periodic;
@@ -126,9 +129,9 @@ under it.
 ## Loader support policy
 
 Fabric is the validated graphical/runtime implementation. NeoForge has a
-dedicated-server bootstrap and complete-atlas graphical-client projection
-checkpoint, not full visual or multiplayer parity. Future development must not
-deepen Fabric coupling. Design new gameplay, topology, persistence,
+dedicated-server bootstrap and the full issue-#92 graphical-client parity
+checkpoint, not gameplay, multiplayer, or packaging parity. Future development
+must not deepen Fabric coupling. Design new gameplay, topology, persistence,
 worldgen, rendering math, protocol models, and tests as loader-agnostic common
 code. When a loader API is unavoidable, isolate it behind a narrow platform
 adapter and provide, or leave a documented implementation path for, both
@@ -287,8 +290,9 @@ has reached `Done` and observed atlas progress. `./gradlew
 :neoforge:runProductionProjectionClient -PringNeoForgeProjectionSource="NeoForge Test"`
 copies the named ignored source save into an isolated run, waits for atlas
 completion, produces tangent/handoff/radial diagnostics, verifies them, and
-exits. The production noon gate passes; it is not yet seam/rim, time/weather,
-lifecycle, gameplay, or multiplayer evidence.
+exits. Noon, dusk, night, and rain pass. The qualified NeoForge visual-parity,
+layout-switch, and production-lifecycle gates also pass on disposable copies;
+these are not yet gameplay or multiplayer evidence.
 
 `scripts/stage_modrinth_release.py --build` checks the active Java generation
 before it invokes Gradle. Keep that fail-closed Java 25 preflight synchronized

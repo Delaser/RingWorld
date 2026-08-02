@@ -10,7 +10,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 
 /** Client-owned assertions for the isolated production dimension/reopen regression. */
-final class ProductionLifecycleTestClient {
+public final class ProductionLifecycleTestClient {
     private static final int DIMENSION_SETTLE_TICKS = 20;
     private static final int STAGE_TIMEOUT_TICKS = 1_800;
 
@@ -24,7 +24,7 @@ final class ProductionLifecycleTestClient {
     private long baselineAtlasWorldHash;
     private boolean disconnectClearedState;
 
-    boolean tick(Minecraft client) {
+    public boolean tick(Minecraft client) {
         if (!Boolean.getBoolean("ringworld.productionLifecycleTest")) return false;
         if (worldName.isEmpty()) {
             finish(client, false, "missing productionLifecycleWorld");

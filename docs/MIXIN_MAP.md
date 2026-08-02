@@ -107,6 +107,7 @@ ordinary helpers:
 | `RingWorldHeadlessPrewarm` / `HeadlessPrewarmEvidenceFiles` | Fabric/dedicated lifecycle adapter and evidence hygiene for explicit headless prewarm; observes the shared service, records constructor-tail `REJECTED` evidence without identity when settings are unavailable, gates joins, checkpoints/reports/saves/stops, but never owns another scheduler or atlas writer |
 | `RingWorldClient` / `NeoForgeRingWorldClient` | Loader client lifecycle and payload receivers; Fabric and NeoForge respectively configure the shared transport/session, cache path, test hooks, and render-pipeline registration |
 | `RingClientPayloadTransport` / `RingWorldClientSession` | Shared client outbound-payload capability/delivery boundary and per-session atlas/GPU/geometry teardown |
+| `RingProjectionCaptureClient` / `RingVisualParityCaptureClient` / `LayoutSwitchTestClient` / `ProductionLifecycleTestClient` | Loader-neutral graphical projection, seam/rim, stale-session, dimension-transition, and reopen gates driven by loader-owned client tick/render events |
 | `ClientRingState` | Immutable geometry, continuous chart, atlas cache/revision |
 | `RingSurfaceTextureRenderer` | Active complete-ring LOD |
 | `CurvedRingFrustum` | Exact section-envelope culling |
