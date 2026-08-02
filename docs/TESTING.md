@@ -74,6 +74,19 @@ destinations. The server/runtime gates below also pass, and local package
 parity is complete. Hosted NeoForge publication remains gated on final
 candidate review and owner approval.
 
+Fabric has the matching production seam-and-rim gate:
+
+```sh
+./gradlew :runProductionVisualParityClient \
+  -PringVisualParitySource="production-ring-save-folder" \
+  -PringVisualParityViewDistanceChunks=12
+```
+
+It copies a source below `run/saves/` into
+`run-production-visual-parity/saves/`, captures the same natural seam and both
+rims, verifies all three outputs, and exits. Both loader runners use the same
+shared `RingVisualParityCaptureClient`; only their launch/copy adapters differ.
+
 NeoForge's dedicated multiplayer gate uses three isolated processes below
 `neoforge/run-multiplayer/`: one server and clients A/B. Prepare the fixture,
 start `:neoforge:runMultiplayerServer` and both qualified client runs, then
@@ -705,6 +718,11 @@ the destination (also a single folder ID) with:
 ```sh
 -PringProjectionDestination="projection-copy-folder"
 ```
+
+After the atlas is complete, the runner requests the deterministic,
+server-authoritative centered spectator pose `(C/4, 120, 0.5)` and waits for
+the surrounding sections to render. It does not inherit a stale saved player
+position, and it moves only the disposable copy.
 
 `ringProjectionViewDistanceChunks` defaults to 16 and is clamped to Minecraft's
 supported 2–32 test range. `ringProjectionEnvironment` accepts `noon` (the

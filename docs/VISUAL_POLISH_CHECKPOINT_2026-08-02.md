@@ -46,5 +46,33 @@ passed the NeoForge evidence verifier, and exited normally.
 
 Visual inspection found the ring closed and aligned at all three distances,
 with the same broad real-terrain/proxy transition and no local rim overlay.
-This completes the safe-small cross-loader matrix. Production-size,
-object/block-entity, changed-gamma/night-vision, and motion review remain open.
+This completes the safe-small cross-loader matrix.
+
+## Production dual-loader checkpoint
+
+The 16,384×256 format-6 fixture exposed a weakness in the old projection
+harness: it inherited the saved player's last position, which happened to be
+at `z=124.7` beside the maximum rim. The shared runner now requests the same
+server-authoritative spectator pose `(4096, 120, 0.5)` on both loaders before
+waiting for chunks and measuring the three views. This makes the evidence
+independent of save history without changing the source world.
+
+At 12 chunks, both centered runs received the complete 65,536-cell atlas and
+passed tangent, handoff, and radial-up capture verification:
+
+| Loader | Tangent average | Handoff average | Radial average | Maximum frame | Frames over 50 ms |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Fabric | 8.953 ms | 8.417 ms | 8.373 ms | 147.336 ms | 2 |
+| NeoForge | 8.869 ms | 8.419 ms | 8.357 ms | 77.054 ms | 3 |
+
+The settled handoff and radial stages had no frames over 50 ms. The isolated
+spikes occurred while the tangent stage was still receiving chunk/atlas
+revisions. Visual inspection found loader-identical alignment and transition
+shape. Straight up, the production band is intentionally narrow: its
+256-block width is only about 4.9% of the 5,215-block ring diameter.
+
+The server-authoritative production seam and both five-block textured-rim
+captures also passed on Fabric and NeoForge at 12 chunks. Natural seam motion
+used 0.25-block steps without a position or camera pop, and the proxy remained
+excluded from both local walls. Object/block-entity, changed-gamma/night-
+vision, broader weather/exposure, and motion review remain open.

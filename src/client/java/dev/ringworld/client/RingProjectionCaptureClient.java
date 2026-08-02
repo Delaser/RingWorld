@@ -24,6 +24,9 @@ public final class RingProjectionCaptureClient {
     private static final int MIN_VIEW_DISTANCE_CHUNKS = 2;
     private static final int MAX_VIEW_DISTANCE_CHUNKS = 32;
     private static final int WORLD_OPEN_TIMEOUT_TICKS = 2_400;
+    private static final int POSITION_TIMEOUT_TICKS = 600;
+    private static final int RENDER_TIMEOUT_TICKS = 1_200;
+    private static final double CAPTURE_CAMERA_Y = 120.0;
     private int stage;
     private int settleTicks;
     private int atlasWaitTicks;
@@ -34,6 +37,9 @@ public final class RingProjectionCaptureClient {
     private int completionTicks;
     private boolean focusPolicyApplied;
     private boolean captureEnvironmentApplied;
+    private boolean capturePoseRequested;
+    private int capturePoseWaitTicks;
+    private int renderReadyWaitTicks;
     private CaptureEnvironment selectedEnvironment;
     private boolean captureStageArmed;
     private float capturePitch;
@@ -73,6 +79,13 @@ public final class RingProjectionCaptureClient {
         }
 
         applyCaptureEnvironment(client);
+        if (!ensureCapturePose(client, geometry)) return true;
+        if (!client.levelRenderer.hasRenderedAllSections()) {
+            if (++renderReadyWaitTicks > RENDER_TIMEOUT_TICKS) {
+                finish(client, false, "timed out rendering centered capture pose");
+            }
+            return true;
+        }
         if (!captureStageArmed) {
             armCaptureStage(client, geometry, atlas);
             return true;
@@ -189,6 +202,29 @@ public final class RingProjectionCaptureClient {
         RingWorldMod.LOGGER.info(
                 "[projection-capture] normalized environment={} and applied {}-chunk view distance",
                 environment.id, viewDistance);
+    }
+
+    private boolean ensureCapturePose(Minecraft client, RingGeometry geometry) {
+        double targetX = geometry.circumferenceBlocks() / 4.0;
+        double targetZ = 0.5;
+        if (!capturePoseRequested) {
+            client.getConnection().sendCommand("gamemode spectator @s");
+            client.getConnection().sendCommand(
+                    "tp @s " + targetX + " " + CAPTURE_CAMERA_Y + " " + targetZ);
+            capturePoseRequested = true;
+            RingWorldMod.LOGGER.info(
+                    "[projection-capture] requested centered server-authoritative pose x={}, y={}, z={}",
+                    targetX, CAPTURE_CAMERA_Y, targetZ);
+            return false;
+        }
+        boolean atPosition = Math.abs(geometry.shortestCircumferenceDelta(
+                targetX, client.player.getX())) < 1.5
+                && Math.abs(client.player.getY() - CAPTURE_CAMERA_Y) < 1.5
+                && Math.abs(client.player.getZ() - targetZ) < 1.5;
+        if (!atPosition && ++capturePoseWaitTicks > POSITION_TIMEOUT_TICKS) {
+            finish(client, false, "timed out reaching centered capture pose");
+        }
+        return atPosition;
     }
 
     private void armCaptureStage(Minecraft client, RingGeometry geometry,

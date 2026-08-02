@@ -65,7 +65,9 @@ not an initial release requirement.
   sampling and final-candidate evidence remain.
 - [#96](https://github.com/Delaser/RingWorld/issues/96): final live/atlas
   transition, colour, fog, ring alignment, sky, sun, clouds, walls, curved
-  entities, supported-size captures, and performance budgets.
+  entities, supported-size captures, and performance budgets. Safe-small
+  6/12/28 plus centered production tangent/handoff/radial, seam, and both-rim
+  evidence now passes on both loaders; object/exposure/motion review remains.
 
 These passes may run together once both loader clients and servers function.
 No known blocker or high-severity standalone defect may remain at sign-off.
