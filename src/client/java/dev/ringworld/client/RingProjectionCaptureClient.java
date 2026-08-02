@@ -323,7 +323,7 @@ public final class RingProjectionCaptureClient {
 
     private enum CaptureEnvironment {
         NOON("noon", 6_000, false),
-        DUSK("dusk", 14_008, false),
+        DUSK("dusk", 12_000, false),
         NIGHT("night", 18_000, false),
         RAIN("rain", 6_000, true);
 

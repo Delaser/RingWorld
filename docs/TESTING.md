@@ -49,7 +49,9 @@ waits for resource/shader loading, format-2 acknowledgement, and a complete
 atlas, records tangent/handoff/radial screenshots plus frame metrics, verifies
 the evidence, and exits. The production 16,384×256 noon run passes with settled
 tangent/handoff/radial averages of 10.7/8.4/8.4 ms per frame. The dusk, night,
-and rain variants also pass.
+and rain variants also pass. Dusk is frozen at tick 12,000, matching
+`RingSkyCycle`'s warm dusk keyframe; tick 14,008 is already night and must not
+be used as dusk evidence.
 
 The NeoForge visual and lifecycle gates use separate disposable run
 directories:
