@@ -27,7 +27,8 @@ layout switching clears stale state, and the production lifecycle passes
 Overworld/Nether/End transitions, save/disconnect, and reopen. NeoForge also
 passes the production/multi-seed structure matrix, a complete unattended
 headless atlas prewarm, and the dedicated two-client seam/combat/block/bed/
-death/physical-portal/boat/teleport/reconnect matrix. Loader-labelled Fabric
+death/physical-portal/boat/teleport/reconnect matrix, including destination
+water and hostile navigation through the seam. Loader-labelled Fabric
 and NeoForge client/server packages, strict jar verification, same-commit
 shared-contract comparison, and a real packaged macOS NeoForge client smoke
 also pass. The shared GUI-scale-4 atlas map/control fixture passes all eleven
@@ -37,7 +38,8 @@ Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
 gameplay/rim probes. The dedicated two-client seam/combat/stateful-block/bed/
-death/physical-portal/boat/teleport/reconnect matrix also passes. The
+death/physical-portal/boat/teleport/reconnect matrix also passes, including
+the strict destination-water and hostile-navigation assertions. The
 multi-seed worldgen matrix covers all 14 major biome families, deliberate
 seam-crossing structures, caves, ores, trees, loot, saved scarce-structure
 outcomes, and exact reload evidence. A copied

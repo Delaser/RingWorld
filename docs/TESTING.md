@@ -935,10 +935,12 @@ The scenario verifies:
 - both clients report their phase matrix.
 
 The historical 2026-08-01 dedicated result predates the X=`0` destination
-assertion and observed only the seam-side source state. Do not count it as a
-pass for this stricter check; refresh the dedicated fixture evidence after a
-new Fabric or NeoForge run. It also predates the tagged hostile-Zombie
-navigation assertion, which likewise needs that fresh run.
+assertion and observed only the seam-side source state. Fresh 2,048x416 runs
+on 2026-08-02 passed the complete strengthened matrix on both Fabric and
+NeoForge, including destination water and the tagged hostile-Zombie fold/path
+completion. NeoForge's standalone evidence verifier also passed. Keep the
+older source-only result labelled as historical rather than conflating it
+with the stricter gate.
 
 Success is:
 

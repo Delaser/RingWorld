@@ -354,17 +354,16 @@ water flow, an explosion, beds, death/respawn, physical Nether/End portal
 transfers, effects, reconnects, long teleports, rims, and exterior void
 behavior.
 
-The next dedicated two-client rerun must additionally record water flowing
-through a sealed trough from canonical `C-1` into the initially empty
-canonical `X=0` destination.
-The historical 2026-08-01 dedicated result observed only the source state, so
-it is not evidence for this strengthened assertion.
+The dedicated two-client fixture records water flowing through a sealed trough
+from canonical `C-1` into the initially empty canonical `X=0` destination.
+The historical 2026-08-01 dedicated result observed only the source state.
+Fresh 2026-08-02 Fabric and NeoForge runs pass the strengthened destination
+assertion.
 
-That rerun must also show a tagged hostile Zombie completing a vanilla
+The fixture also requires a tagged hostile Zombie to complete a vanilla
 navigation request from canonical `C-5` toward `X=2` through a bounded lane,
 naturally folding into low canonical X, and finishing within target tolerance.
-This new server-fixture assertion is
-also pending fresh dedicated evidence.
+The same fresh dual-loader runs pass this server-fixture assertion.
 
 For demonstrated results, open risks, and the prioritized roadmap, see
 [Current state](docs/CURRENT_STATE.md).
