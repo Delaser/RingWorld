@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 235
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 241
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -112,12 +112,13 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite contains 235 unit/parameterized cases:
+The active suite contains 241 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
 | `RingGeometryTest` | Seam continuity, presentation charts and sleeping-position images, default walking length, physical/tangent transforms, noise seam, culling envelope, visibility math, query windows |
 | `RingMapCompassSupportTest` | Bidirectional nearest-image map sampling/decorations/banner gate and spawn/lodestone/recovery compass bearing plus exact-target validity |
+| `RingRaidSupportTest` | Periodic raid distance/selection, seam-window POI queries, nearest-image village-centre averaging/deduplication, and canonical wave-spawn readiness windows |
 | `RingObjectTransformTest` | Exact curved rigid-anchor pose, tangent orientation, and presentation-seam continuity |
 | `RingChunkTopologyTest` | Canonical chunk images, joined-edge distance, periodic entity simulation distance, watch windows, incremental seam diff, long teleport, finite whole-ring filter |
 | `RingDimensionReportTest` | Full-height radial safety, aligned playable minimum, structural-only/unsafe curvature, walls/clouds, allocation bounds, measured-reference cost warnings, and maximum technical warning envelope |

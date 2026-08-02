@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 235 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 241 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
@@ -278,12 +278,12 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 235
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 241
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 235
+The NeoForge module uses the same Java 25 toolchain and also passes all 241
 unit/parameterized cases:
 
 ```sh
