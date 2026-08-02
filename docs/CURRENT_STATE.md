@@ -116,6 +116,14 @@ the NeoForge jar has SHA-256
 They are not frozen release candidates: graphical and strengthened two-client
 acceptance remains open.
 
+Issue #111 tracks the remaining raid/POI seam defect. Its first loader-neutral
+foundation defines periodic raid distance/selection, three-image POI query
+origins, nearest-image village-centre averaging with canonical persistence,
+and split canonical block/chunk readiness windows for wave spawning. Pure
+tests cover the `C-1/0` cases. This foundation does not alter Minecraft raid
+behavior by itself; targeted shared mixins and a deterministic Fabric/NeoForge
+raid fixture remain required before the defect is fixed.
+
 Issue #24 expands the loader-neutral dimension matrix to 200
 unit/parameterized cases. It covers the safe-small, aligned playable-minimum,
 production, former-wide, long/narrow, wide/medium, and custom-wall layouts;
@@ -151,7 +159,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite now contains 235 unit/parameterized cases.
+The active suite now contains 241 unit/parameterized cases.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
@@ -297,7 +305,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 235 unit/parameterized cases pass, and Loom produces
+temporary shims, all 241 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
