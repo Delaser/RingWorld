@@ -175,9 +175,13 @@ The first #111 runtime slice replaces RingWorld Overworld `getRaidAt` with a
 nearest-periodic active-raid scan while preserving vanilla's strict 9,216
 squared-distance threshold. All 241 cases pass on each loader, and fresh
 Fabric and NeoForge dedicated servers reached `Done` with the required
-accessor/injection applied. This target-application evidence does not cover
-periodic POI discovery, centre relocation, wave spawning, or a completed raid;
-the deterministic dual-loader seam-raid fixture remains required.
+accessor/injection applied. The next integration checkpoint adds periodic POI
+discovery and village tests, canonical centre creation/relocation, split
+canonical wave-spawn readiness, periodic raider retention, and nearest-image
+goal targets. Both loader builds and dedicated servers reach `Done` with all
+four new mixins registered. This proves target application and startup only;
+the deterministic dual-loader seam-raid fixture and a completed raid remain
+required.
 
 Inspect machine-readable results under:
 

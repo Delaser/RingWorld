@@ -533,11 +533,13 @@ version numbers.
 - Structure placement and arbitrary third-party mods have not received broad
   seam coverage. Coordinate-sensitive mods, renderers, gravity systems, and
   chunk internals are likely incompatible.
-- `ServerWorldMixin` replaces only RingWorld Overworld `getRaidAt` lookup with
-  the nearest active saved raid under vanilla's strict 9,216 squared-distance
-  threshold. Keep `RaidsAccessor` read-only. This does not yet make vanilla's
-  flat village POI graph, raid-centre relocation, or wave spawning periodic;
-  those remain together in issue #111 and need the deterministic raid fixture.
+- Raid support keeps saved raid centres, POIs, wave positions, and chunks
+  canonical while projecting only transient queries and path targets to their
+  nearest periodic images. `ServerWorldMixin`, `RaidsMixin`, `RaidMixin`,
+  `PathfindToRaidGoalMixin`, and `RaiderMoveThroughVillageGoalMixin` form one
+  contract; keep `RaidsAccessor` read-only and update them together. Loader
+  startup is not completion evidence: issue #111 still needs the deterministic
+  two-loader seam-raid fixture and a real completed raid.
 - Compatibility contract/API version 1 is documented in
   `docs/COMPATIBILITY.md`. Keep `RingCompatibilityContract`, the Fabric probe,
   `fabric.mod.json`'s `ringworld:compatibility_api`, public API documentation,
