@@ -19,9 +19,9 @@ one shader contract, and the same gameplay behavior.
    and development launches. **Checkpoint reached:** the Java 25 NeoForge
    26.1.2.87 / ModDevGradle 2.0.143 module shares the core sources, passes all
    233 unit/parameterized cases, and its dedicated server reaches `Done` with
-   atlas startup/progress. Graphical-client integration and testing remain
-   #92 work; a monitor-unavailable launch attempt is not a code pass.
-3. [#92](https://github.com/Delaser/RingWorld/issues/92): make the NeoForge
+   atlas startup/progress. Graphical-client integration and testing completed
+   under #92.
+3. [#92](https://github.com/Delaser/RingWorld/issues/92): **complete.** The NeoForge
    client pass the curved-renderer, atlas, shader, sky, world-switch, and frame
    pacing gates. **Initial checkpoint reached:** shared client payload/session
    state plus NeoForge lifecycle, payload, and render-pipeline adapters load
@@ -30,8 +30,9 @@ one shader contract, and the same gameplay behavior.
    progressive tangent/radial diagnostics. The replacement
    `:neoforge:runProductionProjectionClient` gate uses a disposable save copy,
    waits for completion, captures tangent/handoff/radial views, verifies them,
-   and exits. Its production 16,384×256 noon run passes. Seam/rim,
-   time/weather, lifecycle, and gameplay/multiplayer parity remain open.
+   and exits. Production noon/dusk/night/rain, seam/both-rim, layout-switch,
+   and Overworld/Nether/End/save/reopen lifecycle gates pass. Gameplay and
+   multiplayer parity continue under #93.
 4. [#93](https://github.com/Delaser/RingWorld/issues/93): make the NeoForge
    server pass topology, worldgen, storage, atlas, structure, and two-client
    gameplay gates.

@@ -19,7 +19,7 @@ import net.minecraft.world.level.storage.LevelResource;
  * disconnect, and checks that the second handshake installs only its own
  * immutable geometry and atlas.</p>
  */
-final class LayoutSwitchTestClient {
+public final class LayoutSwitchTestClient {
     private static final int JOIN_SETTLE_TICKS = 80;
     private static final int STAGE_TIMEOUT_TICKS = 2_400;
 
@@ -32,7 +32,7 @@ final class LayoutSwitchTestClient {
     private boolean disconnectClearedState;
     private boolean firstStorageVerified;
 
-    boolean tick(Minecraft client) {
+    public boolean tick(Minecraft client) {
         if (firstWorld.isEmpty() || secondWorld.isEmpty()) return false;
         if (++ticks > STAGE_TIMEOUT_TICKS) {
             finish(client, false, "timed out in stage " + stage);

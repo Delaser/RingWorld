@@ -48,9 +48,29 @@ It copies the named source save from `neoforge/run-client/saves/` into
 waits for resource/shader loading, format-2 acknowledgement, and a complete
 atlas, records tangent/handoff/radial screenshots plus frame metrics, verifies
 the evidence, and exits. The production 16,384×256 noon run passes with settled
-tangent/handoff/radial averages of 10.7/8.4/8.4 ms per frame. Seam/rim and
-time/weather captures, lifecycle and world-switch coverage, gameplay,
-two-client multiplayer, and package parity remain dedicated open gates.
+tangent/handoff/radial averages of 10.7/8.4/8.4 ms per frame. The dusk, night,
+and rain variants also pass.
+
+The remaining NeoForge #92 visual and lifecycle gates use separate disposable
+run directories:
+
+```sh
+./gradlew :neoforge:runProductionVisualParityClient \
+  -PringNeoForgeVisualParitySource="NeoForge Test"
+./gradlew :neoforge:runLayoutSwitchClient \
+  -PringNeoForgeLayoutSwitchFirstSource="NeoForge Test" \
+  -PringNeoForgeLayoutSwitchSecondSource="NeoForge Layout Source Legacy-Length"
+./gradlew :neoforge:runProductionLifecycleClient \
+  -PringNeoForgeProductionLifecycleSource="NeoForge Test"
+```
+
+The first verifies screenshots at the natural seam and both five-block textured
+rims. The second switches between different immutable layouts and proves that
+disconnect clears client geometry and atlas state. The third proves inactive
+RingWorld state in Nether/End, exact Overworld restoration, normal save and
+disconnect, then reopen. All three pass. Every source must be an ignored save
+under `neoforge/run-client/saves/`; the tasks mutate only freshly copied
+destinations. Gameplay, two-client multiplayer, and package parity remain open.
 
 ## Unit and build validation
 
@@ -174,9 +194,9 @@ required mixin still applies.
 
 The detailed storage evidence below is Fabric evidence. The #91 NeoForge
 bootstrap separately proves a fresh dedicated server reaches `Done` and begins
-atlas work, while #92 supplies an integrated copied-world client diagnostic;
-NeoForge has not yet repeated the storage, topology, worldgen, or two-client
-gates.
+atlas work, while #92 supplies the completed copied-world client visual and
+lifecycle suite; NeoForge has not yet repeated the storage, topology, worldgen,
+or two-client gates.
 
 Run storage migration gates only from a disposable worktree/run directory.
 Never point them at `dist/`, the public service, or the only copy of a world.

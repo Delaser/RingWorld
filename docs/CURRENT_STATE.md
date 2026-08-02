@@ -60,9 +60,13 @@ rendered a progressive textured ring surface. The replacement
 an isolated run directory, waits for atlas completion, captures tangent,
 handoff, and radial views, verifies them, and exits. Its production 16,384×256
 noon run passes; the settled stages averaged 10.7, 8.4, and 8.4 ms per frame,
-respectively. Seam/rim and time/weather visual review, world-switch/lifecycle
-coverage, gameplay, two-client multiplayer, packaging, and full Fabric parity
-remain open. Use `:runServer`
+respectively. Dusk, night, and rain projection variants also pass. The
+disposable visual-parity gate captures a continuous seam and both correctly
+textured rims. Same-process switching between 16,384×256 and 15,552×256 clears
+the old geometry/atlas, and the production lifecycle passes Nether, End, both
+Overworld returns, save/disconnect, and reopen with the original complete
+atlas and fingerprint. This completes #92; gameplay, two-client multiplayer,
+packaging, and full standalone parity remain open. Use `:runServer`
 for Fabric and `:neoforge:runServer` for NeoForge rather than an ambiguous
 unqualified task.
 
