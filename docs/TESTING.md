@@ -171,6 +171,14 @@ for NeoForge. These are headless development-build identities, not frozen
 release candidates. Graphical and strengthened two-client acceptance remains
 open.
 
+The first #111 runtime slice replaces RingWorld Overworld `getRaidAt` with a
+nearest-periodic active-raid scan while preserving vanilla's strict 9,216
+squared-distance threshold. All 241 cases pass on each loader, and fresh
+Fabric and NeoForge dedicated servers reached `Done` with the required
+accessor/injection applied. This target-application evidence does not cover
+periodic POI discovery, centre relocation, wave spawning, or a completed raid;
+the deterministic dual-loader seam-raid fixture remains required.
+
 Inspect machine-readable results under:
 
 ```text
