@@ -36,7 +36,8 @@ On every start, each launcher copies its packaged RingWorld jar plus
 `mmc-pack.json` into its loader-specific Prism instance: `RingWorld-Test` for
 Fabric and `RingWorld-NeoForge` for NeoForge. The separate instance IDs prevent
 a loader change from carrying arbitrary Fabric-only or NeoForge-only mods into
-the other runtime. Fabric launchers additionally refresh only their managed
+the other runtime. The package's loader marker uses fixed LF bytes on every
+assembly platform. Fabric launchers additionally refresh only their managed
 Fabric API jar; NeoForge does not bundle or manage Fabric API. Neither launcher
 replaces Prism accounts, saves, options, screenshots, resource packs, an
 existing RingWorld config, unrelated mods, or unrelated `instance.cfg` values

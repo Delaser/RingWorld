@@ -347,7 +347,9 @@ def add_client_package(
         root = Path(directory) / "bundle"
         root.mkdir()
         shutil.copy2(license_file, root / "LICENSE")
-        (root / "RINGWORLD-LOADER.txt").write_text(loader + "\n", encoding="utf-8")
+        # This marker is consumed from archive bytes and must not vary with the
+        # host platform's text newline translation.
+        (root / "RINGWORLD-LOADER.txt").write_bytes(loader.encode("ascii") + b"\n")
         launchers = {
             "macOS-universal": ("Launch RingWorld.command", "launch-ringworld.sh"),
             "Windows": ("Launch RingWorld.bat",),
