@@ -85,6 +85,12 @@ sign, bed, ender chest, shulker box, banner, copper golem, dropped item, boat,
 cow, and zombie remain seated on the curved stone-brick surface as the camera
 approaches. The two loaders' final captures match.
 
+The two graphical tasks must run sequentially as
+`:runCurvedObjectCaptureClient` and
+`:neoforge:runCurvedObjectCaptureClient`. An unqualified Gradle task selector
+matches both projects and can start both clients together; one Fabric launch
+stalled during resource loading on macOS until the tasks were separated.
+
 The first NeoForge retry exposed an invalid empty-sky PASS: its settings packet
 was sent by `PlayerLoggedInEvent`, after NeoForge flushed the initial chunk
 buffer. Canonical edge chunks therefore reached a fresh client before ring
