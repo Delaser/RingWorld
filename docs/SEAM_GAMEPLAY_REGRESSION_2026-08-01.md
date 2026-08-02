@@ -40,6 +40,15 @@ The final logs contained no `moved too quickly` or `moved wrongly` warning and
 no RingWorld exception or crash. Offline test accounts still produce expected
 Mojang/Realms HTTP 401 noise; that is unrelated to the local offline server.
 
+## Post-evidence fixture strengthening
+
+The current fixture seals a two-cell trough, clears canonical X=`0`, places
+its only water source at `C-1`, and requires both clients plus the server to
+observe water at X=`0`.
+The passing run documented above predates this assertion and checked only the
+source state. It must not be described as evidence that the strengthened
+destination-flow check has passed; a new dedicated run is required.
+
 ## Defects fixed by this gate
 
 Vanilla's private bed-reach test treated canonical X=`C-1.5` and bed X=`1.5`

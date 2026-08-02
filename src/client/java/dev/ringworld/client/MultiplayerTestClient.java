@@ -503,33 +503,34 @@ public final class MultiplayerTestClient {
             BlockPos chest = new BlockPos(chestX, 120, -3);
             BlockPos lectern = new BlockPos(lecternX, 120, -3);
             BlockPos lamp = new BlockPos(chestX, 120, -5);
-            BlockPos fluid = new BlockPos(presentationX(
-                    geometry, client, geometry.circumferenceBlocks() - 1.0), 120, 6);
+            // The sealed trough clears X=0 before placing its only source at
+            // C-1. This is the received destination image, not the source.
+            BlockPos fluidDestination = new BlockPos(presentationX(geometry, client, 0), 120, 6);
             BlockPos blast = new BlockPos(chestX, 124, 9);
             boolean chestReady = client.level.getBlockEntity(chest) instanceof ChestBlockEntity;
             boolean lecternReady = client.level.getBlockEntity(lectern) instanceof LecternBlockEntity
                     && client.level.getBlockState(lectern).getValue(LecternBlock.HAS_BOOK);
             boolean lampLit = client.level.getBlockState(lamp)
                     .getOptionalValue(BlockStateProperties.LIT).orElse(false);
-            boolean fluidCrossed = !client.level.getFluidState(fluid).isEmpty();
+            boolean waterReachedDestination = !client.level.getFluidState(fluidDestination).isEmpty();
             boolean explosionCrossed = client.level.getBlockState(blast).isAir();
             if (stageTicks % 200 == 0) {
                 RingWorldMod.LOGGER.info(
-                        "[multiplayer:{}] waiting for extended fixture chest={} lectern={} lamp={} fluid={} blast={}",
-                        role, chestReady, lecternReady, lampLit, fluidCrossed, explosionCrossed);
+                        "[multiplayer:{}] waiting for extended fixture chest={} lectern={} lamp={} waterReachedDestination={} blast={}",
+                        role, chestReady, lecternReady, lampLit, waterReachedDestination, explosionCrossed);
             }
-            if (chestReady && lecternReady && lampLit && fluidCrossed && explosionCrossed) {
+            if (chestReady && lecternReady && lampLit && waterReachedDestination && explosionCrossed) {
                 extendedFixtureSent = true;
                 sendResult("extended_fixture", true, stageTicks);
                 RingWorldMod.LOGGER.info(
-                        "[multiplayer:{}] extended seam fixture=true chest={} lectern={} lamp={} fluid={} blast={}",
-                        role, chest, lectern, lamp, fluid, blast);
+                        "[multiplayer:{}] extended seam fixture=true chest={} lectern={} lamp={} waterReachedDestination={} blast={}",
+                        role, chest, lectern, lamp, fluidDestination, blast);
             } else if (stageTicks >= 1_200) {
                 extendedFixtureSent = true;
                 sendResult("extended_fixture", false, stageTicks);
                 RingWorldMod.LOGGER.error(
-                        "[multiplayer:{}] extended seam fixture=false chest={} lectern={} lamp={} fluid={} blast={}",
-                        role, chestReady, lecternReady, lampLit, fluidCrossed, explosionCrossed);
+                        "[multiplayer:{}] extended seam fixture=false chest={} lectern={} lamp={} waterReachedDestination={} blast={}",
+                        role, chestReady, lecternReady, lampLit, waterReachedDestination, explosionCrossed);
             }
         }
 

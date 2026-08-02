@@ -842,8 +842,9 @@ The scenario verifies:
 - client B disconnects and reconnects cleanly;
 - a chest and book-bearing lectern synchronize on their nearest seam images;
 - a real neighbour update powers a redstone lamp across X=`C-1`/`0`;
-- a seam-side water source and destructive explosion synchronize to both
-  clients (the integrated harness separately verifies actual flowing water);
+- water in a sealed two-cell trough flows from its sole source at canonical
+  X=`C-1` into the initially empty canonical X=`0` destination on the server
+  and each client, alongside a destructive explosion;
 - a real survival bed spanning canonical X=`0`/`1` accepts a player beside
   `C`, stays canonical, wakes on damage, and disappears cleanly when broken;
 - the death screen, client respawn request, replacement server player, and
@@ -853,6 +854,11 @@ The scenario verifies:
 - a real End portal block carries the player to the vanilla End and an End
   return portal restores the Overworld with client RingWorld state reattached;
 - both clients report their phase matrix.
+
+The historical 2026-08-01 dedicated result predates the X=`0` destination
+assertion and observed only the seam-side source state. Do not count it as a
+pass for this stricter check; refresh the dedicated fixture evidence after a
+new Fabric or NeoForge run.
 
 Success is:
 

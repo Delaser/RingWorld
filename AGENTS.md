@@ -664,6 +664,11 @@ version numbers.
   fully loaded world before setup teleports. Its night fixture advances the
   26.1 `WorldClock` monotonically to the next 13,000-tick phase; rewinding to
   absolute day-zero time makes reused-world bed tests nondeterministic.
+- Its extended water fixture seals a two-cell trough, clears canonical X=0,
+  places the only source at C-1, and must assert water at X=0 on both server
+  and clients. Observing C-1
+  only re-observes the source. The historical 2026-08-01 dedicated evidence
+  predates this destination assertion and must not be described as its pass.
 - Rigid models submitted outside the terrain shader must use
   `RingObjectTransform`: embed the anchor with `toCameraLocal`, then rotate
   the model into that anchor's tangent frame. `EntityRenderManagerMixin` and

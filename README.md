@@ -354,6 +354,12 @@ water flow, an explosion, beds, death/respawn, physical Nether/End portal
 transfers, effects, reconnects, long teleports, rims, and exterior void
 behavior.
 
+The next dedicated two-client rerun must additionally record water flowing
+through a sealed trough from canonical `C-1` into the initially empty
+canonical `X=0` destination.
+The historical 2026-08-01 dedicated result observed only the source state, so
+it is not evidence for this strengthened assertion.
+
 For demonstrated results, open risks, and the prioritized roadmap, see
 [Current state](docs/CURRENT_STATE.md).
 

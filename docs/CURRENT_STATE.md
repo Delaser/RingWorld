@@ -175,6 +175,13 @@ after server-owned sleep poses, monotonic 26.1 clock setup, and explicit
 client-ready gating. Exact automated, manual, and unsupported coverage is in
 `SEAM_GAMEPLAY_REGRESSION_2026-08-01.md`.
 
+The current extended fixture strengthens only future dedicated runs: it seals
+a two-cell trough, clears canonical X=0, places its sole water source at C-1,
+and requires the server and both clients to observe water at X=0. The
+2026-08-01 record above observed the
+source state and is retained as historical evidence, not as a pass of this new
+destination assertion.
+
 #72 completes the multi-seed worldgen and structure seam matrix. Three fresh
 dedicated worlds plus one exact production-save reload cover all 14 defined
 major Overworld biome families, 544 fresh fully generated seam-strip chunks,
