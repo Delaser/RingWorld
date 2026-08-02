@@ -60,8 +60,8 @@ not an initial release requirement.
   creative playability, including sleeping, portals, maps, raids, vehicles,
   structures, combat, building, redstone, weather, and reconnects. The fresh
   strengthened two-client and raid fixtures now pass on both loaders; direct
-  maps/compasses, ordinary play sampling, weather/portal delays, and candidate
-  evidence remain.
+  maps/compasses now pass on both loaders, while ordinary play sampling,
+  weather/portal delays, and candidate evidence remain.
 - [#96](https://github.com/Delaser/RingWorld/issues/96): final live/atlas
   transition, colour, fog, ring alignment, sky, sun, clouds, walls, curved
   entities, supported-size captures, and performance budgets.

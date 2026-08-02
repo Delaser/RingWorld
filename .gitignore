@@ -32,6 +32,7 @@ accounts.json
 /saves/
 /world/
 /world-*/
+/run-map-compass-capture/
 *.log
 hs_err_pid*
 

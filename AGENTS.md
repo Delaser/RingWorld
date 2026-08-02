@@ -33,7 +33,11 @@ and NeoForge client/server packages, strict jar verification, same-commit
 shared-contract comparison, and a real packaged macOS NeoForge client smoke
 also pass. The shared GUI-scale-4 atlas map/control fixture passes all eleven
 captures and its ordered live-revision probe on both loaders. A real graphical
-Windows run, exact-candidate review, and owner release go/no-go remain.
+Windows run, exact-candidate review, and owner release go/no-go remain. The
+shared real-client map/compass fixture also passes on both loaders: filled-map
+pixels and player/banner/frame markers cross the seam in both directions, and
+spawn/lodestone/recovery needles use the nearest periodic target, including
+the exact-target random-spin case.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -263,7 +267,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   hashes, performance evidence, and protected rollback inventory.
 - `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`: historical Java 25/26.1.2
   compiler inventory and the subsequent green build/server checkpoint.
-- `dist/`, `run/`, `run-multiplayer/`, `run-atlas-ui/`, `run-headless-prewarm/`,
+- `dist/`, `run/`, `run-multiplayer/`, `run-atlas-ui/`, `run-map-compass-capture/`, `run-headless-prewarm/`,
   `run-raid-seam/`, `logs/`, `.gradle/`, and `build/`:
   generated or local runtime state; all are intentionally ignored.
 
@@ -673,6 +677,11 @@ version numbers.
   reference (which may be seam-equivalent to C after vanilla grid rounding).
   Do not create another saved map copy or extend this slice to the locator bar
   without a separate audit.
+- `RingMapCompassCaptureClient` is the loader-neutral real-client acceptance
+  fixture. Run `:runMapCompassCaptureClient` and
+  `:neoforge:runMapCompassCaptureClient` separately: the unqualified task name
+  is ambiguous in the multi-project build. Its mixin invoker is test plumbing
+  only and must not become production compass logic.
 - The reusable multiplayer harness waits for both real clients to report a
   fully loaded world before setup teleports. Its night fixture advances the
   26.1 `WorldClock` monotonically to the next 13,000-tick phase; rewinding to

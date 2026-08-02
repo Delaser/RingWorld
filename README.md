@@ -351,8 +351,8 @@ The current build includes:
 Representative automated coverage includes repeated seam crossings, combat,
 block and block-entity updates, redstone, an arrow, a boat, a ground navigator,
 water flow, an explosion, beds, death/respawn, physical Nether/End portal
-transfers, effects, reconnects, long teleports, rims, and exterior void
-behavior.
+transfers, effects, reconnects, long teleports, rims, exterior void behavior,
+and bidirectional filled-map/compass behavior at the seam.
 
 The dedicated two-client fixture records water flowing through a sealed trough
 from canonical `C-1` into the initially empty canonical `X=0` destination.
@@ -416,6 +416,8 @@ Additional automated runs:
 
 ```sh
 ./gradlew runLayoutSwitchClient
+./gradlew :runMapCompassCaptureClient
+./gradlew :neoforge:runMapCompassCaptureClient
 ./gradlew runProductionProjectionClient -PringProjectionWorld="save-folder-id"
 ./gradlew runProductionLifecycleClient -PringProductionLifecycleSource="save-folder-id"
 ./gradlew runHeadlessPrewarmServer

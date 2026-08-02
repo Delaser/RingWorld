@@ -132,6 +132,13 @@ loom {
 			// Minecraft login names are limited to 16 characters.
 			programArgs "--username", "AtlasUiTester"
 		}
+		mapCompassCaptureClient {
+			client()
+			name "RingWorld Map and Compass Capture"
+			runDir "run-map-compass-capture"
+			vmArg "-Dringworld.captureMapCompass=true"
+			programArgs "--username", "MapCompassTester"
+		}
 		strongholdTestServer {
 			server()
 			name "RingWorld Stronghold Test Server"
@@ -425,6 +432,51 @@ tasks.register("prepareAtlasUiRun") {
 tasks.named("runAtlasUiClient") {
 	dependsOn("prepareAtlasUiRun")
 	finalizedBy("verifyAtlasUiClient")
+}
+
+tasks.register("prepareMapCompassCaptureRun") {
+	group = "ringworld verification"
+	description = "Writes an isolated safe-small configuration for the map and compass capture."
+	doLast {
+		delete(file("run-map-compass-capture/saves"))
+		delete(file("run-map-compass-capture/screenshots"))
+		delete(file("run-map-compass-capture/ringworld-cache"))
+		delete(file("run-map-compass-capture/logs"))
+		def configFile = file("run-map-compass-capture/config/ringworld.properties")
+		configFile.parentFile.mkdirs()
+		def config = new Properties()
+		config.setProperty("widthBlocks", "416")
+		config.setProperty("circumferenceBlocks", "2048")
+		config.setProperty("wallHeightBlocks", "160")
+		config.setProperty("testMode", "false")
+		config.setProperty("testViewDistanceChunks", "6")
+		config.setProperty("pregenerateTerrainAtlas", "false")
+		configFile.withOutputStream { config.store(it, "Isolated RingWorld map and compass capture") }
+	}
+}
+
+tasks.register("verifyMapCompassCaptureClient") {
+	group = "ringworld verification"
+	description = "Fails unless the real map and compass paths pass in both seam directions."
+	mustRunAfter("runMapCompassCaptureClient")
+	doLast {
+		def logFile = file("run-map-compass-capture/logs/latest.log")
+		def log = logFile.isFile() ? logFile.text : ""
+		if (!log.contains("[map-compass-capture] PASS") || log.contains("[map-compass-capture] FAIL")) {
+			throw new GradleException("Map and compass capture did not pass; inspect " + logFile)
+		}
+		["ringworld-map-high-to-low", "ringworld-map-low-to-high",
+		 "ringworld-compass-high-to-low", "ringworld-compass-low-to-high"].each { prefix ->
+			if (fileTree("run-map-compass-capture/screenshots").matching { include prefix + "*.png" }.isEmpty()) {
+				throw new GradleException("Map and compass capture is missing screenshot " + prefix + "*.png")
+			}
+		}
+	}
+}
+
+tasks.named("runMapCompassCaptureClient") {
+	dependsOn("prepareMapCompassCaptureRun")
+	finalizedBy("verifyMapCompassCaptureClient")
 }
 
 tasks.register("runAtlasFidelityBenchmark", JavaExec) {
