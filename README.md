@@ -16,7 +16,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 233 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> all 235 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -48,7 +48,7 @@ The Nether and End remain vanilla.
 
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
-> Java 25 module builds with the same 233 tests; its dedicated server reaches
+> Java 25 module builds with the same 235 tests; its dedicated server reaches
 > `Done` and starts/progresses an atlas. Its client now loads the shared
 > resources/shaders and mixins, acknowledges settings format 2, streams atlas
 > metadata/tiles, and renders the complete textured surface in a copied
@@ -231,7 +231,7 @@ The parallel NeoForge module uses the same Java 25 toolchain:
 ./gradlew :neoforge:test :neoforge:build --console=plain
 ```
 
-Both Fabric and NeoForge builds currently pass the 233 unit/parameterized
+Both Fabric and NeoForge builds currently pass the 235 unit/parameterized
 cases. When launching a dedicated development server, use the qualified task
 for the intended loader: `./gradlew :runServer` for Fabric or
 `./gradlew :neoforge:runServer` for NeoForge. Do not use an unqualified
@@ -366,8 +366,9 @@ For demonstrated results, open risks, and the prioritized roadmap, see
   gates pass.
 - The multi-seed matrix covers ordinary biome, carver, ore, tree, loot, and
   mineshaft seam generation, but does not claim exhaustive seam coverage for
-  every vanilla structure. Maps, raids, complex redstone/fluid networks, and
-  additional vehicle/projectile variants still need more coverage. Other scarce
+  every vanilla structure. Full map-mode playthroughs, raids, complex
+  redstone/fluid networks, and additional vehicle/projectile variants still
+  need more coverage. Other scarce
   random-spread structures are not yet selectable; see
   the [scarce-structure audit](docs/SCARCE_STRUCTURE_GUARANTEE_AUDIT.md).
 - The atlas is an eight-block surface sample: edits between sample points may

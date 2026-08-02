@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 233
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 235
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -112,11 +112,12 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite contains 233 unit/parameterized cases:
+The active suite contains 235 unit/parameterized cases:
 
 | Class | Coverage |
 | --- | --- |
 | `RingGeometryTest` | Seam continuity, presentation charts and sleeping-position images, default walking length, physical/tangent transforms, noise seam, culling envelope, visibility math, query windows |
+| `RingMapCompassSupportTest` | Bidirectional nearest-image map sampling/decorations/banner gate and spawn/lodestone/recovery compass bearing plus exact-target validity |
 | `RingObjectTransformTest` | Exact curved rigid-anchor pose, tangent orientation, and presentation-seam continuity |
 | `RingChunkTopologyTest` | Canonical chunk images, joined-edge distance, periodic entity simulation distance, watch windows, incremental seam diff, long teleport, finite whole-ring filter |
 | `RingDimensionReportTest` | Full-height radial safety, aligned playable minimum, structural-only/unsafe curvature, walls/clouds, allocation bounds, measured-reference cost warnings, and maximum technical warning envelope |
@@ -151,6 +152,13 @@ The active suite contains 233 unit/parameterized cases:
 | `RingStrongholdPlacementTest` | Deterministic canonical placement, seam clearance, seed variation, and supported circumference shapes |
 | `RingStructurePolicyTest` | Stronghold bit plus monument request, pending/terminal result, and legacy-v1 disabled behavior |
 | `RingMonumentPlacementTest` | Deterministic bounded candidate walk, canonical/finite bounds, seam/rim envelope, seed variation, and search exhaustion |
+
+The 2026-08-02 #95 navigation checkpoint ran the full 235-case build on both
+loaders. Fabric and NeoForge dedicated servers reached `Done` with the new
+required map mixins, and a Fabric graphical client completed resource/model
+loading with the compass mixin. This is a target-application gate, not a
+substitute for direct in-game map-pixel, decoration, and needle review on the
+final candidates.
 
 Inspect machine-readable results under:
 

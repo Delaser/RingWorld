@@ -38,13 +38,13 @@ classes moved into explicit `src/platform/fabric` and
 `src/platform/fabricClient` source trees without changing their packages or
 runtime identity. Shared main/client trees now contain no Fabric or NeoForge
 API references, enforced by `verifyLoaderBoundary` as part of `check`. The
-Java 25 test/build gate passed all 233 cases, the rebuilt jar retained its
+Java 25 test/build gate passed all 235 cases, the rebuilt jar retained its
 entrypoints and licence, a fresh Fabric dedicated server reached `Done`, and a
 Fabric client completed resource/shader initialization.
 
 Issue #91 adds the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 Java 25 module,
 metadata, bootstrap, lifecycle, command, payload-transport, and atlas
-adapters. The Fabric and NeoForge builds each pass all 233 unit/parameterized
+adapters. The Fabric and NeoForge builds each pass all 235 unit/parameterized
 cases. Fresh dedicated servers for both loaders reach `Done`; the NeoForge
 server also starts and progresses its terrain atlas.
 
@@ -141,7 +141,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite now contains 233 unit/parameterized cases.
+The active suite now contains 235 unit/parameterized cases.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
@@ -190,10 +190,20 @@ counts and honest limits are in `WORLDGEN_STRUCTURE_MATRIX_2026-08-01.md`.
 acknowledgement deadline, exact required-channel capability checks on both
 peers, idempotent duplicate handling, request gating, and disconnect cleanup.
 The 26.1 positional audit adds minecart-step, damage-source, `/look`, sign,
-pick-block, and block-tag-query conversions and explicitly leaves dynamic
-maps/compasses/locator pointers, operator debug packets, and opaque mod
-payloads unsupported. The complete two-client seam/gameplay/reconnect matrix
-still passes. See `PROTOCOL_HARDENING_2026-08-01.md`.
+pick-block, and block-tag-query conversions. Filled-map pixels plus
+player/banner/frame decorations now use their map centre's nearest image, and
+spawn/lodestone/recovery compasses use the holder's nearest target image. The
+locator bar, operator debug packets, and opaque mod payloads remain
+unsupported. The complete two-client seam/gameplay/reconnect matrix still
+passes. See `PROTOCOL_HARDENING_2026-08-01.md`.
+
+The #95 navigation slice now routes filled-map sampling and decorations plus
+spawn/lodestone/recovery compass bearings through the nearest periodic image.
+Its two-direction pure rules pass, both dedicated-server loaders reach `Done`
+with the required server mixins, and a Fabric client completes resource/model
+loading with the compass mixin. Direct in-game map-pixel/marker/needle review
+and a fresh NeoForge graphical run remain exact-candidate checks rather than
+being inferred from the pure test.
 
 #74 completes the stability configuration and compatibility contract. The
 creation preview now scales the measured 16,384-chunk production run into a
@@ -262,7 +272,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 233 unit/parameterized cases pass, and Loom produces
+temporary shims, all 235 unit/parameterized cases pass, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -670,19 +680,21 @@ and compatibility claims.
 ### Gameplay coverage
 
 - Representative arrows, a boat, one navigator, water, explosions, effects,
-  blocks, block entities, redstone, melee, beds, death/respawn, and physical
-  Nether/End portal transfers are tested. Arbitrary redstone/fluid networks,
-  additional projectile/vehicle variants, raids, maps, command families, and
-  modded systems are not.
+  blocks, block entities, redstone, melee, beds, death/respawn, physical
+  Nether/End portal transfers, and map/compass nearest-image rules are tested.
+  Arbitrary redstone/fluid networks, additional projectile/vehicle variants,
+  raids, full map-mode playthroughs, command families, and modded systems are
+  not.
 - Explicit teleport and reconnect have harness coverage. The isolated
   copied-production lifecycle runner covers Nether → Overworld → End →
   Overworld, normal save/disconnect, and same-process reopen at 16,384×256.
   The safe-small two-client runner adds actual `PortalForcer`-created Nether
   blocks/linking/return and End portal block travel. Normal stand-in-portal
-  delays, sleeping-player reconnect, maps, and raids remain manual coverage.
+  delays, sleeping-player reconnect, full map-mode playthroughs, and raids
+  remain manual coverage.
 - Minecraft 26.1.2's gameplay positional packets have an explicit audit, but
-  dynamic maps/compasses/locator pointers, operator debug packets, future
-  Minecraft packets, and opaque third-party payloads are not globally caught.
+  the 26.1 locator bar, operator debug packets, future Minecraft packets, and
+  opaque third-party payloads are not globally caught.
 
 ### Protocol and compatibility
 

@@ -57,8 +57,9 @@ not be wrapped as absolute coordinates.
 The following audited surfaces remain deliberately unsupported rather than
 being incorrectly rewritten once at packet receipt:
 
-- map pixels/decorations, compasses, saved spawn pointers, and the 26.1 locator
-  bar need dynamic nearest-image semantics as the observer changes chart;
+- the 26.1 locator bar still needs its own dynamic nearest-image audit;
+  filled-map pixels/decorations and spawn/lodestone/recovery compass targets are handled
+  separately at their vanilla sampling/rendering paths;
 - world-border centre packets do not describe RingWorld's finite-Z rims and
   are not used as a circumference boundary;
 - GameTest/debug overlays and operator-only structure, jigsaw, command-block,
