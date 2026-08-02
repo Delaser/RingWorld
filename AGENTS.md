@@ -67,6 +67,10 @@ that submission does not make the remaining port gates complete. The approved
 next order is NeoForge standalone parity, standalone gameplay/visual polish,
 then exact-candidate release preparation. Broad third-party compatibility is
 deferred until owner sign-off; see `docs/DUAL_LOADER_STANDALONE_PLAN.md`.
+The post-gameplay #96 refresh has current Fabric safe-small 6/12/28 captures
+and frame evidence at `8f7bc80`; the matching NeoForge run remains pending
+because the graphical Mac session locked. See
+`docs/VISUAL_POLISH_CHECKPOINT_2026-08-02.md`.
 
 For any later Modrinth build, use the fail-closed local staging procedure in
 [`docs/MODRINTH_RELEASE.md`](docs/MODRINTH_RELEASE.md). It stages only the
