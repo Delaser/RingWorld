@@ -845,6 +845,10 @@ The scenario verifies:
 - water in a sealed two-cell trough flows from its sole source at canonical
   X=`C-1` into the initially empty canonical X=`0` destination on the server
   and each client, alongside a destructive explosion;
+- a tagged hostile Zombie follows vanilla navigation in its bounded ground lane
+  from canonical X=`C-5` toward X=`2` and naturally folds into low canonical
+  X, finishes the path, and reaches the target tolerance before the server
+  fixture can pass;
 - a real survival bed spanning canonical X=`0`/`1` accepts a player beside
   `C`, stays canonical, wakes on damage, and disappears cleanly when broken;
 - the death screen, client respawn request, replacement server player, and
@@ -858,7 +862,8 @@ The scenario verifies:
 The historical 2026-08-01 dedicated result predates the X=`0` destination
 assertion and observed only the seam-side source state. Do not count it as a
 pass for this stricter check; refresh the dedicated fixture evidence after a
-new Fabric or NeoForge run.
+new Fabric or NeoForge run. It also predates the tagged hostile-Zombie
+navigation assertion, which likewise needs that fresh run.
 
 Success is:
 

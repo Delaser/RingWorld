@@ -49,6 +49,13 @@ The passing run documented above predates this assertion and checked only the
 source state. It must not be described as evidence that the strengthened
 destination-flow check has passed; a new dedicated run is required.
 
+The current server fixture also clears and bounds a short ground lane, removes
+only stale entities carrying its dedicated navigator tag, then asks a
+persistent Zombie near canonical C-5 to navigate normally toward X=2. The
+server now requires that Zombie to fold naturally into low canonical X before
+finishing its path within target tolerance. This assertion also postdates the
+run documented above and remains pending a new dedicated execution.
+
 ## Defects fixed by this gate
 
 Vanilla's private bed-reach test treated canonical X=`C-1.5` and bed X=`1.5`

@@ -182,6 +182,14 @@ and requires the server and both clients to observe water at X=0. The
 source state and is retained as historical evidence, not as a pass of this new
 destination assertion.
 
+The current fixture also adds a server-only hostile navigation probe: a tagged,
+persistent Zombie starts near canonical C-5 in a bounded clear lane, receives a
+vanilla navigation target near X=2, and must naturally fold into low canonical
+X and finish the path within target tolerance before the fixture can advance.
+It removes only prior tagged fixture Zombies from reused worlds. This is
+pending a fresh dedicated run and is not retroactive evidence for the
+2026-08-01 matrix.
+
 #72 completes the multi-seed worldgen and structure seam matrix. Three fresh
 dedicated worlds plus one exact production-save reload cover all 14 defined
 major Overworld biome families, 544 fresh fully generated seam-strip chunks,
