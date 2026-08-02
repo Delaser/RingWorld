@@ -4,11 +4,11 @@ The primary RingWorld development machine monitors the ChatGPT-backed Codex
 weekly allowance through the supported local Codex app-server. The monitor
 never opens `~/.codex/auth.json`, reads tokens, or prints credentials.
 
-RingWorld has one allowance guardrail: at **20% remaining or below**, the
+RingWorld has one allowance guardrail: at **5% remaining or below**, the
 monitor reports `PAUSE` and all RingWorld work pauses. Do not dispatch new
 tasks at or below that threshold. Active work stops at the next safe handoff;
 do not resume below the threshold without explicit owner authorization. Above
-20%, the monitor reports `OK` and normal operation may continue.
+5%, the monitor reports `OK` and normal operation may continue.
 
 The app-server reports `usedPercent`, `windowDurationMins`, and `resetsAt`.
 The monitor accepts only the exact 10,080-minute weekly window and fails

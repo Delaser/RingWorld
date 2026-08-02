@@ -16,7 +16,7 @@ from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 
 WEEKLY_WINDOW_MINUTES = 7 * 24 * 60
-DEFAULT_PAUSE_THRESHOLD_PERCENT = 20.0
+DEFAULT_PAUSE_THRESHOLD_PERCENT = 5.0
 DEFAULT_INTERVAL_SECONDS = 300
 LAUNCH_AGENT_LABEL = "com.andwhatnotstudio.ringworld-codex-usage"
 
