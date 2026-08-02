@@ -108,7 +108,11 @@ final class RingWorldExtendedMultiplayerTest {
         world.setBlock(new BlockPos(highX, 120, 7), Blocks.STONE.defaultBlockState(), 3);
         world.setBlock(new BlockPos(0, 120, 5), Blocks.STONE.defaultBlockState(), 3);
         world.setBlock(new BlockPos(0, 120, 7), Blocks.STONE.defaultBlockState(), 3);
+        world.setBlock(new BlockPos(geometry.circumferenceBlocks() - 2, 120, 6),
+                Blocks.STONE.defaultBlockState(), 3);
         world.setBlock(new BlockPos(1, 120, 6), Blocks.STONE.defaultBlockState(), 3);
+        world.setBlock(new BlockPos(highX, 121, 6), Blocks.STONE.defaultBlockState(), 3);
+        world.setBlock(new BlockPos(0, 121, 6), Blocks.STONE.defaultBlockState(), 3);
         world.setBlock(fluidDestination(), Blocks.AIR.defaultBlockState(), 3);
         BlockPos source = new BlockPos(highX, 120, 6);
         world.setBlock(source, Blocks.AIR.defaultBlockState(), 3);
@@ -131,10 +135,13 @@ final class RingWorldExtendedMultiplayerTest {
                 && world.getBlockState(lecternPos()).getValue(LecternBlock.HAS_BOOK);
         boolean redstone = world.getBlockState(redstoneLampPos()).getOptionalValue(
                 BlockStateProperties.LIT).orElse(false);
-        boolean fluid = !world.getFluidState(new BlockPos(
-                geometry.circumferenceBlocks() - 1, 120, 6)).isEmpty();
+        // A sealed two-cell trough clears X=0 before placing its only water
+        // source at C-1.
+        // Observing water here proves the scheduled flow crossed the canonical seam;
+        // observing C-1 would only re-observe the source block.
+        boolean waterReachedDestination = !world.getFluidState(fluidDestination()).isEmpty();
         boolean explosion = world.getBlockState(explosionTarget()).isAir();
-        serverFixturePassed = serverChest && serverLectern && redstone && fluid && explosion;
+        serverFixturePassed = serverChest && serverLectern && redstone && waterReachedDestination && explosion;
         boolean clientsPassed = RingWorldMultiplayerTest.clientPassed("A", "extended_fixture")
                 && RingWorldMultiplayerTest.clientPassed("B", "extended_fixture");
         if (serverFixturePassed && clientsPassed) {
@@ -142,8 +149,8 @@ final class RingWorldExtendedMultiplayerTest {
             advance(2);
         } else if (ticks >= TIMEOUT_TICKS) {
             RingWorldMod.LOGGER.error(
-                    "[multiplayer-extended] fixture result=false (chest={}, lectern={}, redstone={}, fluid={}, explosion={}, clientA={}, clientB={})",
-                    serverChest, serverLectern, redstone, fluid, explosion,
+                    "[multiplayer-extended] fixture result=false (chest={}, lectern={}, redstone={}, waterReachedDestination={}, explosion={}, clientA={}, clientB={})",
+                    serverChest, serverLectern, redstone, waterReachedDestination, explosion,
                     RingWorldMultiplayerTest.clientPassed("A", "extended_fixture"),
                     RingWorldMultiplayerTest.clientPassed("B", "extended_fixture"));
             advance(11);
