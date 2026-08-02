@@ -106,6 +106,16 @@ crash. The Windows launcher path runs in GitHub Actions; a real graphical
 Windows Minecraft run remains #12. Nothing in this gate uploads, publishes,
 deploys, or changes a hosted listing.
 
+Public `main` commit `8bb17914` is the latest headless checkpoint. Its clean
+Java 25 build passes all 235 unit/parameterized cases independently for Fabric
+and NeoForge, and explicit dedicated-server launches for both loaders reach
+`Done`. The Fabric development runtime jar has SHA-256
+`5804931222db74590835f978084e6987da88f5bf40eecfe4d2289d9365c441ff`;
+the NeoForge jar has SHA-256
+`53c5786dea95f75f46350ce6e4d77aa5a8ee0f9c75f49cdccc615b309accc277`.
+They are not frozen release candidates: graphical and strengthened two-client
+acceptance remains open.
+
 Issue #24 expands the loader-neutral dimension matrix to 200
 unit/parameterized cases. It covers the safe-small, aligned playable-minimum,
 production, former-wide, long/narrow, wide/medium, and custom-wall layouts;
