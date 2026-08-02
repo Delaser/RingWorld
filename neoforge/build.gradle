@@ -52,6 +52,13 @@ neoForge {
             programArgument '--username'
             programArgument 'AtlasUiTester'
         }
+        mapCompassCaptureClient {
+            client()
+            gameDirectory = project.file('run-map-compass-capture')
+            systemProperty 'ringworld.captureMapCompass', 'true'
+            programArgument '--username'
+            programArgument 'MapCompassTester'
+        }
         productionProjectionClient {
             client()
             gameDirectory = project.file('run-production-projection')
@@ -240,6 +247,7 @@ def checkedProjectionSaveId = { String value, String propertyName ->
 
 def neoForgeProjectionSourceSaves = project.file('run-client/saves')
 def neoForgeAtlasUiRun = project.file('run-atlas-ui')
+def neoForgeMapCompassRun = project.file('run-map-compass-capture')
 def neoForgeProjectionRun = project.file('run-production-projection')
 def neoForgeProjectionSaves = new File(neoForgeProjectionRun, 'saves')
 def neoForgeVisualParityRun = project.file('run-production-visual-parity')
@@ -308,6 +316,52 @@ tasks.register('verifyNeoForgeAtlasUiClient') {
 tasks.named('runAtlasUiClient') {
     dependsOn('prepareNeoForgeAtlasUiRun')
     finalizedBy('verifyNeoForgeAtlasUiClient')
+}
+
+tasks.register('prepareNeoForgeMapCompassCaptureRun') {
+    group = 'ringworld verification'
+    description = 'Writes an isolated safe-small configuration for the NeoForge map and compass capture.'
+    outputs.upToDateWhen { false }
+    doLast {
+        [new File(neoForgeMapCompassRun, 'saves'), new File(neoForgeMapCompassRun, 'screenshots'),
+         new File(neoForgeMapCompassRun, 'ringworld-cache'), new File(neoForgeMapCompassRun, 'logs')].each { delete(it) }
+        def configFile = new File(neoForgeMapCompassRun, 'config/ringworld.properties')
+        configFile.parentFile.mkdirs()
+        def config = new Properties()
+        config.setProperty('widthBlocks', '416')
+        config.setProperty('circumferenceBlocks', '2048')
+        config.setProperty('wallHeightBlocks', '160')
+        config.setProperty('testMode', 'false')
+        config.setProperty('testViewDistanceChunks', '6')
+        config.setProperty('pregenerateTerrainAtlas', 'false')
+        configFile.withOutputStream { config.store(it, 'Isolated NeoForge RingWorld map and compass capture') }
+        def fmlFile = new File(neoForgeMapCompassRun, 'config/fml.toml')
+        fmlFile.text = '# Automated graphical capture: disable only the separate early splash.\nearlyWindowControl = false\n'
+    }
+}
+
+tasks.register('verifyNeoForgeMapCompassCaptureClient') {
+    group = 'ringworld verification'
+    description = 'Fails unless NeoForge passes the real map and compass paths in both seam directions.'
+    mustRunAfter('runMapCompassCaptureClient')
+    doLast {
+        def logFile = new File(neoForgeMapCompassRun, 'logs/latest.log')
+        def log = logFile.isFile() ? logFile.text : ''
+        if (!log.contains('[map-compass-capture] PASS') || log.contains('[map-compass-capture] FAIL')) {
+            throw new GradleException("NeoForge map and compass capture did not pass; inspect ${logFile}")
+        }
+        ['ringworld-map-high-to-low', 'ringworld-map-low-to-high',
+         'ringworld-compass-high-to-low', 'ringworld-compass-low-to-high'].each { prefix ->
+            if (fileTree(new File(neoForgeMapCompassRun, 'screenshots')).matching { include prefix + '*.png' }.isEmpty()) {
+                throw new GradleException("NeoForge map and compass capture is missing screenshot ${prefix}*.png")
+            }
+        }
+    }
+}
+
+tasks.named('runMapCompassCaptureClient') {
+    dependsOn('prepareNeoForgeMapCompassCaptureRun')
+    finalizedBy('verifyNeoForgeMapCompassCaptureClient')
 }
 
 tasks.register('prepareNeoForgeMultiplayerHarness') {

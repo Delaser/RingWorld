@@ -154,12 +154,21 @@ The active suite contains 241 unit/parameterized cases:
 | `RingStructurePolicyTest` | Stronghold bit plus monument request, pending/terminal result, and legacy-v1 disabled behavior |
 | `RingMonumentPlacementTest` | Deterministic bounded candidate walk, canonical/finite bounds, seam/rim envelope, seed variation, and search exhaustion |
 
-The 2026-08-02 #95 navigation checkpoint ran the full 235-case build on both
-loaders. Fabric and NeoForge dedicated servers reached `Done` with the new
-required map mixins, and a Fabric graphical client completed resource/model
-loading with the compass mixin. This is a target-application gate, not a
-substitute for direct in-game map-pixel, decoration, and needle review on the
-final candidates.
+The 2026-08-02 #95 navigation checkpoint now includes a disposable graphical
+acceptance fixture on both loaders. It creates a fresh 2,048×416 world and
+checks bidirectional seam pixels; player, white-banner, and item-frame map
+decorations; spawn, lodestone, and recovery compass targets; and the
+seam-equivalent exact-target random-spin path. Each run verifies four labelled
+screenshots and exits itself:
+
+```sh
+./gradlew :runMapCompassCaptureClient --console=plain
+./gradlew :neoforge:runMapCompassCaptureClient --console=plain
+```
+
+Run the qualified tasks separately so two graphical clients do not contend for
+the same display. Their disposable outputs live under the ignored root and
+NeoForge `run-map-compass-capture/` directories.
 
 After PR #110, clean public `main` commit `8bb17914` again passed all 235 cases
 on each loader and both explicit dedicated-server launches reached `Done`.
@@ -1199,13 +1208,12 @@ Use creative mode and an ordinary render distance (the current test profile is
 
 ### Maps, compasses, weather, and structures
 
-- Fill a map across the seam in both directions. Verify pixels plus player,
-  banner, and item-frame markers; then scale, lock, save/rejoin, teleport away,
-  and return. Adding and removing a banner must use nearest-image range rather
-  than raw X distance.
-- Check spawn, lodestone, and recovery compasses from both sides of the seam,
-  including standing exactly on the target. Nether and End behavior must stay
-  vanilla. Locator-bar seam support is not part of this gate.
+- The dual-loader `runMapCompassCaptureClient` fixtures automate seam pixels,
+  player/banner/item-frame markers, all three compass targets, and exact-target
+  behavior in both directions. On a final candidate, additionally scale and
+  lock a map, save/rejoin, teleport away and return, and add/remove a banner.
+  Nether and End behavior must stay vanilla. Locator-bar seam support is not
+  part of this gate.
 - Start and complete a real raid near the seam. Confirm its center, raider
   navigation, wave completion, and rewards remain local through the wrap.
 - Inspect clear, rain, thunder, and a lightning strike near the seam. Also

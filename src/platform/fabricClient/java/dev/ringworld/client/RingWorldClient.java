@@ -58,6 +58,8 @@ public final class RingWorldClient implements ClientModInitializer {
             new CurvedObjectCaptureClient();
     private final AtlasPregenerationUiTestClient atlasPregenerationUiTest =
             new AtlasPregenerationUiTestClient();
+    private final RingMapCompassCaptureClient mapCompassCapture =
+            new RingMapCompassCaptureClient();
     private boolean testScreenOpened;
     private boolean testWorldStarted;
     private boolean testPerformanceProfileApplied;
@@ -212,6 +214,8 @@ public final class RingWorldClient implements ClientModInitializer {
             if (projectionCapture.tick(client)) return;
             if (visualParityCapture.tick(client)) return;
             if (curvedObjectCapture.tick(client)) return;
+            if (mapCompassCapture.startWorldIfEnabled(client)) return;
+            if (mapCompassCapture.tick(client)) return;
             if (atlasPregenerationUiTest.tick(client)) return;
             saveDiagnosticJoinScreenshot(client);
             startAutomatedTestWorld(client);

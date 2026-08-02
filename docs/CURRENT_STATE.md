@@ -243,11 +243,13 @@ passes. See `PROTOCOL_HARDENING_2026-08-01.md`.
 
 The #95 navigation slice routes filled-map sampling and decorations plus
 spawn/lodestone/recovery compass bearings through the nearest periodic image.
-Its two-direction pure rules pass, both dedicated-server loaders reach `Done`
-with the required server mixins, and a Fabric client completes resource/model
-loading with the compass mixin. Direct in-game map-pixel/marker/needle review
-and a fresh NeoForge graphical run remain exact-candidate checks rather than
-being inferred from the pure test.
+Its two-direction pure rules pass. A disposable real-client fixture now passes
+on Fabric and NeoForge from fresh 2,048×416 worlds: both seam directions verify
+the expected filled-map pixel plus player, white-banner, and item-frame
+decorations; spawn, lodestone, and recovery compasses resolve the nearest
+periodic target; and a seam-equivalent exact target enters vanilla's random
+spin path. Each loader produced and verified four labelled screenshots. Map
+scaling/locking and save/rejoin remain part of the final ordinary-play review.
 
 The strengthened general #95 two-client acceptance matrix now passes from
 fresh 2,048x416 fixtures on both Fabric and NeoForge. Both runs reached
@@ -861,9 +863,9 @@ The owner-approved order is recorded in
      objects, supported sizes, and performance budgets on both loaders.
    - use the exact dual-loader manual checklist and candidate evidence record
      in `TESTING.md`; the strengthened Fabric and NeoForge two-client and raid
-     fixtures pass, while direct maps/compasses, weather, structures, ordinary
-     play sampling, block entities, and final-candidate atlas controls still
-     need inspection.
+     fixtures plus the direct map/compass gate pass, while weather, structures,
+     ordinary play sampling, block entities, and final-candidate atlas controls
+     still need inspection.
 3. **Exact-candidate release (#12, #13, #97)**
    - complete remaining Windows evidence and independent review;
    - freeze hashes, stage loader-specific Modrinth versions, and keep a final
