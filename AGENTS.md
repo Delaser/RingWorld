@@ -669,6 +669,12 @@ version numbers.
   and clients. Observing C-1
   only re-observes the source. The historical 2026-08-01 dedicated evidence
   predates this destination assertion and must not be described as its pass.
+- Its extended hostile-navigation fixture clears and bounds a short ground lane,
+  removes only entities carrying its dedicated navigator tag before reuse, and
+  requires a persistent Zombie to complete vanilla navigation from C-5 toward
+  X=2, finish its path within the target tolerance, and fold naturally into
+  canonical low X. It has no client visual
+  assertion and needs a fresh dedicated run before being claimed passed.
 - Rigid models submitted outside the terrain shader must use
   `RingObjectTransform`: embed the anchor with `toCameraLocal`, then rotate
   the model into that anchor's tangent frame. `EntityRenderManagerMixin` and

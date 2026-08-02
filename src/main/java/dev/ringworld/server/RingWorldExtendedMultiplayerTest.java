@@ -7,8 +7,10 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
@@ -23,12 +25,15 @@ import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.phys.Vec3;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
 /** Additional real-client lifecycle and stateful-block seam regression. */
 final class RingWorldExtendedMultiplayerTest {
     private static final int TIMEOUT_TICKS = 1_200;
+    private static final String NAVIGATOR_TAG = "ringworld_extended_seam_navigator";
 
     private static int stage;
     private static int ticks;
@@ -42,8 +47,10 @@ final class RingWorldExtendedMultiplayerTest {
     private static boolean deathRespawnPassed;
     private static boolean netherPortalPassed;
     private static boolean endPortalPassed;
+    private static boolean navigationStarted;
     private static ServerPlayer preDeathPlayer;
     private static BlockPos overworldNetherPortal;
+    private static Zombie seamNavigator;
 
     private RingWorldExtendedMultiplayerTest() { }
 
@@ -119,6 +126,8 @@ final class RingWorldExtendedMultiplayerTest {
         world.setBlock(source, Blocks.WATER.defaultBlockState(), 3);
         world.scheduleTick(source, Fluids.WATER, 1);
 
+        armSeamNavigator(world, geometry);
+
         world.setBlock(explosionTarget(), Blocks.STONE.defaultBlockState(), 3);
         world.explode(null, highX + 0.5, 124.5, 9.5, 2.5F,
                 Level.ExplosionInteraction.BLOCK);
@@ -140,8 +149,18 @@ final class RingWorldExtendedMultiplayerTest {
         // Observing water here proves the scheduled flow crossed the canonical seam;
         // observing C-1 would only re-observe the source block.
         boolean waterReachedDestination = !world.getFluidState(fluidDestination()).isEmpty();
+        boolean navigatorFolded = seamNavigator != null && seamNavigator.isAlive()
+                && seamNavigator.getX() >= 0.0
+                && seamNavigator.getX() < geometry.circumferenceBlocks() / 2.0;
+        boolean navigatorPathDone = seamNavigator != null
+                && seamNavigator.getNavigation().isDone();
+        boolean navigatorReachedTarget = navigatorFolded
+                && geometry.isWithinPeriodicBox(
+                        seamNavigator.getX(), seamNavigator.getY(), seamNavigator.getZ(),
+                        2.5, 120.0, 15.5, 1.75, 1.5, 1.75);
         boolean explosion = world.getBlockState(explosionTarget()).isAir();
-        serverFixturePassed = serverChest && serverLectern && redstone && waterReachedDestination && explosion;
+        serverFixturePassed = serverChest && serverLectern && redstone && waterReachedDestination
+                && navigationStarted && navigatorPathDone && navigatorReachedTarget && explosion;
         boolean clientsPassed = RingWorldMultiplayerTest.clientPassed("A", "extended_fixture")
                 && RingWorldMultiplayerTest.clientPassed("B", "extended_fixture");
         if (serverFixturePassed && clientsPassed) {
@@ -149,8 +168,11 @@ final class RingWorldExtendedMultiplayerTest {
             advance(2);
         } else if (ticks >= TIMEOUT_TICKS) {
             RingWorldMod.LOGGER.error(
-                    "[multiplayer-extended] fixture result=false (chest={}, lectern={}, redstone={}, waterReachedDestination={}, explosion={}, clientA={}, clientB={})",
-                    serverChest, serverLectern, redstone, waterReachedDestination, explosion,
+                    "[multiplayer-extended] fixture result=false (chest={}, lectern={}, redstone={}, waterReachedDestination={}, navigationStarted={}, navigatorFolded={}, navigatorPathDone={}, navigatorReachedTarget={}, navigatorX={}, navigatorZ={}, explosion={}, clientA={}, clientB={})",
+                    serverChest, serverLectern, redstone, waterReachedDestination, navigationStarted,
+                    navigatorFolded, navigatorPathDone, navigatorReachedTarget,
+                    seamNavigator == null ? Double.NaN : seamNavigator.getX(),
+                    seamNavigator == null ? Double.NaN : seamNavigator.getZ(), explosion,
                     RingWorldMultiplayerTest.clientPassed("A", "extended_fixture"),
                     RingWorldMultiplayerTest.clientPassed("B", "extended_fixture"));
             advance(11);
@@ -179,6 +201,39 @@ final class RingWorldExtendedMultiplayerTest {
         // advance through one server tick so both loaders observe the new
         // night phase instead of a same-tick cached daytime BedRule.
         RingWorldMod.LOGGER.info("[multiplayer-extended] seam bed prepared for next-tick sleep");
+    }
+
+    private static void armSeamNavigator(ServerLevel world, RingGeometry geometry) {
+        List<Entity> staleNavigators = new ArrayList<>();
+        for (Entity entity : world.getAllEntities()) {
+            if (entity.entityTags().contains(NAVIGATOR_TAG)) staleNavigators.add(entity);
+        }
+        staleNavigators.forEach(Entity::discard);
+        int circumference = geometry.circumferenceBlocks();
+        for (int x = circumference - 8; x <= circumference + 4; x++) {
+            int canonicalX = geometry.wrapBlockX(x);
+            world.setBlock(new BlockPos(canonicalX, 119, 15), Blocks.STONE.defaultBlockState(), 3);
+            world.setBlock(new BlockPos(canonicalX, 120, 15), Blocks.AIR.defaultBlockState(), 3);
+            world.setBlock(new BlockPos(canonicalX, 121, 15), Blocks.AIR.defaultBlockState(), 3);
+            for (int z : new int[]{14, 16}) {
+                world.setBlock(new BlockPos(canonicalX, 120, z), Blocks.STONE.defaultBlockState(), 3);
+                world.setBlock(new BlockPos(canonicalX, 121, z), Blocks.STONE.defaultBlockState(), 3);
+            }
+        }
+        seamNavigator = new Zombie(world);
+        seamNavigator.addTag(NAVIGATOR_TAG);
+        seamNavigator.setPersistenceRequired();
+        seamNavigator.setInvulnerable(true);
+        seamNavigator.setPos(circumference - 5.5, 120.0, 15.5);
+        world.addFreshEntity(seamNavigator);
+        seamNavigator.setOnGround(true);
+        navigationStarted = false;
+        navigationStarted = seamNavigator.getNavigation().moveTo(2.5, 120.0, 15.5, 1.0);
+        RingWorldMod.LOGGER.info(
+                "[multiplayer-extended] seam navigator armed started={} sourceX={} target={} path={}",
+                navigationStarted, seamNavigator.getX(), seamNavigator.getNavigation().getTargetPos(),
+                seamNavigator.getNavigation().getPath() == null ? null
+                        : seamNavigator.getNavigation().getPath().getTarget());
     }
 
     private static void attemptSleep(ServerPlayer playerA) {

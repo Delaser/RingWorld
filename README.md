@@ -360,6 +360,12 @@ canonical `X=0` destination.
 The historical 2026-08-01 dedicated result observed only the source state, so
 it is not evidence for this strengthened assertion.
 
+That rerun must also show a tagged hostile Zombie completing a vanilla
+navigation request from canonical `C-5` toward `X=2` through a bounded lane,
+naturally folding into low canonical X, and finishing within target tolerance.
+This new server-fixture assertion is
+also pending fresh dedicated evidence.
+
 For demonstrated results, open risks, and the prioritized roadmap, see
 [Current state](docs/CURRENT_STATE.md).
 
