@@ -46,6 +46,39 @@ loom {
 			vmArg "-Dringworld.multiplayerTestPort=25566"
 			programArgs "--username", "RingTesterB"
 		}
+		raidSeamArmServer {
+			server()
+			name "RingWorld Raid Seam Arm Server"
+			runDir "run-raid-seam/server"
+			vmArg "-Dringworld.raidSeamTest=true"
+			vmArg "-Dringworld.raidSeamTestPhase=arm"
+			vmArg "-Dringworld.raidSeamTestStopAfterSave=true"
+			programArg "nogui"
+		}
+		raidSeamReloadServer {
+			server()
+			name "RingWorld Raid Seam Reload Server"
+			runDir "run-raid-seam/server"
+			vmArg "-Dringworld.raidSeamTest=true"
+			vmArg "-Dringworld.raidSeamTestPhase=reload"
+			programArg "nogui"
+		}
+		raidSeamClientA {
+			client()
+			name "RingWorld Raid Seam Client A"
+			runDir "run-raid-seam/client-a"
+			vmArg "-Dringworld.multiplayerTestRole=A"
+			vmArg "-Dringworld.multiplayerTestPort=25567"
+			programArgs "--username", "RingTesterA"
+		}
+		raidSeamClientB {
+			client()
+			name "RingWorld Raid Seam Client B"
+			runDir "run-raid-seam/client-b"
+			vmArg "-Dringworld.multiplayerTestRole=B"
+			vmArg "-Dringworld.multiplayerTestPort=25567"
+			programArgs "--username", "RingTesterB"
+		}
 		layoutSwitchClient {
 			client()
 			name "RingWorld Layout Switch Client"
@@ -154,6 +187,54 @@ def projectionSavesDirectory = file("run-production-projection/saves")
 def lifecycleSavesDirectory = file("run-production-lifecycle/saves")
 def strongholdTestDirectory = file("run-stronghold-test")
 def headlessPrewarmDirectory = file("run-headless-prewarm")
+def raidSeamDirectory = file("run-raid-seam")
+
+tasks.register("prepareRaidSeamTestWorld") {
+	group = "ringworld verification"
+	description = "Creates a fresh, isolated Fabric two-phase seam-raid fixture."
+	outputs.upToDateWhen { false }
+	doLast {
+		def server = new File(raidSeamDirectory, "server")
+		def eula = new File(server, "eula.txt")
+		if (!eula.isFile()) {
+			eula.parentFile.mkdirs()
+			eula.text = "# Review https://aka.ms/MinecraftEULA before changing this value.\\neula=false\\n"
+		}
+		if (!eula.text.readLines().any { it.trim() == "eula=true" }) {
+			throw new GradleException("Review ${eula}, then set eula=true to run this disposable server")
+		}
+		["world", "logs", "ringworld-cache", "crash-reports"].each { delete(new File(server, it)) }
+		["client-a", "client-b"].each { client ->
+			["logs", "screenshots", "ringworld-cache", "crash-reports"].each { delete(new File(raidSeamDirectory, client + "/" + it)) }
+		}
+		new File(server, "config").mkdirs()
+		new File(server, "config/ringworld.properties").text = '''\\
+widthBlocks=416
+circumferenceBlocks=2048
+wallHeightBlocks=160
+testMode=false
+testViewDistanceChunks=2
+pregenerateTerrainAtlas=false
+'''
+		def properties = new Properties()
+		properties.setProperty("server-port", "25567")
+		properties.setProperty("online-mode", "false")
+		properties.setProperty("gamemode", "creative")
+		properties.setProperty("difficulty", "normal")
+		properties.setProperty("level-name", "world")
+		properties.setProperty("level-seed", "ringworld-raid-seam")
+		properties.setProperty("view-distance", "5")
+		properties.setProperty("simulation-distance", "5")
+		server.mkdirs()
+		new File(server, "server.properties").withOutputStream {
+			properties.store(it, "Disposable RingWorld seam-raid fixture")
+		}
+	}
+}
+
+tasks.named("runRaidSeamArmServer") {
+	dependsOn("prepareRaidSeamTestWorld")
+}
 
 tasks.register("prepareStrongholdTestWorld") {
 	group = "ringworld verification"

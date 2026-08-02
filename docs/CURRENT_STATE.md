@@ -126,8 +126,14 @@ commands, and reconnect. The integration branch additionally applies periodic
 POI discovery/averaging, canonical centre creation and relocation, canonical
 wave-spawn readiness and result positions, periodic village/retention probes,
 and nearest-image raider path targets. Both loader builds and dedicated-server
-startup pass with those mixins applied. A deterministic Fabric/NeoForge raid
-fixture and completed real seam raid remain required before the defect is fixed.
+startup pass with those mixins applied. The branch now contains an opt-in,
+two-phase Fabric/NeoForge fixture: arm creates occupied seam POIs and saves a
+real first wave; reload proves persisted occupied POIs, restored
+membership/bossbar state, natural
+raider folding, victory, and Hero of the Village. On 2026-08-02 both loaders
+completed both phases with canonical centre `X=1`, both seam-side players on
+the bossbar, a natural raider fold, and `[raid-seam] PASS`. Issue #111 is
+complete subject to final merge and tracker closure.
 
 Issue #24 expands the loader-neutral dimension matrix to 200
 unit/parameterized cases. It covers the safe-small, aligned playable-minimum,
