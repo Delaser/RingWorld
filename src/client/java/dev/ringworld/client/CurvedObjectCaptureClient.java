@@ -9,6 +9,7 @@ import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -18,12 +19,14 @@ import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
+import net.minecraft.world.level.block.state.properties.BedPart;
 
 /**
- * Isolated real-renderer proof that block entities share the curved terrain
- * pose instead of sliding vertically as their flat distance changes.
+ * Isolated real-renderer proof that rigid block/entity models share the curved
+ * terrain pose instead of sliding vertically as their flat distance changes.
  */
 public final class CurvedObjectCaptureClient {
     public static final String ENABLE_PROPERTY = "ringworld.curvedObjectCapture";
@@ -115,7 +118,15 @@ public final class CurvedObjectCaptureClient {
                 && client.level.getBlockState(new BlockPos(48, 120, 0)).is(Blocks.LECTERN)
                 && client.level.getBlockEntity(new BlockPos(48, 120, 0)) != null
                 && client.level.getBlockState(new BlockPos(56, 120, 2)).is(Blocks.ENDER_CHEST)
-                && client.level.getBlockEntity(new BlockPos(56, 120, 2)) != null;
+                && client.level.getBlockEntity(new BlockPos(56, 120, 2)) != null
+                && client.level.getBlockState(new BlockPos(52, 120, -2)).is(Blocks.OAK_SIGN)
+                && client.level.getBlockEntity(new BlockPos(52, 120, -2)) != null
+                && client.level.getBlockState(new BlockPos(60, 120, 0)).is(Blocks.RED_BED)
+                && client.level.getBlockEntity(new BlockPos(60, 120, 0)) != null
+                && client.level.getBlockState(new BlockPos(62, 120, 2)).is(Blocks.SHULKER_BOX)
+                && client.level.getBlockEntity(new BlockPos(62, 120, 2)) != null
+                && client.level.getBlockState(new BlockPos(66, 120, 0)).is(Blocks.WHITE_BANNER)
+                && client.level.getBlockEntity(new BlockPos(66, 120, 0)) != null;
     }
 
     private static void requestFixture(Minecraft client) {
@@ -136,7 +147,7 @@ public final class CurvedObjectCaptureClient {
     }
 
     private static void createFixture(ServerLevel world) {
-        for (int x = 0; x <= 80; x++) {
+        for (int x = 0; x <= 88; x++) {
             for (int z = -4; z <= 4; z++) {
                 world.setBlock(new BlockPos(x, 119, z),
                         (x + z & 1) == 0
@@ -157,7 +168,13 @@ public final class CurvedObjectCaptureClient {
             world.sendBlockUpdated(lecternPos, world.getBlockState(lecternPos),
                     world.getBlockState(lecternPos), 3);
         }
+        world.setBlock(new BlockPos(52, 120, -2), Blocks.OAK_SIGN.defaultBlockState(), 3);
         world.setBlock(new BlockPos(56, 120, 2), Blocks.ENDER_CHEST.defaultBlockState(), 3);
+        var bedState = Blocks.RED_BED.defaultBlockState().setValue(BedBlock.FACING, Direction.EAST);
+        world.setBlock(new BlockPos(60, 120, 0), bedState.setValue(BedBlock.PART, BedPart.FOOT), 2);
+        world.setBlock(new BlockPos(61, 120, 0), bedState.setValue(BedBlock.PART, BedPart.HEAD), 2);
+        world.setBlock(new BlockPos(62, 120, 2), Blocks.SHULKER_BOX.defaultBlockState(), 3);
+        world.setBlock(new BlockPos(66, 120, 0), Blocks.WHITE_BANNER.defaultBlockState(), 3);
 
         var copperGolem = EntityType.COPPER_GOLEM.create(world, EntitySpawnReason.COMMAND);
         if (copperGolem != null) {
@@ -176,6 +193,21 @@ public final class CurvedObjectCaptureClient {
             boat.setPos(72.5, 120.15, 2.0);
             boat.setNoGravity(true);
             world.addFreshEntity(boat);
+        }
+        var cow = EntityType.COW.create(world, EntitySpawnReason.COMMAND);
+        if (cow != null) {
+            cow.setPos(76.5, 120.0, -2.0);
+            cow.setNoAi(true);
+            cow.setPersistenceRequired();
+            world.addFreshEntity(cow);
+        }
+        var zombie = EntityType.ZOMBIE.create(world, EntitySpawnReason.COMMAND);
+        if (zombie != null) {
+            zombie.setPos(80.5, 120.0, 2.0);
+            zombie.setNoAi(true);
+            zombie.setInvulnerable(true);
+            zombie.setPersistenceRequired();
+            world.addFreshEntity(zombie);
         }
     }
 

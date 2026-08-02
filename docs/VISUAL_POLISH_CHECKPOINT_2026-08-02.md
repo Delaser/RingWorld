@@ -81,9 +81,9 @@ vision, broader weather/exposure, and motion review remain open.
 
 Fresh 2,048×416 Fabric and NeoForge worlds rendered the same curved fixture
 from X=0.5 and X=32.5. Visual inspection confirmed the chest, lectern/book,
-ender chest, copper golem, dropped item, and boat remain seated on the curved
-stone-brick surface as the camera approaches. The two loaders' final captures
-match.
+sign, bed, ender chest, shulker box, banner, copper golem, dropped item, boat,
+cow, and zombie remain seated on the curved stone-brick surface as the camera
+approaches. The two loaders' final captures match.
 
 The first NeoForge retry exposed an invalid empty-sky PASS: its settings packet
 was sent by `PlayerLoggedInEvent`, after NeoForge flushed the initial chunk
@@ -94,5 +94,5 @@ packets. The rerun rendered the complete fixture. The verifier now also waits
 for the expected client block entities and fails after 1,200 ticks, so this
 regression cannot pass on screenshots alone.
 
-Changed-gamma/night-vision, close cloud-height, broader object classes, and
+Changed-gamma/night-vision, close cloud-height, real-player proximity, and
 motion review remain open.

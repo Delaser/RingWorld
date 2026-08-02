@@ -550,12 +550,14 @@ Run the isolated live-renderer regression with Java 25:
 
 Each loader's preparation task deletes only its ignored curved-object runtime
 world, screenshots, and atlas cache, then creates a safe-small creative world.
-It builds a curved stone-brick strip with a chest, lectern book, ender chest,
-copper golem, item, and boat, captures them from X=0.5 and X=32.5, and exits.
+It builds a curved stone-brick strip with a chest, lectern book, sign, ender
+chest, two-part bed, shulker box, banner, copper golem, item, boat, cow, and
+zombie, captures them from X=0.5 and X=32.5, and exits.
 Both frames must show the rigid models seated on the same curved surface; the
 nearer frame must not show them rising from the platform. The run also strictly
 applies the `LevelRendererMixin` descriptors. Before either frame can pass, the
-client must contain the expected chest, lectern, and ender-chest block entities
+client must contain the expected chest, lectern, sign, bed, ender-chest,
+shulker-box, and banner block entities
 and report all visible sections rendered; a 1,200-tick deadline turns missing
 chunks into `result=FAIL` instead of accepting an empty-sky screenshot.
 Evidence is written under `run-curved-object-capture/screenshots/` for Fabric

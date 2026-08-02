@@ -273,11 +273,12 @@ Complete-ring alignment, the broad live/LOD handoff, sky phases, and the
 inspected rim remained intact. The exact production 16,384×256 tangent,
 handoff, radial-up, natural-seam, and both-rim gate now also passes on both
 loaders. A fresh-world curved-object fixture visually passes for chest,
-lectern/book, ender chest, copper golem, item, and boat on both loaders.
+lectern/book, sign, bed, ender chest, shulker box, banner, copper golem, item,
+boat, cow, and zombie on both loaders.
 That run also fixed NeoForge's initial login ordering: immutable settings are
 now queued after the play-login packet but before initial position/chunk data,
 and the fixture rejects missing client blocks instead of accepting empty sky.
-Exposure, close-cloud, broader-object, and motion review stay open. See
+Exposure, close-cloud, real-player proximity, and motion review stay open. See
 `VISUAL_POLISH_CHECKPOINT_2026-08-02.md`.
 
 The next #96 checkpoint adds an exact production 16,384×256 dual-loader pass.
