@@ -1,14 +1,15 @@
 # Modrinth release workflow
 
-Last updated: 2026-08-01. Issue [#33](https://github.com/Delaser/RingWorld/issues/33)
-tracks this workflow.
+Last updated: 2026-08-02. Issues
+[#33](https://github.com/Delaser/RingWorld/issues/33) and
+[#94](https://github.com/Delaser/RingWorld/issues/94) track this workflow.
 
-RingWorld is distributed as a normal Fabric runtime jar, not as a Prism
-instance or client bundle. The first alpha is `0.2.0+mc26.1.2` for Minecraft
-26.1.2, Java 25, Fabric Loader 0.19.3 or newer, and Fabric API
-0.155.2+26.1.2. The same RingWorld version is required on both a dedicated
-server and every connecting client. A future NeoForge artifact belongs on the
-same Modrinth project as a separately validated loader-specific version.
+RingWorld is distributed as separate normal Fabric and NeoForge runtime jars,
+not as a Prism instance or client bundle. Both target `0.2.0+mc26.1.2`,
+Minecraft 26.1.2, and Java 25. Fabric requires Loader 0.19.3 or newer plus
+Fabric API 0.155.2+26.1.2; NeoForge requires 26.1.2.87 or newer. A server and
+every connecting client must use the same RingWorld version and loader.
+Cross-loader multiplayer is not claimed.
 
 ## Stage locally
 
@@ -17,29 +18,33 @@ Run the following single command at the repository root:
 ```sh
 JAVA_HOME=/path/to/jdk-25 \
 PATH="$JAVA_HOME/bin:$PATH" \
-python3 scripts/stage_modrinth_release.py --build
+python3 scripts/stage_modrinth_release.py --loader both --build
 ```
 
-It runs `./gradlew clean test build --console=plain`, validates the expected
-runtime jar, and creates the ignored review directory
-`dist/modrinth/0.2.0+mc26.1.2/fabric/`. The script has no upload implementation,
-does not make network requests, has no token option, and must never change a
-Modrinth listing. The `--build` path checks the active runtime first and gives
-a direct Java 25/JAVA_HOME error before Gradle if the shell is using another
-Java generation. To validate an already-built exact file, use
-`--jar path/to/ringworld-0.2.0+mc26.1.2.jar` instead.
+It runs the clean Fabric and NeoForge Gradle test/build gates, validates each
+expected runtime jar, compares their shared contract, and creates ignored
+review directories at `dist/modrinth/0.2.0+mc26.1.2/fabric/` and
+`.../neoforge/`. The pair gate requires matching versions and byte-identical
+shared mixins, settings/geometry, compatibility API, protocol models, and
+shader assets before either stage is written. Use `--loader fabric` or
+`--loader neoforge` only when deliberately writing one loader's review
+directory; both artifacts are still freshly built and pair-validated. The
+script has no upload implementation, makes no network requests, accepts no
+token, and cannot change a Modrinth listing. Java is always checked before the
+build; `--build` remains only as a harmless compatibility spelling. The CLI
+accepts no alternate jar or metadata paths, so a cached artifact cannot be
+relabeled as the current source revision.
 
-The generated directory contains exactly one jar. That jar alone is the
+Each generated loader directory contains exactly one jar. That jar alone is a
 potential upload file; `STAGING-MANIFEST.json`, `SHA256SUMS.txt`, the project
-description, and the changelog are operator-review material. The manifest
-records the jar SHA-256 and SHA-512 plus the exact accessible public source
-revision and commit URL. Stage only from a clean, pushed public branch commit:
-the script requires the exact HTTPS `origin` for this repository and requires
-`HEAD` to equal the current branch's `origin` upstream before it records that
-commit in the ignored manifest. This avoids the circular and invalid practice
-of putting a commit's own hash in a source file that changes that commit.
-Confirm the revision is the source corresponding to the selected binary before
-a separately authorized manual upload.
+description, and the loader-specific changelog are operator-review material.
+Both manifests record the jar hashes and the same exact accessible public
+source revision and commit URL. Stage only from a clean, pushed public branch
+commit: the script requires this repository's exact public HTTPS `origin` and
+requires `HEAD` to equal the current branch's upstream. This avoids the
+circular and invalid practice of embedding a commit's own hash in source that
+changes that commit. Confirm both revisions and jar hashes before a separately
+authorized manual upload.
 
 ## Fail-closed checks
 
@@ -48,43 +53,44 @@ missing compiled classes or mixin descriptors; archive source files; account,
 save, option, server, log, or runtime-state files; private-key material;
 unsafe or duplicate archive paths; and replacement of an unrecognized stage.
 It also rejects missing or stale MPL-2.0 metadata, a missing or different
-embedded `LICENSE-RINGWORLD.txt`, inconsistent version, Minecraft, Fabric
-Loader, Java, Fabric API, compatibility API, author/contact, environment, or
-Modrinth dependency metadata. It refuses a dirty checkout, an origin other than the exact public
-HTTPS repository URL, a missing branch upstream, or an unpushed/different
-upstream revision; the generated revision is a full SHA with its canonical
-public GitHub commit URL.
+embedded `LICENSE-RINGWORLD.txt`, cross-loader metadata, inconsistent mod or
+Minecraft versions, wrong Loader/NeoForge requirements, stale Fabric API or
+compatibility API metadata, and incorrect author/contact/environment data. It
+refuses a dirty checkout, an origin other than the exact public HTTPS URL, a
+missing branch upstream, or an unpushed/different upstream revision.
 
 Run focused checks with:
 
 ```sh
-python3 -m unittest scripts/test_verify_distribution_license.py scripts/test_stage_modrinth_release.py
+python3 -m unittest \
+  scripts/test_verify_distribution_license.py \
+  scripts/test_stage_modrinth_release.py \
+  scripts/test_prepare_release_packages.py
 ```
 
 ## Manual release gates
 
-The manual alpha upload already submitted for moderation is not modified by
-this workflow. Any later upload or listing change needs explicit owner
-authorization and must use the reviewed staged jar only. First inspect the
-archive and checksum; install into a clean Fabric client; test installation in
-an existing modded instance; launch a clean dedicated server; then run the
-two-client handshake, seam, combat, block, boat, teleport, reconnect, atlas,
-and production-geometry validation gates. Link `docs/COMPATIBILITY.md` and
-state untested renderer, shader, gravity, world-generation, chunk, and networking combinations as compatibility
-risks, not support claims.
+The existing Fabric alpha upload is not modified by this workflow. Any later
+upload or listing change needs explicit owner authorization and must use only
+the reviewed staged jar for that loader. Inspect each archive and checksum;
+install it into clean and existing matching-loader clients; launch a clean
+matching-loader dedicated server; then run the two-client handshake, seam,
+combat, block, boat, teleport, reconnect, atlas, and production-geometry
+gates. Link `docs/COMPATIBILITY.md` and state untested renderer, shader,
+gravity, world-generation, chunk, and networking combinations as risks, not
+support claims.
 
 ### Non-graphical dedicated-server smoke
 
-Before a release, create a disposable empty server directory containing only
-Fabric's 26.1.2/Loader 0.19.3 server launcher, `eula.txt`,
-`server.properties`, `config/ringworld.properties`, Fabric API
-0.155.2+26.1.2, and the staged `ringworld-*.jar`. Verify the staged jar with
-`scripts/verify_distribution_license.py` and compare its SHA-256 with
-`SHA256SUMS.txt` before copying it. Launch the directory with Java 25 and
-`nogui`, wait for the normal server-ready message, then issue `stop` and
-require a clean exit. The launcher may subsequently create its normal
-`libraries/`, `logs/`, and world data; these are generated state and not
-release files.
+Before a release, create separate disposable empty server directories for
+Fabric and NeoForge. Each contains only the official matching 26.1.2 loader
+runtime, `eula.txt`, `server.properties`, `config/ringworld.properties`, and
+the matching staged RingWorld jar; only Fabric also contains Fabric API
+0.155.2+26.1.2. Verify each jar with
+`scripts/verify_distribution_license.py --loader <loader>` and compare its
+SHA-256 with its `SHA256SUMS.txt`. Launch with Java 25 and `nogui`, wait for
+the normal server-ready message, then issue `stop` and require a clean exit.
+Generated libraries, logs, and world data are test state, not release files.
 
 The 2026-07-31 clean-server smoke passed with the staged
 `0.2.0+mc26.1.2` artifact, Fabric API 0.155.2+26.1.2, and Java 25. It loaded
@@ -104,7 +110,7 @@ texture-atlas initialization path, remained stable at the title screen with
 `testMode=false`, produced no crash report, and was stopped cleanly. The log is
 retained locally at `/tmp/ringworld-release-title/run/logs/latest.log`.
 
-The separate ignored existing-instance fixture first loaded a disposable
+The separate ignored existing-instance Fabric fixture first loaded a disposable
 `release-probe` companion Fabric client mod alone. RingWorld's exact staged jar
 was then added in-place without replacing the fixture state. The second launch
 reported both `[release-probe] companion initialized` and RingWorld's bootstrap
@@ -112,7 +118,13 @@ settings before completing the same resource/shader initialization, with no
 crash report. Its local evidence is
 `/tmp/ringworld-release-modded/run/logs/latest.log`. The probe and both
 fixtures are test instrumentation only and are not source, stage, or release
-artifacts.
+artifacts. On 2026-08-02, a loader-labelled NeoForge macOS package installed
+into a disposable Prism instance, loaded NeoForge 26.1.2.87 and the packaged
+RingWorld jar, completed resource/shader and texture-atlas initialization, and
+remained stable without a crash. The local upgrade tests also prove that
+Fabric and NeoForge use separate managed Prism instances, including when one
+bundle is extracted over the other, while preserving user data and unrelated
+mods.
 
 The Modrinth page must give installation and world-creation guidance, exact
 client/server requirements, the MPL-2.0 statement, a current alpha changelog,

@@ -16,11 +16,14 @@ Validate generated artifacts with
 
 ## Optional 26.1.2 package assembly
 
-Use `scripts/prepare_release_packages.py` with an explicit final RingWorld jar,
-matching Fabric API jar, clean Prism instance template, and full 40-character
-public source revision. It creates reproducible macOS/universal and Windows
-ZIPs plus a separately labelled server overlay. It never downloads a launcher,
-opens Prism, creates website files, uploads, deploys, or changes a live service.
+Use `scripts/prepare_release_packages.py` with an explicit `--loader fabric`
+or `--loader neoforge`, final matching RingWorld jar, clean loader-specific
+Prism template, and the matching manifest produced by the fail-closed Modrinth
+staging gate. Fabric requires the matching Fabric API jar; NeoForge must not be
+given Fabric API. It creates
+reproducible macOS/universal and Windows ZIPs plus a separately labelled server
+overlay. It never downloads a launcher, opens Prism, creates website files,
+uploads, deploys, or changes a live service.
 
 The clean instance template must contain `mmc-pack.json`, `instance.cfg`, and
 `.minecraft/config/ringworld.properties`. It must not contain managed mod jars,
@@ -29,25 +32,31 @@ or other runtime state. The generated `PACKAGE-MANIFEST.json` points to the
 exact MPL-covered public source revision, and root `SHA256SUMS.txt` covers every
 archive.
 
-On every start, each launcher copies the packaged RingWorld and Fabric API jars
-plus `mmc-pack.json` into the existing `RingWorld-Test` Prism instance. It
-removes superseded jars with those two managed filename prefixes. It does not
-replace Prism accounts, saves, options, screenshots, resource packs, an
-existing RingWorld config, or unrelated `instance.cfg` values. On macOS it
+On every start, each launcher copies its packaged RingWorld jar plus
+`mmc-pack.json` into its loader-specific Prism instance: `RingWorld-Test` for
+Fabric and `RingWorld-NeoForge` for NeoForge. The separate instance IDs prevent
+a loader change from carrying arbitrary Fabric-only or NeoForge-only mods into
+the other runtime. The package's loader marker uses fixed LF bytes on every
+assembly platform. Fabric launchers additionally refresh only their managed
+Fabric API jar; NeoForge does not bundle or manage Fabric API. Neither launcher
+replaces Prism accounts, saves, options, screenshots, resource packs, an
+existing RingWorld config, unrelated mods, or unrelated `instance.cfg` values
+inside its own instance. On macOS it
 validates the existing Java path plus common system, Homebrew, SDK, and
 user-local locations. A detected Java 25 runtime is selected explicitly; an
 older override is never reused. If no Java 25 runtime is found, it sets
 `AutomaticJava=true` and `OverrideJavaLocation=false` so Prism can install or
 select one. The Windows launcher retains that automatic Prism path.
 
-This makes an in-place bundle update safe:
+This makes an in-place update of the same loader safe:
 
 1. close Minecraft;
 2. extract a newly downloaded bundle over the existing bundle directory;
 3. run the platform launcher again.
 
-The refreshed launcher source then updates the private `.prism-data` instance
-without requiring another Microsoft login or deleting user state.
+The refreshed launcher source then updates that loader's private `.prism-data`
+instance without requiring another Microsoft login or deleting user state. A
+different-loader bundle creates or updates its separate instance instead.
 
 Keep the three templates synchronized with their copies in the generated
 bundles. Validate both a fresh directory and an existing instance containing

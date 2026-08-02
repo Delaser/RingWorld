@@ -85,8 +85,26 @@ visibility and combat, stateful blocks, explosions, bed/death lifecycle,
 physical Nether and End portals, boats/passengers, teleports, reconnect, and
 canonical storage. Runtime review also fixed NeoForge's changed explosion
 method target, a same-tick bed-rule cache difference, and a client network-
-thread chunk reset during portal travel. Packaging is now the remaining
-NeoForge standalone gate under #94.
+thread chunk reset during portal travel.
+
+Issue #94 completes local standalone packaging parity. Fabric and NeoForge
+runtime jars are validated against their own loader metadata and MPL-2.0
+contents, then compared before staging for matching mod/Minecraft versions and
+byte-identical shared mixins, settings/geometry, compatibility API, protocol
+models, and shaders. `--loader both --build` refuses to write either Modrinth
+stage unless both candidates come from the same clean pushed public commit and
+the shared contract matches. The optional package builder now creates
+loader-labelled, reproducible macOS, Windows, and server archives. Fabric and
+NeoForge use separate Prism instance IDs, preserving the other loader's
+instance while refreshing managed jars only inside the selected instance;
+NeoForge contains no Fabric API. Accounts, saves, options, config, resource
+packs, unrelated mods, and instance settings are preserved. All 37 focused
+Python tests pass locally (two Windows-only cases skipped), all six actual package
+archives pass licence/hygiene verification, and a packaged NeoForge client on
+macOS loaded NeoForge 26.1.2.87, RingWorld, resources, and shaders without a
+crash. The Windows launcher path runs in GitHub Actions; a real graphical
+Windows Minecraft run remains #12. Nothing in this gate uploads, publishes,
+deploys, or changes a hosted listing.
 
 Issue #24 expands the loader-neutral dimension matrix to 200
 unit/parameterized cases. It covers the safe-small, aligned playable-minimum,
@@ -194,28 +212,13 @@ runtime evidence. This records that the ported architecture meets those work
 packages; it does not erase the broader release-hardening and compatibility
 limits documented below.
 
-Issue #12 package preparation has a frozen candidate at public source revision
-`9b77326d1ec7fba7e2e12e06d89adfceae0ffeb5`. The local
-builder produces reproducible macOS/universal and Windows Prism ZIPs plus a server overlay from
-one verified Fabric jar, matching Fabric API jar, clean instance template, and
-exact public source commit. It writes MPL/source manifests and checksums, has
-no website or deployment path, and rejects account/runtime state, source jars,
-unsafe archive paths, stale licence metadata, and managed jars in the template.
-Nine cross-platform Python package/licence cases pass on each platform (with
-the opposite launcher case skipped), including an executed fresh and
-in-place macOS launcher path with preserved save/config/options/instance
-sentinels. A Windows Actions gate now executes the batch/PowerShell fresh and
-upgrade path with a harmless Prism stand-in; it does not replace the pending
-graphical Windows Minecraft gate. The macOS launcher now validates a detected
-Java 25 path before using it, with a tested Prism-managed fallback when none is
-installed. Both a real in-place macOS client and an empty-data first-run client
-selected Java 25, loaded Minecraft, RingWorld, and all resources/shaders with
-the exact staged jar. A fresh
-16,384-by-256 dedicated server built from the overlay reached `Done`, started
-with bounded-test atlas pregeneration disabled, then saved and stopped cleanly.
-The graphical Windows runtime gate remains before
-#12 can close. The exact candidate hashes and runtime record are in
-`FABRIC_RELEASE_CANDIDATE_2026-08-01.md`.
+Issue #12 retains the frozen Fabric-only candidate at public source revision
+`9b77326d1ec7fba7e2e12e06d89adfceae0ffeb5` and its exact evidence in
+`FABRIC_RELEASE_CANDIDATE_2026-08-01.md`. Issue #94 generalizes that builder,
+installer-upgrade path, and Windows launcher CI to both Fabric and NeoForge.
+The remaining release boundary is unchanged: the exact final candidates still
+need a real graphical Windows Minecraft launch and independent review before
+#12 can close.
 
 Atlas-pregeneration Phases 1b and 2 are landed through #55, #56, and #59:
 the loader-neutral job-model foundation
