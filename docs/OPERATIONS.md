@@ -396,6 +396,12 @@ existing RingWorld configuration, and unrelated `instance.cfg` values. The
 only intentional instance-settings migration enables automatic Java selection
 and clears an explicit Java-location override so Prism can select Java 25.
 
+The generated client instance includes one minimal public `servers.dat` entry:
+**RingWorld Test Server** at `andwhatnotstudio.com:25565`. It is generated from
+constants in `prepare_release_packages.py`, contains no player data, and is
+only copied for a newly created managed instance. It must never auto-join the
+server or replace an existing user's server list.
+
 Never distribute a used `.prism-data` directory. Create a fresh package from
 the source instance that contains only:
 

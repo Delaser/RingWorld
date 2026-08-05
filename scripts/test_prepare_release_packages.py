@@ -4,6 +4,8 @@
 from __future__ import annotations
 
 import hashlib
+import gzip
+import io
 import json
 import os
 from pathlib import Path
@@ -226,6 +228,20 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                 contents = set(archive.namelist())
                 self.assertIn("Launch RingWorld.bat", contents)
                 self.assertNotIn("Launch RingWorld.command", contents)
+                self.assertIn("instance/.minecraft/servers.dat", contents)
+                server_data = gzip.decompress(archive.read("instance/.minecraft/servers.dat"))
+                self.assertIn(b"RingWorld Test Server", server_data)
+                self.assertIn(b"andwhatnotstudio.com:25565", server_data)
+                self.assertIn("RingWorld-Prism-Instance.zip", contents)
+                with zipfile.ZipFile(io.BytesIO(archive.read("RingWorld-Prism-Instance.zip"))) as nested:
+                    nested_server_data = gzip.decompress(nested.read(".minecraft/servers.dat"))
+                    self.assertEqual(server_data, nested_server_data)
+                manifest = json.loads(archive.read("PACKAGE-MANIFEST.json"))
+                self.assertEqual(
+                    {"name": "RingWorld Test Server", "address": "andwhatnotstudio.com:25565",
+                     "autoJoin": False},
+                    manifest["preconfiguredServer"],
+                )
 
             with zipfile.ZipFile(output / names[2]) as archive:
                 contents = set(archive.namelist())
