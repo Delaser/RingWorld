@@ -32,6 +32,11 @@ or other runtime state. The generated `PACKAGE-MANIFEST.json` points to the
 exact MPL-covered public source revision, and root `SHA256SUMS.txt` covers every
 archive.
 
+Client packages generate a minimal `servers.dat` containing only **RingWorld
+Test Server** at `andwhatnotstudio.com:25565`. It is a public convenience entry,
+not client state, and the launcher writes it only while creating its managed
+instance; existing server lists are preserved. The bundle never auto-joins it.
+
 On every start, each launcher copies its packaged RingWorld jar plus
 `mmc-pack.json` into its loader-specific Prism instance: `RingWorld-Test` for
 Fabric and `RingWorld-NeoForge` for NeoForge. The separate instance IDs prevent

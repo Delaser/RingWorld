@@ -9,11 +9,13 @@ no upload, deployment, service-control, or live-world capability.
 from __future__ import annotations
 
 import argparse
+import gzip
 import hashlib
 import json
 from pathlib import Path
 import re
 import shutil
+import struct
 import sys
 import tempfile
 import zipfile
@@ -56,6 +58,8 @@ NEOFORGE_VERSION = "26.1.2.87"
 STAGING_MANIFEST_NAME = "STAGING-MANIFEST.json"
 STAGING_MARKER_NAME = ".ringworld-modrinth-stage"
 STAGING_MANIFEST_FORMAT = 2
+PRECONFIGURED_SERVER_NAME = "RingWorld Test Server"
+PRECONFIGURED_SERVER_ADDRESS = "andwhatnotstudio.com:25565"
 
 LOADER_SPECS = {
     "fabric": {
@@ -306,6 +310,11 @@ def manifest(
         "sourceUrl": f"{SOURCE_URL}/tree/{source_revision}",
         "ringworldJar": release_jar.name,
         "ringworldSha256": sha256(release_jar),
+        "preconfiguredServer": {
+            "name": PRECONFIGURED_SERVER_NAME,
+            "address": PRECONFIGURED_SERVER_ADDRESS,
+            "autoJoin": False,
+        },
     }
     if fabric_api is not None:
         result["fabricApiJar"] = fabric_api.name
@@ -317,6 +326,37 @@ def write_json(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def nbt_string(value: str) -> bytes:
+    encoded = value.encode("utf-8")
+    if len(encoded) > 0xFFFF:
+        raise PackageError("preconfigured server field is too long")
+    return struct.pack(">H", len(encoded)) + encoded
+
+
+def write_preconfigured_server_list(destination: Path) -> None:
+    """Write a deterministic Minecraft servers.dat containing the public demo.
+
+    This is intentionally generated instead of copied from a used client
+    profile. It contains only the public server name/address, never account,
+    history, resource-pack, or other player runtime data. Launchers copy it
+    only while creating their managed instance, so an existing user's server
+    list is never replaced.
+    """
+    server = (
+        b"\x08" + nbt_string("name") + nbt_string(PRECONFIGURED_SERVER_NAME)
+        + b"\x08" + nbt_string("ip") + nbt_string(PRECONFIGURED_SERVER_ADDRESS)
+        + b"\x00"
+    )
+    payload = (
+        b"\x0a\x00\x00"  # unnamed root compound
+        + b"\x09" + nbt_string("servers") + b"\x0a" + struct.pack(">i", 1)
+        + server
+        + b"\x00"
+    )
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    destination.write_bytes(gzip.compress(payload, compresslevel=9, mtime=0))
+
+
 def populate_instance(
     instance_template: Path, destination: Path, release_jar: Path, fabric_api: Path | None,
 ) -> None:
@@ -326,6 +366,7 @@ def populate_instance(
     shutil.copy2(release_jar, mods / release_jar.name)
     if fabric_api is not None:
         shutil.copy2(fabric_api, mods / fabric_api.name)
+    write_preconfigured_server_list(destination / ".minecraft" / "servers.dat")
 
 
 def add_client_package(
@@ -375,7 +416,8 @@ def add_client_package(
         (root / "README-FIRST.txt").write_text(
             f"RingWorld optional {LOADER_SPECS[loader]['display']} Prism client bundle.\n"
             "Run the platform launcher, or import RingWorld-Prism-Instance.zip into Prism Launcher.\n"
-            "This bundle does not auto-join a server. Existing accounts, saves and settings are preserved.\n"
+            f"{PRECONFIGURED_SERVER_NAME} ({PRECONFIGURED_SERVER_ADDRESS}) is already in the server list.\n"
+            "This bundle does not auto-join a server. Existing accounts, saves, settings, and server list are preserved.\n"
             f"Source: {package_manifest['sourceUrl']}\n",
             encoding="utf-8",
         )
