@@ -1,6 +1,7 @@
 # Current state
 
-Last audited: 2026-08-08 on the public `main` integration line. The final
+Last audited: 2026-08-08 against the public `main` integration baseline and
+the current release-candidate changes. The final
 Minecraft 1.21.11 implementation remains historical provenance at
 `mc-1.21.11-final` / `2c98650`.
 
@@ -202,7 +203,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite passes 269 unit/parameterized cases per loader.
+The active suite passes 274 unit/parameterized cases per loader.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
@@ -240,8 +241,9 @@ reported triangle absent.
 
 Issues #130 and #131 now have their local runtime evidence as well. Fabric's
 exact production 16,384×256 headless prewarm completed on 2026-08-06; the
-recorded NeoForge prewarm is safe-small only, so production-size NeoForge
-prewarm remains open. `/ringworld atlas start` starts an idle durable partial
+NeoForge headless-only adapter remains recorded at safe-small, while the later
+production connected-player/restart run below covers the full-size scheduling,
+watchdog, and durable-resume acceptance. `/ringworld atlas start` starts an idle durable partial
 atlas and `/ringworld atlas resume` reattaches that saved partial work after an
 `IDLE` restart without replacing active or release-pending work. On 2026-08-08,
 fresh Fabric and cold NeoForge two-client Atlas-concurrency fixtures passed the
@@ -250,6 +252,21 @@ intervals at or below 100 ms (60 seconds/1,200 observations fail closed). The
 gate retains the original 100-tick Creative-to-Survival dwell and the strict
 `maxRemoteStep <= 1.25` requirement; each automated client exits after its
 terminal result.
+
+The ignored Fabric and NeoForge Atlas-concurrency harnesses now expose the
+same validated circumference, width, and wall-height Gradle properties while
+retaining their 2,048×416×160 safe-small defaults. The Atlas opt-in verifier
+checks each logged total against the selected `(C / 8) * (W / 8)` count. On
+2026-08-08 the NeoForge harness created the production 16,384×256×160 layout,
+two ordinary graphical clients completed the full multiplayer matrix while
+its 65,536-cell Atlas advanced, and the verifier passed. The server then saved
+7,544 cells (11.5%), restarted from that exact partial state without preparing
+or deleting the fixture, resumed monotonically, completed all 65,536 cells,
+and stopped through a normal save. The gameplay run logged two isolated cold
+server-behind warnings (7.464 and 8.296 seconds) but no managed-block deadlock;
+the Atlas stayed monotonic and the strict client movement result remained
+within the qualified bound. Cold-stall profiling is tracked separately in #134 and
+does not invalidate the completed Atlas-concurrency proof.
 
 #71 completes the expanded safe-small seam gameplay gate. The dedicated
 server now waits for two fully loaded clients, then passes the original
@@ -442,7 +459,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, with 269 unit/parameterized cases passing per loader, and Loom produces
+temporary shims, with 274 unit/parameterized cases passing per loader, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -887,16 +904,33 @@ and compatibility claims.
 
 ### Configuration/user experience
 
-- The Create World screen has a RingWorld layout editor with safe-small,
-  production, and current presets plus live validation/cost preview.
+- The Create World screen now uses one loader-neutral configuration model for
+  both Fabric and NeoForge. It offers **Safe-small test** (2,048×416×160),
+  **Production (recommended)** (16,384×256×160), and **Saved config values**
+  presets plus live validation/cost preview.
 - Its entry is a third member of Minecraft 26.1's managed Create/Cancel footer
-  row, and the editor uses a compact layout below 320 logical pixels so GUI
-  scale 4 does not overlap its fields, preview, immutable warning, or actions.
+  row, and the editor has a compact layout below 360 logical pixels.
 - The layout editor relies on Minecraft's framework-managed background pass;
   it does not request a second menu blur while rendered over Create World.
+- Field parsing and basic structural validation aggregate applicable field
+  messages; once minimum/alignment checks pass, cross-field report errors are
+  shown together. The apply action stays disabled until all errors are
+  resolved. The full preview reports ring size, horizon radius, atlas size,
+  and estimated full generation cost; the compact view prioritizes the first
+  three so its actions and immutable-world warning remain unobstructed.
 - Applying a valid creation layout requires a second explicit confirmation
-  that repeats the immutable dimensions and wall height.
+  that repeats the immutable dimensions, wall height, and monument choice.
+- The editor explains that values affect only the next new Overworld. First
+  Overworld load saves the layout and monument result permanently; existing
+  worlds are never changed. Enabling the monument option asks that new world
+  to search for one valid ocean-monument location and records either its
+  result or unavailability.
 - Dedicated servers use equivalent first-world bootstrap properties.
+- The pure UI model is shared by Fabric and NeoForge. The dual-loader,
+  menu-only GUI-scale creation-UI gate passes on both loaders: it opens no
+  world, captures all eleven scale-1-to-4 states in a 1,920-pixel-wide
+  framebuffer at least 1,080 pixels tall, validates the final 4,096×640×192
+  monument request in the bootstrap config, and rejects any created save.
 - There is no supported in-place resize or conversion tool.
 - New-world dimension validation now checks the full-height radial clearance,
   finite-rim interior, wall/build bounds, axis limits, and atlas allocation

@@ -146,6 +146,14 @@ loom {
 			// Minecraft login names are limited to 16 characters.
 			programArgs "--username", "AtlasUiTester"
 		}
+		creationUiClient {
+			client()
+			name "RingWorld Creation UI Regression"
+			runDir "run-creation-ui"
+			vmArg "-Dringworld.creationUiTest=true"
+			// The menu-only fixture asserts this exact framebuffer at startup.
+			programArgs "--username", "CreationUiTester", "--width", "1920", "--height", "1080"
+		}
 		mapCompassCaptureClient {
 			client()
 			name "RingWorld Map and Compass Capture"
@@ -260,6 +268,32 @@ def requireReadablePng = { File screenshot, String label ->
 	}
 }
 
+def requireNonUniformPng = { File screenshot, String label ->
+	requireReadablePng(screenshot, label)
+	def image = javax.imageio.ImageIO.read(screenshot)
+	if (image == null) {
+		throw new GradleException("${label} did not decode correctly: ${screenshot}")
+	}
+	Integer firstVisiblePixel = null
+	boolean nonUniform = false
+	for (int y = 0; y < image.height && !nonUniform; y++) {
+		for (int x = 0; x < image.width; x++) {
+			int pixel = image.getRGB(x, y)
+			if ((pixel >>> 24) != 0) {
+				if (firstVisiblePixel == null) {
+					firstVisiblePixel = pixel
+				} else if (pixel != firstVisiblePixel) {
+					nonUniform = true
+					break
+				}
+			}
+		}
+	}
+	if (firstVisiblePixel == null || !nonUniform) {
+		throw new GradleException("${label} is blank or uniform: ${screenshot}")
+	}
+}
+
 def verifyFabricProjectionOutputs = { File runDirectory, String environment ->
 	def normalizedEnvironment = environment.trim().toLowerCase(Locale.ROOT)
 	if (!(normalizedEnvironment in ["noon", "dusk", "night", "rain"])) {
@@ -311,11 +345,40 @@ def verifyFabricProductionLifecycleOutputs = { File runDirectory, String destina
 def multiplayerHarnessDirectory = file("run-multiplayer")
 def multiplayerPregenerateTerrainAtlas = providers.gradleProperty("ringMultiplayerPregenerateTerrainAtlas")
         .orElse("false")
+def multiplayerHarnessDimension = { String propertyName, String defaultValue, int minimum, boolean chunkAligned ->
+	def raw = providers.gradleProperty(propertyName).orElse(defaultValue).get().trim()
+	int value
+	try {
+		value = Integer.parseInt(raw)
+	} catch (NumberFormatException ignored) {
+		throw new GradleException("${propertyName} must be a positive integer")
+	}
+	if (value < minimum) {
+		throw new GradleException("${propertyName} must be at least ${minimum} blocks")
+	}
+	if (chunkAligned && value % 16 != 0) {
+		throw new GradleException("${propertyName} must be divisible by 16 blocks")
+	}
+	value
+}
+// Mirror RingGeometry/RingWorldConfig's bootstrap constraints. The server
+// still applies the full first-world dimension report before world creation.
+def multiplayerCircumferenceBlocks = multiplayerHarnessDimension(
+		"ringMultiplayerCircumferenceBlocks", "2048", 1024, true)
+def multiplayerWidthBlocks = multiplayerHarnessDimension(
+		"ringMultiplayerWidthBlocks", "416", 256, true)
+def multiplayerWallHeightBlocks = multiplayerHarnessDimension(
+		"ringMultiplayerWallHeightBlocks", "160", 32, false)
+def multiplayerAtlasCellCount = (multiplayerCircumferenceBlocks.longValue() / 8L)
+		* (multiplayerWidthBlocks.longValue() / 8L)
 
 tasks.register("prepareMultiplayerHarness") {
 	group = "ringworld verification"
 	description = "Creates clean, isolated Fabric server and client-A/client-B multiplayer harness directories."
 	inputs.property("ringMultiplayerPregenerateTerrainAtlas", multiplayerPregenerateTerrainAtlas)
+	inputs.property("ringMultiplayerCircumferenceBlocks", multiplayerCircumferenceBlocks)
+	inputs.property("ringMultiplayerWidthBlocks", multiplayerWidthBlocks)
+	inputs.property("ringMultiplayerWallHeightBlocks", multiplayerWallHeightBlocks)
 	outputs.dir(multiplayerHarnessDirectory)
 	outputs.upToDateWhen { false }
 	doLast {
@@ -341,9 +404,9 @@ tasks.register("prepareMultiplayerHarness") {
 		def configDirectory = new File(server, "config")
 		configDirectory.mkdirs()
 		new File(configDirectory, "ringworld.properties").text = """\
-widthBlocks=416
-circumferenceBlocks=2048
-wallHeightBlocks=160
+widthBlocks=${multiplayerWidthBlocks}
+circumferenceBlocks=${multiplayerCircumferenceBlocks}
+wallHeightBlocks=${multiplayerWallHeightBlocks}
 testMode=false
 testViewDistanceChunks=2
 pregenerateTerrainAtlas=${multiplayerPregenerateTerrainAtlas.get().toBoolean() ? "true" : "false"}
@@ -368,7 +431,8 @@ pregenerateTerrainAtlas=${multiplayerPregenerateTerrainAtlas.get().toBoolean() ?
 	}
 }
 
-def verifyMultiplayerAtlasProgress = { String loader, File serverLog, String serverText ->
+def verifyMultiplayerAtlasProgress = { String loader, File serverLog, String serverText,
+		long expectedTotalCells ->
 	def samples = []
 	def matcher = (serverText =~ /RingWorld terrain atlas progress: (\d+)\/(\d+) cells \([^)]*\), generation (\w+)/)
 	matcher.each { match ->
@@ -388,6 +452,10 @@ def verifyMultiplayerAtlasProgress = { String loader, File serverLog, String ser
 		}
 		if (sampleTotal <= 0L || presentCells < 0L || presentCells > sampleTotal) {
 			throw new GradleException("${loader} multiplayer atlas status is invalid; inspect ${serverLog}")
+		}
+		if (sampleTotal != expectedTotalCells) {
+			throw new GradleException("${loader} multiplayer atlas total ${sampleTotal} does not match "
+					+ "the configured geometry's expected ${expectedTotalCells} cells; inspect ${serverLog}")
 		}
 		if (totalCells != -1L && sampleTotal != totalCells) {
 			throw new GradleException("${loader} multiplayer atlas total changed during one disposable run; inspect ${serverLog}")
@@ -443,7 +511,7 @@ tasks.register("verifyMultiplayerHarness") {
 			}
 		}
 		if (multiplayerPregenerateTerrainAtlas.get().toBoolean()) {
-			verifyMultiplayerAtlasProgress("Fabric", serverLog, serverText)
+			verifyMultiplayerAtlasProgress("Fabric", serverLog, serverText, multiplayerAtlasCellCount)
 		}
 		logger.lifecycle("[fabric-multiplayer] verified full server and client-A/client-B seam matrix")
 	}
@@ -694,6 +762,101 @@ tasks.register("prepareAtlasUiRun") {
 tasks.named("runAtlasUiClient") {
 	dependsOn("prepareAtlasUiRun")
 	finalizedBy("verifyAtlasUiClient")
+}
+
+def creationUiScreenshotPrefixes = [
+		"creation-ui-01-footer-scale1",
+		"creation-ui-02-default-scale1",
+		"creation-ui-03-default-scale2",
+		"creation-ui-04-default-scale3",
+		"creation-ui-05-default-scale4",
+		"creation-ui-06-invalid-five-errors-scale4",
+		"creation-ui-07-safe-small-scale4",
+		"creation-ui-08-production-scale4",
+		"creation-ui-09-custom-monument-scale4",
+		"creation-ui-10-confirm-layout-scale4",
+		"creation-ui-11-footer-applied-scale4"
+]
+
+def verifyCreationUiConfig = { File runDirectory, String label ->
+	def configFile = new File(runDirectory, "config/ringworld.properties")
+	if (!configFile.isFile()) {
+		throw new GradleException("${label} did not retain its final bootstrap configuration: ${configFile}")
+	}
+	def config = new Properties()
+	configFile.withInputStream { config.load(it) }
+	def expected = [
+			"circumferenceBlocks": "4096",
+			"widthBlocks": "640",
+			"wallHeightBlocks": "192",
+			"requestOceanMonument": "true",
+			"testMode": "false",
+			"pregenerateTerrainAtlas": "false"
+	]
+	expected.each { key, value ->
+		if (config.getProperty(key) != value) {
+			throw new GradleException("${label} did not retain ${key}=${value}: ${configFile}")
+		}
+	}
+}
+
+def verifyCreationUiOutputs = { File runDirectory, String label ->
+	def logFile = new File(runDirectory, "logs/latest.log")
+	requireFabricRuntimeGateLog(logFile, "[creation-ui-test] PASS", "[creation-ui-test] FAIL", label)
+	creationUiScreenshotPrefixes.each { prefix ->
+		def screenshots = fileTree(new File(runDirectory, "screenshots")).matching {
+			include prefix + "*.png"
+		}.files
+		if (screenshots.isEmpty()) {
+			throw new GradleException("${label} is missing screenshot ${prefix}*.png")
+		}
+		screenshots.each { screenshot -> requireNonUniformPng(screenshot, label) }
+	}
+	def createdLevels = fileTree(new File(runDirectory, "saves")).matching {
+		include "**/level.dat"
+	}.files
+	if (!createdLevels.isEmpty()) {
+		throw new GradleException("${label} created a world despite being menu-only: ${createdLevels}")
+	}
+	verifyCreationUiConfig(runDirectory, label)
+}
+ext.verifyCreationUiOutputs = verifyCreationUiOutputs
+
+tasks.register("prepareCreationUiRun") {
+	group = "ringworld verification"
+	description = "Writes the isolated menu-only RingWorld creation-UI regression configuration."
+	outputs.upToDateWhen { false }
+	doLast {
+		["saves", "screenshots", "ringworld-cache", "logs"].each {
+			delete(file("run-creation-ui/" + it))
+		}
+		def configFile = file("run-creation-ui/config/ringworld.properties")
+		configFile.parentFile.mkdirs()
+		def config = new Properties()
+		config.setProperty("widthBlocks", "416")
+		config.setProperty("circumferenceBlocks", "2048")
+		config.setProperty("wallHeightBlocks", "160")
+		config.setProperty("testMode", "false")
+		config.setProperty("testViewDistanceChunks", "6")
+		config.setProperty("pregenerateTerrainAtlas", "false")
+		config.setProperty("requestOceanMonument", "false")
+		configFile.withOutputStream { config.store(it, "Isolated RingWorld creation UI regression") }
+		file("run-creation-ui/options.txt").text = "onboardAccessibility:false\nguiScale:1\n"
+	}
+}
+
+tasks.register("verifyCreationUiClient") {
+	group = "ringworld verification"
+	description = "Fails unless the menu-only creation-UI fixture completed all captures without creating a world."
+	mustRunAfter("runCreationUiClient")
+	doLast {
+		verifyCreationUiOutputs(file("run-creation-ui"), "Fabric creation UI client")
+	}
+}
+
+tasks.named("runCreationUiClient") {
+	dependsOn("prepareCreationUiRun")
+	finalizedBy("verifyCreationUiClient")
 }
 
 tasks.register("prepareMapCompassCaptureRun") {

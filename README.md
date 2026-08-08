@@ -16,7 +16,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> and the current suite passes 269 unit/parameterized cases per loader.
+> and the current suite passes 274 unit/parameterized cases per loader.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -58,7 +58,7 @@ The Nether and End remain vanilla.
 
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
-> Java 25 module builds with the same 269 tests; its dedicated server reaches
+> Java 25 module builds with the same 274 tests; its dedicated server reaches
 > `Done` and starts/progresses an atlas. Its client now loads the shared
 > resources/shaders and mixins, acknowledges settings format 2, streams atlas
 > metadata/tiles, and renders the complete textured surface in a copied
@@ -241,7 +241,7 @@ The parallel NeoForge module uses the same Java 25 toolchain:
 ./gradlew :neoforge:test :neoforge:build --console=plain
 ```
 
-Both Fabric and NeoForge builds pass 269 unit/parameterized cases per loader.
+Both Fabric and NeoForge builds pass 274 unit/parameterized cases per loader.
 When launching a dedicated development server, use the qualified task
 for the intended loader: `./gradlew :runServer` for Fabric or
 `./gradlew :neoforge:runServer` for NeoForge. Do not use an unqualified
@@ -277,7 +277,7 @@ dimensions cannot be resized in place.
 On the Create World screen, select the bottom-left **RingWorld C×W** button.
 The editor provides:
 
-- safe-small, production, and current presets;
+- **Safe-small test**, **Production (recommended)**, and **Saved config values** presets;
 - custom circumference, width, and wall height;
 - an optional guaranteed ocean monument for the new world;
 - validation of chunk alignment, radial/build-height safety, finite-rim
@@ -428,6 +428,11 @@ Two-client dedicated multiplayer regression, in separate terminals:
 ./gradlew :runMultiplayerClientA
 ./gradlew :runMultiplayerClientB
 ```
+
+The disposable Atlas-concurrency harness also accepts a validated custom
+layout, including the production `16384×256` geometry; its exact Fabric and
+NeoForge commands, restart procedure, and cell-total verifier are in
+[`docs/TESTING.md`](docs/TESTING.md#opt-in-atlas-concurrency-gate-130).
 
 Additional automated runs:
 

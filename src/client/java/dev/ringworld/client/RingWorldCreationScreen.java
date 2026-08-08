@@ -1,32 +1,33 @@
 package dev.ringworld.client;
 
 import dev.ringworld.world.RingDimensionReport;
-import dev.ringworld.world.RingGeometry;
-import dev.ringworld.world.RingRenderProfile;
 import dev.ringworld.world.RingWorldConfig;
-import dev.ringworld.world.RingWorldSettings;
+import dev.ringworld.world.RingWorldCreationUiModel;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.Locale;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
 
 /** Pre-creation editor and cost preview for immutable RingWorld layout. */
 public final class RingWorldCreationScreen extends Screen {
-    private static final int COMPACT_HEIGHT = 320;
+    private static final int COMPACT_HEIGHT = 360;
     private final Screen parent;
     private EditBox circumferenceField;
     private EditBox widthField;
     private EditBox wallHeightField;
     private boolean requestOceanMonument;
+    private Button safeSmallButton;
+    private Button productionButton;
+    private Button savedConfigButton;
     private Button monumentButton;
     private Button applyButton;
     @Nullable private RingDimensionReport report;
-    @Nullable private String inputError;
+    private java.util.List<String> validationMessages = java.util.List.of();
 
     public RingWorldCreationScreen(Screen parent) {
         super(Component.literal("RingWorld layout"));
@@ -38,9 +39,9 @@ public final class RingWorldCreationScreen extends Screen {
         RingWorldConfig config = RingWorldConfig.load();
         int left = this.width / 2 - 100;
         boolean compact = this.height < COMPACT_HEIGHT;
-        int firstFieldY = compact ? 28 : 58;
-        int fieldStep = compact ? 24 : 36;
-        int presetY = compact ? 100 : 166;
+        int firstFieldY = compact ? 24 : 52;
+        int fieldStep = compact ? 24 : 34;
+        int presetY = compact ? 98 : 150;
         circumferenceField = numericField(left, firstFieldY, "Circumference blocks",
                 config.circumferenceBlocks());
         widthField = numericField(left, firstFieldY + fieldStep, "Width blocks",
@@ -50,27 +51,21 @@ public final class RingWorldCreationScreen extends Screen {
                 config.wallHeightBlocks());
         requestOceanMonument = config.requestOceanMonument();
 
-        addRenderableWidget(Button.builder(Component.literal("Safe small"),
-                button -> setPreset(2_048, 416, 160))
-                .bounds(this.width / 2 - 154, presetY, 100, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Production"),
-                button -> setPreset(
-                        RingWorldSettings.DEFAULT_CIRCUMFERENCE,
-                        RingWorldSettings.DEFAULT_WIDTH,
-                        RingWorldSettings.DEFAULT_WALL_HEIGHT))
-                .bounds(this.width / 2 - 50, presetY, 100, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Current"),
-                button -> setPreset(
-                        config.circumferenceBlocks(),
-                        config.widthBlocks(),
-                        config.wallHeightBlocks()))
-                .bounds(this.width / 2 + 54, presetY, 100, 20).build());
+        safeSmallButton = addRenderableWidget(Button.builder(Component.literal("Safe-small test"),
+                button -> setPreset(RingWorldCreationUiModel.SAFE_SMALL_TEST))
+                .bounds(this.width / 2 - 154, presetY, 150, 20).build());
+        productionButton = addRenderableWidget(Button.builder(Component.literal("Production (recommended)"),
+                button -> setPreset(RingWorldCreationUiModel.PRODUCTION_RECOMMENDED))
+                .bounds(this.width / 2 + 4, presetY, 150, 20).build());
+        savedConfigButton = addRenderableWidget(Button.builder(Component.literal("Saved config values"),
+                button -> restoreSavedConfig())
+                .bounds(this.width / 2 - 100, presetY + 24, 200, 20).build());
         monumentButton = addRenderableWidget(Button.builder(monumentMessage(),
                 button -> {
                     requestOceanMonument = !requestOceanMonument;
                     button.setMessage(monumentMessage());
                 })
-                .bounds(this.width / 2 - 100, presetY + 26, 200, 20).build());
+                .bounds(this.width / 2 - 100, presetY + 48, 200, 20).build());
 
         applyButton = addRenderableWidget(Button.builder(Component.literal("Use for new world"),
                 button -> apply())
@@ -97,25 +92,28 @@ public final class RingWorldCreationScreen extends Screen {
         updateReport();
     }
 
+    private void setPreset(RingWorldCreationUiModel.Preset preset) {
+        setPreset(preset.circumferenceBlocks(), preset.widthBlocks(), preset.wallHeightBlocks());
+    }
+
+    private void restoreSavedConfig() {
+        RingWorldConfig saved = RingWorldConfig.load();
+        setPreset(saved.circumferenceBlocks(), saved.widthBlocks(), saved.wallHeightBlocks());
+        requestOceanMonument = saved.requestOceanMonument();
+        monumentButton.setMessage(monumentMessage());
+    }
+
     private Component monumentMessage() {
-        return Component.literal("Ocean monument guarantee: " + (requestOceanMonument ? "On" : "Off"));
+        return Component.literal(RingWorldCreationUiModel.monumentChoice(requestOceanMonument));
     }
 
     private void updateReport() {
         if (applyButton == null || circumferenceField == null) return;
-        try {
-            int circumference = Integer.parseInt(circumferenceField.getValue());
-            int width = Integer.parseInt(widthField.getValue());
-            int wallHeight = Integer.parseInt(wallHeightField.getValue());
-            report = RingDimensionReport.forVanillaOverworld(
-                    new RingGeometry(width, circumference), wallHeight);
-            inputError = null;
-            applyButton.active = report.isValid();
-        } catch (IllegalArgumentException exception) {
-            report = null;
-            inputError = exception.getMessage();
-            applyButton.active = false;
-        }
+        RingWorldCreationUiModel.Validation validation = RingWorldCreationUiModel.validate(
+                circumferenceField.getValue(), widthField.getValue(), wallHeightField.getValue());
+        report = validation.report();
+        validationMessages = validation.messages();
+        applyButton.active = validation.canApply();
     }
 
     private void apply() {
@@ -128,14 +126,8 @@ public final class RingWorldCreationScreen extends Screen {
                 minecraft.setScreen(this);
             }
         }, Component.literal("Lock RingWorld dimensions?"),
-                Component.literal("This new Overworld will permanently use "
-                        + confirmedReport.geometry().circumferenceBlocks() + "×"
-                        + confirmedReport.geometry().widthBlocks()
-                        + " blocks with wall height "
-                        + confirmedReport.wallHeightBlocks()
-                        + " and ocean monument guarantee "
-                        + (requestOceanMonument ? "enabled" : "disabled")
-                        + ". Existing worlds are not changed."),
+                Component.literal(RingWorldCreationUiModel.confirmationCopy(
+                        confirmedReport, requestOceanMonument)),
                 Component.literal("Lock and use"), Component.literal("Go back")));
     }
 
@@ -150,7 +142,7 @@ public final class RingWorldCreationScreen extends Screen {
             }
             minecraft.setScreen(parent);
         } catch (RuntimeException exception) {
-            inputError = exception.getMessage();
+            validationMessages = java.util.List.of(exception.getMessage());
             applyButton.active = false;
             minecraft.setScreen(this);
         }
@@ -169,8 +161,8 @@ public final class RingWorldCreationScreen extends Screen {
         super.extractRenderState(context, mouseX, mouseY, deltaTicks);
         int center = width / 2;
         boolean compact = this.height < COMPACT_HEIGHT;
-        int firstFieldY = compact ? 28 : 58;
-        int fieldStep = compact ? 24 : 36;
+        int firstFieldY = compact ? 24 : 52;
+        int fieldStep = compact ? 24 : 34;
         context.centeredText(font, title, center, compact ? 6 : 18, 0xFFFFFFFF);
         drawFieldLabel(context,
                 compact ? "Circumference" : "Circumference (blocks)",
@@ -182,56 +174,44 @@ public final class RingWorldCreationScreen extends Screen {
                 compact ? "Rim wall height" : "Rim wall height (from Y=-64)",
                 firstFieldY + fieldStep * 2, compact);
 
-        int y = compact ? 154 : 226;
+        int y = compact ? 174 : 232;
         int lineStep = compact ? 10 : 12;
-        if (inputError != null) {
-            context.centeredText(font,
-                    Component.literal(inputError), center, y, 0xFFFF6060);
+        if (!validationMessages.isEmpty()) {
+            int capacity = Math.max(1, (height - 74 - y) / lineStep);
+            int shown = Math.min(validationMessages.size(), capacity);
+            if (validationMessages.size() > shown) shown--;
+            for (int index = 0; index < shown; index++) {
+                context.centeredText(font, Component.literal(validationMessages.get(index)), center,
+                        y + lineStep * index, 0xFFFF6060);
+            }
+            if (validationMessages.size() > shown) {
+                context.centeredText(font,
+                        Component.literal("+" + (validationMessages.size() - shown) + " more issue(s) to fix"),
+                        center, y + lineStep * shown, 0xFFFF6060);
+            }
         } else if (report != null) {
-            RingRenderProfile renderProfile = RingRenderProfile.create(
-                    report.geometry(), 28 * 16.0);
-            drawReportLine(context, y, "Chunks: %d around × %d across (%s total)"
-                    .formatted(report.geometry().circumferenceChunks(),
-                            report.geometry().widthChunks(),
-                            formatLong(report.canonicalChunkCount())));
-            drawReportLine(context, y + lineStep, String.format(Locale.ROOT,
-                    "Radius %.2f; centre Y %.2f; sky width %.2f°",
-                    report.geometry().radius(), report.geometry().physicalCenterY(),
-                    report.oppositeAngularWidthDegrees()));
-            drawReportLine(context, y + lineStep * 2, String.format(Locale.ROOT,
-                    "Wall top Y %d; clouds Y %d; top clearance %.2f",
-                    report.wallTopYExclusive(), report.cloudBaseY(),
-                    report.radialClearanceAtHighestPlane()));
-            drawReportLine(context, y + lineStep * 3,
-                    "Build ref ~%s / %s MiB; atlas %s cells (%s MiB)"
-                    .formatted(formatDuration(report.costEstimate().estimatedPregenerationSeconds()),
-                            formatMiB(report.costEstimate().estimatedGeneratedWorldBytes()),
-                            formatLong(report.atlasCellCount()),
-                            formatMiB(report.estimatedAtlasBytes())));
-            drawReportLine(context, y + lineStep * 4, String.format(Locale.ROOT,
-                    "GPU %d×%d; %.2f×%.2f blocks/texel; %s vertices",
-                    renderProfile.textureColumns(), renderProfile.textureRows(),
-                    renderProfile.textureBlocksPerTexelX(),
-                    renderProfile.textureBlocksPerTexelZ(),
-                    formatLong(renderProfile.vertexCount())));
-            drawReportLine(context, y + lineStep * 5,
-                    "GPU texture/mesh ~%s/%s MiB; build scratch ~%s MiB"
-                            .formatted(formatMiB(renderProfile.estimatedGpuTextureBytes()),
-                                    formatMiB(renderProfile.estimatedGpuMeshBytes()),
-                                    formatMiB(renderProfile.estimatedTextureBuildScratchBytes())));
-            if (!report.errors().isEmpty()) {
-                context.centeredText(font,
-                        Component.literal(report.errors().getFirst()), center,
-                        y + lineStep * 7, 0xFFFF6060);
-            } else if (!report.warnings().isEmpty()) {
-                context.centeredText(font,
-                        Component.literal(report.warnings().getFirst()), center,
-                        y + lineStep * 7, 0xFFFFD060);
+            java.util.List<String> summaryLines = RingWorldCreationUiModel.Validation.summaryLines(report);
+            int capacity = Math.max(1, (height - 74 - y) / lineStep);
+            int summaryLimit = compact ? Math.min(3, capacity) : capacity;
+            if (!report.warnings().isEmpty()) summaryLimit--;
+            int shown = Math.min(summaryLimit, summaryLines.size());
+            for (int index = 0; index < shown; index++) {
+                drawReportLine(context, y + lineStep * index, summaryLines.get(index));
+            }
+            if (!report.warnings().isEmpty()) {
+                context.centeredText(font, Component.literal(report.warnings().getFirst()), center,
+                        y + lineStep * shown, 0xFFFFD060);
             }
         }
-        context.centeredText(font,
-                Component.literal("Dimensions and monument choice become immutable when the Overworld is first loaded."),
-                center, height - 50, 0xFFFFD060);
+        int informationY = height - 74;
+        for (int index = 0; index < RingWorldCreationUiModel.MONUMENT_LINES.size(); index++) {
+            context.centeredText(font, Component.literal(RingWorldCreationUiModel.MONUMENT_LINES.get(index)),
+                    center, informationY + index * 10, 0xFFA0A0A0);
+        }
+        for (int index = 0; index < RingWorldCreationUiModel.NEXT_NEW_WORLD_LINES.size(); index++) {
+            context.centeredText(font, Component.literal(RingWorldCreationUiModel.NEXT_NEW_WORLD_LINES.get(index)),
+                    center, informationY + 22 + index * 10, 0xFFFFD060);
+        }
     }
 
     private void drawReportLine(GuiGraphicsExtractor context, int y, String value) {
@@ -248,24 +228,75 @@ public final class RingWorldCreationScreen extends Screen {
         context.text(font, label, x, y, 0xFFA0A0A0);
     }
 
-    private static String formatLong(long value) {
-        return String.format(Locale.ROOT, "%,d", value);
+    /*
+     * Package-visible, test-only paths for the opt-in graphical creation UI
+     * fixture. They deliberately enter through the actual widgets: the
+     * responder recomputes validation and the buttons retain their ordinary
+     * callbacks. No production path invokes these methods.
+     */
+    void ringworld$automationPressSafeSmall() {
+        safeSmallButton.onPress(AutomationInput.INSTANCE);
     }
 
-    private static String formatMiB(long bytes) {
-        return String.format(Locale.ROOT, "%.1f", bytes / (1024.0 * 1024.0));
+    void ringworld$automationPressProduction() {
+        productionButton.onPress(AutomationInput.INSTANCE);
     }
 
-    private static String formatDuration(long seconds) {
-        long hours = seconds / 3_600L;
-        long minutes = seconds % 3_600L / 60L;
-        long remainder = seconds % 60L;
-        return hours > 0L ? "%dh %02dm".formatted(hours, minutes)
-                : "%dm %02ds".formatted(minutes, remainder);
+    void ringworld$automationPressSavedConfig() {
+        savedConfigButton.onPress(AutomationInput.INSTANCE);
+    }
+
+    void ringworld$automationSetLayout(int circumference, int width, int wallHeight) {
+        circumferenceField.setValue(Integer.toString(circumference));
+        widthField.setValue(Integer.toString(width));
+        wallHeightField.setValue(Integer.toString(wallHeight));
+    }
+
+    void ringworld$automationToggleMonument() {
+        monumentButton.onPress(AutomationInput.INSTANCE);
+    }
+
+    void ringworld$automationApply() {
+        applyButton.onPress(AutomationInput.INSTANCE);
+    }
+
+    boolean ringworld$automationHasLayout(int circumference, int width, int wallHeight) {
+        return circumferenceField.getValue().equals(Integer.toString(circumference))
+                && widthField.getValue().equals(Integer.toString(width))
+                && wallHeightField.getValue().equals(Integer.toString(wallHeight));
+    }
+
+    boolean ringworld$automationCanApply() {
+        return applyButton.active;
+    }
+
+    int ringworld$automationValidationMessageCount() {
+        return validationMessages.size();
+    }
+
+    boolean ringworld$automationMonumentRequested() {
+        return requestOceanMonument;
+    }
+
+    /** Shared non-pointer input for invoking a Button's normal onPress path. */
+    public enum AutomationInput implements InputWithModifiers {
+        INSTANCE;
+
+        @Override public int input() { return 0; }
+        @Override public int modifiers() { return 0; }
     }
 
     /** Parent-screen hook kept UI-local so accepting a layout refreshes its summary. */
     public interface LayoutButtonOwner {
         void ringworld$refreshLayoutButton();
+
+        /** True after the real Create World footer widget has been initialized. */
+        boolean ringworld$layoutButtonReadyForAutomation();
+
+        /** Opens the actual footer button for the menu-only graphical fixture. */
+        void ringworld$openLayoutEditorForAutomation();
+
+        /** Reads the actual footer label after an accepted confirmation. */
+        Component ringworld$layoutButtonMessageForAutomation();
     }
 }

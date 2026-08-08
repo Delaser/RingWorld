@@ -58,6 +58,8 @@ public final class RingWorldClient implements ClientModInitializer {
             new CurvedObjectCaptureClient();
     private final AtlasPregenerationUiTestClient atlasPregenerationUiTest =
             new AtlasPregenerationUiTestClient();
+    private final RingWorldCreationUiTestClient creationUiTest =
+            new RingWorldCreationUiTestClient();
     private final RingMapCompassCaptureClient mapCompassCapture =
             new RingMapCompassCaptureClient();
     private boolean testScreenOpened;
@@ -201,6 +203,10 @@ public final class RingWorldClient implements ClientModInitializer {
             atlasPregenerationUiTest.frameRendered();
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (creationUiTest.startMenuIfEnabled(client)) {
+                creationUiTest.tick(client);
+                return;
+            }
             if (client.player != null) ClientRingState.updateCameraPosition(client.player.getX());
             // This short-lived renderer capture deliberately postpones its
             // cache write until disconnect so a periodic async save cannot

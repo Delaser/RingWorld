@@ -13,6 +13,7 @@ import dev.ringworld.client.RingMapCompassCaptureClient;
 import dev.ringworld.client.RingProjectionCaptureClient;
 import dev.ringworld.client.RingVisualParityCaptureClient;
 import dev.ringworld.client.RingWorldClientSession;
+import dev.ringworld.client.RingWorldCreationUiTestClient;
 import dev.ringworld.net.RingAtlasPregenerationStatusPayload;
 import dev.ringworld.net.RingSettingsHandshake;
 import dev.ringworld.net.RingSettingsPayload;
@@ -54,6 +55,8 @@ public final class NeoForgeRingWorldClient {
             new CurvedObjectCaptureClient();
     private static final AtlasPregenerationUiTestClient ATLAS_PREGENERATION_UI_TEST =
             new AtlasPregenerationUiTestClient();
+    private static final RingWorldCreationUiTestClient CREATION_UI_TEST =
+            new RingWorldCreationUiTestClient();
     private static final RingMapCompassCaptureClient MAP_COMPASS_CAPTURE =
             new RingMapCompassCaptureClient();
 
@@ -167,6 +170,10 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft client = Minecraft.getInstance();
+        if (CREATION_UI_TEST.startMenuIfEnabled(client)) {
+            CREATION_UI_TEST.tick(client);
+            return;
+        }
         if (CURVED_OBJECT_CAPTURE.startWorldIfEnabled(client)) return;
         if (MAP_COMPASS_CAPTURE.startWorldIfEnabled(client)) return;
         if (ATLAS_PREGENERATION_UI_TEST.startWorldIfEnabled(client)) return;

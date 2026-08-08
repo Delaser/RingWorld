@@ -11,6 +11,7 @@ run-production-lifecycle/
 run-production-visual-parity/
 run-curved-object-capture/
 run-atlas-ui/
+run-creation-ui/
 run-atlas-release-gate/
 run-stronghold-test/
 run-headless-prewarm/

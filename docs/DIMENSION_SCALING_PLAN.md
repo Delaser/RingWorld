@@ -451,16 +451,28 @@ both client and dedicated-server flows apply identical validation.
 Implemented:
 
 - The Create World screen opens a RingWorld editor for circumference, width,
-  and wall height with safe-small, production, and current presets.
-- The editor previews chunks, physical dimensions, wall/cloud elevation,
-  clearance, atlas memory, measured-reference full-generation time/world-data
-  growth, GPU resolution, blocks per texel, and vertex count; invalid layouts
-  cannot be applied. Layouts beyond the measured 30-minute or 512-MiB planning
-  envelope receive a visible warning.
+  and wall height with **Safe-small test** (2,048×416×160), **Production
+  (recommended)** (16,384×256×160), and **Saved config values** presets. The
+  last reloads bootstrap config, not immutable settings from an existing save.
+- A shared loader-neutral UI model parses all three fields before it validates
+  them, so field-level parse and alignment/minimum errors are aggregated; its
+  report errors remain visible together once every field passes those basic
+  minimum/alignment checks.
+  The editor previews ring size, curved horizon, atlas memory, and
+  measured-reference full-generation time/world-data growth. Layouts beyond
+  the measured 30-minute or 512-MiB planning envelope receive a visible
+  warning.
 - Applying a valid layout opens an explicit confirmation that repeats the
-  immutable circumference, width, and wall height.
+  immutable circumference, width, wall height, and monument choice. It makes
+  clear that values apply only to the next new Overworld: first load saves the
+  layout and the one-time valid-ocean-monument search result, while existing
+  worlds are never changed.
 - Dedicated first-world properties pass through the same validator and startup
   report.
+- Fabric and NeoForge use the same pure configuration model. A dual-loader,
+  menu-only GUI-scale capture gate passes for this cleanup; it proves
+  the footer, editor, invalid state, both presets, custom monument choice, and
+  confirmation without creating a world.
 - A world with existing Overworld region files but no RingWorld saved settings
   is refused instead of silently converted.
 

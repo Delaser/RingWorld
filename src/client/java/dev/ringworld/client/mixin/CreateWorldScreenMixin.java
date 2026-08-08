@@ -57,4 +57,25 @@ abstract class CreateWorldScreenMixin extends Screen
             ringworld$layoutButton.setMessage(message);
         }
     }
+
+    @Override
+    public boolean ringworld$layoutButtonReadyForAutomation() {
+        return ringworld$layoutButton != null;
+    }
+
+    @Override
+    public void ringworld$openLayoutEditorForAutomation() {
+        if (ringworld$layoutButton == null) {
+            throw new IllegalStateException("RingWorld layout footer button was not initialized");
+        }
+        ringworld$layoutButton.onPress(RingWorldCreationScreen.AutomationInput.INSTANCE);
+    }
+
+    @Override
+    public Component ringworld$layoutButtonMessageForAutomation() {
+        if (ringworld$layoutButton == null) {
+            throw new IllegalStateException("RingWorld layout footer button was not initialized");
+        }
+        return ringworld$layoutButton.getMessage();
+    }
 }
