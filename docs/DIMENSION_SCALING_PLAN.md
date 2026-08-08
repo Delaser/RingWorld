@@ -82,7 +82,7 @@ Every value in the following registry belongs to one of four classes:
 
 | Variable/current source | Current behavior | Required treatment |
 | --- | --- | --- |
-| `widthBlocks`, `RingWorldSettings` / `RingWorldConfig` | Default and minimum 256; chunk aligned; persisted, validated, previewed, and sent | Authoritative. The slender default is an intentional visual choice. Upper/resource validation is enforced before new settings or atlas allocation. |
+| `widthBlocks`, `RingWorldSettings` / `RingWorldConfig` | Default 256; new-world minimum 128; chunk aligned; persisted, validated, previewed, and sent | Authoritative. Width 128 leaves 118 playable blocks after both rims. The monument guarantee needs at least 160 blocks; upper/resource validation runs before settings or atlas allocation. |
 | `circumferenceBlocks`, same classes | Default 16,384; structural minimum 1,024; playable layouts additionally require full-height radial clearance | Authoritative. The safe-small preset is 2,048; 1,600 is accepted only when already persisted as a legacy world. The default is a power of two and exactly 32 region widths, but custom layouts must remain fully supported. |
 | `wallHeightBlocks` | Default 160; persisted, validated, and used by generation, migration, clients, and clouds | Authoritative. Changing bootstrap config cannot alter an existing world's rims. |
 | `generatorSeed` | Persisted, sent, and fingerprinted | Authoritative and present in world/atlas identity. |
@@ -438,7 +438,8 @@ Implemented:
 ### Phase 6: world-creation and dedicated-server UX
 
 1. Add width, circumference, and wall-height controls to world creation.
-2. Provide safe-small, production-default, and advanced custom presets.
+2. Provide Small (2,048×128), Medium (16,384×256), Large
+   (32,768×512), and advanced custom layouts.
 3. Show the validation/cost report live.
 4. Require confirmation that dimensions are immutable.
 5. Keep equivalent first-world bootstrap properties for dedicated servers.
@@ -450,16 +451,18 @@ both client and dedicated-server flows apply identical validation.
 
 Implemented:
 
-- The Create World screen opens a RingWorld editor for circumference, width,
-  and wall height with **Safe-small test** (2,048×416×160), **Production
-  (recommended)** (16,384×256×160), and **Saved config values** presets. The
-  last reloads bootstrap config, not immutable settings from an existing save.
+- The Create World screen opens a centered, responsive RingWorld editor for
+  circumference, width, and wall height with **Small** (2,048×128×160),
+  **Medium** (16,384×256×160), and **Large** (32,768×512×160) presets. Reset
+  reloads bootstrap config, not immutable settings from an existing save.
 - A shared loader-neutral UI model parses all three fields before it validates
   them, so field-level parse and alignment/minimum errors are aggregated; its
   report errors remain visible together once every field passes those basic
   minimum/alignment checks.
-  The editor previews ring size, curved horizon, atlas memory, and
-  measured-reference full-generation time/world-data growth. Layouts beyond
+  The editor shows live formula/result lines for walking time, radius/diameter,
+  opposite angular width, chunks, playable area/rims, atlas memory,
+  rim/cloud Y, and measured-reference generation time/world-data growth.
+  Layouts beyond
   the measured 30-minute or 512-MiB planning envelope receive a visible
   warning.
 - Applying a valid layout opens an explicit confirmation that repeats the
@@ -470,9 +473,13 @@ Implemented:
 - Dedicated first-world properties pass through the same validator and startup
   report.
 - Fabric and NeoForge use the same pure configuration model. A dual-loader,
-  menu-only GUI-scale capture gate passes for this cleanup; it proves
-  the footer, editor, invalid state, both presets, custom monument choice, and
-  confirmation without creating a world.
+  13-capture GUI-scale gate proves the footer, 480- and 320-wide editor,
+  invalid state, all three presets, custom monument choice, and confirmation
+  without creating a world. Small additionally passes the dual-loader real
+  stronghold/portal gate; optional graph bounds may extend into suppressed
+  exterior space, while the portal-room terrain envelope and all 12 frames
+  remain in bounds. Monument forcing is
+  deterministically unavailable below width 160.
 - A world with existing Overworld region files but no RingWorld saved settings
   is refused instead of silently converted.
 

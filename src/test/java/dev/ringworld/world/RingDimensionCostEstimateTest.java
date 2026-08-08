@@ -26,7 +26,7 @@ class RingDimensionCostEstimateTest {
 
         assertTrue(estimate.estimatedPregenerationSeconds() > 0L);
         assertTrue(estimate.estimatedGeneratedWorldBytes() > 0L);
-        assertEquals(2_048L, estimate.minimumAtlasTransferTicks());
+        assertEquals(1_024L, estimate.minimumAtlasTransferTicks());
         assertThrows(IllegalArgumentException.class,
                 () -> RingDimensionCostEstimate.estimate(
                         new RingGeometry(256, 16_384), 3));

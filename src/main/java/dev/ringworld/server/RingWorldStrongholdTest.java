@@ -5,6 +5,7 @@ import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingStrongholdPlacement;
+import dev.ringworld.world.RingMonumentPlacement;
 import dev.ringworld.world.RingMonumentResolution;
 import dev.ringworld.world.RingStructurePolicy;
 import dev.ringworld.world.RingWorldGeneratorAccess;
@@ -102,16 +103,29 @@ public final class RingWorldStrongholdTest {
                 .findFirst()
                 .orElseThrow(() -> new IllegalStateException("Stronghold has no portal room"));
         BoundingBox strongholdBox = start.getBoundingBox();
-        if (strongholdBox.minX() < 0 || strongholdBox.maxX() >= geometry.circumferenceBlocks()
-                || strongholdBox.minZ() < geometry.minWidthZ()
-                || strongholdBox.maxZ() > geometry.maxWidthZ()) {
+        boolean graphTooWideX = (long) strongholdBox.maxX() - strongholdBox.minX()
+                >= geometry.circumferenceBlocks();
+        boolean graphTooWideZ = (long) strongholdBox.maxZ() - strongholdBox.minZ()
+                >= geometry.widthBlocks();
+        boolean unexpectedGraphEscape = (!graphTooWideX
+                && (strongholdBox.minX() < 0
+                    || strongholdBox.maxX() >= geometry.circumferenceBlocks()))
+                || (!graphTooWideZ
+                    && (strongholdBox.minZ() < geometry.minWidthZ()
+                        || strongholdBox.maxZ() > geometry.maxWidthZ()));
+        if (unexpectedGraphEscape) {
             throw new IllegalStateException("Stronghold leaves canonical ring bounds: " + strongholdBox);
         }
         BoundingBox portalBox = portal.getBoundingBox();
-        if (portalBox.minX() < 0 || portalBox.maxX() >= geometry.circumferenceBlocks()
-                || portalBox.minZ() < geometry.minWidthZ()
-                || portalBox.maxZ() > geometry.maxWidthZ()) {
-            throw new IllegalStateException("Portal room leaves canonical ring bounds: " + portalBox);
+        BoundingBox protectedPortalBox = portalBox.inflatedBy(
+                RingStrongholdPlacement.TERRAIN_ADJUSTMENT_MARGIN_BLOCKS);
+        if (protectedPortalBox.minX() < 0
+                || protectedPortalBox.maxX() >= geometry.circumferenceBlocks()
+                || protectedPortalBox.minZ() < geometry.minWidthZ()
+                || protectedPortalBox.maxZ() > geometry.maxWidthZ()) {
+            throw new IllegalStateException(
+                    "Portal room terrain envelope leaves canonical ring bounds: "
+                            + protectedPortalBox);
         }
 
         for (int chunkX = SectionPos.blockToSectionCoord(portalBox.minX());
@@ -373,6 +387,14 @@ public final class RingWorldStrongholdTest {
         RingMonumentResolution resolution = RingStructurePolicy.get(world).oceanMonument();
         RingMonumentResolution.Candidate candidate = resolution.candidate();
         if (resolution.status() != RingMonumentResolution.Status.SATISFIED || candidate == null) {
+            if (!RingMonumentPlacement.hasCandidateSpace(geometry)
+                    && resolution.status() == RingMonumentResolution.Status.DISABLED
+                    && candidate == null) {
+                RingWorldMod.LOGGER.info(
+                        "[stronghold-test] monumentStatus=DISABLED: width={} cannot fit the required margins",
+                        geometry.widthBlocks());
+                return;
+            }
             if (allowUnsatisfied
                     && resolution.status() == RingMonumentResolution.Status.UNSATISFIED
                     && candidate == null

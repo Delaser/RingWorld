@@ -64,4 +64,18 @@ class RingStrongholdPlacementTest {
         assertThrows(IllegalArgumentException.class,
                 () -> RingStrongholdPlacement.fitShift(100, 250, -130, 130, geometry));
     }
+
+    @Test
+    void narrowBandKeepsPortalBoundsWhileAllowingOptionalBranchesToCrossRims() {
+        RingGeometry geometry = new RingGeometry(128, 2_048);
+
+        RingStrongholdPlacement.FitPlan plan = RingStrongholdPlacement.fitRequiredPiece(
+                400, 560, -130, 42,
+                470, 510, -78, -38,
+                geometry);
+
+        assertEquals(new RingStrongholdPlacement.BlockShift(0, 14), plan.shift());
+        assertTrue(plan.graphExceedsBoundsZ());
+        assertTrue(!plan.graphExceedsBoundsX());
+    }
 }

@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 274
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 290
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -137,7 +137,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite passes 274 unit/parameterized cases per loader:
+The active suite passes 290 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
@@ -178,12 +178,12 @@ The active suite passes 274 unit/parameterized cases per loader:
 | `RingSurfaceMeshRefreshPolicyTest` | Partial-mesh reuse, height-fingerprint-driven complete-mesh refresh, and forced rebuilds across layout/completion transitions |
 | `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
-| `RingWorldCreationUiModelTest` | Safe-small and recommended-production presets, valid/custom previews, aggregated malformed/structural/cross-field validation, immutable-next-new-world confirmation, and monument copy |
+| `RingWorldCreationUiModelTest` | Small/Medium/Large presets, exact live maths, valid/custom previews, aggregated malformed/structural/cross-field validation, immutable-next-new-world confirmation, and geometry-aware monument state |
 | `RingPhysicalPoseTest` | Cardinal physical position/basis, vanilla yaw/pitch conversion, and rendered local-up direction |
 | `RingCompatibilityContractTest` | Versioned API/contract, baseline stack, case-normalized exact conflict matching, and immutable inventory |
 | `RingProtocolIdentityTest` | Settings, acknowledgement, revisioned terrain-atlas, and pregeneration channel names remain synchronized with their wire layouts |
 | `AtlasPregenerationUiModelTest` | Status-total validation, durable chunk presentation, state-aware controls, permissions, and explicit action/state wire values |
-| `RingStrongholdPlacementTest` | Deterministic canonical placement, seam clearance, seed variation, and supported circumference shapes |
+| `RingStrongholdPlacementTest` | Deterministic canonical placement, seam clearance, seed variation, supported circumference shapes, full-graph fitting, and narrow-band portal-room preservation |
 | `RingStructurePolicyTest` | Stronghold bit plus monument request, pending/terminal result, and legacy-v1 disabled behavior |
 | `RingMonumentPlacementTest` | Deterministic bounded candidate walk, canonical/finite bounds, seam/rim envelope, seed variation, and search exhaustion |
 
@@ -932,12 +932,12 @@ overlapping Create or Cancel, then exercise all four editor cases:
 
 1. enter an invalid layout and confirm that the error is visible and
    **Use for new world** is disabled;
-2. select **Safe small** and confirm `2048×416`, wall height `160`, and a valid
-   cost preview;
-3. select **Production** and confirm the configured production dimensions and
-   a valid cost preview;
+2. select **Small** and confirm `2048×128`, wall height `160`, live equations,
+   and the disabled monument control;
+3. select **Medium** and **Large**, confirming `16384×256` and `32768×512`,
+   their walking-lap/generation maths, and the Large warning highlight;
 4. enter a distinct valid custom layout, confirm its preview, choose
-   **Use for new world**, reject the immutable-layout confirmation once, then
+   **Use layout**, reject the immutable-layout confirmation once, then
    accept it and verify that Create World shows the new C×W summary.
 
 Keep the editor open for at least several frames in each case and treat any
@@ -958,10 +958,11 @@ Run only one loader at a time:
 Each qualified task prepares its own ignored `run-creation-ui/` directory
 (NeoForge uses `neoforge/run-creation-ui/`), deleting only disposable saves,
 screenshots, RingWorld cache, and logs. The initial bootstrap configuration is
-2,048×416×160 with `testMode=false`, atlas pregeneration disabled, and no
+16,384×256×160 with `testMode=false`, atlas pregeneration disabled, and no
 monument request. The client requests a 1,920-pixel-wide framebuffer at least
-1,080 pixels tall (macOS may expose extra usable height), enforces a 480-pixel-
-wide scale-4 layout at least 270 pixels tall, uses GUI scales 1–4, and stops
+1,080 pixels tall (macOS may expose extra usable height), enforces both 480-
+and 320-pixel-wide scale-4 layouts at least 270 pixels tall, uses GUI scales
+1–4, and stops
 without invoking Minecraft's create-world action. It waits for the title-screen
 startup fade before capturing, so the Mojang splash cannot mask UI defects.
 NeoForge disables only its separate early splash; the graphical Minecraft
@@ -974,12 +975,14 @@ window and renderer still run.
 | `creation-ui-03-default-scale2` | Default editor at scale 2 |
 | `creation-ui-04-default-scale3` | Default editor at scale 3 |
 | `creation-ui-05-default-scale4` | Compact default editor at scale 4 |
-| `creation-ui-06-invalid-five-errors-scale4` | All five invalid-layout errors and disabled apply action |
-| `creation-ui-07-safe-small-scale4` | Safe-small preset |
-| `creation-ui-08-production-scale4` | Recommended production preset |
-| `creation-ui-09-custom-monument-scale4` | Valid 4,096×640×192 custom monument layout |
-| `creation-ui-10-confirm-layout-scale4` | Immutable-layout confirmation |
-| `creation-ui-11-footer-applied-scale4` | Refreshed Create World footer after confirmation |
+| `creation-ui-06-large-narrow-scale4` | Large editor retained across resize at 320×270, including monument choice and longest live maths |
+| `creation-ui-07-invalid-five-errors-narrow-scale4` | All five invalid-layout errors and disabled apply action at narrow width |
+| `creation-ui-08-small-scale4` | Small preset, exact maths, unavailable monument state, and visible experimental stronghold advisory |
+| `creation-ui-09-medium-scale4` | Medium preset and exact maths |
+| `creation-ui-10-large-scale4` | Large preset, exact maths, and generation warning |
+| `creation-ui-11-custom-monument-scale4` | Valid 4,096×640×192 custom monument layout |
+| `creation-ui-12-confirm-layout-scale4` | Immutable-layout confirmation |
+| `creation-ui-13-footer-applied-scale4` | Refreshed Create World footer after confirmation |
 
 The finalizer requires `[creation-ui-test] PASS` and no `FAIL`, every listed
 prefix to match at least one decodable, dimension-safe, visible non-uniform
@@ -989,11 +992,20 @@ PNG, no `level.dat` below `saves/`, and final properties exactly
 atlas pregeneration). A missing, stale, blank, corrupt, failed, or
 world-creating run therefore fails closed.
 
-Accepted evidence: both qualified tasks emitted their 11 screenshot markers,
+Accepted evidence: both qualified tasks emitted their 13 screenshot markers,
 the final PASS marker, the exact persisted custom values, and no `level.dat`.
 The compact default, five-error, custom-monument, confirmation, and refreshed-
 footer captures were visually inspected without clipping, overlap, duplicate
 blur, or startup-overlay contamination.
+
+The Small preset also passed the real stronghold gate on both loaders with
+seed `ringworld-small-128`, circumference 2,048, width 128, and wall height
+160. The 148-piece graph exceeded the finite Z band, so optional graph bounds
+extended into suppressed exterior space; the fitted portal-room terrain
+envelope remained wholly in bounds, generated all 12
+frames, activated, and passed periodic locate and Eye-of-Ender checks. The
+monument policy was correctly disabled because no width-128 candidate can
+retain the required 64-block margins.
 
 ## Non-destructive join screenshot
 

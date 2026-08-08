@@ -51,6 +51,12 @@ class RingMonumentPlacementTest {
     }
 
     @Test
+    void smallPresetHasNoMonumentCandidateSpaceButAOneChunkWiderBandDoes() {
+        assertTrue(!RingMonumentPlacement.hasCandidateSpace(new RingGeometry(128, 2_048)));
+        assertTrue(RingMonumentPlacement.hasCandidateSpace(new RingGeometry(160, 2_048)));
+    }
+
+    @Test
     void seedChangesCandidateOrder() {
         RingGeometry geometry = new RingGeometry(416, 2_048);
         Set<RingMonumentPlacement.Candidate> starts = new HashSet<>();

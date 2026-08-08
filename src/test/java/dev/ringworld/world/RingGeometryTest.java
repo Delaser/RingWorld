@@ -114,8 +114,11 @@ class RingGeometryTest {
 
     @Test
     void circumferenceIsAboutOneHourOfWalking() {
-        // 4.317 blocks/s is normal walking speed without sprinting or effects.
-        double seconds = RingWorldSettings.DEFAULT_CIRCUMFERENCE / 4.317;
+        RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
+                new RingGeometry(RingWorldSettings.DEFAULT_WIDTH,
+                        RingWorldSettings.DEFAULT_CIRCUMFERENCE),
+                RingWorldSettings.DEFAULT_WALL_HEIGHT);
+        double seconds = report.normalWalkingLapSeconds();
         assertTrue(seconds > 3_750 && seconds < 3_850);
     }
 

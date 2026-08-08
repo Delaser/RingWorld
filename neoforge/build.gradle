@@ -308,9 +308,9 @@ def neoForgeMultiplayerHarnessDimension = { String propertyName, String defaultV
 // Mirror RingGeometry/RingWorldConfig's bootstrap constraints. The server
 // still applies the full first-world dimension report before world creation.
 def neoForgeMultiplayerCircumferenceBlocks = neoForgeMultiplayerHarnessDimension(
-        'ringMultiplayerCircumferenceBlocks', '2048', 1024, true)
+        'ringMultiplayerCircumferenceBlocks', '2048', 2048, true)
 def neoForgeMultiplayerWidthBlocks = neoForgeMultiplayerHarnessDimension(
-        'ringMultiplayerWidthBlocks', '416', 256, true)
+        'ringMultiplayerWidthBlocks', '416', 128, true)
 def neoForgeMultiplayerWallHeightBlocks = neoForgeMultiplayerHarnessDimension(
         'ringMultiplayerWallHeightBlocks', '160', 32, false)
 def neoForgeMultiplayerAtlasCellCount = (neoForgeMultiplayerCircumferenceBlocks.longValue() / 8L)
@@ -382,8 +382,8 @@ tasks.register('prepareNeoForgeCreationUiRun') {
         def configFile = new File(neoForgeCreationUiRun, 'config/ringworld.properties')
         configFile.parentFile.mkdirs()
         def config = new Properties()
-        config.setProperty('widthBlocks', '416')
-        config.setProperty('circumferenceBlocks', '2048')
+        config.setProperty('widthBlocks', '256')
+        config.setProperty('circumferenceBlocks', '16384')
         config.setProperty('wallHeightBlocks', '160')
         config.setProperty('testMode', 'false')
         config.setProperty('testViewDistanceChunks', '6')
@@ -741,7 +741,8 @@ tasks.register('prepareNeoForgeStrongholdTestWorld') {
         config.setProperty('wallHeightBlocks',
                 providers.gradleProperty('ringStrongholdTestWallHeight').orElse('160').get())
         config.setProperty('pregenerateTerrainAtlas', 'false')
-        config.setProperty('requestOceanMonument', 'true')
+        config.setProperty('requestOceanMonument',
+                Integer.parseInt(config.getProperty('widthBlocks')) >= 160 ? 'true' : 'false')
         configFile.parentFile.mkdirs()
         configFile.withOutputStream { config.store(it, 'Disposable RingWorld NeoForge stronghold test') }
     }

@@ -31,7 +31,9 @@ public record RingDimensionCostEstimate(
         long tileColumns = divideCeil(columns, RingTerrainAtlas.TILE_SIZE);
         long tileRows = divideCeil(rows, RingTerrainAtlas.TILE_SIZE);
         long tiles = Math.multiplyExact(tileColumns, tileRows);
-        long wireBytes = Math.addExact(Math.multiplyExact(cells, 7L), Math.multiplyExact(tiles, 2L));
+        long wireBytes = Math.addExact(
+                Math.multiplyExact(cells, RingTerrainAtlas.ESTIMATED_BYTES_PER_CELL),
+                Math.multiplyExact(tiles, 2L));
         return new RingDimensionCostEstimate(
                 scaleCeil(chunks, REFERENCE_PREGENERATION_SECONDS),
                 scaleCeil(chunks, REFERENCE_GENERATED_WORLD_BYTES),

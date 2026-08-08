@@ -70,7 +70,9 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
                 properties.getProperty("pregenerateTerrainAtlas", "true"));
         boolean requestOceanMonument = Boolean.parseBoolean(
                 properties.getProperty("requestOceanMonument", "false"));
-        // Centralise validation so a malformed bootstrap file fails before chunks are generated.
+        // Saved worlds ignore this bootstrap layout, so retain structural parsing
+        // support for old configuration while first-world creation applies the
+        // stricter new-world admission below.
         new RingGeometry(width, circumference);
         if (wallHeight < 32) throw new IllegalArgumentException("wallHeightBlocks must be at least 32");
         if (testViewDistance < 2 || testViewDistance > 32) {
@@ -92,13 +94,14 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
      */
     public static synchronized RingWorldConfig saveBootstrapLayout(
             int widthBlocks, int circumferenceBlocks, int wallHeightBlocks, boolean requestOceanMonument) {
-        RingGeometry geometry = new RingGeometry(widthBlocks, circumferenceBlocks);
-        RingDimensionReport.forVanillaOverworld(geometry, wallHeightBlocks).requireValid();
+        validateNewWorldLayout(widthBlocks, circumferenceBlocks, wallHeightBlocks);
+        boolean effectiveMonumentRequest = effectiveOceanMonumentRequest(
+                new RingGeometry(widthBlocks, circumferenceBlocks), requestOceanMonument);
         RingWorldConfig current = load();
         RingWorldConfig replacement = new RingWorldConfig(
                 widthBlocks, circumferenceBlocks, wallHeightBlocks,
                 current.testMode(), current.testViewDistanceChunks(),
-                current.pregenerateTerrainAtlas(), requestOceanMonument);
+                current.pregenerateTerrainAtlas(), effectiveMonumentRequest);
         Properties properties = new Properties();
         properties.setProperty("widthBlocks", Integer.toString(widthBlocks));
         properties.setProperty("circumferenceBlocks", Integer.toString(circumferenceBlocks));
@@ -108,7 +111,7 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
                 Integer.toString(current.testViewDistanceChunks()));
         properties.setProperty("pregenerateTerrainAtlas",
                 Boolean.toString(current.pregenerateTerrainAtlas()));
-        properties.setProperty("requestOceanMonument", Boolean.toString(requestOceanMonument));
+        properties.setProperty("requestOceanMonument", Boolean.toString(effectiveMonumentRequest));
         Path path = configPath();
         try {
             Files.createDirectories(path.getParent());
@@ -120,9 +123,31 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
             throw new IllegalStateException("Could not update " + path, exception);
         }
         loaded = replacement;
+        if (requestOceanMonument && !effectiveMonumentRequest) {
+            RingWorldMod.LOGGER.warn(
+                    "Ignored ocean-monument request: width={} cannot fit its required margins",
+                    widthBlocks);
+        }
         RingWorldMod.LOGGER.info("Updated first-world RingWorld layout: {}x{}, wallHeight={}, requestOceanMonument={}",
-                circumferenceBlocks, widthBlocks, wallHeightBlocks, requestOceanMonument);
+                circumferenceBlocks, widthBlocks, wallHeightBlocks, effectiveMonumentRequest);
         return replacement;
+    }
+
+    /** Bootstrap-only admission; saved legacy settings retain 1,024-block structural support. */
+    static void validateNewWorldLayout(int widthBlocks, int circumferenceBlocks,
+                                       int wallHeightBlocks) {
+        RingGeometry geometry = new RingGeometry(widthBlocks, circumferenceBlocks);
+        if (circumferenceBlocks < RingWorldSettings.MIN_NEW_WORLD_CIRCUMFERENCE) {
+            throw new IllegalArgumentException("circumferenceBlocks must be at least "
+                    + RingWorldSettings.MIN_NEW_WORLD_CIRCUMFERENCE + " for a new RingWorld");
+        }
+        RingDimensionReport.forVanillaOverworld(geometry, wallHeightBlocks).requireValid();
+    }
+
+    /** Authoritative new-world request gate shared by UI and server ownership paths. */
+    static boolean effectiveOceanMonumentRequest(
+            RingGeometry geometry, boolean requested) {
+        return requested && RingMonumentPlacement.hasCandidateSpace(geometry);
     }
 
     private static int integer(Properties properties, String key, int fallback) {

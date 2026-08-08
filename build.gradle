@@ -399,9 +399,9 @@ def multiplayerHarnessDimension = { String propertyName, String defaultValue, in
 // Mirror RingGeometry/RingWorldConfig's bootstrap constraints. The server
 // still applies the full first-world dimension report before world creation.
 def multiplayerCircumferenceBlocks = multiplayerHarnessDimension(
-		"ringMultiplayerCircumferenceBlocks", "2048", 1024, true)
+		"ringMultiplayerCircumferenceBlocks", "2048", 2048, true)
 def multiplayerWidthBlocks = multiplayerHarnessDimension(
-		"ringMultiplayerWidthBlocks", "416", 256, true)
+		"ringMultiplayerWidthBlocks", "416", 128, true)
 def multiplayerWallHeightBlocks = multiplayerHarnessDimension(
 		"ringMultiplayerWallHeightBlocks", "160", 32, false)
 def multiplayerAtlasCellCount = (multiplayerCircumferenceBlocks.longValue() / 8L)
@@ -648,7 +648,8 @@ tasks.register("prepareStrongholdTestWorld") {
 		config.setProperty("wallHeightBlocks",
 				providers.gradleProperty("ringStrongholdTestWallHeight").orElse("160").get())
 		config.setProperty("pregenerateTerrainAtlas", "false")
-		config.setProperty("requestOceanMonument", "true")
+		config.setProperty("requestOceanMonument",
+				Integer.parseInt(config.getProperty("widthBlocks")) >= 160 ? "true" : "false")
 		configFile.parentFile.mkdirs()
 		configFile.withOutputStream { config.store(it, "Disposable RingWorld stronghold test") }
 	}
@@ -805,12 +806,14 @@ def creationUiScreenshotPrefixes = [
 		"creation-ui-03-default-scale2",
 		"creation-ui-04-default-scale3",
 		"creation-ui-05-default-scale4",
-		"creation-ui-06-invalid-five-errors-scale4",
-		"creation-ui-07-safe-small-scale4",
-		"creation-ui-08-production-scale4",
-		"creation-ui-09-custom-monument-scale4",
-		"creation-ui-10-confirm-layout-scale4",
-		"creation-ui-11-footer-applied-scale4"
+		"creation-ui-06-large-narrow-scale4",
+		"creation-ui-07-invalid-five-errors-narrow-scale4",
+		"creation-ui-08-small-scale4",
+		"creation-ui-09-medium-scale4",
+		"creation-ui-10-large-scale4",
+		"creation-ui-11-custom-monument-scale4",
+		"creation-ui-12-confirm-layout-scale4",
+		"creation-ui-13-footer-applied-scale4"
 ]
 
 def verifyCreationUiConfig = { File runDirectory, String label ->
@@ -868,8 +871,8 @@ tasks.register("prepareCreationUiRun") {
 		def configFile = file("run-creation-ui/config/ringworld.properties")
 		configFile.parentFile.mkdirs()
 		def config = new Properties()
-		config.setProperty("widthBlocks", "416")
-		config.setProperty("circumferenceBlocks", "2048")
+		config.setProperty("widthBlocks", "256")
+		config.setProperty("circumferenceBlocks", "16384")
 		config.setProperty("wallHeightBlocks", "160")
 		config.setProperty("testMode", "false")
 		config.setProperty("testViewDistanceChunks", "6")
