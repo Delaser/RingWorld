@@ -113,6 +113,9 @@ neoForge {
             systemProperty 'ringworld.layoutSwitchSecond',
                     providers.gradleProperty('ringNeoForgeLayoutSwitchSecondDestination')
                             .orElse('RingWorld NeoForge Layout B').get()
+            systemProperty 'ringworld.layoutSwitchExpectation',
+                    providers.gradleProperty('ringNeoForgeLayoutSwitchExpectation')
+                            .orElse('different-layout').get()
         }
         productionLifecycleClient {
             client()
@@ -904,6 +907,15 @@ tasks.register('prepareCopiedNeoForgeProductionProjectionWorld') {
         delete(new File(neoForgeProjectionRun, 'screenshots'))
         delete(new File(neoForgeProjectionRun, 'ringworld-cache'))
         delete(new File(neoForgeProjectionRun, 'logs'))
+        // Keep release-evidence captures free of the first-world movement toast.
+        // This directory is disposable and isolated from the user's real options.
+        def projectionOptions = new File(neoForgeProjectionRun, 'options.txt')
+        def optionLines = projectionOptions.isFile()
+                ? projectionOptions.readLines('UTF-8') : []
+        optionLines.removeAll { it.startsWith('tutorialStep:') }
+        optionLines.add('tutorialStep:none')
+        projectionOptions.parentFile.mkdirs()
+        projectionOptions.setText(optionLines.join('\n') + '\n', 'UTF-8')
         copy {
             from(source)
             into(destination)
@@ -987,6 +999,16 @@ tasks.register('verifyNeoForgeProductionVisualParityClient') {
         if (!log.contains('[visual-parity-capture] result=true, captures complete')) {
             throw new GradleException("NeoForge visual-parity capture did not pass; inspect ${logFile}")
         }
+        def seamMetrics = log.readLines().findAll {
+            it.contains('[visual-parity-capture] seam motion frame metrics:')
+        }
+        if (seamMetrics.isEmpty()) {
+            throw new GradleException("NeoForge visual-parity capture is missing seam-motion frame metrics; inspect ${logFile}")
+        }
+        def sampleMatcher = (seamMetrics.last() =~ /samples=(\d+)/)
+        if (!sampleMatcher.find() || sampleMatcher.group(1).toInteger() <= 0) {
+            throw new GradleException("NeoForge visual-parity capture recorded no seam-motion frame samples; inspect ${logFile}")
+        }
         ['seam', 'min-rim', 'max-rim'].each { view ->
             def screenshot = new File(neoForgeVisualParityRun,
                     "screenshots/ringworld-visual-parity-${view}.png")
@@ -1053,6 +1075,9 @@ tasks.register('prepareCopiedNeoForgeLayoutSwitchWorlds') {
     inputs.property('ringNeoForgeLayoutSwitchSecondDestination',
             providers.gradleProperty('ringNeoForgeLayoutSwitchSecondDestination')
                     .orElse('RingWorld NeoForge Layout B'))
+    inputs.property('ringNeoForgeLayoutSwitchExpectation',
+            providers.gradleProperty('ringNeoForgeLayoutSwitchExpectation')
+                    .orElse('different-layout'))
     outputs.dir(neoForgeLayoutSwitchSaves)
     outputs.upToDateWhen { false }
     doLast {
@@ -1104,6 +1129,12 @@ tasks.register('verifyNeoForgeLayoutSwitchClient') {
         if (!log.contains('[layout-switch] result-json={"passed":true,')
                 || log.contains('[layout-switch] result-json={"passed":false,')) {
             throw new GradleException("NeoForge layout-switch client did not pass; inspect ${logFile}")
+        }
+        def expectation = providers.gradleProperty('ringNeoForgeLayoutSwitchExpectation')
+                .orElse('different-layout').get()
+        if (!log.contains("[layout-switch] expectation=${expectation}")) {
+            throw new GradleException(
+                    "NeoForge layout-switch client did not run expected mode '${expectation}'; inspect ${logFile}")
         }
         [
                 providers.gradleProperty('ringNeoForgeLayoutSwitchFirstDestination')

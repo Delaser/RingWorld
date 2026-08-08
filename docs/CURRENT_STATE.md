@@ -268,12 +268,22 @@ the Atlas stayed monotonic and the strict client movement result remained
 within the qualified bound. Cold-stall profiling is tracked separately in #134 and
 does not invalidate the completed Atlas-concurrency proof.
 
+A cold safe-small NeoForge release-regression attempt with Atlas generation
+disabled passed through End return, then watchdog-terminated before its final
+weather result. The sample found the server thread runnable in
+`ServerEntity.sendChanges` with an unusually heavy disposable-world inventory
+while the host was under substantial swap pressure. That remains profiling
+evidence for #134, not a proven cause or an Atlas deadlock. A fresh
+warmed/staggered rerun then passed the complete server and both-client matrix,
+including the new sleeping reconnect/resleep path, normal Nether delay, End
+return, weather/lightning, and the strict terminal verifier.
+
 #71 completes the expanded safe-small seam gameplay gate. The dedicated
 server now waits for two fully loaded clients, then passes the original
 movement/combat/block/boat/teleport/reconnect matrix plus synchronized chest
 and lectern block entities, a real cross-seam redstone neighbour update,
-fluid-source state, a destructive explosion, survival bed sleep/damage wake/
-destruction, death/client respawn, linked Nether portal travel and return, and
+fluid-source state, a destructive explosion, survival bed sleep/reconnect/
+resleep/damage wake/destruction, death/client respawn, linked Nether portal travel and return, and
 End portal travel and return. Canonical server ownership and nearest client
 images remain intact, Nether/End client RingWorld state clears and restores,
 and the final run emitted neither flat-distance movement warning. The fixes
@@ -281,6 +291,16 @@ are a nearest-periodic server bed-reach box, movement-baseline realignment
 after server-owned sleep poses, monotonic 26.1 clock setup, and explicit
 client-ready gating. Exact automated, manual, and unsupported coverage is in
 `SEAM_GAMEPLAY_REGRESSION_2026-08-01.md`.
+
+The 2026-08-08 Fabric and warmed/staggered NeoForge reruns extend that gate
+through a real disconnect while
+the player is asleep at the seam. Vanilla intentionally reloads a saved player
+awake; the replacement player remained canonical beside the same bed, the
+client verified the Overworld RingWorld session, loaded bed, and X/Y/Z
+proximity rather than only X, a second sleep restored the nearest-image
+pose, and the subsequent damage wake and full remaining matrix passed. The
+shared readiness sender now retries until the loader transport can actually
+send its payload instead of latching a pre-channel-ready attempt.
 
 The current extended fixture seals
 a two-cell trough, clears canonical X=0, places its sole water source at C-1,
@@ -361,7 +381,9 @@ below 9.4 ms, and all nine measured views had zero frames over 50 ms.
 Complete-ring alignment, the broad live/LOD handoff, sky phases, and the
 inspected rim remained intact. The exact production 16,384×256 tangent,
 handoff, radial-up, natural-seam, and both-rim gate now also passes on both
-loaders. A fresh-world curved-object fixture visually passes for chest,
+loaders. The refreshed noon projection captures contain no tutorial overlay;
+Fabric averaged 9.021/8.599/8.356 ms for tangent/handoff/radial-up and
+NeoForge averaged 8.903/8.694/8.356 ms. A fresh-world curved-object fixture visually passes for chest,
 lectern/book, sign, bed, ender chest, shulker box, banner, copper golem, item,
 boat, cow, and zombie on both loaders.
 That run also fixed NeoForge's initial login ordering: immutable settings are
@@ -370,13 +392,24 @@ and the fixture rejects missing client blocks instead of accepting empty sky.
 Exposure, close-cloud, real-player proximity, and motion review stay open. See
 `VISUAL_POLISH_CHECKPOINT_2026-08-02.md`.
 
-The next #96 checkpoint adds an exact production 16,384×256 dual-loader pass.
+The refreshed #96 checkpoint includes an exact production 16,384×256
+dual-loader pass.
 The projection runner now uses a centered server-authoritative spectator pose
 instead of inheriting the save's stale rim-adjacent player position. Fabric
 and NeoForge passed loader-identical tangent/handoff/radial captures at 12
 chunks, and their shared production visual-parity runner passed a natural seam
 plus both textured rims. Object/block-entity, broader exposure/weather, and
-motion review remain.
+motion review remain. The refreshed shared visual-parity gate recorded the
+natural seam-motion interval: Fabric sampled 426 frames at 16.742 ms average,
+51.018 ms maximum, and one frame over 50 ms; NeoForge sampled 428 frames at
+16.661 ms average, 21.858 ms maximum, and zero frames over 50 ms. Both strict
+loader verifiers passed.
+
+The same-size/different-seed layout-switch regression also passes both
+loaders at 2,048×256. Each process opened two complete-atlas worlds with equal
+geometry but distinct settings fingerprints, Atlas world hashes, and terrain
+content fingerprints; disconnect cleared every RingWorld-owned client session
+and static GPU resource before the second world was accepted.
 
 #74 completes the stability configuration and compatibility contract. The
 creation preview now scales the measured 16,384-chunk production run into a
@@ -884,8 +917,11 @@ and compatibility claims.
   Overworld, normal save/disconnect, and same-process reopen at 16,384×256.
   The safe-small two-client runner adds actual `PortalForcer`-created Nether
   blocks/linking/return and End portal block travel. Normal stand-in-portal
-  delays, sleeping-player reconnect, and full map-mode playthroughs remain
-  manual coverage. A dedicated two-phase Fabric/NeoForge fixture now covers
+  delays and full map-mode playthroughs remain manual coverage. The bed gate
+  disconnects while asleep, requires vanilla's rejoined-awake state beside the
+  canonical seam bed with valid Overworld geometry and loaded-bed proximity,
+  then sleeps again before its
+  damage-wake and destruction probes. A dedicated two-phase Fabric/NeoForge fixture now covers
   raid creation, saved POIs/raid/raider reload, natural raider seam folding,
   victory, and Hero rewards.
 - Minecraft 26.1.2's gameplay positional packets have an explicit audit, but
@@ -1035,8 +1071,8 @@ The owner-approved order is recorded in
 
 ## Evidence required before calling the mod stable and broadly compatible
 
-- Manual sleeping-player reconnect and longer map playthroughs beyond the
-  passing automated bed/death/map/portal-delay gates.
+- Longer manual map playthroughs beyond the passing automated bed reconnect,
+  death, map, and portal-delay gates.
 - Manual gamma, night-vision, and close cloud-height visual checks; automated
   seam thunder/lightning passes but is not final visual sign-off.
 - Optional package fresh/upgrade launch checks and an independent final review.

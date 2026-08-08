@@ -44,6 +44,12 @@ final class RingWorldExtendedMultiplayerTest {
     private static boolean serverFixturePassed;
     private static boolean sleepAttempted;
     private static boolean sleepStarted;
+    private static ServerPlayer sleepingReconnectBaseline;
+    private static boolean sleepingDisconnectObserved;
+    private static boolean sleepingReconnectPassed;
+    private static boolean sleepRestartAttempted;
+    private static boolean sleepRestarted;
+    private static int sleepRestartTick;
     private static boolean damageWakePassed;
     private static boolean bedDestroyedPassed;
     private static boolean deathObserved;
@@ -262,7 +268,16 @@ final class RingWorldExtendedMultiplayerTest {
     }
 
     private static void awaitSleep(ServerLevel world, RingGeometry geometry, ServerPlayer playerA) {
-        if (playerA == null) return;
+        if (playerA == null) {
+            if (sleepingReconnectBaseline != null) sleepingDisconnectObserved = true;
+            if (ticks >= TIMEOUT_TICKS) {
+                RingWorldMod.LOGGER.error(
+                        "[multiplayer-extended] seam bed reconnect result=false reason=reconnect-timeout disconnect={}",
+                        sleepingDisconnectObserved);
+                advance(12);
+            }
+            return;
+        }
         if (!sleepAttempted) {
             attemptSleep(playerA);
             return;
@@ -271,15 +286,61 @@ final class RingWorldExtendedMultiplayerTest {
                 .map(pos -> pos.equals(bedHead()) && pos.getX() >= 0
                         && pos.getX() < geometry.circumferenceBlocks())
                 .orElse(false);
-        if (ticks >= 20 && sleepStarted && canonicalBed
+        if (sleepingReconnectBaseline == null && ticks >= 20 && sleepStarted && canonicalBed
                 && RingWorldMultiplayerTest.clientPassed("A", "bed_sleep")) {
+            sleepingReconnectBaseline = playerA;
+            RingWorldMod.LOGGER.info(
+                    "[multiplayer-extended] seam bed sleep acknowledged; awaiting asleep disconnect/reconnect");
+            return;
+        }
+        boolean replacement = sleepingDisconnectObserved
+                && sleepingReconnectBaseline != null
+                && playerA != sleepingReconnectBaseline;
+        boolean canonicalPlayer = playerA.getX() >= 0.0
+                && playerA.getX() < geometry.circumferenceBlocks();
+        boolean adjacentToBed = Math.abs(geometry.shortestCircumferenceDelta(
+                playerA.getX(), bedHead().getX())) < 4.0
+                && Math.abs(playerA.getY() - bedHead().getY()) < 4.0
+                && Math.abs(playerA.getZ() - bedHead().getZ()) < 4.0;
+        boolean bedStillLoaded = world.hasChunkAt(bedHead())
+                && world.getBlockState(bedHead()).is(Blocks.RED_BED);
+        if (replacement && !playerA.isSleeping() && playerA.getSleepingPos().isEmpty()
+                && canonicalPlayer && adjacentToBed && bedStillLoaded
+                && RingWorldMultiplayerTest.clientPassed("A", "bed_reconnect")
+                && !sleepRestartAttempted) {
+            sleepingReconnectPassed = true;
+            sleepRestartAttempted = true;
+            // The disposable server's default mode is creative. Reassert the
+            // intended survival state on the replacement ServerPlayer before
+            // testing ordinary post-reconnect sleep damage.
+            prepareSurvivalPlayer(playerA);
+            Either<Player.BedSleepingProblem, net.minecraft.util.Unit> result =
+                    playerA.startSleepInBed(bedHead());
+            sleepRestarted = result.right().isPresent();
+            sleepRestartTick = ticks;
+            RingWorldMod.LOGGER.info(
+                    "[multiplayer-extended] seam bed reconnect result=true canonicalX={} vanillaAwake=true; sleep restart={} problem={}",
+                    playerA.getX(), sleepRestarted, result.left().orElse(null));
+            return;
+        }
+        if (sleepingReconnectPassed && sleepRestarted
+                && ticks - sleepRestartTick >= 100 && playerA.isSleeping()
+                && canonicalBed
+                && RingWorldMultiplayerTest.clientPassed("A", "bed_sleep_restart")) {
+            BlockPos sleepingPosBeforeDamage = playerA.getSleepingPos().orElse(null);
             boolean damaged = playerA.hurtServer(world, world.damageSources().generic(), 1.0F);
-            RingWorldMod.LOGGER.info("[multiplayer-extended] sleeping player damage applied={}", damaged);
+            RingWorldMod.LOGGER.info(
+                    "[multiplayer-extended] post-reconnect sleep result=true canonicalX={} canonicalBed={}; damage applied={}",
+                    playerA.getX(), sleepingPosBeforeDamage, damaged);
             advance(3);
         } else if (ticks >= TIMEOUT_TICKS) {
-            RingWorldMod.LOGGER.error("[multiplayer-extended] seam bed sleep result=false started={} canonicalBed={} client={}",
-                    sleepStarted, canonicalBed,
-                    RingWorldMultiplayerTest.clientPassed("A", "bed_sleep"));
+            RingWorldMod.LOGGER.error(
+                    "[multiplayer-extended] seam bed reconnect result=false started={} disconnect={} replacement={} sleeping={} canonicalBed={} canonicalPlayer={} adjacent={} bedLoaded={} sleepClient={} reconnectClient={} restart={} restartClient={}",
+                    sleepStarted, sleepingDisconnectObserved, replacement, playerA.isSleeping(),
+                    canonicalBed, canonicalPlayer, adjacentToBed, bedStillLoaded,
+                    RingWorldMultiplayerTest.clientPassed("A", "bed_sleep"),
+                    RingWorldMultiplayerTest.clientPassed("A", "bed_reconnect"), sleepRestarted,
+                    RingWorldMultiplayerTest.clientPassed("A", "bed_sleep_restart"));
             advance(12);
         }
     }
@@ -523,6 +584,8 @@ final class RingWorldExtendedMultiplayerTest {
         boolean clientFixture = RingWorldMultiplayerTest.clientPassed("A", "extended_fixture")
                 && RingWorldMultiplayerTest.clientPassed("B", "extended_fixture");
         boolean clientLifecycle = RingWorldMultiplayerTest.clientPassed("A", "bed_sleep")
+                && RingWorldMultiplayerTest.clientPassed("A", "bed_reconnect")
+                && RingWorldMultiplayerTest.clientPassed("A", "bed_sleep_restart")
                 && RingWorldMultiplayerTest.clientPassed("A", "bed_damage_wake")
                 && RingWorldMultiplayerTest.clientPassed("A", "bed_destroyed")
                 && RingWorldMultiplayerTest.clientPassed("A", "death_seen")
@@ -534,14 +597,15 @@ final class RingWorldExtendedMultiplayerTest {
         boolean canonicalPlayers = playerA != null && playerB != null
                 && playerA.getX() >= 0.0 && playerA.getX() < geometry.circumferenceBlocks()
                 && playerB.getX() >= 0.0 && playerB.getX() < geometry.circumferenceBlocks();
-        boolean passed = baselinePassed && serverFixturePassed && damageWakePassed
+        boolean passed = baselinePassed && serverFixturePassed && sleepingReconnectPassed
+                && damageWakePassed
                 && bedDestroyedPassed && deathObserved && deathRespawnPassed
                 && netherPortalPassed && endPortalPassed && weatherPassed
                 && clientFixture && clientLifecycle
                 && canonicalPlayers;
         RingWorldMod.LOGGER.info(
-                "[multiplayer] full scenario result={} (baseline={}, fixture={}, damageWake={}, bedDestroyed={}, deathRespawn={}, netherPortal={}, endPortal={}, weather={}, clientFixture={}, clientLifecycle={}, canonicalPlayers={})",
-                passed, baselinePassed, serverFixturePassed, damageWakePassed,
+                "[multiplayer] full scenario result={} (baseline={}, fixture={}, sleepingReconnect={}, damageWake={}, bedDestroyed={}, deathRespawn={}, netherPortal={}, endPortal={}, weather={}, clientFixture={}, clientLifecycle={}, canonicalPlayers={})",
+                passed, baselinePassed, serverFixturePassed, sleepingReconnectPassed, damageWakePassed,
                 bedDestroyedPassed, deathRespawnPassed, netherPortalPassed, endPortalPassed,
                 weatherPassed, clientFixture, clientLifecycle, canonicalPlayers);
     }

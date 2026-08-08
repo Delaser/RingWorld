@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 264
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 274
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -66,15 +66,20 @@ directories:
   -PringNeoForgeProductionLifecycleSource="NeoForge Test"
 ```
 
-The first verifies screenshots at the natural seam and both five-block textured
-rims. The second switches between different immutable layouts and proves that
-disconnect clears client geometry and atlas state. The third proves inactive
-RingWorld state in Nether/End, exact Overworld restoration, normal save and
-disconnect, then reopen. All three pass. Every source must be an ignored save
-under `neoforge/run-client/saves/`; the tasks mutate only freshly copied
-destinations. The server/runtime gates below also pass, and local package
-parity is complete. Hosted NeoForge publication remains gated on final
-candidate review and owner approval.
+The established first gate verifies screenshots at the natural seam and both
+five-block textured rims. It now also records the natural 0.25-block seam
+crossing's rendered-frame sample count plus raw average, maximum, and over-50-ms
+times through the post-crossing settle. A nonzero sample count is required; no
+fixed frame-time threshold is imposed across hardware. The 2026-08-08
+production run recorded 428 frames at 16.661 ms average, 21.858 ms maximum,
+and zero frames over 50 ms. The second switches between
+different immutable layouts and proves that disconnect clears client geometry
+and atlas state. The third proves inactive RingWorld state in Nether/End, exact
+Overworld restoration, normal save and disconnect, then reopen. Every source
+must be an ignored save under `neoforge/run-client/saves/`; the tasks mutate
+only freshly copied destinations. The server/runtime gates below also pass, and
+local package parity is complete. Hosted NeoForge publication remains gated on
+final candidate review and owner approval.
 
 Fabric has the matching production seam-and-rim gate:
 
@@ -86,8 +91,13 @@ Fabric has the matching production seam-and-rim gate:
 
 It copies a source below `run/saves/` into
 `run-production-visual-parity/saves/`, captures the same natural seam and both
-rims, verifies all three outputs, and exits. Both loader runners use the same
-shared `RingVisualParityCaptureClient`; only their launch/copy adapters differ.
+rims, records the seam-motion frame metrics, verifies all evidence, and exits.
+Both loader runners use the same shared `RingVisualParityCaptureClient`; only
+their launch/copy adapters differ. The verifier finds the metric inside the
+normal timestamped log line, rejects a missing or zero-sample record, but
+deliberately does not apply a cross-hardware FPS threshold.
+The 2026-08-08 production run recorded 426 frames at 16.742 ms average,
+51.018 ms maximum, and one frame over 50 ms.
 
 NeoForge's dedicated multiplayer gate uses three isolated processes below
 `neoforge/run-multiplayer/`: one server and clients A/B. Prepare the fixture,
@@ -801,7 +811,12 @@ plane, opposite
 reference-surface distance, far width-edge distance, geometry, texture size,
 mesh vertex count, and per-view average/maximum/over-50-ms frame metrics. The
 probe changes options, time, weather, and camera pose only in the copy; it does
-not move the player or edit blocks.
+not move the player or edit blocks. Its isolated `options.txt` also sets the
+tutorial step to `none`, keeping release-evidence captures free of Minecraft's
+first-world movement toast without changing a real client profile.
+The refreshed 2026-08-08 noon evidence was visually inspected without that
+overlay. Fabric averaged 9.021/8.599/8.356 ms across tangent/handoff/radial-up;
+NeoForge averaged 8.903/8.694/8.356 ms.
 
 Preparation removes prior logs, screenshots, cache, and crash reports from the
 ignored run before launch. The task's `verifyProductionProjectionClient`
@@ -1090,7 +1105,12 @@ The scenario verifies:
   X, finishes the path, and reaches the target tolerance before the server
   fixture can pass;
 - a real survival bed spanning canonical X=`0`/`1` accepts a player beside
-  `C`, stays canonical, wakes on damage, and disappears cleanly when broken;
+  `C`, stays canonical, and survives a disconnect: Minecraft's vanilla
+  reconnect semantics wake the player beside
+  the bed; both server and client require X/Y/Z proximity, and the client also
+  requires a matching Overworld RingWorld session plus the loaded bed. The
+  fixture then sleeps again, wakes on damage, and removes the bed cleanly when
+  broken; a missing reconnect fails at the ordinary bounded timeout;
 - the death screen, client respawn request, replacement server player, and
   canonical respawn all complete;
 - real Nether portal blocks and `PortalForcer` linking carry the player to the
@@ -1343,22 +1363,42 @@ The deterministic layout-switch client opens two copied existing saves in one
 JVM. It copies explicit source folders from `run/saves/` into the ignored
 `run-layout-switch/saves/` directory before launch, so the source worlds are
 never opened or modified. It verifies the first layout, dimension-owned
-settings and atlas storage, disconnects, confirms geometry and atlas state
-were cleared, opens the differently sized second copy, and checks that the new
-handshake, atlas, and storage agree:
+settings and atlas storage, disconnects, confirms all RingWorld-owned client
+session state (including the static GPU ring resources) was cleared, then opens
+the second copy and checks that its handshake, atlas, and storage agree.
+
+The default `different-layout` expectation requires different immutable
+geometries. Use `same-geometry-different-seed` with two complete saved worlds
+of equal width, circumference, and wall height but different seeds to prove
+that equal geometry cannot reuse the prior world's atlas/cache identity:
 
 ```sh
 ./gradlew :runLayoutSwitchClient \
-  -PringLayoutSwitchFirstSource="safe-small-save-folder" \
-  -PringLayoutSwitchSecondSource="production-save-folder"
+  -PringLayoutSwitchFirstSource="same-size-seed-a" \
+  -PringLayoutSwitchSecondSource="same-size-seed-b" \
+  -PringLayoutSwitchExpectation=same-geometry-different-seed
+
+./gradlew :neoforge:runLayoutSwitchClient \
+  -PringNeoForgeLayoutSwitchFirstSource="same-size-seed-a" \
+  -PringNeoForgeLayoutSwitchSecondSource="same-size-seed-b" \
+  -PringNeoForgeLayoutSwitchExpectation=same-geometry-different-seed
 ```
 
 Without overrides, the task retains the two historical source folder defaults
 (`RingWorld Automated Test (10)` and `RingWorld Automated Test (6)`). The
-harness does not assume their numeric layouts in code; it requires the two
-loaded geometries and fingerprints to differ. Override destinations with
+harness does not assume their numeric layouts in code. In default mode it
+requires geometry and identity to differ. In same-geometry/different-seed mode
+it waits for both complete atlases, requires the geometry to match, and requires
+the settings fingerprint, atlas world hash, and a test-only full atlas-content
+fingerprint to differ. Override destinations with
 `ringLayoutSwitchFirstDestination` and `ringLayoutSwitchSecondDestination` if
 needed; they must be distinct folder identifiers under `run-layout-switch/saves/`.
+The matching NeoForge command uses the same expectation value with the
+`ringNeoForgeLayoutSwitch*` property names.
+The 2026-08-08 dual-loader evidence passed at 2,048×256 with distinct settings
+fingerprints, Atlas world hashes, and terrain-content fingerprints; both
+clients reported complete RingWorld-owned session/GPU teardown before opening
+the second save.
 Search `run-layout-switch/logs/latest.log` for:
 
 ```text
@@ -1374,8 +1414,11 @@ edit terrain. Its source-copy stage replaces only prior copies beneath ignored
 
 The preparation stage also removes previous logs/cache/crash evidence. The
 `verifyLayoutSwitchClient` finalizer accepts only the machine-readable
-`"passed":true` marker with no failed marker and confirms both copied
-destinations still contain `level.dat`.
+`"passed":true` marker with no failed marker, verifies that the selected
+expectation was logged, and confirms both copied destinations still contain
+`level.dat`. This is an identity/cache regression, not a visual substitute:
+the owner must still inspect the interval while the second world's atlas is
+incomplete for any old-ring artifact.
 
 ## Optional package safety and upgrade gate
 

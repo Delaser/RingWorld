@@ -22,7 +22,9 @@ source save into an isolated run directory, waits for a complete atlas, writes
 tangent/handoff/radial captures, records frame pacing, verifies the outputs,
 and exits. Its production 16,384×256 noon, dusk, night, and rain runs pass;
 settled stages averaged 8.3–10.7 ms per frame. The disposable visual-parity
-gate also passes a natural seam view and both textured rims. Same-process
+gate also passes a natural seam view and both textured rims; its refreshed
+natural-crossing windows sampled 426 Fabric frames and 428 NeoForge frames,
+with one and zero frames over 50 ms respectively. Same-process
 layout switching clears stale state, and the production lifecycle passes
 Overworld/Nether/End transitions, save/disconnect, and reopen. NeoForge also
 passes the production/multi-seed structure matrix, a complete unattended
@@ -643,8 +645,11 @@ version numbers.
   `Minecraft.isGameLoadFinished()`. Joining during the initial resource
   reload can run leaf display ticks against unprepared particle sprites.
 - `:runLayoutSwitchClient` opens two existing saves in one JVM and stops after
-  logging its result. Keep it non-destructive: it may save normally, but must
-  not move players or edit terrain.
+  logging its result. Its default `different-layout` expectation checks a
+  geometry change; `same-geometry-different-seed` additionally requires two
+  complete, distinct atlas identities/content fingerprints and raw GPU/session
+  teardown between same-size worlds. Keep it non-destructive: it may save
+  normally, but must not move players or edit terrain.
 - `:runProductionLifecycleClient` first copies a named production save into its
   own ignored run directory. Its test-only coordinator must use the 26.1
   `TeleportTransition` API, stay separate from smoke/layout-switch/multiplayer,
@@ -652,13 +657,15 @@ version numbers.
   non-Overworld inactivity and exact restored-layout/atlas assertions. Let
   Minecraft's integrated-server disconnect path own saving; never call
   `MinecraftServer.saveEverything` from the render thread.
-- The Fabric `:runProductionProjectionClient`, `:runLayoutSwitchClient`, and
-  `:runProductionLifecycleClient` preparation tasks must clear old run evidence,
-  and each runtime task must retain its fail-closed verifier finalizer. The
-  projection verifier decodes all three selected-environment PNGs; layout and
-  lifecycle verify their exact terminal marker and copied save. Keep
-  `verifyFabricRuntimeGateContracts` attached to `check` so missing, failed, and
-  corrupt fixture evidence cannot silently pass after build-script changes.
+- The Fabric `:runProductionProjectionClient`, `:runProductionVisualParityClient`,
+  `:runLayoutSwitchClient`, and `:runProductionLifecycleClient` preparation
+  tasks must clear old run evidence, and each runtime task must retain its
+  fail-closed verifier finalizer. The projection verifier decodes all three
+  selected-environment PNGs; visual parity requires all three views and a
+  nonzero seam-motion frame record; layout and lifecycle verify their exact
+  terminal marker and copied save. Keep `verifyFabricRuntimeGateContracts`
+  attached to `check` so missing, failed, and corrupt fixture evidence cannot
+  silently pass after build-script changes.
 - `RingWorldCreationScreen.extractRenderState` must not call a background
   extraction method. Minecraft 26.1's
   `Screen.extractRenderStateWithTooltipAndSubtitles` already owns the frame's
@@ -752,6 +759,11 @@ version numbers.
   the far-side chart with an explicit setup teleport. Both actual seam
   approaches still run at 0.25 blocks per tick at Y=120; keep setup and
   assertion roles separate when changing test timing.
+- `RingVisualParityCaptureClient` records frame pacing only from the rendered,
+  armed natural seam approach through its post-crossing settle. Both loader
+  finalizers require a nonzero record but intentionally impose no fixed frame
+  budget; the raw average, maximum, and over-50-ms count are release evidence
+  to compare on the actual target hardware.
 - `ChunkBuilderBuiltChunkMixin` bypasses vanilla's eight-neighbour
   mesh-readiness check only for chunk rows outside the finite Z band. Removing
   that exception makes genuine rim blocks collide but remain invisible;
@@ -771,7 +783,12 @@ version numbers.
   the RingWorld Overworld with the equivalent nearest-periodic X test. It also
   realigns the connection movement baselines after the server moves a player
   into a sleeping pose. Keep the bed position canonical, retain vanilla Y/Z
-  limits, and do not apply either path in Nether or End.
+  limits, and do not apply either path in Nether or End. Vanilla deliberately
+  wakes a saved sleeping player while loading `ServerPlayer`; the multiplayer
+  regression therefore requires reconnect beside the canonical seam bed with
+  matching Overworld geometry, loaded-bed state, and X/Y/Z proximity, then
+  starts a second sleep before testing damage wake. A missing reconnect must
+  still hit the ordinary bounded fixture timeout.
 - Filled-map pixels, player/banner/frame decorations, and spawn/lodestone/recovery
   compass targets use their nearest periodic X image only in the RingWorld
   Overworld. Banner/frame positions and compass tracker targets remain

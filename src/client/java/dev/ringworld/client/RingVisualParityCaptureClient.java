@@ -53,6 +53,12 @@ public final class RingVisualParityCaptureClient {
     private double maximumSeamStep;
     private float seamYaw;
     private float seamPitch;
+    private boolean seamMotionMetricsActive;
+    private long seamMotionLastFrameNanos;
+    private long seamMotionTotalFrameNanos;
+    private long seamMotionMaxFrameNanos;
+    private int seamMotionFrameSamples;
+    private int seamMotionSlowFrames;
 
     public boolean tick(Minecraft client) {
         if (!Boolean.getBoolean(ENABLE_PROPERTY)) return false;
@@ -113,6 +119,7 @@ public final class RingVisualParityCaptureClient {
                 message -> RingWorldMod.LOGGER.info(
                         "[visual-parity-capture] {} screenshot: {}",
                         view.id, message.getString()));
+        if (view == CaptureView.SEAM) finishSeamMotionMetrics();
         RingWorldMod.LOGGER.info(
                 "[visual-parity-capture] captured {} at x={}, y={}, z={}, yaw={}, pitch={}",
                 view.id, client.player.getX(), client.player.getY(), client.player.getZ(),
@@ -145,6 +152,7 @@ public final class RingVisualParityCaptureClient {
             seamPitch = client.player.getXRot();
             renderTicks = 0;
             settleTicks = 0;
+            startSeamMotionMetrics();
             RingWorldMod.LOGGER.info(
                     "[visual-parity-capture] armed natural seam crossing x={} boundary={} yaw={} pitch={}",
                     previousSeamX, seamBoundary, seamYaw, seamPitch);
@@ -179,6 +187,39 @@ public final class RingVisualParityCaptureClient {
                 "[visual-parity-capture] natural seam crossing complete x={} boundary={} maxStep={}",
                 currentX, seamBoundary, maximumSeamStep);
         return true;
+    }
+
+    /** Called from each loader's existing end-of-level render callback. */
+    public void frameRendered() {
+        if (!Boolean.getBoolean(ENABLE_PROPERTY) || !seamMotionMetricsActive) return;
+        long now = System.nanoTime();
+        if (seamMotionLastFrameNanos != 0L) {
+            long elapsed = now - seamMotionLastFrameNanos;
+            seamMotionTotalFrameNanos += elapsed;
+            seamMotionMaxFrameNanos = Math.max(seamMotionMaxFrameNanos, elapsed);
+            seamMotionFrameSamples++;
+            if (elapsed > 50_000_000L) seamMotionSlowFrames++;
+        }
+        seamMotionLastFrameNanos = now;
+    }
+
+    private void startSeamMotionMetrics() {
+        seamMotionMetricsActive = true;
+        seamMotionLastFrameNanos = 0L;
+        seamMotionTotalFrameNanos = 0L;
+        seamMotionMaxFrameNanos = 0L;
+        seamMotionFrameSamples = 0;
+        seamMotionSlowFrames = 0;
+    }
+
+    private void finishSeamMotionMetrics() {
+        seamMotionMetricsActive = false;
+        double averageMillis = seamMotionFrameSamples == 0 ? 0.0
+                : seamMotionTotalFrameNanos / 1_000_000.0 / seamMotionFrameSamples;
+        RingWorldMod.LOGGER.info(
+                "[visual-parity-capture] seam motion frame metrics: samples={}, averageMs={}, maxMs={}, over50Ms={}",
+                seamMotionFrameSamples, averageMillis,
+                seamMotionMaxFrameNanos / 1_000_000.0, seamMotionSlowFrames);
     }
 
     private boolean ensureWorldOpen(Minecraft client) {
@@ -271,6 +312,7 @@ public final class RingVisualParityCaptureClient {
 
     private void finish(Minecraft client, boolean passed, String detail) {
         if (stage > CaptureView.values().length) return;
+        seamMotionMetricsActive = false;
         stage = CaptureView.values().length + 1;
         RingWorldMod.LOGGER.info("[visual-parity-capture] result={}, {}", passed, detail);
         client.stop();
