@@ -14,11 +14,13 @@ runtime jar for each loader, and writes separate ignored review directories
 under `dist/modrinth/<version>/fabric/` and `.../neoforge/`. Use
 `--loader fabric` or `--loader neoforge` for one explicit loader. Run it only
 from a clean, pushed public branch commit with the standard HTTPS `origin`:
-both manifests record the same checkout `HEAD`, rather than a circular hash
-embedded in source. Only each staged `ringworld-*.jar` is a potential upload
-file. The checksums, manifests, and Markdown are review material and must not
-be uploaded as extra version files. Staging never uploads, publishes, changes
-a listing, or accepts credentials.
+each generated `PROJECT_DESCRIPTION.md` and loader-specific `CHANGELOG.md`
+contains the same exact immutable commit URL derived from that checkout. The
+manifests repeat the provenance for local package assembly, but are not the
+recipient-facing source route. Only each staged `ringworld-*.jar` is a
+potential upload file. The checksums, manifests, and Markdown are review
+material and must not be uploaded as extra version files. Staging never
+uploads, publishes, changes a listing, or accepts credentials.
 
 Read [`docs/MODRINTH_RELEASE.md`](../../docs/MODRINTH_RELEASE.md) before a
 separately authorized manual release action.

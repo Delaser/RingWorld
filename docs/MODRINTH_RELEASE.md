@@ -1,6 +1,6 @@
 # Modrinth release workflow
 
-Last updated: 2026-08-02. Issues
+Last updated: 2026-08-08. Issues
 [#33](https://github.com/Delaser/RingWorld/issues/33) and
 [#94](https://github.com/Delaser/RingWorld/issues/94) track this workflow.
 
@@ -38,13 +38,18 @@ relabeled as the current source revision.
 Each generated loader directory contains exactly one jar. That jar alone is a
 potential upload file; `STAGING-MANIFEST.json`, `SHA256SUMS.txt`, the project
 description, and the loader-specific changelog are operator-review material.
-Both manifests record the jar hashes and the same exact accessible public
-source revision and commit URL. Stage only from a clean, pushed public branch
-commit: the script requires this repository's exact public HTTPS `origin` and
-requires `HEAD` to equal the current branch's upstream. This avoids the
-circular and invalid practice of embedding a commit's own hash in source that
-changes that commit. Confirm both revisions and jar hashes before a separately
-authorized manual upload.
+The generated `PROJECT_DESCRIPTION.md` and `CHANGELOG.md` each contain the
+same exact immutable public commit URL derived from the verified checkout;
+they are the recipient-facing corresponding-source route if their text is
+copied to Modrinth. The manifest repeats that provenance for local package
+assembly, but is not the source-delivery route. Staging fails if either public
+text lacks its one generated source-link placeholder or contains a hard-coded
+GitHub commit/tree/blob URL or short/full SHA. Stage only from a clean,
+pushed public branch commit: the script requires this repository's exact
+public HTTPS `origin` and requires `HEAD` to equal the current branch's
+upstream. This avoids the circular and invalid practice of embedding a
+commit's own hash in source that changes that commit. Confirm both revisions
+and jar hashes before a separately authorized manual upload.
 
 ## Fail-closed checks
 
@@ -126,8 +131,9 @@ Fabric and NeoForge use separate managed Prism instances, including when one
 bundle is extracted over the other, while preserving user data and unrelated
 mods.
 
-The Modrinth page must give installation and world-creation guidance, exact
-client/server requirements, the MPL-2.0 statement, a current alpha changelog,
-and a public route to the corresponding source revision. Do not store a token
-in the repository, generated stage, Gradle properties, documentation, shell
-history, or client bundle.
+The Modrinth page must use the generated description and matching loader
+changelog (or copy their generated immutable source URL verbatim), alongside
+installation and world-creation guidance, exact client/server requirements,
+the MPL-2.0 statement, and current alpha notes. Do not store a token in the
+repository, generated stage, Gradle properties, documentation, shell history,
+or client bundle.

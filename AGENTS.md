@@ -337,10 +337,13 @@ gates are tracked under #12, #13, and #97.
 
 `scripts/stage_modrinth_release.py --loader both --build` checks the active
 Java generation, always performs a fresh dual build, pair-validates the known
-outputs, and writes provenance manifests consumed by optional packaging. It
-accepts no alternate jar path. Keep that fail-closed Java 25 preflight
+outputs, writes provenance manifests consumed by optional packaging, and
+renders the exact verified public commit URL into every staged public
+`PROJECT_DESCRIPTION.md` and `CHANGELOG.md`. It accepts no alternate jar path.
+Keep that fail-closed Java 25 preflight and source-link placeholder validation
 synchronized with the active Minecraft toolchain; do not replace its direct
-setup error with the compiler failure produced by an older Gradle JVM.
+setup error with the compiler failure produced by an older Gradle JVM. The
+ignored manifest is not an acceptable sole corresponding-source route.
 
 The frozen 1.21.11 tag uses Java 21 and passes 73 unit/parameterized cases plus
 the runtime suites recorded in
@@ -572,8 +575,11 @@ version numbers.
 - Optional packages must be built with `scripts/prepare_release_packages.py`
   from a format-2 staging manifest created by the mandatory clean dual-build
   release gate. Never restore free-form jar or source-revision inputs. The
-  builder emits no web content and has no publish/deploy path. Keep its
-  reproducible ZIPs and checksum manifests under ignored local staging only.
+  builder emits no web content and has no publish/deploy path. The staging
+  tool alone renders public release text: both description and changelog
+  templates must carry exactly one source-link placeholder, never a hard-coded
+  GitHub commit/tree/blob URL or short/full SHA. Keep reproducible ZIPs and
+  checksum manifests under ignored local staging only.
 - `/ringworld atlas status|start|pause|resume` controls background pregeneration.
   Pause is process-local and does not alter immutable saved layout.
 - Atlas format 6 represents exposed top-face height and

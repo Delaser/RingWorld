@@ -31,6 +31,7 @@ both files in one instance, and do not assume cross-loader multiplayer works.
 ## Licence and source
 
 RingWorld is open-source software under the Mozilla Public License 2.0. The
-exact corresponding source revision is recorded with every release manifest.
+exact corresponding source revision for this release is
+[this immutable commit]({{RINGWORLD_CORRESPONDING_SOURCE_URL}}).
 Minecraft is a trademark of Microsoft; RingWorld is not affiliated with Mojang
 or Microsoft.
