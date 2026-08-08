@@ -17,6 +17,11 @@ class RingMapCompassSupportTest {
         assertEquals(-2.0, RingMapCompassSupport.nearestMapImageX(geometry, 2_046.0, 2), 1.0e-9);
         assertEquals(-1.0F, RingMapCompassSupport.nearestMapDecorationDeltaX(
                 geometry, 2, 4, 2_046.0));
+        // The graphical fixture scales its high-centred map once before locking
+        // it. Its canonical seam banner must remain inside that scale-one map.
+        assertEquals(2_049.5, RingMapCompassSupport.nearestMapImageX(geometry, 1.5, 2_112), 1.0e-9);
+        assertEquals(-31.25F, RingMapCompassSupport.nearestMapDecorationDeltaX(
+                geometry, 2_112, 2, 1.5), 1.0e-6F);
         assertEquals(127, RingMapCompassSupport.canonicalMapSampleChunkX(geometry, -1));
         assertEquals(0, RingMapCompassSupport.canonicalMapSampleChunkX(geometry, 128));
         assertEquals(2_050, RingMapCompassSupport.nearestMapBannerBlockX(geometry, 2, 2_046));

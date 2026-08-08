@@ -106,8 +106,9 @@ abstract class ClientPlayNetworkHandlerMixin {
 
     @ModifyVariable(method = "handleAddEntity", at = @At("HEAD"), argsOnly = true)
     private ClientboundAddEntityPacket ringworld$projectEntitySpawn(ClientboundAddEntityPacket packet) {
-        RingGeometry geometry = ClientRingState.geometry();
         Minecraft client = Minecraft.getInstance();
+        if (!client.isSameThread()) return packet;
+        RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null || client.player == null) return packet;
         double logicalX = geometry.nearestImageX(packet.getX(), client.player.getX());
         if (logicalX == packet.getX()) return packet;
@@ -118,8 +119,9 @@ abstract class ClientPlayNetworkHandlerMixin {
 
     @ModifyVariable(method = "handleEntityPositionSync", at = @At("HEAD"), argsOnly = true)
     private ClientboundEntityPositionSyncPacket ringworld$projectEntitySync(ClientboundEntityPositionSyncPacket packet) {
-        RingGeometry geometry = ClientRingState.geometry();
         Minecraft client = Minecraft.getInstance();
+        if (!client.isSameThread()) return packet;
+        RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null || client.level == null || client.player == null) return packet;
         PositionMoveRotation values = packet.values();
         double logicalX = geometry.nearestImageX(values.position().x, client.player.getX());
@@ -132,8 +134,9 @@ abstract class ClientPlayNetworkHandlerMixin {
 
     @ModifyVariable(method = "handleTeleportEntity", at = @At("HEAD"), argsOnly = true)
     private ClientboundTeleportEntityPacket ringworld$projectEntityTeleport(ClientboundTeleportEntityPacket packet) {
-        RingGeometry geometry = ClientRingState.geometry();
         Minecraft client = Minecraft.getInstance();
+        if (!client.isSameThread()) return packet;
+        RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null || client.level == null || client.player == null
                 || packet.relatives().contains(Relative.X)) return packet;
         PositionMoveRotation change = packet.change();
@@ -148,8 +151,9 @@ abstract class ClientPlayNetworkHandlerMixin {
     /** Keep authoritative vehicle corrections in the rider's current visual chart. */
     @ModifyVariable(method = "handleMoveVehicle", at = @At("HEAD"), argsOnly = true)
     private ClientboundMoveVehiclePacket ringworld$projectVehicleCorrection(ClientboundMoveVehiclePacket packet) {
-        RingGeometry geometry = ClientRingState.geometry();
         Minecraft client = Minecraft.getInstance();
+        if (!client.isSameThread()) return packet;
+        RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null || client.player == null) return packet;
         Vec3 position = packet.position();
         double logicalX = geometry.nearestImageX(position.x, client.player.getRootVehicle().getX());
@@ -162,8 +166,9 @@ abstract class ClientPlayNetworkHandlerMixin {
     /** Project the absolute positions in 26.1's minecart interpolation batch. */
     @ModifyVariable(method = "handleMinecartAlongTrack", at = @At("HEAD"), argsOnly = true)
     private ClientboundMoveMinecartPacket ringworld$projectMinecartSteps(ClientboundMoveMinecartPacket packet) {
-        RingGeometry geometry = ClientRingState.geometry();
         Minecraft client = Minecraft.getInstance();
+        if (!client.isSameThread()) return packet;
+        RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null || client.level == null || client.player == null) return packet;
         var entity = packet.getEntity(client.level);
         double referenceX = entity == null ? client.player.getX() : entity.getX();
@@ -242,8 +247,9 @@ abstract class ClientPlayNetworkHandlerMixin {
     /** Keep biome-only refreshes on the same client chart as their chunks. */
     @ModifyVariable(method = "handleChunksBiomes", at = @At("HEAD"), argsOnly = true)
     private ClientboundChunksBiomesPacket ringworld$mapChunkBiomeData(ClientboundChunksBiomesPacket packet) {
-        RingGeometry geometry = ClientRingState.geometry();
         Minecraft client = Minecraft.getInstance();
+        if (!client.isSameThread()) return packet;
+        RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null || client.player == null) return packet;
         List<ClientboundChunksBiomesPacket.ChunkBiomeData> mapped = packet.chunkBiomeData().stream()
                 .map(data -> new ClientboundChunksBiomesPacket.ChunkBiomeData(
@@ -348,6 +354,7 @@ abstract class ClientPlayNetworkHandlerMixin {
 
     @ModifyVariable(method = "handleParticleEvent", at = @At("HEAD"), argsOnly = true)
     private ClientboundLevelParticlesPacket ringworld$mapParticle(ClientboundLevelParticlesPacket packet) {
+        if (!Minecraft.getInstance().isSameThread()) return packet;
         double x = mapX(packet.getX());
         if (x == packet.getX()) return packet;
         return new ClientboundLevelParticlesPacket(packet.getParticle(), packet.isOverrideLimiter(), packet.alwaysShow(),
@@ -357,6 +364,7 @@ abstract class ClientPlayNetworkHandlerMixin {
 
     @ModifyVariable(method = "handleExplosion", at = @At("HEAD"), argsOnly = true)
     private ClientboundExplodePacket ringworld$mapExplosion(ClientboundExplodePacket packet) {
+        if (!Minecraft.getInstance().isSameThread()) return packet;
         double x = mapX(packet.center().x);
         if (x == packet.center().x) return packet;
         return new ClientboundExplodePacket(new Vec3(x, packet.center().y, packet.center().z),
@@ -366,6 +374,7 @@ abstract class ClientPlayNetworkHandlerMixin {
 
     @ModifyVariable(method = "handleSoundEvent", at = @At("HEAD"), argsOnly = true)
     private ClientboundSoundPacket ringworld$mapSound(ClientboundSoundPacket packet) {
+        if (!Minecraft.getInstance().isSameThread()) return packet;
         double x = mapX(packet.getX());
         if (x == packet.getX()) return packet;
         return new ClientboundSoundPacket(packet.getSound(), packet.getSource(), x, packet.getY(), packet.getZ(),
@@ -375,9 +384,10 @@ abstract class ClientPlayNetworkHandlerMixin {
     /** Preserve the apparent source direction for position-only damage sources. */
     @ModifyVariable(method = "handleDamageEvent", at = @At("HEAD"), argsOnly = true)
     private ClientboundDamageEventPacket ringworld$mapDamageSource(ClientboundDamageEventPacket packet) {
+        Minecraft client = Minecraft.getInstance();
+        if (!client.isSameThread()) return packet;
         Optional<Vec3> source = packet.sourcePosition();
         if (source.isEmpty()) return packet;
-        Minecraft client = Minecraft.getInstance();
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null || client.level == null || client.player == null) return packet;
         Vec3 position = source.get();

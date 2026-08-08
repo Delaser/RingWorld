@@ -4,6 +4,9 @@ import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingTerrainAtlas;
 import org.junit.jupiter.api.Test;
 
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -38,6 +41,25 @@ class RingAtlasPregenerationSelectionTest {
         assertTrue(selection.failed(0, 1));
         assertFalse(selection.failed(20, 1));
         assertEquals(2, selection.retryAttempt());
+    }
+
+    @Test
+    void shutdownDiscardOfCompletedRequestLeavesSelectedCursorForResume() {
+        RingAtlasPregenerationSelection selection = new RingAtlasPregenerationSelection(
+                GEOMETRY, new RingTerrainAtlas(GEOMETRY, 7L));
+        var selected = selection.select().orElseThrow();
+        AtomicInteger resultReads = new AtomicInteger();
+        RingAtlasChunkRequest<String> request = RingAtlasChunkRequest.start(
+                () -> CompletableFuture.completedFuture(null), () -> {
+                    resultReads.incrementAndGet();
+                    return "unloaded chunk";
+                }, () -> { });
+
+        request.cancel();
+
+        assertEquals(0, resultReads.get());
+        assertEquals(selected, selection.select().orElseThrow());
+        assertEquals(0, selection.retryAttempt());
     }
 
     private static void completeChunk(RingTerrainAtlas atlas, int chunkX, int chunkRow) {

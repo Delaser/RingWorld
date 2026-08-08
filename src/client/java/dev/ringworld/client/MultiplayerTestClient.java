@@ -34,6 +34,7 @@ import net.minecraft.util.Mth;
 
 /** A real-network, two-process client driver. It is dormant outside its JVM test flag. */
 public final class MultiplayerTestClient {
+    private static final int COMPLETION_GRACE_TICKS = 40;
     private final String role = System.getProperty("ringworld.multiplayerTestRole", "").trim();
     private boolean optionsApplied;
     private boolean connectionRequested;
@@ -87,6 +88,8 @@ public final class MultiplayerTestClient {
     private boolean endReturnSent;
     private boolean sawSeamLightning;
     private boolean seamWeatherSent;
+    private int completionGraceTicks;
+    private boolean clientStopRequested;
 
     public boolean tick(Minecraft client) {
         if (role.isEmpty()) return false;
@@ -122,7 +125,31 @@ public final class MultiplayerTestClient {
             case 6 -> runExtendedScenario(client);
             default -> { }
         }
+        finishWhenLocalScenarioIsComplete(client);
         return true;
+    }
+
+    /**
+     * Every required result is already on the wire before this grace period
+     * begins. Exiting the graphical clients here lets the unattended harness
+     * wait for clean process completion before stopping its dedicated server.
+     */
+    private void finishWhenLocalScenarioIsComplete(Minecraft client) {
+        if (clientStopRequested || !localScenarioComplete()) return;
+        if (++completionGraceTicks < COMPLETION_GRACE_TICKS) return;
+        clientStopRequested = true;
+        RingWorldMod.LOGGER.info(
+                "[multiplayer:{}] local scenario result=true; stopping client", role);
+        client.stop();
+    }
+
+    private boolean localScenarioComplete() {
+        if (stage < 6 || !extendedFixtureSent || !seamWeatherSent) return false;
+        if (role.equals("B")) return reconnectResultSent;
+        return bedSleepSent && bedDamageWakeSent && bedDestroyedSent
+                && deathSeenSent && deathRespawnSent
+                && netherEnterSent && netherReturnSent
+                && endEnterSent && endReturnSent;
     }
 
     private void connectWhenReady(Minecraft client) {

@@ -80,6 +80,14 @@ public final class NeoForgeRingWorldClient {
     }
 
     private static void handleSettings(RingSettingsPayload payload, IPayloadContext context) {
+        // Keep session teardown, static client state, and acknowledgement send
+        // together on the client game thread. enqueueWork is immediate when the
+        // client payload registry has already selected that thread.
+        context.enqueueWork(() -> handleSettingsOnClientThread(payload, context));
+    }
+
+    private static void handleSettingsOnClientThread(
+            RingSettingsPayload payload, IPayloadContext context) {
         if (payload.formatVersion() != RingWorldSettings.FORMAT_VERSION) {
             context.disconnect(Component.literal(
                     "Incompatible RingWorld format: server=" + payload.formatVersion()
@@ -113,6 +121,11 @@ public final class NeoForgeRingWorldClient {
 
     private static void handleAtlasMetadata(
             RingTerrainAtlasMetadataPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> handleAtlasMetadataOnClientThread(payload, context));
+    }
+
+    private static void handleAtlasMetadataOnClientThread(
+            RingTerrainAtlasMetadataPayload payload, IPayloadContext context) {
         boolean cacheComplete = ClientRingState.installTerrainAtlas(payload);
         if (Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) return;
         if (!RingClientPayloadTransport.canSend(RingTerrainAtlasRequestPayload.ID)) {
@@ -125,17 +138,29 @@ public final class NeoForgeRingWorldClient {
     }
 
     private static void handleAtlasTile(RingTerrainAtlasTilePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> handleAtlasTileOnClientThread(payload));
+    }
+
+    private static void handleAtlasTileOnClientThread(RingTerrainAtlasTilePayload payload) {
         ClientRingState.applyTerrainAtlasTile(
                 payload.worldHash(), payload.tileX(), payload.tileZ(), payload.data());
     }
 
     private static void handleAtlasRevision(
             RingTerrainAtlasRevisionPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> handleAtlasRevisionOnClientThread(payload));
+    }
+
+    private static void handleAtlasRevisionOnClientThread(RingTerrainAtlasRevisionPayload payload) {
         ClientRingState.commitTerrainAtlasRevision(payload.worldHash(), payload.revision());
     }
 
     private static void handleAtlasStatus(
             RingAtlasPregenerationStatusPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> handleAtlasStatusOnClientThread(payload));
+    }
+
+    private static void handleAtlasStatusOnClientThread(RingAtlasPregenerationStatusPayload payload) {
         AtlasPregenerationClientState.install(Minecraft.getInstance(), payload);
     }
 

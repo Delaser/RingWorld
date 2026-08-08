@@ -143,7 +143,7 @@ changing the capped GPU texture or mesh. See
 
 Production-default atlas completion is therefore a large world-generation
 operation. Monitor disk use, server tick time, and progress logs. Set
-`pregenerateTerrainAtlas=false` to postpone background generation. The distant
+`pregenerateTerrainAtlas=false` to postpone automatic background generation. The distant
 surface progressively reveals only trustworthy cells from player-loaded or
 pregenerated chunks; missing cells remain transparent until generated.
 Progress logs report captured cells, cells per second, and an ETA once a rate
@@ -178,9 +178,17 @@ pregeneration without changing immutable world layout:
 
 ```text
 /ringworld atlas status
+/ringworld atlas start
 /ringworld atlas pause
 /ringworld atlas resume
 ```
+
+`start` explicitly begins an idle partial atlas. `resume` resumes a process-local
+paused job; after a restart, it also starts from the durable partial atlas when
+the handle has returned to `IDLE`. Neither command changes immutable world
+layout or discards saved cells. The local #131 runtime gate covers both the
+idle start and restart-from-`IDLE` resume paths; either command rejects a
+release-pending terminal handle until its loading ticket has closed.
 
 Players in a RingWorld Overworld can instead open **RingWorld Map** from the
 pause menu. Its generation actions require an integrated-world owner or a
@@ -198,15 +206,21 @@ state, so a server restart returns to the configured
 Server atlas:
 
 The background setting starts one idempotent `BACKGROUND` handle per loaded
-RingWorld Overworld. `/ringworld atlas status|pause|resume` observes or
+RingWorld Overworld. `/ringworld atlas status|start|pause|resume` observes or
 controls that same process-local handle. Cancel and explicit headless prewarm
 are not exposed by the current command adapter. Cancellation during the
 service phase checkpoints durable cells rather than deleting terrain; a failed
 checkpoint is reported as failure rather than a misleading successful cancel.
 With `pregenerateTerrainAtlas=false`, that handle is intentionally `IDLE` and
-continues to sample player-loaded chunks; its legacy pause/resume commands
-report that background generation remains disabled rather than creating a
-second scheduler.
+continues to sample player-loaded chunks. A gamemaster may later use
+`/ringworld atlas start` or `/ringworld atlas resume` to start the same
+single-writer service from the durable partial atlas.
+
+If the previous job is terminal but still owns a ticket whose release is being
+retried, `start` is temporarily rejected rather than replacing that job. The
+command and map return the release-pending message; retry shortly after a
+server tick. This fail-closed interval prevents a failed `close()` from
+orphaning its loading ticket.
 
 ```text
 <world>/dimensions/minecraft/overworld/data/ringworld/terrain-atlas.rwat.gz
@@ -226,12 +240,21 @@ For an explicit non-interactive preparation run, use the checked-in Gradle
 fixture only after accepting its disposable EULA:
 
 ```sh
-./gradlew runHeadlessPrewarmServer --console=plain
-./gradlew runHeadlessPrewarmServer --console=plain \
+./gradlew :runHeadlessPrewarmServer --console=plain
+./gradlew :runHeadlessPrewarmServer --console=plain \
   -PringHeadlessPrewarmSource="save-folder-id"
-./gradlew runHeadlessPrewarmServer --console=plain \
+./gradlew :runHeadlessPrewarmServer --console=plain \
   -PringHeadlessPrewarmResume=true
 ```
+
+For a new production-default disposable world, add
+`-PringHeadlessPrewarmCircumference=16384 -PringHeadlessPrewarmWidth=256`.
+NeoForge provides equivalent `ringNeoForgeHeadlessPrewarmCircumference` and
+`ringNeoForgeHeadlessPrewarmWidth` properties.
+
+Fabric's exact production prewarm completed successfully on 2026-08-06. The
+recorded NeoForge prewarm evidence is safe-small; do not describe it as a
+production prewarm until that distinct run completes.
 
 The second form copies `run/saves/<save-folder-id>` to the ignored
 `run-headless-prewarm/world`; it never opens or modifies the source. The first
@@ -243,9 +266,12 @@ JSON under `world/ringworld-prewarm/`: `progress.json` every 20 ticks and
 carry schema version, elapsed time, exact durable chunks/cells, world hash,
 layout fingerprint, atlas path, rate/ETA/error where relevant, and a failure
 reason. A rejected startup has `identityAvailable:false` and zero/null identity
-sentinels. An external SIGTERM consumes completed work and checkpoints before
-writing `INTERRUPTED`; rerun with `-PringHeadlessPrewarmResume=true` to retain
-the disposable runtime world and resume from saved atlas cells. The Gradle
+sentinels. An external SIGTERM cancels/releases an outstanding atlas chunk
+request without resolving a possibly evicted chunk-cache result, then
+checkpoints before writing `INTERRUPTED`; rerun with
+`-PringHeadlessPrewarmResume=true` to retain the disposable runtime world and
+resume from saved atlas cells. The selected cursor is not advanced during
+teardown, so an uncaptured final chunk is safely retried. The Gradle
 finalizer fails unless the terminal result is `COMPLETE`, because Minecraft can
 exit zero after a failed run. Both the dedicated coordinator and Gradle fixture
 delete the selected old result/progress files before every launch (including
@@ -300,7 +326,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite contains 241 unit/parameterized cases. The historical Phase 2
+The current suite passes 269 unit/parameterized cases per loader. The historical Phase 2
 95-error inventory and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.

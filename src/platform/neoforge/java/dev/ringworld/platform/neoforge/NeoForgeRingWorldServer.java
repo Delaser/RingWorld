@@ -5,7 +5,6 @@ import dev.ringworld.server.HeadlessPrewarmCoordinator;
 import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.server.RingWorldStrongholdTest;
 import dev.ringworld.server.RingTerrainAtlasServer;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -76,11 +75,10 @@ public final class NeoForgeRingWorldServer {
     @SubscribeEvent
     public void onPlayerLogin(PlayerEvent.PlayerLoggedInEvent event) {
         if (event.getEntity() instanceof ServerPlayer player) {
-            if (HeadlessPrewarmCoordinator.rejectPlayerJoins(player.level().getServer())) {
-                player.connection.disconnect(Component.literal(
-                        "RingWorld headless atlas preparation is active; player joins are disabled."));
-                return;
-            }
+            // placeNewPlayer owns the normal early admission boundary. Retain
+            // this event check as a defensive fallback for alternate login
+            // paths while keeping one rejection policy and message.
+            if (NeoForgeHeadlessPlayerAdmission.rejectIfActive(player)) return;
             RingWorldServer.onPlayerJoined(player);
         }
     }

@@ -42,7 +42,9 @@ public final class RingVisualParityCaptureClient {
     private int completionTicks;
     private boolean worldOpenRequested;
     private boolean focusPolicyApplied;
-    private boolean environmentApplied;
+    private boolean environmentRequested;
+    private volatile boolean environmentReady;
+    private volatile String serverControlFailure;
     private boolean positionRequested;
     private boolean seamArmed;
     private boolean seamCrossed;
@@ -73,7 +75,12 @@ public final class RingVisualParityCaptureClient {
         }
         if (client.player == null || client.getConnection() == null) return true;
 
-        applyEnvironment(client);
+        String controlFailure = serverControlFailure;
+        if (controlFailure != null) {
+            finish(client, false, controlFailure);
+            return true;
+        }
+        if (!ensureEnvironment(client)) return true;
         CaptureView view = CaptureView.values()[stage];
         if (!positionRequested) {
             requestServerPosition(client, geometry, view);
@@ -199,24 +206,33 @@ public final class RingVisualParityCaptureClient {
         RingWorldMod.LOGGER.info("[visual-parity-capture] applied unattended focus policy");
     }
 
-    private void applyEnvironment(Minecraft client) {
-        if (environmentApplied) return;
-        client.options.renderDistance().set(viewDistanceChunks());
-        client.getConnection().sendCommand("gamemode spectator @s");
-        client.getConnection().sendCommand("time set 6000");
-        client.getConnection().sendCommand("gamerule advance_time false");
-        client.getConnection().sendCommand("weather clear");
-        environmentApplied = true;
+    private boolean ensureEnvironment(Minecraft client) {
+        if (serverControlFailure != null) return false;
+        if (environmentReady) return true;
+        if (environmentRequested) return false;
+        int viewDistance = viewDistanceChunks();
+        client.options.renderDistance().set(viewDistance);
+        environmentRequested = true;
+        RingIntegratedCaptureControl.execute(client, "visual-parity environment setup",
+                context -> RingIntegratedCaptureControl.normalizeEnvironment(
+                        context, 6_000, false),
+                () -> environmentReady = true,
+                detail -> serverControlFailure = detail);
         RingWorldMod.LOGGER.info(
                 "[visual-parity-capture] normalized noon/clear environment at {} chunks",
-                viewDistanceChunks());
+                viewDistance);
+        return false;
     }
 
     private void requestServerPosition(Minecraft client, RingGeometry geometry, CaptureView view) {
         Pose pose = view.pose(geometry);
         double cameraY = cameraY(client, view);
-        client.getConnection().sendCommand("tp @s " + pose.x + " " + cameraY + " " + pose.z);
         positionRequested = true;
+        RingIntegratedCaptureControl.execute(client, "visual-parity " + view.id + " pose",
+                context -> RingIntegratedCaptureControl.teleport(
+                        context, pose.x, cameraY, pose.z),
+                () -> { },
+                detail -> serverControlFailure = detail);
         RingWorldMod.LOGGER.info(
                 "[visual-parity-capture] requested server-authoritative {} pose x={}, y={}, z={}",
                 view.id, pose.x, cameraY, pose.z);

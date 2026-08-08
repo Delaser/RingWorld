@@ -17,16 +17,15 @@ import dev.ringworld.world.RingWorldConfig;
 import dev.ringworld.world.RingWorldSettings;
 import dev.ringworld.world.RingWorldStorageAccess;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ChunkResult;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.TicketType;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
-import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
-import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.storage.LevelResource;
 
@@ -54,6 +53,7 @@ public final class RingAtlasPregenerationService {
     public static final int SAVE_INTERVAL_TICKS = 200;
     public static final int TILE_PUBLICATION_INTERVAL_TICKS = 20;
     public static final int RECAPTURE_CELLS_PER_TICK = 64;
+    private static final int TEARDOWN_RELEASE_ATTEMPTS = 3;
     private static final double WATER_TEXTURE_LUMINANCE = 0.58;
     private static final double GRASS_TEXTURE_LUMINANCE = 0.68;
     private static final double FOLIAGE_TEXTURE_LUMINANCE = 0.52;
@@ -62,8 +62,22 @@ public final class RingAtlasPregenerationService {
     private static final String CACHE_DIRECTORY = RingWorldMod.MOD_ID;
     private static final Map<ServerLevel, WorldState> WORLDS = new IdentityHashMap<>();
     private static final AtlasPregenerationListener NOOP_LISTENER = progress -> { };
-
     private RingAtlasPregenerationService() { }
+
+    /**
+     * Distinct by identity from every vanilla ticket and never persisted.
+     * Keep initialization behind the runtime scheduling path: loading this
+     * service only for pure path helpers must not bootstrap Minecraft's
+     * built-in registries in unit tests.
+     */
+    private static TicketType atlasLoadingTicket() {
+        return AtlasLoadingTicketHolder.INSTANCE;
+    }
+
+    private static final class AtlasLoadingTicketHolder {
+        private static final TicketType INSTANCE = new TicketType(
+                TicketType.NO_TIMEOUT, TicketType.FLAG_LOADING);
+    }
 
     public static void load(ServerLevel world) { load(world, true); }
 
@@ -100,15 +114,18 @@ public final class RingAtlasPregenerationService {
 
     public static void unload(ServerLevel world) {
         requireServerThread(world);
-        WorldState state = WORLDS.remove(world);
+        WorldState state = WORLDS.get(world);
         if (state == null) return;
-        // Unload cannot wait for a chunk future. A completed result is consumed
-        // first, then the active handle is resolved deterministically.
-        consumeFuture(world, state);
-        if (state.job != null && !state.job.completion.isDone()) {
-            state.job.cancelForUnload();
-        }
+        // Level unload can run after the chunk source has evicted the result
+        // named by an already-completed load future. Never resolve that result
+        // during teardown: cancel/release its ticket and leave the selected
+        // cursor unadvanced so durable atlas cells remain the resume journal.
+        // Do not discard the only retained request before its loading ticket
+        // is actually released. Persistent release failure is exceptional and
+        // fails this unload closed with the state still reachable.
+        if (state.job != null) state.job.cancelForUnload();
         save(state, true);
+        WORLDS.remove(world, state);
     }
 
     public static AtlasPregenerationHandle pregenerate(ServerLevel world,
@@ -121,11 +138,25 @@ public final class RingAtlasPregenerationService {
         requireSupportedPolicy(options);
         WorldState state = requireState(world);
         Job active = state.job;
-        if (active != null && AtlasPregenerationHeadlessPolicy.mayReplaceIdleHandle(active.state, options)) {
-            // Config-disabled startup creates an observable IDLE background
-            // handle. It has no selected future or writes, so replacing it is
-            // safe and preserves the single world-owned writer invariant.
-            active = null;
+        if (active != null) {
+            boolean replaceIdle = AtlasPregenerationHeadlessPolicy.mayReplaceIdleHandle(
+                    active.state, options);
+            RingAtlasJobReplacementPolicy.Decision replacement =
+                    RingAtlasJobReplacementPolicy.decide(
+                            active.state, replaceIdle, active.request != null);
+            if (replacement == RingAtlasJobReplacementPolicy.Decision.BLOCK_OUTSTANDING_REQUEST) {
+                // A failed ticket release remains attached to this job so the
+                // normal tick path can retry close(). Replacing the terminal
+                // job here would orphan that retained loading ticket.
+                throw new IllegalStateException(
+                        RingAtlasJobReplacementPolicy.OUTSTANDING_REQUEST_MESSAGE);
+            }
+            if (replacement == RingAtlasJobReplacementPolicy.Decision.REPLACE) {
+                // Config-disabled startup creates an observable IDLE
+                // background handle. Terminal handles are also restartable,
+                // but only after every retained request has been released.
+                active = null;
+            }
         }
         if (active != null && !active.state.isTerminal()) {
             if (!active.options.sharesExecutionPolicyWith(options)) {
@@ -235,32 +266,44 @@ public final class RingAtlasPregenerationService {
 
     private static void consumeFuture(ServerLevel world, WorldState state) {
         Job job = state.job;
-        if (job == null || job.future == null || !job.future.isDone()) return;
-        CompletableFuture<ChunkResult<ChunkAccess>> future = job.future;
-        job.future = null;
+        if (job == null || job.request == null || !job.request.isDone()) return;
+        RingAtlasChunkRequest<LevelChunk> request = job.request;
+        if (!job.requestProcessed) {
+            try {
+                LevelChunk levelChunk = request.joinResult();
+                if (levelChunk == null) {
+                    throw new IllegalStateException("pregeneration returned no full chunk for " + job.selection.selected());
+                }
+                if (!job.selection.accepts(levelChunk.getPos().x(), levelChunk.getPos().z())) {
+                    throw new IllegalStateException("pregeneration returned unexpected chunk " + levelChunk.getPos()
+                            + " for " + job.selection.selected());
+                }
+                CaptureResult capture = captureChunk(world, levelChunk, state);
+                if (!capture.valid()
+                        || !state.atlas.isChunkPresent(job.selection.selected().chunkX(),
+                        job.selection.selected().chunkRow())) {
+                    throw new IllegalStateException("pregeneration did not capture selected chunk " + job.selection.selected());
+                }
+                job.completedChunks++;
+                job.selection.captured(); // Advance only after the selected chunk was safely captured.
+                job.lastError = Optional.empty();
+                if (job.completedChunks % 100 == 0 || state.atlas.isComplete()) {
+                    RingWorldMod.LOGGER.info("RingWorld terrain atlas progress: {}", status(world));
+                }
+            } catch (RuntimeException exception) {
+                job.recordFailure(exception);
+            } finally {
+                // Never process this completed request twice if ticket release
+                // itself fails and has to be retried on a later tick/unload.
+                job.requestProcessed = true;
+            }
+        }
         try {
-            ChunkAccess chunk = future.join().orElse(null);
-            if (!(chunk instanceof LevelChunk levelChunk)) {
-                throw new IllegalStateException("pregeneration returned no full chunk for " + job.selection.selected());
-            }
-            if (!job.selection.accepts(levelChunk.getPos().x(), levelChunk.getPos().z())) {
-                throw new IllegalStateException("pregeneration returned unexpected chunk " + levelChunk.getPos()
-                        + " for " + job.selection.selected());
-            }
-            CaptureResult capture = captureChunk(world, levelChunk, state);
-            if (!capture.valid()
-                    || !state.atlas.isChunkPresent(job.selection.selected().chunkX(),
-                    job.selection.selected().chunkRow())) {
-                throw new IllegalStateException("pregeneration did not capture selected chunk " + job.selection.selected());
-            }
-            job.completedChunks++;
-            job.selection.captured(); // Advance only after the selected chunk was safely captured.
-            job.lastError = Optional.empty();
-            if (job.completedChunks % 100 == 0 || state.atlas.isComplete()) {
-                RingWorldMod.LOGGER.info("RingWorld terrain atlas progress: {}", status(world));
-            }
-        } catch (RuntimeException exception) {
-            job.recordFailure(exception);
+            request.close();
+            job.request = null;
+            job.requestProcessed = false;
+        } catch (RuntimeException releaseFailure) {
+            job.fail(new IllegalStateException("could not release RingWorld atlas chunk ticket", releaseFailure));
         }
     }
 
@@ -412,12 +455,11 @@ public final class RingAtlasPregenerationService {
     public static void interruptForServerStop(ServerLevel world) {
         requireServerThread(world);
         WorldState state = WORLDS.get(world);
-        if (state == null || state.job == null || state.job.completion.isDone()) return;
-        // A completed future may already contain a fully generated canonical
-        // chunk. Capture it before cancellation/checkpoint, exactly as unload
-        // does, so restart never loses durable work from the final tick.
-        consumeFuture(world, state);
-        if (state.job.completion.isDone()) return;
+        if (state == null || state.job == null) return;
+        // Shutdown is not a normal completed-request consumption tick. The
+        // chunk source may already be tearing down, so discard the lease and
+        // checkpoint only cells that were authoritatively captured earlier.
+        // The still-selected cursor chunk is therefore retried after resume.
         state.job.cancelForUnload();
     }
     private static String percent(double completion) { return String.format(java.util.Locale.ROOT, "%.1f", completion * 100.0); }
@@ -471,7 +513,8 @@ public final class RingAtlasPregenerationService {
         private final CompletableFuture<AtlasPregenerationResult> completion = new CompletableFuture<>();
         private final ArrayDeque<AtlasPregenerationListener> listeners = new ArrayDeque<>();
         private AtlasPregenerationState state = AtlasPregenerationState.IDLE;
-        private CompletableFuture<ChunkResult<ChunkAccess>> future;
+        private RingAtlasChunkRequest<LevelChunk> request;
+        private boolean requestProcessed;
         private long completedChunks;
         private final long startedNanos = System.nanoTime();
         private long rateElapsedNanos;
@@ -502,7 +545,7 @@ public final class RingAtlasPregenerationService {
         }
         @Override public void pause() { enqueue(this::pauseOnServerThread); }
         @Override public void resume() { enqueue(this::resumeOnServerThread); }
-        @Override public void cancel() { enqueue(() -> { cancelRequested = true; }); }
+        @Override public void cancel() { enqueue(this::requestCancelOnServerThread); }
         @Override public CompletableFuture<AtlasPregenerationResult> completion() { return completion; }
 
         private void addListener(AtlasPregenerationListener listener) { listeners.add(listener); }
@@ -521,17 +564,25 @@ public final class RingAtlasPregenerationService {
                 transition(AtlasPregenerationState.RUNNING);
             }
         }
+        private void requestCancelOnServerThread() {
+            if (!state.isTerminal()) cancelRequested = true;
+        }
         private void tick() {
             if (cancelRequested) {
+                cancelRequested = false;
+                if (state.isTerminal()) return;
                 cancelNow("cancelled");
                 return;
             }
             if (!RingAtlasPregenerationSchedulingPolicy.maySchedule(state)) return;
             if (owner.atlas.isComplete()) {
-                finish();
+                // A normal chunk-load callback may populate the last atlas
+                // cells before the ticket future is observed complete. The
+                // request still owns a lease and must be consumed/released.
+                if (request == null) finish();
                 return;
             }
-            if (future != null || !selection.mayRetryAt(owner.ticks)) return;
+            if (request != null || !selection.mayRetryAt(owner.ticks)) return;
             if (world.getChunkSource().getPendingTasksCount() >= options.pendingTaskSoftLimit()) return;
             RingAtlasPregenerationCursor.Chunk selected = selection.select().orElse(null);
             if (selected == null) {
@@ -539,7 +590,20 @@ public final class RingAtlasPregenerationService {
                 return;
             }
             try {
-                future = world.getChunkSource().getChunkFuture(selected.chunkX(), selected.chunkZ(), ChunkStatus.FULL, true);
+                // getChunkFuture would managedBlock this server tick. The
+                // public ticket-and-load API schedules FULL generation and
+                // returns immediately; retain our unique ticket until the
+                // completed LevelChunk has been captured on a later tick.
+                ChunkPos position = new ChunkPos(selected.chunkX(), selected.chunkZ());
+                TicketType ticket = atlasLoadingTicket();
+                request = RingAtlasChunkRequest.start(
+                        () -> world.getChunkSource().addTicketAndLoadWithRadius(
+                                ticket, position, 0),
+                        () -> world.getChunkSource().getChunkNow(
+                                selected.chunkX(), selected.chunkZ()),
+                        () -> world.getChunkSource().removeTicketWithRadius(
+                                ticket, position, 0));
+                requestProcessed = false;
                 notifyProgress();
             } catch (RuntimeException exception) {
                 recordFailure(exception);
@@ -581,9 +645,25 @@ public final class RingAtlasPregenerationService {
             for (AtlasPregenerationListener listener : listeners) listener.onComplete(result);
         }
         private void cancelNow(String reason) {
-            if (future != null && future.isDone()) return; // consumed at the next tick before cancellation.
-            if (future != null) future.cancel(false);
-            future = null;
+            cancelNow(reason, 1);
+        }
+        private void cancelNow(String reason, int releaseAttempts) {
+            cancelRequested = false;
+            if (state.isTerminal()) {
+                if (!releaseOutstandingRequest(true, releaseAttempts)
+                        && releaseAttempts > 1) {
+                    throw new IllegalStateException(
+                            "could not release RingWorld atlas chunk ticket during " + reason);
+                }
+                return;
+            }
+            if (!releaseOutstandingRequest(true, releaseAttempts)) {
+                if (releaseAttempts > 1) {
+                    throw new IllegalStateException(
+                            "could not release RingWorld atlas chunk ticket during " + reason);
+                }
+                return;
+            }
             if (!save(owner, true)) {
                 fail(new IOException("could not checkpoint terrain atlas before " + reason));
                 return;
@@ -592,8 +672,28 @@ public final class RingAtlasPregenerationService {
             completion.completeExceptionally(new IllegalStateException("atlas pregeneration " + reason));
             notifyProgress();
         }
-        private void cancelForUnload() { cancelRequested = true; cancelNow("cancelled by world unload"); }
+        private void cancelForUnload() {
+            cancelNow("cancelled by world unload", TEARDOWN_RELEASE_ATTEMPTS);
+        }
+        private boolean releaseOutstandingRequest(boolean cancelLoad) {
+            return releaseOutstandingRequest(cancelLoad, 1);
+        }
+        private boolean releaseOutstandingRequest(boolean cancelLoad, int releaseAttempts) {
+            RingAtlasChunkRequest<LevelChunk> outstanding = request;
+            if (outstanding == null) return true;
+            try {
+                if (cancelLoad) outstanding.cancelWithReleaseAttempts(releaseAttempts);
+                else outstanding.close();
+                request = null;
+                requestProcessed = false;
+                return true;
+            } catch (RuntimeException releaseFailure) {
+                fail(new IllegalStateException("could not release RingWorld atlas chunk ticket", releaseFailure));
+                return false;
+            }
+        }
         private void fail(Throwable error) {
+            if (state.isTerminal()) return;
             if (!state.isTerminal()) transition(AtlasPregenerationState.FAILED);
             completion.completeExceptionally(error);
             for (AtlasPregenerationListener listener : listeners) listener.onFailure(error);

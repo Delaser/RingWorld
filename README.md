@@ -16,7 +16,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> all 241 unit/parameterized cases pass, and Loom produces the 26.1 mod jars.
+> and the current suite passes 269 unit/parameterized cases per loader.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -24,6 +24,10 @@ The Nether and End remain vanilla.
 > combat, stateful block, bed/death lifecycle, physical portal, boat,
 > teleport, reconnect, ordinary survival Nether-portal delay, and seam
 > thunder/lightning scenario also passes on both loaders.
+> The opt-in Atlas-concurrency matrix now waits for a bounded stable server
+> interval after both clients are ready, then passes its strict seam-step gate
+> on fresh Fabric and cold NeoForge fixtures; automated clients exit after
+> their terminal result.
 > A copied 16,384×256 world also passes Nether/End transfers, normal save and
 > disconnect, client-state clearing, and an in-process reopen with the exact
 > layout and complete atlas restored. The safe-small and production
@@ -54,7 +58,7 @@ The Nether and End remain vanilla.
 
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
-> Java 25 module builds with the same 241 tests; its dedicated server reaches
+> Java 25 module builds with the same 269 tests; its dedicated server reaches
 > `Done` and starts/progresses an atlas. Its client now loads the shared
 > resources/shaders and mixins, acknowledges settings format 2, streams atlas
 > metadata/tiles, and renders the complete textured surface in a copied
@@ -62,8 +66,8 @@ The Nether and End remain vanilla.
 > handoff, and radial views with measured frame pacing at noon, dusk, night,
 > and rain. Seam and both textured-rim captures, same-process layout switching,
 > and the Overworld/Nether/End/save/reopen lifecycle also pass. NeoForge also
-> passes the production and multi-seed worldgen/structure gates, unattended
-> headless atlas completion, and the dedicated two-client seam/combat/block/
+> passes the production and multi-seed worldgen/structure gates, safe-small
+> unattended headless atlas completion, and the dedicated two-client seam/combat/block/
 > bed/death/portal/boat/teleport/reconnect matrix. Loader-labelled packages,
 > strict metadata/licence verification, a same-commit shared-contract gate,
 > a real packaged macOS NeoForge client smoke, and the shared eleven-step
@@ -237,8 +241,8 @@ The parallel NeoForge module uses the same Java 25 toolchain:
 ./gradlew :neoforge:test :neoforge:build --console=plain
 ```
 
-Both Fabric and NeoForge builds currently pass the 241 unit/parameterized
-cases. When launching a dedicated development server, use the qualified task
+Both Fabric and NeoForge builds pass 269 unit/parameterized cases per loader.
+When launching a dedicated development server, use the qualified task
 for the intended loader: `./gradlew :runServer` for Fabric or
 `./gradlew :neoforge:runServer` for NeoForge. Do not use an unqualified
 `runServer` now that both tasks exist.
@@ -314,9 +318,14 @@ layout:
 
 ```text
 /ringworld atlas status
+/ringworld atlas start
 /ringworld atlas pause
 /ringworld atlas resume
 ```
+
+`start` begins an idle partial atlas even when automatic background generation
+is disabled. `resume` resumes a paused job and also starts from saved partial
+progress after a process restart returns the handle to `IDLE`.
 
 Detailed sizing, persistence, deployment, and recovery guidance lives in
 [Configuration and operations](docs/OPERATIONS.md).
@@ -358,7 +367,9 @@ Representative automated coverage includes repeated seam crossings, combat,
 block and block-entity updates, redstone, an arrow, a boat, a ground navigator,
 water flow, an explosion, beds, death/respawn, physical Nether/End portal
 transfers, effects, reconnects, long teleports, rims, exterior void behavior,
-and bidirectional filled-map/compass behavior at the seam.
+and bidirectional filled-map/compass behavior at the seam, including map
+scale/lock, banner removal/restoration, real item frames on both sides, and a
+save/disconnect/raw-session-teardown/reopen persistence check.
 
 The dedicated two-client fixture records water flowing through a sealed trough
 from canonical `C-1` into the initially empty canonical `X=0` destination.
@@ -413,32 +424,46 @@ The active 26.1.2 build uses Java 25:
 Two-client dedicated multiplayer regression, in separate terminals:
 
 ```sh
-./gradlew runMultiplayerServer
-./gradlew runMultiplayerClientA
-./gradlew runMultiplayerClientB
+./gradlew :runMultiplayerServer
+./gradlew :runMultiplayerClientA
+./gradlew :runMultiplayerClientB
 ```
 
 Additional automated runs:
 
 ```sh
-./gradlew runLayoutSwitchClient
+./gradlew :runLayoutSwitchClient
 ./gradlew :runMapCompassCaptureClient
 ./gradlew :neoforge:runMapCompassCaptureClient
-./gradlew runProductionProjectionClient -PringProjectionWorld="save-folder-id"
-./gradlew runProductionLifecycleClient -PringProductionLifecycleSource="save-folder-id"
-./gradlew runHeadlessPrewarmServer
+./gradlew :runProductionProjectionClient -PringProjectionWorld="save-folder-id"
+./gradlew :runProductionLifecycleClient -PringProductionLifecycleSource="save-folder-id"
+./gradlew :runHeadlessPrewarmServer
 python3 scripts/run_worldgen_structure_matrix.py
 ```
 
+The three copied-world Fabric runs clear their old logs/evidence before launch
+and finish with a fail-closed Gradle verifier. Layout-switch and lifecycle
+require their exact pass marker and copied save; projection additionally
+decodes all three environment-specific PNG captures. A missing, failed, stale,
+or corrupt result therefore makes the command fail.
+
 `runHeadlessPrewarmServer` works only in its ignored disposable run directory.
 After the server owner accepts its local EULA, it creates or copies only that
-runtime world, rejects player joins, resumes from atlas cells after a stop, and
+runtime world, rejects player joins before any RingWorld settings, handshake,
+or atlas payload is sent, resumes from atlas cells after a stop, and
 writes `world/ringworld-prewarm/progress.json` plus `result.json`. The Gradle
 finalizer turns any non-`COMPLETE` terminal report into a nonzero command
-result. To prepare a read-only source copy, use
+result. Fabric's networking JOIN listener independently rechecks that admission
+because disconnecting in an earlier array-backed JOIN listener does not stop
+later listeners. To prepare a read-only source copy, use
 `-PringHeadlessPrewarmSource="save-folder-id"`; it reads only `run/saves` and
 never launches that source in place. After an interrupted disposable run, add
 `-PringHeadlessPrewarmResume=true` to retain that runtime world and resume it.
+Fresh dimension gates may override the safe-small defaults with
+`-PringHeadlessPrewarmCircumference=16384 -PringHeadlessPrewarmWidth=256`;
+NeoForge uses equivalent `ringNeoForgeHeadlessPrewarm*` properties.
+Fabric's exact production prewarm completed successfully on 2026-08-06. That
+evidence does not claim an equivalent production NeoForge prewarm.
 If a copied ordinary flat world is rejected before the normal level-load
 callback, the dedicated adapter still writes a terminal `REJECTED` result with
 `identityAvailable:false` and zero/null identity fields, then preserves

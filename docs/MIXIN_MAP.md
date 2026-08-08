@@ -24,7 +24,9 @@ NeoForge also owns one narrow platform mixin. `NeoForgePlayerListMixin` queues
 immutable settings immediately after the vanilla play-login packet and before
 buffered position/chunk data. NeoForge's ordinary logged-in event fires after
 that initial buffer is flushed, which is too late for a fresh periodic chunk
-chart.
+chart. The same mixin first runs a cancellable headless-prewarm admission check
+at `PlayerList.placeNewPlayer` HEAD, before the play listener exists; rejection therefore
+cannot begin a RingWorld handshake or queue settings/atlas payloads.
 
 ## Common/server mixins
 
@@ -50,7 +52,7 @@ chart.
 | `LevelMixin` | `Level.setBlock(BlockPos, BlockState, int, int)` | Enqueues successful server block mutations for bounded canonical atlas-cell recapture | Sampling inline or enqueueing outside the RingWorld service creates stalls or a second writer; the Overworld service guard must remain authoritative |
 | `MapItemMixin` | `MapItem.update` | Keeps filled-map holder sampling, chunk selection, and banner checks in the map centre's nearest periodic X image | Sampling an alias chunk or leaving the holder on the far flat-X side produces blank/incorrect seam pixels; the one saved map centre may be seam-equivalent to C after vanilla grid rounding |
 | `MapItemSavedDataMixin` | `MapItemSavedData.addDecoration`, `toggleBanner`, `tickCarriedBy` | Calculates player/banner/frame offsets and the banner in-map gate through the map centre's nearest image, then realigns saved markers once a world is available | Persisting a presentation marker would create a second map coordinate; only transient decoration offsets may move |
-| `MinecraftServerMixin` | `MinecraftServer` | Supplies validated bootstrap geometry only during first-world spawn selection through loader-neutral `RingSpawnBounds`, and exposes the authoritative read-only dimension storage path | Spawn redirection must remain creation-scoped; saved worlds must not read bootstrap geometry, and storage consumers must not reconstruct dimension folders |
+| `MinecraftServerMixin` | `MinecraftServer` | Supplies validated bootstrap geometry only during first-world spawn selection through loader-neutral `RingSpawnBounds`, canonicalizes every final `RespawnData` X after vanilla's safe-spawn spiral, and exposes the authoritative read-only dimension storage path | Spawn redirection must remain creation-scoped; normalize the final saved position rather than only the sampler suggestion, saved worlds must not read bootstrap geometry, and storage consumers must not reconstruct dimension folders |
 | `MultiTickSchedulerMixin` | `WorldGenTickAccess` | Canonicalizes generation-time block/fluid scheduled ticks | Tick key must match canonical block storage |
 | `NoiseChunkGeneratorMixin` | `NoiseBasedChunkGenerator` | Attaches geometry, skips exterior density/surface/carvers, scopes the periodic router to biome, real-terrain, and shared base-height/base-column sampler construction, and canonicalizes query X before private height-query interpolation | The private sampler factory, `iterateNoiseColumn` X-boundary normalization and constructor redirect, and biome climate call must remain paired without intercepting unrelated router consumers; a raw alias or missed query sampler floats heightmap-projected structures |
 | `PlayerInteractionDistanceMixin` | `Player` | Periodic block use, entity interaction, and attack reach | Server authority; client-only fixes do not restore combat |
@@ -119,9 +121,9 @@ ordinary helpers:
 | `RingWorldServer` | World lifecycle, end-tick canonical folding, boundary migration, smoke fixtures |
 | `RingWorldStorageAccess` | Read-only bridge from a `ServerLevel` to Minecraft's authoritative per-dimension storage root |
 | `RingWorldNetworking` / `RingHandshakeTracker` | Payload registration, exact required-channel contract, mandatory acknowledgement deadline, request gating, and disconnect cleanup |
-| `RingTerrainAtlasServer` | Atlas generation, persistence, and tile streams |
-| `HeadlessPrewarmCoordinator` / `HeadlessPrewarmEvidenceFiles` / loader adapters | Loader-neutral explicit headless-prewarm orchestration and evidence hygiene with thin Fabric/NeoForge lifecycle bridges; records constructor-tail `REJECTED` evidence without identity when settings are unavailable, gates joins, checkpoints/reports/saves/stops, but never owns another scheduler or atlas writer |
-| `RingWorldClient` / `NeoForgeRingWorldClient` | Loader client lifecycle and payload receivers; Fabric and NeoForge respectively configure the shared transport/session, cache path, test hooks, and render-pipeline registration |
+| `RingTerrainAtlasServer` | Fabric command, lifecycle, and tile-stream adapter; the service owns atlas generation and persistence |
+| `HeadlessPrewarmCoordinator` / `HeadlessPrewarmEvidenceFiles` / loader adapters | Loader-neutral explicit headless-prewarm orchestration and evidence hygiene with thin Fabric/NeoForge lifecycle bridges; records constructor-tail `REJECTED` evidence without identity when settings are unavailable, gates joins, checkpoints/reports/saves/stops, but never owns another scheduler or atlas writer. Fabric's later array-backed networking JOIN callback independently returns before settings/handshake work; NeoForge delegates its pre-payload PlayerList admission and late-event fallback to one platform helper. |
+| `RingWorldClient` / `NeoForgeRingWorldClient` | Loader client lifecycle and payload receivers; Fabric and NeoForge respectively configure the shared transport/session, cache path, test hooks, and render-pipeline registration. NeoForge handlers explicitly enqueue all stateful payload work onto the client game thread. |
 | `RingClientPayloadTransport` / `RingWorldClientSession` | Shared client outbound-payload capability/delivery boundary and per-session atlas/GPU/geometry teardown |
 | `RingProjectionCaptureClient` / `RingVisualParityCaptureClient` / `LayoutSwitchTestClient` / `ProductionLifecycleTestClient` | Loader-neutral graphical projection, seam/rim, stale-session, dimension-transition, and reopen gates driven by loader-owned client tick/render events |
 | `ClientRingState` | Immutable geometry, continuous chart, atlas cache/revision |
@@ -151,6 +153,8 @@ dangerous than an explicit startup failure.
 
 The frozen 1.21.11 Mojang baseline used the unnamed
 `ServerLevel.method_31420` asynchronous entity-tick lambda. In 26.1.2 the
-source-audited `DistanceManager.inEntityTickingRange` call is directly inside
-named `ServerLevel.tick`, which is now the active redirect target. No
-intermediary-looking identifier remains accepted in active source.
+source-audited `DistanceManager.inEntityTickingRange` call remains inside the
+synthetic `ServerLevel.lambda$tick$0(TickRateManager, ProfilerFiller, Entity)`
+entity consumer, which is the active redirect target. Re-audit that generated
+descriptor on every Minecraft update rather than assuming the call moved into
+the named outer `tick` method.

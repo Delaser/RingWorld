@@ -271,6 +271,8 @@ def neoForgeMultiplayerRun = project.file('run-multiplayer')
 def neoForgeMultiplayerServerRun = new File(neoForgeMultiplayerRun, 'server')
 def neoForgeMultiplayerClientARun = new File(neoForgeMultiplayerRun, 'client-a')
 def neoForgeMultiplayerClientBRun = new File(neoForgeMultiplayerRun, 'client-b')
+def neoForgeMultiplayerPregenerateTerrainAtlas = providers.gradleProperty('ringMultiplayerPregenerateTerrainAtlas')
+        .orElse('false')
 
 def neoForgeMultiplayerPort = {
     def raw = providers.gradleProperty('ringNeoForgeMultiplayerPort').orElse('25566').get().trim()
@@ -351,7 +353,7 @@ tasks.register('prepareNeoForgeMapCompassCaptureRun') {
 
 tasks.register('verifyNeoForgeMapCompassCaptureClient') {
     group = 'ringworld verification'
-    description = 'Fails unless NeoForge passes the real map and compass paths in both seam directions.'
+    description = 'Fails unless NeoForge passes the real map/compass seam and persistence paths.'
     mustRunAfter('runMapCompassCaptureClient')
     doLast {
         def logFile = new File(neoForgeMapCompassRun, 'logs/latest.log')
@@ -359,11 +361,65 @@ tasks.register('verifyNeoForgeMapCompassCaptureClient') {
         if (!log.contains('[map-compass-capture] PASS') || log.contains('[map-compass-capture] FAIL')) {
             throw new GradleException("NeoForge map and compass capture did not pass; inspect ${logFile}")
         }
-        ['ringworld-map-high-to-low', 'ringworld-map-low-to-high',
-         'ringworld-compass-high-to-low', 'ringworld-compass-low-to-high'].each { prefix ->
-            if (fileTree(new File(neoForgeMapCompassRun, 'screenshots')).matching { include prefix + '*.png' }.isEmpty()) {
+        def verifyScreenshot = { screenshot ->
+            def input = javax.imageio.ImageIO.createImageInputStream(screenshot)
+            if (input == null) {
+                throw new GradleException("NeoForge map and compass capture screenshot is not a readable image ${screenshot}")
+            }
+            try {
+                def readers = javax.imageio.ImageIO.getImageReaders(input)
+                if (!readers.hasNext()) {
+                    throw new GradleException("NeoForge map and compass capture screenshot is not a decodable image ${screenshot}")
+                }
+                def reader = readers.next()
+                try {
+                    if (!reader.formatName.equalsIgnoreCase('png')) {
+                        throw new GradleException("NeoForge map and compass capture screenshot is not a PNG ${screenshot}")
+                    }
+                    reader.setInput(input, true, true)
+                    def width = reader.getWidth(0)
+                    def height = reader.getHeight(0)
+                    if (width < 16 || height < 16 || width > 16_384 || height > 16_384) {
+                        throw new GradleException("NeoForge map and compass capture screenshot has unsafe dimensions ${width}x${height}: ${screenshot}")
+                    }
+                    def image = reader.read(0)
+                    if (image == null || image.width != width || image.height != height) {
+                        throw new GradleException("NeoForge map and compass capture screenshot did not decode correctly ${screenshot}")
+                    }
+                    Integer firstVisiblePixel = null
+                    boolean nonUniform = false
+                    for (int y = 0; y < height && !nonUniform; y++) {
+                        for (int x = 0; x < width; x++) {
+                            int pixel = image.getRGB(x, y)
+                            if ((pixel >>> 24) != 0) {
+                                if (firstVisiblePixel == null) {
+                                    firstVisiblePixel = pixel
+                                } else if (pixel != firstVisiblePixel) {
+                                    nonUniform = true
+                                    break
+                                }
+                            }
+                        }
+                    }
+                    if (firstVisiblePixel == null || !nonUniform) {
+                        throw new GradleException("NeoForge map and compass capture screenshot is blank or uniform ${screenshot}")
+                    }
+                } finally {
+                    reader.dispose()
+                }
+            } finally {
+                input.close()
+            }
+        }
+        ['ringworld-map-scale', 'ringworld-map-banner-removed',
+         'ringworld-map-high-to-low', 'ringworld-map-low-to-high',
+         'ringworld-compass-high-to-low', 'ringworld-compass-low-to-high',
+         'ringworld-map-reopened', 'ringworld-compass-reopened'].each { prefix ->
+            def screenshots = fileTree(new File(neoForgeMapCompassRun, 'screenshots')).matching { include prefix + '*.png' }.files
+            if (screenshots.isEmpty()) {
                 throw new GradleException("NeoForge map and compass capture is missing screenshot ${prefix}*.png")
             }
+            screenshots.each(verifyScreenshot)
         }
     }
 }
@@ -374,14 +430,23 @@ tasks.named('runMapCompassCaptureClient') {
 }
 
 tasks.register('prepareNeoForgeMultiplayerHarness') {
-    group = 'ringworld verification'
-    description = 'Creates clean, isolated NeoForge server and client-A/client-B multiplayer harness directories.'
-    inputs.property('ringNeoForgeMultiplayerPort',
-            providers.gradleProperty('ringNeoForgeMultiplayerPort').orElse('25566'))
+	group = 'ringworld verification'
+	description = 'Creates clean, isolated NeoForge server and client-A/client-B multiplayer harness directories.'
+	inputs.property('ringNeoForgeMultiplayerPort',
+			providers.gradleProperty('ringNeoForgeMultiplayerPort').orElse('25566'))
+	inputs.property('ringMultiplayerPregenerateTerrainAtlas', neoForgeMultiplayerPregenerateTerrainAtlas)
     outputs.dir(neoForgeMultiplayerRun)
     outputs.upToDateWhen { false }
     doLast {
         def port = neoForgeMultiplayerPort()
+        def eula = new File(neoForgeMultiplayerServerRun, 'eula.txt')
+        if (!eula.isFile()) {
+            eula.parentFile.mkdirs()
+            eula.text = '# Review https://aka.ms/MinecraftEULA before changing this value.\neula=false\n'
+        }
+        if (!eula.text.readLines().any { it.trim() == 'eula=true' }) {
+            throw new GradleException("Review ${eula}, then set eula=true to run this disposable server")
+        }
         // The harness is fully disposable and subproject-local. Do not touch
         // the root Fabric run-multiplayer directory or any user save. Keep a
         // previously accepted EULA file, though: launching the server again
@@ -403,14 +468,14 @@ tasks.register('prepareNeoForgeMultiplayerHarness') {
 
         def configDirectory = new File(neoForgeMultiplayerServerRun, 'config')
         configDirectory.mkdirs()
-        new File(configDirectory, 'ringworld.properties').text = '''\
+        new File(configDirectory, 'ringworld.properties').text = """\
 widthBlocks=416
 circumferenceBlocks=2048
 wallHeightBlocks=160
 testMode=false
 testViewDistanceChunks=2
-pregenerateTerrainAtlas=false
-'''
+pregenerateTerrainAtlas=${neoForgeMultiplayerPregenerateTerrainAtlas.get().toBoolean() ? 'true' : 'false'}
+"""
 
         def serverProperties = new Properties()
         serverProperties.setProperty('server-port', Integer.toString(port))
@@ -421,13 +486,12 @@ pregenerateTerrainAtlas=false
         serverProperties.setProperty('level-seed', '-2162056627494116761')
         serverProperties.setProperty('view-distance', '5')
         serverProperties.setProperty('simulation-distance', '5')
+        serverProperties.setProperty('pause-when-empty-seconds', '-1')
         serverProperties.setProperty('motd', 'RingWorld NeoForge automated multiplayer harness')
         new File(neoForgeMultiplayerServerRun, 'server.properties').withOutputStream {
             serverProperties.store(it, 'Disposable RingWorld NeoForge multiplayer harness')
         }
 
-        // Deliberately do not write eula=true: the owner must accept Mojang's
-        // EULA once in this isolated directory before starting the server.
         logger.lifecycle('[neoforge-multiplayer] prepared isolated server/client runs at {} on port {}',
                 neoForgeMultiplayerRun, port)
     }
@@ -453,7 +517,9 @@ tasks.register('verifyNeoForgeMultiplayerHarness') {
         }
         [
                 [clientALog, clientAText, '[multiplayer:A] client world fully loaded'],
-                [clientBLog, clientBText, '[multiplayer:B] client world fully loaded']
+                [clientBLog, clientBText, '[multiplayer:B] client world fully loaded'],
+                [clientALog, clientAText, '[multiplayer:A] local scenario result=true; stopping client'],
+                [clientBLog, clientBText, '[multiplayer:B] local scenario result=true; stopping client']
         ].each { entry ->
             if (!entry[1].contains(entry[2])) {
                 throw new GradleException("NeoForge multiplayer client did not complete startup; inspect ${entry[0]}")
@@ -464,12 +530,47 @@ tasks.register('verifyNeoForgeMultiplayerHarness') {
                 new File(neoForgeMultiplayerClientBRun, 'screenshots/ringworld-multiplayer-b.png'),
                 new File(neoForgeMultiplayerClientARun, 'screenshots/ringworld-multiplayer-weather-a.png'),
                 new File(neoForgeMultiplayerClientBRun, 'screenshots/ringworld-multiplayer-weather-b.png')
-        ].each { screenshot ->
+		].each { screenshot ->
             if (!screenshot.isFile()) {
                 throw new GradleException("NeoForge multiplayer harness is missing ${screenshot}")
             }
-        }
-        logger.lifecycle('[neoforge-multiplayer] verified full server and client-A/client-B seam matrix')
+		}
+		if (neoForgeMultiplayerPregenerateTerrainAtlas.get().toBoolean()) {
+			def samples = []
+			def matcher = (serverText =~ /RingWorld terrain atlas progress: (\d+)\/(\d+) cells \([^)]*\), generation (\w+)/)
+			matcher.each { match ->
+				samples << [match[1].toLong(), match[2].toLong(), match[3]]
+			}
+			if (samples.isEmpty()) {
+				throw new GradleException("NeoForge multiplayer atlas gate found no atlas progress or completion status; inspect ${serverLog}")
+			}
+			long previousCells = -1L
+			long totalCells = -1L
+			boolean advanced = false
+			for (sample in samples) {
+				long presentCells = sample[0]
+				long sampleTotal = sample[1]
+				if (sample[2] in ['failed', 'cancelled']) {
+					throw new GradleException("NeoForge multiplayer atlas generation did not remain healthy; inspect ${serverLog}")
+				}
+				if (sampleTotal <= 0L || presentCells < 0L || presentCells > sampleTotal) {
+					throw new GradleException("NeoForge multiplayer atlas status is invalid; inspect ${serverLog}")
+				}
+				if (totalCells != -1L && sampleTotal != totalCells) {
+					throw new GradleException("NeoForge multiplayer atlas total changed during one disposable run; inspect ${serverLog}")
+				}
+				if (previousCells != -1L && presentCells < previousCells) {
+					throw new GradleException("NeoForge multiplayer atlas progress regressed; inspect ${serverLog}")
+				}
+				if (previousCells != -1L && presentCells > previousCells) advanced = true
+				previousCells = presentCells
+				totalCells = sampleTotal
+			}
+			if (!advanced) {
+				throw new GradleException("NeoForge multiplayer atlas gate did not observe increasing atlas progress; inspect ${serverLog}")
+			}
+		}
+		logger.lifecycle('[neoforge-multiplayer] verified full server and client-A/client-B seam matrix')
     }
 }
 
@@ -559,6 +660,10 @@ tasks.register('prepareNeoForgeHeadlessPrewarmWorld') {
             providers.gradleProperty('ringNeoForgeHeadlessPrewarmResult').orElse('result.json'))
     inputs.property('ringNeoForgeHeadlessPrewarmResume',
             providers.gradleProperty('ringNeoForgeHeadlessPrewarmResume').orElse('false'))
+    inputs.property('ringNeoForgeHeadlessPrewarmCircumference',
+            providers.gradleProperty('ringNeoForgeHeadlessPrewarmCircumference').orElse('2048'))
+    inputs.property('ringNeoForgeHeadlessPrewarmWidth',
+            providers.gradleProperty('ringNeoForgeHeadlessPrewarmWidth').orElse('416'))
     outputs.upToDateWhen { false }
     doLast {
         def sourceName = providers.gradleProperty('ringNeoForgeHeadlessPrewarmSource').orElse('').get().trim()
@@ -612,8 +717,10 @@ tasks.register('prepareNeoForgeHeadlessPrewarmWorld') {
 
         def configFile = new File(neoForgeHeadlessPrewarmRun, 'config/ringworld.properties')
         def config = new Properties()
-        config.setProperty('widthBlocks', '416')
-        config.setProperty('circumferenceBlocks', '2048')
+        config.setProperty('widthBlocks',
+                providers.gradleProperty('ringNeoForgeHeadlessPrewarmWidth').orElse('416').get())
+        config.setProperty('circumferenceBlocks',
+                providers.gradleProperty('ringNeoForgeHeadlessPrewarmCircumference').orElse('2048').get())
         config.setProperty('wallHeightBlocks', '160')
         config.setProperty('testMode', 'false')
         config.setProperty('testViewDistanceChunks', '6')
@@ -629,6 +736,8 @@ tasks.register('verifyNeoForgeHeadlessPrewarm') {
     mustRunAfter('runHeadlessPrewarmServer')
     doLast {
         def resultName = providers.gradleProperty('ringNeoForgeHeadlessPrewarmResult').orElse('result.json').get().trim()
+        def expectedCircumference = providers.gradleProperty('ringNeoForgeHeadlessPrewarmCircumference').orElse('2048').get().toInteger()
+        def expectedWidth = providers.gradleProperty('ringNeoForgeHeadlessPrewarmWidth').orElse('416').get().toInteger()
         def result = new File(neoForgeHeadlessPrewarmRun, "world/ringworld-prewarm/${resultName}")
         if (!result.isFile()) {
             throw new GradleException("NeoForge headless prewarm did not write a terminal result; inspect ${result}")
@@ -643,6 +752,7 @@ tasks.register('verifyNeoForgeHeadlessPrewarm') {
                 || report.identityAvailable != true || !report.atlasPath || report.failureReason != null
                 || !(report.totalChunks instanceof Number) || !(report.completedChunks instanceof Number)
                 || !(report.totalCells instanceof Number) || !(report.completedCells instanceof Number)
+                || report.circumferenceBlocks != expectedCircumference || report.widthBlocks != expectedWidth
                 || report.totalChunks <= 0 || report.totalCells <= 0
                 || report.completedChunks != report.totalChunks || report.completedCells != report.totalCells) {
             throw new GradleException("NeoForge headless prewarm did not complete; inspect ${result}")

@@ -89,6 +89,21 @@ public final class RingTerrainAtlas {
     public boolean isComplete() { return presentCount == present.length; }
     public double completion() { return present.length == 0 ? 1.0 : (double)presentCount / present.length; }
 
+    /** Stable content key for deciding whether a terrain-height mesh changed. */
+    public long surfaceHeightFingerprint() {
+        long fingerprint = 0xCBF29CE484222325L;
+        for (int index = 0; index < heights.length; index++) {
+            long sample = present[index]
+                    ? 0x1_0000L | Short.toUnsignedLong(heights[index])
+                    : 0L;
+            fingerprint ^= sample;
+            fingerprint *= 0x100000001B3L;
+        }
+        fingerprint ^= Integer.toUnsignedLong(columns);
+        fingerprint *= 0x100000001B3L;
+        return fingerprint ^ Integer.toUnsignedLong(rows);
+    }
+
     /**
      * Returns an independent point-in-time copy suitable for loader-neutral
      * background work. Network updates and server recaptures may continue to

@@ -196,6 +196,23 @@ public final class ClientRingState {
     public static long serverAtlasWorldHash() { return serverAtlasWorldHash; }
     public static boolean hasServerAtlasWorldHash() { return hasServerAtlasWorldHash; }
 
+    /** Raw teardown assertion; unlike {@link #geometry()}, this does not depend on the active level. */
+    public static boolean sessionCleared() {
+        return geometry == null
+                && wallHeightBlocks == 0
+                && surfaceReferenceY == 0
+                && layoutFingerprint == 0L
+                && cameraPosition == null
+                && cameraSeamCrossings == 0L
+                && seamCorrectionPackets == 0L
+                && terrainAtlas == null
+                && serverAtlasWorldHash == 0L
+                && !hasServerAtlasWorldHash
+                && terrainAtlasCachePath == null
+                && !terrainAtlasDirty
+                && !terrainAtlasPendingRender;
+    }
+
     /** Coalesces partial-cache writes while saving a newly completed atlas immediately. */
     public static void saveTerrainAtlasIfDue(boolean force) {
         publishTerrainAtlasIfDue(force);

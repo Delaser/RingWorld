@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 241 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 269 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
@@ -34,10 +34,14 @@ shared-contract comparison, and a real packaged macOS NeoForge client smoke
 also pass. The shared GUI-scale-4 atlas map/control fixture passes all eleven
 captures and its ordered live-revision probe on both loaders. A real graphical
 Windows run, exact-candidate review, and owner release go/no-go remain. The
-shared real-client map/compass fixture also passes on both loaders: filled-map
-pixels and player/banner/frame markers cross the seam in both directions, and
-spawn/lodestone/recovery needles use the nearest periodic target, including
-the exact-target random-spin case.
+expanded shared real-client map/compass fixture also passes on both loaders:
+filled-map pixels and player/banner markers cross the seam in both directions,
+world-added item frames exercise both sides, scale/lock and banner
+removal/restoration pass, and a normal save/disconnect proves raw
+client-session teardown before reopening and rechecking persistent state.
+Spawn, lodestone, and recovery needles use the nearest periodic target; the
+exact-target random-spin assertion reuses one wobble state so its seeded
+comparison is deterministic.
 Fresh and copied-1.21.11 dedicated servers launch with dimension-owned
 storage. A real client completes resource/shader loading, a 100% atlas-backed
 ring, tangent/radial captures, two natural wraps, and representative
@@ -296,21 +300,24 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 241
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 269
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 241
+The NeoForge module uses the same Java 25 toolchain and also passes all 269
 unit/parameterized cases:
 
 ```sh
 ./gradlew :neoforge:test :neoforge:build --console=plain
 ```
 
-Both loaders now provide a task named `runServer`; always select the loader
-explicitly: `./gradlew :runServer` for Fabric or
-`./gradlew :neoforge:runServer` for NeoForge. The NeoForge dedicated launch
+Both loaders now provide several identically named runtime tasks. Always
+select the loader explicitly—for example `./gradlew :runServer` or
+`:runHeadlessPrewarmServer` for Fabric and `./gradlew :neoforge:runServer` or
+`:neoforge:runHeadlessPrewarmServer` for NeoForge. An unqualified task name is
+matched in both projects and, with parallel Gradle execution, can launch both
+fixtures at once. The NeoForge dedicated launch
 has reached `Done` and observed atlas progress. `./gradlew
 :neoforge:runProductionProjectionClient -PringNeoForgeProjectionSource="NeoForge Test"`
 copies the named ignored source save into an isolated run, waits for atlas
@@ -398,10 +405,12 @@ version numbers.
 - The complete-ring renderer accepts a current-world partial atlas once it has
   at least one trustworthy cell. Missing cells stay transparent; progressive
   updates reuse a source-resolution texture and one reference-height mesh,
-  then completion upgrades exactly once to the expanded texture and detailed
-  terrain-height mesh. Session disconnect/settings handlers must still clear
-  the static GPU texture and mesh, and the renderer must reject absent,
-  zero-cell, corrupt, or wrong-world atlases.
+  then verified completion performs one upgrade to the expanded texture and
+  detailed terrain-height mesh. Later complete-atlas revisions refresh the
+  texture, but rebuild that detailed mesh only when the immutable build
+  snapshot's surface-height fingerprint changes. Session disconnect/settings
+  handlers must still clear the static GPU texture and mesh, and the renderer
+  must reject absent, zero-cell, corrupt, or wrong-world atlases.
   Fabric disconnect callbacks may arrive on a network thread, so they must
   enqueue cache saves and GPU teardown onto the client thread. Failing to clear
   that state lets a newly created world display the previous world's ring.
@@ -426,6 +435,10 @@ version numbers.
 - Complete-ring texture pixels, relief, mips, and `NativeImage` levels are
   prepared asynchronously from `RingTerrainAtlas.snapshot()`. The render
   thread alone validates world hash/geometry/revision and uploads the result.
+  Snapshot capture assigns the explicit no-detail height-fingerprint sentinel;
+  only the existing texture worker may scan a complete atlas to resolve the
+  detailed-mesh fingerprint. Partial builds must return the sentinel without
+  scanning heights.
   Session clear must invalidate the build generation and close both completed
   and abandoned images; do not sample the mutable live atlas on that worker.
 - Atlas format 6 adds a durable monotonic surface revision. Tiles never commit
@@ -455,6 +468,24 @@ version numbers.
   atlas from the Fabric adapter. Retain a selected canonical chunk until a
   full result is captured, including retry/cancel/unload paths, or a failed
   future can skip terrain permanently.
+- Minecraft 26.1.2's `ServerChunkCache.getChunkFuture` blocks through
+  `managedBlock` when entered on the server thread. Atlas generation must use
+  `RingAtlasChunkRequest` with `addTicketAndLoadWithRadius`: retain its unique,
+  non-persistent loading ticket until the completed chunk is sampled on a
+  normal service tick, then release it. Shutdown and level-unload callbacks
+  must instead cancel/release an outstanding request without resolving its
+  loaded-result supplier: the chunk cache may already have evicted that result.
+  Leave the selected cursor unadvanced and checkpoint only captured atlas
+  cells, so resume safely retries any missing chunk without logging a false
+  runtime failure. Do not restore a direct end-tick
+  `getChunkFuture(..., FULL, true)` call or the rejected worker-entry
+  workaround; its one-tick vanilla ticket can expire before FULL.
+- A terminal atlas job is replaceable only after it owns no outstanding
+  `RingAtlasChunkRequest`. An ordinary consume-side ticket-release failure
+  deliberately leaves the request attached so `consumeFuture` can retry
+  `close()` on later ticks. `/ringworld atlas start`, the map control, and any
+  other `pregenerate` caller must fail with actionable feedback while that
+  retry is pending; never install a replacement job and orphan its ticket.
 - `-Dringworld.headlessPrewarm=true` is an explicit dedicated-server-only
   adapter mode. It suppresses normal background autostart, safely replaces
   only the unstarted config-disabled `IDLE` handle, rejects joins, and waits
@@ -463,6 +494,20 @@ version numbers.
   the Gradle wrapper, not Minecraft's process exit code, converts a non-
   `COMPLETE` terminal report to failure. Use only `run-headless-prewarm/` or a
   separately prepared disposable runtime directory; never open a copy source.
+- Fabric `ServerPlayConnectionEvents.JOIN` listeners are array-backed and keep
+  running after an earlier listener disconnects a rejected headless-prewarm
+  join. `FabricRingWorldServer` owns that rejection and its message;
+  `RingWorldNetworking` must independently recheck headless admission and
+  return before settings, handshake, or atlas work. Do not duplicate the
+  disconnect or assume it short-circuits later JOIN callbacks.
+- NeoForge headless admission is owned by `NeoForgeHeadlessPlayerAdmission`
+  at the cancellable `PlayerList.placeNewPlayer` method head, before vanilla
+  creates the play listener or buffers its first packet. The rejection uses
+  the existing configuration listener for its disconnect reason. It must
+  never reach the later settings send, handshake tracker, atlas metadata, or
+  ordinary logged-in event. Keep the event check only as a defensive fallback;
+  moving rejection back to `PlayerLoggedInEvent` leaks the initial RingWorld
+  protocol sequence before the join is denied.
 - An explicit headless launch can reject an ordinary copied Overworld before
   `ServerLevelEvents.LOAD`, while `ServerLevel` attaches its tick schedulers.
   That narrow constructor-tail bridge writes `REJECTED` evidence with
@@ -471,8 +516,11 @@ version numbers.
   topology exceptions to mask this intentional rejection.
 - Initial spawn selection is the one creation-time bootstrap geometry use: it
   runs before an Overworld has saved settings and delegates finite-Z clamping
-  to loader-neutral `RingSpawnBounds`. Keep it scoped to first-world creation;
-  saved-world runtime logic must never read bootstrap geometry.
+  plus final saved-X canonicalization to loader-neutral `RingSpawnBounds`.
+  Vanilla's post-sampler safe-spawn spiral can cross either seam, so normalize
+  every `RespawnData` result at that final ownership boundary, not merely the
+  sampler suggestion. Keep it scoped to first-world creation; saved-world
+  runtime logic must never read bootstrap geometry.
 - `ring_surface.vsh` deliberately clamps only far-out proxy clip-space Z while
   preserving X/Y/W. Minecraft's level far plane is derived from chunk render
   distance and clips most of a production 16,384-block cylinder, especially
@@ -485,11 +533,20 @@ version numbers.
   reusing an old identifier; old clients crash on unread bytes before a useful
   rejection can be sent. Advance the channel generation and keep the
   `RingProtocolIdentityTest` expectation synchronized.
+- `ClientPlayNetworkHandlerMixin` `HEAD` packet modifiers execute before
+  vanilla's packet-thread guard. They must return the original packet when the
+  client is off-thread and let the queued game-thread replay perform chart
+  projection. Never read mutable player/level/chart state from that first
+  network-thread invocation.
 - The mandatory play handshake is exact-version and exact-required-channel,
   not feature-bit negotiation. `RingHandshakeTracker` gives each join 300
   ticks to acknowledge, gates every RingWorld request, treats duplicate
   acknowledgement idempotently, and clears on disconnect. Keep its state
   loader-neutral and server-thread-owned; never let an atlas request bypass it.
+  NeoForge payload entrypoints must call `IPayloadContext.enqueueWork` before
+  they inspect players, mutate handshake/atlas/session state, disconnect, or
+  send a response; the main-thread registrar is an optimisation, not this
+  ownership boundary.
 - Atlas-generation payloads are separately versioned (`atlas_pregen_*_v1`).
   Preserve their explicit action/state wire values and complete immutable
   status snapshot; never append to atlas/settings codecs. The pause-menu map
@@ -512,7 +569,7 @@ version numbers.
   release gate. Never restore free-form jar or source-revision inputs. The
   builder emits no web content and has no publish/deploy path. Keep its
   reproducible ZIPs and checksum manifests under ignored local staging only.
-- `/ringworld atlas status|pause|resume` controls background pregeneration.
+- `/ringworld atlas status|start|pause|resume` controls background pregeneration.
   Pause is process-local and does not alter immutable saved layout.
 - Atlas format 6 represents exposed top-face height and
   texture-luminance-corrected, biome-tinted colour from the actual highest
@@ -582,16 +639,23 @@ version numbers.
 - The dedicated multiplayer clients must not connect before
   `Minecraft.isGameLoadFinished()`. Joining during the initial resource
   reload can run leaf display ticks against unprepared particle sprites.
-- `runLayoutSwitchClient` opens two existing saves in one JVM and stops after
+- `:runLayoutSwitchClient` opens two existing saves in one JVM and stops after
   logging its result. Keep it non-destructive: it may save normally, but must
   not move players or edit terrain.
-- `runProductionLifecycleClient` first copies a named production save into its
+- `:runProductionLifecycleClient` first copies a named production save into its
   own ignored run directory. Its test-only coordinator must use the 26.1
   `TeleportTransition` API, stay separate from smoke/layout-switch/multiplayer,
   and leave the source save untouched. The client, not the coordinator, owns
   non-Overworld inactivity and exact restored-layout/atlas assertions. Let
   Minecraft's integrated-server disconnect path own saving; never call
   `MinecraftServer.saveEverything` from the render thread.
+- The Fabric `:runProductionProjectionClient`, `:runLayoutSwitchClient`, and
+  `:runProductionLifecycleClient` preparation tasks must clear old run evidence,
+  and each runtime task must retain its fail-closed verifier finalizer. The
+  projection verifier decodes all three selected-environment PNGs; layout and
+  lifecycle verify their exact terminal marker and copied save. Keep
+  `verifyFabricRuntimeGateContracts` attached to `check` so missing, failed, and
+  corrupt fixture evidence cannot silently pass after build-script changes.
 - `RingWorldCreationScreen.extractRenderState` must not call a background
   extraction method. Minecraft 26.1's
   `Screen.extractRenderStateWithTooltipAndSubtitles` already owns the frame's
@@ -641,6 +705,25 @@ version numbers.
   16,384-block default retains the atlas's eight-block height spacing; do not
   reduce it to the old visibly faceted 512-segment production mesh without a
   replacement visual/resource review.
+- `RingSurfaceMesh` owns the shared atlas mesh lattice. The GPU uses an
+  unindexed triangle list, but every repeated interior boundary vertex must
+  originate from that one lattice rather than a second atlas sample. Keep the
+  physical X=0/C position exact while retaining distinct U=0/1 texture
+  coordinates at that periodic seam, and preserve the focused
+  production/safe-small continuity tests when changing mesh layout, height
+  sampling, or triangle order.
+- Partial-atlas revisions reuse the reference-height mesh. A complete-atlas
+  revision always refreshes changed texture pixels, but it rebuilds the
+  terrain-height mesh only when the surface-height fingerprint changes. Keep
+  `RingSurfaceMeshRefreshPolicy` and its tests synchronized with renderer
+  resource lifecycle changes; stale geometry under a height-changing texture
+  creates false terrain edges. `RingSurfaceBuildSnapshot` owns the immutable
+  atlas content and height fingerprint for each asynchronous texture result:
+  build any matching mesh from that returned snapshot, never the possibly
+  advanced live atlas. Its two-argument capture constructor must remain O(1)
+  beyond the already-created atlas snapshot: it records
+  `NO_DETAILED_HEIGHT_FINGERPRINT`, and the worker resolves a real fingerprint
+  only for complete content.
 - Cloud base is synchronized as saved wall top plus eight blocks. Do not
   reintroduce a literal Y=104; custom wall height must move both.
 - The active local development geometry is the safe-small 2,048-by-416 preset
@@ -694,7 +777,14 @@ version numbers.
   Do not create another saved map copy or extend this slice to the locator bar
   without a separate audit.
 - `RingMapCompassCaptureClient` is the loader-neutral real-client acceptance
-  fixture. Run `:runMapCompassCaptureClient` and
+  fixture. It covers bidirectional seam pixels/decorations, real world-added
+  item frames on both sides, scale/lock, seam-banner removal/restoration, and
+  a normal save/disconnect/reopen before rechecking map, frame, and compass
+  persistence. Its disconnect gate reads raw geometry/camera/atlas state,
+  atlas-control state, and complete-ring GPU ownership rather than relying on
+  an absent client level. Its exact-target check must reuse one compass wobble
+  state so independent random offsets cannot make the seeded comparison
+  probabilistic. Run `:runMapCompassCaptureClient` and
   `:neoforge:runMapCompassCaptureClient` separately: the unqualified task name
   is ambiguous in the multi-project build. Its mixin invoker is test plumbing
   only and must not become production compass logic.
@@ -702,6 +792,13 @@ version numbers.
   fully loaded world before setup teleports. Its night fixture advances the
   26.1 `WorldClock` monotonically to the next 13,000-tick phase; rewinding to
   absolute day-zero time makes reused-world bed tests nondeterministic.
+- The opt-in Atlas-concurrency multiplayer gate adds a startup-stability
+  barrier after both client-ready reports: require 100 consecutive server
+  intervals at or below 100 ms, fail closed at 60 seconds or 1,200
+  observations, then retain the original 100-tick Creative-to-Survival dwell
+  before arming seam movement. Keep the `maxRemoteStep <= 1.25` assertion and
+  client self-stop behavior; the corrected fresh Fabric and cold NeoForge
+  concurrent runs passed this gate on 2026-08-08.
 - Its extended water fixture seals a two-cell trough, clears canonical X=0,
   places the only source at C-1, and must assert water at X=0 on both server
   and clients. Observing C-1

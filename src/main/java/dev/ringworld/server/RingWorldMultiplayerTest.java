@@ -44,6 +44,8 @@ public final class RingWorldMultiplayerTest {
     private static ServerPlayer reconnectBaselineB;
     private static boolean sawReconnectDisconnect;
     private static boolean baselineScenarioPassed;
+    private static RingMultiplayerReadinessGate readinessGate;
+    private static boolean readinessPassed;
 
     private RingWorldMultiplayerTest() { }
 
@@ -111,10 +113,27 @@ public final class RingWorldMultiplayerTest {
         }
 
         ticks++;
-        if (stage == 0 && (!clientPassed("A", "client_ready")
-                || !clientPassed("B", "client_ready"))) {
+        if (stage == 0 && !readinessPassed) {
+            if (!clientPassed("A", "client_ready") || !clientPassed("B", "client_ready")) {
+                ticks = 0;
+                return;
+            }
+            if (readinessGate == null) readinessGate = new RingMultiplayerReadinessGate();
+            RingMultiplayerReadinessGate.Result readiness = readinessGate.observe(System.nanoTime());
+            if (readiness == RingMultiplayerReadinessGate.Result.TIMED_OUT) {
+                RingWorldMod.LOGGER.error(
+                        "[multiplayer] readiness gate timed out before seam scenario (observedTicks={}, consecutiveOnTimeTicks={}, longestTickIntervalMs={}); stopping disposable harness",
+                        readinessGate.observedTicks(), readinessGate.consecutiveOnTimeTicks(),
+                        readinessGate.longestTickIntervalNanos() / 1_000_000.0);
+                world.getServer().halt(false);
+                return;
+            }
+            if (readiness != RingMultiplayerReadinessGate.Result.READY) return;
+            readinessPassed = true;
+            // Preserve the original harness pacing after the infrastructure
+            // barrier: send Creative first, then allow both real clients time
+            // to observe it before the Survival pose and seam arm arrive.
             ticks = 0;
-            return;
         }
         if (stage == 0 && ticks == 1) {
             // Reused-world boats can finish loading only when the automated

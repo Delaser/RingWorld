@@ -46,7 +46,9 @@ sequenceDiagram
     participant S as Server
     participant C as Client
     S->>S: Player joins
-    alt Client cannot receive ringworld:settings_v2
+    alt Explicit headless atlas prewarm is active
+        S-->>C: Disconnect before any RingWorld payload or handshake state
+    else Client cannot receive ringworld:settings_v2
         S-->>C: Disconnect: RingWorld missing or out of date
     else Payload supported
         S->>C: settings(W,C,seed,wall,surface,format,fingerprint)
@@ -101,12 +103,37 @@ deadline, treats duplicate acknowledgement as idempotent, rejects unexpected
 or mismatched acknowledgement, gates all RingWorld requests until success,
 and clears state on disconnect.
 
+Fabric's lifecycle JOIN listener owns the headless-prewarm disconnect and its
+message, but Fabric's array-backed event dispatch continues through later JOIN
+listeners after that disconnect. The networking JOIN boundary therefore
+rechecks the same coordinator state and returns before `sendSettings`, so it
+cannot create handshake state or lead to atlas metadata. It deliberately does
+not issue a second disconnect. Ordinary joins continue into the unchanged
+settings handshake.
+
+NeoForge owns an earlier admission guard because its immutable settings packet
+must otherwise be inserted inside `PlayerList.placeNewPlayer`, immediately
+behind vanilla's play-login packet. During explicit headless prewarm,
+`NeoForgeHeadlessPlayerAdmission` cancels that method at its head and
+disconnects through the existing configuration listener before vanilla creates
+the play listener or initial packet buffer. No settings payload is queued, the handshake
+tracker is not started, atlas metadata cannot be emitted, and the later
+`PlayerLoggedInEvent` is only a defensive fallback. Ordinary logins retain the
+existing play-login/settings/world-packet order.
+
 Atlas-pregeneration status is independent from settings and atlas tile codecs:
 its `_v1` identifiers must advance on any layout change. Status observers are
 cleared on disconnect/world unload, receive periodic snapshots no more than
 once per 20 ticks plus immediate transitions, and cannot mutate atlas state
 from the network thread. Control actions and lifecycle states use explicit
 stable numeric wire values rather than enum ordinals.
+
+Client positional packet mixins which inject at handler `HEAD` run before
+vanilla's packet-thread guard. They must leave the first network-thread packet
+unchanged; vanilla queues it, and the handler's game-thread replay performs the
+nearest-image projection. Redirects reached after vanilla's guard may project
+normally. This prevents logout, dimension-change, and reconnect traffic from
+reading a stale client chart or level.
 
 ## Atlas wire format
 

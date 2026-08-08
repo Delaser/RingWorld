@@ -1,6 +1,6 @@
 # Current state
 
-Last audited: 2026-08-02 on the public `main` integration line. The final
+Last audited: 2026-08-08 on the public `main` integration line. The final
 Minecraft 1.21.11 implementation remains historical provenance at
 `mc-1.21.11-final` / `2c98650`.
 
@@ -70,6 +70,38 @@ multiplayer runtime gates, leaving packaging and full standalone parity open.
 Use `:runServer`
 for Fabric and `:neoforge:runServer` for NeoForge rather than an ambiguous
 unqualified task.
+
+The copied-world Fabric projection, same-process layout-switch, and production
+lifecycle runtime tasks now match the NeoForge fail-closed gate shape: each
+clears old ignored evidence before launch and runs a verifier finalizer.
+Projection requires and decodes its three environment-specific PNGs; layout
+and lifecycle require their exact successful terminal marker and copied
+`level.dat`. The build-level verifier contract fixture proves missing, failed,
+and corrupt evidence is rejected as part of `check`.
+
+The subsequent networking audit makes the NeoForge payload-thread boundary
+explicit: every serverbound and clientbound payload handler delegates its
+stateful body through `IPayloadContext.enqueueWork`. This keeps the handshake
+tracker, server atlas stream, client session/cache/GPU state, disconnects, and
+outbound acknowledgements on the corresponding game thread while preserving
+the immediate post-play-login settings send, exact rejection messages, and
+idempotent acknowledgement behavior.
+
+The follow-up headless admission audit moves NeoForge's denial to a
+cancellable `PlayerList.placeNewPlayer` method-head injection before vanilla
+creates the play listener or initial packet buffer. One platform helper is shared by that early gate
+and the later event fallback. An active prewarm therefore sends no RingWorld
+settings, starts no handshake timeout, and exposes no atlas metadata; ordinary
+login still receives settings directly behind the play-login packet. The
+dual-loader suite includes a compiled-bytecode platform-boundary assertion for the
+decision side effects and exact injection order.
+
+The matching Fabric audit closes a different loader boundary: its array-backed
+JOIN event continues invoking listeners after the lifecycle adapter disconnects
+a headless-prewarm join. The later networking listener now rechecks the same
+coordinator state and returns before `sendSettings`, leaving rejection/message
+ownership unchanged and preventing handshake or atlas work. A platform-isolated
+compiled-bytecode test fixes that guard-before-settings ordering.
 
 Issue #93 completes NeoForge server/runtime parity. The shared headless prewarm
 coordinator now owns scheduling, terminal JSON evidence, join gating,
@@ -170,7 +202,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite now contains 241 unit/parameterized cases.
+The active suite passes 269 unit/parameterized cases per loader.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
@@ -189,6 +221,35 @@ snapshot off the render thread, and already-complete revision bursts publish
 once after a three-second quiet period or ten-second maximum delay. Exact
 resource numbers, hashes, commands, frame metrics, and residual cold-start
 spikes are recorded in `ATLAS_RELEASE_GATE_2026-08-01.md`.
+
+Issue #128 replaces the final atlas mesh's per-quad corner resampling with a
+shared pure `RingSurfaceMesh` lattice. The unindexed GPU triangle list still
+repeats vertices, but every interior adjacent band and segment now receives
+the exact same sampled float position and UV at its common boundary. The two
+periodic seam columns share an exact physical X=0/C position while deliberately
+retaining U=0/1 for texture repeat. Focused production and safe-small tests
+cover band continuity, segment continuity, the periodic seam, and the
+progressive reference-height path. Verified completion performs one detailed
+mesh upgrade; later complete-atlas revisions rebuild relief only when their
+surface-height fingerprint changes, so colour-only texture updates retain the
+existing mesh. Texture pixels, height fingerprint, and any replacement mesh
+share one immutable atlas snapshot, preventing asynchronous work from mixing
+one revision's colour with another revision's relief. The exact production
+visual projection/parity gates now pass on both loaders and show the formerly
+reported triangle absent.
+
+Issues #130 and #131 now have their local runtime evidence as well. Fabric's
+exact production 16,384×256 headless prewarm completed on 2026-08-06; the
+recorded NeoForge prewarm is safe-small only, so production-size NeoForge
+prewarm remains open. `/ringworld atlas start` starts an idle durable partial
+atlas and `/ringworld atlas resume` reattaches that saved partial work after an
+`IDLE` restart without replacing active or release-pending work. On 2026-08-08,
+fresh Fabric and cold NeoForge two-client Atlas-concurrency fixtures passed the
+full matrix after both clients had been ready through 100 consecutive server
+intervals at or below 100 ms (60 seconds/1,200 observations fail closed). The
+gate retains the original 100-tick Creative-to-Survival dwell and the strict
+`maxRemoteStep <= 1.25` requirement; each automated client exits after its
+terminal result.
 
 #71 completes the expanded safe-small seam gameplay gate. The dedicated
 server now waits for two fully loaded clients, then passes the original
@@ -243,13 +304,24 @@ passes. See `PROTOCOL_HARDENING_2026-08-01.md`.
 
 The #95 navigation slice routes filled-map sampling and decorations plus
 spawn/lodestone/recovery compass bearings through the nearest periodic image.
-Its two-direction pure rules pass. A disposable real-client fixture now passes
-on Fabric and NeoForge from fresh 2,048×416 worlds: both seam directions verify
-the expected filled-map pixel plus player, white-banner, and item-frame
-decorations; spawn, lodestone, and recovery compasses resolve the nearest
-periodic target; and a seam-equivalent exact target enters vanilla's random
-spin path. Each loader produced and verified four labelled screenshots. Map
-scaling/locking and save/rejoin remain part of the final ordinary-play review.
+Its two-direction pure rules pass. Fresh 2026-08-06 Fabric and NeoForge runs of
+the expanded disposable real-client fixture also pass and each produced all
+eight labelled screenshots. Both seam directions verify filled-map pixels,
+player and white-banner decorations, and decorations backed by real
+world-added item frames; the high-centred map then passes scale one, banner
+removal/restoration, and locking. The fixture exercises spawn, lodestone, and
+recovery targets in both directions. Its seam-equivalent exact-target check
+reuses one compass wobble state, making the two seeded random-spin samples a
+deterministic assertion instead of comparing independent random offsets.
+
+The same runs use Minecraft's normal save/disconnect path, wait for raw
+RingWorld session teardown, and reopen the saved world in the same process.
+The raw gate covers geometry and presentation-camera state, atlas identity and
+cache ownership, atlas-control status, and complete-ring GPU resources without
+depending on `client.level` already being absent. After reopen, the fixture
+rechecks the locked map's pixel/decorations and server centre/scale/lock,
+loads the same persistent live item frame and framed map, verifies persisted
+spawn/lodestone/recovery targets, and repeats the nearest-image compass check.
 
 The strengthened general #95 two-client acceptance matrix now passes from
 fresh 2,048x416 fixtures on both Fabric and NeoForge. Both runs reached
@@ -317,7 +389,7 @@ need a real graphical Windows Minecraft launch and independent review before
 Atlas-pregeneration Phases 1b and 2 are landed through #55, #56, and #59:
 the loader-neutral job-model foundation
 plus `RingAtlasPregenerationService`, the sole world-owned server atlas writer.
-It owns cursor/future/retry/control/save/completion state; Fabric commands,
+It owns cursor/ticket-backed request/retry/control/save/completion state; Fabric commands,
 lifecycle hooks, and client tile streaming delegate through
 `RingTerrainAtlasServer`. One in-flight chunk, the 64-task player-work guard,
 200-tick checkpoints, 20-tick tile publication, format-6 bytes, partial
@@ -327,8 +399,20 @@ permissions, completion toast, and disconnect cleanup share that same handle
 on Fabric and NeoForge. Both isolated GUI-scale-4 fixtures pass the complete
 11-capture flow through start, progressive view, pause/resume, cancel/retry,
 completion, and revisioned block edit; NeoForge uses
-`:neoforge:runAtlasUiClient`. The
-Fabric headless prewarm adapter is now implemented as that thin
+`:neoforge:runAtlasUiClient`.
+The shutdown lifecycle now cancels/releases an outstanding ticket-backed request
+without resolving its loaded-result supplier. A normal Fabric `stop` showed
+that level unload can follow chunk-cache eviction even when the load future is
+complete; consuming it there produced a false missing-chunk retry. Teardown now
+checkpoints only previously captured cells and leaves the cursor selection
+unadvanced for safe resume, while ordinary service ticks retain the existing
+consume/capture behavior.
+The follow-up ownership audit also closes the terminal-replacement leak: a
+consume-side ticket-release exception leaves the terminal job attached for an
+idempotent close retry, and `pregenerate` refuses to replace it until the
+request is gone. Both operator command and map-control paths report that
+temporary release-pending state instead of claiming a new job started.
+The Fabric headless prewarm adapter is now implemented as that thin
 launch/report/save/stop coordinator: a fresh safe-small run checkpointed on
 SIGTERM at 1,200 durable chunks/4,800 cells, resumed to 3,328/3,328 chunks and
 13,312/13,312 cells, then verified, saved, emitted atomic JSON evidence, and
@@ -337,7 +421,9 @@ legacy-open-proof fixture also upgraded only in the ignored destination,
 migrated settings, rejected its incompatible legacy atlas, regenerated and
 verified 2,000/2,000 chunks (8,000 cells), and left the 66-file/47,931,005-byte
 source fingerprint unchanged. The later #70 gate supplies the production-scale
-benchmark and recovery evidence.
+benchmark and recovery evidence. An exact production Fabric prewarm also
+completed successfully on 2026-08-06. NeoForge's recorded unattended prewarm
+remains safe-small; no production NeoForge prewarm is claimed.
 The independent copied ordinary-world fixture now also reaches the
 pre-`ServerLevelEvents.LOAD` constructor-tail rejection seam: it writes an
 atomic `REJECTED` report with unavailable identity sentinels and the original
@@ -356,7 +442,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, all 241 unit/parameterized cases pass, and Loom produces
+temporary shims, with 269 unit/parameterized cases passing per loader, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -427,6 +513,12 @@ packet/tick samples; mutual visibility/query/distance passed; real melee,
 block interaction/update, shared boat visibility, long teleport and periodic
 return, disconnect, and reconnect all passed. The server reported
 `full scenario result=true` and stopped cleanly.
+
+The current Fabric atlas-concurrency/full-matrix rerun passed from a fresh
+fixture on 2026-08-06. The former NeoForge cold-start `1.333`-block remote-step
+result was startup timing noise, not accepted evidence: the corrected cold
+concurrent gate passed on 2026-08-08 after the bounded readiness interval,
+including its `<= 1.25` remote-step limit.
 
 The same dedicated two-client scenario has now passed on the production
 16,384×256 layout after warming the saved world and resource state. The first
@@ -573,8 +665,9 @@ and compatibility claims.
   unloaded client-only grass/foliage colormaps return zero.
 - Relief-shaded, mipmapped progressive/complete-ring GPU texture and bounded
   mesh at normal real-chunk render distance. Partial atlases expose only known
-  cells through alpha and use one reference-height mesh; completion upgrades
-  exactly once to the expanded terrain-height surface.
+  cells through alpha and use one reference-height mesh. Completion performs
+  one upgrade to the expanded terrain-height surface; later colour-only
+  revisions reuse that mesh and changed height fingerprints rebuild it.
 - Live RGB lightmap exposure for the distant surface using the
   full-skylight/no-block-light texel, matching client day/night, weather,
   gamma, lightning, darkness, and night-vision state.
@@ -596,7 +689,8 @@ and compatibility claims.
 - Checked atlas allocation, typed tile coordinates, long pregeneration
   counters, transfer estimates, progress rate, ETA, and a loader-neutral
   pregeneration model/cursor.
-- Gamemaster-level atlas status/pause/resume commands.
+- Gamemaster-level atlas status/start/pause/resume commands. Start and resume
+  can continue a durable partial atlas from process-local `IDLE`.
 - Local destructive smoke harness.
 - Same-JVM saved-layout switch harness that verifies disconnect clearing and
   second-world geometry/atlas replacement.

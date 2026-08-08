@@ -69,10 +69,15 @@ public final class RingTerrainAtlasServer {
                                             : "RingWorld atlas: " + RingAtlasPregenerationService.status(world)), false);
                                     return world == null ? 0 : 1;
                                 }))
+                                .then(Commands.literal("start").executes(context -> control(
+                                        context.getSource().getServer().getLevel(Level.OVERWORLD),
+                                        AtlasPregenerationAction.START, context.getSource())))
                                 .then(Commands.literal("pause").executes(context -> control(
-                                        context.getSource().getServer().getLevel(Level.OVERWORLD), true, context.getSource())))
+                                        context.getSource().getServer().getLevel(Level.OVERWORLD),
+                                        AtlasPregenerationAction.PAUSE, context.getSource())))
                                 .then(Commands.literal("resume").executes(context -> control(
-                                        context.getSource().getServer().getLevel(Level.OVERWORLD), false, context.getSource())))));
+                                        context.getSource().getServer().getLevel(Level.OVERWORLD),
+                                        AtlasPregenerationAction.RESUME, context.getSource())))));
     }
 
     public static void load(ServerLevel world) { RingAtlasPregenerationService.load(world); }
@@ -283,7 +288,8 @@ public final class RingTerrainAtlasServer {
     static Path cachePath(Path dimensionPath) { return RingAtlasPregenerationService.cachePath(dimensionPath); }
     static Path legacyCachePath(Path worldRoot) { return RingAtlasPregenerationService.legacyCachePath(worldRoot); }
 
-    private static int control(ServerLevel world, boolean pause, net.minecraft.commands.CommandSourceStack source) {
+    private static int control(ServerLevel world, AtlasPregenerationAction action,
+                               net.minecraft.commands.CommandSourceStack source) {
         if (world == null) {
             source.sendFailure(Component.literal("RingWorld Overworld is unavailable"));
             return 0;
@@ -293,11 +299,51 @@ public final class RingTerrainAtlasServer {
             source.sendFailure(Component.literal("RingWorld terrain atlas pregeneration is unavailable"));
             return 0;
         }
-        if (pause) handle.pause(); else handle.resume();
-        String action = handle.progress().state() == dev.ringworld.world.AtlasPregenerationState.IDLE
-                ? "remains idle (background generation is disabled)"
-                : (pause ? "paused" : "resumed");
-        source.sendSuccess(() -> Component.literal("RingWorld atlas pregeneration " + action
+        AtlasPregenerationState state = handle.progress().state();
+        String result;
+        switch (RingAtlasCommandPolicy.decide(action, state)) {
+            case START -> {
+                try {
+                    RingAtlasPregenerationService.pregenerate(world,
+                            AtlasPregenerationOptions.interactiveDefaults(), progress -> { });
+                } catch (IllegalStateException exception) {
+                    source.sendFailure(Component.literal(
+                            "RingWorld atlas generation could not start: "
+                                    + Optional.ofNullable(exception.getMessage())
+                                    .orElse("the previous job has not released its resources")));
+                    return 0;
+                }
+                result = state == AtlasPregenerationState.IDLE
+                        ? "started from saved progress" : "started";
+            }
+            case PAUSE -> {
+                handle.pause();
+                result = "paused";
+            }
+            case RESUME -> {
+                handle.resume();
+                result = "resumed";
+            }
+            case ALREADY_COMPLETE -> result = "is already complete";
+            case ALREADY_ACTIVE -> result = "is already active";
+            case NOT_RUNNING -> {
+                source.sendFailure(Component.literal("RingWorld atlas generation is not running: "
+                        + RingAtlasPregenerationService.status(world)));
+                return 0;
+            }
+            case NOT_PAUSED -> {
+                source.sendFailure(Component.literal("RingWorld atlas generation is not paused: "
+                        + RingAtlasPregenerationService.status(world)));
+                return 0;
+            }
+            case UNSUPPORTED -> {
+                source.sendFailure(Component.literal(
+                        "Atlas cancellation is available from the RingWorld Map screen."));
+                return 0;
+            }
+            default -> throw new IllegalStateException("unsupported atlas command outcome");
+        }
+        source.sendSuccess(() -> Component.literal("RingWorld atlas pregeneration " + result
                 + ": " + RingAtlasPregenerationService.status(world)), true);
         return 1;
     }

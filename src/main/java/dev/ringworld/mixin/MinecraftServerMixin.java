@@ -10,6 +10,7 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Climate;
+import net.minecraft.world.level.storage.LevelData;
 import net.minecraft.world.level.storage.LevelStorageSource;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -43,5 +44,26 @@ abstract class MinecraftServerMixin implements RingWorldStorageAccess {
         // safe surface while staying well away from either edge.
         int z = RingSpawnBounds.constrainInitialSpawnZ(vanilla.getZ(), geometry);
         return new BlockPos(vanilla.getX(), vanilla.getY(), z);
+    }
+
+    /**
+     * Vanilla's 11-by-11 safe-spawn spiral runs after the sampler redirect and
+     * can cross either periodic edge. Canonicalize every final RespawnData
+     * value, not just the original sampler suggestion, before it reaches saved
+     * level data.
+     */
+    @Redirect(
+            method = "setInitialSpawn",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/storage/LevelData$RespawnData;of(Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/core/BlockPos;FF)Lnet/minecraft/world/level/storage/LevelData$RespawnData;"),
+            require = 3)
+    private static LevelData.RespawnData ringworld$canonicalInitialRespawnData(
+            ResourceKey<Level> dimension, BlockPos position, float yaw, float pitch) {
+        if (dimension != Level.OVERWORLD) {
+            return LevelData.RespawnData.of(dimension, position, yaw, pitch);
+        }
+        RingWorldConfig config = RingWorldConfig.load();
+        RingGeometry geometry = new RingGeometry(config.widthBlocks(), config.circumferenceBlocks());
+        return LevelData.RespawnData.of(dimension,
+                RingSpawnBounds.canonicalInitialSpawn(position, geometry), yaw, pitch);
     }
 }
