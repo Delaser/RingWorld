@@ -38,18 +38,14 @@ platform-specific skips.
 - The deterministic seam explosion added no item or falling-block entities in
   either loader fixture.
 
-## Optional package hashes
+## Optional packages
 
-These archives are convenience packages, not normal Modrinth upload files.
-
-| Artifact | SHA-256 |
-| --- | --- |
-| Fabric macOS client | `40596d022e8cfa2d174e61efef8ff89e630d892706342e6eee754e17fe63b317` |
-| Fabric Windows client | `650e4d5cd62be39ed37d5d2db9a5ff7a92f48f8abb08d1c1255608fe96b52e7d` |
-| Fabric server overlay | `a957b2f20f59d51f8e33455ca5f64e5d0bbcd1a5748e76bc3cdb91e81580f0d4` |
-| NeoForge macOS client | `28b1f4ac6af35385aa039d256af90a4a5c16d95f3a817dfd31f5b8bad97d3be3` |
-| NeoForge Windows client | `dcc36b368cd2ae634b8e97514f16199c8c1fb0f3b9e427ed7e5282b9fb685b64` |
-| NeoForge server overlay | `277355c7bfb15b62a958fc08017e808936fc6d8969480203dd8d3f076cf70300` |
+The reproducible builder passed for the Fabric and NeoForge macOS clients,
+Windows clients, and server overlays. These are convenience packages, not
+normal Modrinth upload files. Their exact checksums are deliberately emitted
+to each ignored external `SHA256SUMS.txt`: package archives include the staging
+manifest and corresponding-source revision, so embedding those package hashes
+inside the source commit would create a circular, immediately stale record.
 
 ## Remaining release gates
 
