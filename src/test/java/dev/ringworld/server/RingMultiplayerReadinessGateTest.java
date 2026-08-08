@@ -51,4 +51,29 @@ class RingMultiplayerReadinessGateTest {
         now += RingMultiplayerReadinessGate.MAXIMUM_WAIT_NANOS;
         assertEquals(RingMultiplayerReadinessGate.Result.TIMED_OUT, gate.observe(now));
     }
+
+    @Test
+    void independentPostPortalBarrierRequiresItsOwnStableWindow() {
+        RingMultiplayerReadinessGate preSeam = new RingMultiplayerReadinessGate();
+        RingMultiplayerReadinessGate postPortal = new RingMultiplayerReadinessGate();
+        long now = 1_000L;
+        assertEquals(RingMultiplayerReadinessGate.Result.WARMING, preSeam.observe(now));
+        for (int tick = 1; tick <= RingMultiplayerReadinessGate.REQUIRED_CONSECUTIVE_ON_TIME_TICKS; tick++) {
+            now += 50_000_000L;
+            preSeam.observe(now);
+        }
+        assertEquals(RingMultiplayerReadinessGate.Result.READY, preSeam.observe(now));
+
+        assertEquals(RingMultiplayerReadinessGate.Result.WARMING, postPortal.observe(now));
+        now += 2_500_000_000L;
+        assertEquals(RingMultiplayerReadinessGate.Result.WARMING, postPortal.observe(now));
+        assertEquals(0, postPortal.consecutiveOnTimeTicks());
+
+        for (int tick = 1; tick < RingMultiplayerReadinessGate.REQUIRED_CONSECUTIVE_ON_TIME_TICKS; tick++) {
+            now += 50_000_000L;
+            assertEquals(RingMultiplayerReadinessGate.Result.WARMING, postPortal.observe(now));
+        }
+        now += 50_000_000L;
+        assertEquals(RingMultiplayerReadinessGate.Result.READY, postPortal.observe(now));
+    }
 }

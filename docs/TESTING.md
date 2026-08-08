@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 290
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 291
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -137,7 +137,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite passes 290 unit/parameterized cases per loader:
+The active suite passes 291 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
@@ -1111,7 +1111,8 @@ The scenario verifies:
 - a real neighbour update powers a redstone lamp across X=`C-1`/`0`;
 - water in a sealed two-cell trough flows from its sole source at canonical
   X=`C-1` into the initially empty canonical X=`0` destination on the server
-  and each client, alongside a destructive explosion;
+  and each client, alongside a real BLOCK explosion crossing C-1→0 inside a
+  deterministic seam-wrapped no-drop glass cell;
 - a tagged hostile Zombie follows vanilla navigation in its bounded ground lane
   from canonical X=`C-5` toward X=`2` and naturally folds into low canonical
   X, finishes the path, and reaches the target tolerance before the server
@@ -1166,11 +1167,15 @@ The same disposable harness accepts three shared geometry properties:
 `ringMultiplayerCircumferenceBlocks` (default `2048`),
 `ringMultiplayerWidthBlocks` (default `416`), and
 `ringMultiplayerWallHeightBlocks` (default `160`). Circumference and width
-must be integer, 16-block-aligned values of at least `1024` and `256` blocks;
+must be integer, 16-block-aligned values of at least `2048` and `128` blocks;
 wall height must be an integer of at least `32` blocks. The normal first-world
 layout report remains the final safety check. With the Atlas opt-in, the
 verifier derives its required total from the selected layout as
 `(C / 8) * (W / 8)` cells, so a mismatched server configuration fails closed.
+Fabric uses port `25568` by default and accepts
+`-PringFabricMultiplayerPort=<port>`; NeoForge uses `25566` and accepts
+`-PringNeoForgeMultiplayerPort=<port>`. These distinct defaults prevent two
+loader-qualified disposable profiles from accidentally binding the same port.
 
 For Fabric, first run the preparation task. On first use it creates
 `run-multiplayer/server/eula.txt` with `eula=false`; review Mojang's EULA and
@@ -1239,7 +1244,14 @@ Each automated multiplayer client self-stops after it emits its terminal
 result. Stop the dedicated server normally after both clients exit, then run
 the verifier. With the property enabled, each verifier still requires the ordinary full
 multiplayer PASS marker, portal/weather evidence, both client-start markers,
-and all four screenshots. It additionally parses the server's periodic
+all four screenshots, and the ordered `multiplayer-cold` fixture/Nether/End/
+post-End-stability/terminal telemetry markers. Weather cannot arm until a
+fresh post-End barrier observes 100 consecutive server intervals at or below
+100 ms; the existing 60-second/1,200-observation timeout fails the disposable
+matrix. Telemetry records elapsed wall time, dimension/game time, loaded and
+pending chunks, scheduled block/fluid ticks, entity/item/falling-block counts,
+heap use, and Atlas state without loading chunks or mutating simulation. The
+verifier additionally parses the server's periodic
 `RingWorld terrain atlas progress` status: total cells must stay fixed, present
 cells must never decrease, and at least two statuses must demonstrate a real
 increase. A `generation complete` status is accepted by the same rule. This is an
@@ -1262,6 +1274,13 @@ completed the full matrix while Atlas generation advanced; the server saved
 advanced monotonically to 65,536/65,536, and saved normally. Two cold server-
 behind warnings (7.464 and 8.296 seconds) remain under profiling issue #134;
 there was no managed-block deadlock, Atlas regression, or multiplayer failure.
+
+After the cold-fixture telemetry hardening, a fresh production repeat passed
+again with Atlas advancing monotonically from 596 to 3,824 cells at roughly
+28–32 cells/s. Both clients and the strict verifier completed; the largest
+server-behind warning was 3.219 seconds during cold Nether generation, and no
+watchdog or crash report was produced. The deterministic cross-seam glass
+blast did not add item or falling-block entities.
 
 The original run on 2026-07-31 achieved the baseline result
 on a reused 2,048×416 server whose seam crossed an ocean. Both clients

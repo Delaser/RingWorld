@@ -64,6 +64,9 @@ final class RingWorldExtendedMultiplayerTest {
     private static ServerPlayer preDeathPlayer;
     private static BlockPos overworldNetherPortal;
     private static Zombie seamNavigator;
+    private static final RingMultiplayerPhaseTelemetry COLD_TELEMETRY = new RingMultiplayerPhaseTelemetry();
+    private static RingMultiplayerReadinessGate postEndWeatherGate;
+    private static boolean weatherArmed;
 
     private RingWorldExtendedMultiplayerTest() { }
 
@@ -110,6 +113,7 @@ final class RingWorldExtendedMultiplayerTest {
         weather.setThundering(false);
         world.setRainLevel(0.0F);
         world.setThunderLevel(0.0F);
+        COLD_TELEMETRY.record("extended-fixture-before", world);
         playerA.teleportTo(world, geometry.circumferenceBlocks() - 2.5, 120.0, 0.5,
                 Set.<Relative>of(), 90.0f, 10.0f, false);
         playerB.teleportTo(world, 2.5, 120.0, 0.5,
@@ -150,9 +154,10 @@ final class RingWorldExtendedMultiplayerTest {
 
         armSeamNavigator(world, geometry);
 
-        world.setBlock(explosionTarget(), Blocks.STONE.defaultBlockState(), 3);
+        prepareCrossSeamExplosionCell(world, geometry);
         world.explode(null, highX + 0.5, 124.5, 9.5, 2.5F,
                 Level.ExplosionInteraction.BLOCK);
+        COLD_TELEMETRY.record("extended-fixture-after", world);
 
         RingWorldMod.LOGGER.info("[multiplayer-extended] fixture armed across canonical seam");
         advance(1);
@@ -256,6 +261,24 @@ final class RingWorldExtendedMultiplayerTest {
                 navigationStarted, seamNavigator.getX(), seamNavigator.getNavigation().getTargetPos(),
                 seamNavigator.getNavigation().getPath() == null ? null
                         : seamNavigator.getNavigation().getPath().getTarget());
+    }
+
+    /**
+     * Makes the cross-seam explosion independent of generated terrain. Glass
+     * is non-dropping, so a seed-specific slope cannot create an unbounded
+     * item or falling-block population during the fixture.
+     */
+    private static void prepareCrossSeamExplosionCell(ServerLevel world, RingGeometry geometry) {
+        int highX = geometry.circumferenceBlocks() - 1;
+        for (int xOffset = -4; xOffset <= 3; xOffset++) {
+            int x = geometry.wrapBlockX(highX + xOffset);
+            for (int y = 121; y <= 128; y++) {
+                for (int z = 7; z <= 12; z++) {
+                    world.setBlock(new BlockPos(x, y, z), Blocks.GLASS.defaultBlockState(), 2);
+                }
+            }
+        }
+        world.setBlock(explosionTarget(), Blocks.GLASS.defaultBlockState(), 3);
     }
 
     private static void attemptSleep(ServerPlayer playerA) {
@@ -402,6 +425,7 @@ final class RingWorldExtendedMultiplayerTest {
         if (playerA == null || playerA.level() != overworld) return;
         prepareSurvivalPlayer(playerA);
         BlockPos requested = new BlockPos(geometry.circumferenceBlocks() - 8, 120, 12);
+        COLD_TELEMETRY.record("nether-before-create", overworld);
         Optional<net.minecraft.util.BlockUtil.FoundRectangle> created = overworld.getPortalForcer()
                 .createPortal(requested, Direction.Axis.Z);
         if (created.isEmpty()) {
@@ -419,6 +443,7 @@ final class RingWorldExtendedMultiplayerTest {
         RingWorldMod.LOGGER.info(
                 "[multiplayer-extended] ordinary Nether portal wait armed source={} expectedTicks={}",
                 overworldNetherPortal, expectedPortalWait);
+        COLD_TELEMETRY.record("nether-wait-armed", overworld);
         advance(7);
     }
 
@@ -427,6 +452,7 @@ final class RingWorldExtendedMultiplayerTest {
         if (playerA.level().dimension() == Level.NETHER
                 && RingWorldMultiplayerTest.clientPassed("A", "nether_enter")) {
             ServerLevel nether = (ServerLevel) playerA.level();
+            COLD_TELEMETRY.record("nether-entered", nether);
             long elapsed = overworld.getGameTime() - portalWaitStarted;
             outboundPortalWaitPassed = elapsed >= expectedPortalWait;
             Optional<BlockPos> exit = nether.getPortalForcer().findClosestPortalPosition(
@@ -448,6 +474,7 @@ final class RingWorldExtendedMultiplayerTest {
             RingWorldMod.LOGGER.info(
                     "[multiplayer-extended] ordinary Nether portal wait result={} elapsedTicks={} expectedTicks={}",
                     outboundPortalWaitPassed, elapsed, expectedPortalWait);
+            COLD_TELEMETRY.record("nether-return-armed", overworld);
             advance(8);
         } else if (ticks >= TIMEOUT_TICKS) {
             RingWorldMod.LOGGER.error("[multiplayer-extended] Nether portal result=false reason=enter-timeout dimension={} client={}",
@@ -468,6 +495,7 @@ final class RingWorldExtendedMultiplayerTest {
         if (returned) {
             netherPortalPassed = outboundPortalWaitPassed;
             double netherReturnX = playerA.getX();
+            COLD_TELEMETRY.record("nether-returned", overworld);
             BlockPos endPortal = new BlockPos(geometry.circumferenceBlocks() - 12, 120, 16);
             overworld.setBlock(endPortal, Blocks.END_PORTAL.defaultBlockState(), 3);
             playerA.teleportTo(overworld, endPortal.getX() + 0.5, endPortal.getY() + 1.0,
@@ -483,6 +511,7 @@ final class RingWorldExtendedMultiplayerTest {
             playerA.setPortalCooldown();
             RingWorldMod.LOGGER.info("[multiplayer-extended] physical Nether portal result=true returnX={}; End outbound armed",
                     netherReturnX);
+            COLD_TELEMETRY.record("end-outbound-armed", (ServerLevel) playerA.level());
             advance(9);
         } else if (ticks >= TIMEOUT_TICKS) {
             RingWorldMod.LOGGER.error("[multiplayer-extended] Nether portal result=false reason=return-timeout dimension={} x={} client={}",
@@ -497,6 +526,7 @@ final class RingWorldExtendedMultiplayerTest {
         if (playerA.level().dimension() == Level.END
                 && RingWorldMultiplayerTest.clientPassed("A", "end_enter")) {
             ServerLevel end = (ServerLevel) playerA.level();
+            COLD_TELEMETRY.record("end-entered", end);
             BlockPos returnPortal = playerA.blockPosition();
             end.setBlock(returnPortal, Blocks.END_PORTAL.defaultBlockState(), 3);
             var transition = ((Portal) Blocks.END_PORTAL)
@@ -508,6 +538,7 @@ final class RingWorldExtendedMultiplayerTest {
             }
             playerA.teleport(transition);
             playerA.setPortalCooldown();
+            COLD_TELEMETRY.record("end-return-armed", overworld);
             advance(10);
         } else if (ticks >= TIMEOUT_TICKS) {
             RingWorldMod.LOGGER.error("[multiplayer-extended] End portal result=false reason=enter-timeout dimension={} client={}",
@@ -527,6 +558,9 @@ final class RingWorldExtendedMultiplayerTest {
             endPortalPassed = true;
             RingWorldMod.LOGGER.info("[multiplayer-extended] physical End portal result=true returnX={} canonical=true",
                     playerA.getX());
+            COLD_TELEMETRY.record("end-returned", overworld);
+            postEndWeatherGate = new RingMultiplayerReadinessGate();
+            weatherArmed = false;
             advance(11);
         } else if (ticks >= TIMEOUT_TICKS) {
             RingWorldMod.LOGGER.error("[multiplayer-extended] End portal result=false reason=return-timeout dimension={} x={} client={}",
@@ -539,6 +573,24 @@ final class RingWorldExtendedMultiplayerTest {
     private static void awaitWeather(ServerLevel world, RingGeometry geometry,
                                      ServerPlayer playerA, ServerPlayer playerB) {
         if (playerA == null || playerB == null) return;
+        if (!weatherArmed) {
+            if (postEndWeatherGate == null) postEndWeatherGate = new RingMultiplayerReadinessGate();
+            RingMultiplayerReadinessGate.Result readiness = postEndWeatherGate.observe(System.nanoTime());
+            if (readiness == RingMultiplayerReadinessGate.Result.TIMED_OUT) {
+                COLD_TELEMETRY.record("weather-stability-timeout", world);
+                RingWorldMod.LOGGER.error(
+                        "[multiplayer-cold] post-End weather stability timed out "
+                                + "(observedTicks={}, consecutiveOnTimeTicks={}, longestTickIntervalMs={})",
+                        postEndWeatherGate.observedTicks(), postEndWeatherGate.consecutiveOnTimeTicks(),
+                        postEndWeatherGate.longestTickIntervalNanos() / 1_000_000.0);
+                advance(12);
+                return;
+            }
+            if (readiness != RingMultiplayerReadinessGate.Result.READY) return;
+            weatherArmed = true;
+            ticks = 0;
+            COLD_TELEMETRY.record("weather-stability-ready", world);
+        }
         if (ticks == 1) {
             prepareCreativePlayer(playerA);
             prepareCreativePlayer(playerB);
@@ -603,6 +655,7 @@ final class RingWorldExtendedMultiplayerTest {
                 && netherPortalPassed && endPortalPassed && weatherPassed
                 && clientFixture && clientLifecycle
                 && canonicalPlayers;
+        COLD_TELEMETRY.record("terminal-result", world);
         RingWorldMod.LOGGER.info(
                 "[multiplayer] full scenario result={} (baseline={}, fixture={}, sleepingReconnect={}, damageWake={}, bedDestroyed={}, deathRespawn={}, netherPortal={}, endPortal={}, weather={}, clientFixture={}, clientLifecycle={}, canonicalPlayers={})",
                 passed, baselinePassed, serverFixturePassed, sleepingReconnectPassed, damageWakePassed,

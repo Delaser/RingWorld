@@ -10,6 +10,17 @@ base {
 	archivesName = project.archives_base_name
 }
 
+def fabricMultiplayerPort = {
+	def raw = providers.gradleProperty("ringFabricMultiplayerPort").orElse("25568").get().trim()
+	try {
+		def port = Integer.parseInt(raw)
+		if (port < 1 || port > 65535) throw new NumberFormatException(raw)
+		return port
+	} catch (NumberFormatException ignored) {
+		throw new GradleException("ringFabricMultiplayerPort must be an integer from 1 to 65535")
+	}
+}
+
 repositories {
 	mavenCentral()
 }
@@ -35,7 +46,7 @@ loom {
 			name "RingWorld Multiplayer Client A"
 			runDir "run-multiplayer/client-a"
 			vmArg "-Dringworld.multiplayerTestRole=A"
-			vmArg "-Dringworld.multiplayerTestPort=25566"
+			vmArg "-Dringworld.multiplayerTestPort=${fabricMultiplayerPort()}"
 			programArgs "--username", "RingTesterA"
 		}
 		multiplayerClientB {
@@ -43,7 +54,7 @@ loom {
 			name "RingWorld Multiplayer Client B"
 			runDir "run-multiplayer/client-b"
 			vmArg "-Dringworld.multiplayerTestRole=B"
-			vmArg "-Dringworld.multiplayerTestPort=25566"
+			vmArg "-Dringworld.multiplayerTestPort=${fabricMultiplayerPort()}"
 			programArgs "--username", "RingTesterB"
 		}
 		raidSeamArmServer {
@@ -414,6 +425,7 @@ tasks.register("prepareMultiplayerHarness") {
 	inputs.property("ringMultiplayerCircumferenceBlocks", multiplayerCircumferenceBlocks)
 	inputs.property("ringMultiplayerWidthBlocks", multiplayerWidthBlocks)
 	inputs.property("ringMultiplayerWallHeightBlocks", multiplayerWallHeightBlocks)
+	inputs.property("ringFabricMultiplayerPort", fabricMultiplayerPort())
 	outputs.dir(multiplayerHarnessDirectory)
 	outputs.upToDateWhen { false }
 	doLast {
@@ -448,7 +460,7 @@ pregenerateTerrainAtlas=${multiplayerPregenerateTerrainAtlas.get().toBoolean() ?
 """
 
 		def properties = new Properties()
-		properties.setProperty("server-port", "25566")
+		properties.setProperty("server-port", fabricMultiplayerPort().toString())
 		properties.setProperty("online-mode", "false")
 		properties.setProperty("gamemode", "creative")
 		properties.setProperty("difficulty", "normal")
@@ -462,7 +474,8 @@ pregenerateTerrainAtlas=${multiplayerPregenerateTerrainAtlas.get().toBoolean() ?
 			properties.store(it, "Disposable RingWorld Fabric multiplayer harness")
 		}
 
-		logger.lifecycle("[fabric-multiplayer] prepared isolated server/client runs at {}", multiplayerHarnessDirectory)
+		logger.lifecycle("[fabric-multiplayer] prepared isolated server/client runs at {} on port {}",
+				multiplayerHarnessDirectory, fabricMultiplayerPort())
 	}
 }
 
@@ -524,6 +537,15 @@ tasks.register("verifyMultiplayerHarness") {
 		if (!serverText.contains("[multiplayer-extended] ordinary Nether portal wait result=true")
 				|| !serverText.contains("[multiplayer-extended] seam thunder/lightning result=true")) {
 			throw new GradleException("Fabric multiplayer portal-delay/weather evidence is incomplete; inspect ${serverLog}")
+		}
+		["extended-fixture-before", "extended-fixture-after", "nether-returned",
+		 "end-returned", "weather-stability-ready", "terminal-result"].each { phase ->
+			if (!serverText.contains("[multiplayer-cold] phase=${phase}")) {
+				throw new GradleException("Fabric multiplayer cold-phase telemetry is missing ${phase}; inspect ${serverLog}")
+			}
+		}
+		if (serverText.contains("post-End weather stability timed out")) {
+			throw new GradleException("Fabric multiplayer post-End stability barrier timed out; inspect ${serverLog}")
 		}
 		[
 				[clientALog, clientAText, "[multiplayer:A] client world fully loaded"],

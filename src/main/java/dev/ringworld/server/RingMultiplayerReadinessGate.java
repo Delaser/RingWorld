@@ -3,10 +3,10 @@ package dev.ringworld.server;
 /**
  * Pure pacing barrier for the disposable two-client seam fixture.
  *
- * <p>The seam assertion samples real client interpolation.  Starting it during
- * a cold server hitch turns an infrastructure delay into a false topology
- * failure, so both clients must first observe a bounded run of normally paced
- * server ticks.</p>
+ * <p>The seam assertion and the post-portal weather assertion sample real
+ * client interpolation. Starting either during a cold server hitch turns an
+ * infrastructure delay into a false topology failure, so callers first
+ * observe a bounded run of normally paced server ticks.</p>
  */
 final class RingMultiplayerReadinessGate {
     static final int REQUIRED_CONSECUTIVE_ON_TIME_TICKS = 100;
