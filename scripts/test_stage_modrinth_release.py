@@ -114,8 +114,14 @@ class ModrinthStagingTest(unittest.TestCase):
         self.neo_jar = self.root / f"ringworld-neoforge-{VERSION}.jar"
         self.config.write_text(json.dumps(release_config()), encoding="utf-8")
         self.neo_config.write_text(json.dumps(release_config("neoforge")), encoding="utf-8")
-        self.description.write_text("Description\n", encoding="utf-8")
-        self.changelog.write_text("Changes\n", encoding="utf-8")
+        self.description.write_text(
+            "Description\n\nSource: {{RINGWORLD_CORRESPONDING_SOURCE_URL}}\n",
+            encoding="utf-8",
+        )
+        self.changelog.write_text(
+            "Changes\n\nSource: {{RINGWORLD_CORRESPONDING_SOURCE_URL}}\n",
+            encoding="utf-8",
+        )
         self.license.write_bytes(LICENSE)
 
     def tearDown(self) -> None:
@@ -143,6 +149,11 @@ class ModrinthStagingTest(unittest.TestCase):
         self.assertTrue(manifest["upload_file_only"])
         self.assertEqual(manifest["source"]["revision"], REVISION)
         self.assertIn(manifest["hashes"]["sha256"], (target / "SHA256SUMS.txt").read_text())
+        source_url = f"https://github.com/Delaser/RingWorld/commit/{REVISION}"
+        self.assertIn(source_url, (target / "PROJECT_DESCRIPTION.md").read_text())
+        self.assertIn(source_url, (target / "CHANGELOG.md").read_text())
+        self.assertNotIn("{{RINGWORLD_CORRESPONDING_SOURCE_URL}}",
+                         (target / "PROJECT_DESCRIPTION.md").read_text())
 
     def test_stages_neoforge_in_a_separate_loader_directory(self) -> None:
         write_neoforge_jar(self.neo_jar)
@@ -152,6 +163,65 @@ class ModrinthStagingTest(unittest.TestCase):
         self.assertEqual(list(target.glob("*.jar")), [target / self.neo_jar.name])
         self.assertEqual(manifest["loader"], "neoforge")
         self.assertEqual(manifest["source"]["revision"], REVISION)
+        source_url = f"https://github.com/Delaser/RingWorld/commit/{REVISION}"
+        self.assertIn(source_url, (target / "PROJECT_DESCRIPTION.md").read_text())
+        self.assertIn(source_url, (target / "CHANGELOG.md").read_text())
+
+    def test_rejects_absent_or_duplicate_public_source_placeholder(self) -> None:
+        write_jar(self.jar)
+        for path, content in (
+                (self.description, "Description without source\n"),
+                (self.changelog, "Changes without source\n"),
+                (self.description,
+                 "One {{RINGWORLD_CORRESPONDING_SOURCE_URL}} two "
+                 "{{RINGWORLD_CORRESPONDING_SOURCE_URL}}\n")):
+            with self.subTest(path=path.name, content=content):
+                original = path.read_text(encoding="utf-8")
+                path.write_text(content, encoding="utf-8")
+                with self.assertRaisesRegex(VerificationError, "exactly one.*placeholder"):
+                    self.stage()
+                path.write_text(original, encoding="utf-8")
+
+    def test_rejects_hard_coded_or_unverified_public_source_url(self) -> None:
+        write_jar(self.jar)
+        for content in (
+                "Source: https://github.com/Delaser/RingWorld/commit/" + REVISION
+                + "\n{{RINGWORLD_CORRESPONDING_SOURCE_URL}}\n",
+                "Source revision: " + REVISION
+                + "\n{{RINGWORLD_CORRESPONDING_SOURCE_URL}}\n",
+                "Source revision: " + REVISION.upper()
+                + "\n{{RINGWORLD_CORRESPONDING_SOURCE_URL}}\n",
+                "Source revision: " + REVISION[:7].upper()
+                + "\n{{RINGWORLD_CORRESPONDING_SOURCE_URL}}\n",
+                "Source: https://GitHub.com/Delaser/RingWorld/tree/" + REVISION[:7].upper()
+                + "\n{{RINGWORLD_CORRESPONDING_SOURCE_URL}}\n",
+                "Source: https://github.com/Delaser/RingWorld/blob/" + REVISION[:7]
+                + "/deploy/modrinth/project-description.md\n"
+                + "\n{{RINGWORLD_CORRESPONDING_SOURCE_URL}}\n"):
+            with self.subTest(content=content):
+                self.description.write_text(content, encoding="utf-8")
+                with self.assertRaisesRegex(VerificationError, "must not hard-code"):
+                    self.stage()
+        self.description.write_text(
+            "Source: {{RINGWORLD_CORRESPONDING_SOURCE_URL}}\n", encoding="utf-8",
+        )
+        with self.assertRaisesRegex(VerificationError, "source URL"):
+            stage_release(
+                self.jar, self.config, self.description, self.changelog,
+                self.license, self.root / "out",
+                {"revision": REVISION, "url": "https://example.invalid/commit/" + REVISION},
+            )
+
+    def test_allows_normal_release_versions_and_non_revision_hex_word(self) -> None:
+        write_jar(self.jar)
+        self.description.write_text(
+            "RingWorld 0.2.0+mc26.1.2 requires Java 25; its defaced cobblestone rim "
+            "supports a 16384-block ring.\n"
+            "Source: {{RINGWORLD_CORRESPONDING_SOURCE_URL}}\n",
+            encoding="utf-8",
+        )
+        target = self.stage()
+        self.assertTrue((target / "PROJECT_DESCRIPTION.md").is_file())
 
     def test_validates_matching_dual_loader_contract_and_rejects_mismatch(self) -> None:
         write_jar(self.jar)

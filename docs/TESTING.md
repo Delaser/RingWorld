@@ -1440,7 +1440,11 @@ strictly validated staged jar; it cannot relabel an arbitrary jar with a
 caller-supplied commit. Negative cases cover empty/non-runtime jars, decoy or
 malformed NeoForge TOML, credentials/runtime state, source artifacts, path
 traversal, stale licence/version/API metadata, auto-join, and altered
-provenance. The POSIX launcher cases execute fresh and in-place macOS paths,
+provenance. The staging tests also require each loader's generated public
+project description and changelog to render exactly the verified immutable
+public source-commit URL; absent, duplicate, hard-coded GitHub revision URLs
+or short/full SHAs, and unverified links fail before a stage is written. The
+POSIX launcher cases execute fresh and in-place macOS paths,
 verify that saves/options/config/user settings and unrelated mods survive, and
 prove Fabric and NeoForge remain in separate `RingWorld-Test` and
 `RingWorld-NeoForge` instances. The isolated home also checks Prism-managed

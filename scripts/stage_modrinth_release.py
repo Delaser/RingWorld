@@ -40,8 +40,19 @@ SENSITIVE_TOP_LEVEL = {".minecraft", "logs", "run", "saves"}
 SENSITIVE_SUFFIXES = {".jks", ".keystore", ".p12", ".pfx"}
 PRIVATE_KEY_PATTERN = re.compile(rb"-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----")
 SHA_PATTERN = re.compile(r"^[0-9a-f]{40}$")
+FULL_COMMIT_SHA_TEXT_PATTERN = re.compile(r"\b[0-9a-f]{40}\b", re.IGNORECASE)
+SHORT_COMMIT_SHA_LABELLED_PATTERN = re.compile(
+    r"\b(?:commit|revision|sha)(?:\s+(?:id|hash))?\s*"
+    r"(?::|=|#|-|\bis\b)?\s*[`'\"]*([0-9a-f]{7,39})\b",
+    re.IGNORECASE,
+)
 GITHUB_COMMIT_PREFIX = "https://github.com/Delaser/RingWorld/commit/"
 PUBLIC_REPOSITORY = "https://github.com/Delaser/RingWorld"
+GITHUB_REVISION_URL_PATTERN = re.compile(
+    r"https?://github\.com/delaser/ringworld/(?:commit|tree|blob)/[^\s)\]}>]+",
+    re.IGNORECASE,
+)
+SOURCE_URL_PLACEHOLDER = "{{RINGWORLD_CORRESPONDING_SOURCE_URL}}"
 COMPATIBILITY_API_VERSION = 1
 REQUIRED_BUILD_JAVA = 25
 JAVA_VERSION_PATTERN = re.compile(r'\b(?:java|openjdk) version "(?:1\.)?(\d+)')
@@ -209,6 +220,34 @@ def validate_source_descriptor(source: dict) -> None:
     require_equal("source URL", url, f"{GITHUB_COMMIT_PREFIX}{revision}")
 
 
+def render_public_release_text(path: Path, source: dict, *, label: str) -> str:
+    """Render one upload-adjacent public text with the verified source URL.
+
+    The source manifest is local operator evidence, so it cannot be the only
+    way a recipient learns where to obtain the corresponding source.  Require
+    every staged public text to carry the one immutable link itself.
+    """
+    validate_source_descriptor(source)
+    template = path.read_text(encoding="utf-8")
+    if not template.strip():
+        raise VerificationError(f"{label} must not be empty")
+    placeholder_count = template.count(SOURCE_URL_PLACEHOLDER)
+    if placeholder_count != 1:
+        raise VerificationError(
+            f"{label} must contain exactly one {SOURCE_URL_PLACEHOLDER} placeholder"
+        )
+    if (GITHUB_REVISION_URL_PATTERN.search(template)
+            or FULL_COMMIT_SHA_TEXT_PATTERN.search(template)
+            or SHORT_COMMIT_SHA_LABELLED_PATTERN.search(template)):
+        raise VerificationError(
+            f"{label} must not hard-code a GitHub revision URL or SHA; use {SOURCE_URL_PLACEHOLDER}"
+        )
+    rendered = template.replace(SOURCE_URL_PLACEHOLDER, source["url"])
+    if SOURCE_URL_PLACEHOLDER in rendered or rendered.count(source["url"]) != 1:
+        raise VerificationError(f"{label} did not render one verified corresponding-source URL")
+    return rendered
+
+
 def validate_archive_paths(names: list[str]) -> None:
     if len(names) != len(set(names)):
         raise VerificationError("runtime jar contains duplicate archive entries")
@@ -374,10 +413,12 @@ def stage_release(
     resolved_loader = validate_release_config(config, loader)
     validate_source_descriptor(source)
     metadata = validate_runtime_jar(jar_path, config, license_path.read_bytes(), loader=resolved_loader)
-    description = description_path.read_text(encoding="utf-8")
-    changelog = changelog_path.read_text(encoding="utf-8")
-    if not description.strip() or not changelog.strip():
-        raise VerificationError("project description and changelog must not be empty")
+    description = render_public_release_text(
+        description_path, source, label="project description",
+    )
+    changelog = render_public_release_text(
+        changelog_path, source, label=f"{resolved_loader} changelog",
+    )
     target = output_root / config["version"]["version_number"] / resolved_loader
     target.parent.mkdir(parents=True, exist_ok=True)
     remove_recognized_stage(target)

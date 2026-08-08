@@ -95,9 +95,10 @@ Maintainers stage matching Fabric and NeoForge candidates with
 `python3 scripts/stage_modrinth_release.py --loader both --build` under Java 25
 from a clean, pushed public branch. The command fails early with Java setup
 guidance if the active runtime is not Java 25. It produces one reviewed runtime
-jar per loader, checksums, and the same exact source revision; it verifies the
-shared gameplay/protocol/shader contract before writing either stage. It does
-not upload or change the listing. See
+jar per loader, checksums, and generated public description/changelog text with
+the exact immutable source-commit URL; it verifies the shared
+gameplay/protocol/shader contract before writing either stage. It does not
+upload or change the listing. See
 [the release procedure](docs/MODRINTH_RELEASE.md).
 
 Optional loader-labelled Prism client bundles and dedicated-server overlays

@@ -9,3 +9,5 @@
 This alpha is for compatibility and pre-launch testing. Install it on both the
 server and every client using NeoForge. See the project page for known
 compatibility limits.
+
+Corresponding source: [exact immutable commit]({{RINGWORLD_CORRESPONDING_SOURCE_URL}}).
