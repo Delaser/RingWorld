@@ -65,6 +65,9 @@ Start here:
 - [`FABRIC_RELEASE_CANDIDATE_2026-08-01.md`](FABRIC_RELEASE_CANDIDATE_2026-08-01.md):
   frozen Fabric candidate hashes, package/server/macOS runtime evidence, and
   the remaining graphical platform gates.
+- [`DUAL_LOADER_RELEASE_CANDIDATE_2026-08-08.md`](DUAL_LOADER_RELEASE_CANDIDATE_2026-08-08.md):
+  current Fabric/NeoForge source and artifact hashes, machine validation,
+  optional packages, and remaining human release gates.
 - [`SEAM_GAMEPLAY_REGRESSION_2026-08-01.md`](SEAM_GAMEPLAY_REGRESSION_2026-08-01.md):
   expanded dedicated-client stateful-block, bed/death, and physical-portal
   seam evidence plus the remaining manual/unsupported matrix.

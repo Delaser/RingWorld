@@ -77,6 +77,10 @@ that submission does not make the remaining port gates complete. The approved
 next order is NeoForge standalone parity, standalone gameplay/visual polish,
 then exact-candidate release preparation. Broad third-party compatibility is
 deferred until owner sign-off; see `docs/DUAL_LOADER_STANDALONE_PLAN.md`.
+The current dual-loader candidate's validated code baseline is public commit
+`967759be872080a72e48bd26f7a97df9ee0a0302`; its exact jar/package hashes,
+machine evidence, and remaining human gates are recorded in
+`docs/DUAL_LOADER_RELEASE_CANDIDATE_2026-08-08.md`.
 The post-gameplay #96 refresh has current Fabric and NeoForge safe-small
 6/12/28 tangent, handoff, radial-up, and frame evidence. All NeoForge measured
 views completed with zero frames over 50 ms. The exact production 16,384×256

@@ -9,6 +9,18 @@ The Minecraft 26.1.2 port is integrated on `main`; see
 [`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md) and the
 [`final baseline`](MINECRAFT_1_21_11_FINAL_BASELINE.md).
 
+The current dual-loader alpha candidate's validated code baseline is commit
+`967759be872080a72e48bd26f7a97df9ee0a0302`. Its Fabric SHA-256 is
+`9ec25789e1418fd3b1877c3c23d8388cbb880a0ed562ef5f0608498df0605097`;
+its NeoForge SHA-256 is
+`ac8b8776d85038512bb85dab8967a32a53e8d33128a4ccae17b51b65b214938a`.
+The clean dual build/stage, 291 tests per loader, focused distribution suite,
+dual-loader safe-small multiplayer gates, and production NeoForge
+Atlas-concurrency matrix pass. The final staging manifest supplies the exact
+post-documentation corresponding-source revision. Machine evidence and the
+remaining human gates are in
+[`DUAL_LOADER_RELEASE_CANDIDATE_2026-08-08.md`](DUAL_LOADER_RELEASE_CANDIDATE_2026-08-08.md).
+
 On 2026-07-31, the Fabric alpha `0.2.0+mc26.1.2` was uploaded to Modrinth as
 version `1MhIDQ2h`; it is currently **Under review**. Modrinth detected Fabric
 and Minecraft 26.1.2; the release declares Fabric API as required and requires
