@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 269 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 274 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
@@ -32,7 +32,10 @@ water and hostile navigation through the seam. Loader-labelled Fabric
 and NeoForge client/server packages, strict jar verification, same-commit
 shared-contract comparison, and a real packaged macOS NeoForge client smoke
 also pass. The shared GUI-scale-4 atlas map/control fixture passes all eleven
-captures and its ordered live-revision probe on both loaders. A real graphical
+captures and its ordered live-revision probe on both loaders. The shared
+menu-only world-creation fixture also passes eleven footer/editor/error/preset/
+confirmation captures across GUI scales 1–4 on both loaders without creating
+a world. A real graphical
 Windows run, exact-candidate review, and owner release go/no-go remain. The
 expanded shared real-client map/compass fixture also passes on both loaders:
 filled-map pixels and player/banner markers cross the seam in both directions,
@@ -282,7 +285,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   hashes, performance evidence, and protected rollback inventory.
 - `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`: historical Java 25/26.1.2
   compiler inventory and the subsequent green build/server checkpoint.
-- `dist/`, `run/`, `run-multiplayer/`, `run-atlas-ui/`, `run-map-compass-capture/`, `run-headless-prewarm/`,
+- `dist/`, `run/`, `run-multiplayer/`, `run-atlas-ui/`, `run-creation-ui/`, `run-map-compass-capture/`, `run-headless-prewarm/`,
   `run-raid-seam/`, `logs/`, `.gradle/`, and `build/`:
   generated or local runtime state; all are intentionally ignored.
 
@@ -300,12 +303,12 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 269
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 274
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 269
+The NeoForge module uses the same Java 25 toolchain and also passes all 274
 unit/parameterized cases:
 
 ```sh
@@ -799,6 +802,15 @@ version numbers.
   before arming seam movement. Keep the `maxRemoteStep <= 1.25` assertion and
   client self-stop behavior; the corrected fresh Fabric and cold NeoForge
   concurrent runs passed this gate on 2026-08-08.
+- Its disposable Fabric and NeoForge preparation tasks share
+  `ringMultiplayerCircumferenceBlocks`, `ringMultiplayerWidthBlocks`, and
+  `ringMultiplayerWallHeightBlocks` (safe-small defaults: `2048`, `416`,
+  `160`). Circumference and width must meet the normal minimums and be
+  16-block aligned; wall height must be at least 32. With atlas concurrency
+  enabled, the verifier must match every logged total against `(C / 8) *
+  (W / 8)`, not merely a fixed safe-small count. Rerun the server with
+  `-x prepare...` only to resume the ignored disposable world without erasing
+  it; do not use that escape hatch for a changed geometry.
 - Its extended water fixture seals a two-cell trough, clears canonical X=0,
   places the only source at C-1, and must assert water at X=0 on both server
   and clients. Observing C-1

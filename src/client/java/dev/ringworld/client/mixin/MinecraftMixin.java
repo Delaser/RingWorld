@@ -1,6 +1,7 @@
 package dev.ringworld.client.mixin;
 
 import dev.ringworld.client.RingWorldClientSession;
+import dev.ringworld.client.RingWorldCreationUiTestClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import org.spongepowered.asm.mixin.Mixin;
@@ -24,5 +25,11 @@ abstract class MinecraftMixin {
     @Inject(method = "clearClientLevel", at = @At("HEAD"))
     private void ringworld$clearClientSession(Screen nextScreen, CallbackInfo ci) {
         RingWorldClientSession.clear();
+    }
+
+    /** Menu rendering does not reach either loader's level-render callback. */
+    @Inject(method = "renderFrame", at = @At("TAIL"))
+    private void ringworld$recordCreationUiTestFrame(boolean advanceGameTime, CallbackInfo ci) {
+        RingWorldCreationUiTestClient.frameRendered();
     }
 }

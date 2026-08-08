@@ -48,22 +48,30 @@ editing the file. The in-game editor updates both the file and process cache
 immediately.
 
 The Create World screen has a bottom-left `RingWorld C×W` button. Its editor
-provides safe-small (2,048×416), production-default, and current presets plus
-custom circumference, width, wall-height, and new-world ocean-monument
-controls. It previews:
+provides **Safe-small test** (2,048×416×160), **Production (recommended)**
+(16,384×256×160), and **Saved config values** presets, plus custom
+circumference, width, wall-height, and new-world ocean-monument controls. The
+saved-values preset reloads the bootstrap values in `config/ringworld.properties`; it
+does not read or change an existing world's saved layout. The editor previews:
 
-- chunks around/across and total canonical chunks;
-- radius, physical centre, and apparent opposite width;
-- wall/cloud elevation and top radial clearance;
-- atlas cells/raw memory;
-- GPU texture size, blocks per texel, and mesh vertices.
+- blocks around/across;
+- curved-horizon radius and wall height;
+- atlas cells and approximate raw memory;
+- measured-reference full-generation time and generated-world size when the
+  available GUI height permits the full fourth summary line.
 
-Invalid layouts cannot be applied. The chosen values are bootstrap defaults
-for the next new world; they do not mutate any save already created. Applying
-a valid layout opens a second confirmation that names the dimensions and wall
-height before those immutable first-load defaults are written. The monument
-choice is persisted separately in `ringworld:structure_policy`; existing
-worlds never gain it from a later config edit.
+Invalid layouts cannot be applied. Parsing and basic structural checks
+aggregate applicable field-level messages, so malformed circumference, width,
+and wall-height values can be corrected together. Once those fields meet their
+minimum and alignment rules, cross-field radial and wall errors are reported
+together. The chosen values are bootstrap defaults for the next new world;
+they do not mutate any save already created. Applying a valid layout opens a
+second confirmation that names the dimensions, wall height, and monument
+choice before immutable first-load defaults are written. The monument option
+searches once for a valid ocean-monument location as that new world first
+loads, then saves the satisfied or unavailable result separately in
+`ringworld:structure_policy`; existing worlds never gain it from a later
+config edit.
 
 ## Persistence and immutability
 
@@ -140,6 +148,15 @@ bytes. The #69 benchmark rejected adaptive 4/2/1-block profiles for this
 release because they multiply source/cache/transfer cost by 4/16/64 without
 changing the capped GPU texture or mesh. See
 [`ATLAS_FIDELITY_BENCHMARK_2026-08-01.md`](ATLAS_FIDELITY_BENCHMARK_2026-08-01.md).
+
+The ignored two-client Atlas-concurrency harness can create either development
+or production-sized disposable worlds through
+`ringMultiplayerCircumferenceBlocks`, `ringMultiplayerWidthBlocks`, and
+`ringMultiplayerWallHeightBlocks`; it is never a live-server configuration.
+The Atlas verifier derives its required count from `(circumference / 8) *
+(width / 8)` and rejects a different logged total. See the exact loader-
+qualified production commands and safe restart procedure in
+[`TESTING.md`](TESTING.md#opt-in-atlas-concurrency-gate-130).
 
 Production-default atlas completion is therefore a large world-generation
 operation. Monitor disk use, server tick time, and progress logs. Set
@@ -326,7 +343,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite passes 269 unit/parameterized cases per loader. The historical Phase 2
+The current suite passes 274 unit/parameterized cases per loader. The historical Phase 2
 95-error inventory and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.

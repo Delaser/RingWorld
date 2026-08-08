@@ -127,7 +127,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite passes 269 unit/parameterized cases per loader:
+The active suite passes 274 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
@@ -168,7 +168,7 @@ The active suite passes 269 unit/parameterized cases per loader:
 | `RingSurfaceMeshRefreshPolicyTest` | Partial-mesh reuse, height-fingerprint-driven complete-mesh refresh, and forced rebuilds across layout/completion transitions |
 | `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
-| `RingWorldCreationUiModelTest` | Safe-small, production, custom, and invalid world-creation cost previews |
+| `RingWorldCreationUiModelTest` | Safe-small and recommended-production presets, valid/custom previews, aggregated malformed/structural/cross-field validation, immutable-next-new-world confirmation, and monument copy |
 | `RingPhysicalPoseTest` | Cardinal physical position/basis, vanilla yaw/pitch conversion, and rendered local-up direction |
 | `RingCompatibilityContractTest` | Versioned API/contract, baseline stack, case-normalized exact conflict matching, and immutable inventory |
 | `RingProtocolIdentityTest` | Settings, acknowledgement, revisioned terrain-atlas, and pregeneration channel names remain synchronized with their wire layouts |
@@ -930,6 +930,56 @@ duplicate-blur exception, clipped controls, footer overlap, missing validation
 message, or stale C×W summary as a failure. This is a local UI test; do not
 create or connect to the live server.
 
+## Creation UI GUI-scale regression
+
+The menu-only creation-UI gate passed on Fabric and NeoForge on 2026-08-08.
+Run only one loader at a time:
+
+```sh
+./gradlew :runCreationUiClient --console=plain
+./gradlew :neoforge:runCreationUiClient --console=plain
+```
+
+Each qualified task prepares its own ignored `run-creation-ui/` directory
+(NeoForge uses `neoforge/run-creation-ui/`), deleting only disposable saves,
+screenshots, RingWorld cache, and logs. The initial bootstrap configuration is
+2,048×416×160 with `testMode=false`, atlas pregeneration disabled, and no
+monument request. The client requests a 1,920-pixel-wide framebuffer at least
+1,080 pixels tall (macOS may expose extra usable height), enforces a 480-pixel-
+wide scale-4 layout at least 270 pixels tall, uses GUI scales 1–4, and stops
+without invoking Minecraft's create-world action. It waits for the title-screen
+startup fade before capturing, so the Mojang splash cannot mask UI defects.
+NeoForge disables only its separate early splash; the graphical Minecraft
+window and renderer still run.
+
+| Capture prefix | Required state |
+| --- | --- |
+| `creation-ui-01-footer-scale1` | Create World footer entry |
+| `creation-ui-02-default-scale1` | Default editor at scale 1 |
+| `creation-ui-03-default-scale2` | Default editor at scale 2 |
+| `creation-ui-04-default-scale3` | Default editor at scale 3 |
+| `creation-ui-05-default-scale4` | Compact default editor at scale 4 |
+| `creation-ui-06-invalid-five-errors-scale4` | All five invalid-layout errors and disabled apply action |
+| `creation-ui-07-safe-small-scale4` | Safe-small preset |
+| `creation-ui-08-production-scale4` | Recommended production preset |
+| `creation-ui-09-custom-monument-scale4` | Valid 4,096×640×192 custom monument layout |
+| `creation-ui-10-confirm-layout-scale4` | Immutable-layout confirmation |
+| `creation-ui-11-footer-applied-scale4` | Refreshed Create World footer after confirmation |
+
+The finalizer requires `[creation-ui-test] PASS` and no `FAIL`, every listed
+prefix to match at least one decodable, dimension-safe, visible non-uniform
+PNG, no `level.dat` below `saves/`, and final properties exactly
+`circumferenceBlocks=4096`, `widthBlocks=640`, `wallHeightBlocks=192`, and
+`requestOceanMonument=true` (while retaining `testMode=false` and disabled
+atlas pregeneration). A missing, stale, blank, corrupt, failed, or
+world-creating run therefore fails closed.
+
+Accepted evidence: both qualified tasks emitted their 11 screenshot markers,
+the final PASS marker, the exact persisted custom values, and no `level.dat`.
+The compact default, five-error, custom-monument, confirmation, and refreshed-
+footer captures were visually inspected without clipping, overlap, duplicate
+blur, or startup-overlay contamination.
+
 ## Non-destructive join screenshot
 
 For a real saved world without the automated traversal, start the client with:
@@ -1080,6 +1130,16 @@ matrix runs, use the shared opt-in Gradle property
 fresh `run-multiplayer/` fixture selected by the server preparation task; it
 does not start a live server or change a deploy/save configuration.
 
+The same disposable harness accepts three shared geometry properties:
+`ringMultiplayerCircumferenceBlocks` (default `2048`),
+`ringMultiplayerWidthBlocks` (default `416`), and
+`ringMultiplayerWallHeightBlocks` (default `160`). Circumference and width
+must be integer, 16-block-aligned values of at least `1024` and `256` blocks;
+wall height must be an integer of at least `32` blocks. The normal first-world
+layout report remains the final safety check. With the Atlas opt-in, the
+verifier derives its required total from the selected layout as
+`(C / 8) * (W / 8)` cells, so a mismatched server configuration fails closed.
+
 For Fabric, first run the preparation task. On first use it creates
 `run-multiplayer/server/eula.txt` with `eula=false`; review Mojang's EULA and
 set it to `true`, then repeat preparation. Start the following three commands
@@ -1095,7 +1155,11 @@ in separate terminals, wait for all to exit, and run the verifier:
 
 NeoForge is loader-parallel and uses its subproject-local fixture. Its prepare
 task creates and gates the same persistent `eula.txt` acknowledgement; review
-it, set `eula=true`, and repeat the preparation command before launching. Use:
+it, set `eula=true`, and repeat the preparation command before launching.
+The preparation task disables only NeoForge's separate early splash for the
+two automated clients. The real Minecraft windows and renderer still run;
+this prevents a false GLFW primary-monitor failure if macOS has recently put
+the display to sleep. Use:
 
 ```sh
 ./gradlew :neoforge:prepareNeoForgeMultiplayerHarness -PringMultiplayerPregenerateTerrainAtlas=true --console=plain
@@ -1104,6 +1168,40 @@ it, set `eula=true`, and repeat the preparation command before launching. Use:
 ./gradlew :neoforge:runMultiplayerClientB --console=plain
 ./gradlew :neoforge:verifyNeoForgeMultiplayerHarness -PringMultiplayerPregenerateTerrainAtlas=true --console=plain
 ```
+
+For the exact production `16384×256` layout, pass the three layout properties
+to the preparation, server, and verifier commands. For example, Fabric uses:
+
+```sh
+./gradlew :prepareMultiplayerHarness -PringMultiplayerPregenerateTerrainAtlas=true -PringMultiplayerCircumferenceBlocks=16384 -PringMultiplayerWidthBlocks=256 -PringMultiplayerWallHeightBlocks=160 --console=plain
+./gradlew :runMultiplayerServer -PringMultiplayerPregenerateTerrainAtlas=true -PringMultiplayerCircumferenceBlocks=16384 -PringMultiplayerWidthBlocks=256 -PringMultiplayerWallHeightBlocks=160 --console=plain
+./gradlew :runMultiplayerClientA --console=plain
+./gradlew :runMultiplayerClientB --console=plain
+./gradlew :verifyMultiplayerHarness -PringMultiplayerPregenerateTerrainAtlas=true -PringMultiplayerCircumferenceBlocks=16384 -PringMultiplayerWidthBlocks=256 -PringMultiplayerWallHeightBlocks=160 --console=plain
+```
+
+NeoForge uses the loader-qualified counterparts:
+
+```sh
+./gradlew :neoforge:prepareNeoForgeMultiplayerHarness -PringMultiplayerPregenerateTerrainAtlas=true -PringMultiplayerCircumferenceBlocks=16384 -PringMultiplayerWidthBlocks=256 -PringMultiplayerWallHeightBlocks=160 --console=plain
+./gradlew :neoforge:runMultiplayerServer -PringMultiplayerPregenerateTerrainAtlas=true -PringMultiplayerCircumferenceBlocks=16384 -PringMultiplayerWidthBlocks=256 -PringMultiplayerWallHeightBlocks=160 --console=plain
+./gradlew :neoforge:runMultiplayerClientA --console=plain
+./gradlew :neoforge:runMultiplayerClientB --console=plain
+./gradlew :neoforge:verifyNeoForgeMultiplayerHarness -PringMultiplayerPregenerateTerrainAtlas=true -PringMultiplayerCircumferenceBlocks=16384 -PringMultiplayerWidthBlocks=256 -PringMultiplayerWallHeightBlocks=160 --console=plain
+```
+
+Preparation deliberately deletes its disposable world. To restart the same
+prepared server and resume its saved Atlas instead, omit preparation and skip
+only that dependency, retaining the same geometry:
+
+```sh
+./gradlew :runMultiplayerServer -x prepareMultiplayerHarness --console=plain
+./gradlew :neoforge:runMultiplayerServer -x prepareNeoForgeMultiplayerHarness --console=plain
+```
+
+Do not use either restart command after changing a layout property: prepare a
+fresh fixture so immutable saved settings and the expected Atlas-cell total
+remain aligned.
 
 Each automated multiplayer client self-stops after it emits its terminal
 result. Stop the dedicated server normally after both clients exit, then run
@@ -1124,6 +1222,14 @@ gate, including the strict `maxRemoteStep <= 1.25` client requirement. Each
 automated client emits its terminal result and self-stops; stop the dedicated
 server normally after both have exited. Detailed scope and residual manual
 coverage are recorded in [`SEAM_GAMEPLAY_REGRESSION_2026-08-01.md`](SEAM_GAMEPLAY_REGRESSION_2026-08-01.md).
+
+The production-size NeoForge qualification on 2026-08-08 used
+16,384×256×160 and the derived 65,536-cell total. Two normal graphical clients
+completed the full matrix while Atlas generation advanced; the server saved
+7,544 cells (11.5%), then a no-prepare restart loaded that exact partial Atlas,
+advanced monotonically to 65,536/65,536, and saved normally. Two cold server-
+behind warnings (7.464 and 8.296 seconds) remain under profiling issue #134;
+there was no managed-block deadlock, Atlas regression, or multiplayer failure.
 
 The original run on 2026-07-31 achieved the baseline result
 on a reused 2,048×416 server whose seam crossed an ocean. Both clients
