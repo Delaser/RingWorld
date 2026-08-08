@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 290 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 291 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
@@ -306,12 +306,12 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 290
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 291
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 290
+The NeoForge module uses the same Java 25 toolchain and also passes all 291
 unit/parameterized cases:
 
 ```sh
@@ -717,6 +717,12 @@ version numbers.
   the cross-seam test block. Its terminal gate requires the ordinary survival
   Nether-portal wait and an actual lightning entity observed by both seam-side
   clients; do not replace either with a direct-transition-only assertion.
+- Keep its cross-seam explosion inside the deterministic seam-wrapped glass
+  cell; do not restore arbitrary natural-terrain destruction, which once
+  amplified cold item/falling-block tracking. Preserve the read-only
+  `multiplayer-cold` phase telemetry and independent post-End readiness window
+  before weather. Neither may load chunks, clear ordinary entities, weaken the
+  watchdog, or alter production scheduling.
 - The vanilla entity loop's asynchronous simulation graph can retain the old
   side of a natural seam crossing. `ServerWorldMixin` first checks the
   canonical graph key, then falls back only to non-spectator players within
@@ -853,6 +859,9 @@ version numbers.
   (W / 8)`, not merely a fixed safe-small count. Rerun the server with
   `-x prepare...` only to resume the ignored disposable world without erasing
   it; do not use that escape hatch for a changed geometry.
+  Fabric defaults this fixture to port 25568 and NeoForge to 25566; preserve
+  their loader-specific port properties so independent Gradle invocations do
+  not collide silently.
 - Its extended water fixture seals a two-cell trough, clears canonical X=0,
   places the only source at C-1, and must assert water at X=0 on both server
   and clients. Observing C-1

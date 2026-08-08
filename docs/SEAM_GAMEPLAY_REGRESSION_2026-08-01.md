@@ -22,6 +22,12 @@ An earlier cold NeoForge attempt passed through End return but later
 watchdog-terminated before weather/final result under the separate cold-stall
 issue #134. The subsequent warmed/staggered run passed weather, both client
 terminal results, the server's full result, and the strict NeoForge verifier.
+Later instrumented fresh Fabric and NeoForge runs also passed. Their
+deterministic glass blasts left the pre-existing item/falling-block counts
+unchanged (158/86 on Fabric and 167/86 on NeoForge), their post-End stability
+windows completed before weather, and neither produced a watchdog or crash
+report. Isolated cold portal/weather server-behind warnings remain profiling
+evidence rather than a topology or Atlas failure.
 
 ### Strengthened dual-loader checkpoint — 2026-08-02
 
@@ -53,7 +59,8 @@ The run passed:
   image;
 - a redstone-block neighbour update from canonical X=`C-1` powering a lamp at
   X=`0`;
-- synchronized seam-side water source state and a destructive explosion. The
+- synchronized seam-side water source state and a destructive BLOCK explosion
+  inside a deterministic seam-wrapped no-drop glass cell. The
   existing integrated harness separately proves scheduled water flow across
   the seam;
 - a survival bed at canonical X=`0`/`1`, used by a player beside `C`, with a

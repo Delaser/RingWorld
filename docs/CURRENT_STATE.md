@@ -203,7 +203,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite passes 290 unit/parameterized cases per loader.
+The active suite passes 291 unit/parameterized cases per loader.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
@@ -277,6 +277,37 @@ evidence for #134, not a proven cause or an Atlas deadlock. A fresh
 warmed/staggered rerun then passed the complete server and both-client matrix,
 including the new sleeping reconnect/resleep path, normal Nether delay, End
 return, weather/lightning, and the strict terminal verifier.
+
+The disposable fixture now bounds that diagnosis directly. Its cross-seam
+BLOCK explosion runs inside a seam-wrapped no-drop glass cell instead of
+breaking arbitrary cold terrain. Read-only phase telemetry records chunk,
+scheduled-tick, entity/item/falling-block, heap, and Atlas state around the
+fixture and portal transitions. After verified End return, a new independent
+100-on-time-tick stability window must pass before weather is armed; timeout
+fails the matrix. Both loader verifiers require the ordered telemetry and
+stability-ready markers. These are fixture-only safeguards and do not alter
+live server scheduling, chunks, entities, or watchdog policy.
+
+Fresh patched Fabric and NeoForge safe-small runs on 2026-08-08 passed the
+complete server/client matrix and their strict verifiers. The synthetic
+explosion changed the NeoForge fixture inventory from 167 items/86 falling
+blocks before to exactly the same counts afterwards, and Fabric likewise held
+158/86, ruling out the former terrain-dependent blast as a source of further
+growth. NeoForge recovered from isolated 4.073-second Nether and 5.870-second
+post-weather-arm server-behind warnings; Fabric recovered from a 3.988-second
+Nether warning. Neither produced a watchdog or crash report. This is
+dual-loader functional evidence for the fixture hardening, not a claim that
+cold host/resource stalls are eliminated.
+
+The exact patched production NeoForge profile then passed at
+16,384×256×160 with two graphical clients and Atlas generation enabled. Atlas
+advanced monotonically from 596 to 3,824 of 65,536 cells at roughly 28–32
+cells/s while the complete gameplay matrix ran; its strict verifier passed.
+The largest server-behind warning was 3.219 seconds during cold Nether
+generation, with no watchdog, crash report, Atlas failure, or progress
+regression. This satisfies #134's reproducible production attribution: the
+remaining bounded spike coincides with vanilla cold dimension work rather
+than the ticket-backed Atlas scheduler.
 
 #71 completes the expanded safe-small seam gameplay gate. The dedicated
 server now waits for two fully loaded clients, then passes the original
@@ -492,7 +523,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, with 290 unit/parameterized cases passing per loader, and Loom produces
+temporary shims, with 291 unit/parameterized cases passing per loader, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
