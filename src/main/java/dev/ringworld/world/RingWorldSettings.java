@@ -27,7 +27,11 @@ public final class RingWorldSettings extends SavedData {
     public static final int DEFAULT_CIRCUMFERENCE = 16_384;
     /** 160 blocks from minimum build height: a visible top near Y=96 in vanilla terrain. */
     public static final int DEFAULT_WALL_HEIGHT = 160;
-    public static final int MIN_WIDTH = 256;
+    /** Structural geometry/storage minimum; persisted worlds may use this width. */
+    public static final int MIN_WIDTH = 128;
+    /** Bootstrap layouts below this circumference are not offered for new worlds. */
+    public static final int MIN_NEW_WORLD_CIRCUMFERENCE = 2_048;
+    /** Structural loading minimum retained for persisted legacy layouts. */
     public static final int MIN_CIRCUMFERENCE = 1_024;
     private static final Codec<RingWorldSettings> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.fieldOf("width").forGetter(RingWorldSettings::widthBlocks),
@@ -53,7 +57,7 @@ public final class RingWorldSettings extends SavedData {
                 0L, RingWorldConfig.load().wallHeightBlocks(),
                 (int)RingGeometry.SURFACE_Y, FORMAT_VERSION);
         // This constructor is used only when no saved state exists yet.
-        RingDimensionReport.forVanillaOverworld(geometry(), wallHeightBlocks).requireValid();
+        RingWorldConfig.validateNewWorldLayout(widthBlocks, circumferenceBlocks, wallHeightBlocks);
         setDirty();
     }
 
@@ -104,16 +108,24 @@ public final class RingWorldSettings extends SavedData {
         }
 
         RingWorldConfig config = RingWorldConfig.load();
+        RingWorldConfig.validateNewWorldLayout(
+                config.widthBlocks(), config.circumferenceBlocks(), config.wallHeightBlocks());
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
                 new RingGeometry(config.widthBlocks(), config.circumferenceBlocks()),
                 config.wallHeightBlocks());
-        report.requireValid();
         RingWorldSettings created = new RingWorldSettings(
                 config.widthBlocks(), config.circumferenceBlocks(), world.getSeed(),
                 config.wallHeightBlocks(), (int)RingGeometry.SURFACE_Y, FORMAT_VERSION);
         created.setDirty();
         manager.set(TYPE, created);
-        RingStructurePolicy.createForNewWorld(manager, config.requestOceanMonument());
+        boolean monumentRequest = RingWorldConfig.effectiveOceanMonumentRequest(
+                report.geometry(), config.requestOceanMonument());
+        if (config.requestOceanMonument() && !monumentRequest) {
+            RingWorldMod.LOGGER.warn(
+                    "Disabled ocean-monument request: width={} cannot fit its required margins",
+                    config.widthBlocks());
+        }
+        RingStructurePolicy.createForNewWorld(manager, monumentRequest);
         RingWorldMod.LOGGER.info(
                 "Created RingWorld layout: {}x{} blocks ({}x{} chunks), radius={}, centreY={}, "
                         + "wallTopY={}, cloudBaseY={}, atlasCells={}",

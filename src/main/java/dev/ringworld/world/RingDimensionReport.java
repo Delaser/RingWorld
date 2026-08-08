@@ -13,6 +13,9 @@ import java.util.List;
  */
 public record RingDimensionReport(
         RingGeometry geometry,
+        int rimThicknessBlocks,
+        int playableInteriorBlocks,
+        long playableInteriorAreaBlocks,
         int worldBottomY,
         int worldTopYExclusive,
         int wallHeightBlocks,
@@ -21,6 +24,8 @@ public record RingDimensionReport(
         double radialClearanceAtHighestPlane,
         double oppositeAngularWidthDegrees,
         long canonicalChunkCount,
+        int atlasColumns,
+        int atlasRows,
         long atlasCellCount,
         long estimatedAtlasBytes,
         long estimatedNoiseCoordinateBytes,
@@ -35,6 +40,8 @@ public record RingDimensionReport(
     public static final int MIN_RADIAL_CLEARANCE_BLOCKS = 64;
     public static final int CLOUD_CLEARANCE_BLOCKS = 8;
     public static final int MIN_PLAYABLE_INTERIOR_BLOCKS = 64;
+    /** Vanilla normal walking without sprinting, effects, or terrain slowdown. */
+    public static final double NORMAL_WALKING_SPEED_BLOCKS_PER_SECOND = 4.317;
 
     /**
      * Technical envelope for the current integer noise cache and float shader
@@ -103,6 +110,8 @@ public record RingDimensionReport(
         }
 
         int playableInterior = geometry.widthBlocks() - rimThicknessBlocks * 2;
+        long playableInteriorArea = Math.multiplyExact(
+                (long) geometry.circumferenceBlocks(), playableInterior);
         if (playableInterior < MIN_PLAYABLE_INTERIOR_BLOCKS) {
             errors.add("width leaves only " + playableInterior
                     + " interior blocks after both " + rimThicknessBlocks + "-block rims");
@@ -130,10 +139,11 @@ public record RingDimensionReport(
 
         long chunks = Math.multiplyExact(
                 (long)geometry.circumferenceChunks(), geometry.widthChunks());
-        long atlasColumns = divideCeil(geometry.circumferenceBlocks(), atlasSampleStepBlocks);
-        long atlasRows = divideCeil(geometry.widthBlocks(), atlasSampleStepBlocks);
-        long atlasCells = Math.multiplyExact(atlasColumns, atlasRows);
-        long atlasBytes = Math.multiplyExact(atlasCells, 7L);
+        int atlasColumns = Math.toIntExact(
+                divideCeil(geometry.circumferenceBlocks(), atlasSampleStepBlocks));
+        int atlasRows = Math.toIntExact(divideCeil(geometry.widthBlocks(), atlasSampleStepBlocks));
+        long atlasCells = Math.multiplyExact((long) atlasColumns, atlasRows);
+        long atlasBytes = Math.multiplyExact(atlasCells, RingTerrainAtlas.ESTIMATED_BYTES_PER_CELL);
         long noiseCoordinateBytes = Math.multiplyExact(
                 (long)geometry.circumferenceBlocks(), 8L);
         RingDimensionCostEstimate costEstimate = RingDimensionCostEstimate.estimate(
@@ -166,10 +176,30 @@ public record RingDimensionReport(
         }
 
         return new RingDimensionReport(
-                geometry, worldBottomY, worldTopYExclusive, wallHeightBlocks,
+                geometry, rimThicknessBlocks, playableInterior, playableInteriorArea,
+                worldBottomY, worldTopYExclusive, wallHeightBlocks,
                 wallTopYExclusive, cloudBaseY, radialClearance, angularWidth,
-                chunks, atlasCells, atlasBytes, noiseCoordinateBytes, costEstimate,
+                chunks, atlasColumns, atlasRows, atlasCells, atlasBytes,
+                noiseCoordinateBytes, costEstimate,
                 errors, warnings);
+    }
+
+    /** Full walking lap at the named vanilla normal-walking reference speed. */
+    public double normalWalkingLapSeconds() {
+        return geometry.circumferenceBlocks() / NORMAL_WALKING_SPEED_BLOCKS_PER_SECOND;
+    }
+
+    /** Reference-surface diameter; kept here for UI/report consumers. */
+    public double diameterBlocks() {
+        return geometry.diameter();
+    }
+
+    /** Whether generation or atlas workload crosses a named cost threshold. */
+    public boolean hasHighGenerationCost() {
+        return canonicalChunkCount > WARN_CANONICAL_CHUNKS
+                || atlasCellCount > WARN_ATLAS_CELLS
+                || costEstimate.estimatedPregenerationSeconds() > WARN_PREGENERATION_SECONDS
+                || costEstimate.estimatedGeneratedWorldBytes() > WARN_GENERATED_WORLD_BYTES;
     }
 
     public boolean isValid() {

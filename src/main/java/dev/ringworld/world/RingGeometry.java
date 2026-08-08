@@ -23,6 +23,11 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
         return circumferenceBlocks / (2.0 * Math.PI);
     }
 
+    /** Physical diameter of the rendered cylindrical band at the reference surface. */
+    public double diameter() {
+        return radius() * 2.0;
+    }
+
     /** Authoritative intrinsic surface elevation for settings format 2. */
     public double surfaceReferenceY() {
         return SURFACE_Y;

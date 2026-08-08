@@ -14,6 +14,24 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingDimensionReportTest {
     @Test
+    void smallPresetHasExactUsableBandAndMeasuredCosts() {
+        RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
+                new RingGeometry(128, 2_048), 160);
+
+        assertTrue(report.isValid(), report.errors().toString());
+        assertEquals(118, report.playableInteriorBlocks());
+        assertEquals(241_664L, report.playableInteriorAreaBlocks());
+        assertEquals(256, report.atlasColumns());
+        assertEquals(16, report.atlasRows());
+        assertEquals(4_096L, report.atlasCellCount());
+        assertEquals(28_672L, report.estimatedAtlasBytes());
+        assertEquals(52L, report.costEstimate().estimatedPregenerationSeconds());
+        assertEquals(11_095_245L, report.costEstimate().estimatedGeneratedWorldBytes());
+        assertEquals(11.2, report.oppositeAngularWidthDegrees(), 0.1);
+        assertEquals(651.9, report.diameterBlocks(), 0.1);
+    }
+
+    @Test
     void safeSmallReferencePreservesTheOldVisualWidthWithoutCrossingTheCenter() {
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
                 new RingGeometry(416, 2_048), 160);
@@ -51,6 +69,10 @@ class RingDimensionReportTest {
         assertEquals(256, report.geometry().widthBlocks());
         assertEquals(16_384L, report.canonicalChunkCount());
         assertEquals(65_536L, report.atlasCellCount());
+        assertEquals(2_048, report.atlasColumns());
+        assertEquals(32, report.atlasRows());
+        assertEquals(246, report.playableInteriorBlocks());
+        assertEquals(4_030_464L, report.playableInteriorAreaBlocks());
         assertEquals(817L, report.costEstimate().estimatedPregenerationSeconds());
         assertEquals(177_523_917L, report.costEstimate().estimatedGeneratedWorldBytes());
         assertEquals(459_264L, report.costEstimate().estimatedAtlasWireBytes());
@@ -59,6 +81,23 @@ class RingDimensionReportTest {
                 && report.oppositeAngularWidthDegrees() < 2.9);
         assertTrue(report.warnings().isEmpty(), report.warnings().toString());
         assertTrue(report.radialClearanceAtHighestPlane() > 2_350.0);
+    }
+
+    @Test
+    void largePresetRetainsBoundedAtlasCostsButWarnsForGenerationScale() {
+        RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
+                new RingGeometry(512, 32_768), 160);
+
+        assertTrue(report.isValid(), report.errors().toString());
+        assertEquals(65_536L, report.canonicalChunkCount());
+        assertEquals(4_096, report.atlasColumns());
+        assertEquals(64, report.atlasRows());
+        assertEquals(262_144L, report.atlasCellCount());
+        assertEquals(1_835_008L, report.estimatedAtlasBytes());
+        assertEquals(3_268L, report.costEstimate().estimatedPregenerationSeconds());
+        assertEquals(710_095_668L, report.costEstimate().estimatedGeneratedWorldBytes());
+        assertTrue(report.warnings().stream().anyMatch(
+                warning -> warning.contains("measured-reference full generation")));
     }
 
     private static Stream<Arguments> productionAtlasFidelityCandidates() {
@@ -133,9 +172,9 @@ class RingDimensionReportTest {
     }
 
     @Test
-    void maximumTechnicalCircumferenceWithMinimumWidthRemainsAValidatedWarningCase() {
+    void maximumTechnicalCircumferenceWithA256BlockBandRemainsAValidatedWarningCase() {
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
-                new RingGeometry(RingWorldSettings.MIN_WIDTH, RingDimensionReport.MAX_AXIS_BLOCKS),
+                new RingGeometry(256, RingDimensionReport.MAX_AXIS_BLOCKS),
                 160);
 
         assertTrue(report.isValid(), report.errors().toString());
@@ -171,7 +210,7 @@ class RingDimensionReportTest {
         return Stream.of(
                 Arguments.of("width alignment", 2_048, 257),
                 Arguments.of("circumference alignment", 2_017, 256),
-                Arguments.of("width below supported minimum", 2_048, 240));
+                Arguments.of("width below supported minimum", 2_048, 112));
     }
 
     @ParameterizedTest(name = "{0} is rejected before creating a layout")

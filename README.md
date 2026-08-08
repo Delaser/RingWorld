@@ -16,7 +16,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> and the current suite passes 274 unit/parameterized cases per loader.
+> and the current suite passes 290 unit/parameterized cases per loader.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -61,7 +61,7 @@ The Nether and End remain vanilla.
 
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
-> Java 25 module builds with the same 274 tests; its dedicated server reaches
+> Java 25 module builds with the same 290 tests; its dedicated server reaches
 > `Done` and starts/progresses an atlas. Its client now loads the shared
 > resources/shaders and mixins, acknowledges settings format 2, streams atlas
 > metadata/tiles, and renders the complete textured surface in a copied
@@ -245,7 +245,7 @@ The parallel NeoForge module uses the same Java 25 toolchain:
 ./gradlew :neoforge:test :neoforge:build --console=plain
 ```
 
-Both Fabric and NeoForge builds pass 274 unit/parameterized cases per loader.
+Both Fabric and NeoForge builds pass 290 unit/parameterized cases per loader.
 When launching a dedicated development server, use the qualified task
 for the intended loader: `./gradlew :runServer` for Fabric or
 `./gradlew :neoforge:runServer` for NeoForge. Do not use an unqualified
@@ -279,15 +279,17 @@ dimensions cannot be resized in place.
 ## Create a world
 
 On the Create World screen, select the bottom-left **RingWorld C×W** button.
-The editor provides:
+The redesigned editor provides:
 
-- **Safe-small test**, **Production (recommended)**, and **Saved config values** presets;
+- **Small** (2,048×128), **Medium** (16,384×256), and **Large**
+  (32,768×512) presets;
 - custom circumference, width, and wall height;
 - an optional guaranteed ocean monument for the new world;
 - validation of chunk alignment, radial/build-height safety, finite-rim
   interior, coordinate bounds, and atlas resource limits;
-- estimates for chunks, radius, atlas/GPU cost, and measured-reference full
-  generation time and world-data growth;
+- live equations for walking-lap time, radius/diameter, far-side angular width,
+  chunks, playable area, atlas storage, rim/cloud height, and
+  measured-reference pregeneration time and disk growth;
 - a final confirmation because the saved dimensions are immutable.
 
 Dedicated servers use `config/ringworld.properties` before first world load:
@@ -303,16 +305,29 @@ requestOceanMonument=false
 ```
 
 Width and circumference must be multiples of 16 and pass the creation safety
-checks. The smallest structurally valid circumference is 1,024 blocks, but a
-playable vanilla-height world needs at least 2,016 blocks for radial clearance.
+checks. New worlds require at least 2,048 blocks around and 128 blocks across.
+The lower 1,024-block structural circumference remains readable only for
+legacy saved settings and internal topology fixtures. A 128-wide Small ring
+cannot fit the monument guarantee's 64-block margins, so that option is
+disabled until width reaches 160 blocks.
 Saved settings always override later bootstrap configuration changes.
 
 ### Reference layouts
 
 | Layout | Circumference | Width | Purpose |
 | --- | ---: | ---: | --- |
-| Production default | 16,384 blocks / 1,024 chunks | 256 blocks / 16 chunks | Approximately 63 minutes to walk a lap; power-of-two, atlas, chunk, and 32-region alignment |
-| Safe-small | 2,048 blocks / 128 chunks | 416 blocks / 26 chunks | Fast development, atlas, and multiplayer testing |
+| Small | 2,048 blocks / 128 chunks | 128 blocks / 8 chunks | About 7m 54s per walking lap; strongest curvature; monument guarantee unavailable |
+| Medium (default) | 16,384 blocks / 1,024 chunks | 256 blocks / 16 chunks | About 1h 03m per walking lap; balanced visual and generation cost |
+| Large | 32,768 blocks / 2,048 chunks | 512 blocks / 32 chunks | About 2h 06m per walking lap; reference pregeneration about 54m 28s and 677.2 MiB |
+
+The older 2,048×416 **safe-small test fixture** remains in automated renderer,
+atlas, and multiplayer evidence; it is not one of the user-facing presets.
+At 128 blocks across, a vanilla stronghold's optional graph may extend into
+suppressed exterior space and meet the rims. The guaranteed portal room and
+its 12-frame End portal are fitted safely inside the band and runtime-tested
+on both loaders, though Small players may need to mine to the room. The editor
+therefore labels Small experimental instead of implying a fully intact vanilla
+stronghold graph.
 
 The production atlas covers 16,384 canonical chunks and is a substantial
 background generation job. A clean-atlas copied-world benchmark completed it

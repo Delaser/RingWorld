@@ -16,6 +16,15 @@ public final class RingMonumentPlacement {
 
     private RingMonumentPlacement() { }
 
+    /**
+     * True when the finite band has at least one canonical chunk that can keep
+     * a forced monument's conservative envelope clear of both rims and seams.
+     */
+    public static boolean hasCandidateSpace(RingGeometry geometry) {
+        Bounds bounds = Bounds.forGeometry(geometry);
+        return bounds.hasCandidates();
+    }
+
     /** Searches a bounded seed-derived walk of canonical, conservatively in-band chunks. */
     public static SearchResult findCandidate(long worldSeed, RingGeometry geometry, Predicate<Candidate> validator) {
         Bounds bounds = Bounds.forGeometry(geometry);
@@ -64,6 +73,10 @@ public final class RingMonumentPlacement {
     }
 
     private record Bounds(int minChunkX, int maxChunkX, int minChunkZ, int maxChunkZ) {
+        boolean hasCandidates() {
+            return maxChunkX >= minChunkX && maxChunkZ >= minChunkZ;
+        }
+
         static Bounds forGeometry(RingGeometry geometry) {
             int minChunkX = divideCeil(FOOTPRINT_MARGIN_BLOCKS, 16);
             int maxChunkX = Math.floorDiv(geometry.circumferenceBlocks() - 1

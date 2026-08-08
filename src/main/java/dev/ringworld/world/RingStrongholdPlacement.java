@@ -44,6 +44,34 @@ public final class RingStrongholdPlacement {
                 fitAxis(minZ, maxZ, geometry.minWidthZ(), geometry.maxWidthZ()));
     }
 
+    /**
+     * Fits the complete graph when possible. On an intentionally narrow band,
+     * preserves the required portal-room bounds instead of crashing chunk
+     * generation merely because optional stronghold branches cross a rim.
+     */
+    public static FitPlan fitRequiredPiece(
+            int graphMinX, int graphMaxX, int graphMinZ, int graphMaxZ,
+            int requiredMinX, int requiredMaxX, int requiredMinZ, int requiredMaxZ,
+            RingGeometry geometry) {
+        AxisFit x = fitGraphOrRequired(graphMinX, graphMaxX,
+                requiredMinX, requiredMaxX, 0, geometry.circumferenceBlocks() - 1);
+        AxisFit z = fitGraphOrRequired(graphMinZ, graphMaxZ,
+                requiredMinZ, requiredMaxZ, geometry.minWidthZ(), geometry.maxWidthZ());
+        return new FitPlan(new BlockShift(x.shift(), z.shift()),
+                x.graphExceedsBounds(), z.graphExceedsBounds());
+    }
+
+    private static AxisFit fitGraphOrRequired(
+            int graphMin, int graphMax, int requiredMin, int requiredMax,
+            int worldMin, int worldMax) {
+        long graphSpan = (long) graphMax - graphMin;
+        long worldSpan = (long) worldMax - worldMin;
+        if (graphSpan <= worldSpan) {
+            return new AxisFit(fitAxis(graphMin, graphMax, worldMin, worldMax), false);
+        }
+        return new AxisFit(fitAxis(requiredMin, requiredMax, worldMin, worldMax), true);
+    }
+
     private static int fitAxis(int structureMin, int structureMax, int worldMin, int worldMax) {
         long structureSpan = (long) structureMax - structureMin;
         long worldSpan = (long) worldMax - worldMin;
@@ -66,4 +94,10 @@ public final class RingStrongholdPlacement {
 
     /** Loader-neutral block translation applied to the completed piece graph. */
     public record BlockShift(int x, int z) { }
+
+    /** Placement outcome; oversized graph axes may extend into suppressed exterior space. */
+    public record FitPlan(BlockShift shift,
+                          boolean graphExceedsBoundsX, boolean graphExceedsBoundsZ) { }
+
+    private record AxisFit(int shift, boolean graphExceedsBounds) { }
 }

@@ -7,6 +7,8 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -51,20 +53,34 @@ class RingWorldCreationUiModelTest {
     }
 
     @Test
-    void namedPresetsExposeTheRecommendedAndSafeSmallLayouts() {
-        RingWorldCreationUiModel.Preset production =
-                RingWorldCreationUiModel.PRODUCTION_RECOMMENDED;
-        RingWorldCreationUiModel.Preset safeSmall = RingWorldCreationUiModel.SAFE_SMALL_TEST;
+    void namedPresetsExposeSmallMediumAndLargeLayouts() {
+        RingWorldCreationUiModel.Preset small = RingWorldCreationUiModel.SMALL;
+        RingWorldCreationUiModel.Preset medium = RingWorldCreationUiModel.MEDIUM;
+        RingWorldCreationUiModel.Preset large = RingWorldCreationUiModel.LARGE;
 
-        assertEquals("Production (recommended)", production.label());
-        assertEquals(RingWorldSettings.DEFAULT_CIRCUMFERENCE, production.circumferenceBlocks());
-        assertEquals(RingWorldSettings.DEFAULT_WIDTH, production.widthBlocks());
-        assertEquals(2_048, safeSmall.circumferenceBlocks());
-        assertEquals(416, safeSmall.widthBlocks());
+        assertEquals("Small", small.label());
+        assertEquals(2_048, small.circumferenceBlocks());
+        assertEquals(128, small.widthBlocks());
+        assertEquals("Medium", medium.label());
+        assertEquals(RingWorldSettings.DEFAULT_CIRCUMFERENCE, medium.circumferenceBlocks());
+        assertEquals(RingWorldSettings.DEFAULT_WIDTH, medium.widthBlocks());
+        assertEquals("Large", large.label());
+        assertEquals(32_768, large.circumferenceBlocks());
+        assertEquals(512, large.widthBlocks());
         assertTrue(RingWorldCreationUiModel.validate(
-                Integer.toString(safeSmall.circumferenceBlocks()),
-                Integer.toString(safeSmall.widthBlocks()),
-                Integer.toString(safeSmall.wallHeightBlocks())).canApply());
+                Integer.toString(small.circumferenceBlocks()),
+                Integer.toString(small.widthBlocks()),
+                Integer.toString(small.wallHeightBlocks())).canApply());
+        assertTrue(RingWorldCreationUiModel.validate(
+                Integer.toString(small.circumferenceBlocks()),
+                Integer.toString(small.widthBlocks()),
+                Integer.toString(small.wallHeightBlocks()))
+                .metricLines().getLast().startsWith("Small is experimental:"));
+        assertTrue(RingWorldCreationUiModel.validate(
+                Integer.toString(large.circumferenceBlocks()),
+                Integer.toString(large.widthBlocks()),
+                Integer.toString(large.wallHeightBlocks()))
+                .metricLines().getLast().startsWith("High cost:"));
     }
 
     @Test
@@ -82,13 +98,14 @@ class RingWorldCreationUiModelTest {
     @Test
     void structuralValidationNamesEveryInvalidField() {
         RingWorldCreationUiModel.Validation validation = RingWorldCreationUiModel.validate(
-                "1001", "255", "31");
+                "1001", "127", "31");
 
         assertFalse(validation.canApply());
         assertEquals(5, validation.errors().size());
-        assertTrue(validation.errors().stream().anyMatch(error -> error.equals("Circumference must be at least 1024 blocks.")));
+        assertTrue(validation.errors().stream().anyMatch(error -> error.equals(
+                "Circumference must be at least 2048 blocks for a new world.")));
         assertTrue(validation.errors().stream().anyMatch(error -> error.equals("Circumference must be a multiple of 16 blocks.")));
-        assertTrue(validation.errors().stream().anyMatch(error -> error.equals("Width must be at least 256 blocks.")));
+        assertTrue(validation.errors().stream().anyMatch(error -> error.equals("Width must be at least 128 blocks.")));
         assertTrue(validation.errors().stream().anyMatch(error -> error.equals("Width must be a multiple of 16 blocks.")));
         assertTrue(validation.errors().stream().anyMatch(error -> error.equals("Wall height must be at least 32 blocks.")));
     }
@@ -96,7 +113,7 @@ class RingWorldCreationUiModelTest {
     @Test
     void crossFieldValidationKeepsAllReportErrorsVisible() {
         RingWorldCreationUiModel.Validation validation = RingWorldCreationUiModel.validate(
-                "1600", "320", "400");
+                "2048", "320", "400");
 
         assertFalse(validation.canApply());
         assertTrue(validation.messages().stream().anyMatch(error -> error.contains("wall top")));
@@ -104,16 +121,54 @@ class RingWorldCreationUiModelTest {
     }
 
     @Test
-    void validPreviewAndConfirmationExplainFirstWorldPersistenceAndMonuments() {
+    void metricsAndConfirmationExplainFirstWorldPersistenceAndMonuments() {
         RingWorldCreationUiModel.Validation validation = RingWorldCreationUiModel.validate(
                 "16384", "256", "160");
 
         assertTrue(validation.canApply());
-        assertEquals(4, validation.summaryLines().size());
-        assertTrue(validation.summaryLines().getFirst().contains("16,384 blocks around"));
+        assertEquals(8, validation.metricLines().size());
+        assertEquals("Lap: 16,384÷4.317 = 1h 03m",
+                validation.metricLines().getFirst());
+        assertTrue(validation.metricLines().stream().anyMatch(
+                line -> line.equals("Radius: 16,384÷2π ≈ 2,607.6; D ≈ 5,215.2")));
+        assertTrue(validation.metricLines().stream().anyMatch(
+                line -> line.equals("Opposite width: 2atan(256÷10,430) = 2.81°")));
+        assertTrue(validation.metricLines().stream().anyMatch(line -> line.contains("1,024×16")));
+        assertTrue(validation.metricLines().stream().anyMatch(line -> line.contains("2,048×32")));
+        assertTrue(validation.metricLines().stream().anyMatch(
+                line -> line.equals("Heights: rim top Y95; clouds Y104")));
         String confirmation = RingWorldCreationUiModel.confirmationCopy(validation.report(), true);
-        assertTrue(confirmation.contains("Ocean monument guarantee: On"));
-        assertTrue(confirmation.contains("cannot be changed here"));
-        assertTrue(RingWorldCreationUiModel.MONUMENT_COPY.contains("valid ocean-monument location"));
+        assertTrue(confirmation.contains("Monument: On"));
+        assertTrue(confirmation.contains("locks on first load"));
+        assertTrue(RingWorldCreationUiModel.MONUMENT_COPY.contains("result is saved"));
+
+        RingWorldCreationUiModel.Validation visualWarningOnly =
+                RingWorldCreationUiModel.validate("2048", "4096", "160");
+        assertTrue(visualWarningOnly.canApply());
+        assertFalse(visualWarningOnly.report().warnings().isEmpty());
+        assertFalse(visualWarningOnly.report().hasHighGenerationCost());
+        assertTrue(visualWarningOnly.metricLines().getLast().startsWith("Pregen:"));
     }
+
+    @Test
+    void creationAdmissionRejectsLegacySizedCircumferenceButGeometryRetainsIt() {
+        assertFalse(RingWorldCreationUiModel.validate("2016", "128", "160").canApply());
+        assertThrows(IllegalArgumentException.class,
+                () -> RingWorldConfig.validateNewWorldLayout(128, 2016, 160));
+        assertDoesNotThrow(() -> RingWorldConfig.validateNewWorldLayout(128, 2_048, 160));
+        assertTrue(RingDimensionReport.forVanillaOverworld(
+                new RingGeometry(128, 1_024), 160).geometry().circumferenceBlocks() == 1_024);
+    }
+
+    @Test
+    void smallPresetExplainsTheDeterministicMonumentLimitation() {
+        RingGeometry small = new RingGeometry(128, 2_048);
+        assertFalse(RingWorldCreationUiModel.monumentAvailable(small));
+        assertTrue(RingWorldCreationUiModel.monumentAvailabilityCopy(small).contains("unavailable"));
+        assertEquals("Monument: unavailable", RingWorldCreationUiModel.monumentChoice(true, small));
+        assertFalse(RingWorldConfig.effectiveOceanMonumentRequest(small, true));
+        assertTrue(RingWorldConfig.effectiveOceanMonumentRequest(
+                new RingGeometry(160, 2_048), true));
+    }
+
 }

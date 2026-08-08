@@ -47,18 +47,28 @@ The config record is cached for the process lifetime. Restart after manually
 editing the file. The in-game editor updates both the file and process cache
 immediately.
 
-The Create World screen has a bottom-left `RingWorld C×W` button. Its editor
-provides **Safe-small test** (2,048×416×160), **Production (recommended)**
-(16,384×256×160), and **Saved config values** presets, plus custom
-circumference, width, wall-height, and new-world ocean-monument controls. The
-saved-values preset reloads the bootstrap values in `config/ringworld.properties`; it
-does not read or change an existing world's saved layout. The editor previews:
+The Create World screen has a bottom-left `RingWorld C×W` button. Its centered,
+responsive editor provides **Small** (2,048×128×160), **Medium**
+(16,384×256×160), and **Large** (32,768×512×160) presets, plus custom
+circumference, width, wall-height, a reset to `config/ringworld.properties`,
+and the new-world ocean-monument control. Reset does not read or change an
+existing world's saved layout. The live maths panel shows:
 
-- blocks around/across;
-- curved-horizon radius and wall height;
-- atlas cells and approximate raw memory;
-- measured-reference full-generation time and generated-world size when the
-  available GUI height permits the full fourth summary line.
+- walking-lap time at 4.317 blocks/s;
+- radius, diameter, and opposite-band angular width;
+- canonical chunks, playable interior, and five-block rims;
+- atlas grid/cells/raw size, rim/cloud Y, and measured-reference
+  pregeneration/disk estimates.
+
+Only atlas, chunk-count, pregeneration, or disk thresholds produce the amber
+**High cost** label; an apparent-width visual advisory alone does not.
+
+The same information remains visible at GUI scale 4 and a 320×270 logical
+viewport. Small disables the monument option because width 128 cannot fit its
+required margins; width 160 or greater enables it. Its guaranteed stronghold
+keeps the portal room and terrain envelope inside the band while optional
+graph bounds may extend into suppressed exterior space. Small players may
+need to mine to the portal room, so the editor labels this preset experimental.
 
 Invalid layouts cannot be applied. Parsing and basic structural checks
 aggregate applicable field-level messages, so malformed circumference, width,
@@ -343,7 +353,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite passes 274 unit/parameterized cases per loader. The historical Phase 2
+The current suite passes 290 unit/parameterized cases per loader. The historical Phase 2
 95-error inventory and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.

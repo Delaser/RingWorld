@@ -203,7 +203,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite passes 274 unit/parameterized cases per loader.
+The active suite passes 290 unit/parameterized cases per loader.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
@@ -492,7 +492,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, with 274 unit/parameterized cases passing per loader, and Loom produces
+temporary shims, with 290 unit/parameterized cases passing per loader, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -941,19 +941,20 @@ and compatibility claims.
 ### Configuration/user experience
 
 - The Create World screen now uses one loader-neutral configuration model for
-  both Fabric and NeoForge. It offers **Safe-small test** (2,048×416×160),
-  **Production (recommended)** (16,384×256×160), and **Saved config values**
-  presets plus live validation/cost preview.
+  both Fabric and NeoForge. It offers **Small** (2,048×128×160), **Medium**
+  (16,384×256×160), and **Large** (32,768×512×160) presets plus concise live
+  validation and equations for lap time, physical geometry, chunk/playable
+  area, atlas, height, and measured generation/disk cost.
 - Its entry is a third member of Minecraft 26.1's managed Create/Cancel footer
-  row, and the editor has a compact layout below 360 logical pixels.
+  row. The centered bordered editor remains complete at both 480×270 and
+  320×270 logical scale-4 views.
 - The layout editor relies on Minecraft's framework-managed background pass;
   it does not request a second menu blur while rendered over Create World.
 - Field parsing and basic structural validation aggregate applicable field
   messages; once minimum/alignment checks pass, cross-field report errors are
   shown together. The apply action stays disabled until all errors are
-  resolved. The full preview reports ring size, horizon radius, atlas size,
-  and estimated full generation cost; the compact view prioritizes the first
-  three so its actions and immutable-world warning remain unobstructed.
+  resolved. New-world admission is 2,048 blocks around by 128 across, while
+  legacy 1,024-circumference settings remain readable.
 - Applying a valid creation layout requires a second explicit confirmation
   that repeats the immutable dimensions, wall height, and monument choice.
 - The editor explains that values affect only the next new Overworld. First
@@ -964,10 +965,17 @@ and compatibility claims.
 - Dedicated servers use equivalent first-world bootstrap properties.
 - The pure UI model is shared by Fabric and NeoForge. The dual-loader,
   menu-only GUI-scale creation-UI gate passes on both loaders: it opens no
-  world, captures all eleven scale-1-to-4 states in a 1,920-pixel-wide
+  world, captures all thirteen scale-1-to-4 and narrow states in a 1,920-pixel-wide
   framebuffer at least 1,080 pixels tall, validates the final 4,096×640×192
   monument request in the bootstrap config, and rejects any created save.
 - There is no supported in-place resize or conversion tool.
+- Width 128 cannot satisfy the optional monument margins, so Small disables
+  that toggle. Its guaranteed stronghold fits the portal room and terrain
+  envelope within the band; optional graph bounds may extend into suppressed
+  exterior space and players may need to mine to the room, so the creation
+  editor visibly labels Small experimental. The exact 2,048×128
+  seed `ringworld-small-128` passes portal frames/activation, periodic locate,
+  and Eye behavior on both Fabric and NeoForge.
 - New-world dimension validation now checks the full-height radial clearance,
   finite-rim interior, wall/build bounds, axis limits, and atlas allocation
   budget before settings are created. The active 2,048-by-416 development

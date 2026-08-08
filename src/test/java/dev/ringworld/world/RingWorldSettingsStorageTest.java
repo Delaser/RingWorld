@@ -41,4 +41,14 @@ class RingWorldSettingsStorageTest {
         assertFalse(RingWorldSettings.copyAtomicallyIfAbsent(legacy, current));
         assertArrayEquals(new byte[] {1, 2, 3}, Files.readAllBytes(current));
     }
+
+    @Test
+    void persistedLegacyGeometryRetainsTheStructural1024BlockCircumference() {
+        RingWorldSettings legacy = new RingWorldSettings(
+                128, RingWorldSettings.MIN_CIRCUMFERENCE, 42L, 160, 1);
+
+        assertEquals(128, legacy.widthBlocks());
+        assertEquals(RingWorldSettings.MIN_CIRCUMFERENCE, legacy.circumferenceBlocks());
+        assertEquals(1, legacy.formatVersion());
+    }
 }

@@ -28,8 +28,10 @@ public final class RingTerrainAtlas {
     public static final int FORMAT_VERSION = 6;
     public static final int SAMPLE_STEP_BLOCKS = 8;
     public static final int TILE_SIZE = 16;
+    /** Short height, map colour, and presence bit-array accounting per sampled cell. */
+    public static final int ESTIMATED_BYTES_PER_CELL = 7;
     private static final int MAGIC = 0x52574154; // RWAT
-    private static final int MAX_TILE_BYTES = TILE_SIZE * TILE_SIZE * 7;
+    private static final int MAX_TILE_BYTES = TILE_SIZE * TILE_SIZE * ESTIMATED_BYTES_PER_CELL;
 
     private final RingGeometry geometry;
     private final long worldHash;
@@ -82,9 +84,12 @@ public final class RingTerrainAtlas {
     public int presentCount() { return presentCount; }
     public long revision() { return revision; }
     public int cellCount() { return present.length; }
-    public long estimatedMemoryBytes() { return (long)present.length * 7L; }
+    public long estimatedMemoryBytes() {
+        return (long)present.length * ESTIMATED_BYTES_PER_CELL;
+    }
     public long estimatedWireBytes() {
-        return (long)present.length * 7L + (long)tileColumns() * tileRows() * 2L;
+        return (long)present.length * ESTIMATED_BYTES_PER_CELL
+                + (long)tileColumns() * tileRows() * 2L;
     }
     public boolean isComplete() { return presentCount == present.length; }
     public double completion() { return present.length == 0 ? 1.0 : (double)presentCount / present.length; }

@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 274 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 290 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
@@ -35,8 +35,9 @@ and NeoForge client/server packages, strict jar verification, same-commit
 shared-contract comparison, and a real packaged macOS NeoForge client smoke
 also pass. The shared GUI-scale-4 atlas map/control fixture passes all eleven
 captures and its ordered live-revision probe on both loaders. The shared
-menu-only world-creation fixture also passes eleven footer/editor/error/preset/
-confirmation captures across GUI scales 1–4 on both loaders without creating
+menu-only world-creation fixture also passes thirteen footer/editor/error/preset/
+confirmation captures across GUI scales 1–4, including a 320×270 logical view,
+on both loaders without creating
 a world. A real graphical
 Windows run, exact-candidate review, and owner release go/no-go remain. The
 expanded shared real-client map/compass fixture also passes on both loaders:
@@ -305,12 +306,12 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 274
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 290
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 274
+The NeoForge module uses the same Java 25 toolchain and also passes all 290
 unit/parameterized cases:
 
 ```sh
@@ -529,6 +530,13 @@ version numbers.
   every `RespawnData` result at that final ownership boundary, not merely the
   sampler suggestion. Keep it scoped to first-world creation; saved-world
   runtime logic must never read bootstrap geometry.
+- The world-creation editor must retain its unsaved field and monument draft
+  across Minecraft `init()` rebuilds, including GUI-scale and window-size
+  changes. Its automated fixture must wait for each asynchronous screenshot
+  write callback before mutating widgets or resizing again; otherwise a valid
+  capture can contain glyphs from two UI states. Keep the 320-by-270 Large
+  preset capture because it exercises the longest live metric and warning
+  lines at the supported compact size.
 - `ring_surface.vsh` deliberately clamps only far-out proxy clip-space Z while
   preserving X/Y/W. Minecraft's level far plane is derived from chunk render
   distance and clips most of a production 16,384-block cylinder, especially
@@ -641,9 +649,14 @@ version numbers.
 - New-world strongholds carry a saved guarantee bit into both the placement
   state and noise generator. After vanilla builds the complete piece graph,
   `StrongholdStructureMixin` applies the smallest X/Z translation needed to
-  keep the terrain-adjusted bounds inside canonical X and finite Z. Keep the
-  policy flag `volatile`: generation runs on worker threads. Missing-policy
-  legacy worlds must remain untouched.
+  keep the terrain-adjusted bounds inside canonical X and finite Z. At the
+  supported 128-block minimum width, the full optional graph can be wider
+  than finite Z; fit the inflated portal-room bounds instead, preserve the
+  graph translation, and allow only optional branches to meet the rims. Never
+  restore the former exception that crashed chunk generation, and keep the
+  creation editor's visible Small-is-experimental/mining advisory. Keep the policy
+  flag `volatile`: generation runs on worker threads. Missing-policy legacy
+  worlds must remain untouched.
 - The extended Globals UBO publishes the complete format-2 layout and render
   profile. Its std140 field order, `GlobalSettings` allocation, and every
   custom program that declares Globals must change together.
@@ -675,7 +688,13 @@ version numbers.
 - `RingWorldCreationScreen.extractRenderState` must not call a background
   extraction method. Minecraft 26.1's
   `Screen.extractRenderStateWithTooltipAndSubtitles` already owns the frame's
-  single legal menu-blur pass.
+  single legal menu-blur pass. The public presets are Small 2,048×128,
+  Medium 16,384×256, and Large 32,768×512. Keep all eight base equation lines
+  (plus Small's experimental advisory) visible at the automated 320×270
+  scale-4 view, keep the five-error state legible, and disable the monument
+  toggle below its 160-block usable minimum. Cost emphasis must use
+  `RingDimensionReport.hasHighGenerationCost()` because the general warning
+  list also contains apparent-width/sky-composition advisories.
 - New worlds persist `RingStructurePolicy` with the mandatory stronghold bit.
   A missing policy identifies an older world and deliberately retains its
   previous vanilla structure placement. Do not infer or enable the guarantee
