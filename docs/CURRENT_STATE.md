@@ -21,14 +21,16 @@ post-documentation corresponding-source revision. Machine evidence and the
 remaining human gates are in
 [`DUAL_LOADER_RELEASE_CANDIDATE_2026-08-08.md`](DUAL_LOADER_RELEASE_CANDIDATE_2026-08-08.md).
 
-On 2026-07-31, the Fabric alpha `0.2.0+mc26.1.2` was uploaded to Modrinth as
-version `1MhIDQ2h`; it is currently **Under review**. Modrinth detected Fabric
-and Minecraft 26.1.2; the release declares Fabric API as required and requires
-the mod on both client and server. The uploaded jar has SHA-256
-`cddba0f0654c0b82c451670f4c9afb477c997b379aa33bbbd173aa3651e5ce60`
-and points to public source revision `3f6cb9e`. It is explicitly an alpha test
-build; submission does not close the optional convenience-package,
-independent-review, broader regression, or compatibility gates below.
+On 2026-08-08, owner-authorized matched alpha 3 files were uploaded to the
+still-**Under review** Modrinth project. Fabric version `lnY3EC8t` has SHA-256
+`9ec25789e1418fd3b1877c3c23d8388cbb880a0ed562ef5f0608498df0605097`;
+NeoForge version `D19TF1Qj` has SHA-256
+`ac8b8776d85038512bb85dab8967a32a53e8d33128a4ccae17b51b65b214938a`.
+Both hosted files point to exact public source revision `94c8c9e`; a fresh CDN
+download matched each frozen hash and passed the loader-specific MPL
+distribution verifier. These remain alpha test builds. Upload does not close
+the owner gameplay/visual, real Windows, independent-review, or compatibility
+gates; use `OWNER_RELEASE_SIGNOFF_2026-08-09.md` for the final review.
 
 Issue #33 now supplies a local fail-closed staging workflow for any later
 manual Fabric upload. It builds and validates exactly one runtime jar, records

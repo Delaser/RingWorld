@@ -1,8 +1,9 @@
 # Dual-loader release-candidate evidence — 2026-08-08
 
 This checkpoint records local machine validation for the Fabric and NeoForge
-`0.2.0+mc26.1.2` standalone candidates. It does not authorize a Modrinth
-upload, listing change, demo-server restart, or live-world change.
+`0.2.0+mc26.1.2` standalone candidates. The owner subsequently authorized the
+matched Modrinth alpha uploads. It still does not authorize a demo-server
+restart, live-world change, or promotion beyond alpha.
 
 ## Source and runtime artifacts
 
@@ -25,6 +26,17 @@ compared the byte-identical shared contract, verified MPL-2.0 metadata and the
 embedded licence, and generated exact corresponding-source links. The 40
 focused distribution/staging/package tests passed with two expected
 platform-specific skips.
+
+## Hosted alpha 3 files
+
+- Fabric: `0.2.0-alpha.3-fabric+mc26.1.2`, Modrinth version `lnY3EC8t`
+- NeoForge: `0.2.0-alpha.3-neoforge+mc26.1.2`, Modrinth version `D19TF1Qj`
+- Corresponding source for both:
+  `94c8c9eb8a1a0e3d399ffd08a87af5c70b60b9b7`
+
+Both CDN downloads reproduce the SHA-256 values above and pass the
+loader-specific distribution/licence verifier. The Modrinth project remains
+under review. The uploads are testing alphas, not stable-release sign-off.
 
 ## Runtime evidence
 
@@ -54,7 +66,7 @@ inside the source commit would create a circular, immediately stale record.
 - real graphical Windows title-screen and world/server connection on both
   loaders;
 - independent final cross-system review after those results;
-- explicit owner go/no-go before any hosted or live-server change.
+- explicit owner go/no-go before promotion or any live-server change.
 
 Until those gates pass, this remains an alpha candidate rather than a stable
 release.
