@@ -89,6 +89,8 @@ loom {
 					.orElse("RingWorld Layout Switch A").get()
 			vmArg "-Dringworld.layoutSwitchSecond=" + providers.gradleProperty("ringLayoutSwitchSecondDestination")
 					.orElse("RingWorld Layout Switch B").get()
+			vmArg "-Dringworld.layoutSwitchExpectation=" + providers.gradleProperty("ringLayoutSwitchExpectation")
+					.orElse("different-layout").get()
 		}
 		productionProjectionClient {
 			client()
@@ -312,12 +314,45 @@ def verifyFabricProjectionOutputs = { File runDirectory, String environment ->
 	}
 }
 
-def verifyFabricLayoutSwitchOutputs = { File runDirectory, List<String> destinations ->
+def requireVisualParitySeamMotionMetrics = { File logFile, String label ->
+	def metrics = logFile.readLines("UTF-8").findAll {
+		it.contains("[visual-parity-capture] seam motion frame metrics:")
+	}
+	if (metrics.isEmpty()) {
+		throw new GradleException("${label} is missing seam-motion frame metrics: ${logFile}")
+	}
+	def sampleMatcher = (metrics.last() =~ /samples=(\d+)/)
+	if (!sampleMatcher.find() || sampleMatcher.group(1).toInteger() <= 0) {
+		throw new GradleException("${label} recorded no seam-motion frame samples: ${logFile}")
+	}
+}
+
+def verifyFabricVisualParityOutputs = { File runDirectory ->
+	def logFile = new File(runDirectory, "logs/latest.log")
+	requireFabricRuntimeGateLog(logFile,
+			"[visual-parity-capture] result=true, captures complete",
+			"[visual-parity-capture] result=false",
+			"Fabric visual-parity capture")
+	requireVisualParitySeamMotionMetrics(logFile, "Fabric visual-parity capture")
+	["seam", "min-rim", "max-rim"].each { view ->
+		def screenshot = new File(runDirectory,
+				"screenshots/ringworld-visual-parity-${view}.png")
+		if (!screenshot.isFile()) {
+			throw new GradleException("Fabric visual-parity capture is missing " + screenshot)
+		}
+	}
+}
+
+def verifyFabricLayoutSwitchOutputs = { File runDirectory, List<String> destinations, String expectation ->
 	def logFile = new File(runDirectory, "logs/latest.log")
 	requireFabricRuntimeGateLog(logFile,
 			"[layout-switch] result-json={\"passed\":true,",
 			"[layout-switch] result-json={\"passed\":false,",
 			"Fabric layout-switch client")
+	if (!logFile.text.contains("[layout-switch] expectation=${expectation}")) {
+		throw new GradleException(
+				"Fabric layout-switch client did not run expected mode '${expectation}'; inspect ${logFile}")
+	}
 	destinations.each { destinationId ->
 		def destination = new File(new File(runDirectory, "saves"),
 				checkedSaveId(destinationId, "ringLayoutSwitchDestination"))
@@ -1009,6 +1044,8 @@ tasks.register("prepareCopiedLayoutSwitchWorlds") {
 			providers.gradleProperty("ringLayoutSwitchFirstDestination").orElse("RingWorld Layout Switch A"))
 	inputs.property("ringLayoutSwitchSecondDestination",
 			providers.gradleProperty("ringLayoutSwitchSecondDestination").orElse("RingWorld Layout Switch B"))
+	inputs.property("ringLayoutSwitchExpectation",
+			providers.gradleProperty("ringLayoutSwitchExpectation").orElse("different-layout"))
 	outputs.dir(layoutSwitchSavesDirectory)
 	// A saved world can change between runs; always refresh only the isolated copies.
 	outputs.upToDateWhen { false }
@@ -1055,7 +1092,8 @@ tasks.register("verifyLayoutSwitchClient") {
 						.orElse("RingWorld Layout Switch A").get(),
 				providers.gradleProperty("ringLayoutSwitchSecondDestination")
 						.orElse("RingWorld Layout Switch B").get()
-		])
+		], providers.gradleProperty("ringLayoutSwitchExpectation")
+				.orElse("different-layout").get())
 	}
 }
 
@@ -1129,6 +1167,15 @@ tasks.register("prepareCopiedProductionProjectionWorld") {
 		["screenshots", "ringworld-cache", "logs", "crash-reports"].each {
 			delete(file("run-production-projection/${it}"))
 		}
+		// Keep release-evidence captures free of the first-world movement toast.
+		// This directory is disposable and isolated from the user's real options.
+		def projectionOptions = file("run-production-projection/options.txt")
+		def optionLines = projectionOptions.isFile()
+				? projectionOptions.readLines("UTF-8") : []
+		optionLines.removeAll { it.startsWith("tutorialStep:") }
+		optionLines.add("tutorialStep:none")
+		projectionOptions.parentFile.mkdirs()
+		projectionOptions.setText(optionLines.join("\n") + "\n", "UTF-8")
 		def source = requireSave(providers.gradleProperty("ringProjectionWorld").orNull,
 				"ringProjectionWorld", sourceSavesDirectory)
 		def destinationId = checkedSaveId(
@@ -1225,24 +1272,57 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 			verifyFabricProjectionOutputs(projection, "invalid")
 		}
 
+		def visualParity = new File(fixtureRoot, "visual-parity")
+		writeText(new File(visualParity, "logs/latest.log"),
+				"[visual-parity-capture] seam motion frame metrics: samples=12, averageMs=8.0, maxMs=12.0, over50Ms=0\n"
+						+ "[visual-parity-capture] result=true, captures complete\n")
+		["seam", "min-rim", "max-rim"].each { view ->
+			writePng(new File(visualParity,
+					"screenshots/ringworld-visual-parity-${view}.png"))
+		}
+		verifyFabricVisualParityOutputs(visualParity)
+		writeText(new File(visualParity, "logs/latest.log"),
+				"[visual-parity-capture] result=true, captures complete\n")
+		expectRejected("missing visual-parity seam-motion metrics") {
+			verifyFabricVisualParityOutputs(visualParity)
+		}
+		writeText(new File(visualParity, "logs/latest.log"),
+				"[visual-parity-capture] seam motion frame metrics: samples=0, averageMs=0.0, maxMs=0.0, over50Ms=0\n"
+						+ "[visual-parity-capture] result=true, captures complete\n")
+		expectRejected("zero visual-parity seam-motion samples") {
+			verifyFabricVisualParityOutputs(visualParity)
+		}
+
 		def layoutSwitch = new File(fixtureRoot, "layout-switch")
 		writeText(new File(layoutSwitch, "logs/latest.log"),
-				"[layout-switch] result-json={\"passed\":true,\"detail\":\"fixture\"}\n")
+				"[layout-switch] expectation=different-layout\n"
+						+ "[layout-switch] result-json={\"passed\":true,\"detail\":\"fixture\"}\n")
 		["Layout A", "Layout B"].each { destination ->
 			writeText(new File(layoutSwitch, "saves/${destination}/level.dat"), "fixture")
 		}
-		verifyFabricLayoutSwitchOutputs(layoutSwitch, ["Layout A", "Layout B"])
-		writeText(new File(layoutSwitch, "logs/latest.log"),
-				"[layout-switch] result-json={\"passed\":true,\"detail\":\"fixture\"}\n"
-						+ "[layout-switch] result-json={\"passed\":false,\"detail\":\"failed\"}\n")
-		expectRejected("failed layout-switch log") {
-			verifyFabricLayoutSwitchOutputs(layoutSwitch, ["Layout A", "Layout B"])
+		verifyFabricLayoutSwitchOutputs(layoutSwitch, ["Layout A", "Layout B"], "different-layout")
+		expectRejected("wrong layout-switch expectation") {
+			verifyFabricLayoutSwitchOutputs(layoutSwitch, ["Layout A", "Layout B"],
+					"same-geometry-different-seed")
 		}
 		writeText(new File(layoutSwitch, "logs/latest.log"),
-				"[layout-switch] result-json={\"passed\":true,\"detail\":\"fixture\"}\n")
+				"[layout-switch] expectation=same-geometry-different-seed\n"
+						+ "[layout-switch] result-json={\"passed\":true,\"detail\":\"fixture\"}\n")
+		verifyFabricLayoutSwitchOutputs(layoutSwitch, ["Layout A", "Layout B"],
+				"same-geometry-different-seed")
+		writeText(new File(layoutSwitch, "logs/latest.log"),
+				"[layout-switch] expectation=different-layout\n"
+						+ "[layout-switch] result-json={\"passed\":true,\"detail\":\"fixture\"}\n"
+						+ "[layout-switch] result-json={\"passed\":false,\"detail\":\"failed\"}\n")
+		expectRejected("failed layout-switch log") {
+			verifyFabricLayoutSwitchOutputs(layoutSwitch, ["Layout A", "Layout B"], "different-layout")
+		}
+		writeText(new File(layoutSwitch, "logs/latest.log"),
+				"[layout-switch] expectation=different-layout\n"
+						+ "[layout-switch] result-json={\"passed\":true,\"detail\":\"fixture\"}\n")
 		delete(new File(layoutSwitch, "saves/Layout B/level.dat"))
 		expectRejected("missing layout-switch output") {
-			verifyFabricLayoutSwitchOutputs(layoutSwitch, ["Layout A", "Layout B"])
+			verifyFabricLayoutSwitchOutputs(layoutSwitch, ["Layout A", "Layout B"], "different-layout")
 		}
 
 		def lifecycle = new File(fixtureRoot, "lifecycle")
@@ -1308,17 +1388,7 @@ tasks.register("verifyProductionVisualParityClient") {
 	description = "Fails unless the Fabric seam and both finite-width rim captures completed."
 	mustRunAfter("runProductionVisualParityClient")
 	doLast {
-		def logFile = file("run-production-visual-parity/logs/latest.log")
-		def log = logFile.isFile() ? logFile.text : ""
-		if (!log.contains("[visual-parity-capture] result=true, captures complete")) {
-			throw new GradleException("Fabric visual-parity capture did not pass; inspect " + logFile)
-		}
-		["seam", "min-rim", "max-rim"].each { view ->
-			def screenshot = file("run-production-visual-parity/screenshots/ringworld-visual-parity-${view}.png")
-			if (!screenshot.isFile()) {
-				throw new GradleException("Fabric visual-parity capture is missing " + screenshot)
-			}
-		}
+		verifyFabricVisualParityOutputs(file("run-production-visual-parity"))
 	}
 }
 

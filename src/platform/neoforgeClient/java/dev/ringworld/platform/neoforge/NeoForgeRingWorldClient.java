@@ -194,6 +194,7 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onAfterLevel(RenderLevelStageEvent.AfterLevel event) {
         PROJECTION_CAPTURE.frameRendered();
+        VISUAL_PARITY_CAPTURE.frameRendered();
         ATLAS_PREGENERATION_UI_TEST.frameRendered();
     }
 

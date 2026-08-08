@@ -77,6 +77,11 @@ public final class MultiplayerTestClient {
     private boolean extendedFixtureSent;
     private boolean bedSleepSent;
     private boolean sawSleeping;
+    private int bedSleepObservedTicks;
+    private boolean sleepingReconnectRequested;
+    private int sleepingReconnectWaitTicks;
+    private boolean sleepingReconnectResultSent;
+    private boolean bedSleepRestartSent;
     private boolean bedDamageWakeSent;
     private boolean bedDestroyedSent;
     private boolean deathSeenSent;
@@ -109,10 +114,11 @@ public final class MultiplayerTestClient {
         }
         if (client.screen instanceof PauseScreen) client.setScreen(null);
         if (!readySent && client.isGameLoadFinished()) {
-            readySent = true;
-            sendResult("client_ready", true, client.player.getX());
-            RingWorldMod.LOGGER.info("[multiplayer:{}] client world fully loaded x={}",
-                    role, client.player.getX());
+            if (sendResult("client_ready", true, client.player.getX())) {
+                readySent = true;
+                RingWorldMod.LOGGER.info("[multiplayer:{}] client world fully loaded x={}",
+                        role, client.player.getX());
+            }
         }
         stageTicks++;
         switch (stage) {
@@ -146,7 +152,8 @@ public final class MultiplayerTestClient {
     private boolean localScenarioComplete() {
         if (stage < 6 || !extendedFixtureSent || !seamWeatherSent) return false;
         if (role.equals("B")) return reconnectResultSent;
-        return bedSleepSent && bedDamageWakeSent && bedDestroyedSent
+        return bedSleepSent && sleepingReconnectResultSent && bedSleepRestartSent
+                && bedDamageWakeSent && bedDestroyedSent
                 && deathSeenSent && deathRespawnSent
                 && netherEnterSent && netherReturnSent
                 && endEnterSent && endReturnSent;
@@ -624,6 +631,31 @@ public final class MultiplayerTestClient {
                         nearestBed, client.player.getSleepingPos().orElse(null), expectedX,
                         client.player.getX());
             }
+            if (!sleepingReconnectRequested && ++bedSleepObservedTicks >= 20) {
+                sleepingReconnectRequested = true;
+                reconnectPending = true;
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:A] disconnecting while asleep for seam-bed reconnect test");
+                client.getConnection().getConnection().disconnect(
+                        Component.literal("RingWorld automated sleeping reconnect"));
+                return;
+            }
+            if (sleepingReconnectRequested && sleepingReconnectResultSent
+                    && !bedSleepRestartSent) {
+                BlockPos canonicalBed = new BlockPos(1, 120, -1);
+                int expectedX = presentationX(geometry, client, canonicalBed.getX());
+                boolean nearestBed = client.player.getSleepingPos()
+                        .map(pos -> pos.equals(new BlockPos(expectedX, 120, -1)))
+                        .orElse(false);
+                boolean adjacent = Math.abs(geometry.shortestCircumferenceDelta(
+                        client.player.getX(), canonicalBed.getX())) < 4.0;
+                bedSleepRestartSent = true;
+                sendResult("bed_sleep_restart", nearestBed && adjacent, client.player.getX());
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:A] seam bed post-reconnect sleep={} sleepingPos={} expectedX={} playerX={}",
+                        nearestBed && adjacent, client.player.getSleepingPos().orElse(null),
+                        expectedX, client.player.getX());
+            }
         } else if (sawSleeping && !bedDamageWakeSent
                 && (client.player.hurtTime > 0 || client.player.getHealth() < client.player.getMaxHealth())) {
             bedDamageWakeSent = true;
@@ -632,6 +664,33 @@ public final class MultiplayerTestClient {
             sendResult("bed_damage_wake", adjacent, client.player.getX());
             RingWorldMod.LOGGER.info("[multiplayer:A] seam bed damage wake={} x={} hurtTime={}",
                     adjacent, client.player.getX(), client.player.hurtTime);
+        }
+
+        if (sleepingReconnectRequested && !sleepingReconnectResultSent
+                && ++sleepingReconnectWaitTicks >= 20) {
+            BlockPos canonicalBed = new BlockPos(1, 120, -1);
+            BlockPos presentedBed = new BlockPos(
+                    presentationX(geometry, client, canonicalBed.getX()),
+                    canonicalBed.getY(), canonicalBed.getZ());
+            boolean adjacent = Math.abs(geometry.shortestCircumferenceDelta(
+                    client.player.getX(), canonicalBed.getX())) < 4.0
+                    && Math.abs(client.player.getY() - canonicalBed.getY()) < 4.0
+                    && Math.abs(client.player.getZ() - canonicalBed.getZ()) < 4.0;
+            boolean overworldSessionReady = client.level.dimension() == Level.OVERWORLD
+                    && ClientRingState.geometry() != null;
+            boolean bedStillLoaded = client.level.hasChunkAt(presentedBed)
+                    && client.level.getBlockState(presentedBed).is(Blocks.RED_BED);
+            boolean vanillaAwake = !client.player.isSleeping()
+                    && client.player.getSleepingPos().isEmpty();
+            sleepingReconnectResultSent = true;
+            sendResult("bed_reconnect",
+                    vanillaAwake && adjacent && overworldSessionReady && bedStillLoaded,
+                    client.player.getX());
+            RingWorldMod.LOGGER.info(
+                    "[multiplayer:A] seam bed reconnect={} vanillaAwake={} sessionReady={} bedLoaded={} sleepingPos={} pos={}",
+                    vanillaAwake && adjacent && overworldSessionReady && bedStillLoaded,
+                    vanillaAwake, overworldSessionReady, bedStillLoaded,
+                    client.player.getSleepingPos().orElse(null), client.player.position());
         }
 
         if (bedDamageWakeSent && !bedDestroyedSent) {
@@ -672,10 +731,10 @@ public final class MultiplayerTestClient {
         return (int)Math.floor(geometry.nearestImageX(canonicalX, client.player.getX()));
     }
 
-    private void sendResult(String phase, boolean passed, double value) {
-        if (RingClientPayloadTransport.canSend(RingMultiplayerTestPayload.ID)) {
-            RingClientPayloadTransport.send(new RingMultiplayerTestPayload(role, phase, passed, value));
-        }
+    private boolean sendResult(String phase, boolean passed, double value) {
+        if (!RingClientPayloadTransport.canSend(RingMultiplayerTestPayload.ID)) return false;
+        RingClientPayloadTransport.send(new RingMultiplayerTestPayload(role, phase, passed, value));
+        return true;
     }
 
     private AbstractClientPlayer findRemotePlayer(Minecraft client) {

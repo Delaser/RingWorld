@@ -6,6 +6,23 @@ behavior separate. The runtime directories and logs are ignored local state.
 
 ## Passing automated coverage
 
+### Sleeping-player reconnect extension — 2026-08-08
+
+The fresh Fabric and warmed/staggered NeoForge 2,048×416 gates now disconnect
+client A while it is sleeping
+in the canonical X=`0`/`1` seam bed. Minecraft intentionally loads a saved
+player awake; the replacement player and client both remained beside the bed
+in their correct canonical/nearest-image coordinates, with valid Overworld
+geometry and loaded-bed X/Y/Z proximity. The server then started a second real sleep, waited out
+post-login protection, applied ordinary survival damage, and completed the
+existing wake, bed destruction, death, portal, and weather matrix. Its terminal
+line included `sleepingReconnect=true` and `full scenario result=true`.
+
+An earlier cold NeoForge attempt passed through End return but later
+watchdog-terminated before weather/final result under the separate cold-stall
+issue #134. The subsequent warmed/staggered run passed weather, both client
+terminal results, the server's full result, and the strict NeoForge verifier.
+
 ### Strengthened dual-loader checkpoint — 2026-08-02
 
 Fresh-process Fabric and NeoForge 2,048×416 runs passed the current complete
@@ -40,8 +57,10 @@ The run passed:
   existing integrated harness separately proves scheduled water flow across
   the seam;
 - a survival bed at canonical X=`0`/`1`, used by a player beside `C`, with a
-  canonical server bed position, nearest-image client pose, damage wake, and
-  bed destruction;
+  canonical server bed position and nearest-image client pose; disconnecting
+  while asleep must rejoin awake beside that bed (vanilla behavior), rather
+  than remain in a void state, after which a second sleep, damage wake, and bed
+  destruction pass;
 - a real client death screen, respawn request, replacement server player, and
   canonical Overworld respawn;
 - a `PortalForcer`-created Nether portal, vanilla linked exit, return near the
@@ -59,16 +78,15 @@ Mojang/Realms HTTP 401 noise; that is unrelated to the local offline server.
 The current fixture seals a two-cell trough, clears canonical X=`0`, places
 its only water source at `C-1`, and requires both clients plus the server to
 observe water at X=`0`.
-The passing run documented above predates this assertion and checked only the
-source state. It must not be described as evidence that the strengthened
-destination-flow check has passed; a new dedicated run is required.
+The historical source-only run predates this assertion. The strengthened
+2026-08-02 Fabric and NeoForge runs both passed the destination-flow check.
 
 The current server fixture also clears and bounds a short ground lane, removes
 only stale entities carrying its dedicated navigator tag, then asks a
 persistent Zombie near canonical C-5 to navigate normally toward X=2. The
 server now requires that Zombie to fold naturally into low canonical X before
-finishing its path within target tolerance. This assertion also postdates the
-run documented above and remains pending a new dedicated execution.
+finishing its path within target tolerance. The strengthened 2026-08-02 Fabric
+and NeoForge runs both passed this assertion.
 
 ## Defects fixed by this gate
 
@@ -88,8 +106,8 @@ Nether exit cannot return the player before the harness observes it.
 
 ## Manual or narrower coverage
 
-- Rejoin while the player is still sleeping remains manual. Ordinary
-  reconnect and the complete sleep/wake/destruction lifecycle pass separately.
+- Both loaders now automate disconnect while sleeping, vanilla's
+  rejoined-awake state, resleep, damage wake, and destruction.
 - Maps, raids, command families, complex redstone/fluid networks, and more
   projectile/vehicle types remain manual sampling rather than exhaustive
   automation.

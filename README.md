@@ -41,7 +41,10 @@ The Nether and End remain vanilla.
 > production 16,384×256 terrain/seam/rim gate and a fresh-world curved-object
 > fixture covering representative block entities, vehicles, items, passive
 > mobs, and hostile mobs now pass on both loaders; exposure, close-cloud,
-> real-player proximity, and motion sign-off remain open.
+> real-player proximity, and final motion sign-off remain open. The refreshed
+> production seam/rim runs retain raw seam-motion frame metrics on both loaders;
+> those numbers are evidence to review on target hardware, not a universal FPS
+> requirement.
 > A dedicated multi-seed worldgen matrix now covers all 14 major biome
 > families, caves, ores, trees, loot, canonical structure ownership, actual
 > seam-crossing mineshafts, saved scarce-structure outcomes, and exact reload.
@@ -447,10 +450,12 @@ python3 scripts/run_worldgen_structure_matrix.py
 ```
 
 The three copied-world Fabric runs clear their old logs/evidence before launch
-and finish with a fail-closed Gradle verifier. Layout-switch and lifecycle
-require their exact pass marker and copied save; projection additionally
-decodes all three environment-specific PNG captures. A missing, failed, stale,
-or corrupt result therefore makes the command fail.
+and finish with a fail-closed Gradle verifier. Layout-switch requires its exact
+pass marker, selected expectation, and copied saves; it can also exercise two
+same-size worlds with different seeds. Lifecycle requires its exact pass marker
+and copied save; projection additionally decodes all three environment-specific
+PNG captures. A missing, failed, stale, or corrupt result therefore makes the
+command fail.
 
 `runHeadlessPrewarmServer` works only in its ignored disposable run directory.
 After the server owner accepts its local EULA, it creates or copies only that
