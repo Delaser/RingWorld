@@ -36,8 +36,9 @@ public final class RingProjectionCaptureClient {
     private boolean worldReadyLogged;
     private int completionTicks;
     private boolean focusPolicyApplied;
-    private boolean captureEnvironmentApplied;
-    private boolean capturePoseRequested;
+    private boolean captureSetupRequested;
+    private volatile boolean captureSetupComplete;
+    private volatile String captureSetupFailure;
     private int capturePoseWaitTicks;
     private int renderReadyWaitTicks;
     private CaptureEnvironment selectedEnvironment;
@@ -78,8 +79,7 @@ public final class RingProjectionCaptureClient {
             return true;
         }
 
-        applyCaptureEnvironment(client);
-        if (!ensureCapturePose(client, geometry)) return true;
+        if (!ensureCaptureSetup(client, geometry)) return true;
         if (!client.levelRenderer.hasRenderedAllSections()) {
             if (++renderReadyWaitTicks > RENDER_TIMEOUT_TICKS) {
                 finish(client, false, "timed out rendering centered capture pose");
@@ -187,36 +187,35 @@ public final class RingProjectionCaptureClient {
         RingWorldMod.LOGGER.info("[projection-capture] applied unattended focus policy");
     }
 
-    private void applyCaptureEnvironment(Minecraft client) {
-        if (captureEnvironmentApplied) return;
-        int viewDistance = projectionViewDistanceChunks();
-        CaptureEnvironment environment = selectedEnvironment();
-        client.options.renderDistance().set(viewDistance);
-        if (client.getConnection() != null) {
-            client.getConnection().sendCommand("time set " + environment.timeTicks);
-            client.getConnection().sendCommand("gamerule advance_time false");
-            client.getConnection().sendCommand(
-                    environment.raining ? "weather rain" : "weather clear");
-        }
-        captureEnvironmentApplied = true;
-        RingWorldMod.LOGGER.info(
-                "[projection-capture] normalized environment={} and applied {}-chunk view distance",
-                environment.id, viewDistance);
-    }
-
-    private boolean ensureCapturePose(Minecraft client, RingGeometry geometry) {
-        double targetX = geometry.circumferenceBlocks() / 4.0;
-        double targetZ = 0.5;
-        if (!capturePoseRequested) {
-            client.getConnection().sendCommand("gamemode spectator @s");
-            client.getConnection().sendCommand(
-                    "tp @s " + targetX + " " + CAPTURE_CAMERA_Y + " " + targetZ);
-            capturePoseRequested = true;
-            RingWorldMod.LOGGER.info(
-                    "[projection-capture] requested centered server-authoritative pose x={}, y={}, z={}",
-                    targetX, CAPTURE_CAMERA_Y, targetZ);
+    private boolean ensureCaptureSetup(Minecraft client, RingGeometry geometry) {
+        String failure = captureSetupFailure;
+        if (failure != null) {
+            finish(client, false, failure);
             return false;
         }
+        int viewDistance = projectionViewDistanceChunks();
+        CaptureEnvironment environment = selectedEnvironment();
+        double targetX = geometry.circumferenceBlocks() / 4.0;
+        double targetZ = 0.5;
+        if (!captureSetupRequested) {
+            client.options.renderDistance().set(viewDistance);
+            captureSetupRequested = true;
+            RingIntegratedCaptureControl.execute(client, "projection setup",
+                    context -> {
+                        RingIntegratedCaptureControl.normalizeEnvironment(
+                                context, environment.timeTicks, environment.raining);
+                        RingIntegratedCaptureControl.teleport(
+                                context, targetX, CAPTURE_CAMERA_Y, targetZ);
+                    },
+                    () -> captureSetupComplete = true,
+                    detail -> captureSetupFailure = detail);
+            RingWorldMod.LOGGER.info(
+                    "[projection-capture] requested integrated-server environment={} and "
+                            + "centered pose x={}, y={}, z={} at {} chunks",
+                    environment.id, targetX, CAPTURE_CAMERA_Y, targetZ, viewDistance);
+            return false;
+        }
+        if (!captureSetupComplete) return false;
         boolean atPosition = Math.abs(geometry.shortestCircumferenceDelta(
                 targetX, client.player.getX())) < 1.5
                 && Math.abs(client.player.getY() - CAPTURE_CAMERA_Y) < 1.5

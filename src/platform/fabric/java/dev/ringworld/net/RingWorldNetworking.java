@@ -1,6 +1,7 @@
 package dev.ringworld.net;
 
 import dev.ringworld.RingWorldMod;
+import dev.ringworld.server.HeadlessPrewarmCoordinator;
 import dev.ringworld.server.RingWorldMultiplayerTest;
 import dev.ringworld.server.RingTerrainAtlasServer;
 import dev.ringworld.world.RingWorldSettings;
@@ -41,7 +42,10 @@ public final class RingWorldNetworking {
     }
 
     public static void registerServer() {
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> sendSettings(handler));
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            if (HeadlessPrewarmCoordinator.rejectPlayerJoins(server)) return;
+            sendSettings(handler);
+        });
         ServerPlayNetworking.registerGlobalReceiver(RingSettingsAckPayload.ID, (payload, context) ->
                 context.server().execute(() -> validateAcknowledgement(payload, context.player().connection)));
         ServerPlayNetworking.registerGlobalReceiver(RingMultiplayerTestPayload.ID, (payload, context) -> {

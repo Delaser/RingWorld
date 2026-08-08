@@ -69,4 +69,6 @@ public final class AtlasPregenerationClientState {
     }
 
     public static void clear() { status = null; }
+
+    public static boolean sessionCleared() { return status == null; }
 }

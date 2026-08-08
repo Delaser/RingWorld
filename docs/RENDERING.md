@@ -175,8 +175,10 @@ least one trustworthy cell.
 
 A newly generated world therefore shows real chunks, atmospheric effects, and
 only its own available atlas regions while generation runs. It must never
-display the previous world's ring. Once the new world-hash atlas is complete,
-the renderer upgrades exactly once to the full-detail texture and mesh.
+display the previous world's ring. Verified completion performs one transition
+to the full-detail texture and terrain-height mesh. Later complete-atlas
+revisions may refresh that texture; only a changed surface-height fingerprint
+rebuilds the detailed mesh.
 
 ### GPU texture
 
@@ -217,14 +219,31 @@ vertices = segments * bands * 6
 ```
 
 During generation one reference-height mesh is reused while alpha reveals new
-cells; tile arrival does not rebuild it. Completion replaces it once with the
-detailed mesh. Each final vertex uses the sampled terrain height to vary its
-radius. Texture U is
+cells; tile arrival does not rebuild it. Completion performs one transition to
+the detailed mesh. Later complete-atlas revisions reuse it when their
+surface-height fingerprint is unchanged and rebuild it only when sampled
+relief changes. Each final vertex uses the sampled terrain height to vary its
+radius. `RingSurfaceMesh` first samples one shared `(segments + 1)` by
+`(bands + 1)` lattice, then repeats those exact float values into the
+unindexed triangle list. Interior neighbours therefore share identical
+positions and UVs. The two periodic seam columns share an exact physical
+X=0/C position but retain distinct U=0/1 coordinates for texture repeat.
+Texture U is
 canonical X/circumference; V is the finite width coordinate. The mesh exists
 in one global ring-centred model. Visual profile 5 raised the circumference
 cap from 512 to 2,048 so the default 16,384-block ring no longer stretches
 eight-block atlas heights across 32-block triangles. That production mesh is
 393,216 vertices (about 9 MiB at the declared 24-byte vertex stride).
+
+Incomplete-atlas texture revisions continue to reuse the flat
+reference-height mesh. Each asynchronous texture build carries its own
+immutable `RingTerrainAtlas` snapshot back to the render thread; the matching
+complete mesh is built from that exact snapshot, never from a live atlas that
+may have advanced while pixels were prepared. Once complete, later committed
+surface revisions update the texture while the snapshot's height fingerprint
+decides whether relief also needs rebuilding. Colour-only changes therefore
+reuse the existing mesh, while edited heights cannot leave stale relief under
+current texture pixels.
 
 Walking does not rebuild the mesh. Per frame, the renderer:
 

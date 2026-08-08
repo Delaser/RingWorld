@@ -1,5 +1,6 @@
 package dev.ringworld.world;
 
+import net.minecraft.core.BlockPos;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -93,6 +94,18 @@ class RingDimensionMatrixTest {
         assertEquals(0, RingSpawnBounds.constrainInitialSpawnZ(minimumSafeZ - 1, geometry));
         assertEquals(0, RingSpawnBounds.constrainInitialSpawnZ(maximumSafeZ + 1, geometry));
         assertEquals(0, RingSpawnBounds.constrainInitialSpawnZ(0, geometry));
+
+        // The final vanilla spawn spiral can select either seam alias after
+        // its initial climate candidate. Persist one canonical BlockPos only.
+        for (int rawX : new int[]{-1, circumference, circumference + 19, -circumference + 23}) {
+            BlockPos raw = new BlockPos(rawX, 96, minimumSafeZ);
+            BlockPos canonical = RingSpawnBounds.canonicalInitialSpawn(raw, geometry);
+            assertEquals(geometry.wrapBlockX(rawX), canonical.getX());
+            assertEquals(raw.getY(), canonical.getY());
+            assertEquals(raw.getZ(), canonical.getZ());
+            assertEquals(geometry.toPhysical(rawX, raw.getY(), raw.getZ()),
+                    geometry.toPhysical(canonical.getX(), canonical.getY(), canonical.getZ()));
+        }
     }
 
     @ParameterizedTest(name = "{0}: atlas dimensions follow immutable C×W")

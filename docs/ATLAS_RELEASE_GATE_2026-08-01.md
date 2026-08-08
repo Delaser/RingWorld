@@ -31,28 +31,28 @@ can watch coverage grow. Real chunks remain authoritative at every point.
 All commands used Java 25 and `--console=plain`.
 
 ```sh
-./gradlew runHeadlessPrewarmServer \
+./gradlew :runHeadlessPrewarmServer \
   -PringHeadlessPrewarmSource='Atlas Visual Complete Source' \
   -PringHeadlessPrewarmResult=issue70-production.json
 
-./gradlew runHeadlessPrewarmServer \
+./gradlew :runHeadlessPrewarmServer \
   -PringHeadlessPrewarmResume=true \
   -PringHeadlessPrewarmResult=issue70-production.json
 
-./gradlew runHeadlessPrewarmServer \
+./gradlew :runHeadlessPrewarmServer \
   -PringHeadlessPrewarmResume=true \
   -PringHeadlessPrewarmResult=issue70-complete-cache.json
 
-./gradlew runAtlasUiClient
+./gradlew :runAtlasUiClient
 
-./gradlew runLayoutSwitchClient \
+./gradlew :runLayoutSwitchClient \
   -PringLayoutSwitchFirstSource='Issue70 Format6 Safe Small' \
   -PringLayoutSwitchSecondSource='Issue70 Format6 Production'
 
-./gradlew runProductionLifecycleClient \
+./gradlew :runProductionLifecycleClient \
   -PringProductionLifecycleSource='Issue70 Format6 Production'
 
-./gradlew runProductionProjectionClient \
+./gradlew :runProductionProjectionClient \
   -PringProjectionWorld='<safe-small or production source>' \
   -PringProjectionViewDistanceChunks='<6, 12, or 28>'
 

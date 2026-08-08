@@ -178,9 +178,11 @@ existing world. Format 1 migrates explicitly with surface reference Y=64.
 The one deliberate bootstrap-time geometry use is initial spawn selection:
 Minecraft asks for a new world's spawn before an Overworld has saved data.
 The platform redirect supplies the already-validated new-world bootstrap
-geometry to the loader-neutral `RingSpawnBounds` helper, which only constrains
-Z away from the two finite rims. It does not read configuration itself and is
-not a runtime policy for saved worlds.
+geometry to the loader-neutral `RingSpawnBounds` helper. It constrains Z away
+from the two finite rims and canonicalizes every final saved spawn X after
+vanilla's local safe-spawn spiral, which may cross the periodic seam. The
+helper does not read configuration itself and is not a runtime policy for
+saved worlds.
 
 `RingLayoutFingerprint` covers those fields plus rim thickness/style.
 Clients independently verify it during login, and the terrain-atlas world hash
@@ -212,7 +214,7 @@ the gate in
 
 ### Production lifecycle regression
 
-`runProductionLifecycleClient` is an opt-in, isolated integrated-client
+`:runProductionLifecycleClient` is an opt-in, isolated integrated-client
 regression. Before launch, its Gradle preparation task copies a named
 production save from `run/saves/` into `run-production-lifecycle/saves/`; the
 source save is only read. A test-only server coordinator uses Minecraft 26.1's
@@ -226,7 +228,10 @@ are available again after the Overworld return. It uses Minecraft's normal
 integrated-server save-and-disconnect path, reopens the copied world, and
 repeats the restoration assertion. This is separate from
 the destructive smoke, cross-world layout-switch, and dedicated multiplayer
-harnesses.
+harnesses. Its Fabric Gradle runtime task, plus the projection and layout-switch
+tasks, clears old disposable evidence before launch and retains a verifier
+finalizer so a missing/failed result, missing copied save, or corrupt projection
+PNG fails the invocation rather than reusing stale output.
 
 ## Seam movement
 
@@ -357,6 +362,11 @@ separate unsupported dynamic-pointer surface.
 - chunk delta updates;
 - breaking progress and block/world events;
 - particles, explosions, and sounds.
+
+Its `HEAD` packet modifiers explicitly no-op off the client thread because
+they execute before vanilla queues the handler through its packet-thread
+guard. The queued game-thread replay performs the actual nearest-image
+mapping. Calls redirected later in the handler are already behind that guard.
 
 Outbound block break/use packets are converted back to canonical positions by
 `ClientConnectionMixin`.
@@ -526,13 +536,22 @@ not a missing-data migration.
 ```
 
 `RingAtlasPregenerationService` is the sole server-side atlas writer for one
-RingWorld Overworld. It consumes completed chunk futures only on the server
-thread, gives player-loaded chunks priority, retains a failed selected cursor
+RingWorld Overworld. It consumes completed ticket-backed `RingAtlasChunkRequest`
+loads only on the server thread, gives player-loaded chunks priority, retains a failed selected cursor
 chunk for retry, checkpoints every 200 ticks, and verifies the final atomic
-save by reopening format-6 storage before reporting completion. Successful
-server block mutations enqueue affected canonical sample cells; the service
+save by reopening format-6 storage before reporting completion. Normal runtime
+ticks consume a completed ticket-backed request while the selected
+chunk is still authoritative. Shutdown and level-unload paths do not consume:
+they cancel/release the request, retain the unadvanced selection, and checkpoint
+only captured cells because Minecraft may already have evicted the completed
+request's chunk during teardown. Successful server block mutations enqueue
+affected canonical sample cells; the service
 recaptures at most 64 cells per tick and collapses extreme exact-cell queues
 into atlas tiles before they can become an unbounded server-thread storm.
+If a normal consume-side ticket release fails, the terminal job retains its
+request for the next tick's idempotent close retry. The world-owned job slot is
+not replaceable until that request is released; command and map-control starts
+fail explicitly during the retry window instead of orphaning a loading ticket.
 `RingTerrainAtlasServer` is only the Fabric command/lifecycle/network adapter:
 it drains service-published dirty tiles at the existing 20-tick cadence and
 streams them to persistent client subscriptions. It sends a revision commit

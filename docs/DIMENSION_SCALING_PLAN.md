@@ -91,7 +91,7 @@ Every value in the following registry belongs to one of four classes:
 | rim thickness/style version | Thickness 5 and about 30% mossy remain code constants | Fixed design included in layout and atlas fingerprints. |
 | `testMode` | Process-local destructive harness switch | Keep operational, never persist as world geometry. |
 | `pregenerateTerrainAtlas` | Process-local administration switch | Keep operational. It may pause work but must not change atlas identity or dimensions. |
-| initial-spawn Z clamp | `RingSpawnBounds` receives validated bootstrap geometry before saved data exists | Deliberate creation-time exception only. Keep the finite-rim margin loader-neutral and do not read bootstrap configuration from saved-world runtime paths. |
+| initial-spawn final X canonicalization and Z clamp | `RingSpawnBounds` receives validated bootstrap geometry before saved data exists | Deliberate creation-time exception only. Canonicalize every final `RespawnData` position after vanilla's safe-spawn spiral, keep the finite-rim margin loader-neutral, and do not read bootstrap configuration from saved-world runtime paths. |
 
 The earlier lifecycle race is removed. `ServerWorldMixin` loads or creates
 persisted settings and attaches the Overworld generator at the constructor

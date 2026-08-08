@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 241
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 264
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -127,19 +127,19 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite contains 241 unit/parameterized cases:
+The active suite passes 269 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
 | `RingGeometryTest` | Seam continuity, presentation charts and sleeping-position images, default walking length, physical/tangent transforms, noise seam, culling envelope, visibility math, query windows |
-| `RingMapCompassSupportTest` | Bidirectional nearest-image map sampling/decorations/banner gate and spawn/lodestone/recovery compass bearing plus exact-target validity |
+| `RingMapCompassSupportTest` | Bidirectional nearest-image map sampling/decorations, scale-one seam-banner placement, banner gate, and spawn/lodestone/recovery compass bearing plus exact-target validity |
 | `RingRaidSupportTest` | Periodic raid distance/selection, seam-window POI queries, nearest-image village-centre averaging/deduplication, and canonical wave-spawn readiness windows |
 | `RingObjectTransformTest` | Exact curved rigid-anchor pose, tangent orientation, and presentation-seam continuity |
 | `RingChunkTopologyTest` | Canonical chunk images, joined-edge distance, periodic entity simulation distance, watch windows, incremental seam diff, long teleport, finite whole-ring filter |
 | `RingDimensionReportTest` | Full-height radial safety, aligned playable minimum, structural-only/unsafe curvature, walls/clouds, allocation bounds, measured-reference cost warnings, and maximum technical warning envelope |
 | `RingDimensionCostEstimateTest` | Exact production benchmark retention, atlas wire/tick calculation, checked scaling, and supported-maximum arithmetic |
 | `RingGenerationBoundaryTest` | Shared generated-rim top bound for default/custom wall heights and world-top clamping |
-| `RingDimensionMatrixTest` | Safe-small, aligned playable minimum, narrow, production, former-wide, long/narrow, wide/medium, and custom-wall layouts across topology, spawn, worldgen coordinate seams/finite-band limits, atlas and 6/12/28/64 render budgets |
+| `RingDimensionMatrixTest` | Safe-small, aligned playable minimum, narrow, production, former-wide, long/narrow, wide/medium, and custom-wall layouts across topology, final saved spawn canonicalization for negative/seam aliases, worldgen coordinate seams/finite-band limits, atlas and 6/12/28/64 render budgets |
 | `RingSettingsHandshakeTest` | Immutable safe-small/production/wide/custom-wall payload identity, acknowledgement, and mismatch rejection |
 | `RingHandshakeTrackerTest` | Correct, duplicate, missing/expired, unexpected, disconnect, and reconnect acknowledgement state |
 | `RingLayoutFingerprintTest` | Immutable layout and rim semantic identity |
@@ -150,14 +150,22 @@ The active suite contains 241 unit/parameterized cases:
 | `RingAtlasSurfaceInvalidationTest` | Presentation-X canonicalization, finite-Z exclusion, and stored-top relevance for terrain mutations |
 | `RingAtlasRecaptureQueueTest` | Exact-cell deduplication, 64-cell bounded drain, and bulk overflow collapse into tile work |
 | `RingAtlasPregenerationCursorTest` | X-major canonical enumeration, finite-Z coordinates, non-power-of-two circumference, atlas-backed resume/skip, checked totals, options, state transitions, and zero-work/restarted rate/ETA |
-| `RingAtlasPregenerationSelectionTest` | Server-service retry seam: a failed selected canonical chunk remains selected through bounded retry, partial storage resumes at its first missing chunk, and retry exhaustion is explicit without a `ServerLevel` fixture |
+| `RingAtlasPregenerationSelectionTest` | Server-service retry seam: failed and shutdown-discarded selected canonical chunks remain selected without false retry advancement, partial storage resumes at its first missing chunk, and retry exhaustion is explicit without a `ServerLevel` fixture |
+| `RingAtlasChunkRequestTest` | Ticket-backed radius-load retention, completed-result handoff, completed-load teardown without result resolution, exact-once cancellation/release, retryable release failure, and start/null-future cleanup |
+| `RingAtlasJobReplacementPolicyTest` | Failed/cancelled/complete and headless-idle replacement candidates cannot orphan an outstanding request; clean terminal/idle jobs remain replaceable and active jobs are reused |
+| `RingAtlasCommandPolicyTest` | Idle/failed durable restart, strict pause/resume, completed/active deduplication, and unsupported command cancellation |
 | `RingAtlasDirtyTileQueueTest` | Final dirty tile stays published until the Fabric adapter drains it, including a completion transition in the same server tick |
 | `RingAtlasPregenerationServiceStorageTest` | Fresh/partial/complete/corrupt format-6 service persistence seams: interrupted partial checkpoints resume without a byte rewrite, complete reload is idempotent, and corrupt current input is rejected |
 | `RingAtlasPregenerationSchedulingPolicyTest` | Config-disabled `IDLE`, paused, saving, and cancelled handles cannot schedule chunks; only a running handle may request work |
 | `AtlasPregenerationHeadlessPolicyTest` | Explicit headless startup suppresses normal background autostart and replaces only the unstarted config-disabled `IDLE` handle |
 | `AtlasPregenerationReportTest` | Loader-neutral terminal report validation requires complete evidence or documented unavailable-identity sentinels |
 | `HeadlessPrewarmEvidenceFilesTest` | Direct dedicated launch removes stale terminal/progress evidence before publishing a new headless job |
+| `FabricHeadlessNetworkingAdmissionTest` | Platform-isolated compiled-bytecode assertion that Fabric's later array-backed JOIN listener rechecks headless admission and returns before settings/handshake work |
+| `NeoForgeHeadlessPlayerAdmissionTest` | Platform-isolated active/inactive admission side effects plus a compiled-bytecode assertion that the cancellable NeoForge PlayerList guard runs at method HEAD, before play-packet buffering and the later settings injection |
 | `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, explicit missing-cell alpha, alpha-weighted periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
+| `RingSurfaceBuildSnapshotTest` | Immutable atlas-content retention across live changes, colour-only height-fingerprint stability, and identity/revision rejection |
+| `RingSurfaceMeshTest` | Production and safe-small shared-lattice band/segment continuity, exact physical seam closure with U=0/1, and the reference-height path |
+| `RingSurfaceMeshRefreshPolicyTest` | Partial-mesh reuse, height-fingerprint-driven complete-mesh refresh, and forced rebuilds across layout/completion transitions |
 | `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
 | `RingWorldCreationUiModelTest` | Safe-small, production, custom, and invalid world-creation cost previews |
@@ -169,17 +177,32 @@ The active suite contains 241 unit/parameterized cases:
 | `RingStructurePolicyTest` | Stronghold bit plus monument request, pending/terminal result, and legacy-v1 disabled behavior |
 | `RingMonumentPlacementTest` | Deterministic bounded candidate walk, canonical/finite bounds, seam/rim envelope, seed variation, and search exhaustion |
 
-The 2026-08-02 #95 navigation checkpoint now includes a disposable graphical
-acceptance fixture on both loaders. It creates a fresh 2,048×416 world and
-checks bidirectional seam pixels; player, white-banner, and item-frame map
-decorations; spawn, lodestone, and recovery compass targets; and the
-seam-equivalent exact-target random-spin path. Each run verifies four labelled
-screenshots and exits itself:
+The #95 navigation checkpoint includes a disposable graphical acceptance
+fixture on both loaders. It creates a fresh 2,048×416 world and checks
+bidirectional seam pixels; player and white-banner decorations; decorations
+from real world-added item frames on both seam sides; a scale-one map and its
+locked result; seam-banner removal and restoration; and spawn, lodestone, and
+recovery compass targets. The seam-equivalent exact-target assertion reuses
+one compass wobble state for two seeded samples, avoiding a probabilistic
+comparison between independent random offsets. It then performs Minecraft's
+normal save/disconnect/reopen flow, verifies raw session teardown independent
+of the active-level guard, and rechecks the scaled locked map's pixel and
+decorations, the persistent live frame and framed map, persisted
+spawn/lodestone/recovery targets, and the nearest-image compass calculation.
+Each run decodes and validates every matching required PNG screenshot: it must
+be at least 16×16 and no larger than 16,384×16,384 pixels, and contain
+visible, non-uniform image content rather than merely existing. It then exits
+itself:
 
 ```sh
 ./gradlew :runMapCompassCaptureClient --console=plain
 ./gradlew :neoforge:runMapCompassCaptureClient --console=plain
 ```
+
+Fresh 2026-08-06 Fabric and NeoForge runs pass this expanded gate and each
+produced all eight screenshots. The teardown assertion covers raw
+geometry/camera/atlas state, atlas-control state, and complete-ring GPU
+resources before the same-process reopen.
 
 Run the qualified tasks separately so two graphical clients do not contend for
 the same display. Their disposable outputs live under the ignored root and
@@ -353,14 +376,17 @@ On first use the preparation task creates an ignored
 EULA, set `eula=true`, then run a fresh safe-small prewarm:
 
 ```sh
-./gradlew runHeadlessPrewarmServer --console=plain
+./gradlew :runHeadlessPrewarmServer --console=plain
 ```
+
+To exercise a fresh production-default layout instead of safe-small, add
+`-PringHeadlessPrewarmCircumference=16384 -PringHeadlessPrewarmWidth=256`.
 
 For a copied fixture, first place the source save under ignored `run/saves/`,
 then run:
 
 ```sh
-./gradlew runHeadlessPrewarmServer --console=plain \
+./gradlew :runHeadlessPrewarmServer --console=plain \
   -PringHeadlessPrewarmSource="save-folder-id"
 ```
 
@@ -390,9 +416,13 @@ Mojang's EULA, then set `eula=true` once.
 Use `-PringNeoForgeHeadlessPrewarmSource=<save-folder-id>`,
 `-PringNeoForgeHeadlessPrewarmResume=true`, and
 `-PringNeoForgeHeadlessPrewarmResult=<filename.json>` for copy, resume, and
-terminal-result variants. A fresh 2,048×416 NeoForge run completed all 3,328
+terminal-result variants. Fresh geometry overrides are
+`-PringNeoForgeHeadlessPrewarmCircumference=<blocks>` and
+`-PringNeoForgeHeadlessPrewarmWidth=<blocks>`. A fresh 2,048×416 NeoForge run completed all 3,328
 chunks/13,312 cells and the verifier accepted only its identity-bearing
-`COMPLETE` report.
+`COMPLETE` report. Fabric also completed an exact production prewarm on
+2026-08-06. Do not claim an equivalent production NeoForge prewarm until it
+has its own terminal evidence.
 
 The structure matrix is also loader-selectable:
 
@@ -576,6 +606,19 @@ packet. Its normal player-login event occurs after the initial packet buffer is
 flushed, which is too late: canonical edge chunks can otherwise be rejected by
 a fresh client before it knows the periodic geometry. The capture deliberately
 starts from a fresh world and therefore guards this packet-ordering boundary.
+Explicit headless prewarm is the exception: a cancellable admission injection
+runs at `PlayerList.placeNewPlayer` HEAD, before a play listener or packet buffer exists, so rejection sends no
+RingWorld settings, creates no handshake entry, and cannot expose atlas
+metadata. `NeoForgeHeadlessPlayerAdmissionTest` checks both admission outcomes
+and the exact mixin targets; the ordinary graphical fixture continues to prove
+the allowed login order.
+
+Fabric retains its loader event admission boundary. Its JOIN event is
+array-backed, so the networking listener must independently recheck the active
+headless run even after the earlier lifecycle listener disconnects the player.
+`FabricHeadlessNetworkingAdmissionTest` inspects the compiled listener and
+requires the admission predicate, conditional return, and settings send in
+that order.
 
 ## Local automated smoke world
 
@@ -715,7 +758,7 @@ For a non-destructive three-direction capture of an existing complete-atlas
 world under `run/saves/`, use:
 
 ```sh
-./gradlew runProductionProjectionClient \
+./gradlew :runProductionProjectionClient \
   -PringProjectionWorld="production-ring-save-folder" \
   -PringProjectionViewDistanceChunks=16 \
   -PringProjectionEnvironment=noon
@@ -760,8 +803,14 @@ mesh vertex count, and per-view average/maximum/over-50-ms frame metrics. The
 probe changes options, time, weather, and camera pose only in the copy; it does
 not move the player or edit blocks.
 
-The harness logs individual probes rather than one final aggregate boolean, so
-review the complete group.
+Preparation removes prior logs, screenshots, cache, and crash reports from the
+ignored run before launch. The task's `verifyProductionProjectionClient`
+finalizer then requires the exact successful terminal marker, rejects any
+failure marker, and decodes the three expected PNGs for the selected
+environment with bounded dimensions. Missing, stale, mislabeled, or corrupt
+capture evidence fails the same Gradle invocation. Review the per-view frame
+metrics as well; the verifier establishes completion and readable evidence,
+not subjective visual parity.
 
 `ringProjectionWorld` must be the folder directly below `run/saves/` and must
 contain `level.dat`. It is intentionally required: do not substitute the
@@ -799,7 +848,7 @@ without altering the source world. It first copies a complete production
 `run-production-lifecycle/saves/` directory, then opens only that copy:
 
 ```sh
-./gradlew runProductionLifecycleClient \
+./gradlew :runProductionLifecycleClient \
   -PringProductionLifecycleSource="production-save-folder" \
   -PringProductionLifecycleDestination="RingWorld Production Lifecycle"
 ```
@@ -812,7 +861,8 @@ and refreshes only the ignored destination. The client opens that copy through
 Minecraft's in-process world-open flow rather than the unreliable quick-play
 argument. Runtime directories must not be committed or packaged.
 
-The server coordinator uses the Minecraft 26.1 `TeleportTransition` API. After
+The test client controls its integrated server directly through the Minecraft
+26.1 `TeleportTransition` API. After
 an initial Overworld-to-Nether setup move, the asserted sequence is Nether →
 Overworld → End → Overworld. The client independently records a complete
 production atlas and immutable layout baseline, proves
@@ -831,6 +881,11 @@ Search the client log for the bounded machine-readable completion marker:
 `result=false` records the failing phase or state. This test does not replace
 the dedicated two-client seam matrix, the layout-switch world replacement test,
 or manual portal/respawn playtesting.
+
+Its preparation removes old logs/cache/crash evidence, and the
+`verifyProductionLifecycleClient` finalizer requires the successful terminal
+marker, rejects any failure marker, and confirms that the copied destination
+still contains `level.dat`. A crash or stale prior run cannot satisfy the gate.
 
 The production 16,384×256 checkpoint passes with a complete 65,536-cell atlas.
 It logged inactive client geometry in Nether and End, exact baseline restoration
@@ -898,12 +953,15 @@ pose and therefore may not show the distant ring.
 The Gradle project defines:
 
 ```sh
-./gradlew runMultiplayerServer
-./gradlew runMultiplayerClientA
-./gradlew runMultiplayerClientB
+./gradlew :prepareMultiplayerHarness
+./gradlew :runMultiplayerServer
+./gradlew :runMultiplayerClientA
+./gradlew :runMultiplayerClientB
+./gradlew :verifyMultiplayerHarness --console=plain
 ```
 
-Run each in its own terminal. Runtime state is isolated under:
+Run the server and both clients in their own terminals, then run the verifier
+after they exit. Runtime state is isolated under:
 
 ```text
 run-multiplayer/server/
@@ -911,8 +969,10 @@ run-multiplayer/client-a/
 run-multiplayer/client-b/
 ```
 
-On a fresh checkout, the server may first generate files and require EULA
-acceptance. Use the test geometry in each isolated
+On a fresh checkout, `prepareMultiplayerHarness` creates
+`run-multiplayer/server/eula.txt` with `eula=false` and stops. Review Mojang's
+EULA, set it to `true`, then repeat preparation before launching the server.
+Use the test geometry in each isolated
 `config/ringworld.properties` and configure the dedicated server port expected
 by the clients (default harness property 25566).
 
@@ -949,6 +1009,13 @@ the seam lane so an ocean seed cannot refill it during the test. The server
 detects a fold from the large canonical-coordinate
 discontinuity plus its small positive periodic step, so an overloaded tick
 does not have to sample the player inside the final one-block interval.
+
+After both clients are ready, the opt-in Atlas-concurrency fixture additionally
+requires 100 consecutive server intervals at or below 100 ms before it begins
+the scenario. It fails closed after 60 wall-clock seconds or 1,200 observations.
+The readiness gate deliberately preserves the original 100-tick Creative-to-
+Survival dwell before seam movement is armed; it is a startup-stability guard,
+not a gameplay shortcut.
 
 The scenario verifies:
 
@@ -1003,10 +1070,60 @@ Success is:
 
 in `run-multiplayer/server/logs/latest.log`.
 
-The expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01 achieved that
-result on the reused 2,048×416 server with no `moved too quickly` or `moved
-wrongly` warning. Detailed scope and residual manual coverage are recorded in
-[`SEAM_GAMEPLAY_REGRESSION_2026-08-01.md`](SEAM_GAMEPLAY_REGRESSION_2026-08-01.md).
+### Opt-in atlas-concurrency gate (#130)
+
+The default multiplayer harness deliberately writes
+`pregenerateTerrainAtlas=false`. To prove the watchdog-safe, single-writer
+background atlas scheduler can advance while the existing two-real-client
+matrix runs, use the shared opt-in Gradle property
+`-PringMultiplayerPregenerateTerrainAtlas=true`. It only affects the ignored,
+fresh `run-multiplayer/` fixture selected by the server preparation task; it
+does not start a live server or change a deploy/save configuration.
+
+For Fabric, first run the preparation task. On first use it creates
+`run-multiplayer/server/eula.txt` with `eula=false`; review Mojang's EULA and
+set it to `true`, then repeat preparation. Start the following three commands
+in separate terminals, wait for all to exit, and run the verifier:
+
+```sh
+./gradlew :prepareMultiplayerHarness -PringMultiplayerPregenerateTerrainAtlas=true --console=plain
+./gradlew :runMultiplayerServer -PringMultiplayerPregenerateTerrainAtlas=true --console=plain
+./gradlew :runMultiplayerClientA --console=plain
+./gradlew :runMultiplayerClientB --console=plain
+./gradlew :verifyMultiplayerHarness -PringMultiplayerPregenerateTerrainAtlas=true --console=plain
+```
+
+NeoForge is loader-parallel and uses its subproject-local fixture. Its prepare
+task creates and gates the same persistent `eula.txt` acknowledgement; review
+it, set `eula=true`, and repeat the preparation command before launching. Use:
+
+```sh
+./gradlew :neoforge:prepareNeoForgeMultiplayerHarness -PringMultiplayerPregenerateTerrainAtlas=true --console=plain
+./gradlew :neoforge:runMultiplayerServer -PringMultiplayerPregenerateTerrainAtlas=true --console=plain
+./gradlew :neoforge:runMultiplayerClientA --console=plain
+./gradlew :neoforge:runMultiplayerClientB --console=plain
+./gradlew :neoforge:verifyNeoForgeMultiplayerHarness -PringMultiplayerPregenerateTerrainAtlas=true --console=plain
+```
+
+Each automated multiplayer client self-stops after it emits its terminal
+result. Stop the dedicated server normally after both clients exit, then run
+the verifier. With the property enabled, each verifier still requires the ordinary full
+multiplayer PASS marker, portal/weather evidence, both client-start markers,
+and all four screenshots. It additionally parses the server's periodic
+`RingWorld terrain atlas progress` status: total cells must stay fixed, present
+cells must never decrease, and at least two statuses must demonstrate a real
+increase. A `generation complete` status is accepted by the same rule. This is an
+advancement gate, not a requirement to complete all 3,328 chunks during the
+multiplayer scenario.
+
+The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
+achieved that result on the reused 2,048×416 server with no `moved too quickly`
+or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge
+atlas-concurrency/full-matrix runs both passed on 2026-08-08 after the readiness
+gate, including the strict `maxRemoteStep <= 1.25` client requirement. Each
+automated client emits its terminal result and self-stops; stop the dedicated
+server normally after both have exited. Detailed scope and residual manual
+coverage are recorded in [`SEAM_GAMEPLAY_REGRESSION_2026-08-01.md`](SEAM_GAMEPLAY_REGRESSION_2026-08-01.md).
 
 The original run on 2026-07-31 achieved the baseline result
 on a reused 2,048×416 server whose seam crossed an ocean. Both clients
@@ -1125,7 +1242,7 @@ were cleared, opens the differently sized second copy, and checks that the new
 handshake, atlas, and storage agree:
 
 ```sh
-./gradlew runLayoutSwitchClient \
+./gradlew :runLayoutSwitchClient \
   -PringLayoutSwitchFirstSource="safe-small-save-folder" \
   -PringLayoutSwitchSecondSource="production-save-folder"
 ```
@@ -1148,6 +1265,11 @@ separators. The copied worlds may save normally while their own dimension-owned
 settings and atlas paths are materialized; the harness does not move players or
 edit terrain. Its source-copy stage replaces only prior copies beneath ignored
 `run-layout-switch/`, never a source save.
+
+The preparation stage also removes previous logs/cache/crash evidence. The
+`verifyLayoutSwitchClient` finalizer accepts only the machine-readable
+`"passed":true` marker with no failed marker and confirms both copied
+destinations still contain `level.dat`.
 
 ## Optional package safety and upgrade gate
 
@@ -1253,11 +1375,12 @@ Use creative mode and an ordinary render distance (the current test profile is
 ### Maps, compasses, weather, and structures
 
 - The dual-loader `runMapCompassCaptureClient` fixtures automate seam pixels,
-  player/banner/item-frame markers, all three compass targets, and exact-target
-  behavior in both directions. On a final candidate, additionally scale and
-  lock a map, save/rejoin, teleport away and return, and add/remove a banner.
-  Nether and End behavior must stay vanilla. Locator-bar seam support is not
-  part of this gate.
+  player/banner markers, real item frames on both sides, map scale/lock,
+  seam-banner removal and restoration, raw-session teardown plus normal
+  save/disconnect/reopen persistence, all three compass targets, and
+  deterministic exact-target behavior in both directions. Nether and End
+  behavior must stay vanilla. Locator-bar seam support is not part of this
+  gate.
 - Start and complete a real raid near the seam. Confirm its center, raider
   navigation, wave completion, and rewards remain local through the wrap.
 - Inspect clear, rain, thunder, and a lightning strike near the seam. Also

@@ -105,5 +105,12 @@ packets. The rerun rendered the complete fixture. The verifier now also waits
 for the expected client block entities and fails after 1,200 ticks, so this
 regression cannot pass on screenshots alone.
 
+The later headless-admission audit preserves that ordinary-login ordering but
+adds a cancellable NeoForge method-head guard before vanilla creates the play
+listener or begins buffering play packets.
+Explicit atlas prewarm now rejects the connection without queuing settings,
+starting handshake state, or exposing atlas metadata; the logged-in event is a
+fallback only.
+
 Changed-gamma/night-vision, close cloud-height, real-player proximity, and
 motion review remain open.

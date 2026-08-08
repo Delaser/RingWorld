@@ -11,4 +11,10 @@ public final class RingWorldClientSession {
         AtlasPregenerationClientState.clear();
         ClientRingState.clear();
     }
+
+    public static boolean isCleared() {
+        return RingSurfaceTextureRenderer.sessionCleared()
+                && AtlasPregenerationClientState.sessionCleared()
+                && ClientRingState.sessionCleared();
+    }
 }

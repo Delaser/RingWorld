@@ -83,6 +83,15 @@ public final class NeoForgeRingWorldNetworking {
     }
 
     private static void handleAcknowledgement(RingSettingsAckPayload payload, IPayloadContext context) {
+        // Payload delivery may originate on Netty. Keep the handshake tracker,
+        // player connection, and atlas stream on the server thread just as the
+        // Fabric receiver does. enqueueWork is immediate when NeoForge already
+        // selected its main-thread handler.
+        context.enqueueWork(() -> handleAcknowledgementOnServerThread(payload, context));
+    }
+
+    private static void handleAcknowledgementOnServerThread(
+            RingSettingsAckPayload payload, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player)) return;
         ServerLevel overworld = player.level().getServer().getLevel(Level.OVERWORLD);
         if (overworld == null || !RingSettingsHandshake.accepts(RingWorldSettings.get(overworld), payload)) {
@@ -102,6 +111,11 @@ public final class NeoForgeRingWorldNetworking {
     }
 
     private static void handleMultiplayerTest(RingMultiplayerTestPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> handleMultiplayerTestOnServerThread(payload, context));
+    }
+
+    private static void handleMultiplayerTestOnServerThread(
+            RingMultiplayerTestPayload payload, IPayloadContext context) {
         if (!(context.player() instanceof ServerPlayer player)
                 || !Boolean.getBoolean("ringworld.multiplayerTest")
                 || !HANDSHAKES.isAcknowledged(player.getUUID())) return;
@@ -109,6 +123,11 @@ public final class NeoForgeRingWorldNetworking {
     }
 
     private static void handleAtlasRequest(RingTerrainAtlasRequestPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> handleAtlasRequestOnServerThread(payload, context));
+    }
+
+    private static void handleAtlasRequestOnServerThread(
+            RingTerrainAtlasRequestPayload payload, IPayloadContext context) {
         if (context.player() instanceof ServerPlayer player && requireAcknowledged(player, context)) {
             RingTerrainAtlasServer.requestTiles(
                     player, payload.worldHash(), payload.revision(), payload.cacheComplete());
@@ -117,12 +136,22 @@ public final class NeoForgeRingWorldNetworking {
 
     private static void handleAtlasStatusRequest(
             RingAtlasPregenerationStatusRequestPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> handleAtlasStatusRequestOnServerThread(payload, context));
+    }
+
+    private static void handleAtlasStatusRequestOnServerThread(
+            RingAtlasPregenerationStatusRequestPayload payload, IPayloadContext context) {
         if (context.player() instanceof ServerPlayer player && requireAcknowledged(player, context)) {
             RingTerrainAtlasServer.requestPregenerationStatus(player, payload.worldHash());
         }
     }
 
     private static void handleAtlasControl(
+            RingAtlasPregenerationControlPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> handleAtlasControlOnServerThread(payload, context));
+    }
+
+    private static void handleAtlasControlOnServerThread(
             RingAtlasPregenerationControlPayload payload, IPayloadContext context) {
         if (context.player() instanceof ServerPlayer player && requireAcknowledged(player, context)) {
             RingTerrainAtlasServer.controlPregeneration(player, payload.worldHash(), payload.action());

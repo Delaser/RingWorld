@@ -232,6 +232,8 @@ public final class HeadlessPrewarmCoordinator {
             json.addProperty("identityAvailable", true);
             json.addProperty("worldHash", Long.toUnsignedString(atlas.worldHash()));
             json.addProperty("layoutFingerprint", Long.toUnsignedString(settings.layoutFingerprint()));
+            json.addProperty("circumferenceBlocks", settings.circumferenceBlocks());
+            json.addProperty("widthBlocks", settings.widthBlocks());
             json.addProperty("completedChunks", atlas.presentChunkCount());
             json.addProperty("totalChunks", RingAtlasPregenerationCursor.checkedTotalChunks(
                     atlas.geometry().circumferenceChunks(), atlas.geometry().widthChunks()));
@@ -269,6 +271,13 @@ public final class HeadlessPrewarmCoordinator {
             json.addProperty("identityAvailable", report.identityAvailable());
             json.addProperty("worldHash", Long.toUnsignedString(report.worldHash()));
             json.addProperty("layoutFingerprint", Long.toUnsignedString(report.layoutFingerprint()));
+            if (identityAvailable) {
+                json.addProperty("circumferenceBlocks", settings.circumferenceBlocks());
+                json.addProperty("widthBlocks", settings.widthBlocks());
+            } else {
+                json.add("circumferenceBlocks", null);
+                json.add("widthBlocks", null);
+            }
             json.addProperty("completedChunks", report.completedChunks());
             json.addProperty("totalChunks", report.totalChunks());
             json.addProperty("completedCells", report.completedCells());

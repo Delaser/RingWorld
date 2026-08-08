@@ -3,11 +3,11 @@
 Status: Phases 1b and 2's player-facing workflow landed on 2026-08-01 and its
 shared Fabric/NeoForge UI parity gate passed on 2026-08-02.
 `RingAtlasPregenerationService` now owns one Overworld atlas writer, its
-cursor/selected future/retry state, process-local controls, checkpointing, and
+cursor/selected ticket-backed request/retry state, process-local controls, checkpointing, and
 verified completion. Fabric commands, lifecycle hooks, and client tile streams
 remain in `RingTerrainAtlasServer`. The pause-menu map, versioned status/control
 payloads, server-side authority checks, and completion toast now reuse that
-same service. Phase 3's Fabric-only dedicated-server adapter is implemented:
+same service. Phase 3's dedicated-server adapters are implemented on both loaders:
 it owns launch gating, JSON evidence, world save, and stop after the service's
 verified completion, without adding another scheduler or writer. Both loaders
 now run the same disposable GUI-scale-4 fixture through all eleven map/control
@@ -26,9 +26,10 @@ AtlasPregenerationHandle pregenerate(
 ```
 
 The function returns immediately on the server thread, advances through normal
-server ticks and chunk futures, and completes only after every canonical atlas
-cell has been captured and the dimension-owned atlas has been atomically
-saved. It must never block the server thread waiting on a chunk future.
+server ticks and a selected ticket-backed `RingAtlasChunkRequest`, and completes
+only after every canonical atlas cell has been captured and the dimension-owned
+atlas has been atomically saved. It must never block the server thread waiting
+on a chunk load.
 
 The primary product experience is a player-facing **Generate Entire Ring**
 button. Pressing it generates every canonical terrain chunk needed by the
@@ -37,7 +38,7 @@ service also supports:
 
 - the existing low-impact background generation during ordinary play;
 - a progress screen with pause, resume, and safe cancellation;
-- `/ringworld atlas status|pause|resume`;
+- `/ringworld atlas status|start|pause|resume`;
 - an explicit operator-requested prewarm;
 - a headless `prewarm-and-stop` server run for packaging, staging, and
   production-world preparation;
@@ -50,7 +51,7 @@ The extracted `RingAtlasPregenerationService` preserves the proven baseline:
 - it loads or resumes the atlas identified by immutable geometry, seed, layout
   fingerprint, format, and sample step;
 - it scans only canonical chunks;
-- it allows one `ChunkStatus.FULL` future in flight;
+- it allows one ticket-backed `ChunkStatus.FULL` request in flight;
 - it yields while the normal chunk queue has 64 or more pending tasks;
 - player-loaded chunks populate the same atlas;
 - dirty state saves atomically every 200 ticks and on world unload;
@@ -66,9 +67,14 @@ The client now renders the same stream progressively. It never treats an
 absent cell as terrain: missing samples encode zero alpha, known boundaries
 fade by bilinear coverage, and mipmaps weight colour by alpha. Coalesced tile
 updates reuse a source-resolution GPU texture and one reference-height mesh;
-the expanded texture and sampled terrain-height mesh are built exactly once
-when verified completion arrives. The final complete-atlas fast path and all
-server-side generation/persistence rules are unchanged.
+verified completion performs one transition to the expanded texture and
+sampled terrain-height mesh. Later complete-atlas revisions update the texture
+from one immutable snapshot and rebuild relief only when that snapshot's
+surface-height fingerprint changes; colour-only revisions reuse the detailed
+mesh. The final complete-atlas fast path and all server-side
+generation/persistence rules are unchanged. Exact production graphical
+projection/parity gates now pass on both loaders; the #128 triangle is absent
+from those captures.
 
 ## Required interfaces
 
@@ -157,9 +163,9 @@ void cancel();
 CompletionStage<AtlasPregenerationResult> completion();
 ```
 
-All mutations occur on the Minecraft server thread. Chunk futures may complete
-asynchronously, but their results are consumed and sampled on the server
-thread. The service is the only atlas writer. Player-driven chunk capture,
+All mutations occur on the Minecraft server thread. A ticket-backed request may
+complete asynchronously, but its result is consumed and sampled only on the
+server thread. The service is the only atlas writer. Player-driven chunk capture,
 network tile streaming, and periodic saving call into the same world-owned
 state instead of competing with it.
 
@@ -168,10 +174,34 @@ not delete atlas cells or generated terrain. A later call resumes from the
 persisted atlas.
 
 When `pregenerateTerrainAtlas=false`, the service still creates the same
-`BACKGROUND` handle in `IDLE` so status and legacy pause/resume commands stay
-defined and player-loaded chunks use the authoritative writer. It does not
-schedule chunks until a future explicit matching start; resume alone preserves
-the disabled-background policy.
+`BACKGROUND` handle in `IDLE` so status stays defined and player-loaded chunks
+use the authoritative writer. It does not schedule chunks until an explicit
+matching start. The command adapter exposes `/ringworld atlas start`, and
+`resume` also treats an idle partial handle as a request to start from durable
+progress. The #131 local runtime gate passed both the idle-start and
+restart-from-`IDLE` resume paths without replacing active or release-pending
+work.
+
+Minecraft 26.1.2's `ServerChunkCache.getChunkFuture` calls `managedBlock` when
+entered directly on the main server thread. The service instead starts the
+public non-blocking `addTicketAndLoadWithRadius` path with one unique,
+non-persistent loading ticket. It retains that ticket until the FULL chunk is
+consumed and sampled on a normal owning-server-thread tick. Cancellation and
+shutdown release the ticket without resolving the result supplier. In
+particular, a level-unload callback may run after the completed request's chunk
+has already left the cache; teardown therefore leaves the selected cursor
+unadvanced and checkpoints only cells captured before shutdown. Resume either
+skips those durable cells or retries that same missing chunk, with no false
+failure/backoff. The discarded worker-entry attempt still inherited vanilla's
+one-tick `UNKNOWN` ticket and could return an unloaded result before generation
+finished.
+
+If ordinary completed-request consumption succeeds but ticket release throws,
+the job becomes terminal while retaining that request for a later server-tick
+`close()` retry. A terminal job is not replaceable until the retained request
+is gone. Starting a replacement during that interval fails with an actionable
+message in both command and map-control paths; silently swapping `state.job`
+would orphan the unique loading ticket.
 
 The initial server implementation accepts only the conservative execution
 policy (one in-flight chunk and 64 pending-task limit). Non-default model
@@ -292,11 +322,15 @@ ignored and must never enter a client package or private source history.
 - Format 5 and the current world-hash derivation remain unchanged unless atlas
   cell semantics change.
 - Checkpoints use the existing temporary-file plus atomic-replace behavior.
-- World unload performs a final checkpoint and resolves or cancels the handle
-  deterministically.
+- World unload cancels/releases any outstanding chunk request without resolving
+  its possibly evicted result, performs a final checkpoint, and resolves the
+  handle deterministically. Only the normal tick path consumes completed loads.
 - A chunk failure records its canonical index and error. Background mode may
   retry with bounded backoff; headless mode fails after a configured bounded
   retry count.
+- A terminal job with an outstanding request remains the world-owned job until
+  its ticket release succeeds. Restart controls report the temporary block and
+  must not create a second writer or lose the release retry.
 - Completion is not reported until the atlas is complete, the final dirty
   tiles are queued, the file is saved, and a validation reopen succeeds.
 - Server restart needs no separate cursor file: present atlas cells are the
@@ -374,11 +408,17 @@ same payload layouts and call the loader-neutral model/service.
   copies an ignored source from `run/saves` without opening it in place.
   `-PringHeadlessPrewarmResume=true` retains only the existing disposable
   runtime world, rejects a copy source, and resumes from its atlas cells.
+  Fresh gates may select another valid immutable layout with
+  `ringHeadlessPrewarmCircumference` and `ringHeadlessPrewarmWidth`; NeoForge
+  exposes equivalent loader-prefixed properties.
 - The adapter suppresses normal background autostart, safely replaces only the
   unstarted disabled-background `IDLE` handle, rejects accepted joins
   immediately, disables vanilla empty-server pausing in its disposable fixture,
   and uses the one-in-flight service. It saves the world only
   after the service atomically saves and reopens the complete atlas.
+  Fabric's later array-backed networking JOIN callback independently rechecks
+  that admission and returns before settings or handshake state; the earlier
+  lifecycle callback remains the sole owner of the disconnect and message.
 - `world/ringworld-prewarm/progress.json` is atomically refreshed every 20
   ticks with schema version, identity, exact durable `completedChunks`,
   separately named `generatedChunksThisRun`, rate, ETA, and error. A result
@@ -397,9 +437,11 @@ same payload layouts and call the loader-neutral model/service.
   escaping for control characters in an error message; a report-write failure
   is a controlled checkpoint/failure/halt path rather than an uncaught server
   tick exception.
-- SIGTERM/server stop first consumes any completed selected future, checkpoints
-  the same service, then reports `INTERRUPTED`; restart resumes from atlas
-  cells. Existing region worlds without RingWorld settings are rejected by the
+- SIGTERM/server stop cancels and releases any outstanding selected request
+  without reading from a chunk cache that may already be tearing down,
+  checkpoints the same service, then reports `INTERRUPTED`; restart resumes
+  from captured atlas cells and retries the unadvanced selection when needed.
+  Existing region worlds without RingWorld settings are rejected by the
   immutable-settings guard. The Gradle finalizer turns any non-`COMPLETE`
   terminal JSON into a nonzero command result.
 - `HeadlessPrewarmCoordinator` owns this behavior in loader-neutral common
@@ -407,7 +449,9 @@ same payload layouts and call the loader-neutral model/service.
   join rejection. NeoForge's isolated equivalent is
   `:neoforge:runHeadlessPrewarmServer`, with loader-prefixed copy/resume/result
   properties and the same schema and completion requirements. A fresh
-  2,048×416 NeoForge gate completed all 3,328 chunks/13,312 cells.
+  2,048×416 NeoForge gate completed all 3,328 chunks/13,312 cells. Fabric's
+  exact production prewarm also completed on 2026-08-06; production NeoForge
+  prewarm evidence remains outstanding and is not implied by the safe-small run.
 
 Exit gate: fresh and copied safe-small worlds prewarm, reopen, serve the
 complete atlas to a clean client, and stop cleanly.
@@ -433,6 +477,11 @@ budgets, two-client revision/cache behavior, lifecycle/layout switching, and
 safe-small/production 6/12/28 captures pass. See
 `ATLAS_FIDELITY_BENCHMARK_2026-08-01.md` and
 `ATLAS_RELEASE_GATE_2026-08-01.md`.
+
+The later dual-loader exact production projection/parity gates pass with the
+former #128 triangle absent. The shared-lattice mesh and immutable
+texture/height snapshot behavior are therefore supported by current graphical
+evidence, not only pure tests.
 
 ## Test matrix
 

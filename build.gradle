@@ -211,6 +211,244 @@ def strongholdTestDirectory = file("run-stronghold-test")
 def headlessPrewarmDirectory = file("run-headless-prewarm")
 def raidSeamDirectory = file("run-raid-seam")
 
+def requireFabricRuntimeGateLog = { File logFile, String passMarker,
+									 String failMarker, String label ->
+	def log = logFile.isFile() ? logFile.getText("UTF-8") : ""
+	if (!log.contains(passMarker) || log.contains(failMarker)) {
+		throw new GradleException("${label} did not pass; inspect ${logFile}")
+	}
+}
+
+def requireReadablePng = { File screenshot, String label ->
+	if (!screenshot.isFile()) {
+		throw new GradleException("${label} is missing ${screenshot}")
+	}
+	def input = javax.imageio.ImageIO.createImageInputStream(screenshot)
+	if (input == null) {
+		throw new GradleException("${label} is not a readable image: ${screenshot}")
+	}
+	try {
+		def readers = javax.imageio.ImageIO.getImageReaders(input)
+		if (!readers.hasNext()) {
+			throw new GradleException("${label} is not a decodable image: ${screenshot}")
+		}
+		def reader = readers.next()
+		try {
+			if (!reader.formatName.equalsIgnoreCase("png")) {
+				throw new GradleException("${label} is not a PNG: ${screenshot}")
+			}
+			reader.setInput(input, true, true)
+			def width = reader.getWidth(0)
+			def height = reader.getHeight(0)
+			if (width < 16 || height < 16 || width > 16_384 || height > 16_384) {
+				throw new GradleException(
+						"${label} has unsafe dimensions ${width}x${height}: ${screenshot}")
+			}
+			def image = reader.read(0)
+			if (image == null || image.width != width || image.height != height) {
+				throw new GradleException("${label} did not decode correctly: ${screenshot}")
+			}
+		} catch (GradleException failure) {
+			throw failure
+		} catch (Exception failure) {
+			throw new GradleException("${label} is corrupt: ${screenshot}", failure)
+		} finally {
+			reader.dispose()
+		}
+	} finally {
+		input.close()
+	}
+}
+
+def verifyFabricProjectionOutputs = { File runDirectory, String environment ->
+	def normalizedEnvironment = environment.trim().toLowerCase(Locale.ROOT)
+	if (!(normalizedEnvironment in ["noon", "dusk", "night", "rain"])) {
+		throw new GradleException(
+				"ringProjectionEnvironment must be one of noon, dusk, night, or rain")
+	}
+	def logFile = new File(runDirectory, "logs/latest.log")
+	requireFabricRuntimeGateLog(logFile,
+			"[projection-capture] result=true, captures complete",
+			"[projection-capture] result=false", "Fabric projection capture")
+	def prefix = normalizedEnvironment == "noon"
+			? "ringworld-projection-" : "ringworld-projection-${normalizedEnvironment}-"
+	["tangent", "handoff", "up"].each { view ->
+		requireReadablePng(new File(runDirectory, "screenshots/${prefix}${view}.png"),
+				"Fabric projection capture")
+	}
+}
+
+def verifyFabricLayoutSwitchOutputs = { File runDirectory, List<String> destinations ->
+	def logFile = new File(runDirectory, "logs/latest.log")
+	requireFabricRuntimeGateLog(logFile,
+			"[layout-switch] result-json={\"passed\":true,",
+			"[layout-switch] result-json={\"passed\":false,",
+			"Fabric layout-switch client")
+	destinations.each { destinationId ->
+		def destination = new File(new File(runDirectory, "saves"),
+				checkedSaveId(destinationId, "ringLayoutSwitchDestination"))
+		if (!new File(destination, "level.dat").isFile()) {
+			throw new GradleException(
+					"Fabric layout-switch output is missing level.dat: ${destination}")
+		}
+	}
+}
+
+def verifyFabricProductionLifecycleOutputs = { File runDirectory, String destinationId ->
+	def logFile = new File(runDirectory, "logs/latest.log")
+	requireFabricRuntimeGateLog(logFile,
+			"[production-lifecycle] result=true",
+			"[production-lifecycle] result=false",
+			"Fabric production lifecycle")
+	def destination = new File(new File(runDirectory, "saves"),
+			checkedSaveId(destinationId, "ringProductionLifecycleDestination"))
+	if (!new File(destination, "level.dat").isFile()) {
+		throw new GradleException(
+				"Fabric lifecycle output is missing level.dat: ${destination}")
+	}
+}
+
+def multiplayerHarnessDirectory = file("run-multiplayer")
+def multiplayerPregenerateTerrainAtlas = providers.gradleProperty("ringMultiplayerPregenerateTerrainAtlas")
+        .orElse("false")
+
+tasks.register("prepareMultiplayerHarness") {
+	group = "ringworld verification"
+	description = "Creates clean, isolated Fabric server and client-A/client-B multiplayer harness directories."
+	inputs.property("ringMultiplayerPregenerateTerrainAtlas", multiplayerPregenerateTerrainAtlas)
+	outputs.dir(multiplayerHarnessDirectory)
+	outputs.upToDateWhen { false }
+	doLast {
+		def server = new File(multiplayerHarnessDirectory, "server")
+		def eula = new File(server, "eula.txt")
+		if (!eula.isFile()) {
+			eula.parentFile.mkdirs()
+			eula.text = "# Review https://aka.ms/MinecraftEULA before changing this value.\neula=false\n"
+		}
+		if (!eula.text.readLines().any { it.trim() == "eula=true" }) {
+			throw new GradleException("Review ${eula}, then set eula=true to run this disposable server")
+		}
+
+		["world", "logs", "ringworld-cache", "crash-reports"].each { delete(new File(server, it)) }
+		["client-a", "client-b"].each { client ->
+			["logs", "screenshots", "ringworld-cache", "crash-reports"].each {
+				delete(new File(multiplayerHarnessDirectory, client + "/" + it))
+			}
+		}
+		[server, new File(multiplayerHarnessDirectory, "client-a"),
+		 new File(multiplayerHarnessDirectory, "client-b")].each { it.mkdirs() }
+
+		def configDirectory = new File(server, "config")
+		configDirectory.mkdirs()
+		new File(configDirectory, "ringworld.properties").text = """\
+widthBlocks=416
+circumferenceBlocks=2048
+wallHeightBlocks=160
+testMode=false
+testViewDistanceChunks=2
+pregenerateTerrainAtlas=${multiplayerPregenerateTerrainAtlas.get().toBoolean() ? "true" : "false"}
+"""
+
+		def properties = new Properties()
+		properties.setProperty("server-port", "25566")
+		properties.setProperty("online-mode", "false")
+		properties.setProperty("gamemode", "creative")
+		properties.setProperty("difficulty", "normal")
+		properties.setProperty("level-name", "world")
+		properties.setProperty("level-seed", "-2162056627494116761")
+		properties.setProperty("view-distance", "5")
+		properties.setProperty("simulation-distance", "5")
+		properties.setProperty("pause-when-empty-seconds", "-1")
+		properties.setProperty("motd", "RingWorld Fabric automated multiplayer harness")
+		new File(server, "server.properties").withOutputStream {
+			properties.store(it, "Disposable RingWorld Fabric multiplayer harness")
+		}
+
+		logger.lifecycle("[fabric-multiplayer] prepared isolated server/client runs at {}", multiplayerHarnessDirectory)
+	}
+}
+
+def verifyMultiplayerAtlasProgress = { String loader, File serverLog, String serverText ->
+	def samples = []
+	def matcher = (serverText =~ /RingWorld terrain atlas progress: (\d+)\/(\d+) cells \([^)]*\), generation (\w+)/)
+	matcher.each { match ->
+		samples << [match[1].toLong(), match[2].toLong(), match[3]]
+	}
+	if (samples.isEmpty()) {
+		throw new GradleException("${loader} multiplayer atlas gate found no atlas progress or completion status; inspect ${serverLog}")
+	}
+	long previousCells = -1L
+	long totalCells = -1L
+	boolean advanced = false
+	for (sample in samples) {
+		long presentCells = sample[0]
+		long sampleTotal = sample[1]
+		if (sample[2] in ["failed", "cancelled"]) {
+			throw new GradleException("${loader} multiplayer atlas generation did not remain healthy; inspect ${serverLog}")
+		}
+		if (sampleTotal <= 0L || presentCells < 0L || presentCells > sampleTotal) {
+			throw new GradleException("${loader} multiplayer atlas status is invalid; inspect ${serverLog}")
+		}
+		if (totalCells != -1L && sampleTotal != totalCells) {
+			throw new GradleException("${loader} multiplayer atlas total changed during one disposable run; inspect ${serverLog}")
+		}
+		if (previousCells != -1L && presentCells < previousCells) {
+			throw new GradleException("${loader} multiplayer atlas progress regressed; inspect ${serverLog}")
+		}
+		if (previousCells != -1L && presentCells > previousCells) advanced = true
+		previousCells = presentCells
+		totalCells = sampleTotal
+	}
+	if (!advanced) {
+		throw new GradleException("${loader} multiplayer atlas gate did not observe increasing atlas progress; inspect ${serverLog}")
+	}
+}
+
+tasks.register("verifyMultiplayerHarness") {
+	group = "ringworld verification"
+	description = "Fails unless the isolated Fabric two-client seam matrix completed successfully."
+	doLast {
+		def serverLog = new File(multiplayerHarnessDirectory, "server/logs/latest.log")
+		def clientALog = new File(multiplayerHarnessDirectory, "client-a/logs/latest.log")
+		def clientBLog = new File(multiplayerHarnessDirectory, "client-b/logs/latest.log")
+		def serverText = serverLog.isFile() ? serverLog.text : ""
+		def clientAText = clientALog.isFile() ? clientALog.text : ""
+		def clientBText = clientBLog.isFile() ? clientBLog.text : ""
+		if (!serverText.contains("[multiplayer] full scenario result=true")
+				|| serverText.contains("[multiplayer] full scenario result=false")) {
+			throw new GradleException("Fabric multiplayer server matrix did not pass; inspect ${serverLog}")
+		}
+		if (!serverText.contains("[multiplayer-extended] ordinary Nether portal wait result=true")
+				|| !serverText.contains("[multiplayer-extended] seam thunder/lightning result=true")) {
+			throw new GradleException("Fabric multiplayer portal-delay/weather evidence is incomplete; inspect ${serverLog}")
+		}
+		[
+				[clientALog, clientAText, "[multiplayer:A] client world fully loaded"],
+				[clientBLog, clientBText, "[multiplayer:B] client world fully loaded"],
+				[clientALog, clientAText, "[multiplayer:A] local scenario result=true; stopping client"],
+				[clientBLog, clientBText, "[multiplayer:B] local scenario result=true; stopping client"]
+		].each { entry ->
+			if (!entry[1].contains(entry[2])) {
+				throw new GradleException("Fabric multiplayer client did not complete startup; inspect ${entry[0]}")
+			}
+		}
+		[
+				new File(multiplayerHarnessDirectory, "client-a/screenshots/ringworld-multiplayer-a.png"),
+				new File(multiplayerHarnessDirectory, "client-b/screenshots/ringworld-multiplayer-b.png"),
+				new File(multiplayerHarnessDirectory, "client-a/screenshots/ringworld-multiplayer-weather-a.png"),
+				new File(multiplayerHarnessDirectory, "client-b/screenshots/ringworld-multiplayer-weather-b.png")
+		].each { screenshot ->
+			if (!screenshot.isFile()) {
+				throw new GradleException("Fabric multiplayer harness is missing ${screenshot}")
+			}
+		}
+		if (multiplayerPregenerateTerrainAtlas.get().toBoolean()) {
+			verifyMultiplayerAtlasProgress("Fabric", serverLog, serverText)
+		}
+		logger.lifecycle("[fabric-multiplayer] verified full server and client-A/client-B seam matrix")
+	}
+}
+
 tasks.register("prepareRaidSeamTestWorld") {
 	group = "ringworld verification"
 	description = "Creates a fresh, isolated Fabric two-phase seam-raid fixture."
@@ -327,6 +565,10 @@ tasks.register("prepareHeadlessPrewarmWorld") {
 			providers.gradleProperty("ringHeadlessPrewarmResult").orElse("result.json"))
 	inputs.property("ringHeadlessPrewarmResume",
 			providers.gradleProperty("ringHeadlessPrewarmResume").orElse("false"))
+	inputs.property("ringHeadlessPrewarmCircumference",
+			providers.gradleProperty("ringHeadlessPrewarmCircumference").orElse("2048"))
+	inputs.property("ringHeadlessPrewarmWidth",
+			providers.gradleProperty("ringHeadlessPrewarmWidth").orElse("416"))
 	outputs.upToDateWhen { false }
 	doLast {
 		def sourceName = providers.gradleProperty("ringHeadlessPrewarmSource").orElse("").get().trim()
@@ -378,8 +620,10 @@ tasks.register("prepareHeadlessPrewarmWorld") {
 		propertiesFile.withOutputStream { properties.store(it, "Disposable RingWorld headless prewarm") }
 		def config = new Properties()
 		def configFile = new File(headlessPrewarmDirectory, "config/ringworld.properties")
-		config.setProperty("widthBlocks", "416")
-		config.setProperty("circumferenceBlocks", "2048")
+		config.setProperty("widthBlocks",
+				providers.gradleProperty("ringHeadlessPrewarmWidth").orElse("416").get())
+		config.setProperty("circumferenceBlocks",
+				providers.gradleProperty("ringHeadlessPrewarmCircumference").orElse("2048").get())
 		config.setProperty("wallHeightBlocks", "160")
 		config.setProperty("testMode", "false")
 		config.setProperty("testViewDistanceChunks", "6")
@@ -397,6 +641,8 @@ tasks.register("verifyHeadlessPrewarm") {
 	mustRunAfter("runHeadlessPrewarmServer")
 	doLast {
 		def resultName = providers.gradleProperty("ringHeadlessPrewarmResult").orElse("result.json").get().trim()
+		def expectedCircumference = providers.gradleProperty("ringHeadlessPrewarmCircumference").orElse("2048").get().toInteger()
+		def expectedWidth = providers.gradleProperty("ringHeadlessPrewarmWidth").orElse("416").get().toInteger()
 		def result = new File(headlessPrewarmDirectory, "world/ringworld-prewarm/" + resultName)
 		if (!result.isFile()) {
 			throw new GradleException("Headless prewarm did not write a terminal result; inspect " + result)
@@ -411,6 +657,7 @@ tasks.register("verifyHeadlessPrewarm") {
 				|| !report.containsKey("atlasPath") || !report.atlasPath || !report.containsKey("failureReason") || report.failureReason != null
 				|| !(report.totalChunks instanceof Number) || !(report.completedChunks instanceof Number)
 				|| !(report.totalCells instanceof Number) || !(report.completedCells instanceof Number)
+				|| report.circumferenceBlocks != expectedCircumference || report.widthBlocks != expectedWidth
 				|| report.totalChunks <= 0 || report.totalCells <= 0
 				|| report.completedChunks != report.totalChunks || report.completedCells != report.totalCells) {
 			throw new GradleException("Headless prewarm did not complete; inspect " + result)
@@ -472,7 +719,7 @@ tasks.register("prepareMapCompassCaptureRun") {
 
 tasks.register("verifyMapCompassCaptureClient") {
 	group = "ringworld verification"
-	description = "Fails unless the real map and compass paths pass in both seam directions."
+	description = "Fails unless the real map/compass seam and persistence paths pass."
 	mustRunAfter("runMapCompassCaptureClient")
 	doLast {
 		def logFile = file("run-map-compass-capture/logs/latest.log")
@@ -480,11 +727,65 @@ tasks.register("verifyMapCompassCaptureClient") {
 		if (!log.contains("[map-compass-capture] PASS") || log.contains("[map-compass-capture] FAIL")) {
 			throw new GradleException("Map and compass capture did not pass; inspect " + logFile)
 		}
-		["ringworld-map-high-to-low", "ringworld-map-low-to-high",
-		 "ringworld-compass-high-to-low", "ringworld-compass-low-to-high"].each { prefix ->
-			if (fileTree("run-map-compass-capture/screenshots").matching { include prefix + "*.png" }.isEmpty()) {
+		def verifyScreenshot = { screenshot ->
+			def input = javax.imageio.ImageIO.createImageInputStream(screenshot)
+			if (input == null) {
+				throw new GradleException("Map and compass capture screenshot is not a readable image " + screenshot)
+			}
+			try {
+				def readers = javax.imageio.ImageIO.getImageReaders(input)
+				if (!readers.hasNext()) {
+					throw new GradleException("Map and compass capture screenshot is not a decodable image " + screenshot)
+				}
+				def reader = readers.next()
+				try {
+					if (!reader.formatName.equalsIgnoreCase("png")) {
+						throw new GradleException("Map and compass capture screenshot is not a PNG " + screenshot)
+					}
+					reader.setInput(input, true, true)
+					def width = reader.getWidth(0)
+					def height = reader.getHeight(0)
+					if (width < 16 || height < 16 || width > 16_384 || height > 16_384) {
+						throw new GradleException("Map and compass capture screenshot has unsafe dimensions ${width}x${height}: " + screenshot)
+					}
+					def image = reader.read(0)
+					if (image == null || image.width != width || image.height != height) {
+						throw new GradleException("Map and compass capture screenshot did not decode correctly " + screenshot)
+					}
+					Integer firstVisiblePixel = null
+					boolean nonUniform = false
+					for (int y = 0; y < height && !nonUniform; y++) {
+						for (int x = 0; x < width; x++) {
+							int pixel = image.getRGB(x, y)
+							if ((pixel >>> 24) != 0) {
+								if (firstVisiblePixel == null) {
+									firstVisiblePixel = pixel
+								} else if (pixel != firstVisiblePixel) {
+									nonUniform = true
+									break
+								}
+							}
+						}
+					}
+					if (firstVisiblePixel == null || !nonUniform) {
+						throw new GradleException("Map and compass capture screenshot is blank or uniform " + screenshot)
+					}
+				} finally {
+					reader.dispose()
+				}
+			} finally {
+				input.close()
+			}
+		}
+		["ringworld-map-scale", "ringworld-map-banner-removed",
+		 "ringworld-map-high-to-low", "ringworld-map-low-to-high",
+		 "ringworld-compass-high-to-low", "ringworld-compass-low-to-high",
+		 "ringworld-map-reopened", "ringworld-compass-reopened"].each { prefix ->
+			def screenshots = fileTree("run-map-compass-capture/screenshots").matching { include prefix + "*.png" }.files
+			if (screenshots.isEmpty()) {
 				throw new GradleException("Map and compass capture is missing screenshot " + prefix + "*.png")
 			}
+			screenshots.each(verifyScreenshot)
 		}
 	}
 }
@@ -549,6 +850,9 @@ tasks.register("prepareCopiedLayoutSwitchWorlds") {
 	// A saved world can change between runs; always refresh only the isolated copies.
 	outputs.upToDateWhen { false }
 	doLast {
+		["screenshots", "ringworld-cache", "logs", "crash-reports"].each {
+			delete(file("run-layout-switch/${it}"))
+		}
 		def copies = [
 			[providers.gradleProperty("ringLayoutSwitchFirstSource").orElse("RingWorld Automated Test (10)").get(),
 					providers.gradleProperty("ringLayoutSwitchFirstDestination").orElse("RingWorld Layout Switch A").get(),
@@ -578,6 +882,20 @@ tasks.register("prepareCopiedLayoutSwitchWorlds") {
 	}
 }
 
+tasks.register("verifyLayoutSwitchClient") {
+	group = "ringworld verification"
+	description = "Fails unless the Fabric same-process layout switch clears and restores client state."
+	mustRunAfter("runLayoutSwitchClient")
+	doLast {
+		verifyFabricLayoutSwitchOutputs(file("run-layout-switch"), [
+				providers.gradleProperty("ringLayoutSwitchFirstDestination")
+						.orElse("RingWorld Layout Switch A").get(),
+				providers.gradleProperty("ringLayoutSwitchSecondDestination")
+						.orElse("RingWorld Layout Switch B").get()
+		])
+	}
+}
+
 tasks.register("verifyProductionProjectionSave") {
 	group = "ringworld verification"
 	description = "Checks that ringProjectionWorld names an existing source save under run/saves."
@@ -599,6 +917,9 @@ tasks.register("prepareCopiedProductionLifecycleWorld") {
 	// A saved world can change between runs; always refresh only the ignored copy.
 	outputs.upToDateWhen { false }
 	doLast {
+		["screenshots", "ringworld-cache", "logs", "crash-reports"].each {
+			delete(file("run-production-lifecycle/${it}"))
+		}
 		def source = requireSave(providers.gradleProperty("ringProductionLifecycleSource").orNull,
 				"ringProductionLifecycleSource", sourceSavesDirectory)
 		def destinationId = checkedSaveId(
@@ -619,6 +940,17 @@ tasks.register("prepareCopiedProductionLifecycleWorld") {
 	}
 }
 
+tasks.register("verifyProductionLifecycleClient") {
+	group = "ringworld verification"
+	description = "Fails unless the Fabric production dimension and reopen lifecycle passes."
+	mustRunAfter("runProductionLifecycleClient")
+	doLast {
+		verifyFabricProductionLifecycleOutputs(file("run-production-lifecycle"),
+				providers.gradleProperty("ringProductionLifecycleDestination")
+						.orElse("RingWorld Production Lifecycle").get())
+	}
+}
+
 tasks.register("prepareCopiedProductionProjectionWorld") {
 	group = "ringworld verification"
 	description = "Copies the named production-projection source save into its isolated run directory."
@@ -631,6 +963,9 @@ tasks.register("prepareCopiedProductionProjectionWorld") {
 	// World state can change between runs; refresh only the ignored destination copy.
 	outputs.upToDateWhen { false }
 	doLast {
+		["screenshots", "ringworld-cache", "logs", "crash-reports"].each {
+			delete(file("run-production-projection/${it}"))
+		}
 		def source = requireSave(providers.gradleProperty("ringProjectionWorld").orNull,
 				"ringProjectionWorld", sourceSavesDirectory)
 		def destinationId = checkedSaveId(
@@ -649,6 +984,126 @@ tasks.register("prepareCopiedProductionProjectionWorld") {
 		logger.lifecycle("[projection-capture] copied source={} destination={}",
 				source.directory, destination)
 	}
+}
+
+tasks.register("verifyProductionProjectionClient") {
+	group = "ringworld verification"
+	description = "Fails unless the Fabric projection client completed three decodable captures."
+	mustRunAfter("runProductionProjectionClient")
+	doLast {
+		verifyFabricProjectionOutputs(file("run-production-projection"),
+				providers.gradleProperty("ringProjectionEnvironment").orElse("noon").get())
+	}
+}
+
+tasks.register("verifyFabricRuntimeGateContracts") {
+	group = "ringworld verification"
+	description = "Proves the Fabric projection/layout/lifecycle verifiers reject stale or corrupt evidence."
+	outputs.upToDateWhen { false }
+	doLast {
+		def fixtureRoot = layout.buildDirectory.dir(
+				"tmp/fabric-runtime-gate-verifiers").get().asFile
+		delete(fixtureRoot)
+		fixtureRoot.mkdirs()
+
+		def writeText = { File destination, String value ->
+			destination.parentFile.mkdirs()
+			destination.setText(value, "UTF-8")
+		}
+		def writePng = { File destination ->
+			destination.parentFile.mkdirs()
+			def image = new java.awt.image.BufferedImage(
+					16, 16, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+			image.setRGB(0, 0, 0xFFFFFFFF as int)
+			image.setRGB(15, 15, 0xFF000000 as int)
+			if (!javax.imageio.ImageIO.write(image, "png", destination)) {
+				throw new GradleException("Could not create PNG verifier fixture ${destination}")
+			}
+		}
+		def expectRejected = { String caseName, Closure verification ->
+			boolean rejected = false
+			try {
+				verification.call()
+			} catch (GradleException expected) {
+				rejected = true
+			}
+			if (!rejected) {
+				throw new GradleException(
+						"Fabric runtime-gate verifier accepted invalid fixture: ${caseName}")
+			}
+		}
+
+		def projection = new File(fixtureRoot, "projection")
+		writeText(new File(projection, "logs/latest.log"),
+				"[projection-capture] result=true, captures complete\n")
+		["tangent", "handoff", "up"].each { view ->
+			writePng(new File(projection,
+					"screenshots/ringworld-projection-${view}.png"))
+		}
+		verifyFabricProjectionOutputs(projection, "noon")
+		def tangent = new File(projection,
+				"screenshots/ringworld-projection-tangent.png")
+		delete(tangent)
+		expectRejected("missing projection screenshot") {
+			verifyFabricProjectionOutputs(projection, "noon")
+		}
+		writeText(tangent, "not a PNG")
+		expectRejected("corrupt projection screenshot") {
+			verifyFabricProjectionOutputs(projection, "noon")
+		}
+		writePng(tangent)
+		writeText(new File(projection, "logs/latest.log"),
+				"[projection-capture] result=true, captures complete\n"
+						+ "[projection-capture] result=false, fixture failure\n")
+		expectRejected("failed projection log") {
+			verifyFabricProjectionOutputs(projection, "noon")
+		}
+		expectRejected("invalid projection environment") {
+			verifyFabricProjectionOutputs(projection, "invalid")
+		}
+
+		def layoutSwitch = new File(fixtureRoot, "layout-switch")
+		writeText(new File(layoutSwitch, "logs/latest.log"),
+				"[layout-switch] result-json={\"passed\":true,\"detail\":\"fixture\"}\n")
+		["Layout A", "Layout B"].each { destination ->
+			writeText(new File(layoutSwitch, "saves/${destination}/level.dat"), "fixture")
+		}
+		verifyFabricLayoutSwitchOutputs(layoutSwitch, ["Layout A", "Layout B"])
+		writeText(new File(layoutSwitch, "logs/latest.log"),
+				"[layout-switch] result-json={\"passed\":true,\"detail\":\"fixture\"}\n"
+						+ "[layout-switch] result-json={\"passed\":false,\"detail\":\"failed\"}\n")
+		expectRejected("failed layout-switch log") {
+			verifyFabricLayoutSwitchOutputs(layoutSwitch, ["Layout A", "Layout B"])
+		}
+		writeText(new File(layoutSwitch, "logs/latest.log"),
+				"[layout-switch] result-json={\"passed\":true,\"detail\":\"fixture\"}\n")
+		delete(new File(layoutSwitch, "saves/Layout B/level.dat"))
+		expectRejected("missing layout-switch output") {
+			verifyFabricLayoutSwitchOutputs(layoutSwitch, ["Layout A", "Layout B"])
+		}
+
+		def lifecycle = new File(fixtureRoot, "lifecycle")
+		writeText(new File(lifecycle, "logs/latest.log"),
+				"[production-lifecycle] result=true fixture\n")
+		writeText(new File(lifecycle, "saves/Lifecycle/level.dat"), "fixture")
+		verifyFabricProductionLifecycleOutputs(lifecycle, "Lifecycle")
+		writeText(new File(lifecycle, "logs/latest.log"),
+				"[production-lifecycle] result=true fixture\n"
+						+ "[production-lifecycle] result=false fixture failure\n")
+		expectRejected("failed production-lifecycle log") {
+			verifyFabricProductionLifecycleOutputs(lifecycle, "Lifecycle")
+		}
+		delete(new File(lifecycle, "logs/latest.log"))
+		expectRejected("missing production-lifecycle log") {
+			verifyFabricProductionLifecycleOutputs(lifecycle, "Lifecycle")
+		}
+
+		logger.lifecycle("[fabric-runtime-gates] verifier contract fixtures passed")
+	}
+}
+
+tasks.named("check") {
+	dependsOn(tasks.named("verifyFabricRuntimeGateContracts"))
 }
 
 tasks.register("prepareCopiedProductionVisualParityWorld") {
@@ -706,10 +1161,12 @@ tasks.register("verifyProductionVisualParityClient") {
 
 tasks.named("runLayoutSwitchClient") {
 	dependsOn(tasks.named("prepareCopiedLayoutSwitchWorlds"))
+	finalizedBy(tasks.named("verifyLayoutSwitchClient"))
 }
 
 tasks.named("runProductionProjectionClient") {
 	dependsOn(tasks.named("prepareCopiedProductionProjectionWorld"))
+	finalizedBy(tasks.named("verifyProductionProjectionClient"))
 }
 
 tasks.named("runProductionVisualParityClient") {
@@ -717,8 +1174,13 @@ tasks.named("runProductionVisualParityClient") {
 	finalizedBy(tasks.named("verifyProductionVisualParityClient"))
 }
 
+tasks.named("runMultiplayerServer") {
+	dependsOn(tasks.named("prepareMultiplayerHarness"))
+}
+
 tasks.named("runProductionLifecycleClient") {
 	dependsOn(tasks.named("prepareCopiedProductionLifecycleWorld"))
+	finalizedBy(tasks.named("verifyProductionLifecycleClient"))
 }
 
 tasks.register("prepareCurvedObjectCapture") {
