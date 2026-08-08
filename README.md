@@ -59,6 +59,13 @@ The Nether and End remain vanilla.
 > The validated server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
 
+The current dual-loader alpha candidate and its exact source/artifact hashes
+are recorded in the
+[2026-08-08 candidate checkpoint](docs/DUAL_LOADER_RELEASE_CANDIDATE_2026-08-08.md).
+It is machine-validated but still awaits owner gameplay/visual review, real
+graphical Windows launches, independent review, and an explicit publication
+decision.
+
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
 > Java 25 module builds with the same 291 tests; its dedicated server reaches

@@ -1510,11 +1510,13 @@ do not substitute for those platform runtime gates. Generated packages and
 test runtime state stay under ignored local directories and are never used as
 deployment inputs without separate owner approval.
 
-The frozen `9b77326` candidate now passes the exact-archive in-place macOS,
+The historical `9b77326` Fabric-only candidate passes the exact-archive in-place macOS,
 empty-data macOS first-run, and fresh production-layout dedicated-server
 gates. Its jar and optional archive hashes are recorded in
 `FABRIC_RELEASE_CANDIDATE_2026-08-01.md`. The real graphical Windows launch
 remains open; do not infer it from the launcher-only Windows Actions result.
+The current dual-loader candidate, machine evidence, and package hashes are
+recorded in `DUAL_LOADER_RELEASE_CANDIDATE_2026-08-08.md`.
 
 ## Manual playability checklist
 

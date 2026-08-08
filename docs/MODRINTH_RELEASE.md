@@ -102,9 +102,11 @@ The 2026-07-31 clean-server smoke passed with the staged
 RingWorld's 2048-by-416 bootstrap layout, reached the ready state, and stopped
 cleanly.
 
-The later frozen issue-#12 candidate and optional-package checks are recorded
-in `FABRIC_RELEASE_CANDIDATE_2026-08-01.md`. Those package hashes are local
-review evidence, not an authorization to upload or deploy them.
+The historical Fabric-only checkpoint is recorded in
+`FABRIC_RELEASE_CANDIDATE_2026-08-01.md`. The current dual-loader machine
+evidence and package hashes are in
+`DUAL_LOADER_RELEASE_CANDIDATE_2026-08-08.md`. Neither record authorizes an
+upload or deployment.
 
 ### Graphical installation smokes
 
