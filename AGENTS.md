@@ -73,8 +73,10 @@ gameplay compatibility, and compatibility work remain, so
 the Fabric alpha is not a stable release yet. See
 `docs/CURRENT_STATE.md` and `docs/VISUAL_HANDOFF_REVIEW_2026-08-01.md`.
 Exact Fabric and NeoForge alpha 3 files are uploaded while the Modrinth project
-remains **Under review**; those uploads do not make the remaining port gates
-complete. The approved
+remains **Under review**. The same verified jars were submitted to CurseForge
+project `1645598` on 2026-08-09 and are awaiting file/project moderation; see
+`docs/CURSEFORGE_RELEASE.md`. Those uploads do not make the remaining port
+gates complete. The approved
 next order is NeoForge standalone parity, standalone gameplay/visual polish,
 then exact-candidate release preparation. Broad third-party compatibility is
 deferred until owner sign-off; see `docs/DUAL_LOADER_STANDALONE_PLAN.md`.
@@ -93,10 +95,12 @@ must queue immutable settings immediately after the play-login packet; its
 ordinary logged-in event is after the initial chunk-buffer flush. See
 `docs/VISUAL_POLISH_CHECKPOINT_2026-08-02.md`.
 
-For any later Modrinth build, use the fail-closed local staging procedure in
+For any later Modrinth or CurseForge build, use the fail-closed local staging procedure in
 [`docs/MODRINTH_RELEASE.md`](docs/MODRINTH_RELEASE.md). It stages only the
 runtime jar and records a checksum plus the exact clean, pushed public branch
-revision. It never uploads or changes the listing.
+revision. It never uploads or changes either listing. CurseForge-specific
+manual metadata and dependency rules are in
+[`docs/CURSEFORGE_RELEASE.md`](docs/CURSEFORGE_RELEASE.md).
 
 ## Codex weekly usage pause
 

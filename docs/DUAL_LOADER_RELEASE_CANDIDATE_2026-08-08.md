@@ -38,6 +38,12 @@ Both CDN downloads reproduce the SHA-256 values above and pass the
 loader-specific distribution/licence verifier. The Modrinth project remains
 under review. The uploads are testing alphas, not stable-release sign-off.
 
+On 2026-08-09, those same exact jars were submitted to CurseForge project
+`1645598` as separate Fabric and NeoForge Alpha files. Both are tagged Client,
+Server, Java 25, and Minecraft 26.1.2; Fabric alone requires Fabric API project
+`306612`. The CurseForge project and files are awaiting scanning/moderation.
+See `CURSEFORGE_RELEASE.md`; no live-server or promotion authority was implied.
+
 ## Runtime evidence
 
 - Fresh Fabric and NeoForge 2,048×416 two-client matrices passed seam movement,

@@ -32,6 +32,14 @@ distribution verifier. These remain alpha test builds. Upload does not close
 the owner gameplay/visual, real Windows, independent-review, or compatibility
 gates; use `OWNER_RELEASE_SIGNOFF_2026-08-09.md` for the final review.
 
+On 2026-08-09, the same exact Fabric and NeoForge jars were submitted as Alpha
+files to new CurseForge Minecraft Mod project `1645598` under MPL-2.0. Both
+files target Client and Server, Java 25, and Minecraft 26.1.2. Fabric alone
+declares Fabric API project `306612` as a required relation. The project Source
+tab points to the public RingWorld GitHub repository. Both files reached
+CurseForge's `Under Review` state, so this is distribution
+staging rather than release promotion. See `CURSEFORGE_RELEASE.md`.
+
 Issue #33 now supplies a local fail-closed staging workflow for any later
 manual Fabric upload. It builds and validates exactly one runtime jar, records
 SHA-256/SHA-512 and the clean pushed public-source revision, and rejects stale

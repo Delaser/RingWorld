@@ -1,8 +1,10 @@
 # RingWorld alpha 3 owner sign-off
 
-Use this checklist against the hosted Modrinth files before approving promotion
-or any live-server deployment. A failure leaves the release as alpha and must
-be recorded before a replacement is built.
+Use this checklist against the exact hosted files before approving promotion
+or any live-server deployment. The same jar hashes are staged on Modrinth and
+CurseForge project `1645598`; testing either host is valid only after the
+downloaded SHA-256 matches the table. A failure leaves the release as alpha
+and must be recorded before a replacement is built.
 
 ## Exact files
 

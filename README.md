@@ -3,8 +3,8 @@
 RingWorld is an experimental Minecraft mod that turns the Overworld into a
 finite, genuinely looping cylindrical world. Fabric and NeoForge now have
 matching client, server, topology, worldgen, atlas, multiplayer, and packaging
-gates. Exact dual-loader alpha 3 files are uploaded to Modrinth while the
-project remains under review.
+gates. Exact dual-loader alpha 3 files are uploaded to Modrinth and CurseForge
+while both projects remain under review.
 
 Walk far enough around the circumference and you return to the same place
 without entering a duplicate world or crossing a corrective teleport. Players,
@@ -98,6 +98,11 @@ The exact dual-loader candidate is uploaded to
 `lnY3EC8t` and NeoForge version `D19TF1Qj`. The project is still **Under
 review**. Both alpha 3 files target Minecraft 26.1.2 and Java 25 and must be
 installed on the server and every client; only Fabric requires Fabric API.
+The same verified jars have also been submitted as Alpha files to
+[CurseForge](https://www.curseforge.com/minecraft/mc-mods/ringworld) project
+`1645598`; that new project is awaiting moderation. See the
+[CurseForge release procedure](docs/CURSEFORGE_RELEASE.md) for the exact
+metadata and future upload checklist.
 Use the [owner sign-off runbook](docs/OWNER_RELEASE_SIGNOFF_2026-08-09.md)
 before approving promotion or live deployment.
 
