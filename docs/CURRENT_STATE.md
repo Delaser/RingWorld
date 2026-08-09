@@ -39,6 +39,8 @@ declares Fabric API project `306612` as a required relation. The project Source
 tab points to the public RingWorld GitHub repository. Both files reached
 CurseForge's `Under Review` state, so this is distribution
 staging rather than release promotion. See `CURSEFORGE_RELEASE.md`.
+The CurseForge media gallery also contains the six approved in-game images
+from the RingWorld showcase page rather than automated diagnostic captures.
 
 Issue #33 now supplies a local fail-closed staging workflow for any later
 manual Fabric upload. It builds and validates exactly one runtime jar, records

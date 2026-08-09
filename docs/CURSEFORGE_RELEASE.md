@@ -27,6 +27,12 @@ The project is in the `Mods` class with `World Gen` as its main category and
 Mozilla Public License 2.0, permits third-party distribution, allows comments,
 and points its public source field at `https://github.com/Delaser/RingWorld`.
 
+The media gallery uses the six in-game images from the official showcase page,
+not automated test-fixture captures: `ring-snow-arch`, the open/tight/compact
+ratio views, and the distant/nearby Atlas views. CurseForge's 2 MiB media limit
+required the 3.2 MiB snow PNG to be uploaded as a visually equivalent JPEG;
+the other showcase files were accepted unchanged.
+
 ## Future upload checklist
 
 1. Stage and verify both jars from one clean, pushed commit using
@@ -45,6 +51,9 @@ and points its public source field at `https://github.com/Delaser/RingWorld`.
    loader-specific distribution/licence verifier.
 8. Record hosted file IDs, review status, hashes, and any moderation feedback
    in the current release-candidate evidence.
+9. Reuse approved showcase imagery for the gallery. Do not publish diagnostic
+   captures with test overlays, debug text, or known visual defects as release
+   screenshots.
 
 Uploading an alpha does not authorize a live-server restart, world change, or
 promotion to beta/release. Those still require the owner sign-off and explicit
