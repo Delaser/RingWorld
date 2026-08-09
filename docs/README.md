@@ -89,6 +89,11 @@ Start here:
   installation, packaging, and deployment.
 - [`MODRINTH_RELEASE.md`](MODRINTH_RELEASE.md): fail-closed dual-loader local
   staging, source provenance, and manual release gates.
+- [`CURSEFORGE_RELEASE.md`](CURSEFORGE_RELEASE.md): official CurseForge
+  project metadata, current alpha uploads, loader relations, and manual upload
+  checklist.
+- [`OWNER_RELEASE_SIGNOFF_2026-08-09.md`](OWNER_RELEASE_SIGNOFF_2026-08-09.md):
+  exact alpha 3 owner gameplay, visual, Windows, and go/no-go checklist.
 - [`CURRENT_STATE.md`](CURRENT_STATE.md): implemented features, deliberate
   boundaries, known defects, and recommended next work.
 

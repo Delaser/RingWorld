@@ -75,15 +75,22 @@ python3 -m unittest \
 
 ## Manual release gates
 
-The existing Fabric alpha upload is not modified by this workflow. Any later
-upload or listing change needs explicit owner authorization and must use only
-the reviewed staged jar for that loader. Inspect each archive and checksum;
+On 2026-08-08, explicit owner authorization was used to upload the exact
+staged candidate as Fabric alpha 3 (`lnY3EC8t`) and NeoForge alpha 3
+(`D19TF1Qj`). Any later upload, promotion, withdrawal, or listing change needs
+fresh owner authorization and must use only the reviewed staged jar for that
+loader. Inspect each archive and checksum;
 install it into clean and existing matching-loader clients; launch a clean
 matching-loader dedicated server; then run the two-client handshake, seam,
 combat, block, boat, teleport, reconnect, atlas, and production-geometry
 gates. Link `docs/COMPATIBILITY.md` and state untested renderer, shader,
 gravity, world-generation, chunk, and networking combinations as risks, not
 support claims.
+
+The alpha 3 CDN downloads were independently fetched after upload, matched the
+frozen Fabric and NeoForge SHA-256 values, and passed the distribution/licence
+verifier. Complete the owner checklist in
+`OWNER_RELEASE_SIGNOFF_2026-08-09.md` before promotion or live deployment.
 
 ### Non-graphical dedicated-server smoke
 

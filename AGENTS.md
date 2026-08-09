@@ -72,8 +72,11 @@ independent release-candidate review, broader
 gameplay compatibility, and compatibility work remain, so
 the Fabric alpha is not a stable release yet. See
 `docs/CURRENT_STATE.md` and `docs/VISUAL_HANDOFF_REVIEW_2026-08-01.md`.
-The Fabric alpha `0.2.0+mc26.1.2` is currently **Under review** on Modrinth;
-that submission does not make the remaining port gates complete. The approved
+Exact Fabric and NeoForge alpha 3 files are uploaded while the Modrinth project
+remains **Under review**. The same verified jars were submitted to CurseForge
+project `1645598` on 2026-08-09 and are awaiting file/project moderation; see
+`docs/CURSEFORGE_RELEASE.md`. Those uploads do not make the remaining port
+gates complete. The approved
 next order is NeoForge standalone parity, standalone gameplay/visual polish,
 then exact-candidate release preparation. Broad third-party compatibility is
 deferred until owner sign-off; see `docs/DUAL_LOADER_STANDALONE_PLAN.md`.
@@ -92,10 +95,12 @@ must queue immutable settings immediately after the play-login packet; its
 ordinary logged-in event is after the initial chunk-buffer flush. See
 `docs/VISUAL_POLISH_CHECKPOINT_2026-08-02.md`.
 
-For any later Modrinth build, use the fail-closed local staging procedure in
+For any later Modrinth or CurseForge build, use the fail-closed local staging procedure in
 [`docs/MODRINTH_RELEASE.md`](docs/MODRINTH_RELEASE.md). It stages only the
 runtime jar and records a checksum plus the exact clean, pushed public branch
-revision. It never uploads or changes the listing.
+revision. It never uploads or changes either listing. CurseForge-specific
+manual metadata and dependency rules are in
+[`docs/CURSEFORGE_RELEASE.md`](docs/CURSEFORGE_RELEASE.md).
 
 ## Codex weekly usage pause
 
@@ -117,8 +122,9 @@ agent uses a separate account and must monitor its own allowance.
 ## What this project is
 
 RingWorld is a dual-loader mod ported from Minecraft Java 1.21.11 to 26.1.2.
-Fabric is the current test release; NeoForge runtime and local packaging parity
-are complete. No NeoForge artifact has been published yet.
+Fabric and NeoForge are uploaded as matched alpha 3 test builds. Runtime and
+local packaging parity are complete, but owner and independent release gates
+remain.
 The validated design turns only the Overworld into a finite band:
 
 - canonical X runs around the circumference and is periodic;
@@ -166,9 +172,10 @@ under it.
 
 ## Loader support policy
 
-Fabric is the current released-test implementation. NeoForge has full
+Fabric and NeoForge are current hosted-test implementations. NeoForge has full
 graphical, dedicated-server, topology, worldgen, atlas, storage, multiplayer,
-and local packaging parity; hosted publication is not yet authorized. Future
+and local packaging parity; promotion beyond the uploaded alpha is not yet
+authorized. Future
 development must not deepen Fabric coupling. Design new gameplay, topology, persistence,
 worldgen, rendering math, protocol models, and tests as loader-agnostic common
 code. When a loader API is unavoidable, isolate it behind a narrow platform
