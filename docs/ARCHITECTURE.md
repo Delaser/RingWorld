@@ -371,7 +371,10 @@ guard. The queued game-thread replay performs the actual nearest-image
 mapping. Calls redirected later in the handler are already behind that guard.
 
 Outbound block break/use packets are converted back to canonical positions by
-`ClientConnectionMixin`.
+`ClientConnectionMixin`. For a block-use hit, the clicked block and hit vector
+move by one identical whole-chart offset. This preserves the local clicked
+face across `C-1 -> 0`; canonicalizing those values independently would turn a
+valid adjacent hit into a circumference-sized server distance.
 
 Natural small chart changes use vanilla incremental chunk updates. An explicit
 large teleport may make the old and new client chunk-array windows disjoint;

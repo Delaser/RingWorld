@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 307 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 311 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
@@ -317,12 +317,12 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 307
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 311
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 307
+The NeoForge module uses the same Java 25 toolchain and also passes all 311
 unit/parameterized cases:
 
 ```sh
@@ -689,6 +689,11 @@ version numbers.
   complete, distinct atlas identities/content fingerprints and raw GPU/session
   teardown between same-size worlds. Keep it non-destructive: it may save
   normally, but must not move players or edit terrain.
+- Outbound block-use packets must canonicalize the clicked block and translate
+  the hit vector by the same whole-chart offset. Never wrap the hit vector
+  independently: an east-face hit at `X=C` belongs locally to the canonical
+  block at `X=C-1`, and wrapping only that vector makes vanilla reject the
+  interaction as impossibly distant.
 - `:runProductionLifecycleClient` first copies a named production save into its
   own ignored run directory. Its test-only coordinator must use the 26.1
   `TeleportTransition` API, stay separate from smoke/layout-switch/multiplayer,

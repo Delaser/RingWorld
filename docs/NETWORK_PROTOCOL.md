@@ -233,7 +233,10 @@ therefore continues to receive the same root-vehicle and passenger identities.
 `ClientConnectionMixin` canonicalizes outbound:
 
 - block action positions;
-- block interaction positions and hit vectors.
+- block interaction positions and hit vectors. The clicked block is wrapped
+  first and the hit vector is translated by the same whole-chart offset; the
+  vector is never wrapped independently because a seam-face hit may
+  legitimately lie at `X=C` beside canonical block `X=C-1`;
 - sign updates, pick-block-with-data, and block-entity tag queries.
 
 Player and vehicle movement packets remain continuous presentation-space

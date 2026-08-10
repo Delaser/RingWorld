@@ -43,6 +43,13 @@ cross-seam block is placed, preventing reused-world and cold-start false
 results. Both server logs ended with `weather=true` and
 `full scenario result=true`; NeoForge's evidence verifier passed.
 
+The issue-#147 branch repeated this full NeoForge fixture on 2026-08-10 with
+Atlas generation disabled after both directional Survival placements passed.
+It completed the subsequent sleeping reconnect, death/respawn, physical
+Nether/End, post-End stability, and weather stages, and the strict verifier
+passed. This separates placement correctness from the independently tracked
+cold Atlas/performance profile.
+
 The reused 2,048×416 dedicated fixture ran one server and two independent real
 clients. Both clients reported a fully loaded world before setup. The terminal
 server line was:

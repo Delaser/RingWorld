@@ -540,6 +540,15 @@ tasks.register("verifyMultiplayerHarness") {
 				|| !serverText.contains("[multiplayer-extended] seam thunder/lightning result=true")) {
 			throw new GradleException("Fabric multiplayer portal-delay/weather evidence is incomplete; inspect ${serverLog}")
 		}
+		if (!serverText.contains("[multiplayer] bidirectional seam placement result=true")) {
+			throw new GradleException("Fabric multiplayer bidirectional placement evidence is incomplete; inspect ${serverLog}")
+		}
+		[[clientALog, clientAText], [clientBLog, clientBText]].each { entry ->
+			if (!entry[1].contains("forward seam placement result=true")
+					|| !entry[1].contains("reverse seam placement result=true")) {
+				throw new GradleException("Fabric multiplayer client placement evidence is incomplete; inspect ${entry[0]}")
+			}
+		}
 		["extended-fixture-before", "extended-fixture-after", "nether-returned",
 		 "end-returned", "weather-stability-ready", "terminal-result"].each { phase ->
 			if (!serverText.contains("[multiplayer-cold] phase=${phase}")) {

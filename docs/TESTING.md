@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 307
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 311
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -149,11 +149,12 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite passes 307 unit/parameterized cases per loader:
+The active suite passes 311 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
 | `RingGeometryTest` | Seam continuity, presentation charts and sleeping-position images, default walking length, physical/tangent transforms, noise seam, culling envelope, visibility math, query windows |
+| `RingInteractionCoordinatesTest` | Bidirectional seam-face block-use normalization, positive/negative presentation aliases, and exact preservation of the hit-to-clicked-block offset |
 | `RingMapCompassSupportTest` | Bidirectional nearest-image map sampling/decorations, scale-one seam-banner placement, banner gate, and spawn/lodestone/recovery compass bearing plus exact-target validity |
 | `RingRaidSupportTest` | Periodic raid distance/selection, seam-window POI queries, nearest-image village-centre averaging/deduplication, and canonical wave-spawn readiness windows |
 | `RingObjectTransformTest` | Exact curved rigid-anchor pose, tangent orientation, and presentation-seam continuity |
@@ -1172,6 +1173,10 @@ The scenario verifies:
 - server player query and tracking cross the seam;
 - real melee damage crosses the seam;
 - a block interaction/update crosses the seam;
+- Survival placement crosses the seam in both directions using the real
+  `MultiPlayerGameMode.useItemOn` path: support `C-1` east face places at
+  canonical `0`, and support `0` west face places at canonical `C-1`; each
+  direction consumes exactly one item and is visible to the other client;
 - a server-owned boat and its passenger retain identity, mount, orientation,
   zero fixture velocity, visibility, and canonical ownership through the fold;
 - an intentional long teleport re-keys the client chart;
