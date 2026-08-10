@@ -20,7 +20,7 @@ not create an exterior Overworld portal or strand the player in void.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> and the current suite passes 334 unit/parameterized cases per loader.
+> and the current suite passes 336 unit/parameterized cases per loader.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -79,7 +79,7 @@ and promotion approval.
 
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
-> Java 25 module builds with the same 334 tests; its dedicated server reaches
+> Java 25 module builds with the same 336 tests; its dedicated server reaches
 > `Done` and starts/progresses an atlas. Its client now loads the shared
 > resources/shaders and mixins, acknowledges settings format 3, streams atlas
 > metadata/tiles, and renders the complete textured surface in a copied
@@ -186,12 +186,14 @@ RingWorld separates storage, presentation, and rendering:
 This is why the seam can contain visible players, mobs, vehicles, blocks, and
 interactions rather than acting like a portal between two distant borders.
 
-Fresh worlds persist the complete annular terrain mapping, which makes biome,
-density, surface, carver, and structure-height sampling periodic together.
+Fresh worlds persist complete annular mapping v2, which makes biome, density,
+surface, carver, structure-height, and vanilla direct blended-noise sampling
+periodic together.
 Worlds created by older alpha builds retain their historical mapping rather
 than silently changing how unexplored chunks generate. Press F3 in the
 Overworld and check the RingWorld `Worldgen` line: new-world seam evidence
-must show `annular-complete (3)`; mapping 1 or 2 identifies a legacy world.
+must show `annular-complete-v2 (4)`. Mapping 1, 2, or 3 identifies an older
+world whose unexplored terrain deliberately retains its original generator.
 
 The complete coordinate model and data flow are documented in
 [Architecture](docs/ARCHITECTURE.md) and
@@ -289,7 +291,7 @@ The parallel NeoForge module uses the same Java 25 toolchain:
 ./gradlew :neoforge:test :neoforge:build --console=plain
 ```
 
-Both Fabric and NeoForge builds pass 334 unit/parameterized cases per loader.
+Both Fabric and NeoForge builds pass 336 unit/parameterized cases per loader.
 When launching a dedicated development server, use the qualified task
 for the intended loader: `./gradlew :runServer` for Fabric or
 `./gradlew :neoforge:runServer` for NeoForge. Do not use an unqualified

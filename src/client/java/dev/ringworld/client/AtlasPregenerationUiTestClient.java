@@ -80,7 +80,7 @@ public final class AtlasPregenerationUiTestClient {
                     return fail(client, "map screen showed the wrong embedded build identity: "
                             + screen.buildLabelForAutomation());
                 }
-                if (!screen.worldgenLabelForAutomation().equals("Worldgen: annular-complete (3)")) {
+                if (!screen.worldgenLabelForAutomation().equals("Worldgen: annular-complete-v2 (4)")) {
                     return fail(client, "map screen showed the wrong persisted worldgen identity: "
                             + screen.worldgenLabelForAutomation());
                 }

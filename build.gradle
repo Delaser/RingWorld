@@ -787,9 +787,9 @@ tasks.register("verifyHeadlessPrewarm") {
 		def resultName = providers.gradleProperty("ringHeadlessPrewarmResult").orElse("result.json").get().trim()
 		def expectedCircumference = providers.gradleProperty("ringHeadlessPrewarmCircumference").orElse("2048").get().toInteger()
 		def expectedWidth = providers.gradleProperty("ringHeadlessPrewarmWidth").orElse("416").get().toInteger()
-		def expectedMapping = providers.gradleProperty("ringHeadlessPrewarmExpectedTerrainNoiseMapping").orElse("3").get().toInteger()
-		if (!(expectedMapping in [1, 2, 3])) {
-			throw new GradleException("-PringHeadlessPrewarmExpectedTerrainNoiseMapping must be 1, 2, or 3")
+		def expectedMapping = providers.gradleProperty("ringHeadlessPrewarmExpectedTerrainNoiseMapping").orElse("4").get().toInteger()
+		if (!(expectedMapping in [1, 2, 3, 4])) {
+			throw new GradleException("-PringHeadlessPrewarmExpectedTerrainNoiseMapping must be 1, 2, 3, or 4")
 		}
 		def result = new File(headlessPrewarmDirectory, "world/ringworld-prewarm/" + resultName)
 		if (!result.isFile()) {

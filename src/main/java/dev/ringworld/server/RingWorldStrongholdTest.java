@@ -9,6 +9,7 @@ import dev.ringworld.world.RingMonumentPlacement;
 import dev.ringworld.world.RingMonumentResolution;
 import dev.ringworld.world.RingStructurePolicy;
 import dev.ringworld.world.RingSeamTerrainAudit;
+import dev.ringworld.world.RingTerrainNoiseMapping;
 import dev.ringworld.world.RingWorldGeneratorAccess;
 import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.core.BlockPos;
@@ -362,6 +363,12 @@ public final class RingWorldStrongholdTest {
             throw new IllegalStateException("Broad terrain cliff remains at circumference seam: "
                     + seam);
         }
+        if (RingWorldSettings.get(world).terrainNoiseMapping()
+                >= RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2
+                && !seam.passesSmoothJoin()) {
+            throw new IllegalStateException("Terrain join is not smooth under the current mapping: "
+                    + seam);
+        }
         if (caveAir.get() == 0 || ores.get() == 0) {
             throw new IllegalStateException("Seam strip lacks ordinary carver/ore evidence: caveAir="
                     + caveAir + ", ores=" + ores);
@@ -546,7 +553,12 @@ public final class RingWorldStrongholdTest {
                 int chunkZ = SectionPos.blockToSectionCoord(z);
                 boolean terrainWasLoaded = world.getChunkSource().getChunkNow(
                         chunkX, chunkZ) != null;
-                boolean compareFreshNoise = !Boolean.getBoolean(
+                // Spawn preparation and its periodic neighbour can advance
+                // either seam chunk without leaving it resident in getChunkNow().
+                // Keep both edge columns as alias checks rather than
+                // misclassifying them as untouched NOISE probes.
+                boolean seamCardinal = canonicalX == 0 || canonicalX == circumference - 1;
+                boolean compareFreshNoise = !seamCardinal && !Boolean.getBoolean(
                         "ringworld.strongholdTestResume") && !terrainWasLoaded;
                 int canonicalHeight = generator.getBaseHeight(
                         canonicalX, z, Heightmap.Types.WORLD_SURFACE_WG, world, randomState);

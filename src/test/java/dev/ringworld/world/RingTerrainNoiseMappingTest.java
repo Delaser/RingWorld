@@ -90,10 +90,14 @@ class RingTerrainNoiseMappingTest {
                 geometry, RingTerrainNoiseMapping.LEGACY_AXIAL);
         RingNoiseCoordinates annular = RingNoiseCoordinates.forGeometry(
                 geometry, RingTerrainNoiseMapping.ANNULAR);
+        RingNoiseCoordinates completeV2 = RingNoiseCoordinates.forGeometry(
+                geometry, RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2);
 
         assertTrue(legacy != annular);
+        assertTrue(annular != completeV2);
         assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL, legacy.mappingVersion());
         assertEquals(RingTerrainNoiseMapping.ANNULAR, annular.mappingVersion());
+        assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2, completeV2.mappingVersion());
         assertNotEquals(legacy.noiseX(2_048, 127), annular.noiseX(2_048, 127));
     }
 
@@ -164,7 +168,7 @@ class RingTerrainNoiseMappingTest {
                 () -> RingTerrainNoiseMapping.requireSafeNewWorldGeometry(unsafe));
         assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL,
                 RingTerrainNoiseMapping.forSettingsFormat(2));
-        assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE,
+        assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2,
                 RingTerrainNoiseMapping.forSettingsFormat(3));
     }
 
@@ -173,12 +177,13 @@ class RingTerrainNoiseMappingTest {
         assertEquals("legacy-axial", RingTerrainNoiseMapping.diagnosticName(1));
         assertEquals("annular-v1", RingTerrainNoiseMapping.diagnosticName(2));
         assertEquals("annular-complete", RingTerrainNoiseMapping.diagnosticName(3));
+        assertEquals("annular-complete-v2", RingTerrainNoiseMapping.diagnosticName(4));
         assertThrows(IllegalArgumentException.class,
                 () -> RingTerrainNoiseMapping.requireSupported(0));
-        assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE,
-                RingTerrainNoiseMapping.requireSupported(3));
+        assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2,
+                RingTerrainNoiseMapping.requireSupported(4));
         assertThrows(IllegalArgumentException.class,
-                () -> RingTerrainNoiseMapping.requireSupported(4));
+                () -> RingTerrainNoiseMapping.requireSupported(5));
     }
 
     @Test
@@ -201,5 +206,17 @@ class RingTerrainNoiseMappingTest {
                 geometry, RingTerrainNoiseMapping.ANNULAR_COMPLETE, 1_024));
         assertEquals(-1, RingTerrainNoiseMapping.carverSeedChunkX(
                 geometry, RingTerrainNoiseMapping.ANNULAR, -1));
+    }
+
+    @Test
+    void currentMappingMakesTheDiscreteSeamColumnsAdjacent() {
+        RingGeometry geometry = new RingGeometry(256, 16_384);
+        RingNoiseCoordinates coordinates = RingNoiseCoordinates.forGeometry(
+                geometry, RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2);
+
+        for (int z : new int[] {-192, -128, -44, 0, 127, 191}) {
+            assertEquals(coordinates.noiseX(0, z) - 1, coordinates.noiseX(16_383, z), 1);
+            assertEquals(coordinates.noiseZ(0, z), coordinates.noiseZ(16_383, z), 1);
+        }
     }
 }

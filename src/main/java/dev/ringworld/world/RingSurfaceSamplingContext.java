@@ -7,7 +7,7 @@ public final class RingSurfaceSamplingContext {
     private RingSurfaceSamplingContext() { }
 
     public static void run(RingGeometry geometry, int mappingVersion, Runnable operation) {
-        if (mappingVersion != RingTerrainNoiseMapping.ANNULAR_COMPLETE) {
+        if (mappingVersion < RingTerrainNoiseMapping.ANNULAR_COMPLETE) {
             operation.run();
             return;
         }

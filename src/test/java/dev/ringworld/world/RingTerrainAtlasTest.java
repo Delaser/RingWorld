@@ -184,6 +184,9 @@ class RingTerrainAtlasTest {
         RingWorldSettings completeMapping = new RingWorldSettings(
                 320, 1_024, 123L, 160, 64,
                 RingTerrainNoiseMapping.ANNULAR_COMPLETE, RingWorldSettings.FORMAT_VERSION);
+        RingWorldSettings completeV2Mapping = new RingWorldSettings(
+                320, 1_024, 123L, 160, 64,
+                RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2, RingWorldSettings.FORMAT_VERSION);
 
         assertFalse(RingTerrainAtlas.worldHash(first) == RingTerrainAtlas.worldHash(differentSeed));
         assertFalse(RingTerrainAtlas.worldHash(first) == RingTerrainAtlas.worldHash(differentLength));
@@ -192,6 +195,8 @@ class RingTerrainAtlasTest {
                 == RingTerrainAtlas.worldHash(annularMapping));
         assertFalse(RingTerrainAtlas.worldHash(annularMapping)
                 == RingTerrainAtlas.worldHash(completeMapping));
+        assertFalse(RingTerrainAtlas.worldHash(completeMapping)
+                == RingTerrainAtlas.worldHash(completeV2Mapping));
     }
 
     @Test

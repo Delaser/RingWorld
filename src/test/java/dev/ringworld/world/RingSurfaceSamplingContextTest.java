@@ -8,7 +8,7 @@ class RingSurfaceSamplingContextTest {
     @Test
     void completeMappingMakesSurfaceNoiseAdjacentAcrossTheSeam() {
         RingGeometry geometry = new RingGeometry(256, 16_384);
-        RingSurfaceSamplingContext.run(geometry, RingTerrainNoiseMapping.ANNULAR_COMPLETE, () -> {
+        RingSurfaceSamplingContext.run(geometry, RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2, () -> {
             RingSurfaceSamplingContext.Coordinates high =
                     RingSurfaceSamplingContext.mapScaled(16_383.0, 31.0, 1.0);
             RingSurfaceSamplingContext.Coordinates low =

@@ -50,9 +50,9 @@ complete atlas, records tangent/handoff/radial screenshots plus frame metrics,
 verifies the evidence, and exits. The historical format-2 production
 16,384×256 noon run passed with settled tangent/handoff/radial averages of
 10.7/8.4/8.4 ms per frame; the dusk, night, and rain variants also passed.
-Those captures describe alpha 3 and do not qualify the new format-3 annular
+Those captures describe alpha 3 and do not qualify the current format-3
 candidate. A fresh candidate source must acknowledge format 3 and complete
-annular mapping 3.
+annular mapping v2 (4).
 Dusk is frozen at tick 12,000, matching
 `RingSkyCycle`'s warm dusk keyframe; tick 14,008 is already night and must not
 be used as dusk evidence.
@@ -150,7 +150,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite passes 334 unit/parameterized cases per loader:
+The active suite passes 336 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
@@ -363,7 +363,7 @@ PNGs. After completion it also places and removes a sampled high surface block,
 requiring two changed tile broadcasts and ordered durable revision commits
 before passing. The initial map stage additionally requires the embedded
 `Alpha 4 · 0.2.0+mc26.1.2` label and fresh-world
-`Worldgen: annular-complete (3)` identity. It is a real integrated-server test:
+`Worldgen: annular-complete-v2 (4)` identity. It is a real integrated-server test:
 generation remains active because `RingWorldMapScreen` is explicitly
 non-pausing. Keep its run directory ignored and do not point it at a personal
 Prism instance or a production world.
@@ -378,7 +378,7 @@ fixture startup and lifecycle registration are loader-owned.
 The 2026-08-10 Fabric rerun after adding the menu identity lines passed all
 eleven captures and the revisioned-edit probe. Its initial GUI-scale-4 capture
 visibly showed `Alpha 4 · 0.2.0+mc26.1.2` and
-`Worldgen: annular-complete (3)` without overlapping the progress fields or
+`Worldgen: annular-complete-v2 (4)` without overlapping the progress fields or
 controls.
 
 After any mapping or game-version migration, also search active Java and
@@ -446,7 +446,7 @@ first result is `INTERRUPTED` and the next run resumes from durable atlas cells.
 Use `-PringHeadlessPrewarmResume=true` for that second run; the default fresh
 task deliberately deletes its disposable world.
 
-Fresh format-3 fixtures default to `terrainNoiseMapping=3`. A deliberate copied
+Fresh format-3 fixtures default to `terrainNoiseMapping=4`. A deliberate copied
 legacy-world run must set `-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1`;
 the NeoForge equivalent is
 `-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping=1`. Missing, unknown,
@@ -532,12 +532,13 @@ start, complete piece-graph and portal-room bounds, all 12 generated frame
 blocks, any minimal whole-graph boundary fit, an activatable frame orientation,
 periodic `getBaseHeight` and full
 `getBaseColumn` equality at canonical X and X+C (including X=0), and canonical
-`getBaseHeight` agreement with noise-complete `WORLD_SURFACE_WG` terrain at two
+`getBaseHeight` agreement with noise-complete `WORLD_SURFACE_WG` terrain at
 remote deterministic positions (the shared sampler path used by structure
-height placement). It deliberately excludes X=0 from the terrain-height
-comparison because spawn preparation may have already advanced that chunk
-beyond noise generation, and rejects either selected remote chunk if it is
-already fully loaded. The gate also verifies a nearest-periodic locate target
+height placement). It deliberately keeps X=0 and X=C-1 as periodic
+base-height/base-column checks only because spawn preparation can advance
+either seam neighbour without leaving it resident in `getChunkNow`; the
+remaining cardinal probes reject an already loaded chunk before comparing
+fresh noise terrain. The gate also verifies a nearest-periodic locate target
 and Eye target continuity after a canonical seam fold. It also requires the
 saved monument request to resolve to a canonical valid start, verifies its
 complete bounds, forces it without an alias chunk, locates it from an adjacent
@@ -639,13 +640,23 @@ The production visual-parity gate now requires both the natural forward seam
 capture and a `seam-join` look-back from canonical X=2 toward C-1. The latter
 is the terrain-join view: the forward crossing alone cannot reveal a wall left
 behind the player. The F3 RingWorld group reports the persisted terrain
-mapping; fresh-world evidence must show `annular-complete (3)`. Values
-`legacy-axial (1)` and `annular-v1 (2)` identify older worlds whose generator
-identity is deliberately preserved. Fresh production mapping-3 Fabric and
+mapping; current fresh-world evidence must show `annular-complete-v2 (4)`.
+Values 1, 2, and 3 identify older worlds whose generator identity is
+deliberately preserved. Fresh production mapping-3 Fabric and
 NeoForge runs passed this new view on 2026-08-10. The captured real chunk
 terrain crosses the join without a flat height wall; Fabric recorded 847 seam
 motion frames at 8.49 ms average and NeoForge recorded 846 at 8.44 ms average,
 with one frame over 50 ms in each run.
+
+The uploaded seed `-4558730636853595596` exposed a gap in that mapping-3
+qualification: vanilla's direct `BlendedNoise` leaf still consumed flat X/Z,
+and the old broad-cliff audit ignored a nine-block wall because it was below
+the twelve-block cliff threshold. Mapping 4 includes that leaf in the annular
+router and the strengthened gate rejects average join mismatch above one
+block. On the exact 16,384x256 reproduction, Fabric and NeoForge both report
+`largestDelta=8`, no cliff columns, and average absolute join delta
+`0.35365853658536583`; the isolated maximum remains natural variation while
+the broad wall is gone. Mapping-3 saves are not silently migrated.
 
 The post-#148/#157 biome-flavoured placeholder and 750 ms texture-morph
 production visual-parity runs passed on both loaders on 2026-08-10. Fabric

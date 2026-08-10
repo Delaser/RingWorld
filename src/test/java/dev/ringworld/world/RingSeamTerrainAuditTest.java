@@ -31,4 +31,20 @@ class RingSeamTerrainAuditTest {
         assertFalse(report.passes());
         assertEquals(32, report.longestCliffRun());
     }
+
+    @Test
+    void smoothJoinGateRejectsAVisibleWallBelowTheOldCliffThreshold() {
+        int[] high = new int[246];
+        int[] low = new int[246];
+        java.util.Arrays.fill(low, 0, 100, 9);
+
+        RingSeamTerrainAudit.Report report = RingSeamTerrainAudit.inspect(high, low);
+        assertTrue(report.passes(), "nine-block wall stays below the historic cliff threshold");
+        assertFalse(report.passesSmoothJoin(), "a broad nine-block join must still fail");
+
+        java.util.Arrays.fill(low, 0);
+        low[30] = 8;
+        assertTrue(RingSeamTerrainAudit.inspect(high, low).passesSmoothJoin(),
+                "one isolated natural feature is not a seam wall");
+    }
 }

@@ -327,8 +327,9 @@ totals rather than trusting stale text. Do not
 add the headless JVM option to an ordinary service unit or point it at a
 production/source world.
 
-Fresh and normal resumed format-3 runs default to expected mapping `3`
-(annular). To verify an intentionally copied legacy alpha world, pass
+Fresh and normal resumed format-3 runs default to expected mapping `4`
+(`annular-complete-v2`). To verify an intentionally copied older world, pass
+the world's explicit mapping instead; for example,
 `-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1` for Fabric or
 `-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping=1` for NeoForge.
 The verifier rejects any terminal report whose explicit mapping differs from
@@ -380,7 +381,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite passes 334 unit/parameterized cases per loader. The
+The current suite passes 336 unit/parameterized cases per loader. The
 historical Phase 2 95-error inventory and the subsequent source-port
 checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable

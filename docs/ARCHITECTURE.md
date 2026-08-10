@@ -426,9 +426,12 @@ the new chart.
 ### Periodic terrain noise
 
 The worldgen noise domain itself is periodic, not merely repeated flat noise.
-Fresh worlds use persisted mapping 3 (`ANNULAR_COMPLETE`), while mapping 2
-preserves the first annular implementation for existing format-3 saves. Both
-use an orthogonal annular embedding. For source intrinsic
+Fresh worlds use persisted mapping 4 (`ANNULAR_COMPLETE_V2`). Mapping 3
+preserves the earlier complete-annular implementation and mapping 2 preserves
+the first annular implementation for existing format-3 saves. All use an
+orthogonal annular embedding. Mapping 4 additionally applies that embedding to
+vanilla's direct `BlendedNoise` density leaf; leaving that one sampler flat was
+enough to create a deterministic wall at X=16383/0 for some seeds. For source intrinsic
 `(x,z)`:
 
 ```text
