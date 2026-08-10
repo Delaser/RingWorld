@@ -212,6 +212,27 @@ unsupported until their type-specific predicates and generated graphs pass
 the gate in
 [`SCARCE_STRUCTURE_GUARANTEE_AUDIT.md`](SCARCE_STRUCTURE_GUARANTEE_AUDIT.md).
 
+### Nether portal destination topology
+
+The Nether remains infinite and vanilla. After vanilla applies its dimension
+scale to a Nether-to-Overworld target, the destination Overworld
+`PortalForcer` applies the finite-ring policy before either POI lookup or
+portal creation:
+
+- `X = floorMod(scaledX, circumference)`;
+- Y is unchanged;
+- Z is clamped to the safe creation-anchor interval. That interval excludes
+  both five-block rims, three blocks for the widest frame/foundation offset,
+  and vanilla's complete 16-block portal-creation sweep.
+
+Portal POI lookup uses the canonical anchor and its `X-C`/`X+C` query images,
+deduplicates candidates to canonical ownership, rejects portal blocks whose
+frames could intersect a rim, and selects by periodic-X distance. This means a
+portal at `C-1` can link from a target near zero without an alias portal. The
+policy lives at the lookup/create ownership boundary; clamping only a final
+`TeleportTransition` would be too late because vanilla may already have
+loaded, searched, or created exterior Overworld state.
+
 ### Production lifecycle regression
 
 `:runProductionLifecycleClient` is an opt-in, isolated integrated-client

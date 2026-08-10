@@ -227,7 +227,20 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite passes 291 unit/parameterized cases per loader.
+The active suite passes 296 unit/parameterized cases per loader.
+
+Issue #145 now has a loader-neutral portal destination policy at the
+`PortalForcer` ownership boundary. After vanilla's Nether-to-Overworld 8:1
+scale, X is canonicalized, Z is clamped far enough inside the rims for the
+complete vanilla creation sweep, and portal POI lookup unions both adjacent X
+images before selecting by periodic distance. Fresh Fabric and NeoForge
+two-client fixtures both pass positive/negative multi-lap lookup, portal
+creation beyond both Z rims, a real four-lap player return, ordinary 80-tick
+survival portal delay, reconnect, and subsequent End travel. The live demo
+world was not opened or regenerated. The same complete matrix also passes at
+the Medium 16,384x256 geometry on Fabric and on a warmed NeoForge retry; the
+first cold NeoForge production attempt stopped earlier at the known fixture
+resource-pressure boundary tracked by #134, before portal routing ran.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
@@ -547,7 +560,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, with 291 unit/parameterized cases passing per loader, and Loom produces
+temporary shims, with 296 unit/parameterized cases passing per loader, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -971,7 +984,8 @@ and compatibility claims.
   copied-production lifecycle runner covers Nether → Overworld → End →
   Overworld, normal save/disconnect, and same-process reopen at 16,384×256.
   The safe-small two-client runner adds actual `PortalForcer`-created Nether
-  blocks/linking/return and End portal block travel. Normal stand-in-portal
+  blocks/linking/return, positive and negative multi-lap X lookup, safe
+  destinations for targets beyond both Z rims, and End portal block travel. Normal stand-in-portal
   delays and full map-mode playthroughs remain manual coverage. The bed gate
   disconnects while asleep, requires vanilla's rejoined-awake state beside the
   canonical seam bed with valid Overworld geometry and loaded-bed proximity,

@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 291
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 296
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -137,7 +137,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite passes 291 unit/parameterized cases per loader:
+The active suite passes 296 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
@@ -149,6 +149,7 @@ The active suite passes 291 unit/parameterized cases per loader:
 | `RingDimensionReportTest` | Full-height radial safety, aligned playable minimum, structural-only/unsafe curvature, walls/clouds, allocation bounds, measured-reference cost warnings, and maximum technical warning envelope |
 | `RingDimensionCostEstimateTest` | Exact production benchmark retention, atlas wire/tick calculation, checked scaling, and supported-maximum arithmetic |
 | `RingGenerationBoundaryTest` | Shared generated-rim top bound for default/custom wall heights and world-top clamping |
+| `RingPortalDestinationBoundsTest` | Positive/negative multi-lap X normalization, both finite-Z clamps, preserved safe targets, Small-preset frame/creation clearance, and three-image periodic portal lookup distance |
 | `RingDimensionMatrixTest` | Safe-small, aligned playable minimum, narrow, production, former-wide, long/narrow, wide/medium, and custom-wall layouts across topology, final saved spawn canonicalization for negative/seam aliases, worldgen coordinate seams/finite-band limits, atlas and 6/12/28/64 render budgets |
 | `RingSettingsHandshakeTest` | Immutable safe-small/production/wide/custom-wall payload identity, acknowledgement, and mismatch rejection |
 | `RingHandshakeTrackerTest` | Correct, duplicate, missing/expired, unexpected, disconnect, and reconnect acknowledgement state |
@@ -1127,13 +1128,20 @@ The scenario verifies:
 - the death screen, client respawn request, replacement server player, and
   canonical respawn all complete;
 - real Nether portal blocks and `PortalForcer` linking carry the player to the
-  vanilla Nether only after the normal survival wait, then back near the
-  periodic source image;
+  vanilla Nether only after the normal survival wait, verify positive and
+  negative multi-lap X targets plus targets beyond both Z rims, then return a
+  deliberately four-lap player to a canonical safe Overworld portal;
 - a real End portal block carries the player to the vanilla End and an End
   return portal restores the Overworld with client RingWorld state reattached;
 - both clients report their phase matrix.
 - both seam-side clients observe full rain/thunder and an actual lightning
   entity, with one labelled weather screenshot per client.
+
+The 2026-08-10 routing refresh also passes the entire matrix at 16,384x256 on
+Fabric and on a warmed NeoForge retry. The first cold NeoForge production run
+stopped at the pre-existing sleeping-reconnect fixture/resource-pressure
+boundary tracked by #134 before the portal phase; it is not counted as a
+portal failure.
 
 The historical 2026-08-01 dedicated result predates the X=`0` destination
 assertion and observed only the seam-side source state. Fresh 2,048x416 runs

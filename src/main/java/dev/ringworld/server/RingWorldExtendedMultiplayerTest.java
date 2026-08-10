@@ -3,6 +3,7 @@ package dev.ringworld.server;
 import com.mojang.datafixers.util.Either;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
+import dev.ringworld.world.RingPortalDestinationBounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -55,6 +56,7 @@ final class RingWorldExtendedMultiplayerTest {
     private static boolean deathObserved;
     private static boolean deathRespawnPassed;
     private static boolean netherPortalPassed;
+    private static boolean netherPortalRoutingPassed;
     private static boolean endPortalPassed;
     private static boolean weatherPassed;
     private static boolean outboundPortalWaitPassed;
@@ -63,6 +65,7 @@ final class RingWorldExtendedMultiplayerTest {
     private static boolean navigationStarted;
     private static ServerPlayer preDeathPlayer;
     private static BlockPos overworldNetherPortal;
+    private static BlockPos expectedOverworldPortalReturn;
     private static Zombie seamNavigator;
     private static final RingMultiplayerPhaseTelemetry COLD_TELEMETRY = new RingMultiplayerPhaseTelemetry();
     private static RingMultiplayerReadinessGate postEndWeatherGate;
@@ -84,7 +87,7 @@ final class RingWorldExtendedMultiplayerTest {
             case 4 -> awaitBedDestruction(world, playerA);
             case 5 -> awaitDeath(world, geometry, playerA);
             case 6 -> startNetherPortal(world, geometry, playerA);
-            case 7 -> awaitNetherAndReturn(world, playerA);
+            case 7 -> awaitNetherAndReturn(world, geometry, playerA);
             case 8 -> awaitOverworldAndStartEnd(world, geometry, playerA);
             case 9 -> awaitEndAndReturn(world, playerA);
             case 10 -> awaitFinalOverworld(world, geometry, playerA);
@@ -447,7 +450,8 @@ final class RingWorldExtendedMultiplayerTest {
         advance(7);
     }
 
-    private static void awaitNetherAndReturn(ServerLevel overworld, ServerPlayer playerA) {
+    private static void awaitNetherAndReturn(ServerLevel overworld, RingGeometry geometry,
+                                              ServerPlayer playerA) {
         if (playerA == null) return;
         if (playerA.level().dimension() == Level.NETHER
                 && RingWorldMultiplayerTest.clientPassed("A", "nether_enter")) {
@@ -462,6 +466,57 @@ final class RingWorldExtendedMultiplayerTest {
                 advance(12);
                 return;
             }
+            int targetX = geometry.circumferenceBlocks() / 2 + 17;
+            BlockPos lowRawTarget = new BlockPos(
+                    targetX - geometry.circumferenceBlocks() * 3,
+                    120,
+                    geometry.minWidthZ() - 10_000);
+            BlockPos highRawTarget = new BlockPos(
+                    targetX + geometry.circumferenceBlocks() * 4,
+                    120,
+                    geometry.maxWidthZ() + 10_000);
+            Optional<BlockPos> seamFound = overworld.getPortalForcer().findClosestPortalPosition(
+                    new BlockPos(2, overworldNetherPortal.getY(), overworldNetherPortal.getZ()),
+                    false,
+                    overworld.getWorldBorder());
+            Optional<net.minecraft.util.BlockUtil.FoundRectangle> lowCreated =
+                    overworld.getPortalForcer().createPortal(lowRawTarget, Direction.Axis.Z);
+            Optional<net.minecraft.util.BlockUtil.FoundRectangle> highCreated =
+                    overworld.getPortalForcer().createPortal(highRawTarget, Direction.Axis.Z);
+            Optional<BlockPos> lowFound = overworld.getPortalForcer().findClosestPortalPosition(
+                    lowRawTarget, false, overworld.getWorldBorder());
+            Optional<BlockPos> highFound = overworld.getPortalForcer().findClosestPortalPosition(
+                    highRawTarget, false, overworld.getWorldBorder());
+            boolean routing = seamFound.isPresent()
+                    && Math.abs(geometry.shortestCircumferenceDelta(
+                            overworldNetherPortal.getX(), seamFound.get().getX())) <= 16.0
+                    && lowCreated.isPresent() && highCreated.isPresent()
+                    && lowFound.isPresent() && highFound.isPresent()
+                    && lowFound.get().getX() >= 0
+                    && lowFound.get().getX() < geometry.circumferenceBlocks()
+                    && highFound.get().getX() >= 0
+                    && highFound.get().getX() < geometry.circumferenceBlocks()
+                    && Math.abs(geometry.shortestCircumferenceDelta(targetX, lowFound.get().getX())) <= 16.0
+                    && Math.abs(geometry.shortestCircumferenceDelta(targetX, highFound.get().getX())) <= 16.0
+                    && RingPortalDestinationBounds.isSafePortalBlock(geometry, lowFound.get())
+                    && RingPortalDestinationBounds.isSafePortalBlock(geometry, highFound.get());
+            if (!routing) {
+                RingWorldMod.LOGGER.error(
+                        "[multiplayer-extended] multi-lap Nether portal routing result=false seamFound={} lowCreated={} highCreated={} lowFound={} highFound={}",
+                        seamFound, lowCreated, highCreated, lowFound, highFound);
+                advance(12);
+                return;
+            }
+            netherPortalRoutingPassed = true;
+            expectedOverworldPortalReturn = highFound.get();
+            // Vanilla performs the 8:1 scaling from this deliberately remote
+            // Nether pose. Four complete X laps must resolve to targetX and
+            // the extreme positive Z must remain inside the safe ring band.
+            playerA.teleportTo(nether,
+                    highRawTarget.getX() / 8.0,
+                    playerA.getY(),
+                    highRawTarget.getZ() / 8.0,
+                    Set.<Relative>of(), playerA.getYRot(), playerA.getXRot(), false);
             var transition = ((Portal) Blocks.NETHER_PORTAL)
                     .getPortalDestination(nether, playerA, exit.get());
             if (transition == null) {
@@ -474,6 +529,9 @@ final class RingWorldExtendedMultiplayerTest {
             RingWorldMod.LOGGER.info(
                     "[multiplayer-extended] ordinary Nether portal wait result={} elapsedTicks={} expectedTicks={}",
                     outboundPortalWaitPassed, elapsed, expectedPortalWait);
+            RingWorldMod.LOGGER.info(
+                    "[multiplayer-extended] multi-lap Nether portal routing result=true seam={} low={} high={} expectedReturn={}",
+                    seamFound.get(), lowFound.get(), highFound.get(), expectedOverworldPortalReturn);
             COLD_TELEMETRY.record("nether-return-armed", overworld);
             advance(8);
         } else if (ticks >= TIMEOUT_TICKS) {
@@ -490,10 +548,13 @@ final class RingWorldExtendedMultiplayerTest {
         boolean returned = playerA.level() == overworld
                 && playerA.getX() >= 0.0 && playerA.getX() < geometry.circumferenceBlocks()
                 && Math.abs(geometry.shortestCircumferenceDelta(
-                        overworldNetherPortal.getX(), playerA.getX())) < 16.0
+                        expectedOverworldPortalReturn.getX(), playerA.getX())) < 16.0
+                && Math.abs(expectedOverworldPortalReturn.getZ() - playerA.getZ()) < 16.0
+                && RingPortalDestinationBounds.isSafePortalBlock(
+                        geometry, playerA.blockPosition())
                 && RingWorldMultiplayerTest.clientPassed("A", "nether_return");
         if (returned) {
-            netherPortalPassed = outboundPortalWaitPassed;
+            netherPortalPassed = outboundPortalWaitPassed && netherPortalRoutingPassed;
             double netherReturnX = playerA.getX();
             COLD_TELEMETRY.record("nether-returned", overworld);
             BlockPos endPortal = new BlockPos(geometry.circumferenceBlocks() - 12, 120, 16);
@@ -652,14 +713,14 @@ final class RingWorldExtendedMultiplayerTest {
         boolean passed = baselinePassed && serverFixturePassed && sleepingReconnectPassed
                 && damageWakePassed
                 && bedDestroyedPassed && deathObserved && deathRespawnPassed
-                && netherPortalPassed && endPortalPassed && weatherPassed
+                && netherPortalPassed && netherPortalRoutingPassed && endPortalPassed && weatherPassed
                 && clientFixture && clientLifecycle
                 && canonicalPlayers;
         COLD_TELEMETRY.record("terminal-result", world);
         RingWorldMod.LOGGER.info(
-                "[multiplayer] full scenario result={} (baseline={}, fixture={}, sleepingReconnect={}, damageWake={}, bedDestroyed={}, deathRespawn={}, netherPortal={}, endPortal={}, weather={}, clientFixture={}, clientLifecycle={}, canonicalPlayers={})",
+                "[multiplayer] full scenario result={} (baseline={}, fixture={}, sleepingReconnect={}, damageWake={}, bedDestroyed={}, deathRespawn={}, netherPortal={}, netherPortalRouting={}, endPortal={}, weather={}, clientFixture={}, clientLifecycle={}, canonicalPlayers={})",
                 passed, baselinePassed, serverFixturePassed, sleepingReconnectPassed, damageWakePassed,
-                bedDestroyedPassed, deathRespawnPassed, netherPortalPassed, endPortalPassed,
+                bedDestroyedPassed, deathRespawnPassed, netherPortalPassed, netherPortalRoutingPassed, endPortalPassed,
                 weatherPassed, clientFixture, clientLifecycle, canonicalPlayers);
     }
 
