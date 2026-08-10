@@ -43,21 +43,28 @@ staging rather than release promotion. See `CURSEFORGE_RELEASE.md`.
 The CurseForge media gallery also contains the six approved in-game images
 from the RingWorld showcase page rather than automated diagnostic captures.
 
-On 2026-08-10, the unlisted showcase alpha directory was refreshed from public
-source commit `3384ea8`, including the mapping-4 terrain-seam correction, the
-biome-flavoured incomplete-Atlas placeholder, 750 ms revision morph,
-completion-driven haze, neutral cobble/moss rim returns, and the in-menu
-alpha/worldgen identity. Its Windows Fabric package SHA-256 is
-`31d260ce83e6d19885f8cbf01d5f9fcf2ebf0d60f06605835f1a847170a5cb5b`.
-`https://andwhatnotstudio.com/ringworld/alpha/` now provides a reusable
-manifest-following one-click installer, the same manual ZIP, MPL licence, and
-source manifest. The installer validates manifest identity and the selected
-artifact SHA-256 on every run, so one newly downloaded BAT follows later alpha
-builds without embedding their checksums.
+On 2026-08-10, the unlisted showcase alpha directory was refreshed from merged
+public source commit `622fb76`, including the mapping-4 terrain-seam
+correction, biome-flavoured incomplete-Atlas placeholder, 750 ms revision
+morph, completion-driven haze, neutral cobble/moss rim returns, finite clouds,
+and the in-menu alpha/worldgen identity. It also displays the compact top-left
+Atlas percentage until generation completes. The exact Windows package
+SHA-256 values are Fabric
+`b5e9eff725623f6e716d5d9f7d4c0366532350f683ed732ebcc9f1d6618c7729`
+and NeoForge
+`e2130a6d7db766ac857b69d6b4e92564e118b258b33f5e661a5d413848df4a4d`.
+`https://andwhatnotstudio.com/ringworld/alpha/` provides separate reusable
+manifest-following one-click installers and manual ZIPs for both loaders, the
+MPL licence, and exact source manifests. The historical installer and manifest
+names remain Fabric aliases for existing testers. Every installer validates
+loader/source identity and the selected artifact SHA-256 on each run, so one
+downloaded BAT follows later matching alpha builds without embedding their
+checksums.
 The packaged server entry is pre-added but is not joined automatically. This
 is a test convenience build, not a Modrinth/CurseForge promotion or 1.0 gate.
-The previous directory is retained outside the document root in the server's
-dated `ringworld-alpha-backups` directory.
+The previous directory is retained outside the document root at
+`/root/ringworld-alpha-backups/alpha-20260810T192327Z`. No live server or world
+was changed.
 
 Issue #33 now supplies a local fail-closed staging workflow for any later
 manual Fabric upload. It builds and validates exactly one runtime jar, records

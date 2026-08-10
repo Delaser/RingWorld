@@ -114,6 +114,10 @@ The same verified jars have also been submitted as Alpha files to
 `1645598`; that new project is awaiting moderation. See the
 [CurseForge release procedure](docs/CURSEFORGE_RELEASE.md) for the exact
 metadata and future upload checklist.
+The unlisted [alpha test page](https://andwhatnotstudio.com/ringworld/alpha/)
+provides separate self-updating Fabric and NeoForge Windows installers built
+from merged source commit `622fb76`. These convenience packages are for owner
+confirmation and do not replace the alpha-3 mod-host files.
 Use the [owner sign-off runbook](docs/OWNER_RELEASE_SIGNOFF_2026-08-09.md)
 before approving promotion or live deployment.
 
