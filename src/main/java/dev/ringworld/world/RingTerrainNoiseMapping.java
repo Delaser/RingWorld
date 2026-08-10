@@ -29,6 +29,16 @@ public final class RingTerrainNoiseMapping {
         return mapping;
     }
 
+    /** Stable diagnostic name for logs and the client debug HUD. */
+    public static String diagnosticName(int mapping) {
+        return switch (requireSupported(mapping)) {
+            case LEGACY_AXIAL -> "legacy-axial";
+            case ANNULAR -> "annular-v1";
+            case ANNULAR_COMPLETE -> "annular-complete";
+            default -> throw new AssertionError("validated terrain-noise mapping " + mapping);
+        };
+    }
+
     /** New-world-only safety rule. Persisted legacy worlds are not revalidated through it. */
     public static void requireSafeNewWorldGeometry(RingGeometry geometry) {
         double minimumRadius = minimumSampledRadius(geometry);

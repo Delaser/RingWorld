@@ -627,6 +627,18 @@ longestCliffRun=0, averageAbsoluteDelta=0.0, passes=true]`. A fresh production
 NeoForge stronghold/cardinal run also passed with mapping 3. The complete
 multi-seed production matrix remains required before release-candidate freeze.
 
+The production visual-parity gate now requires both the natural forward seam
+capture and a `seam-join` look-back from canonical X=2 toward C-1. The latter
+is the terrain-join view: the forward crossing alone cannot reveal a wall left
+behind the player. The F3 RingWorld group reports the persisted terrain
+mapping; fresh-world evidence must show `annular-complete (3)`. Values
+`legacy-axial (1)` and `annular-v1 (2)` identify older worlds whose generator
+identity is deliberately preserved. Fresh production mapping-3 Fabric and
+NeoForge runs passed this new view on 2026-08-10. The captured real chunk
+terrain crosses the join without a flat height wall; Fabric recorded 847 seam
+motion frames at 8.49 ms average and NeoForge recorded 846 at 8.44 ms average,
+with one frame over 50 ms in each run.
+
 The post-#148/#157 biome-flavoured placeholder and 750 ms texture-morph
 production visual-parity runs passed on both loaders on 2026-08-10. Fabric
 streamed live Atlas revisions, completed the natural seam and both rim

@@ -1046,7 +1046,7 @@ tasks.register('verifyNeoForgeProductionVisualParityClient') {
         if (!sampleMatcher.find() || sampleMatcher.group(1).toInteger() <= 0) {
             throw new GradleException("NeoForge visual-parity capture recorded no seam-motion frame samples; inspect ${logFile}")
         }
-        ['seam', 'min-rim', 'max-rim'].each { view ->
+        ['seam', 'seam-join', 'min-rim', 'max-rim'].each { view ->
             def screenshot = new File(neoForgeVisualParityRun,
                     "screenshots/ringworld-visual-parity-${view}.png")
             if (!screenshot.isFile()) {

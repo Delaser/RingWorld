@@ -297,6 +297,16 @@ Atlas revisions and the two-texture shader on both loaders before completing
 the natural seam and both rim captures. Fabric recorded 831 seam-motion frames
 at 8.65 ms average; NeoForge recorded 855 at 8.41 ms average. Both exited
 cleanly.
+The visual-parity fixture now also requires a look-back capture from X=2 toward
+the C-1 side. Earlier seam captures faced along travel after crossing and were
+not evidence that generated terrain visually joined behind the player.
+The F3 RingWorld group now reports the persisted terrain mapping name and
+number so legacy-world evidence cannot be mistaken for a fresh
+`annular-complete (3)` world.
+Fresh production mapping-3 runs passed that seam-join capture on both loaders
+on 2026-08-10. Their real chunk terrain crosses X=16383/0 without a flat
+height wall; Fabric recorded 847 seam-motion frames at 8.49 ms average and
+NeoForge recorded 846 at 8.44 ms average, with one frame over 50 ms each.
 The follow-up progress haze and neutral cobble/moss return shading also passed
 fresh production visual-parity runs on both loaders: Fabric rendered 12.5% and
 71.9% partial states and NeoForge exercised the partial path through 71.9%,

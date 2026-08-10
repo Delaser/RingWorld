@@ -170,6 +170,9 @@ class RingTerrainNoiseMappingTest {
 
     @Test
     void unknownMappingIsRejected() {
+        assertEquals("legacy-axial", RingTerrainNoiseMapping.diagnosticName(1));
+        assertEquals("annular-v1", RingTerrainNoiseMapping.diagnosticName(2));
+        assertEquals("annular-complete", RingTerrainNoiseMapping.diagnosticName(3));
         assertThrows(IllegalArgumentException.class,
                 () -> RingTerrainNoiseMapping.requireSupported(0));
         assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE,

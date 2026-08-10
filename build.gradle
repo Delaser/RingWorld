@@ -347,7 +347,7 @@ def verifyFabricVisualParityOutputs = { File runDirectory ->
 			"[visual-parity-capture] result=false",
 			"Fabric visual-parity capture")
 	requireVisualParitySeamMotionMetrics(logFile, "Fabric visual-parity capture")
-	["seam", "min-rim", "max-rim"].each { view ->
+	["seam", "seam-join", "min-rim", "max-rim"].each { view ->
 		def screenshot = new File(runDirectory,
 				"screenshots/ringworld-visual-parity-${view}.png")
 		if (!screenshot.isFile()) {
@@ -1352,7 +1352,7 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 		writeText(new File(visualParity, "logs/latest.log"),
 				"[visual-parity-capture] seam motion frame metrics: samples=12, averageMs=8.0, maxMs=12.0, over50Ms=0\n"
 						+ "[visual-parity-capture] result=true, captures complete\n")
-		["seam", "min-rim", "max-rim"].each { view ->
+		["seam", "seam-join", "min-rim", "max-rim"].each { view ->
 			writePng(new File(visualParity,
 					"screenshots/ringworld-visual-parity-${view}.png"))
 		}

@@ -621,6 +621,7 @@ F3 replaces the normal position section in the Overworld with:
 - canonical block/chunk/region;
 - facing direction;
 - circumference/chunk count;
+- persisted terrain mapping name and number;
 - atlas completion and sample step.
 
 ## Recovery notes

@@ -186,6 +186,13 @@ RingWorld separates storage, presentation, and rendering:
 This is why the seam can contain visible players, mobs, vehicles, blocks, and
 interactions rather than acting like a portal between two distant borders.
 
+Fresh worlds persist the complete annular terrain mapping, which makes biome,
+density, surface, carver, and structure-height sampling periodic together.
+Worlds created by older alpha builds retain their historical mapping rather
+than silently changing how unexplored chunks generate. Press F3 in the
+Overworld and check the RingWorld `Worldgen` line: new-world seam evidence
+must show `annular-complete (3)`; mapping 1 or 2 identifies a legacy world.
+
 The complete coordinate model and data flow are documented in
 [Architecture](docs/ARCHITECTURE.md) and
 [Network protocol and client charts](docs/NETWORK_PROTOCOL.md).
