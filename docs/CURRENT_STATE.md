@@ -56,7 +56,7 @@ builds without embedding their checksums.
 The packaged server entry is pre-added but is not joined automatically. This
 is a test convenience build, not a Modrinth/CurseForge promotion or 1.0 gate.
 The previous directory is retained outside the document root at
-`/var/backups/ringworld-alpha/20260810T131042Z`.
+`/var/backups/ringworld-alpha/20260810T131801Z`.
 
 Issue #33 now supplies a local fail-closed staging workflow for any later
 manual Fabric upload. It builds and validates exactly one runtime jar, records
