@@ -439,10 +439,13 @@ The 2026-08-10 Fabric disposable two-client run passed the complete matrix and
 recorded one shared 54-slot container from both halves, cross-view items, and
 canonical alias identity. The matching NeoForge run passed the same explicit
 container/client checks; its serialized pending-NBT recovery marker also
-passes. An earlier run on this branch completed the NeoForge matrix and
-verifier. Later cold reruns hit the separately tracked #134 client-readiness
-contention before the fixture, so they are not presented as new full-matrix
-evidence.
+passes. A serialized Atlas-disabled NeoForge rerun on 2026-08-10 completed the
+entire matrix and strict verifier after the double-chest and recovery markers,
+including sleeping reconnect, death/respawn, Nether/End, post-End stability,
+weather, and both client terminal results. An earlier attempt failed before
+the chest fixture when client B did not arm the baseline seam stage; the
+client harness now records its local pose, game mode, remote position, and
+expected nearest image while waiting so this startup condition is diagnosable.
 No automatic destructive merge is attempted if an already-corrupted save
 contains two distinct alias-backed inventories. Saved-chunk post-load retains
 the raw alias through vanilla NBT position decoding: a lone alias repairs to

@@ -1149,6 +1149,11 @@ The scenario verifies:
 - both seam-side clients observe full rain/thunder and an actual lightning
   entity, with one labelled weather screenshot per client.
 
+While either client waits to arm the first seam stage, the log periodically
+records its local pose, game mode, and either the missing remote player or the
+remote/expected nearest-image X pair. This is diagnostic only: it does not
+relax the existing ready, proximity, smooth-step, or timeout assertions.
+
 The historical 2026-08-01 dedicated result predates the X=`0` destination
 assertion and observed only the seam-side source state. Fresh 2,048x416 runs
 on 2026-08-02 passed the complete strengthened matrix on both Fabric and

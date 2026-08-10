@@ -212,13 +212,26 @@ public final class MultiplayerTestClient {
         AbstractClientPlayer remote = findRemotePlayer(client);
         if (remote == null) {
             if (seamArmed) remoteMissingTicks++;
+            if (!seamArmed && stageTicks % 100 == 0) {
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:{}] waiting to arm seam localX={} atTestPose={} mode={} remote=missing",
+                        role, client.player.getX(), atTestPose, client.gameMode.getPlayerMode());
+            }
             return;
         }
         if (!seamArmed) {
             double expectedRemoteX = geometry.nearestImageX(
                     role.equals("A") ? 2.0 : geometry.circumferenceBlocks() - 4.0,
                     client.player.getX());
-            if (Math.abs(remote.getX() - expectedRemoteX) >= 0.75) return;
+            if (Math.abs(remote.getX() - expectedRemoteX) >= 0.75) {
+                if (stageTicks % 100 == 0) {
+                    RingWorldMod.LOGGER.info(
+                            "[multiplayer:{}] waiting to arm seam localX={} atTestPose={} mode={} remoteX={} expectedRemoteX={}",
+                            role, client.player.getX(), atTestPose, client.gameMode.getPlayerMode(),
+                            remote.getX(), expectedRemoteX);
+                }
+                return;
+            }
         }
         positionedTicks++;
         if (!seamArmed && positionedTicks >= 80) {
