@@ -2,6 +2,7 @@ package dev.ringworld.client.mixin;
 
 import dev.ringworld.client.ClientRingState;
 import dev.ringworld.world.RingGeometry;
+import dev.ringworld.world.RingInteractionCoordinates;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
@@ -32,9 +33,13 @@ abstract class ClientConnectionMixin {
         if (packet instanceof ServerboundUseItemOnPacket interaction) {
             BlockHitResult hit = interaction.getHitResult();
             Vec3 hitPosition = hit.getLocation();
+            RingInteractionCoordinates.CanonicalBlockHit canonical =
+                    RingInteractionCoordinates.canonicalizeBlockHit(
+                            geometry, hit.getBlockPos().getX(), hitPosition.x);
             BlockHitResult canonicalHit = new BlockHitResult(
-                    new Vec3(geometry.wrapX(hitPosition.x), hitPosition.y, hitPosition.z),
-                    hit.getDirection(), canonical(hit.getBlockPos(), geometry),
+                    new Vec3(canonical.hitX(), hitPosition.y, hitPosition.z),
+                    hit.getDirection(), new BlockPos(canonical.blockX(),
+                            hit.getBlockPos().getY(), hit.getBlockPos().getZ()),
                     hit.isInside(), hit.isWorldBorderHit());
             return new ServerboundUseItemOnPacket(interaction.getHand(), canonicalHit, interaction.getSequence());
         }

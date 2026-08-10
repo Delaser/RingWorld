@@ -1,7 +1,7 @@
 # Current state
 
-Last audited: 2026-08-08 against the public `main` integration baseline and
-the current release-candidate changes. The final
+Last audited: 2026-08-10 against the public `main` integration baseline and
+the current release-hardening changes. The final
 Minecraft 1.21.11 implementation remains historical provenance at
 `mc-1.21.11-final` / `2c98650`.
 
@@ -227,7 +227,20 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite passes 291 unit/parameterized cases per loader.
+The active suite passes 295 unit/parameterized cases per loader.
+
+Issue #147's directional seam-placement loss is fixed at the outbound packet
+ownership boundary. Block-use packets now canonicalize the clicked block and
+translate the hit vector by the same whole-chart offset, so the valid east face
+of canonical `X=C-1` remains locally at `X=C` instead of wrapping to a point a
+full circumference away. Pure coverage includes both seam directions and
+positive/negative presentation aliases. The real two-client Survival fixture
+then passed both directions on Fabric and NeoForge: each placement preserved
+the support, created one canonical target block, consumed exactly one of two
+items, and appeared on both clients. Fabric continued through the full matrix.
+NeoForge's placement and baseline matrix passed before the later known #134
+cold 23.243-second stall caused the sleeping-reconnect phase to time out; that
+unrelated terminal qualification remains owned by #134.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
@@ -547,7 +560,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, with 291 unit/parameterized cases passing per loader, and Loom produces
+temporary shims, with 295 unit/parameterized cases passing per loader, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
