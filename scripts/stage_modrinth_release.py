@@ -55,8 +55,18 @@ GITHUB_REVISION_URL_PATTERN = re.compile(
 SOURCE_URL_PLACEHOLDER = "{{RINGWORLD_CORRESPONDING_SOURCE_URL}}"
 COMPATIBILITY_API_VERSION = 1
 REQUIRED_BUILD_JAVA = 25
+ARTIFACT_VERSION = "0.2.0+mc26.1.2"
+RELEASE_LABEL = "Alpha 4"
 JAVA_VERSION_PATTERN = re.compile(r'\b(?:java|openjdk) version "(?:1\.)?(\d+)')
 LOADERS = {"fabric", "neoforge"}
+PUBLIC_ALPHA_VERSION = {
+    "fabric": "0.2.0-alpha.4-fabric+mc26.1.2",
+    "neoforge": "0.2.0-alpha.4-neoforge+mc26.1.2",
+}
+PUBLIC_ALPHA_NAME = {
+    "fabric": "RingWorld 0.2.0 alpha 4 for Minecraft 26.1.2 (Fabric)",
+    "neoforge": "RingWorld 0.2.0 alpha 4 for Minecraft 26.1.2 (NeoForge)",
+}
 SHARED_CRITICAL_ENTRIES = (
     "ringworld.mixins.json",
     "ringworld.client.mixins.json",
@@ -126,6 +136,11 @@ def validate_release_config(config: dict, expected_loader: str | None = None) ->
     require_equal("project.server_side", project.get("server_side"), "required")
     require_equal("project.license_id", project.get("license_id"), EXPECTED_IDENTIFIER)
     require_equal("version.version_type", version.get("version_type"), "alpha")
+    require_equal("version.artifact_version", version.get("artifact_version"),
+                  ARTIFACT_VERSION)
+    require_equal("version.version_number", version.get("version_number"),
+                  PUBLIC_ALPHA_VERSION[loader])
+    require_equal("version.name", version.get("name"), PUBLIC_ALPHA_NAME[loader])
     require_equal("version.environment", version.get("environment"), "client_and_server")
     require_equal("version.featured", version.get("featured"), False)
     require_equal("source.repository", source.get("repository"), PUBLIC_REPOSITORY)
@@ -274,6 +289,29 @@ def ringworld_mod(metadata: dict) -> dict:
     return matches[0]
 
 
+def read_build_identity(archive: zipfile.ZipFile) -> dict[str, str]:
+    name = "ringworld-build.properties"
+    try:
+        text = archive.read(name).decode("utf-8")
+    except KeyError as exc:
+        raise VerificationError(f"runtime jar missing {name}") from exc
+    except UnicodeDecodeError as exc:
+        raise VerificationError(f"runtime jar has invalid UTF-8 in {name}") from exc
+    values: dict[str, str] = {}
+    for line_number, raw in enumerate(text.splitlines(), start=1):
+        line = raw.strip()
+        if not line or line.startswith(("#", "!")):
+            continue
+        key, separator, value = line.partition("=")
+        key, value = key.strip(), value.strip()
+        if not separator or not key or key in values:
+            raise VerificationError(f"{name}:{line_number}: malformed or duplicate build property")
+        values[key] = value
+    require_equal(f"{name} artifactVersion", values.get("artifactVersion"), ARTIFACT_VERSION)
+    require_equal(f"{name} releaseLabel", values.get("releaseLabel"), RELEASE_LABEL)
+    return values
+
+
 def required_neoforge_dependency(metadata: dict, mod_id: str) -> dict:
     dependencies = metadata.get("dependencies")
     if not isinstance(dependencies, dict):
@@ -302,18 +340,20 @@ def validate_runtime_jar(jar_path: Path, config: dict, expected_license: bytes, 
             if required not in names:
                 raise VerificationError(f"runtime jar missing {required}")
         _, metadata = read_jar_metadata(archive, str(jar_path), loader=loader)
+        read_build_identity(archive)
         for name in names:
             if not name.endswith("/") and PRIVATE_KEY_PATTERN.search(archive.read(name)):
                 raise VerificationError(f"runtime jar contains private-key material: {name}")
     version, platform = config["version"], config[loader]
+    artifact_version = version["artifact_version"]
     expected_filename = (
-        f"ringworld-{version['version_number']}.jar" if loader == "fabric"
-        else f"ringworld-neoforge-{version['version_number']}.jar"
+        f"ringworld-{artifact_version}.jar" if loader == "fabric"
+        else f"ringworld-neoforge-{artifact_version}.jar"
     )
     require_equal("runtime jar filename", jar_path.name, expected_filename)
     if loader == "fabric":
         require_equal("fabric.mod.json id", metadata.get("id"), platform["mod_id"])
-        require_equal("fabric.mod.json version", metadata.get("version"), version["version_number"])
+        require_equal("fabric.mod.json version", metadata.get("version"), artifact_version)
         require_equal("fabric.mod.json authors", metadata.get("authors"), [platform["author"]])
         contact = metadata.get("contact")
         if not isinstance(contact, dict):
@@ -334,7 +374,7 @@ def validate_runtime_jar(jar_path: Path, config: dict, expected_license: bytes, 
         return {"id": metadata["id"], "version": metadata["version"]}
     mod = ringworld_mod(metadata)
     require_equal("neoforge.mods.toml modId", mod.get("modId"), platform["mod_id"])
-    require_equal("neoforge.mods.toml version", mod.get("version"), version["version_number"])
+    require_equal("neoforge.mods.toml version", mod.get("version"), artifact_version)
     require_equal("neoforge.mods.toml authors", mod.get("authors"), platform["author"])
     require_equal("neoforge.mods.toml displayURL", mod.get("displayURL"), platform["homepage"])
     neo_dependency = required_neoforge_dependency(metadata, "neoforge")
@@ -419,7 +459,7 @@ def stage_release(
     changelog = render_public_release_text(
         changelog_path, source, label=f"{resolved_loader} changelog",
     )
-    target = output_root / config["version"]["version_number"] / resolved_loader
+    target = output_root / config["version"]["artifact_version"] / resolved_loader
     target.parent.mkdir(parents=True, exist_ok=True)
     remove_recognized_stage(target)
     temporary = Path(tempfile.mkdtemp(prefix=f".{resolved_loader}-stage-", dir=target.parent))
@@ -436,6 +476,8 @@ def stage_release(
             "generated": True, "upload_file": staged_jar.name, "upload_file_only": True,
             "size": staged_jar.stat().st_size, "hashes": {"sha256": sha256, "sha512": sha512},
             "mod_id": metadata["id"], "version": metadata["version"], "loader": resolved_loader,
+            "public_version": config["version"]["version_number"],
+            "public_name": config["version"]["name"],
             "game_version": config[resolved_loader]["minecraft"],
             "environment": config["version"]["environment"], "source": source,
             "release_config": config,

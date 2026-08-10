@@ -14,7 +14,7 @@ final class RingDimensionFixtures {
     static final Layout FORMER_WIDE = new Layout("former-wide", 15_552, 4_096, 160);
     static final Layout LARGE = new Layout("large", 32_768, 512, 160);
     static final Layout LONG_NARROW = LARGE;
-    static final Layout WIDE_MEDIUM = new Layout("wide-medium", 4_096, 2_048, 160);
+    static final Layout WIDE_MEDIUM = new Layout("wide-medium", 16_384, 2_048, 160);
     static final Layout CUSTOM_WALL = new Layout("custom-wall", 4_096, 640, 192);
 
     private RingDimensionFixtures() { }

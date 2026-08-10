@@ -28,7 +28,7 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
         return radius() * 2.0;
     }
 
-    /** Authoritative intrinsic surface elevation for settings format 2. */
+    /** Authoritative intrinsic surface elevation for every persisted settings format. */
     public double surfaceReferenceY() {
         return SURFACE_Y;
     }

@@ -1,5 +1,7 @@
 package dev.ringworld.world;
 
+import com.google.gson.JsonObject;
+import com.mojang.serialization.JsonOps;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -10,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RingWorldSettingsStorageTest {
     @Test
@@ -50,5 +53,60 @@ class RingWorldSettingsStorageTest {
         assertEquals(128, legacy.widthBlocks());
         assertEquals(RingWorldSettings.MIN_CIRCUMFERENCE, legacy.circumferenceBlocks());
         assertEquals(1, legacy.formatVersion());
+        assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL, legacy.terrainNoiseMapping());
+    }
+
+    @Test
+    void formatUpgradePreservesLegacyTerrainNoiseWhileFreshSettingsUseAnnular() {
+        RingWorldSettings alpha = new RingWorldSettings(
+                256, 16_384, 42L, 160, 64, 2);
+        RingWorldSettings upgraded = RingWorldSettings.upgradeToCurrentFormat(alpha);
+        RingWorldSettings fresh = new RingWorldSettings(
+                256, 16_384, 42L, 160, RingWorldSettings.FORMAT_VERSION);
+
+        assertEquals(RingWorldSettings.FORMAT_VERSION, upgraded.formatVersion());
+        assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL, upgraded.terrainNoiseMapping());
+        assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2, fresh.terrainNoiseMapping());
+        assertFalse(upgraded.layoutFingerprint() == fresh.layoutFingerprint());
+    }
+
+    @Test
+    void absentMappingInFormatTwoDecodesAsLegacyAndCurrentEncodingNamesAnnular() {
+        JsonObject alphaJson = new JsonObject();
+        alphaJson.addProperty("width", 256);
+        alphaJson.addProperty("circumference", 16_384);
+        alphaJson.addProperty("seed", 42L);
+        alphaJson.addProperty("wallHeight", 160);
+        alphaJson.addProperty("surfaceReferenceY", 64);
+        alphaJson.addProperty("format", 2);
+
+        RingWorldSettings alpha = RingWorldSettings.codecForTests()
+                .parse(JsonOps.INSTANCE, alphaJson).getOrThrow();
+        RingWorldSettings upgraded = RingWorldSettings.upgradeToCurrentFormat(alpha);
+        JsonObject upgradedJson = RingWorldSettings.codecForTests()
+                .encodeStart(JsonOps.INSTANCE, upgraded).getOrThrow().getAsJsonObject();
+        RingWorldSettings reopened = RingWorldSettings.codecForTests()
+                .parse(JsonOps.INSTANCE, upgradedJson).getOrThrow();
+        RingWorldSettings current = new RingWorldSettings(
+                256, 16_384, 42L, 160, RingWorldSettings.FORMAT_VERSION);
+        JsonObject currentJson = RingWorldSettings.codecForTests()
+                .encodeStart(JsonOps.INSTANCE, current).getOrThrow().getAsJsonObject();
+
+        assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL, alpha.terrainNoiseMapping());
+        assertEquals(RingWorldSettings.FORMAT_VERSION, reopened.formatVersion());
+        assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL, reopened.terrainNoiseMapping());
+        assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2,
+                currentJson.get("terrainNoiseMapping").getAsInt());
+        assertEquals(RingWorldSettings.FORMAT_VERSION, currentJson.get("format").getAsInt());
+    }
+
+    @Test
+    void preFormatThreeSettingsCannotClaimAnnularTerrain() {
+        assertThrows(IllegalArgumentException.class, () -> new RingWorldSettings(
+                256, 16_384, 42L, 160, 64,
+                RingTerrainNoiseMapping.ANNULAR, 2));
+        assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL, new RingWorldSettings(
+                256, 16_384, 42L, 160, 64,
+                RingTerrainNoiseMapping.LEGACY_AXIAL, 3).terrainNoiseMapping());
     }
 }

@@ -5,6 +5,11 @@ This checkpoint records local machine validation for the Fabric and NeoForge
 matched Modrinth alpha uploads. It still does not authorize a demo-server
 restart, live-world change, or promotion beyond alpha.
 
+> Historical checkpoint: issue #149 subsequently changed saved-settings and
+> handshake generation to format 3 for corrected fresh-world terrain. These
+> alpha-3 hashes remain valid evidence for the uploaded format-2 artifacts but
+> cannot be promoted as the next stable candidate.
+
 ## Source and runtime artifacts
 
 - Validated code baseline: `967759be872080a72e48bd26f7a97df9ee0a0302`

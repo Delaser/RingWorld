@@ -6,6 +6,8 @@ import com.mojang.blaze3d.buffers.Std140SizeCalculator;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.ringworld.client.ClientRingState;
 import dev.ringworld.world.RingDimensionReport;
+import dev.ringworld.world.RingCloudBounds;
+import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingRenderProfile;
 import net.minecraft.client.DeltaTracker;
@@ -81,6 +83,9 @@ abstract class GlobalSettingsMixin {
         RingRenderProfile profile = geometry == null
                 ? null
                 : RingRenderProfile.create(geometry, viewDistanceBlocks);
+        RingCloudBounds cloudBounds = geometry == null ? null
+                : RingCloudBounds.betweenInnerRimFaces(
+                        geometry, RingGenerationBoundary.RIM_THICKNESS);
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var data = Std140Builder.onStack(stack, RINGWORLD_GLOBALS_SIZE)
@@ -116,10 +121,11 @@ abstract class GlobalSettingsMixin {
                             profile == null ? 0.0F : (float)profile.hazeFar(),
                             profile == null ? 0.0F : (float)profile.hazeExponent(),
                             profile == null ? 0.0F : (float)profile.cloudFadeStartBlocks())
-                    // cloud fade end and visual policy version
+                    // cloud fade end, visual policy version, inner Z face planes
                     .putVec4(profile == null ? 0.0F : (float)profile.cloudFadeEndBlocks(),
                             profile == null ? 0.0F : profile.visualProfileVersion(),
-                            0.0F, 0.0F)
+                            cloudBounds == null ? 0.0F : (float)cloudBounds.minimumZ(),
+                            cloudBounds == null ? 0.0F : (float)cloudBounds.maximumZ())
                     .get();
             RenderSystem.getDevice().createCommandEncoder()
                     .writeToBuffer(buffer.slice(), data);

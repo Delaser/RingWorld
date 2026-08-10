@@ -43,6 +43,13 @@ cross-seam block is placed, preventing reused-world and cold-start false
 results. Both server logs ended with `weather=true` and
 `full scenario result=true`; NeoForge's evidence verifier passed.
 
+The issue-#147 branch repeated this full NeoForge fixture on 2026-08-10 with
+Atlas generation disabled after both directional Survival placements passed.
+It completed the subsequent sleeping reconnect, death/respawn, physical
+Nether/End, post-End stability, and weather stages, and the strict verifier
+passed. This separates placement correctness from the independently tracked
+cold Atlas/performance profile.
+
 The reused 2,048×416 dedicated fixture ran one server and two independent real
 clients. Both clients reported a fully loaded world before setup. The terminal
 server line was:
@@ -81,6 +88,21 @@ no RingWorld exception or crash. Offline test accounts still produce expected
 Mojang/Realms HTTP 401 noise; that is unrelated to the local offline server.
 
 ## Post-evidence fixture strengthening
+
+The 2026-08-10 dual-loader refresh extends the physical portal phase. It
+creates and rediscovers safe canonical portals from positive and negative raw
+targets several circumferences away and beyond both Z rims, then moves the
+player to a four-lap Nether coordinate and performs the real return transition.
+Fabric and NeoForge both returned at canonical X=1044.5 beside the expected
+safe high-Z portal, retained the ordinary 80-tick survival delay, and completed
+the following End/weather phases. The verifier now requires the ordered
+`multi-lap Nether portal routing result=true` marker.
+
+The complete matrix also passed at the Medium 16,384x256 geometry on Fabric
+and on a warmed NeoForge retry, returning beside the normalized high-Z portal
+at canonical X=8217.5. The first cold NeoForge production attempt stopped at
+the already tracked #134 fixture/resource-pressure boundary before portal
+routing began.
 
 The current fixture seals a two-cell trough, clears canonical X=`0`, places
 its only water source at `C-1`, and requires both clients plus the server to

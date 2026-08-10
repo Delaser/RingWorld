@@ -181,6 +181,8 @@ loom {
 			vmArg "-Dringworld.strongholdTest=true"
 			vmArg "-Dringworld.worldgenMatrix=" + providers.gradleProperty("ringWorldgenMatrix")
 					.orElse("false").get()
+			vmArg "-Dringworld.strongholdTestResume=" + providers.gradleProperty("ringStrongholdTestResume")
+					.orElse("false").get()
 			programArg "nogui"
 		}
 		headlessPrewarmServer {
@@ -345,7 +347,7 @@ def verifyFabricVisualParityOutputs = { File runDirectory ->
 			"[visual-parity-capture] result=false",
 			"Fabric visual-parity capture")
 	requireVisualParitySeamMotionMetrics(logFile, "Fabric visual-parity capture")
-	["seam", "min-rim", "max-rim"].each { view ->
+	["seam", "seam-join", "min-rim", "max-rim"].each { view ->
 		def screenshot = new File(runDirectory,
 				"screenshots/ringworld-visual-parity-${view}.png")
 		if (!screenshot.isFile()) {
@@ -535,8 +537,24 @@ tasks.register("verifyMultiplayerHarness") {
 			throw new GradleException("Fabric multiplayer server matrix did not pass; inspect ${serverLog}")
 		}
 		if (!serverText.contains("[multiplayer-extended] ordinary Nether portal wait result=true")
+				|| !serverText.contains("[multiplayer-extended] multi-lap Nether portal routing result=true")
 				|| !serverText.contains("[multiplayer-extended] seam thunder/lightning result=true")) {
 			throw new GradleException("Fabric multiplayer portal-delay/weather evidence is incomplete; inspect ${serverLog}")
+		}
+		if (!serverText.contains("[multiplayer] bidirectional seam placement result=true")) {
+			throw new GradleException("Fabric multiplayer bidirectional placement evidence is incomplete; inspect ${serverLog}")
+		}
+		[[clientALog, clientAText], [clientBLog, clientBText]].each { entry ->
+			if (!entry[1].contains("forward seam placement result=true")
+					|| !entry[1].contains("reverse seam placement result=true")) {
+				throw new GradleException("Fabric multiplayer client placement evidence is incomplete; inspect ${entry[0]}")
+			}
+		}
+		if (!serverText.contains("[multiplayer-extended] double chest prepared")
+				|| !serverText.contains("highSize=54, lowSize=54")
+				|| !serverText.contains("lowAliasSame=true, highAliasSame=true")
+				|| !serverText.contains("[multiplayer-extended] alias block-entity recovery policy result=true")) {
+			throw new GradleException("Fabric multiplayer seam double-chest evidence is incomplete; inspect ${serverLog}")
 		}
 		["extended-fixture-before", "extended-fixture-after", "nether-returned",
 		 "end-returned", "weather-stability-ready", "terminal-result"].each { phase ->
@@ -769,6 +787,10 @@ tasks.register("verifyHeadlessPrewarm") {
 		def resultName = providers.gradleProperty("ringHeadlessPrewarmResult").orElse("result.json").get().trim()
 		def expectedCircumference = providers.gradleProperty("ringHeadlessPrewarmCircumference").orElse("2048").get().toInteger()
 		def expectedWidth = providers.gradleProperty("ringHeadlessPrewarmWidth").orElse("416").get().toInteger()
+		def expectedMapping = providers.gradleProperty("ringHeadlessPrewarmExpectedTerrainNoiseMapping").orElse("4").get().toInteger()
+		if (!(expectedMapping in [1, 2, 3, 4])) {
+			throw new GradleException("-PringHeadlessPrewarmExpectedTerrainNoiseMapping must be 1, 2, 3, or 4")
+		}
 		def result = new File(headlessPrewarmDirectory, "world/ringworld-prewarm/" + resultName)
 		if (!result.isFile()) {
 			throw new GradleException("Headless prewarm did not write a terminal result; inspect " + result)
@@ -779,7 +801,8 @@ tasks.register("verifyHeadlessPrewarm") {
 		} catch (Exception failure) {
 			throw new GradleException("Headless prewarm result is not valid JSON: " + result, failure)
 		}
-		if (!(report instanceof Map) || report.schemaVersion != 1 || report.status != "COMPLETE" || report.identityAvailable != true
+		if (!(report instanceof Map) || report.schemaVersion != 2 || report.status != "COMPLETE" || report.identityAvailable != true
+				|| report.terrainNoiseMapping != expectedMapping
 				|| !report.containsKey("atlasPath") || !report.atlasPath || !report.containsKey("failureReason") || report.failureReason != null
 				|| !(report.totalChunks instanceof Number) || !(report.completedChunks instanceof Number)
 				|| !(report.totalCells instanceof Number) || !(report.completedCells instanceof Number)
@@ -1231,6 +1254,34 @@ tasks.register("verifyProductionProjectionClient") {
 	}
 }
 
+tasks.register("verifyOutboundPositionPacketInventory") {
+	group = "ringworld verification"
+	description = "Fails unless every audited outbound positional block packet is canonicalized."
+	inputs.file("src/client/java/dev/ringworld/client/mixin/ClientConnectionMixin.java")
+	doLast {
+		def outboundPositionMixin = file(
+				"src/client/java/dev/ringworld/client/mixin/ClientConnectionMixin.java").text
+		[
+				"ServerboundPlayerActionPacket",
+				"ServerboundUseItemOnPacket",
+				"ServerboundSignUpdatePacket",
+				"ServerboundPickItemFromBlockPacket",
+				"ServerboundBlockEntityTagQueryPacket",
+				"ServerboundSetCommandBlockPacket",
+				"ServerboundSetStructureBlockPacket",
+				"ServerboundSetJigsawBlockPacket",
+				"ServerboundJigsawGeneratePacket",
+				"ServerboundSetTestBlockPacket",
+				"ServerboundTestInstanceBlockActionPacket"
+		].each { packetType ->
+			if (!outboundPositionMixin.contains("packet instanceof ${packetType}")) {
+				throw new GradleException(
+						"Outbound positional packet audit is missing ${packetType}")
+			}
+		}
+	}
+}
+
 tasks.register("verifyFabricRuntimeGateContracts") {
 	group = "ringworld verification"
 	description = "Proves the Fabric projection/layout/lifecycle verifiers reject stale or corrupt evidence."
@@ -1301,7 +1352,7 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 		writeText(new File(visualParity, "logs/latest.log"),
 				"[visual-parity-capture] seam motion frame metrics: samples=12, averageMs=8.0, maxMs=12.0, over50Ms=0\n"
 						+ "[visual-parity-capture] result=true, captures complete\n")
-		["seam", "min-rim", "max-rim"].each { view ->
+		["seam", "seam-join", "min-rim", "max-rim"].each { view ->
 			writePng(new File(visualParity,
 					"screenshots/ringworld-visual-parity-${view}.png"))
 		}
@@ -1372,6 +1423,7 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 
 tasks.named("check") {
 	dependsOn(tasks.named("verifyFabricRuntimeGateContracts"))
+	dependsOn(tasks.named("verifyOutboundPositionPacketInventory"))
 }
 
 tasks.register("prepareCopiedProductionVisualParityWorld") {
@@ -1500,7 +1552,11 @@ dependencies {
 
 processResources {
 	inputs.property 'version', project.version
+	inputs.property 'release_label', project.release_label
 	filesMatching('fabric.mod.json') { expand version: project.version }
+	filesMatching('ringworld-build.properties') {
+		expand version: project.version, release_label: project.release_label
+	}
 }
 
 tasks.withType(JavaCompile).configureEach {

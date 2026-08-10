@@ -109,7 +109,8 @@ public final class NeoForgeRingWorldClient {
         RingWorldClientSession.clear();
         long fingerprint = RingSettingsHandshake.fingerprintFor(payload);
         ClientRingState.set(new RingGeometry(payload.width(), payload.circumference()),
-                payload.wallHeight(), payload.surfaceReferenceY(), fingerprint);
+                payload.wallHeight(), payload.surfaceReferenceY(),
+                payload.terrainNoiseMapping(), fingerprint);
         RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
     }
 

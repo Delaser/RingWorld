@@ -5,6 +5,20 @@ existing guaranteed-stronghold gate. It validates ordinary vanilla worldgen
 near both canonical sides of the circumference seam without pretending that a
 finite ring can contain every random structure for every seed.
 
+> The numeric matrix below is historical format-2/legacy-mapping evidence.
+> Issue #149 adds fresh format-3 annular terrain. On 2026-08-10 the complete
+> matrix passed again independently on Fabric and NeoForge, including stable
+> production fresh/reload evidence and both safe-small policy outcomes. The
+> expanded cardinal gate also passes at X 0, C/4, C/2, 3C/4, and C-1 across
+> three in-band Z positions. The old numeric table remains provenance for the
+> format-2 alpha rather than being rewritten as new evidence.
+>
+> A later exact-seed regression (`-4558730636853595596`) found that mapping 3
+> had not transformed vanilla's direct `BlendedNoise` leaf. Fresh mapping 4
+> fixes that omission and strengthens the seam audit to reject broad walls
+> below the old twelve-block cliff threshold. Exact 16,384x256 Fabric and
+> NeoForge runs pass; the historical tables below remain unchanged.
+
 ## Command
 
 Run with Java 25 after accepting only the ignored test server's local EULA:

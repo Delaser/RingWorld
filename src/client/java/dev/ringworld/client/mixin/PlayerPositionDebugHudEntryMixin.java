@@ -4,6 +4,7 @@ import dev.ringworld.client.ClientRingState;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingPosition;
 import dev.ringworld.world.RingTerrainAtlas;
+import dev.ringworld.world.RingTerrainNoiseMapping;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import java.util.List;
@@ -82,6 +83,9 @@ abstract class PlayerPositionDebugHudEntryMixin {
                         geometry.circumferenceBlocks() - 1,
                         geometry.circumferenceBlocks(),
                         geometry.circumferenceChunks()),
+                String.format(Locale.ROOT, "Worldgen: %s (%d)",
+                        RingTerrainNoiseMapping.diagnosticName(ClientRingState.terrainNoiseMapping()),
+                        ClientRingState.terrainNoiseMapping()),
                 "Ring Atlas: " + atlasStatus,
                 client.level.dimension().identifier() + " FC: " + forcedChunks.size()
         ));

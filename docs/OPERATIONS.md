@@ -60,6 +60,16 @@ existing world's saved layout. The live maths panel shows:
 - atlas grid/cells/raw size, rim/cloud Y, and measured-reference
   pregeneration/disk estimates.
 
+Updating an existing world to a build containing the seam block-entity fix
+does not require regeneration. New runtime block-entity reads and writes use
+canonical Overworld ownership immediately. Before upgrading a world known to
+contain a split seam double chest, back it up and inspect both half-inventories:
+the mod deliberately does not guess how to merge two already-divergent
+inventories or delete a possible alias copy. A lone saved alias is repaired to
+its canonical owner on load. If canonical and alias NBT both exist, both are
+kept and the server log warns with the exact positions; recover the contents
+from the backup before removing or rebuilding that seam container.
+
 Only atlas, chunk-count, pregeneration, or disk thresholds produce the amber
 **High cost** label; an apparent-width visual advisory alone does not.
 
@@ -93,7 +103,11 @@ width, circumference, generator seed, wall height, surface reference, format ver
 
 Every saved layout field takes precedence on subsequent loads. Changing
 bootstrap dimensions or wall height does not resize or redecorate an existing
-RingWorld. Format-1 saves migrate to format 2 with surface reference Y=64.
+RingWorld. Format-1 and format-2 saves migrate to format 3 with surface
+reference Y=64 and their legacy terrain-noise mapping preserved. Fresh worlds
+use the corrected annular mapping. This prevents unexplored chunks in an alpha
+world from changing terrain algorithms after an update. The mapping is part of
+the atlas world hash, so an incompatible cached atlas is discarded and rebuilt.
 
 Minecraft 26.1 stores RingWorld settings at:
 
@@ -172,7 +186,7 @@ Production-default atlas completion is therefore a large world-generation
 operation. Monitor disk use, server tick time, and progress logs. Set
 `pregenerateTerrainAtlas=false` to postpone automatic background generation. The distant
 surface progressively reveals only trustworthy cells from player-loaded or
-pregenerated chunks; missing cells remain transparent until generated.
+pregenerated chunks; missing cells use the deterministic opaque fallback until generated.
 Progress logs report captured cells, cells per second, and an ETA once a rate
 can be measured.
 
@@ -222,7 +236,10 @@ pause menu. Its generation actions require an integrated-world owner or a
 dedicated gamemaster; other players see read-only status. **Generate Entire
 Ring** confirms the exact canonical chunk count and warns that it generates
 and saves real terrain/region files. Closing the map does not pause or cancel
-the job; reopening attaches to the same dimension-owned handle.
+the job; reopening attaches to the same dimension-owned handle. The header
+shows the embedded release/artifact identity (`Alpha 4 · 0.2.0+mc26.1.2` for
+the prepared candidate), and the first status line shows the persisted terrain
+mapping so a screenshot identifies both the installed build and worldgen.
 
 Pause stops scheduling new atlas chunks after any one in-flight chunk
 completes. Player-driven chunk capture, cache saving, and client tile streaming
@@ -279,9 +296,11 @@ For a new production-default disposable world, add
 NeoForge provides equivalent `ringNeoForgeHeadlessPrewarmCircumference` and
 `ringNeoForgeHeadlessPrewarmWidth` properties.
 
-Fabric's exact production prewarm completed successfully on 2026-08-06. The
-recorded NeoForge prewarm evidence is safe-small; do not describe it as a
-production prewarm until that distinct run completes.
+Fresh format-3 production prewarms completed successfully on both loaders on
+2026-08-10. Fabric generated all 16,384 chunks / 65,536 cells in 38m16s at
+about 29 cells/s; NeoForge completed the same totals in 41m at about 27
+cells/s. Both wrote schema-2 `COMPLETE` reports with mapping `2`, saved normally,
+and then passed a separate complete-atlas resume/load run.
 
 The second form copies `run/saves/<save-folder-id>` to the ignored
 `run-headless-prewarm/world`; it never opens or modifies the source. The first
@@ -290,9 +309,10 @@ server world directory, disable empty-server pausing, reject an accepted join
 immediately, and write atomic
 JSON under `world/ringworld-prewarm/`: `progress.json` every 20 ticks and
 `result.json` on `COMPLETE`, `FAILED`, `INTERRUPTED`, or `REJECTED`. Reports
-carry schema version, elapsed time, exact durable chunks/cells, world hash,
-layout fingerprint, atlas path, rate/ETA/error where relevant, and a failure
-reason. A rejected startup has `identityAvailable:false` and zero/null identity
+carry schema version 2, elapsed time, exact durable chunks/cells, world hash,
+layout fingerprint, explicit terrain-noise mapping, atlas path, rate/ETA/error
+where relevant, and a failure reason. A rejected startup has
+`identityAvailable:false` and zero/null identity
 sentinels. An external SIGTERM cancels/releases an outstanding atlas chunk
 request without resolving a possibly evicted chunk-cache result, then
 checkpoints before writing `INTERRUPTED`; rerun with
@@ -304,8 +324,16 @@ exit zero after a failed run. Both the dedicated coordinator and Gradle fixture
 delete the selected old result/progress files before every launch (including
 resume), then parse schema version, identity, atlas path, and exact complete
 totals rather than trusting stale text. Do not
-add the headless JVM option to an ordinary
-service unit or point it at a production/source world.
+add the headless JVM option to an ordinary service unit or point it at a
+production/source world.
+
+Fresh and normal resumed format-3 runs default to expected mapping `4`
+(`annular-complete-v2`). To verify an intentionally copied older world, pass
+the world's explicit mapping instead; for example,
+`-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1` for Fabric or
+`-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping=1` for NeoForge.
+The verifier rejects any terminal report whose explicit mapping differs from
+that expectation.
 
 An ordinary copied world with existing region files and no RingWorld settings
 is rejected during `ServerLevel` construction, before the normal Fabric level
@@ -353,8 +381,9 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite passes 290 unit/parameterized cases per loader. The historical Phase 2
-95-error inventory and the subsequent source-port checkpoint are recorded in
+The current suite passes 337 unit/parameterized cases per loader. The
+historical Phase 2 95-error inventory and the subsequent source-port
+checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.
 
@@ -454,6 +483,27 @@ The generated client instance includes one minimal public `servers.dat` entry:
 constants in `prepare_release_packages.py`, contains no player data, and is
 only copied for a newly created managed instance. It must never auto-join the
 server or replace an existing user's server list.
+
+The optional unlisted Windows test package is served from
+`/ringworld/alpha/`. Build it only from a clean pushed revision through the
+normal staging and `prepare_release_packages.py` gates. Publish the ZIP under
+the exact artifact name stored in `RELEASE-MANIFEST.json`, the stable
+loader-specific `deploy/alpha/Install-RingWorld-Alpha-{Fabric,NeoForge}-Windows.bat`
+bootstrappers, `RELEASE-MANIFEST-{FABRIC,NEOFORGE}.json`, `SHA256SUMS.txt`, MPL
+licence, and landing page together; back up the previous directory outside the
+document root and install the landing page last. Keep the historical
+`Install-RingWorld-Alpha-Windows.bat` and `RELEASE-MANIFEST.json` as Fabric
+aliases so previously downloaded installers continue to update. Each
+bootstrapper downloads its current manifest on every run, validates
+format/loader/licence/source identity, selects exactly one safe loader-matched
+Windows artifact, and verifies its manifest SHA-256 before extraction. The two
+named installers use separate local installation directories, so testing one
+loader does not overwrite the other.
+It must never contain a build-specific hash or trust an artifact filename that
+can escape the alpha directory. Run `python3 -m unittest
+scripts/test_alpha_installer.py` and verify the downloaded HTTPS ZIP hash rather
+than trusting the uploaded file alone. Do not link the alpha page from the main
+showcase unless the owner explicitly changes its unlisted status.
 
 Never distribute a used `.prism-data` directory. Create a fresh package from
 the source instance that contains only:
@@ -580,6 +630,7 @@ F3 replaces the normal position section in the Overworld with:
 - canonical block/chunk/region;
 - facing direction;
 - circumference/chunk count;
+- persisted terrain mapping name and number;
 - atlas completion and sample step.
 
 ## Recovery notes
@@ -593,3 +644,9 @@ F3 replaces the normal position section in the Overworld with:
   tick.
 - Nether and End should remain usable even if Overworld-specific rendering is
   unavailable; a missing dimension guard is a bug.
+- Nether travel can span any number of effective RingWorld laps. On return,
+  vanilla first scales the Nether coordinates by 8; RingWorld then wraps X and
+  clamps only an out-of-band Z target to the nearest portal-safe interior
+  latitude. Existing safe canonical portals are reused across the X seam.
+  There is no operator setting for this policy and an existing world does not
+  need regeneration after the mod update.

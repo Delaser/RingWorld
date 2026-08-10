@@ -12,6 +12,7 @@ public record AtlasPregenerationReport(
         boolean identityAvailable,
         long worldHash,
         long layoutFingerprint,
+        int terrainNoiseMapping,
         long completedChunks,
         long totalChunks,
         int completedCells,
@@ -20,7 +21,7 @@ public record AtlasPregenerationReport(
         Optional<Path> atlasPath,
         Optional<String> failureReason) {
     public AtlasPregenerationReport {
-        if (schemaVersion != 1) throw new IllegalArgumentException("unsupported report schema version: " + schemaVersion);
+        if (schemaVersion != 2) throw new IllegalArgumentException("unsupported report schema version: " + schemaVersion);
         Objects.requireNonNull(status, "status");
         Objects.requireNonNull(elapsed, "elapsed");
         atlasPath = Objects.requireNonNull(atlasPath, "atlasPath");
@@ -40,7 +41,11 @@ public record AtlasPregenerationReport(
         } else if (failureReason.isEmpty()) {
             throw new IllegalArgumentException("non-complete reports require a failure or interruption reason");
         }
+        if (identityAvailable) {
+            RingTerrainNoiseMapping.requireSupported(terrainNoiseMapping);
+        }
         if (!identityAvailable && (worldHash != 0L || layoutFingerprint != 0L
+                || terrainNoiseMapping != 0
                 || completedChunks != 0L || totalChunks != 0L || completedCells != 0
                 || totalCells != 0 || atlasPath.isPresent())) {
             throw new IllegalArgumentException("unavailable atlas identity must use documented zero/null sentinels");

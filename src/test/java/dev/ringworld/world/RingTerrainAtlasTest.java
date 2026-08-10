@@ -175,10 +175,78 @@ class RingTerrainAtlasTest {
         RingWorldSettings differentSeed = new RingWorldSettings(320, 1_024, 124L, 160, 1);
         RingWorldSettings differentLength = new RingWorldSettings(320, 1_040, 123L, 160, 1);
         RingWorldSettings differentWall = new RingWorldSettings(320, 1_024, 123L, 176, 1);
+        RingWorldSettings legacyMapping = new RingWorldSettings(
+                320, 1_024, 123L, 160, 64,
+                RingTerrainNoiseMapping.LEGACY_AXIAL, RingWorldSettings.FORMAT_VERSION);
+        RingWorldSettings annularMapping = new RingWorldSettings(
+                320, 1_024, 123L, 160, 64,
+                RingTerrainNoiseMapping.ANNULAR, RingWorldSettings.FORMAT_VERSION);
+        RingWorldSettings completeMapping = new RingWorldSettings(
+                320, 1_024, 123L, 160, 64,
+                RingTerrainNoiseMapping.ANNULAR_COMPLETE, RingWorldSettings.FORMAT_VERSION);
+        RingWorldSettings completeV2Mapping = new RingWorldSettings(
+                320, 1_024, 123L, 160, 64,
+                RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2, RingWorldSettings.FORMAT_VERSION);
 
         assertFalse(RingTerrainAtlas.worldHash(first) == RingTerrainAtlas.worldHash(differentSeed));
         assertFalse(RingTerrainAtlas.worldHash(first) == RingTerrainAtlas.worldHash(differentLength));
         assertFalse(RingTerrainAtlas.worldHash(first) == RingTerrainAtlas.worldHash(differentWall));
+        assertFalse(RingTerrainAtlas.worldHash(legacyMapping)
+                == RingTerrainAtlas.worldHash(annularMapping));
+        assertFalse(RingTerrainAtlas.worldHash(annularMapping)
+                == RingTerrainAtlas.worldHash(completeMapping));
+        assertFalse(RingTerrainAtlas.worldHash(completeMapping)
+                == RingTerrainAtlas.worldHash(completeV2Mapping));
+    }
+
+    @Test
+    void legacyMappingAtlasIsRejectedForTheSameAnnularWorldGeometry(@TempDir Path directory)
+            throws Exception {
+        RingWorldSettings legacy = new RingWorldSettings(
+                GEOMETRY.widthBlocks(), GEOMETRY.circumferenceBlocks(), 123L, 160, 64,
+                RingTerrainNoiseMapping.LEGACY_AXIAL, RingWorldSettings.FORMAT_VERSION);
+        RingWorldSettings annular = new RingWorldSettings(
+                GEOMETRY.widthBlocks(), GEOMETRY.circumferenceBlocks(), 123L, 160, 64,
+                RingTerrainNoiseMapping.ANNULAR, RingWorldSettings.FORMAT_VERSION);
+        Path current = directory.resolve("dimension/data/ringworld/atlas.rwat.gz");
+        Path legacyPath = directory.resolve("data/atlas.rwat.gz");
+        RingTerrainAtlas oldAtlas = new RingTerrainAtlas(
+                GEOMETRY, RingTerrainAtlas.worldHash(legacy));
+        oldAtlas.putCell(0, 0, 70, 0x123456);
+        oldAtlas.save(current);
+
+        RingTerrainAtlas.StorageLoad storage = RingTerrainAtlas.loadStorage(
+                current, legacyPath, GEOMETRY, RingTerrainAtlas.worldHash(annular));
+
+        assertEquals(RingTerrainAtlas.StorageStatus.INVALID_CURRENT, storage.status());
+        assertEquals(0, storage.atlas().presentCount());
+        assertEquals(RingTerrainAtlas.worldHash(annular), storage.atlas().worldHash());
+    }
+
+    @Test
+    void shippedFormatTwoAtlasIsRejectedAfterLegacySettingsMigration(@TempDir Path directory)
+            throws Exception {
+        RingWorldSettings alpha = new RingWorldSettings(
+                GEOMETRY.widthBlocks(), GEOMETRY.circumferenceBlocks(), 123L, 160, 64,
+                RingTerrainNoiseMapping.LEGACY_AXIAL, 2);
+        RingWorldSettings upgraded = RingWorldSettings.upgradeToCurrentFormat(alpha);
+        // Frozen from the public alpha-3 fingerprint-v1/settings-format-2 algorithm.
+        long shippedAlphaWorldHash = 0xAB21_6FD5_047B_650EL;
+        Path current = directory.resolve("dimension/data/ringworld/atlas.rwat.gz");
+        Path legacyPath = directory.resolve("data/atlas.rwat.gz");
+        RingTerrainAtlas alphaAtlas = new RingTerrainAtlas(GEOMETRY, shippedAlphaWorldHash);
+        alphaAtlas.putCell(0, 0, 70, 0x123456);
+        alphaAtlas.save(current);
+
+        assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL, upgraded.terrainNoiseMapping());
+        assertFalse(shippedAlphaWorldHash == RingTerrainAtlas.worldHash(upgraded));
+
+        RingTerrainAtlas.StorageLoad storage = RingTerrainAtlas.loadStorage(
+                current, legacyPath, GEOMETRY, RingTerrainAtlas.worldHash(upgraded));
+
+        assertEquals(RingTerrainAtlas.StorageStatus.INVALID_CURRENT, storage.status());
+        assertEquals(0, storage.atlas().presentCount());
+        assertEquals(RingTerrainAtlas.worldHash(upgraded), storage.atlas().worldHash());
     }
 
     @Test

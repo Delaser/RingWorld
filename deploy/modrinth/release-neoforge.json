@@ -10,8 +10,9 @@
     "license_id": "MPL-2.0"
   },
   "version": {
-    "name": "RingWorld 0.2.0 for Minecraft 26.1.2 (NeoForge alpha)",
-    "version_number": "0.2.0+mc26.1.2",
+    "name": "RingWorld 0.2.0 alpha 4 for Minecraft 26.1.2 (NeoForge)",
+    "version_number": "0.2.0-alpha.4-neoforge+mc26.1.2",
+    "artifact_version": "0.2.0+mc26.1.2",
     "version_type": "alpha",
     "game_versions": ["26.1.2"],
     "loaders": ["neoforge"],

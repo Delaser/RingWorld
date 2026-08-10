@@ -58,9 +58,11 @@ preserve the same saved-data and network formats. The shared client
 sends/capability checks and teardown loader-neutral; each loader supplies its
 own narrow transport and lifecycle registration. NeoForge also registers the
 shared ring-surface render pipeline in its client event and packages the shared
-client mixins and resources. Its 26.1.2.87 client has loaded those resources,
-acknowledged format 2, and passed a complete-atlas tangent/handoff/radial
-projection gate in a copied production integrated world. The seam/rim,
+client mixins and resources. Its 26.1.2.87 client loaded those resources,
+acknowledged the historical alpha-3 format 2, and passed a complete-atlas
+tangent/handoff/radial projection gate in a copied production integrated
+world. Fresh release-candidate evidence must instead acknowledge format 3 and
+the corrected annular terrain mapping. The seam/rim,
 time/weather, lifecycle, worldgen/structure, headless-atlas, and dedicated
 two-client gameplay gates also pass. Local Fabric and NeoForge package parity
 is complete; distributed artifacts remain Fabric-only until final candidate
@@ -85,6 +87,23 @@ maxZ = minZ + W - 1
 
 Y is vanilla height. Blocks, canonical chunks, scheduled ticks, persistent
 entities, and server watch state use this domain.
+
+Runtime block entities share that ownership rule. A local neighbour step may
+ask for X=`-1` or X=`C`, but the server `LevelChunk` converts that position to
+the canonical key before block-state mutation, block-entity lookup/removal, or
+serialization. This makes a double chest spanning `C-1`/`0` one ordinary
+54-slot container. Client chunks are excluded because their nearby
+presentation-chart keys are transient render state, not persistent ownership.
+During saved-chunk post-load, a narrowly scoped RingWorld context prevents
+vanilla's wrong-chunk repair from collapsing a periodic alias before ownership
+can be resolved. A lone saved alias moves to its canonical key. If both keys
+contain different block entities, both NBT payloads remain addressable for
+explicit recovery; the mod never guesses which inventory should win.
+Direct saved entries are reconciled only after the complete post-load list is
+known, and packed pending NBT reserves its canonical key before alias
+promotion. Save/removal lookup preserves an exact alias whether it is already
+live or still packed, so list or map iteration order cannot discard an
+inventory.
 
 `RingGeometry.wrapX`, `wrapBlockX`, and `RingChunkCoordinates.wrapChunkX`
 perform the conversion. `RingTopology` supplies higher-level operations.
@@ -211,6 +230,27 @@ climate router as generated chunks. Other scarce structures remain
 unsupported until their type-specific predicates and generated graphs pass
 the gate in
 [`SCARCE_STRUCTURE_GUARANTEE_AUDIT.md`](SCARCE_STRUCTURE_GUARANTEE_AUDIT.md).
+
+### Nether portal destination topology
+
+The Nether remains infinite and vanilla. After vanilla applies its dimension
+scale to a Nether-to-Overworld target, the destination Overworld
+`PortalForcer` applies the finite-ring policy before either POI lookup or
+portal creation:
+
+- `X = floorMod(scaledX, circumference)`;
+- Y is unchanged;
+- Z is clamped to the safe creation-anchor interval. That interval excludes
+  both five-block rims, three blocks for the widest frame/foundation offset,
+  and vanilla's complete 16-block portal-creation sweep.
+
+Portal POI lookup uses the canonical anchor and its `X-C`/`X+C` query images,
+deduplicates candidates to canonical ownership, rejects portal blocks whose
+frames could intersect a rim, and selects by periodic-X distance. This means a
+portal at `C-1` can link from a target near zero without an alias portal. The
+policy lives at the lookup/create ownership boundary; clamping only a final
+`TeleportTransition` would be too late because vanilla may already have
+loaded, searched, or created exterior Overworld state.
 
 ### Production lifecycle regression
 
@@ -368,8 +408,13 @@ they execute before vanilla queues the handler through its packet-thread
 guard. The queued game-thread replay performs the actual nearest-image
 mapping. Calls redirected later in the handler are already behind that guard.
 
-Outbound block break/use packets are converted back to canonical positions by
-`ClientConnectionMixin`.
+Outbound positional block packets are converted back to canonical positions
+by `ClientConnectionMixin`. This includes break/use, signs, pick-block and NBT
+queries, plus command, structure, jigsaw, test-block, and test-instance editor
+actions. For a block-use hit, the clicked block and hit vector
+move by one identical whole-chart offset. This preserves the local clicked
+face across `C-1 -> 0`; canonicalizing those values independently would turn a
+valid adjacent hit into a circumference-sized server distance.
 
 Natural small chart changes use vanilla incremental chunk updates. An explicit
 large teleport may make the old and new client chunk-array windows disjoint;
@@ -380,18 +425,33 @@ the new chart.
 
 ### Periodic terrain noise
 
-The worldgen noise domain itself is cylindrical, not merely repeated flat
-noise. For source intrinsic `(x,z)`:
+The worldgen noise domain itself is periodic, not merely repeated flat noise.
+Fresh worlds use persisted mapping 4 (`ANNULAR_COMPLETE_V2`). Mapping 3
+preserves the earlier complete-annular implementation and mapping 2 preserves
+the first annular implementation for existing format-3 saves. All use an
+orthogonal annular embedding. Mapping 4 additionally applies that embedding to
+vanilla's direct `BlendedNoise` density leaf; leaving that one sampler flat was
+enough to create a deterministic wall at X=16383/0 for some seeds. For source intrinsic
+`(x,z)`:
 
 ```text
 θ = 2π * floorMod(x,C) / C
-noiseX = round(R * sin(θ))
-noiseZ = z + round(R * cos(θ))
+ρ = R + z
+noiseX = round(ρ * sin(θ))
+noiseZ = round(ρ * cos(θ))
 ```
 
 Y is unchanged.
 
-`RingNoiseCoordinates` precomputes these values when `C <= 1,048,576`.
+This mapping has orthogonal circumference and width derivatives everywhere in
+the admitted band. It replaces the alpha mapping, whose `noiseX` ignored Z and
+whose Jacobian collapsed at quarter-ring longitudes, producing visible terrain
+banding. Saved formats 1 and 2 are upgraded to format 3 with the exact legacy
+mapping retained; only newly created worlds select annular terrain. Mapping
+identity is persisted, handshaken, fingerprinted, and included in the atlas
+world hash, so a client cannot reuse an atlas generated for the other mapping.
+
+`RingNoiseCoordinates` precomputes sine/cosine values when `C <= 1,048,576`.
 `RingNoiseRouter` applies them only to density functions tagged as actual
 horizontal-coordinate consumers. Vanilla caches, interpolation wrappers,
 aquifer-local coordinates, and the identity of `NoiseChunk` remain
@@ -405,7 +465,13 @@ structure's canonical intrinsic X/Z therefore samples the same cylindrical
 noise column as the eventual terrain beneath it, including when a caller asks
 through an X+C presentation alias.
 
-This makes density meet at X=0/C while retaining vanilla terrain machinery.
+Mapping 3 additionally carries the same coordinates into vanilla surface
+depth/secondary rules, noise-threshold rules, badlands pillars and bands,
+frozen-ocean icebergs, and canonical carver seed identities. This removes the
+raw `C-1 -> 0` surface discontinuity without post-generation smoothing and
+keeps old mappings bit-compatible.
+
+This makes density and surface generation meet at X=0/C while retaining vanilla terrain machinery.
 It does not automatically prove every coordinate-sensitive structure
 placement algorithm is periodic; structure seam coverage remains incomplete.
 

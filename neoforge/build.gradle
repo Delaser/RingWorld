@@ -3,6 +3,10 @@ plugins {
     id 'net.neoforged.moddev' version "${moddevgradle_version}"
 }
 
+tasks.named('check') {
+	dependsOn(rootProject.tasks.named('verifyOutboundPositionPacketInventory'))
+}
+
 version = rootProject.mod_version
 group = rootProject.maven_group
 
@@ -131,6 +135,8 @@ neoForge {
             systemProperty 'ringworld.strongholdTest', 'true'
             systemProperty 'ringworld.worldgenMatrix',
                     providers.gradleProperty('ringWorldgenMatrix').orElse('false').get()
+            systemProperty 'ringworld.strongholdTestResume',
+                    providers.gradleProperty('ringStrongholdTestResume').orElse('false').get()
             programArgument '--nogui'
         }
         headlessPrewarmServer {
@@ -256,6 +262,14 @@ tasks.named('test') {
 tasks.withType(Jar).configureEach {
     from(rootProject.file('LICENSE')) {
         rename { 'LICENSE-RINGWORLD.txt' }
+    }
+}
+
+tasks.named('processResources') {
+    inputs.property 'version', project.version
+    inputs.property 'release_label', rootProject.release_label
+    filesMatching('ringworld-build.properties') {
+        expand version: project.version, release_label: rootProject.release_label
     }
 }
 
@@ -622,9 +636,25 @@ tasks.register('verifyNeoForgeMultiplayerHarness') {
             throw new GradleException("NeoForge multiplayer server matrix did not pass; inspect ${serverLog}")
         }
         if (!serverText.contains('[multiplayer-extended] ordinary Nether portal wait result=true')
+                || !serverText.contains('[multiplayer-extended] multi-lap Nether portal routing result=true')
                 || !serverText.contains('[multiplayer-extended] seam thunder/lightning result=true')) {
             throw new GradleException("NeoForge multiplayer portal-delay/weather evidence is incomplete; inspect ${serverLog}")
         }
+		if (!serverText.contains('[multiplayer] bidirectional seam placement result=true')) {
+			throw new GradleException("NeoForge multiplayer bidirectional placement evidence is incomplete; inspect ${serverLog}")
+		}
+		[[clientALog, clientAText], [clientBLog, clientBText]].each { entry ->
+			if (!entry[1].contains('forward seam placement result=true')
+					|| !entry[1].contains('reverse seam placement result=true')) {
+				throw new GradleException("NeoForge multiplayer client placement evidence is incomplete; inspect ${entry[0]}")
+			}
+		}
+		if (!serverText.contains('[multiplayer-extended] double chest prepared')
+				|| !serverText.contains('highSize=54, lowSize=54')
+				|| !serverText.contains('lowAliasSame=true, highAliasSame=true')
+				|| !serverText.contains('[multiplayer-extended] alias block-entity recovery policy result=true')) {
+			throw new GradleException("NeoForge multiplayer seam double-chest evidence is incomplete; inspect ${serverLog}")
+		}
 		['extended-fixture-before', 'extended-fixture-after', 'nether-returned',
 		 'end-returned', 'weather-stability-ready', 'terminal-result'].each { phase ->
 			if (!serverText.contains("[multiplayer-cold] phase=${phase}")) {
@@ -862,6 +892,10 @@ tasks.register('verifyNeoForgeHeadlessPrewarm') {
         def resultName = providers.gradleProperty('ringNeoForgeHeadlessPrewarmResult').orElse('result.json').get().trim()
         def expectedCircumference = providers.gradleProperty('ringNeoForgeHeadlessPrewarmCircumference').orElse('2048').get().toInteger()
         def expectedWidth = providers.gradleProperty('ringNeoForgeHeadlessPrewarmWidth').orElse('416').get().toInteger()
+        def expectedMapping = providers.gradleProperty('ringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping').orElse('4').get().toInteger()
+        if (!(expectedMapping in [1, 2, 3, 4])) {
+            throw new GradleException('-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping must be 1, 2, 3, or 4')
+        }
         def result = new File(neoForgeHeadlessPrewarmRun, "world/ringworld-prewarm/${resultName}")
         if (!result.isFile()) {
             throw new GradleException("NeoForge headless prewarm did not write a terminal result; inspect ${result}")
@@ -872,7 +906,8 @@ tasks.register('verifyNeoForgeHeadlessPrewarm') {
         } catch (Exception failure) {
             throw new GradleException("NeoForge headless prewarm result is not valid JSON: ${result}", failure)
         }
-        if (!(report instanceof Map) || report.schemaVersion != 1 || report.status != 'COMPLETE'
+        if (!(report instanceof Map) || report.schemaVersion != 2 || report.status != 'COMPLETE'
+                || report.terrainNoiseMapping != expectedMapping
                 || report.identityAvailable != true || !report.atlasPath || report.failureReason != null
                 || !(report.totalChunks instanceof Number) || !(report.completedChunks instanceof Number)
                 || !(report.totalCells instanceof Number) || !(report.completedCells instanceof Number)
@@ -1019,7 +1054,7 @@ tasks.register('verifyNeoForgeProductionVisualParityClient') {
         if (!sampleMatcher.find() || sampleMatcher.group(1).toInteger() <= 0) {
             throw new GradleException("NeoForge visual-parity capture recorded no seam-motion frame samples; inspect ${logFile}")
         }
-        ['seam', 'min-rim', 'max-rim'].each { view ->
+        ['seam', 'seam-join', 'min-rim', 'max-rim'].each { view ->
             def screenshot = new File(neoForgeVisualParityRun,
                     "screenshots/ringworld-visual-parity-${view}.png")
             if (!screenshot.isFile()) {

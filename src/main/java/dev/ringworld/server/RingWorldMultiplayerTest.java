@@ -10,11 +10,13 @@ import java.util.Set;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.entity.vehicle.boat.Boat;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.storage.LevelData;
@@ -35,6 +37,11 @@ public final class RingWorldMultiplayerTest {
     private static boolean combatPassed;
     private static boolean interactionPassed;
     private static boolean interactionArmed;
+    private static boolean forwardPlacementArmed;
+    private static boolean forwardPlacementPassed;
+    private static boolean reversePlacementArmed;
+    private static boolean reversePlacementPassed;
+    private static boolean placementPassed;
     private static boolean vehiclePassed;
     private static boolean sawVehicleHighSide;
     private static boolean sawCanonicalVehicleWrap;
@@ -240,48 +247,69 @@ public final class RingWorldMultiplayerTest {
                 var state = world.getBlockState(target);
                 world.sendBlockUpdated(target, state, state, 3);
             }
-            if (interactionArmed && world.getBlockState(target).isAir()) {
+            if (interactionArmed && world.getBlockState(target).isAir()
+                    && !forwardPlacementArmed) {
                 interactionPassed = true;
-                Boat boat = EntityType.OAK_BOAT.create(world, EntitySpawnReason.COMMAND);
-                if (boat != null) {
-                    boat.setPos(geometry.circumferenceBlocks() - 2.0, 120.0, 3.5);
-                    boat.setYRot(37.0f);
-                    boat.setXRot(0.0f);
-                    boat.setNoGravity(true);
-                    // Hold the fixture until both clients have acquired it.
-                    // This removes network-startup timing from the seam test.
-                    boat.setDeltaMovement(Vec3.ZERO);
-                    world.addFreshEntity(boat);
-                    vehicleId = boat.getId();
-                    Entity passenger = EntityType.ARMOR_STAND.create(world, EntitySpawnReason.COMMAND);
-                    if (passenger != null) {
-                        passenger.setPos(boat.getX(), boat.getY(), boat.getZ());
-                        passenger.setYRot(boat.getYRot());
-                        passenger.setNoGravity(true);
-                        world.addFreshEntity(passenger);
-                        if (passenger.startRiding(boat)) {
-                            vehiclePassengerId = passenger.getId();
-                        } else {
-                            passenger.discard();
-                            vehicleStateContinuous = false;
-                        }
-                    } else {
-                        vehicleStateContinuous = false;
-                    }
-                    sawVehicleHighSide = boat.getX() > geometry.circumferenceBlocks() / 2.0;
-                }
                 RingWorldMod.LOGGER.info(
-                        "[multiplayer] cross-seam interaction result=true; vehicleId={} passengerId={}",
-                        vehicleId, vehiclePassengerId);
-                stage = 4;
+                        "[multiplayer] cross-seam interaction result=true; arming forward placement");
+                armPlacement(world, geometry, playerA, true);
+                forwardPlacementArmed = true;
                 ticks = 0;
-            } else if (ticks >= 600) {
+            } else if (!forwardPlacementArmed && ticks >= 600) {
                 RingWorldMod.LOGGER.error(
                         "[multiplayer] cross-seam interaction result=false (timeout, armed={}, clientAReady={}, clientBReady={})",
                         interactionArmed, clientPassed("A", "interaction_chunk_ready"),
                         clientPassed("B", "interaction_chunk_ready"));
-                stage = 4;
+                finishPlacementScenario(world, geometry, playerA, false);
+            }
+
+            if (forwardPlacementArmed && !reversePlacementArmed
+                    && world.getBlockState(forwardPlacementTarget()).is(Blocks.STONE)
+                    && clientPassed("A", "placement_forward")
+                    && clientPassed("B", "placement_forward")) {
+                forwardPlacementPassed = world.getBlockState(forwardPlacementSupport(geometry)).is(Blocks.STONE)
+                        && playerA.getMainHandItem().is(Blocks.STONE.asItem())
+                        && playerA.getMainHandItem().getCount() == 1;
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer] forward seam placement result={} support={} target={} remaining={}",
+                        forwardPlacementPassed,
+                        world.getBlockState(forwardPlacementSupport(geometry)).getBlock(),
+                        world.getBlockState(forwardPlacementTarget()).getBlock(),
+                        playerA.getMainHandItem().getCount());
+                armPlacement(world, geometry, playerA, false);
+                reversePlacementArmed = true;
                 ticks = 0;
+            } else if (forwardPlacementArmed && !reversePlacementArmed && ticks >= 600) {
+                RingWorldMod.LOGGER.error(
+                        "[multiplayer] forward seam placement result=false (serverTarget={}, clientA={}, clientB={})",
+                        world.getBlockState(forwardPlacementTarget()).getBlock(),
+                        clientPassed("A", "placement_forward"),
+                        clientPassed("B", "placement_forward"));
+                finishPlacementScenario(world, geometry, playerA, false);
+            }
+
+            if (reversePlacementArmed
+                    && world.getBlockState(reversePlacementTarget(geometry)).is(Blocks.STONE)
+                    && clientPassed("A", "placement_reverse")
+                    && clientPassed("B", "placement_reverse")) {
+                reversePlacementPassed = world.getBlockState(reversePlacementSupport()).is(Blocks.STONE)
+                        && playerA.getMainHandItem().is(Blocks.STONE.asItem())
+                        && playerA.getMainHandItem().getCount() == 1;
+                placementPassed = forwardPlacementPassed && reversePlacementPassed;
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer] reverse seam placement result={} support={} target={} remaining={}",
+                        reversePlacementPassed,
+                        world.getBlockState(reversePlacementSupport()).getBlock(),
+                        world.getBlockState(reversePlacementTarget(geometry)).getBlock(),
+                        playerA.getMainHandItem().getCount());
+                finishPlacementScenario(world, geometry, playerA, placementPassed);
+            } else if (reversePlacementArmed && ticks >= 600) {
+                RingWorldMod.LOGGER.error(
+                        "[multiplayer] reverse seam placement result=false (serverTarget={}, clientA={}, clientB={})",
+                        world.getBlockState(reversePlacementTarget(geometry)).getBlock(),
+                        clientPassed("A", "placement_reverse"),
+                        clientPassed("B", "placement_reverse"));
+                finishPlacementScenario(world, geometry, playerA, false);
             }
             return;
         }
@@ -377,17 +405,22 @@ public final class RingWorldMultiplayerTest {
                     && clientPassed("B", "melee_combat")
                     && clientPassed("A", "block_interaction")
                     && clientPassed("B", "block_interaction")
+                    && clientPassed("A", "placement_forward")
+                    && clientPassed("B", "placement_forward")
+                    && clientPassed("A", "placement_reverse")
+                    && clientPassed("B", "placement_reverse")
                     && clientPassed("A", "vehicle_visibility")
                     && clientPassed("B", "vehicle_visibility")
                     && clientPassed("A", "intentional_teleport")
                     && clientPassed("A", "teleport_return")
                     && clientPassed("B", "reconnect");
             boolean passed = playerA != null && serverSeamPassed && combatPassed && interactionPassed
+                    && placementPassed
                     && vehiclePassed && clientMatrix;
             baselineScenarioPassed = passed;
             RingWorldMod.LOGGER.info(
-                    "[multiplayer] baseline scenario result={} (serverSeam={}, combat={}, interaction={}, vehicle={}, reconnect={}, clientMatrix={})",
-                    passed, serverSeamPassed, combatPassed, interactionPassed, vehiclePassed,
+                    "[multiplayer] baseline scenario result={} (serverSeam={}, combat={}, interaction={}, placement={}, vehicle={}, reconnect={}, clientMatrix={})",
+                    passed, serverSeamPassed, combatPassed, interactionPassed, placementPassed, vehiclePassed,
                     newConnection, clientMatrix);
             stage = 8;
             ticks = 0;
@@ -425,6 +458,79 @@ public final class RingWorldMultiplayerTest {
         player.getAbilities().flying = true;
         player.onUpdateAbilities();
         player.setDeltaMovement(Vec3.ZERO);
+    }
+
+    private static void armPlacement(ServerLevel world, RingGeometry geometry,
+                                     ServerPlayer player, boolean forward) {
+        BlockPos support = forward ? forwardPlacementSupport(geometry) : reversePlacementSupport();
+        BlockPos target = forward ? forwardPlacementTarget() : reversePlacementTarget(geometry);
+        world.setBlock(support, Blocks.STONE.defaultBlockState(), 3);
+        world.setBlock(target, Blocks.AIR.defaultBlockState(), 3);
+        player.setGameMode(GameType.SURVIVAL);
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(Blocks.STONE, 2));
+        player.containerMenu.broadcastChanges();
+        player.teleportTo(world,
+                forward ? geometry.circumferenceBlocks() - 2.5 : 1.5,
+                120.0, forward ? 2.5 : 3.5, Set.<Relative>of(),
+                forward ? -90.0f : 90.0f, 0.0f, false);
+        RingWorldMod.LOGGER.info(
+                "[multiplayer] {} seam placement armed support={} target={} playerX={}",
+                forward ? "forward" : "reverse", support, target, player.getX());
+    }
+
+    private static void finishPlacementScenario(ServerLevel world, RingGeometry geometry,
+                                                ServerPlayer player, boolean passed) {
+        placementPassed = passed;
+        prepareCreativePlayer(player);
+        Boat boat = EntityType.OAK_BOAT.create(world, EntitySpawnReason.COMMAND);
+        if (boat != null) {
+            boat.setPos(geometry.circumferenceBlocks() - 2.0, 120.0, 3.5);
+            boat.setYRot(37.0f);
+            boat.setXRot(0.0f);
+            boat.setNoGravity(true);
+            // Hold the fixture until both clients have acquired it. This
+            // removes network-startup timing from the seam test.
+            boat.setDeltaMovement(Vec3.ZERO);
+            world.addFreshEntity(boat);
+            vehicleId = boat.getId();
+            Entity passenger = EntityType.ARMOR_STAND.create(world, EntitySpawnReason.COMMAND);
+            if (passenger != null) {
+                passenger.setPos(boat.getX(), boat.getY(), boat.getZ());
+                passenger.setYRot(boat.getYRot());
+                passenger.setNoGravity(true);
+                world.addFreshEntity(passenger);
+                if (passenger.startRiding(boat)) {
+                    vehiclePassengerId = passenger.getId();
+                } else {
+                    passenger.discard();
+                    vehicleStateContinuous = false;
+                }
+            } else {
+                vehicleStateContinuous = false;
+            }
+            sawVehicleHighSide = boat.getX() > geometry.circumferenceBlocks() / 2.0;
+        }
+        RingWorldMod.LOGGER.info(
+                "[multiplayer] bidirectional seam placement result={}; vehicleId={} passengerId={}",
+                placementPassed, vehicleId, vehiclePassengerId);
+        stage = 4;
+        ticks = 0;
+    }
+
+    private static BlockPos forwardPlacementSupport(RingGeometry geometry) {
+        return new BlockPos(geometry.circumferenceBlocks() - 1, 119, 2);
+    }
+
+    private static BlockPos forwardPlacementTarget() {
+        return new BlockPos(0, 119, 2);
+    }
+
+    private static BlockPos reversePlacementSupport() {
+        return new BlockPos(0, 119, 3);
+    }
+
+    private static BlockPos reversePlacementTarget(RingGeometry geometry) {
+        return new BlockPos(geometry.circumferenceBlocks() - 1, 119, 3);
     }
 
     private static void clearStaleTestVehicles(ServerLevel world) {

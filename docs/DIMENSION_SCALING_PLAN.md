@@ -86,8 +86,9 @@ Every value in the following registry belongs to one of four classes:
 | `circumferenceBlocks`, same classes | Default 16,384; structural minimum 1,024; playable layouts additionally require full-height radial clearance | Authoritative. The safe-small preset is 2,048; 1,600 is accepted only when already persisted as a legacy world. The default is a power of two and exactly 32 region widths, but custom layouts must remain fully supported. |
 | `wallHeightBlocks` | Default 160; persisted, validated, and used by generation, migration, clients, and clouds | Authoritative. Changing bootstrap config cannot alter an existing world's rims. |
 | `generatorSeed` | Persisted, sent, and fingerprinted | Authoritative and present in world/atlas identity. |
-| `FORMAT_VERSION` | Settings format 2 | Format 1 migrates explicitly with surface reference Y=64. |
-| surface reference | Saved and sent as `surfaceReferenceY`; format 2 currently requires 64 | Authoritative protocol/layout field; all active shaders consume the synchronized value. |
+| `FORMAT_VERSION` | Settings format 3 | Formats 1 and 2 migrate explicitly with surface reference Y=64 and legacy terrain-noise mapping. |
+| surface reference | Saved and sent as `surfaceReferenceY`; format 3 currently requires 64 | Authoritative protocol/layout field; all active shaders consume the synchronized value. |
+| terrain-noise mapping | Fresh worlds use complete annular v3; upgraded alpha worlds retain legacy axial v1, and existing annular-v2 worlds remain v2 | Persisted worldgen identity. Include it in generator attachment/cache, handshake, layout fingerprint, atlas hash, and diagnostics; never infer or migrate it from chunk age. |
 | rim thickness/style version | Thickness 5 and about 30% mossy remain code constants | Fixed design included in layout and atlas fingerprints. |
 | `testMode` | Process-local destructive harness switch | Keep operational, never persist as world geometry. |
 | `pregenerateTerrainAtlas` | Process-local administration switch | Keep operational. It may pause work but must not change atlas identity or dimensions. |
@@ -133,8 +134,8 @@ named derived helpers rather than copied formulas.
 | star direction | `RingGeometry.directionToRingCenter` | Already dimension-derived. Add width-edge and vertical-extreme tests. |
 | sun apparent size and day length | about 0.9°, 24,000 ticks | Fixed design. Do **not** scale with circumference unless the art direction changes. |
 
-The format-2 settings handshake sends width, circumference, seed, wall height,
-surface reference, format, and a stable layout fingerprint. The client
+The format-3 settings handshake sends width, circumference, seed, wall height,
+surface reference, terrain-noise mapping, format, and a stable layout fingerprint. The client
 recomputes that fingerprint before installing the geometry and acknowledges
 only format plus the independently verified value.
 
@@ -146,7 +147,7 @@ split between Java and GLSL.
 | Variable/current source | Current value | Required treatment |
 | --- | ---: | --- |
 | shader layout transport | Named RingWorld fields appended to the Globals UBO | Carries activation, C/W, saved wall height, vertical layout, view distance, handoff, detail, and haze without altering menu blur. |
-| terrain shader surface reference | `RingWorldVertical.x` | Synchronized from the saved format-2 layout. |
+| terrain shader surface reference | `RingWorldVertical.x` | Synchronized from the saved format-3 layout. |
 | terrain fog distance scale | `1.02` in `terrain.vsh` | Profile constant; calibrate across curvature ratios `viewDistance/C`. |
 | live-terrain dither | `RingRenderProfile`: 78% to 102% of effective view | Shared with proxy values and clamped at `C/2`. |
 | proxy opacity | `RingRenderProfile`: 68% to 98% in visual profile 5 | Centralized and clamped at `C/2`; reaches opacity before the live edge so dither cannot expose translucent sky. |
@@ -181,8 +182,8 @@ the cloud shader; moving this final policy into the shared profile is open.
 | pregeneration queue gate | fewer than 64 pending tasks | Operational profile; benchmark rather than scale linearly from geometry. |
 | stream rate | 8 tiles/tick | Operational profile; add byte/time estimates and avoid login bursts for large atlases. |
 | save/broadcast cadence | 200/20 ticks | Operational profile; benchmark dirty-set and save cost at large atlas sizes. |
-| atlas world hash | Layout fingerprint plus atlas format/sample semantics | Seed, C/W, wall, surface, format, rim thickness/style, and atlas meaning invalidate cache. |
-| noise coordinate precompute | two `int[C]` arrays up to C=1,048,576 | About 8 bytes per circumference block and cached per geometry. Add lifecycle/budget handling; the trigonometric fallback above the threshold is a performance cliff that must be benchmarked. |
+| atlas world hash | Layout fingerprint plus atlas format/sample semantics | Seed, C/W, wall, surface, terrain-noise mapping, format, rim thickness/style, and atlas meaning invalidate cache. |
+| noise coordinate precompute | legacy: two `int[C]`; annular: two `double[C]`, up to C=1,048,576 | Current new-world mapping uses about 16 bytes per circumference block and caches by geometry plus mapping. Lifecycle clear remains required; the trigonometric fallback above the threshold is a performance cliff that must be benchmarked. |
 | shader numeric precision | circumference converted to `float` | Define a supported maximum or use a high/low phase representation before block precision is lost on very large rings. |
 | proxy projection depth | physical mesh used the chunk-derived level far plane | Visual profile 5 preserves profile 4's physical X/Y/W correction and compresses only far-out proxy clip-space Z; never solve this by increasing real chunk distance. Test tangent and radial-up views independently. |
 
@@ -333,14 +334,14 @@ before any chunk generation, on both integrated and dedicated servers.
 
 Implemented:
 
-- Settings format 2 saves wall height and surface reference, and explicitly
-  migrates format 1.
+- Settings format 3 saves wall height, surface reference, and terrain-noise
+  mapping. Formats 1 and 2 migrate explicitly while retaining legacy terrain.
 - Saved settings attach before geometry-dependent Overworld generation;
   bootstrap config is now new-world input only.
 - The settings payload carries the complete layout and fingerprint. Its
   acknowledgement verifies a client-recomputed fingerprint.
 - Layout and terrain-atlas identity include seed, dimensions, wall/surface
-  values, format, rim thickness/style, and atlas semantics.
+  values, terrain-noise mapping, format, rim thickness/style, and atlas semantics.
 
 Still to verify in Phase 7: switch repeatedly between fresh worlds with
 different layouts/seeds in one game process and inspect both live and cached

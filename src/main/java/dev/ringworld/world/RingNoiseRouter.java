@@ -4,13 +4,19 @@ import net.minecraft.util.KeyDispatchDataCodec;
 import net.minecraft.world.level.levelgen.DensityFunction;
 import net.minecraft.world.level.levelgen.NoiseRouter;
 import net.minecraft.world.level.levelgen.blending.Blender;
+import net.minecraft.world.level.levelgen.synth.BlendedNoise;
 
 /** Applies cylindrical coordinates only at noise-consuming density leaves. */
 public final class RingNoiseRouter {
     private RingNoiseRouter() { }
 
     public static NoiseRouter wrap(NoiseRouter router, RingGeometry geometry) {
-        return router.mapAll(new CylindricalVisitor(RingNoiseCoordinates.forGeometry(geometry)));
+        return wrap(router, geometry, RingTerrainNoiseMapping.CURRENT);
+    }
+
+    public static NoiseRouter wrap(NoiseRouter router, RingGeometry geometry, int mappingVersion) {
+        return router.mapAll(new CylindricalVisitor(
+                RingNoiseCoordinates.forGeometry(geometry, mappingVersion), mappingVersion));
     }
 
     /**
@@ -19,7 +25,7 @@ public final class RingNoiseRouter {
      * grid rely on that identity and its local coordinates. Only functions
      * which actually consume horizontal coordinates are wrapped.
      */
-    private record CylindricalVisitor(RingNoiseCoordinates coordinates)
+    private record CylindricalVisitor(RingNoiseCoordinates coordinates, int mappingVersion)
             implements DensityFunction.Visitor {
         @Override
         public DensityFunction apply(DensityFunction function) {
@@ -29,8 +35,10 @@ public final class RingNoiseRouter {
             return function;
         }
 
-        private static boolean isCoordinateConsumer(DensityFunction function) {
-            return function instanceof RingCoordinateDensityFunction;
+        private boolean isCoordinateConsumer(DensityFunction function) {
+            return function instanceof RingCoordinateDensityFunction
+                    || (mappingVersion >= RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2
+                    && function instanceof BlendedNoise);
         }
     }
 
@@ -58,8 +66,9 @@ public final class RingNoiseRouter {
         private FunctionContext transform(FunctionContext source) {
             if (source instanceof CylindricalNoisePos) return source;
             int sourceX = source.blockX();
-            return new CylindricalNoisePos(coordinates.ringX(sourceX), source.blockY(),
-                    coordinates.ringZ(sourceX, source.blockZ()), source.getBlender());
+            int sourceZ = source.blockZ();
+            return new CylindricalNoisePos(coordinates.noiseX(sourceX, sourceZ), source.blockY(),
+                    coordinates.noiseZ(sourceX, sourceZ), source.getBlender());
         }
     }
 
@@ -70,8 +79,9 @@ public final class RingNoiseRouter {
             DensityFunction.FunctionContext source = delegate.forIndex(index);
             if (source instanceof CylindricalNoisePos) return source;
             int sourceX = source.blockX();
-            return new CylindricalNoisePos(coordinates.ringX(sourceX), source.blockY(),
-                    coordinates.ringZ(sourceX, source.blockZ()), source.getBlender());
+            int sourceZ = source.blockZ();
+            return new CylindricalNoisePos(coordinates.noiseX(sourceX, sourceZ), source.blockY(),
+                    coordinates.noiseZ(sourceX, sourceZ), source.getBlender());
         }
 
         @Override

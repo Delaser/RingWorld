@@ -7,6 +7,8 @@ import net.minecraft.world.level.levelgen.RandomState;
 public interface RingWorldGeneratorAccess {
     void ringworld$setGeometry(RingGeometry geometry);
     RingGeometry ringworld$getGeometry();
+    void ringworld$setTerrainNoiseMapping(int mappingVersion);
+    int ringworld$getTerrainNoiseMapping();
     void ringworld$setWallHeight(int wallHeightBlocks);
     int ringworld$getWallHeight();
     void ringworld$setGuaranteeStronghold(boolean guaranteeStronghold);

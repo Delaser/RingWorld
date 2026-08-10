@@ -10,13 +10,13 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 291 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 337 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
 resources load through NeoForge adapters; its render pipeline registers; and a
 copied production 16,384×256 world opens through the integrated server with a
-format-2 settings acknowledgement and streaming atlas metadata/tiles. The
+format-3 settings acknowledgement and streaming atlas metadata/tiles. The
 `:neoforge:runProductionProjectionClient` copies a named
 source save into an isolated run directory, waits for a complete atlas, writes
 tangent/handoff/radial captures, records frame pacing, verifies the outputs,
@@ -30,7 +30,12 @@ Overworld/Nether/End transitions, save/disconnect, and reopen. NeoForge also
 passes the production/multi-seed structure matrix, a complete unattended
 headless atlas prewarm, and the dedicated two-client seam/combat/block/bed/
 death/physical-portal/boat/teleport/reconnect matrix, including destination
-water and hostile navigation through the seam. Loader-labelled Fabric
+water, hostile navigation through the seam, and normalized positive/negative
+multi-lap Nether returns with both out-of-band Z directions. The 2026-08-10
+alpha-4 integration branch also passes the complete strict matrix on both
+loaders with the format-3 noise identity, bidirectional seam placement,
+canonical double-chest ownership/recovery, and portal routing fixes present
+together. Loader-labelled Fabric
 and NeoForge client/server packages, strict jar verification, same-commit
 shared-contract comparison, and a real packaged macOS NeoForge client smoke
 also pass. The shared GUI-scale-4 atlas map/control fixture passes all eleven
@@ -317,12 +322,12 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 291
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 337
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 291
+The NeoForge module uses the same Java 25 toolchain and also passes all 337
 unit/parameterized cases:
 
 ```sh
@@ -352,6 +357,12 @@ Java generation, always performs a fresh dual build, pair-validates the known
 outputs, writes provenance manifests consumed by optional packaging, and
 renders the exact verified public commit URL into every staged public
 `PROJECT_DESCRIPTION.md` and `CHANGELOG.md`. It accepts no alternate jar path.
+It also verifies the embedded `ringworld-build.properties` identity displayed
+by the RingWorld Map, so `release_label` must advance with both loader release
+descriptors.
+The current release metadata separates the shared runtime artifact version
+from loader-specific public alpha-4 identifiers; never relabel a generic
+artifact as a new hosted file outside this fail-closed path.
 Keep that fail-closed Java 25 preflight and source-link placeholder validation
 synchronized with the active Minecraft toolchain; do not replace its direct
 setup error with the compiler failure produced by an older Gradle JVM. The
@@ -422,15 +433,23 @@ version numbers.
 
 ## Current implementation cautions
 
-- The complete-ring renderer accepts a current-world partial atlas once it has
-  at least one trustworthy cell. Missing cells stay transparent; progressive
-  updates reuse a source-resolution texture and one reference-height mesh,
+- The complete-ring renderer accepts a current-world zero-cell or partial Atlas
+  as soon as its identity metadata arrives. Missing cells use an opaque,
+  deterministic world-hash fallback with smooth generated-terrain palette propagation;
+  progressive updates use source-resolution textures, one reference-height
+  mesh, and curved temporary returns at both inner rim faces,
   then verified completion performs one upgrade to the expanded texture and
-  detailed terrain-height mesh. Later complete-atlas revisions refresh the
+  detailed terrain-height mesh. The partial ring starts under an 0.88-strength
+  progress haze which reaches exactly zero at completion, and the temporary
+  returns use their out-of-range V marker to select cobble/moss shading rather
+  than sampling the terrain palette. Later complete-atlas revisions refresh the
   texture, but rebuild that detailed mesh only when the immutable build
   snapshot's surface-height fingerprint changes. Session disconnect/settings
   handlers must still clear the static GPU texture and mesh, and the renderer
-  must reject absent, zero-cell, corrupt, or wrong-world atlases.
+  must reject absent, corrupt, or wrong-world atlases. Completion must remove
+  every fallback pixel and temporary return. Each new incomplete texture keeps
+  the prior GPU texture for a 750 ms shader cross-fade; session teardown must
+  close both textures.
   Fabric disconnect callbacks may arrive on a network thread, so they must
   enqueue cache saves and GPU teardown onto the client thread. Failing to clear
   that state lets a newly created world display the previous world's ring.
@@ -444,6 +463,25 @@ version numbers.
   villages and other surface structures then choose a Y that disagrees with
   the cylindrical terrain below them. Leave Z and the null-geometry Nether/End
   path vanilla.
+- Terrain-noise mapping is a persisted worldgen identity. Saved settings
+  formats 1 and 2 must upgrade to format 3 with `LEGACY_AXIAL`; only a fresh
+  format-3 world may select a persisted annular mapping. Mapping 2 preserves
+  the first annular implementation for existing saves, and mapping 3 retains
+  its exact alpha-4 terrain. Fresh worlds use `ANNULAR_COMPLETE_V2` (4), which
+  additionally transforms vanilla's direct `BlendedNoise` sampler; omitting
+  that leaf produced the reproducible X=16383/0 wall in an uploaded mapping-3
+  save. It also maps vanilla surface-rule, badlands, frozen-ocean, and
+  carver-seed coordinates. The annular transform uses
+  `(R+Z)sin(theta),(R+Z)cos(theta)` and removes the legacy quarter-ring
+  Jacobian collapse. Keep mapping selection identical across biome, density,
+  cave/aquifer/ore, and base-height paths; include it in the settings
+  handshake, layout fingerprint, generator cache key, and atlas world hash.
+  Never silently migrate an existing world's mapping or accept an atlas from
+  the other mapping.
+- Curved clouds are fragment-clipped in intrinsic Z at the two inner rim-face
+  planes published in `RingWorldAtmosphere2.zw`. Those planes currently derive
+  from `RingGenerationBoundary.RIM_THICKNESS`; future wall-style settings must
+  change the shared bound calculation rather than hard-code shader coordinates.
 - Atlas tile application is idempotent. Duplicate dirty tiles must not advance
   the client render revision, force another cache save, or rebuild the complete
   texture/mesh. Only the actual incomplete-to-complete transition bypasses the
@@ -461,6 +499,9 @@ version numbers.
   scanning heights.
   Session clear must invalidate the build generation and close both completed
   and abandoned images; do not sample the mutable live atlas on that worker.
+- `GuiMixin` owns the small top-left incomplete-Atlas progress label. It derives
+  whole-percent progress from the current client Atlas, never from server job
+  state, obeys Hide GUI, and must render nothing once the Atlas is complete.
 - Atlas format 6 adds a durable monotonic surface revision. Tiles never commit
   that revision individually: `terrain_atlas_revision_v1` arrives only after
   all preceding tiles for the batch. Complete clients stay subscribed after
@@ -541,6 +582,26 @@ version numbers.
   every `RespawnData` result at that final ownership boundary, not merely the
   sampler suggestion. Keep it scoped to first-world creation; saved-world
   runtime logic must never read bootstrap geometry.
+- Runtime block entities are owned by canonical server positions even when a
+  neighbour traversal reaches them through X=`-1` or X=`C`. Keep
+  `LevelChunkMixin` server-Overworld-only: client chunks deliberately key
+  block entities by presentation coordinates. Canonicalize the `LevelChunk`
+  block-state and block-entity map arguments before vanilla creates, reads,
+  removes, or serializes an entry; do not patch individual double-container
+  blocks. Saved chunk post-load must retain a raw periodic alias until the
+  canonical/alias collision decision is made: a lone alias is repaired to its
+  canonical owner, while two distinct inventories remain independently
+  recoverable and emit an operator warning. Make this decision only after all
+  direct saved entries are known, and reserve a canonical pending-NBT key
+  before promoting an alias. Save and removal lookups must preserve both live
+  and still-packed exact aliases; serialized entry order must never choose
+  which inventory survives. Never silently merge or delete either inventory.
+- Nether-to-Overworld portal routing normalizes the already vanilla-scaled
+  target at `PortalForcer`: X wraps onto canonical storage, Z clamps to a
+  portal-safe creation anchor, and lookup queries the adjacent X images before
+  creation. Do not move this correction to the final entity transition; that
+  would still search or create at a raw multi-lap/exterior coordinate. Keep
+  Nether and End `PortalForcer` behavior vanilla.
 - The world-creation editor must retain its unsaved field and monument draft
   across Minecraft `init()` rebuilds, including GUI-scale and window-size
   changes. Its automated fixture must wait for each asynchronous screenshot
@@ -556,7 +617,7 @@ version numbers.
   tangent and radial-up projection captures after changing projection,
   celestial render order, or the proxy pipeline.
 - Settings payload identifiers are wire-layout-versioned
-  (`settings_v2`/`settings_ack_v2`). Never append or reorder codec fields while
+  (`settings_v3`/`settings_ack_v3`). Never append or reorder codec fields while
   reusing an old identifier; old clients crash on unread bytes before a useful
   rejection can be sent. Advance the channel generation and keep the
   `RingProtocolIdentityTest` expectation synchronized.
@@ -668,7 +729,7 @@ version numbers.
   creation editor's visible Small-is-experimental/mining advisory. Keep the policy
   flag `volatile`: generation runs on worker threads. Missing-policy legacy
   worlds must remain untouched.
-- The extended Globals UBO publishes the complete format-2 layout and render
+- The extended Globals UBO publishes the complete format-3 layout and render
   profile. Its std140 field order, `GlobalSettings` allocation, and every
   custom program that declares Globals must change together.
 - The dedicated multiplayer clients must not connect before
@@ -680,6 +741,11 @@ version numbers.
   complete, distinct atlas identities/content fingerprints and raw GPU/session
   teardown between same-size worlds. Keep it non-destructive: it may save
   normally, but must not move players or edit terrain.
+- Outbound block-use packets must canonicalize the clicked block and translate
+  the hit vector by the same whole-chart offset. Never wrap the hit vector
+  independently: an east-face hit at `X=C` belongs locally to the canonical
+  block at `X=C-1`, and wrapping only that vector makes vanilla reject the
+  interaction as impossibly distant.
 - `:runProductionLifecycleClient` first copies a named production save into its
   own ignored run directory. Its test-only coordinator must use the 26.1
   `TeleportTransition` API, stay separate from smoke/layout-switch/multiplayer,

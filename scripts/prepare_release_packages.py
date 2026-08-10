@@ -146,8 +146,8 @@ def read_fabric_metadata(jar: Path, *, label: str) -> dict[str, object]:
 
 def load_staged_release(
     manifest_path: Path, *, loader: str, expected_license: bytes,
-) -> tuple[Path, str, str]:
-    """Return the exact staged jar, version, and public source revision.
+) -> tuple[Path, str, str, str, str]:
+    """Return the exact staged jar, artifact/public versions, name, and source revision.
 
     Optional bundles are deliberately downstream of the local Modrinth review
     stage.  They must not be able to relabel an arbitrary jar with a caller
@@ -204,19 +204,27 @@ def load_staged_release(
         runtime = validate_runtime_jar(release_jar, config, expected_license, loader=loader)
     except VerificationError as exc:
         raise PackageError(str(exc)) from exc
-    version = config["version"].get("version_number")
+    version = config["version"].get("artifact_version")
     if not isinstance(version, str) or not re.fullmatch(r"[0-9A-Za-z.+_-]+", version):
-        raise PackageError("staging release config has an unsafe version_number")
+        raise PackageError("staging release config has an unsafe artifact_version")
     expected_fields = {
         "mod_id": runtime["id"],
         "version": runtime["version"],
         "game_version": config[loader]["minecraft"],
         "environment": config["version"]["environment"],
+        "public_version": config["version"]["version_number"],
+        "public_name": config["version"]["name"],
     }
     for key, expected in expected_fields.items():
         if staged.get(key) != expected:
             raise PackageError(f"staging manifest {key} does not match its validated runtime artifact")
-    return release_jar, version, source["revision"]
+    return (
+        release_jar,
+        version,
+        config["version"]["version_number"],
+        config["version"]["name"],
+        source["revision"],
+    )
 
 
 def validate_inputs(
@@ -490,7 +498,13 @@ def build_packages(args: argparse.Namespace) -> tuple[Path, ...]:
     expected_license = args.license.read_bytes()
     if not expected_license:
         raise PackageError(f"empty licence file: {args.license}")
-    args.jar, args.version, args.source_revision = load_staged_release(
+    (
+        args.jar,
+        args.version,
+        args.public_version,
+        args.public_name,
+        args.source_revision,
+    ) = load_staged_release(
         args.stage_manifest, loader=args.loader, expected_license=expected_license,
     )
     expected_license = validate_inputs(
@@ -528,6 +542,9 @@ def build_packages(args: argparse.Namespace) -> tuple[Path, ...]:
                 "format": 1,
                 "license": EXPECTED_IDENTIFIER,
                 "loader": args.loader,
+                "artifactVersion": args.version,
+                "publicVersion": args.public_version,
+                "publicName": args.public_name,
                 "sourceRevision": args.source_revision,
                 "sourceUrl": f"{SOURCE_URL}/tree/{args.source_revision}",
                 "artifacts": [

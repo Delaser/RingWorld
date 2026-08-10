@@ -20,6 +20,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.vehicle.boat.Boat;
@@ -30,6 +31,8 @@ import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.phys.BlockHitResult;
+import net.minecraft.world.phys.Vec3;
 import net.minecraft.util.Mth;
 
 /** A real-network, two-process client driver. It is dormant outside its JVM test flag. */
@@ -57,6 +60,11 @@ public final class MultiplayerTestClient {
     private boolean interactionChunkReadySent;
     private boolean interactionSent;
     private int interactionAge;
+    private boolean blockInteractionResultSent;
+    private boolean forwardPlacementSent;
+    private boolean forwardPlacementResultSent;
+    private boolean reversePlacementSent;
+    private boolean reversePlacementResultSent;
     private int attacksSent;
 
     private boolean vehicleSeen;
@@ -212,13 +220,26 @@ public final class MultiplayerTestClient {
         AbstractClientPlayer remote = findRemotePlayer(client);
         if (remote == null) {
             if (seamArmed) remoteMissingTicks++;
+            if (!seamArmed && stageTicks % 100 == 0) {
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:{}] waiting to arm seam localX={} atTestPose={} mode={} remote=missing",
+                        role, client.player.getX(), atTestPose, client.gameMode.getPlayerMode());
+            }
             return;
         }
         if (!seamArmed) {
             double expectedRemoteX = geometry.nearestImageX(
                     role.equals("A") ? 2.0 : geometry.circumferenceBlocks() - 4.0,
                     client.player.getX());
-            if (Math.abs(remote.getX() - expectedRemoteX) >= 0.75) return;
+            if (Math.abs(remote.getX() - expectedRemoteX) >= 0.75) {
+                if (stageTicks % 100 == 0) {
+                    RingWorldMod.LOGGER.info(
+                            "[multiplayer:{}] waiting to arm seam localX={} atTestPose={} mode={} remoteX={} expectedRemoteX={}",
+                            role, client.player.getX(), atTestPose, client.gameMode.getPlayerMode(),
+                            remote.getX(), expectedRemoteX);
+                }
+                return;
+            }
         }
         positionedTicks++;
         if (!seamArmed && positionedTicks >= 80) {
@@ -374,17 +395,104 @@ public final class MultiplayerTestClient {
         }
         if (interactionSent) interactionAge++;
 
-        if (blockSeen && !targetPresent && (!role.equals("A") || interactionAge >= 5)) {
+        if (!blockInteractionResultSent && blockSeen && !targetPresent
+                && (!role.equals("A") || interactionAge >= 5)) {
             RingWorldMod.LOGGER.info("[multiplayer:{}] cross-seam block update result=true at {}", role, target);
             sendResult("block_interaction", true, stageTicks);
-            stage = 3;
+            blockInteractionResultSent = true;
             stageTicks = 0;
-        } else if (stageTicks >= 600) {
+            return;
+        } else if (!blockInteractionResultSent && stageTicks >= 600) {
             RingWorldMod.LOGGER.error("[multiplayer:{}] cross-seam block update result=false", role);
             sendResult("block_interaction", false, stageTicks);
+            blockInteractionResultSent = true;
+            stageTicks = 0;
+            return;
+        }
+
+        if (!blockInteractionResultSent) return;
+        if (runSeamPlacementScenario(client, geometry)) {
             stage = 3;
             stageTicks = 0;
         }
+    }
+
+    private boolean runSeamPlacementScenario(Minecraft client, RingGeometry geometry) {
+        int highX = (int)Math.floor(geometry.nearestImageX(
+                geometry.circumferenceBlocks() - 1.0, client.player.getX()));
+        int zeroX = (int)Math.floor(geometry.nearestImageX(0.0, client.player.getX()));
+        BlockPos forwardSupport = new BlockPos(highX, 119, 2);
+        BlockPos forwardTarget = new BlockPos(highX + 1, 119, 2);
+        BlockPos reverseSupport = new BlockPos(zeroX, 119, 3);
+        BlockPos reverseTarget = new BlockPos(zeroX - 1, 119, 3);
+
+        boolean forwardFixture = client.level.getBlockState(forwardSupport).is(Blocks.STONE);
+        boolean forwardPlaced = client.level.getBlockState(forwardTarget).is(Blocks.STONE);
+        if (!forwardPlacementResultSent) {
+            if (role.equals("A") && forwardFixture && !forwardPlaced
+                    && !forwardPlacementSent
+                    && client.gameMode.getPlayerMode() == GameType.SURVIVAL
+                    && client.player.getMainHandItem().is(Blocks.STONE.asItem())
+                    && client.player.getMainHandItem().getCount() == 2) {
+                BlockHitResult hit = new BlockHitResult(
+                        new Vec3(forwardSupport.getX() + 1.0, 119.5, 2.5),
+                        Direction.EAST, forwardSupport, false);
+                InteractionResult result = client.gameMode.useItemOn(
+                        client.player, InteractionHand.MAIN_HAND, hit);
+                forwardPlacementSent = result.consumesAction();
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:A] forward seam placement sent={} support={} hitX={} target={}",
+                        forwardPlacementSent, forwardSupport, hit.getLocation().x, forwardTarget);
+            }
+            if (forwardFixture && forwardPlaced) {
+                forwardPlacementResultSent = true;
+                sendResult("placement_forward", true, stageTicks);
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:{}] forward seam placement result=true target={}", role, forwardTarget);
+                stageTicks = 0;
+            } else if (stageTicks >= 600) {
+                forwardPlacementResultSent = true;
+                sendResult("placement_forward", false, stageTicks);
+                RingWorldMod.LOGGER.error(
+                        "[multiplayer:{}] forward seam placement result=false support={} targetState={}",
+                        role, forwardSupport, client.level.getBlockState(forwardTarget).getBlock());
+                stageTicks = 0;
+            }
+            return false;
+        }
+
+        boolean reverseFixture = client.level.getBlockState(reverseSupport).is(Blocks.STONE);
+        boolean reversePlaced = client.level.getBlockState(reverseTarget).is(Blocks.STONE);
+        if (!reversePlacementResultSent) {
+            if (role.equals("A") && reverseFixture && !reversePlaced
+                    && !reversePlacementSent
+                    && client.gameMode.getPlayerMode() == GameType.SURVIVAL
+                    && client.player.getMainHandItem().is(Blocks.STONE.asItem())
+                    && client.player.getMainHandItem().getCount() == 2) {
+                BlockHitResult hit = new BlockHitResult(
+                        new Vec3(reverseSupport.getX(), 119.5, 3.5),
+                        Direction.WEST, reverseSupport, false);
+                InteractionResult result = client.gameMode.useItemOn(
+                        client.player, InteractionHand.MAIN_HAND, hit);
+                reversePlacementSent = result.consumesAction();
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:A] reverse seam placement sent={} support={} hitX={} target={}",
+                        reversePlacementSent, reverseSupport, hit.getLocation().x, reverseTarget);
+            }
+            if (reverseFixture && reversePlaced) {
+                reversePlacementResultSent = true;
+                sendResult("placement_reverse", true, stageTicks);
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:{}] reverse seam placement result=true target={}", role, reverseTarget);
+            } else if (stageTicks >= 600) {
+                reversePlacementResultSent = true;
+                sendResult("placement_reverse", false, stageTicks);
+                RingWorldMod.LOGGER.error(
+                        "[multiplayer:{}] reverse seam placement result=false support={} targetState={}",
+                        role, reverseSupport, client.level.getBlockState(reverseTarget).getBlock());
+            }
+        }
+        return reversePlacementResultSent;
     }
 
     private void runVehicleScenario(Minecraft client) {
@@ -582,13 +690,20 @@ public final class MultiplayerTestClient {
             int chestX = presentationX(geometry, client, 0);
             int lecternX = presentationX(geometry, client, 1);
             BlockPos chest = new BlockPos(chestX, 120, -3);
+            BlockPos chestHigh = new BlockPos(presentationX(
+                    geometry, client, geometry.circumferenceBlocks() - 1), 120, -3);
             BlockPos lectern = new BlockPos(lecternX, 120, -3);
             BlockPos lamp = new BlockPos(chestX, 120, -5);
             // The sealed trough clears X=0 before placing its only source at
             // C-1. This is the received destination image, not the source.
             BlockPos fluidDestination = new BlockPos(presentationX(geometry, client, 0), 120, 6);
             BlockPos blast = new BlockPos(chestX, 124, 9);
-            boolean chestReady = client.level.getBlockEntity(chest) instanceof ChestBlockEntity;
+            boolean chestReady = client.level.getBlockEntity(chest) instanceof ChestBlockEntity
+                    && client.level.getBlockEntity(chestHigh) instanceof ChestBlockEntity
+                    && client.level.getBlockState(chest).getValue(net.minecraft.world.level.block.ChestBlock.TYPE)
+                    != net.minecraft.world.level.block.state.properties.ChestType.SINGLE
+                    && client.level.getBlockState(chestHigh).getValue(net.minecraft.world.level.block.ChestBlock.TYPE)
+                    != net.minecraft.world.level.block.state.properties.ChestType.SINGLE;
             boolean lecternReady = client.level.getBlockEntity(lectern) instanceof LecternBlockEntity
                     && client.level.getBlockState(lectern).getValue(LecternBlock.HAS_BOOK);
             boolean lampLit = client.level.getBlockState(lamp)
@@ -597,8 +712,11 @@ public final class MultiplayerTestClient {
             boolean explosionCrossed = client.level.getBlockState(blast).isAir();
             if (stageTicks % 200 == 0) {
                 RingWorldMod.LOGGER.info(
-                        "[multiplayer:{}] waiting for extended fixture chest={} lectern={} lamp={} waterReachedDestination={} blast={}",
-                        role, chestReady, lecternReady, lampLit, waterReachedDestination, explosionCrossed);
+                        "[multiplayer:{}] waiting for extended fixture chest={} chestState={} highState={} chestBe={} highBe={} lectern={} lamp={} waterReachedDestination={} blast={}",
+                        role, chestReady, client.level.getBlockState(chest),
+                        client.level.getBlockState(chestHigh), client.level.getBlockEntity(chest),
+                        client.level.getBlockEntity(chestHigh), lecternReady, lampLit,
+                        waterReachedDestination, explosionCrossed);
             }
             if (chestReady && lecternReady && lampLit && waterReachedDestination && explosionCrossed) {
                 extendedFixtureSent = true;

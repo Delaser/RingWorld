@@ -5,6 +5,14 @@ This is issue-#96 safe-small dual-loader evidence for public `main` commit
 `8f7bc80831964ce00a315b2f52daf1f4349c7eff`). Runtime worlds, logs, and
 screenshots remain in ignored local paths.
 
+> Historical terrain evidence: these captures used the alpha legacy
+> terrain-noise mapping. Issue #149 intentionally preserves that mapping for
+> existing saves but gives fresh format-3 worlds a corrected annular mapping;
+> fresh cardinal and visual review must replace this evidence before release.
+> Mapping 3 evidence is itself now historical after an uploaded exact seed
+> exposed the remaining flat `BlendedNoise` sampler. Current fresh worlds use
+> mapping 4 (`annular-complete-v2`); owner visual review must use that identity.
+
 ## Fabric safe-small matrix
 
 A fresh 2,048×416 world and complete 13,312-cell atlas were generated for each

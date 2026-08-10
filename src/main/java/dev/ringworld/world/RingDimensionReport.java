@@ -129,6 +129,14 @@ public record RingDimensionReport(
                     + requiredCircumference + ")");
         }
 
+        double minimumNoiseRadius = RingTerrainNoiseMapping.minimumSampledRadius(geometry);
+        if (minimumNoiseRadius < RingTerrainNoiseMapping.MINIMUM_NOISE_RADIUS_BLOCKS) {
+            errors.add("periodic terrain-noise band reaches radius " + format(minimumNoiseRadius)
+                    + " blocks after its query margin; at least "
+                    + format(RingTerrainNoiseMapping.MINIMUM_NOISE_RADIUS_BLOCKS)
+                    + " blocks are required");
+        }
+
         if (geometry.widthBlocks() > MAX_AXIS_BLOCKS) {
             errors.add("width exceeds the current " + MAX_AXIS_BLOCKS + "-block technical limit");
         }
@@ -145,7 +153,7 @@ public record RingDimensionReport(
         long atlasCells = Math.multiplyExact((long) atlasColumns, atlasRows);
         long atlasBytes = Math.multiplyExact(atlasCells, RingTerrainAtlas.ESTIMATED_BYTES_PER_CELL);
         long noiseCoordinateBytes = Math.multiplyExact(
-                (long)geometry.circumferenceBlocks(), 8L);
+                (long)geometry.circumferenceBlocks(), 16L);
         RingDimensionCostEstimate costEstimate = RingDimensionCostEstimate.estimate(
                 geometry, atlasSampleStepBlocks);
         if (atlasCells > MAX_ATLAS_CELLS) {
