@@ -1236,6 +1236,13 @@ stopped at the pre-existing sleeping-reconnect fixture/resource-pressure
 boundary tracked by #134 before the portal phase; it is not counted as a
 portal failure.
 
+The 2026-08-10 alpha-4 integration branch also passed fresh Atlas-disabled
+2,048×416 Fabric and NeoForge runs after merging issues #145, #146, #147, and
+#149. Both strict verifiers observed format-3 acknowledgement, both placement
+directions, the joined 54-slot seam chest plus alias-recovery marker, the
+multi-lap/out-of-width portal marker, sleeping reconnect, death/respawn,
+Nether/End travel, and terminal seam weather in the same process matrix.
+
 The historical 2026-08-01 dedicated result predates the X=`0` destination
 assertion and observed only the seam-side source state. Fresh 2,048x416 runs
 on 2026-08-02 passed the complete strengthened matrix on both Fabric and

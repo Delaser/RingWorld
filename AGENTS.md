@@ -31,7 +31,11 @@ passes the production/multi-seed structure matrix, a complete unattended
 headless atlas prewarm, and the dedicated two-client seam/combat/block/bed/
 death/physical-portal/boat/teleport/reconnect matrix, including destination
 water, hostile navigation through the seam, and normalized positive/negative
-multi-lap Nether returns with both out-of-band Z directions. Loader-labelled Fabric
+multi-lap Nether returns with both out-of-band Z directions. The 2026-08-10
+alpha-4 integration branch also passes the complete strict matrix on both
+loaders with the format-3 noise identity, bidirectional seam placement,
+canonical double-chest ownership/recovery, and portal routing fixes present
+together. Loader-labelled Fabric
 and NeoForge client/server packages, strict jar verification, same-commit
 shared-contract comparison, and a real packaged macOS NeoForge client smoke
 also pass. The shared GUI-scale-4 atlas map/control fixture passes all eleven

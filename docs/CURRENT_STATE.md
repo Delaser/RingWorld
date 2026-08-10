@@ -66,7 +66,7 @@ format-3 worlds now use the orthogonal annular mapping
 legacy mapping retained. Mapping identity is persisted, handshaken on new
 `settings_v3`/`settings_ack_v3` channels, attached to every Overworld noise
 router, fingerprinted, and included in the atlas world hash. Both loader test
-suites pass 307 cases and both fresh 16,384×256 stronghold/worldgen gates pass
+suites pass 317 cases and both fresh 16,384×256 stronghold/worldgen gates pass
 the five-longitude, three-width-position terrain/height/alias matrix plus the
 existing biome, seam structure, rim, monument, and portal checks. The uploaded
 alpha-3 jars remain format-2 historical test artifacts; this branch is not yet
@@ -292,6 +292,16 @@ world was not opened or regenerated. The same complete matrix also passes at
 the Medium 16,384x256 geometry on Fabric and on a warmed NeoForge retry; the
 first cold NeoForge production attempt stopped earlier at the known fixture
 resource-pressure boundary tracked by #134, before portal routing ran.
+
+The combined alpha-4 integration branch was then built and exercised as one
+candidate rather than relying only on the four issue branches independently.
+Its clean Fabric and NeoForge builds each pass 317 tests. Fresh Atlas-disabled
+2,048×416 two-client runs on both loaders pass the strict full-matrix verifier
+with settings format 3, both seam-placement directions, the shared 54-slot
+double chest and lossless alias recovery, the four-lap/out-of-width Nether
+portal cases, sleeping reconnect, death/respawn, End travel, and seam weather
+all enabled together. This is automated integration evidence; it does not
+replace the remaining owner visual/gameplay and real-Windows review.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
