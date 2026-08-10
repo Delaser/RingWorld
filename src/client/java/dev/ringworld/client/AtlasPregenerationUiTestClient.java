@@ -76,6 +76,14 @@ public final class AtlasPregenerationUiTestClient {
             case 2 -> {
                 if (!(client.screen instanceof RingWorldMapScreen screen) || !settled()) return true;
                 if (status == null) return true;
+                if (!screen.buildLabelForAutomation().equals("Alpha 4 · 0.2.0+mc26.1.2")) {
+                    return fail(client, "map screen showed the wrong embedded build identity: "
+                            + screen.buildLabelForAutomation());
+                }
+                if (!screen.worldgenLabelForAutomation().equals("Worldgen: annular-complete (3)")) {
+                    return fail(client, "map screen showed the wrong persisted worldgen identity: "
+                            + screen.worldgenLabelForAutomation());
+                }
                 if (!capturedInitial) {
                     capture(client, "atlas-ui-02-map-initial", false);
                     capturedInitial = true;

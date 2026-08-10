@@ -60,18 +60,20 @@ def write_shared_contract(archive: zipfile.ZipFile, *, mutation: str | None = No
     archive.writestr("assets/minecraft/shaders/core/terrain.vsh", b"shared shader")
 
 
-def write_jar(path: Path, *, minecraft: str = "26.1.2", identifier: str = "MPL-2.0", environment: str = "*", compatibility_api: int = 1, sensitive: str | None = None, sensitive_content: str = "secret", embedded_license: bytes = LICENSE, contract_mutation: str | None = None) -> None:
+def write_jar(path: Path, *, minecraft: str = "26.1.2", identifier: str = "MPL-2.0", environment: str = "*", compatibility_api: int = 1, sensitive: str | None = None, sensitive_content: str = "secret", embedded_license: bytes = LICENSE, contract_mutation: str | None = None, build_identity: bytes | None = b"artifactVersion=0.2.0+mc26.1.2\nreleaseLabel=Alpha 4\n") -> None:
     metadata = {"schemaVersion": 1, "id": "ringworld", "version": VERSION, "authors": ["Delaser"], "contact": {"homepage": "https://andwhatnotstudio.com/ringworld/"}, "custom": {"ringworld:compatibility_api": compatibility_api}, "license": identifier, "environment": environment, "depends": {"fabricloader": ">=0.19.3", "minecraft": minecraft, "java": ">=25", "fabric-api": "*"}}
     with zipfile.ZipFile(path, "w") as archive:
         archive.writestr("fabric.mod.json", json.dumps(metadata))
         archive.writestr("LICENSE-RINGWORLD.txt", embedded_license)
         write_shared_contract(archive, mutation=contract_mutation)
+        if build_identity is not None:
+            archive.writestr("ringworld-build.properties", build_identity)
         archive.writestr("dev/ringworld/RingWorld.class", b"compiled")
         if sensitive:
             archive.writestr(sensitive, sensitive_content)
 
 
-def write_neoforge_jar(path: Path, *, minecraft: str = "26.1.2", neoforge: str = "[26.1.2.87,)", identifier: str = "MPL-2.0", mod_id: str = "ringworld", embedded_license: bytes = LICENSE, contract_mutation: str | None = None) -> None:
+def write_neoforge_jar(path: Path, *, minecraft: str = "26.1.2", neoforge: str = "[26.1.2.87,)", identifier: str = "MPL-2.0", mod_id: str = "ringworld", embedded_license: bytes = LICENSE, contract_mutation: str | None = None, build_identity: bytes | None = b"artifactVersion=0.2.0+mc26.1.2\nreleaseLabel=Alpha 4\n") -> None:
     metadata = f'''license="{identifier}"
 
 [[mods]]
@@ -104,6 +106,8 @@ versionRange="[{minecraft}]"
         archive.writestr("META-INF/neoforge.mods.toml", metadata)
         archive.writestr("LICENSE-RINGWORLD.txt", embedded_license)
         write_shared_contract(archive, mutation=contract_mutation)
+        if build_identity is not None:
+            archive.writestr("ringworld-build.properties", build_identity)
         archive.writestr("dev/ringworld/RingWorld.class", b"compiled")
 
 
@@ -194,6 +198,14 @@ class ModrinthStagingTest(unittest.TestCase):
                     config["version"]["artifact_version"] = artifact_version
                 with self.assertRaisesRegex(VerificationError, "version.artifact_version"):
                     validate_release_config(config, "fabric")
+        for identity in (None,
+                         b"artifactVersion=0.2.1+mc26.1.2\nreleaseLabel=Alpha 4\n",
+                         b"artifactVersion=0.2.0+mc26.1.2\nreleaseLabel=Alpha 3\n"):
+            with self.subTest(build_identity=identity):
+                write_jar(self.jar, build_identity=identity)
+                with self.assertRaisesRegex(VerificationError,
+                                            "ringworld-build.properties"):
+                    self.stage()
 
     def test_rejects_absent_or_duplicate_public_source_placeholder(self) -> None:
         write_jar(self.jar)

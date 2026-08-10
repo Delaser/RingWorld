@@ -1552,7 +1552,11 @@ dependencies {
 
 processResources {
 	inputs.property 'version', project.version
+	inputs.property 'release_label', project.release_label
 	filesMatching('fabric.mod.json') { expand version: project.version }
+	filesMatching('ringworld-build.properties') {
+		expand version: project.version, release_label: project.release_label
+	}
 }
 
 tasks.withType(JavaCompile).configureEach {

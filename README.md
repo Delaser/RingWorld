@@ -229,7 +229,9 @@ durable monotonic revision, so an exact reconnect reuses its cache while a
 stale reconnect safely downloads the authoritative surface again.
 
 In a loaded RingWorld Overworld, the pause menu includes **RingWorld Map**.
-It shows authoritative atlas progress and lets the integrated-world owner or a
+Its header identifies the embedded alpha/artifact build, and its first status
+line identifies the saved world's terrain mapping. It shows authoritative
+atlas progress and lets the integrated-world owner or a
 dedicated-server gamemaster confirm **Generate Entire Ring**, pause, resume, or
 cancel it. Closing the map returns to play while generation continues. Other
 players receive read-only status; complete atlases cannot be regenerated from

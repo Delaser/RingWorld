@@ -265,6 +265,14 @@ tasks.withType(Jar).configureEach {
     }
 }
 
+tasks.named('processResources') {
+    inputs.property 'version', project.version
+    inputs.property 'release_label', rootProject.release_label
+    filesMatching('ringworld-build.properties') {
+        expand version: project.version, release_label: rootProject.release_label
+    }
+}
+
 def checkedProjectionSaveId = { String value, String propertyName ->
     def saveId = value == null ? '' : value.trim()
     if (saveId.isEmpty() || saveId == '.' || saveId == '..'

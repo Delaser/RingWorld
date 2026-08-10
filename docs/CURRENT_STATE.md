@@ -303,6 +303,10 @@ not evidence that generated terrain visually joined behind the player.
 The F3 RingWorld group now reports the persisted terrain mapping name and
 number so legacy-world evidence cannot be mistaken for a fresh
 `annular-complete (3)` world.
+The RingWorld Map now embeds the same diagnostic in its normal UI, beneath an
+`Alpha 4 · 0.2.0+mc26.1.2` build label generated into both loader jars. Fabric
+passed the complete GUI-scale-4 atlas UI capture/revision fixture with the new
+header on 2026-08-10; both runtime jars carry the same validated identity.
 Fresh production mapping-3 runs passed that seam-join capture on both loaders
 on 2026-08-10. Their real chunk terrain crosses X=16383/0 without a flat
 height wall; Fabric recorded 847 seam-motion frames at 8.49 ms average and

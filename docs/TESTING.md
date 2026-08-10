@@ -361,7 +361,9 @@ close/reopen, pause/resume, cancel/retry, and complete screens as
 `[atlas-ui-test] PASS`, and its finalizer verifies the marker plus all eleven
 PNGs. After completion it also places and removes a sampled high surface block,
 requiring two changed tile broadcasts and ordered durable revision commits
-before passing. It is a real integrated-server test:
+before passing. The initial map stage additionally requires the embedded
+`Alpha 4 · 0.2.0+mc26.1.2` label and fresh-world
+`Worldgen: annular-complete (3)` identity. It is a real integrated-server test:
 generation remains active because `RingWorldMapScreen` is explicitly
 non-pausing. Keep its run directory ignored and do not point it at a personal
 Prism instance or a production world.
@@ -372,6 +374,12 @@ atlas cells, then committed the gold-block placement and removal as ordered
 atlas revisions 12 and 13 before reporting `[atlas-ui-test] PASS`. Fabric and
 NeoForge therefore exercise the same player-facing atlas workflow; only their
 fixture startup and lifecycle registration are loader-owned.
+
+The 2026-08-10 Fabric rerun after adding the menu identity lines passed all
+eleven captures and the revisioned-edit probe. Its initial GUI-scale-4 capture
+visibly showed `Alpha 4 · 0.2.0+mc26.1.2` and
+`Worldgen: annular-complete (3)` without overlapping the progress fields or
+controls.
 
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated
