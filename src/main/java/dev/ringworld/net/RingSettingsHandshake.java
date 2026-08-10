@@ -10,19 +10,27 @@ public final class RingSettingsHandshake {
     public static RingSettingsPayload payloadFor(RingWorldSettings settings) {
         return new RingSettingsPayload(
                 settings.widthBlocks(), settings.circumferenceBlocks(), settings.generatorSeed(),
-                settings.wallHeightBlocks(), settings.surfaceReferenceY(), settings.formatVersion(),
+                settings.wallHeightBlocks(), settings.surfaceReferenceY(),
+                settings.terrainNoiseMapping(), settings.formatVersion(),
                 settings.layoutFingerprint());
     }
 
     /** Recomputes the identity from every settings field carried on the wire. */
     public static long fingerprintFor(RingSettingsPayload payload) {
+        dev.ringworld.world.RingTerrainNoiseMapping.requireSupported(
+                payload.terrainNoiseMapping());
         return RingLayoutFingerprint.compute(
                 payload.width(), payload.circumference(), payload.seed(), payload.wallHeight(),
-                payload.surfaceReferenceY(), payload.formatVersion());
+                payload.surfaceReferenceY(), payload.terrainNoiseMapping(),
+                payload.formatVersion());
     }
 
     public static boolean hasMatchingPayloadFingerprint(RingSettingsPayload payload) {
-        return fingerprintFor(payload) == payload.fingerprint();
+        try {
+            return fingerprintFor(payload) == payload.fingerprint();
+        } catch (IllegalArgumentException invalidMapping) {
+            return false;
+        }
     }
 
     public static RingSettingsAckPayload acknowledgementFor(RingSettingsPayload payload) {

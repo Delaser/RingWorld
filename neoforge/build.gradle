@@ -131,6 +131,8 @@ neoForge {
             systemProperty 'ringworld.strongholdTest', 'true'
             systemProperty 'ringworld.worldgenMatrix',
                     providers.gradleProperty('ringWorldgenMatrix').orElse('false').get()
+            systemProperty 'ringworld.strongholdTestResume',
+                    providers.gradleProperty('ringStrongholdTestResume').orElse('false').get()
             programArgument '--nogui'
         }
         headlessPrewarmServer {
@@ -862,6 +864,10 @@ tasks.register('verifyNeoForgeHeadlessPrewarm') {
         def resultName = providers.gradleProperty('ringNeoForgeHeadlessPrewarmResult').orElse('result.json').get().trim()
         def expectedCircumference = providers.gradleProperty('ringNeoForgeHeadlessPrewarmCircumference').orElse('2048').get().toInteger()
         def expectedWidth = providers.gradleProperty('ringNeoForgeHeadlessPrewarmWidth').orElse('416').get().toInteger()
+        def expectedMapping = providers.gradleProperty('ringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping').orElse('2').get().toInteger()
+        if (!(expectedMapping in [1, 2])) {
+            throw new GradleException('-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping must be 1 or 2')
+        }
         def result = new File(neoForgeHeadlessPrewarmRun, "world/ringworld-prewarm/${resultName}")
         if (!result.isFile()) {
             throw new GradleException("NeoForge headless prewarm did not write a terminal result; inspect ${result}")
@@ -872,7 +878,8 @@ tasks.register('verifyNeoForgeHeadlessPrewarm') {
         } catch (Exception failure) {
             throw new GradleException("NeoForge headless prewarm result is not valid JSON: ${result}", failure)
         }
-        if (!(report instanceof Map) || report.schemaVersion != 1 || report.status != 'COMPLETE'
+        if (!(report instanceof Map) || report.schemaVersion != 2 || report.status != 'COMPLETE'
+                || report.terrainNoiseMapping != expectedMapping
                 || report.identityAvailable != true || !report.atlasPath || report.failureReason != null
                 || !(report.totalChunks instanceof Number) || !(report.completedChunks instanceof Number)
                 || !(report.totalCells instanceof Number) || !(report.completedCells instanceof Number)

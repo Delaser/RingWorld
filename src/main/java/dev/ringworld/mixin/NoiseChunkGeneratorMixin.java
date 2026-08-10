@@ -5,6 +5,7 @@ import dev.ringworld.world.RingClimateSampler;
 import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingNoiseRouter;
 import dev.ringworld.world.RingNoiseSamplingContext;
+import dev.ringworld.world.RingTerrainNoiseMapping;
 import dev.ringworld.world.RingWorldGeneratorAccess;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -40,6 +41,7 @@ import net.minecraft.world.level.levelgen.blending.Blender;
 abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     @Shadow @Final private Holder<NoiseGeneratorSettings> settings;
     @Unique private @Nullable RingGeometry ringworld$geometry;
+    @Unique private int ringworld$terrainNoiseMapping = RingTerrainNoiseMapping.CURRENT;
     @Unique private int ringworld$wallHeight;
     @Unique private volatile boolean ringworld$guaranteeStronghold;
     @Unique private @Nullable RandomState ringworld$cachedNoiseConfig;
@@ -59,6 +61,22 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     @Override
     public @Nullable RingGeometry ringworld$getGeometry() {
         return ringworld$geometry;
+    }
+
+    @Override
+    public void ringworld$setTerrainNoiseMapping(int mappingVersion) {
+        int supported = RingTerrainNoiseMapping.requireSupported(mappingVersion);
+        if (ringworld$terrainNoiseMapping == supported) return;
+        ringworld$terrainNoiseMapping = supported;
+        ringworld$cachedNoiseConfig = null;
+        ringworld$cachedRouter = null;
+        ringworld$cachedClimateNoiseConfig = null;
+        ringworld$cachedClimateSampler = null;
+    }
+
+    @Override
+    public int ringworld$getTerrainNoiseMapping() {
+        return ringworld$terrainNoiseMapping;
     }
 
     @Override
@@ -128,7 +146,8 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     private synchronized NoiseRouter ringworld$getOrCreatePeriodicRouter(RandomState noiseConfig, NoiseRouter vanilla) {
         if (ringworld$cachedNoiseConfig != noiseConfig || ringworld$cachedRouter == null) {
             ringworld$cachedNoiseConfig = noiseConfig;
-            ringworld$cachedRouter = RingNoiseRouter.wrap(vanilla, ringworld$geometry);
+            ringworld$cachedRouter = RingNoiseRouter.wrap(
+                    vanilla, ringworld$geometry, ringworld$terrainNoiseMapping);
             ringworld$cachedClimateNoiseConfig = null;
             ringworld$cachedClimateSampler = null;
         }

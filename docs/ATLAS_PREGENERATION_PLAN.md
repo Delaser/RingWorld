@@ -48,8 +48,8 @@ service also supports:
 
 The extracted `RingAtlasPregenerationService` preserves the proven baseline:
 
-- it loads or resumes the atlas identified by immutable geometry, seed, layout
-  fingerprint, format, and sample step;
+- it loads or resumes the atlas identified by immutable geometry, seed,
+  persisted terrain-noise mapping, layout fingerprint, format, and sample step;
 - it scans only canonical chunks;
 - it allows one ticket-backed `ChunkStatus.FULL` request in flight;
 - it yields while the normal chunk queue has 64 or more pending tasks;
@@ -420,7 +420,7 @@ same payload layouts and call the loader-neutral model/service.
   that admission and returns before settings or handshake state; the earlier
   lifecycle callback remains the sole owner of the disconnect and message.
 - `world/ringworld-prewarm/progress.json` is atomically refreshed every 20
-  ticks with schema version, identity, exact durable `completedChunks`,
+  ticks with schema version 2, identity, explicit terrain-noise mapping, exact durable `completedChunks`,
   separately named `generatedChunksThisRun`, rate, ETA, and error. A result
   filename of `progress.json` is rejected so progress and terminal paths cannot
   collide.
@@ -430,9 +430,12 @@ same payload layouts and call the loader-neutral model/service.
   JSON schema rather than accepting a text substring. A stale `COMPLETE` report
   therefore cannot pass a crashed later launch.
   `result.json` records `COMPLETE`, `FAILED`, `INTERRUPTED`, or `REJECTED`,
-  elapsed time, exact durable canonical chunks/cells, atlas path, and failure
+  elapsed time, explicit terrain-noise mapping, exact durable canonical chunks/cells, atlas path, and failure
   reason. Rejected startup declares `identityAvailable:false` and documented
   zero/null identity sentinels rather than inventing a layout.
+- Loader finalizers require the explicit expected mapping: annular v2 by
+  default, or legacy axial v1 only when an operator deliberately supplies the
+  loader-specific expected-mapping property for a copied alpha world.
 - The JSON writer is Gson-backed, including explicit `null` fields and complete
   escaping for control characters in an error message; a report-write failure
   is a controlled checkpoint/failure/halt path rather than an uncaught server

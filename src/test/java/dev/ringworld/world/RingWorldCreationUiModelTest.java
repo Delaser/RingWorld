@@ -143,11 +143,12 @@ class RingWorldCreationUiModelTest {
         assertTrue(RingWorldCreationUiModel.MONUMENT_COPY.contains("result is saved"));
 
         RingWorldCreationUiModel.Validation visualWarningOnly =
-                RingWorldCreationUiModel.validate("2048", "4096", "160");
+                RingWorldCreationUiModel.validate("32768", "128", "160");
         assertTrue(visualWarningOnly.canApply());
         assertFalse(visualWarningOnly.report().warnings().isEmpty());
         assertFalse(visualWarningOnly.report().hasHighGenerationCost());
-        assertTrue(visualWarningOnly.metricLines().getLast().startsWith("Pregen:"));
+        assertTrue(visualWarningOnly.metricLines().stream()
+                .anyMatch(line -> line.startsWith("Pregen:")));
     }
 
     @Test

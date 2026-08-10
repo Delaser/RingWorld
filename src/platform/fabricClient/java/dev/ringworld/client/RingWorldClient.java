@@ -139,7 +139,6 @@ public final class RingWorldClient implements ClientModInitializer {
                     // the menus. Destroy the previous world's static GPU ring
                     // before installing another session, even when both worlds
                     // happen to use identical dimensions.
-                    long fingerprint = RingSettingsHandshake.fingerprintFor(payload);
                     if (!RingSettingsHandshake.hasMatchingPayloadFingerprint(payload)) {
                         var handler = context.client().getConnection();
                         if (handler != null) {
@@ -148,6 +147,7 @@ public final class RingWorldClient implements ClientModInitializer {
                         }
                         return;
                     }
+                    long fingerprint = RingSettingsHandshake.fingerprintFor(payload);
                     if (!RingClientPayloadTransport.canSend(RingSettingsAckPayload.ID)
                             || !RingClientPayloadTransport.canSend(RingTerrainAtlasRequestPayload.ID)
                             || !RingClientPayloadTransport.canSend(RingAtlasPregenerationStatusRequestPayload.ID)
@@ -162,7 +162,8 @@ public final class RingWorldClient implements ClientModInitializer {
                     clearRingSession();
                     ClientRingState.set(
                             new RingGeometry(payload.width(), payload.circumference()),
-                            payload.wallHeight(), payload.surfaceReferenceY(), fingerprint);
+                            payload.wallHeight(), payload.surfaceReferenceY(),
+                            payload.terrainNoiseMapping(), fingerprint);
                     RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
                 }));
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasMetadataPayload.ID, (payload, context) ->

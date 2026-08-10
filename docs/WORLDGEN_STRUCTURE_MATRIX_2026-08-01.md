@@ -5,6 +5,14 @@ existing guaranteed-stronghold gate. It validates ordinary vanilla worldgen
 near both canonical sides of the circumference seam without pretending that a
 finite ring can contain every random structure for every seed.
 
+> The numeric matrix below is historical format-2/legacy-mapping evidence.
+> Issue #149 adds fresh format-3 annular terrain. On 2026-08-10 the complete
+> matrix passed again independently on Fabric and NeoForge, including stable
+> production fresh/reload evidence and both safe-small policy outcomes. The
+> expanded cardinal gate also passes at X 0, C/4, C/2, 3C/4, and C-1 across
+> three in-band Z positions. The old numeric table remains provenance for the
+> format-2 alpha rather than being rewritten as new evidence.
+
 ## Command
 
 Run with Java 25 after accepting only the ignored test server's local EULA:

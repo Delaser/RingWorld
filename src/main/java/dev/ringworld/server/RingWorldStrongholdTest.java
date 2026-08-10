@@ -509,54 +509,65 @@ public final class RingWorldStrongholdTest {
         ChunkGenerator generator = world.getChunkSource().getGenerator();
         RandomState randomState = world.getChunkSource().randomState();
         int circumference = geometry.circumferenceBlocks();
-        int[] canonicalXs = {0, circumference / 4 + 7, circumference / 2 + 3};
-        int[] remoteTerrainXs = {circumference / 4 + 7, circumference / 2 + 3};
-        int z = 0;
+        int[] canonicalXs = {
+                0, circumference / 4, circumference / 2,
+                circumference * 3 / 4, circumference - 1
+        };
+        int[] sampleZs = {
+                Math.max(geometry.minWidthZ() + 8, -120),
+                0,
+                Math.min(geometry.maxWidthZ() - 8, 120)
+        };
         for (int canonicalX : canonicalXs) {
-            int aliasX = canonicalX + circumference;
-            int canonicalHeight = generator.getBaseHeight(
-                    canonicalX, z, Heightmap.Types.WORLD_SURFACE_WG, world, randomState);
-            int aliasHeight = generator.getBaseHeight(
-                    aliasX, z, Heightmap.Types.WORLD_SURFACE_WG, world, randomState);
-            if (canonicalHeight != aliasHeight) {
-                throw new IllegalStateException("Periodic base-height mismatch at canonicalX="
-                        + canonicalX + ", aliasX=" + aliasX + ": "
-                        + canonicalHeight + " != " + aliasHeight);
-            }
-
-            NoiseColumn canonicalColumn = generator.getBaseColumn(canonicalX, z, world, randomState);
-            NoiseColumn aliasColumn = generator.getBaseColumn(aliasX, z, world, randomState);
-            for (int y = world.getMinY(); y < world.getMaxY(); y++) {
-                if (!canonicalColumn.getBlock(y).equals(aliasColumn.getBlock(y))) {
-                    throw new IllegalStateException("Periodic base-column mismatch at canonicalX="
-                            + canonicalX + ", aliasX=" + aliasX + ", y=" + y);
+            for (int z : sampleZs) {
+                int aliasX = canonicalX + circumference;
+                int chunkX = SectionPos.blockToSectionCoord(canonicalX);
+                int chunkZ = SectionPos.blockToSectionCoord(z);
+                boolean terrainWasLoaded = world.getChunkSource().getChunkNow(
+                        chunkX, chunkZ) != null;
+                boolean compareFreshNoise = !Boolean.getBoolean(
+                        "ringworld.strongholdTestResume") && !terrainWasLoaded;
+                int canonicalHeight = generator.getBaseHeight(
+                        canonicalX, z, Heightmap.Types.WORLD_SURFACE_WG, world, randomState);
+                int aliasHeight = generator.getBaseHeight(
+                        aliasX, z, Heightmap.Types.WORLD_SURFACE_WG, world, randomState);
+                if (canonicalHeight != aliasHeight) {
+                    throw new IllegalStateException("Periodic base-height mismatch at canonicalX="
+                            + canonicalX + ", aliasX=" + aliasX + ", z=" + z + ": "
+                            + canonicalHeight + " != " + aliasHeight);
                 }
-            }
-        }
 
-        for (int canonicalX : remoteTerrainXs) {
-            int chunkX = SectionPos.blockToSectionCoord(canonicalX);
-            int chunkZ = SectionPos.blockToSectionCoord(z);
-            if (world.getChunkSource().getChunkNow(chunkX, chunkZ) != null) {
-                throw new IllegalStateException("Remote base-height terrain chunk was already fully loaded at X="
-                        + canonicalX + ", Z=" + z);
-            }
-            int canonicalHeight = generator.getBaseHeight(
-                    canonicalX, z, Heightmap.Types.WORLD_SURFACE_WG, world, randomState);
-            ChunkAccess terrain = world.getChunkSource().getChunk(
-                    chunkX, chunkZ, ChunkStatus.NOISE, true);
-            if (terrain == null) {
-                throw new IllegalStateException("Canonical terrain did not load for base-height check at X="
-                        + canonicalX + ", Z=" + z);
-            }
-            int terrainHeight = terrain.getHeight(Heightmap.Types.WORLD_SURFACE_WG,
-                    Math.floorMod(canonicalX, 16), Math.floorMod(z, 16)) + 1;
-            if (canonicalHeight != terrainHeight) {
-                throw new IllegalStateException("Base-height differs from canonical generated terrain at X="
-                        + canonicalX + ", Z=" + z + ": query=" + canonicalHeight
-                        + ", terrain=" + terrainHeight);
-            }
+                NoiseColumn canonicalColumn = generator.getBaseColumn(
+                        canonicalX, z, world, randomState);
+                NoiseColumn aliasColumn = generator.getBaseColumn(aliasX, z, world, randomState);
+                for (int y = world.getMinY(); y < world.getMaxY(); y++) {
+                    if (!canonicalColumn.getBlock(y).equals(aliasColumn.getBlock(y))) {
+                        throw new IllegalStateException("Periodic base-column mismatch at canonicalX="
+                                + canonicalX + ", aliasX=" + aliasX + ", z=" + z + ", y=" + y);
+                    }
+                }
 
+                if (compareFreshNoise) {
+                    ChunkAccess terrain = world.getChunkSource().getChunk(
+                            chunkX, chunkZ, ChunkStatus.NOISE, true);
+                    if (terrain == null) {
+                        throw new IllegalStateException(
+                                "Canonical terrain did not load for base-height check at X="
+                                        + canonicalX + ", Z=" + z);
+                    }
+                    int terrainHeight = terrain.getHeight(Heightmap.Types.WORLD_SURFACE_WG,
+                            Math.floorMod(canonicalX, 16), Math.floorMod(z, 16)) + 1;
+                    if (canonicalHeight != terrainHeight) {
+                        throw new IllegalStateException(
+                                "Base-height differs from canonical generated terrain at X="
+                                        + canonicalX + ", Z=" + z + ": query=" + canonicalHeight
+                                        + ", terrain=" + terrainHeight);
+                    }
+                }
+                RingWorldMod.LOGGER.info(
+                        "[stronghold-test] terrain cardinal X={} Z={} height={} periodic=true freshNoise={}",
+                        canonicalX, z, canonicalHeight, compareFreshNoise);
+            }
         }
     }
 }

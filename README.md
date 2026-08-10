@@ -16,7 +16,7 @@ The Nether and End remain vanilla.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> and the current suite passes 291 unit/parameterized cases per loader.
+> and the current suite passes 307 unit/parameterized cases per loader.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -68,9 +68,9 @@ and promotion approval.
 
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
-> Java 25 module builds with the same 291 tests; its dedicated server reaches
+> Java 25 module builds with the same 307 tests; its dedicated server reaches
 > `Done` and starts/progresses an atlas. Its client now loads the shared
-> resources/shaders and mixins, acknowledges settings format 2, streams atlas
+> resources/shaders and mixins, acknowledges settings format 3, streams atlas
 > metadata/tiles, and renders the complete textured surface in a copied
 > 16,384×256 integrated world. The verified gate captures tangent, live/LOD
 > handoff, and radial views with measured frame pacing at noon, dusk, night,
@@ -260,7 +260,7 @@ The parallel NeoForge module uses the same Java 25 toolchain:
 ./gradlew :neoforge:test :neoforge:build --console=plain
 ```
 
-Both Fabric and NeoForge builds pass 291 unit/parameterized cases per loader.
+Both Fabric and NeoForge builds pass 307 unit/parameterized cases per loader.
 When launching a dedicated development server, use the qualified task
 for the intended loader: `./gradlew :runServer` for Fabric or
 `./gradlew :neoforge:runServer` for NeoForge. Do not use an unqualified
@@ -373,8 +373,10 @@ The current build includes:
   chunk transition and local-client bed positions projected into the current
   presentation chart;
 - continuous client charts and natural player/vehicle seam folding;
-- periodic density-noise sampling, including canonicalized structure
-  base-height/base-column queries, and canonical seam-crossing worldgen writes;
+- versioned periodic density-noise sampling: existing alpha worlds retain their
+  exact legacy mapping, while fresh worlds use an orthogonal annular mapping
+  that removes quarter-ring terrain banding; structure base-height/base-column
+  queries and canonical seam-crossing worldgen writes use the same selection;
 - finite exterior void and five-block textured, breakable rims;
 - curved terrain, entity, block-entity, interaction-overlay, cloud, frustum,
   and section-visibility handling;

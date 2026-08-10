@@ -93,7 +93,11 @@ width, circumference, generator seed, wall height, surface reference, format ver
 
 Every saved layout field takes precedence on subsequent loads. Changing
 bootstrap dimensions or wall height does not resize or redecorate an existing
-RingWorld. Format-1 saves migrate to format 2 with surface reference Y=64.
+RingWorld. Format-1 and format-2 saves migrate to format 3 with surface
+reference Y=64 and their legacy terrain-noise mapping preserved. Fresh worlds
+use the corrected annular mapping. This prevents unexplored chunks in an alpha
+world from changing terrain algorithms after an update. The mapping is part of
+the atlas world hash, so an incompatible cached atlas is discarded and rebuilt.
 
 Minecraft 26.1 stores RingWorld settings at:
 
@@ -279,9 +283,11 @@ For a new production-default disposable world, add
 NeoForge provides equivalent `ringNeoForgeHeadlessPrewarmCircumference` and
 `ringNeoForgeHeadlessPrewarmWidth` properties.
 
-Fabric's exact production prewarm completed successfully on 2026-08-06. The
-recorded NeoForge prewarm evidence is safe-small; do not describe it as a
-production prewarm until that distinct run completes.
+Fresh format-3 production prewarms completed successfully on both loaders on
+2026-08-10. Fabric generated all 16,384 chunks / 65,536 cells in 38m16s at
+about 29 cells/s; NeoForge completed the same totals in 41m at about 27
+cells/s. Both wrote schema-2 `COMPLETE` reports with mapping `2`, saved normally,
+and then passed a separate complete-atlas resume/load run.
 
 The second form copies `run/saves/<save-folder-id>` to the ignored
 `run-headless-prewarm/world`; it never opens or modifies the source. The first
@@ -290,9 +296,10 @@ server world directory, disable empty-server pausing, reject an accepted join
 immediately, and write atomic
 JSON under `world/ringworld-prewarm/`: `progress.json` every 20 ticks and
 `result.json` on `COMPLETE`, `FAILED`, `INTERRUPTED`, or `REJECTED`. Reports
-carry schema version, elapsed time, exact durable chunks/cells, world hash,
-layout fingerprint, atlas path, rate/ETA/error where relevant, and a failure
-reason. A rejected startup has `identityAvailable:false` and zero/null identity
+carry schema version 2, elapsed time, exact durable chunks/cells, world hash,
+layout fingerprint, explicit terrain-noise mapping, atlas path, rate/ETA/error
+where relevant, and a failure reason. A rejected startup has
+`identityAvailable:false` and zero/null identity
 sentinels. An external SIGTERM cancels/releases an outstanding atlas chunk
 request without resolving a possibly evicted chunk-cache result, then
 checkpoints before writing `INTERRUPTED`; rerun with
@@ -304,8 +311,15 @@ exit zero after a failed run. Both the dedicated coordinator and Gradle fixture
 delete the selected old result/progress files before every launch (including
 resume), then parse schema version, identity, atlas path, and exact complete
 totals rather than trusting stale text. Do not
-add the headless JVM option to an ordinary
-service unit or point it at a production/source world.
+add the headless JVM option to an ordinary service unit or point it at a
+production/source world.
+
+Fresh and normal resumed format-3 runs default to expected mapping `2`
+(annular). To verify an intentionally copied legacy alpha world, pass
+`-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1` for Fabric or
+`-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping=1` for NeoForge.
+The verifier rejects any terminal report whose explicit mapping differs from
+that expectation.
 
 An ordinary copied world with existing region files and no RingWorld settings
 is rejected during `ServerLevel` construction, before the normal Fabric level
@@ -353,7 +367,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite passes 290 unit/parameterized cases per loader. The historical Phase 2
+The current suite passes 307 unit/parameterized cases per loader. The historical Phase 2
 95-error inventory and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
 release candidates until the remaining runtime gates pass.

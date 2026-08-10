@@ -58,9 +58,11 @@ preserve the same saved-data and network formats. The shared client
 sends/capability checks and teardown loader-neutral; each loader supplies its
 own narrow transport and lifecycle registration. NeoForge also registers the
 shared ring-surface render pipeline in its client event and packages the shared
-client mixins and resources. Its 26.1.2.87 client has loaded those resources,
-acknowledged format 2, and passed a complete-atlas tangent/handoff/radial
-projection gate in a copied production integrated world. The seam/rim,
+client mixins and resources. Its 26.1.2.87 client loaded those resources,
+acknowledged the historical alpha-3 format 2, and passed a complete-atlas
+tangent/handoff/radial projection gate in a copied production integrated
+world. Fresh release-candidate evidence must instead acknowledge format 3 and
+the corrected annular terrain mapping. The seam/rim,
 time/weather, lifecycle, worldgen/structure, headless-atlas, and dedicated
 two-client gameplay gates also pass. Local Fabric and NeoForge package parity
 is complete; distributed artifacts remain Fabric-only until final candidate
@@ -380,18 +382,28 @@ the new chart.
 
 ### Periodic terrain noise
 
-The worldgen noise domain itself is cylindrical, not merely repeated flat
-noise. For source intrinsic `(x,z)`:
+The worldgen noise domain itself is periodic, not merely repeated flat noise.
+Fresh format-3 worlds use an orthogonal annular embedding. For source intrinsic
+`(x,z)`:
 
 ```text
 θ = 2π * floorMod(x,C) / C
-noiseX = round(R * sin(θ))
-noiseZ = z + round(R * cos(θ))
+ρ = R + z
+noiseX = round(ρ * sin(θ))
+noiseZ = round(ρ * cos(θ))
 ```
 
 Y is unchanged.
 
-`RingNoiseCoordinates` precomputes these values when `C <= 1,048,576`.
+This mapping has orthogonal circumference and width derivatives everywhere in
+the admitted band. It replaces the alpha mapping, whose `noiseX` ignored Z and
+whose Jacobian collapsed at quarter-ring longitudes, producing visible terrain
+banding. Saved formats 1 and 2 are upgraded to format 3 with the exact legacy
+mapping retained; only newly created worlds select annular terrain. Mapping
+identity is persisted, handshaken, fingerprinted, and included in the atlas
+world hash, so a client cannot reuse an atlas generated for the other mapping.
+
+`RingNoiseCoordinates` precomputes sine/cosine values when `C <= 1,048,576`.
 `RingNoiseRouter` applies them only to density functions tagged as actual
 horizontal-coordinate consumers. Vanilla caches, interpolation wrappers,
 aquifer-local coordinates, and the identity of `NoiseChunk` remain
