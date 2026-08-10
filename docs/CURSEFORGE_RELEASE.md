@@ -5,7 +5,21 @@ CurseForge project `1645598` is the official RingWorld Minecraft Mod listing:
 first files were submitted for moderation on 2026-08-09. CurseForge may keep
 the public page unavailable until moderation is complete.
 
-## Current alpha 3 uploads
+## Current 1.0 uploads
+
+On 2026-08-10 the owner-authorized 1.0 files were submitted as `Release`:
+
+| Loader | Display name | SHA-256 | Current host state |
+| --- | --- | --- | --- |
+| Fabric | `RingWorld 1.0 for Fabric` | `ec06f6dbf81a6ac1c662f87f2fdb6a3d30297222e61da7094212b125a568c421` | Under Review |
+| NeoForge | `RingWorld 1.0 for NeoForge` | `ad818e6aec7aaf64f4d0618975c667d8b9163965e83e32408d8fc98797e700d5` | Baking |
+
+Both use exact source commit `f3a5ce12a3d72a7e2253e893ca385e27f3fe7448`.
+Fabric declares Fabric API project `306612` as a required dependency;
+NeoForge has no external relation. These states may advance asynchronously
+through CurseForge review without another source change.
+
+## Historical alpha 3 uploads
 
 The owner-authorized Fabric and NeoForge alpha 3 uploads use the same exact
 runtime jars and corresponding source as the verified Modrinth files:

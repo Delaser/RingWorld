@@ -72,21 +72,16 @@ resource/frame-pacing review. The P1–P4 topology, worldgen, protocol, and
 renderer architecture parents are closed. Optional convenience packaging has
 passing macOS in-place, empty-data macOS first-run, dedicated-server, and real
 Windows owner smokes. Owner gameplay, visual, Windows, and independent review
-gates are complete; the active source prepares the matched 1.0 release. Broad
+gates are complete; matched 1.0 artifacts are published. Broad
 compatibility work remains post-release. See
 `docs/CURRENT_STATE.md` and `docs/VISUAL_HANDOFF_REVIEW_2026-08-01.md`.
-Exact Fabric and NeoForge alpha 3 files are uploaded while the Modrinth project
-remains **Under review**. The same verified jars were submitted to CurseForge
-project `1645598` on 2026-08-09 and are awaiting file/project moderation; see
-`docs/CURSEFORGE_RELEASE.md`. Those uploads do not make the remaining port
-gates complete. Separate self-updating Fabric and NeoForge Windows alpha-4
-test installers are available only on the unlisted showcase alpha page. They
-derive from merged source commit `622fb76`; their exact package hashes and
-remaining owner checks are recorded in `docs/CURRENT_STATE.md` and
-`docs/OWNER_ALPHA4_SIGNOFF_2026-08-10.md`. The approved
-next order is NeoForge standalone parity, standalone gameplay/visual polish,
-then exact-candidate release preparation. Broad third-party compatibility is
-deferred until owner sign-off; see `docs/DUAL_LOADER_STANDALONE_PLAN.md`.
+Exact Fabric and NeoForge 1.0 Release files were published to Modrinth on
+2026-08-10 from tag `v1.0.0+mc26.1.2` / commit `f3a5ce1`. Matching CurseForge
+Release files are submitted and may remain Baking or Under Review; see
+`docs/CURSEFORGE_RELEASE.md`. Separate self-updating Fabric and NeoForge 1.0
+Windows installers are available only on the unlisted showcase alpha page.
+Broad third-party compatibility remains the post-release priority; see
+`docs/DUAL_LOADER_STANDALONE_PLAN.md`.
 The current dual-loader candidate's validated code baseline is public commit
 `967759be872080a72e48bd26f7a97df9ee0a0302`; its exact jar/package hashes,
 machine evidence, and remaining human gates are recorded in
@@ -129,9 +124,9 @@ agent uses a separate account and must monitor its own allowance.
 ## What this project is
 
 RingWorld is a dual-loader mod ported from Minecraft Java 1.21.11 to 26.1.2.
-Fabric and NeoForge are uploaded as matched alpha 3 test builds. Runtime and
-local packaging parity are complete, but owner and independent release gates
-remain.
+Fabric and NeoForge are published as matched 1.0 builds. Runtime, packaging,
+owner, and independent release gates are complete; broad compatibility work
+remains.
 The validated design turns only the Overworld into a finite band:
 
 - canonical X runs around the circumference and is periodic;
@@ -179,10 +174,9 @@ under it.
 
 ## Loader support policy
 
-Fabric and NeoForge are current hosted-test implementations. NeoForge has full
+Fabric and NeoForge are current supported loaders. NeoForge has full
 graphical, dedicated-server, topology, worldgen, atlas, storage, multiplayer,
-and local packaging parity; promotion beyond the uploaded alpha is not yet
-authorized. Future
+and local packaging parity and is published at 1.0. Future
 development must not deepen Fabric coupling. Design new gameplay, topology, persistence,
 worldgen, rendering math, protocol models, and tests as loader-agnostic common
 code. When a loader API is unavoidable, isolate it behind a narrow platform
