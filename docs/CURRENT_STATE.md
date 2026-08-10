@@ -80,7 +80,9 @@ owner visual review remains before promotion.
 The prepared next-upload metadata uses distinct public alpha-4 identifiers for
 Fabric and NeoForge while retaining the shared `0.2.0+mc26.1.2` jar metadata.
 The staging gate rejects the generic artifact version as a public identifier,
-but still performs no upload or listing mutation.
+but still performs no upload or listing mutation. The exact owner review is
+recorded in `OWNER_ALPHA4_SIGNOFF_2026-08-10.md`; it keeps merge, hosted upload,
+and live-demo deployment as separate decisions.
 
 The 2026-08-10 fresh-candidate graphical runs used the independently generated
 production worlds rather than an alpha save. Fabric and NeoForge each loaded

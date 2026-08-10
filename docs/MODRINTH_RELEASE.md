@@ -104,7 +104,8 @@ frozen Fabric and NeoForge SHA-256 values, and passed the distribution/licence
 verifier. Complete the owner checklist in
 `OWNER_RELEASE_SIGNOFF_2026-08-09.md` before promotion or live deployment.
 The alpha-4 metadata and changelogs are preparation only; they do not authorize
-an upload.
+an upload. Use [`OWNER_ALPHA4_SIGNOFF_2026-08-10.md`](OWNER_ALPHA4_SIGNOFF_2026-08-10.md)
+for the exact candidate review; the older alpha-3 checklist remains historical.
 
 ### Non-graphical dedicated-server smoke
 

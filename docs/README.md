@@ -92,8 +92,11 @@ Start here:
 - [`CURSEFORGE_RELEASE.md`](CURSEFORGE_RELEASE.md): official CurseForge
   project metadata, current alpha uploads, loader relations, and manual upload
   checklist.
+- [`OWNER_ALPHA4_SIGNOFF_2026-08-10.md`](OWNER_ALPHA4_SIGNOFF_2026-08-10.md):
+  exact prepared alpha-4 gameplay, visual, seam-regression, Windows, and
+  go/no-go checklist.
 - [`OWNER_RELEASE_SIGNOFF_2026-08-09.md`](OWNER_RELEASE_SIGNOFF_2026-08-09.md):
-  exact alpha 3 owner gameplay, visual, Windows, and go/no-go checklist.
+  historical exact alpha-3 owner checklist.
 - [`CURRENT_STATE.md`](CURRENT_STATE.md): implemented features, deliberate
   boundaries, known defects, and recommended next work.
 
