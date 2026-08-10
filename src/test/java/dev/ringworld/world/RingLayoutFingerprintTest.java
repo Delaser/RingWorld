@@ -36,6 +36,10 @@ class RingLayoutFingerprintTest {
         assertNotEquals(baseline, RingLayoutFingerprint.compute(416, 2_048, 123L, 160, 64,
                 RingTerrainNoiseMapping.LEGACY_AXIAL, 3));
         assertNotEquals(baseline, RingLayoutFingerprint.compute(416, 2_048, 123L, 160, 64,
+                RingTerrainNoiseMapping.ANNULAR_COMPLETE, 3));
+        assertNotEquals(baseline, RingLayoutFingerprint.compute(416, 2_048, 123L, 160, 64,
+                RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2, 3));
+        assertNotEquals(baseline, RingLayoutFingerprint.compute(416, 2_048, 123L, 160, 64,
                 RingTerrainNoiseMapping.LEGACY_AXIAL, 2));
     }
 }

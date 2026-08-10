@@ -433,9 +433,10 @@ same payload layouts and call the loader-neutral model/service.
   elapsed time, explicit terrain-noise mapping, exact durable canonical chunks/cells, atlas path, and failure
   reason. Rejected startup declares `identityAvailable:false` and documented
   zero/null identity sentinels rather than inventing a layout.
-- Loader finalizers require the explicit expected mapping: annular v2 by
+- Loader finalizers require the explicit expected mapping: complete annular v3 by
   default, or legacy axial v1 only when an operator deliberately supplies the
-  loader-specific expected-mapping property for a copied alpha world.
+  loader-specific expected-mapping property for a copied alpha world. Persisted
+  annular-v2 worlds remain readable only when that mapping is selected explicitly.
 - The JSON writer is Gson-backed, including explicit `null` fields and complete
   escaping for control characters in an error message; a report-write failure
   is a controlled checkpoint/failure/halt path rather than an uncaught server

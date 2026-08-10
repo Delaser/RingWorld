@@ -20,7 +20,7 @@ not create an exterior Overworld portal or strand the player in void.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> and the current suite passes 318 unit/parameterized cases per loader.
+> and the current suite passes 337 unit/parameterized cases per loader.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -79,7 +79,7 @@ and promotion approval.
 
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
-> Java 25 module builds with the same 318 tests; its dedicated server reaches
+> Java 25 module builds with the same 337 tests; its dedicated server reaches
 > `Done` and starts/progresses an atlas. Its client now loads the shared
 > resources/shaders and mixins, acknowledges settings format 3, streams atlas
 > metadata/tiles, and renders the complete textured surface in a copied
@@ -156,6 +156,9 @@ service-control capability.
 - **A complete ring overhead.** A lightweight terrain-atlas proxy continues
   beyond ordinary chunk distance, through the zenith, and back to the opposite
   horizon.
+- **Visible generation progress.** While that Atlas is incomplete, a compact
+  top-left `Ring Atlas Generating: X%` indicator tracks whole-percent progress
+  and disappears automatically at completion.
 - **Finite width.** The playable band ends at two thick, finite-height
   cobblestone and mossy-cobblestone rims. They are breakable; leaving the ring
   is allowed.
@@ -164,7 +167,8 @@ service-control capability.
   rendered as a cylinder.
 - **Ringworld sky.** The sun is small, fixed toward the ring centre, and
   changes brightness and colour through a global Minecraft day/night cycle.
-  Clouds follow the same cylindrical geometry as the terrain.
+  Clouds follow the same cylindrical geometry as the terrain and stop at the
+  inner faces of the finite rim walls.
 
 ## How the true loop works
 
@@ -185,6 +189,15 @@ RingWorld separates storage, presentation, and rendering:
 This is why the seam can contain visible players, mobs, vehicles, blocks, and
 interactions rather than acting like a portal between two distant borders.
 
+Fresh worlds persist complete annular mapping v2, which makes biome, density,
+surface, carver, structure-height, and vanilla direct blended-noise sampling
+periodic together.
+Worlds created by older alpha builds retain their historical mapping rather
+than silently changing how unexplored chunks generate. Press F3 in the
+Overworld and check the RingWorld `Worldgen` line: new-world seam evidence
+must show `annular-complete-v2 (4)`. Mapping 1, 2, or 3 identifies an older
+world whose unexplored terrain deliberately retains its original generator.
+
 The complete coordinate model and data flow are documented in
 [Architecture](docs/ARCHITECTURE.md) and
 [Network protocol and client charts](docs/NETWORK_PROTOCOL.md).
@@ -198,9 +211,15 @@ and `0 -> C-1` directions. RingWorld does not force the client to load the
 entire circumference as vanilla chunks.
 
 Instead, the server incrementally samples generated surface height and colour
-into a periodic terrain atlas. The client progressively reveals trustworthy
-atlas cells while generation runs, leaving missing regions transparent, then
-upgrades once to the full-detail texture and terrain-height mesh at completion.
+into a periodic terrain atlas. From the first metadata frame, the client draws
+an opaque world-hash-seeded fallback ring and temporary curved rim returns.
+Received cells softly flavour nearby unknown terrain with their real surface
+palette. A dense progress-driven haze hides the approximation at low coverage,
+then clears continuously as the Atlas fills. Each published revision
+cross-fades over 750 ms; completion removes all placeholder influence and haze
+and upgrades once to the exact full-detail texture and terrain-height mesh.
+Temporary rim returns use a cobble/moss treatment instead of sampling green
+terrain colour.
 Real terrain cross-fades into this proxy near the configured render distance.
 
 On the server, one Overworld-owned pregeneration service is the only atlas
@@ -215,7 +234,9 @@ durable monotonic revision, so an exact reconnect reuses its cache while a
 stale reconnect safely downloads the authoritative surface again.
 
 In a loaded RingWorld Overworld, the pause menu includes **RingWorld Map**.
-It shows authoritative atlas progress and lets the integrated-world owner or a
+Its header identifies the embedded alpha/artifact build, and its first status
+line identifies the saved world's terrain mapping. It shows authoritative
+atlas progress and lets the integrated-world owner or a
 dedicated-server gamemaster confirm **Generate Entire Ring**, pause, resume, or
 cancel it. Closing the map returns to play while generation continues. Other
 players receive read-only status; complete atlases cannot be regenerated from
@@ -273,7 +294,7 @@ The parallel NeoForge module uses the same Java 25 toolchain:
 ./gradlew :neoforge:test :neoforge:build --console=plain
 ```
 
-Both Fabric and NeoForge builds pass 318 unit/parameterized cases per loader.
+Both Fabric and NeoForge builds pass 337 unit/parameterized cases per loader.
 When launching a dedicated development server, use the qualified task
 for the intended loader: `./gradlew :runServer` for Fabric or
 `./gradlew :neoforge:runServer` for NeoForge. Do not use an unqualified

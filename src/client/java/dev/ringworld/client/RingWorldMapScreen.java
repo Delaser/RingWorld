@@ -1,8 +1,10 @@
 package dev.ringworld.client;
 
+import dev.ringworld.RingWorldBuildIdentity;
 import dev.ringworld.world.AtlasPregenerationAction;
 import dev.ringworld.world.AtlasPregenerationStatus;
 import dev.ringworld.world.AtlasPregenerationView;
+import dev.ringworld.world.RingTerrainNoiseMapping;
 import java.util.Optional;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -110,6 +112,16 @@ public final class RingWorldMapScreen extends Screen {
         AtlasPregenerationClientState.status().ifPresent(this::confirmStart);
     }
 
+    /** Package-local build identity hook for the real menu fixture. */
+    String buildLabelForAutomation() {
+        return RingWorldBuildIdentity.displayLabel();
+    }
+
+    /** Package-local saved-world identity hook for the real menu fixture. */
+    String worldgenLabelForAutomation() {
+        return worldgenLabel();
+    }
+
     @Override
     public void onClose() {
         // Do not return to PauseScreen: this is intentionally a backgroundable
@@ -122,6 +134,8 @@ public final class RingWorldMapScreen extends Screen {
         super.extractRenderState(context, mouseX, mouseY, deltaTicks);
         int center = width / 2;
         context.centeredText(font, title, center, 18, 0xFFFFFFFF);
+        context.centeredText(font, Component.literal(RingWorldBuildIdentity.displayLabel()),
+                center, 30, 0xFF909090);
         Optional<AtlasPregenerationStatus> current = AtlasPregenerationClientState.status();
         if (current.isEmpty()) {
             context.centeredText(font, Component.literal("Requesting authoritative generation status…"), center, 55, 0xFFD0D0D0);
@@ -129,18 +143,24 @@ public final class RingWorldMapScreen extends Screen {
         }
         AtlasPregenerationView view = AtlasPregenerationView.from(current.get());
         String[] lines = {
-                "Dimensions: " + view.dimensions(), view.chunks(), view.cells(),
+                worldgenLabel(), "Dimensions: " + view.dimensions(), view.chunks(), view.cells(),
                 "State: " + view.state(), "Elapsed: " + view.elapsed(),
                 "Rate: " + view.rate(), "ETA: " + view.eta()
         };
         for (int i = 0; i < lines.length; i++) {
-            context.centeredText(font, Component.literal(lines[i]), center, 45 + i * 15, 0xFFD0D0D0);
+            context.centeredText(font, Component.literal(lines[i]), center, 43 + i * 15, 0xFFD0D0D0);
         }
         if (!current.get().canControl()) {
             context.centeredText(font, Component.literal("Read-only: ask the owner or a gamemaster to control generation."),
-                    center, 158, 0xFFFFD060);
+                    center, 162, 0xFFFFD060);
         } else if (!view.error().isEmpty()) {
-            context.centeredText(font, Component.literal(view.error()), center, 158, 0xFFFF8080);
+            context.centeredText(font, Component.literal(view.error()), center, 162, 0xFFFF8080);
         }
+    }
+
+    private static String worldgenLabel() {
+        int mapping = ClientRingState.terrainNoiseMapping();
+        return "Worldgen: " + RingTerrainNoiseMapping.diagnosticName(mapping)
+                + " (" + mapping + ")";
     }
 }

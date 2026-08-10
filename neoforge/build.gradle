@@ -265,6 +265,14 @@ tasks.withType(Jar).configureEach {
     }
 }
 
+tasks.named('processResources') {
+    inputs.property 'version', project.version
+    inputs.property 'release_label', rootProject.release_label
+    filesMatching('ringworld-build.properties') {
+        expand version: project.version, release_label: rootProject.release_label
+    }
+}
+
 def checkedProjectionSaveId = { String value, String propertyName ->
     def saveId = value == null ? '' : value.trim()
     if (saveId.isEmpty() || saveId == '.' || saveId == '..'
@@ -884,9 +892,9 @@ tasks.register('verifyNeoForgeHeadlessPrewarm') {
         def resultName = providers.gradleProperty('ringNeoForgeHeadlessPrewarmResult').orElse('result.json').get().trim()
         def expectedCircumference = providers.gradleProperty('ringNeoForgeHeadlessPrewarmCircumference').orElse('2048').get().toInteger()
         def expectedWidth = providers.gradleProperty('ringNeoForgeHeadlessPrewarmWidth').orElse('416').get().toInteger()
-        def expectedMapping = providers.gradleProperty('ringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping').orElse('2').get().toInteger()
-        if (!(expectedMapping in [1, 2])) {
-            throw new GradleException('-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping must be 1 or 2')
+        def expectedMapping = providers.gradleProperty('ringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping').orElse('4').get().toInteger()
+        if (!(expectedMapping in [1, 2, 3, 4])) {
+            throw new GradleException('-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping must be 1, 2, 3, or 4')
         }
         def result = new File(neoForgeHeadlessPrewarmRun, "world/ringworld-prewarm/${resultName}")
         if (!result.isFile()) {
@@ -1046,7 +1054,7 @@ tasks.register('verifyNeoForgeProductionVisualParityClient') {
         if (!sampleMatcher.find() || sampleMatcher.group(1).toInteger() <= 0) {
             throw new GradleException("NeoForge visual-parity capture recorded no seam-motion frame samples; inspect ${logFile}")
         }
-        ['seam', 'min-rim', 'max-rim'].each { view ->
+        ['seam', 'seam-join', 'min-rim', 'max-rim'].each { view ->
             def screenshot = new File(neoForgeVisualParityRun,
                     "screenshots/ringworld-visual-parity-${view}.png")
             if (!screenshot.isFile()) {

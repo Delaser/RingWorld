@@ -56,6 +56,7 @@ SOURCE_URL_PLACEHOLDER = "{{RINGWORLD_CORRESPONDING_SOURCE_URL}}"
 COMPATIBILITY_API_VERSION = 1
 REQUIRED_BUILD_JAVA = 25
 ARTIFACT_VERSION = "0.2.0+mc26.1.2"
+RELEASE_LABEL = "Alpha 4"
 JAVA_VERSION_PATTERN = re.compile(r'\b(?:java|openjdk) version "(?:1\.)?(\d+)')
 LOADERS = {"fabric", "neoforge"}
 PUBLIC_ALPHA_VERSION = {
@@ -288,6 +289,29 @@ def ringworld_mod(metadata: dict) -> dict:
     return matches[0]
 
 
+def read_build_identity(archive: zipfile.ZipFile) -> dict[str, str]:
+    name = "ringworld-build.properties"
+    try:
+        text = archive.read(name).decode("utf-8")
+    except KeyError as exc:
+        raise VerificationError(f"runtime jar missing {name}") from exc
+    except UnicodeDecodeError as exc:
+        raise VerificationError(f"runtime jar has invalid UTF-8 in {name}") from exc
+    values: dict[str, str] = {}
+    for line_number, raw in enumerate(text.splitlines(), start=1):
+        line = raw.strip()
+        if not line or line.startswith(("#", "!")):
+            continue
+        key, separator, value = line.partition("=")
+        key, value = key.strip(), value.strip()
+        if not separator or not key or key in values:
+            raise VerificationError(f"{name}:{line_number}: malformed or duplicate build property")
+        values[key] = value
+    require_equal(f"{name} artifactVersion", values.get("artifactVersion"), ARTIFACT_VERSION)
+    require_equal(f"{name} releaseLabel", values.get("releaseLabel"), RELEASE_LABEL)
+    return values
+
+
 def required_neoforge_dependency(metadata: dict, mod_id: str) -> dict:
     dependencies = metadata.get("dependencies")
     if not isinstance(dependencies, dict):
@@ -316,6 +340,7 @@ def validate_runtime_jar(jar_path: Path, config: dict, expected_license: bytes, 
             if required not in names:
                 raise VerificationError(f"runtime jar missing {required}")
         _, metadata = read_jar_metadata(archive, str(jar_path), loader=loader)
+        read_build_identity(archive)
         for name in names:
             if not name.endswith("/") and PRIVATE_KEY_PATTERN.search(archive.read(name)):
                 raise VerificationError(f"runtime jar contains private-key material: {name}")

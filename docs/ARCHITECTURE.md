@@ -426,7 +426,12 @@ the new chart.
 ### Periodic terrain noise
 
 The worldgen noise domain itself is periodic, not merely repeated flat noise.
-Fresh format-3 worlds use an orthogonal annular embedding. For source intrinsic
+Fresh worlds use persisted mapping 4 (`ANNULAR_COMPLETE_V2`). Mapping 3
+preserves the earlier complete-annular implementation and mapping 2 preserves
+the first annular implementation for existing format-3 saves. All use an
+orthogonal annular embedding. Mapping 4 additionally applies that embedding to
+vanilla's direct `BlendedNoise` density leaf; leaving that one sampler flat was
+enough to create a deterministic wall at X=16383/0 for some seeds. For source intrinsic
 `(x,z)`:
 
 ```text
@@ -460,7 +465,13 @@ structure's canonical intrinsic X/Z therefore samples the same cylindrical
 noise column as the eventual terrain beneath it, including when a caller asks
 through an X+C presentation alias.
 
-This makes density meet at X=0/C while retaining vanilla terrain machinery.
+Mapping 3 additionally carries the same coordinates into vanilla surface
+depth/secondary rules, noise-threshold rules, badlands pillars and bands,
+frozen-ocean icebergs, and canonical carver seed identities. This removes the
+raw `C-1 -> 0` surface discontinuity without post-generation smoothing and
+keeps old mappings bit-compatible.
+
+This makes density and surface generation meet at X=0/C while retaining vanilla terrain machinery.
 It does not automatically prove every coordinate-sensitive structure
 placement algorithm is periodic; structure seam coverage remains incomplete.
 

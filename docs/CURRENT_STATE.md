@@ -43,6 +43,22 @@ staging rather than release promotion. See `CURSEFORGE_RELEASE.md`.
 The CurseForge media gallery also contains the six approved in-game images
 from the RingWorld showcase page rather than automated diagnostic captures.
 
+On 2026-08-10, the unlisted showcase alpha directory was refreshed from public
+source commit `3384ea8`, including the mapping-4 terrain-seam correction, the
+biome-flavoured incomplete-Atlas placeholder, 750 ms revision morph,
+completion-driven haze, neutral cobble/moss rim returns, and the in-menu
+alpha/worldgen identity. Its Windows Fabric package SHA-256 is
+`31d260ce83e6d19885f8cbf01d5f9fcf2ebf0d60f06605835f1a847170a5cb5b`.
+`https://andwhatnotstudio.com/ringworld/alpha/` now provides a reusable
+manifest-following one-click installer, the same manual ZIP, MPL licence, and
+source manifest. The installer validates manifest identity and the selected
+artifact SHA-256 on every run, so one newly downloaded BAT follows later alpha
+builds without embedding their checksums.
+The packaged server entry is pre-added but is not joined automatically. This
+is a test convenience build, not a Modrinth/CurseForge promotion or 1.0 gate.
+The previous directory is retained outside the document root in the server's
+dated `ringworld-alpha-backups` directory.
+
 Issue #33 now supplies a local fail-closed staging workflow for any later
 manual Fabric upload. It builds and validates exactly one runtime jar, records
 SHA-256/SHA-512 and the clean pushed public-source revision, and rejects stale
@@ -61,12 +77,14 @@ work. It should be updated after every substantial milestone.
 Issue #149 corrects the alpha terrain-banding defect without silently changing
 existing worlds. The legacy axial mapping ignored intrinsic Z in one noise
 axis and its coordinate Jacobian collapsed at quarter-ring longitudes. Fresh
-format-3 worlds now use the orthogonal annular mapping
+worlds created after the seam regression use complete annular mapping v2 (4)
 `((R+Z)sin(theta),(R+Z)cos(theta))`; formats 1 and 2 upgrade with the exact
 legacy mapping retained. Mapping identity is persisted, handshaken on new
 `settings_v3`/`settings_ack_v3` channels, attached to every Overworld noise
 router, fingerprinted, and included in the atlas world hash. Both loader test
-suites pass 318 cases and both fresh 16,384×256 stronghold/worldgen gates pass
+suites pass 337 cases. Mapping 4 also transforms vanilla's direct
+`BlendedNoise` leaf; mappings 1-3 remain preserved historical identities. Both
+fresh 16,384×256 stronghold/worldgen gates previously passed
 the five-longitude, three-width-position terrain/height/alias matrix plus the
 existing biome, seam structure, rim, monument, and portal checks. The uploaded
 alpha-3 jars remain format-2 historical test artifacts; this branch is not yet
@@ -262,14 +280,62 @@ reference as used.
 
 The atlas-priority phase is complete through #70. #66
 records the production and safe-small 6/12/28 visual/performance baseline. #67
-renders trustworthy partial cells immediately with transparent missing sky and
-performs one full-detail transition at completion. #68 introduces disk format
+is superseded by #148: zero-cell and partial Atlases now render an opaque,
+world-hash-seeded fallback, smooth generated-terrain palette influence, and
+temporary curved returns at both inner rim faces. Each published revision
+cross-fades on the GPU for 750 ms. A completion-driven 0.88-strength haze
+clears to zero as the Atlas fills, and temporary returns use neutral
+cobble/moss shading instead of green terrain samples; completion still performs one exact
+full-detail transition. #68 introduces disk format
 6, bounded post-edit cell recapture, monotonic durable revisions, persistent
 complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite passes 318 unit/parameterized cases per loader.
+The active suite passes 337 unit/parameterized cases per loader.
+Fresh production visual-parity runs on 2026-08-10 exercised multiple partial
+Atlas revisions and the two-texture shader on both loaders before completing
+the natural seam and both rim captures. Fabric recorded 831 seam-motion frames
+at 8.65 ms average; NeoForge recorded 855 at 8.41 ms average. Both exited
+cleanly.
+The visual-parity fixture now also requires a look-back capture from X=2 toward
+the C-1 side. Earlier seam captures faced along travel after crossing and were
+not evidence that generated terrain visually joined behind the player.
+The F3 RingWorld group now reports the persisted terrain mapping name and
+number so legacy-world evidence cannot be mistaken for a current
+`annular-complete-v2 (4)` world.
+The RingWorld Map now embeds the same diagnostic in its normal UI, beneath an
+`Alpha 4 · 0.2.0+mc26.1.2` build label generated into both loader jars. Fabric
+passed the complete GUI-scale-4 atlas UI capture/revision fixture with the new
+header on 2026-08-10; both runtime jars carry the same validated identity.
+Fresh production mapping-3 runs passed that seam-join capture on both loaders
+on 2026-08-10. Their real chunk terrain crosses X=16383/0 without a flat
+height wall; Fabric recorded 847 seam-motion frames at 8.49 ms average and
+NeoForge recorded 846 at 8.44 ms average, with one frame over 50 ms each.
+The follow-up progress haze and neutral cobble/moss return shading also passed
+fresh production visual-parity runs on both loaders: Fabric rendered 12.5% and
+71.9% partial states and NeoForge exercised the partial path through 71.9%,
+then both completed their seam and rim captures with one frame over 50 ms.
+Owner review of the deliberately incomplete appearance remains.
+
+Issue #157 clips curved vanilla cloud fragments to `RingCloudBounds` at the
+inner faces of the two five-block rims. The clip is fragment-accurate for
+straddling cells and remains inactive outside a negotiated RingWorld
+Overworld. Issue #158 adds complete annular mapping 3 for fresh worlds: the
+saved density transform is also applied to surface rules, clay/badlands,
+frozen-ocean features, and carver seed identity. Existing mapping-1/2 saves
+remain unchanged. A fresh 2,048×256 Fabric seam-strip matrix reported zero
+height delta for every playable-Z seam column; fresh Fabric and NeoForge
+mapping-3 stronghold/cardinal gates pass.
+
+The uploaded exact seed `-4558730636853595596` then exposed a remaining
+mapping-3 gap: vanilla's direct `BlendedNoise` density leaf still used flat
+X/Z, and the old twelve-block cliff threshold missed its broad nine-block
+join wall. Fresh mapping 4 (`annular-complete-v2`) transforms that leaf too,
+while the strengthened gate rejects average join mismatch above one block.
+Fabric and NeoForge exact-seed 16,384x256 runs pass at average delta
+`0.35365853658536583` instead of the uploaded world's `3.2276`. Existing
+mapping-3 worlds keep their saved generator and are not rewritten.
 
 Issue #147's directional seam-placement loss is fixed at the outbound packet
 ownership boundary. Block-use packets now canonicalize the clicked block and
@@ -302,7 +368,7 @@ resource-pressure boundary tracked by #134, before portal routing ran.
 
 The combined alpha-4 integration branch was then built and exercised as one
 candidate rather than relying only on the four issue branches independently.
-Its clean Fabric and NeoForge builds each pass 318 tests. Fresh Atlas-disabled
+Its clean Fabric and NeoForge builds each pass 337 tests. Fresh Atlas-disabled
 2,048×416 two-client runs on both loaders pass the strict full-matrix verifier
 with settings format 3, both seam-placement directions, the shared 54-slot
 double chest and lossless alias recovery, the four-lap/out-of-width Nether
@@ -674,7 +740,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, with 318 unit/parameterized cases passing per loader, and Loom produces
+temporary shims, with 337 unit/parameterized cases passing per loader, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -900,6 +966,8 @@ and compatibility claims.
   cells through alpha and use one reference-height mesh. Completion performs
   one upgrade to the expanded terrain-height surface; later colour-only
   revisions reuse that mesh and changed height fingerprints rebuild it.
+- A compact top-left `Ring Atlas Generating: X%` indicator reports whole-percent
+  client Atlas coverage while generation is incomplete and disappears at 100%.
 - Live RGB lightmap exposure for the distant surface using the
   full-skylight/no-block-light texel, matching client day/night, weather,
   gamma, lightning, darkness, and night-vision state.
@@ -1015,11 +1083,12 @@ and compatibility claims.
 
 ### Distant surface
 
-- The active far ring fills in from the first trustworthy atlas cells. Missing
-  cells remain transparent rather than fabricating a base-height surface.
+- The active far ring appears at zero cells as a deliberately subdued,
+  world-specific opaque fallback and converges toward received Atlas data.
 - Disconnect and settings-reception paths clear the previous world's GPU mesh
-  and texture. The renderer independently rejects absent, zero-cell, corrupt,
-  and wrong-world atlases, preventing stale terrain during a new world.
+  and texture. The renderer independently rejects absent, corrupt, and
+  wrong-world Atlases while accepting a current zero-cell Atlas as the
+  fallback identity, preventing stale terrain during a new world.
 - Source resolution is one height/surface-colour sample per eight blocks.
 - The client expands colour data but cannot recreate blocks, transparent
   layers, trees, buildings, mobs, or weather volumes.

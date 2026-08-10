@@ -18,6 +18,9 @@ class AtlasPregenerationReportTest {
         assertDoesNotThrow(() -> new AtlasPregenerationReport(2, AtlasPregenerationReportStatus.COMPLETE, true,
                 1L, 2L, RingTerrainNoiseMapping.LEGACY_AXIAL, 3L, 3L, 12, 12,
                 Duration.ofSeconds(2), Optional.of(Path.of("atlas.rwat.gz")), Optional.empty()));
+        assertDoesNotThrow(() -> new AtlasPregenerationReport(2, AtlasPregenerationReportStatus.COMPLETE, true,
+                1L, 2L, RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2, 3L, 3L, 12, 12,
+                Duration.ofSeconds(2), Optional.of(Path.of("atlas.rwat.gz")), Optional.empty()));
         assertThrows(IllegalArgumentException.class, () -> new AtlasPregenerationReport(
                 2, AtlasPregenerationReportStatus.FAILED, true, 1L, 2L,
                 RingTerrainNoiseMapping.ANNULAR, 0L, 3L, 0, 12,

@@ -12,6 +12,12 @@ finite ring can contain every random structure for every seed.
 > expanded cardinal gate also passes at X 0, C/4, C/2, 3C/4, and C-1 across
 > three in-band Z positions. The old numeric table remains provenance for the
 > format-2 alpha rather than being rewritten as new evidence.
+>
+> A later exact-seed regression (`-4558730636853595596`) found that mapping 3
+> had not transformed vanilla's direct `BlendedNoise` leaf. Fresh mapping 4
+> fixes that omission and strengthens the seam audit to reject broad walls
+> below the old twelve-block cliff threshold. Exact 16,384x256 Fabric and
+> NeoForge runs pass; the historical tables below remain unchanged.
 
 ## Command
 

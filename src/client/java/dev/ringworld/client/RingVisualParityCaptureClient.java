@@ -287,7 +287,7 @@ public final class RingVisualParityCaptureClient {
     }
 
     private double cameraY(Minecraft client, CaptureView view) {
-        if (view == CaptureView.SEAM) return SEAM_CAMERA_Y;
+        if (view == CaptureView.SEAM || view == CaptureView.SEAM_JOIN) return SEAM_CAMERA_Y;
         int wallTopExclusive = client.level.getMinY() + ClientRingState.wallHeightBlocks();
         return wallTopExclusive - 8.0;
     }
@@ -325,6 +325,15 @@ public final class RingVisualParityCaptureClient {
             @Override
             Pose pose(RingGeometry geometry) {
                 return new Pose(geometry.circumferenceBlocks() - 4.0, 0.5);
+            }
+        },
+        SEAM_JOIN("seam-join", "ringworld-visual-parity-seam-join.png", 90.0F, 8.0F) {
+            @Override
+            Pose pose(RingGeometry geometry) {
+                // Look back from canonical zero into the C-1 side. The natural
+                // crossing view faces away from this join and cannot reveal a
+                // generated terrain wall left behind the player.
+                return new Pose(2.0, 0.5);
             }
         },
         MIN_RIM("min-rim", "ringworld-visual-parity-min-rim.png", 180.0F, 0.0F) {

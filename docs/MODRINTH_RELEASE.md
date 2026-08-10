@@ -84,6 +84,10 @@ platform-specific skips, including fail-closed rejection of ambiguous or
 wrong-loader public alpha identifiers and missing or mismatched runtime
 artifact versions. Optional package manifests retain both the runtime artifact
 version and the exact loader-specific public alpha identifier for provenance.
+Every runtime jar also contains `ringworld-build.properties`; staging rejects
+a missing file or a release/artifact label that disagrees with the prepared
+alpha metadata. The in-game RingWorld Map displays this identity. Advance
+`release_label` together with both loader release descriptors.
 
 ## Manual release gates
 

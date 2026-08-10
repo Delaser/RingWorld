@@ -82,6 +82,10 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                 archive.writestr("LICENSE-RINGWORLD.txt", (ROOT / "LICENSE").read_bytes())
                 archive.writestr("ringworld.mixins.json", "{}")
                 archive.writestr("ringworld.client.mixins.json", "{}")
+                archive.writestr(
+                    "ringworld-build.properties",
+                    f"artifactVersion={VERSION}\nreleaseLabel=Alpha 4\n",
+                )
                 archive.writestr("dev/ringworld/RingWorld.class", b"compiled")
                 return
             metadata: dict[str, object] = {"id": mod_id, "version": version}
@@ -101,6 +105,10 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                 archive.writestr("LICENSE-RINGWORLD.txt", (ROOT / "LICENSE").read_bytes())
                 archive.writestr("ringworld.mixins.json", "{}")
                 archive.writestr("ringworld.client.mixins.json", "{}")
+                archive.writestr(
+                    "ringworld-build.properties",
+                    f"artifactVersion={VERSION}\nreleaseLabel=Alpha 4\n",
+                )
                 archive.writestr("dev/ringworld/RingWorld.class", b"compiled")
 
     def make_stage_manifest(
@@ -361,6 +369,10 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                     archive.writestr("LICENSE-RINGWORLD.txt", (ROOT / "LICENSE").read_bytes())
                     archive.writestr("ringworld.mixins.json", "{}")
                     archive.writestr("ringworld.client.mixins.json", "{}")
+                    archive.writestr(
+                        "ringworld-build.properties",
+                        f"artifactVersion={VERSION}\nreleaseLabel=Alpha 4\n",
+                    )
                     archive.writestr("dev/ringworld/RingWorld.class", b"compiled")
                 stage = self.make_stage_manifest(temporary, jar, loader="neoforge")
                 result = self.run_prepare(

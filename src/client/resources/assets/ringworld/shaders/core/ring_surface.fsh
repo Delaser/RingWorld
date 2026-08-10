@@ -5,11 +5,13 @@
 #moj_import <minecraft:globals.glsl>
 
 uniform sampler2D Sampler0;
+uniform sampler2D Sampler1;
 uniform sampler2D Sampler2;
 
 in vec2 texCoord0;
 in vec4 vertexColor;
 in float intrinsicDistance;
+in float intrinsicHeight;
 
 out vec4 fragColor;
 
@@ -18,8 +20,26 @@ float smootherstep(float edge0, float edge1, float value) {
     return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
+float wallHash(vec2 block) {
+    return fract(sin(dot(block, vec2(12.9898, 78.233))) * 43758.5453);
+}
+
 void main() {
-    vec4 sampled = texture(Sampler0, texCoord0) * vertexColor;
+    vec4 previous = texture(Sampler1, texCoord0);
+    vec4 current = texture(Sampler0, texCoord0);
+    vec4 sampled = mix(previous, current, clamp(ColorModulator.z, 0.0, 1.0))
+                   * vertexColor;
+    bool rimBridge = texCoord0.y < 0.0 || texCoord0.y > 1.0;
+    if (rimBridge) {
+        float blockX = floor(mod(texCoord0.x * float(RingWorldLayout.y),
+                                 float(RingWorldLayout.y)));
+        float blockY = floor(intrinsicHeight);
+        float moss = step(0.70, wallHash(vec2(blockX, blockY)));
+        float textureNoise = 0.82 + 0.18 * wallHash(vec2(blockX + 31.0, blockY - 17.0));
+        vec3 cobble = vec3(0.40, 0.42, 0.40);
+        vec3 mossy = vec3(0.30, 0.40, 0.30);
+        sampled = vec4(mix(cobble, mossy, moss) * textureNoise, 1.0);
+    }
     if (sampled.a == 0.0) {
         discard;
     }
@@ -64,6 +84,11 @@ void main() {
     );
     reveal *= 1.0 - distanceHaze;
 
+    // ColorModulator.w is the incomplete-Atlas generation haze. It begins
+    // dense, clears with authoritative coverage, and reaches exactly zero for
+    // a complete ring. The renderer interpolates it alongside texture morphs.
+    reveal *= 1.0 - clamp(ColorModulator.w, 0.0, 1.0);
+
     // Atlas samples are exposed top surfaces, so use the same lightmap texel
     // as a real face with maximum sky light and no block light. This carries
     // Minecraft's current RGB sky tint and all client lightmap effects into
@@ -71,8 +96,8 @@ void main() {
     const vec2 fullSkyNoBlockLight = vec2(0.5 / 16.0, 15.5 / 16.0);
     vec3 surfaceLight = texture(Sampler2, fullSkyNoBlockLight).rgb;
     vec3 litTerrain = sampled.rgb * surfaceLight;
-    // Atlas alpha is authoritative availability. Missing cells remain sky;
-    // partial bilinear coverage fades at the generated boundary rather than
-    // fabricating a base-height strip around it.
+    // The incomplete texture is deliberately opaque: real generated colours
+    // flavour nearby unknown cells, then each published revision cross-fades
+    // into the next instead of exposing a hard tile update.
     fragColor = vec4(mix(FogColor.rgb, litTerrain, reveal), proxyAlpha * sampled.a);
 }

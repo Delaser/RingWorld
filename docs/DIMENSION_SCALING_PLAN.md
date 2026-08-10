@@ -88,7 +88,7 @@ Every value in the following registry belongs to one of four classes:
 | `generatorSeed` | Persisted, sent, and fingerprinted | Authoritative and present in world/atlas identity. |
 | `FORMAT_VERSION` | Settings format 3 | Formats 1 and 2 migrate explicitly with surface reference Y=64 and legacy terrain-noise mapping. |
 | surface reference | Saved and sent as `surfaceReferenceY`; format 3 currently requires 64 | Authoritative protocol/layout field; all active shaders consume the synchronized value. |
-| terrain-noise mapping | Fresh worlds use annular v2; upgraded alpha worlds retain legacy axial v1 | Persisted worldgen identity. Include it in generator attachment/cache, handshake, layout fingerprint, atlas hash, and diagnostics; never infer or migrate it from chunk age. |
+| terrain-noise mapping | Fresh worlds use complete annular v3; upgraded alpha worlds retain legacy axial v1, and existing annular-v2 worlds remain v2 | Persisted worldgen identity. Include it in generator attachment/cache, handshake, layout fingerprint, atlas hash, and diagnostics; never infer or migrate it from chunk age. |
 | rim thickness/style version | Thickness 5 and about 30% mossy remain code constants | Fixed design included in layout and atlas fingerprints. |
 | `testMode` | Process-local destructive harness switch | Keep operational, never persist as world geometry. |
 | `pregenerateTerrainAtlas` | Process-local administration switch | Keep operational. It may pause work but must not change atlas identity or dimensions. |

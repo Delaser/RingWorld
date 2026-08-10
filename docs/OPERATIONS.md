@@ -186,7 +186,7 @@ Production-default atlas completion is therefore a large world-generation
 operation. Monitor disk use, server tick time, and progress logs. Set
 `pregenerateTerrainAtlas=false` to postpone automatic background generation. The distant
 surface progressively reveals only trustworthy cells from player-loaded or
-pregenerated chunks; missing cells remain transparent until generated.
+pregenerated chunks; missing cells use the deterministic opaque fallback until generated.
 Progress logs report captured cells, cells per second, and an ETA once a rate
 can be measured.
 
@@ -236,7 +236,10 @@ pause menu. Its generation actions require an integrated-world owner or a
 dedicated gamemaster; other players see read-only status. **Generate Entire
 Ring** confirms the exact canonical chunk count and warns that it generates
 and saves real terrain/region files. Closing the map does not pause or cancel
-the job; reopening attaches to the same dimension-owned handle.
+the job; reopening attaches to the same dimension-owned handle. The header
+shows the embedded release/artifact identity (`Alpha 4 · 0.2.0+mc26.1.2` for
+the prepared candidate), and the first status line shows the persisted terrain
+mapping so a screenshot identifies both the installed build and worldgen.
 
 Pause stops scheduling new atlas chunks after any one in-flight chunk
 completes. Player-driven chunk capture, cache saving, and client tile streaming
@@ -324,8 +327,9 @@ totals rather than trusting stale text. Do not
 add the headless JVM option to an ordinary service unit or point it at a
 production/source world.
 
-Fresh and normal resumed format-3 runs default to expected mapping `2`
-(annular). To verify an intentionally copied legacy alpha world, pass
+Fresh and normal resumed format-3 runs default to expected mapping `4`
+(`annular-complete-v2`). To verify an intentionally copied older world, pass
+the world's explicit mapping instead; for example,
 `-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1` for Fabric or
 `-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping=1` for NeoForge.
 The verifier rejects any terminal report whose explicit mapping differs from
@@ -377,7 +381,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite passes 318 unit/parameterized cases per loader. The
+The current suite passes 337 unit/parameterized cases per loader. The
 historical Phase 2 95-error inventory and the subsequent source-port
 checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
@@ -479,6 +483,27 @@ The generated client instance includes one minimal public `servers.dat` entry:
 constants in `prepare_release_packages.py`, contains no player data, and is
 only copied for a newly created managed instance. It must never auto-join the
 server or replace an existing user's server list.
+
+The optional unlisted Windows test package is served from
+`/ringworld/alpha/`. Build it only from a clean pushed revision through the
+normal staging and `prepare_release_packages.py` gates. Publish the ZIP under
+the exact artifact name stored in `RELEASE-MANIFEST.json`, the stable
+loader-specific `deploy/alpha/Install-RingWorld-Alpha-{Fabric,NeoForge}-Windows.bat`
+bootstrappers, `RELEASE-MANIFEST-{FABRIC,NEOFORGE}.json`, `SHA256SUMS.txt`, MPL
+licence, and landing page together; back up the previous directory outside the
+document root and install the landing page last. Keep the historical
+`Install-RingWorld-Alpha-Windows.bat` and `RELEASE-MANIFEST.json` as Fabric
+aliases so previously downloaded installers continue to update. Each
+bootstrapper downloads its current manifest on every run, validates
+format/loader/licence/source identity, selects exactly one safe loader-matched
+Windows artifact, and verifies its manifest SHA-256 before extraction. The two
+named installers use separate local installation directories, so testing one
+loader does not overwrite the other.
+It must never contain a build-specific hash or trust an artifact filename that
+can escape the alpha directory. Run `python3 -m unittest
+scripts/test_alpha_installer.py` and verify the downloaded HTTPS ZIP hash rather
+than trusting the uploaded file alone. Do not link the alpha page from the main
+showcase unless the owner explicitly changes its unlisted status.
 
 Never distribute a used `.prism-data` directory. Create a fresh package from
 the source instance that contains only:
@@ -605,6 +630,7 @@ F3 replaces the normal position section in the Overworld with:
 - canonical block/chunk/region;
 - facing direction;
 - circumference/chunk count;
+- persisted terrain mapping name and number;
 - atlas completion and sample step.
 
 ## Recovery notes

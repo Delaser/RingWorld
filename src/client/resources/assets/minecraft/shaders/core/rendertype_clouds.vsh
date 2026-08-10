@@ -20,6 +20,7 @@ uniform isamplerBuffer CloudFaces;
 
 out float vertexDistance;
 out vec4 vertexColor;
+out float ringIntrinsicWorldZ;
 
 const vec3[] vertices = vec3[](
     vec3(1, 0, 0), vec3(1, 0, 1), vec3(0, 0, 1), vec3(0, 0, 0),
@@ -106,6 +107,9 @@ void main() {
         pos.y += (RingWorldVertical.z - cameraY) - CloudOffset.y;
     }
     vec3 flatPos = pos;
+    ringIntrinsicWorldZ = ring_active()
+        ? (float(CameraBlockPos.z) - CameraOffset.z) + flatPos.z
+        : 0.0;
     if (ring_active()) {
         pos = curve_cloud_position(pos);
     }
