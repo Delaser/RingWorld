@@ -24,6 +24,12 @@ the NeoForge jar SHA-256 is
 The public showcase now links only to Modrinth, CurseForge, and GitHub; old
 direct downloads were moved outside the document root. The unlisted alpha page
 serves checksum-verified 1.0 Windows packages and manifest-following installers.
+GitHub, host-listing, showcase, and operator copy now describe the same
+progressive Atlas experience: real chunks are playable first, a fogged
+biome-flavoured placeholder bridges the incomplete distant ring and both rims,
+streamed revisions cross-fade as work is checkpointed, and verified completion
+removes the placeholder and upgrades the detailed mesh. The copy explicitly
+warns that generation time and disk cost vary by layout and machine.
 
 The live demo was migrated from Fabric to NeoForge 26.1.2.87 and RingWorld 1.0.
 Its previous world is preserved intact at

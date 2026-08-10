@@ -405,6 +405,11 @@ relevant project documentation in the same change. At minimum, check
 not complete while its documentation describes the previous behavior. This
 also applies to renamed classes, changed constants, new or removed mixins,
 altered test commands, known limitations, and rejected or superseded designs.
+Keep public GitHub, showcase-site, Modrinth, and CurseForge explanations of
+Atlas generation aligned: playable real chunks appear first, the incomplete
+ring uses a fogged progressive placeholder, revisions are resumable and
+cross-faded, and only verified completion removes the fallback and enables the
+detailed mesh. Never promise one fixed generation time.
 
 1. Check `git status` and preserve unrelated user work.
 2. Identify which coordinate domain the failing value belongs to.

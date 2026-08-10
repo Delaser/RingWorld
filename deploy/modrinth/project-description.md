@@ -6,6 +6,44 @@ same blocks without a duplicate lap or corrective teleport. Nearby terrain
 curves away from the player while a terrain atlas continues the visible ring
 beyond normal chunk distance.
 
+## What it does
+
+- The two ends of the circumference are real neighbours. Players, mobs,
+  vehicles, redstone, fluids, projectiles, and block interactions can cross the
+  join.
+- The Overworld has a configurable circumference, finite width, and breakable
+  cobble-and-moss rim walls. Nether and End remain ordinary Minecraft.
+- Nearby terrain is made from real Minecraft chunks. A lightweight curved
+  surface continues the view through the sky without forcing a huge render
+  distance.
+- New-world presets cover Small 2,048×128, Medium 16,384×256, and Large
+  32,768×512 rings. Dimensions are fixed after the first Overworld load.
+
+## The ring fills in over time
+
+You can start playing straight away. The distant ring is prepared in layers:
+
+1. Minecraft generates normal playable chunks around you.
+2. RingWorld draws a fogged, biome-flavoured stand-in to bridge the horizons
+   and rim walls.
+3. The server samples missing surface chunks into the Ring Atlas and streams
+   the results. New sections softly replace the stand-in instead of popping.
+4. At 100%, the fog and placeholder disappear and the full curved terrain
+   texture and height mesh take over.
+
+`Ring Atlas Generating: X%` appears at the top left while this is happening and
+disappears when it is complete. Open **RingWorld Map** from the pause menu to
+see the live rate and ETA, or to start, pause, and resume generation when you
+have permission. Progress is saved across restarts; you do not need to walk a
+lap.
+
+Atlas generation creates real chunks and uses CPU, disk, and time. Small rings
+finish quickly. Medium and Large rings can take tens of minutes or longer,
+depending on the machine, seed, server load, and other mods. The world remains
+playable while it runs, but the distant ring is deliberately foggier and less
+detailed until completion. The Atlas is visual only: real chunks still own
+collision, entities, lighting, and block interaction.
+
 ## Requirements and installation
 
 Install the matching Fabric or NeoForge artifact in Minecraft Java 26.1.2 with

@@ -209,6 +209,37 @@ clicked face through the seam, so Survival placement works in both `C-1 -> 0`
 and `0 -> C-1` directions. RingWorld does not force the client to load the
 entire circumference as vanilla chunks.
 
+### What happens while a new ring is generating
+
+The world is playable immediately, but the distant view is built in layers:
+
+1. **Real chunks load first.** Minecraft generates and renders ordinary
+   playable terrain around each player at the normal render distance.
+2. **A temporary ring appears.** As soon as the server sends the world
+   identity, RingWorld draws a curved, fogged stand-in so the sky is not left
+   with a blank gap. Known biome colours spread into nearby unknown areas while
+   temporary cobble-and-moss returns connect the proxy to both rim walls.
+3. **The Atlas fills progressively.** The server visits the missing canonical
+   chunks, samples their exposed surface, saves the results, and streams small
+   revisions to connected clients. Each revision softly cross-fades into the
+   last one instead of popping into place.
+4. **The detailed ring replaces it.** At 100%, all placeholder colour and
+   generation haze disappear. The client makes one final upgrade to the
+   complete texture and terrain-height mesh.
+
+The small top-left `Ring Atlas Generating: X%` label shows this process and
+vanishes when it is done. Closing the RingWorld Map or leaving the server does
+not throw completed work away: progress is checkpointed and can resume later.
+You never need to walk a lap to fill it.
+
+This is a real world-generation job, so it takes time and disk space. Small
+rings finish much sooner than large ones. The 16,384×256 default contains
+65,536 Atlas cells; a development-machine benchmark completed in about 14
+minutes, while a busy or lower-powered server may take tens of minutes or more.
+The live rate and ETA in the RingWorld Map are better guides than that one
+reference result. Players can keep playing while it runs, although generation
+competes with other server work.
+
 Instead, the server incrementally samples generated surface height and colour
 into a periodic terrain atlas. From the first metadata frame, the client draws
 an opaque world-hash-seeded fallback ring and temporary curved rim returns.
