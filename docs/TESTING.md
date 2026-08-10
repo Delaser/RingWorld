@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 291
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 292
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -137,7 +137,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite passes 291 unit/parameterized cases per loader:
+The active suite passes 292 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
@@ -1123,7 +1123,21 @@ The scenario verifies:
   the bed; both server and client require X/Y/Z proximity, and the client also
   requires a matching Overworld RingWorld session plus the loaded bed. The
   fixture then sleeps again, wakes on damage, and removes the bed cleanly when
-  broken; a missing reconnect fails at the ordinary bounded timeout;
+  broken; a missing reconnect fails at the ordinary bounded timeout. The gate
+  captures the old `ServerPlayer` at the authoritative successful server-side
+  sleep start, then accepts either a sampled null-player interval or its
+  definitive replacement because a cold server may delay the client
+  acknowledgement or complete disconnect/login between two ticks;
+- a double chest spanning canonical X=`C-1`/`0` is joined on both clients;
+  both server container views have 54 slots, items written through opposite
+  views are visible from both, and X=`-1`/`C` block-entity lookups resolve to
+  the same two canonical owners. Serialized pending NBT also covers a lone
+  alias repairing to canonical ownership and a canonical/alias collision
+  retaining both inventories until explicit recovery. The alias is loaded
+  first through packed-pending promotion and the direct-entry reconciliation
+  policy so the ownership decision cannot pass only under a favorable order.
+  This does not yet substitute for a future alias-first region-file fixture
+  that drives vanilla `LevelChunk.runPostLoad` end to end;
 - the death screen, client respawn request, replacement server player, and
   canonical respawn all complete;
 - real Nether portal blocks and `PortalForcer` linking carry the player to the
@@ -1144,6 +1158,19 @@ thunder/lightning. NeoForge's standalone evidence verifier also requires both
 weather screenshots and the explicit portal/weather server markers. Keep the
 older source-only result labelled as historical rather than conflating it
 with the stricter gate.
+
+The 2026-08-10 Fabric regression for issue #146 completed the full disposable
+matrix with `full scenario result=true`. Its server evidence recorded
+`highSize=54, lowSize=54`, diamonds and emeralds visible through both
+container views, and `lowAliasSame=true, highAliasSame=true`. Both real
+clients accepted the joined chest states before the normal sleep/reconnect,
+portal, and weather stages passed. NeoForge recorded the same inventory,
+serialized pending-NBT recovery, alias, and both-client evidence; an earlier
+run on the branch reached terminal `full scenario result=true` and passed its
+loader-specific verifier. Subsequent cold replays hit #134's known client-
+readiness contention before the extended fixture or the superseded sleep-
+acknowledgement race, so they do not replace that evidence. Re-run the
+NeoForge matrix warmed/staggered when closing #134.
 
 Success is:
 

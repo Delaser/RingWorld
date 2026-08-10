@@ -625,6 +625,12 @@ tasks.register('verifyNeoForgeMultiplayerHarness') {
                 || !serverText.contains('[multiplayer-extended] seam thunder/lightning result=true')) {
             throw new GradleException("NeoForge multiplayer portal-delay/weather evidence is incomplete; inspect ${serverLog}")
         }
+		if (!serverText.contains('[multiplayer-extended] double chest prepared')
+				|| !serverText.contains('highSize=54, lowSize=54')
+				|| !serverText.contains('lowAliasSame=true, highAliasSame=true')
+				|| !serverText.contains('[multiplayer-extended] alias block-entity recovery policy result=true')) {
+			throw new GradleException("NeoForge multiplayer seam double-chest evidence is incomplete; inspect ${serverLog}")
+		}
 		['extended-fixture-before', 'extended-fixture-after', 'nether-returned',
 		 'end-returned', 'weather-stability-ready', 'terminal-result'].each { phase ->
 			if (!serverText.contains("[multiplayer-cold] phase=${phase}")) {

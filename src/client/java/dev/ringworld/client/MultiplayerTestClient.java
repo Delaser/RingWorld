@@ -582,13 +582,20 @@ public final class MultiplayerTestClient {
             int chestX = presentationX(geometry, client, 0);
             int lecternX = presentationX(geometry, client, 1);
             BlockPos chest = new BlockPos(chestX, 120, -3);
+            BlockPos chestHigh = new BlockPos(presentationX(
+                    geometry, client, geometry.circumferenceBlocks() - 1), 120, -3);
             BlockPos lectern = new BlockPos(lecternX, 120, -3);
             BlockPos lamp = new BlockPos(chestX, 120, -5);
             // The sealed trough clears X=0 before placing its only source at
             // C-1. This is the received destination image, not the source.
             BlockPos fluidDestination = new BlockPos(presentationX(geometry, client, 0), 120, 6);
             BlockPos blast = new BlockPos(chestX, 124, 9);
-            boolean chestReady = client.level.getBlockEntity(chest) instanceof ChestBlockEntity;
+            boolean chestReady = client.level.getBlockEntity(chest) instanceof ChestBlockEntity
+                    && client.level.getBlockEntity(chestHigh) instanceof ChestBlockEntity
+                    && client.level.getBlockState(chest).getValue(net.minecraft.world.level.block.ChestBlock.TYPE)
+                    != net.minecraft.world.level.block.state.properties.ChestType.SINGLE
+                    && client.level.getBlockState(chestHigh).getValue(net.minecraft.world.level.block.ChestBlock.TYPE)
+                    != net.minecraft.world.level.block.state.properties.ChestType.SINGLE;
             boolean lecternReady = client.level.getBlockEntity(lectern) instanceof LecternBlockEntity
                     && client.level.getBlockState(lectern).getValue(LecternBlock.HAS_BOOK);
             boolean lampLit = client.level.getBlockState(lamp)
@@ -597,8 +604,11 @@ public final class MultiplayerTestClient {
             boolean explosionCrossed = client.level.getBlockState(blast).isAir();
             if (stageTicks % 200 == 0) {
                 RingWorldMod.LOGGER.info(
-                        "[multiplayer:{}] waiting for extended fixture chest={} lectern={} lamp={} waterReachedDestination={} blast={}",
-                        role, chestReady, lecternReady, lampLit, waterReachedDestination, explosionCrossed);
+                        "[multiplayer:{}] waiting for extended fixture chest={} chestState={} highState={} chestBe={} highBe={} lectern={} lamp={} waterReachedDestination={} blast={}",
+                        role, chestReady, client.level.getBlockState(chest),
+                        client.level.getBlockState(chestHigh), client.level.getBlockEntity(chest),
+                        client.level.getBlockEntity(chestHigh), lecternReady, lampLit,
+                        waterReachedDestination, explosionCrossed);
             }
             if (chestReady && lecternReady && lampLit && waterReachedDestination && explosionCrossed) {
                 extendedFixtureSent = true;

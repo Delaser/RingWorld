@@ -5,8 +5,10 @@ import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Container;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
@@ -20,12 +22,18 @@ import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.ChestBlock;
 import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.Portal;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BedPart;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.material.Fluids;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.ArrayList;
@@ -42,6 +50,7 @@ final class RingWorldExtendedMultiplayerTest {
     private static int ticks;
     private static boolean baselinePassed;
     private static boolean serverFixturePassed;
+    private static boolean aliasRecoveryPassed;
     private static boolean sleepAttempted;
     private static boolean sleepStarted;
     private static ServerPlayer sleepingReconnectBaseline;
@@ -120,8 +129,25 @@ final class RingWorldExtendedMultiplayerTest {
                 Set.<Relative>of(), -90.0f, 10.0f, false);
 
         BlockPos chest = chestPos();
+        BlockPos chestHigh = chestHighPos(geometry);
         BlockPos lectern = lecternPos();
-        world.setBlock(chest, Blocks.CHEST.defaultBlockState(), 3);
+        world.setBlock(chestHigh, Blocks.AIR.defaultBlockState(), 3);
+        world.setBlock(chest, Blocks.AIR.defaultBlockState(), 3);
+        BlockState highChestState = Blocks.CHEST.defaultBlockState()
+                .setValue(ChestBlock.FACING, Direction.NORTH)
+                .setValue(ChestBlock.TYPE, ChestType.LEFT);
+        BlockState lowChestState = Blocks.CHEST.defaultBlockState()
+                .setValue(ChestBlock.FACING, Direction.NORTH)
+                .setValue(ChestBlock.TYPE, ChestType.RIGHT);
+        world.setBlock(chestHigh, highChestState, 3);
+        world.setBlock(chest, lowChestState, 3);
+        seedDoubleChest(world, geometry);
+        RingWorldMod.LOGGER.info("[multiplayer-extended] double chest prepared {}",
+                doubleChestDiagnostic(world, geometry));
+        aliasRecoveryPassed = verifyAliasCollisionRecovery(world, geometry);
+        RingWorldMod.LOGGER.info(
+                "[multiplayer-extended] alias block-entity recovery policy result={}",
+                aliasRecoveryPassed);
         world.setBlock(lectern, Blocks.LECTERN.defaultBlockState(), 3);
         LecternBlock.tryPlaceBook(null, world, lectern, world.getBlockState(lectern),
                 new ItemStack(Items.WRITABLE_BOOK));
@@ -165,7 +191,7 @@ final class RingWorldExtendedMultiplayerTest {
 
     private static void awaitFixture(ServerLevel world, RingGeometry geometry,
                                      ServerPlayer playerA, ServerPlayer playerB) {
-        boolean serverChest = world.getBlockEntity(chestPos()) != null;
+        boolean serverChest = doubleChestValid(world, geometry);
         boolean serverLectern = world.getBlockEntity(lecternPos()) instanceof LecternBlockEntity lectern
                 && lectern.hasBook()
                 && world.getBlockState(lecternPos()).getValue(LecternBlock.HAS_BOOK);
@@ -186,7 +212,8 @@ final class RingWorldExtendedMultiplayerTest {
                         seamNavigator.getX(), seamNavigator.getY(), seamNavigator.getZ(),
                         2.5, 120.0, 15.5, 1.75, 1.5, 1.75);
         boolean explosion = world.getBlockState(explosionTarget()).isAir();
-        serverFixturePassed = serverChest && serverLectern && redstone && waterReachedDestination
+        serverFixturePassed = serverChest && aliasRecoveryPassed && serverLectern
+                && redstone && waterReachedDestination
                 && navigationStarted && navigatorPathDone && navigatorReachedTarget && explosion;
         boolean clientsPassed = RingWorldMultiplayerTest.clientPassed("A", "extended_fixture")
                 && RingWorldMultiplayerTest.clientPassed("B", "extended_fixture");
@@ -195,8 +222,9 @@ final class RingWorldExtendedMultiplayerTest {
             advance(2);
         } else if (ticks >= TIMEOUT_TICKS) {
             RingWorldMod.LOGGER.error(
-                    "[multiplayer-extended] fixture result=false (chest={}, lectern={}, redstone={}, waterReachedDestination={}, navigationStarted={}, navigatorFolded={}, navigatorPathDone={}, navigatorReachedTarget={}, navigatorX={}, navigatorZ={}, explosion={}, clientA={}, clientB={})",
-                    serverChest, serverLectern, redstone, waterReachedDestination, navigationStarted,
+                    "[multiplayer-extended] fixture result=false (doubleChest={}, aliasRecovery={}, lectern={}, redstone={}, waterReachedDestination={}, navigationStarted={}, navigatorFolded={}, navigatorPathDone={}, navigatorReachedTarget={}, navigatorX={}, navigatorZ={}, explosion={}, clientA={}, clientB={})",
+                    serverChest, aliasRecoveryPassed, serverLectern, redstone,
+                    waterReachedDestination, navigationStarted,
                     navigatorFolded, navigatorPathDone, navigatorReachedTarget,
                     seamNavigator == null ? Double.NaN : seamNavigator.getX(),
                     seamNavigator == null ? Double.NaN : seamNavigator.getZ(), explosion,
@@ -286,6 +314,7 @@ final class RingWorldExtendedMultiplayerTest {
         BlockPos head = bedHead();
         Either<Player.BedSleepingProblem, net.minecraft.util.Unit> result = playerA.startSleepInBed(head);
         sleepStarted = result.right().isPresent();
+        if (sleepStarted) sleepingReconnectBaseline = playerA;
         RingWorldMod.LOGGER.info("[multiplayer-extended] seam bed sleep start={} problem={} canonicalBed={}",
                 sleepStarted, result.left().orElse(null), playerA.getSleepingPos().orElse(null));
     }
@@ -309,16 +338,13 @@ final class RingWorldExtendedMultiplayerTest {
                 .map(pos -> pos.equals(bedHead()) && pos.getX() >= 0
                         && pos.getX() < geometry.circumferenceBlocks())
                 .orElse(false);
-        if (sleepingReconnectBaseline == null && ticks >= 20 && sleepStarted && canonicalBed
-                && RingWorldMultiplayerTest.clientPassed("A", "bed_sleep")) {
-            sleepingReconnectBaseline = playerA;
-            RingWorldMod.LOGGER.info(
-                    "[multiplayer-extended] seam bed sleep acknowledged; awaiting asleep disconnect/reconnect");
-            return;
-        }
-        boolean replacement = sleepingDisconnectObserved
-                && sleepingReconnectBaseline != null
+        boolean replacementInstance = sleepingReconnectBaseline != null
                 && playerA != sleepingReconnectBaseline;
+        // A cold server can miss the brief null-player interval when the
+        // disconnect and login complete between two ticks. A different
+        // ServerPlayer object is itself definitive reconnect evidence.
+        if (replacementInstance) sleepingDisconnectObserved = true;
+        boolean replacement = sleepingDisconnectObserved && replacementInstance;
         boolean canonicalPlayer = playerA.getX() >= 0.0
                 && playerA.getX() < geometry.circumferenceBlocks();
         boolean adjacentToBed = Math.abs(geometry.shortestCircumferenceDelta(
@@ -691,7 +717,174 @@ final class RingWorldExtendedMultiplayerTest {
         return null;
     }
 
+    private static void seedDoubleChest(ServerLevel world, RingGeometry geometry) {
+        Container fromHigh = doubleChestContainer(world, chestHighPos(geometry));
+        Container fromLow = doubleChestContainer(world, chestPos());
+        if (fromHigh == null || fromLow == null
+                || fromHigh.getContainerSize() != 54 || fromLow.getContainerSize() != 54) {
+            return;
+        }
+        fromHigh.setItem(0, new ItemStack(Items.DIAMOND, 3));
+        fromLow.setItem(53, new ItemStack(Items.EMERALD, 5));
+        fromHigh.setChanged();
+        fromLow.setChanged();
+    }
+
+    private static boolean doubleChestValid(ServerLevel world, RingGeometry geometry) {
+        BlockPos high = chestHighPos(geometry);
+        BlockPos low = chestPos();
+        Container fromHigh = doubleChestContainer(world, high);
+        Container fromLow = doubleChestContainer(world, low);
+        boolean combined = fromHigh != null && fromLow != null
+                && fromHigh.getContainerSize() == 54 && fromLow.getContainerSize() == 54;
+        boolean sharedInventory = combined
+                && fromHigh.getItem(0).is(Items.DIAMOND) && fromHigh.getItem(0).getCount() == 3
+                && fromLow.getItem(0).is(Items.DIAMOND) && fromLow.getItem(0).getCount() == 3
+                && fromHigh.getItem(53).is(Items.EMERALD) && fromHigh.getItem(53).getCount() == 5
+                && fromLow.getItem(53).is(Items.EMERALD) && fromLow.getItem(53).getCount() == 5;
+        boolean canonicalAliases = world.getBlockEntity(new BlockPos(
+                geometry.circumferenceBlocks(), low.getY(), low.getZ())) == world.getBlockEntity(low)
+                && world.getBlockEntity(new BlockPos(-1, high.getY(), high.getZ()))
+                == world.getBlockEntity(high);
+        boolean connectedStates = connectedChestState(world.getBlockState(high))
+                && connectedChestState(world.getBlockState(low));
+        return combined && sharedInventory && canonicalAliases && connectedStates;
+    }
+
+    private static String doubleChestDiagnostic(ServerLevel world, RingGeometry geometry) {
+        BlockPos high = chestHighPos(geometry);
+        BlockPos low = chestPos();
+        Container fromHigh = doubleChestContainer(world, high);
+        Container fromLow = doubleChestContainer(world, low);
+        return "highState=" + world.getBlockState(high)
+                + ", lowState=" + world.getBlockState(low)
+                + ", highSize=" + (fromHigh == null ? -1 : fromHigh.getContainerSize())
+                + ", lowSize=" + (fromLow == null ? -1 : fromLow.getContainerSize())
+                + ", highSlot0=" + (fromHigh == null ? null : fromHigh.getItem(0))
+                + ", lowSlot0=" + (fromLow == null ? null : fromLow.getItem(0))
+                + ", highSlot53=" + (fromHigh == null || fromHigh.getContainerSize() <= 53
+                        ? null : fromHigh.getItem(53))
+                + ", lowSlot53=" + (fromLow == null || fromLow.getContainerSize() <= 53
+                        ? null : fromLow.getItem(53))
+                + ", lowAliasSame=" + (world.getBlockEntity(new BlockPos(
+                        geometry.circumferenceBlocks(), low.getY(), low.getZ()))
+                        == world.getBlockEntity(low))
+                + ", highAliasSame=" + (world.getBlockEntity(new BlockPos(
+                        -1, high.getY(), high.getZ())) == world.getBlockEntity(high));
+    }
+
+    /**
+     * Simulates an old/modded alias entry colliding with an existing canonical
+     * owner. Both inventories must remain independently addressable and
+     * serializable until an administrator explicitly removes the alias.
+     */
+    private static boolean verifyAliasCollisionRecovery(ServerLevel world, RingGeometry geometry) {
+        BlockPos canonical = new BlockPos(4, 120, -7);
+        BlockPos alias = canonical.offset(geometry.circumferenceBlocks(), 0, 0);
+        world.setBlock(canonical, Blocks.AIR.defaultBlockState(), 3);
+        BlockState chestState = Blocks.CHEST.defaultBlockState();
+        world.setBlock(canonical, chestState, 3);
+        if (!(world.getBlockEntity(canonical) instanceof ChestBlockEntity initialCanonicalChest)) {
+            return false;
+        }
+        initialCanonicalChest.setItem(0, new ItemStack(Items.GOLD_INGOT, 2));
+        CompoundTag savedCanonical = initialCanonicalChest.saveWithFullMetadata(world.registryAccess());
+        LevelChunk chunk = world.getChunkAt(canonical);
+        chunk.removeBlockEntity(canonical);
+
+        ChestBlockEntity aliasChest = new ChestBlockEntity(alias, chestState);
+        aliasChest.setItem(0, new ItemStack(Items.IRON_INGOT, 4));
+        CompoundTag savedAlias = aliasChest.saveWithFullMetadata(world.registryAccess());
+        RingBlockEntityLoadContext.withGeometry(geometry, () -> {
+            // Deliberately queue and promote the alias first. Recovery must
+            // not depend on the serialized list or pending-map iteration order.
+            chunk.setBlockEntityNbt(savedAlias);
+            chunk.setBlockEntityNbt(savedCanonical);
+        });
+        BlockEntity loadedAlias = chunk.getBlockEntity(alias);
+        BlockEntity loadedCanonical = chunk.getBlockEntity(canonical);
+        CompoundTag aliasNbt = chunk.getBlockEntityNbtForSaving(alias, world.registryAccess());
+        ChestBlockEntity canonicalChest = loadedCanonical instanceof ChestBlockEntity chest
+                ? chest : null;
+        ChestBlockEntity loadedAliasChest = loadedAlias instanceof ChestBlockEntity chest
+                ? chest : null;
+        boolean preserved = canonicalChest != null && loadedAliasChest != null
+                && chunk.getBlockEntity(canonical) == canonicalChest
+                && chunk.getBlockEntity(alias) == loadedAliasChest
+                && canonicalChest.getItem(0).is(Items.GOLD_INGOT)
+                && canonicalChest.getItem(0).getCount() == 2
+                && loadedAliasChest.getItem(0).is(Items.IRON_INGOT)
+                && loadedAliasChest.getItem(0).getCount() == 4
+                && aliasNbt != null;
+
+        chunk.removeBlockEntity(alias);
+        boolean exactAliasRemoved = !chunk.getBlockEntities().containsKey(alias)
+                && chunk.getBlockEntity(canonical) == canonicalChest;
+        world.setBlock(canonical, Blocks.AIR.defaultBlockState(), 3);
+
+        BlockPos directCanonical = new BlockPos(6, 120, -7);
+        BlockPos directAlias = directCanonical.offset(geometry.circumferenceBlocks(), 0, 0);
+        world.setBlock(directCanonical, chestState, 3);
+        LevelChunk directChunk = world.getChunkAt(directCanonical);
+        directChunk.removeBlockEntity(directCanonical);
+        ChestBlockEntity directAliasChest = new ChestBlockEntity(directAlias, chestState);
+        directAliasChest.setItem(0, new ItemStack(Items.IRON_INGOT, 7));
+        ChestBlockEntity directCanonicalChest = new ChestBlockEntity(directCanonical, chestState);
+        directCanonicalChest.setItem(0, new ItemStack(Items.GOLD_INGOT, 8));
+        RingBlockEntityLoadContext.withGeometry(geometry, () -> {
+            directChunk.setBlockEntity(directAliasChest);
+            directChunk.setBlockEntity(directCanonicalChest);
+        });
+        RingBlockEntityOwnership.reconcileLoadedAliases(directChunk, geometry);
+        boolean directAliasFirstPreserved = directChunk.getBlockEntity(directAlias)
+                == directAliasChest
+                && directChunk.getBlockEntity(directCanonical) == directCanonicalChest
+                && directAliasChest.getItem(0).is(Items.IRON_INGOT)
+                && directAliasChest.getItem(0).getCount() == 7
+                && directCanonicalChest.getItem(0).is(Items.GOLD_INGOT)
+                && directCanonicalChest.getItem(0).getCount() == 8;
+        directChunk.removeBlockEntity(directAlias);
+        world.setBlock(directCanonical, Blocks.AIR.defaultBlockState(), 3);
+
+        BlockPos repairedCanonical = new BlockPos(5, 120, -7);
+        BlockPos repairedAlias = repairedCanonical.offset(geometry.circumferenceBlocks(), 0, 0);
+        world.setBlock(repairedCanonical, chestState, 3);
+        LevelChunk repairedChunk = world.getChunkAt(repairedCanonical);
+        repairedChunk.removeBlockEntity(repairedCanonical);
+        ChestBlockEntity loneAlias = new ChestBlockEntity(repairedAlias, chestState);
+        loneAlias.setItem(0, new ItemStack(Items.COPPER_INGOT, 6));
+        CompoundTag savedLoneAlias = loneAlias.saveWithFullMetadata(world.registryAccess());
+        RingBlockEntityLoadContext.withGeometry(
+                geometry, () -> repairedChunk.setBlockEntityNbt(savedLoneAlias));
+        BlockEntity repaired = repairedChunk.getBlockEntity(repairedAlias);
+        boolean singleAliasRepaired = repaired instanceof ChestBlockEntity repairedChest
+                && repaired.getBlockPos().equals(repairedCanonical)
+                && repairedChunk.getBlockEntity(repairedCanonical) == repaired
+                && repairedChunk.getBlockEntity(repairedAlias) == repaired
+                && repairedChest.getItem(0).is(Items.COPPER_INGOT)
+                && repairedChest.getItem(0).getCount() == 6
+                && !repairedChunk.getBlockEntities().containsKey(repairedAlias);
+        world.setBlock(repairedCanonical, Blocks.AIR.defaultBlockState(), 3);
+        return preserved && exactAliasRemoved && directAliasFirstPreserved
+                && singleAliasRepaired;
+    }
+
+    private static Container doubleChestContainer(ServerLevel world, BlockPos position) {
+        BlockState state = world.getBlockState(position);
+        return state.getBlock() instanceof ChestBlock chest
+                ? ChestBlock.getContainer(chest, state, world, position, true)
+                : null;
+    }
+
+    private static boolean connectedChestState(BlockState state) {
+        return state.is(Blocks.CHEST) && state.getValue(ChestBlock.TYPE)
+                != net.minecraft.world.level.block.state.properties.ChestType.SINGLE;
+    }
+
     private static BlockPos chestPos() { return new BlockPos(0, 120, -3); }
+    private static BlockPos chestHighPos(RingGeometry geometry) {
+        return new BlockPos(geometry.circumferenceBlocks() - 1, 120, -3);
+    }
     private static BlockPos lecternPos() { return new BlockPos(1, 120, -3); }
     private static BlockPos redstoneLampPos() { return new BlockPos(0, 120, -5); }
     private static BlockPos fluidDestination() { return new BlockPos(0, 120, 6); }

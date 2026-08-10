@@ -86,6 +86,21 @@ maxZ = minZ + W - 1
 Y is vanilla height. Blocks, canonical chunks, scheduled ticks, persistent
 entities, and server watch state use this domain.
 
+Runtime block entities share that ownership rule. A local neighbour step may
+ask for X=`-1` or X=`C`, but the server `LevelChunk` converts that position to
+the canonical key before block-state mutation, block-entity lookup/removal, or
+serialization. This makes a double chest spanning `C-1`/`0` one ordinary
+54-slot container. Client chunks are excluded because their nearby
+presentation-chart keys are transient render state, not persistent ownership.
+During saved-chunk post-load, a narrowly scoped RingWorld context prevents
+vanilla's wrong-chunk repair from collapsing a periodic alias before ownership
+can be resolved. A lone saved alias moves to its canonical key. If both keys
+contain different block entities, both NBT payloads remain addressable for
+explicit recovery; the mod never guesses which inventory should win.
+Direct saved entries are reconciled only after the complete post-load list is
+known, and packed pending NBT reserves its canonical key before alias
+promotion, so list or map iteration order cannot discard an inventory.
+
 `RingGeometry.wrapX`, `wrapBlockX`, and `RingChunkCoordinates.wrapChunkX`
 perform the conversion. `RingTopology` supplies higher-level operations.
 

@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 291 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 292 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
@@ -317,12 +317,12 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 291
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 292
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 291
+The NeoForge module uses the same Java 25 toolchain and also passes all 292
 unit/parameterized cases:
 
 ```sh
@@ -541,6 +541,19 @@ version numbers.
   every `RespawnData` result at that final ownership boundary, not merely the
   sampler suggestion. Keep it scoped to first-world creation; saved-world
   runtime logic must never read bootstrap geometry.
+- Runtime block entities are owned by canonical server positions even when a
+  neighbour traversal reaches them through X=`-1` or X=`C`. Keep
+  `LevelChunkMixin` server-Overworld-only: client chunks deliberately key
+  block entities by presentation coordinates. Canonicalize the `LevelChunk`
+  block-state and block-entity map arguments before vanilla creates, reads,
+  removes, or serializes an entry; do not patch individual double-container
+  blocks. Saved chunk post-load must retain a raw periodic alias until the
+  canonical/alias collision decision is made: a lone alias is repaired to its
+  canonical owner, while two distinct inventories remain independently
+  recoverable and emit an operator warning. Make this decision only after all
+  direct saved entries are known, and reserve a canonical pending-NBT key
+  before promoting an alias; serialized entry order must never choose which
+  inventory survives. Never silently merge or delete either inventory.
 - The world-creation editor must retain its unsaved field and monument draft
   across Minecraft `init()` rebuilds, including GUI-scale and window-size
   changes. Its automated fixture must wait for each asynchronous screenshot

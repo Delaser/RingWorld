@@ -60,6 +60,16 @@ existing world's saved layout. The live maths panel shows:
 - atlas grid/cells/raw size, rim/cloud Y, and measured-reference
   pregeneration/disk estimates.
 
+Updating an existing world to a build containing the seam block-entity fix
+does not require regeneration. New runtime block-entity reads and writes use
+canonical Overworld ownership immediately. Before upgrading a world known to
+contain a split seam double chest, back it up and inspect both half-inventories:
+the mod deliberately does not guess how to merge two already-divergent
+inventories or delete a possible alias copy. A lone saved alias is repaired to
+its canonical owner on load. If canonical and alias NBT both exist, both are
+kept and the server log warns with the exact positions; recover the contents
+from the backup before removing or rebuilding that seam container.
+
 Only atlas, chunk-count, pregeneration, or disk thresholds produce the amber
 **High cost** label; an apparent-width visual advisory alone does not.
 
