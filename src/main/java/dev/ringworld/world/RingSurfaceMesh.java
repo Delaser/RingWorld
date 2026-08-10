@@ -13,6 +13,9 @@ import java.util.Objects;
  * two finite width edges.</p>
  */
 public final class RingSurfaceMesh {
+    static final float MINIMUM_BRIDGE_TEXTURE_V = -1.0F;
+    static final float MAXIMUM_BRIDGE_TEXTURE_V = 2.0F;
+
     private RingSurfaceMesh() { }
 
     /** Builds the bounded mesh lattice selected by the active render profile. */
@@ -138,8 +141,13 @@ public final class RingSurfaceMesh {
             }
             if (bridgeRims) {
                 for (int segment = 0; segment < segments; segment++) {
-                    emitBridgeQuad(consumer, segment, bridgeMinimumZ, 0.0F);
-                    emitBridgeQuad(consumer, segment, bridgeMaximumZ, 1.0F);
+                    // V outside the surface's [0,1] range is a shader-stable
+                    // bridge marker. The fragment stage renders these returns
+                    // as cobble/moss rather than sampling green terrain.
+                    emitBridgeQuad(consumer, segment, bridgeMinimumZ,
+                            MINIMUM_BRIDGE_TEXTURE_V);
+                    emitBridgeQuad(consumer, segment, bridgeMaximumZ,
+                            MAXIMUM_BRIDGE_TEXTURE_V);
                 }
             }
         }

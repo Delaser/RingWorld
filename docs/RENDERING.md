@@ -155,6 +155,10 @@ zero-cell or partial Atlas uses an opaque, deterministic world-hash fallback.
 Generated surface colours propagate into nearby unknown areas through a smooth
 confidence falloff, so forest, ocean, desert, snow, and other real palettes
 flavour the placeholder without adding a biome payload or generating chunks.
+Atlas completion also controls a temporary haze: zero coverage replaces 88%
+of proxy terrain colour with Minecraft's live fog colour, 50% coverage halves
+that amount, and verified completion removes it exactly. The value interpolates
+with each texture revision rather than changing in visible percentage steps.
 Atlas format 4
 records the original highest-block tint semantics. Atlas format 5 additionally
 falls back to the sampled block's map colour when a dedicated server's
@@ -199,7 +203,10 @@ distance, and the reference-height mesh carries temporary curved returns up to
 both inner rim faces. Each publication retains the previous GPU texture and
 cross-fades to the new revision over 750 ms; no CPU texture is uploaded per
 frame. The old texture is released when the fade completes or the session
-ends. At completion all fallback influence and temporary returns disappear as
+ends. Temporary return vertices use V coordinates outside the terrain range;
+the shader converts that marker to a block-scaled neutral cobble/moss pattern
+instead of stretching green edge terrain up the wall. At completion all
+fallback influence, generation haze, and temporary returns disappear as
 the client bilinearly expands into the dimension-aware,
 quality-bounded size:
 

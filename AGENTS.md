@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 332 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 334 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
@@ -322,12 +322,12 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 332
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 334
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 332
+The NeoForge module uses the same Java 25 toolchain and also passes all 334
 unit/parameterized cases:
 
 ```sh
@@ -436,7 +436,10 @@ version numbers.
   progressive updates use source-resolution textures, one reference-height
   mesh, and curved temporary returns at both inner rim faces,
   then verified completion performs one upgrade to the expanded texture and
-  detailed terrain-height mesh. Later complete-atlas revisions refresh the
+  detailed terrain-height mesh. The partial ring starts under an 0.88-strength
+  progress haze which reaches exactly zero at completion, and the temporary
+  returns use their out-of-range V marker to select cobble/moss shading rather
+  than sampling the terrain palette. Later complete-atlas revisions refresh the
   texture, but rebuild that detailed mesh only when the immutable build
   snapshot's surface-height fingerprint changes. Session disconnect/settings
   handlers must still clear the static GPU texture and mesh, and the renderer

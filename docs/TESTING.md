@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 332
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 334
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -150,7 +150,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite passes 332 unit/parameterized cases per loader:
+The active suite passes 334 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
@@ -194,6 +194,7 @@ The active suite passes 332 unit/parameterized cases per loader:
 | `RingSurfaceMeshTest` | Production and safe-small shared-lattice continuity, exact physical seam closure, reference-height path, and incomplete-Atlas inner-rim returns |
 | `RingSurfacePlaceholderTest` | Zero-cell deterministic opaque fallback, world identity, exact known-cell retention, bounded resampling, and smooth distance-decayed generated palette influence |
 | `RingSurfaceMorphTest` | Clamped 750 ms transition timing and symmetric smoother-step progression |
+| `RingSurfaceGenerationFogTest` | Heavy zero-coverage haze, smooth progress clearing, exact completed removal, and malformed-input clamping |
 | `RingSurfaceMeshRefreshPolicyTest` | Partial-mesh reuse, height-fingerprint-driven complete-mesh refresh, and forced rebuilds across layout/completion transitions |
 | `RingTerrainNoiseMappingTest` | Exact legacy vectors, annular seam/cardinals, orthogonal derivatives, mapping-cache isolation, complete-mapping carver identity, overflow rejection, and preset safety |
 | `RingSurfaceSamplingContextTest` | Mapping-3 unit/scaled surface-noise seam continuity plus mapping-2 compatibility and thread-context teardown |
@@ -637,6 +638,13 @@ frames averaging 8.41 ms with one frame over 50 ms. Both runs linked the
 two-texture shader, published multiple revisions, and exited cleanly without a
 GPU texture-lifetime failure. The captures certify the completed handoff; the
 intermediate percentage markers and renderer logs certify the progressive path.
+The later progress-haze and neutral bridge-wall refinement passed the same gate
+on both loaders. Fabric exercised 12.5% and 71.9% partial states before
+completion and recorded 845 motion frames averaging 8.51 ms with one over
+50 ms. NeoForge exercised the partial path through 71.9%, completed the same
+seam/rim captures, and recorded 847 frames averaging 8.42 ms with one over
+50 ms. This proves shader linkage and teardown; subjective fog density and wall
+colour still require owner review in a deliberately incomplete world.
 
 ## 26.1 integrated safe-small client gate
 

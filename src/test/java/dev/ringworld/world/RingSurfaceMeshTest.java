@@ -81,6 +81,17 @@ class RingSurfaceMeshTest {
 
         assertEquals(withoutReturns.vertexCount() + withReturns.segments() * 12,
                 withReturns.vertexCount());
+        List<RingSurfaceMesh.Vertex> vertices = emitted(withReturns);
+        int surfaceVertices = withoutReturns.vertexCount();
+        for (int segment = 0; segment < withReturns.segments(); segment++) {
+            int bridgeOffset = surfaceVertices + segment * 12;
+            for (int vertex = 0; vertex < 6; vertex++) {
+                assertEquals(RingSurfaceMesh.MINIMUM_BRIDGE_TEXTURE_V,
+                        vertices.get(bridgeOffset + vertex).v());
+                assertEquals(RingSurfaceMesh.MAXIMUM_BRIDGE_TEXTURE_V,
+                        vertices.get(bridgeOffset + 6 + vertex).v());
+            }
+        }
     }
 
     private static RingTerrainAtlas variedCompleteAtlas(RingGeometry geometry) {

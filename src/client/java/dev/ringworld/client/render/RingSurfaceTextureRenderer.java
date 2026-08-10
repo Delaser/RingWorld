@@ -32,6 +32,7 @@ import dev.ringworld.world.RingSurfaceLod;
 import dev.ringworld.world.RingSurfaceBuildSnapshot;
 import dev.ringworld.world.RingSurfaceMesh;
 import dev.ringworld.world.RingSurfaceMeshRefreshPolicy;
+import dev.ringworld.world.RingSurfaceGenerationFog;
 import dev.ringworld.world.RingSurfaceMorph;
 import dev.ringworld.world.RingSurfacePlaceholder;
 import dev.ringworld.world.RingTerrainAtlas;
@@ -80,6 +81,8 @@ public final class RingSurfaceTextureRenderer {
     private static GpuTextureView surfaceTextureView;
     private static GpuTexture previousSurfaceTexture;
     private static GpuTextureView previousSurfaceTextureView;
+    private static float surfaceCompletion;
+    private static float previousSurfaceCompletion;
     private static long textureMorphStartedNanos;
     private static RingGeometry bufferedGeometry;
     private static long bufferedWorldHash;
@@ -112,6 +115,11 @@ public final class RingSurfaceTextureRenderer {
 
         Minecraft client = Minecraft.getInstance();
         float textureMorph = updateTextureMorph(System.nanoTime());
+        float visibleCompletion = previousSurfaceTextureView == null
+                ? surfaceCompletion
+                : previousSurfaceCompletion
+                        + (surfaceCompletion - previousSurfaceCompletion) * textureMorph;
+        float generationFog = RingSurfaceGenerationFog.amount(visibleCompletion);
         double cameraAngle = Math.PI * 2.0 * geometry.wrapX(camera.x)
                 / geometry.circumferenceBlocks();
         double cameraRadius = geometry.physicalRadiusAt(camera.y);
@@ -144,7 +152,7 @@ public final class RingSurfaceTextureRenderer {
         modelView.rotateZ((float)-cameraAngle);
         GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(
                 modelView,
-                new Vector4f(1.0F, alpha, textureMorph, 0.0F),
+                new Vector4f(1.0F, alpha, textureMorph, generationFog),
                 new Vector3f((float)cameraAngle, (float)camera.z, 0.0F),
                 new Matrix4f());
 
@@ -240,7 +248,8 @@ public final class RingSurfaceTextureRenderer {
             }
             pendingTextureBuild = null;
             if (build.snapshot().matches(geometry, atlas.worldHash(), revision)) {
-                return uploadTexture(build.images()) ? build.snapshot() : null;
+                return uploadTexture(build.images(), (float)build.snapshot().atlas().completion())
+                        ? build.snapshot() : null;
             }
             build.close();
         }
@@ -350,7 +359,7 @@ public final class RingSurfaceTextureRenderer {
         }
     }
 
-    private static boolean uploadTexture(TextureImages images) {
+    private static boolean uploadTexture(TextureImages images, float completion) {
         if (images.generation() != textureBuildGeneration) {
             images.close();
             return false;
@@ -388,12 +397,16 @@ public final class RingSurfaceTextureRenderer {
         if (surfaceTexture == null || surfaceTextureView == null) {
             surfaceTexture = targetTexture;
             surfaceTextureView = targetView;
+            surfaceCompletion = completion;
+            previousSurfaceCompletion = completion;
             textureMorphStartedNanos = 0L;
         } else {
             previousSurfaceTexture = surfaceTexture;
             previousSurfaceTextureView = surfaceTextureView;
+            previousSurfaceCompletion = surfaceCompletion;
             surfaceTexture = targetTexture;
             surfaceTextureView = targetView;
+            surfaceCompletion = completion;
             textureMorphStartedNanos = System.nanoTime();
         }
         return true;
@@ -505,6 +518,8 @@ public final class RingSurfaceTextureRenderer {
         surfaceTextureView = null;
         if (surfaceTexture != null) surfaceTexture.close();
         surfaceTexture = null;
+        surfaceCompletion = 0.0F;
+        previousSurfaceCompletion = 0.0F;
         textureMorphStartedNanos = 0L;
     }
 
