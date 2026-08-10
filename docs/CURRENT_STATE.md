@@ -82,7 +82,7 @@ worlds created after the seam regression use complete annular mapping v2 (4)
 legacy mapping retained. Mapping identity is persisted, handshaken on new
 `settings_v3`/`settings_ack_v3` channels, attached to every Overworld noise
 router, fingerprinted, and included in the atlas world hash. Both loader test
-suites pass 336 cases. Mapping 4 also transforms vanilla's direct
+suites pass 337 cases. Mapping 4 also transforms vanilla's direct
 `BlendedNoise` leaf; mappings 1-3 remain preserved historical identities. Both
 fresh 16,384×256 stronghold/worldgen gates previously passed
 the five-longitude, three-width-position terrain/height/alias matrix plus the
@@ -292,7 +292,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite passes 336 unit/parameterized cases per loader.
+The active suite passes 337 unit/parameterized cases per loader.
 Fresh production visual-parity runs on 2026-08-10 exercised multiple partial
 Atlas revisions and the two-texture shader on both loaders before completing
 the natural seam and both rim captures. Fabric recorded 831 seam-motion frames
@@ -368,7 +368,7 @@ resource-pressure boundary tracked by #134, before portal routing ran.
 
 The combined alpha-4 integration branch was then built and exercised as one
 candidate rather than relying only on the four issue branches independently.
-Its clean Fabric and NeoForge builds each pass 336 tests. Fresh Atlas-disabled
+Its clean Fabric and NeoForge builds each pass 337 tests. Fresh Atlas-disabled
 2,048×416 two-client runs on both loaders pass the strict full-matrix verifier
 with settings format 3, both seam-placement directions, the shared 54-slot
 double chest and lossless alias recovery, the four-lap/out-of-width Nether
@@ -740,7 +740,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, with 336 unit/parameterized cases passing per loader, and Loom produces
+temporary shims, with 337 unit/parameterized cases passing per loader, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
@@ -966,6 +966,8 @@ and compatibility claims.
   cells through alpha and use one reference-height mesh. Completion performs
   one upgrade to the expanded terrain-height surface; later colour-only
   revisions reuse that mesh and changed height fingerprints rebuild it.
+- A compact top-left `Ring Atlas Generating: X%` indicator reports whole-percent
+  client Atlas coverage while generation is incomplete and disappears at 100%.
 - Live RGB lightmap exposure for the distant surface using the
   full-skylight/no-block-light texel, matching client day/night, weather,
   gamma, lightning, darkness, and night-vision state.

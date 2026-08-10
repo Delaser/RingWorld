@@ -381,7 +381,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite passes 336 unit/parameterized cases per loader. The
+The current suite passes 337 unit/parameterized cases per loader. The
 historical Phase 2 95-error inventory and the subsequent source-port
 checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
@@ -488,12 +488,17 @@ The optional unlisted Windows test package is served from
 `/ringworld/alpha/`. Build it only from a clean pushed revision through the
 normal staging and `prepare_release_packages.py` gates. Publish the ZIP under
 the exact artifact name stored in `RELEASE-MANIFEST.json`, the stable
-`deploy/alpha/Install-RingWorld-Alpha-Windows.bat` bootstrapper,
-`RELEASE-MANIFEST.json`, `SHA256SUMS.txt`, MPL licence, and landing page
-together; back up the previous directory outside the document root and install
-the landing page last. The bootstrapper downloads the current manifest on every
-run, validates format/loader/licence/source identity, selects exactly one safe
-Windows Fabric artifact, and verifies its manifest SHA-256 before extraction.
+loader-specific `deploy/alpha/Install-RingWorld-Alpha-{Fabric,NeoForge}-Windows.bat`
+bootstrappers, `RELEASE-MANIFEST-{FABRIC,NEOFORGE}.json`, `SHA256SUMS.txt`, MPL
+licence, and landing page together; back up the previous directory outside the
+document root and install the landing page last. Keep the historical
+`Install-RingWorld-Alpha-Windows.bat` and `RELEASE-MANIFEST.json` as Fabric
+aliases so previously downloaded installers continue to update. Each
+bootstrapper downloads its current manifest on every run, validates
+format/loader/licence/source identity, selects exactly one safe loader-matched
+Windows artifact, and verifies its manifest SHA-256 before extraction. The two
+named installers use separate local installation directories, so testing one
+loader does not overwrite the other.
 It must never contain a build-specific hash or trust an artifact filename that
 can escape the alpha directory. Run `python3 -m unittest
 scripts/test_alpha_installer.py` and verify the downloaded HTTPS ZIP hash rather

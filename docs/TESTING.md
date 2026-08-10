@@ -150,7 +150,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite passes 336 unit/parameterized cases per loader:
+The active suite passes 337 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
@@ -174,6 +174,7 @@ The active suite passes 336 unit/parameterized cases per loader:
 | `RingEntityTrackingTest` | Existing pairing is retained only for a watched pending canonical destination; initial and out-of-window pairings remain rejected |
 | `RingSkyCycleTest` | Fixed angle, reduced vanilla-sun size, noon/dawn/dusk/midnight tone keyframes, smooth interpolation, time wrapping |
 | `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, durable revision persistence/rollback rejection, idempotent duplicate-tile detection, independent render snapshots, completion, cache monotonicity, mapping-sensitive world hash, and frozen alpha-format incompatible-cache rejection |
+| `RingAtlasHudProgressTest` | Whole-percent incomplete-Atlas label, 99% floor before completion, completion disappearance, and malformed-count rejection |
 | `RingAtlasSurfaceInvalidationTest` | Presentation-X canonicalization, finite-Z exclusion, and stored-top relevance for terrain mutations |
 | `RingAtlasRecaptureQueueTest` | Exact-cell deduplication, 64-cell bounded drain, and bulk overflow collapse into tile work |
 | `RingAtlasPregenerationCursorTest` | X-major canonical enumeration, finite-Z coordinates, non-power-of-two circumference, atlas-backed resume/skip, checked totals, options, state transitions, and zero-work/restarted rate/ETA |
