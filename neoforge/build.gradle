@@ -3,6 +3,10 @@ plugins {
     id 'net.neoforged.moddev' version "${moddevgradle_version}"
 }
 
+tasks.named('check') {
+	dependsOn(rootProject.tasks.named('verifyOutboundPositionPacketInventory'))
+}
+
 version = rootProject.mod_version
 group = rootProject.maven_group
 

@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 317
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 318
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -149,12 +149,13 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite passes 317 unit/parameterized cases per loader:
+The active suite passes 318 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
 | `RingGeometryTest` | Seam continuity, presentation charts and sleeping-position images, default walking length, physical/tangent transforms, noise seam, culling envelope, visibility math, query windows |
 | `RingInteractionCoordinatesTest` | Bidirectional seam-face block-use normalization, positive/negative presentation aliases, and exact preservation of the hit-to-clicked-block offset |
+| `RingBlockEntityOwnershipTest` | Live and still-packed exact aliases remain addressable for save/removal while clean aliases resolve to canonical ownership |
 | `RingMapCompassSupportTest` | Bidirectional nearest-image map sampling/decorations, scale-one seam-banner placement, banner gate, and spawn/lodestone/recovery compass bearing plus exact-target validity |
 | `RingRaidSupportTest` | Periodic raid distance/selection, seam-window POI queries, nearest-image village-centre averaging/deduplication, and canonical wave-spawn readiness windows |
 | `RingObjectTransformTest` | Exact curved rigid-anchor pose, tangent orientation, and presentation-seam continuity |
@@ -1208,7 +1209,8 @@ The scenario verifies:
   views are visible from both, and X=`-1`/`C` block-entity lookups resolve to
   the same two canonical owners. Serialized pending NBT also covers a lone
   alias repairing to canonical ownership and a canonical/alias collision
-  retaining both inventories until explicit recovery. The alias is loaded
+  retaining both inventories until explicit recovery. Save lookup runs while
+  both entries are still packed, before the alias is loaded. The alias is loaded
   first through packed-pending promotion and the direct-entry reconciliation
   policy so the ownership decision cannot pass only under a favorable order.
   This does not yet substitute for a future alias-first region-file fixture
@@ -1229,6 +1231,13 @@ While either client waits to arm the first seam stage, the log periodically
 records its local pose, game mode, and either the missing remote player or the
 remote/expected nearest-image X pair. This is diagnostic only: it does not
 relax the existing ready, proximity, smooth-step, or timeout assertions.
+
+The build contract also inventories all 11 currently positional outbound
+block packet families handled by `ClientConnectionMixin`; both client source
+sets must compile their field-preserving packet reconstruction. The inventory
+includes command/structure/jigsaw/test editors as well as ordinary gameplay
+packets, so a future Minecraft packet addition requires another positional
+audit rather than silently retaining presentation X.
 
 The 2026-08-10 routing refresh also passes the entire matrix at 16,384x256 on
 Fabric and on a warmed NeoForge retry. The first cold NeoForge production run

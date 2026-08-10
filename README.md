@@ -20,7 +20,7 @@ not create an exterior Overworld portal or strand the player in void.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> and the current suite passes 317 unit/parameterized cases per loader.
+> and the current suite passes 318 unit/parameterized cases per loader.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -30,6 +30,8 @@ not create an exterior Overworld portal or strand the player in void.
 > thunder/lightning scenario also passes on both loaders. Runtime block-entity
 > ownership now uses canonical Overworld positions, so a double chest spanning
 > `C-1`/`0` exposes one shared 54-slot inventory from either side of the seam.
+> Outbound positional block packets, including command/structure/jigsaw/test
+> editors, are also canonicalized from the active presentation chart.
 > The physical portal
 > gate now includes positive and negative multi-lap Nether X targets and
 > targets beyond both finite Z rims.
@@ -77,7 +79,7 @@ and promotion approval.
 
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
-> Java 25 module builds with the same 317 tests; its dedicated server reaches
+> Java 25 module builds with the same 318 tests; its dedicated server reaches
 > `Done` and starts/progresses an atlas. Its client now loads the shared
 > resources/shaders and mixins, acknowledges settings format 3, streams atlas
 > metadata/tiles, and renders the complete textured surface in a copied
@@ -271,7 +273,7 @@ The parallel NeoForge module uses the same Java 25 toolchain:
 ./gradlew :neoforge:test :neoforge:build --console=plain
 ```
 
-Both Fabric and NeoForge builds pass 317 unit/parameterized cases per loader.
+Both Fabric and NeoForge builds pass 318 unit/parameterized cases per loader.
 When launching a dedicated development server, use the qualified task
 for the intended loader: `./gradlew :runServer` for Fabric or
 `./gradlew :neoforge:runServer` for NeoForge. Do not use an unqualified

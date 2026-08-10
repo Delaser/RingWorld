@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 317 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 318 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
@@ -322,12 +322,12 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 317
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 318
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 317
+The NeoForge module uses the same Java 25 toolchain and also passes all 318
 unit/parameterized cases:
 
 ```sh
@@ -566,8 +566,9 @@ version numbers.
   canonical owner, while two distinct inventories remain independently
   recoverable and emit an operator warning. Make this decision only after all
   direct saved entries are known, and reserve a canonical pending-NBT key
-  before promoting an alias; serialized entry order must never choose which
-  inventory survives. Never silently merge or delete either inventory.
+  before promoting an alias. Save and removal lookups must preserve both live
+  and still-packed exact aliases; serialized entry order must never choose
+  which inventory survives. Never silently merge or delete either inventory.
 - Nether-to-Overworld portal routing normalizes the already vanilla-scaled
   target at `PortalForcer`: X wraps onto canonical storage, Z clamps to a
   portal-safe creation anchor, and lookup queries the adjacent X images before

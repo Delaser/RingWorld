@@ -101,7 +101,9 @@ contain different block entities, both NBT payloads remain addressable for
 explicit recovery; the mod never guesses which inventory should win.
 Direct saved entries are reconciled only after the complete post-load list is
 known, and packed pending NBT reserves its canonical key before alias
-promotion, so list or map iteration order cannot discard an inventory.
+promotion. Save/removal lookup preserves an exact alias whether it is already
+live or still packed, so list or map iteration order cannot discard an
+inventory.
 
 `RingGeometry.wrapX`, `wrapBlockX`, and `RingChunkCoordinates.wrapChunkX`
 perform the conversion. `RingTopology` supplies higher-level operations.
@@ -406,8 +408,10 @@ they execute before vanilla queues the handler through its packet-thread
 guard. The queued game-thread replay performs the actual nearest-image
 mapping. Calls redirected later in the handler are already behind that guard.
 
-Outbound block break/use packets are converted back to canonical positions by
-`ClientConnectionMixin`. For a block-use hit, the clicked block and hit vector
+Outbound positional block packets are converted back to canonical positions
+by `ClientConnectionMixin`. This includes break/use, signs, pick-block and NBT
+queries, plus command, structure, jigsaw, test-block, and test-instance editor
+actions. For a block-use hit, the clicked block and hit vector
 move by one identical whole-chart offset. This preserves the local clicked
 face across `C-1 -> 0`; canonicalizing those values independently would turn a
 valid adjacent hit into a circumference-sized server distance.

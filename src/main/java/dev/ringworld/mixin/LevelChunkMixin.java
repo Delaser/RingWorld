@@ -121,11 +121,12 @@ abstract class LevelChunkMixin {
 
     private BlockPos exactAliasOrCanonical(BlockPos position) {
         BlockPos canonical = canonical(position);
-        if (!canonical.equals(position)
-                && ((LevelChunk) (Object) this).getBlockEntities().containsKey(position)) {
-            return position;
-        }
-        return canonical;
+        LevelChunk chunk = (LevelChunk) (Object) this;
+        return RingBlockEntityOwnership.saveOrRemovalPosition(
+                position,
+                canonical,
+                chunk.getBlockEntities().containsKey(position),
+                chunk.getBlockEntityNbt(position) != null);
     }
 
     private BlockPos canonical(BlockPos position) {

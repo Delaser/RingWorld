@@ -13,6 +13,18 @@ import java.util.List;
 public final class RingBlockEntityOwnership {
     private RingBlockEntityOwnership() { }
 
+    /**
+     * Keeps an exact legacy alias addressable while either its live owner or
+     * its still-packed NBT exists. Canonicalizing a pending alias during save
+     * would overwrite or duplicate the canonical payload before reconciliation.
+     */
+    public static BlockPos saveOrRemovalPosition(BlockPos requested, BlockPos canonical,
+                                                 boolean exactLive, boolean exactPending) {
+        return !canonical.equals(requested) && (exactLive || exactPending)
+                ? requested
+                : canonical;
+    }
+
     public static void reconcileLoadedAliases(LevelChunk chunk, RingGeometry geometry) {
         for (BlockPos alias : List.copyOf(chunk.getBlockEntities().keySet())) {
             int canonicalX = geometry.wrapBlockX(alias.getX());

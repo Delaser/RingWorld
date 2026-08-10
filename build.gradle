@@ -1254,6 +1254,34 @@ tasks.register("verifyProductionProjectionClient") {
 	}
 }
 
+tasks.register("verifyOutboundPositionPacketInventory") {
+	group = "ringworld verification"
+	description = "Fails unless every audited outbound positional block packet is canonicalized."
+	inputs.file("src/client/java/dev/ringworld/client/mixin/ClientConnectionMixin.java")
+	doLast {
+		def outboundPositionMixin = file(
+				"src/client/java/dev/ringworld/client/mixin/ClientConnectionMixin.java").text
+		[
+				"ServerboundPlayerActionPacket",
+				"ServerboundUseItemOnPacket",
+				"ServerboundSignUpdatePacket",
+				"ServerboundPickItemFromBlockPacket",
+				"ServerboundBlockEntityTagQueryPacket",
+				"ServerboundSetCommandBlockPacket",
+				"ServerboundSetStructureBlockPacket",
+				"ServerboundSetJigsawBlockPacket",
+				"ServerboundJigsawGeneratePacket",
+				"ServerboundSetTestBlockPacket",
+				"ServerboundTestInstanceBlockActionPacket"
+		].each { packetType ->
+			if (!outboundPositionMixin.contains("packet instanceof ${packetType}")) {
+				throw new GradleException(
+						"Outbound positional packet audit is missing ${packetType}")
+			}
+		}
+	}
+}
+
 tasks.register("verifyFabricRuntimeGateContracts") {
 	group = "ringworld verification"
 	description = "Proves the Fabric projection/layout/lifecycle verifiers reject stale or corrupt evidence."
@@ -1395,6 +1423,7 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 
 tasks.named("check") {
 	dependsOn(tasks.named("verifyFabricRuntimeGateContracts"))
+	dependsOn(tasks.named("verifyOutboundPositionPacketInventory"))
 }
 
 tasks.register("prepareCopiedProductionVisualParityWorld") {

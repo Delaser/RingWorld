@@ -862,6 +862,10 @@ final class RingWorldExtendedMultiplayerTest {
             chunk.setBlockEntityNbt(savedAlias);
             chunk.setBlockEntityNbt(savedCanonical);
         });
+        // Exercise the real save boundary before either packed entry is read.
+        // The alias and canonical payloads must serialize independently.
+        CompoundTag pendingAliasNbt = chunk.getBlockEntityNbtForSaving(alias, world.registryAccess());
+        CompoundTag pendingCanonicalNbt = chunk.getBlockEntityNbtForSaving(canonical, world.registryAccess());
         BlockEntity loadedAlias = chunk.getBlockEntity(alias);
         BlockEntity loadedCanonical = chunk.getBlockEntity(canonical);
         CompoundTag aliasNbt = chunk.getBlockEntityNbtForSaving(alias, world.registryAccess());
@@ -870,6 +874,10 @@ final class RingWorldExtendedMultiplayerTest {
         ChestBlockEntity loadedAliasChest = loadedAlias instanceof ChestBlockEntity chest
                 ? chest : null;
         boolean preserved = canonicalChest != null && loadedAliasChest != null
+                && pendingAliasNbt != null
+                && pendingAliasNbt.getIntOr("x", Integer.MIN_VALUE) == alias.getX()
+                && pendingCanonicalNbt != null
+                && pendingCanonicalNbt.getIntOr("x", Integer.MIN_VALUE) == canonical.getX()
                 && chunk.getBlockEntity(canonical) == canonicalChest
                 && chunk.getBlockEntity(alias) == loadedAliasChest
                 && canonicalChest.getItem(0).is(Items.GOLD_INGOT)

@@ -66,7 +66,7 @@ format-3 worlds now use the orthogonal annular mapping
 legacy mapping retained. Mapping identity is persisted, handshaken on new
 `settings_v3`/`settings_ack_v3` channels, attached to every Overworld noise
 router, fingerprinted, and included in the atlas world hash. Both loader test
-suites pass 317 cases and both fresh 16,384×256 stronghold/worldgen gates pass
+suites pass 318 cases and both fresh 16,384×256 stronghold/worldgen gates pass
 the five-longitude, three-width-position terrain/height/alias matrix plus the
 existing biome, seam structure, rim, monument, and portal checks. The uploaded
 alpha-3 jars remain format-2 historical test artifacts; this branch is not yet
@@ -262,7 +262,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite passes 317 unit/parameterized cases per loader.
+The active suite passes 318 unit/parameterized cases per loader.
 
 Issue #147's directional seam-placement loss is fixed at the outbound packet
 ownership boundary. Block-use packets now canonicalize the clicked block and
@@ -295,7 +295,7 @@ resource-pressure boundary tracked by #134, before portal routing ran.
 
 The combined alpha-4 integration branch was then built and exercised as one
 candidate rather than relying only on the four issue branches independently.
-Its clean Fabric and NeoForge builds each pass 317 tests. Fresh Atlas-disabled
+Its clean Fabric and NeoForge builds each pass 318 tests. Fresh Atlas-disabled
 2,048×416 two-client runs on both loaders pass the strict full-matrix verifier
 with settings format 3, both seam-placement directions, the shared 54-slot
 double chest and lossless alias recovery, the four-lap/out-of-width Nether
@@ -514,7 +514,8 @@ The 2026-08-10 Fabric disposable two-client run passed the complete matrix and
 recorded one shared 54-slot container from both halves, cross-view items, and
 canonical alias identity. The matching NeoForge run passed the same explicit
 container/client checks; its serialized pending-NBT recovery marker also
-passes. A serialized Atlas-disabled NeoForge rerun on 2026-08-10 completed the
+passes, including save lookup before the alias and canonical packed entries
+are otherwise read. A serialized Atlas-disabled NeoForge rerun on 2026-08-10 completed the
 entire matrix and strict verifier after the double-chest and recovery markers,
 including sleeping reconnect, death/respawn, Nether/End, post-End stability,
 weather, and both client terminal results. An earlier attempt failed before
@@ -666,7 +667,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, with 317 unit/parameterized cases passing per loader, and Loom produces
+temporary shims, with 318 unit/parameterized cases passing per loader, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server

@@ -7,9 +7,15 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ServerboundBlockEntityTagQueryPacket;
+import net.minecraft.network.protocol.game.ServerboundJigsawGeneratePacket;
 import net.minecraft.network.protocol.game.ServerboundPickItemFromBlockPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
+import net.minecraft.network.protocol.game.ServerboundSetCommandBlockPacket;
+import net.minecraft.network.protocol.game.ServerboundSetJigsawBlockPacket;
+import net.minecraft.network.protocol.game.ServerboundSetStructureBlockPacket;
+import net.minecraft.network.protocol.game.ServerboundSetTestBlockPacket;
 import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
+import net.minecraft.network.protocol.game.ServerboundTestInstanceBlockActionPacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -54,6 +60,41 @@ abstract class ClientConnectionMixin {
         if (packet instanceof ServerboundBlockEntityTagQueryPacket query) {
             return new ServerboundBlockEntityTagQueryPacket(
                     query.getTransactionId(), canonical(query.getPos(), geometry));
+        }
+        if (packet instanceof ServerboundSetCommandBlockPacket commandBlock) {
+            return new ServerboundSetCommandBlockPacket(
+                    canonical(commandBlock.getPos(), geometry), commandBlock.getCommand(),
+                    commandBlock.getMode(), commandBlock.isTrackOutput(),
+                    commandBlock.isConditional(), commandBlock.isAutomatic());
+        }
+        if (packet instanceof ServerboundSetStructureBlockPacket structureBlock) {
+            return new ServerboundSetStructureBlockPacket(
+                    canonical(structureBlock.getPos(), geometry), structureBlock.getUpdateType(),
+                    structureBlock.getMode(), structureBlock.getName(), structureBlock.getOffset(),
+                    structureBlock.getSize(), structureBlock.getMirror(), structureBlock.getRotation(),
+                    structureBlock.getData(), structureBlock.isIgnoreEntities(), structureBlock.isStrict(),
+                    structureBlock.isShowAir(), structureBlock.isShowBoundingBox(),
+                    structureBlock.getIntegrity(), structureBlock.getSeed());
+        }
+        if (packet instanceof ServerboundSetJigsawBlockPacket jigsawBlock) {
+            return new ServerboundSetJigsawBlockPacket(
+                    canonical(jigsawBlock.getPos(), geometry), jigsawBlock.getName(),
+                    jigsawBlock.getTarget(), jigsawBlock.getPool(), jigsawBlock.getFinalState(),
+                    jigsawBlock.getJoint(), jigsawBlock.getSelectionPriority(),
+                    jigsawBlock.getPlacementPriority());
+        }
+        if (packet instanceof ServerboundJigsawGeneratePacket jigsawGenerate) {
+            return new ServerboundJigsawGeneratePacket(
+                    canonical(jigsawGenerate.getPos(), geometry),
+                    jigsawGenerate.levels(), jigsawGenerate.keepJigsaws());
+        }
+        if (packet instanceof ServerboundSetTestBlockPacket testBlock) {
+            return new ServerboundSetTestBlockPacket(
+                    canonical(testBlock.position(), geometry), testBlock.mode(), testBlock.message());
+        }
+        if (packet instanceof ServerboundTestInstanceBlockActionPacket testInstance) {
+            return new ServerboundTestInstanceBlockActionPacket(
+                    canonical(testInstance.pos(), geometry), testInstance.action(), testInstance.data());
         }
         return packet;
     }
