@@ -482,13 +482,19 @@ server or replace an existing user's server list.
 
 The optional unlisted Windows test package is served from
 `/ringworld/alpha/`. Build it only from a clean pushed revision through the
-normal staging and `prepare_release_packages.py` gates. Publish the ZIP,
-checksum-bound installer, `RELEASE-MANIFEST.json`, `SHA256SUMS.txt`, MPL
-licence, and landing page together; back up the previous directory outside the
-document root and install the landing page last. Verify the downloaded HTTPS
-ZIP hash rather than trusting the uploaded file alone. Do not link the alpha
-page from the main showcase unless the owner explicitly changes its unlisted
-status.
+normal staging and `prepare_release_packages.py` gates. Publish the ZIP under
+the exact artifact name stored in `RELEASE-MANIFEST.json`, the stable
+`deploy/alpha/Install-RingWorld-Alpha-Windows.bat` bootstrapper,
+`RELEASE-MANIFEST.json`, `SHA256SUMS.txt`, MPL licence, and landing page
+together; back up the previous directory outside the document root and install
+the landing page last. The bootstrapper downloads the current manifest on every
+run, validates format/loader/licence/source identity, selects exactly one safe
+Windows Fabric artifact, and verifies its manifest SHA-256 before extraction.
+It must never contain a build-specific hash or trust an artifact filename that
+can escape the alpha directory. Run `python3 -m unittest
+scripts/test_alpha_installer.py` and verify the downloaded HTTPS ZIP hash rather
+than trusting the uploaded file alone. Do not link the alpha page from the main
+showcase unless the owner explicitly changes its unlisted status.
 
 Never distribute a used `.prism-data` directory. Create a fresh package from
 the source instance that contains only:

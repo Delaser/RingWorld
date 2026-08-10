@@ -48,8 +48,11 @@ source commit `2ae1ce4`, including the biome-flavoured incomplete-Atlas
 placeholder, 750 ms revision morph, completion-driven haze, and neutral
 cobble/moss rim returns. Its Windows Fabric package SHA-256 is
 `a6390fc76388cc103114d2f385bfb7c7315c15d73d98468176d4eb4d0829d2c6`.
-`https://andwhatnotstudio.com/ringworld/alpha/` now provides a checksum-bound
-one-click installer, the same manual ZIP, MPL licence, and source manifest.
+`https://andwhatnotstudio.com/ringworld/alpha/` now provides a reusable
+manifest-following one-click installer, the same manual ZIP, MPL licence, and
+source manifest. The installer validates manifest identity and the selected
+artifact SHA-256 on every run, so one newly downloaded BAT follows later alpha
+builds without embedding their checksums.
 The packaged server entry is pre-added but is not joined automatically. This
 is a test convenience build, not a Modrinth/CurseForge promotion or 1.0 gate.
 The previous directory is retained outside the document root at

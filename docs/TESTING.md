@@ -1622,12 +1622,14 @@ Run the package/licence tests independently of Minecraft:
 
 ```sh
 python3 -m unittest \
+  scripts/test_alpha_installer.py \
   scripts/test_verify_distribution_license.py \
   scripts/test_stage_modrinth_release.py \
   scripts/test_prepare_release_packages.py
 ```
 
-The package/licence suite covers Fabric and NeoForge runtime metadata,
+The package/licence suite covers the reusable alpha-channel manifest/checksum
+bootstrapper, Fabric and NeoForge runtime metadata,
 dual-candidate shared-contract comparison, staging provenance, reproducible
 client/server archives, and loader-specific launcher updates. Package assembly
 accepts only a generated format-2 staging manifest whose recorded SHA-256,
