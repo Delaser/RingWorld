@@ -480,6 +480,16 @@ constants in `prepare_release_packages.py`, contains no player data, and is
 only copied for a newly created managed instance. It must never auto-join the
 server or replace an existing user's server list.
 
+The optional unlisted Windows test package is served from
+`/ringworld/alpha/`. Build it only from a clean pushed revision through the
+normal staging and `prepare_release_packages.py` gates. Publish the ZIP,
+checksum-bound installer, `RELEASE-MANIFEST.json`, `SHA256SUMS.txt`, MPL
+licence, and landing page together; back up the previous directory outside the
+document root and install the landing page last. Verify the downloaded HTTPS
+ZIP hash rather than trusting the uploaded file alone. Do not link the alpha
+page from the main showcase unless the owner explicitly changes its unlisted
+status.
+
 Never distribute a used `.prism-data` directory. Create a fresh package from
 the source instance that contains only:
 

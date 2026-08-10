@@ -43,6 +43,14 @@ staging rather than release promotion. See `CURSEFORGE_RELEASE.md`.
 The CurseForge media gallery also contains the six approved in-game images
 from the RingWorld showcase page rather than automated diagnostic captures.
 
+On 2026-08-10, the unlisted showcase alpha directory was refreshed from public
+source commit `8eed127`. Its Windows Fabric package SHA-256 is
+`00f90c91f470c640239df385e66e8898113e685f0162113cc215278c8b31abd4`.
+`https://andwhatnotstudio.com/ringworld/alpha/` now provides a checksum-bound
+one-click installer, the same manual ZIP, MPL licence, and source manifest.
+The packaged server entry is pre-added but is not joined automatically. This
+is a test convenience build, not a Modrinth/CurseForge promotion or 1.0 gate.
+
 Issue #33 now supplies a local fail-closed staging workflow for any later
 manual Fabric upload. It builds and validates exactly one runtime jar, records
 SHA-256/SHA-512 and the clean pushed public-source revision, and rejects stale
