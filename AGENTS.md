@@ -10,13 +10,13 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 291 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 307 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
 resources load through NeoForge adapters; its render pipeline registers; and a
 copied production 16,384×256 world opens through the integrated server with a
-format-2 settings acknowledgement and streaming atlas metadata/tiles. The
+format-3 settings acknowledgement and streaming atlas metadata/tiles. The
 `:neoforge:runProductionProjectionClient` copies a named
 source save into an isolated run directory, waits for a complete atlas, writes
 tangent/handoff/radial captures, records frame pacing, verifies the outputs,
@@ -317,12 +317,12 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 291
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 307
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 291
+The NeoForge module uses the same Java 25 toolchain and also passes all 307
 unit/parameterized cases:
 
 ```sh
@@ -444,6 +444,15 @@ version numbers.
   villages and other surface structures then choose a Y that disagrees with
   the cylindrical terrain below them. Leave Z and the null-geometry Nether/End
   path vanilla.
+- Terrain-noise mapping is a persisted worldgen identity. Saved settings
+  formats 1 and 2 must upgrade to format 3 with `LEGACY_AXIAL`; only a fresh
+  format-3 world may select `ANNULAR`. The annular transform uses
+  `(R+Z)sin(theta),(R+Z)cos(theta)` and removes the legacy quarter-ring
+  Jacobian collapse. Keep mapping selection identical across biome, density,
+  cave/aquifer/ore, and base-height paths; include it in the settings
+  handshake, layout fingerprint, generator cache key, and atlas world hash.
+  Never silently migrate an existing world's mapping or accept an atlas from
+  the other mapping.
 - Atlas tile application is idempotent. Duplicate dirty tiles must not advance
   the client render revision, force another cache save, or rebuild the complete
   texture/mesh. Only the actual incomplete-to-complete transition bypasses the
@@ -556,7 +565,7 @@ version numbers.
   tangent and radial-up projection captures after changing projection,
   celestial render order, or the proxy pipeline.
 - Settings payload identifiers are wire-layout-versioned
-  (`settings_v2`/`settings_ack_v2`). Never append or reorder codec fields while
+  (`settings_v3`/`settings_ack_v3`). Never append or reorder codec fields while
   reusing an old identifier; old clients crash on unread bytes before a useful
   rejection can be sent. Advance the channel generation and keep the
   `RingProtocolIdentityTest` expectation synchronized.
@@ -668,7 +677,7 @@ version numbers.
   creation editor's visible Small-is-experimental/mining advisory. Keep the policy
   flag `volatile`: generation runs on worker threads. Missing-policy legacy
   worlds must remain untouched.
-- The extended Globals UBO publishes the complete format-2 layout and render
+- The extended Globals UBO publishes the complete format-3 layout and render
   profile. Its std140 field order, `GlobalSettings` allocation, and every
   custom program that declares Globals must change together.
 - The dedicated multiplayer clients must not connect before

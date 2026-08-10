@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 291
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 307
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -45,11 +45,14 @@ also has a focused diagnostic gate:
 
 It copies the named source save from `neoforge/run-client/saves/` into
 `neoforge/run-production-projection/saves/`, opens only that disposable copy,
-waits for resource/shader loading, format-2 acknowledgement, and a complete
-atlas, records tangent/handoff/radial screenshots plus frame metrics, verifies
-the evidence, and exits. The production 16,384×256 noon run passes with settled
-tangent/handoff/radial averages of 10.7/8.4/8.4 ms per frame. The dusk, night,
-and rain variants also pass. Dusk is frozen at tick 12,000, matching
+waits for resource/shader loading, the current settings acknowledgement, and a
+complete atlas, records tangent/handoff/radial screenshots plus frame metrics,
+verifies the evidence, and exits. The historical format-2 production
+16,384×256 noon run passed with settled tangent/handoff/radial averages of
+10.7/8.4/8.4 ms per frame; the dusk, night, and rain variants also passed.
+Those captures describe alpha 3 and do not qualify the new format-3 annular
+candidate. A fresh candidate source must acknowledge format 3 and mapping 2.
+Dusk is frozen at tick 12,000, matching
 `RingSkyCycle`'s warm dusk keyframe; tick 14,008 is already night and must not
 be used as dusk evidence.
 
@@ -99,6 +102,15 @@ deliberately does not apply a cross-hardware FPS threshold.
 The 2026-08-08 production run recorded 426 frames at 16.742 ms average,
 51.018 ms maximum, and one frame over 50 ms.
 
+Issue #149 repeated the projection and natural seam/both-rim visual-parity
+gates on 2026-08-10 using independently generated format-3 annular production
+sources. Both loaders acknowledged format 3, received all 65,536 Atlas cells,
+and passed tangent, 12-chunk handoff, radial, seam, and both-rim verification.
+The fresh seam-motion windows sampled 702 frames at 11.99 ms average on Fabric
+and 753 frames at 9.60 ms average on NeoForge; both retained a 0.25-block
+maximum natural crossing step. Owner inspection is still required for the
+subjective banding/colour/LOD verdict.
+
 NeoForge's dedicated multiplayer gate uses three isolated processes below
 `neoforge/run-multiplayer/`: one server and clients A/B. Prepare the fixture,
 start `:neoforge:runMultiplayerServer` and both qualified client runs, then
@@ -137,7 +149,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite passes 291 unit/parameterized cases per loader:
+The active suite passes 307 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
@@ -150,13 +162,13 @@ The active suite passes 291 unit/parameterized cases per loader:
 | `RingDimensionCostEstimateTest` | Exact production benchmark retention, atlas wire/tick calculation, checked scaling, and supported-maximum arithmetic |
 | `RingGenerationBoundaryTest` | Shared generated-rim top bound for default/custom wall heights and world-top clamping |
 | `RingDimensionMatrixTest` | Safe-small, aligned playable minimum, narrow, production, former-wide, long/narrow, wide/medium, and custom-wall layouts across topology, final saved spawn canonicalization for negative/seam aliases, worldgen coordinate seams/finite-band limits, atlas and 6/12/28/64 render budgets |
-| `RingSettingsHandshakeTest` | Immutable safe-small/production/wide/custom-wall payload identity, acknowledgement, and mismatch rejection |
+| `RingSettingsHandshakeTest` | Immutable safe-small/production/wide/custom-wall payload identity, acknowledgement, mapping mismatch, malformed mapping, and fingerprint rejection |
 | `RingHandshakeTrackerTest` | Correct, duplicate, missing/expired, unexpected, disconnect, and reconnect acknowledgement state |
 | `RingLayoutFingerprintTest` | Immutable layout and rim semantic identity |
 | `RingRenderProfileTest` | Shared handoff values, texture/mesh budgets, and whole-ring clamping |
 | `RingEntityTrackingTest` | Existing pairing is retained only for a watched pending canonical destination; initial and out-of-window pairings remain rejected |
 | `RingSkyCycleTest` | Fixed angle, reduced vanilla-sun size, noon/dawn/dusk/midnight tone keyframes, smooth interpolation, time wrapping |
-| `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, durable revision persistence/rollback rejection, idempotent duplicate-tile detection, independent render snapshots, completion, cache monotonicity, world hash |
+| `RingTerrainAtlasTest` | Seam interpolation, colour/height interpolation, tile/disk round-trip, durable revision persistence/rollback rejection, idempotent duplicate-tile detection, independent render snapshots, completion, cache monotonicity, mapping-sensitive world hash, and frozen alpha-format incompatible-cache rejection |
 | `RingAtlasSurfaceInvalidationTest` | Presentation-X canonicalization, finite-Z exclusion, and stored-top relevance for terrain mutations |
 | `RingAtlasRecaptureQueueTest` | Exact-cell deduplication, 64-cell bounded drain, and bulk overflow collapse into tile work |
 | `RingAtlasPregenerationCursorTest` | X-major canonical enumeration, finite-Z coordinates, non-power-of-two circumference, atlas-backed resume/skip, checked totals, options, state transitions, and zero-work/restarted rate/ETA |
@@ -168,7 +180,7 @@ The active suite passes 291 unit/parameterized cases per loader:
 | `RingAtlasPregenerationServiceStorageTest` | Fresh/partial/complete/corrupt format-6 service persistence seams: interrupted partial checkpoints resume without a byte rewrite, complete reload is idempotent, and corrupt current input is rejected |
 | `RingAtlasPregenerationSchedulingPolicyTest` | Config-disabled `IDLE`, paused, saving, and cancelled handles cannot schedule chunks; only a running handle may request work |
 | `AtlasPregenerationHeadlessPolicyTest` | Explicit headless startup suppresses normal background autostart and replaces only the unstarted config-disabled `IDLE` handle |
-| `AtlasPregenerationReportTest` | Loader-neutral terminal report validation requires complete evidence or documented unavailable-identity sentinels |
+| `AtlasPregenerationReportTest` | Schema-2 loader-neutral terminal report validation requires complete evidence, a supported explicit terrain-noise mapping, or documented unavailable-identity sentinels |
 | `HeadlessPrewarmEvidenceFilesTest` | Direct dedicated launch removes stale terminal/progress evidence before publishing a new headless job |
 | `FabricHeadlessNetworkingAdmissionTest` | Platform-isolated compiled-bytecode assertion that Fabric's later array-backed JOIN listener rechecks headless admission and returns before settings/handshake work |
 | `NeoForgeHeadlessPlayerAdmissionTest` | Platform-isolated active/inactive admission side effects plus a compiled-bytecode assertion that the cancellable NeoForge PlayerList guard runs at method HEAD, before play-packet buffering and the later settings injection |
@@ -176,7 +188,8 @@ The active suite passes 291 unit/parameterized cases per loader:
 | `RingSurfaceBuildSnapshotTest` | Immutable atlas-content retention across live changes, colour-only height-fingerprint stability, and identity/revision rejection |
 | `RingSurfaceMeshTest` | Production and safe-small shared-lattice band/segment continuity, exact physical seam closure with U=0/1, and the reference-height path |
 | `RingSurfaceMeshRefreshPolicyTest` | Partial-mesh reuse, height-fingerprint-driven complete-mesh refresh, and forced rebuilds across layout/completion transitions |
-| `RingWorldSettingsStorageTest` | Dimension-owned settings path and legacy settings migration plan |
+| `RingTerrainNoiseMappingTest` | Exact legacy vectors, annular seam/cardinals, orthogonal derivatives across the full query band, mapping-cache isolation, integer-overflow rejection, and preset safety |
+| `RingWorldSettingsStorageTest` | Dimension-owned paths plus codec-backed format-1/2 migration that persists legacy terrain mapping while fresh format-3 settings use annular terrain |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
 | `RingWorldCreationUiModelTest` | Small/Medium/Large presets, exact live maths, valid/custom previews, aggregated malformed/structural/cross-field validation, immutable-next-new-world confirmation, and geometry-aware monument state |
 | `RingPhysicalPoseTest` | Cardinal physical position/basis, vanilla yaw/pitch conversion, and rendered local-up direction |
@@ -406,12 +419,20 @@ launches the source. The dedicated adapter suppresses ordinary background
 autostart, disables empty-server pausing, immediately disconnects accepted
 player joins, and uses normal
 server ticks. Inspect `world/ringworld-prewarm/progress.json` and
-`result.json`. The finalizer accepts only `"status": "COMPLETE"`, so corrupt,
+`result.json`. Schema 2 records the explicit terrain-noise mapping beside the
+mapping-sensitive world/layout hashes. The finalizer accepts only
+`"status": "COMPLETE"`, a supported mapping, and exact totals, so corrupt,
 incompatible, ordinary-existing, interrupted, and failed fixtures fail even if
 Minecraft exits zero. Stop during generation to verify checkpoint/restart: the
 first result is `INTERRUPTED` and the next run resumes from durable atlas cells.
 Use `-PringHeadlessPrewarmResume=true` for that second run; the default fresh
 task deliberately deletes its disposable world.
+
+Fresh format-3 fixtures default to `terrainNoiseMapping=2`. A deliberate copied
+legacy-world run must set `-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1`;
+the NeoForge equivalent is
+`-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping=1`. Missing, unknown,
+or unexpected mapping evidence is a verifier failure.
 
 NeoForge provides the same contract through its own isolated directory and
 loader lifecycle adapter:
@@ -431,8 +452,11 @@ terminal-result variants. Fresh geometry overrides are
 `-PringNeoForgeHeadlessPrewarmWidth=<blocks>`. A fresh 2,048×416 NeoForge run completed all 3,328
 chunks/13,312 cells and the verifier accepted only its identity-bearing
 `COMPLETE` report. Fabric also completed an exact production prewarm on
-2026-08-06. Do not claim an equivalent production NeoForge prewarm until it
-has its own terminal evidence.
+2026-08-06. On 2026-08-10 fresh format-3 production runs completed separately
+on Fabric and NeoForge: each generated all 16,384 chunks / 65,536 cells, wrote
+schema-2 mapping-2 `COMPLETE` evidence, saved normally, and passed a subsequent
+complete-atlas resume/load run. Fabric took 38m16s at about 29 cells/s;
+NeoForge took about 41m at about 27 cells/s.
 
 The structure matrix is also loader-selectable:
 
@@ -440,6 +464,14 @@ The structure matrix is also loader-selectable:
 python3 scripts/run_worldgen_structure_matrix.py --loader fabric
 python3 scripts/run_worldgen_structure_matrix.py --loader neoforge
 ```
+
+The runner uses root-qualified `:runStrongholdTestServer` for Fabric and
+`:neoforge:runStrongholdTestServer` for NeoForge. Do not remove the leading
+colon: the unqualified task name matches both projects and can corrupt the two
+disposable worlds by launching both loaders together. On the production reload,
+the cardinal gate still proves periodic base-height/base-column equality but
+does not compare a pre-feature query to an already feature-populated chunk
+heightmap.
 
 Each loader uses separate worlds, logs, and report directories. The NeoForge
 matrix passes fresh and exact-reload production 16,384×256 plus the two
@@ -517,6 +549,31 @@ height queries, bounded stronghold and portal-room geometry, an activatable
 portal, folded Eye continuity, both textured rims through their saved height,
 and generated exterior void.
 
+Issue #149 supersedes that wide layout for fresh format-3 admission: annular
+terrain cannot cross radius zero, so a width must leave at least a 32-block
+noise radius after the 64-block query margin. On 2026-08-10 both loader gates
+passed a fresh 16,384×256 annular world for seed `ringworld-regression-1`.
+Each emitted matching base-height/base-column and generated-terrain evidence at
+X `0`, `4096`, `8192`, `12288`, and `16383`, at Z `-120`, `0`, and `119`,
+then passed all biome-family, seam-mineshaft, rim, monument, stronghold, and
+End-portal checks. Reproduce sequentially with:
+
+```sh
+./gradlew :runStrongholdTestServer --console=plain \
+  -PringStrongholdTestSeed=ringworld-regression-1 \
+  -PringStrongholdTestCircumference=16384 \
+  -PringStrongholdTestWidth=256 \
+  -PringStrongholdTestWallHeight=160 \
+  -PringStrongholdTestResume=false -PringWorldgenMatrix=true
+
+./gradlew :neoforge:runStrongholdTestServer --console=plain \
+  -PringStrongholdTestSeed=ringworld-regression-1 \
+  -PringStrongholdTestCircumference=16384 \
+  -PringStrongholdTestWidth=256 \
+  -PringStrongholdTestWallHeight=160 \
+  -PringStrongholdTestResume=false -PringWorldgenMatrix=true
+```
+
 ## Multi-seed worldgen and structure seam matrix
 
 After accepting the ignored stronghold test server's local EULA, run:
@@ -546,6 +603,12 @@ Machine-readable results are ignored under
 `WORLDGEN_STRUCTURE_MATRIX_2026-08-01.md`. The normal
 `runStrongholdTestServer` remains strict: without
 `-PringWorldgenMatrix=true`, a requested but unsatisfied monument fails it.
+
+On 2026-08-10, the root-qualified runner passed the complete format-3 annular
+matrix independently on Fabric and NeoForge: production fresh/reload records
+were stable, all 14 major biome families were present, and the aggregate
+cave/ore/tree/loot, seam-crossing structure, satisfied monument, bounded
+unsatisfied monument, stronghold, portal, rim, and exterior checks passed.
 
 ## 26.1 integrated safe-small client gate
 
@@ -875,6 +938,12 @@ task fails before launch when `level.dat` is absent, never writes to the source,
 and refreshes only the ignored destination. The client opens that copy through
 Minecraft's in-process world-open flow rather than the unreliable quick-play
 argument. Runtime directories must not be committed or packaged.
+
+On 2026-08-10 this lifecycle passed again on independently generated format-3
+annular production sources for both Fabric and NeoForge. Each completed
+Overworld → Nether → Overworld → End → Overworld, saved and
+disconnected normally, proved client/GPU state clear, and reopened the same
+world with its exact format-3 fingerprint and complete Atlas restored.
 
 The test client controls its integrated server directly through the Minecraft
 26.1 `TeleportTransition` API. After
@@ -1426,10 +1495,12 @@ fingerprint to differ. Override destinations with
 needed; they must be distinct folder identifiers under `run-layout-switch/saves/`.
 The matching NeoForge command uses the same expectation value with the
 `ringNeoForgeLayoutSwitch*` property names.
-The 2026-08-08 dual-loader evidence passed at 2,048×256 with distinct settings
-fingerprints, Atlas world hashes, and terrain-content fingerprints; both
+The refreshed 2026-08-10 dual-loader evidence passed at production
+16,384×256 with two complete format-3/annular Atlases, distinct settings
+fingerprints, Atlas world hashes, and terrain-content fingerprints. Both
 clients reported complete RingWorld-owned session/GPU teardown before opening
-the second save.
+the second save. Fabric opened world hashes `4b031fbba76f61fc` then
+`99b37c331155cee5`; NeoForge opened the same pair in reverse order.
 Search `run-layout-switch/logs/latest.log` for:
 
 ```text

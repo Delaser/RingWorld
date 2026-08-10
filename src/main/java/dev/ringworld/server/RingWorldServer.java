@@ -112,7 +112,8 @@ public final class RingWorldServer {
         RingWorldSettings settings = RingWorldSettings.get(world);
         RingGeometry geometry = settings.geometry();
         WORLD_GEOMETRY.put(world, geometry);
-        attachGeneratorSettings(world, geometry, settings.wallHeightBlocks());
+        attachGeneratorSettings(world, geometry, settings.wallHeightBlocks(),
+                settings.terrainNoiseMapping());
         return geometry;
     }
 
@@ -131,7 +132,9 @@ public final class RingWorldServer {
         }
     }
 
-    private static void attachGeneratorSettings(ServerLevel world, RingGeometry geometry, int wallHeightBlocks) {
+    private static void attachGeneratorSettings(ServerLevel world, RingGeometry geometry,
+                                                int wallHeightBlocks,
+                                                int terrainNoiseMapping) {
         RingStructurePolicy policy = RingStructurePolicy.get(world);
         boolean guaranteeStronghold = policy.guaranteesStronghold();
         ChunkGenerator generator = world.getChunkSource().getGenerator();
@@ -140,6 +143,7 @@ public final class RingWorldServer {
         var generatorState = world.getChunkSource().getGeneratorState();
         if (generator instanceof RingWorldGeneratorAccess access) {
             access.ringworld$setGeometry(geometry);
+            access.ringworld$setTerrainNoiseMapping(terrainNoiseMapping);
             access.ringworld$setWallHeight(wallHeightBlocks);
             access.ringworld$setGuaranteeStronghold(guaranteeStronghold);
             periodicClimateSampler = access.ringworld$getPeriodicClimateSampler(
@@ -170,8 +174,8 @@ public final class RingWorldServer {
                 RingWorldMod.LOGGER.error("Saved RingWorld ocean-monument candidate is incompatible with the current built-in registry or biome data; it will not be moved or regenerated");
             }
         }
-        RingWorldMod.LOGGER.debug("Attached RingWorld generator policy: guaranteeStronghold={}, monumentStatus={}",
-                guaranteeStronghold, policy.oceanMonument().status());
+        RingWorldMod.LOGGER.debug("Attached RingWorld generator policy: guaranteeStronghold={}, monumentStatus={}, terrainNoiseMapping={}",
+                guaranteeStronghold, policy.oceanMonument().status(), terrainNoiseMapping);
     }
 
     /** Allocation-free geometry lookup for chunk and network hot paths. */

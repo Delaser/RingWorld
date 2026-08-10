@@ -228,10 +228,11 @@ public final class HeadlessPrewarmCoordinator {
             JsonObject json = new JsonObject();
             json.addProperty("type", "progress");
             json.addProperty("state", progress.state().name());
-            json.addProperty("schemaVersion", 1);
+            json.addProperty("schemaVersion", 2);
             json.addProperty("identityAvailable", true);
             json.addProperty("worldHash", Long.toUnsignedString(atlas.worldHash()));
             json.addProperty("layoutFingerprint", Long.toUnsignedString(settings.layoutFingerprint()));
+            json.addProperty("terrainNoiseMapping", settings.terrainNoiseMapping());
             json.addProperty("circumferenceBlocks", settings.circumferenceBlocks());
             json.addProperty("widthBlocks", settings.widthBlocks());
             json.addProperty("completedChunks", atlas.presentChunkCount());
@@ -255,9 +256,10 @@ public final class HeadlessPrewarmCoordinator {
                     dev.ringworld.world.AtlasPregenerationState.FAILED, 0, 0, 0, 0, 0,
                     Duration.ZERO, Optional.empty(), failure) : handle.progress();
             boolean identityAvailable = atlas != null && settings != null;
-            AtlasPregenerationReport report = new AtlasPregenerationReport(1, status, identityAvailable,
+            AtlasPregenerationReport report = new AtlasPregenerationReport(2, status, identityAvailable,
                     identityAvailable ? atlas.worldHash() : 0L,
                     identityAvailable ? settings.layoutFingerprint() : 0L,
+                    identityAvailable ? settings.terrainNoiseMapping() : 0,
                     identityAvailable ? atlas.presentChunkCount() : 0L,
                     identityAvailable ? RingAtlasPregenerationCursor.checkedTotalChunks(
                             atlas.geometry().circumferenceChunks(), atlas.geometry().widthChunks()) : 0L,
@@ -271,6 +273,11 @@ public final class HeadlessPrewarmCoordinator {
             json.addProperty("identityAvailable", report.identityAvailable());
             json.addProperty("worldHash", Long.toUnsignedString(report.worldHash()));
             json.addProperty("layoutFingerprint", Long.toUnsignedString(report.layoutFingerprint()));
+            if (identityAvailable) {
+                json.addProperty("terrainNoiseMapping", report.terrainNoiseMapping());
+            } else {
+                json.add("terrainNoiseMapping", null);
+            }
             if (identityAvailable) {
                 json.addProperty("circumferenceBlocks", settings.circumferenceBlocks());
                 json.addProperty("widthBlocks", settings.widthBlocks());

@@ -61,7 +61,7 @@ class LoaderRuntime:
 def loader_runtime(loader: str) -> LoaderRuntime:
     if loader == "fabric":
         return LoaderRuntime(
-            "runStrongholdTestServer",
+            ":runStrongholdTestServer",
             ROOT / "run-stronghold-test" / "logs" / "latest.log",
             DEFAULT_REPORT_DIR,
         )

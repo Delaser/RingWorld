@@ -18,6 +18,7 @@ public final class ClientRingState {
     private static volatile RingGeometry geometry;
     private static volatile int wallHeightBlocks;
     private static volatile int surfaceReferenceY;
+    private static volatile int terrainNoiseMapping;
     private static volatile long layoutFingerprint;
     @Nullable private static volatile RingPosition cameraPosition;
     private static volatile long cameraSeamCrossings;
@@ -45,9 +46,19 @@ public final class ClientRingState {
 
     public static void set(RingGeometry newGeometry, int newWallHeightBlocks,
                            int newSurfaceReferenceY, long newLayoutFingerprint) {
+        set(newGeometry, newWallHeightBlocks, newSurfaceReferenceY,
+                dev.ringworld.world.RingTerrainNoiseMapping.CURRENT,
+                newLayoutFingerprint);
+    }
+
+    public static void set(RingGeometry newGeometry, int newWallHeightBlocks,
+                           int newSurfaceReferenceY, int newTerrainNoiseMapping,
+                           long newLayoutFingerprint) {
         geometry = newGeometry;
         wallHeightBlocks = newWallHeightBlocks;
         surfaceReferenceY = newSurfaceReferenceY;
+        terrainNoiseMapping = dev.ringworld.world.RingTerrainNoiseMapping.requireSupported(
+                newTerrainNoiseMapping);
         layoutFingerprint = newLayoutFingerprint;
         cameraPosition = null;
         cameraSeamCrossings = 0;
@@ -75,6 +86,7 @@ public final class ClientRingState {
 
     public static int wallHeightBlocks() { return wallHeightBlocks; }
     public static int surfaceReferenceY() { return surfaceReferenceY; }
+    public static int terrainNoiseMapping() { return terrainNoiseMapping; }
     public static long layoutFingerprint() { return layoutFingerprint; }
 
     /**
@@ -201,6 +213,7 @@ public final class ClientRingState {
         return geometry == null
                 && wallHeightBlocks == 0
                 && surfaceReferenceY == 0
+                && terrainNoiseMapping == 0
                 && layoutFingerprint == 0L
                 && cameraPosition == null
                 && cameraSeamCrossings == 0L
@@ -272,6 +285,7 @@ public final class ClientRingState {
         geometry = null;
         wallHeightBlocks = 0;
         surfaceReferenceY = 0;
+        terrainNoiseMapping = 0;
         layoutFingerprint = 0L;
         cameraPosition = null;
         cameraSeamCrossings = 0;

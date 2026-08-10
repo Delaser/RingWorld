@@ -15,8 +15,8 @@ All identifiers use the `ringworld` namespace.
 
 | Direction | Identifier | Fields | Purpose |
 | --- | --- | --- | --- |
-| S2C | `ringworld:settings_v2` | width, circumference, seed, wallHeight, surfaceReferenceY, formatVersion, layoutFingerprint | Install the complete immutable world layout |
-| C2S | `ringworld:settings_ack_v2` | formatVersion, independently recomputed layoutFingerprint | Prove the client installed and verified the same layout |
+| S2C | `ringworld:settings_v3` | width, circumference, seed, wallHeight, surfaceReferenceY, terrainNoiseMapping, formatVersion, layoutFingerprint | Install the complete immutable world layout and worldgen identity |
+| C2S | `ringworld:settings_ack_v3` | formatVersion, independently recomputed layoutFingerprint | Prove the client installed and verified the same layout |
 | S2C | `ringworld:terrain_atlas_metadata_v2` | worldHash, sampleStep, columns, rows, tileSize, presentCells, complete, revision | Describe server atlas/cache identity and durable surface generation |
 | C2S | `ringworld:terrain_atlas_request_v2` | worldHash, revision, cacheComplete | Request a full snapshot or subscribe an exact complete cache |
 | S2C | `ringworld:terrain_atlas_tile_v2` | worldHash, tileX, tileZ, byte array | Transfer one height/colour tile |
@@ -30,7 +30,7 @@ Payload registration occurs in `RingWorldNetworking.registerPayloads` during
 common initialization.
 
 The layout fingerprint covers the seed, width, circumference, saved wall
-height, surface reference, settings format, rim thickness, and rim style
+height, surface reference, terrain-noise mapping, settings format, rim thickness, and rim style
 version. The client recomputes it from the decoded fields instead of merely
 echoing the server-provided value. The same layout fields feed worldgen, shader
 globals, terrain-atlas identity, and cache invalidation. The common
@@ -48,10 +48,10 @@ sequenceDiagram
     S->>S: Player joins
     alt Explicit headless atlas prewarm is active
         S-->>C: Disconnect before any RingWorld payload or handshake state
-    else Client cannot receive ringworld:settings_v2
+    else Client cannot receive ringworld:settings_v3
         S-->>C: Disconnect: RingWorld missing or out of date
     else Payload supported
-        S->>C: settings(W,C,seed,wall,surface,format,fingerprint)
+        S->>C: settings(W,C,seed,wall,surface,noiseMapping,format,fingerprint)
         alt Client format unsupported
             C-->>S: Disconnect: incompatible format
         else Supported
@@ -76,9 +76,10 @@ sequenceDiagram
 ```
 
 Current geometry protocol compatibility is `RingWorldSettings.FORMAT_VERSION`
-(currently 2). Format 1 saved settings migrate explicitly to format 2 with the
-vanilla Overworld surface reference Y=64; format 1 network peers are not
-accepted. There is no feature-bit negotiation: compatibility requires the
+(currently 3). Format 1 and 2 saved settings migrate explicitly to format 3
+with the vanilla Overworld surface reference Y=64 and the legacy terrain-noise
+mapping. Fresh format-3 worlds use the corrected annular mapping. Older network
+peers are not accepted. There is no feature-bit negotiation: compatibility requires the
 exact settings format and the complete current settings, revisioned-atlas, and
 map-control channel generations. Those behaviors are a single engine contract,
 not independently optional features. A semantic change to coordinate meaning
@@ -86,7 +87,7 @@ or required packet behavior must increment the format, update both ends, and
 add mismatch tests.
 
 Payload channel identifiers also name their byte-layout generation. The
-complete-layout protocol uses `settings_v2`/`settings_ack_v2`. A breaking codec
+complete-layout protocol uses `settings_v3`/`settings_ack_v3`. A breaking codec
 change must use a new identifier instead of reusing the old channel: an old
 codec otherwise consumes its known prefix and Netty disconnects on unread
 trailing bytes before RingWorld can show a useful mismatch message. With a new
@@ -122,7 +123,9 @@ tracker is not started, atlas metadata cannot be emitted, and the later
 existing play-login/settings/world-packet order.
 
 Atlas-pregeneration status is independent from settings and atlas tile codecs:
-its `_v1` identifiers must advance on any layout change. Status observers are
+its `_v1` identifiers advance only when their own wire layout changes. The
+mapping-sensitive `worldHash` rejects status/control traffic for another world
+or terrain mapping without changing these payload bytes. Status observers are
 cleared on disconnect/world unload, receive periodic snapshots no more than
 once per 20 ticks plus immediate transitions, and cannot mutate atlas state
 from the network thread. Control actions and lifecycle states use explicit

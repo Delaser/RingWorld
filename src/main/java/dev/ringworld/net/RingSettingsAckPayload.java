@@ -11,7 +11,7 @@ import net.minecraft.resources.Identifier;
 public record RingSettingsAckPayload(int formatVersion, long fingerprint)
         implements CustomPacketPayload {
     public static final Type<RingSettingsAckPayload> ID =
-            new Type<>(Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "settings_ack_v2"));
+            new Type<>(Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "settings_ack_v3"));
     public static final StreamCodec<RegistryFriendlyByteBuf, RingSettingsAckPayload> CODEC = StreamCodec.composite(
             ByteBufCodecs.VAR_INT, RingSettingsAckPayload::formatVersion,
             ByteBufCodecs.LONG, RingSettingsAckPayload::fingerprint,

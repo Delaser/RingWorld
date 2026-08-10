@@ -1,7 +1,7 @@
 # Current state
 
-Last audited: 2026-08-08 against the public `main` integration baseline and
-the current release-candidate changes. The final
+Last audited: 2026-08-10 against the public `main` integration baseline and
+the issue-#149 release-blocker branch. The final
 Minecraft 1.21.11 implementation remains historical provenance at
 `mc-1.21.11-final` / `2c98650`.
 
@@ -14,7 +14,7 @@ The current dual-loader alpha candidate's validated code baseline is commit
 `9ec25789e1418fd3b1877c3c23d8388cbb880a0ed562ef5f0608498df0605097`;
 its NeoForge SHA-256 is
 `ac8b8776d85038512bb85dab8967a32a53e8d33128a4ccae17b51b65b214938a`.
-The clean dual build/stage, 291 tests per loader, focused distribution suite,
+The clean dual alpha build/stage, 291 tests per loader, focused distribution suite,
 dual-loader safe-small multiplayer gates, and production NeoForge
 Atlas-concurrency matrix pass. The final staging manifest supplies the exact
 post-documentation corresponding-source revision. Machine evidence and the
@@ -56,6 +56,40 @@ The ignored local evidence and exact procedures are recorded in
 
 This document separates demonstrated implementation from planned or incomplete
 work. It should be updated after every substantial milestone.
+
+Issue #149 corrects the alpha terrain-banding defect without silently changing
+existing worlds. The legacy axial mapping ignored intrinsic Z in one noise
+axis and its coordinate Jacobian collapsed at quarter-ring longitudes. Fresh
+format-3 worlds now use the orthogonal annular mapping
+`((R+Z)sin(theta),(R+Z)cos(theta))`; formats 1 and 2 upgrade with the exact
+legacy mapping retained. Mapping identity is persisted, handshaken on new
+`settings_v3`/`settings_ack_v3` channels, attached to every Overworld noise
+router, fingerprinted, and included in the atlas world hash. Both loader test
+suites pass 307 cases and both fresh 16,384×256 stronghold/worldgen gates pass
+the five-longitude, three-width-position terrain/height/alias matrix plus the
+existing biome, seam structure, rim, monument, and portal checks. The uploaded
+alpha-3 jars remain format-2 historical test artifacts; this branch is not yet
+a replacement release candidate. Fresh dual-loader production/reload plus both
+safe-small policy-seed matrices now pass. Fresh production headless Atlas
+generation and complete-atlas resume/load also pass on both loaders. Fresh
+format-3 production projection, natural seam/both-rim visual parity, and the
+Overworld/Nether/End save-disconnect-reopen lifecycle now pass on both loaders;
+owner visual review remains before promotion.
+
+The 2026-08-10 fresh-candidate graphical runs used the independently generated
+production worlds rather than an alpha save. Fabric and NeoForge each loaded
+all 65,536 Atlas cells, acknowledged format 3, and verified tangent, 12-chunk
+handoff, and radial captures. Their natural seam traversals retained 0.25-block
+steps and sampled 702 frames at 11.99 ms average on Fabric and 753 frames at
+9.60 ms average on NeoForge before capturing both textured rims. Both lifecycle
+runs restored the exact format-3 fingerprint and Atlas after Nether and End
+transfers, normal save/disconnect, full client-state clear, and same-process
+reopen. These automated captures do not replace owner judgement of perceived
+terrain banding and colour/LOD quality.
+
+Headless prewarm evidence schema 2 now records the supported terrain-noise
+mapping explicitly in progress and terminal JSON; both loader finalizers reject
+an absent/unknown mapping in addition to stale identity or incomplete totals.
 
 On 2026-08-02, Phase 4 began with issue #90. The eleven Fabric-owned
 entrypoint, lifecycle, networking, environment-path, and automated-client
@@ -227,7 +261,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite passes 291 unit/parameterized cases per loader.
+The active suite passes 307 unit/parameterized cases per loader.
 
 #69 compares production atlas steps 8/4/2/1 with a checked cost matrix and a
 repeatable format-6 save/load/tile/CPU-texture benchmark. Finer candidates use
@@ -264,10 +298,11 @@ visual projection/parity gates now pass on both loaders and show the formerly
 reported triangle absent.
 
 Issues #130 and #131 now have their local runtime evidence as well. Fabric's
-exact production 16,384×256 headless prewarm completed on 2026-08-06; the
-NeoForge headless-only adapter remains recorded at safe-small, while the later
-production connected-player/restart run below covers the full-size scheduling,
-watchdog, and durable-resume acceptance. `/ringworld atlas start` starts an idle durable partial
+exact production 16,384×256 headless prewarm completed on 2026-08-06. Issue
+#149 then supplied fresh format-3 annular production prewarms on both loaders on
+2026-08-10: Fabric completed in 38m16s and NeoForge in about 41m, each with
+16,384/16,384 chunks, 65,536/65,536 cells, schema 2, mapping 2, normal save,
+and a separate complete-atlas resume/load pass. `/ringworld atlas start` starts an idle durable partial
 atlas and `/ringworld atlas resume` reattaches that saved partial work after an
 `IDLE` restart without replacing active or release-pending work. On 2026-08-08,
 fresh Fabric and cold NeoForge two-client Atlas-concurrency fixtures passed the
@@ -460,8 +495,9 @@ natural seam-motion interval: Fabric sampled 426 frames at 16.742 ms average,
 16.661 ms average, 21.858 ms maximum, and zero frames over 50 ms. Both strict
 loader verifiers passed.
 
-The same-size/different-seed layout-switch regression also passes both
-loaders at 2,048×256. Each process opened two complete-atlas worlds with equal
+The refreshed 2026-08-10 same-size/different-seed layout-switch regression
+also passes both loaders at production 16,384×256. Each process opened two
+complete format-3/annular Atlas worlds with equal
 geometry but distinct settings fingerprints, Atlas world hashes, and terrain
 content fingerprints; disconnect cleared every RingWorld-owned client session
 and static GPU resource before the second world was accepted.
@@ -527,8 +563,8 @@ migrated settings, rejected its incompatible legacy atlas, regenerated and
 verified 2,000/2,000 chunks (8,000 cells), and left the 66-file/47,931,005-byte
 source fingerprint unchanged. The later #70 gate supplies the production-scale
 benchmark and recovery evidence. An exact production Fabric prewarm also
-completed successfully on 2026-08-06. NeoForge's recorded unattended prewarm
-remains safe-small; no production NeoForge prewarm is claimed.
+completed successfully on 2026-08-06. Fresh format-3 unattended production
+prewarms subsequently passed on both loaders on 2026-08-10, as recorded above.
 The independent copied ordinary-world fixture now also reaches the
 pre-`ServerLevelEvents.LOAD` constructor-tail rejection seam: it writes an
 atomic `REJECTED` report with unavailable identity sentinels and the original
@@ -748,7 +784,7 @@ and compatibility claims.
 
 ### Rendering
 
-- Curved terrain shader using a synchronized format-2 layout.
+- Curved terrain shader using a synchronized format-3 layout.
 - Named extended Globals UBO fields for circumference, width, surface
   reference, saved wall height, wall/cloud elevations, physical centre, view
   distance, handoff, detail, and haze.
@@ -846,8 +882,8 @@ and compatibility claims.
   is unavailable; ordinary integrated-server biome tint remains unchanged.
   The rebuilt atlas contains zero black cells (median luminance 72.7 instead
   of 0).
-- Layout wire generation 2 uses versioned `settings_v2` and
-  `settings_ack_v2` channels. Stale generation-1 clients are rejected with a
+- Layout wire generation 3 uses versioned `settings_v3` and
+  `settings_ack_v3` channels. Stale earlier clients are rejected with a
   package-update message instead of crashing Netty after leaving ten unread
   settings bytes. Shareable launchers now refresh managed mod files in an
   existing Prism instance on every start without touching accounts, saves, or
@@ -1040,7 +1076,8 @@ and compatibility claims.
   and generated-world size, and warns above 30 minutes or 512 MiB. These are
   planning figures rather than performance guarantees; atlas transport bounds
   are calculated exactly.
-- Saved format-2 settings win before generation; format 1 migrates explicitly.
+- Saved format-3 settings win before generation; formats 1 and 2 migrate
+  explicitly while retaining the legacy terrain-noise mapping.
 - The full immutable layout is sent to clients and used for walls, clouds,
   shaders, and atlas identity.
 - The 26.1 F3 position group reports presentation and canonical Ring

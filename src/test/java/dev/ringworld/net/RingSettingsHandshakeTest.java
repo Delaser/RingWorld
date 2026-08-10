@@ -1,6 +1,7 @@
 package dev.ringworld.net;
 
 import dev.ringworld.world.RingWorldSettings;
+import dev.ringworld.world.RingTerrainNoiseMapping;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -40,9 +41,20 @@ class RingSettingsHandshakeTest {
         RingSettingsPayload payload = RingSettingsHandshake.payloadFor(settings);
         RingSettingsPayload changedWall = new RingSettingsPayload(payload.width(),
                 payload.circumference(), payload.seed(), payload.wallHeight() + 16,
-                payload.surfaceReferenceY(), payload.formatVersion(), payload.fingerprint());
+                payload.surfaceReferenceY(), payload.terrainNoiseMapping(),
+                payload.formatVersion(), payload.fingerprint());
+        RingSettingsPayload changedMapping = new RingSettingsPayload(payload.width(),
+                payload.circumference(), payload.seed(), payload.wallHeight(),
+                payload.surfaceReferenceY(), RingTerrainNoiseMapping.LEGACY_AXIAL,
+                payload.formatVersion(), payload.fingerprint());
+        RingSettingsPayload unknownMapping = new RingSettingsPayload(payload.width(),
+                payload.circumference(), payload.seed(), payload.wallHeight(),
+                payload.surfaceReferenceY(), 99,
+                payload.formatVersion(), payload.fingerprint());
 
         assertFalse(RingSettingsHandshake.hasMatchingPayloadFingerprint(changedWall));
+        assertFalse(RingSettingsHandshake.hasMatchingPayloadFingerprint(changedMapping));
+        assertFalse(RingSettingsHandshake.hasMatchingPayloadFingerprint(unknownMapping));
         assertFalse(RingSettingsHandshake.accepts(settings,
                 new RingSettingsAckPayload(payload.formatVersion(), payload.fingerprint() ^ 1L)));
         assertFalse(RingSettingsHandshake.accepts(settings,

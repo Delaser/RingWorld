@@ -31,7 +31,7 @@ class WorldgenStructureMatrixTest(unittest.TestCase):
     def test_selects_isolated_loader_runtime(self):
         fabric = loader_runtime("fabric")
         neoforge = loader_runtime("neoforge")
-        self.assertEqual("runStrongholdTestServer", fabric.task)
+        self.assertEqual(":runStrongholdTestServer", fabric.task)
         self.assertEqual(":neoforge:runStrongholdTestServer", neoforge.task)
         self.assertEqual(ROOT / "run-stronghold-test" / "logs" / "latest.log", fabric.run_log)
         self.assertEqual(ROOT / "neoforge" / "run-stronghold-test" / "logs" / "latest.log",

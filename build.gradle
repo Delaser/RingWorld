@@ -181,6 +181,8 @@ loom {
 			vmArg "-Dringworld.strongholdTest=true"
 			vmArg "-Dringworld.worldgenMatrix=" + providers.gradleProperty("ringWorldgenMatrix")
 					.orElse("false").get()
+			vmArg "-Dringworld.strongholdTestResume=" + providers.gradleProperty("ringStrongholdTestResume")
+					.orElse("false").get()
 			programArg "nogui"
 		}
 		headlessPrewarmServer {
@@ -769,6 +771,10 @@ tasks.register("verifyHeadlessPrewarm") {
 		def resultName = providers.gradleProperty("ringHeadlessPrewarmResult").orElse("result.json").get().trim()
 		def expectedCircumference = providers.gradleProperty("ringHeadlessPrewarmCircumference").orElse("2048").get().toInteger()
 		def expectedWidth = providers.gradleProperty("ringHeadlessPrewarmWidth").orElse("416").get().toInteger()
+		def expectedMapping = providers.gradleProperty("ringHeadlessPrewarmExpectedTerrainNoiseMapping").orElse("2").get().toInteger()
+		if (!(expectedMapping in [1, 2])) {
+			throw new GradleException("-PringHeadlessPrewarmExpectedTerrainNoiseMapping must be 1 or 2")
+		}
 		def result = new File(headlessPrewarmDirectory, "world/ringworld-prewarm/" + resultName)
 		if (!result.isFile()) {
 			throw new GradleException("Headless prewarm did not write a terminal result; inspect " + result)
@@ -779,7 +785,8 @@ tasks.register("verifyHeadlessPrewarm") {
 		} catch (Exception failure) {
 			throw new GradleException("Headless prewarm result is not valid JSON: " + result, failure)
 		}
-		if (!(report instanceof Map) || report.schemaVersion != 1 || report.status != "COMPLETE" || report.identityAvailable != true
+		if (!(report instanceof Map) || report.schemaVersion != 2 || report.status != "COMPLETE" || report.identityAvailable != true
+				|| report.terrainNoiseMapping != expectedMapping
 				|| !report.containsKey("atlasPath") || !report.atlasPath || !report.containsKey("failureReason") || report.failureReason != null
 				|| !(report.totalChunks instanceof Number) || !(report.completedChunks instanceof Number)
 				|| !(report.totalCells instanceof Number) || !(report.completedCells instanceof Number)
