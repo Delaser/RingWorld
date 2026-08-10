@@ -261,7 +261,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite passes 311 unit/parameterized cases per loader.
+The active suite passes 312 unit/parameterized cases per loader.
 
 Issue #147's directional seam-placement loss is fixed at the outbound packet
 ownership boundary. Block-use packets now canonicalize the clicked block and
@@ -479,6 +479,49 @@ entity visible to both clients across the seam. Client interaction now waits
 for both target chunks before the server places its block, and fixture startup
 clears saved weather so reused worlds cannot satisfy the new evidence early.
 
+Issue #146 identified a missing runtime block-entity ownership boundary.
+Chunk acquisition already selected the canonical holder, but vanilla
+`LevelChunk` still keyed its block-entity maps by the full raw `BlockPos`.
+Consequently, a double chest spanning `C-1`/`0` could resolve its partner via
+X=`C` or X=`-1` and expose two independent 27-slot inventories. The shared,
+server-Overworld-only `LevelChunkMixin` now canonicalizes block-state and
+block-entity map positions before creation, lookup, removal, and save lookup.
+The 2026-08-10 Fabric disposable two-client run passed the complete matrix and
+recorded one shared 54-slot container from both halves, cross-view items, and
+canonical alias identity. The matching NeoForge run passed the same explicit
+container/client checks; its serialized pending-NBT recovery marker also
+passes. A serialized Atlas-disabled NeoForge rerun on 2026-08-10 completed the
+entire matrix and strict verifier after the double-chest and recovery markers,
+including sleeping reconnect, death/respawn, Nether/End, post-End stability,
+weather, and both client terminal results. An earlier attempt failed before
+the chest fixture when client B did not arm the baseline seam stage; the
+client harness now records its local pose, game mode, remote position, and
+expected nearest image while waiting so this startup condition is diagnosable.
+No automatic destructive merge is attempted if an already-corrupted save
+contains two distinct alias-backed inventories. Saved-chunk post-load retains
+the raw alias through vanilla NBT position decoding: a lone alias repairs to
+its canonical owner, while a canonical/alias collision keeps both payloads
+independently addressable and logs recovery guidance. The runtime regression
+uses serialized chest NBT for both cases rather than injecting only live map
+entries. It deliberately promotes/loads the alias before the canonical entry
+through the packed-pending path and the same direct-entry reconciliation
+policy used by post-load, proving the ownership decision itself is independent
+of iteration order. The production `runPostLoad` redirect resolves on both
+loader servers, but a future fixture should still drive an alias-first region
+file through that exact vanilla callback rather than invoking its two shared
+components separately.
+
+The same cold dual-loader rerun exposed a fixture-only sleep/reconnect race:
+the client acknowledgement could arrive after a cold server had already
+processed the disconnect, and disconnect/login could also finish between two
+slow server ticks. The harness now captures the old `ServerPlayer` when the
+server successfully starts sleep and treats its later replacement as
+definitive reconnect evidence, while retaining the bounded timeout and all
+awake/session/bed/proximity assertions. Gameplay behavior is unchanged.
+The corrected timing path completed the final Fabric matrix; the code is
+shared and dual-build green, while a fresh terminal NeoForge replay remains
+part of #134's warmed/staggered harness work rather than issue #146.
+
 The #96 refresh completed Fabric and NeoForge safe-small 6/12/28 tangent,
 handoff, and radial-up captures. Fabric average frame times were
 8.636/8.646/11.915 ms with 0/1/2 frames over 50 ms. NeoForge's tangent
@@ -599,7 +642,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, with 295 unit/parameterized cases passing per loader, and Loom produces
+temporary shims, with 312 unit/parameterized cases passing per loader, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
