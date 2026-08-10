@@ -42,9 +42,8 @@ also pass. The shared GUI-scale-4 atlas map/control fixture passes all eleven
 captures and its ordered live-revision probe on both loaders. The shared
 menu-only world-creation fixture also passes thirteen footer/editor/error/preset/
 confirmation captures across GUI scales 1–4, including a 320×270 logical view,
-on both loaders without creating
-a world. A real graphical
-Windows run, exact-candidate review, and owner release go/no-go remain. The
+on both loaders without creating a world. Real graphical Windows runs,
+exact-candidate review, and owner release go/no-go are complete. The
 expanded shared real-client map/compass fixture also passes on both loaders:
 filled-map pixels and player/banner markers cross the seam in both directions,
 world-added item frames exercise both sides, scale/lock and banner
@@ -70,12 +69,11 @@ tangent/radial visual handoff review and repeatable Fabric release staging also
 pass. The complete production atlas regression gate passes generation/recovery,
 live revisions, layout/lifecycle switching, two-client synchronization, and
 resource/frame-pacing review. The P1–P4 topology, worldgen, protocol, and
-renderer architecture parents are closed. Optional convenience packaging now
-has a frozen exact candidate with passing macOS in-place, empty-data macOS
-first-run, and dedicated-server smokes. A real graphical Windows launch,
-independent release-candidate review, broader
-gameplay compatibility, and compatibility work remain, so
-the Fabric alpha is not a stable release yet. See
+renderer architecture parents are closed. Optional convenience packaging has
+passing macOS in-place, empty-data macOS first-run, dedicated-server, and real
+Windows owner smokes. Owner gameplay, visual, Windows, and independent review
+gates are complete; the active source prepares the matched 1.0 release. Broad
+compatibility work remains post-release. See
 `docs/CURRENT_STATE.md` and `docs/VISUAL_HANDOFF_REVIEW_2026-08-01.md`.
 Exact Fabric and NeoForge alpha 3 files are uploaded while the Modrinth project
 remains **Under review**. The same verified jars were submitted to CurseForge
@@ -326,7 +324,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 337
+`build/libs/ringworld-1.0.0+mc26.1.2.jar`; the current suite contains 337
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
@@ -353,8 +351,8 @@ layout-switch, production-lifecycle, stronghold/worldgen, headless-prewarm,
 and dedicated two-client gates also pass on isolated fixtures. Local
 dual-loader packaging and the packaged macOS NeoForge client smoke also pass;
 a qualified `:neoforge:runAtlasUiClient` additionally verifies the shared
-pause-menu atlas workflow and all eleven screenshots. The remaining release
-gates are tracked under #12, #13, and #97.
+pause-menu atlas workflow and all eleven screenshots. Release publication is
+tracked under #97; #12, #13, #95, and #96 are complete.
 
 `scripts/stage_modrinth_release.py --loader both --build` checks the active
 Java generation, always performs a fresh dual build, pair-validates the known
@@ -365,7 +363,7 @@ It also verifies the embedded `ringworld-build.properties` identity displayed
 by the RingWorld Map, so `release_label` must advance with both loader release
 descriptors.
 The current release metadata separates the shared runtime artifact version
-from loader-specific public alpha-4 identifiers; never relabel a generic
+from loader-specific public 1.0 identifiers; never relabel a generic
 artifact as a new hosted file outside this fail-closed path.
 Keep that fail-closed Java 25 preflight and source-link placeholder validation
 synchronized with the active Minecraft toolchain; do not replace its direct

@@ -42,7 +42,7 @@ the other showcase files were accepted unchanged.
    development/source jars, Prism bundles, server overlays, or both loaders in
    one file.
 4. Select Client and Server, Java 25, Minecraft 26.1.2, and only the matching
-   loader. Use Alpha until the owner release gate permits promotion.
+   loader. The completed owner gate authorizes the 1.0 files as Release.
 5. Add Fabric API as a required relation only to the Fabric file.
 6. Put the exact immutable source-commit URL in both changelogs. Confirm the
    project remains MPL-2.0 and its Source tab still points to the public repo.
@@ -55,6 +55,6 @@ the other showcase files were accepted unchanged.
    captures with test overlays, debug text, or known visual defects as release
    screenshots.
 
-Uploading an alpha does not authorize a live-server restart, world change, or
-promotion to beta/release. Those still require the owner sign-off and explicit
-go/no-go.
+The 2026-08-10 owner instruction explicitly authorizes the matched 1.0 upload,
+showcase-link update, and rollback-safe NeoForge demo migration. Future uploads
+or world changes require a new explicit go/no-go.

@@ -24,9 +24,8 @@ uploads, publishes, changes a listing, or accepts credentials.
 
 `version.artifact_version` names and validates the jar bytes. The separate
 `version.version_number` is the public Modrinth identifier and must be the
-current loader-labelled alpha-4 value. This keeps the shared runtime version
-stable while preventing Fabric, NeoForge, or the earlier alpha 3 files from
-sharing an ambiguous hosted identifier.
+current loader-labelled 1.0 value. This prevents Fabric, NeoForge, and older
+alpha files from sharing an ambiguous hosted identifier.
 Generated optional-package provenance retains both identities rather than
 relabelling the shared runtime jar.
 

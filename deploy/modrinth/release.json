@@ -10,15 +10,15 @@
     "license_id": "MPL-2.0"
   },
   "version": {
-    "name": "RingWorld 0.2.0 alpha 4 for Minecraft 26.1.2 (Fabric)",
-    "version_number": "0.2.0-alpha.4-fabric+mc26.1.2",
-    "artifact_version": "0.2.0+mc26.1.2",
-    "version_type": "alpha",
+    "name": "RingWorld 1.0 for Minecraft 26.1.2 (Fabric)",
+    "version_number": "1.0.0-fabric+mc26.1.2",
+    "artifact_version": "1.0.0+mc26.1.2",
+    "version_type": "release",
     "game_versions": ["26.1.2"],
     "loaders": ["fabric"],
     "environment": "client_and_server",
     "dependencies": [{"project_id": "P7dR8mSH", "dependency_type": "required"}],
-    "featured": false
+    "featured": true
   },
   "fabric": {
     "mod_id": "ringworld",

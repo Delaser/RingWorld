@@ -1,18 +1,21 @@
-## RingWorld 0.2.0 alpha 4 — Minecraft 26.1.2 NeoForge
+## RingWorld 1.0 — Minecraft 26.1.2 NeoForge
 
-- Finite periodic Overworld gameplay with curved terrain and complete-ring
-  atlas rendering.
-- Required client/server settings and protocol handshake.
-- Configurable immutable circumference, width, and breakable finite rims.
-- Nether and End remain vanilla.
-- Corrected annular terrain-noise mapping for fresh worlds; existing alpha
-  worlds retain their original mapping.
-- Fixed both block-placement directions and persistent double chests across
-  the circumference seam.
-- Normalized multi-lap Nether returns and finite-width portal destinations.
+- A finite, configurable Overworld that truly wraps around one canonical X
+  plane with continuous entities, interactions, vehicles, combat and terrain.
+- Curved terrain, clouds, sky lighting, finite textured rims, and a complete-
+  ring Atlas beyond ordinary chunk render distance.
+- Three world-size presets plus custom immutable dimensions and live geometry,
+  walking-time, Atlas and generation estimates.
+- Resumable whole-ring Atlas generation with progressive terrain colouring,
+  generation haze, a visible progress indicator and durable cache recovery.
+- Corrected annular terrain generation for new worlds while older alpha worlds
+  retain their persisted historical mapping.
+- Seam-safe structures, portals, beds, maps, compasses, raids, block entities,
+  redstone, fluids, double chests and bidirectional block placement.
+- Vanilla Nether and End, with multi-lap Nether returns normalized into the
+  finite Overworld band.
 
-This alpha is for compatibility and pre-launch testing. Install it on both the
-server and every client using NeoForge. See the project page for known
-compatibility limits.
+Install RingWorld on the server and every client using NeoForge. See the
+project page for known compatibility limits.
 
 Corresponding source: [exact immutable commit]({{RINGWORLD_CORRESPONDING_SOURCE_URL}}).

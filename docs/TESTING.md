@@ -144,11 +144,11 @@ corresponding `src/platform/` trees.
 Expected artifact:
 
 ```text
-build/libs/ringworld-0.2.0+mc26.1.2.jar
+build/libs/ringworld-1.0.0+mc26.1.2.jar
 ```
 
 The NeoForge development artifact is
-`neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
+`neoforge/build/libs/ringworld-neoforge-1.0.0+mc26.1.2.jar`.
 
 The active suite passes 337 unit/parameterized cases per loader:
 
@@ -363,7 +363,7 @@ close/reopen, pause/resume, cancel/retry, and complete screens as
 PNGs. After completion it also places and removes a sampled high surface block,
 requiring two changed tile broadcasts and ordered durable revision commits
 before passing. The initial map stage additionally requires the embedded
-`Alpha 4 · 0.2.0+mc26.1.2` label and fresh-world
+`1.0 · 1.0.0+mc26.1.2` label and fresh-world
 `Worldgen: annular-complete-v2 (4)` identity. It is a real integrated-server test:
 generation remains active because `RingWorldMapScreen` is explicitly
 non-pausing. Keep its run directory ignored and do not point it at a personal
@@ -378,7 +378,7 @@ fixture startup and lifecycle registration are loader-owned.
 
 The 2026-08-10 Fabric rerun after adding the menu identity lines passed all
 eleven captures and the revisioned-edit probe. Its initial GUI-scale-4 capture
-visibly showed `Alpha 4 · 0.2.0+mc26.1.2` and
+visibly showed `1.0 · 1.0.0+mc26.1.2` and
 `Worldgen: annular-complete-v2 (4)` without overlapping the progress fields or
 controls.
 

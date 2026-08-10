@@ -17,9 +17,9 @@ loader instance like any other mod. Create a new RingWorld world from the
 Create World screen, or configure a dedicated server before its first
 Overworld load. Saved RingWorld dimensions are immutable.
 
-## Alpha compatibility
+## Compatibility
 
-This is an experimental engine-level alpha. Back up worlds before testing.
+RingWorld is an engine-level mod. Back up worlds before changing versions.
 Mods that replace renderers or shaders, gravity, chunk or world-generation
 internals, entity tracking, distance rules, or networking may conflict. Do not
 assume Sodium, Iris, large world-generation suites, or another loader are

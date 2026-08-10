@@ -10,7 +10,7 @@ Current development versions:
 - Minecraft Java 26.1.2
 - Fabric Loader 0.19.3
 - Fabric API 0.155.2+26.1.2
-- RingWorld 0.2.0+mc26.1.2
+- RingWorld 1.0.0+mc26.1.2
 - Java 25
 
 Copy `server.properties.example` to `server.properties` only in the installed

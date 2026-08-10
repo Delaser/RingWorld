@@ -70,12 +70,11 @@ not create an exterior Overworld portal or strand the player in void.
 > The validated server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
 
-The current dual-loader alpha candidate and its exact source/artifact hashes
-are recorded in the
+The dual-loader alpha evidence is recorded in the
 [2026-08-08 candidate checkpoint](docs/DUAL_LOADER_RELEASE_CANDIDATE_2026-08-08.md).
-It is machine-validated and uploaded as an alpha, but still awaits owner
-gameplay/visual review, real graphical Windows launches, independent review,
-and promotion approval.
+Owner gameplay, visual, Windows, and final-review gates are complete. The
+current source prepares the matched Fabric and NeoForge 1.0 release candidate;
+hosted publication is tracked by issue #97.
 
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
@@ -104,7 +103,7 @@ and promotion approval.
 
 ## Distribution
 
-The exact dual-loader candidate is uploaded to
+The previous dual-loader candidate is uploaded to
 [Modrinth](https://modrinth.com/mod/ringworld/versions) as Fabric version
 `lnY3EC8t` and NeoForge version `D19TF1Qj`. The project is still **Under
 review**. Both alpha 3 files target Minecraft 26.1.2 and Java 25 and must be
@@ -121,7 +120,7 @@ confirmation and do not replace the alpha-3 mod-host files.
 Use the [owner sign-off runbook](docs/OWNER_RELEASE_SIGNOFF_2026-08-09.md)
 before approving promotion or live deployment.
 
-Maintainers stage matching Fabric and NeoForge candidates with
+Maintainers stage matching Fabric and NeoForge 1.0 candidates with
 `python3 scripts/stage_modrinth_release.py --loader both --build` under Java 25
 from a clean, pushed public branch. The command fails early with Java setup
 guidance if the active runtime is not Java 25. It produces one reviewed runtime
@@ -289,7 +288,7 @@ PATH="$JAVA_HOME/bin:$PATH" \
 The expected development artifact is:
 
 ```text
-build/libs/ringworld-0.2.0+mc26.1.2.jar
+build/libs/ringworld-1.0.0+mc26.1.2.jar
 ```
 
 The parallel NeoForge module uses the same Java 25 toolchain:
