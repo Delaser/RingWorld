@@ -37,9 +37,11 @@ REVISION = "3f6cb9ee26578bd395cde9469977377a70314aad"
 
 
 def release_config(loader: str = "fabric") -> dict:
+    public_version = f"0.2.0-alpha.4-{loader}+mc26.1.2"
+    public_loader = "Fabric" if loader == "fabric" else "NeoForge"
     config = {
         "project": {"slug": "ringworld", "project_type": "mod", "client_side": "required", "server_side": "required", "license_id": "MPL-2.0"},
-        "version": {"version_number": VERSION, "version_type": "alpha", "game_versions": ["26.1.2"], "loaders": [loader], "environment": "client_and_server", "dependencies": [{"project_id": "P7dR8mSH", "dependency_type": "required"}] if loader == "fabric" else [], "featured": False},
+        "version": {"name": f"RingWorld 0.2.0 alpha 4 for Minecraft 26.1.2 ({public_loader})", "version_number": public_version, "artifact_version": VERSION, "version_type": "alpha", "game_versions": ["26.1.2"], "loaders": [loader], "environment": "client_and_server", "dependencies": [{"project_id": "P7dR8mSH", "dependency_type": "required"}] if loader == "fabric" else [], "featured": False},
         "source": {"repository": "https://github.com/Delaser/RingWorld"},
     }
     if loader == "fabric":
@@ -148,6 +150,8 @@ class ModrinthStagingTest(unittest.TestCase):
         self.assertEqual(list(target.glob("*.jar")), [target / self.jar.name])
         self.assertTrue(manifest["upload_file_only"])
         self.assertEqual(manifest["source"]["revision"], REVISION)
+        self.assertEqual(manifest["public_version"],
+                         "0.2.0-alpha.4-fabric+mc26.1.2")
         self.assertIn(manifest["hashes"]["sha256"], (target / "SHA256SUMS.txt").read_text())
         source_url = f"https://github.com/Delaser/RingWorld/commit/{REVISION}"
         self.assertIn(source_url, (target / "PROJECT_DESCRIPTION.md").read_text())
@@ -162,10 +166,34 @@ class ModrinthStagingTest(unittest.TestCase):
         self.assertEqual(target, self.root / "out" / VERSION / "neoforge")
         self.assertEqual(list(target.glob("*.jar")), [target / self.neo_jar.name])
         self.assertEqual(manifest["loader"], "neoforge")
+        self.assertEqual(manifest["public_version"],
+                         "0.2.0-alpha.4-neoforge+mc26.1.2")
         self.assertEqual(manifest["source"]["revision"], REVISION)
         source_url = f"https://github.com/Delaser/RingWorld/commit/{REVISION}"
         self.assertIn(source_url, (target / "PROJECT_DESCRIPTION.md").read_text())
         self.assertIn(source_url, (target / "CHANGELOG.md").read_text())
+
+    def test_rejects_ambiguous_or_wrong_loader_public_version(self) -> None:
+        for loader, public_version in (
+                ("fabric", VERSION),
+                ("fabric", "0.2.0-alpha.4-neoforge+mc26.1.2"),
+                ("neoforge", "0.2.0-alpha.4-fabric+mc26.1.2")):
+            with self.subTest(loader=loader, public_version=public_version):
+                config = release_config(loader)
+                config["version"]["version_number"] = public_version
+                with self.assertRaisesRegex(VerificationError, "version.version_number"):
+                    validate_release_config(config, loader)
+
+    def test_rejects_missing_or_mismatched_artifact_version(self) -> None:
+        for artifact_version in (None, "", "0.2.1+mc26.1.2"):
+            with self.subTest(artifact_version=artifact_version):
+                config = release_config("fabric")
+                if artifact_version is None:
+                    del config["version"]["artifact_version"]
+                else:
+                    config["version"]["artifact_version"] = artifact_version
+                with self.assertRaisesRegex(VerificationError, "version.artifact_version"):
+                    validate_release_config(config, "fabric")
 
     def test_rejects_absent_or_duplicate_public_source_placeholder(self) -> None:
         write_jar(self.jar)

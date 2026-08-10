@@ -357,6 +357,9 @@ Java generation, always performs a fresh dual build, pair-validates the known
 outputs, writes provenance manifests consumed by optional packaging, and
 renders the exact verified public commit URL into every staged public
 `PROJECT_DESCRIPTION.md` and `CHANGELOG.md`. It accepts no alternate jar path.
+The current release metadata separates the shared runtime artifact version
+from loader-specific public alpha-4 identifiers; never relabel a generic
+artifact as a new hosted file outside this fail-closed path.
 Keep that fail-closed Java 25 preflight and source-link placeholder validation
 synchronized with the active Minecraft toolchain; do not replace its direct
 setup error with the compiler failure produced by an older Gradle JVM. The

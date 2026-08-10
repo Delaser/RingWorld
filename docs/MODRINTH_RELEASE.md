@@ -1,6 +1,6 @@
 # Modrinth release workflow
 
-Last updated: 2026-08-08. Issues
+Last updated: 2026-08-10. Issues
 [#33](https://github.com/Delaser/RingWorld/issues/33) and
 [#94](https://github.com/Delaser/RingWorld/issues/94) track this workflow.
 
@@ -24,7 +24,13 @@ python3 scripts/stage_modrinth_release.py --loader both --build
 It runs the clean Fabric and NeoForge Gradle test/build gates, validates each
 expected runtime jar, compares their shared contract, and creates ignored
 review directories at `dist/modrinth/0.2.0+mc26.1.2/fabric/` and
-`.../neoforge/`. The pair gate requires matching versions and byte-identical
+`.../neoforge/`. The local runtime artifact version remains
+`0.2.0+mc26.1.2`, while the prepared public identifiers are unambiguous and
+loader-specific: `0.2.0-alpha.4-fabric+mc26.1.2` and
+`0.2.0-alpha.4-neoforge+mc26.1.2`. Staging rejects the generic artifact
+version or the other loader's public identifier, preventing a format-3 alpha
+from being confused with the hosted format-2 alpha 3. The pair gate requires
+matching artifact versions and byte-identical
 shared mixins, settings/geometry, compatibility API, protocol models, and
 shader assets before either stage is written. Use `--loader fabric` or
 `--loader neoforge` only when deliberately writing one loader's review
@@ -73,6 +79,12 @@ python3 -m unittest \
   scripts/test_prepare_release_packages.py
 ```
 
+The current focused suite contains 42 checks with two expected
+platform-specific skips, including fail-closed rejection of ambiguous or
+wrong-loader public alpha identifiers and missing or mismatched runtime
+artifact versions. Optional package manifests retain both the runtime artifact
+version and the exact loader-specific public alpha identifier for provenance.
+
 ## Manual release gates
 
 On 2026-08-08, explicit owner authorization was used to upload the exact
@@ -91,6 +103,8 @@ The alpha 3 CDN downloads were independently fetched after upload, matched the
 frozen Fabric and NeoForge SHA-256 values, and passed the distribution/licence
 verifier. Complete the owner checklist in
 `OWNER_RELEASE_SIGNOFF_2026-08-09.md` before promotion or live deployment.
+The alpha-4 metadata and changelogs are preparation only; they do not authorize
+an upload.
 
 ### Non-graphical dedicated-server smoke
 

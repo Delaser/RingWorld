@@ -77,6 +77,11 @@ format-3 production projection, natural seam/both-rim visual parity, and the
 Overworld/Nether/End save-disconnect-reopen lifecycle now pass on both loaders;
 owner visual review remains before promotion.
 
+The prepared next-upload metadata uses distinct public alpha-4 identifiers for
+Fabric and NeoForge while retaining the shared `0.2.0+mc26.1.2` jar metadata.
+The staging gate rejects the generic artifact version as a public identifier,
+but still performs no upload or listing mutation.
+
 The 2026-08-10 fresh-candidate graphical runs used the independently generated
 production worlds rather than an alpha save. Fabric and NeoForge each loaded
 all 65,536 Atlas cells, acknowledged format 3, and verified tangent, 12-chunk

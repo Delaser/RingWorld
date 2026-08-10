@@ -25,8 +25,11 @@ REVISION = "a" * 40
 
 
 def release_config(loader: str) -> dict:
+    public_loader = "Fabric" if loader == "fabric" else "NeoForge"
     version = {
-        "version_number": VERSION,
+        "name": f"RingWorld 0.2.0 alpha 4 for Minecraft 26.1.2 ({public_loader})",
+        "version_number": f"0.2.0-alpha.4-{loader}+mc26.1.2",
+        "artifact_version": VERSION,
         "version_type": "alpha",
         "game_versions": ["26.1.2"],
         "loaders": [loader],
@@ -114,6 +117,8 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             "hashes": {"sha256": hashlib.sha256(data).hexdigest(),
                        "sha512": hashlib.sha512(data).hexdigest()},
             "mod_id": "ringworld", "version": VERSION, "loader": loader,
+            "public_version": release_config(loader)["version"]["version_number"],
+            "public_name": release_config(loader)["version"]["name"],
             "game_version": "26.1.2", "environment": "client_and_server",
             "source": {"revision": revision,
                        "url": f"https://github.com/Delaser/RingWorld/commit/{revision}"},
@@ -205,6 +210,11 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             self.assertFalse((output / "web").exists())
             self.assertTrue((output / "SHA256SUMS.txt").is_file())
             release_manifest = json.loads((output / "RELEASE-MANIFEST.json").read_text())
+            self.assertEqual(release_manifest["artifactVersion"], VERSION)
+            self.assertEqual(release_manifest["publicVersion"],
+                             "0.2.0-alpha.4-fabric+mc26.1.2")
+            self.assertEqual(release_manifest["publicName"],
+                             "RingWorld 0.2.0 alpha 4 for Minecraft 26.1.2 (Fabric)")
             self.assertEqual(release_manifest["sourceRevision"], REVISION)
             self.assertEqual(len(release_manifest["artifacts"]), 3)
             for name in names:
@@ -268,6 +278,11 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             )
             release_manifest = json.loads((output / "RELEASE-MANIFEST.json").read_text())
             self.assertEqual(release_manifest["loader"], "neoforge")
+            self.assertEqual(release_manifest["artifactVersion"], VERSION)
+            self.assertEqual(release_manifest["publicVersion"],
+                             "0.2.0-alpha.4-neoforge+mc26.1.2")
+            self.assertEqual(release_manifest["publicName"],
+                             "RingWorld 0.2.0 alpha 4 for Minecraft 26.1.2 (NeoForge)")
             for name in names:
                 self.assertTrue((output / name).is_file())
                 self.assertEqual((output / name).read_bytes(),
