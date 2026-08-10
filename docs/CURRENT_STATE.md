@@ -12,8 +12,24 @@ The Minecraft 26.1.2 port is integrated on `main`; see
 Owner Windows, gameplay, visual, and final-review gates #12, #13, #95, and
 #96 are complete. The active release metadata targets shared runtime version
 `1.0.0+mc26.1.2`, with loader-specific public identifiers
-`1.0.0-fabric+mc26.1.2` and `1.0.0-neoforge+mc26.1.2`. Issue #97 owns the
-authorized build, publication, showcase cleanup, and NeoForge demo migration.
+`1.0.0-fabric+mc26.1.2` and `1.0.0-neoforge+mc26.1.2`. Issue #97 is complete:
+exact source commit `f3a5ce12a3d72a7e2253e893ca385e27f3fe7448` is tagged
+`v1.0.0+mc26.1.2`, both Modrinth Release files are published, and both
+CurseForge Release files are submitted for host review.
+
+The exact 1.0 Fabric jar SHA-256 is
+`ec06f6dbf81a6ac1c662f87f2fdb6a3d30297222e61da7094212b125a568c421`;
+the NeoForge jar SHA-256 is
+`ad818e6aec7aaf64f4d0618975c667d8b9163965e83e32408d8fc98797e700d5`.
+The public showcase now links only to Modrinth, CurseForge, and GitHub; old
+direct downloads were moved outside the document root. The unlisted alpha page
+serves checksum-verified 1.0 Windows packages and manifest-following installers.
+
+The live demo was migrated from Fabric to NeoForge 26.1.2.87 and RingWorld 1.0.
+Its previous world is preserved intact at
+`/opt/ringworld-server-archives/20260810T204137Z-fabric-world`; the replacement
+world uses seed `-7809050111168616191` with 16,384×256 geometry. The server,
+Meridian, and Meridian regeneration API are active after migration.
 
 The historical dual-loader alpha-3 candidate's validated code baseline is commit
 `967759be872080a72e48bd26f7a97df9ee0a0302`. Its Fabric SHA-256 is
@@ -48,7 +64,7 @@ staging rather than release promotion. See `CURSEFORGE_RELEASE.md`.
 The CurseForge media gallery also contains the six approved in-game images
 from the RingWorld showcase page rather than automated diagnostic captures.
 
-On 2026-08-10, the unlisted showcase alpha directory was refreshed from merged
+Earlier on 2026-08-10, the unlisted showcase alpha directory was refreshed from merged
 public source commit `622fb76`, including the mapping-4 terrain-seam
 correction, biome-flavoured incomplete-Atlas placeholder, 750 ms revision
 morph, completion-driven haze, neutral cobble/moss rim returns, finite clouds,
@@ -68,8 +84,9 @@ checksums.
 The packaged server entry is pre-added but is not joined automatically. This
 is a test convenience build, not a Modrinth/CurseForge promotion or 1.0 gate.
 The previous directory is retained outside the document root at
-`/root/ringworld-alpha-backups/alpha-20260810T192327Z`. No live server or world
-was changed.
+`/root/ringworld-alpha-backups/alpha-20260810T192327Z`. At that checkpoint no
+live server or world was changed; the later 1.0 publication and migration
+recorded at the top of this document supersede that distribution state.
 
 Issue #33 now supplies a local fail-closed staging workflow for any later
 manual Fabric upload. It builds and validates exactly one runtime jar, records
@@ -99,8 +116,8 @@ suites pass 337 cases. Mapping 4 also transforms vanilla's direct
 fresh 16,384×256 stronghold/worldgen gates previously passed
 the five-longitude, three-width-position terrain/height/alias matrix plus the
 existing biome, seam structure, rim, monument, and portal checks. The uploaded
-alpha-3 jars remain format-2 historical test artifacts; this branch is not yet
-a replacement release candidate. Fresh dual-loader production/reload plus both
+alpha-3 jars remain format-2 historical test artifacts; 1.0 supersedes them.
+Fresh dual-loader production/reload plus both
 safe-small policy-seed matrices now pass. Fresh production headless Atlas
 generation and complete-atlas resume/load also pass on both loaders. Fresh
 format-3 production projection, natural seam/both-rim visual parity, and the
@@ -691,9 +708,8 @@ Issue #12 retains the frozen Fabric-only candidate at public source revision
 `9b77326d1ec7fba7e2e12e06d89adfceae0ffeb5` and its exact evidence in
 `FABRIC_RELEASE_CANDIDATE_2026-08-01.md`. Issue #94 generalizes that builder,
 installer-upgrade path, and Windows launcher CI to both Fabric and NeoForge.
-The remaining release boundary is unchanged: the exact final candidates still
-need a real graphical Windows Minecraft launch and independent review before
-#12 can close.
+That historical release boundary is closed: real graphical Windows launches
+and independent review passed before the 1.0 publication.
 
 Atlas-pregeneration Phases 1b and 2 are landed through #55, #56, and #59:
 the loader-neutral job-model foundation

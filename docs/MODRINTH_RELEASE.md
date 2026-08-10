@@ -110,6 +110,14 @@ Owner authorization for the 1.0 publication and subsequent website/server
 deployment was recorded on 2026-08-10 in issue #97. The alpha-3 and alpha-4
 checklists remain historical evidence.
 
+The authorized publication completed from exact commit
+`f3a5ce12a3d72a7e2253e893ca385e27f3fe7448`, tagged
+`v1.0.0+mc26.1.2`. Modrinth now lists
+`1.0.0-fabric+mc26.1.2` and `1.0.0-neoforge+mc26.1.2` as Release files. The
+uploaded SHA-256 values are respectively
+`ec06f6dbf81a6ac1c662f87f2fdb6a3d30297222e61da7094212b125a568c421`
+and `ad818e6aec7aaf64f4d0618975c667d8b9163965e83e32408d8fc98797e700d5`.
+
 ### Non-graphical dedicated-server smoke
 
 Before a release, create separate disposable empty server directories for

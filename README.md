@@ -3,8 +3,8 @@
 RingWorld is an experimental Minecraft mod that turns the Overworld into a
 finite, genuinely looping cylindrical world. Fabric and NeoForge now have
 matching client, server, topology, worldgen, atlas, multiplayer, and packaging
-gates. Exact dual-loader alpha 3 files are uploaded to Modrinth and CurseForge
-while both projects remain under review.
+gates. RingWorld 1.0 is published as matched Fabric and NeoForge files on
+Modrinth; the corresponding CurseForge Release files are still being reviewed.
 
 Walk far enough around the circumference and you return to the same place
 without entering a duplicate world or crossing a corrective teleport. Players,
@@ -51,8 +51,8 @@ not create an exterior Overworld portal or strand the player in void.
 > A post-gameplay Fabric and NeoForge 6/12/28 visual refresh also passes. The
 > production 16,384×256 terrain/seam/rim gate and a fresh-world curved-object
 > fixture covering representative block entities, vehicles, items, passive
-> mobs, and hostile mobs now pass on both loaders; exposure, close-cloud,
-> real-player proximity, and final motion sign-off remain open. The refreshed
+> mobs, and hostile mobs now pass on both loaders. Owner visual, gameplay,
+> Windows, and final motion sign-off are complete. The refreshed
 > production seam/rim runs retain raw seam-motion frame metrics on both loaders;
 > those numbers are evidence to review on target hardware, not a universal FPS
 > requirement.
@@ -64,17 +64,16 @@ not create an exterior Overworld portal or strand the player in void.
 > support boundary. Custom-size previews now use the measured production
 > generation/disk reference, and compatibility API/contract version 1 lists
 > known unsupported renderer and topology combinations. Release-candidate
-> packaging and independent review remain, so this is not a stable release
-> yet. The first 26.1.2 Fabric
-> alpha is an early test build, not a stable or broadly compatible release.
+> packaging, independent review, and exact-host publication are complete for
+> 1.0. Broad third-party compatibility remains explicitly unverified.
 > The validated server, client packages, and rollback tag remain Minecraft 1.21.11
 > (`mc-1.21.11-final`).
 
 The dual-loader alpha evidence is recorded in the
 [2026-08-08 candidate checkpoint](docs/DUAL_LOADER_RELEASE_CANDIDATE_2026-08-08.md).
 Owner gameplay, visual, Windows, and final-review gates are complete. The
-current source prepares the matched Fabric and NeoForge 1.0 release candidate;
-hosted publication is tracked by issue #97.
+exact 1.0 source is tagged `v1.0.0+mc26.1.2` at commit `f3a5ce1`; issue #97
+records the completed hosted publication and demo migration.
 
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
@@ -92,8 +91,8 @@ hosted publication is tracked by issue #97.
 > strict metadata/licence verification, a same-commit shared-contract gate,
 > a real packaged macOS NeoForge client smoke, and the shared eleven-step
 > pause-menu atlas generation/control fixture also pass. NeoForge alpha 3 is
-> hosted for testing; promotion beyond alpha still requires the final release
-> review and owner go/no-go.
+> hosted for testing; the matched 1.0 Fabric and NeoForge releases now carry
+> the completed final review and owner go/no-go.
 
 > **Licence status:** RingWorld is open-source software licensed under the
 > [Mozilla Public License 2.0](LICENSE). Changes to existing RingWorld source
@@ -103,22 +102,19 @@ hosted publication is tracked by issue #97.
 
 ## Distribution
 
-The previous dual-loader candidate is uploaded to
-[Modrinth](https://modrinth.com/mod/ringworld/versions) as Fabric version
-`lnY3EC8t` and NeoForge version `D19TF1Qj`. The project is still **Under
-review**. Both alpha 3 files target Minecraft 26.1.2 and Java 25 and must be
-installed on the server and every client; only Fabric requires Fabric API.
-The same verified jars have also been submitted as Alpha files to
-[CurseForge](https://www.curseforge.com/minecraft/mc-mods/ringworld) project
-`1645598`; that new project is awaiting moderation. See the
+RingWorld 1.0 is available from
+[Modrinth](https://modrinth.com/mod/ringworld/versions) as loader-specific
+Fabric and NeoForge Release files. Matching Release files have been submitted
+to [CurseForge](https://www.curseforge.com/minecraft/mc-mods/ringworld)
+project `1645598`; CurseForge may show them as Baking or Under Review until
+host moderation completes. Both target Minecraft 26.1.2 and Java 25 and must
+be installed on the server and every client; only Fabric requires Fabric API. See the
 [CurseForge release procedure](docs/CURSEFORGE_RELEASE.md) for the exact
 metadata and future upload checklist.
 The unlisted [alpha test page](https://andwhatnotstudio.com/ringworld/alpha/)
-provides separate self-updating Fabric and NeoForge Windows installers built
-from merged source commit `622fb76`. These convenience packages are for owner
-confirmation and do not replace the alpha-3 mod-host files.
-Use the [owner sign-off runbook](docs/OWNER_RELEASE_SIGNOFF_2026-08-09.md)
-before approving promotion or live deployment.
+provides separate self-updating Fabric and NeoForge 1.0 Windows installers
+built from exact source commit `f3a5ce1`. These are convenience packages; the
+standalone mod-host jars remain the normal install path.
 
 Maintainers stage matching Fabric and NeoForge 1.0 candidates with
 `python3 scripts/stage_modrinth_release.py --loader both --build` under Java 25
