@@ -40,9 +40,9 @@ public final class RingNoiseCoordinates {
                     ? new int[circumference] : null;
             legacyRingZOffset = mappingVersion == RingTerrainNoiseMapping.LEGACY_AXIAL
                     ? new int[circumference] : null;
-            sine = mappingVersion == RingTerrainNoiseMapping.ANNULAR
+            sine = mappingVersion != RingTerrainNoiseMapping.LEGACY_AXIAL
                     ? new double[circumference] : null;
-            cosine = mappingVersion == RingTerrainNoiseMapping.ANNULAR
+            cosine = mappingVersion != RingTerrainNoiseMapping.LEGACY_AXIAL
                     ? new double[circumference] : null;
             for (int x = 0; x < circumference; x++) {
                 double angle = Math.PI * 2.0 * x / circumference;

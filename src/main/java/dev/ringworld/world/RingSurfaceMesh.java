@@ -18,6 +18,13 @@ public final class RingSurfaceMesh {
     /** Builds the bounded mesh lattice selected by the active render profile. */
     public static Mesh build(RingGeometry geometry, RingTerrainAtlas atlas,
                              boolean detailed, double referenceHeight) {
+        return build(geometry, atlas, detailed, referenceHeight, referenceHeight, 1);
+    }
+
+    /** Builds the surface plus temporary inner-rim returns for an incomplete Atlas. */
+    public static Mesh build(RingGeometry geometry, RingTerrainAtlas atlas,
+                             boolean detailed, double referenceHeight,
+                             double wallTopHeight, int rimThicknessBlocks) {
         Objects.requireNonNull(geometry, "geometry");
         Objects.requireNonNull(atlas, "atlas");
         if (!geometry.equals(atlas.geometry())) {
@@ -26,11 +33,17 @@ public final class RingSurfaceMesh {
         if (!Double.isFinite(referenceHeight)) {
             throw new IllegalArgumentException("reference height must be finite");
         }
+        if (!Double.isFinite(wallTopHeight)) {
+            throw new IllegalArgumentException("wall top height must be finite");
+        }
+        RingCloudBounds innerFaces = RingCloudBounds.betweenInnerRimFaces(
+                geometry, rimThicknessBlocks);
 
         RingRenderProfile profile = RingRenderProfile.create(geometry, 16.0);
         int segments = Math.min(atlas.columns(), profile.circumferenceSegments());
         int bands = Math.min(atlas.rows(), profile.widthBands());
-        return new Mesh(geometry, atlas, detailed, referenceHeight, segments, bands);
+        return new Mesh(geometry, atlas, detailed, referenceHeight, wallTopHeight,
+                innerFaces, segments, bands);
     }
 
     /** A consumer of the exact float vertex values written to the GPU buffer. */
@@ -49,11 +62,24 @@ public final class RingSurfaceMesh {
         private final float[] positionsZ;
         private final float[] textureU;
         private final float[] textureV;
+        private final RingGeometry geometry;
+        private final boolean bridgeRims;
+        private final float bridgeBottomY;
+        private final float bridgeTopY;
+        private final float bridgeMinimumZ;
+        private final float bridgeMaximumZ;
 
         private Mesh(RingGeometry geometry, RingTerrainAtlas atlas, boolean detailed,
-                     double referenceHeight, int segments, int bands) {
+                     double referenceHeight, double wallTopHeight,
+                     RingCloudBounds innerFaces, int segments, int bands) {
+            this.geometry = geometry;
             this.segments = segments;
             this.bands = bands;
+            bridgeRims = !detailed && wallTopHeight > referenceHeight;
+            bridgeBottomY = (float)referenceHeight;
+            bridgeTopY = (float)wallTopHeight;
+            bridgeMinimumZ = (float)innerFaces.minimumZ();
+            bridgeMaximumZ = (float)innerFaces.maximumZ();
             this.columns = Math.addExact(segments, 1);
             int rows = Math.addExact(bands, 1);
             int vertices = Math.multiplyExact(columns, rows);
@@ -93,7 +119,8 @@ public final class RingSurfaceMesh {
         public int segments() { return segments; }
         public int bands() { return bands; }
         public int vertexCount() {
-            return Math.multiplyExact(Math.multiplyExact(segments, bands), 6);
+            int surface = Math.multiplyExact(Math.multiplyExact(segments, bands), 6);
+            return bridgeRims ? Math.addExact(surface, Math.multiplyExact(segments, 12)) : surface;
         }
 
         /** Emits the two consistently wound triangles for every finite quad. */
@@ -109,6 +136,33 @@ public final class RingSurfaceMesh {
                     emitTriangleVertex(consumer, segment, band, 3);
                 }
             }
+            if (bridgeRims) {
+                for (int segment = 0; segment < segments; segment++) {
+                    emitBridgeQuad(consumer, segment, bridgeMinimumZ, 0.0F);
+                    emitBridgeQuad(consumer, segment, bridgeMaximumZ, 1.0F);
+                }
+            }
+        }
+
+        private void emitBridgeQuad(VertexConsumer consumer, int segment, float z, float v) {
+            float u0 = (float)segment / segments;
+            float u1 = (float)(segment + 1) / segments;
+            emitBridgeVertex(consumer, segment, bridgeBottomY, z, u0, v);
+            emitBridgeVertex(consumer, segment + 1, bridgeBottomY, z, u1, v);
+            emitBridgeVertex(consumer, segment + 1, bridgeTopY, z, u1, v);
+            emitBridgeVertex(consumer, segment, bridgeBottomY, z, u0, v);
+            emitBridgeVertex(consumer, segment + 1, bridgeTopY, z, u1, v);
+            emitBridgeVertex(consumer, segment, bridgeTopY, z, u0, v);
+        }
+
+        private void emitBridgeVertex(VertexConsumer consumer, int segment, float y, float z,
+                                      float u, float v) {
+            double canonicalX = (double)segment * geometry.circumferenceBlocks() / segments;
+            double angle = segment == segments ? 0.0
+                    : Math.PI * 2.0 * canonicalX / geometry.circumferenceBlocks();
+            double radius = geometry.physicalRadiusAt(y);
+            consumer.vertex((float)(radius * Math.sin(angle)), (float)(-radius * Math.cos(angle)),
+                    z, u, v);
         }
 
         /**

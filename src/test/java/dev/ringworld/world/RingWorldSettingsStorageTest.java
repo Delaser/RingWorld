@@ -66,7 +66,7 @@ class RingWorldSettingsStorageTest {
 
         assertEquals(RingWorldSettings.FORMAT_VERSION, upgraded.formatVersion());
         assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL, upgraded.terrainNoiseMapping());
-        assertEquals(RingTerrainNoiseMapping.ANNULAR, fresh.terrainNoiseMapping());
+        assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE, fresh.terrainNoiseMapping());
         assertFalse(upgraded.layoutFingerprint() == fresh.layoutFingerprint());
     }
 
@@ -95,7 +95,7 @@ class RingWorldSettingsStorageTest {
         assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL, alpha.terrainNoiseMapping());
         assertEquals(RingWorldSettings.FORMAT_VERSION, reopened.formatVersion());
         assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL, reopened.terrainNoiseMapping());
-        assertEquals(RingTerrainNoiseMapping.ANNULAR,
+        assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE,
                 currentJson.get("terrainNoiseMapping").getAsInt());
         assertEquals(RingWorldSettings.FORMAT_VERSION, currentJson.get("format").getAsInt());
     }

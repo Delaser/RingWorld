@@ -884,9 +884,9 @@ tasks.register('verifyNeoForgeHeadlessPrewarm') {
         def resultName = providers.gradleProperty('ringNeoForgeHeadlessPrewarmResult').orElse('result.json').get().trim()
         def expectedCircumference = providers.gradleProperty('ringNeoForgeHeadlessPrewarmCircumference').orElse('2048').get().toInteger()
         def expectedWidth = providers.gradleProperty('ringNeoForgeHeadlessPrewarmWidth').orElse('416').get().toInteger()
-        def expectedMapping = providers.gradleProperty('ringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping').orElse('2').get().toInteger()
-        if (!(expectedMapping in [1, 2])) {
-            throw new GradleException('-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping must be 1 or 2')
+        def expectedMapping = providers.gradleProperty('ringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping').orElse('3').get().toInteger()
+        if (!(expectedMapping in [1, 2, 3])) {
+            throw new GradleException('-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping must be 1, 2, or 3')
         }
         def result = new File(neoForgeHeadlessPrewarmRun, "world/ringworld-prewarm/${resultName}")
         if (!result.isFile()) {

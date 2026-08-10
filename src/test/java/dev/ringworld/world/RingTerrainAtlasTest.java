@@ -181,12 +181,17 @@ class RingTerrainAtlasTest {
         RingWorldSettings annularMapping = new RingWorldSettings(
                 320, 1_024, 123L, 160, 64,
                 RingTerrainNoiseMapping.ANNULAR, RingWorldSettings.FORMAT_VERSION);
+        RingWorldSettings completeMapping = new RingWorldSettings(
+                320, 1_024, 123L, 160, 64,
+                RingTerrainNoiseMapping.ANNULAR_COMPLETE, RingWorldSettings.FORMAT_VERSION);
 
         assertFalse(RingTerrainAtlas.worldHash(first) == RingTerrainAtlas.worldHash(differentSeed));
         assertFalse(RingTerrainAtlas.worldHash(first) == RingTerrainAtlas.worldHash(differentLength));
         assertFalse(RingTerrainAtlas.worldHash(first) == RingTerrainAtlas.worldHash(differentWall));
         assertFalse(RingTerrainAtlas.worldHash(legacyMapping)
                 == RingTerrainAtlas.worldHash(annularMapping));
+        assertFalse(RingTerrainAtlas.worldHash(annularMapping)
+                == RingTerrainAtlas.worldHash(completeMapping));
     }
 
     @Test

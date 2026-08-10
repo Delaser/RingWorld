@@ -32,7 +32,7 @@ RingWorldRender   = min Z, max Z exclusive, half circumference, view distance
 RingWorldHandoff  = live fade start/end, proxy fade start/end
 RingWorldDetail   = detail start/end, near/far terrain reveal
 RingWorldAtmosphere = near/far haze, haze exponent, cloud fade start
-RingWorldAtmosphere2 = cloud fade end, visual profile version, reserved, reserved
+RingWorldAtmosphere2 = cloud fade end, visual profile version, inner cloud min/max Z planes
 ```
 
 The vanilla camera, screen, time, menu-blur, and RGSS values keep their normal
@@ -150,8 +150,10 @@ already returns that block's Y coordinate; the sampled state uses that exact Y
 and the mesh height is its top face at Y+1. Water, grass, and foliage start with
 their biome tint, then apply an average block-texture luminance so the tint is
 not mistaken for the finished lit pixel colour. Other blocks use their map
-colour. Rendering begins after the first trustworthy client atlas cells arrive;
-missing cells remain transparent. Atlas format 4
+colour. Rendering begins as soon as current-world Atlas metadata arrives. A
+zero-cell or partial Atlas uses an opaque, deterministic world-hash fallback;
+bounded nearest-known-cell dilation blends actual colours into unknown areas.
+Atlas format 4
 records the original highest-block tint semantics. Atlas format 5 additionally
 falls back to the sampled block's map colour when a dedicated server's
 client-owned grass/foliage colormap lookup returns zero. This invalidates the
@@ -170,8 +172,7 @@ The visual surface is world-owned even though `SkyRenderer` and its static GPU
 resources can survive a return to the menus. On disconnect and again when a
 new settings payload is accepted, `RingWorldClient` closes the buffered texture
 and mesh before clearing/installing client state. `RingSurfaceTextureRenderer`
-also refuses to draw unless the current session's atlas exists and contains at
-least one trustworthy cell.
+also refuses to draw unless the current session's Atlas identity exists.
 
 A newly generated world therefore shows real chunks, atmospheric effects, and
 only its own available atlas regions while generation runs. It must never
@@ -191,9 +192,10 @@ resources.
 
 While generation is incomplete, the client keeps the GPU texture at bounded
 source-atlas resolution and reuses the allocation on coalesced updates. Missing
-samples have zero alpha, partial bilinear coverage fades naturally, and mip
-colours are alpha-weighted so transparent neighbours do not darken known
-terrain. At completion the client bilinearly expands into the dimension-aware,
+samples remain opaque fallback pixels, known colours dilate only a bounded
+distance, and the reference-height mesh carries temporary curved returns up to
+both inner rim faces. At completion all fallback influence and temporary
+returns disappear as the client bilinearly expands into the dimension-aware,
 quality-bounded size:
 
 ```text
@@ -353,6 +355,11 @@ The vanilla volumetric cloud cell data is retained, but
   physical centre as terrain;
 - consumes the shared profile's view- and circumference-bounded fade before
   the local cloud layer can wrap into a complete tube.
+
+The paired `rendertype_clouds.fsh` reconstructs intrinsic world Z and discards
+fragments outside the inner faces of both rim walls. `RingCloudBounds` derives
+the exact face planes from geometry and rim thickness, so straddling cloud
+cells are clipped rather than admitted by their centres.
 
 The eight-block cloud clearance is a named fixed design value validated before
 world creation. Saved wall height therefore moves the wall and cloud deck

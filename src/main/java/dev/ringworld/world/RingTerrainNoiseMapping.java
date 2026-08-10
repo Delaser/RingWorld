@@ -6,7 +6,9 @@ public final class RingTerrainNoiseMapping {
     public static final int LEGACY_AXIAL = 1;
     /** Orthogonal annular embedding used by newly created worlds. */
     public static final int ANNULAR = 2;
-    public static final int CURRENT = ANNULAR;
+    /** Annular density plus periodic surface-system and carver identities. */
+    public static final int ANNULAR_COMPLETE = 3;
+    public static final int CURRENT = ANNULAR_COMPLETE;
 
     /** Conservative allowance for structure and column queries beside the finite band. */
     public static final int QUERY_MARGIN_BLOCKS = 64;
@@ -20,7 +22,8 @@ public final class RingTerrainNoiseMapping {
     }
 
     public static int requireSupported(int mapping) {
-        if (mapping != LEGACY_AXIAL && mapping != ANNULAR) {
+        if (mapping != LEGACY_AXIAL && mapping != ANNULAR
+                && mapping != ANNULAR_COMPLETE) {
             throw new IllegalArgumentException("unsupported RingWorld terrain-noise mapping " + mapping);
         }
         return mapping;
@@ -41,6 +44,14 @@ public final class RingTerrainNoiseMapping {
 
     public static double minimumSampledRadius(RingGeometry geometry) {
         return geometry.radius() + geometry.minWidthZ() - QUERY_MARGIN_BLOCKS;
+    }
+
+    /** Keeps one carver source identity when generation views it through either seam chart. */
+    public static int carverSeedChunkX(RingGeometry geometry, int mapping, int sourceChunkX) {
+        requireSupported(mapping);
+        return mapping == ANNULAR_COMPLETE
+                ? Math.floorMod(sourceChunkX, geometry.circumferenceChunks())
+                : sourceChunkX;
     }
 
     static ContinuousCoordinate continuousAnnular(

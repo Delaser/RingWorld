@@ -186,7 +186,7 @@ Production-default atlas completion is therefore a large world-generation
 operation. Monitor disk use, server tick time, and progress logs. Set
 `pregenerateTerrainAtlas=false` to postpone automatic background generation. The distant
 surface progressively reveals only trustworthy cells from player-loaded or
-pregenerated chunks; missing cells remain transparent until generated.
+pregenerated chunks; missing cells use the deterministic opaque fallback until generated.
 Progress logs report captured cells, cells per second, and an ETA once a rate
 can be measured.
 
@@ -324,7 +324,7 @@ totals rather than trusting stale text. Do not
 add the headless JVM option to an ordinary service unit or point it at a
 production/source world.
 
-Fresh and normal resumed format-3 runs default to expected mapping `2`
+Fresh and normal resumed format-3 runs default to expected mapping `3`
 (annular). To verify an intentionally copied legacy alpha world, pass
 `-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1` for Fabric or
 `-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping=1` for NeoForge.
@@ -377,7 +377,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
 ```
 
-The current suite passes 318 unit/parameterized cases per loader. The
+The current suite passes 329 unit/parameterized cases per loader. The
 historical Phase 2 95-error inventory and the subsequent source-port
 checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable

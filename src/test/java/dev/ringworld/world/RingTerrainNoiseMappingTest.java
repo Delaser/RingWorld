@@ -164,7 +164,7 @@ class RingTerrainNoiseMappingTest {
                 () -> RingTerrainNoiseMapping.requireSafeNewWorldGeometry(unsafe));
         assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL,
                 RingTerrainNoiseMapping.forSettingsFormat(2));
-        assertEquals(RingTerrainNoiseMapping.ANNULAR,
+        assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE,
                 RingTerrainNoiseMapping.forSettingsFormat(3));
     }
 
@@ -172,8 +172,10 @@ class RingTerrainNoiseMappingTest {
     void unknownMappingIsRejected() {
         assertThrows(IllegalArgumentException.class,
                 () -> RingTerrainNoiseMapping.requireSupported(0));
+        assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE,
+                RingTerrainNoiseMapping.requireSupported(3));
         assertThrows(IllegalArgumentException.class,
-                () -> RingTerrainNoiseMapping.requireSupported(3));
+                () -> RingTerrainNoiseMapping.requireSupported(4));
     }
 
     @Test
@@ -185,5 +187,16 @@ class RingTerrainNoiseMappingTest {
                 () -> coordinates.noiseZ(0, Integer.MAX_VALUE));
         assertThrows(IllegalArgumentException.class,
                 () -> coordinates.noiseZ(8_192, Integer.MAX_VALUE));
+    }
+
+    @Test
+    void completeMappingGivesCarversOneCanonicalSeedIdentity() {
+        RingGeometry geometry = new RingGeometry(256, 16_384);
+        assertEquals(1_023, RingTerrainNoiseMapping.carverSeedChunkX(
+                geometry, RingTerrainNoiseMapping.ANNULAR_COMPLETE, -1));
+        assertEquals(0, RingTerrainNoiseMapping.carverSeedChunkX(
+                geometry, RingTerrainNoiseMapping.ANNULAR_COMPLETE, 1_024));
+        assertEquals(-1, RingTerrainNoiseMapping.carverSeedChunkX(
+                geometry, RingTerrainNoiseMapping.ANNULAR, -1));
     }
 }

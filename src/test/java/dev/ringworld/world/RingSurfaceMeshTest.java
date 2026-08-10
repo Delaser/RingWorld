@@ -70,6 +70,19 @@ class RingSurfaceMeshTest {
                 mesh.triangleVertex(19, 13, 1));
     }
 
+    @Test
+    void incompleteMeshAddsClosedReturnsAtBothInnerRimFaces() {
+        RingGeometry geometry = new RingGeometry(128, 2_048);
+        RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, HASH);
+        RingSurfaceMesh.Mesh withoutReturns = RingSurfaceMesh.build(
+                geometry, atlas, false, 64.0);
+        RingSurfaceMesh.Mesh withReturns = RingSurfaceMesh.build(
+                geometry, atlas, false, 64.0, 96.0, 5);
+
+        assertEquals(withoutReturns.vertexCount() + withReturns.segments() * 12,
+                withReturns.vertexCount());
+    }
+
     private static RingTerrainAtlas variedCompleteAtlas(RingGeometry geometry) {
         RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, HASH);
         for (int row = 0; row < atlas.rows(); row++) {

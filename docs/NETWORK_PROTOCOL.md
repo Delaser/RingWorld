@@ -78,7 +78,8 @@ sequenceDiagram
 Current geometry protocol compatibility is `RingWorldSettings.FORMAT_VERSION`
 (currently 3). Format 1 and 2 saved settings migrate explicitly to format 3
 with the vanilla Overworld surface reference Y=64 and the legacy terrain-noise
-mapping. Fresh format-3 worlds use the corrected annular mapping. Older network
+mapping. Fresh worlds use complete annular mapping 3; existing format-3 worlds
+may retain annular mapping 2, and formats 1/2 retain legacy mapping 1. Older network
 peers are not accepted. There is no feature-bit negotiation: compatibility requires the
 exact settings format and the complete current settings, revisioned-atlas, and
 map-control channel generations. Those behaviors are a single engine contract,

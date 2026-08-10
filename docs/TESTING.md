@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 318
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 329
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -51,7 +51,8 @@ verifies the evidence, and exits. The historical format-2 production
 16,384×256 noon run passed with settled tangent/handoff/radial averages of
 10.7/8.4/8.4 ms per frame; the dusk, night, and rain variants also passed.
 Those captures describe alpha 3 and do not qualify the new format-3 annular
-candidate. A fresh candidate source must acknowledge format 3 and mapping 2.
+candidate. A fresh candidate source must acknowledge format 3 and complete
+annular mapping 3.
 Dusk is frozen at tick 12,000, matching
 `RingSkyCycle`'s warm dusk keyframe; tick 14,008 is already night and must not
 be used as dusk evidence.
@@ -149,7 +150,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite passes 318 unit/parameterized cases per loader:
+The active suite passes 329 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
@@ -163,6 +164,7 @@ The active suite passes 318 unit/parameterized cases per loader:
 | `RingDimensionReportTest` | Full-height radial safety, aligned playable minimum, structural-only/unsafe curvature, walls/clouds, allocation bounds, measured-reference cost warnings, and maximum technical warning envelope |
 | `RingDimensionCostEstimateTest` | Exact production benchmark retention, atlas wire/tick calculation, checked scaling, and supported-maximum arithmetic |
 | `RingGenerationBoundaryTest` | Shared generated-rim top bound for default/custom wall heights and world-top clamping |
+| `RingCloudBoundsTest` | Exact inner rim-face cloud clipping planes for all presets and custom wall thickness |
 | `RingPortalDestinationBoundsTest` | Positive/negative multi-lap X normalization, both finite-Z clamps, preserved safe targets, Small-preset frame/creation clearance, and three-image periodic portal lookup distance |
 | `RingDimensionMatrixTest` | Safe-small, aligned playable minimum, narrow, production, former-wide, long/narrow, wide/medium, and custom-wall layouts across topology, final saved spawn canonicalization for negative/seam aliases, worldgen coordinate seams/finite-band limits, atlas and 6/12/28/64 render budgets |
 | `RingSettingsHandshakeTest` | Immutable safe-small/production/wide/custom-wall payload identity, acknowledgement, mapping mismatch, malformed mapping, and fingerprint rejection |
@@ -189,9 +191,12 @@ The active suite passes 318 unit/parameterized cases per loader:
 | `NeoForgeHeadlessPlayerAdmissionTest` | Platform-isolated active/inactive admission side effects plus a compiled-bytecode assertion that the cancellable NeoForge PlayerList guard runs at method HEAD, before play-packet buffering and the later settings injection |
 | `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, explicit missing-cell alpha, alpha-weighted periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
 | `RingSurfaceBuildSnapshotTest` | Immutable atlas-content retention across live changes, colour-only height-fingerprint stability, and identity/revision rejection |
-| `RingSurfaceMeshTest` | Production and safe-small shared-lattice band/segment continuity, exact physical seam closure with U=0/1, and the reference-height path |
+| `RingSurfaceMeshTest` | Production and safe-small shared-lattice continuity, exact physical seam closure, reference-height path, and incomplete-Atlas inner-rim returns |
+| `RingSurfacePlaceholderTest` | Zero-cell deterministic opaque fallback, world identity, exact known-cell retention, and bounded dilation opacity |
 | `RingSurfaceMeshRefreshPolicyTest` | Partial-mesh reuse, height-fingerprint-driven complete-mesh refresh, and forced rebuilds across layout/completion transitions |
-| `RingTerrainNoiseMappingTest` | Exact legacy vectors, annular seam/cardinals, orthogonal derivatives across the full query band, mapping-cache isolation, integer-overflow rejection, and preset safety |
+| `RingTerrainNoiseMappingTest` | Exact legacy vectors, annular seam/cardinals, orthogonal derivatives, mapping-cache isolation, complete-mapping carver identity, overflow rejection, and preset safety |
+| `RingSurfaceSamplingContextTest` | Mapping-3 unit/scaled surface-noise seam continuity plus mapping-2 compatibility and thread-context teardown |
+| `RingSeamTerrainAuditTest` | Broad contiguous join-wall rejection while retaining isolated natural cliffs |
 | `RingWorldSettingsStorageTest` | Dimension-owned paths plus codec-backed format-1/2 migration that persists legacy terrain mapping while fresh format-3 settings use annular terrain |
 | `RingTerrainAtlasServerStorageTest` | Dimension-owned server atlas path and legacy atlas migration source |
 | `RingWorldCreationUiModelTest` | Small/Medium/Large presets, exact live maths, valid/custom previews, aggregated malformed/structural/cross-field validation, immutable-next-new-world confirmation, and geometry-aware monument state |
@@ -431,7 +436,7 @@ first result is `INTERRUPTED` and the next run resumes from durable atlas cells.
 Use `-PringHeadlessPrewarmResume=true` for that second run; the default fresh
 task deliberately deletes its disposable world.
 
-Fresh format-3 fixtures default to `terrainNoiseMapping=2`. A deliberate copied
+Fresh format-3 fixtures default to `terrainNoiseMapping=3`. A deliberate copied
 legacy-world run must set `-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1`;
 the NeoForge equivalent is
 `-PringNeoForgeHeadlessPrewarmExpectedTerrainNoiseMapping=1`. Missing, unknown,
@@ -612,6 +617,23 @@ matrix independently on Fabric and NeoForge: production fresh/reload records
 were stable, all 14 major biome families were present, and the aggregate
 cave/ore/tree/loot, seam-crossing structure, satisfied monument, bounded
 unsatisfied monument, stronghold, portal, rim, and exterior checks passed.
+
+Issue #158 introduces mapping 3 for fresh worlds. Focused fresh
+2,048×256 Fabric and NeoForge matrices passed on 2026-08-10 with 128 generated
+seam-strip chunks each and `seamTerrain=Report[largestDelta=0, cliffColumns=0,
+longestCliffRun=0, averageAbsoluteDelta=0.0, passes=true]`. A fresh production
+NeoForge stronghold/cardinal run also passed with mapping 3. The complete
+multi-seed production matrix remains required before release-candidate freeze.
+
+The post-#148/#157 Fabric production visual-parity run also passed on
+2026-08-10. Its real network stream rendered 21.9% and 78.1% partial states as
+the opaque reference mesh with both temporary returns (417,792 vertices), then
+removed the returns at completion (393,216 detailed vertices), completed the
+natural seam and both rim captures, and recorded 841 motion frames averaging
+8.49 ms with one frame over 50 ms. This proves shader linkage and progressive
+mesh handoff; the equivalent NeoForge graphical launch was blocked before game
+startup because the unattended Mac session exposed no primary monitor, so it
+must be repeated when a display is available.
 
 ## 26.1 integrated safe-small client gate
 
@@ -1781,10 +1803,10 @@ See [`VISUAL_POLISH_CHECKPOINT_2026-08-02.md`](VISUAL_POLISH_CHECKPOINT_2026-08-
   bed in the same presentation chart. The server/save value must remain in
   `[0,C)` throughout; a player appearing at raw canonical X or in the void is
   a regression in `LivingEntitySleepingPositionMixin`.
-- Leave a world with a complete atlas, create a different-seed world with the
-  same dimensions, and watch the entire atlas-generation interval. The old
-  ring must disappear immediately; no complete-ring surface should render
-  until the new atlas reaches 100%, after which its terrain must differ.
+- Leave a world with a complete Atlas, create a different-seed world with the
+  same dimensions, and watch the entire generation interval. The old ring must
+  disappear immediately; the new world-specific opaque fallback must appear,
+  progressively converge, and lose all placeholder influence at 100%.
 - Die and respawn.
 - Use `/tp` for a disjoint X move.
 - Enter and return from Nether and End.

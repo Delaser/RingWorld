@@ -8,6 +8,7 @@ import dev.ringworld.world.RingStrongholdPlacement;
 import dev.ringworld.world.RingMonumentPlacement;
 import dev.ringworld.world.RingMonumentResolution;
 import dev.ringworld.world.RingStructurePolicy;
+import dev.ringworld.world.RingSeamTerrainAudit;
 import dev.ringworld.world.RingWorldGeneratorAccess;
 import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.core.BlockPos;
@@ -279,6 +280,11 @@ public final class RingWorldStrongholdTest {
         Set<String> referenceKeys = new HashSet<>();
         var structureRegistry = world.registryAccess().lookupOrThrow(Registries.STRUCTURE);
 
+        int interiorMinimumZ = geometry.minWidthZ() + RingGenerationBoundary.RIM_THICKNESS;
+        int interiorMaximumZ = geometry.maxWidthZ() - RingGenerationBoundary.RIM_THICKNESS;
+        int[] highSideHeights = new int[interiorMaximumZ - interiorMinimumZ + 1];
+        int[] lowSideHeights = new int[highSideHeights.length];
+
         for (int chunkX : sampleChunkXs) {
             for (int chunkZ = geometry.minChunkZ(); chunkZ <= geometry.maxChunkZ(); chunkZ++) {
                 LevelChunk chunk = world.getChunk(chunkX, chunkZ);
@@ -342,18 +348,33 @@ public final class RingWorldStrongholdTest {
                 }
             }
         }
+        for (int z = interiorMinimumZ; z <= interiorMaximumZ; z++) {
+            int index = z - interiorMinimumZ;
+            highSideHeights[index] = world.getHeight(
+                    Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                    geometry.circumferenceBlocks() - 1, z);
+            lowSideHeights[index] = world.getHeight(
+                    Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 0, z);
+        }
+        RingSeamTerrainAudit.Report seam = RingSeamTerrainAudit.inspect(
+                highSideHeights, lowSideHeights);
+        if (!seam.passes()) {
+            throw new IllegalStateException("Broad terrain cliff remains at circumference seam: "
+                    + seam);
+        }
         if (caveAir.get() == 0 || ores.get() == 0) {
             throw new IllegalStateException("Seam strip lacks ordinary carver/ore evidence: caveAir="
                     + caveAir + ", ores=" + ores);
         }
         RingWorldMod.LOGGER.info(
-                "[worldgen-matrix] seed={} layout={}x{} biomeFamilies={} biomeIds={} chunks={} caveAir={} ores={} logs={} starts={} structureIds={} crossingStarts={} crossingStructureIds={} references={} lootContainers={} structuresWithSpawnOverrides={} spawnOverrideStructureIds={}",
+                "[worldgen-matrix] seed={} layout={}x{} biomeFamilies={} biomeIds={} chunks={} caveAir={} ores={} logs={} starts={} structureIds={} crossingStarts={} crossingStructureIds={} references={} lootContainers={} structuresWithSpawnOverrides={} spawnOverrideStructureIds={} seamTerrain={}",
                 world.getSeed(), geometry.circumferenceBlocks(), geometry.widthBlocks(),
                 sampledFamilies.stream().sorted().toList(), sampledBiomes.stream().sorted().toList(),
                 sampledChunks, caveAir, ores, logs,
                 validStarts, structureIds.stream().sorted().toList(), seamCrossingStarts,
                 crossingStructureIds.stream().sorted().toList(), references, lootContainers,
-                structuresWithSpawnOverrides, spawnOverrideStructureIds.stream().sorted().toList());
+                structuresWithSpawnOverrides, spawnOverrideStructureIds.stream().sorted().toList(),
+                seam);
     }
 
     private static void classifyBiome(String biomeId, Set<String> families) {

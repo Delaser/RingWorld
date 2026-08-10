@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 318 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 329 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
@@ -322,12 +322,12 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 318
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 329
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 318
+The NeoForge module uses the same Java 25 toolchain and also passes all 329
 unit/parameterized cases:
 
 ```sh
@@ -430,15 +430,18 @@ version numbers.
 
 ## Current implementation cautions
 
-- The complete-ring renderer accepts a current-world partial atlas once it has
-  at least one trustworthy cell. Missing cells stay transparent; progressive
-  updates reuse a source-resolution texture and one reference-height mesh,
+- The complete-ring renderer accepts a current-world zero-cell or partial Atlas
+  as soon as its identity metadata arrives. Missing cells use an opaque,
+  deterministic world-hash fallback with bounded nearest-real-cell dilation;
+  progressive updates reuse a source-resolution texture, one reference-height
+  mesh, and curved temporary returns at both inner rim faces,
   then verified completion performs one upgrade to the expanded texture and
   detailed terrain-height mesh. Later complete-atlas revisions refresh the
   texture, but rebuild that detailed mesh only when the immutable build
   snapshot's surface-height fingerprint changes. Session disconnect/settings
   handlers must still clear the static GPU texture and mesh, and the renderer
-  must reject absent, zero-cell, corrupt, or wrong-world atlases.
+  must reject absent, corrupt, or wrong-world atlases. Completion must remove
+  every fallback pixel and temporary return.
   Fabric disconnect callbacks may arrive on a network thread, so they must
   enqueue cache saves and GPU teardown onto the client thread. Failing to clear
   that state lets a newly created world display the previous world's ring.
@@ -454,13 +457,20 @@ version numbers.
   path vanilla.
 - Terrain-noise mapping is a persisted worldgen identity. Saved settings
   formats 1 and 2 must upgrade to format 3 with `LEGACY_AXIAL`; only a fresh
-  format-3 world may select `ANNULAR`. The annular transform uses
+  format-3 world may select a persisted annular mapping. Mapping 2 preserves
+  the first annular implementation for existing saves; fresh worlds use
+  `ANNULAR_COMPLETE` (3), which also maps vanilla surface-rule, badlands,
+  frozen-ocean, and carver-seed coordinates. The annular transform uses
   `(R+Z)sin(theta),(R+Z)cos(theta)` and removes the legacy quarter-ring
   Jacobian collapse. Keep mapping selection identical across biome, density,
   cave/aquifer/ore, and base-height paths; include it in the settings
   handshake, layout fingerprint, generator cache key, and atlas world hash.
   Never silently migrate an existing world's mapping or accept an atlas from
   the other mapping.
+- Curved clouds are fragment-clipped in intrinsic Z at the two inner rim-face
+  planes published in `RingWorldAtmosphere2.zw`. Those planes currently derive
+  from `RingGenerationBoundary.RIM_THICKNESS`; future wall-style settings must
+  change the shared bound calculation rather than hard-code shader coordinates.
 - Atlas tile application is idempotent. Duplicate dirty tiles must not advance
   the client render revision, force another cache save, or rebuild the complete
   texture/mesh. Only the actual incomplete-to-complete transition bypasses the
