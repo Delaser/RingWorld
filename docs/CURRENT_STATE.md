@@ -44,15 +44,16 @@ The CurseForge media gallery also contains the six approved in-game images
 from the RingWorld showcase page rather than automated diagnostic captures.
 
 On 2026-08-10, the unlisted showcase alpha directory was refreshed from public
-source commit `83bc806`, including the biome-flavoured incomplete-Atlas
-placeholder and 750 ms revision morph. Its Windows Fabric package SHA-256 is
-`6f0f808123d7d4605f8a8c4d5ba13a8f011bab181181f76b7d420bfb7dc58136`.
+source commit `2ae1ce4`, including the biome-flavoured incomplete-Atlas
+placeholder, 750 ms revision morph, completion-driven haze, and neutral
+cobble/moss rim returns. Its Windows Fabric package SHA-256 is
+`a6390fc76388cc103114d2f385bfb7c7315c15d73d98468176d4eb4d0829d2c6`.
 `https://andwhatnotstudio.com/ringworld/alpha/` now provides a checksum-bound
 one-click installer, the same manual ZIP, MPL licence, and source manifest.
 The packaged server entry is pre-added but is not joined automatically. This
 is a test convenience build, not a Modrinth/CurseForge promotion or 1.0 gate.
 The previous directory is retained outside the document root at
-`/var/backups/ringworld-alpha/20260810T124026Z`.
+`/var/backups/ringworld-alpha/20260810T131042Z`.
 
 Issue #33 now supplies a local fail-closed staging workflow for any later
 manual Fabric upload. It builds and validates exactly one runtime jar, records
