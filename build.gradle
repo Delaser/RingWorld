@@ -537,6 +537,7 @@ tasks.register("verifyMultiplayerHarness") {
 			throw new GradleException("Fabric multiplayer server matrix did not pass; inspect ${serverLog}")
 		}
 		if (!serverText.contains("[multiplayer-extended] ordinary Nether portal wait result=true")
+				|| !serverText.contains("[multiplayer-extended] multi-lap Nether portal routing result=true")
 				|| !serverText.contains("[multiplayer-extended] seam thunder/lightning result=true")) {
 			throw new GradleException("Fabric multiplayer portal-delay/weather evidence is incomplete; inspect ${serverLog}")
 		}

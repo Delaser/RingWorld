@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 312 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 317 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
@@ -30,7 +30,8 @@ Overworld/Nether/End transitions, save/disconnect, and reopen. NeoForge also
 passes the production/multi-seed structure matrix, a complete unattended
 headless atlas prewarm, and the dedicated two-client seam/combat/block/bed/
 death/physical-portal/boat/teleport/reconnect matrix, including destination
-water and hostile navigation through the seam. Loader-labelled Fabric
+water, hostile navigation through the seam, and normalized positive/negative
+multi-lap Nether returns with both out-of-band Z directions. Loader-labelled Fabric
 and NeoForge client/server packages, strict jar verification, same-commit
 shared-contract comparison, and a real packaged macOS NeoForge client smoke
 also pass. The shared GUI-scale-4 atlas map/control fixture passes all eleven
@@ -317,12 +318,12 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 312
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 317
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 312
+The NeoForge module uses the same Java 25 toolchain and also passes all 317
 unit/parameterized cases:
 
 ```sh
@@ -563,6 +564,12 @@ version numbers.
   direct saved entries are known, and reserve a canonical pending-NBT key
   before promoting an alias; serialized entry order must never choose which
   inventory survives. Never silently merge or delete either inventory.
+- Nether-to-Overworld portal routing normalizes the already vanilla-scaled
+  target at `PortalForcer`: X wraps onto canonical storage, Z clamps to a
+  portal-safe creation anchor, and lookup queries the adjacent X images before
+  creation. Do not move this correction to the final entity transition; that
+  would still search or create at a raw multi-lap/exterior coordinate. Keep
+  Nether and End `PortalForcer` behavior vanilla.
 - The world-creation editor must retain its unsaved field and monument draft
   across Minecraft `init()` rebuilds, including GUI-scale and window-size
   changes. Its automated fixture must wait for each asynchronous screenshot

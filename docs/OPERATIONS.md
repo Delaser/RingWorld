@@ -617,3 +617,9 @@ F3 replaces the normal position section in the Overworld with:
   tick.
 - Nether and End should remain usable even if Overworld-specific rendering is
   unavailable; a missing dimension guard is a bug.
+- Nether travel can span any number of effective RingWorld laps. On return,
+  vanilla first scales the Nether coordinates by 8; RingWorld then wraps X and
+  clamps only an out-of-band Z target to the nearest portal-safe interior
+  latitude. Existing safe canonical portals are reused across the X seam.
+  There is no operator setting for this policy and an existing world does not
+  need regeneration after the mod update.

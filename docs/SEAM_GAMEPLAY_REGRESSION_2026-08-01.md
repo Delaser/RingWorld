@@ -89,6 +89,21 @@ Mojang/Realms HTTP 401 noise; that is unrelated to the local offline server.
 
 ## Post-evidence fixture strengthening
 
+The 2026-08-10 dual-loader refresh extends the physical portal phase. It
+creates and rediscovers safe canonical portals from positive and negative raw
+targets several circumferences away and beyond both Z rims, then moves the
+player to a four-lap Nether coordinate and performs the real return transition.
+Fabric and NeoForge both returned at canonical X=1044.5 beside the expected
+safe high-Z portal, retained the ordinary 80-tick survival delay, and completed
+the following End/weather phases. The verifier now requires the ordered
+`multi-lap Nether portal routing result=true` marker.
+
+The complete matrix also passed at the Medium 16,384x256 geometry on Fabric
+and on a warmed NeoForge retry, returning beside the normalized high-Z portal
+at canonical X=8217.5. The first cold NeoForge production attempt stopped at
+the already tracked #134 fixture/resource-pressure boundary before portal
+routing began.
+
 The current fixture seals a two-cell trough, clears canonical X=`0`, places
 its only water source at `C-1`, and requires both clients plus the server to
 observe water at X=`0`.
