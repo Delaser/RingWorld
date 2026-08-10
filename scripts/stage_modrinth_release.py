@@ -55,17 +55,17 @@ GITHUB_REVISION_URL_PATTERN = re.compile(
 SOURCE_URL_PLACEHOLDER = "{{RINGWORLD_CORRESPONDING_SOURCE_URL}}"
 COMPATIBILITY_API_VERSION = 1
 REQUIRED_BUILD_JAVA = 25
-ARTIFACT_VERSION = "0.2.0+mc26.1.2"
-RELEASE_LABEL = "Alpha 4"
+ARTIFACT_VERSION = "1.0.0+mc26.1.2"
+RELEASE_LABEL = "1.0"
 JAVA_VERSION_PATTERN = re.compile(r'\b(?:java|openjdk) version "(?:1\.)?(\d+)')
 LOADERS = {"fabric", "neoforge"}
-PUBLIC_ALPHA_VERSION = {
-    "fabric": "0.2.0-alpha.4-fabric+mc26.1.2",
-    "neoforge": "0.2.0-alpha.4-neoforge+mc26.1.2",
+PUBLIC_RELEASE_VERSION = {
+    "fabric": "1.0.0-fabric+mc26.1.2",
+    "neoforge": "1.0.0-neoforge+mc26.1.2",
 }
-PUBLIC_ALPHA_NAME = {
-    "fabric": "RingWorld 0.2.0 alpha 4 for Minecraft 26.1.2 (Fabric)",
-    "neoforge": "RingWorld 0.2.0 alpha 4 for Minecraft 26.1.2 (NeoForge)",
+PUBLIC_RELEASE_NAME = {
+    "fabric": "RingWorld 1.0 for Minecraft 26.1.2 (Fabric)",
+    "neoforge": "RingWorld 1.0 for Minecraft 26.1.2 (NeoForge)",
 }
 SHARED_CRITICAL_ENTRIES = (
     "ringworld.mixins.json",
@@ -91,8 +91,8 @@ SHARED_PREFIXES = (
     "dev/ringworld/net/",
     "assets/minecraft/shaders/",
 )
-FABRIC_JAR = Path("build/libs/ringworld-0.2.0+mc26.1.2.jar")
-NEOFORGE_JAR = Path("neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar")
+FABRIC_JAR = Path("build/libs/ringworld-1.0.0+mc26.1.2.jar")
+NEOFORGE_JAR = Path("neoforge/build/libs/ringworld-neoforge-1.0.0+mc26.1.2.jar")
 FABRIC_CONFIG = Path("deploy/modrinth/release.json")
 NEOFORGE_CONFIG = Path("deploy/modrinth/release-neoforge.json")
 DESCRIPTION = Path("deploy/modrinth/project-description.md")
@@ -135,14 +135,14 @@ def validate_release_config(config: dict, expected_loader: str | None = None) ->
     require_equal("project.client_side", project.get("client_side"), "required")
     require_equal("project.server_side", project.get("server_side"), "required")
     require_equal("project.license_id", project.get("license_id"), EXPECTED_IDENTIFIER)
-    require_equal("version.version_type", version.get("version_type"), "alpha")
+    require_equal("version.version_type", version.get("version_type"), "release")
     require_equal("version.artifact_version", version.get("artifact_version"),
                   ARTIFACT_VERSION)
     require_equal("version.version_number", version.get("version_number"),
-                  PUBLIC_ALPHA_VERSION[loader])
-    require_equal("version.name", version.get("name"), PUBLIC_ALPHA_NAME[loader])
+                  PUBLIC_RELEASE_VERSION[loader])
+    require_equal("version.name", version.get("name"), PUBLIC_RELEASE_NAME[loader])
     require_equal("version.environment", version.get("environment"), "client_and_server")
-    require_equal("version.featured", version.get("featured"), False)
+    require_equal("version.featured", version.get("featured"), True)
     require_equal("source.repository", source.get("repository"), PUBLIC_REPOSITORY)
     platform = config.get(loader)
     if not isinstance(platform, dict):

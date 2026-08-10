@@ -237,7 +237,7 @@ dedicated gamemaster; other players see read-only status. **Generate Entire
 Ring** confirms the exact canonical chunk count and warns that it generates
 and saves real terrain/region files. Closing the map does not pause or cancel
 the job; reopening attaches to the same dimension-owned handle. The header
-shows the embedded release/artifact identity (`Alpha 4 · 0.2.0+mc26.1.2` for
+shows the embedded release/artifact identity (`1.0 · 1.0.0+mc26.1.2` for
 the prepared candidate), and the first status line shows the persisted terrain
 mapping so a screenshot identifies both the installed build and worldgen.
 
@@ -377,8 +377,8 @@ PATH="$JAVA_HOME/bin:$PATH" \
 Expected development artifacts:
 
 ```text
-build/libs/ringworld-0.2.0+mc26.1.2.jar
-build/libs/ringworld-0.2.0+mc26.1.2-sources.jar
+build/libs/ringworld-1.0.0+mc26.1.2.jar
+build/libs/ringworld-1.0.0+mc26.1.2-sources.jar
 ```
 
 The current suite passes 337 unit/parameterized cases per loader. The
@@ -545,13 +545,13 @@ python3 scripts/stage_modrinth_release.py --loader both --build
 
 python3 scripts/prepare_release_packages.py \
   --loader fabric \
-  --stage-manifest dist/modrinth/0.2.0+mc26.1.2/fabric/STAGING-MANIFEST.json \
+  --stage-manifest dist/modrinth/1.0.0+mc26.1.2/fabric/STAGING-MANIFEST.json \
   --fabric-api /path/to/fabric-api-0.155.2+26.1.2.jar \
   --output dist/release-candidate-fabric
 
 python3 scripts/prepare_release_packages.py \
   --loader neoforge \
-  --stage-manifest dist/modrinth/0.2.0+mc26.1.2/neoforge/STAGING-MANIFEST.json \
+  --stage-manifest dist/modrinth/1.0.0+mc26.1.2/neoforge/STAGING-MANIFEST.json \
   --output dist/release-candidate-neoforge
 
 python3 -m unittest \

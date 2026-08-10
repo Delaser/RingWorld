@@ -76,7 +76,7 @@ public final class AtlasPregenerationUiTestClient {
             case 2 -> {
                 if (!(client.screen instanceof RingWorldMapScreen screen) || !settled()) return true;
                 if (status == null) return true;
-                if (!screen.buildLabelForAutomation().equals("Alpha 4 · 0.2.0+mc26.1.2")) {
+                if (!screen.buildLabelForAutomation().equals("1.0 · 1.0.0+mc26.1.2")) {
                     return fail(client, "map screen showed the wrong embedded build identity: "
                             + screen.buildLabelForAutomation());
                 }

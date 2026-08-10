@@ -5,7 +5,7 @@ Last updated: 2026-08-10. Issues
 [#94](https://github.com/Delaser/RingWorld/issues/94) track this workflow.
 
 RingWorld is distributed as separate normal Fabric and NeoForge runtime jars,
-not as a Prism instance or client bundle. Both target `0.2.0+mc26.1.2`,
+not as a Prism instance or client bundle. Both target `1.0.0+mc26.1.2`,
 Minecraft 26.1.2, and Java 25. Fabric requires Loader 0.19.3 or newer plus
 Fabric API 0.155.2+26.1.2; NeoForge requires 26.1.2.87 or newer. A server and
 every connecting client must use the same RingWorld version and loader.
@@ -23,13 +23,12 @@ python3 scripts/stage_modrinth_release.py --loader both --build
 
 It runs the clean Fabric and NeoForge Gradle test/build gates, validates each
 expected runtime jar, compares their shared contract, and creates ignored
-review directories at `dist/modrinth/0.2.0+mc26.1.2/fabric/` and
+review directories at `dist/modrinth/1.0.0+mc26.1.2/fabric/` and
 `.../neoforge/`. The local runtime artifact version remains
-`0.2.0+mc26.1.2`, while the prepared public identifiers are unambiguous and
-loader-specific: `0.2.0-alpha.4-fabric+mc26.1.2` and
-`0.2.0-alpha.4-neoforge+mc26.1.2`. Staging rejects the generic artifact
-version or the other loader's public identifier, preventing a format-3 alpha
-from being confused with the hosted format-2 alpha 3. The pair gate requires
+`1.0.0+mc26.1.2`, while the public identifiers are unambiguous and
+loader-specific: `1.0.0-fabric+mc26.1.2` and
+`1.0.0-neoforge+mc26.1.2`. Staging rejects the generic artifact version or the
+other loader's public identifier. The pair gate requires
 matching artifact versions and byte-identical
 shared mixins, settings/geometry, compatibility API, protocol models, and
 shader assets before either stage is written. Use `--loader fabric` or
@@ -81,9 +80,9 @@ python3 -m unittest \
 
 The current focused suite contains 42 checks with two expected
 platform-specific skips, including fail-closed rejection of ambiguous or
-wrong-loader public alpha identifiers and missing or mismatched runtime
+wrong-loader public release identifiers and missing or mismatched runtime
 artifact versions. Optional package manifests retain both the runtime artifact
-version and the exact loader-specific public alpha identifier for provenance.
+version and the exact loader-specific public release identifier for provenance.
 Every runtime jar also contains `ringworld-build.properties`; staging rejects
 a missing file or a release/artifact label that disagrees with the prepared
 alpha metadata. The in-game RingWorld Map displays this identity. Advance
@@ -107,9 +106,9 @@ The alpha 3 CDN downloads were independently fetched after upload, matched the
 frozen Fabric and NeoForge SHA-256 values, and passed the distribution/licence
 verifier. Complete the owner checklist in
 `OWNER_RELEASE_SIGNOFF_2026-08-09.md` before promotion or live deployment.
-The alpha-4 metadata and changelogs are preparation only; they do not authorize
-an upload. Use [`OWNER_ALPHA4_SIGNOFF_2026-08-10.md`](OWNER_ALPHA4_SIGNOFF_2026-08-10.md)
-for the exact candidate review; the older alpha-3 checklist remains historical.
+Owner authorization for the 1.0 publication and subsequent website/server
+deployment was recorded on 2026-08-10 in issue #97. The alpha-3 and alpha-4
+checklists remain historical evidence.
 
 ### Non-graphical dedicated-server smoke
 
@@ -162,6 +161,6 @@ mods.
 The Modrinth page must use the generated description and matching loader
 changelog (or copy their generated immutable source URL verbatim), alongside
 installation and world-creation guidance, exact client/server requirements,
-the MPL-2.0 statement, and current alpha notes. Do not store a token in the
+the MPL-2.0 statement, and current compatibility notes. Do not store a token in the
 repository, generated stage, Gradle properties, documentation, shell history,
 or client bundle.

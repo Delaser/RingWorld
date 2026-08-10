@@ -2,7 +2,7 @@
 
 RingWorld is an engine-level mod, not an ordinary content mod. Both the server
 and every client need the same build. Compatibility contract version 1 applies
-to Minecraft 26.1.2 and the `0.2.0+mc26.1.2` Fabric line.
+to Minecraft 26.1.2 and the `1.0.0+mc26.1.2` Fabric and NeoForge line.
 
 ## Supported baseline
 

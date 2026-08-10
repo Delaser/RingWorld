@@ -1,7 +1,6 @@
 # Current state
 
-Last audited: 2026-08-10 against the public `main` integration baseline and
-the alpha-4 release-integration branch for issues #145, #146, #147, and #149.
+Last audited: 2026-08-10 against public `main` and the 1.0 release branch.
 The final
 Minecraft 1.21.11 implementation remains historical provenance at
 `mc-1.21.11-final` / `2c98650`.
@@ -10,7 +9,13 @@ The Minecraft 26.1.2 port is integrated on `main`; see
 [`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md) and the
 [`final baseline`](MINECRAFT_1_21_11_FINAL_BASELINE.md).
 
-The current dual-loader alpha candidate's validated code baseline is commit
+Owner Windows, gameplay, visual, and final-review gates #12, #13, #95, and
+#96 are complete. The active release metadata targets shared runtime version
+`1.0.0+mc26.1.2`, with loader-specific public identifiers
+`1.0.0-fabric+mc26.1.2` and `1.0.0-neoforge+mc26.1.2`. Issue #97 owns the
+authorized build, publication, showcase cleanup, and NeoForge demo migration.
+
+The historical dual-loader alpha-3 candidate's validated code baseline is commit
 `967759be872080a72e48bd26f7a97df9ee0a0302`. Its Fabric SHA-256 is
 `9ec25789e1418fd3b1877c3c23d8388cbb880a0ed562ef5f0608498df0605097`;
 its NeoForge SHA-256 is
@@ -100,14 +105,13 @@ safe-small policy-seed matrices now pass. Fresh production headless Atlas
 generation and complete-atlas resume/load also pass on both loaders. Fresh
 format-3 production projection, natural seam/both-rim visual parity, and the
 Overworld/Nether/End save-disconnect-reopen lifecycle now pass on both loaders;
-owner visual review remains before promotion.
+owner visual review is complete for promotion.
 
-The prepared next-upload metadata uses distinct public alpha-4 identifiers for
-Fabric and NeoForge while retaining the shared `0.2.0+mc26.1.2` jar metadata.
-The staging gate rejects the generic artifact version as a public identifier,
-but still performs no upload or listing mutation. The exact owner review is
-recorded in `OWNER_ALPHA4_SIGNOFF_2026-08-10.md`; it keeps merge, hosted upload,
-and live-demo deployment as separate decisions.
+The 1.0 metadata uses distinct loader-specific public identifiers while
+retaining one shared `1.0.0+mc26.1.2` runtime version. The staging gate rejects
+the generic artifact version as a hosted identifier and remains a local-only
+verification step. Owner authorization for publication and the subsequent
+website/server deployment is recorded in issue #97.
 
 The 2026-08-10 fresh-candidate graphical runs used the independently generated
 production worlds rather than an alpha save. Fabric and NeoForge each loaded
@@ -748,7 +752,7 @@ Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
 temporary shims, with 337 unit/parameterized cases passing per loader, and Loom produces
-`ringworld-0.2.0+mc26.1.2.jar`.
+`ringworld-1.0.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server
 terrain atlas now live under the Overworld's 26.1 dimension-owned data

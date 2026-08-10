@@ -19,7 +19,7 @@ import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
 PREPARE = ROOT / "scripts" / "prepare_release_packages.py"
-VERSION = "0.2.0+mc26.1.2"
+VERSION = "1.0.0+mc26.1.2"
 FABRIC_API_VERSION = "0.155.2+26.1.2"
 REVISION = "a" * 40
 
@@ -27,16 +27,16 @@ REVISION = "a" * 40
 def release_config(loader: str) -> dict:
     public_loader = "Fabric" if loader == "fabric" else "NeoForge"
     version = {
-        "name": f"RingWorld 0.2.0 alpha 4 for Minecraft 26.1.2 ({public_loader})",
-        "version_number": f"0.2.0-alpha.4-{loader}+mc26.1.2",
+        "name": f"RingWorld 1.0 for Minecraft 26.1.2 ({public_loader})",
+        "version_number": f"1.0.0-{loader}+mc26.1.2",
         "artifact_version": VERSION,
-        "version_type": "alpha",
+        "version_type": "release",
         "game_versions": ["26.1.2"],
         "loaders": [loader],
         "environment": "client_and_server",
         "dependencies": ([{"project_id": "P7dR8mSH", "dependency_type": "required"}]
                          if loader == "fabric" else []),
-        "featured": False,
+        "featured": True,
     }
     config = {
         "project": {"project_type": "mod", "client_side": "required", "server_side": "required",
@@ -84,7 +84,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                 archive.writestr("ringworld.client.mixins.json", "{}")
                 archive.writestr(
                     "ringworld-build.properties",
-                    f"artifactVersion={VERSION}\nreleaseLabel=Alpha 4\n",
+                    f"artifactVersion={VERSION}\nreleaseLabel=1.0\n",
                 )
                 archive.writestr("dev/ringworld/RingWorld.class", b"compiled")
                 return
@@ -107,7 +107,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                 archive.writestr("ringworld.client.mixins.json", "{}")
                 archive.writestr(
                     "ringworld-build.properties",
-                    f"artifactVersion={VERSION}\nreleaseLabel=Alpha 4\n",
+                    f"artifactVersion={VERSION}\nreleaseLabel=1.0\n",
                 )
                 archive.writestr("dev/ringworld/RingWorld.class", b"compiled")
 
@@ -220,9 +220,9 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             release_manifest = json.loads((output / "RELEASE-MANIFEST.json").read_text())
             self.assertEqual(release_manifest["artifactVersion"], VERSION)
             self.assertEqual(release_manifest["publicVersion"],
-                             "0.2.0-alpha.4-fabric+mc26.1.2")
+                             "1.0.0-fabric+mc26.1.2")
             self.assertEqual(release_manifest["publicName"],
-                             "RingWorld 0.2.0 alpha 4 for Minecraft 26.1.2 (Fabric)")
+                             "RingWorld 1.0 for Minecraft 26.1.2 (Fabric)")
             self.assertEqual(release_manifest["sourceRevision"], REVISION)
             self.assertEqual(len(release_manifest["artifacts"]), 3)
             for name in names:
@@ -288,9 +288,9 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             self.assertEqual(release_manifest["loader"], "neoforge")
             self.assertEqual(release_manifest["artifactVersion"], VERSION)
             self.assertEqual(release_manifest["publicVersion"],
-                             "0.2.0-alpha.4-neoforge+mc26.1.2")
+                             "1.0.0-neoforge+mc26.1.2")
             self.assertEqual(release_manifest["publicName"],
-                             "RingWorld 0.2.0 alpha 4 for Minecraft 26.1.2 (NeoForge)")
+                             "RingWorld 1.0 for Minecraft 26.1.2 (NeoForge)")
             for name in names:
                 self.assertTrue((output / name).is_file())
                 self.assertEqual((output / name).read_bytes(),
@@ -371,7 +371,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                     archive.writestr("ringworld.client.mixins.json", "{}")
                     archive.writestr(
                         "ringworld-build.properties",
-                        f"artifactVersion={VERSION}\nreleaseLabel=Alpha 4\n",
+                        f"artifactVersion={VERSION}\nreleaseLabel=1.0\n",
                     )
                     archive.writestr("dev/ringworld/RingWorld.class", b"compiled")
                 stage = self.make_stage_manifest(temporary, jar, loader="neoforge")
