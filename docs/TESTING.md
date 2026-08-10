@@ -1669,7 +1669,9 @@ strictly validated staged jar; it cannot relabel an arbitrary jar with a
 caller-supplied commit. Negative cases cover empty/non-runtime jars, decoy or
 malformed NeoForge TOML, credentials/runtime state, source artifacts, path
 traversal, stale licence/version/API metadata, auto-join, and altered
-provenance. The staging tests also require each loader's generated public
+provenance. Synthetic runtime jars include the same
+`ringworld-build.properties` artifact and release-label identity required from
+real staged jars. The staging tests also require each loader's generated public
 project description and changelog to render exactly the verified immutable
 public source-commit URL; absent, duplicate, hard-coded GitHub revision URLs
 or short/full SHAs, and unverified links fail before a stage is written. The
