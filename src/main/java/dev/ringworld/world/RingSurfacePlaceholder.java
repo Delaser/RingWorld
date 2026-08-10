@@ -4,7 +4,7 @@ import java.util.Arrays;
 
 /** Builds the deterministic, opaque visual fallback used by an incomplete Atlas. */
 public final class RingSurfacePlaceholder {
-    private static final int MAX_DILATION_DISTANCE = 32;
+    private static final int MAX_BIOME_INFLUENCE_DISTANCE = 64;
     private static final int WATER = 0x315C78;
     private static final int GRASS = 0x526B3B;
     private static final int STONE = 0x676860;
@@ -71,7 +71,7 @@ public final class RingSurfacePlaceholder {
             int row = index / columns;
             int column = index - row * columns;
             int nextDistance = distance[index] + 1;
-            if (nextDistance > MAX_DILATION_DISTANCE) continue;
+            if (nextDistance > MAX_BIOME_INFLUENCE_DISTANCE) continue;
             tail = visit(Math.floorMod(column - 1, columns), row, columns,
                     index, nextDistance, nearest, distance, queue, tail);
             tail = visit(Math.floorMod(column + 1, columns), row, columns,
@@ -98,10 +98,9 @@ public final class RingSurfacePlaceholder {
                 if (source >= 0) {
                     int sourceRow = source / columns;
                     int sourceColumn = source - sourceRow * columns;
-                    double confidence = 1.0 - (double)distance[index]
-                            / (MAX_DILATION_DISTANCE + 1.0);
+                    double confidence = biomeInfluence(distance[index]);
                     fallback = blendRgb(fallback, atlas.cellColor(sourceColumn, sourceRow),
-                            confidence * 0.72);
+                            confidence);
                 }
                 argb[index] = 0xFF000000 | fallback;
                 heights[index] = (float)RingGeometry.SURFACE_Y;
@@ -123,6 +122,15 @@ public final class RingSurfacePlaceholder {
         if (field < -0.28) return blendRgb(WATER, SAND, (field + 0.55) / 0.27);
         if (field > 1.25) return STONE;
         return blendRgb(GRASS, STONE, Math.max(0.0, (field - 0.72) / 0.53) * 0.45);
+    }
+
+    /** Smooth confidence used to carry a real generated terrain palette into unknown cells. */
+    static double biomeInfluence(int distance) {
+        if (distance <= 0) return 1.0;
+        if (distance > MAX_BIOME_INFLUENCE_DISTANCE) return 0.0;
+        double linear = 1.0 - (double)distance / (MAX_BIOME_INFLUENCE_DISTANCE + 1.0);
+        double smooth = linear * linear * (3.0 - 2.0 * linear);
+        return smooth * 0.92;
     }
 
     private static int visit(int column, int row, int columns, int from, int candidateDistance,

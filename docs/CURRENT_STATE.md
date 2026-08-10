@@ -74,7 +74,7 @@ worlds created after #158 use complete annular mapping 3
 legacy mapping retained. Mapping identity is persisted, handshaken on new
 `settings_v3`/`settings_ack_v3` channels, attached to every Overworld noise
 router, fingerprinted, and included in the atlas world hash. Both loader test
-suites pass 329 cases; the existing mapping-2 production evidence remains
+suites pass 332 cases; the existing mapping-2 production evidence remains
 historical while mapping-3 runtime requalification is in progress. Both fresh
 16,384×256 stronghold/worldgen gates previously passed
 the five-longitude, three-width-position terrain/height/alias matrix plus the
@@ -273,15 +273,21 @@ reference as used.
 The atlas-priority phase is complete through #70. #66
 records the production and safe-small 6/12/28 visual/performance baseline. #67
 is superseded by #148: zero-cell and partial Atlases now render an opaque,
-world-hash-seeded fallback, bounded nearest-real-cell dilation, and temporary
-curved returns at both inner rim faces; completion still performs one exact
+world-hash-seeded fallback, smooth generated-terrain palette influence, and
+temporary curved returns at both inner rim faces. Each published revision
+cross-fades on the GPU for 750 ms; completion still performs one exact
 full-detail transition. #68 introduces disk format
 6, bounded post-edit cell recapture, monotonic durable revisions, persistent
 complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite passes 329 unit/parameterized cases per loader.
+The active suite passes 332 unit/parameterized cases per loader.
+Fresh production visual-parity runs on 2026-08-10 exercised multiple partial
+Atlas revisions and the two-texture shader on both loaders before completing
+the natural seam and both rim captures. Fabric recorded 831 seam-motion frames
+at 8.65 ms average; NeoForge recorded 855 at 8.41 ms average. Both exited
+cleanly.
 
 Issue #157 clips curved vanilla cloud fragments to `RingCloudBounds` at the
 inner faces of the two five-block rims. The clip is fragment-accurate for
@@ -324,7 +330,7 @@ resource-pressure boundary tracked by #134, before portal routing ran.
 
 The combined alpha-4 integration branch was then built and exercised as one
 candidate rather than relying only on the four issue branches independently.
-Its clean Fabric and NeoForge builds each pass 329 tests. Fresh Atlas-disabled
+Its clean Fabric and NeoForge builds each pass 332 tests. Fresh Atlas-disabled
 2,048×416 two-client runs on both loaders pass the strict full-matrix verifier
 with settings format 3, both seam-placement directions, the shared 54-slot
 double chest and lossless alias recovery, the four-lap/out-of-width Nether
@@ -696,7 +702,7 @@ intermediary-looking source identifier was Mojang's still-unnamed
 Phase 2 and the first integrated source/runtime gate are established. The
 active branch resolves unobfuscated Minecraft 26.1.2 and Fabric API 0.155.2
 under Java 25 and Gradle 9.5.1. Common and client compilation passes without
-temporary shims, with 329 unit/parameterized cases passing per loader, and Loom produces
+temporary shims, with 332 unit/parameterized cases passing per loader, and Loom produces
 `ringworld-0.2.0+mc26.1.2.jar`.
 
 The S2 storage migration is integrated. RingWorld settings and the server

@@ -10,7 +10,7 @@ implementation identified in the private development archive as
 and is intentionally not present in the clean public Git history.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
-gate. The Fabric and NeoForge builds each pass all 329 unit/parameterized
+gate. The Fabric and NeoForge builds each pass all 332 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge
 26.1.2.87 on ModDevGradle 2.0.143 reaches `Done` on a dedicated server and has
 a client checkpoint: shared client payload/session state, mixins, shaders, and
@@ -322,12 +322,12 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ```
 
 The expected development artifact is
-`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 329
+`build/libs/ringworld-0.2.0+mc26.1.2.jar`; the current suite contains 332
 unit/parameterized cases. A green source build and dedicated-server launch are
 not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 329
+The NeoForge module uses the same Java 25 toolchain and also passes all 332
 unit/parameterized cases:
 
 ```sh
@@ -432,8 +432,8 @@ version numbers.
 
 - The complete-ring renderer accepts a current-world zero-cell or partial Atlas
   as soon as its identity metadata arrives. Missing cells use an opaque,
-  deterministic world-hash fallback with bounded nearest-real-cell dilation;
-  progressive updates reuse a source-resolution texture, one reference-height
+  deterministic world-hash fallback with smooth generated-terrain palette propagation;
+  progressive updates use source-resolution textures, one reference-height
   mesh, and curved temporary returns at both inner rim faces,
   then verified completion performs one upgrade to the expanded texture and
   detailed terrain-height mesh. Later complete-atlas revisions refresh the
@@ -441,7 +441,9 @@ version numbers.
   snapshot's surface-height fingerprint changes. Session disconnect/settings
   handlers must still clear the static GPU texture and mesh, and the renderer
   must reject absent, corrupt, or wrong-world atlases. Completion must remove
-  every fallback pixel and temporary return.
+  every fallback pixel and temporary return. Each new incomplete texture keeps
+  the prior GPU texture for a 750 ms shader cross-fade; session teardown must
+  close both textures.
   Fabric disconnect callbacks may arrive on a network thread, so they must
   enqueue cache saves and GPU teardown onto the client thread. Failing to clear
   that state lets a newly created world display the previous world's ring.

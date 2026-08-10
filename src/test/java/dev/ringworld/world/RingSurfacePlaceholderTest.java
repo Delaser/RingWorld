@@ -43,4 +43,15 @@ class RingSurfacePlaceholderTest {
         assertEquals(256 * 32, surface.argb().length);
         for (int pixel : surface.argb()) assertEquals(0xFF, pixel >>> 24);
     }
+
+    @Test
+    void generatedTerrainPaletteFadesSmoothlyAcrossUnknownCells() {
+        assertEquals(1.0, RingSurfacePlaceholder.biomeInfluence(0));
+        assertTrue(RingSurfacePlaceholder.biomeInfluence(1) > 0.9);
+        assertTrue(RingSurfacePlaceholder.biomeInfluence(16)
+                > RingSurfacePlaceholder.biomeInfluence(32));
+        assertTrue(RingSurfacePlaceholder.biomeInfluence(32)
+                > RingSurfacePlaceholder.biomeInfluence(63));
+        assertEquals(0.0, RingSurfacePlaceholder.biomeInfluence(65));
+    }
 }

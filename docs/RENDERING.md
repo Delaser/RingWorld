@@ -151,8 +151,10 @@ and the mesh height is its top face at Y+1. Water, grass, and foliage start with
 their biome tint, then apply an average block-texture luminance so the tint is
 not mistaken for the finished lit pixel colour. Other blocks use their map
 colour. Rendering begins as soon as current-world Atlas metadata arrives. A
-zero-cell or partial Atlas uses an opaque, deterministic world-hash fallback;
-bounded nearest-known-cell dilation blends actual colours into unknown areas.
+zero-cell or partial Atlas uses an opaque, deterministic world-hash fallback.
+Generated surface colours propagate into nearby unknown areas through a smooth
+confidence falloff, so forest, ocean, desert, snow, and other real palettes
+flavour the placeholder without adding a biome payload or generating chunks.
 Atlas format 4
 records the original highest-block tint semantics. Atlas format 5 additionally
 falls back to the sampled block's map colour when a dedicated server's
@@ -190,12 +192,15 @@ then performs the GPU upload; stale or abandoned images are closed. A session
 clear invalidates in-flight generations before destroying the previous GPU
 resources.
 
-While generation is incomplete, the client keeps the GPU texture at bounded
-source-atlas resolution and reuses the allocation on coalesced updates. Missing
-samples remain opaque fallback pixels, known colours dilate only a bounded
+While generation is incomplete, the client keeps each published GPU texture at
+bounded source-atlas resolution. Missing
+samples remain opaque fallback pixels, known colours influence only a bounded
 distance, and the reference-height mesh carries temporary curved returns up to
-both inner rim faces. At completion all fallback influence and temporary
-returns disappear as the client bilinearly expands into the dimension-aware,
+both inner rim faces. Each publication retains the previous GPU texture and
+cross-fades to the new revision over 750 ms; no CPU texture is uploaded per
+frame. The old texture is released when the fade completes or the session
+ends. At completion all fallback influence and temporary returns disappear as
+the client bilinearly expands into the dimension-aware,
 quality-bounded size:
 
 ```text

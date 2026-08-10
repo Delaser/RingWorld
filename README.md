@@ -20,7 +20,7 @@ not create an exterior Overworld portal or strand the player in void.
 
 > **Port status:** the active development branch targets Minecraft Java
 > 26.1.2. The common and client source sets now compile together on Java 25,
-> and the current suite passes 329 unit/parameterized cases per loader.
+> and the current suite passes 332 unit/parameterized cases per loader.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
 > client has completed terrain, full-atlas rendering, two natural wraps, and
@@ -79,7 +79,7 @@ and promotion approval.
 
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
-> Java 25 module builds with the same 329 tests; its dedicated server reaches
+> Java 25 module builds with the same 332 tests; its dedicated server reaches
 > `Done` and starts/progresses an atlas. Its client now loads the shared
 > resources/shaders and mixins, acknowledges settings format 3, streams atlas
 > metadata/tiles, and renders the complete textured surface in a copied
@@ -201,9 +201,10 @@ entire circumference as vanilla chunks.
 Instead, the server incrementally samples generated surface height and colour
 into a periodic terrain atlas. From the first metadata frame, the client draws
 an opaque world-hash-seeded fallback ring and temporary curved rim returns.
-Received cells replace nearby fallback colour progressively; completion removes
-all placeholder influence and upgrades once to the exact full-detail texture
-and terrain-height mesh.
+Received cells softly flavour nearby unknown terrain with their real surface
+palette. Each published revision cross-fades over 750 ms; completion removes all
+placeholder influence and upgrades once to the exact full-detail texture and
+terrain-height mesh.
 Real terrain cross-fades into this proxy near the configured render distance.
 
 On the server, one Overworld-owned pregeneration service is the only atlas
@@ -276,7 +277,7 @@ The parallel NeoForge module uses the same Java 25 toolchain:
 ./gradlew :neoforge:test :neoforge:build --console=plain
 ```
 
-Both Fabric and NeoForge builds pass 329 unit/parameterized cases per loader.
+Both Fabric and NeoForge builds pass 332 unit/parameterized cases per loader.
 When launching a dedicated development server, use the qualified task
 for the intended loader: `./gradlew :runServer` for Fabric or
 `./gradlew :neoforge:runServer` for NeoForge. Do not use an unqualified

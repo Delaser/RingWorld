@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 329
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 332
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -150,7 +150,7 @@ build/libs/ringworld-0.2.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-0.2.0+mc26.1.2.jar`.
 
-The active suite passes 329 unit/parameterized cases per loader:
+The active suite passes 332 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
@@ -192,7 +192,8 @@ The active suite passes 329 unit/parameterized cases per loader:
 | `RingSurfaceLodTest` | Texture-luminance colour correction, relief shading, flat-colour preservation, explicit missing-cell alpha, alpha-weighted periodic-X/clamped-Z mip filtering, one-pixel stability, malformed input rejection |
 | `RingSurfaceBuildSnapshotTest` | Immutable atlas-content retention across live changes, colour-only height-fingerprint stability, and identity/revision rejection |
 | `RingSurfaceMeshTest` | Production and safe-small shared-lattice continuity, exact physical seam closure, reference-height path, and incomplete-Atlas inner-rim returns |
-| `RingSurfacePlaceholderTest` | Zero-cell deterministic opaque fallback, world identity, exact known-cell retention, and bounded dilation opacity |
+| `RingSurfacePlaceholderTest` | Zero-cell deterministic opaque fallback, world identity, exact known-cell retention, bounded resampling, and smooth distance-decayed generated palette influence |
+| `RingSurfaceMorphTest` | Clamped 750 ms transition timing and symmetric smoother-step progression |
 | `RingSurfaceMeshRefreshPolicyTest` | Partial-mesh reuse, height-fingerprint-driven complete-mesh refresh, and forced rebuilds across layout/completion transitions |
 | `RingTerrainNoiseMappingTest` | Exact legacy vectors, annular seam/cardinals, orthogonal derivatives, mapping-cache isolation, complete-mapping carver identity, overflow rejection, and preset safety |
 | `RingSurfaceSamplingContextTest` | Mapping-3 unit/scaled surface-noise seam continuity plus mapping-2 compatibility and thread-context teardown |
@@ -625,15 +626,17 @@ longestCliffRun=0, averageAbsoluteDelta=0.0, passes=true]`. A fresh production
 NeoForge stronghold/cardinal run also passed with mapping 3. The complete
 multi-seed production matrix remains required before release-candidate freeze.
 
-The post-#148/#157 Fabric production visual-parity run also passed on
-2026-08-10. Its real network stream rendered 21.9% and 78.1% partial states as
-the opaque reference mesh with both temporary returns (417,792 vertices), then
-removed the returns at completion (393,216 detailed vertices), completed the
-natural seam and both rim captures, and recorded 841 motion frames averaging
-8.49 ms with one frame over 50 ms. This proves shader linkage and progressive
-mesh handoff; the equivalent NeoForge graphical launch was blocked before game
-startup because the unattended Mac session exposed no primary monitor, so it
-must be repeated when a display is available.
+The post-#148/#157 biome-flavoured placeholder and 750 ms texture-morph
+production visual-parity runs passed on both loaders on 2026-08-10. Fabric
+streamed live Atlas revisions, completed the natural seam and both rim
+captures, and recorded 831 motion frames averaging 8.65 ms with two frames over
+50 ms. NeoForge visibly rendered 9.4% and 62.5% partial states on the opaque
+reference mesh before the exact complete texture and detailed mesh replaced
+them; it completed the same seam and rim captures and recorded 855 motion
+frames averaging 8.41 ms with one frame over 50 ms. Both runs linked the
+two-texture shader, published multiple revisions, and exited cleanly without a
+GPU texture-lifetime failure. The captures certify the completed handoff; the
+intermediate percentage markers and renderer logs certify the progressive path.
 
 ## 26.1 integrated safe-small client gate
 
