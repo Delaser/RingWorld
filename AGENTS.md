@@ -81,7 +81,11 @@ Exact Fabric and NeoForge alpha 3 files are uploaded while the Modrinth project
 remains **Under review**. The same verified jars were submitted to CurseForge
 project `1645598` on 2026-08-09 and are awaiting file/project moderation; see
 `docs/CURSEFORGE_RELEASE.md`. Those uploads do not make the remaining port
-gates complete. The approved
+gates complete. Separate self-updating Fabric and NeoForge Windows alpha-4
+test installers are available only on the unlisted showcase alpha page. They
+derive from merged source commit `622fb76`; their exact package hashes and
+remaining owner checks are recorded in `docs/CURRENT_STATE.md` and
+`docs/OWNER_ALPHA4_SIGNOFF_2026-08-10.md`. The approved
 next order is NeoForge standalone parity, standalone gameplay/visual polish,
 then exact-candidate release preparation. Broad third-party compatibility is
 deferred until owner sign-off; see `docs/DUAL_LOADER_STANDALONE_PLAN.md`.

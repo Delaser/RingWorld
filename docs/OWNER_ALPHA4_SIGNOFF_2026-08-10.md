@@ -1,21 +1,26 @@
 # RingWorld alpha 4 owner sign-off
 
-Use this checklist against the exact locally staged alpha-4 files before
-authorizing a merge, upload, or live-server update. Fabric and NeoForge must be
-tested in separate clean instances. A failure remains a release blocker unless
-the owner explicitly records it as accepted and non-blocking.
+Use this checklist against the exact alpha-4 files on the unlisted showcase
+page before authorizing a mod-host upload or live-server update. Fabric and
+NeoForge must be tested in separate clean instances. A failure remains a
+release blocker unless the owner explicitly records it as accepted and
+non-blocking.
 
 ## Exact files
 
 | Loader | Prepared public version | SHA-256 |
 | --- | --- | --- |
-| Fabric | `0.2.0-alpha.4-fabric+mc26.1.2` | `517b9b0ace9c87b7225242f09d4aceda7ecf95d5fd9d1506c571b8b2774ab6f1` |
-| NeoForge | `0.2.0-alpha.4-neoforge+mc26.1.2` | `2fe2cfb04060a740ec450e62247eadd42e7f52ac859aa5c416bf62f3fd4d3dbd` |
+| Fabric | `0.2.0-alpha.4-fabric+mc26.1.2` | `48a5b77928a28b491a6cc4da233fa6e87241679924cbe7705d3dacc7d46efcf9` |
+| NeoForge | `0.2.0-alpha.4-neoforge+mc26.1.2` | `2af0a10c8ecda5ae4f74f1b6de824d608a3a9b1fea3475e739adec084b574a5d` |
 
-The staged manifest beside each jar records the exact pushed source revision
-and must match the final draft PR #154 head. The shared jar metadata version is
+The staged manifest beside each jar records exact merged source revision
+`622fb76a1bbe1f0118ecdb3aaeb0080c7f676270`. The shared jar metadata version is
 `0.2.0+mc26.1.2`; that is intentional and is distinct from the hosted public
-version identifiers above. No alpha-4 upload is authorized by this document.
+version identifiers above. The Windows convenience ZIP hashes are Fabric
+`b5e9eff725623f6e716d5d9f7d4c0366532350f683ed732ebcc9f1d6618c7729`
+and NeoForge
+`e2130a6d7db766ac857b69d6b4e92564e118b258b33f5e661a5d413848df4a4d`.
+No mod-host alpha-4 upload is authorized by this document.
 
 ## Record first
 
@@ -25,7 +30,7 @@ version identifiers above. No alpha-4 upload is authorized by this document.
 - Fabric Loader and Fabric API versions:
 - NeoForge version:
 - Tested jar SHA-256 values:
-- Draft PR #154 head and staged-manifest source revision:
+- Source revision and staged-manifest source revision:
 
 ## Clean install and creation UI
 
@@ -45,6 +50,8 @@ version identifiers above. No alpha-4 upload is authorized by this document.
   mapping. Do not reuse an alpha-3 world for this check.
 - [ ] Generate the entire Atlas and wait for completion; incomplete cells may
   use the normal placeholder but must be replaced by the generated terrain.
+- [ ] `Ring Atlas Generating: X%` is visible at the top left while incomplete
+  and disappears when generation reaches 100%.
 - [ ] Inspect approximately X=0, 4,096, 8,192, 12,288, and the 16,383→0 seam.
   Terrain must not develop longitude-dependent bands or stretched strips.
 - [ ] Looking tangent and straight up shows a continuous full loop without a
@@ -83,10 +90,12 @@ version identifiers above. No alpha-4 upload is authorized by this document.
 
 ## Windows requirement
 
-- [ ] A clean Windows Fabric instance with the exact jar reaches the title
+- [ ] Download and run
+  `Install-RingWorld-Alpha-Fabric-Windows.bat` from the alpha page. A clean
+  Windows Fabric instance with the exact jar reaches the title
   screen and opens or joins a RingWorld world.
-- [ ] A separate clean Windows NeoForge instance with the exact jar does the
-  same.
+- [ ] Separately run `Install-RingWorld-Alpha-NeoForge-Windows.bat`. A clean
+  Windows NeoForge instance with the exact jar does the same.
 - [ ] Save `latest.log`, loader/Java versions, the tested SHA-256, and one
   in-world screenshot from each run.
 
@@ -103,7 +112,7 @@ Fresh annular terrain and Atlas: PASS/FAIL
 Seam placement/chest/portal regressions: PASS/FAIL
 Ordinary gameplay and motion: PASS/FAIL
 Windows clean installs: PASS/FAIL
-Merge and hosted alpha-4 upload: GO/NO-GO
+Hosted alpha-4 upload: GO/NO-GO
 Live demo server update: GO/NO-GO (separate authorization)
 ```
 
