@@ -209,10 +209,21 @@ def _assert_disposable(layout: RuntimeLayout, paths: QualificationPaths) -> None
             raise InvocationError("external runtime path escapes the disposable cell root")
 
 
-def runtime_layout(paths: QualificationPaths, loader: str) -> RuntimeLayout:
+def runtime_layout(
+    paths: QualificationPaths,
+    loader: str,
+    *,
+    runtime_root: Path | None = None,
+) -> RuntimeLayout:
     if loader not in {"fabric", "neoforge"}:
         raise InvocationError("runtime layout requires a supported loader")
-    root = contained_path(paths.run_directory, "external-dedicated", "external runtime root")
+    if runtime_root is None:
+        root = contained_path(paths.run_directory, "external-dedicated", "external runtime root")
+    else:
+        if not isinstance(runtime_root, Path) or not runtime_root.is_absolute() \
+                or not is_within(runtime_root, paths.cell_root):
+            raise InvocationError("explicit external runtime root must be absolute and contained in its qualification cell")
+        root = runtime_root
     layout = RuntimeLayout(
         root=root,
         mods_directory=contained_path(root, "mods", "mods directory"),
@@ -299,6 +310,7 @@ def external_runtime_smoke_plan(
     paths: QualificationPaths,
     *,
     frozen_candidate_root: Path | None = None,
+    runtime_root: Path | None = None,
 ) -> ExternalRuntimeSmokePlan:
     """Plan an isolated dedicated smoke without touching its inputs or output tree.
 
@@ -316,7 +328,7 @@ def external_runtime_smoke_plan(
     version = required_minecraft_version(cell)
     port = qualification_port(cell)
     timeout_seconds = _timeout_seconds(cell)
-    layout = runtime_layout(paths, loader)
+    layout = runtime_layout(paths, loader, runtime_root=runtime_root)
     minecraft_server = _minecraft_server_download(cell, paths)
     installer_value = _require_mapping(cell.get("runtime_install"), "runtime installer")
     installer_download = _pinned_download(

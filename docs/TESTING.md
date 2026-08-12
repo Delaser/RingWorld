@@ -662,18 +662,25 @@ The Phase 4 pure recovery contract is covered by:
 ```sh
 PYTHONPATH=scripts python3 -m unittest \
   scripts/test_minecraft_atlas_recovery_qualification.py \
-  scripts/test_minecraft_atlas_recovery_persistence.py
+  scripts/test_minecraft_atlas_recovery_persistence.py \
+  scripts/test_external_runtime_atlas_recovery_plan.py \
+  scripts/test_external_runtime_atlas_recovery_executor.py \
+  scripts/test_external_runtime_atlas_stage_runner.py
 ```
 
-It does not launch a server. It rejects report-only claims by requiring
-independent saved-settings and Atlas-file observations, the same disposable
+This command does not launch Minecraft or use the network. The process tests
+use bounded local Python children to exercise stop, self-halt, fatal-output,
+port, and immutable-log behavior. The combined gate rejects report-only claims
+by requiring independent saved-settings and Atlas-file observations, the same disposable
 world and Atlas path across stages, a real partial checkpoint, exact complete
 totals, clean exits, and ordered interruption/recovery ledgers. The real
 external dual-loader interruption/restart run remains a separate pending gate.
 The persistence tests use hand-built gzip NBT and Atlas-v6 data and include a
 known Java hash vector. A local read-only check against the 26.1 NeoForge quick
 world independently reproduced layout fingerprint `4064118068185880929` and
-Atlas world hash `8665210144080158345` from its persisted settings.
+Atlas world hash `8665210144080158345` from its persisted settings. Real
+external Fabric and NeoForge interruption/recovery runs remain pending;
+synthetic static results are not nightly compatibility evidence.
 
 Fresh format-3 fixtures default to `terrainNoiseMapping=4`. A deliberate copied
 legacy-world run must set `-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1`;

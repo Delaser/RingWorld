@@ -98,9 +98,16 @@ requires a genuine partial schema-2 `INTERRUPTED` checkpoint and a later
 schema-2 `COMPLETE` report from the same disposable runtime/world and report
 target. Independent saved-settings and Atlas-file observations must match the
 mapping-4 2,048x416 identity, wall height, persistent Atlas path, hashes,
-totals, clean exits, and globally ordered stage ledgers. This is contract
-coverage only; the external interruption/restart executor and real dual-loader
-run are still pending.
+totals, clean exits, and globally ordered stage ledgers. A concrete external
+plan, executor, and bounded process runner now implement this first nightly
+slice. They re-inspect the frozen candidate, semantically validate and rehash
+the selected cell's strict quick record before any download, use the official
+installer in a new contained runtime, and hash every capture and process log.
+The first process stops only after a durable independently parsed partial
+Atlas exists; the second receives those exact bytes, must show growth, and
+must halt itself with `COMPLETE`. Static tests use local fake children only.
+No real Fabric or NeoForge Minecraft recovery run has passed this executor
+yet, so Phase 4 remains pending.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

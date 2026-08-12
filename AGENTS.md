@@ -392,6 +392,14 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   the Java-compatible unsigned layout/Atlas identities from decoded settings,
   rejects malformed/trailing payloads, and counts durable cells/chunks from
   the Atlas presence map rather than trusting report JSON.
+- `scripts/external_runtime_atlas_recovery_plan.py`,
+  `scripts/external_runtime_atlas_recovery_executor.py`, and
+  `scripts/external_runtime_atlas_stage_runner.py`: the first concrete Phase 4
+  external fixture. They bind a validated quick terminal record and retained
+  frozen candidate, wait for an independently parsed partial Atlas before a
+  normal stop, and require the same checkpoint to advance to a self-halting
+  complete restart. Every capture and process log is hash-addressed. Static
+  tests use fake local children; they are not a real Minecraft nightly PASS.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit

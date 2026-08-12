@@ -483,19 +483,24 @@ or persistence. Server worlds are rooted at each fixture runtime's `world`
 child. Fixtures never share state, except that Atlas prewarm recovery may
 restart only its own just-created world after validating an interrupted
 checkpoint. The model does not read, copy, create, or run any input. A concrete
-external-candidate executor remains a later phase. The companion pure
+external-candidate slice now exists for Atlas recovery: it assembles an
+official isolated runtime, revalidates the frozen candidate and strict quick
+record, waits for durable partial Atlas bytes before stopping stage one, and
+requires byte-identical resume, growth, and a self-halting complete stage two.
+Its process and persistence tests use synthetic local children/data and do not
+establish a Minecraft runtime PASS. The companion pure
 `minecraft_atlas_recovery_qualification.py` contract now defines the first
 runtime slice precisely: one genuine partial schema-2 `INTERRUPTED` report,
 then a complete clean restart of the same disposable world. It binds the raw
 reports to separately inspected persisted settings and Atlas headers/files,
 including mapping 4, 2,048x416 geometry, wall height 160, stable world/layout
 identity and Atlas path, exact totals, hashes, and ordered stage markers. It
-does not yet execute Minecraft or establish a nightly PASS.
+does not by itself establish a nightly PASS.
 The bounded persistence parser now decodes the real dimension-owned settings
 NBT and Atlas-v6 file independently, derives the Java-compatible layout and
 Atlas identities, counts durable cells and complete chunks, and binds an exact
-pre-restart checkpoint hash. This closes the report-only evidence gap, but it
-still does not replace the pending external process executor.
+pre-restart checkpoint hash. This closes the report-only evidence gap. Real
+Fabric and NeoForge executions of the new process executor are the next gate.
 
 ### Phase 5 — world-upgrade qualification
 

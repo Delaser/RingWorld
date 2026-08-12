@@ -31,6 +31,9 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
             "test_minecraft_nightly_qualification_model.py",
             "test_minecraft_atlas_recovery_qualification.py",
             "test_minecraft_atlas_recovery_persistence.py",
+            "test_external_runtime_atlas_recovery_plan.py",
+            "test_external_runtime_atlas_recovery_executor.py",
+            "test_external_runtime_atlas_stage_runner.py",
         ):
             self.assertIn(test, source)
         for prohibited in ("./gradlew", "curl ", "wget ", "java ", "publish", "upload"):

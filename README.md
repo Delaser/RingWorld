@@ -287,17 +287,20 @@ The pinned six-cell manifest and fail-closed quick runner are now present.
 A partial loader selection stays `INCOMPLETE` without downloading or launching
 a runtime; a complete three-version loader selection may build one frozen
 oldest-ABI candidate and test that unchanged file in isolated external
-dedicated servers. No complete triplet has passed yet, so this does not add a
-26.1 or 26.1.1 support claim.
+dedicated servers. Both Fabric and NeoForge quick triplets now pass with one
+unchanged frozen jar per loader, but this does not add a 26.1 or 26.1.1
+support claim.
 Official loader installer inputs are now pinned for all six cells so later
 runtime checks can assemble clean dedicated servers outside Gradle. That
-execution gate is still pending.
+quick execution gate is complete.
 Qualification-only broad-metadata candidates compile from the oldest 26.1
 ABI, while normal artifacts remain exact to 26.1.2. This is preparation for
 the same-file external runtime matrix, not a new compatibility claim.
 The isolated external-server executor and strict terminal evidence schema are
 connected to the matrix CLI behind clean-provenance, full-triplet, held-lock,
-same-file, and immutable-evidence gates.
+same-file, and immutable-evidence gates. The broader nightly matrix remains in
+progress; its first concrete Atlas interruption/recovery executor is
+statically covered but has not completed real dual-loader Minecraft runs.
 Minecraft 26.1 and 26.1.1 therefore remain unadvertised and unsupported.
 
 ## Build and install
