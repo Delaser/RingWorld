@@ -336,6 +336,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   `caches/modules-2` tree without lock/cleanup files and do not mutate it while
   a qualification run reads it; the runner rechecks the path at every Gradle
   command boundary but does not trust its contents.
+  The isolated wrapper download remains separate and must match the official
+  Gradle 9.5.1 binary ZIP SHA-256 pinned in `gradle-wrapper.properties`.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,

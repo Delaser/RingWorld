@@ -90,6 +90,8 @@ python3 scripts/run_minecraft_qualification.py \
 Both the frozen-candidate build and each diagnostic cell use
 `--max-workers=1`. This keeps dependency resolution serial on constrained
 hosts while retaining isolated Gradle homes, outputs, and evidence.
+The wrapper properties also pin the official Gradle 9.5.1 binary ZIP SHA-256;
+do not remove that verification to work around a transient download failure.
 
 On a worker that has provisioned an external read-only dependency cache, the
 pure planning check may include it explicitly:

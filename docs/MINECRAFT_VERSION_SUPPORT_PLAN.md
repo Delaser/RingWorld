@@ -352,6 +352,9 @@ its own `GRADLE_USER_HOME`, `--no-daemon`, `--max-workers=1`, held OS lock, fres
 immutable report. The shared-contract adapter is available only after the
 complete-triplet frozen preflight; the external runtime adapter is installed
 only under that same complete-triplet/provenance condition.
+The Gradle 9.5.1 wrapper distribution is pinned with Gradle's published
+binary ZIP SHA-256, so a fresh isolated cell verifies the downloaded tool
+before executing it.
 
 An operator may optionally provide
 `--gradle-dependency-cache /absolute/worker-provisioned-cache` to reuse a
