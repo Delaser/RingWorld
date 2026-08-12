@@ -161,7 +161,7 @@ There is also an open community contribution lane for the planned Minecraft
 
 - [1.21.1 backport epic](https://github.com/Delaser/RingWorld/issues/181)
 - [1.21.1 milestone](https://github.com/Delaser/RingWorld/milestone/1)
-- [1.21.1 contributor guide](https://github.com/Delaser/RingWorld/blob/port/mc-1.21.1/versions/mc1.21.1/README.md)
+- [1.21.1 contributor guide](versions/mc1.21.1/README.md)
 
 The backport is not yet playable or supported. Contributors should take one
 of the linked issues and target the `port/mc-1.21.1` integration branch.
@@ -199,7 +199,7 @@ the project documentation:
 | [Rendering](docs/RENDERING.md) | Curvature, distant terrain, fog, sky, clouds, and visual handoff |
 | [Network protocol](docs/NETWORK_PROTOCOL.md) | Required settings handshake and Atlas transport |
 | [Testing](docs/TESTING.md) | Automated fixtures, commands, evidence, and safety rules |
-| [Minecraft version qualification epic](https://github.com/Delaser/RingWorld/issues/168) | Automated 26.1.x qualification and rolling-version release work |
+| [Minecraft version plan](docs/MINECRAFT_VERSION_SUPPORT_PLAN.md) | Automated 26.1.x qualification and rolling-version release work |
 | [Licensing](docs/LICENSING.md) | MPL-2.0 distribution and source-availability guidance |
 
 This separation is intentional: the README explains the mod to players and
