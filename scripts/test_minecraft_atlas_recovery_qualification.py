@@ -16,11 +16,12 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from minecraft_atlas_recovery_qualification import (  # noqa: E402
-    ATLAS_REPORT_SCHEMA, EXPECTED_TOTAL_CELLS, EXPECTED_TOTAL_CHUNKS,
+    ATLAS_FORMAT_VERSION, ATLAS_REPORT_SCHEMA, EXPECTED_ATLAS_COLUMNS,
+    EXPECTED_ATLAS_ROWS, EXPECTED_TOTAL_CELLS, EXPECTED_TOTAL_CHUNKS,
     AtlasCacheObservation, AtlasRecoveryEvidence, AtlasReportFact,
-    INTERRUPTED_MARKERS, MarkerLedger, PersistedRingSettingsObservation,
+    FreshRuntimeObservation, INTERRUPTED_MARKERS, MarkerLedger, PersistedRingSettingsObservation,
     QualificationIdentity, RECOVERY_MARKERS, TimedMarker,
-    validate_atlas_recovery_qualification,
+    atlas_world_hash, layout_fingerprint, validate_atlas_recovery_qualification,
 )
 from minecraft_qualification_model import InvocationError  # noqa: E402
 
@@ -36,15 +37,19 @@ class AtlasRecoveryQualificationTest(unittest.TestCase):
     def valid(self, root: Path):
         runtime = root / "run" / "nightly" / "03-atlas-prewarm-recovery" / "runtime"
         world, evidence = runtime / "world", root / "evidence" / "nightly" / "03-atlas-prewarm-recovery"
-        settings = PersistedRingSettingsObservation("101", "202", 4, 2048, 416, 160, world / "data" / "ringworld-settings.dat", HASH)
-        atlas_path = world / "ringworld" / "terrain-atlas-v6.bin"
+        settings_path = world / "dimensions" / "minecraft" / "overworld" / "data" / "ringworld" / "settings.dat"
+        settings = PersistedRingSettingsObservation(416, 2048, 12345, 160, 64, 4, 3, settings_path, HASH)
+        atlas_path = settings_path.with_name("terrain-atlas.rwat.gz")
+        world_hash = atlas_world_hash(settings)
+        layout = layout_fingerprint(settings)
         def report(status, chunks, cells, capture, failure):
-            return AtlasReportFact(ATLAS_REPORT_SCHEMA, status, True, "101", "202", 4, 2048, 416, chunks, EXPECTED_TOTAL_CHUNKS, cells, EXPECTED_TOTAL_CELLS, 1_000, atlas_path, world / "ringworld-prewarm" / "result.json", evidence / capture, failure)
-        def atlas(hash_value):
-            return AtlasCacheObservation("101", "202", 4, 2048, 416, atlas_path, hash_value)
+            return AtlasReportFact(ATLAS_REPORT_SCHEMA, status, True, world_hash, layout, 4, 2048, 416, chunks, EXPECTED_TOTAL_CHUNKS, cells, EXPECTED_TOTAL_CELLS, 1_000, atlas_path, world / "ringworld-prewarm" / "result.json", evidence / capture, failure)
+        def atlas(hash_value, cells, chunks, revision):
+            return AtlasCacheObservation(ATLAS_FORMAT_VERSION, world_hash, 416, 2048, 8, EXPECTED_ATLAS_COLUMNS, EXPECTED_ATLAS_ROWS, revision, cells, chunks, atlas_path, hash_value)
         def ledger(stage, names, start):
             return MarkerLedger(stage, evidence / f"{stage}-markers.json", tuple(TimedMarker(name, start + number * 10) for number, name in enumerate(names)))
-        value = AtlasRecoveryEvidence(runtime, world, evidence, settings, report("INTERRUPTED", 100, 100, "interrupted-result.json", "controlled test interruption"), report("COMPLETE", EXPECTED_TOTAL_CHUNKS, EXPECTED_TOTAL_CELLS, "complete-result.json", None), atlas("b" * 64), atlas("c" * 64), ledger("interrupted", INTERRUPTED_MARKERS, 10), ledger("recovery", RECOVERY_MARKERS, 100), 0, 0)
+        partial = atlas("b" * 64, 100, 100, 1)
+        value = AtlasRecoveryEvidence(runtime, world, evidence, FreshRuntimeObservation(True, True, True), settings, report("INTERRUPTED", 100, 100, "interrupted-result.json", "controlled test interruption"), report("COMPLETE", EXPECTED_TOTAL_CHUNKS, EXPECTED_TOTAL_CELLS, "complete-result.json", None), partial, partial, atlas("c" * 64, EXPECTED_TOTAL_CELLS, EXPECTED_TOTAL_CHUNKS, 2), ledger("interrupted", INTERRUPTED_MARKERS, 10), ledger("recovery", RECOVERY_MARKERS, 100), 0, 0)
         return QualificationIdentity("26.1-fabric", "fabric", "26.1", HASH, "d" * 64), value
 
     def reject(self, mutate):
@@ -66,13 +71,16 @@ class AtlasRecoveryQualificationTest(unittest.TestCase):
         self.reject(lambda i, e: (replace(i, frozen_candidate_sha256="bad"), e))
         self.reject(lambda i, e: (i, replace(e, settings=replace(e.settings, wall_height_blocks=159))))
         self.reject(lambda i, e: (i, replace(e, settings=replace(e.settings, terrain_noise_mapping=3))))
+        self.reject(lambda i, e: (i, replace(e, settings=replace(e.settings, generator_seed=1 << 63))))
         self.reject(lambda i, e: (i, replace(e, recovered_report=replace(e.recovered_report, world_hash="999"))))
+        self.reject(lambda i, e: (i, replace(e, fresh_runtime=replace(e.fresh_runtime, world_root_absent=False))))
 
     def test_rejects_raw_report_schema_status_identity_totals_and_partial_rules(self):
         self.reject(lambda i, e: (i, replace(e, interrupted_report=replace(e.interrupted_report, schema_version=1))))
         self.reject(lambda i, e: (i, replace(e, interrupted_report=replace(e.interrupted_report, status="COMPLETE"))))
         self.reject(lambda i, e: (i, replace(e, interrupted_report=replace(e.interrupted_report, identity_available=False))))
         self.reject(lambda i, e: (i, replace(e, interrupted_report=replace(e.interrupted_report, completed_cells=0))))
+        self.reject(lambda i, e: (i, replace(e, interrupted_report=replace(e.interrupted_report, completed_chunks=0))))
         self.reject(lambda i, e: (i, replace(e, interrupted_report=replace(e.interrupted_report, completed_cells=EXPECTED_TOTAL_CELLS))))
         self.reject(lambda i, e: (i, replace(e, recovered_report=replace(e.recovered_report, completed_chunks=EXPECTED_TOTAL_CHUNKS - 1))))
         self.reject(lambda i, e: (i, replace(e, interrupted_report=replace(e.interrupted_report, elapsed_millis=-1))))
@@ -83,6 +91,9 @@ class AtlasRecoveryQualificationTest(unittest.TestCase):
         self.reject(lambda i, e: (i, replace(e, interrupted_report=replace(e.interrupted_report, atlas_path=Path("relative.bin")))))
         self.reject(lambda i, e: (i, replace(e, recovered_report=replace(e.recovered_report, captured_report_path=e.interrupted_report.captured_report_path))))
         self.reject(lambda i, e: (i, replace(e, recovered_atlas=replace(e.recovered_atlas, world_hash="999"))))
+        self.reject(lambda i, e: (i, replace(e, recovered_atlas=replace(e.recovered_atlas, present_cells=EXPECTED_TOTAL_CELLS - 1))))
+        self.reject(lambda i, e: (i, replace(e, recovery_input_atlas=replace(e.recovery_input_atlas, atlas_sha256="e" * 64))))
+        self.reject(lambda i, e: (i, replace(e, recovered_atlas=replace(e.recovered_atlas, revision=0))))
         self.reject(lambda i, e: (i, replace(e, recovered_atlas=replace(e.recovered_atlas, atlas_path=e.world_root / "other.bin"))))
         self.reject(lambda i, e: (i, replace(e, interrupted_exit_code=1)))
 

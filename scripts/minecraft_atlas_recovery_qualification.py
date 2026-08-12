@@ -22,13 +22,20 @@ DECIMAL_ID = re.compile(r"^(0|[1-9][0-9]*)$")
 SAFE_MARKER = re.compile(r"^[a-z][a-z0-9-]{0,95}$")
 
 ATLAS_REPORT_SCHEMA = 2
+ATLAS_FORMAT_VERSION = 6
 TERRAIN_NOISE_MAPPING = 4
 CIRCUMFERENCE_BLOCKS = 2_048
 WIDTH_BLOCKS = 416
 WALL_HEIGHT_BLOCKS = 160
+SURFACE_REFERENCE_Y = 64
+SETTINGS_FORMAT_VERSION = 3
+RIM_THICKNESS = 5
+RIM_STYLE_VERSION = 1
 ATLAS_SAMPLE_STEP_BLOCKS = 8
+EXPECTED_ATLAS_COLUMNS = CIRCUMFERENCE_BLOCKS // ATLAS_SAMPLE_STEP_BLOCKS
+EXPECTED_ATLAS_ROWS = WIDTH_BLOCKS // ATLAS_SAMPLE_STEP_BLOCKS
 EXPECTED_TOTAL_CHUNKS = (CIRCUMFERENCE_BLOCKS // 16) * (WIDTH_BLOCKS // 16)
-EXPECTED_TOTAL_CELLS = (CIRCUMFERENCE_BLOCKS // ATLAS_SAMPLE_STEP_BLOCKS) * (WIDTH_BLOCKS // ATLAS_SAMPLE_STEP_BLOCKS)
+EXPECTED_TOTAL_CELLS = EXPECTED_ATLAS_COLUMNS * EXPECTED_ATLAS_ROWS
 INTERRUPTED_MARKERS = ("atlas-started", "atlas-interrupted")
 RECOVERY_MARKERS = ("atlas-restarted", "atlas-recovered", "atlas-complete", "fixture-pass")
 
@@ -44,29 +51,44 @@ class QualificationIdentity:
 
 @dataclass(frozen=True)
 class PersistedRingSettingsObservation:
-    """Independently observed saved settings; wall height is not in the report."""
+    """Fields independently decoded from the persisted settings NBT."""
 
-    world_hash: str
-    layout_fingerprint: str
-    terrain_noise_mapping: int
-    circumference_blocks: int
     width_blocks: int
+    circumference_blocks: int
+    generator_seed: int
     wall_height_blocks: int
+    surface_reference_y: int
+    terrain_noise_mapping: int
+    format_version: int
     settings_path: Path
     settings_sha256: str
 
 
 @dataclass(frozen=True)
 class AtlasCacheObservation:
-    """Independently inspected Atlas header/file identity for one stage."""
+    """Fields independently decoded from one Atlas v6 header and payload."""
 
+    format_version: int
     world_hash: str
-    layout_fingerprint: str
-    terrain_noise_mapping: int
-    circumference_blocks: int
     width_blocks: int
+    circumference_blocks: int
+    sample_step_blocks: int
+    columns: int
+    rows: int
+    revision: int
+    present_cells: int
+    present_chunks: int
     atlas_path: Path
     atlas_sha256: str
+
+
+@dataclass(frozen=True)
+class FreshRuntimeObservation:
+    """Pre-assembly observation for a newly allocated disposable fixture."""
+
+    runtime_root_absent: bool
+    world_root_absent: bool
+    atlas_path_absent: bool
 
 
 @dataclass(frozen=True)
@@ -112,10 +134,12 @@ class AtlasRecoveryEvidence:
     runtime_root: Path
     world_root: Path
     evidence_root: Path
+    fresh_runtime: FreshRuntimeObservation
     settings: PersistedRingSettingsObservation
     interrupted_report: AtlasReportFact
     recovered_report: AtlasReportFact
     interrupted_atlas: AtlasCacheObservation
+    recovery_input_atlas: AtlasCacheObservation
     recovered_atlas: AtlasCacheObservation
     interrupted_ledger: MarkerLedger
     recovery_ledger: MarkerLedger
@@ -139,8 +163,8 @@ class AtlasRecoveryQualification:
             "settingsSha256": self.evidence.settings.settings_sha256,
             "interruptedReport": str(self.evidence.interrupted_report.captured_report_path),
             "recoveredReport": str(self.evidence.recovered_report.captured_report_path),
-            "worldHash": self.evidence.settings.world_hash,
-            "layoutFingerprint": self.evidence.settings.layout_fingerprint,
+            "worldHash": self.evidence.recovered_atlas.world_hash,
+            "layoutFingerprint": self.evidence.recovered_report.layout_fingerprint,
             "totalChunks": self.evidence.recovered_report.total_chunks,
             "totalCells": self.evidence.recovered_report.total_cells,
         }
@@ -177,6 +201,42 @@ def _unsigned(value: object, label: str) -> str:
     return value
 
 
+MASK_64 = (1 << 64) - 1
+
+
+def _mix64(value: int) -> int:
+    value &= MASK_64
+    value ^= value >> 30
+    value = (value * 0xBF58476D1CE4E5B9) & MASK_64
+    value ^= value >> 27
+    value = (value * 0x94D049BB133111EB) & MASK_64
+    return (value ^ (value >> 31)) & MASK_64
+
+
+def layout_fingerprint(settings: PersistedRingSettingsObservation) -> str:
+    """Reproduce ``RingLayoutFingerprint`` from independently decoded fields."""
+    value = (0x9E3779B97F4A7C15 ^ (settings.generator_seed & MASK_64)) & MASK_64
+    for component in (
+        2,
+        settings.width_blocks & 0xFFFFFFFF,
+        (settings.circumference_blocks & 0xFFFFFFFF) << 1,
+        (settings.wall_height_blocks & 0xFFFFFFFF) << 17,
+        (settings.surface_reference_y & 0xFFFFFFFF) << 33,
+        (settings.terrain_noise_mapping & 0xFFFFFFFF) << 49,
+        (settings.format_version & 0xFFFFFFFF) << 41,
+        RIM_THICKNESS << 9,
+    ):
+        value = _mix64(value ^ component)
+    return str(_mix64(value ^ (RIM_STYLE_VERSION << 25)))
+
+
+def atlas_world_hash(settings: PersistedRingSettingsObservation) -> str:
+    """Reproduce ``RingTerrainAtlas.worldHash`` for the persisted layout."""
+    value = int(layout_fingerprint(settings))
+    value = _mix64(value ^ (ATLAS_FORMAT_VERSION << 32))
+    return str(_mix64(value ^ ATLAS_SAMPLE_STEP_BLOCKS))
+
+
 def _fixed_identity(world_hash: object, layout: object, mapping: object, circumference: object, width: object, label: str) -> tuple[str, str, int, int, int]:
     identity = (_unsigned(world_hash, label + " world hash"), _unsigned(layout, label + " layout fingerprint"), mapping, circumference, width)
     if identity[2:] != (TERRAIN_NOISE_MAPPING, CIRCUMFERENCE_BLOCKS, WIDTH_BLOCKS):
@@ -198,11 +258,18 @@ def _canonical_cell(cell: Mapping[str, Any], identity: QualificationIdentity) ->
 def _settings(value: object, world_root: Path) -> PersistedRingSettingsObservation:
     if not isinstance(value, PersistedRingSettingsObservation):
         raise InvocationError("Atlas recovery requires independently observed saved settings")
-    _fixed_identity(value.world_hash, value.layout_fingerprint, value.terrain_noise_mapping, value.circumference_blocks, value.width_blocks, "saved settings")
-    if value.wall_height_blocks != WALL_HEIGHT_BLOCKS:
-        raise InvocationError("saved settings must use wall height 160")
+    if (value.terrain_noise_mapping, value.circumference_blocks, value.width_blocks,
+            value.wall_height_blocks, value.surface_reference_y, value.format_version) != (
+            TERRAIN_NOISE_MAPPING, CIRCUMFERENCE_BLOCKS, WIDTH_BLOCKS,
+            WALL_HEIGHT_BLOCKS, SURFACE_REFERENCE_Y, SETTINGS_FORMAT_VERSION):
+        raise InvocationError("saved settings must use the mapping-4 2048x416 safe-small layout")
+    if not isinstance(value.generator_seed, int) or isinstance(value.generator_seed, bool) \
+            or not -(1 << 63) <= value.generator_seed < (1 << 63):
+        raise InvocationError("saved settings generator seed must be a signed 64-bit integer")
     path = _path(value.settings_path, "saved settings path")
-    _contained(path, world_root, "saved settings path")
+    expected = world_root / "dimensions" / "minecraft" / "overworld" / "data" / "ringworld" / "settings.dat"
+    if path != expected:
+        raise InvocationError("saved settings path is not the dimension-owned RingWorld settings file")
     _sha256(value.settings_sha256, "saved settings hash")
     return value
 
@@ -212,7 +279,11 @@ def _report(value: object, status: str, runtime_root: Path, world_root: Path, ev
         raise InvocationError(f"{label} must be an AtlasReportFact")
     if value.schema_version != ATLAS_REPORT_SCHEMA or value.status != status or not value.identity_available:
         raise InvocationError(f"{label} must be an identity-available schema-2 {status} report")
-    if _fixed_identity(value.world_hash, value.layout_fingerprint, value.terrain_noise_mapping, value.circumference_blocks, value.width_blocks, label) != _fixed_identity(settings.world_hash, settings.layout_fingerprint, settings.terrain_noise_mapping, settings.circumference_blocks, settings.width_blocks, "saved settings"):
+    expected_identity = (
+        atlas_world_hash(settings), layout_fingerprint(settings), settings.terrain_noise_mapping,
+        settings.circumference_blocks, settings.width_blocks,
+    )
+    if _fixed_identity(value.world_hash, value.layout_fingerprint, value.terrain_noise_mapping, value.circumference_blocks, value.width_blocks, label) != expected_identity:
         raise InvocationError(f"{label} does not match persisted settings")
     chunks, total_chunks = _count(value.completed_chunks, label + " completed chunks"), _count(value.total_chunks, label + " total chunks")
     cells, total_cells = _count(value.completed_cells, label + " completed cells"), _count(value.total_cells, label + " total cells")
@@ -237,12 +308,23 @@ def _report(value: object, status: str, runtime_root: Path, world_root: Path, ev
 def _atlas(value: object, report: AtlasReportFact, world_root: Path, label: str) -> AtlasCacheObservation:
     if not isinstance(value, AtlasCacheObservation):
         raise InvocationError(f"{label} needs an independently inspected Atlas observation")
-    observed = _fixed_identity(value.world_hash, value.layout_fingerprint, value.terrain_noise_mapping, value.circumference_blocks, value.width_blocks, label + " Atlas")
-    reported = _fixed_identity(report.world_hash, report.layout_fingerprint, report.terrain_noise_mapping, report.circumference_blocks, report.width_blocks, label + " report")
-    if observed != reported:
+    _unsigned(value.world_hash, label + " Atlas world hash")
+    if (value.format_version, value.world_hash, value.width_blocks, value.circumference_blocks,
+            value.sample_step_blocks, value.columns, value.rows) != (
+            ATLAS_FORMAT_VERSION, report.world_hash, WIDTH_BLOCKS, CIRCUMFERENCE_BLOCKS,
+            ATLAS_SAMPLE_STEP_BLOCKS, EXPECTED_ATLAS_COLUMNS, EXPECTED_ATLAS_ROWS):
         raise InvocationError(f"{label} Atlas identity does not match its report")
+    _count(value.revision, label + " Atlas revision")
+    present = _count(value.present_cells, label + " Atlas present cells")
+    chunks = _count(value.present_chunks, label + " Atlas present chunks")
+    if present != report.completed_cells:
+        raise InvocationError(f"{label} Atlas present cells do not match its report")
+    if chunks != report.completed_chunks:
+        raise InvocationError(f"{label} Atlas present chunks do not match its report")
     path = _path(value.atlas_path, label + " Atlas path")
-    _contained(path, world_root, label + " Atlas path")
+    expected = world_root / "dimensions" / "minecraft" / "overworld" / "data" / "ringworld" / "terrain-atlas.rwat.gz"
+    if path != expected:
+        raise InvocationError(f"{label} Atlas path is not the dimension-owned RingWorld cache")
     if path != report.atlas_path:
         raise InvocationError(f"{label} Atlas path does not match its report")
     _sha256(value.atlas_sha256, label + " Atlas hash")
@@ -275,19 +357,31 @@ def validate_atlas_recovery_qualification(canonical_cell: Mapping[str, Any], ide
     runtime, world, evidence_root = _path(evidence.runtime_root, "runtime root"), _path(evidence.world_root, "world root"), _path(evidence.evidence_root, "evidence root")
     if world != runtime / "world":
         raise InvocationError("Atlas recovery must use one fixture runtime/world")
+    if not isinstance(evidence.fresh_runtime, FreshRuntimeObservation) or (
+            evidence.fresh_runtime.runtime_root_absent,
+            evidence.fresh_runtime.world_root_absent,
+            evidence.fresh_runtime.atlas_path_absent,
+    ) != (True, True, True):
+        raise InvocationError("Atlas recovery requires an independently observed fresh disposable runtime")
     settings = _settings(evidence.settings, world)
     interrupted = _report(evidence.interrupted_report, "INTERRUPTED", runtime, world, evidence_root, settings, "interrupted stage")
     recovered = _report(evidence.recovered_report, "COMPLETE", runtime, world, evidence_root, settings, "recovery stage")
     if interrupted.runtime_report_path != recovered.runtime_report_path or interrupted.captured_report_path == recovered.captured_report_path:
         raise InvocationError("Atlas restart must reuse one runtime report but retain distinct captured reports")
-    if not (0 < interrupted.completed_cells < interrupted.total_cells):
+    if not (0 < interrupted.completed_cells < interrupted.total_cells) \
+            or not (0 < interrupted.completed_chunks < interrupted.total_chunks):
         raise InvocationError("interrupted stage must retain a genuine partial Atlas checkpoint")
     if (recovered.completed_chunks, recovered.completed_cells) != (recovered.total_chunks, recovered.total_cells):
         raise InvocationError("recovery stage must complete every chunk and Atlas cell")
     first_atlas = _atlas(evidence.interrupted_atlas, interrupted, world, "interrupted stage")
+    recovery_input = _atlas(evidence.recovery_input_atlas, interrupted, world, "recovery input")
     second_atlas = _atlas(evidence.recovered_atlas, recovered, world, "recovery stage")
+    if first_atlas != recovery_input:
+        raise InvocationError("recovery launch did not receive the exact interrupted Atlas checkpoint")
     if first_atlas.atlas_path != second_atlas.atlas_path:
         raise InvocationError("Atlas recovery must observe one persistent Atlas file")
+    if second_atlas.revision < first_atlas.revision or second_atlas.present_cells <= first_atlas.present_cells:
+        raise InvocationError("recovery stage did not advance the interrupted Atlas checkpoint")
     if evidence.interrupted_exit_code != 0 or evidence.recovery_exit_code != 0:
         raise InvocationError("both Atlas server stages must have clean exits")
     first_ledger = _ledger(evidence.interrupted_ledger, "interrupted", INTERRUPTED_MARKERS, evidence_root)

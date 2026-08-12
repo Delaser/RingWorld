@@ -70,6 +70,7 @@ jobs:
           scripts/test_run_minecraft_qualification.py
           scripts/test_minecraft_nightly_qualification_model.py
           scripts/test_minecraft_atlas_recovery_qualification.py
+          scripts/test_minecraft_atlas_recovery_persistence.py
           scripts/test_qualification_static_workflow.py
 
       # Static only: no Gradle, Minecraft runtime, installer, server, network,

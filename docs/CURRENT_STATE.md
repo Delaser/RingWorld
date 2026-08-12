@@ -101,6 +101,13 @@ mapping-4 2,048x416 identity, wall height, persistent Atlas path, hashes,
 totals, clean exits, and globally ordered stage ledgers. This is contract
 coverage only; the external interruption/restart executor and real dual-loader
 run are still pending.
+The companion bounded persistence parser has been checked against an actual
+NeoForge qualification world. It independently decodes the dimension-owned
+gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java
+unsigned layout fingerprint and Atlas world hash, and rejects malformed,
+truncated, trailing, or invalid-presence data. Recovery evidence additionally
+requires an absent fresh runtime/world/Atlas before assembly and an exact
+byte-identical interrupted Atlas observation immediately before restart.
 The accepted same-jar proof architecture builds one frozen candidate per
 loader against the oldest supported ABI and runs that unchanged file in
 external production-style profiles for every patch. Per-cell Gradle builds are

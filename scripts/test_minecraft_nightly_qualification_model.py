@@ -82,6 +82,13 @@ class NightlyQualificationModelTest(unittest.TestCase):
                 ("frozen-candidate", "quick-terminal-evidence", "production-world"),
                 lifecycle.input_roles,
             )
+            atlas = next(item for item in plan.fixture_plans if item.fixture is NightlyFixture.ATLAS_PREWARM_RECOVERY)
+            self.assertEqual(
+                ("atlas-started", "atlas-interrupted", "atlas-restarted", "atlas-recovered", "atlas-complete", "fixture-pass"),
+                atlas.required_markers,
+            )
+            self.assertEqual(10, len(atlas.required_outputs))
+            self.assertTrue(any(path.name == "recovery-input-atlas.rwat.gz" for path in atlas.required_outputs))
 
     def test_missing_production_world_fails_closed_before_any_runtime_plan(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -491,6 +491,11 @@ reports to separately inspected persisted settings and Atlas headers/files,
 including mapping 4, 2,048x416 geometry, wall height 160, stable world/layout
 identity and Atlas path, exact totals, hashes, and ordered stage markers. It
 does not yet execute Minecraft or establish a nightly PASS.
+The bounded persistence parser now decodes the real dimension-owned settings
+NBT and Atlas-v6 file independently, derives the Java-compatible layout and
+Atlas identities, counts durable cells and complete chunks, and binds an exact
+pre-restart checkpoint hash. This closes the report-only evidence gap, but it
+still does not replace the pending external process executor.
 
 ### Phase 5 — world-upgrade qualification
 

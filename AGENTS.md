@@ -387,6 +387,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   complete restart of that exact disposable world. It models the Java
   schema-2 report exactly and binds it to independent persisted-settings and
   Atlas-file observations; it performs no I/O or runtime work.
+- `scripts/minecraft_atlas_recovery_persistence.py`: bounded independent
+  gzip/NBT and Atlas-v6 byte parsers for that recovery evidence. It derives
+  the Java-compatible unsigned layout/Atlas identities from decoded settings,
+  rejects malformed/trailing payloads, and counts durable cells/chunks from
+  the Atlas presence map rather than trusting report JSON.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit
