@@ -674,13 +674,23 @@ port, and immutable-log behavior. The combined gate rejects report-only claims
 by requiring independent saved-settings and Atlas-file observations, the same disposable
 world and Atlas path across stages, a real partial checkpoint, exact complete
 totals, clean exits, and ordered interruption/recovery ledgers. The real
-external dual-loader interruption/restart run remains a separate pending gate.
+external dual-loader interruption/restart gate passed on 2026-08-12 at clean
+pushed commit `1887692`: Fabric run `20260812T184342Z-cef57e3ac2a4`
+recovered 244/13,312 cells to completion and NeoForge run
+`20260812T185236Z-670720ec923e` recovered 280/13,312. Their terminal-evidence
+SHA-256 values are
+`bc770cd1395c8a45203ef54e436ff3645bc0c32285a0ec2b2471849e4355498d`
+and `f3459d31f906fcafd085540a46e5b989554ca129da717ac5f87fc87aacd801b3`.
+Both runs independently captured settings, the partial restart bytes, the
+complete Atlas, both schema-2 reports, bounded logs, and ordered clean-exit
+markers. This is the Atlas-recovery nightly slice only.
 The persistence tests use hand-built gzip NBT and Atlas-v6 data and include a
 known Java hash vector. A local read-only check against the 26.1 NeoForge quick
 world independently reproduced layout fingerprint `4064118068185880929` and
 Atlas world hash `8665210144080158345` from its persisted settings. Real
-external Fabric and NeoForge interruption/recovery runs remain pending;
-synthetic static results are not nightly compatibility evidence.
+external Fabric and NeoForge interruption/recovery runs now supply runtime
+evidence; synthetic static results alone remain insufficient for any other
+nightly fixture.
 
 From a clean pushed Java 25 checkout, run one real external recovery fixture
 with the exact quick evidence that supplied its frozen candidate:

@@ -500,7 +500,14 @@ The bounded persistence parser now decodes the real dimension-owned settings
 NBT and Atlas-v6 file independently, derives the Java-compatible layout and
 Atlas identities, counts durable cells and complete chunks, and binds an exact
 pre-restart checkpoint hash. This closes the report-only evidence gap. Real
-Fabric and NeoForge executions of the new process executor are the next gate.
+Fabric and NeoForge executions of the new process executor passed on
+2026-08-12 from clean pushed commit `1887692`. Fabric run
+`20260812T184342Z-cef57e3ac2a4` recovered 244/13,312 durable cells to complete;
+NeoForge run `20260812T185236Z-670720ec923e` recovered 280/13,312 to complete.
+Their terminal-evidence SHA-256 values are respectively
+`bc770cd1...5498d` and `f3459d31...01b3`. This qualifies the Atlas
+interruption/recovery fixture on the oldest supported patch for both frozen
+loader candidates; the remaining Phase 4 fixtures are still pending.
 The operator entry point is intentionally explicit:
 
 ```sh

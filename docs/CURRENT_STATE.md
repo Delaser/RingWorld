@@ -106,8 +106,18 @@ installer in a new contained runtime, and hash every capture and process log.
 The first process stops only after a durable independently parsed partial
 Atlas exists; the second receives those exact bytes, must show growth, and
 must halt itself with `COMPLETE`. Static tests use local fake children only.
-No real Fabric or NeoForge Minecraft recovery run has passed this executor
-yet, so Phase 4 remains pending.
+The first real external recovery slice passed on both loaders at clean pushed
+commit `1887692` on 2026-08-12. Fabric run
+`20260812T184342Z-cef57e3ac2a4` stopped at 244/13,312 cells and resumed to
+13,312/13,312; its terminal-evidence SHA-256 is
+`bc770cd1395c8a45203ef54e436ff3645bc0c32285a0ec2b2471849e4355498d`.
+NeoForge run `20260812T185236Z-670720ec923e` stopped at 280/13,312 and
+resumed to 13,312/13,312; its terminal-evidence SHA-256 is
+`f3459d31f906fcafd085540a46e5b989554ca129da717ac5f87fc87aacd801b3`.
+Both retained mapping 4, world hash `8665210144080158345`, layout fingerprint
+`4064118068185880929`, an exact byte-identical restart checkpoint, clean
+stage exits, and self-halted only after schema-2 `COMPLETE`. This completes
+the Atlas recovery slice, not the broader Phase 4 nightly matrix.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

@@ -299,8 +299,10 @@ the same-file external runtime matrix, not a new compatibility claim.
 The isolated external-server executor and strict terminal evidence schema are
 connected to the matrix CLI behind clean-provenance, full-triplet, held-lock,
 same-file, and immutable-evidence gates. The broader nightly matrix remains in
-progress; its first concrete Atlas interruption/recovery executor is
-statically covered but has not completed real dual-loader Minecraft runs.
+progress. Its first concrete Atlas interruption/recovery fixture now passes
+real Fabric and NeoForge 26.1 external-server runs with the unchanged frozen
+candidate for each loader; the remaining gameplay, worldgen, client, and
+rendering fixtures are not yet qualified across 26.1.x.
 Minecraft 26.1 and 26.1.1 therefore remain unadvertised and unsupported.
 
 ## Build and install

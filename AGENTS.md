@@ -405,6 +405,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   run ID, revalidates the prior strict PASS record and frozen jar, requires the
   current public branch to be clean/pushed under Java 25, and records that
   executor-source provenance before launching the concrete two-stage runner.
+  Real Fabric and NeoForge 26.1 runs passed on 2026-08-12 from commit
+  `1887692`; the retained run IDs and terminal-evidence hashes are recorded in
+  `docs/CURRENT_STATE.md`. This qualifies Atlas recovery only, not the rest of
+  the Phase 4 nightly matrix.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit
