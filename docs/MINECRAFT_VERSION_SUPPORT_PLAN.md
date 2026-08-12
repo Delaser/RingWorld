@@ -1,6 +1,7 @@
 # Minecraft version support plan
 
-Status: approved policy and end-to-end delivery plan; implementation pending.
+Status: approved policy and end-to-end delivery plan. Phase 0 tracking and
+the Phase 1 manifest/validator are implemented; later phases remain pending.
 
 ## Support model
 
@@ -198,6 +199,11 @@ and exit condition. Record these non-negotiable decisions in the epic:
 Exit: the tracker matches this document and no issue describes 26.1 or 26.1.1
 as already supported.
 
+Implemented: GitHub epic
+[#168](https://github.com/Delaser/RingWorld/issues/168) links the bounded
+Phase 1–10 issues. The tracker preserves the no-live-world and explicit-owner-
+authorization boundaries.
+
 ### Phase 1 — pinned version manifest
 
 Add a machine-readable manifest, schema, and pure validator for the initial
@@ -215,6 +221,19 @@ release types, missing checksums, shared paths or ports, and a published state
 without immutable evidence.
 
 Exit: deterministic tests cover valid 26.1.x data and every fail-closed rule.
+
+Implemented: [`../config/minecraft-version-matrix.json`](../config/minecraft-version-matrix.json)
+contains the initial six cells. The 26.1.2 cells retain exact published
+artifact evidence. Exact Fabric inputs are pinned for 26.1 and 26.1.1. The
+only official NeoForge runtimes for those Minecraft patches are beta builds,
+so they are pinned only as trial inputs and cannot become support claims until
+the complete gates pass. All four earlier-patch cells remain `pending`.
+Validate with:
+
+```sh
+python3 scripts/validate_minecraft_version_matrix.py
+python3 -m unittest scripts/test_validate_minecraft_version_matrix.py
+```
 
 ### Phase 2 — version-aware build layout
 

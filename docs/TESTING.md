@@ -51,6 +51,21 @@ That orchestrator is not implemented yet; do not document its intended command
 as current evidence or broaden loader metadata before its initial six-cell
 matrix passes.
 
+The Phase 1 pinned matrix and pure validator are implemented. They retain
+26.1/26.1.1 as `pending` cells despite exact Fabric inputs and pinned NeoForge
+beta trial inputs, and reject promoting those cells without qualification
+evidence:
+
+```sh
+python3 scripts/validate_minecraft_version_matrix.py
+python3 -m unittest scripts/test_validate_minecraft_version_matrix.py
+```
+
+The validator covers six unique cells, exact/non-floating dependency inputs,
+checksums, profile path and port isolation, legal states, immutable evidence
+for published cells, and consistent same-artifact claims. These tests validate
+the matrix policy; they do not qualify a Minecraft runtime.
+
 Fresh Fabric and NeoForge dedicated-server launches reach `Done`; the NeoForge
 launch also starts and progresses atlas generation. The NeoForge client now
 also has a focused diagnostic gate:

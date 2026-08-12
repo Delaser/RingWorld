@@ -305,6 +305,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
 - `deploy/`: generic client-launcher, dedicated-server, and Modrinth staging
   templates. `scripts/prepare_release_packages.py` assembles optional local
   client/server packages from them; generated archives remain ignored.
+- `config/minecraft-version-matrix.json`: pinned Fabric/NeoForge qualification
+  cells and publication evidence for the Minecraft 26.1.x support line.
+- `scripts/validate_minecraft_version_matrix.py`: fail-closed pure validation
+  for version inputs, isolated profiles, states, evidence, and same-jar claims.
 - `docs/DIMENSION_SCALING_PLAN.md`: authoritative audit and staged plan for
   removing test-world assumptions from custom dimensions.
 - `docs/ATLAS_PREGENERATION_PLAN.md`: planned **Generate Entire Ring** UI and

@@ -1,0 +1,357 @@
+{
+  "schema_version": 1,
+  "line": "26.1.x",
+  "cells": [
+    {
+      "id": "26.1-fabric",
+      "minecraft": {
+        "version": "26.1",
+        "java_major": 25,
+        "downloads": [
+          {
+            "name": "client",
+            "url": "https://piston-data.mojang.com/v1/objects/191771837687b766537a8c4607cb6fad79c533a1/client.jar",
+            "checksum": { "algorithm": "sha1", "value": "191771837687b766537a8c4607cb6fad79c533a1" }
+          },
+          {
+            "name": "server",
+            "url": "https://piston-data.mojang.com/v1/objects/3872a7f07a1a595e651aef8b058dfc2bb3772f46/server.jar",
+            "checksum": { "algorithm": "sha1", "value": "3872a7f07a1a595e651aef8b058dfc2bb3772f46" }
+          }
+        ]
+      },
+      "loader": "fabric",
+      "status": "pending",
+      "dependencies": [
+        {
+          "name": "Fabric Loader",
+          "coordinate": "net.fabricmc:fabric-loader",
+          "version": "0.19.3",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.19.3/fabric-loader-0.19.3.jar",
+          "checksum": { "algorithm": "sha256", "value": "73eed8c34bbad0320a2a3cba5346351e822f74f82b3f3c060574068474132958" }
+        },
+        {
+          "name": "Fabric Loom",
+          "coordinate": "net.fabricmc:fabric-loom",
+          "version": "1.17.19",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-loom/1.17.19/fabric-loom-1.17.19.jar",
+          "checksum": { "algorithm": "sha256", "value": "ad331736d7ee6cd5f21c45b19584b951c716ba5de8ace8662b42813d110452b8" }
+        },
+        {
+          "name": "Fabric API",
+          "coordinate": "net.fabricmc.fabric-api:fabric-api",
+          "version": "0.145.1+26.1",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.145.1+26.1/fabric-api-0.145.1+26.1.jar",
+          "checksum": { "algorithm": "sha256", "value": "f80ee0909d820649d5b1b31c74f2ebd503530a0ed163447a4a5779b9fbe8716e" }
+        }
+      ],
+      "pending_inputs": [
+        {
+          "name": "Qualification evidence",
+          "reason": "Exact dependencies are pinned, but this cell has not passed the version-aware build and runtime gates."
+        }
+      ],
+      "profile": {
+        "run_directory": "run/qualification/26.1/fabric",
+        "cache_directory": "run/qualification-cache/26.1/fabric",
+        "evidence_directory": "dist/qualification/ringworld/26.1/fabric",
+        "server_port": 26101,
+        "fixture": "safe-small",
+        "timeout_seconds": 1800,
+        "allowed_parallelism": 1
+      },
+      "expected_game_version_tags": { "modrinth": ["26.1"], "curseforge": ["26.1"] }
+    },
+    {
+      "id": "26.1-neoforge",
+      "minecraft": {
+        "version": "26.1",
+        "java_major": 25,
+        "downloads": [
+          {
+            "name": "client",
+            "url": "https://piston-data.mojang.com/v1/objects/191771837687b766537a8c4607cb6fad79c533a1/client.jar",
+            "checksum": { "algorithm": "sha1", "value": "191771837687b766537a8c4607cb6fad79c533a1" }
+          },
+          {
+            "name": "server",
+            "url": "https://piston-data.mojang.com/v1/objects/3872a7f07a1a595e651aef8b058dfc2bb3772f46/server.jar",
+            "checksum": { "algorithm": "sha1", "value": "3872a7f07a1a595e651aef8b058dfc2bb3772f46" }
+          }
+        ]
+      },
+      "loader": "neoforge",
+      "status": "pending",
+      "dependencies": [
+        {
+          "name": "NeoForge",
+          "coordinate": "net.neoforged:neoforge",
+          "version": "26.1.0.19-beta",
+          "url": "https://maven.neoforged.net/releases/net/neoforged/neoforge/26.1.0.19-beta/neoforge-26.1.0.19-beta-universal.jar",
+          "checksum": { "algorithm": "sha256", "value": "cd57bc3ce419023996b0ead6869a6f681810fde802d17efbcb26b9b689362ae6" }
+        },
+        {
+          "name": "ModDevGradle",
+          "coordinate": "net.neoforged:moddev-gradle",
+          "version": "2.0.143",
+          "url": "https://maven.neoforged.net/releases/net/neoforged/moddev-gradle/2.0.143/moddev-gradle-2.0.143.jar",
+          "checksum": { "algorithm": "sha256", "value": "9fd57611921da8105d4342b2afb26c4cb0dfbd685af28f37263df0bf006789da" }
+        }
+      ],
+      "pending_inputs": [
+        {
+          "name": "Qualification evidence",
+          "reason": "The only official NeoForge runtime is a beta and ModDevGradle compatibility is unproven; this is a trial build cell, not a support claim."
+        }
+      ],
+      "profile": {
+        "run_directory": "run/qualification/26.1/neoforge",
+        "cache_directory": "run/qualification-cache/26.1/neoforge",
+        "evidence_directory": "dist/qualification/ringworld/26.1/neoforge",
+        "server_port": 26102,
+        "fixture": "safe-small",
+        "timeout_seconds": 1800,
+        "allowed_parallelism": 1
+      },
+      "expected_game_version_tags": { "modrinth": ["26.1"], "curseforge": ["26.1"] }
+    },
+    {
+      "id": "26.1.1-fabric",
+      "minecraft": {
+        "version": "26.1.1",
+        "java_major": 25,
+        "downloads": [
+          {
+            "name": "client",
+            "url": "https://piston-data.mojang.com/v1/objects/377031a9e733ba8ab4d355959a8f6fb8eb707556/client.jar",
+            "checksum": { "algorithm": "sha1", "value": "377031a9e733ba8ab4d355959a8f6fb8eb707556" }
+          },
+          {
+            "name": "server",
+            "url": "https://piston-data.mojang.com/v1/objects/49c8195703ad0ba4f0a4efbccfd85a4a8ca57431/server.jar",
+            "checksum": { "algorithm": "sha1", "value": "49c8195703ad0ba4f0a4efbccfd85a4a8ca57431" }
+          }
+        ]
+      },
+      "loader": "fabric",
+      "status": "pending",
+      "dependencies": [
+        {
+          "name": "Fabric Loader",
+          "coordinate": "net.fabricmc:fabric-loader",
+          "version": "0.19.3",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.19.3/fabric-loader-0.19.3.jar",
+          "checksum": { "algorithm": "sha256", "value": "73eed8c34bbad0320a2a3cba5346351e822f74f82b3f3c060574068474132958" }
+        },
+        {
+          "name": "Fabric Loom",
+          "coordinate": "net.fabricmc:fabric-loom",
+          "version": "1.17.19",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-loom/1.17.19/fabric-loom-1.17.19.jar",
+          "checksum": { "algorithm": "sha256", "value": "ad331736d7ee6cd5f21c45b19584b951c716ba5de8ace8662b42813d110452b8" }
+        },
+        {
+          "name": "Fabric API",
+          "coordinate": "net.fabricmc.fabric-api:fabric-api",
+          "version": "0.145.4+26.1.1",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.145.4+26.1.1/fabric-api-0.145.4+26.1.1.jar",
+          "checksum": { "algorithm": "sha256", "value": "e4f2cb1d89efb61896eb407c3c02a46d4931e5aad64350e2d8ba2981e3f95a79" }
+        }
+      ],
+      "pending_inputs": [
+        {
+          "name": "Qualification evidence",
+          "reason": "Exact dependencies are pinned, but this cell has not passed the version-aware build and runtime gates."
+        }
+      ],
+      "profile": {
+        "run_directory": "run/qualification/26.1.1/fabric",
+        "cache_directory": "run/qualification-cache/26.1.1/fabric",
+        "evidence_directory": "dist/qualification/ringworld/26.1.1/fabric",
+        "server_port": 26111,
+        "fixture": "safe-small",
+        "timeout_seconds": 1800,
+        "allowed_parallelism": 1
+      },
+      "expected_game_version_tags": { "modrinth": ["26.1.1"], "curseforge": ["26.1.1"] }
+    },
+    {
+      "id": "26.1.1-neoforge",
+      "minecraft": {
+        "version": "26.1.1",
+        "java_major": 25,
+        "downloads": [
+          {
+            "name": "client",
+            "url": "https://piston-data.mojang.com/v1/objects/377031a9e733ba8ab4d355959a8f6fb8eb707556/client.jar",
+            "checksum": { "algorithm": "sha1", "value": "377031a9e733ba8ab4d355959a8f6fb8eb707556" }
+          },
+          {
+            "name": "server",
+            "url": "https://piston-data.mojang.com/v1/objects/49c8195703ad0ba4f0a4efbccfd85a4a8ca57431/server.jar",
+            "checksum": { "algorithm": "sha1", "value": "49c8195703ad0ba4f0a4efbccfd85a4a8ca57431" }
+          }
+        ]
+      },
+      "loader": "neoforge",
+      "status": "pending",
+      "dependencies": [
+        {
+          "name": "NeoForge",
+          "coordinate": "net.neoforged:neoforge",
+          "version": "26.1.1.15-beta",
+          "url": "https://maven.neoforged.net/releases/net/neoforged/neoforge/26.1.1.15-beta/neoforge-26.1.1.15-beta-universal.jar",
+          "checksum": { "algorithm": "sha256", "value": "27b547078f4cd15fac189bb048931d435f37fd7563126a3fcbe910ad308e4c73" }
+        },
+        {
+          "name": "ModDevGradle",
+          "coordinate": "net.neoforged:moddev-gradle",
+          "version": "2.0.143",
+          "url": "https://maven.neoforged.net/releases/net/neoforged/moddev-gradle/2.0.143/moddev-gradle-2.0.143.jar",
+          "checksum": { "algorithm": "sha256", "value": "9fd57611921da8105d4342b2afb26c4cb0dfbd685af28f37263df0bf006789da" }
+        }
+      ],
+      "pending_inputs": [
+        {
+          "name": "Qualification evidence",
+          "reason": "The only official NeoForge runtime is a beta and ModDevGradle compatibility is unproven; this is a trial build cell, not a support claim."
+        }
+      ],
+      "profile": {
+        "run_directory": "run/qualification/26.1.1/neoforge",
+        "cache_directory": "run/qualification-cache/26.1.1/neoforge",
+        "evidence_directory": "dist/qualification/ringworld/26.1.1/neoforge",
+        "server_port": 26112,
+        "fixture": "safe-small",
+        "timeout_seconds": 1800,
+        "allowed_parallelism": 1
+      },
+      "expected_game_version_tags": { "modrinth": ["26.1.1"], "curseforge": ["26.1.1"] }
+    },
+    {
+      "id": "26.1.2-fabric",
+      "minecraft": {
+        "version": "26.1.2",
+        "java_major": 25,
+        "downloads": [
+          {
+            "name": "client",
+            "url": "https://piston-data.mojang.com/v1/objects/4e618f09a0c649dde3fdf829df443ce0b8831e65/client.jar",
+            "checksum": { "algorithm": "sha1", "value": "4e618f09a0c649dde3fdf829df443ce0b8831e65" }
+          },
+          {
+            "name": "server",
+            "url": "https://piston-data.mojang.com/v1/objects/97ccd4c0ed3f81bbb7bfacddd1090b0c56f9bc51/server.jar",
+            "checksum": { "algorithm": "sha1", "value": "97ccd4c0ed3f81bbb7bfacddd1090b0c56f9bc51" }
+          }
+        ]
+      },
+      "loader": "fabric",
+      "status": "published",
+      "dependencies": [
+        {
+          "name": "Fabric Loader",
+          "coordinate": "net.fabricmc:fabric-loader",
+          "version": "0.19.3",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.19.3/fabric-loader-0.19.3.jar",
+          "checksum": { "algorithm": "sha256", "value": "73eed8c34bbad0320a2a3cba5346351e822f74f82b3f3c060574068474132958" }
+        },
+        {
+          "name": "Fabric API",
+          "coordinate": "net.fabricmc.fabric-api:fabric-api",
+          "version": "0.155.2+26.1.2",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.155.2+26.1.2/fabric-api-0.155.2+26.1.2.jar",
+          "checksum": { "algorithm": "sha256", "value": "7196f2d8700cf906676db98cc13cd4b98267c4ca4ba3e8c516e62070b21a5a3a" }
+        },
+        {
+          "name": "Fabric Loom",
+          "coordinate": "net.fabricmc:fabric-loom",
+          "version": "1.17.19",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-loom/1.17.19/fabric-loom-1.17.19.jar",
+          "checksum": { "algorithm": "sha256", "value": "ad331736d7ee6cd5f21c45b19584b951c716ba5de8ace8662b42813d110452b8" }
+        }
+      ],
+      "profile": {
+        "run_directory": "run/qualification/26.1.2/fabric",
+        "cache_directory": "run/qualification-cache/26.1.2/fabric",
+        "evidence_directory": "dist/qualification/ringworld/26.1.2/fabric",
+        "server_port": 26121,
+        "fixture": "safe-small",
+        "timeout_seconds": 1800,
+        "allowed_parallelism": 1
+      },
+      "expected_game_version_tags": { "modrinth": ["26.1.2"], "curseforge": ["26.1.2"] },
+      "artifact": {
+        "shared_runtime_version": "1.0.0+mc26.1.2",
+        "host_version": "1.0.0-fabric+mc26.1.2",
+        "sha256": "ec06f6dbf81a6ac1c662f87f2fdb6a3d30297222e61da7094212b125a568c421"
+      },
+      "evidence": [
+        {
+          "source_revision": "f3a5ce12a3d72a7e2253e893ca385e27f3fe7448",
+          "uri": "https://github.com/Delaser/RingWorld/blob/f3a5ce12a3d72a7e2253e893ca385e27f3fe7448/docs/MODRINTH_RELEASE.md",
+          "artifact_sha256": "ec06f6dbf81a6ac1c662f87f2fdb6a3d30297222e61da7094212b125a568c421"
+        }
+      ]
+    },
+    {
+      "id": "26.1.2-neoforge",
+      "minecraft": {
+        "version": "26.1.2",
+        "java_major": 25,
+        "downloads": [
+          {
+            "name": "client",
+            "url": "https://piston-data.mojang.com/v1/objects/4e618f09a0c649dde3fdf829df443ce0b8831e65/client.jar",
+            "checksum": { "algorithm": "sha1", "value": "4e618f09a0c649dde3fdf829df443ce0b8831e65" }
+          },
+          {
+            "name": "server",
+            "url": "https://piston-data.mojang.com/v1/objects/97ccd4c0ed3f81bbb7bfacddd1090b0c56f9bc51/server.jar",
+            "checksum": { "algorithm": "sha1", "value": "97ccd4c0ed3f81bbb7bfacddd1090b0c56f9bc51" }
+          }
+        ]
+      },
+      "loader": "neoforge",
+      "status": "published",
+      "dependencies": [
+        {
+          "name": "NeoForge",
+          "coordinate": "net.neoforged:neoforge",
+          "version": "26.1.2.87",
+          "url": "https://maven.neoforged.net/releases/net/neoforged/neoforge/26.1.2.87/neoforge-26.1.2.87-universal.jar",
+          "checksum": { "algorithm": "sha256", "value": "2842ea4e015f6c0e92ae3a1eabea2cfb77eff6d8625845d760bbc22116d7e6fc" }
+        },
+        {
+          "name": "ModDevGradle",
+          "coordinate": "net.neoforged:moddev-gradle",
+          "version": "2.0.143",
+          "url": "https://maven.neoforged.net/releases/net/neoforged/moddev-gradle/2.0.143/moddev-gradle-2.0.143.jar",
+          "checksum": { "algorithm": "sha256", "value": "9fd57611921da8105d4342b2afb26c4cb0dfbd685af28f37263df0bf006789da" }
+        }
+      ],
+      "profile": {
+        "run_directory": "run/qualification/26.1.2/neoforge",
+        "cache_directory": "run/qualification-cache/26.1.2/neoforge",
+        "evidence_directory": "dist/qualification/ringworld/26.1.2/neoforge",
+        "server_port": 26122,
+        "fixture": "safe-small",
+        "timeout_seconds": 1800,
+        "allowed_parallelism": 1
+      },
+      "expected_game_version_tags": { "modrinth": ["26.1.2"], "curseforge": ["26.1.2"] },
+      "artifact": {
+        "shared_runtime_version": "1.0.0+mc26.1.2",
+        "host_version": "1.0.0-neoforge+mc26.1.2",
+        "sha256": "ad818e6aec7aaf64f4d0618975c667d8b9163965e83e32408d8fc98797e700d5"
+      },
+      "evidence": [
+        {
+          "source_revision": "f3a5ce12a3d72a7e2253e893ca385e27f3fe7448",
+          "uri": "https://github.com/Delaser/RingWorld/blob/f3a5ce12a3d72a7e2253e893ca385e27f3fe7448/docs/MODRINTH_RELEASE.md",
+          "artifact_sha256": "ad818e6aec7aaf64f4d0618975c667d8b9163965e83e32408d8fc98797e700d5"
+        }
+      ]
+    }
+  ]
+}

@@ -18,6 +18,14 @@ tiers, evidence contract, and intake order are defined in
 Existing 26.1.2 release evidence remains exact historical evidence and is not
 silently generalized to the rest of the patch line.
 
+Phase 0 is tracked by GitHub epic #168 and its Phase 1–10 child issues. Phase 1
+now has a fail-closed six-cell manifest and ten pure validator tests. The
+26.1.2 Fabric and NeoForge cells contain their immutable published hashes;
+26.1 and 26.1.1 remain pending. Exact Fabric inputs are available, while the
+only official NeoForge runtimes for those patches are pinned beta trial
+builds whose ModDevGradle/build/runtime compatibility is not yet proven.
+Phase 2 version-aware build isolation is the next implementation step.
+
 Owner Windows, gameplay, visual, and final-review gates #12, #13, #95, and
 #96 are complete. The active release metadata targets shared runtime version
 `1.0.0+mc26.1.2`, with loader-specific public identifiers
