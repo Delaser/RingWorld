@@ -118,7 +118,8 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
     def installer_for(plan, *, extra_ringworld: bool = False, wrong_mojang_server: bool = False):
         def run(record, paths, *, ordinal: int):
             assert ordinal == 1
-            plan.layout.root.mkdir(parents=True)
+            assert plan.layout.root.is_dir()
+            assert not any(plan.layout.root.iterdir())
             if plan.loader == "fabric":
                 assert plan.layout.fabric_server_jar is not None
                 plan.layout.fabric_server_jar.write_bytes(b"fake fabric launcher")
@@ -239,7 +240,8 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
             with self.assertRaises(EXECUTOR.ExternalRuntimeExecutionError):
                 EXECUTOR.execute_external_runtime_smoke(plan, paths, paths.run_id, opener=redirect, command_executor=never)
             self.assertEqual([], calls)
-            self.assertFalse(plan.layout.root.exists())
+            self.assertTrue(plan.layout.root.is_dir())
+            self.assertEqual([], list(plan.layout.root.iterdir()))
 
     def test_query_url_is_rejected_before_network_access(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

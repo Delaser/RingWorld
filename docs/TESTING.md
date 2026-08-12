@@ -88,7 +88,7 @@ python3 scripts/run_minecraft_qualification.py \
 
 The executor and external-runtime planner checks cover their isolated
 primitives and plan contracts. They verify pinned/no-redirect downloads, the
-official installer contract, installed Mojang-server identity, exact mod
+official installer contract (including its pre-created empty contained target), installed Mojang-server identity, exact mod
 inventory, loopback port preflight, loader/RingWorld/ready markers, and an
 ordered stop/save/clean-exit sequence. The external adapter additionally
 checks full-triplet same-file identity and clean source provenance before it

@@ -345,7 +345,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   identity, exact mod copies, port and marker checks, ordered stop/save/exit
   observations, and immutable local results. The default runner reaches it
   only for a clean, complete loader triplet and it is never a release
-  publisher.
+  publisher. It creates the already-validated empty runtime root before the
+  official installer; Fabric Installer rejects a missing target directory.
 - `scripts/minecraft_qualification_ranges.py`: strict pure parser for the
   reviewed qualification-only Fabric and NeoForge 26.1.x metadata ranges.
 - `scripts/minecraft_frozen_candidate.py`: strict oldest-ABI candidate and

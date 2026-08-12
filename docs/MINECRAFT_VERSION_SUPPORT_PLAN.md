@@ -348,8 +348,11 @@ only under that same complete-triplet/provenance condition.
 The separately tested external runtime executor now implements the planned
 pinned/no-redirect downloads, official installer, installer-owned Mojang
 server hash, exact mod inventory, loopback port, loader/RingWorld/ready marker,
-fatal-output, interactive stop, save, and clean-exit controls. A strict pure
-terminal schema defines the additional provenance, installed-runtime
+fatal-output, interactive stop, save, and clean-exit controls.
+The executor creates one validated empty disposable runtime root before the
+official installer; this is required by Fabric Installer 1.1.1 and remains the
+same contained boundary for NeoForge.
+A strict pure terminal schema defines the additional provenance, installed-runtime
 inventory, log hashes, candidate identity, ordered markers, and same-file
 group evidence required for `PASS`; its structural adapter rejects an
 executor result that lacks any of those independent records. Its bounded phase

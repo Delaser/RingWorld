@@ -676,6 +676,10 @@ def execute_external_runtime_smoke(
         _assert_no_symlink_components(paths.cell_root, paths.repository_root, "qualification cell")
         _assert_no_symlink_components(plan.layout.root, paths.cell_root, "external runtime")
         create_contained_directories(paths)
+        # Fabric Installer requires its target directory to exist.  Create the
+        # already-validated fresh root ourselves so both loaders receive the
+        # same empty, contained, non-symlink installation boundary.
+        plan.layout.root.mkdir(parents=False, exist_ok=False)
         downloads.append(fetch_pinned_https(plan.minecraft_server, paths, opener=opener))
         for item in plan.downloads:
             downloads.append(fetch_pinned_https(item, paths, opener=opener))
