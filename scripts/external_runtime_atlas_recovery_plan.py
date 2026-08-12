@@ -57,6 +57,7 @@ class ExternalRuntimeAtlasRecoveryPlan:
     atlas_path: Path
     recovery_input_atlas_path: Path
     quick_terminal_evidence: QuickTerminalEvidenceInput
+    quick_evidence_root: Path
     frozen_candidate_root: Path
     stages: tuple[AtlasRecoveryStagePlan, AtlasRecoveryStagePlan]
     lock_path: Path
@@ -117,17 +118,22 @@ def external_runtime_atlas_recovery_plan(
     quick_terminal_evidence: QuickTerminalEvidenceInput,
     *,
     frozen_candidate_root: Path | None = None,
+    quick_evidence_root: Path | None = None,
 ) -> ExternalRuntimeAtlasRecoveryPlan:
     """Plan the exact nightly stage-3 headless interruption/recovery fixture."""
     fixture_root, runtime, world, evidence = _fixture_paths(paths)
-    if not isinstance(quick_terminal_evidence, QuickTerminalEvidenceInput) \
-            or not quick_terminal_evidence.path.is_absolute() \
-            or not is_within(quick_terminal_evidence.path, paths.cell_root) \
-            or SHA256.fullmatch(quick_terminal_evidence.sha256) is None:
-        raise InvocationError("Atlas recovery needs a contained hash-identified quick terminal record")
     if frozen_candidate_root is None or not frozen_candidate_root.is_absolute() \
             or not is_within(candidate.path, frozen_candidate_root):
         raise InvocationError("Atlas recovery needs the reviewed frozen candidate root")
+    quick_root = paths.cell_root if quick_evidence_root is None else quick_evidence_root
+    expected_prior_cell_root = frozen_candidate_root.parent / paths.cell_id
+    if not isinstance(quick_terminal_evidence, QuickTerminalEvidenceInput) \
+            or not quick_terminal_evidence.path.is_absolute() \
+            or not quick_root.is_absolute() \
+            or quick_root not in {paths.cell_root, expected_prior_cell_root} \
+            or not is_within(quick_terminal_evidence.path, quick_root) \
+            or SHA256.fullmatch(quick_terminal_evidence.sha256) is None:
+        raise InvocationError("Atlas recovery needs a contained hash-identified quick terminal record")
     smoke = _fixture_world_files(external_runtime_smoke_plan(
         cell,
         candidate,
@@ -169,6 +175,7 @@ def external_runtime_atlas_recovery_plan(
         atlas,
         recovery_input,
         quick_terminal_evidence,
+        quick_root,
         frozen_candidate_root,
         (stage_one, stage_two),
         paths.lock_path,

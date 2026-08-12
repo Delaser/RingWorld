@@ -400,6 +400,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   normal stop, and require the same checkpoint to advance to a self-halting
   complete restart. Every capture and process log is hash-addressed. Static
   tests use fake local children; they are not a real Minecraft nightly PASS.
+- `scripts/run_atlas_recovery_qualification.py`: clean-source operator CLI for
+  that first nightly slice. It accepts one canonical cell and one prior quick
+  run ID, revalidates the prior strict PASS record and frozen jar, requires the
+  current public branch to be clean/pushed under Java 25, and records that
+  executor-source provenance before launching the concrete two-stage runner.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit

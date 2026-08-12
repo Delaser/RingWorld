@@ -34,6 +34,7 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
             "test_external_runtime_atlas_recovery_plan.py",
             "test_external_runtime_atlas_recovery_executor.py",
             "test_external_runtime_atlas_stage_runner.py",
+            "test_run_atlas_recovery_qualification.py",
         ):
             self.assertIn(test, source)
         for prohibited in ("./gradlew", "curl ", "wget ", "java ", "publish", "upload"):

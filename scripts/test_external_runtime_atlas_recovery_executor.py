@@ -48,6 +48,17 @@ def sha256(value: bytes) -> str:
     return hashlib.sha256(value).hexdigest()
 
 
+EXECUTION_PROVENANCE = {
+    "commit": "a" * 40,
+    "branch": "codex/qualification-test",
+    "upstream": "a" * 40,
+    "origin": "https://github.com/Delaser/RingWorld.git",
+    "manifest_sha256": "b" * 64,
+    "gradle_wrapper_sha256": "c" * 64,
+    "java_version": 'openjdk version "25.0.4"',
+}
+
+
 class Response:
     def __init__(self, url: str, body: bytes) -> None:
         self.url, self.body, self.offset = url, body, 0
@@ -236,7 +247,7 @@ class ExternalRuntimeAtlasRecoveryExecutorTest(unittest.TestCase):
                     plan, paths, paths.run_id,
                     canonical_cells=canonical_cells(), range_identities=RANGES,
                     opener=self.opener(bodies), command_executor=self.installer(plan), stage_runner=self.stage_runner(plan),
-                    candidate_inspector=self.candidate_inspector(plan),
+                    candidate_inspector=self.candidate_inspector(plan), execution_source_provenance=EXECUTION_PROVENANCE,
                 )
                 self.assertEqual(Verdict.PASS, result.verdict)
                 self.assertTrue((plan.evidence_root / "terminal.json").is_file())
@@ -248,6 +259,7 @@ class ExternalRuntimeAtlasRecoveryExecutorTest(unittest.TestCase):
                 self.assertEqual(plan.quick_terminal_evidence.sha256,
                                  terminal["qualification"]["quickTerminalEvidenceSha256"])
                 self.assertIn("completeAtlas", terminal["qualification"]["captures"])
+                self.assertEqual(EXECUTION_PROVENANCE, terminal["qualification"]["executionSourceProvenance"])
                 if cell_id.endswith("neoforge"):
                     assert plan.smoke.layout.neoforge_user_jvm_args is not None
                     args = plan.smoke.layout.neoforge_user_jvm_args.read_text(encoding="utf-8")
@@ -262,7 +274,7 @@ class ExternalRuntimeAtlasRecoveryExecutorTest(unittest.TestCase):
                     plan, paths, paths.run_id,
                     canonical_cells=canonical_cells(), range_identities=RANGES,
                     opener=self.opener(bodies), command_executor=self.installer(plan),
-                    candidate_inspector=self.candidate_inspector(plan),
+                    candidate_inspector=self.candidate_inspector(plan), execution_source_provenance=EXECUTION_PROVENANCE,
                 )
 
     def test_rejects_report_atlas_path_or_recovery_byte_change(self) -> None:
@@ -281,7 +293,7 @@ class ExternalRuntimeAtlasRecoveryExecutorTest(unittest.TestCase):
                     plan, paths, paths.run_id,
                     canonical_cells=canonical_cells(), range_identities=RANGES,
                     opener=self.opener(bodies), command_executor=self.installer(plan), stage_runner=wrong,
-                    candidate_inspector=self.candidate_inspector(plan),
+                    candidate_inspector=self.candidate_inspector(plan), execution_source_provenance=EXECUTION_PROVENANCE,
                 )
 
     def test_rejects_semantically_wrong_quick_record_before_download(self) -> None:
@@ -301,7 +313,7 @@ class ExternalRuntimeAtlasRecoveryExecutorTest(unittest.TestCase):
                     canonical_cells=canonical_cells(), range_identities=RANGES,
                     opener=lambda url, **kwargs: downloads.append(url),  # type: ignore[arg-type]
                     command_executor=self.installer(plan), stage_runner=self.stage_runner(plan),
-                    candidate_inspector=self.candidate_inspector(plan),
+                    candidate_inspector=self.candidate_inspector(plan), execution_source_provenance=EXECUTION_PROVENANCE,
                 )
             self.assertEqual([], downloads)
 

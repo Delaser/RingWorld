@@ -682,6 +682,19 @@ Atlas world hash `8665210144080158345` from its persisted settings. Real
 external Fabric and NeoForge interruption/recovery runs remain pending;
 synthetic static results are not nightly compatibility evidence.
 
+From a clean pushed Java 25 checkout, run one real external recovery fixture
+with the exact quick evidence that supplied its frozen candidate:
+
+```sh
+python3 scripts/run_atlas_recovery_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260812T170742Z-d5ff11778395
+```
+
+The analogous NeoForge proof uses `--cell 26.1-neoforge` and quick run
+`20260812T171404Z-a2d212243bb3`. These are disposable local qualification
+worlds; they do not connect to or mutate the live demo server.
+
 Fresh format-3 fixtures default to `terrainNoiseMapping=4`. A deliberate copied
 legacy-world run must set `-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1`;
 the NeoForge equivalent is

@@ -501,6 +501,17 @@ NBT and Atlas-v6 file independently, derives the Java-compatible layout and
 Atlas identities, counts durable cells and complete chunks, and binds an exact
 pre-restart checkpoint hash. This closes the report-only evidence gap. Real
 Fabric and NeoForge executions of the new process executor are the next gate.
+The operator entry point is intentionally explicit:
+
+```sh
+python3 scripts/run_atlas_recovery_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260812T170742Z-d5ff11778395
+```
+
+Use the matching NeoForge quick run ID for a NeoForge cell. The command refuses
+a dirty/unpushed checkout, a mismatched quick record or frozen jar, and any
+pre-existing destination. It creates only a new ignored qualification run.
 
 ### Phase 5 — world-upgrade qualification
 

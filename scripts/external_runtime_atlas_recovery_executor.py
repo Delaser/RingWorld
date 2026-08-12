@@ -16,6 +16,7 @@ from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
+import re
 import stat
 import hashlib
 from typing import Any, Callable, Mapping
@@ -85,6 +86,41 @@ class ExternalAtlasRecoveryResult:
 
 StageRunner = Callable[[AtlasRecoveryStagePlan, ExternalRuntimeAtlasRecoveryPlan, QualificationPaths], AtlasRecoveryStageResult]
 CandidateInspector = Callable[[Path, str], FrozenCandidateInspection]
+
+
+def _execution_source_provenance(value: Mapping[str, Any] | None) -> dict[str, str]:
+    """Normalize the clean source identity that executed this nightly gate.
+
+    The frozen jar and quick terminal record deliberately come from an earlier
+    quick-qualification run.  The recovery runner itself is still executable
+    source, so a passing nightly record must say exactly which clean, pushed
+    Java-25 checkout ran it.  Keeping this small schema here avoids a circular
+    import from the process executor back into the CLI scheduler.
+    """
+    required = {
+        "commit", "branch", "upstream", "origin", "manifest_sha256",
+        "gradle_wrapper_sha256", "java_version",
+    }
+    if not isinstance(value, Mapping) or set(value) != required:
+        raise AtlasRecoveryExecutionError("Atlas recovery requires exact current execution source provenance")
+    normalized: dict[str, str] = {}
+    for name in required:
+        candidate = value.get(name)
+        if not isinstance(candidate, str) or not candidate:
+            raise AtlasRecoveryExecutionError(f"execution source provenance has no valid {name}")
+        normalized[name] = candidate
+    if any(re.fullmatch(r"[0-9a-f]{40}", normalized[name]) is None for name in ("commit", "upstream")) \
+            or normalized["commit"] != normalized["upstream"]:
+        raise AtlasRecoveryExecutionError("execution source provenance is not synchronized to one full commit")
+    if any(re.fullmatch(r"[0-9a-f]{64}", normalized[name]) is None
+           for name in ("manifest_sha256", "gradle_wrapper_sha256")):
+        raise AtlasRecoveryExecutionError("execution source provenance has invalid input hashes")
+    if normalized["origin"] != "https://github.com/Delaser/RingWorld.git":
+        raise AtlasRecoveryExecutionError("execution source provenance has an unexpected origin")
+    if not re.search(r"(?:version\s+\"?25(?:[.\"]|$)|openjdk\s+25(?:[.\s]|$))",
+                     normalized["java_version"], re.IGNORECASE):
+        raise AtlasRecoveryExecutionError("execution source provenance does not prove Java 25")
+    return normalized
 
 
 def _unimplemented_stage_runner(
@@ -347,6 +383,7 @@ def execute_external_runtime_atlas_recovery(
     stage_runner: StageRunner = _unimplemented_stage_runner,
     candidate_inspector: CandidateInspector = inspect_frozen_candidate,
     held_lock: QualificationLock | None = None,
+    execution_source_provenance: Mapping[str, Any] | None = None,
 ) -> ExternalAtlasRecoveryResult:
     """Assemble, execute via injected stages, and validate one recovery fixture.
 
@@ -356,6 +393,7 @@ def execute_external_runtime_atlas_recovery(
     if command_executor is None:
         from minecraft_qualification_executor import execute_command
         command_executor = execute_command
+    execution_provenance = _execution_source_provenance(execution_source_provenance)
     smoke = plan.smoke
     if plan.runtime_root != smoke.layout.root or plan.world_root != plan.runtime_root / "world" \
             or plan.evidence_root != paths.evidence_directory / f"nightly/{plan.fixture_root.name}" \
@@ -376,7 +414,7 @@ def execute_external_runtime_atlas_recovery(
         _assert_no_symlink_components(paths.cell_root, paths.repository_root, "qualification cell")
         _revalidate_candidate(plan, candidate_inspector)
         quick_raw = _read_regular(
-            plan.quick_terminal_evidence.path, paths.cell_root, "quick terminal evidence",
+            plan.quick_terminal_evidence.path, plan.quick_evidence_root, "quick terminal evidence",
         )
         if _sha256_bytes(quick_raw) != plan.quick_terminal_evidence.sha256:
             raise AtlasRecoveryExecutionError("quick terminal evidence changed before nightly execution")
@@ -452,6 +490,7 @@ def execute_external_runtime_atlas_recovery(
                 installer, tuple(downloads), tuple(copied), None, None,
             ), plan)
         summary = qualification.as_dict()
+        summary["executionSourceProvenance"] = execution_provenance
         summary["captures"] = {
             "settings": {"path": str((plan.evidence_root / "settings.dat").relative_to(paths.cell_root)), "sha256": _sha256_bytes(settings_raw)},
             "interruptedReport": {"path": str(plan.stages[0].captured_report_path.relative_to(paths.cell_root)), "sha256": _sha256_bytes(interrupted_report_raw)},
