@@ -342,6 +342,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   `--gradle-distribution-zip`; the runner rehashes it and exclusively copies it
   into each fresh cell's wrapper store without creating Gradle's `.ok` marker
   or bypassing wrapper verification.
+  Fabric quick run `20260812T170742Z-d5ff11778395` passes 26.1, 26.1.1, and
+  26.1.2 with one unchanged frozen jar
+  (`e1254b38cf811e7c68382c4ecc025dbede8b5effca54993e5bd403716bff5f39`).
+  This is dedicated-server quick evidence only; NeoForge and the Phase 4
+  nightly gameplay/rendering matrix remain pending.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,

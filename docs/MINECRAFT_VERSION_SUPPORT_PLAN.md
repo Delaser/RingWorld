@@ -288,8 +288,9 @@ fixture paths below `<cell>/run` and reject traversal or user/live paths.
 As an initial ABI diagnostic, the unchanged common source now compiles and
 packages for Fabric 26.1 and 26.1.1 and the pinned NeoForge beta trials for
 26.1 and 26.1.1. Each isolated cell passes 337 tests and renders target-specific
-loader metadata. This does not promote the cells: no external runtime or
-same-file jar gate has run.
+loader metadata. This did not promote the cells at that earlier checkpoint;
+the later Phase 3 Fabric triplet now supplies external runtime and same-file
+evidence, while NeoForge remains pending.
 
 ### Phase 3 — quick qualification orchestrator
 
@@ -310,6 +311,14 @@ Gradle development source-set run.
 
 Exit: one command produces a fail-closed six-cell quick report on a clean
 checkout, and deliberate corruptions are rejected by tests.
+
+Fabric reached the loader-side Phase 3 exit on 2026-08-12 in run
+`20260812T170742Z-d5ff11778395`: 26.1, 26.1.1, and 26.1.2 all passed with the
+same frozen jar SHA-256
+`e1254b38cf811e7c68382c4ecc025dbede8b5effca54993e5bd403716bff5f39`.
+This is quick dedicated-server evidence, not the Phase 4 gameplay/rendering
+matrix or a publication decision. NeoForge still needs the equivalent
+three-cell run before Phase 3 is complete for both loaders.
 
 Current checkpoint: the runner and pure model implement selection, safe path
 and command planning, pinned download plans, lock/port policy, and

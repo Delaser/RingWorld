@@ -75,18 +75,18 @@ frozen-candidate identity, and same-file group evidence. The runner now
 installs this phase only after clean provenance and a complete frozen loader
 triplet, lending its live exact cell lock to avoid re-acquisition. It persists
 a separately validated, immutable raw strict-terminal-evidence JSON record
-alongside the scheduler report. A real clean Fabric 26.1 quick cell completed
-end to end on 2026-08-12 in run
-`20260812T165521Z-2b3c66d93af0`: all 337 tests, strict diagnostic jar, one
-frozen wide-range jar, official installer/runtime assembly, a fresh 2,048x416
-mapping-4 server, and strict stop/save evidence passed. Its frozen candidate
-SHA-256 is
+alongside the scheduler report. The complete Fabric triplet passed end to end
+on 2026-08-12 in run `20260812T170742Z-d5ff11778395` at commit `b4d80ce`.
+Each of 26.1, 26.1.1, and 26.1.2 passed all 337 tests, strict diagnostic-jar
+inspection, official installer/runtime assembly, a fresh 2,048x416 mapping-4
+server, and strict stop/save evidence. All three loaded the same frozen
+wide-range jar with SHA-256
 `e1254b38cf811e7c68382c4ecc025dbede8b5effca54993e5bd403716bff5f39`.
-The subsequent 26.1.1 cell was not exercised because its isolated Gradle
-wrapper download ended early; this is infrastructure interruption, not a
-Minecraft compatibility verdict. The runner now accepts an optional exact,
-checksum-pinned external Gradle ZIP seed while keeping cell homes isolated.
-Fabric 26.1.1/26.1.2 and all three NeoForge external cells remain pending.
+The exact strict-evidence SHA-256 values are `9df2b50f...ecd8` (26.1),
+`37c9a2e3...0072` (26.1.1), and `4fecc925...5cc3` (26.1.2). The optional
+checksum-pinned external Gradle ZIP seed removed the earlier wrapper-download
+interruption while preserving isolated cell homes. All three NeoForge
+external cells remain pending.
 The accepted same-jar proof architecture builds one frozen candidate per
 loader against the oldest supported ABI and runs that unchanged file in
 external production-style profiles for every patch. Per-cell Gradle builds are
@@ -95,7 +95,8 @@ Qualification-only Fabric and NeoForge candidates now also compile from the
 26.1 source ABI with reviewed closed metadata covering 26.1 through 26.1.2.
 Normal builds were separately checked to retain their exact published 26.1.2
 metadata. Strict pure range checks prove that the six manifest targets are
-inside those declarations; no candidate has yet passed an external runtime.
+inside those declarations. The Fabric candidate now passes all three quick
+external runtimes; this does not substitute for the Phase 4 nightly matrix.
 The runner now has a serial injected-phase state machine, isolated
 `GRADLE_USER_HOME`, `--no-daemon`, held cell locks, immutable per-cell/matrix
 reports, and a clean pushed-source/Java-25 provenance preflight. Build/unit and
