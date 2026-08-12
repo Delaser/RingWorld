@@ -130,7 +130,9 @@ def _secure_read(path: Path, root: Path) -> bytes:
         if current.exists() or current.is_symlink():
             if current.is_symlink():
                 raise OSError("path traverses a symlink")
-    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    descriptor = os.open(
+        path, os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0),
+    )
     try:
         import stat
         if not stat.S_ISREG(os.fstat(descriptor).st_mode):

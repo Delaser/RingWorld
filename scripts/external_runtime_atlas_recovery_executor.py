@@ -104,7 +104,9 @@ def _read_regular(path: Path, root: Path, label: str) -> bytes:
     _assert_no_symlink_components(path, root, label)
     descriptor = -1
     try:
-        descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        descriptor = os.open(
+            path, os.O_RDONLY | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0),
+        )
         if not stat.S_ISREG(os.fstat(descriptor).st_mode):
             raise AtlasRecoveryExecutionError(f"{label} must be a regular contained file")
         chunks: list[bytes] = []
@@ -126,7 +128,11 @@ def _write_new(path: Path, raw: bytes, root: Path, label: str) -> None:
     _assert_no_symlink_components(path.parent, root, label)
     path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0), 0o600)
+        descriptor = os.open(
+            path,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_BINARY", 0) | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+        )
         with os.fdopen(descriptor, "wb") as output:
             output.write(raw)
             output.flush()

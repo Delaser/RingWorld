@@ -39,6 +39,14 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
         for prohibited in ("./gradlew", "curl ", "wget ", "java ", "publish", "upload"):
             self.assertNotIn(prohibited, source.lower())
 
+    def test_binary_recovery_evidence_uses_windows_binary_descriptors(self) -> None:
+        for name in (
+            "external_runtime_atlas_recovery_executor.py",
+            "external_runtime_atlas_stage_runner.py",
+        ):
+            source = (ROOT / "scripts" / name).read_text(encoding="utf-8")
+            self.assertIn('getattr(os, "O_BINARY", 0)', source)
+
 
 if __name__ == "__main__":
     unittest.main()
