@@ -19,12 +19,33 @@ Existing 26.1.2 release evidence remains exact historical evidence and is not
 silently generalized to the rest of the patch line.
 
 Phase 0 is tracked by GitHub epic #168 and its Phase 1–10 child issues. Phase 1
-now has a fail-closed six-cell manifest and fifteen pure validator tests. The
+now has a fail-closed six-cell manifest and sixteen pure validator tests. The
 26.1.2 Fabric and NeoForge cells contain their immutable published hashes;
 26.1 and 26.1.1 remain pending. Exact Fabric inputs are available, while the
 only official NeoForge runtimes for those patches are pinned beta trial
 builds whose ModDevGradle/build/runtime compatibility is not yet proven.
-Phase 2 version-aware build isolation is the next implementation step.
+Phase 2 now has its first opt-in Gradle isolation slice. Supplying the paired
+`ringQualificationRoot` and `ringQualificationCell` properties redirects both
+loaders' build output, declared game directories, fixture preparers, and
+verifiers below one disposable cell root. Qualification-specific port
+properties cover multiplayer, raid, and dedicated-smoke profiles. Normal
+developer paths remain unchanged when those properties are absent. Seven
+static guardrail tests and real Java 25 default/isolated Gradle configuration
+checks pass. Script-owned fixture paths and a complete external runtime
+adapter still need routing before Phase 2 can close.
+The first source-build diagnostics also pass unchanged on all four earlier
+patch cells: Fabric 26.1/26.1.1 and NeoForge's pinned 26.1/26.1.1 beta trials
+each compile, package, and pass all 337 tests. Their generated loader metadata
+names the selected Minecraft/runtime versions. These are source-build ABI
+results only—not server/client runtime qualification or same-jar evidence—so
+the four manifest cells remain `pending`.
+
+Phase 3 has a pure, fail-closed orchestration core. It validates and selects
+manifest cells, plans contained paths, pinned downloads, locks, ports, Gradle
+argument vectors, and deterministic JSON/Markdown reports. It deliberately
+returns `INCOMPLETE` and performs no writes or process launches until the
+execution adapter exists; dry-run output cannot be mistaken for qualification
+evidence. Thirteen orchestration tests pass.
 The accepted same-jar proof architecture builds one frozen candidate per
 loader against the oldest supported ABI and runs that unchanged file in
 external production-style profiles for every patch. Per-cell Gradle builds are

@@ -283,6 +283,9 @@ The current jars still target Minecraft 26.1.2 exactly. A future 26.1.x-wide
 claim requires the same Fabric and NeoForge artifact hashes to pass the full
 26.1, 26.1.1, and 26.1.2 qualification matrix; see the
 [version support plan](docs/MINECRAFT_VERSION_SUPPORT_PLAN.md).
+The pinned six-cell manifest and fail-closed quick planner are now present,
+but the planner still reports `INCOMPLETE` without launching runtimes. This
+does not add a 26.1 or 26.1.1 support claim.
 
 ## Build and install
 

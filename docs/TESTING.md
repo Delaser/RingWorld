@@ -68,6 +68,41 @@ every terminal result, host-specific publication state and downloaded hashes,
 official evidence URLs, and consistent same-artifact claims. These tests
 validate the matrix policy; they do not qualify a Minecraft runtime.
 
+The current Phase 2/3 foundations are checked with:
+
+```sh
+python3 -m unittest \
+  scripts/test_qualification_gradle_isolation.py \
+  scripts/test_run_minecraft_qualification.py
+python3 scripts/run_minecraft_qualification.py \
+  --tier quick --cell 26.1-fabric --dry-run
+```
+
+The dry run must exit nonzero with `INCOMPLETE` and
+`DRY_RUN_NO_EXECUTION`; it is planning output, not evidence. A non-dry run is
+also deliberately `INCOMPLETE` until the execution adapter exists. Inspect the
+opt-in Gradle layout without launching Minecraft with:
+
+```sh
+./gradlew help --console=plain --no-daemon \
+  -PringQualificationRoot=dist/qualification/config-smoke \
+  -PringQualificationCell=26.1.2-fabric \
+  -PringQualificationPort=26129
+```
+
+Both qualification properties are required together. The root must be below
+`dist/qualification`; normal invocations with neither property retain the
+established development paths.
+
+The 2026-08-12 source-build ABI diagnostic used the manifest's exact inputs
+for Fabric 26.1/26.1.1 and the pinned NeoForge 26.1/26.1.1 beta trials. All
+four isolated `test build` cells pass 337 tests with zero failures/errors and
+generate metadata for the selected Minecraft version. Diagnostic artifacts
+use `0.0.0-qualification+mc<version>` plus a qualification release label so
+they cannot be confused with release files. This is compile/package evidence
+only; it does not qualify a dedicated server, graphical client, or one frozen
+jar across patches.
+
 Fresh Fabric and NeoForge dedicated-server launches reach `Done`; the NeoForge
 launch also starts and progresses atlas generation. The NeoForge client now
 also has a focused diagnostic gate:

@@ -249,7 +249,7 @@ def _validate_hosting(cell: dict[str, Any], location: str, errors: list[str]) ->
         if state not in HOST_STATES:
             _error(errors, f"{host_location}.state", f"must be one of {sorted(HOST_STATES)}")
         project_url = _required_string(record.get("project_url"), f"{host_location}.project_url", errors)
-        if project_url and not project_url.startswith(prefix):
+        if project_url and project_url != prefix:
             _error(errors, f"{host_location}.project_url", f"must identify the official RingWorld {host} project")
         if host == "curseforge" and record.get("project_id") != "1645598":
             _error(errors, f"{host_location}.project_id", "must identify CurseForge project 1645598")

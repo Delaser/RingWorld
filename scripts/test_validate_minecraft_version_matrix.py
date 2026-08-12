@@ -131,6 +131,11 @@ class MinecraftVersionMatrixValidationTest(unittest.TestCase):
         evidence["uri"] = f"https://example.invalid/{evidence['source_revision']}/unrelated"
         self.assertTrue(any("source-repository blob URL" in error for error in self.errors(manifest)))
 
+    def test_rejects_project_url_prefix_impersonation(self) -> None:
+        manifest = copy.deepcopy(self.manifest)
+        manifest["cells"][4]["hosting"]["modrinth"]["project_url"] += "-fork"
+        self.assertTrue(any("official RingWorld modrinth project" in error for error in self.errors(manifest)))
+
     def test_rejects_terminal_state_with_pending_inputs(self) -> None:
         manifest = copy.deepcopy(self.manifest)
         cell = manifest["cells"][0]

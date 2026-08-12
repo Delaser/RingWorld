@@ -10,14 +10,89 @@ base {
 	archivesName = project.archives_base_name
 }
 
+// Qualification invocations are deliberately opt-in.  Normal developer runs
+// retain their historic build and run directories, while a matrix cell writes
+// only below a reviewed disposable root.
+def qualificationRootProperty = providers.gradleProperty("ringQualificationRoot").orNull
+def qualificationCellProperty = providers.gradleProperty("ringQualificationCell").orNull
+if ((qualificationRootProperty == null) != (qualificationCellProperty == null)) {
+	throw new GradleException("ringQualificationRoot and ringQualificationCell must be supplied together")
+}
+
+def qualificationEnabled = qualificationRootProperty != null
+File qualificationCellRoot = null
+if (qualificationEnabled) {
+	def rawRoot = qualificationRootProperty.trim()
+	def rawCell = qualificationCellProperty.trim()
+	def rootSegments = rawRoot.replace('\\', '/').tokenize('/')
+	if (rawRoot.isEmpty() || rawRoot == "." || rawRoot == ".."
+			|| rootSegments.contains("..")) {
+		throw new GradleException("ringQualificationRoot must not be empty or contain path traversal")
+	}
+	if (!(rawCell ==~ /[A-Za-z0-9][A-Za-z0-9._-]{0,95}/)
+			|| rawCell == "." || rawCell == "..") {
+		throw new GradleException("ringQualificationCell must be one safe cell identifier")
+	}
+
+	def repositoryRoot = rootDir.canonicalFile
+	def requestedRoot = file(rawRoot).canonicalFile
+	def allowedRoots = [
+			new File(repositoryRoot, "dist/qualification").canonicalFile
+	]
+	def isWithin = { File child, File parent ->
+		child == parent || child.toPath().startsWith(parent.toPath())
+	}
+	if (!allowedRoots.any { allowed -> isWithin(requestedRoot, allowed) }) {
+		throw new GradleException("ringQualificationRoot must be below ${allowedRoots[0]}")
+	}
+	qualificationCellRoot = new File(requestedRoot, rawCell).canonicalFile
+	if (!isWithin(qualificationCellRoot, requestedRoot)) {
+		throw new GradleException("ringQualificationCell resolves outside ringQualificationRoot")
+	}
+	layout.buildDirectory.set(new File(qualificationCellRoot, "build/fabric"))
+}
+
+def qualificationRunDirectory = { String historicPath ->
+	if (!qualificationEnabled) return historicPath
+	def relative = historicPath.startsWith("run/") ? historicPath.substring("run/".length()) : historicPath
+	return new File(new File(qualificationCellRoot, "run"), relative).path
+}
+def qualificationRunFile = { String historicPath -> file(qualificationRunDirectory(historicPath)) }
+ext.ringQualificationEnabled = qualificationEnabled
+ext.ringQualificationCellRoot = qualificationCellRoot
+ext.ringQualificationRunDirectory = qualificationRunDirectory
+ext.ringQualificationBuildDirectory = qualificationEnabled
+		? new File(qualificationCellRoot, "build") : null
+
 def fabricMultiplayerPort = {
-	def raw = providers.gradleProperty("ringFabricMultiplayerPort").orElse("25568").get().trim()
+	def raw = (qualificationEnabled
+			? providers.gradleProperty("ringQualificationFabricMultiplayerPort")
+					.orElse(providers.gradleProperty("ringQualificationPort"))
+					.orElse(providers.gradleProperty("ringFabricMultiplayerPort"))
+			: providers.gradleProperty("ringFabricMultiplayerPort"))
+			.orElse("25568").get().trim()
 	try {
 		def port = Integer.parseInt(raw)
 		if (port < 1 || port > 65535) throw new NumberFormatException(raw)
 		return port
 	} catch (NumberFormatException ignored) {
 		throw new GradleException("ringFabricMultiplayerPort must be an integer from 1 to 65535")
+	}
+}
+
+def fabricRaidSeamPort = {
+	def raw = (qualificationEnabled
+			? providers.gradleProperty("ringQualificationFabricRaidSeamPort")
+					.orElse(providers.gradleProperty("ringQualificationRaidSeamPort"))
+					.orElse(providers.gradleProperty("ringFabricRaidSeamPort"))
+			: providers.gradleProperty("ringFabricRaidSeamPort"))
+			.orElse("25567").get().trim()
+	try {
+		def port = Integer.parseInt(raw)
+		if (port < 1 || port > 65535) throw new NumberFormatException(raw)
+		return port
+	} catch (NumberFormatException ignored) {
+		throw new GradleException("ringQualificationRaidSeamPort/ringFabricRaidSeamPort must be an integer from 1 to 65535")
 	}
 }
 
@@ -34,17 +109,28 @@ loom {
 		}
 	}
 	runs {
+		configureEach {
+			if (qualificationEnabled) {
+				runDir qualificationRunDirectory("loom/${name}")
+			}
+		}
+		qualificationSmokeServer {
+			server()
+			name "RingWorld Qualification Smoke Server"
+			runDir qualificationRunDirectory("qualification-smoke")
+			programArgs "--port", fabricMultiplayerPort().toString(), "nogui"
+		}
 		multiplayerServer {
 			server()
 			name "RingWorld Multiplayer Server"
-			runDir "run-multiplayer/server"
+			runDir qualificationRunDirectory("run-multiplayer/server")
 			vmArg "-Dringworld.multiplayerTest=true"
 			programArg "nogui"
 		}
 		multiplayerClientA {
 			client()
 			name "RingWorld Multiplayer Client A"
-			runDir "run-multiplayer/client-a"
+			runDir qualificationRunDirectory("run-multiplayer/client-a")
 			vmArg "-Dringworld.multiplayerTestRole=A"
 			vmArg "-Dringworld.multiplayerTestPort=${fabricMultiplayerPort()}"
 			programArgs "--username", "RingTesterA"
@@ -52,7 +138,7 @@ loom {
 		multiplayerClientB {
 			client()
 			name "RingWorld Multiplayer Client B"
-			runDir "run-multiplayer/client-b"
+			runDir qualificationRunDirectory("run-multiplayer/client-b")
 			vmArg "-Dringworld.multiplayerTestRole=B"
 			vmArg "-Dringworld.multiplayerTestPort=${fabricMultiplayerPort()}"
 			programArgs "--username", "RingTesterB"
@@ -60,7 +146,7 @@ loom {
 		raidSeamArmServer {
 			server()
 			name "RingWorld Raid Seam Arm Server"
-			runDir "run-raid-seam/server"
+			runDir qualificationRunDirectory("run-raid-seam/server")
 			vmArg "-Dringworld.raidSeamTest=true"
 			vmArg "-Dringworld.raidSeamTestPhase=arm"
 			vmArg "-Dringworld.raidSeamTestStopAfterSave=true"
@@ -69,7 +155,7 @@ loom {
 		raidSeamReloadServer {
 			server()
 			name "RingWorld Raid Seam Reload Server"
-			runDir "run-raid-seam/server"
+			runDir qualificationRunDirectory("run-raid-seam/server")
 			vmArg "-Dringworld.raidSeamTest=true"
 			vmArg "-Dringworld.raidSeamTestPhase=reload"
 			programArg "nogui"
@@ -77,17 +163,17 @@ loom {
 		raidSeamClientA {
 			client()
 			name "RingWorld Raid Seam Client A"
-			runDir "run-raid-seam/client-a"
+			runDir qualificationRunDirectory("run-raid-seam/client-a")
 			vmArg "-Dringworld.multiplayerTestRole=A"
-			vmArg "-Dringworld.multiplayerTestPort=25567"
+			vmArg "-Dringworld.multiplayerTestPort=${fabricRaidSeamPort()}"
 			programArgs "--username", "RingTesterA"
 		}
 		raidSeamClientB {
 			client()
 			name "RingWorld Raid Seam Client B"
-			runDir "run-raid-seam/client-b"
+			runDir qualificationRunDirectory("run-raid-seam/client-b")
 			vmArg "-Dringworld.multiplayerTestRole=B"
-			vmArg "-Dringworld.multiplayerTestPort=25567"
+			vmArg "-Dringworld.multiplayerTestPort=${fabricRaidSeamPort()}"
 			programArgs "--username", "RingTesterB"
 		}
 		layoutSwitchClient {
@@ -95,7 +181,7 @@ loom {
 			name "RingWorld Layout Switch Client"
 			// Never open the source saves in-place: this run receives disposable
 			// copies from prepareCopiedLayoutSwitchWorlds below.
-			runDir "run-layout-switch"
+			runDir qualificationRunDirectory("run-layout-switch")
 			vmArg "-Dringworld.layoutSwitchFirst=" + providers.gradleProperty("ringLayoutSwitchFirstDestination")
 					.orElse("RingWorld Layout Switch A").get()
 			vmArg "-Dringworld.layoutSwitchSecond=" + providers.gradleProperty("ringLayoutSwitchSecondDestination")
@@ -108,7 +194,7 @@ loom {
 			name "RingWorld Production Projection Capture"
 			// The projection run opens only the disposable copied world prepared
 			// below. It must never open a source checkpoint in place.
-			runDir "run-production-projection"
+			runDir qualificationRunDirectory("run-production-projection")
 			vmArg "-Dringworld.captureRingProjection=true"
 			vmArg "-Dringworld.projectionWorld=" + providers.gradleProperty("ringProjectionDestination")
 					.orElse("RingWorld Production Projection").get()
@@ -124,7 +210,7 @@ loom {
 			name "RingWorld Production Visual Parity"
 			// This run receives a fresh copied save and uses server-authoritative
 			// poses for the natural seam and both finite-width rims.
-			runDir "run-production-visual-parity"
+			runDir qualificationRunDirectory("run-production-visual-parity")
 			vmArg "-Dringworld.captureRingVisualParity=true"
 			vmArg("-Dringworld.visualParityWorld="
 					+ providers.gradleProperty("ringVisualParityDestination")
@@ -138,7 +224,7 @@ loom {
 			name "RingWorld Production Lifecycle Regression"
 			// The client opens only the disposable copied world prepared below.
 			// Do not use quick-play: its macOS launch path is nondeterministic.
-			runDir "run-production-lifecycle"
+			runDir qualificationRunDirectory("run-production-lifecycle")
 			vmArg "-Dringworld.productionLifecycleTest=true"
 			vmArg("-Dringworld.productionLifecycleWorld="
 					+ providers.gradleProperty("ringProductionLifecycleDestination")
@@ -147,14 +233,14 @@ loom {
 		curvedObjectCaptureClient {
 			client()
 			name "RingWorld Curved Object Capture"
-			runDir "run-curved-object-capture"
+			runDir qualificationRunDirectory("run-curved-object-capture")
 			vmArg "-Dringworld.curvedObjectCapture=true"
 			programArgs "--username", "RingObjectTester"
 		}
 		atlasUiClient {
 			client()
 			name "RingWorld Atlas UI Regression"
-			runDir "run-atlas-ui"
+			runDir qualificationRunDirectory("run-atlas-ui")
 			vmArg "-Dringworld.atlasUiTest=true"
 			// Minecraft login names are limited to 16 characters.
 			programArgs "--username", "AtlasUiTester"
@@ -162,7 +248,7 @@ loom {
 		creationUiClient {
 			client()
 			name "RingWorld Creation UI Regression"
-			runDir "run-creation-ui"
+			runDir qualificationRunDirectory("run-creation-ui")
 			vmArg "-Dringworld.creationUiTest=true"
 			// The menu-only fixture asserts this exact framebuffer at startup.
 			programArgs "--username", "CreationUiTester", "--width", "1920", "--height", "1080"
@@ -170,14 +256,14 @@ loom {
 		mapCompassCaptureClient {
 			client()
 			name "RingWorld Map and Compass Capture"
-			runDir "run-map-compass-capture"
+			runDir qualificationRunDirectory("run-map-compass-capture")
 			vmArg "-Dringworld.captureMapCompass=true"
 			programArgs "--username", "MapCompassTester"
 		}
 		strongholdTestServer {
 			server()
 			name "RingWorld Stronghold Test Server"
-			runDir "run-stronghold-test"
+			runDir qualificationRunDirectory("run-stronghold-test")
 			vmArg "-Dringworld.strongholdTest=true"
 			vmArg "-Dringworld.worldgenMatrix=" + providers.gradleProperty("ringWorldgenMatrix")
 					.orElse("false").get()
@@ -190,7 +276,7 @@ loom {
 			name "RingWorld Headless Atlas Prewarm"
 			// This is the only launch directory accepted by the checked-in
 			// disposable fixture. Never point this launch at a source save.
-			runDir "run-headless-prewarm"
+			runDir qualificationRunDirectory("run-headless-prewarm")
 			vmArg "-Dringworld.headlessPrewarm=true"
 			vmArg "-Dringworld.headlessPrewarmReport=" + providers.gradleProperty("ringHeadlessPrewarmResult")
 					.orElse("result.json").get()
@@ -225,14 +311,14 @@ def requireSave = { String value, String propertyName, File savesDirectory ->
 	return [id: saveId, directory: worldDirectory]
 }
 
-def sourceSavesDirectory = file("run/saves")
-def layoutSwitchSavesDirectory = file("run-layout-switch/saves")
-def projectionSavesDirectory = file("run-production-projection/saves")
-def visualParitySavesDirectory = file("run-production-visual-parity/saves")
-def lifecycleSavesDirectory = file("run-production-lifecycle/saves")
-def strongholdTestDirectory = file("run-stronghold-test")
-def headlessPrewarmDirectory = file("run-headless-prewarm")
-def raidSeamDirectory = file("run-raid-seam")
+def sourceSavesDirectory = qualificationRunFile("run/saves")
+def layoutSwitchSavesDirectory = qualificationRunFile("run-layout-switch/saves")
+def projectionSavesDirectory = qualificationRunFile("run-production-projection/saves")
+def visualParitySavesDirectory = qualificationRunFile("run-production-visual-parity/saves")
+def lifecycleSavesDirectory = qualificationRunFile("run-production-lifecycle/saves")
+def strongholdTestDirectory = qualificationRunFile("run-stronghold-test")
+def headlessPrewarmDirectory = qualificationRunFile("run-headless-prewarm")
+def raidSeamDirectory = qualificationRunFile("run-raid-seam")
 
 def requireFabricRuntimeGateLog = { File logFile, String passMarker,
 									 String failMarker, String label ->
@@ -390,7 +476,7 @@ def verifyFabricProductionLifecycleOutputs = { File runDirectory, String destina
 	}
 }
 
-def multiplayerHarnessDirectory = file("run-multiplayer")
+def multiplayerHarnessDirectory = qualificationRunFile("run-multiplayer")
 def multiplayerPregenerateTerrainAtlas = providers.gradleProperty("ringMultiplayerPregenerateTerrainAtlas")
         .orElse("false")
 def multiplayerHarnessDimension = { String propertyName, String defaultValue, int minimum, boolean chunkAligned ->
@@ -620,7 +706,7 @@ testViewDistanceChunks=2
 pregenerateTerrainAtlas=false
 '''
 		def properties = new Properties()
-		properties.setProperty("server-port", "25567")
+		properties.setProperty("server-port", fabricRaidSeamPort().toString())
 		properties.setProperty("online-mode", "false")
 		properties.setProperty("gamemode", "creative")
 		properties.setProperty("difficulty", "normal")
@@ -823,11 +909,11 @@ tasks.register("prepareAtlasUiRun") {
 	group = "ringworld verification"
 	description = "Writes an isolated safe-small configuration for the atlas-map GUI regression."
 	doLast {
-		delete(file("run-atlas-ui/saves"))
-		delete(file("run-atlas-ui/screenshots"))
-		delete(file("run-atlas-ui/ringworld-cache"))
-		delete(file("run-atlas-ui/logs"))
-		def configFile = file("run-atlas-ui/config/ringworld.properties")
+		delete(new File(qualificationRunFile("run-atlas-ui"), "saves"))
+		delete(new File(qualificationRunFile("run-atlas-ui"), "screenshots"))
+		delete(new File(qualificationRunFile("run-atlas-ui"), "ringworld-cache"))
+		delete(new File(qualificationRunFile("run-atlas-ui"), "logs"))
+		def configFile = new File(qualificationRunFile("run-atlas-ui"), "config/ringworld.properties")
 		configFile.parentFile.mkdirs()
 		def config = new Properties()
 		config.setProperty("widthBlocks", "416")
@@ -911,9 +997,9 @@ tasks.register("prepareCreationUiRun") {
 	outputs.upToDateWhen { false }
 	doLast {
 		["saves", "screenshots", "ringworld-cache", "logs"].each {
-			delete(file("run-creation-ui/" + it))
+			delete(new File(qualificationRunFile("run-creation-ui"), it))
 		}
-		def configFile = file("run-creation-ui/config/ringworld.properties")
+		def configFile = new File(qualificationRunFile("run-creation-ui"), "config/ringworld.properties")
 		configFile.parentFile.mkdirs()
 		def config = new Properties()
 		config.setProperty("widthBlocks", "256")
@@ -924,7 +1010,7 @@ tasks.register("prepareCreationUiRun") {
 		config.setProperty("pregenerateTerrainAtlas", "false")
 		config.setProperty("requestOceanMonument", "false")
 		configFile.withOutputStream { config.store(it, "Isolated RingWorld creation UI regression") }
-		file("run-creation-ui/options.txt").text = "onboardAccessibility:false\nguiScale:1\n"
+		new File(qualificationRunFile("run-creation-ui"), "options.txt").text = "onboardAccessibility:false\nguiScale:1\n"
 	}
 }
 
@@ -933,7 +1019,7 @@ tasks.register("verifyCreationUiClient") {
 	description = "Fails unless the menu-only creation-UI fixture completed all captures without creating a world."
 	mustRunAfter("runCreationUiClient")
 	doLast {
-		verifyCreationUiOutputs(file("run-creation-ui"), "Fabric creation UI client")
+		verifyCreationUiOutputs(qualificationRunFile("run-creation-ui"), "Fabric creation UI client")
 	}
 }
 
@@ -946,11 +1032,11 @@ tasks.register("prepareMapCompassCaptureRun") {
 	group = "ringworld verification"
 	description = "Writes an isolated safe-small configuration for the map and compass capture."
 	doLast {
-		delete(file("run-map-compass-capture/saves"))
-		delete(file("run-map-compass-capture/screenshots"))
-		delete(file("run-map-compass-capture/ringworld-cache"))
-		delete(file("run-map-compass-capture/logs"))
-		def configFile = file("run-map-compass-capture/config/ringworld.properties")
+		delete(new File(qualificationRunFile("run-map-compass-capture"), "saves"))
+		delete(new File(qualificationRunFile("run-map-compass-capture"), "screenshots"))
+		delete(new File(qualificationRunFile("run-map-compass-capture"), "ringworld-cache"))
+		delete(new File(qualificationRunFile("run-map-compass-capture"), "logs"))
+		def configFile = new File(qualificationRunFile("run-map-compass-capture"), "config/ringworld.properties")
 		configFile.parentFile.mkdirs()
 		def config = new Properties()
 		config.setProperty("widthBlocks", "416")
@@ -968,7 +1054,7 @@ tasks.register("verifyMapCompassCaptureClient") {
 	description = "Fails unless the real map/compass seam and persistence paths pass."
 	mustRunAfter("runMapCompassCaptureClient")
 	doLast {
-		def logFile = file("run-map-compass-capture/logs/latest.log")
+		def logFile = new File(qualificationRunFile("run-map-compass-capture"), "logs/latest.log")
 		def log = logFile.isFile() ? logFile.text : ""
 		if (!log.contains("[map-compass-capture] PASS") || log.contains("[map-compass-capture] FAIL")) {
 			throw new GradleException("Map and compass capture did not pass; inspect " + logFile)
@@ -1027,7 +1113,7 @@ tasks.register("verifyMapCompassCaptureClient") {
 		 "ringworld-map-high-to-low", "ringworld-map-low-to-high",
 		 "ringworld-compass-high-to-low", "ringworld-compass-low-to-high",
 		 "ringworld-map-reopened", "ringworld-compass-reopened"].each { prefix ->
-			def screenshots = fileTree("run-map-compass-capture/screenshots").matching { include prefix + "*.png" }.files
+			def screenshots = fileTree(new File(qualificationRunFile("run-map-compass-capture"), "screenshots")).matching { include prefix + "*.png" }.files
 			if (screenshots.isEmpty()) {
 				throw new GradleException("Map and compass capture is missing screenshot " + prefix + "*.png")
 			}
@@ -1054,14 +1140,14 @@ tasks.register("verifyAtlasUiClient") {
 	description = "Fails unless the isolated GUI-scale-4 atlas-map client completed every required capture."
 	mustRunAfter("runAtlasUiClient")
 	doLast {
-		def logFile = file("run-atlas-ui/logs/latest.log")
+		def logFile = new File(qualificationRunFile("run-atlas-ui"), "logs/latest.log")
 		def log = logFile.isFile() ? logFile.text : ""
 		if (!log.contains("[atlas-ui-test] PASS") || log.contains("[atlas-ui-test] FAIL")) {
 			throw new GradleException("Atlas UI client did not pass; inspect " + logFile)
 		}
         (1..11).each { index ->
 			def prefix = String.format("atlas-ui-%02d-", index)
-			if (fileTree("run-atlas-ui/screenshots").matching { include prefix + "*.png" }.isEmpty()) {
+			if (fileTree(new File(qualificationRunFile("run-atlas-ui"), "screenshots")).matching { include prefix + "*.png" }.isEmpty()) {
 				throw new GradleException("Atlas UI client is missing screenshot " + prefix + "*.png")
 			}
 		}
@@ -1099,7 +1185,7 @@ tasks.register("prepareCopiedLayoutSwitchWorlds") {
 	outputs.upToDateWhen { false }
 	doLast {
 		["screenshots", "ringworld-cache", "logs", "crash-reports"].each {
-			delete(file("run-layout-switch/${it}"))
+			delete(new File(qualificationRunFile("run-layout-switch"), it))
 		}
 		def copies = [
 			[providers.gradleProperty("ringLayoutSwitchFirstSource").orElse("RingWorld Automated Test (10)").get(),
@@ -1135,7 +1221,7 @@ tasks.register("verifyLayoutSwitchClient") {
 	description = "Fails unless the Fabric same-process layout switch clears and restores client state."
 	mustRunAfter("runLayoutSwitchClient")
 	doLast {
-		verifyFabricLayoutSwitchOutputs(file("run-layout-switch"), [
+		verifyFabricLayoutSwitchOutputs(qualificationRunFile("run-layout-switch"), [
 				providers.gradleProperty("ringLayoutSwitchFirstDestination")
 						.orElse("RingWorld Layout Switch A").get(),
 				providers.gradleProperty("ringLayoutSwitchSecondDestination")
@@ -1167,7 +1253,7 @@ tasks.register("prepareCopiedProductionLifecycleWorld") {
 	outputs.upToDateWhen { false }
 	doLast {
 		["screenshots", "ringworld-cache", "logs", "crash-reports"].each {
-			delete(file("run-production-lifecycle/${it}"))
+			delete(new File(qualificationRunFile("run-production-lifecycle"), it))
 		}
 		def source = requireSave(providers.gradleProperty("ringProductionLifecycleSource").orNull,
 				"ringProductionLifecycleSource", sourceSavesDirectory)
@@ -1194,7 +1280,7 @@ tasks.register("verifyProductionLifecycleClient") {
 	description = "Fails unless the Fabric production dimension and reopen lifecycle passes."
 	mustRunAfter("runProductionLifecycleClient")
 	doLast {
-		verifyFabricProductionLifecycleOutputs(file("run-production-lifecycle"),
+		verifyFabricProductionLifecycleOutputs(qualificationRunFile("run-production-lifecycle"),
 				providers.gradleProperty("ringProductionLifecycleDestination")
 						.orElse("RingWorld Production Lifecycle").get())
 	}
@@ -1213,11 +1299,11 @@ tasks.register("prepareCopiedProductionProjectionWorld") {
 	outputs.upToDateWhen { false }
 	doLast {
 		["screenshots", "ringworld-cache", "logs", "crash-reports"].each {
-			delete(file("run-production-projection/${it}"))
+			delete(new File(qualificationRunFile("run-production-projection"), it))
 		}
 		// Keep release-evidence captures free of the first-world movement toast.
 		// This directory is disposable and isolated from the user's real options.
-		def projectionOptions = file("run-production-projection/options.txt")
+		def projectionOptions = new File(qualificationRunFile("run-production-projection"), "options.txt")
 		def optionLines = projectionOptions.isFile()
 				? projectionOptions.readLines("UTF-8") : []
 		optionLines.removeAll { it.startsWith("tutorialStep:") }
@@ -1249,7 +1335,7 @@ tasks.register("verifyProductionProjectionClient") {
 	description = "Fails unless the Fabric projection client completed three decodable captures."
 	mustRunAfter("runProductionProjectionClient")
 	doLast {
-		verifyFabricProjectionOutputs(file("run-production-projection"),
+		verifyFabricProjectionOutputs(qualificationRunFile("run-production-projection"),
 				providers.gradleProperty("ringProjectionEnvironment").orElse("noon").get())
 	}
 }
@@ -1445,9 +1531,9 @@ tasks.register("prepareCopiedProductionVisualParityWorld") {
 				"ringVisualParityDestination")
 		def destination = new File(visualParitySavesDirectory, destinationId)
 		delete(destination)
-		delete(file("run-production-visual-parity/screenshots"))
-		delete(file("run-production-visual-parity/ringworld-cache"))
-		delete(file("run-production-visual-parity/logs"))
+		delete(new File(qualificationRunFile("run-production-visual-parity"), "screenshots"))
+		delete(new File(qualificationRunFile("run-production-visual-parity"), "ringworld-cache"))
+		delete(new File(qualificationRunFile("run-production-visual-parity"), "logs"))
 		copy {
 			from(source.directory)
 			into(destination)
@@ -1465,7 +1551,7 @@ tasks.register("verifyProductionVisualParityClient") {
 	description = "Fails unless the Fabric seam and both finite-width rim captures completed."
 	mustRunAfter("runProductionVisualParityClient")
 	doLast {
-		verifyFabricVisualParityOutputs(file("run-production-visual-parity"))
+		verifyFabricVisualParityOutputs(qualificationRunFile("run-production-visual-parity"))
 	}
 }
 
@@ -1496,13 +1582,13 @@ tasks.named("runProductionLifecycleClient") {
 tasks.register("prepareCurvedObjectCapture") {
 	group = "ringworld verification"
 	description = "Creates a clean safe-small test configuration for curved object captures."
-	outputs.dir(file("run-curved-object-capture/config"))
+	outputs.dir(new File(qualificationRunFile("run-curved-object-capture"), "config"))
 	outputs.upToDateWhen { false }
 	doLast {
-		delete(file("run-curved-object-capture/saves"))
-		delete(file("run-curved-object-capture/screenshots"))
-		delete(file("run-curved-object-capture/ringworld-cache"))
-		def configDirectory = file("run-curved-object-capture/config")
+		delete(new File(qualificationRunFile("run-curved-object-capture"), "saves"))
+		delete(new File(qualificationRunFile("run-curved-object-capture"), "screenshots"))
+		delete(new File(qualificationRunFile("run-curved-object-capture"), "ringworld-cache"))
+		def configDirectory = new File(qualificationRunFile("run-curved-object-capture"), "config")
 		configDirectory.mkdirs()
 		new File(configDirectory, "ringworld.properties").text = """\
 widthBlocks=416
@@ -1525,14 +1611,14 @@ tasks.register("verifyCurvedObjectCaptureClient") {
 	description = "Fails unless both Fabric curved rigid-object captures completed."
 	mustRunAfter("runCurvedObjectCaptureClient")
 	doLast {
-		def logFile = file("run-curved-object-capture/logs/latest.log")
+		def logFile = new File(qualificationRunFile("run-curved-object-capture"), "logs/latest.log")
 		def log = logFile.isFile() ? logFile.text : ""
 		if (!log.contains("[curved-object-capture] result=PASS, captures complete")
 				|| log.contains("[curved-object-capture] result=FAIL")) {
 			throw new GradleException("Fabric curved-object capture did not pass; inspect " + logFile)
 		}
 		["far", "near"].each { distance ->
-			def screenshot = file("run-curved-object-capture/screenshots/ringworld-curved-objects-${distance}.png")
+			def screenshot = new File(qualificationRunFile("run-curved-object-capture"), "screenshots/ringworld-curved-objects-${distance}.png")
 			if (!screenshot.isFile()) {
 				throw new GradleException("Fabric curved-object capture is missing " + screenshot)
 			}
@@ -1553,7 +1639,10 @@ dependencies {
 processResources {
 	inputs.property 'version', project.version
 	inputs.property 'release_label', project.release_label
-	filesMatching('fabric.mod.json') { expand version: project.version }
+	inputs.property 'minecraft_version', project.minecraft_version
+	filesMatching('fabric.mod.json') {
+		expand version: project.version, minecraft_version: project.minecraft_version
+	}
 	filesMatching('ringworld-build.properties') {
 		expand version: project.version, release_label: project.release_label
 	}

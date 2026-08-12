@@ -270,6 +270,19 @@ same-file evidence.
 Exit: all six cells compile and package, or each failed cell has a precise ABI
 report and remains unsupported.
 
+Current checkpoint: paired opt-in `ringQualificationRoot` and
+`ringQualificationCell` properties confine both loader build outputs, declared
+game directories, fixture preparers, and verifiers to one disposable cell
+below `dist/qualification`. Qualification multiplayer, raid, and smoke ports
+are independently routed. Omitting the pair preserves historical developer
+paths. This is an isolation foundation, not the Phase 2 exit: script-owned
+fixtures and the external production-runtime adapter remain outstanding.
+As an initial ABI diagnostic, the unchanged common source now compiles and
+packages for Fabric 26.1 and 26.1.1 and the pinned NeoForge beta trials for
+26.1 and 26.1.1. Each isolated cell passes 337 tests and renders target-specific
+loader metadata. This does not promote the cells: no external runtime or
+same-file jar gate has run.
+
 ### Phase 3 — quick qualification orchestrator
 
 Implement the planned `run_minecraft_qualification.py` interface with:
@@ -289,6 +302,14 @@ Gradle development source-set run.
 
 Exit: one command produces a fail-closed six-cell quick report on a clean
 checkout, and deliberate corruptions are rejected by tests.
+
+Current checkpoint: `scripts/run_minecraft_qualification.py` and its pure
+model implement selection, safe path and command planning, pinned download
+plans, lock/port policy, and deterministic reports. The CLI accepts only
+`--tier quick` and an explicit cell selection, `--all`, or `--all-supported`.
+Dry and non-dry invocations currently end `INCOMPLETE`; they create no
+evidence and launch no Gradle, network, or runtime work until the execution
+adapter is implemented and covered by fail-closed tests.
 
 ### Phase 4 — nightly runtime matrix
 

@@ -309,6 +309,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   cells and publication evidence for the Minecraft 26.1.x support line.
 - `scripts/validate_minecraft_version_matrix.py`: fail-closed pure validation
   for version inputs, isolated profiles, states, evidence, and same-jar claims.
+- `scripts/run_minecraft_qualification.py` and
+  `scripts/minecraft_qualification_model.py`: current fail-closed Phase 3
+  planner/report seam. Until its execution adapter exists it must return
+  `INCOMPLETE`, create no evidence, and never be described as runtime
+  qualification.
 - `docs/DIMENSION_SCALING_PLAN.md`: authoritative audit and staged plan for
   removing test-world assumptions from custom dimensions.
 - `docs/ATLAS_PREGENERATION_PLAN.md`: planned **Generate Entire Ring** UI and
@@ -355,6 +360,21 @@ unit/parameterized cases:
 ```sh
 ./gradlew :neoforge:test :neoforge:build --console=plain
 ```
+
+Version-matrix work may opt into a disposable Gradle cell with paired
+`ringQualificationRoot` and `ringQualificationCell` properties. Both loaders'
+build outputs, declared runs, preparers, and verifiers then resolve below that
+cell, and `ringQualificationPort` supplies its smoke/multiplayer default. The
+root is accepted only below `dist/qualification`. Supplying only one property,
+using traversal, or pointing at ordinary development/package state must fail.
+With neither property, all historical paths and ports remain unchanged. This
+is build isolation, not cross-version proof; a same-jar claim requires one
+frozen jar in external production-style runtimes.
+Qualification source-build artifacts must use the diagnostic
+`0.0.0-qualification+mc<version>` identity and a qualification release label;
+never stage or publish them. The 26.1 and 26.1.1 Fabric and NeoForge beta
+source-build cells currently pass 337 tests each, but remain pending until
+external runtime and frozen-jar gates pass.
 
 Both loaders now provide several identically named runtime tasks. Always
 select the loader explicitly—for example `./gradlew :runServer` or
