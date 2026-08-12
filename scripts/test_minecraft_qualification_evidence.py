@@ -124,6 +124,13 @@ class TerminalEvidenceTest(unittest.TestCase):
         incomplete = {"schema_version": EVIDENCE_SCHEMA_VERSION, "verdict": "INCOMPLETE", "cell": canonical_cells()["26.1-fabric"], "reason": "NO_RUNTIME"}
         self.assertEqual("INCOMPLETE", validate_terminal_evidence(incomplete, canonical_cells(), RANGES).verdict)
 
+    def test_safe_relative_paths_allow_version_plus_but_reject_traversal(self) -> None:
+        record = passing_record()
+        record["runtime_inventory"][1]["path"] = "run/mods/fabric-api-0.145.1+26.1.jar"  # type: ignore[index]
+        self.assertEqual("PASS", validate_terminal_evidence(record, canonical_cells(), RANGES).verdict)
+        record["runtime_inventory"][1]["path"] = "run/mods/../escape.jar"  # type: ignore[index]
+        self.assert_invalid(record)
+
     def test_pass_requires_every_evidence_family(self) -> None:
         for family in ("provenance", "commands", "installer", "runtime_inventory", "frozen_candidate", "markers", "runtime", "same_file"):
             with self.subTest(family=family):

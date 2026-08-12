@@ -203,11 +203,18 @@ class ExternalRuntimeQualificationAdapterTest(unittest.TestCase):
                     "runtime-start", "loader-bootstrap", "ringworld-bootstrap", "atlas-disabled", "server-ready",
                     "server-stop", "world-save", "clean-stop", "runtime-exit",
                 ))),
-                RuntimeIdentity("fabric", "0.19.3", str(launcher), str(minecraft_server), "unused", digest(minecraft_server)),
+                RuntimeIdentity("fabric", "0.19.3", str(launcher), str(minecraft_server),
+                                hashlib.sha1(minecraft_server.read_bytes()).hexdigest(),
+                                hashlib.sha1(minecraft_server.read_bytes()).hexdigest()),
                 "Stopping server", 0, str(server_log), "2026-08-12T12:00:00Z", 8.0,
             )
             plan = SimpleNamespace(
                 loader="fabric", downloads=(RuntimeDownload("runtime installer", "https://example.invalid/installer.jar", "sha256", digest(installer), installer),),
+                minecraft_server=RuntimeDownload(
+                    "server", "https://example.invalid/server.jar", "sha1",
+                    hashlib.sha1(minecraft_server.read_bytes()).hexdigest(), minecraft_server,
+                ),
+                installer=SimpleNamespace(argv=("java", "-jar", str(installer))),
                 mods=(SimpleNamespace(name="RingWorld", destination=candidate, sha256=candidate_hash),),
                 launch=SimpleNamespace(argv=("java", "-jar", str(launcher))),
             )

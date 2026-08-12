@@ -339,7 +339,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   frozen/provenance runner inputs to external dedicated smoke and strict
   terminal evidence. It must validate and exclusive-create the raw strict JSON
   record before returning a `PASS` phase, and must re-inspect the retained
-  frozen jar before any installer, download, or runtime activity.
+  frozen jar before any installer, download, or runtime activity. Preserve the
+  Mojang server's declared hash algorithm (currently SHA-1) for pin validation;
+  the separate installed-file inventory remains SHA-256. Bind the installer
+  download by the reviewed command path/checksum, not a loader-specific display
+  name.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit
@@ -357,7 +361,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   hashes, installer/runtime inventory, frozen candidate identity, ordered
   runtime markers, clean exit, and same-file group evidence. Its pure external
   adapter cannot manufacture missing evidence from the executor's compact
-  result.
+  result. Safe relative evidence paths permit `+` in versioned artifact names
+  while continuing to reject absolute paths and traversal.
 - `docs/DIMENSION_SCALING_PLAN.md`: authoritative audit and staged plan for
   removing test-world assumptions from custom dimensions.
 - `docs/ATLAS_PREGENERATION_PLAN.md`: planned **Generate Entire Ring** UI and

@@ -406,8 +406,18 @@ def _runtime_inventory(
         raise ExternalAdapterError("external runtime result has no installed runtime identity")
     if identity.loader != plan.loader:
         raise ExternalAdapterError("installed runtime loader disagrees with plan")
-    server_path, server_hash = _sha256_regular(Path(identity.minecraft_server_path), paths, "installed Minecraft server")
-    if server_hash != identity.minecraft_server_actual:
+    installed_server = Path(identity.minecraft_server_path)
+    server_path, server_hash = _sha256_regular(installed_server, paths, "installed Minecraft server")
+    algorithm = plan.minecraft_server.algorithm
+    if algorithm not in {"sha1", "sha256"}:
+        raise ExternalAdapterError("reviewed Minecraft server pin uses an unsupported algorithm")
+    try:
+        pinned_hash = hashlib.new(algorithm, installed_server.read_bytes()).hexdigest()
+    except (OSError, ValueError) as error:
+        raise ExternalAdapterError("cannot rehash the installed Minecraft server") from error
+    if pinned_hash != identity.minecraft_server_actual \
+            or identity.minecraft_server_expected != plan.minecraft_server.checksum \
+            or pinned_hash != plan.minecraft_server.checksum:
         raise ExternalAdapterError("installed Minecraft server hash changed after executor verification")
     launcher_path, launcher_hash = _sha256_regular(Path(identity.launcher_path), paths, "installed launcher")
     entries: list[Mapping[str, str]] = [
@@ -450,19 +460,25 @@ def _installer_record(
     result: ExternalRuntimeSmokeResult,
     paths: QualificationPaths,
 ) -> Mapping[str, str]:
-    matching = [download for download in result.downloads if download.name == "runtime installer"]
+    if len(plan.installer.argv) < 3:
+        raise ExternalAdapterError("reviewed installer command has no jar argument")
+    installer_path = Path(plan.installer.argv[2]).resolve(strict=False)
+    matching_plan = [download for download in plan.downloads if download.destination.resolve(strict=False) == installer_path]
+    if len(matching_plan) != 1:
+        raise ExternalAdapterError("reviewed runtime plan has no unique installer download")
+    planned_installer = matching_plan[0]
+    matching = [download for download in result.downloads if Path(download.path).resolve(strict=False) == installer_path]
     if len(matching) != 1:
-        raise ExternalAdapterError("external runtime result has no unique runtime installer download")
+        raise ExternalAdapterError("external runtime result has no unique installer download")
     downloaded = matching[0]
     path, actual = _sha256_regular(Path(downloaded.path), paths, "runtime installer")
     if actual != downloaded.actual or downloaded.expected != downloaded.actual:
         raise ExternalAdapterError("runtime installer hash disagrees with download evidence")
-    matching_plan = [download for download in plan.downloads if download.name == "runtime installer"]
-    if len(matching_plan) != 1 or matching_plan[0].checksum != downloaded.expected:
+    if planned_installer.checksum != downloaded.expected or planned_installer.name != downloaded.name:
         raise ExternalAdapterError("reviewed runtime installer plan disagrees with download evidence")
     return {
         "name": downloaded.name,
-        "url": matching_plan[0].url,
+        "url": planned_installer.url,
         "path": path,
         "sha256": actual,
         "installed_sha256": actual,
