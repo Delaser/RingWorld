@@ -256,7 +256,10 @@ def frozen_candidate_plan(cell: Mapping[str, Any], repository_root: Path, run_id
     tasks = (":test", ":build") if loader == "fabric" else (":neoforge:test", ":neoforge:build")
     command = CommandRecord(
         PhaseName.SHARED_CONTRACT,
-        (str(repository_root / "gradlew"), "--console=plain", "--no-daemon", *property_args, *tasks),
+        (
+            str(repository_root / "gradlew"), "--console=plain", "--no-daemon", "--max-workers=1",
+            *property_args, *tasks,
+        ),
         repository_root,
         (("GRADLE_USER_HOME", str(paths.gradle_home)),),
         profile["timeout_seconds"],

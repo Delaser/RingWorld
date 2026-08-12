@@ -348,7 +348,7 @@ The serial runner now executes its reviewed build/unit and per-cell diagnostic
 artifact adapters by default. Before process work it requires a clean source tree including no
 untracked files, a full HEAD equal to its upstream, the reviewed public
 origin, Java 25, and hashes of the manifest and Gradle wrapper. Each cell gets
-its own `GRADLE_USER_HOME`, `--no-daemon`, held OS lock, fresh output root, and
+its own `GRADLE_USER_HOME`, `--no-daemon`, `--max-workers=1`, held OS lock, fresh output root, and
 immutable report. The shared-contract adapter is available only after the
 complete-triplet frozen preflight; the external runtime adapter is installed
 only under that same complete-triplet/provenance condition.

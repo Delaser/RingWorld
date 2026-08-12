@@ -141,6 +141,7 @@ class MinecraftQualificationModelTest(unittest.TestCase):
                 self.assertEqual(expected_versions, {name: value[0] for name, value in values.items()}, cell["id"])
                 self.assertEqual((("GRADLE_USER_HOME", str(paths.gradle_home)),), command.environment, cell["id"])
                 self.assertIn("--no-daemon", command.argv, cell["id"])
+                self.assertIn("--max-workers=1", command.argv, cell["id"])
                 self.assertFalse(any(fragment in argument for argument in command.argv for fragment in prohibited_fragments))
                 if cell["minecraft"]["version"] != "26.1.2":
                     self.assertNotIn("26.1.2", "\0".join(command.argv), cell["id"])
@@ -327,6 +328,7 @@ class MinecraftQualificationExecutionTest(unittest.TestCase):
             prepared = preparations["fabric"]
             self.assertEqual(MODEL.Verdict.PASS, prepared.verdict)
             self.assertEqual(1, len(calls))
+            self.assertIn("--max-workers=1", calls[0][0].argv)
             self.assertTrue(prepared.plan.candidate_path.is_file())
             adapter = RUNNER.shared_contract_adapter(preparations)
             results = []

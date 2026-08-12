@@ -87,6 +87,10 @@ python3 scripts/run_minecraft_qualification.py \
   --tier quick --cell 26.1-fabric --dry-run
 ```
 
+Both the frozen-candidate build and each diagnostic cell use
+`--max-workers=1`. This keeps dependency resolution serial on constrained
+hosts while retaining isolated Gradle homes, outputs, and evidence.
+
 The executor and external-runtime planner checks cover their isolated
 primitives and plan contracts. They verify pinned/no-redirect downloads, the
 official installer contract (including its pre-created empty contained target), installed Mojang-server identity, exact mod

@@ -331,7 +331,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
   immutable reports, pinned hashes, and strict diagnostic jar inspection. It
-  supplies the runner's build and strict diagnostic-artifact primitives. Its
+  supplies the runner's build and strict diagnostic-artifact primitives.
+  Isolated Gradle builds use one worker so dependency resolution does not fan
+  out across simultaneous connections on constrained hosts. Its
   external runtime API may reuse only a live runner-supplied lock with the
   exact path and run ID; standalone calls still acquire their own lock.
 - `scripts/external_runtime_smoke.py`: pure production-style dedicated-server

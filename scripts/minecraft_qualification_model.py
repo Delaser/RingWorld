@@ -466,7 +466,13 @@ def planned_commands(cell: Mapping[str, Any], paths: QualificationPaths) -> tupl
         raise InvocationError(f"unsupported loader {loader!r}")
     executable = str(paths.repository_root / "gradlew")
     return (
-        CommandRecord(PhaseName.BUILD_AND_UNIT, (executable, "--console=plain", "--no-daemon", *property_args, *build_tasks), paths.repository_root, environment, timeout),
+        CommandRecord(
+            PhaseName.BUILD_AND_UNIT,
+            (executable, "--console=plain", "--no-daemon", "--max-workers=1", *property_args, *build_tasks),
+            paths.repository_root,
+            environment,
+            timeout,
+        ),
     )
 
 
