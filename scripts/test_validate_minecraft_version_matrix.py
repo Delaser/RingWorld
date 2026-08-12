@@ -89,6 +89,17 @@ class MinecraftVersionMatrixValidationTest(unittest.TestCase):
         manifest["cells"][1]["profile"]["run_directory"] = manifest["cells"][0]["profile"]["run_directory"]
         self.assertTrue(any("path" in error and "shared" in error for error in self.errors(manifest)))
 
+    def test_rejects_profile_paths_outside_qualification_roots(self) -> None:
+        for field, unsafe in (
+            ("run_directory", "run-multiplayer/server"),
+            ("cache_directory", "dist/client-bundle/.prism-data"),
+            ("evidence_directory", "docs/evidence"),
+        ):
+            with self.subTest(field=field):
+                manifest = copy.deepcopy(self.manifest)
+                manifest["cells"][0]["profile"][field] = unsafe
+                self.assertTrue(any("must be a child" in error for error in self.errors(manifest)))
+
     def test_rejects_shared_port(self) -> None:
         manifest = copy.deepcopy(self.manifest)
         manifest["cells"][1]["profile"]["server_port"] = manifest["cells"][0]["profile"]["server_port"]
@@ -98,6 +109,15 @@ class MinecraftVersionMatrixValidationTest(unittest.TestCase):
         manifest = copy.deepcopy(self.manifest)
         del manifest["cells"][4]["evidence"]
         self.assertTrue(any("published cells require immutable evidence" in error for error in self.errors(manifest)))
+
+    def test_rejects_terminal_qualification_without_evidence_or_artifact(self) -> None:
+        manifest = copy.deepcopy(self.manifest)
+        cell = manifest["cells"][0]
+        cell["status"] = "passing"
+        del cell["pending_inputs"]
+        errors = self.errors(manifest)
+        self.assertTrue(any("passing cells require an immutable artifact" in error for error in errors))
+        self.assertTrue(any("passing cells require immutable evidence" in error for error in errors))
 
     def test_rejects_malformed_same_artifact_claim(self) -> None:
         manifest = copy.deepcopy(self.manifest)

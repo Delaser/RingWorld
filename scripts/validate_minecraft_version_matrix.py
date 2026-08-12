@@ -14,6 +14,11 @@ from urllib.parse import urlparse
 
 ALLOWED_LOADERS = {"fabric", "neoforge"}
 ALLOWED_STATUSES = {"pending", "passing", "failing", "published"}
+PROFILE_PATH_PREFIXES = {
+    "run_directory": PurePosixPath("run/qualification"),
+    "cache_directory": PurePosixPath("run/qualification-cache"),
+    "evidence_directory": PurePosixPath("dist/qualification"),
+}
 CHECKSUM_LENGTHS = {"sha1": 40, "sha256": 64}
 HEX_40 = re.compile(r"^[0-9a-f]{40}$")
 HEX_64 = re.compile(r"^[0-9a-f]{64}$")
@@ -117,13 +122,22 @@ def _validate_dependencies(value: Any, location: str, errors: list[str]) -> None
         _validate_checksum(item.get("checksum"), f"{item_location}.checksum", errors)
 
 
-def _validate_path(value: Any, location: str, errors: list[str]) -> str | None:
+def _validate_path(
+    value: Any,
+    location: str,
+    required_prefix: PurePosixPath,
+    errors: list[str],
+) -> str | None:
     path = _required_string(value, location, errors)
     if path is None:
         return None
     candidate = PurePosixPath(path)
     if candidate.is_absolute() or ".." in candidate.parts or path == ".":
         _error(errors, location, "must be a non-root-relative, non-traversing path")
+        return None
+    prefix_parts = required_prefix.parts
+    if candidate.parts[:len(prefix_parts)] != prefix_parts or len(candidate.parts) == len(prefix_parts):
+        _error(errors, location, f"must be a child of {required_prefix.as_posix()!r}")
         return None
     return path.rstrip("/")
 
@@ -133,9 +147,11 @@ def _validate_profile(value: Any, location: str, errors: list[str]) -> tuple[set
     if profile is None:
         return set(), None
     paths: set[str] = set()
-    for field in ("run_directory", "cache_directory", "evidence_directory"):
-        path = _validate_path(profile.get(field), f"{location}.{field}", errors)
+    for field, prefix in PROFILE_PATH_PREFIXES.items():
+        path = _validate_path(profile.get(field), f"{location}.{field}", prefix, errors)
         if path:
+            if path in paths:
+                _error(errors, f"{location}.{field}", "profile paths must be distinct")
             paths.add(path)
     port = profile.get("server_port")
     if not isinstance(port, int) or isinstance(port, bool) or not 1024 <= port <= 65535:
@@ -163,10 +179,10 @@ def _validate_artifact(cell: dict[str, Any], location: str, minecraft_version: s
     status = cell.get("status")
     artifact = cell.get("artifact")
     evidence = cell.get("evidence")
-    if status == "published" and not _is_mapping(artifact):
-        _error(errors, f"{location}.artifact", "published cells require an immutable artifact")
-    if status == "published" and (not isinstance(evidence, list) or not evidence):
-        _error(errors, f"{location}.evidence", "published cells require immutable evidence")
+    if status in {"passing", "published"} and not _is_mapping(artifact):
+        _error(errors, f"{location}.artifact", f"{status} cells require an immutable artifact")
+    if status != "pending" and (not isinstance(evidence, list) or not evidence):
+        _error(errors, f"{location}.evidence", f"{status} cells require immutable evidence")
     if artifact is not None:
         artifact_data = _required_mapping(artifact, f"{location}.artifact", errors)
         if artifact_data:

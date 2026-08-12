@@ -19,7 +19,7 @@ Existing 26.1.2 release evidence remains exact historical evidence and is not
 silently generalized to the rest of the patch line.
 
 Phase 0 is tracked by GitHub epic #168 and its Phase 1–10 child issues. Phase 1
-now has a fail-closed six-cell manifest and ten pure validator tests. The
+now has a fail-closed six-cell manifest and twelve pure validator tests. The
 26.1.2 Fabric and NeoForge cells contain their immutable published hashes;
 26.1 and 26.1.1 remain pending. Exact Fabric inputs are available, while the
 only official NeoForge runtimes for those patches are pinned beta trial
