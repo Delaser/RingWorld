@@ -315,7 +315,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   isolated build/unit, per-cell diagnostic-artifact, and full-loader-triplet
   frozen-candidate adapters. The diagnostic artifact adapter accepts one
   direct runtime jar plus only its canonical Gradle sources sibling below
-  `<cell>/build/<loader>/libs`, strict-checks loader/MPL/build identity, and
+  `<cell>/build/<loader>/libs`, strict-checks loader/canonical-MPL/build identity, and
   records SHA-256. Frozen preparation builds once from the oldest ABI under the
   run root, retains/re-inspects one MPL-covered candidate, and records one
   path/hash for all three loader cells. It is not external-runtime

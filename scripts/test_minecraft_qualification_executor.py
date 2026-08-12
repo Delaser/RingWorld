@@ -32,6 +32,9 @@ from minecraft_qualification_executor import (
 from minecraft_qualification_model import CommandRecord, PhaseName, QualificationPaths
 
 
+ROOT = Path(__file__).resolve().parents[1]
+
+
 def paths_at(root: Path) -> QualificationPaths:
     cell = root / "dist" / "qualification" / "run" / "fabric-26.1"
     return QualificationPaths(
@@ -205,7 +208,7 @@ class QualificationExecutorTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             jar = Path(temporary) / "ringworld.jar"
             with zipfile.ZipFile(jar, "w") as archive:
-                archive.writestr("LICENSE-RINGWORLD.txt", "Mozilla Public License Version 2.0\nMPL-2.0\n")
+                archive.writestr("LICENSE-RINGWORLD.txt", (ROOT / "LICENSE").read_bytes())
                 archive.writestr("ringworld-build.properties", "artifactVersion=0.0.0-qualification+mc26.1\nreleaseLabel=qualification-26.1-fabric\n")
                 archive.writestr(
                     "fabric.mod.json",
@@ -227,7 +230,7 @@ class QualificationExecutorTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             jar = Path(temporary) / "ringworld.jar"
             with zipfile.ZipFile(jar, "w") as archive:
-                archive.writestr("LICENSE-RINGWORLD.txt", "Mozilla Public License Version 2.0\nMPL-2.0\n")
+                archive.writestr("LICENSE-RINGWORLD.txt", (ROOT / "LICENSE").read_bytes())
                 archive.writestr("ringworld-build.properties", "artifactVersion=0.0.0-qualification+mc26.1\nreleaseLabel=qualification-26.1-neoforge\n")
                 archive.writestr(
                     "META-INF/neoforge.mods.toml",
@@ -237,6 +240,23 @@ class QualificationExecutorTest(unittest.TestCase):
                 jar, loader="neoforge", minecraft_version="26.1", diagnostic_version="0.0.0-qualification+mc26.1",
             )
             self.assertEqual("META-INF/neoforge.mods.toml", inspected.metadata_entry)
+
+    def test_jar_inspection_rejects_modified_mpl_text_even_when_label_remains(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            jar = Path(temporary) / "ringworld.jar"
+            altered = (ROOT / "LICENSE").read_text(encoding="utf-8") + "\nMPL-2.0\n"
+            with zipfile.ZipFile(jar, "w") as archive:
+                archive.writestr("LICENSE-RINGWORLD.txt", altered)
+                archive.writestr("ringworld-build.properties", "artifactVersion=0.0.0-qualification+mc26.1\nreleaseLabel=qualification-26.1-fabric\n")
+                archive.writestr("fabric.mod.json", json.dumps({
+                    "id": "ringworld", "version": "0.0.0-qualification+mc26.1",
+                    "license": "MPL-2.0", "depends": {"minecraft": "26.1"},
+                }))
+            with self.assertRaises(PackageVerificationError):
+                inspect_runtime_jar(
+                    jar, loader="fabric", minecraft_version="26.1",
+                    diagnostic_version="0.0.0-qualification+mc26.1",
+                )
 
     def test_jar_inspection_rejects_duplicate_and_ambiguous_descriptors(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

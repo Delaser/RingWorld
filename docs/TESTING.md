@@ -110,7 +110,7 @@ portable static-tooling check only, not qualification or release evidence.
 A non-dry runner requires a completely clean, pushed checkout and Java 25.
 It executes the isolated source build/unit adapter and then verifies exactly
 one per-cell diagnostic runtime jar for loader metadata, MPL-2.0, diagnostic
-build identity, and SHA-256. A partial loader selection writes immutable local
+build identity, the exact repository MPL-2.0 text, and SHA-256. A partial loader selection writes immutable local
 reports and returns `INCOMPLETE` without runtime I/O. A complete three-version
 loader selection additionally builds one frozen oldest-ABI jar and may run
 that exact file through the external dedicated-server adapter. It becomes

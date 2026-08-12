@@ -72,6 +72,7 @@ FORBIDDEN_STALE_LICENSE_STRINGS = (
     "RingWorld Evaluation License",
     "MIT",
 )
+CANONICAL_RINGWORLD_MPL_SHA256 = "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5"
 
 
 class QualificationExecutionError(RuntimeError):
@@ -647,8 +648,8 @@ def inspect_runtime_jar(
             if loader == "neoforge" and not neoforge_present:
                 raise PackageVerificationError("NeoForge jar is missing META-INF/neoforge.mods.toml")
             license_text = _single_archive_entry(archive, license_entry)
-            if "MPL-2.0" not in license_text:
-                raise PackageVerificationError("embedded RingWorld license is not MPL-2.0")
+            if hashlib.sha256(archive.read(license_entry)).hexdigest() != CANONICAL_RINGWORLD_MPL_SHA256:
+                raise PackageVerificationError("embedded RingWorld license is not the canonical MPL-2.0 text")
             text_entries = [
                 name for name in names
                 if name.lower().endswith((".json", ".toml", ".txt", ".properties", ".mf", ".md"))

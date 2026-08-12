@@ -316,7 +316,7 @@ and command planning, pinned download plans, lock/port policy, and
 deterministic reports. Dry-run stays write-free and `INCOMPLETE`. A non-dry
 quick run now executes the reviewed isolated build/unit command, then requires
 exactly one runtime jar under `<cell>/build/<loader>/libs`. It strict-checks
-the loader metadata, MPL file/declaration, diagnostic build identity, and a
+the loader metadata, exact canonical MPL file/declaration, diagnostic build identity, and a
 computed SHA-256 before recording the artifact in immutable cell evidence.
 That per-cell diagnostic result is not a same-file frozen-candidate claim.
 
