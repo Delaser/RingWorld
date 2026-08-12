@@ -63,6 +63,13 @@ mods inventory, safe-small configuration, launch command, markers, and clean
 stop contract for all six cells without writing or launching anything. Neither
 component is wired to the CLI yet, so neither can execute or claim a quick
 qualification run.
+The external executor can now, as a separately tested adapter, fetch exact
+pinned inputs without following redirects, refuse symlinked or reused runtime
+paths, run the official installer, enforce an exact mod inventory, preflight
+the loopback port, wait for RingWorld/readiness markers, send `stop`, reject
+fatal/crash output, and require a clean exit. Its output still cannot become a
+cell `PASS` until it is wired through the strict terminal evidence schema and
+the installed loader/Minecraft runtime inventory is bound to the manifest.
 The accepted same-jar proof architecture builds one frozen candidate per
 loader against the oldest supported ABI and runs that unchanged file in
 external production-style profiles for every patch. Per-cell Gradle builds are
@@ -72,6 +79,12 @@ Qualification-only Fabric and NeoForge candidates now also compile from the
 Normal builds were separately checked to retain their exact published 26.1.2
 metadata. Strict pure range checks prove that the six manifest targets are
 inside those declarations; no candidate has yet passed an external runtime.
+The runner now has a serial injected-phase state machine, isolated
+`GRADLE_USER_HOME`, `--no-daemon`, held cell locks, immutable per-cell/matrix
+reports, and a clean pushed-source/Java-25 provenance preflight. Only the
+build/unit adapter is enabled by default. Artifact, shared-contract, and
+external-runtime phases remain explicit `INCOMPLETE`, so invoking the runner
+cannot yet create a false support claim.
 Publication is host-scoped: the current records describe Modrinth as published
 and independently hash-verified, while CurseForge remains Under Review for
 Fabric and Baking for NeoForge. One aggregate status never implies both hosts

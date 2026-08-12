@@ -292,6 +292,9 @@ execution gate is still pending.
 Qualification-only broad-metadata candidates compile from the oldest 26.1
 ABI, while normal artifacts remain exact to 26.1.2. This is preparation for
 the same-file external runtime matrix, not a new compatibility claim.
+The isolated external-server executor and strict terminal evidence schema are
+also present, but they are not yet connected end-to-end to the matrix CLI.
+Minecraft 26.1 and 26.1.1 therefore remain unadvertised and unsupported.
 
 ## Build and install
 

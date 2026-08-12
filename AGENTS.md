@@ -322,8 +322,19 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
 - `scripts/external_runtime_smoke.py`: pure production-style dedicated-server
   plan for the official installer, exact mods inventory, safe-small config,
   launch, markers, and clean-stop contract. It performs no I/O or execution.
+- `scripts/external_runtime_executor.py`: isolated external-server executor for
+  exact pinned downloads, official installer runs, exact mod copies, port and
+  marker checks, interactive clean stop, and immutable local results. It is
+  not yet a complete qualification verdict or release publisher.
 - `scripts/minecraft_qualification_ranges.py`: strict pure parser for the
   reviewed qualification-only Fabric and NeoForge 26.1.x metadata ranges.
+- `scripts/minecraft_frozen_candidate.py`: strict oldest-ABI candidate and
+  same-file hash inspection. Passing it is declaration/identity evidence, not
+  runtime support.
+- `scripts/minecraft_qualification_evidence.py`: fail-closed terminal evidence
+  schema. A cell cannot claim `PASS` without provenance, command and log
+  hashes, installer/runtime inventory, frozen candidate identity, ordered
+  runtime markers, clean exit, and same-file group evidence.
 - `docs/DIMENSION_SCALING_PLAN.md`: authoritative audit and staged plan for
   removing test-world assumptions from custom dimensions.
 - `docs/ATLAS_PREGENERATION_PLAN.md`: planned **Generate Entire Ring** UI and

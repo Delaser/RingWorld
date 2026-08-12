@@ -326,6 +326,23 @@ models official installers, exact mod inventories, safe-small files, launches,
 and terminal markers for all six cells. Wiring/downloads and real external
 server installation remain deliberately incomplete.
 
+The serial runner now executes only its reviewed build/unit adapter by
+default. Before process work it requires a clean source tree including no
+untracked source files, a full HEAD equal to its upstream, the reviewed public
+origin, Java 25, and hashes of the manifest and Gradle wrapper. Each cell gets
+its own `GRADLE_USER_HOME`, `--no-daemon`, held OS lock, fresh output root, and
+immutable report. Missing artifact, contract, or runtime adapters remain
+`INCOMPLETE`.
+
+The separately tested external runtime executor now implements the planned
+pinned download, official installer, exact mod inventory, loopback port,
+marker, fatal-output, interactive stop, and clean-exit controls. A strict pure
+terminal schema defines the additional provenance, installed-runtime
+inventory, log hashes, candidate identity, ordered markers, and same-file
+group evidence required for `PASS`. The next integration step is to connect
+these contracts and verify the installer-produced runtime against manifest
+pins; until then no real quick cell is qualified.
+
 Qualification-only Fabric and NeoForge candidates have also completed a real
 Java 25 build from the 26.1 ABI using reviewed closed 26.1–26.1.2 metadata.
 Normal resource generation remains exact to the existing 26.1.2 release. Pure

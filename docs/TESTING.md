@@ -74,9 +74,12 @@ The current Phase 2/3 foundations are checked with:
 python3 scripts/test_qualification_gradle_isolation.py
 python3 scripts/test_qualification_metadata_ranges.py
 python3 scripts/test_minecraft_qualification_ranges.py
+python3 scripts/test_minecraft_frozen_candidate.py
+python3 scripts/test_minecraft_qualification_evidence.py
 python3 scripts/test_run_minecraft_qualification.py
 python3 scripts/test_minecraft_qualification_executor.py
 python3 scripts/test_external_runtime_smoke.py
+python3 scripts/test_external_runtime_executor.py
 python3 scripts/run_minecraft_qualification.py \
   --tier quick --cell 26.1-fabric --dry-run
 ```
@@ -84,6 +87,12 @@ python3 scripts/run_minecraft_qualification.py \
 The executor and external-runtime planner checks cover only their isolated
 primitives and plan contracts. The CLI still cannot execute them, so this
 green command set is not runtime evidence.
+
+A non-dry runner requires a completely clean, pushed checkout and Java 25.
+It currently executes the isolated source build/unit adapter, writes terminal
+local reports, and returns `INCOMPLETE` because artifact, shared-contract, and
+external-runtime adapters are not yet installed. Do not use that partial run
+as compatibility evidence.
 
 The dry run must exit nonzero with `INCOMPLETE` and
 `DRY_RUN_NO_EXECUTION`; it is planning output, not evidence. A non-dry run is

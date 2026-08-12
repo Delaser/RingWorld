@@ -58,6 +58,30 @@ class PhaseName(str, Enum):
 PHASES: tuple[PhaseName, ...] = tuple(PhaseName)
 
 
+@dataclass(frozen=True)
+class EvidenceReference:
+    """A reviewed fact that justifies a phase verdict.
+
+    A reference may point to an immutable file created by the executor or to a
+    deterministic input selected during write-free planning.  It is kept
+    deliberately small so that future runtime adapters cannot smuggle an
+    unstructured success through the report model.
+    """
+
+    kind: str
+    location: str
+    detail: str
+
+
+def _require_phase_evidence(
+    verdict: "Verdict", evidence: Sequence[EvidenceReference],
+) -> tuple[EvidenceReference, ...]:
+    result = tuple(evidence)
+    if verdict is Verdict.PASS and not result:
+        raise InvocationError("a PASS qualification phase must carry evidence")
+    return result
+
+
 class InvocationError(ValueError):
     """A command invocation is unsafe, invalid, or cannot select any cells."""
 
@@ -158,6 +182,10 @@ class PhaseResult:
     verdict: Verdict
     reason: str | None = None
     commands: tuple[CommandRecord, ...] = ()
+    evidence: tuple[EvidenceReference, ...] = ()
+
+    def __post_init__(self) -> None:
+        _require_phase_evidence(self.verdict, self.evidence)
 
 
 @dataclass(frozen=True)
@@ -425,9 +453,10 @@ def planned_commands(cell: Mapping[str, Any], paths: QualificationPaths) -> tupl
         raise InvocationError(f"cell {cell.get('id', '<unknown>')} has an invalid timeout")
     properties = gradle_properties(cell, paths)
     property_args = tuple(f"-P{name}={value}" for name, value in properties)
-    # Cache and run-directory ownership has not been implemented yet.  Do not
-    # claim that merely planning a command configures those future paths.
-    environment: tuple[tuple[str, str], ...] = ()
+    # Gradle is the one tool that may retain downloaded/build state across
+    # invocations, so each cell receives an explicit disposable home. Other
+    # runtime/cache paths remain owned by later phase adapters.
+    environment = (("GRADLE_USER_HOME", str(paths.gradle_home)),)
     if loader == "fabric":
         build_tasks = (":test", ":build")
         smoke_task = ":runQualificationSmokeServer"
@@ -438,8 +467,8 @@ def planned_commands(cell: Mapping[str, Any], paths: QualificationPaths) -> tupl
         raise InvocationError(f"unsupported loader {loader!r}")
     executable = str(paths.repository_root / "gradlew")
     return (
-        CommandRecord(PhaseName.BUILD_AND_UNIT, (executable, "--console=plain", *property_args, *build_tasks), paths.repository_root, environment, timeout),
-        CommandRecord(PhaseName.DEDICATED_SMOKE, (executable, "--console=plain", *property_args, smoke_task), paths.repository_root, environment, timeout),
+        CommandRecord(PhaseName.BUILD_AND_UNIT, (executable, "--console=plain", "--no-daemon", *property_args, *build_tasks), paths.repository_root, environment, timeout),
+        CommandRecord(PhaseName.DEDICATED_SMOKE, (executable, "--console=plain", "--no-daemon", *property_args, smoke_task), paths.repository_root, environment, timeout),
     )
 
 
@@ -459,8 +488,18 @@ def plan_cell(cell: Mapping[str, Any], repository_root: Path, run_id: str, *, dr
     reason = DRY_RUN_NO_EXECUTION if dry_run else QUALIFICATION_EXECUTION_NOT_IMPLEMENTED
     phases: list[PhaseResult] = []
     for phase in PHASES:
-        if phase in {PhaseName.MANIFEST_VALIDATION, PhaseName.INPUT_PLAN}:
-            phases.append(PhaseResult(phase, Verdict.PASS))
+        if phase is PhaseName.MANIFEST_VALIDATION:
+            phases.append(PhaseResult(
+                phase,
+                Verdict.PASS,
+                evidence=(EvidenceReference("manifest-cell", str(cell["id"]), "manifest validated before planning"),),
+            ))
+        elif phase is PhaseName.INPUT_PLAN:
+            phases.append(PhaseResult(
+                phase,
+                Verdict.PASS,
+                evidence=(EvidenceReference("input-plan", str(paths.cell_root), "pinned inputs and isolated paths selected"),),
+            ))
         else:
             command = command_by_phase.get(phase)
             phases.append(PhaseResult(phase, Verdict.INCOMPLETE, reason, (command,) if command else ()))
@@ -493,6 +532,11 @@ def _json_value(value: Any) -> Any:
 
 
 def report_dict(report: MatrixReport) -> dict[str, Any]:
+    return _json_value(asdict(report))
+
+
+def cell_report_dict(report: CellReport) -> dict[str, Any]:
+    """Convert one cell report to JSON-safe immutable-evidence data."""
     return _json_value(asdict(report))
 
 

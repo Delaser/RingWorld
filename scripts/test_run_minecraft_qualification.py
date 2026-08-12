@@ -11,6 +11,7 @@ from pathlib import Path
 from contextlib import redirect_stderr, redirect_stdout
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -30,6 +31,10 @@ def load(name: str, path: Path):
 
 MODEL = load("minecraft_qualification_model", MODEL_PATH)
 VALIDATOR = load("validate_minecraft_version_matrix", ROOT / "scripts" / "validate_minecraft_version_matrix.py")
+# The runner imports executor primitives; register the local module explicitly
+# so this test remains independent of how unittest discovers ``scripts/``.
+LICENSE = load("verify_distribution_license", ROOT / "scripts" / "verify_distribution_license.py")
+EXECUTOR = load("minecraft_qualification_executor", ROOT / "scripts" / "minecraft_qualification_executor.py")
 RUNNER = load("run_minecraft_qualification", RUNNER_PATH)
 
 
@@ -132,7 +137,8 @@ class MinecraftQualificationModelTest(unittest.TestCase):
                 self.assertEqual(expected_names, set(values), cell["id"])
                 self.assertTrue(all(len(value) == 1 for value in values.values()), cell["id"])
                 self.assertEqual(expected_versions, {name: value[0] for name, value in values.items()}, cell["id"])
-                self.assertEqual((), command.environment, cell["id"])
+                self.assertEqual((("GRADLE_USER_HOME", str(paths.gradle_home)),), command.environment, cell["id"])
+                self.assertIn("--no-daemon", command.argv, cell["id"])
                 self.assertFalse(any(fragment in argument for argument in command.argv for fragment in prohibited_fragments))
                 if cell["minecraft"]["version"] != "26.1.2":
                     self.assertNotIn("26.1.2", "\0".join(command.argv), cell["id"])
@@ -175,6 +181,10 @@ class MinecraftQualificationModelTest(unittest.TestCase):
         with self.assertRaises(Exception):
             paths.run_id = "changed"  # type: ignore[misc]
 
+    def test_pass_phase_without_evidence_is_rejected(self) -> None:
+        with self.assertRaises(MODEL.InvocationError):
+            MODEL.PhaseResult(MODEL.PhaseName.BUILD_AND_UNIT, MODEL.Verdict.PASS)
+
 
 class MinecraftQualificationCliTest(unittest.TestCase):
     def call(self, argv: list[str]) -> tuple[int, str, str]:
@@ -190,16 +200,117 @@ class MinecraftQualificationCliTest(unittest.TestCase):
         self.assertIn("DRY_RUN_NO_EXECUTION", stdout)
         self.assertIn('"format": 1', stdout)
 
-    def test_real_run_stops_before_gradle_with_execution_not_implemented_reason(self) -> None:
-        code, stdout, stderr = self.call(["--tier", "quick", "--cell", "26.1-fabric"])
+    def test_real_run_delegates_to_execution_state_machine_without_running_gradle_in_this_test(self) -> None:
+        fake = MODEL.plan_matrix((self.manifest_cell(),), ROOT, "dry-run", dry_run=True)
+        with patch.object(RUNNER, "execute_quick_matrix", return_value=fake) as execute:
+            code, stdout, stderr = self.call(["--tier", "quick", "--cell", "26.1-fabric"])
         self.assertEqual(1, code)
         self.assertEqual("", stderr)
-        self.assertIn("QUALIFICATION_EXECUTION_NOT_IMPLEMENTED", stdout)
+        self.assertIn("DRY_RUN_NO_EXECUTION", stdout)
+        execute.assert_called_once()
+
+    def manifest_cell(self):
+        manifest = json.loads((ROOT / "config/minecraft-version-matrix.json").read_text(encoding="utf-8"))
+        return manifest["cells"][0]
 
     def test_invocation_errors_are_exit_two(self) -> None:
         code, _, stderr = self.call(["--tier", "quick", "--all", "--all-supported", "--dry-run"])
         self.assertEqual(2, code)
         self.assertIn("select exactly one", stderr)
+
+    def test_jobs_and_resume_fail_closed_before_execution(self) -> None:
+        code, _, stderr = self.call(["--tier", "quick", "--cell", "26.1-fabric", "--jobs", "2"])
+        self.assertEqual(2, code)
+        self.assertIn("exactly 1", stderr)
+        code, _, stderr = self.call(["--tier", "quick", "--cell", "26.1-fabric", "--resume"])
+        self.assertEqual(2, code)
+        self.assertIn("not implemented", stderr)
+
+    def test_untracked_source_file_blocks_provenance_before_any_execution(self) -> None:
+        with patch.object(RUNNER, "_checked_text", return_value="?? scripts/local-untracked.py\n") as checked:
+            with self.assertRaises(EXECUTOR.QualificationExecutionError):
+                RUNNER.collect_source_provenance(ROOT, ROOT / "config/minecraft-version-matrix.json")
+        self.assertEqual(("git", "status", "--porcelain", "--untracked-files=all"), checked.call_args.args[0])
+
+
+class MinecraftQualificationExecutionTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.cell = json.loads((ROOT / "config/minecraft-version-matrix.json").read_text(encoding="utf-8"))["cells"][0]
+        self.run_id = "20260812T120000Z-0123456789ab"
+
+    @staticmethod
+    def provenance(root: Path, manifest: Path):
+        return RUNNER.SourceProvenance(
+            commit="a" * 40,
+            branch="codex/test",
+            upstream="a" * 40,
+            origin="https://github.com/Delaser/RingWorld.git",
+            manifest_sha256="b" * 64,
+            gradle_wrapper_sha256="c" * 64,
+            java_version='openjdk version "25.0.1"',
+        )
+
+    @staticmethod
+    def passing_adapter(context):
+        return MODEL.PhaseResult(
+            context.phase,
+            MODEL.Verdict.PASS,
+            commands=(context.command,) if context.command else (),
+            evidence=(MODEL.EvidenceReference("fake", context.phase.value, "injected test evidence"),),
+        )
+
+    def test_injected_adapters_write_immutable_cell_and_matrix_evidence_without_gradle(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            report = RUNNER.execute_quick_matrix(
+                (self.cell,), root,
+                run_id_factory=lambda: self.run_id,
+                phase_adapters={phase: self.passing_adapter for phase in MODEL.PhaseName if phase not in {MODEL.PhaseName.MANIFEST_VALIDATION, MODEL.PhaseName.INPUT_PLAN}},
+                provenance_provider=self.provenance,
+            )
+            self.assertEqual(MODEL.Verdict.PASS, report.verdict)
+            cell = report.cells[0]
+            self.assertTrue((cell.paths.evidence_directory / "cell-report.json").is_file())
+            self.assertTrue((root / "dist" / "qualification" / "matrix" / self.run_id / "matrix-report.json").is_file())
+            self.assertTrue(all(phase.evidence for phase in cell.phases if phase.verdict is MODEL.Verdict.PASS))
+            self.assertIn(("GRADLE_USER_HOME", str(cell.paths.gradle_home)), next(phase for phase in cell.phases if phase.phase is MODEL.PhaseName.BUILD_AND_UNIT).commands[0].environment)
+
+    def test_missing_adapter_is_incomplete_and_cannot_be_reported_as_pass(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            report = RUNNER.execute_quick_matrix(
+                (self.cell,), Path(temporary), run_id_factory=lambda: self.run_id,
+                phase_adapters={MODEL.PhaseName.BUILD_AND_UNIT: self.passing_adapter},
+                provenance_provider=self.provenance,
+            )
+            self.assertEqual(MODEL.Verdict.INCOMPLETE, report.verdict)
+            self.assertIn(RUNNER.NO_PHASE_ADAPTER, {phase.reason for phase in report.cells[0].phases})
+
+    def test_fail_fast_still_leaves_a_terminal_report_for_later_selected_cells(self) -> None:
+        def fail_build(context):
+            if context.phase is MODEL.PhaseName.BUILD_AND_UNIT:
+                return MODEL.PhaseResult(
+                    context.phase, MODEL.Verdict.FAIL, "FAKE_FAILURE",
+                    commands=(context.command,),
+                    evidence=(MODEL.EvidenceReference("fake", "build", "intentional failure"),),
+                )
+            return self.passing_adapter(context)
+
+        second = copy.deepcopy(self.cell)
+        second["id"] = "26.1-fabric-second"
+        second["profile"]["evidence_directory"] = "dist/qualification/ringworld/26.1/fabric-second"
+        second["profile"]["server_port"] = 26501
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            report = RUNNER.execute_quick_matrix(
+                (self.cell, second), root, run_id_factory=lambda: self.run_id,
+                phase_adapters={phase: fail_build for phase in MODEL.PhaseName if phase not in {MODEL.PhaseName.MANIFEST_VALIDATION, MODEL.PhaseName.INPUT_PLAN}},
+                provenance_provider=self.provenance,
+            )
+            self.assertEqual(MODEL.Verdict.FAIL, report.verdict)
+            self.assertEqual(RUNNER.CELL_ABORTED_AFTER_FAILURE, next(
+                phase.reason for phase in report.cells[1].phases if phase.phase is MODEL.PhaseName.BUILD_AND_UNIT
+            ))
+            self.assertTrue((report.cells[1].paths.evidence_directory / "cell-report.json").is_file())
 
 
 if __name__ == "__main__":
