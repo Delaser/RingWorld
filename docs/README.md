@@ -25,6 +25,10 @@ Start here:
 - [`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md): gated
   Minecraft 26.1.2 port plan, primary/secondary agent ownership, integration
   order, validation gates, and deployment criteria.
+- [`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md):
+  approved Minecraft 26.1 compatibility floor, initial patch matrix, rolling
+  stable-version intake, automation tiers, evidence contract, and complete
+  Modrinth/CurseForge delivery plan.
 - [`DUAL_LOADER_STANDALONE_PLAN.md`](DUAL_LOADER_STANDALONE_PLAN.md): approved
   NeoForge-first implementation, standalone gameplay/visual polish, release,
   and deferred third-party compatibility sequence.

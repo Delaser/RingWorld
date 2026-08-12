@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 334
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 337
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -33,6 +33,23 @@ The NeoForge build uses the same Java 25 toolchain:
 Both projects expose `runServer`. Launch the intended dedicated server with
 `./gradlew :runServer` (Fabric) or `./gradlew :neoforge:runServer` (NeoForge),
 not an unqualified `runServer` task.
+
+## Rolling Minecraft version qualification
+
+Minecraft 26.1 is the development compatibility floor, but the current tasks
+and published artifacts remain proven for 26.1.2 only. Minecraft 26.1 and
+26.1.1 become supported only after the same exact loader-specific jar passes
+their build, server, world, Atlas, multiplayer, rendering, lifecycle, and
+packaging cells. Later stable Minecraft versions follow the same intake and
+must not inherit a support claim from compilation or launch alone.
+
+The approved manifest, quick/nightly/release tiers, isolated-fixture rules,
+same-hash requirement, forward-only world-copy policy, and planned
+orchestrator interface are specified in
+[`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
+That orchestrator is not implemented yet; do not document its intended command
+as current evidence or broaden loader metadata before its initial six-cell
+matrix passes.
 
 Fresh Fabric and NeoForge dedicated-server launches reach `Done`; the NeoForge
 launch also starts and progresses atlas generation. The NeoForge client now

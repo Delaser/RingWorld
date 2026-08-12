@@ -123,10 +123,12 @@ agent uses a separate account and must monitor its own allowance.
 
 ## What this project is
 
-RingWorld is a dual-loader mod ported from Minecraft Java 1.21.11 to 26.1.2.
-Fabric and NeoForge are published as matched 1.0 builds. Runtime, packaging,
-owner, and independent release gates are complete; broad compatibility work
-remains.
+RingWorld is a dual-loader mod ported from Minecraft Java 1.21.11. Minecraft
+26.1 is the development compatibility floor, while 26.1.2 remains the only
+currently proven and published release. Fabric and NeoForge are published as
+matched 1.0 builds for 26.1.2. Runtime, packaging, owner, and independent
+release gates are complete; broad compatibility and the rolling-version
+qualification automation remain.
 The validated design turns only the Overworld into a finite band:
 
 - canonical X runs around the circumference and is periodic;
@@ -171,6 +173,23 @@ retroactively revokes rights previously granted to a recipient. Likewise,
 copies distributed under the former RingWorld Evaluation License retain the
 terms attached to those copies; MPL-2.0 applies to repository versions released
 under it.
+
+## Minecraft version support policy
+
+Minecraft 26.1 is the source/build compatibility floor. This is not permission
+to advertise the current jar for 26.1 or 26.1.1: 26.1.2 remains the exact
+verified and published runtime until the six-cell Fabric/NeoForge 26.1.x
+matrix passes. A 26.1.x-wide release must use the exact same jar hash for every
+tested patch release on a loader.
+
+Every later stable Minecraft release enters the automated qualification
+pipeline described in
+[`docs/MINECRAFT_VERSION_SUPPORT_PLAN.md`](docs/MINECRAFT_VERSION_SUPPORT_PLAN.md).
+Treat each new stable line as a porting project, pin every dependency, audit
+all mixin and shader ABI, use disposable worlds, and require the appropriate
+quick, nightly, and release gates before changing support metadata. Snapshots,
+pre-releases, and release candidates are unsupported unless explicitly marked
+experimental. Never rewrite historical 26.1.2 evidence as broader evidence.
 
 ## Loader support policy
 
@@ -296,6 +315,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   resource comparison and the decision to retain fixed eight-block sampling.
 - `docs/MINECRAFT_26_1_PORT_PLAN.md`: authoritative Minecraft 26.1.2 port,
   agent ownership, integration, validation, and deployment plan.
+- `docs/MINECRAFT_VERSION_SUPPORT_PLAN.md`: approved Minecraft 26.1 floor,
+  26.1.x qualification matrix, rolling stable-version automation, release
+  staging, and Modrinth/CurseForge publication plan.
 - `docs/MINECRAFT_1_21_11_FINAL_BASELINE.md`: immutable pre-port validation,
   hashes, performance evidence, and protected rollback inventory.
 - `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`: historical Java 25/26.1.2
@@ -423,8 +445,9 @@ altered test commands, known limitations, and rejected or superseded designs.
 9. Update the appropriate file under `docs/` in the same change.
 
 Mixin method descriptors on the active branch target unobfuscated Minecraft
-26.1.2. A Minecraft, mappings, Loader, Loom, or Fabric API upgrade is a porting
-project: audit every injection target and shader ABI rather than only changing
+26.1.2. A Minecraft, mappings, Loader, Loom, ModDevGradle, or API upgrade is a
+porting project: follow the version-support intake, audit every injection
+target and shader ABI, and run the required matrix rather than only changing
 version numbers.
 
 ## Current implementation cautions

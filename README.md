@@ -18,8 +18,9 @@ destination beyond either finite rim is moved to the nearest portal-safe
 interior latitude before portal lookup or creation, so long Nether journeys do
 not create an exterior Overworld portal or strand the player in void.
 
-> **Port status:** the active development branch targets Minecraft Java
-> 26.1.2. The common and client source sets now compile together on Java 25,
+> **Port status:** Minecraft 26.1 is now the development compatibility floor,
+> while Minecraft 26.1.2 remains the only currently proven and published
+> release. The common and client source sets compile together on Java 25,
 > and the current suite passes 337 unit/parameterized cases per loader.
 > Fresh-world and copied-1.21.11 dedicated-server launch gates also pass,
 > including dimension-owned saved-data migration. A safe-small integrated
@@ -74,6 +75,12 @@ The dual-loader alpha evidence is recorded in the
 Owner gameplay, visual, Windows, and final-review gates are complete. The
 exact 1.0 source is tagged `v1.0.0+mc26.1.2` at commit `f3a5ce1`; issue #97
 records the completed hosted publication and demo migration.
+
+The [Minecraft version support plan](docs/MINECRAFT_VERSION_SUPPORT_PLAN.md)
+defines the rolling policy. Minecraft 26.1 and 26.1.1 are qualification
+targets, not current public compatibility claims. Each later stable Minecraft
+release will enter the same automated dual-loader matrix and will be
+advertised only after it passes.
 
 > **Loader direction:** shared Minecraft code now has separate Fabric and
 > NeoForge platform adapters. The NeoForge 26.1.2.87 / ModDevGradle 2.0.143
@@ -260,7 +267,8 @@ handoff behavior.
 
 | Component | Version |
 | --- | --- |
-| Minecraft Java | 26.1.2 port target |
+| Development compatibility floor | Minecraft Java 26.1 |
+| Current verified and published runtime | Minecraft Java 26.1.2 |
 | Java | 25 |
 | Fabric Loader | 0.19.3 |
 | Fabric API | 0.155.2+26.1.2 |
@@ -270,6 +278,11 @@ handoff behavior.
 
 The server performs a required geometry/protocol handshake and rejects missing
 or incompatible clients.
+
+The current jars still target Minecraft 26.1.2 exactly. A future 26.1.x-wide
+claim requires the same Fabric and NeoForge artifact hashes to pass the full
+26.1, 26.1.1, and 26.1.2 qualification matrix; see the
+[version support plan](docs/MINECRAFT_VERSION_SUPPORT_PLAN.md).
 
 ## Build and install
 

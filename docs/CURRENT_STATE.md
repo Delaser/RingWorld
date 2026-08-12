@@ -9,6 +9,15 @@ The Minecraft 26.1.2 port is integrated on `main`; see
 [`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md) and the
 [`final baseline`](MINECRAFT_1_21_11_FINAL_BASELINE.md).
 
+Minecraft 26.1 is now the approved development compatibility floor. The
+current verified and published files still target 26.1.2 exactly; neither
+26.1 nor 26.1.1 is a public compatibility claim until the complete dual-loader
+qualification matrix passes. The rolling stable-release policy, automation
+tiers, evidence contract, and intake order are defined in
+[`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
+Existing 26.1.2 release evidence remains exact historical evidence and is not
+silently generalized to the rest of the patch line.
+
 Owner Windows, gameplay, visual, and final-review gates #12, #13, #95, and
 #96 are complete. The active release metadata targets shared runtime version
 `1.0.0+mc26.1.2`, with loader-specific public identifiers
