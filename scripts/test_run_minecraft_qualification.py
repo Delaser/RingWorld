@@ -7,6 +7,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 from pathlib import Path
 from contextlib import redirect_stderr, redirect_stdout
 import tempfile
@@ -38,6 +39,30 @@ VALIDATOR = load("validate_minecraft_version_matrix", ROOT / "scripts" / "valida
 LICENSE = load("verify_distribution_license", ROOT / "scripts" / "verify_distribution_license.py")
 EXECUTOR = load("minecraft_qualification_executor", ROOT / "scripts" / "minecraft_qualification_executor.py")
 RUNNER = load("run_minecraft_qualification", RUNNER_PATH)
+
+
+def write_wrapper_seed_fixture(root: Path, payload: bytes = b"pinned wrapper zip") -> tuple[Path, Path]:
+    """Create a disposable checked-in-wrapper analogue plus external ZIP seed."""
+    repository = root / "repository"
+    properties = repository / "gradle" / "wrapper" / "gradle-wrapper.properties"
+    properties.parent.mkdir(parents=True)
+    source = root / "worker" / "gradle-9.5.1-bin.zip"
+    source.parent.mkdir(parents=True)
+    source.write_bytes(payload)
+    properties.write_text("\n".join((
+        "distributionBase=GRADLE_USER_HOME",
+        "distributionPath=wrapper/dists",
+        "distributionUrl=https\\://services.gradle.org/distributions/gradle-9.5.1-bin.zip",
+        f"distributionSha256Sum={hashlib.sha256(payload).hexdigest()}",
+        "networkTimeout=10000",
+        "retries=3",
+        "retryBackOffMs=500",
+        "validateDistributionUrl=true",
+        "zipStoreBase=GRADLE_USER_HOME",
+        "zipStorePath=wrapper/dists",
+        "",
+    )), encoding="ISO-8859-1")
+    return repository, source
 
 
 class MinecraftQualificationModelTest(unittest.TestCase):
@@ -164,6 +189,20 @@ class MinecraftQualificationModelTest(unittest.TestCase):
             seen_loaders.add(cell["loader"])
         self.assertEqual({"fabric", "neoforge"}, seen_loaders)
 
+    def test_optional_wrapper_distribution_seed_is_reported_without_altering_gradle_commands(self) -> None:
+        seed = Path("/worker/gradle-9.5.1-bin.zip")
+        for cell in self.manifest["cells"]:
+            paths = MODEL.QualificationPaths.from_cell(ROOT, cell, "run")
+            report = MODEL.plan_cell(
+                cell, ROOT, "run", dry_run=True, gradle_distribution_zip=seed,
+            )
+            command = MODEL.planned_commands(cell, paths)[0]
+            self.assertEqual(("GRADLE_USER_HOME", str(paths.gradle_home)), command.environment[0])
+            self.assertNotIn("--offline", command.argv)
+            input_phase = next(phase for phase in report.phases if phase.phase is MODEL.PhaseName.INPUT_PLAN)
+            evidence = [item for item in input_phase.evidence if item.kind == "gradle-wrapper-distribution-zip"]
+            self.assertEqual([str(seed)], [item.location for item in evidence])
+
     def test_required_dependency_properties_fail_closed_for_missing_or_duplicate_coordinates(self) -> None:
         missing = copy.deepcopy(self.cell)
         missing["dependencies"] = [
@@ -281,6 +320,102 @@ class MinecraftQualificationCliTest(unittest.TestCase):
             with self.assertRaises(EXECUTOR.QualificationExecutionError):
                 RUNNER.collect_source_provenance(ROOT, ROOT / "config/minecraft-version-matrix.json")
         self.assertEqual(("git", "status", "--porcelain", "--untracked-files=all"), checked.call_args.args[0])
+
+
+class GradleDistributionSeedTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.manifest = json.loads((ROOT / "config/minecraft-version-matrix.json").read_text(encoding="utf-8"))
+        self.run_id = "20260812T120000Z-0123456789ab"
+
+    def test_seed_requires_the_pinned_external_file_and_stages_exact_wrapper_target_for_both_loaders(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            repository, source = write_wrapper_seed_fixture(root)
+            seed = RUNNER.validate_gradle_distribution_zip(source, repository)
+            self.assertIsNotNone(seed)
+            assert seed is not None
+            self.assertEqual("iq79hdu3mqx29lgffhp8bfmx", seed.url_hash)
+            self.assertEqual("gradle-9.5.1-bin.zip", seed.archive_name)
+            for loader in ("fabric", "neoforge"):
+                cell = next(item for item in self.manifest["cells"] if item["loader"] == loader)
+                paths = MODEL.QualificationPaths.from_cell(repository, cell, self.run_id)
+                EXECUTOR.create_contained_directories(paths)
+                destination = RUNNER.stage_gradle_distribution_zip(source, repository, paths)
+                self.assertEqual(
+                    paths.gradle_home / "wrapper" / "dists" / "gradle-9.5.1-bin"
+                    / "iq79hdu3mqx29lgffhp8bfmx" / "gradle-9.5.1-bin.zip",
+                    destination,
+                )
+                self.assertEqual(source.read_bytes(), destination.read_bytes())
+                self.assertFalse((destination.parent / "gradle-9.5.1-bin.zip.ok").exists())
+
+    def test_seed_rejects_relative_repository_home_symlink_and_checksum_mismatch(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            repository, source = write_wrapper_seed_fixture(root)
+            with self.assertRaises(MODEL.InvocationError):
+                RUNNER.validate_gradle_distribution_zip(Path("relative.zip"), repository)
+            with self.assertRaises(MODEL.InvocationError):
+                RUNNER.validate_gradle_distribution_zip(repository / "gradle/wrapper/gradle-wrapper.properties", repository)
+            source.write_bytes(b"wrong bytes")
+            with self.assertRaises(MODEL.InvocationError):
+                RUNNER.validate_gradle_distribution_zip(source, repository)
+            source.write_bytes(b"pinned wrapper zip")
+            if os.name == "nt":
+                return
+            link = root / "worker" / "seed-link.zip"
+            link.symlink_to(source)
+            with self.assertRaises(MODEL.InvocationError):
+                RUNNER.validate_gradle_distribution_zip(link, repository)
+            linked_parent = root / "linked-worker"
+            linked_parent.symlink_to(source.parent, target_is_directory=True)
+            with self.assertRaises(MODEL.InvocationError):
+                RUNNER.validate_gradle_distribution_zip(linked_parent / source.name, repository)
+
+    def test_seed_is_rechecked_before_diagnostic_and_frozen_gradle_launches(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            repository, source = write_wrapper_seed_fixture(root)
+            fabric = next(item for item in self.manifest["cells"] if item["id"] == "26.1-fabric")
+            paths = MODEL.QualificationPaths.from_cell(repository, fabric, self.run_id)
+            command = MODEL.planned_commands(fabric, paths)[0]
+
+            def fake_diagnostic(command, received_paths, *, ordinal):
+                destination = received_paths.gradle_home / "wrapper/dists/gradle-9.5.1-bin/iq79hdu3mqx29lgffhp8bfmx/gradle-9.5.1-bin.zip"
+                self.assertTrue(destination.is_file())
+                self.assertEqual(source.read_bytes(), destination.read_bytes())
+                return SimpleNamespace(
+                    verdict=MODEL.Verdict.PASS, stdout_log="diagnostic.stdout", stderr_log="diagnostic.stderr",
+                    return_code=0, reason=None,
+                )
+
+            context = RUNNER.PhaseAdapterContext(
+                fabric, paths, MODEL.PhaseName.BUILD_AND_UNIT, command, 1,
+                gradle_distribution_zip=source,
+            )
+            with patch.object(RUNNER, "execute_command", side_effect=fake_diagnostic):
+                result = RUNNER.build_and_unit_adapter(context)
+            self.assertIs(MODEL.Verdict.PASS, result.verdict)
+
+            calls = []
+
+            def fake_frozen(command, received_paths, *, ordinal):
+                destination = received_paths.gradle_home / "wrapper/dists/gradle-9.5.1-bin/iq79hdu3mqx29lgffhp8bfmx/gradle-9.5.1-bin.zip"
+                self.assertTrue(destination.is_file())
+                loader = "neoforge" if ":neoforge:test" in command.argv else "fabric"
+                MinecraftQualificationExecutionTest.write_frozen_candidate(self, received_paths.build_directory, loader)
+                calls.append(loader)
+                return SimpleNamespace(
+                    verdict=MODEL.Verdict.PASS, stdout_log="frozen.stdout", stderr_log="frozen.stderr", reason=None,
+                )
+
+            triplet = tuple(item for item in self.manifest["cells"] if item["loader"] in {"fabric", "neoforge"})
+            with patch.object(RUNNER, "execute_command", side_effect=fake_frozen):
+                prepared = RUNNER.prepare_frozen_candidates(
+                    triplet, repository, "20260812T120001Z-0123456789ab", gradle_distribution_zip=source,
+                )
+            self.assertEqual(["fabric", "neoforge"], calls)
+            self.assertTrue(all(item.verdict is MODEL.Verdict.PASS for item in prepared.values()))
 
 
 class MinecraftQualificationExecutionTest(unittest.TestCase):

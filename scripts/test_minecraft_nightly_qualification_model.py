@@ -58,7 +58,7 @@ class NightlyQualificationModelTest(unittest.TestCase):
             self.assertEqual("26.1-fabric", plan.cell_id)
             self.assertEqual(11, len(plan.fixture_plans))
             self.assertEqual(tuple(range(1, 12)), tuple(item.ordinal for item in plan.fixture_plans))
-            self.assertEqual(NightlyFixture.CREATION_RELOAD, plan.fixture_plans[0].fixture)
+            self.assertEqual(NightlyFixture.CREATION_SETTINGS_UI, plan.fixture_plans[0].fixture)
             self.assertEqual(NightlyFixture.PRODUCTION_ATLAS_RENDER, plan.fixture_plans[-1].fixture)
             self.assertEqual(NIGHTLY_SAFE_SMALL_TIMEOUT_SECONDS, plan.fixture_plans[0].timeout_seconds)
             self.assertEqual(NIGHTLY_PRODUCTION_TIMEOUT_SECONDS, plan.fixture_plans[-1].timeout_seconds)
@@ -69,12 +69,18 @@ class NightlyQualificationModelTest(unittest.TestCase):
                 self.assertEqual(len(fixture.required_markers), len(set(fixture.required_markers)))
                 self.assertTrue(str(fixture.runtime_root).startswith(str(paths.cell_root)))
                 self.assertTrue(str(fixture.world_root).startswith(str(paths.cell_root)))
+                self.assertEqual(fixture.runtime_root / "world", fixture.world_root)
                 self.assertTrue(str(fixture.evidence_json).startswith(str(paths.cell_root)))
                 self.assertEqual(fixture.evidence_json, fixture.required_outputs[0])
                 self.assertEqual(fixture.evidence_markdown, fixture.required_outputs[1])
             self.assertEqual(
                 ("frozen-candidate", "quick-terminal-evidence", "production-world"),
                 plan.fixture_plans[-1].input_roles,
+            )
+            lifecycle = next(item for item in plan.fixture_plans if item.fixture is NightlyFixture.LIFECYCLE_PORTALS)
+            self.assertEqual(
+                ("frozen-candidate", "quick-terminal-evidence", "production-world"),
+                lifecycle.input_roles,
             )
 
     def test_missing_production_world_fails_closed_before_any_runtime_plan(self) -> None:

@@ -87,6 +87,12 @@ python3 scripts/run_minecraft_qualification.py \
   --tier quick --cell 26.1-fabric --dry-run
 ```
 
+The pure nightly model does not execute a fixture. It plans each server world
+at `<fixture-runtime>/world`; lifecycle/portal and production-render entries
+both require an immutable production-world input. Its creation entry covers
+the existing settings UI only. Atlas prewarm recovery is the sole planned
+same-fixture restart.
+
 Both the frozen-candidate build and each diagnostic cell use
 `--max-workers=1`. This keeps dependency resolution serial on constrained
 hosts while retaining isolated Gradle homes, outputs, and evidence.
@@ -99,7 +105,8 @@ pure planning check may include it explicitly:
 ```sh
 python3 scripts/run_minecraft_qualification.py \
   --tier quick --cell 26.1-fabric --dry-run \
-  --gradle-dependency-cache /absolute/worker-provisioned-gradle-cache
+  --gradle-dependency-cache /absolute/worker-provisioned-gradle-cache \
+  --gradle-distribution-zip /absolute/external/gradle-9.5.1-bin.zip
 ```
 
 The directory must already exist, be non-symlinked (including its path
@@ -112,6 +119,15 @@ non-authoritative acceleration. Provision the directory from a compatible
 Gradle `caches/modules-2` tree, excluding `*.lock` and `gc.properties`, and do
 not mutate it while qualification reads it. The runner revalidates its path at
 each Gradle command boundary; cache bytes are never support evidence.
+
+The optional wrapper ZIP must be the exact non-symlinked external file named
+by `gradle-wrapper.properties`, outside the checkout, qualification state, and
+operator home. The runner rehashes it against `distributionSha256Sum` before
+each frozen or diagnostic Gradle launch and copies it into that cell's empty
+wrapper store. It does not forge the wrapper `.ok` marker, pre-extract Gradle,
+or weaken URL/checksum validation. This avoids repeatedly downloading the
+same distribution into isolated homes; it is acceleration, not qualification
+evidence.
 
 The executor and external-runtime planner checks cover their isolated
 primitives and plan contracts. They verify pinned/no-redirect downloads, the

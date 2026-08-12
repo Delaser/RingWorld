@@ -356,6 +356,13 @@ The Gradle 9.5.1 wrapper distribution is pinned with Gradle's published
 binary ZIP SHA-256, so a fresh isolated cell verifies the downloaded tool
 before executing it.
 
+The optional `--gradle-distribution-zip /absolute/external/gradle-9.5.1-bin.zip`
+input may seed that exact ZIP into each disposable Gradle home. It is accepted
+only as a non-symlinked regular file outside the repository and operator home,
+is rehashed against the checked-in wrapper checksum at every Gradle boundary,
+and never creates an extraction or `.ok` marker. Gradle still performs its
+normal pinned wrapper verification.
+
 An operator may optionally provide
 `--gradle-dependency-cache /absolute/worker-provisioned-cache` to reuse a
 Gradle read-only dependency-cache input across otherwise isolated builds. The path
@@ -457,9 +464,14 @@ per-fixture ports, timeouts, terminal markers, and required outputs for the
 existing creation/reload, worldgen, Atlas, UI, client, multiplayer, raid,
 map/compass, lifecycle, curved-object, and production-projection fixtures.
 It accepts only an absolute, hash-identified frozen candidate, a hash-identified
-quick terminal record, and—only for the final scheduled production fixture—a
-separate immutable production-world input. It does not read, copy, create, or
-run any of those inputs. An executor remains a later phase.
+quick terminal record, and a separate immutable production-world input for
+both lifecycle/portal and final production-render fixtures. The first item is
+the existing creation-settings UI capture; it does not overclaim world reload
+or persistence. Server worlds are rooted at each fixture runtime's `world`
+child. Fixtures never share state, except that Atlas prewarm recovery may
+restart only its own just-created world after validating an interrupted
+checkpoint. The model does not read, copy, create, or run any input. A concrete
+external-candidate executor remains a later phase.
 
 ### Phase 5 — world-upgrade qualification
 

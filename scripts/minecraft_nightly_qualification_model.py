@@ -27,7 +27,7 @@ NIGHTLY_PRODUCTION_TIMEOUT_SECONDS = 7_200
 
 
 class NightlyFixture(str, Enum):
-    CREATION_RELOAD = "creation-reload"
+    CREATION_SETTINGS_UI = "creation-settings-ui"
     WORLDGEN_SEAM_STRUCTURES = "worldgen-seam-structures"
     ATLAS_PREWARM_RECOVERY = "atlas-prewarm-recovery"
     ATLAS_UI_REVISION = "atlas-ui-revision"
@@ -89,8 +89,8 @@ class NightlyQualificationPlan:
 
 
 _FIXTURES: tuple[tuple[NightlyFixture, str, str, int, tuple[str, ...], tuple[str, ...]], ...] = (
-    (NightlyFixture.CREATION_RELOAD, SAFE_SMALL_PROFILE, "world-creation/settings persistence", NIGHTLY_SAFE_SMALL_TIMEOUT_SECONDS,
-     ("world-created", "settings-persisted", "settings-reloaded", "fixture-pass"), ("terminal.json", "terminal.md")),
+    (NightlyFixture.CREATION_SETTINGS_UI, SAFE_SMALL_PROFILE, "world-creation settings UI", NIGHTLY_SAFE_SMALL_TIMEOUT_SECONDS,
+     ("creation-ui-opened", "settings-validated", "fixture-pass"), ("terminal.json", "terminal.md", "captures/index.json")),
     (NightlyFixture.WORLDGEN_SEAM_STRUCTURES, SAFE_SMALL_PROFILE, "stronghold/worldgen structure matrix", NIGHTLY_SAFE_SMALL_TIMEOUT_SECONDS,
      ("worldgen-ready", "seam-structure-verified", "fixture-pass"), ("terminal.json", "terminal.md", "worldgen-summary.json")),
     (NightlyFixture.ATLAS_PREWARM_RECOVERY, SAFE_SMALL_PROFILE, "headless Atlas prewarm/recovery", NIGHTLY_SAFE_SMALL_TIMEOUT_SECONDS,
@@ -166,9 +166,9 @@ def _require_source_inputs(inputs: NightlySourceInputs, loader: str) -> NightlyS
 def _fixture_paths(paths: QualificationPaths, ordinal: int, fixture: NightlyFixture) -> tuple[Path, Path, Path, Path]:
     name = f"{ordinal:02d}-{fixture.value}"
     root = contained_path(paths.run_directory, f"nightly/{name}", "nightly fixture root")
-    world = contained_path(paths.world_directory, f"nightly/{name}", "nightly fixture world")
     evidence = contained_path(paths.evidence_directory, f"nightly/{name}", "nightly fixture evidence")
     runtime = contained_path(root, "runtime", "nightly fixture runtime")
+    world = contained_path(runtime, "world", "nightly fixture world")
     if not all(is_within(value, paths.cell_root) for value in (root, world, evidence, runtime)):
         raise InvocationError("nightly fixture path escapes qualification cell")
     return root, runtime, world, evidence
@@ -195,8 +195,12 @@ def nightly_qualification_plan(
     planned: list[NightlyFixturePlan] = []
     ports: set[int] = set()
     for ordinal, (fixture, profile, existing, timeout, markers, outputs) in enumerate(_FIXTURES, start=1):
-        if profile == PRODUCTION_PROFILE and source.production_world is None:
-            raise InvocationError("nightly production Atlas/render fixture requires an immutable production world")
+        needs_production_world = fixture in {
+            NightlyFixture.LIFECYCLE_PORTALS,
+            NightlyFixture.PRODUCTION_ATLAS_RENDER,
+        }
+        if needs_production_world and source.production_world is None:
+            raise InvocationError(f"nightly {fixture.value} fixture requires an immutable production world")
         root, runtime, world, evidence = _fixture_paths(paths, ordinal, fixture)
         port = base_port + ordinal
         if port > 65535 or port in ports:
@@ -205,7 +209,7 @@ def nightly_qualification_plan(
         output_paths = tuple(contained_path(evidence, output, "nightly fixture output") for output in outputs)
         if len(markers) != len(set(markers)) or markers[-1] != "fixture-pass":
             raise InvocationError("nightly fixture markers must be unique and terminate with fixture-pass")
-        input_roles = ("frozen-candidate", "quick-terminal-evidence") + (("production-world",) if profile == PRODUCTION_PROFILE else ())
+        input_roles = ("frozen-candidate", "quick-terminal-evidence") + (("production-world",) if needs_production_world else ())
         planned.append(NightlyFixturePlan(
             ordinal, fixture, profile, port, timeout, existing, input_roles,
             runtime, world, output_paths[0], output_paths[1], markers, output_paths,
@@ -215,7 +219,8 @@ def nightly_qualification_plan(
         source.production_world, tuple(planned), paths.lock_path,
         (
             "Re-check every immutable input hash immediately before copying it.",
-            "Run fixtures in declared order; do not reuse worlds, ports, reports, or runtime directories.",
+            "Run fixtures in declared order; do not reuse worlds, ports, reports, or runtime directories between fixtures.",
+            "Atlas recovery may restart only its own just-created runtime/world after a validated interrupted checkpoint.",
             "Require every declared marker and output before recording a fixture PASS.",
             "A nightly executor must remain below this qualification cell and never inspect user/live worlds.",
         ),

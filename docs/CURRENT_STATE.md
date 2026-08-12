@@ -75,8 +75,18 @@ frozen-candidate identity, and same-file group evidence. The runner now
 installs this phase only after clean provenance and a complete frozen loader
 triplet, lending its live exact cell lock to avoid re-acquisition. It persists
 a separately validated, immutable raw strict-terminal-evidence JSON record
-alongside the scheduler report. No external cell has run yet, so none is
-qualified.
+alongside the scheduler report. A real clean Fabric 26.1 quick cell completed
+end to end on 2026-08-12 in run
+`20260812T165521Z-2b3c66d93af0`: all 337 tests, strict diagnostic jar, one
+frozen wide-range jar, official installer/runtime assembly, a fresh 2,048x416
+mapping-4 server, and strict stop/save evidence passed. Its frozen candidate
+SHA-256 is
+`e1254b38cf811e7c68382c4ecc025dbede8b5effca54993e5bd403716bff5f39`.
+The subsequent 26.1.1 cell was not exercised because its isolated Gradle
+wrapper download ended early; this is infrastructure interruption, not a
+Minecraft compatibility verdict. The runner now accepts an optional exact,
+checksum-pinned external Gradle ZIP seed while keeping cell homes isolated.
+Fabric 26.1.1/26.1.2 and all three NeoForge external cells remain pending.
 The accepted same-jar proof architecture builds one frozen candidate per
 loader against the oldest supported ABI and runs that unchanged file in
 external production-style profiles for every patch. Per-cell Gradle builds are

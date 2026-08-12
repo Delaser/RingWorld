@@ -496,6 +496,7 @@ def aggregate_verdict(phases: Sequence[PhaseResult]) -> Verdict:
 def plan_cell(
     cell: Mapping[str, Any], repository_root: Path, run_id: str, *, dry_run: bool,
     gradle_dependency_cache: Path | None = None,
+    gradle_distribution_zip: Path | None = None,
 ) -> CellReport:
     paths = QualificationPaths.from_cell(repository_root, cell, run_id)
     commands = planned_commands(cell, paths, gradle_dependency_cache=gradle_dependency_cache)
@@ -519,6 +520,12 @@ def plan_cell(
                     str(gradle_dependency_cache),
                     "optional worker-provisioned read-only dependency cache; non-authoritative acceleration only",
                 ))
+            if gradle_distribution_zip is not None:
+                evidence.append(EvidenceReference(
+                    "gradle-wrapper-distribution-zip",
+                    str(gradle_distribution_zip),
+                    "optional external wrapper ZIP seed; revalidated against gradle-wrapper.properties before every Gradle launch",
+                ))
             phases.append(PhaseResult(
                 phase,
                 Verdict.PASS,
@@ -538,9 +545,14 @@ def plan_cell(
 def plan_matrix(
     cells: Sequence[Mapping[str, Any]], repository_root: Path, run_id: str, *, dry_run: bool,
     gradle_dependency_cache: Path | None = None,
+    gradle_distribution_zip: Path | None = None,
 ) -> MatrixReport:
     reports = tuple(
-        plan_cell(cell, repository_root, run_id, dry_run=dry_run, gradle_dependency_cache=gradle_dependency_cache)
+        plan_cell(
+            cell, repository_root, run_id, dry_run=dry_run,
+            gradle_dependency_cache=gradle_dependency_cache,
+            gradle_distribution_zip=gradle_distribution_zip,
+        )
         for cell in cells
     )
     verdict = aggregate_verdict(tuple(

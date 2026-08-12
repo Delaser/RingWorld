@@ -337,7 +337,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   a qualification run reads it; the runner rechecks the path at every Gradle
   command boundary but does not trust its contents.
   The isolated wrapper download remains separate and must match the official
-  Gradle 9.5.1 binary ZIP SHA-256 pinned in `gradle-wrapper.properties`.
+  Gradle 9.5.1 binary ZIP SHA-256 pinned in `gradle-wrapper.properties`. A
+  worker may provide that exact external ZIP with
+  `--gradle-distribution-zip`; the runner rehashes it and exclusively copies it
+  into each fresh cell's wrapper store without creating Gradle's `.ok` marker
+  or bypassing wrapper verification.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
@@ -366,7 +370,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   for reusing existing fixtures under one qualification cell. It names no
   executable and must not gain I/O, Gradle, or runtime behavior; a later
   executor must recheck immutable candidate/quick-evidence/production-world
-  inputs and exclusive-create every output.
+  inputs and exclusive-create every output. The creation item covers settings
+  UI only; lifecycle and production rendering both require the immutable
+  production-world input. A server fixture owns `runtime/world`, and only
+  Atlas recovery may restart its own newly created world.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit

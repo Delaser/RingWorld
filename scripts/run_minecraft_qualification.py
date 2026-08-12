@@ -17,12 +17,14 @@ import json
 from dataclasses import dataclass, replace
 from enum import Enum
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import shutil
+import stat
 import subprocess
 import sys
 from typing import Any, Callable, Mapping, Protocol, Sequence
+from urllib.parse import urlsplit
 
 from minecraft_qualification_executor import (
     PackageVerificationError,
@@ -118,6 +120,7 @@ class PhaseAdapterContext:
     command: CommandRecord | None
     ordinal: int
     held_lock: QualificationLock | None = None
+    gradle_distribution_zip: Path | None = None
 
 
 class PhaseAdapter(Protocol):
@@ -169,6 +172,25 @@ class FrozenCandidatePreparation:
     inspection: FrozenCandidateInspection | None = None
     evidence: tuple[EvidenceReference, ...] = ()
     artifacts: tuple[ArtifactEvidence, ...] = ()
+
+
+@dataclass(frozen=True)
+class GradleDistributionSeed:
+    """One exact, external copy of the wrapper's pinned Gradle distribution.
+
+    The seed is not a Gradle user home and cannot contain extracted runtime or
+    dependency state.  It is copied into each disposable cell's wrapper ZIP
+    location immediately before that cell launches Gradle, where the wrapper
+    still verifies the checked-in distribution SHA-256 before extraction.
+    """
+
+    source: Path
+    distribution_url: str
+    distribution_sha256: str
+    zip_store_parts: tuple[str, ...]
+    archive_name: str
+    distribution_directory_name: str
+    url_hash: str
 
 
 def _direct_runtime_jar(root: Path) -> Path:
@@ -278,6 +300,194 @@ def _gradle_cache_evidence(cache: Path | None) -> tuple[EvidenceReference, ...]:
     ),)
 
 
+_GRADLE_WRAPPER_PROPERTIES = Path("gradle/wrapper/gradle-wrapper.properties")
+_GRADLE_DISTRIBUTION_NAME = re.compile(r"^gradle-[0-9][A-Za-z0-9._+-]*-bin\.zip$")
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+
+
+def _path_is_plain_existing_file(path: Path, option: str) -> Path:
+    """Resolve an external file without permitting symlink or lexical aliases."""
+    if not isinstance(path, Path) or not path.is_absolute():
+        raise InvocationError(f"{option} must be an absolute path")
+    try:
+        if path.is_symlink() or not path.exists() or not path.is_file():
+            raise InvocationError(f"{option} must name an existing non-symlink regular file")
+        resolved = path.resolve(strict=True)
+        if path != resolved or not stat.S_ISREG(resolved.stat().st_mode):
+            raise InvocationError(f"{option} must not traverse a symlink")
+    except OSError as error:
+        raise InvocationError(f"{option} cannot be inspected safely") from error
+    return resolved
+
+
+def _sha256_stream(path: Path, option: str) -> str:
+    try:
+        digest = hashlib.sha256()
+        with path.open("rb") as source:
+            for block in iter(lambda: source.read(1024 * 1024), b""):
+                digest.update(block)
+        return digest.hexdigest()
+    except OSError as error:
+        raise InvocationError(f"{option} cannot be hashed") from error
+
+
+def _parse_plain_wrapper_properties(path: Path) -> Mapping[str, str]:
+    """Read the small checked-in wrapper property set without accepting ambiguity."""
+    try:
+        raw_lines = path.read_text(encoding="ISO-8859-1").splitlines()
+    except OSError as error:
+        raise InvocationError("cannot read gradle-wrapper.properties") from error
+    result: dict[str, str] = {}
+    for line in raw_lines:
+        stripped = line.strip()
+        if not stripped or stripped.startswith(("#", "!")):
+            continue
+        if stripped.endswith("\\"):
+            raise InvocationError("gradle-wrapper.properties must not use continued values")
+        separator = next((index for index, character in enumerate(line) if character in "=:"), -1)
+        if separator < 1:
+            raise InvocationError("gradle-wrapper.properties contains an invalid property")
+        key, value = line[:separator].strip(), line[separator + 1 :].strip()
+        if not key or key in result:
+            raise InvocationError("gradle-wrapper.properties contains an ambiguous property")
+        # The checked-in URL uses the ordinary Java-properties `\\:` form.
+        # Reject other escapes instead of guessing a different URL/hash path.
+        if "\\" in value:
+            if key != "distributionUrl" or "\\:" not in value or value.replace("\\:", "").find("\\") >= 0:
+                raise InvocationError("gradle-wrapper.properties contains an unsupported escaped value")
+            value = value.replace("\\:", ":")
+        result[key] = value
+    return result
+
+
+def _base36_unsigned(value: bytes) -> str:
+    number = int.from_bytes(value, byteorder="big", signed=False)
+    alphabet = "0123456789abcdefghijklmnopqrstuvwxyz"
+    rendered = ""
+    while number:
+        number, remainder = divmod(number, 36)
+        rendered = alphabet[remainder] + rendered
+    return rendered or "0"
+
+
+def _gradle_wrapper_distribution(repository_root: Path) -> tuple[str, str, tuple[str, ...], str, str, str]:
+    """Parse only the verified wrapper layout needed for a local ZIP seed."""
+    properties_path = repository_root / _GRADLE_WRAPPER_PROPERTIES
+    _path_is_plain_existing_file(properties_path, "gradle-wrapper.properties")
+    properties = _parse_plain_wrapper_properties(properties_path)
+    required = {
+        "distributionBase", "distributionPath", "distributionUrl", "distributionSha256Sum",
+        "zipStoreBase", "zipStorePath", "validateDistributionUrl",
+    }
+    if any(not isinstance(properties.get(key), str) or not properties[key] for key in required):
+        raise InvocationError("gradle-wrapper.properties lacks a required distribution property")
+    if properties["distributionBase"] != "GRADLE_USER_HOME" or properties["zipStoreBase"] != "GRADLE_USER_HOME":
+        raise InvocationError("qualification requires wrapper distributions below the disposable Gradle user home")
+    if properties["validateDistributionUrl"] != "true":
+        raise InvocationError("gradle-wrapper.properties must validate its distribution URL")
+    distribution_url = properties["distributionUrl"]
+    parsed = urlsplit(distribution_url)
+    if (
+        distribution_url.encode("ascii", "strict").decode("ascii") != distribution_url
+        or parsed.scheme != "https"
+        or parsed.hostname != "services.gradle.org"
+        or parsed.port is not None
+        or parsed.username is not None
+        or parsed.password is not None
+        or parsed.query
+        or parsed.fragment
+    ):
+        raise InvocationError("gradle-wrapper.properties must name an exact HTTPS services.gradle.org distribution")
+    path_parts = PurePosixPath(parsed.path).parts
+    if len(path_parts) != 3 or path_parts[:2] != ("/", "distributions"):
+        raise InvocationError("Gradle distribution URL has an unexpected path")
+    archive_name = path_parts[-1]
+    if not _GRADLE_DISTRIBUTION_NAME.fullmatch(archive_name):
+        raise InvocationError("Gradle distribution URL must name a binary Gradle ZIP")
+    expected_sha256 = properties["distributionSha256Sum"].lower()
+    if not _SHA256.fullmatch(expected_sha256):
+        raise InvocationError("gradle-wrapper.properties has an invalid distribution SHA-256")
+    raw_store = properties["zipStorePath"]
+    store_path = PurePosixPath(raw_store)
+    if store_path.is_absolute() or not store_path.parts or any(part in {".", ".."} for part in store_path.parts) or "\\" in raw_store:
+        raise InvocationError("gradle-wrapper.properties has an unsafe ZIP store path")
+    distribution_directory_name = archive_name.rsplit(".", 1)[0]
+    url_hash = _base36_unsigned(hashlib.md5(distribution_url.encode("utf-8")).digest())
+    return distribution_url, expected_sha256, tuple(store_path.parts), archive_name, distribution_directory_name, url_hash
+
+
+def validate_gradle_distribution_zip(seed: Path | None, repository_root: Path) -> GradleDistributionSeed | None:
+    """Accept only the wrapper's exact externally-provisioned official ZIP.
+
+    It is deliberately separate from `GRADLE_USER_HOME`: a seed can reduce
+    transient wrapper-download failures, but cannot carry extracted Gradle
+    state, dependencies, credentials, or a claim of compatibility.
+    """
+    if seed is None:
+        return None
+    source = _path_is_plain_existing_file(seed, "--gradle-distribution-zip")
+    repository = repository_root.resolve(strict=False)
+    prohibited = (
+        repository,
+        repository / "dist",
+        repository / "build",
+        repository / "run",
+        Path.home().resolve(strict=False),
+    )
+    if any(_paths_overlap(source, root) for root in prohibited):
+        raise InvocationError("--gradle-distribution-zip must not overlap the repository, disposable state, or home directory")
+    distribution_url, expected_sha256, store_parts, archive_name, distribution_name, url_hash = _gradle_wrapper_distribution(repository_root)
+    actual_sha256 = _sha256_stream(source, "--gradle-distribution-zip")
+    if actual_sha256 != expected_sha256:
+        raise InvocationError("--gradle-distribution-zip does not match gradle-wrapper.properties distributionSha256Sum")
+    return GradleDistributionSeed(
+        source, distribution_url, expected_sha256, store_parts, archive_name, distribution_name, url_hash,
+    )
+
+
+def stage_gradle_distribution_zip(
+    seed: Path | None, repository_root: Path, paths: QualificationPaths,
+) -> Path | None:
+    """Exclusively copy a freshly revalidated seed into one disposable cell.
+
+    The destination exactly mirrors Gradle's `PathAssembler`: URL basename
+    plus the MD5-to-base36 hash of the ASCII distribution URL.  No `.ok`
+    marker or extracted directory is synthesized; Gradle owns verification and
+    extraction after this copy.
+    """
+    checked = validate_gradle_distribution_zip(seed, repository_root)
+    if checked is None:
+        return None
+    destination = paths.gradle_home.joinpath(
+        *checked.zip_store_parts, checked.distribution_directory_name, checked.url_hash, checked.archive_name,
+    )
+    if not is_within(destination, paths.gradle_home):
+        raise QualificationExecutionError("wrapper ZIP destination escapes the disposable Gradle home")
+    if destination.exists() or destination.is_symlink():
+        raise QualificationExecutionError("wrapper ZIP destination already exists and cannot be reused")
+    parent = destination.parent
+    try:
+        parent.mkdir(parents=True, exist_ok=False)
+        with checked.source.open("rb") as input_file, destination.open("xb") as output_file:
+            shutil.copyfileobj(input_file, output_file, length=1024 * 1024)
+            output_file.flush()
+            os.fsync(output_file.fileno())
+        actual_sha256 = _sha256_stream(destination, "seeded wrapper ZIP")
+        if actual_sha256 != checked.distribution_sha256:
+            raise QualificationExecutionError("seeded wrapper ZIP differs from gradle-wrapper.properties")
+        return destination
+    except Exception:
+        try:
+            destination.unlink()
+        except FileNotFoundError:
+            pass
+        try:
+            parent.rmdir()
+        except OSError:
+            pass
+        raise
+
+
 def _validated_command_gradle_cache(command: CommandRecord, repository_root: Path) -> Path | None:
     """Recheck an optional shared cache immediately before a Gradle launch."""
     values = [Path(value) for key, value in command.environment if key == "GRADLE_RO_DEP_CACHE"]
@@ -384,6 +594,7 @@ def _full_loader_triplet(cells: Sequence[Mapping[str, Any]], loader: str) -> tup
 
 def prepare_frozen_candidates(
     cells: Sequence[Mapping[str, Any]], repository_root: Path, run_id: str, *, gradle_dependency_cache: Path | None = None,
+    gradle_distribution_zip: Path | None = None,
 ) -> Mapping[str, FrozenCandidatePreparation]:
     """Build and freeze at most one candidate per complete loader triplet.
 
@@ -393,6 +604,10 @@ def prepare_frozen_candidates(
     separately unavailable phase.
     """
     gradle_dependency_cache = validate_gradle_dependency_cache(gradle_dependency_cache, repository_root)
+    gradle_distribution_zip = (
+        validate_gradle_distribution_zip(gradle_distribution_zip, repository_root).source
+        if gradle_distribution_zip is not None else None
+    )
     preparations: dict[str, FrozenCandidatePreparation] = {}
     for loader in ("fabric", "neoforge"):
         triplet = _full_loader_triplet(cells, loader)
@@ -411,6 +626,7 @@ def prepare_frozen_candidates(
                 if plan.paths.cell_root.exists() or plan.candidate_path.exists():
                     raise QualificationExecutionError("frozen candidate output already exists and cannot be reused")
                 create_contained_directories(plan.paths)
+                stage_gradle_distribution_zip(gradle_distribution_zip, repository_root, plan.paths)
                 _validated_command_gradle_cache(plan.command, repository_root)
                 executed = execute_command(plan.command, plan.paths, ordinal=1)
                 if executed.verdict is not Verdict.PASS:
@@ -553,6 +769,10 @@ def parser() -> argparse.ArgumentParser:
         "--gradle-dependency-cache",
         help="optional absolute worker-provisioned read-only Gradle dependency cache; never enables offline mode",
     )
+    result.add_argument(
+        "--gradle-distribution-zip",
+        help="optional absolute external copy of the exact Gradle wrapper distribution ZIP",
+    )
     return result
 
 
@@ -580,6 +800,9 @@ def build_and_unit_adapter(context: PhaseAdapterContext) -> PhaseResult:
     """Execute the reviewed Gradle build/unit command through the safe primitive."""
     if context.phase is not PhaseName.BUILD_AND_UNIT or context.command is None:
         raise QualificationExecutionError("build/unit adapter received an invalid phase context")
+    stage_gradle_distribution_zip(
+        context.gradle_distribution_zip, context.paths.repository_root, context.paths,
+    )
     _validated_command_gradle_cache(context.command, context.paths.repository_root)
     executed = execute_command(context.command, context.paths, ordinal=context.ordinal)
     evidence = (
@@ -836,6 +1059,7 @@ def execute_quick_matrix(
     provenance_provider: ProvenanceProvider = collect_source_provenance,
     manifest_path: Path | None = None,
     gradle_dependency_cache: Path | None = None,
+    gradle_distribution_zip: Path | None = None,
 ) -> MatrixReport:
     """Execute serial cell work and leave immutable terminal evidence.
 
@@ -845,6 +1069,10 @@ def execute_quick_matrix(
     tests and future proof phases injectable without changing the core runner.
     """
     gradle_dependency_cache = validate_gradle_dependency_cache(gradle_dependency_cache, repository_root)
+    gradle_distribution_zip = (
+        validate_gradle_distribution_zip(gradle_distribution_zip, repository_root).source
+        if gradle_distribution_zip is not None else None
+    )
     run_id = run_id_factory()
     if not isinstance(run_id, str):
         raise QualificationExecutionError("run-id factory returned a non-string value")
@@ -858,16 +1086,15 @@ def execute_quick_matrix(
     # remain hermetic; an omitted shared adapter stays explicitly incomplete.
     if phase_adapters is None:
         try:
-            preparations = (
-                frozen_preparation_provider(cells, repository_root, run_id)
-                if gradle_dependency_cache is None
-                else frozen_preparation_provider(
-                    cells, repository_root, run_id, gradle_dependency_cache=gradle_dependency_cache,
-                )
-            )
+            frozen_options: dict[str, Path] = {}
+            if gradle_dependency_cache is not None:
+                frozen_options["gradle_dependency_cache"] = gradle_dependency_cache
+            if gradle_distribution_zip is not None:
+                frozen_options["gradle_distribution_zip"] = gradle_distribution_zip
+            preparations = frozen_preparation_provider(cells, repository_root, run_id, **frozen_options)
         except TypeError as error:
             raise QualificationExecutionError(
-                "frozen preparation provider does not implement the dependency-cache contract"
+                "frozen preparation provider does not implement the optional Gradle-input contract"
             ) from error
     else:
         preparations = {}
@@ -890,7 +1117,9 @@ def execute_quick_matrix(
 
     for cell in cells:
         planned = _with_provenance(plan_cell(
-            cell, repository_root, run_id, dry_run=False, gradle_dependency_cache=gradle_dependency_cache,
+            cell, repository_root, run_id, dry_run=False,
+            gradle_dependency_cache=gradle_dependency_cache,
+            gradle_distribution_zip=gradle_distribution_zip,
         ), provenance)
         paths = planned.paths
         loader = cell.get("loader")
@@ -956,7 +1185,9 @@ def execute_quick_matrix(
                     if adapter is None:
                         phases.append(_unavailable_phase(phase, command))
                         continue
-                    result = adapter(PhaseAdapterContext(cell, paths, phase, command, len(phases) + 1, held_lock))
+                    result = adapter(PhaseAdapterContext(
+                        cell, paths, phase, command, len(phases) + 1, held_lock, gradle_distribution_zip,
+                    ))
                     if result.phase is not phase:
                         raise QualificationExecutionError("phase adapter returned evidence for a different phase")
                     phases.append(result)
@@ -992,15 +1223,21 @@ def main(argv: list[str] | None = None, *, repository_root: Path = ROOT) -> int:
             Path(args.gradle_dependency_cache) if args.gradle_dependency_cache is not None else None,
             repository_root,
         )
+        gradle_distribution_zip = (
+            validate_gradle_distribution_zip(Path(args.gradle_distribution_zip), repository_root).source
+            if args.gradle_distribution_zip is not None else None
+        )
         report = (
             plan_matrix(
                 cells, repository_root, "dry-run", dry_run=True,
                 gradle_dependency_cache=gradle_dependency_cache,
+                gradle_distribution_zip=gradle_distribution_zip,
             )
             if args.dry_run
             else execute_quick_matrix(
                 cells, repository_root, manifest_path=manifest_path,
                 gradle_dependency_cache=gradle_dependency_cache,
+                gradle_distribution_zip=gradle_distribution_zip,
             )
         )
     except (InvocationError, QualificationExecutionError, OSError) as error:
