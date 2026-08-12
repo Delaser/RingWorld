@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
+from contextlib import nullcontext
 import os
 from pathlib import Path
 import queue
@@ -648,6 +649,7 @@ def execute_external_runtime_smoke(
     opener: UrlOpen = _no_redirect_urlopen,
     command_executor: Callable[..., ExecutedCommand] = execute_command,
     server_runner: ServerRunner = _run_server,
+    held_lock: QualificationLock | None = None,
 ) -> ExternalRuntimeSmokeResult:
     """Execute exactly one reviewed dedicated-runtime smoke plan.
 
@@ -656,13 +658,21 @@ def execute_external_runtime_smoke(
     misleading runtime verdict.
     """
     _assert_contained(plan, paths)
+    # Standalone invocation owns a fresh OS lock.  The serial matrix runner
+    # may lend its already-held exact cell lock, but only through the live
+    # object that owns that OS lock; lock-file metadata is never sufficient.
+    if held_lock is None:
+        lock_context = QualificationLock.acquire(plan.lock_path, run_id)
+    else:
+        held_lock.require_held_for(plan.lock_path, run_id)
+        lock_context = nullcontext(held_lock)
     started_at = datetime.now(timezone.utc)
     started = time.monotonic()
     downloads: list[DownloadResult] = []
     copied: list[ModCopyResult] = []
     installer_result: ExecutedCommand | None = None
     ledger = _MarkerLedger()
-    with QualificationLock.acquire(plan.lock_path, run_id):
+    with lock_context:
         _assert_no_symlink_components(paths.cell_root, paths.repository_root, "qualification cell")
         _assert_no_symlink_components(plan.layout.root, paths.cell_root, "external runtime")
         create_contained_directories(paths)

@@ -12,6 +12,7 @@ import socket
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,6 +33,7 @@ def load(name: str, path: Path):
 MODEL = load("minecraft_qualification_model", SCRIPTS / "minecraft_qualification_model.py")
 SMOKE = load("external_runtime_smoke", SCRIPTS / "external_runtime_smoke.py")
 EXECUTOR = load("external_runtime_executor", SCRIPTS / "external_runtime_executor.py")
+from minecraft_qualification_executor import LockError  # noqa: E402
 
 
 class Response:
@@ -170,6 +172,49 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
                 ("installer-start", "installer-complete", "runtime-start", "loader-bootstrap", "ringworld-bootstrap", "atlas-disabled", "server-ready", "stop-sent", "server-stop", "world-save", "clean-stop", "runtime-exit"),
                 tuple(item.name for item in result.marker_ledger),
             )
+
+    def test_runner_held_exact_lock_runs_without_reacquiring(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths, plan, bodies = self.plan(Path(directory), "26.1-fabric")
+            with EXECUTOR.QualificationLock.acquire(paths.lock_path, paths.run_id) as held:
+                with patch.object(EXECUTOR.QualificationLock, "acquire", side_effect=AssertionError("must not reacquire")):
+                    result = EXECUTOR.execute_external_runtime_smoke(
+                        plan, paths, paths.run_id, opener=self.opener(bodies),
+                        command_executor=self.installer_for(plan), server_runner=self.successful_server,
+                        held_lock=held,
+                    )
+            self.assertEqual(MODEL.Verdict.PASS, result.verdict)
+
+    def test_borrowed_lock_rejects_unheld_wrong_path_and_wrong_run_before_network(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths, plan, _ = self.plan(Path(directory), "26.1-fabric")
+            unheld = EXECUTOR.QualificationLock.acquire(paths.lock_path, paths.run_id)
+            unheld.release()
+            with self.assertRaises(LockError):
+                EXECUTOR.execute_external_runtime_smoke(
+                    plan, paths, paths.run_id,
+                    opener=lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("network must not run")),
+                    held_lock=unheld,
+                )
+        with tempfile.TemporaryDirectory() as directory:
+            paths, plan, _ = self.plan(Path(directory), "26.1-fabric")
+            with EXECUTOR.QualificationLock.acquire(paths.lock_path.with_name("wrong.lock"), paths.run_id) as wrong_path:
+                with self.assertRaises(LockError):
+                    EXECUTOR.execute_external_runtime_smoke(
+                        plan, paths, paths.run_id,
+                        opener=lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("network must not run")),
+                        held_lock=wrong_path,
+                    )
+        with tempfile.TemporaryDirectory() as directory:
+            paths, plan, _ = self.plan(Path(directory), "26.1-fabric")
+            other_run = "20260812T120001Z-0123456789ab"
+            with EXECUTOR.QualificationLock.acquire(paths.lock_path, other_run) as wrong_run:
+                with self.assertRaises(LockError):
+                    EXECUTOR.execute_external_runtime_smoke(
+                        plan, paths, paths.run_id,
+                        opener=lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("network must not run")),
+                        held_lock=wrong_run,
+                    )
 
     def test_neoforge_generated_contract_and_clean_stop(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

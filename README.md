@@ -283,9 +283,12 @@ The current jars still target Minecraft 26.1.2 exactly. A future 26.1.x-wide
 claim requires the same Fabric and NeoForge artifact hashes to pass the full
 26.1, 26.1.1, and 26.1.2 qualification matrix; see the
 [version support plan](docs/MINECRAFT_VERSION_SUPPORT_PLAN.md).
-The pinned six-cell manifest and fail-closed quick planner are now present,
-but the planner still reports `INCOMPLETE` without launching runtimes. This
-does not add a 26.1 or 26.1.1 support claim.
+The pinned six-cell manifest and fail-closed quick runner are now present.
+A partial loader selection stays `INCOMPLETE` without downloading or launching
+a runtime; a complete three-version loader selection may build one frozen
+oldest-ABI candidate and test that unchanged file in isolated external
+dedicated servers. No complete triplet has passed yet, so this does not add a
+26.1 or 26.1.1 support claim.
 Official loader installer inputs are now pinned for all six cells so later
 runtime checks can assemble clean dedicated servers outside Gradle. That
 execution gate is still pending.
@@ -293,7 +296,8 @@ Qualification-only broad-metadata candidates compile from the oldest 26.1
 ABI, while normal artifacts remain exact to 26.1.2. This is preparation for
 the same-file external runtime matrix, not a new compatibility claim.
 The isolated external-server executor and strict terminal evidence schema are
-also present, but they are not yet connected end-to-end to the matrix CLI.
+connected to the matrix CLI behind clean-provenance, full-triplet, held-lock,
+same-file, and immutable-evidence gates.
 Minecraft 26.1 and 26.1.1 therefore remain unadvertised and unsupported.
 
 ## Build and install

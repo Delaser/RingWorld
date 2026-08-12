@@ -47,9 +47,10 @@ The approved manifest, quick/nightly/release tiers, isolated-fixture rules,
 same-hash requirement, forward-only world-copy policy, and planned
 orchestrator interface are specified in
 [`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
-The execution-capable orchestrator is not implemented yet; do not treat its
-planning command as current evidence or broaden loader metadata before its
-initial six-cell matrix passes.
+The execution-capable orchestrator is fail-closed and may run its external
+smoke only for a complete loader triplet with clean provenance and one frozen
+candidate. Do not treat its planning output as current evidence or broaden
+loader metadata before its initial six-cell matrix passes.
 
 The Phase 1 pinned matrix and pure validator are implemented. They retain
 26.1/26.1.1 as `pending` cells despite exact Fabric inputs and pinned NeoForge
@@ -80,6 +81,7 @@ python3 scripts/test_run_minecraft_qualification.py
 python3 scripts/test_minecraft_qualification_executor.py
 python3 scripts/test_external_runtime_smoke.py
 python3 scripts/test_external_runtime_executor.py
+python3 scripts/test_external_runtime_qualification_adapter.py
 python3 scripts/run_minecraft_qualification.py \
   --tier quick --cell 26.1-fabric --dry-run
 ```
@@ -88,16 +90,31 @@ The executor and external-runtime planner checks cover their isolated
 primitives and plan contracts. They verify pinned/no-redirect downloads, the
 official installer contract, installed Mojang-server identity, exact mod
 inventory, loopback port preflight, loader/RingWorld/ready markers, and an
-ordered stop/save/clean-exit sequence. The external adapter is still not wired
-into the CLI, so this green command set is not runtime evidence.
+ordered stop/save/clean-exit sequence. The external adapter additionally
+checks full-triplet same-file identity and clean source provenance before it
+can perform runtime I/O, then emits a separately schema-validated immutable
+`strict-terminal-evidence.json`. The focused bridge tests also replace the
+retained jar after preparation and prove that this fails before the executor
+is called, then lend a real runner lock through a deterministic terminal
+fixture and verify the immutable strict record. This green command set remains
+tooling evidence, not a completed runtime matrix.
+
+GitHub Actions runs the same pure qualification contract suite as
+`Qualification static guard` on Ubuntu and Windows. The Windows job includes
+the held-lock and space/Unicode qualification-path test, using the single
+cross-platform `PYTHONPATH=scripts` import root. It intentionally does
+not invoke Gradle, download or install Minecraft, run a server, contact an
+external service, package artifacts, or publish anything. Its result is a
+portable static-tooling check only, not qualification or release evidence.
 
 A non-dry runner requires a completely clean, pushed checkout and Java 25.
 It executes the isolated source build/unit adapter and then verifies exactly
 one per-cell diagnostic runtime jar for loader metadata, MPL-2.0, diagnostic
-build identity, and SHA-256. It writes immutable local reports and returns
-`INCOMPLETE` because frozen same-file/shared-contract and external-runtime
-adapters are not yet integrated. Do not use that partial run as compatibility
-evidence.
+build identity, and SHA-256. A partial loader selection writes immutable local
+reports and returns `INCOMPLETE` without runtime I/O. A complete three-version
+loader selection additionally builds one frozen oldest-ABI jar and may run
+that exact file through the external dedicated-server adapter. It becomes
+compatibility evidence only when every strict terminal record passes.
 
 The first real clean/pushed runner execution on 2026-08-12 selected
 `26.1-fabric`, used Java 25 and Fabric Loom 1.17.19, and completed `:test
@@ -107,8 +124,8 @@ because the later adapters were absent. This proves the execution boundary and
 26.1 source build only; it is not external-runtime or support evidence.
 
 The dry run must exit nonzero with `INCOMPLETE` and
-`DRY_RUN_NO_EXECUTION`; it is planning output, not evidence. A non-dry run is
-also deliberately `INCOMPLETE` until every required adapter exists. Inspect
+`DRY_RUN_NO_EXECUTION`; it is planning output, not evidence. A partial non-dry
+selection is also deliberately `INCOMPLETE`. Inspect
 the opt-in Gradle layout without launching Minecraft with:
 
 ```sh

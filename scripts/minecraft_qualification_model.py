@@ -460,16 +460,13 @@ def planned_commands(cell: Mapping[str, Any], paths: QualificationPaths) -> tupl
     environment = (("GRADLE_USER_HOME", str(paths.gradle_home)),)
     if loader == "fabric":
         build_tasks = (":test", ":build")
-        smoke_task = ":runQualificationSmokeServer"
     elif loader == "neoforge":
         build_tasks = (":neoforge:test", ":neoforge:build")
-        smoke_task = ":neoforge:runQualificationSmokeServer"
     else:
         raise InvocationError(f"unsupported loader {loader!r}")
     executable = str(paths.repository_root / "gradlew")
     return (
         CommandRecord(PhaseName.BUILD_AND_UNIT, (executable, "--console=plain", "--no-daemon", *property_args, *build_tasks), paths.repository_root, environment, timeout),
-        CommandRecord(PhaseName.DEDICATED_SMOKE, (executable, "--console=plain", "--no-daemon", *property_args, smoke_task), paths.repository_root, environment, timeout),
     )
 
 
@@ -557,7 +554,7 @@ def render_markdown(report: MatrixReport) -> str:
         "# Minecraft quick qualification",
         "",
         f"Run: `{report.run_id}`  ",
-        f"Mode: `{'dry-run' if report.dry_run else 'execution'} `  ",
+        f"Mode: `{'dry-run' if report.dry_run else 'execution'}`  ",
         f"Verdict: **{report.verdict.value}**",
         "",
         "| Cell | Minecraft | Loader | Verdict |",

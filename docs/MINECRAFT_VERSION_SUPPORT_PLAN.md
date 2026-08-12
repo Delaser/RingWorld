@@ -318,15 +318,32 @@ quick run now executes the reviewed isolated build/unit command, then requires
 exactly one runtime jar under `<cell>/build/<loader>/libs`. It strict-checks
 the loader metadata, MPL file/declaration, diagnostic build identity, and a
 computed SHA-256 before recording the artifact in immutable cell evidence.
-That per-cell diagnostic result is not a same-file frozen-candidate claim;
-shared-contract and external-runtime adapters remain deliberately incomplete.
+That per-cell diagnostic result is not a same-file frozen-candidate claim.
+
+When and only when all three 26.1.x cells for one loader are selected, the
+runner now performs a bounded frozen-candidate preflight. It starts one
+separate synthetic build cell from that loader's `26.1` inputs, supplies only
+the reviewed closed qualification metadata ranges, and writes below the same
+disposable qualification run. It accepts one direct runtime JAR plus at most
+its canonical Gradle `-sources.jar` sibling, retains an immutable candidate at
+`frozen-candidates/<loader>/`, and re-inspects the retained file for exact
+oldest-ABI identity, approved ranges, MPL metadata, and the canonical embedded
+RingWorld licence. Each complete-triplet `SHARED_CONTRACT` result cites that
+same retained pathname and SHA-256. A partial loader selection does not build
+a candidate and remains explicitly `INCOMPLETE`; three per-cell diagnostic
+builds can never be substituted for this shared file. A complete triplet now
+installs the external-runtime adapter, but no triplet has completed the real
+runtime matrix yet, so this remains preparation rather than a broader support
+or release claim.
 
 The serial runner now executes its reviewed build/unit and per-cell diagnostic
 artifact adapters by default. Before process work it requires a clean source tree including no
 untracked files, a full HEAD equal to its upstream, the reviewed public
 origin, Java 25, and hashes of the manifest and Gradle wrapper. Each cell gets
 its own `GRADLE_USER_HOME`, `--no-daemon`, held OS lock, fresh output root, and
-immutable report. Shared-contract and runtime adapters remain `INCOMPLETE`.
+immutable report. The shared-contract adapter is available only after the
+complete-triplet frozen preflight; the external runtime adapter is installed
+only under that same complete-triplet/provenance condition.
 
 The separately tested external runtime executor now implements the planned
 pinned/no-redirect downloads, official installer, installer-owned Mojang
@@ -335,10 +352,33 @@ fatal-output, interactive stop, save, and clean-exit controls. A strict pure
 terminal schema defines the additional provenance, installed-runtime
 inventory, log hashes, candidate identity, ordered markers, and same-file
 group evidence required for `PASS`; its structural adapter rejects an
-executor result that lacks any of those independent records. The next
-integration step is to connect these contracts and run the unchanged frozen
-candidate in all six external runtimes; until then no real quick cell is
-qualified.
+executor result that lacks any of those independent records. Its bounded phase
+bridge now uses the runner's single-owner cell lock and runs the unchanged
+frozen candidate only in selected complete loader triplets. The bridge
+converts nested reviewed manifest identities, immutable
+installer/server logs, exact installed inventories, and timestamped semantic
+markers into the strict schema, but deliberately reports `INCOMPLETE` if the
+pre-run provenance, frozen-candidate inspection, or all-three-cell same-file
+proof is absent. A runner may lend its live cell lock only through the exact
+lock object, path, and run ID; the external executor verifies that capability
+before skipping its normal standalone acquisition. The bridge also re-opens
+and fully validates the retained frozen jar before any installer, download,
+or runtime activity. The default runner now
+passes that capability for a complete loader triplet, but until the six real
+runs exist no quick cell is qualified. A
+passing smoke phase first exclusive-creates a schema-validated raw
+`strict-terminal-evidence.json` below its cell evidence directory; this is
+separate from the ordinary scheduler report and carries a SHA-256 reference.
+
+The `Qualification static guard` GitHub Actions workflow runs the pure matrix,
+range, frozen-candidate, evidence, runner, executor, and external-runtime-plan
+tests on both Ubuntu and Windows. The Windows leg exercises the real Windows
+file-lock and space/Unicode path backend. Its one Python command uses the
+single cross-platform `PYTHONPATH=scripts` import root. It deliberately performs **no**
+Gradle build, Minecraft launch, installer invocation, runtime download,
+network request, credential use, package creation, or publication. A green
+static guard proves only that the qualification tooling contracts remain
+portable; it is never runtime, same-file, or release evidence.
 
 Qualification-only Fabric and NeoForge candidates have also completed a real
 Java 25 build from the 26.1 ABI using reviewed closed 26.1–26.1.2 metadata.

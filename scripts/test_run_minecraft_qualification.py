@@ -13,6 +13,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import zipfile
+from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -119,7 +120,7 @@ class MinecraftQualificationModelTest(unittest.TestCase):
         for cell in self.manifest["cells"]:
             paths = MODEL.QualificationPaths.from_cell(ROOT, cell, "run")
             commands = MODEL.planned_commands(cell, paths)
-            self.assertEqual(2, len(commands), cell["id"])
+            self.assertEqual(1, len(commands), cell["id"])
             self.assertTrue(all(isinstance(command.argv, tuple) for command in commands), cell["id"])
             expected_names = allowed_common | expected_loader_properties[cell["loader"]]
             dependency_versions = {entry["coordinate"]: entry["version"] for entry in cell["dependencies"]}
@@ -145,11 +146,7 @@ class MinecraftQualificationModelTest(unittest.TestCase):
                     self.assertNotIn("26.1.2", "\0".join(command.argv), cell["id"])
             argv = "\n".join("\0".join(command.argv) for command in commands)
             self.assertIn(":test", argv)
-            expected_smoke = (
-                ":runQualificationSmokeServer" if cell["loader"] == "fabric"
-                else ":neoforge:runQualificationSmokeServer"
-            )
-            self.assertIn(expected_smoke, argv)
+            self.assertNotIn("runQualificationSmokeServer", argv)
 
     def test_required_dependency_properties_fail_closed_for_missing_or_duplicate_coordinates(self) -> None:
         missing = copy.deepcopy(self.cell)
@@ -169,7 +166,10 @@ class MinecraftQualificationModelTest(unittest.TestCase):
         self.assertEqual(MODEL.Verdict.INCOMPLETE, report.verdict)
         self.assertIn(MODEL.DRY_RUN_NO_EXECUTION, MODEL.render_json(report))
         self.assertEqual(MODEL.render_json(report), MODEL.render_json(report))
-        self.assertEqual(MODEL.render_markdown(report), MODEL.render_markdown(report))
+        markdown = MODEL.render_markdown(report)
+        self.assertEqual(markdown, MODEL.render_markdown(report))
+        self.assertIn("Mode: `dry-run`  ", markdown)
+        self.assertNotIn("Mode: `dry-run `", markdown)
 
     def test_real_pre_adapter_report_is_explicitly_incomplete(self) -> None:
         report = MODEL.plan_matrix((self.cell,), ROOT, "planned", dry_run=False)
@@ -282,6 +282,84 @@ class MinecraftQualificationExecutionTest(unittest.TestCase):
                 )))
         return jar
 
+    def write_frozen_candidate(self, paths: Path, loader: str) -> Path:
+        jar = paths / loader / "libs" / "ringworld-qualification.jar"
+        jar.parent.mkdir(parents=True)
+        with zipfile.ZipFile(jar, "w") as archive:
+            archive.writestr("LICENSE-RINGWORLD.txt", (ROOT / "LICENSE").read_text(encoding="utf-8"))
+            archive.writestr(
+                "ringworld-build.properties",
+                f"artifactVersion=0.0.0-qualification+mc26.1\nreleaseLabel=qualification-26.1-{loader}\n",
+            )
+            if loader == "fabric":
+                archive.writestr("fabric.mod.json", json.dumps({
+                    "id": "ringworld", "version": "0.0.0-qualification+mc26.1", "license": "MPL-2.0",
+                    "depends": {"minecraft": ">=26.1 <=26.1.2"},
+                }))
+            else:
+                archive.writestr("META-INF/neoforge.mods.toml", "\n".join((
+                    'license="MPL-2.0"', '[[mods]]', 'modId="ringworld"',
+                    'version="0.0.0-qualification+mc26.1"',
+                    '[[dependencies.ringworld]]', 'modId="neoforge"',
+                    'versionRange="[26.1.0.19-beta,26.1.2.87]"',
+                    '[[dependencies.ringworld]]', 'modId="minecraft"', 'versionRange="[26.1,26.1.2]"',
+                )))
+        return jar
+
+    def full_loader_triplet(self, loader: str):
+        manifest = json.loads((ROOT / "config/minecraft-version-matrix.json").read_text(encoding="utf-8"))
+        return tuple(cell for cell in manifest["cells"] if cell["loader"] == loader)
+
+    def test_frozen_candidate_preparation_builds_once_and_shared_contract_reuses_one_path_hash(self) -> None:
+        calls = []
+
+        def fake_execute(command, paths, *, ordinal):
+            calls.append((command, paths, ordinal))
+            self.write_frozen_candidate(paths.build_directory, "fabric")
+            return SimpleNamespace(
+                verdict=MODEL.Verdict.PASS, stdout_log="frozen.stdout", stderr_log="frozen.stderr", reason=None,
+            )
+
+        with tempfile.TemporaryDirectory() as temporary, patch.object(RUNNER, "execute_command", side_effect=fake_execute):
+            root = Path(temporary)
+            cells = self.full_loader_triplet("fabric")
+            preparations = RUNNER.prepare_frozen_candidates(cells, root, self.run_id)
+            prepared = preparations["fabric"]
+            self.assertEqual(MODEL.Verdict.PASS, prepared.verdict)
+            self.assertEqual(1, len(calls))
+            self.assertTrue(prepared.plan.candidate_path.is_file())
+            adapter = RUNNER.shared_contract_adapter(preparations)
+            results = []
+            for ordinal, cell in enumerate(cells, 1):
+                paths = MODEL.QualificationPaths.from_cell(root, cell, self.run_id)
+                results.append(adapter(RUNNER.PhaseAdapterContext(
+                    cell, paths, MODEL.PhaseName.SHARED_CONTRACT, None, ordinal,
+                )))
+            self.assertTrue(all(item.verdict is MODEL.Verdict.PASS for item in results))
+            self.assertTrue(all(item.artifacts == prepared.artifacts for item in results))
+            self.assertEqual(1, len({item.artifacts[0].actual for item in results}))
+            self.assertEqual(1, len({item.artifacts[0].path for item in results}))
+
+    def test_partial_loader_selection_never_builds_a_frozen_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary, patch.object(RUNNER, "execute_command") as execute:
+            root = Path(temporary)
+            preparations = RUNNER.prepare_frozen_candidates((self.cell,), root, self.run_id)
+            self.assertEqual(MODEL.Verdict.INCOMPLETE, preparations["fabric"].verdict)
+            self.assertEqual(RUNNER.SHARED_CONTRACT_REQUIRES_FULL_LOADER_TRIPLET, preparations["fabric"].reason)
+            execute.assert_not_called()
+
+    def test_frozen_candidate_preparation_fails_when_retained_jar_is_not_licensed(self) -> None:
+        def fake_execute(command, paths, *, ordinal):
+            jar = paths.build_directory / "fabric" / "libs" / "ringworld-qualification.jar"
+            jar.parent.mkdir(parents=True)
+            jar.write_bytes(b"not a candidate")
+            return SimpleNamespace(verdict=MODEL.Verdict.PASS, stdout_log="out", stderr_log="err", reason=None)
+
+        with tempfile.TemporaryDirectory() as temporary, patch.object(RUNNER, "execute_command", side_effect=fake_execute):
+            preparations = RUNNER.prepare_frozen_candidates(self.full_loader_triplet("fabric"), Path(temporary), self.run_id)
+            self.assertEqual(MODEL.Verdict.FAIL, preparations["fabric"].verdict)
+            self.assertTrue(preparations["fabric"].reason.startswith(RUNNER.FROZEN_CANDIDATE_PREPARATION_FAILED))
+
     def test_injected_adapters_write_immutable_cell_and_matrix_evidence_without_gradle(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -297,6 +375,126 @@ class MinecraftQualificationExecutionTest(unittest.TestCase):
             self.assertTrue((root / "dist" / "qualification" / "matrix" / self.run_id / "matrix-report.json").is_file())
             self.assertTrue(all(phase.evidence for phase in cell.phases if phase.verdict is MODEL.Verdict.PASS))
             self.assertIn(("GRADLE_USER_HOME", str(cell.paths.gradle_home)), next(phase for phase in cell.phases if phase.phase is MODEL.PhaseName.BUILD_AND_UNIT).commands[0].environment)
+
+    def test_runner_lends_the_current_cell_lock_to_every_phase_adapter(self) -> None:
+        seen = []
+
+        def capture_lock(context):
+            seen.append(context.held_lock)
+            return self.passing_adapter(context)
+
+        with tempfile.TemporaryDirectory() as temporary:
+            RUNNER.execute_quick_matrix(
+                (self.cell,), Path(temporary), run_id_factory=lambda: self.run_id,
+                phase_adapters={
+                    phase: capture_lock for phase in MODEL.PhaseName
+                    if phase not in {MODEL.PhaseName.MANIFEST_VALIDATION, MODEL.PhaseName.INPUT_PLAN}
+                },
+                provenance_provider=self.provenance,
+            )
+        self.assertTrue(seen)
+        self.assertTrue(all(lock is not None for lock in seen))
+
+    def test_default_preparation_is_called_only_after_provenance_validation(self) -> None:
+        order = []
+
+        def provenance(root, manifest):
+            order.append("provenance")
+            return self.provenance(root, manifest)
+
+        def frozen(cells, root, run_id):
+            order.append("frozen")
+            return {}
+
+        with tempfile.TemporaryDirectory() as temporary, patch.object(RUNNER, "default_phase_adapters", return_value={}):
+            RUNNER.execute_quick_matrix(
+                (self.cell,), Path(temporary), run_id_factory=lambda: self.run_id,
+                provenance_provider=provenance, frozen_preparation_provider=frozen,
+            )
+        self.assertEqual(["provenance", "frozen"], order)
+
+    def test_default_partial_selection_reaches_external_bridge_without_runtime_io(self) -> None:
+        external = __import__("external_runtime_qualification_adapter")
+        passing = {
+            phase: self.passing_adapter for phase in (
+                MODEL.PhaseName.BUILD_AND_UNIT,
+                MODEL.PhaseName.ARTIFACT_VERIFY,
+                MODEL.PhaseName.SHARED_CONTRACT,
+            )
+        }
+        with tempfile.TemporaryDirectory() as temporary, \
+                patch.object(RUNNER, "default_phase_adapters", return_value=passing), \
+                patch.object(external, "execute_external_runtime_smoke") as runtime:
+            report = RUNNER.execute_quick_matrix(
+                (self.cell,), Path(temporary), run_id_factory=lambda: self.run_id,
+                provenance_provider=self.provenance,
+                frozen_preparation_provider=lambda cells, root, run_id: {},
+            )
+        runtime.assert_not_called()
+        dedicated = next(
+            phase for phase in report.cells[0].phases if phase.phase is MODEL.PhaseName.DEDICATED_SMOKE
+        )
+        self.assertEqual(MODEL.Verdict.INCOMPLETE, dedicated.verdict)
+        self.assertEqual(external.FROZEN_CANDIDATE_UNAVAILABLE, dedicated.reason)
+
+    def test_default_full_triplet_factory_receives_preparation_and_live_cell_locks(self) -> None:
+        external = __import__("external_runtime_qualification_adapter")
+        cells = self.full_loader_triplet("fabric")
+        preparation = {"fabric": object()}
+        factory_inputs, locks = [], []
+
+        def factory(selected, provenance, preparations):
+            factory_inputs.append((tuple(selected), provenance, preparations))
+
+            def dedicated(context):
+                locks.append(context.held_lock)
+                return self.passing_adapter(context)
+            return dedicated
+
+        passing = {
+            phase: self.passing_adapter for phase in (
+                MODEL.PhaseName.BUILD_AND_UNIT,
+                MODEL.PhaseName.ARTIFACT_VERIFY,
+                MODEL.PhaseName.SHARED_CONTRACT,
+            )
+        }
+        with tempfile.TemporaryDirectory() as temporary, \
+                patch.object(RUNNER, "default_phase_adapters", return_value=passing), \
+                patch.object(external, "external_runtime_adapter_from_qualification_inputs", side_effect=factory):
+            report = RUNNER.execute_quick_matrix(
+                cells, Path(temporary), run_id_factory=lambda: self.run_id,
+                provenance_provider=self.provenance,
+                frozen_preparation_provider=lambda selected, root, run_id: preparation,
+            )
+        self.assertEqual(MODEL.Verdict.PASS, report.verdict)
+        self.assertEqual(1, len(factory_inputs))
+        self.assertEqual(cells, factory_inputs[0][0])
+        self.assertIs(preparation, factory_inputs[0][2])
+        self.assertEqual(3, len(locks))
+        self.assertTrue(all(lock is not None for lock in locks))
+
+    def test_failed_frozen_preparation_prevents_external_runtime_io(self) -> None:
+        external = __import__("external_runtime_qualification_adapter")
+        failure = RUNNER.FrozenCandidatePreparation(
+            "fabric", MODEL.Verdict.FAIL, RUNNER.FROZEN_CANDIDATE_PREPARATION_FAILED,
+        )
+        passing = {
+            phase: self.passing_adapter for phase in (
+                MODEL.PhaseName.BUILD_AND_UNIT,
+                MODEL.PhaseName.ARTIFACT_VERIFY,
+            )
+        }
+        passing[MODEL.PhaseName.SHARED_CONTRACT] = RUNNER.shared_contract_adapter({"fabric": failure})
+        with tempfile.TemporaryDirectory() as temporary, \
+                patch.object(RUNNER, "default_phase_adapters", return_value=passing), \
+                patch.object(external, "execute_external_runtime_smoke") as runtime:
+            report = RUNNER.execute_quick_matrix(
+                self.full_loader_triplet("fabric"), Path(temporary), run_id_factory=lambda: self.run_id,
+                provenance_provider=self.provenance,
+                frozen_preparation_provider=lambda cells, root, run_id: {"fabric": failure},
+            )
+        runtime.assert_not_called()
+        self.assertEqual(MODEL.Verdict.FAIL, report.cells[0].verdict)
 
     def test_missing_adapter_is_incomplete_and_cannot_be_reported_as_pass(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -322,6 +520,28 @@ class MinecraftQualificationExecutionTest(unittest.TestCase):
             self.assertTrue(result.artifacts[0].verified)
             self.assertEqual(64, len(result.artifacts[0].actual or ""))
             self.assertTrue(any(item.kind == "jar-license" for item in result.evidence))
+
+    def test_artifact_adapter_allows_gradles_direct_sources_jar_but_not_a_second_runtime_jar(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = MODEL.QualificationPaths.from_cell(root, self.cell, self.run_id)
+            jar = self.write_diagnostic_jar(paths.build_directory)
+            jar.with_name("ringworld-qualification-sources.jar").write_bytes(b"normal Gradle sources output")
+            result = RUNNER.artifact_verify_adapter(RUNNER.PhaseAdapterContext(
+                self.cell, paths, MODEL.PhaseName.ARTIFACT_VERIFY, None, 3,
+            ))
+            self.assertEqual(MODEL.Verdict.PASS, result.verdict)
+
+    def test_artifact_adapter_rejects_unrelated_or_multiple_sources_jars(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = MODEL.QualificationPaths.from_cell(root, self.cell, self.run_id)
+            jar = self.write_diagnostic_jar(paths.build_directory)
+            jar.with_name("unrelated-sources.jar").write_bytes(b"unexpected")
+            result = RUNNER.artifact_verify_adapter(RUNNER.PhaseAdapterContext(
+                self.cell, paths, MODEL.PhaseName.ARTIFACT_VERIFY, None, 3,
+            ))
+            self.assertEqual(MODEL.Verdict.FAIL, result.verdict)
 
     def test_artifact_adapter_rejects_ambiguous_build_output(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

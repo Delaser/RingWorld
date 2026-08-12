@@ -39,8 +39,7 @@ checks pass. The raid and worldgen scripts now keep their fixture-managed
 state below an explicitly selected qualification cell and reject traversal or
 paths outside `dist/qualification`. The destructive raid preparer additionally
 rejects every existing symlink component on its managed paths before fixture
-creation or deletion. A complete external runtime adapter still needs routing
-before Phase 2 can close.
+creation or deletion.
 The first source-build diagnostics also pass unchanged on all four earlier
 patch cells: Fabric 26.1/26.1.1 and NeoForge's pinned 26.1/26.1.1 beta trials
 each compile, package, and pass all 337 tests. Their generated loader metadata
@@ -52,9 +51,9 @@ Phase 3 has a fail-closed orchestration core. It validates and selects
 manifest cells, plans contained paths, pinned downloads, locks, ports, Gradle
 argument vectors, and deterministic JSON/Markdown reports. Dry-run output
 remains write-free and `INCOMPLETE`; the serial non-dry path records immutable
-evidence only for its reviewed build/unit and per-cell diagnostic-artifact
-adapters. It does not yet claim frozen same-file, shared-contract, or runtime
-qualification.
+evidence for reviewed build/unit, per-cell diagnostic-artifact, and complete
+loader-triplet frozen-candidate preparation. Runtime qualification remains
+pending until its real external cells complete.
 The executor foundation now has passing focused coverage for UTC run
 IDs, held operating-system cell locks, contained directories, process-group
 timeouts, bounded credential-pattern-redacted logs, immutable terminal
@@ -63,8 +62,7 @@ inspection. Its build and diagnostic-artifact primitives are wired to the
 serial runner; the external-runtime planner models the exact official
 installer, mods inventory, safe-small configuration, launch command, markers,
 and clean stop contract for all six cells without writing or launching
-anything. The external runtime component is not wired to the CLI, so it cannot
-claim a quick qualification run.
+anything.
 The external executor can now, as a separately tested adapter, fetch exact
 pinned inputs without following redirects, refuse symlinked or reused runtime
 paths, run the official installer, enforce an exact mod inventory, preflight
@@ -73,8 +71,12 @@ manifest pin, wait for loader/RingWorld/readiness markers, send `stop`, reject
 fatal/crash output, and record an ordered stop/save/clean-exit ledger. A pure
 adapter now binds this result to the strict terminal schema but deliberately
 rejects `PASS` without the separate provenance, log hashes, runtime inventory,
-frozen-candidate identity, and same-file group evidence. The executor is not
-yet wired into the runner, so no external cell is qualified.
+frozen-candidate identity, and same-file group evidence. The runner now
+installs this phase only after clean provenance and a complete frozen loader
+triplet, lending its live exact cell lock to avoid re-acquisition. It persists
+a separately validated, immutable raw strict-terminal-evidence JSON record
+alongside the scheduler report. No external cell has run yet, so none is
+qualified.
 The accepted same-jar proof architecture builds one frozen candidate per
 loader against the oldest supported ABI and runs that unchanged file in
 external production-style profiles for every patch. Per-cell Gradle builds are
@@ -86,12 +88,19 @@ metadata. Strict pure range checks prove that the six manifest targets are
 inside those declarations; no candidate has yet passed an external runtime.
 The runner now has a serial injected-phase state machine, isolated
 `GRADLE_USER_HOME`, `--no-daemon`, held cell locks, immutable per-cell/matrix
-reports, and a clean pushed-source/Java-25 provenance preflight. Only the
-build/unit and per-cell diagnostic-artifact adapters are enabled by default.
-The latter accepts exactly one isolated runtime jar and records strict
-loader/MPL/build-identity inspection plus SHA-256. Shared-contract and
-external-runtime phases remain explicit `INCOMPLETE`, so invoking the runner
-cannot yet create a false support claim.
+reports, and a clean pushed-source/Java-25 provenance preflight. Build/unit and
+per-cell diagnostic-artifact adapters are enabled by default. The latter
+accepts exactly one isolated runtime jar plus its canonical Gradle sources
+sibling and records strict loader/MPL/build-identity inspection plus SHA-256.
+A complete three-version loader selection additionally builds one candidate
+from the 26.1 ABI with the reviewed closed metadata ranges, retains and
+re-inspects it under the immutable run, and makes every loader cell cite the
+same path and hash. Partial loader selections do not synthesize that proof.
+The external-runtime phase bridge and standalone executor share one exact live
+cell lock safely. Default runner wiring enables it only when clean provenance
+and a complete loader triplet exist; a partial selection remains `INCOMPLETE`
+without runtime I/O. Strict terminal evidence is written only after schema
+validation with exclusive, non-symlink-safe creation.
 The first clean pushed execution of this boundary selected Fabric 26.1 at
 commit `51e7a95d56617e0af7b575dbc9c076727f5e65e2`: Java 25/Fabric Loom
 1.17.19 completed all 337 tests and its isolated build in 2m59s, while the

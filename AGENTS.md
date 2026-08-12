@@ -311,27 +311,41 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   for version inputs, isolated profiles, states, evidence, and same-jar claims.
 - `scripts/run_minecraft_qualification.py` and
   `scripts/minecraft_qualification_model.py`: fail-closed serial Phase 3
-  runner/model seam. Dry-run is write-free and `INCOMPLETE`; non-dry runs only
-  the isolated build/unit and per-cell diagnostic-artifact adapters. The
-  artifact adapter accepts one jar below `<cell>/build/<loader>/libs`, strict
-  checks loader/MPL/build identity, and records SHA-256. It is not frozen
-  same-file or external-runtime qualification.
+  runner/model seam. Dry-run is write-free and `INCOMPLETE`; non-dry runs the
+  isolated build/unit, per-cell diagnostic-artifact, and full-loader-triplet
+  frozen-candidate adapters. The diagnostic artifact adapter accepts one
+  direct runtime jar plus only its canonical Gradle sources sibling below
+  `<cell>/build/<loader>/libs`, strict-checks loader/MPL/build identity, and
+  records SHA-256. Frozen preparation builds once from the oldest ABI under the
+  run root, retains/re-inspects one MPL-covered candidate, and records one
+  path/hash for all three loader cells. It is not external-runtime
+  qualification. Once clean provenance and a complete frozen loader triplet
+  exist, the default runner also installs the external dedicated-smoke bridge,
+  lends its held cell lock, and stores a separately schema-validated immutable
+  `strict-terminal-evidence.json` before a runtime phase can pass. Partial
+  selections stay `INCOMPLETE` without runtime I/O.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
   immutable reports, pinned hashes, and strict diagnostic jar inspection. It
-  supplies the runner's build and strict diagnostic-artifact primitives; its
-  external runtime mechanisms remain separate until their evidence contract is
-  wired.
+  supplies the runner's build and strict diagnostic-artifact primitives. Its
+  external runtime API may reuse only a live runner-supplied lock with the
+  exact path and run ID; standalone calls still acquire their own lock.
 - `scripts/external_runtime_smoke.py`: pure production-style dedicated-server
   plan for the pinned Mojang server, official installer, exact mods inventory,
   safe-small config, launch, markers, and clean-stop contract. It performs no
   I/O or execution.
+- `scripts/external_runtime_qualification_adapter.py`: structural bridge from
+  frozen/provenance runner inputs to external dedicated smoke and strict
+  terminal evidence. It must validate and exclusive-create the raw strict JSON
+  record before returning a `PASS` phase, and must re-inspect the retained
+  frozen jar before any installer, download, or runtime activity.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit
-  observations, and immutable local results. It is not yet wired into the
-  complete qualification verdict and is never a release publisher.
+  observations, and immutable local results. The default runner reaches it
+  only for a clean, complete loader triplet and it is never a release
+  publisher.
 - `scripts/minecraft_qualification_ranges.py`: strict pure parser for the
   reviewed qualification-only Fabric and NeoForge 26.1.x metadata ranges.
 - `scripts/minecraft_frozen_candidate.py`: strict oldest-ABI candidate and
@@ -398,7 +412,10 @@ root is accepted only below `dist/qualification`. Supplying only one property,
 using traversal, or pointing at ordinary development/package state must fail.
 With neither property, all historical paths and ports remain unchanged. This
 is build isolation, not cross-version proof; a same-jar claim requires one
-frozen jar in external production-style runtimes.
+frozen jar built once against the oldest ABI and then exercised in external
+production-style runtimes. The runner's `SHARED_CONTRACT` preflight records
+that one frozen path/hash only when a complete three-version loader triplet is
+selected; it never synthesizes the claim from per-cell source builds.
 Qualification source-build artifacts must use the diagnostic
 `0.0.0-qualification+mc<version>` identity and a qualification release label;
 never stage or publish them. The 26.1 and 26.1.1 Fabric and NeoForge beta

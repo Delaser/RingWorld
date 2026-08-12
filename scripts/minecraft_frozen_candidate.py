@@ -31,6 +31,8 @@ from verify_distribution_license import parse_neoforge_metadata
 EXPECTED_VERSIONS = ("26.1", "26.1.1", "26.1.2")
 MAX_ARCHIVE_ENTRIES = 20_000
 MAX_METADATA_BYTES = 1024 * 1024
+_MPL_LICENSE = "MPL-2.0"
+_CANONICAL_MPL_SHA256 = "1f256ecad192880510e84ad60474eab7589218784b9a50bc7ceee34c2b91f1d5"
 
 
 class FrozenCandidateError(ValueError):
@@ -128,6 +130,9 @@ def inspect_frozen_candidate(path: Path, loader: str) -> FrozenCandidateInspecti
             expected_label = f"qualification-26.1-{loader}"
             if artifact_version != expected_artifact or release_label != expected_label:
                 raise FrozenCandidateError("candidate was not built once from the approved 26.1 ABI identity")
+            license_text = _single_text(archive, "LICENSE-RINGWORLD.txt")
+            if hashlib.sha256(license_text.encode("utf-8")).hexdigest() != _CANONICAL_MPL_SHA256:
+                raise FrozenCandidateError("candidate does not embed the canonical RingWorld MPL-2.0 license")
 
             loader_range: str | None = None
             if loader == "fabric":
@@ -136,7 +141,8 @@ def inspect_frozen_candidate(path: Path, loader: str) -> FrozenCandidateInspecti
                 except json.JSONDecodeError as error:
                     raise FrozenCandidateError("Fabric metadata is invalid JSON") from error
                 if not isinstance(metadata, Mapping) or metadata.get("id") != "ringworld" \
-                        or metadata.get("version") != artifact_version:
+                        or metadata.get("version") != artifact_version \
+                        or metadata.get("license") != _MPL_LICENSE:
                     raise FrozenCandidateError("Fabric candidate identity does not match")
                 dependencies = metadata.get("depends")
                 minecraft_range = dependencies.get("minecraft") if isinstance(dependencies, Mapping) else None
@@ -150,7 +156,8 @@ def inspect_frozen_candidate(path: Path, loader: str) -> FrozenCandidateInspecti
                     raise FrozenCandidateError("NeoForge metadata is invalid TOML") from error
                 mods = metadata.get("mods")
                 if not isinstance(mods, Sequence) or len(mods) != 1 or not isinstance(mods[0], Mapping) \
-                        or mods[0].get("modId") != "ringworld" or mods[0].get("version") != artifact_version:
+                        or mods[0].get("modId") != "ringworld" or mods[0].get("version") != artifact_version \
+                        or metadata.get("license") != _MPL_LICENSE:
                     raise FrozenCandidateError("NeoForge candidate identity does not match")
                 minecraft_range = _neoforge_dependency(metadata, "minecraft").get("versionRange")
                 loader_range = _neoforge_dependency(metadata, "neoforge").get("versionRange")

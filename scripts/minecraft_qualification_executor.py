@@ -230,6 +230,22 @@ class QualificationLock:
     def __exit__(self, exception_type: object, exception: object, traceback: object) -> None:
         self.release()
 
+    def require_held_for(self, path: Path, run_id: str) -> None:
+        """Bind a borrowed lock to exactly one qualification execution.
+
+        This is intentionally an instance capability, not a reconstruction
+        from lock-file JSON: the operating-system lock held by this exact
+        object is the authority.  It lets a higher-level serial runner lend
+        its existing lock to a nested executor without a self-deadlock.
+        """
+        _assert_run_id(run_id)
+        if not self._held:
+            raise LockError("supplied qualification lock is not held")
+        if self.identity.run_id != run_id:
+            raise LockError("supplied qualification lock belongs to a different run id")
+        if self.path.resolve(strict=False) != path.resolve(strict=False):
+            raise LockError("supplied qualification lock belongs to a different path")
+
 
 def create_contained_directories(paths: QualificationPaths) -> None:
     """Create only the reviewed, per-cell directories below ``cell_root``."""

@@ -17,20 +17,27 @@ from minecraft_frozen_candidate import (
 )
 
 
+REPOSITORY_LICENSE = (Path(__file__).resolve().parents[1] / "LICENSE").read_text(encoding="utf-8")
+
+
 def write_candidate(path: Path, loader: str, *, minecraft_range: str | None = None,
-                    loader_range: str | None = None, source_version: str = "26.1") -> None:
+                    loader_range: str | None = None, source_version: str = "26.1",
+                    license_text: str = REPOSITORY_LICENSE,
+                    declared_license: str = "MPL-2.0") -> None:
     version = f"0.0.0-qualification+mc{source_version}"
     label = f"qualification-{source_version}-{loader}"
     with zipfile.ZipFile(path, "w") as archive:
+        archive.writestr("LICENSE-RINGWORLD.txt", license_text)
         archive.writestr("ringworld-build.properties", f"artifactVersion={version}\nreleaseLabel={label}\n")
         if loader == "fabric":
             archive.writestr("fabric.mod.json", json.dumps({
                 "id": "ringworld", "version": version,
+                "license": declared_license,
                 "depends": {"minecraft": minecraft_range or ">=26.1 <=26.1.2"},
             }))
         else:
             archive.writestr("META-INF/neoforge.mods.toml", "\n".join((
-                'license="MPL-2.0"',
+                f'license="{declared_license}"',
                 '[[mods]]', 'modId="ringworld"', f'version="{version}"',
                 '[[dependencies.ringworld]]', 'modId="neoforge"',
                 f'versionRange="{loader_range or "[26.1.0.19-beta,26.1.2.87]"}"',
@@ -68,6 +75,31 @@ class FrozenCandidateTest(unittest.TestCase):
             write_candidate(path, "fabric", source_version="26.1.2")
             with self.assertRaises(FrozenCandidateError):
                 inspect_frozen_candidate(path, "fabric")
+
+    def test_rejects_missing_embedded_or_declared_mpl_license(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "fabric.jar"
+            with zipfile.ZipFile(path, "w") as archive:
+                archive.writestr("ringworld-build.properties", "artifactVersion=0.0.0-qualification+mc26.1\nreleaseLabel=qualification-26.1-fabric\n")
+                archive.writestr("fabric.mod.json", json.dumps({
+                    "id": "ringworld", "version": "0.0.0-qualification+mc26.1",
+                    "license": "MPL-2.0", "depends": {"minecraft": ">=26.1 <=26.1.2"},
+                }))
+            with self.assertRaises(FrozenCandidateError):
+                inspect_frozen_candidate(path, "fabric")
+
+    def test_rejects_altered_embedded_or_loader_license_declarations(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            altered = root / "altered.jar"
+            write_candidate(altered, "fabric", license_text=REPOSITORY_LICENSE + "\nchanged\n")
+            with self.assertRaises(FrozenCandidateError):
+                inspect_frozen_candidate(altered, "fabric")
+            for loader in ("fabric", "neoforge"):
+                wrong = root / f"wrong-{loader}.jar"
+                write_candidate(wrong, loader, declared_license="MIT")
+                with self.assertRaises(FrozenCandidateError):
+                    inspect_frozen_candidate(wrong, loader)
 
     def test_same_file_coverage_requires_one_path_and_hash_for_three_cells(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

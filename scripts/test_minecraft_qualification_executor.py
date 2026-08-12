@@ -92,6 +92,18 @@ class QualificationExecutorTest(unittest.TestCase):
             with self.assertRaises(Exception):
                 sanitized_environment((("API_TOKEN", "nope"),), inherited={})
 
+    def test_lock_and_contained_paths_work_with_windows_safe_spacing_and_unicode(self) -> None:
+        """Exercise the real host Path/lock backend, including Windows CI."""
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary) / "qualification space \u2713"
+            paths = paths_at(root)
+            create_contained_directories(paths)
+            self.assertTrue(paths.logs_directory.is_dir())
+            self.assertIn("qualification space \u2713", str(paths.cell_root))
+            with QualificationLock.acquire(paths.lock_path, "20260812T120000Z-0123456789ab"):
+                with self.assertRaises(LockError):
+                    QualificationLock.acquire(paths.lock_path, "20260812T120001Z-0123456789ab")
+
     def test_subprocess_logs_success_failure_and_timeout(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
