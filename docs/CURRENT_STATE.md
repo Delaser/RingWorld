@@ -105,6 +105,10 @@ The first clean pushed execution of this boundary selected Fabric 26.1 at
 commit `51e7a95d56617e0af7b575dbc9c076727f5e65e2`: Java 25/Fabric Loom
 1.17.19 completed all 337 tests and its isolated build in 2m59s, while the
 cell correctly remained `INCOMPLETE` at the then-unwired later phases.
+A clean repeat at `954bc7c` also passes strict inspection of the real Gradle
+runtime jar (SHA-256 `7669a10461801bd0e24db60fbb3cab925d5177905e698377e65eb1e69b82a43f`)
+and remains deliberately `INCOMPLETE` without a full loader triplet; no
+external runtime was launched.
 Publication is host-scoped: the current records describe Modrinth as published
 and independently hash-verified, while CurseForge remains Under Review for
 Fabric and Baking for NeoForge. One aggregate status never implies both hosts

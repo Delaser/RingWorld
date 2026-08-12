@@ -123,6 +123,16 @@ ended `INCOMPLETE` at commit `51e7a95d56617e0af7b575dbc9c076727f5e65e2`
 because the later adapters were absent. This proves the execution boundary and
 26.1 source build only; it is not external-runtime or support evidence.
 
+After the diagnostic verifier was corrected to compare the embedded licence
+against the canonical repository MPL-2.0 bytes, clean commit `954bc7c` repeated
+the 26.1 Fabric cell as run `20260812T151647Z-66228770c525`. All 337 tests and
+the isolated build passed; artifact verification accepted the real runtime jar
+with SHA-256
+`7669a10461801bd0e24db60fbb3cab925d5177905e698377e65eb1e69b82a43f`.
+The terminal verdict is correctly `INCOMPLETE` at shared-contract and
+dedicated-smoke because only one loader cell was selected, and no external
+runtime I/O occurred.
+
 The dry run must exit nonzero with `INCOMPLETE` and
 `DRY_RUN_NO_EXECUTION`; it is planning output, not evidence. A partial non-dry
 selection is also deliberately `INCOMPLETE`. Inspect
