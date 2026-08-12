@@ -47,3 +47,15 @@ rights to RingWorld trademarks, logos, or release branding.
 
 See `docs/LICENSING.md` for practical source-availability and binary-
 distribution guidance.
+
+## Minecraft 1.21.1 backport
+
+The coordinated 1.21.1 backport uses the temporary integration branch
+`port/mc-1.21.1`. Contributors should begin with an assigned `mc:1.21.1`
+issue, branch from that integration branch, and open their pull request back
+against it. Do not target incomplete backport slices directly at `main`.
+
+Read `versions/mc1.21.1/README.md` before changing build inputs, mappings,
+mixins, world generation, networking, or rendering. Shared RingWorld behavior
+must remain shared; version-specific code belongs behind the narrowest
+practical adapter.

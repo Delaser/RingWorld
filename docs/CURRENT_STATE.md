@@ -9,6 +9,160 @@ The Minecraft 26.1.2 port is integrated on `main`; see
 [`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md) and the
 [`final baseline`](MINECRAFT_1_21_11_FINAL_BASELINE.md).
 
+Minecraft 26.1 is now the approved development compatibility floor. The
+current verified and published files still target 26.1.2 exactly; neither
+26.1 nor 26.1.1 is a public compatibility claim until the complete dual-loader
+qualification matrix passes. The rolling stable-release policy, automation
+tiers, evidence contract, and intake order are defined in
+[`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
+Existing 26.1.2 release evidence remains exact historical evidence and is not
+silently generalized to the rest of the patch line.
+
+Phase 0 is tracked by GitHub epic #168 and its Phase 1–10 child issues. Phase 1
+now has a fail-closed six-cell manifest and eighteen pure validator tests. The
+26.1.2 Fabric and NeoForge cells contain their immutable published hashes;
+26.1 and 26.1.1 remain pending. Exact Fabric inputs are available, while the
+only official NeoForge runtimes for those patches are pinned beta trial
+builds whose ModDevGradle/build/runtime compatibility is not yet proven.
+Every cell also pins the official runtime installer jar and SHA-256: Fabric
+Installer 1.1.1 for Fabric, and the exact matching NeoForge installer for each
+NeoForge runtime. Loader or universal jars are never treated as substitutes
+for a production server installer.
+Phase 2 now has its first opt-in Gradle isolation slice. Supplying the paired
+`ringQualificationRoot` and `ringQualificationCell` properties redirects both
+loaders' build output, declared game directories, fixture preparers, and
+verifiers below one disposable cell root. Qualification-specific port
+properties cover multiplayer, raid, and dedicated-smoke profiles. Normal
+developer paths remain unchanged when those properties are absent. Seven
+static guardrail tests and real Java 25 default/isolated Gradle configuration
+checks pass. The raid and worldgen scripts now keep their fixture-managed
+state below an explicitly selected qualification cell and reject traversal or
+paths outside `dist/qualification`. The destructive raid preparer additionally
+rejects every existing symlink component on its managed paths before fixture
+creation or deletion.
+The first source-build diagnostics also pass unchanged on all four earlier
+patch cells: Fabric 26.1/26.1.1 and NeoForge's pinned 26.1/26.1.1 beta trials
+each compile, package, and pass all 337 tests. Their generated loader metadata
+names the selected Minecraft/runtime versions. These are source-build ABI
+results only—not server/client runtime qualification or same-jar evidence—so
+the four manifest cells remain `pending`.
+
+Phase 3 has a fail-closed orchestration core. It validates and selects
+manifest cells, plans contained paths, pinned downloads, locks, ports, Gradle
+argument vectors, and deterministic JSON/Markdown reports. Dry-run output
+remains write-free and `INCOMPLETE`; the serial non-dry path records immutable
+evidence for reviewed build/unit, per-cell diagnostic-artifact, and complete
+loader-triplet frozen-candidate preparation. Runtime qualification remains
+pending until its real external cells complete.
+The executor foundation now has passing focused coverage for UTC run
+IDs, held operating-system cell locks, contained directories, process-group
+timeouts, bounded credential-pattern-redacted logs, immutable terminal
+reports, pinned-file hashing, and strict loader-aware diagnostic jar
+inspection. Its build and diagnostic-artifact primitives are wired to the
+serial runner; the external-runtime planner models the exact official
+installer, mods inventory, safe-small configuration, launch command, markers,
+and clean stop contract for all six cells without writing or launching
+anything.
+The external executor can now, as a separately tested adapter, fetch exact
+pinned inputs without following redirects, refuse symlinked or reused runtime
+paths, run the official installer, enforce an exact mod inventory, preflight
+the loopback port, verify the installer-owned Mojang server against the
+manifest pin, wait for loader/RingWorld/readiness markers, send `stop`, reject
+fatal/crash output, and record an ordered stop/save/clean-exit ledger. A pure
+adapter now binds this result to the strict terminal schema but deliberately
+rejects `PASS` without the separate provenance, log hashes, runtime inventory,
+frozen-candidate identity, and same-file group evidence. The runner now
+installs this phase only after clean provenance and a complete frozen loader
+triplet, lending its live exact cell lock to avoid re-acquisition. It persists
+a separately validated, immutable raw strict-terminal-evidence JSON record
+alongside the scheduler report. The complete Fabric triplet passed end to end
+on 2026-08-12 in run `20260812T170742Z-d5ff11778395` at commit `b4d80ce`.
+Each of 26.1, 26.1.1, and 26.1.2 passed all 337 tests, strict diagnostic-jar
+inspection, official installer/runtime assembly, a fresh 2,048x416 mapping-4
+server, and strict stop/save evidence. All three loaded the same frozen
+wide-range jar with SHA-256
+`e1254b38cf811e7c68382c4ecc025dbede8b5effca54993e5bd403716bff5f39`.
+The exact strict-evidence SHA-256 values are `9df2b50f...ecd8` (26.1),
+`37c9a2e3...0072` (26.1.1), and `4fecc925...5cc3` (26.1.2). The optional
+checksum-pinned external Gradle ZIP seed removed the earlier wrapper-download
+interruption while preserving isolated cell homes. The complete NeoForge
+triplet then passed in run `20260812T171404Z-a2d212243bb3`: all three cells
+passed the same gates with frozen jar SHA-256
+`c264b1d389ef3e341e4bd7318c89b4c819568c114c811867c239ecbf9d6f8e2f`.
+Its strict-evidence SHA-256 values are `ecf0f169...421d` (26.1),
+`fb29c97f...eb4c` (26.1.1), and `03538bba...ce94` (26.1.2). Phase 3 quick
+qualification is therefore complete for both loaders; Phase 4 nightly
+gameplay/rendering qualification remains pending.
+Phase 4 now also has a pure, fail-closed Atlas recovery evidence contract. It
+requires a genuine partial schema-2 `INTERRUPTED` checkpoint and a later
+schema-2 `COMPLETE` report from the same disposable runtime/world and report
+target. Independent saved-settings and Atlas-file observations must match the
+mapping-4 2,048x416 identity, wall height, persistent Atlas path, hashes,
+totals, clean exits, and globally ordered stage ledgers. A concrete external
+plan, executor, and bounded process runner now implement this first nightly
+slice. They re-inspect the frozen candidate, semantically validate and rehash
+the selected cell's strict quick record before any download, use the official
+installer in a new contained runtime, and hash every capture and process log.
+The first process stops only after a durable independently parsed partial
+Atlas exists; the second receives those exact bytes, must show growth, and
+must halt itself with `COMPLETE`. Static tests use local fake children only.
+The first real external recovery slice passed on both loaders at clean pushed
+commit `1887692` on 2026-08-12. Fabric run
+`20260812T184342Z-cef57e3ac2a4` stopped at 244/13,312 cells and resumed to
+13,312/13,312; its terminal-evidence SHA-256 is
+`bc770cd1395c8a45203ef54e436ff3645bc0c32285a0ec2b2471849e4355498d`.
+NeoForge run `20260812T185236Z-670720ec923e` stopped at 280/13,312 and
+resumed to 13,312/13,312; its terminal-evidence SHA-256 is
+`f3459d31f906fcafd085540a46e5b989554ca129da717ac5f87fc87aacd801b3`.
+Both retained mapping 4, world hash `8665210144080158345`, layout fingerprint
+`4064118068185880929`, an exact byte-identical restart checkpoint, clean
+stage exits, and self-halted only after schema-2 `COMPLETE`. This completes
+the Atlas recovery slice, not the broader Phase 4 nightly matrix.
+The companion bounded persistence parser has been checked against an actual
+NeoForge qualification world. It independently decodes the dimension-owned
+gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java
+unsigned layout fingerprint and Atlas world hash, and rejects malformed,
+truncated, trailing, or invalid-presence data. Recovery evidence additionally
+requires an absent fresh runtime/world/Atlas before assembly and an exact
+byte-identical interrupted Atlas observation immediately before restart.
+The accepted same-jar proof architecture builds one frozen candidate per
+loader against the oldest supported ABI and runs that unchanged file in
+external production-style profiles for every patch. Per-cell Gradle builds are
+ABI diagnostics, not compatibility proof.
+Qualification-only Fabric and NeoForge candidates now also compile from the
+26.1 source ABI with reviewed closed metadata covering 26.1 through 26.1.2.
+Normal builds were separately checked to retain their exact published 26.1.2
+metadata. Strict pure range checks prove that the six manifest targets are
+inside those declarations. Both loader candidates now pass all three quick
+external runtimes; this does not substitute for the Phase 4 nightly matrix.
+The runner now has a serial injected-phase state machine, isolated
+`GRADLE_USER_HOME`, `--no-daemon`, held cell locks, immutable per-cell/matrix
+reports, and a clean pushed-source/Java-25 provenance preflight. Build/unit and
+per-cell diagnostic-artifact adapters are enabled by default. The latter
+accepts exactly one isolated runtime jar plus its canonical Gradle sources
+sibling and records strict loader/MPL/build-identity inspection plus SHA-256.
+A complete three-version loader selection additionally builds one candidate
+from the 26.1 ABI with the reviewed closed metadata ranges, retains and
+re-inspects it under the immutable run, and makes every loader cell cite the
+same path and hash. Partial loader selections do not synthesize that proof.
+The external-runtime phase bridge and standalone executor share one exact live
+cell lock safely. Default runner wiring enables it only when clean provenance
+and a complete loader triplet exist; a partial selection remains `INCOMPLETE`
+without runtime I/O. Strict terminal evidence is written only after schema
+validation with exclusive, non-symlink-safe creation.
+The first clean pushed execution of this boundary selected Fabric 26.1 at
+commit `51e7a95d56617e0af7b575dbc9c076727f5e65e2`: Java 25/Fabric Loom
+1.17.19 completed all 337 tests and its isolated build in 2m59s, while the
+cell correctly remained `INCOMPLETE` at the then-unwired later phases.
+A clean repeat at `954bc7c` also passes strict inspection of the real Gradle
+runtime jar (SHA-256 `7669a10461801bd0e24db60fbb3cab925d5177905e698377e65eb1e69b82a43f`)
+and remains deliberately `INCOMPLETE` without a full loader triplet; no
+external runtime was launched.
+Publication is host-scoped: the current records describe Modrinth as published
+and independently hash-verified, while CurseForge remains Under Review for
+Fabric and Baking for NeoForge. One aggregate status never implies both hosts
+are downloadable.
+
 Owner Windows, gameplay, visual, and final-review gates #12, #13, #95, and
 #96 are complete. The active release metadata targets shared runtime version
 `1.0.0+mc26.1.2`, with loader-specific public identifiers
@@ -24,6 +178,12 @@ the NeoForge jar SHA-256 is
 The public showcase now links only to Modrinth, CurseForge, and GitHub; old
 direct downloads were moved outside the document root. The unlisted alpha page
 serves checksum-verified 1.0 Windows packages and manifest-following installers.
+GitHub, host-listing, showcase, and operator copy now describe the same
+progressive Atlas experience: real chunks are playable first, a fogged
+biome-flavoured placeholder bridges the incomplete distant ring and both rims,
+streamed revisions cross-fade as work is checkpointed, and verified completion
+removes the placeholder and upgrades the detailed mesh. The copy explicitly
+warns that generation time and disk cost vary by layout and machine.
 
 The live demo was migrated from Fabric to NeoForge 26.1.2.87 and RingWorld 1.0.
 Its previous world is preserved intact at

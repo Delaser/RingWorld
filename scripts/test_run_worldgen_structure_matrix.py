@@ -1,8 +1,18 @@
 #!/usr/bin/env python3
 
 import unittest
+from pathlib import Path
 
-from run_worldgen_structure_matrix import ROOT, loader_runtime, parse_log, validate_aggregate, validate_reload
+from run_worldgen_structure_matrix import (
+    QUALIFICATION_ROOT,
+    ROOT,
+    loader_runtime,
+    parse_log,
+    qualification_cell_root,
+    qualification_gradle_properties,
+    validate_aggregate,
+    validate_reload,
+)
 
 
 def record(**overrides):
@@ -37,6 +47,38 @@ class WorldgenStructureMatrixTest(unittest.TestCase):
         self.assertEqual(ROOT / "neoforge" / "run-stronghold-test" / "logs" / "latest.log",
                          neoforge.run_log)
         self.assertNotEqual(fabric.report_dir, neoforge.report_dir)
+
+    def test_qualification_runtime_stays_below_one_reviewed_cell(self):
+        cell = QUALIFICATION_ROOT / "ringworld" / "26.1" / "fabric" / "run-1" / "26.1-fabric"
+        runtime = loader_runtime("fabric", cell)
+        self.assertEqual(
+            cell / "run" / "run-stronghold-test" / "logs" / "latest.log",
+            runtime.run_log,
+        )
+        self.assertEqual(cell / "evidence" / "worldgen-matrix", runtime.report_dir)
+        self.assertEqual(
+            (
+                ("ringQualificationRoot", str((cell.parent).resolve())),
+                ("ringQualificationCell", "26.1-fabric"),
+            ),
+            runtime.gradle_properties,
+        )
+        self.assertEqual(runtime.gradle_properties, qualification_gradle_properties(cell))
+
+    def test_qualification_cell_rejects_traversal_and_nonqualification_paths(self):
+        for unsafe in (
+            Path("dist/qualification/../client-bundle"),
+            ROOT / "run-stronghold-test",
+            QUALIFICATION_ROOT,
+            QUALIFICATION_ROOT / "..",
+        ):
+            with self.subTest(unsafe=unsafe):
+                with self.assertRaisesRegex(ValueError, "qualification cell root"):
+                    qualification_cell_root(unsafe)
+        self.assertEqual(
+            (QUALIFICATION_ROOT / "ringworld" / "26.1" / "fabric").resolve(),
+            qualification_cell_root(Path("dist/qualification/ringworld/26.1/fabric")),
+        )
 
     def test_parses_complete_runtime_record(self):
         log = """

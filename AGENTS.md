@@ -123,10 +123,12 @@ agent uses a separate account and must monitor its own allowance.
 
 ## What this project is
 
-RingWorld is a dual-loader mod ported from Minecraft Java 1.21.11 to 26.1.2.
-Fabric and NeoForge are published as matched 1.0 builds. Runtime, packaging,
-owner, and independent release gates are complete; broad compatibility work
-remains.
+RingWorld is a dual-loader mod ported from Minecraft Java 1.21.11. Minecraft
+26.1 is the development compatibility floor, while 26.1.2 remains the only
+currently proven and published release. Fabric and NeoForge are published as
+matched 1.0 builds for 26.1.2. Runtime, packaging, owner, and independent
+release gates are complete; broad compatibility and the rolling-version
+qualification automation remain.
 The validated design turns only the Overworld into a finite band:
 
 - canonical X runs around the circumference and is periodic;
@@ -171,6 +173,23 @@ retroactively revokes rights previously granted to a recipient. Likewise,
 copies distributed under the former RingWorld Evaluation License retain the
 terms attached to those copies; MPL-2.0 applies to repository versions released
 under it.
+
+## Minecraft version support policy
+
+Minecraft 26.1 is the source/build compatibility floor. This is not permission
+to advertise the current jar for 26.1 or 26.1.1: 26.1.2 remains the exact
+verified and published runtime until the six-cell Fabric/NeoForge 26.1.x
+matrix passes. A 26.1.x-wide release must use the exact same jar hash for every
+tested patch release on a loader.
+
+Every later stable Minecraft release enters the automated qualification
+pipeline described in
+[`docs/MINECRAFT_VERSION_SUPPORT_PLAN.md`](docs/MINECRAFT_VERSION_SUPPORT_PLAN.md).
+Treat each new stable line as a porting project, pin every dependency, audit
+all mixin and shader ABI, use disposable worlds, and require the appropriate
+quick, nightly, and release gates before changing support metadata. Snapshots,
+pre-releases, and release candidates are unsupported unless explicitly marked
+experimental. Never rewrite historical 26.1.2 evidence as broader evidence.
 
 ## Loader support policy
 
@@ -286,6 +305,129 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
 - `deploy/`: generic client-launcher, dedicated-server, and Modrinth staging
   templates. `scripts/prepare_release_packages.py` assembles optional local
   client/server packages from them; generated archives remain ignored.
+- `config/minecraft-version-matrix.json`: pinned Fabric/NeoForge qualification
+  cells and publication evidence for the Minecraft 26.1.x support line.
+- `scripts/validate_minecraft_version_matrix.py`: fail-closed pure validation
+  for version inputs, isolated profiles, states, evidence, and same-jar claims.
+- `scripts/run_minecraft_qualification.py` and
+  `scripts/minecraft_qualification_model.py`: fail-closed serial Phase 3
+  runner/model seam. Dry-run is write-free and `INCOMPLETE`; non-dry runs the
+  isolated build/unit, per-cell diagnostic-artifact, and full-loader-triplet
+  frozen-candidate adapters. The diagnostic artifact adapter accepts one
+  direct runtime jar plus only its canonical Gradle sources sibling below
+  `<cell>/build/<loader>/libs`, strict-checks loader/canonical-MPL/build identity, and
+  records SHA-256. Frozen preparation builds once from the oldest ABI under the
+  run root, retains/re-inspects one MPL-covered candidate, and records one
+  path/hash for all three loader cells. It is not external-runtime
+  qualification. Once clean provenance and a complete frozen loader triplet
+  exist, the default runner also installs the external dedicated-smoke bridge,
+  lends its held cell lock, and stores a separately schema-validated immutable
+  `strict-terminal-evidence.json` before a runtime phase can pass. Partial
+  selections stay `INCOMPLETE` without runtime I/O. A failed complete-triplet
+  frozen preflight aborts per-cell diagnostics before Gradle work but still
+  writes immutable reports with the shared-contract failure and explicit
+  aborted phases; partial-triplet diagnostics remain unchanged. The optional
+  `--gradle-dependency-cache` is only for a worker-provisioned, already-existing
+  external read-only dependency cache. It must be absolute, non-symlinked, and
+  outside the checkout, qualification state, and home; the runner passes it
+  only as `GRADLE_RO_DEP_CACHE` while retaining each cell's disposable
+  `GRADLE_USER_HOME`. It is non-authoritative acceleration, never offline
+  qualification or support evidence. Provision it from a compatible Gradle
+  `caches/modules-2` tree without lock/cleanup files and do not mutate it while
+  a qualification run reads it; the runner rechecks the path at every Gradle
+  command boundary but does not trust its contents.
+  The isolated wrapper download remains separate and must match the official
+  Gradle 9.5.1 binary ZIP SHA-256 pinned in `gradle-wrapper.properties`. A
+  worker may provide that exact external ZIP with
+  `--gradle-distribution-zip`; the runner rehashes it and exclusively copies it
+  into each fresh cell's wrapper store without creating Gradle's `.ok` marker
+  or bypassing wrapper verification.
+  Fabric quick run `20260812T170742Z-d5ff11778395` passes 26.1, 26.1.1, and
+  26.1.2 with one unchanged frozen jar
+  (`e1254b38cf811e7c68382c4ecc025dbede8b5effca54993e5bd403716bff5f39`).
+  NeoForge quick run `20260812T171404Z-a2d212243bb3` also passes all three
+  versions with one unchanged frozen jar
+  (`c264b1d389ef3e341e4bd7318c89b4c819568c114c811867c239ecbf9d6f8e2f`).
+  These are dedicated-server quick evidence only; the Phase 4 nightly
+  gameplay/rendering matrix remains pending.
+- `scripts/minecraft_qualification_executor.py`: stdlib-only execution
+  primitives for held cell locks, contained directories, bounded
+  credential-pattern-redacted subprocess logs, process-group timeout cleanup,
+  immutable reports, pinned hashes, and strict diagnostic jar inspection. It
+  supplies the runner's build and strict diagnostic-artifact primitives.
+  Isolated Gradle builds use one worker so dependency resolution does not fan
+  out across simultaneous connections on constrained hosts. Its
+  external runtime API may reuse only a live runner-supplied lock with the
+  exact path and run ID; standalone calls still acquire their own lock.
+- `scripts/external_runtime_smoke.py`: pure production-style dedicated-server
+  plan for the pinned Mojang server, official installer, exact mods inventory,
+  safe-small config, launch, markers, and clean-stop contract. It performs no
+  I/O or execution.
+- `scripts/external_runtime_qualification_adapter.py`: structural bridge from
+  frozen/provenance runner inputs to external dedicated smoke and strict
+  terminal evidence. It must validate and exclusive-create the raw strict JSON
+  record before returning a `PASS` phase, and must re-inspect the retained
+  frozen jar before any installer, download, or runtime activity. Preserve the
+  Mojang server's declared hash algorithm (currently SHA-1) for pin validation;
+  the separate installed-file inventory remains SHA-256. Bind the installer
+  download by the reviewed command path/checksum, then carry that reviewed
+  loader-specific display name into terminal validation rather than requiring
+  one hard-coded label. The terminal schema must independently bind that name,
+  URL, checksum algorithm, and checksum value to the canonical manifest cell.
+- `scripts/minecraft_nightly_qualification_model.py`: pure Phase 4 contract
+  for reusing existing fixtures under one qualification cell. It names no
+  executable and must not gain I/O, Gradle, or runtime behavior; a later
+  executor must recheck immutable candidate/quick-evidence/production-world
+  inputs and exclusive-create every output. The creation item covers settings
+  UI only; lifecycle and production rendering both require the immutable
+  production-world input. A server fixture owns `runtime/world`, and only
+  Atlas recovery may restart its own newly created world.
+- `scripts/minecraft_atlas_recovery_qualification.py`: pure Phase 4 evidence
+  contract for one clean interrupted headless-Atlas run followed by a clean
+  complete restart of that exact disposable world. It models the Java
+  schema-2 report exactly and binds it to independent persisted-settings and
+  Atlas-file observations; it performs no I/O or runtime work.
+- `scripts/minecraft_atlas_recovery_persistence.py`: bounded independent
+  gzip/NBT and Atlas-v6 byte parsers for that recovery evidence. It derives
+  the Java-compatible unsigned layout/Atlas identities from decoded settings,
+  rejects malformed/trailing payloads, and counts durable cells/chunks from
+  the Atlas presence map rather than trusting report JSON.
+- `scripts/external_runtime_atlas_recovery_plan.py`,
+  `scripts/external_runtime_atlas_recovery_executor.py`, and
+  `scripts/external_runtime_atlas_stage_runner.py`: the first concrete Phase 4
+  external fixture. They bind a validated quick terminal record and retained
+  frozen candidate, wait for an independently parsed partial Atlas before a
+  normal stop, and require the same checkpoint to advance to a self-halting
+  complete restart. Every capture and process log is hash-addressed. Static
+  tests use fake local children; they are not a real Minecraft nightly PASS.
+- `scripts/run_atlas_recovery_qualification.py`: clean-source operator CLI for
+  that first nightly slice. It accepts one canonical cell and one prior quick
+  run ID, revalidates the prior strict PASS record and frozen jar, requires the
+  current public branch to be clean/pushed under Java 25, and records that
+  executor-source provenance before launching the concrete two-stage runner.
+  Real Fabric and NeoForge 26.1 runs passed on 2026-08-12 from commit
+  `1887692`; the retained run IDs and terminal-evidence hashes are recorded in
+  `docs/CURRENT_STATE.md`. This qualifies Atlas recovery only, not the rest of
+  the Phase 4 nightly matrix.
+- `scripts/external_runtime_executor.py`: isolated external-server executor for
+  exact pinned downloads, official installer runs, installed Mojang-server
+  identity, exact mod copies, port and marker checks, ordered stop/save/exit
+  observations, and immutable local results. The default runner reaches it
+  only for a clean, complete loader triplet and it is never a release
+  publisher. It creates the already-validated empty runtime root before the
+  official installer; Fabric Installer rejects a missing target directory.
+- `scripts/minecraft_qualification_ranges.py`: strict pure parser for the
+  reviewed qualification-only Fabric and NeoForge 26.1.x metadata ranges.
+- `scripts/minecraft_frozen_candidate.py`: strict oldest-ABI candidate and
+  same-file hash inspection. Passing it is declaration/identity evidence, not
+  runtime support.
+- `scripts/minecraft_qualification_evidence.py`: fail-closed terminal evidence
+  schema. A cell cannot claim `PASS` without provenance, command and log
+  hashes, installer/runtime inventory, frozen candidate identity, ordered
+  runtime markers, clean exit, and same-file group evidence. Its pure external
+  adapter cannot manufacture missing evidence from the executor's compact
+  result. Safe relative evidence paths permit `+` in versioned artifact names
+  while continuing to reject absolute paths and traversal.
 - `docs/DIMENSION_SCALING_PLAN.md`: authoritative audit and staged plan for
   removing test-world assumptions from custom dimensions.
 - `docs/ATLAS_PREGENERATION_PLAN.md`: planned **Generate Entire Ring** UI and
@@ -296,6 +438,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   resource comparison and the decision to retain fixed eight-block sampling.
 - `docs/MINECRAFT_26_1_PORT_PLAN.md`: authoritative Minecraft 26.1.2 port,
   agent ownership, integration, validation, and deployment plan.
+- `docs/MINECRAFT_VERSION_SUPPORT_PLAN.md`: approved Minecraft 26.1 floor,
+  26.1.x qualification matrix, rolling stable-version automation, release
+  staging, and Modrinth/CurseForge publication plan.
 - `docs/MINECRAFT_1_21_11_FINAL_BASELINE.md`: immutable pre-port validation,
   hashes, performance evidence, and protected rollback inventory.
 - `docs/MINECRAFT_26_1_COMPILER_BASELINE.md`: historical Java 25/26.1.2
@@ -329,6 +474,34 @@ unit/parameterized cases:
 ```sh
 ./gradlew :neoforge:test :neoforge:build --console=plain
 ```
+
+Version-matrix work may opt into a disposable Gradle cell with paired
+`ringQualificationRoot` and `ringQualificationCell` properties. Both loaders'
+build outputs, declared runs, preparers, and verifiers then resolve below that
+cell, and `ringQualificationPort` supplies its smoke/multiplayer default. The
+root is accepted only below `dist/qualification`. Supplying only one property,
+using traversal, or pointing at ordinary development/package state must fail.
+With neither property, all historical paths and ports remain unchanged. This
+is build isolation, not cross-version proof; a same-jar claim requires one
+frozen jar built once against the oldest ABI and then exercised in external
+production-style runtimes. The runner's `SHARED_CONTRACT` preflight records
+that one frozen path/hash only when a complete three-version loader triplet is
+selected; it never synthesizes the claim from per-cell source builds.
+Qualification source-build artifacts must use the diagnostic
+`0.0.0-qualification+mc<version>` identity and a qualification release label;
+never stage or publish them. The 26.1 and 26.1.1 Fabric and NeoForge beta
+source-build cells currently pass 337 tests each, but remain pending until
+external runtime and frozen-jar gates pass.
+An operator may opt into an external worker-provisioned read-only dependency
+cache with `--gradle-dependency-cache /absolute/path`; it is rejected if it is
+missing, symlinked, or overlaps the checkout, `dist/`, per-cell build/run
+state, or the home directory. The cache is passed only as
+`GRADLE_RO_DEP_CACHE`; each cell still owns `GRADLE_USER_HOME`, and the runner
+never adds Gradle offline mode.
+External runtime assembly must use the exact SHA-256-pinned installer in each
+manifest cell: Fabric Installer for Fabric and the matching NeoForge installer
+for NeoForge. Never count a Gradle development run, Fabric Loader jar, or
+NeoForge universal jar as production-style server evidence.
 
 Both loaders now provide several identically named runtime tasks. Always
 select the loader explicitly—for example `./gradlew :runServer` or
@@ -405,6 +578,11 @@ relevant project documentation in the same change. At minimum, check
 not complete while its documentation describes the previous behavior. This
 also applies to renamed classes, changed constants, new or removed mixins,
 altered test commands, known limitations, and rejected or superseded designs.
+Keep public GitHub, showcase-site, Modrinth, and CurseForge explanations of
+Atlas generation aligned: playable real chunks appear first, the incomplete
+ring uses a fogged progressive placeholder, revisions are resumable and
+cross-faded, and only verified completion removes the fallback and enables the
+detailed mesh. Never promise one fixed generation time.
 
 1. Check `git status` and preserve unrelated user work.
 2. Identify which coordinate domain the failing value belongs to.
@@ -423,8 +601,9 @@ altered test commands, known limitations, and rejected or superseded designs.
 9. Update the appropriate file under `docs/` in the same change.
 
 Mixin method descriptors on the active branch target unobfuscated Minecraft
-26.1.2. A Minecraft, mappings, Loader, Loom, or Fabric API upgrade is a porting
-project: audit every injection target and shader ABI rather than only changing
+26.1.2. A Minecraft, mappings, Loader, Loom, ModDevGradle, or API upgrade is a
+porting project: follow the version-support intake, audit every injection
+target and shader ABI, and run the required matrix rather than only changing
 version numbers.
 
 ## Current implementation cautions
