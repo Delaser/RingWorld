@@ -1,0 +1,81 @@
+name: Qualification static guard
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/qualification-static.yml"
+      - "config/minecraft-version-matrix.json"
+      - "scripts/minecraft_qualification_*.py"
+      - "scripts/run_minecraft_qualification.py"
+      - "scripts/external_runtime_*.py"
+      - "scripts/test_*qualification*.py"
+      - "scripts/test_external_runtime_*.py"
+      - "scripts/test_minecraft_frozen_candidate.py"
+      - "scripts/test_validate_minecraft_version_matrix.py"
+      - "docs/MINECRAFT_VERSION_SUPPORT_PLAN.md"
+      - "docs/TESTING.md"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/qualification-static.yml"
+      - "config/minecraft-version-matrix.json"
+      - "scripts/minecraft_qualification_*.py"
+      - "scripts/run_minecraft_qualification.py"
+      - "scripts/external_runtime_*.py"
+      - "scripts/test_*qualification*.py"
+      - "scripts/test_external_runtime_*.py"
+      - "scripts/test_minecraft_frozen_candidate.py"
+      - "scripts/test_validate_minecraft_version_matrix.py"
+      - "docs/MINECRAFT_VERSION_SUPPORT_PLAN.md"
+      - "docs/TESTING.md"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualification-static:
+    name: Static qualification contracts (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    env:
+      # A single relative entry works on both shell families and lets the
+      # historical standalone test modules import their script siblings.
+      PYTHONPATH: scripts
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: Run matrix, path, lock, evidence, and runtime-plan contracts
+        run: >-
+          python -m unittest
+          scripts/test_validate_minecraft_version_matrix.py
+          scripts/test_qualification_gradle_isolation.py
+          scripts/test_qualification_metadata_ranges.py
+          scripts/test_minecraft_qualification_ranges.py
+          scripts/test_minecraft_frozen_candidate.py
+          scripts/test_minecraft_qualification_evidence.py
+          scripts/test_minecraft_qualification_executor.py
+          scripts/test_external_runtime_smoke.py
+          scripts/test_external_runtime_executor.py
+          scripts/test_external_runtime_qualification_adapter.py
+          scripts/test_run_minecraft_qualification.py
+          scripts/test_minecraft_nightly_qualification_model.py
+          scripts/test_minecraft_atlas_recovery_qualification.py
+          scripts/test_minecraft_atlas_recovery_persistence.py
+          scripts/test_external_runtime_atlas_recovery_plan.py
+          scripts/test_external_runtime_atlas_recovery_executor.py
+          scripts/test_external_runtime_atlas_stage_runner.py
+          scripts/test_run_atlas_recovery_qualification.py
+          scripts/test_qualification_static_workflow.py
+
+      # Static only: no Gradle, Minecraft runtime, installer, server, network,
+      # credential, package, or publication action is allowed in this job.

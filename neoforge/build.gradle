@@ -14,6 +14,32 @@ base {
     archivesName = rootProject.archives_base_name + '-neoforge'
 }
 
+def qualificationEnabled = rootProject.ext.ringQualificationEnabled
+def qualificationRunDirectory = rootProject.ext.ringQualificationRunDirectory
+def qualificationRunFile = { String historicPath -> project.file(qualificationRunDirectory(historicPath)) }
+def qualificationMinecraftRange = rootProject.ext.ringQualificationMinecraftRange
+def qualificationNeoForgeRange = rootProject.ext.ringQualificationNeoForgeRange
+def minecraftMetadataVersion = qualificationMinecraftRange ?: "[${rootProject.minecraft_version}]"
+def neoForgeMetadataVersion = qualificationNeoForgeRange ?: "[${rootProject.neoforge_version},)"
+def neoForgeRunPort = { String qualificationProperty, String historicProperty, String defaultValue ->
+    def raw = (qualificationEnabled
+            ? providers.gradleProperty(qualificationProperty)
+                    .orElse(providers.gradleProperty('ringQualificationPort'))
+                    .orElse(providers.gradleProperty(historicProperty))
+            : providers.gradleProperty(historicProperty))
+            .orElse(defaultValue).get().trim()
+    try {
+        def port = Integer.parseInt(raw)
+        if (port < 1 || port > 65535) throw new NumberFormatException(raw)
+        return port
+    } catch (NumberFormatException ignored) {
+        throw new GradleException("${qualificationProperty}/${historicProperty} must be an integer from 1 to 65535")
+    }
+}
+if (qualificationEnabled) {
+    layout.buildDirectory.set(new File(rootProject.ext.ringQualificationCellRoot, 'build/neoforge'))
+}
+
 java {
     toolchain.languageVersion = JavaLanguageVersion.of(25)
     withSourcesJar()
@@ -48,18 +74,18 @@ neoForge {
     runs {
         client {
             client()
-            gameDirectory = project.file('run-client')
+            gameDirectory = qualificationRunFile('run-client')
         }
         atlasUiClient {
             client()
-            gameDirectory = project.file('run-atlas-ui')
+            gameDirectory = qualificationRunFile('run-atlas-ui')
             systemProperty 'ringworld.atlasUiTest', 'true'
             programArgument '--username'
             programArgument 'AtlasUiTester'
         }
         creationUiClient {
             client()
-            gameDirectory = project.file('run-creation-ui')
+            gameDirectory = qualificationRunFile('run-creation-ui')
             systemProperty 'ringworld.creationUiTest', 'true'
             // The fixture requires this exact framebuffer before it opens Create World.
             programArgument '--username'
@@ -71,21 +97,21 @@ neoForge {
         }
         mapCompassCaptureClient {
             client()
-            gameDirectory = project.file('run-map-compass-capture')
+            gameDirectory = qualificationRunFile('run-map-compass-capture')
             systemProperty 'ringworld.captureMapCompass', 'true'
             programArgument '--username'
             programArgument 'MapCompassTester'
         }
         curvedObjectCaptureClient {
             client()
-            gameDirectory = project.file('run-curved-object-capture')
+            gameDirectory = qualificationRunFile('run-curved-object-capture')
             systemProperty 'ringworld.curvedObjectCapture', 'true'
             programArgument '--username'
             programArgument 'RingObjectTester'
         }
         productionProjectionClient {
             client()
-            gameDirectory = project.file('run-production-projection')
+            gameDirectory = qualificationRunFile('run-production-projection')
             systemProperty 'ringworld.captureRingProjection', 'true'
             systemProperty 'ringworld.projectionWorld', providers.gradleProperty('ringNeoForgeProjectionDestination')
                     .orElse('RingWorld NeoForge Projection').get()
@@ -99,7 +125,7 @@ neoForge {
             // This run receives a fresh copied save for every invocation.
             // Keep it separate from the projection checkpoint so its seam and
             // rim screenshots are disposable, unambiguous gate evidence.
-            gameDirectory = project.file('run-production-visual-parity')
+            gameDirectory = qualificationRunFile('run-production-visual-parity')
             systemProperty 'ringworld.captureRingVisualParity', 'true'
             systemProperty 'ringworld.visualParityWorld',
                     providers.gradleProperty('ringNeoForgeVisualParityDestination')
@@ -110,7 +136,7 @@ neoForge {
         }
         layoutSwitchClient {
             client()
-            gameDirectory = project.file('run-layout-switch')
+            gameDirectory = qualificationRunFile('run-layout-switch')
             systemProperty 'ringworld.layoutSwitchFirst',
                     providers.gradleProperty('ringNeoForgeLayoutSwitchFirstDestination')
                             .orElse('RingWorld NeoForge Layout A').get()
@@ -123,7 +149,7 @@ neoForge {
         }
         productionLifecycleClient {
             client()
-            gameDirectory = project.file('run-production-lifecycle')
+            gameDirectory = qualificationRunFile('run-production-lifecycle')
             systemProperty 'ringworld.productionLifecycleTest', 'true'
             systemProperty 'ringworld.productionLifecycleWorld',
                     providers.gradleProperty('ringNeoForgeProductionLifecycleDestination')
@@ -131,7 +157,7 @@ neoForge {
         }
         strongholdTestServer {
             server()
-            gameDirectory = project.file('run-stronghold-test')
+            gameDirectory = qualificationRunFile('run-stronghold-test')
             systemProperty 'ringworld.strongholdTest', 'true'
             systemProperty 'ringworld.worldgenMatrix',
                     providers.gradleProperty('ringWorldgenMatrix').orElse('false').get()
@@ -141,7 +167,7 @@ neoForge {
         }
         headlessPrewarmServer {
             server()
-            gameDirectory = project.file('run-headless-prewarm')
+            gameDirectory = qualificationRunFile('run-headless-prewarm')
             systemProperty 'ringworld.headlessPrewarm', 'true'
             systemProperty 'ringworld.headlessPrewarmReport',
                     providers.gradleProperty('ringNeoForgeHeadlessPrewarmResult').orElse('result.json').get()
@@ -152,33 +178,33 @@ neoForge {
             // This intentionally lives below the NeoForge subproject so it
             // never shares a world, logs, or port configuration with Fabric's
             // run-multiplayer harness.
-            gameDirectory = project.file('run-multiplayer/server')
+            gameDirectory = qualificationRunFile('run-multiplayer/server')
             systemProperty 'ringworld.multiplayerTest', 'true'
             programArgument '--nogui'
         }
         multiplayerClientA {
             client()
-            gameDirectory = project.file('run-multiplayer/client-a')
+            gameDirectory = qualificationRunFile('run-multiplayer/client-a')
             systemProperty 'ringworld.multiplayerTestRole', 'A'
             systemProperty 'ringworld.multiplayerTestPort',
-                    providers.gradleProperty('ringNeoForgeMultiplayerPort').orElse('25566').get()
+                    neoForgeRunPort('ringQualificationNeoForgeMultiplayerPort', 'ringNeoForgeMultiplayerPort', '25566').toString()
             systemProperty 'ringworld.multiplayerTestViewDistanceChunks', '5'
             programArgument '--username'
             programArgument 'RingTesterA'
         }
         multiplayerClientB {
             client()
-            gameDirectory = project.file('run-multiplayer/client-b')
+            gameDirectory = qualificationRunFile('run-multiplayer/client-b')
             systemProperty 'ringworld.multiplayerTestRole', 'B'
             systemProperty 'ringworld.multiplayerTestPort',
-                    providers.gradleProperty('ringNeoForgeMultiplayerPort').orElse('25566').get()
+                    neoForgeRunPort('ringQualificationNeoForgeMultiplayerPort', 'ringNeoForgeMultiplayerPort', '25566').toString()
             systemProperty 'ringworld.multiplayerTestViewDistanceChunks', '5'
             programArgument '--username'
             programArgument 'RingTesterB'
         }
         raidSeamArmServer {
             server()
-            gameDirectory = project.file('run-raid-seam/server')
+            gameDirectory = qualificationRunFile('run-raid-seam/server')
             systemProperty 'ringworld.raidSeamTest', 'true'
             systemProperty 'ringworld.raidSeamTestPhase', 'arm'
             systemProperty 'ringworld.raidSeamTestStopAfterSave', 'true'
@@ -186,30 +212,38 @@ neoForge {
         }
         raidSeamReloadServer {
             server()
-            gameDirectory = project.file('run-raid-seam/server')
+            gameDirectory = qualificationRunFile('run-raid-seam/server')
             systemProperty 'ringworld.raidSeamTest', 'true'
             systemProperty 'ringworld.raidSeamTestPhase', 'reload'
             programArgument '--nogui'
         }
         raidSeamClientA {
             client()
-            gameDirectory = project.file('run-raid-seam/client-a')
+            gameDirectory = qualificationRunFile('run-raid-seam/client-a')
             systemProperty 'ringworld.multiplayerTestRole', 'A'
-            systemProperty 'ringworld.multiplayerTestPort', '25567'
+            systemProperty 'ringworld.multiplayerTestPort',
+                    neoForgeRunPort('ringQualificationNeoForgeRaidSeamPort', 'ringNeoForgeRaidSeamPort', '25567').toString()
             programArgument '--username'
             programArgument 'RingTesterA'
         }
         raidSeamClientB {
             client()
-            gameDirectory = project.file('run-raid-seam/client-b')
+            gameDirectory = qualificationRunFile('run-raid-seam/client-b')
             systemProperty 'ringworld.multiplayerTestRole', 'B'
-            systemProperty 'ringworld.multiplayerTestPort', '25567'
+            systemProperty 'ringworld.multiplayerTestPort',
+                    neoForgeRunPort('ringQualificationNeoForgeRaidSeamPort', 'ringNeoForgeRaidSeamPort', '25567').toString()
             programArgument '--username'
             programArgument 'RingTesterB'
         }
         server {
             server()
-            gameDirectory = project.file('run-server')
+            gameDirectory = qualificationRunFile('run-server')
+        }
+        qualificationSmokeServer {
+            server()
+            gameDirectory = qualificationRunFile('qualification-smoke')
+            programArgument '--port'
+            programArgument neoForgeRunPort('ringQualificationNeoForgeSmokePort', 'ringNeoForgeSmokePort', '25565').toString()
             programArgument '--nogui'
         }
     }
@@ -235,16 +269,26 @@ dependencies {
 def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
     inputs.properties([
         mod_version: project.version,
-        minecraft_version: rootProject.minecraft_version,
-        neoforge_version: rootProject.neoforge_version
+        minecraft_metadata_version: minecraftMetadataVersion,
+        neoforge_metadata_version: neoForgeMetadataVersion
     ])
     expand([
         mod_version: project.version,
-        minecraft_version: rootProject.minecraft_version,
-        neoforge_version: rootProject.neoforge_version
+        minecraft_metadata_version: minecraftMetadataVersion,
+        neoforge_metadata_version: neoForgeMetadataVersion
     ])
     from 'src/main/templates'
     into layout.buildDirectory.dir('generated/sources/modMetadata')
+    doFirst {
+        if (qualificationMinecraftRange != null) {
+            rootProject.ext.requireNeoForgeQualificationRange(
+                    'ringQualificationMinecraftRange', qualificationMinecraftRange)
+        }
+        if (qualificationNeoForgeRange != null) {
+            rootProject.ext.requireNeoForgeQualificationRange(
+                    'ringQualificationNeoForgeRange', qualificationNeoForgeRange)
+        }
+    }
 }
 
 sourceSets.main.resources.srcDir generateModMetadata
@@ -282,22 +326,22 @@ def checkedProjectionSaveId = { String value, String propertyName ->
     saveId
 }
 
-def neoForgeProjectionSourceSaves = project.file('run-client/saves')
-def neoForgeAtlasUiRun = project.file('run-atlas-ui')
-def neoForgeCreationUiRun = project.file('run-creation-ui')
-def neoForgeMapCompassRun = project.file('run-map-compass-capture')
-def neoForgeProjectionRun = project.file('run-production-projection')
+def neoForgeProjectionSourceSaves = qualificationRunFile('run-client/saves')
+def neoForgeAtlasUiRun = qualificationRunFile('run-atlas-ui')
+def neoForgeCreationUiRun = qualificationRunFile('run-creation-ui')
+def neoForgeMapCompassRun = qualificationRunFile('run-map-compass-capture')
+def neoForgeProjectionRun = qualificationRunFile('run-production-projection')
 def neoForgeProjectionSaves = new File(neoForgeProjectionRun, 'saves')
-def neoForgeVisualParityRun = project.file('run-production-visual-parity')
+def neoForgeVisualParityRun = qualificationRunFile('run-production-visual-parity')
 def neoForgeVisualParitySaves = new File(neoForgeVisualParityRun, 'saves')
-def neoForgeCurvedObjectRun = project.file('run-curved-object-capture')
-def neoForgeLayoutSwitchRun = project.file('run-layout-switch')
+def neoForgeCurvedObjectRun = qualificationRunFile('run-curved-object-capture')
+def neoForgeLayoutSwitchRun = qualificationRunFile('run-layout-switch')
 def neoForgeLayoutSwitchSaves = new File(neoForgeLayoutSwitchRun, 'saves')
-def neoForgeProductionLifecycleRun = project.file('run-production-lifecycle')
+def neoForgeProductionLifecycleRun = qualificationRunFile('run-production-lifecycle')
 def neoForgeProductionLifecycleSaves = new File(neoForgeProductionLifecycleRun, 'saves')
-def neoForgeStrongholdTestRun = project.file('run-stronghold-test')
-def neoForgeHeadlessPrewarmRun = project.file('run-headless-prewarm')
-def neoForgeMultiplayerRun = project.file('run-multiplayer')
+def neoForgeStrongholdTestRun = qualificationRunFile('run-stronghold-test')
+def neoForgeHeadlessPrewarmRun = qualificationRunFile('run-headless-prewarm')
+def neoForgeMultiplayerRun = qualificationRunFile('run-multiplayer')
 def neoForgeMultiplayerServerRun = new File(neoForgeMultiplayerRun, 'server')
 def neoForgeMultiplayerClientARun = new File(neoForgeMultiplayerRun, 'client-a')
 def neoForgeMultiplayerClientBRun = new File(neoForgeMultiplayerRun, 'client-b')
@@ -331,14 +375,7 @@ def neoForgeMultiplayerAtlasCellCount = (neoForgeMultiplayerCircumferenceBlocks.
         * (neoForgeMultiplayerWidthBlocks.longValue() / 8L)
 
 def neoForgeMultiplayerPort = {
-    def raw = providers.gradleProperty('ringNeoForgeMultiplayerPort').orElse('25566').get().trim()
-    try {
-        def port = Integer.parseInt(raw)
-        if (port < 1 || port > 65535) throw new NumberFormatException(raw)
-        return port
-    } catch (NumberFormatException ignored) {
-        throw new GradleException('ringNeoForgeMultiplayerPort must be an integer from 1 to 65535')
-    }
+    neoForgeRunPort('ringQualificationNeoForgeMultiplayerPort', 'ringNeoForgeMultiplayerPort', '25566')
 }
 
 tasks.register('prepareNeoForgeAtlasUiRun') {
@@ -544,7 +581,7 @@ tasks.register('prepareNeoForgeMultiplayerHarness') {
 	group = 'ringworld verification'
 	description = 'Creates clean, isolated NeoForge server and client-A/client-B multiplayer harness directories.'
 	inputs.property('ringNeoForgeMultiplayerPort',
-			providers.gradleProperty('ringNeoForgeMultiplayerPort').orElse('25566'))
+			neoForgeMultiplayerPort())
 	inputs.property('ringMultiplayerPregenerateTerrainAtlas', neoForgeMultiplayerPregenerateTerrainAtlas)
 	inputs.property('ringMultiplayerCircumferenceBlocks', neoForgeMultiplayerCircumferenceBlocks)
 	inputs.property('ringMultiplayerWidthBlocks', neoForgeMultiplayerWidthBlocks)

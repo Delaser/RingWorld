@@ -5,6 +5,35 @@ CurseForge project `1645598` is the official RingWorld Minecraft Mod listing:
 first files were submitted for moderation on 2026-08-09. CurseForge may keep
 the public page unavailable until moderation is complete.
 
+This document remains the exact 26.1.2 host record and manual upload runbook.
+The qualification, staging, and dual-host delivery plan for 26.1.x and later
+stable lines is
+[`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
+
+## Author Upload API
+
+CurseForge provides an official author API for automated project-file uploads.
+It uses a token generated from the CurseForge author account and supplied in
+the `X-Api-Token` header. A multipart request to
+`https://minecraft.curseforge.com/api/projects/{projectId}/upload-file`
+contains a JSON `metadata` field and the actual `file`; a successful response
+returns the new CurseForge file ID. The metadata supports changelog and type,
+display name, game-version IDs or names, `alpha`/`beta`/`release`, optional
+manual-release hold, and dependency relations. Current game-version and
+dependency values are available from the corresponding official API
+endpoints.
+
+The existing releases were uploaded manually. Future automation must remain
+dry-run-first, read its token only from an environment variable or OS
+credential store, redact authorization data, consume only a verified staged
+jar, require explicit owner authorization for execution, and record the
+returned file ID. Fabric API is a `requiredDependency` only for the Fabric
+file. Upload automation does not bypass CurseForge moderation and must never
+archive, delete, update, or resubmit files automatically.
+
+Official reference:
+[CurseForge Upload API](https://support.curseforge.com/support/solutions/articles/9000197321-curseforge-upload-api).
+
 ## Current 1.0 uploads
 
 On 2026-08-10 the owner-authorized 1.0 files were submitted as `Release`:

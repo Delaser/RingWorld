@@ -4,6 +4,12 @@ RingWorld is an engine-level mod, not an ordinary content mod. Both the server
 and every client need the same build. Compatibility contract version 1 applies
 to Minecraft 26.1.2 and the `1.0.0+mc26.1.2` Fabric and NeoForge line.
 
+Minecraft 26.1 is the development compatibility floor, not yet a blanket
+runtime claim. The published contract remains 26.1.2 until the exact same
+loader-specific artifacts pass the 26.1, 26.1.1, and 26.1.2 qualification
+matrix. Later stable versions use the same fail-closed intake described in
+[`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
+
 ## Supported baseline
 
 The release gate covers this exact foundation:
@@ -30,7 +36,8 @@ shader contract.
 
 ## Known unsupported combinations
 
-These are deliberately listed as unsupported for the current Fabric alpha.
+These are deliberately listed as unsupported for the current dual-loader
+release.
 The loader probe reports a clear early log error when it finds their mod IDs;
 it does not crash the game or claim that every version necessarily fails in
 the same way.
@@ -86,11 +93,10 @@ shader globals, saved settings, or topology folding.
 ## Loader boundary
 
 The compatibility catalog, pose math, cost model, settings, and coordinate
-rules are loader-neutral. `FabricCompatibilityProbe` is a narrow adapter that
-only obtains loaded mod IDs and logs matching contract entries. A NeoForge
-port must provide an equivalent discovery adapter without changing the public
-contract or coordinate semantics. NeoForge is not supported until its own
-runtime and multiplayer gates pass.
+rules are loader-neutral. Fabric and NeoForge use narrow discovery adapters
+that obtain loaded mod IDs and log matching contract entries without changing
+the public contract or coordinate semantics. Any later loader or Minecraft
+version remains unsupported until its own runtime and multiplayer gates pass.
 
 ## Reporting an unlisted conflict
 
@@ -101,7 +107,7 @@ occurs with only RingWorld and Fabric API. An unlisted combination is
 
 ## Validation
 
-- 233/233 Java unit and parameterized cases pass. New coverage fixes the
+- 337/337 Java unit and parameterized cases pass per loader. Coverage fixes the
   compatibility/API versions, exact mod-ID matching, immutable inventory,
   cardinal physical-pose basis, measured production reference, checked
   maximum scaling, and exact atlas transport bounds.

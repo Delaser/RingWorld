@@ -10,6 +10,9 @@ the smallest safe supporting log or configuration excerpt. Remove access
 tokens, account files, server passwords, player personal data, and unrelated
 world data before attaching anything.
 
-Only the current Minecraft 26.1 development line receives security fixes.
-Historical 1.21.11 test builds are retained as validation evidence and are not
-supported releases.
+The active security-maintenance family begins at Minecraft 26.1, but only
+Minecraft 26.1.2 is currently a verified and published RingWorld release.
+Minecraft 26.1, 26.1.1, and later stable versions enter supported status only
+after their dual-loader qualification passes. Historical 1.21.11 test builds
+are retained as validation evidence and are not supported releases. See
+[`docs/MINECRAFT_VERSION_SUPPORT_PLAN.md`](docs/MINECRAFT_VERSION_SUPPORT_PLAN.md).
