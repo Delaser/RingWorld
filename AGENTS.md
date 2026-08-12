@@ -344,7 +344,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   the separate installed-file inventory remains SHA-256. Bind the installer
   download by the reviewed command path/checksum, then carry that reviewed
   loader-specific display name into terminal validation rather than requiring
-  one hard-coded label.
+  one hard-coded label. The terminal schema must independently bind that name,
+  URL, checksum algorithm, and checksum value to the canonical manifest cell.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit

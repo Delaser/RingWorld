@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+from copy import deepcopy
 import hashlib
 import json
 from pathlib import Path
@@ -97,6 +98,8 @@ class ExternalRuntimeQualificationAdapterTest(unittest.TestCase):
         self.assertFalse(first["world_config"]["pregenerate_terrain_atlas"])
         self.assertEqual("26.1.2", self.canonical["26.1.2-neoforge"]["minecraft_version"])
         self.assertEqual(26122, self.canonical["26.1.2-neoforge"]["port"])
+        self.assertEqual("Fabric Installer", first["runtime_install"]["name"])
+        self.assertEqual("NeoForge Installer", self.canonical["26.1-neoforge"]["runtime_install"]["name"])
 
     def test_manifest_conversion_rejects_missing_nested_or_duplicate_identity(self) -> None:
         invalid = dict(self.manifest_cells[0])
@@ -234,16 +237,22 @@ class ExternalRuntimeQualificationAdapterTest(unittest.TestCase):
                 )),
             )
             from minecraft_qualification_evidence import normalize_external_runtime_result
-            terminal = normalize_external_runtime_result(result, support, self.canonical, ranges())
-            self.assertEqual("PASS", validate_terminal_evidence(terminal, self.canonical, ranges()).verdict)
+            canonical = deepcopy(self.canonical)
+            canonical["26.1-fabric"]["runtime_install"] = {
+                "name": "Fabric Installer",
+                "url": "https://example.invalid/installer.jar",
+                "checksum": {"algorithm": "sha256", "value": digest(installer)},
+            }
+            terminal = normalize_external_runtime_result(result, support, canonical, ranges())
+            self.assertEqual("PASS", validate_terminal_evidence(terminal, canonical, ranges()).verdict)
             self.assertEqual(candidate_hash, terminal["same_file"]["sha256"])
-            reference = write_strict_terminal_evidence(terminal, paths, self.canonical, ranges())
+            reference = write_strict_terminal_evidence(terminal, paths, canonical, ranges())
             stored = paths.evidence_directory / "strict-terminal-evidence.json"
             self.assertTrue(stored.is_file())
             self.assertEqual("strict-terminal-evidence-json", reference.kind)
             self.assertIn("SHA-256 ", reference.detail)
             with self.assertRaises(Exception):
-                write_strict_terminal_evidence(terminal, paths, self.canonical, ranges())
+                write_strict_terminal_evidence(terminal, paths, canonical, ranges())
 
     def test_factory_keeps_partial_triplet_incomplete_without_calling_runtime(self) -> None:
         calls: list[object] = []

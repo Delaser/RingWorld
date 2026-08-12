@@ -217,6 +217,12 @@ def canonical_cells_from_manifest(cells: Sequence[Mapping[str, Any]]) -> dict[st
         if not isinstance(profile, Mapping) or not isinstance(profile.get("server_port"), int) \
                 or isinstance(profile["server_port"], bool) or not 1 <= profile["server_port"] <= 65535:
             raise ExternalAdapterError("manifest cell has no valid profile server port")
+        runtime_install = raw.get("runtime_install")
+        if not isinstance(runtime_install, Mapping):
+            raise ExternalAdapterError("manifest cell has no reviewed runtime installer")
+        installer_checksum = runtime_install.get("checksum")
+        if not isinstance(installer_checksum, Mapping):
+            raise ExternalAdapterError("manifest cell has no reviewed runtime installer checksum")
         if cell_id in result:
             raise ExternalAdapterError("manifest duplicates a qualification cell id")
         result[cell_id] = {
@@ -225,6 +231,14 @@ def canonical_cells_from_manifest(cells: Sequence[Mapping[str, Any]]) -> dict[st
             "loader": loader,
             "port": profile["server_port"],
             "world_config": dict(SAFE_SMALL_WORLD_CONFIG),
+            "runtime_install": {
+                "name": runtime_install.get("name"),
+                "url": runtime_install.get("url"),
+                "checksum": {
+                    "algorithm": installer_checksum.get("algorithm"),
+                    "value": installer_checksum.get("value"),
+                },
+            },
         }
     if not result:
         raise ExternalAdapterError("manifest selects no qualification cells")

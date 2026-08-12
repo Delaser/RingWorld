@@ -325,7 +325,17 @@ def _validate_external_result_identity(result: Any, canonical_cells: Mapping[str
     return cell_id, str(cell["loader"]), cell
 
 
-def _validate_external_result_installer(result: Any, installer: Mapping[str, Any]) -> None:
+def _validate_external_result_installer(
+    result: Any,
+    installer: Mapping[str, Any],
+    canonical_cell: Mapping[str, Any],
+) -> None:
+    reviewed = _mapping(canonical_cell.get("runtime_install"), "canonical runtime_install")
+    reviewed_checksum = _mapping(reviewed.get("checksum"), "canonical runtime_install.checksum")
+    if reviewed.get("name") != installer.get("name") or reviewed.get("url") != installer.get("url") \
+            or reviewed_checksum.get("algorithm") != "sha256" \
+            or reviewed_checksum.get("value") != installer.get("sha256"):
+        raise TerminalEvidenceError("terminal installer differs from the canonical manifest cell")
     executed = _external_field(result, "installer")
     if executed is None:
         raise TerminalEvidenceError("a PASS external runtime result must retain its installer command")
@@ -433,7 +443,7 @@ def normalize_external_runtime_result(
     candidate = _mapping(support["frozen_candidate"], "frozen_candidate")
     candidate_hash = _validate_frozen_candidate(candidate, inventory, cell, range_identities)
     _validate_same_file(support["same_file"], candidate_hash, cell, canonical_cells)
-    _validate_external_result_installer(result, installer)
+    _validate_external_result_installer(result, installer, cell)
     _validate_external_result_mods(result, candidate)
     _validate_external_result_markers(result, support["markers"])
     runtime = _validate_external_result_runtime(result)

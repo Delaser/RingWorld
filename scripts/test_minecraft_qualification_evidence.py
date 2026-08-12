@@ -39,18 +39,38 @@ def canonical_cells() -> dict[str, dict[str, object]]:
         "wall_height_blocks": 160,
         "pregenerate_terrain_atlas": False,
     }
-    return {
+    fabric = {
         f"{version}-fabric": {
             "id": f"{version}-fabric", "minecraft_version": version, "loader": "fabric",
             "port": 27000 + index, "world_config": deepcopy(world),
+            "runtime_install": {
+                "name": "Fabric Installer",
+                "url": "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.1/fabric-installer-1.1.1.jar",
+                "checksum": {"algorithm": "sha256", "value": HASH},
+            },
         }
         for index, version in enumerate(("26.1", "26.1.1", "26.1.2"))
     }
+    neoforge = {
+        f"{version}-neoforge": {
+            "id": f"{version}-neoforge", "minecraft_version": version, "loader": "neoforge",
+            "port": 27100 + index, "world_config": deepcopy(world),
+            "runtime_install": {
+                "name": "NeoForge Installer",
+                "url": f"https://maven.neoforged.net/releases/net/neoforged/neoforge/{version}/neoforge-{version}-installer.jar",
+                "checksum": {"algorithm": "sha256", "value": HASH},
+            },
+        }
+        for index, version in enumerate(("26.1", "26.1.1", "26.1.2"))
+    }
+    return {**fabric, **neoforge}
 
 
 def passing_record() -> dict[str, object]:
     cells = canonical_cells()
-    cell = deepcopy(cells["26.1-fabric"])
+    cell = {key: deepcopy(cells["26.1-fabric"][key]) for key in (
+        "id", "minecraft_version", "loader", "port", "world_config",
+    )}
     return {
         "schema_version": EVIDENCE_SCHEMA_VERSION,
         "verdict": "PASS",
@@ -121,7 +141,14 @@ class TerminalEvidenceTest(unittest.TestCase):
     def test_valid_pass_and_nonpass_minimum(self) -> None:
         result = validate_terminal_evidence(passing_record(), canonical_cells(), RANGES)
         self.assertEqual(("26.1-fabric", "PASS", HASH), (result.cell_id, result.verdict, result.candidate_sha256))
-        incomplete = {"schema_version": EVIDENCE_SCHEMA_VERSION, "verdict": "INCOMPLETE", "cell": canonical_cells()["26.1-fabric"], "reason": "NO_RUNTIME"}
+        incomplete = {
+            "schema_version": EVIDENCE_SCHEMA_VERSION,
+            "verdict": "INCOMPLETE",
+            "cell": {key: deepcopy(canonical_cells()["26.1-fabric"][key]) for key in (
+                "id", "minecraft_version", "loader", "port", "world_config",
+            )},
+            "reason": "NO_RUNTIME",
+        }
         self.assertEqual("INCOMPLETE", validate_terminal_evidence(incomplete, canonical_cells(), RANGES).verdict)
 
     def test_safe_relative_paths_allow_version_plus_but_reject_traversal(self) -> None:
@@ -212,6 +239,48 @@ class TerminalEvidenceTest(unittest.TestCase):
         mismatched.downloads = (SimpleNamespace(name="NeoForge Installer", expected=HASH, actual=HASH),)
         with self.assertRaises(TerminalEvidenceError):
             normalize_external_runtime_result(mismatched, external_support(), canonical_cells(), RANGES)
+
+        forged_support = external_support()
+        forged_support["installer"] = dict(forged_support["installer"], name="Other Installer")
+        forged = passing_external_result()
+        forged.downloads = (SimpleNamespace(name="Other Installer", expected=HASH, actual=HASH),)
+        with self.assertRaises(TerminalEvidenceError):
+            normalize_external_runtime_result(forged, forged_support, canonical_cells(), RANGES)
+
+    def test_external_runtime_adapter_accepts_reviewed_neoforge_installer_only(self) -> None:
+        record = passing_record()
+        record["cell"] = {key: deepcopy(canonical_cells()["26.1-neoforge"][key]) for key in (
+            "id", "minecraft_version", "loader", "port", "world_config",
+        )}
+        record["installer"] = {
+            "name": "NeoForge Installer",
+            "url": canonical_cells()["26.1-neoforge"]["runtime_install"]["url"],
+            "path": "cache/neoforge-installer.jar",
+            "sha256": HASH,
+            "installed_sha256": HASH,
+        }
+        record["frozen_candidate"]["minecraft_range"] = "[26.1,26.1.2]"  # type: ignore[index]
+        record["frozen_candidate"]["loader_range"] = "[26.1.0.19-beta,26.1.2.87]"  # type: ignore[index]
+        record["same_file"] = {
+            "group": "26.1.x-neoforge", "sha256": HASH,
+            "cell_ids": ["26.1-neoforge", "26.1.1-neoforge", "26.1.2-neoforge"],
+        }
+        support = {key: record[key] for key in (
+            "provenance", "commands", "installer", "runtime_inventory", "frozen_candidate", "markers", "same_file",
+        )}
+        result = SimpleNamespace(
+            cell_id="26.1-neoforge", loader="neoforge", minecraft_version="26.1", verdict="PASS", reason=None,
+            installer=SimpleNamespace(verdict="PASS", return_code=0),
+            downloads=(SimpleNamespace(name="NeoForge Installer", expected=HASH, actual=HASH),),
+            mods=(SimpleNamespace(name="RingWorld", expected_sha256=HASH, actual_sha256=HASH),),
+            observed_markers=("atlas-disabled", "loader-bootstrap", "ringworld-bootstrap", "server-ready"),
+            stop_marker="Stopping server", launcher_verified=True, server_return_code=0,
+        )
+        normalized = normalize_external_runtime_result(result, support, canonical_cells(), RANGES)
+        self.assertEqual("PASS", normalized["verdict"])
+        result.downloads = (SimpleNamespace(name="Fabric Installer", expected=HASH, actual=HASH),)
+        with self.assertRaises(TerminalEvidenceError):
+            normalize_external_runtime_result(result, support, canonical_cells(), RANGES)
 
     def test_external_runtime_adapter_accepts_minimal_nonpass_and_rejects_incomplete_pass_binding(self) -> None:
         failed = normalize_external_runtime_result(

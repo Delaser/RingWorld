@@ -94,7 +94,9 @@ ordered stop/save/clean-exit sequence. The external adapter additionally
 rechecks the installed server with its official manifest algorithm while
 recording a separate SHA-256 inventory identity. It carries the reviewed
 loader-specific installer name into terminal validation rather than requiring
-one hard-coded label. It also
+one hard-coded label. The strict schema independently binds that installer's
+name, URL, algorithm, and checksum to the canonical manifest cell; both Fabric
+and NeoForge names have acceptance and mismatch coverage. It also
 checks full-triplet same-file identity and clean source provenance before it
 can perform runtime I/O, then emits a separately schema-validated immutable
 `strict-terminal-evidence.json`. The focused bridge tests also replace the
