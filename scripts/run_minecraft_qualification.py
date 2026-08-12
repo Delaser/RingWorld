@@ -78,6 +78,7 @@ NO_PHASE_ADAPTER = "NO_PHASE_ADAPTER"
 CELL_ABORTED_AFTER_FAILURE = "CELL_ABORTED_AFTER_FAILURE"
 SHARED_CONTRACT_REQUIRES_FULL_LOADER_TRIPLET = "SHARED_CONTRACT_REQUIRES_FULL_LOADER_TRIPLET"
 FROZEN_CANDIDATE_PREPARATION_FAILED = "FROZEN_CANDIDATE_PREPARATION_FAILED"
+FROZEN_PREFLIGHT_ABORTED = "FROZEN_CANDIDATE_PREFLIGHT_ABORTED"
 
 
 class ExecutionMode(str, Enum):
@@ -600,6 +601,11 @@ def _failed_after_abort(phase: PhaseName, command: CommandRecord | None) -> Phas
     return PhaseResult(phase, Verdict.INCOMPLETE, CELL_ABORTED_AFTER_FAILURE, (command,) if command else ())
 
 
+def _frozen_preflight_aborted(phase: PhaseName, command: CommandRecord | None) -> PhaseResult:
+    """Record a diagnostic phase deliberately skipped by a failed shared preflight."""
+    return PhaseResult(phase, Verdict.INCOMPLETE, FROZEN_PREFLIGHT_ABORTED, (command,) if command else ())
+
+
 def _cell_with_phases(planned: CellReport, phases: Sequence[PhaseResult]) -> CellReport:
     phase_tuple = tuple(phases)
     return CellReport(
@@ -678,6 +684,67 @@ def _write_cell_report(report: CellReport) -> None:
     )
 
 
+def _frozen_preflight_failures(
+    cells: Sequence[Mapping[str, Any]],
+    preparations: Mapping[str, FrozenCandidatePreparation],
+) -> Mapping[str, FrozenCandidatePreparation]:
+    """Return failed preparations only for selected complete loader triplets.
+
+    A partial selection intentionally remains an ``INCOMPLETE`` shared-contract
+    result and must still run its source-build diagnostics.  A failed *complete*
+    triplet instead makes those diagnostics pointless: they cannot repair the
+    retained common candidate needed by every one of its cells.
+    """
+    return {
+        loader: preparation
+        for loader, preparation in preparations.items()
+        if getattr(preparation, "verdict", None) is Verdict.FAIL
+        and _full_loader_triplet(cells, loader) is not None
+    }
+
+
+def _preflight_failure_cell(
+    planned: CellReport,
+    preparation: FrozenCandidatePreparation,
+) -> CellReport:
+    """Render the concrete shared-contract failure without source-build work."""
+    phases: list[PhaseResult] = []
+    for planned_phase in planned.phases:
+        phase = planned_phase.phase
+        command = _phase_command(planned, phase)
+        if phase in {PhaseName.MANIFEST_VALIDATION, PhaseName.INPUT_PLAN}:
+            phases.append(planned_phase)
+        elif phase in {PhaseName.BUILD_AND_UNIT, PhaseName.ARTIFACT_VERIFY}:
+            phases.append(_frozen_preflight_aborted(phase, command))
+        elif phase is PhaseName.SHARED_CONTRACT:
+            phases.append(PhaseResult(
+                phase,
+                Verdict.FAIL,
+                preparation.reason or FROZEN_CANDIDATE_PREPARATION_FAILED,
+                evidence=preparation.evidence,
+                artifacts=preparation.artifacts,
+            ))
+        else:
+            phases.append(_failed_after_abort(phase, command))
+    return _cell_with_phases(planned, phases)
+
+
+def _write_preplanned_cell_report(planned: CellReport, report: CellReport, run_id: str) -> CellReport:
+    """Create and write one terminal preflight-aborted cell report under its lock."""
+    paths = planned.paths
+    try:
+        with QualificationLock.acquire(paths.lock_path, run_id):
+            if paths.cell_root.exists():
+                raise QualificationExecutionError(
+                    f"qualification cell output already exists and cannot be reused: {paths.cell_root}"
+                )
+            create_contained_directories(paths)
+            _write_cell_report(report)
+    except (QualificationExecutionError, InvocationError, OSError) as error:
+        return _execution_error_cell(planned, report.phases, error)
+    return report
+
+
 def execute_quick_matrix(
     cells: Sequence[Mapping[str, Any]],
     repository_root: Path,
@@ -707,23 +774,42 @@ def execute_quick_matrix(
     # before any per-cell source diagnostics. Tests that inject all adapters
     # remain hermetic; an omitted shared adapter stays explicitly incomplete.
     preparations = frozen_preparation_provider(cells, repository_root, run_id) if phase_adapters is None else {}
+    preflight_failures = _frozen_preflight_failures(cells, preparations)
     if phase_adapters is None:
         # Local import preserves the adapter's one-way structural dependency:
         # it accepts runner values but never imports the scheduler.
         from external_runtime_qualification_adapter import external_runtime_adapter_from_qualification_inputs
 
         adapters = dict(default_phase_adapters(preparations))
-        adapters[PhaseName.DEDICATED_SMOKE] = external_runtime_adapter_from_qualification_inputs(
-            cells, provenance, preparations,
-        )
+        if not preflight_failures:
+            adapters[PhaseName.DEDICATED_SMOKE] = external_runtime_adapter_from_qualification_inputs(
+                cells, provenance, preparations,
+            )
     else:
         adapters = dict(phase_adapters)
     reports: list[CellReport] = []
     fail_fast_triggered = False
+    preflight_failure_recorded = False
 
     for cell in cells:
         planned = _with_provenance(plan_cell(cell, repository_root, run_id, dry_run=False), provenance)
         paths = planned.paths
+        loader = cell.get("loader")
+        if preflight_failures:
+            if not preflight_failure_recorded and isinstance(loader, str) and loader in preflight_failures:
+                report = _preflight_failure_cell(planned, preflight_failures[loader])
+                preflight_failure_recorded = True
+            else:
+                report = _cell_with_phases(
+                    planned,
+                    tuple(
+                        planned_phase if planned_phase.phase in {PhaseName.MANIFEST_VALIDATION, PhaseName.INPUT_PLAN}
+                        else _failed_after_abort(planned_phase.phase, _phase_command(planned, planned_phase.phase))
+                        for planned_phase in planned.phases
+                    ),
+                )
+            reports.append(_write_preplanned_cell_report(planned, report, run_id))
+            continue
         if fail_fast_triggered:
             skipped = _cell_with_phases(
                 planned,

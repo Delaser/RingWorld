@@ -323,7 +323,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   exist, the default runner also installs the external dedicated-smoke bridge,
   lends its held cell lock, and stores a separately schema-validated immutable
   `strict-terminal-evidence.json` before a runtime phase can pass. Partial
-  selections stay `INCOMPLETE` without runtime I/O.
+  selections stay `INCOMPLETE` without runtime I/O. A failed complete-triplet
+  frozen preflight aborts per-cell diagnostics before Gradle work but still
+  writes immutable reports with the shared-contract failure and explicit
+  aborted phases; partial-triplet diagnostics remain unchanged.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
@@ -346,6 +349,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   loader-specific display name into terminal validation rather than requiring
   one hard-coded label. The terminal schema must independently bind that name,
   URL, checksum algorithm, and checksum value to the canonical manifest cell.
+- `scripts/minecraft_nightly_qualification_model.py`: pure Phase 4 contract
+  for reusing existing fixtures under one qualification cell. It names no
+  executable and must not gain I/O, Gradle, or runtime behavior; a later
+  executor must recheck immutable candidate/quick-evidence/production-world
+  inputs and exclusive-create every output.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit

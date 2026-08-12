@@ -82,6 +82,7 @@ python3 scripts/test_minecraft_qualification_executor.py
 python3 scripts/test_external_runtime_smoke.py
 python3 scripts/test_external_runtime_executor.py
 python3 scripts/test_external_runtime_qualification_adapter.py
+python3 scripts/test_minecraft_nightly_qualification_model.py
 python3 scripts/run_minecraft_qualification.py \
   --tier quick --cell 26.1-fabric --dry-run
 ```
@@ -121,6 +122,14 @@ reports and returns `INCOMPLETE` without runtime I/O. A complete three-version
 loader selection additionally builds one frozen oldest-ABI jar and may run
 that exact file through the external dedicated-server adapter. It becomes
 compatibility evidence only when every strict terminal record passes.
+
+For a selected complete loader triplet, a failed frozen-candidate preflight
+stops before the per-cell diagnostic builds: they cannot repair the missing
+shared candidate. The immutable report keeps the failure attributable by
+recording it at `SHARED_CONTRACT`, marks its skipped diagnostics
+`FROZEN_PREFLIGHT_ABORTED`, and marks later selected cells
+`CELL_ABORTED_AFTER_FAILURE`. Partial selections retain their normal diagnostic
+behavior and remain `INCOMPLETE`.
 
 The first real clean/pushed runner execution on 2026-08-12 selected
 `26.1-fabric`, used Java 25 and Fabric Loom 1.17.19, and completed `:test

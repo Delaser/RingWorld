@@ -336,6 +336,14 @@ installs the external-runtime adapter, but no triplet has completed the real
 runtime matrix yet, so this remains preparation rather than a broader support
 or release claim.
 
+If that complete-triplet frozen preflight fails, the runner fails fast before
+any per-cell diagnostic build or artifact inspection. It still writes immutable
+cell and matrix reports: the first applicable cell records the concrete
+`SHARED_CONTRACT` failure, its earlier diagnostic phases are marked
+`FROZEN_PREFLIGHT_ABORTED`, and every later selected cell is marked
+`CELL_ABORTED_AFTER_FAILURE`. This optimization never applies to a partial
+triplet, whose diagnostics remain useful ABI evidence.
+
 The serial runner now executes its reviewed build/unit and per-cell diagnostic
 artifact adapters by default. Before process work it requires a clean source tree including no
 untracked files, a full HEAD equal to its upstream, the reviewed public
@@ -420,6 +428,17 @@ behavior.
 
 Exit: the nightly report is repeatable, isolates failures to a cell and phase,
 and cannot touch a live server or a user's normal client/world directories.
+
+Current Phase 4 foundation: `minecraft_nightly_qualification_model.py` is a
+pure, non-executing fixture contract. For one quick-qualified cell it fixes
+the order, isolated cell-relative runtime/world/evidence paths, unique
+per-fixture ports, timeouts, terminal markers, and required outputs for the
+existing creation/reload, worldgen, Atlas, UI, client, multiplayer, raid,
+map/compass, lifecycle, curved-object, and production-projection fixtures.
+It accepts only an absolute, hash-identified frozen candidate, a hash-identified
+quick terminal record, and—only for the final scheduled production fixture—a
+separate immutable production-world input. It does not read, copy, create, or
+run any of those inputs. An executor remains a later phase.
 
 ### Phase 5 — world-upgrade qualification
 

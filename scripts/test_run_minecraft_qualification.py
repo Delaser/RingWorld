@@ -496,6 +496,77 @@ class MinecraftQualificationExecutionTest(unittest.TestCase):
         runtime.assert_not_called()
         self.assertEqual(MODEL.Verdict.FAIL, report.cells[0].verdict)
 
+    def test_failed_complete_triplet_preflight_skips_all_per_cell_diagnostics_and_writes_reports(self) -> None:
+        external = __import__("external_runtime_qualification_adapter")
+        cells = self.full_loader_triplet("fabric")
+        failure = RUNNER.FrozenCandidatePreparation(
+            "fabric", MODEL.Verdict.FAIL, "FROZEN_CANDIDATE_PREPARATION_FAILED:BUILD_FAILED",
+        )
+        calls = []
+
+        def unexpected_diagnostic(context):
+            calls.append(context.phase)
+            raise AssertionError("a failed frozen preflight must skip per-cell diagnostics")
+
+        with tempfile.TemporaryDirectory() as temporary, \
+                patch.object(RUNNER, "default_phase_adapters", return_value={
+                    MODEL.PhaseName.BUILD_AND_UNIT: unexpected_diagnostic,
+                    MODEL.PhaseName.ARTIFACT_VERIFY: unexpected_diagnostic,
+                }), \
+                patch.object(external, "external_runtime_adapter_from_qualification_inputs") as runtime_factory:
+            report = RUNNER.execute_quick_matrix(
+                cells, Path(temporary), run_id_factory=lambda: self.run_id,
+                provenance_provider=self.provenance,
+                frozen_preparation_provider=lambda selected, root, run_id: {"fabric": failure},
+            )
+            report_paths = [cell.paths.evidence_directory / "cell-report.json" for cell in report.cells]
+            self.assertTrue(all(path.is_file() for path in report_paths))
+
+        self.assertEqual([], calls)
+        runtime_factory.assert_not_called()
+        self.assertEqual(MODEL.Verdict.FAIL, report.verdict)
+        first = report.cells[0]
+        self.assertEqual("FROZEN_CANDIDATE_PREPARATION_FAILED:BUILD_FAILED", next(
+            phase.reason for phase in first.phases if phase.phase is MODEL.PhaseName.SHARED_CONTRACT
+        ))
+        self.assertEqual(RUNNER.FROZEN_PREFLIGHT_ABORTED, next(
+            phase.reason for phase in first.phases if phase.phase is MODEL.PhaseName.BUILD_AND_UNIT
+        ))
+        self.assertEqual(RUNNER.FROZEN_PREFLIGHT_ABORTED, next(
+            phase.reason for phase in first.phases if phase.phase is MODEL.PhaseName.ARTIFACT_VERIFY
+        ))
+        self.assertEqual(RUNNER.CELL_ABORTED_AFTER_FAILURE, next(
+            phase.reason for phase in first.phases if phase.phase is MODEL.PhaseName.DEDICATED_SMOKE
+        ))
+        for cell in report.cells[1:]:
+            self.assertEqual(RUNNER.CELL_ABORTED_AFTER_FAILURE, next(
+                phase.reason for phase in cell.phases if phase.phase is MODEL.PhaseName.BUILD_AND_UNIT
+            ))
+
+    def test_partial_triplet_keeps_per_cell_diagnostics_after_incomplete_preflight(self) -> None:
+        calls = []
+
+        def build(context):
+            calls.append(context.phase)
+            return self.passing_adapter(context)
+
+        incomplete = RUNNER.FrozenCandidatePreparation(
+            "fabric", MODEL.Verdict.INCOMPLETE, RUNNER.SHARED_CONTRACT_REQUIRES_FULL_LOADER_TRIPLET,
+        )
+        with tempfile.TemporaryDirectory() as temporary, patch.object(
+                RUNNER, "default_phase_adapters", return_value={MODEL.PhaseName.BUILD_AND_UNIT: build}):
+            report = RUNNER.execute_quick_matrix(
+                (self.cell,), Path(temporary), run_id_factory=lambda: self.run_id,
+                provenance_provider=self.provenance,
+                frozen_preparation_provider=lambda selected, root, run_id: {"fabric": incomplete},
+            )
+
+        self.assertEqual([MODEL.PhaseName.BUILD_AND_UNIT], calls)
+        self.assertEqual(MODEL.Verdict.INCOMPLETE, report.verdict)
+        self.assertNotIn(RUNNER.FROZEN_PREFLIGHT_ABORTED, {
+            phase.reason for phase in report.cells[0].phases
+        })
+
     def test_missing_adapter_is_incomplete_and_cannot_be_reported_as_pass(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             report = RUNNER.execute_quick_matrix(
