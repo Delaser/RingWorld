@@ -183,6 +183,7 @@ class PhaseResult:
     reason: str | None = None
     commands: tuple[CommandRecord, ...] = ()
     evidence: tuple[EvidenceReference, ...] = ()
+    artifacts: tuple["ArtifactEvidence", ...] = ()
 
     def __post_init__(self) -> None:
         _require_phase_evidence(self.verdict, self.evidence)
@@ -513,7 +514,14 @@ def plan_cell(cell: Mapping[str, Any], repository_root: Path, run_id: str, *, dr
 
 def plan_matrix(cells: Sequence[Mapping[str, Any]], repository_root: Path, run_id: str, *, dry_run: bool) -> MatrixReport:
     reports = tuple(plan_cell(cell, repository_root, run_id, dry_run=dry_run) for cell in cells)
-    verdict = aggregate_verdict(tuple(PhaseResult(PhaseName.MANIFEST_VALIDATION, report.verdict) for report in reports))
+    verdict = aggregate_verdict(tuple(
+        PhaseResult(
+            PhaseName.MANIFEST_VALIDATION,
+            report.verdict,
+            evidence=(EvidenceReference("cell-plan", report.cell_id, report.verdict.value),),
+        )
+        for report in reports
+    ))
     return MatrixReport(REPORT_FORMAT, "quick", dry_run, run_id, verdict, reports)
 
 

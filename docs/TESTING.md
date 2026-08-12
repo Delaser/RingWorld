@@ -84,20 +84,32 @@ python3 scripts/run_minecraft_qualification.py \
   --tier quick --cell 26.1-fabric --dry-run
 ```
 
-The executor and external-runtime planner checks cover only their isolated
-primitives and plan contracts. The CLI still cannot execute them, so this
-green command set is not runtime evidence.
+The executor and external-runtime planner checks cover their isolated
+primitives and plan contracts. They verify pinned/no-redirect downloads, the
+official installer contract, installed Mojang-server identity, exact mod
+inventory, loopback port preflight, loader/RingWorld/ready markers, and an
+ordered stop/save/clean-exit sequence. The external adapter is still not wired
+into the CLI, so this green command set is not runtime evidence.
 
 A non-dry runner requires a completely clean, pushed checkout and Java 25.
-It currently executes the isolated source build/unit adapter, writes terminal
-local reports, and returns `INCOMPLETE` because artifact, shared-contract, and
-external-runtime adapters are not yet installed. Do not use that partial run
-as compatibility evidence.
+It executes the isolated source build/unit adapter and then verifies exactly
+one per-cell diagnostic runtime jar for loader metadata, MPL-2.0, diagnostic
+build identity, and SHA-256. It writes immutable local reports and returns
+`INCOMPLETE` because frozen same-file/shared-contract and external-runtime
+adapters are not yet integrated. Do not use that partial run as compatibility
+evidence.
+
+The first real clean/pushed runner execution on 2026-08-12 selected
+`26.1-fabric`, used Java 25 and Fabric Loom 1.17.19, and completed `:test
+:build` in 2m59s with 337 tests and no failures or errors. It deliberately
+ended `INCOMPLETE` at commit `51e7a95d56617e0af7b575dbc9c076727f5e65e2`
+because the later adapters were absent. This proves the execution boundary and
+26.1 source build only; it is not external-runtime or support evidence.
 
 The dry run must exit nonzero with `INCOMPLETE` and
 `DRY_RUN_NO_EXECUTION`; it is planning output, not evidence. A non-dry run is
-also deliberately `INCOMPLETE` until the execution adapter exists. Inspect the
-opt-in Gradle layout without launching Minecraft with:
+also deliberately `INCOMPLETE` until every required adapter exists. Inspect
+the opt-in Gradle layout without launching Minecraft with:
 
 ```sh
 ./gradlew help --console=plain --no-daemon \

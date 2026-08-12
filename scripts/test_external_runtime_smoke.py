@@ -67,6 +67,8 @@ class ExternalRuntimeSmokePlanTest(unittest.TestCase):
             )), cell_id)
             self.assertTrue(all(MODEL.is_within(item.destination, plan.layout.root.parents[2])
                                 for item in plan.downloads), cell_id)
+            self.assertTrue(MODEL.is_within(plan.minecraft_server.destination, plan.layout.root.parents[2]), cell_id)
+            self.assertIn("server.jar", plan.minecraft_server.url, cell_id)
             self.assertTrue(all(MODEL.is_within(item.destination, plan.layout.root)
                                 for item in plan.mods), cell_id)
             self.assertTrue(all(MODEL.is_within(item.path, plan.layout.root)
@@ -78,6 +80,7 @@ class ExternalRuntimeSmokePlanTest(unittest.TestCase):
             plan = self.plan(cell_id)
             self.assertEqual(["RingWorld", "Fabric API"], [entry.name for entry in plan.mods])
             self.assertEqual(["Fabric Installer", "Fabric API"], [item.name for item in plan.downloads])
+            self.assertEqual("server", plan.minecraft_server.name)
             self.assertEqual("fabric", plan.installer.loader)
             self.assertIn("server", plan.installer.argv)
             self.assertIn("-mcversion", plan.installer.argv)
@@ -86,18 +89,22 @@ class ExternalRuntimeSmokePlanTest(unittest.TestCase):
             self.assertIn("-dir", plan.installer.argv)
             self.assertIn("fabric-server-launch.jar", " ".join(plan.launch.argv))
             self.assertIsNone(plan.generated_run_script)
+            self.assertEqual("loader-bootstrap", plan.expected_log_markers[0].name)
+            self.assertEqual("Fabric Loader", plan.expected_log_markers[0].required_substring)
 
     def test_neoforge_inventory_has_no_fabric_api_and_uses_generated_script_contract(self) -> None:
         for cell_id in ("26.1-neoforge", "26.1.1-neoforge", "26.1.2-neoforge"):
             plan = self.plan(cell_id)
             self.assertEqual(["RingWorld"], [entry.name for entry in plan.mods])
             self.assertEqual(["NeoForge Installer"], [item.name for item in plan.downloads])
+            self.assertEqual("server", plan.minecraft_server.name)
             self.assertEqual(("--installServer", str(plan.layout.root)), plan.installer.argv[-2:])
             self.assertEqual(("./run.sh", "nogui"), plan.launch.argv)
             self.assertIsNotNone(plan.generated_run_script)
             assert plan.generated_run_script is not None
             self.assertEqual(plan.layout.neoforge_run_script, plan.generated_run_script.path)
             self.assertEqual(plan.layout.neoforge_user_jvm_args, plan.generated_run_script.required_sibling)
+            self.assertEqual("RingWorld NeoForge platform bootstrap active", plan.expected_log_markers[0].required_substring)
 
     def test_one_frozen_candidate_is_reusable_for_all_same_loader_cells_without_metadata_claim(self) -> None:
         candidate = self.candidate("fabric")

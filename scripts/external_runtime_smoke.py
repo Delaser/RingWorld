@@ -116,6 +116,7 @@ class ExternalRuntimeSmokePlan:
     loader: str
     candidate: CandidateJar
     candidate_origin: str
+    minecraft_server: RuntimeDownload
     downloads: tuple[RuntimeDownload, ...]
     installer: InstallerInvocation
     layout: RuntimeLayout
@@ -277,6 +278,21 @@ def _timeout_seconds(cell: Mapping[str, Any]) -> int:
     return value
 
 
+def _minecraft_server_download(cell: Mapping[str, Any], paths: QualificationPaths) -> RuntimeDownload:
+    minecraft = _require_mapping(cell.get("minecraft"), "cell minecraft")
+    downloads = minecraft.get("downloads")
+    if not isinstance(downloads, Sequence) or isinstance(downloads, (str, bytes)):
+        raise InvocationError("cell minecraft has no download list")
+    servers = [item for item in downloads if isinstance(item, Mapping) and item.get("name") == "server"]
+    if len(servers) != 1:
+        raise InvocationError("cell minecraft must pin exactly one Mojang server download")
+    return _pinned_download(
+        servers[0],
+        contained_path(paths.cache_directory, "external-runtime/mojang-server.jar", "Mojang server download"),
+        "Mojang server",
+    )
+
+
 def external_runtime_smoke_plan(
     cell: Mapping[str, Any],
     candidate: CandidateJar,
@@ -301,6 +317,7 @@ def external_runtime_smoke_plan(
     port = qualification_port(cell)
     timeout_seconds = _timeout_seconds(cell)
     layout = runtime_layout(paths, loader)
+    minecraft_server = _minecraft_server_download(cell, paths)
     installer_value = _require_mapping(cell.get("runtime_install"), "runtime installer")
     installer_download = _pinned_download(
         installer_value,
@@ -353,13 +370,17 @@ def external_runtime_smoke_plan(
         )
         launch = LaunchPlan(generated_run_script.launch_argv, layout.root, timeout_seconds)
     markers = (
+        ExpectedLogMarker(
+            "loader-bootstrap",
+            "Fabric Loader" if loader == "fabric" else "RingWorld NeoForge platform bootstrap active",
+        ),
         ExpectedLogMarker("ringworld-bootstrap", "RingWorld bootstrap settings: width=416, circumference=2048, wallHeight=160"),
         ExpectedLogMarker("atlas-disabled", "pregenerateTerrainAtlas=false"),
         ExpectedLogMarker("server-ready", "Done ("),
     )
     _assert_disposable(layout, paths)
     return ExternalRuntimeSmokePlan(
-        cell_id, version, loader, candidate, origin, tuple(downloads), installer, layout,
+        cell_id, version, loader, candidate, origin, minecraft_server, tuple(downloads), installer, layout,
         safe_small_files(layout, port), tuple(mods), launch, markers, paths.lock_path, generated_run_script,
         (
             "Verify the candidate jar SHA-256 after it is copied into mods.",

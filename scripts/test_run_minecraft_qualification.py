@@ -12,6 +12,7 @@ from contextlib import redirect_stderr, redirect_stdout
 import tempfile
 import unittest
 from unittest.mock import patch
+import zipfile
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -259,6 +260,28 @@ class MinecraftQualificationExecutionTest(unittest.TestCase):
             evidence=(MODEL.EvidenceReference("fake", context.phase.value, "injected test evidence"),),
         )
 
+    def write_diagnostic_jar(self, paths: Path, loader: str = "fabric") -> Path:
+        jar = paths / loader / "libs" / "ringworld-qualification.jar"
+        jar.parent.mkdir(parents=True)
+        with zipfile.ZipFile(jar, "w") as archive:
+            archive.writestr("LICENSE-RINGWORLD.txt", "Mozilla Public License Version 2.0\nMPL-2.0\n")
+            archive.writestr(
+                "ringworld-build.properties",
+                f"artifactVersion=0.0.0-qualification+mc26.1\nreleaseLabel=qualification-26.1-fabric\n",
+            )
+            if loader == "fabric":
+                archive.writestr("fabric.mod.json", json.dumps({
+                    "id": "ringworld", "version": "0.0.0-qualification+mc26.1", "license": "MPL-2.0",
+                    "depends": {"minecraft": "26.1"},
+                }))
+            else:
+                archive.writestr("META-INF/neoforge.mods.toml", "\n".join((
+                    'license="MPL-2.0"', '[[mods]]', 'modId="ringworld"',
+                    'version="0.0.0-qualification+mc26.1"',
+                    '[[dependencies.ringworld]]', 'modId="minecraft"', 'versionRange="[26.1]"',
+                )))
+        return jar
+
     def test_injected_adapters_write_immutable_cell_and_matrix_evidence_without_gradle(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -284,6 +307,58 @@ class MinecraftQualificationExecutionTest(unittest.TestCase):
             )
             self.assertEqual(MODEL.Verdict.INCOMPLETE, report.verdict)
             self.assertIn(RUNNER.NO_PHASE_ADAPTER, {phase.reason for phase in report.cells[0].phases})
+
+    def test_artifact_adapter_requires_one_isolated_mpl_diagnostic_jar_and_records_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = MODEL.QualificationPaths.from_cell(root, self.cell, self.run_id)
+            jar = self.write_diagnostic_jar(paths.build_directory)
+            result = RUNNER.artifact_verify_adapter(RUNNER.PhaseAdapterContext(
+                self.cell, paths, MODEL.PhaseName.ARTIFACT_VERIFY, None, 3,
+            ))
+            self.assertEqual(MODEL.Verdict.PASS, result.verdict)
+            self.assertEqual(1, len(result.artifacts))
+            self.assertEqual(str(jar), result.artifacts[0].path)
+            self.assertTrue(result.artifacts[0].verified)
+            self.assertEqual(64, len(result.artifacts[0].actual or ""))
+            self.assertTrue(any(item.kind == "jar-license" for item in result.evidence))
+
+    def test_artifact_adapter_rejects_ambiguous_build_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            paths = MODEL.QualificationPaths.from_cell(root, self.cell, self.run_id)
+            jar = self.write_diagnostic_jar(paths.build_directory)
+            jar.with_name("another-runtime.jar").write_bytes(jar.read_bytes())
+            result = RUNNER.artifact_verify_adapter(RUNNER.PhaseAdapterContext(
+                self.cell, paths, MODEL.PhaseName.ARTIFACT_VERIFY, None, 3,
+            ))
+            self.assertEqual(MODEL.Verdict.FAIL, result.verdict)
+            self.assertEqual("ARTIFACT_VERIFY_FAILED:PackageVerificationError", result.reason)
+
+    def test_artifact_phase_is_wired_after_build_and_carries_cell_artifact_evidence(self) -> None:
+        def build_creates_jar(context):
+            self.write_diagnostic_jar(context.paths.build_directory)
+            return MODEL.PhaseResult(
+                context.phase, MODEL.Verdict.PASS,
+                commands=(context.command,),
+                evidence=(MODEL.EvidenceReference("fake-build", "jar", "test build produced isolated jar"),),
+            )
+
+        with tempfile.TemporaryDirectory() as temporary:
+            report = RUNNER.execute_quick_matrix(
+                (self.cell,), Path(temporary), run_id_factory=lambda: self.run_id,
+                phase_adapters={
+                    MODEL.PhaseName.BUILD_AND_UNIT: build_creates_jar,
+                    MODEL.PhaseName.ARTIFACT_VERIFY: RUNNER.artifact_verify_adapter,
+                },
+                provenance_provider=self.provenance,
+            )
+            cell = report.cells[0]
+            self.assertEqual(MODEL.Verdict.PASS, next(
+                phase.verdict for phase in cell.phases if phase.phase is MODEL.PhaseName.ARTIFACT_VERIFY
+            ))
+            self.assertEqual(1, len(cell.artifacts))
+            self.assertEqual(MODEL.Verdict.INCOMPLETE, report.verdict)
 
     def test_fail_fast_still_leaves_a_terminal_report_for_later_selected_cells(self) -> None:
         def fail_build(context):

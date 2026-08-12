@@ -311,37 +311,34 @@ Gradle development source-set run.
 Exit: one command produces a fail-closed six-cell quick report on a clean
 checkout, and deliberate corruptions are rejected by tests.
 
-Current checkpoint: `scripts/run_minecraft_qualification.py` and its pure
-model implement selection, safe path and command planning, pinned download
-plans, lock/port policy, and deterministic reports. The CLI accepts only
-`--tier quick` and an explicit cell selection, `--all`, or `--all-supported`.
-Dry and non-dry invocations currently end `INCOMPLETE`; they create no
-evidence and launch no Gradle, network, or runtime work until the execution
-adapter is implemented and covered by fail-closed tests.
-The executor primitive layer is present but not wired: it owns held per-cell
-OS locks, contained directory creation, bounded credential-pattern-redacted
-process logs, process-group timeout cleanup, immutable reports, pinned hashes,
-and strict diagnostic jar inspection. The pure external-runtime planner now
-models official installers, exact mod inventories, safe-small files, launches,
-and terminal markers for all six cells. Wiring/downloads and real external
-server installation remain deliberately incomplete.
+Current checkpoint: the runner and pure model implement selection, safe path
+and command planning, pinned download plans, lock/port policy, and
+deterministic reports. Dry-run stays write-free and `INCOMPLETE`. A non-dry
+quick run now executes the reviewed isolated build/unit command, then requires
+exactly one runtime jar under `<cell>/build/<loader>/libs`. It strict-checks
+the loader metadata, MPL file/declaration, diagnostic build identity, and a
+computed SHA-256 before recording the artifact in immutable cell evidence.
+That per-cell diagnostic result is not a same-file frozen-candidate claim;
+shared-contract and external-runtime adapters remain deliberately incomplete.
 
-The serial runner now executes only its reviewed build/unit adapter by
-default. Before process work it requires a clean source tree including no
-untracked source files, a full HEAD equal to its upstream, the reviewed public
+The serial runner now executes its reviewed build/unit and per-cell diagnostic
+artifact adapters by default. Before process work it requires a clean source tree including no
+untracked files, a full HEAD equal to its upstream, the reviewed public
 origin, Java 25, and hashes of the manifest and Gradle wrapper. Each cell gets
 its own `GRADLE_USER_HOME`, `--no-daemon`, held OS lock, fresh output root, and
-immutable report. Missing artifact, contract, or runtime adapters remain
-`INCOMPLETE`.
+immutable report. Shared-contract and runtime adapters remain `INCOMPLETE`.
 
 The separately tested external runtime executor now implements the planned
-pinned download, official installer, exact mod inventory, loopback port,
-marker, fatal-output, interactive stop, and clean-exit controls. A strict pure
+pinned/no-redirect downloads, official installer, installer-owned Mojang
+server hash, exact mod inventory, loopback port, loader/RingWorld/ready marker,
+fatal-output, interactive stop, save, and clean-exit controls. A strict pure
 terminal schema defines the additional provenance, installed-runtime
 inventory, log hashes, candidate identity, ordered markers, and same-file
-group evidence required for `PASS`. The next integration step is to connect
-these contracts and verify the installer-produced runtime against manifest
-pins; until then no real quick cell is qualified.
+group evidence required for `PASS`; its structural adapter rejects an
+executor result that lacks any of those independent records. The next
+integration step is to connect these contracts and run the unchanged frozen
+candidate in all six external runtimes; until then no real quick cell is
+qualified.
 
 Qualification-only Fabric and NeoForge candidates have also completed a real
 Java 25 build from the 26.1 ABI using reviewed closed 26.1–26.1.2 metadata.

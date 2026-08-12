@@ -310,22 +310,28 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
 - `scripts/validate_minecraft_version_matrix.py`: fail-closed pure validation
   for version inputs, isolated profiles, states, evidence, and same-jar claims.
 - `scripts/run_minecraft_qualification.py` and
-  `scripts/minecraft_qualification_model.py`: current fail-closed Phase 3
-  planner/report seam. Until its execution adapter exists it must return
-  `INCOMPLETE`, create no evidence, and never be described as runtime
-  qualification.
+  `scripts/minecraft_qualification_model.py`: fail-closed serial Phase 3
+  runner/model seam. Dry-run is write-free and `INCOMPLETE`; non-dry runs only
+  the isolated build/unit and per-cell diagnostic-artifact adapters. The
+  artifact adapter accepts one jar below `<cell>/build/<loader>/libs`, strict
+  checks loader/MPL/build identity, and records SHA-256. It is not frozen
+  same-file or external-runtime qualification.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
   immutable reports, pinned hashes, and strict diagnostic jar inspection. It
-  is not yet connected to the runner.
+  supplies the runner's build and strict diagnostic-artifact primitives; its
+  external runtime mechanisms remain separate until their evidence contract is
+  wired.
 - `scripts/external_runtime_smoke.py`: pure production-style dedicated-server
-  plan for the official installer, exact mods inventory, safe-small config,
-  launch, markers, and clean-stop contract. It performs no I/O or execution.
+  plan for the pinned Mojang server, official installer, exact mods inventory,
+  safe-small config, launch, markers, and clean-stop contract. It performs no
+  I/O or execution.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
-  exact pinned downloads, official installer runs, exact mod copies, port and
-  marker checks, interactive clean stop, and immutable local results. It is
-  not yet a complete qualification verdict or release publisher.
+  exact pinned downloads, official installer runs, installed Mojang-server
+  identity, exact mod copies, port and marker checks, ordered stop/save/exit
+  observations, and immutable local results. It is not yet wired into the
+  complete qualification verdict and is never a release publisher.
 - `scripts/minecraft_qualification_ranges.py`: strict pure parser for the
   reviewed qualification-only Fabric and NeoForge 26.1.x metadata ranges.
 - `scripts/minecraft_frozen_candidate.py`: strict oldest-ABI candidate and
@@ -334,7 +340,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
 - `scripts/minecraft_qualification_evidence.py`: fail-closed terminal evidence
   schema. A cell cannot claim `PASS` without provenance, command and log
   hashes, installer/runtime inventory, frozen candidate identity, ordered
-  runtime markers, clean exit, and same-file group evidence.
+  runtime markers, clean exit, and same-file group evidence. Its pure external
+  adapter cannot manufacture missing evidence from the executor's compact
+  result.
 - `docs/DIMENSION_SCALING_PLAN.md`: authoritative audit and staged plan for
   removing test-world assumptions from custom dimensions.
 - `docs/ATLAS_PREGENERATION_PLAN.md`: planned **Generate Entire Ring** UI and

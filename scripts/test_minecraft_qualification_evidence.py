@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from types import SimpleNamespace
 import unittest
 
 from minecraft_qualification_evidence import (
     EVIDENCE_SCHEMA_VERSION,
     TerminalEvidenceError,
+    normalize_external_runtime_result,
     validate_terminal_evidence,
 )
 
@@ -93,6 +95,24 @@ def passing_record() -> dict[str, object]:
     }
 
 
+def passing_external_result(*, verdict: str = "PASS", reason: str | None = None) -> SimpleNamespace:
+    return SimpleNamespace(
+        cell_id="26.1-fabric", loader="fabric", minecraft_version="26.1", verdict=verdict, reason=reason,
+        installer=SimpleNamespace(verdict="PASS", return_code=0),
+        downloads=(SimpleNamespace(name="runtime installer", expected=HASH, actual=HASH),),
+        mods=(SimpleNamespace(name="RingWorld", expected_sha256=HASH, actual_sha256=HASH),),
+        observed_markers=("atlas-disabled", "loader-bootstrap", "ringworld-bootstrap", "server-ready"),
+        stop_marker="Stopping server", launcher_verified=True, server_return_code=0,
+    )
+
+
+def external_support() -> dict[str, object]:
+    source = passing_record()
+    return {key: source[key] for key in (
+        "provenance", "commands", "installer", "runtime_inventory", "frozen_candidate", "markers", "same_file",
+    )}
+
+
 class TerminalEvidenceTest(unittest.TestCase):
     def assert_invalid(self, record: dict[str, object]) -> None:
         with self.assertRaises(TerminalEvidenceError):
@@ -172,6 +192,40 @@ class TerminalEvidenceTest(unittest.TestCase):
         record = passing_record()
         record["same_file"]["cell_ids"] = ["26.1-fabric", "26.1-fabric", "26.1.2-fabric"]  # type: ignore[index]
         self.assert_invalid(record)
+
+    def test_external_runtime_adapter_normalizes_only_bound_complete_pass_evidence(self) -> None:
+        normalized = normalize_external_runtime_result(
+            passing_external_result(), external_support(), canonical_cells(), RANGES,
+        )
+        self.assertEqual("PASS", normalized["verdict"])
+        self.assertEqual(0, normalized["runtime"]["exit_code"])
+        self.assertEqual(HASH, normalized["frozen_candidate"]["installed_sha256"])
+
+    def test_external_runtime_adapter_accepts_minimal_nonpass_and_rejects_incomplete_pass_binding(self) -> None:
+        failed = normalize_external_runtime_result(
+            passing_external_result(verdict="FAIL", reason="SERVER_EXIT_1"), None, canonical_cells(), RANGES,
+        )
+        self.assertEqual({"schema_version", "verdict", "cell", "reason"}, set(failed))
+        with self.assertRaises(TerminalEvidenceError):
+            normalize_external_runtime_result(passing_external_result(), None, canonical_cells(), RANGES)
+
+    def test_external_runtime_adapter_rejects_marker_candidate_inventory_and_identity_disagreements(self) -> None:
+        result = passing_external_result()
+        result.observed_markers = ("loader-bootstrap", "ringworld-bootstrap", "server-ready")
+        with self.assertRaises(TerminalEvidenceError):
+            normalize_external_runtime_result(result, external_support(), canonical_cells(), RANGES)
+        result = passing_external_result()
+        result.mods = (SimpleNamespace(name="RingWorld", expected_sha256=HASH, actual_sha256=OTHER_HASH),)
+        with self.assertRaises(TerminalEvidenceError):
+            normalize_external_runtime_result(result, external_support(), canonical_cells(), RANGES)
+        support = external_support()
+        support["runtime_inventory"][0]["sha256"] = OTHER_HASH  # type: ignore[index]
+        with self.assertRaises(TerminalEvidenceError):
+            normalize_external_runtime_result(passing_external_result(), support, canonical_cells(), RANGES)
+        result = passing_external_result()
+        result.minecraft_version = "26.1.2"
+        with self.assertRaises(TerminalEvidenceError):
+            normalize_external_runtime_result(result, external_support(), canonical_cells(), RANGES)
 
 
 if __name__ == "__main__":

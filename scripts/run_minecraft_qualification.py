@@ -21,14 +21,18 @@ import sys
 from typing import Any, Callable, Mapping, Protocol, Sequence
 
 from minecraft_qualification_executor import (
+    PackageVerificationError,
     QualificationExecutionError,
     QualificationLock,
     create_contained_directories,
     execute_command,
+    exact_runtime_jar,
+    inspect_runtime_jar,
     new_run_id,
     write_terminal_report,
 )
 from minecraft_qualification_model import (
+    ArtifactEvidence,
     CellReport,
     CommandRecord,
     EvidenceReference,
@@ -46,6 +50,7 @@ from minecraft_qualification_model import (
     render_markdown,
     report_dict,
     require_safe_identifier,
+    is_within,
     select_cells,
 )
 from validate_minecraft_version_matrix import validate_manifest
@@ -251,9 +256,51 @@ def build_and_unit_adapter(context: PhaseAdapterContext) -> PhaseResult:
     return PhaseResult(context.phase, executed.verdict, executed.reason, (context.command,), evidence)
 
 
+def artifact_verify_adapter(context: PhaseAdapterContext) -> PhaseResult:
+    """Inspect exactly one isolated diagnostic runtime jar after a source build.
+
+    This deliberately verifies the *per-cell* source-build diagnostic jar. It
+    cannot establish the later same-file frozen candidate claim, which has a
+    different wide-range metadata identity and needs cross-cell evidence.
+    """
+    if context.phase is not PhaseName.ARTIFACT_VERIFY or context.command is not None:
+        raise QualificationExecutionError("artifact adapter received an invalid phase context")
+    loader = context.cell.get("loader")
+    minecraft = context.cell.get("minecraft")
+    if not isinstance(loader, str) or not isinstance(minecraft, Mapping) or not isinstance(minecraft.get("version"), str):
+        raise QualificationExecutionError("artifact adapter received an invalid manifest cell")
+    artifact_root = context.paths.build_directory / loader / "libs"
+    try:
+        jar = exact_runtime_jar(artifact_root)
+        if not is_within(jar, artifact_root):
+            raise PackageVerificationError("runtime jar resolves outside the isolated cell build output")
+        diagnostic_version = f"0.0.0-qualification+mc{minecraft['version']}"
+        inspection = inspect_runtime_jar(
+            jar,
+            loader=loader,
+            minecraft_version=minecraft["version"],
+            diagnostic_version=diagnostic_version,
+        )
+        sha256 = _sha256(jar)
+    except (OSError, PackageVerificationError, QualificationExecutionError) as error:
+        return PhaseResult(context.phase, Verdict.FAIL, f"ARTIFACT_VERIFY_FAILED:{error.__class__.__name__}")
+    artifact = ArtifactEvidence(str(jar), "sha256", sha256, sha256, True)
+    evidence = (
+        EvidenceReference("runtime-jar", str(jar), "exactly one loader runtime jar under the isolated build output"),
+        EvidenceReference("runtime-jar-sha256", sha256, "computed SHA-256 of the inspected jar"),
+        EvidenceReference("jar-metadata", inspection.metadata_entry, f"strict {loader} metadata identity"),
+        EvidenceReference("jar-license", inspection.license_entry, "embedded MPL-2.0 RingWorld license"),
+        EvidenceReference("jar-build-identity", diagnostic_version, "strict diagnostic artifact/release-label identity"),
+    )
+    return PhaseResult(context.phase, Verdict.PASS, evidence=evidence, artifacts=(artifact,))
+
+
 def default_phase_adapters() -> Mapping[PhaseName, PhaseAdapter]:
     """Return only adapters whose proof contract is implemented today."""
-    return {PhaseName.BUILD_AND_UNIT: build_and_unit_adapter}
+    return {
+        PhaseName.BUILD_AND_UNIT: build_and_unit_adapter,
+        PhaseName.ARTIFACT_VERIFY: artifact_verify_adapter,
+    }
 
 
 def _unavailable_phase(phase: PhaseName, command: CommandRecord | None, reason: str = NO_PHASE_ADAPTER) -> PhaseResult:
@@ -275,7 +322,9 @@ def _cell_with_phases(planned: CellReport, phases: Sequence[PhaseResult]) -> Cel
         phases=phase_tuple,
         paths=planned.paths,
         downloads=planned.downloads,
-        artifacts=planned.artifacts,
+        artifacts=planned.artifacts + tuple(
+            artifact for phase in phase_tuple for artifact in phase.artifacts
+        ),
     )
 
 

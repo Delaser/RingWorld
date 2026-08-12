@@ -33,6 +33,10 @@ _PASS_FIELDS = frozenset({
 })
 _NONPASS_FIELDS = frozenset({"schema_version", "verdict", "cell", "reason"})
 _CELL_FIELDS = frozenset({"id", "minecraft_version", "loader", "port", "world_config"})
+_EXTERNAL_SUPPORT_FIELDS = frozenset({
+    "provenance", "commands", "installer", "runtime_inventory", "frozen_candidate", "markers", "same_file",
+})
+_EXTERNAL_BOOT_MARKERS = frozenset({"loader-bootstrap", "ringworld-bootstrap", "atlas-disabled", "server-ready"})
 
 
 class TerminalEvidenceError(ValueError):
@@ -46,6 +50,34 @@ class TerminalEvidence:
     cell_id: str
     verdict: str
     candidate_sha256: str | None
+
+
+def _external_field(result: Any, name: str) -> Any:
+    """Read a dataclass-like executor result without importing its executor.
+
+    Keeping this structural avoids a dependency from pure evidence validation
+    onto the process/network executor.  The real
+    ``ExternalRuntimeSmokeResult`` has these attributes; focused tests use a
+    simple immutable stand-in.
+    """
+    if isinstance(result, Mapping):
+        if name not in result:
+            raise TerminalEvidenceError(f"external runtime result is missing {name}")
+        return result[name]
+    if not hasattr(result, name):
+        raise TerminalEvidenceError(f"external runtime result is missing {name}")
+    return getattr(result, name)
+
+
+def _external_verdict(value: Any) -> str:
+    result = getattr(value, "value", value)
+    if result not in {"PASS", "FAIL", "INCOMPLETE"}:
+        raise TerminalEvidenceError("external runtime result has an invalid verdict")
+    return result
+
+
+def _external_string(result: Any, name: str) -> str:
+    return _string(_external_field(result, name), f"external runtime result.{name}")
 
 
 def _mapping(value: Any, label: str) -> Mapping[str, Any]:
@@ -278,6 +310,147 @@ def _validate_same_file(value: Any, candidate_hash: str, expected_cell: Mapping[
     expected_ids = {cell_id for cell_id, cell in canonical_cells.items() if cell.get("loader") == loader}
     if set(ids) != expected_ids:
         raise TerminalEvidenceError("same_file.cell_ids must be exactly the canonical loader group")
+
+
+def _validate_external_result_identity(result: Any, canonical_cells: Mapping[str, Mapping[str, Any]]) -> tuple[str, str, Mapping[str, Any]]:
+    """Bind an executor result to a reviewed cell before using any detail."""
+    cell_id = _external_string(result, "cell_id")
+    cell = canonical_cells.get(cell_id)
+    if not isinstance(cell, Mapping):
+        raise TerminalEvidenceError("external runtime result selects a noncanonical cell")
+    if _external_string(result, "loader") != cell.get("loader"):
+        raise TerminalEvidenceError("external runtime result loader differs from the canonical cell")
+    if _external_string(result, "minecraft_version") != cell.get("minecraft_version"):
+        raise TerminalEvidenceError("external runtime result Minecraft version differs from the canonical cell")
+    return cell_id, str(cell["loader"]), cell
+
+
+def _validate_external_result_installer(result: Any, installer: Mapping[str, Any]) -> None:
+    executed = _external_field(result, "installer")
+    if executed is None:
+        raise TerminalEvidenceError("a PASS external runtime result must retain its installer command")
+    if _external_verdict(_external_field(executed, "verdict")) != "PASS" \
+            or _external_field(executed, "return_code") != 0:
+        raise TerminalEvidenceError("external runtime installer did not exit successfully")
+    downloads = _external_field(result, "downloads")
+    if not isinstance(downloads, Sequence) or isinstance(downloads, (str, bytes)):
+        raise TerminalEvidenceError("external runtime result downloads must be an array")
+    matching = [item for item in downloads if _external_field(item, "name") == "runtime installer"]
+    if len(matching) != 1:
+        raise TerminalEvidenceError("external runtime result must retain exactly one runtime-installer download")
+    downloaded = matching[0]
+    expected = _sha256(_external_field(downloaded, "expected"), "external runtime installer expected hash")
+    actual = _sha256(_external_field(downloaded, "actual"), "external runtime installer actual hash")
+    if expected != actual or expected != _sha256(installer["sha256"], "installer.sha256"):
+        raise TerminalEvidenceError("external runtime installer download does not match the terminal installer pin")
+
+
+def _validate_external_result_mods(result: Any, candidate: Mapping[str, Any]) -> None:
+    copied = _external_field(result, "mods")
+    if not isinstance(copied, Sequence) or isinstance(copied, (str, bytes)):
+        raise TerminalEvidenceError("external runtime result mods must be an array")
+    ringworld = [item for item in copied if _external_field(item, "name") == "RingWorld"]
+    if len(ringworld) != 1:
+        raise TerminalEvidenceError("external runtime result must retain exactly one copied RingWorld jar")
+    copied_jar = ringworld[0]
+    expected = _sha256(_external_field(copied_jar, "expected_sha256"), "external RingWorld expected hash")
+    actual = _sha256(_external_field(copied_jar, "actual_sha256"), "external RingWorld actual hash")
+    source = _sha256(candidate["source_sha256"], "frozen_candidate.source_sha256")
+    installed = _sha256(candidate["installed_sha256"], "frozen_candidate.installed_sha256")
+    if expected != actual or expected != source or actual != installed:
+        raise TerminalEvidenceError("external copied RingWorld jar differs from frozen candidate evidence")
+
+
+def _validate_external_result_markers(result: Any, markers: Any) -> None:
+    observed = _external_field(result, "observed_markers")
+    if not isinstance(observed, Sequence) or isinstance(observed, (str, bytes)) \
+            or any(not isinstance(name, str) for name in observed):
+        raise TerminalEvidenceError("external runtime observed markers must be a string array")
+    if len(observed) != len(set(observed)) or set(observed) != _EXTERNAL_BOOT_MARKERS:
+        raise TerminalEvidenceError(
+            "external runtime result must observe exactly loader-bootstrap, ringworld-bootstrap, atlas-disabled, and ready"
+        )
+    if not isinstance(_external_field(result, "stop_marker"), str) or not _external_field(result, "stop_marker"):
+        raise TerminalEvidenceError("external runtime result has no clean stop marker")
+    # ``markers`` carries the timestamped, ordered record including the final
+    # save marker.  Existing executor summaries only retain marker names, so
+    # a PASS cannot be normalized until the richer observation data is added.
+    _validate_markers(markers)
+
+
+def _validate_external_result_runtime(result: Any) -> dict[str, Any]:
+    reason = _external_field(result, "reason")
+    if reason is not None:
+        raise TerminalEvidenceError("a PASS external runtime result cannot carry a failure reason")
+    if _external_field(result, "launcher_verified") is not True:
+        raise TerminalEvidenceError("external runtime launcher was not verified")
+    if _external_field(result, "server_return_code") != 0:
+        raise TerminalEvidenceError("external runtime server did not exit zero")
+    return {"exit_code": 0, "clean_stop": True, "clean_exit": True, "crash_detected": False}
+
+
+def normalize_external_runtime_result(
+    result: Any,
+    supporting_evidence: Mapping[str, Any] | None,
+    canonical_cells: Mapping[str, Mapping[str, Any]],
+    range_identities: Mapping[str, Mapping[str, str]],
+) -> dict[str, Any]:
+    """Normalize a completed external smoke result into strict terminal JSON.
+
+    This is deliberately a *binding* adapter rather than an evidence
+    generator.  The process executor's current compact result does not hold
+    source provenance, immutable log hashes, or timestamped save observation,
+    so callers must provide those immutable capture fields explicitly.  The
+    function rejects a purported PASS if they are absent or disagree with the
+    executor result.  ``FAIL``/``INCOMPLETE`` require no later capture and
+    normalize to the schema's minimal terminal form.
+    """
+    cell_id, _, cell = _validate_external_result_identity(result, canonical_cells)
+    verdict = _external_verdict(_external_field(result, "verdict"))
+    cell_record = {
+        "id": cell["id"], "minecraft_version": cell["minecraft_version"], "loader": cell["loader"],
+        "port": cell["port"], "world_config": cell["world_config"],
+    }
+    if verdict != "PASS":
+        reason = _external_field(result, "reason")
+        normalized = {
+            "schema_version": EVIDENCE_SCHEMA_VERSION,
+            "verdict": verdict,
+            "cell": cell_record,
+            "reason": reason if isinstance(reason, str) and reason else f"EXTERNAL_RUNTIME_{verdict}",
+        }
+        validate_terminal_evidence(normalized, canonical_cells, range_identities)
+        return normalized
+
+    support = _mapping(supporting_evidence, "external runtime supporting evidence")
+    _exact_keys(support, _EXTERNAL_SUPPORT_FIELDS, "external runtime supporting evidence")
+    _validate_provenance(support["provenance"])
+    _validate_commands(support["commands"])
+    installer = _mapping(support["installer"], "installer")
+    _validate_installer(installer)
+    inventory = _validate_inventory(support["runtime_inventory"])
+    candidate = _mapping(support["frozen_candidate"], "frozen_candidate")
+    candidate_hash = _validate_frozen_candidate(candidate, inventory, cell, range_identities)
+    _validate_same_file(support["same_file"], candidate_hash, cell, canonical_cells)
+    _validate_external_result_installer(result, installer)
+    _validate_external_result_mods(result, candidate)
+    _validate_external_result_markers(result, support["markers"])
+    runtime = _validate_external_result_runtime(result)
+    normalized = {
+        "schema_version": EVIDENCE_SCHEMA_VERSION,
+        "verdict": "PASS",
+        "cell": cell_record,
+        "provenance": support["provenance"],
+        "commands": support["commands"],
+        "installer": installer,
+        "runtime_inventory": support["runtime_inventory"],
+        "frozen_candidate": candidate,
+        "markers": support["markers"],
+        "runtime": runtime,
+        "same_file": support["same_file"],
+    }
+    validate_terminal_evidence(normalized, canonical_cells, range_identities)
+    return normalized
 
 
 def validate_terminal_evidence(

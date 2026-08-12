@@ -48,28 +48,33 @@ names the selected Minecraft/runtime versions. These are source-build ABI
 results only—not server/client runtime qualification or same-jar evidence—so
 the four manifest cells remain `pending`.
 
-Phase 3 has a pure, fail-closed orchestration core. It validates and selects
+Phase 3 has a fail-closed orchestration core. It validates and selects
 manifest cells, plans contained paths, pinned downloads, locks, ports, Gradle
-argument vectors, and deterministic JSON/Markdown reports. It deliberately
-returns `INCOMPLETE` and performs no writes or process launches until the
-execution adapter exists; dry-run output cannot be mistaken for qualification
-evidence. Thirteen orchestration tests pass.
-The unwired executor foundation now has passing focused coverage for UTC run
+argument vectors, and deterministic JSON/Markdown reports. Dry-run output
+remains write-free and `INCOMPLETE`; the serial non-dry path records immutable
+evidence only for its reviewed build/unit and per-cell diagnostic-artifact
+adapters. It does not yet claim frozen same-file, shared-contract, or runtime
+qualification.
+The executor foundation now has passing focused coverage for UTC run
 IDs, held operating-system cell locks, contained directories, process-group
 timeouts, bounded credential-pattern-redacted logs, immutable terminal
 reports, pinned-file hashing, and strict loader-aware diagnostic jar
-inspection. The external-runtime planner models the exact official installer,
-mods inventory, safe-small configuration, launch command, markers, and clean
-stop contract for all six cells without writing or launching anything. Neither
-component is wired to the CLI yet, so neither can execute or claim a quick
-qualification run.
+inspection. Its build and diagnostic-artifact primitives are wired to the
+serial runner; the external-runtime planner models the exact official
+installer, mods inventory, safe-small configuration, launch command, markers,
+and clean stop contract for all six cells without writing or launching
+anything. The external runtime component is not wired to the CLI, so it cannot
+claim a quick qualification run.
 The external executor can now, as a separately tested adapter, fetch exact
 pinned inputs without following redirects, refuse symlinked or reused runtime
 paths, run the official installer, enforce an exact mod inventory, preflight
-the loopback port, wait for RingWorld/readiness markers, send `stop`, reject
-fatal/crash output, and require a clean exit. Its output still cannot become a
-cell `PASS` until it is wired through the strict terminal evidence schema and
-the installed loader/Minecraft runtime inventory is bound to the manifest.
+the loopback port, verify the installer-owned Mojang server against the
+manifest pin, wait for loader/RingWorld/readiness markers, send `stop`, reject
+fatal/crash output, and record an ordered stop/save/clean-exit ledger. A pure
+adapter now binds this result to the strict terminal schema but deliberately
+rejects `PASS` without the separate provenance, log hashes, runtime inventory,
+frozen-candidate identity, and same-file group evidence. The executor is not
+yet wired into the runner, so no external cell is qualified.
 The accepted same-jar proof architecture builds one frozen candidate per
 loader against the oldest supported ABI and runs that unchanged file in
 external production-style profiles for every patch. Per-cell Gradle builds are
@@ -82,9 +87,15 @@ inside those declarations; no candidate has yet passed an external runtime.
 The runner now has a serial injected-phase state machine, isolated
 `GRADLE_USER_HOME`, `--no-daemon`, held cell locks, immutable per-cell/matrix
 reports, and a clean pushed-source/Java-25 provenance preflight. Only the
-build/unit adapter is enabled by default. Artifact, shared-contract, and
+build/unit and per-cell diagnostic-artifact adapters are enabled by default.
+The latter accepts exactly one isolated runtime jar and records strict
+loader/MPL/build-identity inspection plus SHA-256. Shared-contract and
 external-runtime phases remain explicit `INCOMPLETE`, so invoking the runner
 cannot yet create a false support claim.
+The first clean pushed execution of this boundary selected Fabric 26.1 at
+commit `51e7a95d56617e0af7b575dbc9c076727f5e65e2`: Java 25/Fabric Loom
+1.17.19 completed all 337 tests and its isolated build in 2m59s, while the
+cell correctly remained `INCOMPLETE` at the then-unwired later phases.
 Publication is host-scoped: the current records describe Modrinth as published
 and independently hash-verified, while CurseForge remains Under Review for
 Fabric and Baking for NeoForge. One aggregate status never implies both hosts

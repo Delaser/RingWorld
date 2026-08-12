@@ -11,7 +11,7 @@ index; this adapter owns one production-style dedicated-server smoke.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import os
 from pathlib import Path
 import queue
@@ -49,6 +49,8 @@ from minecraft_qualification_model import CommandRecord, PhaseName, Qualificatio
 MAX_DOWNLOAD_BYTES = 1024 * 1024 * 1024
 SERVER_STOP_MARKERS = ("Stopping server", "Stopping the server")
 FATAL_SERVER_MARKERS = ("Crash report", "Exception in server tick loop", "A fatal error has occurred", "Fatal error")
+SERVER_SAVE_MARKERS = ("Saving chunks for level", "Saving worlds")
+SEMANTIC_MARKERS = ("ringworld-bootstrap", "atlas-disabled", "server-ready", "server-stop", "world-save")
 
 
 class ExternalRuntimeExecutionError(QualificationExecutionError):
@@ -75,6 +77,24 @@ class ModCopyResult:
 
 
 @dataclass(frozen=True)
+class MarkerEvent:
+    """One observed lifecycle event with a strictly ordered UTC timestamp."""
+
+    name: str
+    timestamp_utc: str
+
+
+@dataclass(frozen=True)
+class RuntimeIdentity:
+    loader: str
+    loader_identity: str
+    launcher_path: str
+    minecraft_server_path: str
+    minecraft_server_expected: str
+    minecraft_server_actual: str
+
+
+@dataclass(frozen=True)
 class ExternalRuntimeSmokeResult:
     cell_id: str
     loader: str
@@ -86,6 +106,8 @@ class ExternalRuntimeSmokeResult:
     mods: tuple[ModCopyResult, ...]
     launcher_verified: bool
     observed_markers: tuple[str, ...]
+    marker_ledger: tuple[MarkerEvent, ...]
+    runtime_identity: RuntimeIdentity | None
     stop_marker: str | None
     server_return_code: int | None
     server_log: str | None
@@ -96,6 +118,26 @@ class ExternalRuntimeSmokeResult:
 UrlOpen = Callable[..., Any]
 CommandExecutor = Callable[[CommandRecord, QualificationPaths], ExecutedCommand]
 ServerRunner = Callable[..., tuple]
+
+
+class _MarkerLedger:
+    """Append immutable event names in deterministic, strictly increasing time."""
+
+    def __init__(self) -> None:
+        self._events: list[MarkerEvent] = []
+        self._last: datetime | None = None
+
+    def add(self, name: str) -> None:
+        if not name or any(event.name == name for event in self._events):
+            raise ExternalRuntimeExecutionError(f"invalid or duplicate runtime marker {name!r}")
+        moment = datetime.now(timezone.utc)
+        if self._last is not None and moment <= self._last:
+            moment = self._last + timedelta(microseconds=1)
+        self._last = moment
+        self._events.append(MarkerEvent(name, moment.isoformat(timespec="microseconds").replace("+00:00", "Z")))
+
+    def events(self) -> tuple[MarkerEvent, ...]:
+        return tuple(self._events)
 
 
 def _regular_file(path: Path, label: str) -> None:
@@ -128,7 +170,7 @@ def _assert_contained(plan: ExternalRuntimeSmokePlan, paths: QualificationPaths)
         raise ExternalRuntimeExecutionError("external runtime plan lock escapes dist/qualification")
     if plan.lock_path != paths.lock_path:
         raise ExternalRuntimeExecutionError("external runtime plan does not use the cell's stable lock")
-    for download in plan.downloads:
+    for download in (plan.minecraft_server, *plan.downloads):
         if not is_within(download.destination, paths.cache_directory):
             raise ExternalRuntimeExecutionError("download destination escapes the disposable cache")
     for file in plan.files:
@@ -352,6 +394,57 @@ def _verify_launcher(plan: ExternalRuntimeSmokePlan) -> None:
         raise ExternalRuntimeExecutionError("NeoForge launch command is not the generated executable run script")
 
 
+def _launcher_path(plan: ExternalRuntimeSmokePlan) -> Path:
+    if plan.loader == "fabric":
+        assert plan.layout.fabric_server_jar is not None
+        return plan.layout.fabric_server_jar
+    assert plan.layout.neoforge_run_script is not None
+    return plan.layout.neoforge_run_script
+
+
+def _loader_identity(plan: ExternalRuntimeSmokePlan) -> str:
+    """Return the reviewed loader version carried by the installer command."""
+    if plan.loader == "fabric":
+        try:
+            index = plan.installer.argv.index("-loader")
+            value = plan.installer.argv[index + 1]
+        except (ValueError, IndexError) as error:
+            raise ExternalRuntimeExecutionError("Fabric installer command does not declare a loader version") from error
+        if not value:
+            raise ExternalRuntimeExecutionError("Fabric installer command declares an empty loader version")
+        return value
+    # NeoForge's official installer artifact is versioned and independently
+    # hash-pinned. Retain the exact reviewed URL rather than guessing a version
+    # from an installed launcher filename.
+    return plan.downloads[0].url
+
+
+def _installed_minecraft_server(plan: ExternalRuntimeSmokePlan) -> RuntimeIdentity:
+    """Find the installer-owned Mojang server copy by its reviewed SHA-1 pin."""
+    expected = plan.minecraft_server
+    candidates: list[tuple[Path, str]] = []
+    for path in plan.layout.root.rglob("*.jar"):
+        if not is_within(path, plan.layout.root) or is_within(path, plan.layout.mods_directory):
+            continue
+        if path.is_symlink() or not path.is_file():
+            continue
+        verified = verify_pinned_file(path, expected.algorithm, expected.checksum)
+        if verified.verified:
+            candidates.append((path, verified.actual))
+    if len(candidates) != 1:
+        detail = "none" if not candidates else ", ".join(str(path) for path, _ in candidates)
+        raise ExternalRuntimeExecutionError("installer did not create one hash-verified Mojang server jar: " + detail)
+    path, actual = candidates[0]
+    return RuntimeIdentity(
+        loader=plan.loader,
+        loader_identity=_loader_identity(plan),
+        launcher_path=str(_launcher_path(plan)),
+        minecraft_server_path=str(path),
+        minecraft_server_expected=expected.checksum,
+        minecraft_server_actual=actual,
+    )
+
+
 def _drain_server_output(source: BinaryIO, received: "queue.Queue[bytes | None]") -> None:
     try:
         for line in iter(source.readline, b""):
@@ -361,20 +454,27 @@ def _drain_server_output(source: BinaryIO, received: "queue.Queue[bytes | None]"
         received.put(None)
 
 
-def _run_server(plan: ExternalRuntimeSmokePlan, paths: QualificationPaths) -> tuple[Verdict, str | None, tuple[str, ...], str | None, int | None, str]:
+def _run_server(
+    plan: ExternalRuntimeSmokePlan,
+    paths: QualificationPaths,
+    ledger: _MarkerLedger | None = None,
+) -> tuple[Verdict, str | None, tuple[str, ...], str | None, int | None, str, tuple[MarkerEvent, ...]]:
+    ledger = ledger or _MarkerLedger()
     log = paths.logs_directory / "02-external-runtime-server.combined.log"
     if log.exists():
         raise EvidenceError(f"external server log already exists: {log}")
     started = time.monotonic()
     creation_flags = subprocess.CREATE_NEW_PROCESS_GROUP if os.name == "nt" else 0
     try:
+        ledger.add("runtime-start")
         process = subprocess.Popen(
             list(plan.launch.argv), cwd=plan.launch.cwd, env=sanitized_environment(), stdin=subprocess.PIPE,
             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=os.name != "nt",
             creationflags=creation_flags,
         )
     except OSError as error:
-        return Verdict.FAIL, f"SERVER_START_FAILED:{error.__class__.__name__}", (), None, None, str(log)
+        ledger.add("runtime-start-failed")
+        return Verdict.FAIL, f"SERVER_START_FAILED:{error.__class__.__name__}", (), None, None, str(log), ledger.events()
     assert process.stdout is not None and process.stdin is not None
     received: "queue.Queue[bytes | None]" = queue.Queue()
     drain = threading.Thread(target=_drain_server_output, args=(process.stdout, received), daemon=True)
@@ -403,11 +503,17 @@ def _run_server(plan: ExternalRuntimeSmokePlan, paths: QualificationPaths) -> tu
             complete_text = (complete_text + text)[-65536:]
             for marker in plan.expected_log_markers:
                 if marker.required_substring in complete_text:
-                    observed.add(marker.name)
+                    if marker.name not in observed:
+                        observed.add(marker.name)
+                        ledger.add(marker.name)
             if stop_sent:
                 for marker in SERVER_STOP_MARKERS:
-                    if marker in complete_text:
+                    if marker in complete_text and stop_marker is None:
                         stop_marker = marker
+                        ledger.add("clean-stop")
+            for marker in SERVER_SAVE_MARKERS:
+                if marker in complete_text and not any(event.name == "world-save" for event in ledger.events()):
+                    ledger.add("world-save")
             for marker in FATAL_SERVER_MARKERS:
                 if marker in complete_text:
                     fatal_marker = marker
@@ -423,6 +529,12 @@ def _run_server(plan: ExternalRuntimeSmokePlan, paths: QualificationPaths) -> tu
                     reason = "SERVER_STOP_WRITE_FAILED"
                     break
                 stop_sent = True
+                ledger.add("stop-sent")
+                # ``server-stop`` is the semantic lifecycle transition: we
+                # successfully sent the stop command.  ``clean-stop`` records
+                # the later vanilla acknowledgement and remains separately
+                # reviewable because it can arrive after world saving.
+                ledger.add("server-stop")
         if len(observed) != len(plan.expected_log_markers):
             missing = sorted(marker.name for marker in plan.expected_log_markers if marker.name not in observed)
             reason = reason or "MISSING_MARKERS:" + ",".join(missing)
@@ -450,9 +562,14 @@ def _run_server(plan: ExternalRuntimeSmokePlan, paths: QualificationPaths) -> tu
             sink.feed(item)
             text = item.decode("utf-8", errors="replace")
             complete_text = (complete_text + text)[-65536:]
+        for marker in SERVER_SAVE_MARKERS:
+            if marker in complete_text and not any(event.name == "world-save" for event in ledger.events()):
+                ledger.add("world-save")
         for marker in SERVER_STOP_MARKERS:
             if marker in complete_text:
                 stop_marker = marker
+                if not any(event.name == "clean-stop" for event in ledger.events()):
+                    ledger.add("clean-stop")
                 break
         for marker in FATAL_SERVER_MARKERS:
             if marker in complete_text:
@@ -463,8 +580,11 @@ def _run_server(plan: ExternalRuntimeSmokePlan, paths: QualificationPaths) -> tu
             reason = reason or f"SERVER_EXIT_{return_code}"
         if stop_marker is None:
             reason = reason or "SERVER_STOP_MARKER_MISSING"
+        if not any(event.name == "world-save" for event in ledger.events()):
+            reason = reason or "SERVER_SAVE_MARKER_MISSING"
+        ledger.add("runtime-exit")
         verdict = Verdict.PASS if reason is None else Verdict.FAIL
-        return verdict, reason, tuple(sorted(observed)), stop_marker, return_code, str(log)
+        return verdict, reason, tuple(sorted(observed)), stop_marker, return_code, str(log), ledger.events()
     finally:
         if process.poll() is None:
             _terminate_process_group(process)
@@ -500,6 +620,8 @@ def _result_payload(result: ExternalRuntimeSmokeResult) -> dict[str, Any]:
         "mods": [item.__dict__ for item in result.mods],
         "launcher_verified": result.launcher_verified,
         "observed_markers": list(result.observed_markers),
+        "marker_ledger": [item.__dict__ for item in result.marker_ledger],
+        "runtime_identity": None if result.runtime_identity is None else result.runtime_identity.__dict__,
         "stop_marker": result.stop_marker,
         "server_return_code": result.server_return_code,
         "server_log": result.server_log,
@@ -539,24 +661,30 @@ def execute_external_runtime_smoke(
     downloads: list[DownloadResult] = []
     copied: list[ModCopyResult] = []
     installer_result: ExecutedCommand | None = None
+    ledger = _MarkerLedger()
     with QualificationLock.acquire(plan.lock_path, run_id):
         _assert_no_symlink_components(paths.cell_root, paths.repository_root, "qualification cell")
         _assert_no_symlink_components(plan.layout.root, paths.cell_root, "external runtime")
         create_contained_directories(paths)
+        downloads.append(fetch_pinned_https(plan.minecraft_server, paths, opener=opener))
         for item in plan.downloads:
             downloads.append(fetch_pinned_https(item, paths, opener=opener))
+        ledger.add("installer-start")
         installer_record = CommandRecord(
             PhaseName.DEDICATED_SMOKE, plan.installer.argv, plan.installer.cwd, (), plan.launch.timeout_seconds,
         )
         installer_result = command_executor(installer_record, paths, ordinal=1)
         if installer_result.verdict is not Verdict.PASS:
+            ledger.add("installer-failed")
             return _record_terminal_result(ExternalRuntimeSmokeResult(
                 plan.cell_id, plan.loader, plan.minecraft_version, Verdict.FAIL, installer_result.reason,
-                tuple(downloads), installer_result, (), False, (), None, None, None,
+                tuple(downloads), installer_result, (), False, (), ledger.events(), None, None, None, None,
                 started_at.isoformat(), time.monotonic() - started,
             ), paths)
+        ledger.add("installer-complete")
         _assert_no_symlink_components(plan.layout.root, paths.cell_root, "installed external runtime")
         _verify_launcher(plan)
+        runtime_identity = _installed_minecraft_server(plan)
         for file in plan.files:
             _write_planned_file(file.path, file.contents, plan.layout.root)
         for mod in plan.mods:
@@ -565,12 +693,12 @@ def execute_external_runtime_smoke(
         if not socket_port_probe(_planned_server_port(plan)):
             return _record_terminal_result(ExternalRuntimeSmokeResult(
                 plan.cell_id, plan.loader, plan.minecraft_version, Verdict.FAIL, "SERVER_PORT_UNAVAILABLE",
-                tuple(downloads), installer_result, tuple(copied), True, (), None, None, None,
+                tuple(downloads), installer_result, tuple(copied), True, (), ledger.events(), runtime_identity, None, None, None,
                 started_at.isoformat(), time.monotonic() - started,
             ), paths)
-        verdict, reason, markers, stop_marker, return_code, server_log = server_runner(plan, paths)
+        verdict, reason, markers, stop_marker, return_code, server_log, markers_ledger = server_runner(plan, paths, ledger)
         return _record_terminal_result(ExternalRuntimeSmokeResult(
             plan.cell_id, plan.loader, plan.minecraft_version, verdict, reason, tuple(downloads), installer_result,
-            tuple(copied), True, markers, stop_marker, return_code, server_log,
+            tuple(copied), True, markers, markers_ledger, runtime_identity, stop_marker, return_code, server_log,
             started_at.isoformat(), time.monotonic() - started,
         ), paths)
