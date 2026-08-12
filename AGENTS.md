@@ -326,7 +326,16 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   selections stay `INCOMPLETE` without runtime I/O. A failed complete-triplet
   frozen preflight aborts per-cell diagnostics before Gradle work but still
   writes immutable reports with the shared-contract failure and explicit
-  aborted phases; partial-triplet diagnostics remain unchanged.
+  aborted phases; partial-triplet diagnostics remain unchanged. The optional
+  `--gradle-dependency-cache` is only for a worker-provisioned, already-existing
+  external read-only dependency cache. It must be absolute, non-symlinked, and
+  outside the checkout, qualification state, and home; the runner passes it
+  only as `GRADLE_RO_DEP_CACHE` while retaining each cell's disposable
+  `GRADLE_USER_HOME`. It is non-authoritative acceleration, never offline
+  qualification or support evidence. Provision it from a compatible Gradle
+  `caches/modules-2` tree without lock/cleanup files and do not mutate it while
+  a qualification run reads it; the runner rechecks the path at every Gradle
+  command boundary but does not trust its contents.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
@@ -439,6 +448,12 @@ Qualification source-build artifacts must use the diagnostic
 never stage or publish them. The 26.1 and 26.1.1 Fabric and NeoForge beta
 source-build cells currently pass 337 tests each, but remain pending until
 external runtime and frozen-jar gates pass.
+An operator may opt into an external worker-provisioned read-only dependency
+cache with `--gradle-dependency-cache /absolute/path`; it is rejected if it is
+missing, symlinked, or overlaps the checkout, `dist/`, per-cell build/run
+state, or the home directory. The cache is passed only as
+`GRADLE_RO_DEP_CACHE`; each cell still owns `GRADLE_USER_HOME`, and the runner
+never adds Gradle offline mode.
 External runtime assembly must use the exact SHA-256-pinned installer in each
 manifest cell: Fabric Installer for Fabric and the matching NeoForge installer
 for NeoForge. Never count a Gradle development run, Fabric Loader jar, or

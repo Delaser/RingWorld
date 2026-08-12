@@ -91,6 +91,26 @@ Both the frozen-candidate build and each diagnostic cell use
 `--max-workers=1`. This keeps dependency resolution serial on constrained
 hosts while retaining isolated Gradle homes, outputs, and evidence.
 
+On a worker that has provisioned an external read-only dependency cache, the
+pure planning check may include it explicitly:
+
+```sh
+python3 scripts/run_minecraft_qualification.py \
+  --tier quick --cell 26.1-fabric --dry-run \
+  --gradle-dependency-cache /absolute/worker-provisioned-gradle-cache
+```
+
+The directory must already exist, be non-symlinked (including its path
+components), and be outside the checkout, `dist/`, qualification cell
+build/run state, and the operator home. This only supplies
+`GRADLE_RO_DEP_CACHE`; it never replaces the per-cell `GRADLE_USER_HOME`,
+enables Gradle offline mode, or constitutes runtime/support evidence. The
+generated input-plan and frozen-candidate evidence label the cache as
+non-authoritative acceleration. Provision the directory from a compatible
+Gradle `caches/modules-2` tree, excluding `*.lock` and `gc.properties`, and do
+not mutate it while qualification reads it. The runner revalidates its path at
+each Gradle command boundary; cache bytes are never support evidence.
+
 The executor and external-runtime planner checks cover their isolated
 primitives and plan contracts. They verify pinned/no-redirect downloads, the
 official installer contract (including its pre-created empty contained target), installed Mojang-server identity, exact mod

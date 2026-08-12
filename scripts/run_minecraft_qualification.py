@@ -220,7 +220,75 @@ def _frozen_properties(cell: Mapping[str, Any], paths: QualificationPaths) -> tu
             ("ringQualificationNeoForgeRange", APPROVED_NEOFORGE_LOADER_RANGE))
 
 
-def frozen_candidate_plan(cell: Mapping[str, Any], repository_root: Path, run_id: str) -> FrozenCandidatePlan:
+def _paths_overlap(first: Path, second: Path) -> bool:
+    """Return whether two resolved directory trees overlap in either direction."""
+    return is_within(first, second) or is_within(second, first)
+
+
+def validate_gradle_dependency_cache(
+    cache: Path | None, repository_root: Path,
+) -> Path | None:
+    """Accept only an external worker-provisioned read-only dependency cache.
+
+    The cache is deliberately an opt-in performance aid, never qualification
+    evidence. It must already exist outside both the checkout/disposable
+    outputs and the operator home directory, and cannot traverse a symlink.
+    The latter prevents a harmless-looking command-line spelling from binding
+    the runner to mutable repository or credential-bearing state.
+    """
+    if cache is None:
+        return None
+    if not isinstance(cache, Path) or not cache.is_absolute():
+        raise InvocationError("--gradle-dependency-cache must be an absolute path")
+    if not cache.exists() or not cache.is_dir():
+        raise InvocationError("--gradle-dependency-cache must name an existing directory")
+    if cache.is_symlink():
+        raise InvocationError("--gradle-dependency-cache must not be a symlink")
+    resolved = cache.resolve(strict=True)
+    if cache != resolved:
+        raise InvocationError("--gradle-dependency-cache must not traverse a symlink")
+    repository = repository_root.resolve(strict=False)
+    prohibited = (
+        repository,
+        repository / "dist",
+        repository / "build",
+        repository / "run",
+        Path.home().resolve(strict=False),
+    )
+    if any(_paths_overlap(resolved, root) for root in prohibited):
+        raise InvocationError(
+            "--gradle-dependency-cache must not overlap the repository, dist, cell/build/run state, or home directory"
+        )
+    return resolved
+
+
+def _gradle_cache_environment(paths: QualificationPaths, cache: Path | None) -> tuple[tuple[str, str], ...]:
+    """Keep the cell home isolated while optionally exposing only the RO cache."""
+    environment = (("GRADLE_USER_HOME", str(paths.gradle_home)),)
+    return environment if cache is None else environment + (("GRADLE_RO_DEP_CACHE", str(cache)),)
+
+
+def _gradle_cache_evidence(cache: Path | None) -> tuple[EvidenceReference, ...]:
+    if cache is None:
+        return ()
+    return (EvidenceReference(
+        "gradle-ro-dependency-cache",
+        str(cache),
+        "optional worker-provisioned read-only dependency cache; non-authoritative acceleration only",
+    ),)
+
+
+def _validated_command_gradle_cache(command: CommandRecord, repository_root: Path) -> Path | None:
+    """Recheck an optional shared cache immediately before a Gradle launch."""
+    values = [Path(value) for key, value in command.environment if key == "GRADLE_RO_DEP_CACHE"]
+    if len(values) > 1:
+        raise QualificationExecutionError("Gradle command has duplicate read-only dependency-cache inputs")
+    return validate_gradle_dependency_cache(values[0] if values else None, repository_root)
+
+
+def frozen_candidate_plan(
+    cell: Mapping[str, Any], repository_root: Path, run_id: str, *, gradle_dependency_cache: Path | None = None,
+) -> FrozenCandidatePlan:
     """Purely plan the contained oldest-ABI candidate build for one loader."""
     source_paths = QualificationPaths.from_cell(repository_root, cell, run_id)
     loader = cell.get("loader")
@@ -261,7 +329,7 @@ def frozen_candidate_plan(cell: Mapping[str, Any], repository_root: Path, run_id
             *property_args, *tasks,
         ),
         repository_root,
-        (("GRADLE_USER_HOME", str(paths.gradle_home)),),
+        _gradle_cache_environment(paths, gradle_dependency_cache),
         profile["timeout_seconds"],
     )
     candidate_path = source_paths.run_root / "frozen-candidates" / loader / "ringworld-qualification.jar"
@@ -315,7 +383,7 @@ def _full_loader_triplet(cells: Sequence[Mapping[str, Any]], loader: str) -> tup
 
 
 def prepare_frozen_candidates(
-    cells: Sequence[Mapping[str, Any]], repository_root: Path, run_id: str,
+    cells: Sequence[Mapping[str, Any]], repository_root: Path, run_id: str, *, gradle_dependency_cache: Path | None = None,
 ) -> Mapping[str, FrozenCandidatePreparation]:
     """Build and freeze at most one candidate per complete loader triplet.
 
@@ -324,6 +392,7 @@ def prepare_frozen_candidates(
     does not make any quick cell pass; dedicated runtime evidence remains a
     separately unavailable phase.
     """
+    gradle_dependency_cache = validate_gradle_dependency_cache(gradle_dependency_cache, repository_root)
     preparations: dict[str, FrozenCandidatePreparation] = {}
     for loader in ("fabric", "neoforge"):
         triplet = _full_loader_triplet(cells, loader)
@@ -335,11 +404,14 @@ def prepare_frozen_candidates(
         source = next(cell for cell in triplet if cell["id"] == f"26.1-{loader}")
         plan: FrozenCandidatePlan | None = None
         try:
-            plan = frozen_candidate_plan(source, repository_root, run_id)
+            plan = frozen_candidate_plan(
+                source, repository_root, run_id, gradle_dependency_cache=gradle_dependency_cache,
+            )
             with QualificationLock.acquire(plan.paths.lock_path, run_id):
                 if plan.paths.cell_root.exists() or plan.candidate_path.exists():
                     raise QualificationExecutionError("frozen candidate output already exists and cannot be reused")
                 create_contained_directories(plan.paths)
+                _validated_command_gradle_cache(plan.command, repository_root)
                 executed = execute_command(plan.command, plan.paths, ordinal=1)
                 if executed.verdict is not Verdict.PASS:
                     preparations[loader] = FrozenCandidatePreparation(
@@ -347,7 +419,7 @@ def prepare_frozen_candidates(
                         evidence=(
                             EvidenceReference("frozen-build-stdout", executed.stdout_log, "bounded, redacted oldest-ABI build stdout"),
                             EvidenceReference("frozen-build-stderr", executed.stderr_log, "bounded, redacted oldest-ABI build stderr"),
-                        ),
+                        ) + _gradle_cache_evidence(gradle_dependency_cache),
                     )
                     continue
                 source_jar = _direct_runtime_jar(plan.source_runtime_directory)
@@ -365,12 +437,13 @@ def prepare_frozen_candidates(
                         EvidenceReference("frozen-candidate", str(plan.candidate_path), "one directly MPL-inspected oldest-ABI candidate"),
                         EvidenceReference("frozen-candidate-sha256", inspection.sha256, "retained candidate hash"),
                         EvidenceReference("same-file-coverage", ",".join(coverage.cell_ids), "one path/hash covers the complete loader triplet"),
-                    ),
+                    ) + _gradle_cache_evidence(gradle_dependency_cache),
                     artifacts=(artifact,),
                 )
         except (OSError, FrozenCandidateError, PackageVerificationError, QualificationExecutionError, InvocationError) as error:
             preparations[loader] = FrozenCandidatePreparation(
                 loader, Verdict.FAIL, f"{FROZEN_CANDIDATE_PREPARATION_FAILED}:{error.__class__.__name__}", plan,
+                evidence=_gradle_cache_evidence(gradle_dependency_cache),
             )
     return preparations
 
@@ -476,6 +549,10 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--fail-fast", action="store_true", help="accepted for compatibility; execution is always fail-fast")
     result.add_argument("--resume", action="store_true", help="not implemented; immutable evidence cannot be safely resumed yet")
     result.add_argument("--dry-run", action="store_true", help="validate and plan only; performs no writes or process work")
+    result.add_argument(
+        "--gradle-dependency-cache",
+        help="optional absolute worker-provisioned read-only Gradle dependency cache; never enables offline mode",
+    )
     return result
 
 
@@ -503,6 +580,7 @@ def build_and_unit_adapter(context: PhaseAdapterContext) -> PhaseResult:
     """Execute the reviewed Gradle build/unit command through the safe primitive."""
     if context.phase is not PhaseName.BUILD_AND_UNIT or context.command is None:
         raise QualificationExecutionError("build/unit adapter received an invalid phase context")
+    _validated_command_gradle_cache(context.command, context.paths.repository_root)
     executed = execute_command(context.command, context.paths, ordinal=context.ordinal)
     evidence = (
         EvidenceReference("command-stdout", executed.stdout_log, "bounded, redacted process stdout"),
@@ -757,6 +835,7 @@ def execute_quick_matrix(
     frozen_preparation_provider: Callable[[Sequence[Mapping[str, Any]], Path, str], Mapping[str, FrozenCandidatePreparation]] = prepare_frozen_candidates,
     provenance_provider: ProvenanceProvider = collect_source_provenance,
     manifest_path: Path | None = None,
+    gradle_dependency_cache: Path | None = None,
 ) -> MatrixReport:
     """Execute serial cell work and leave immutable terminal evidence.
 
@@ -765,6 +844,7 @@ def execute_quick_matrix(
     are *incomplete*, never passes. The adapter mapping makes integration
     tests and future proof phases injectable without changing the core runner.
     """
+    gradle_dependency_cache = validate_gradle_dependency_cache(gradle_dependency_cache, repository_root)
     run_id = run_id_factory()
     if not isinstance(run_id, str):
         raise QualificationExecutionError("run-id factory returned a non-string value")
@@ -776,7 +856,21 @@ def execute_quick_matrix(
     # Production execution prepares the one immutable oldest-ABI candidate
     # before any per-cell source diagnostics. Tests that inject all adapters
     # remain hermetic; an omitted shared adapter stays explicitly incomplete.
-    preparations = frozen_preparation_provider(cells, repository_root, run_id) if phase_adapters is None else {}
+    if phase_adapters is None:
+        try:
+            preparations = (
+                frozen_preparation_provider(cells, repository_root, run_id)
+                if gradle_dependency_cache is None
+                else frozen_preparation_provider(
+                    cells, repository_root, run_id, gradle_dependency_cache=gradle_dependency_cache,
+                )
+            )
+        except TypeError as error:
+            raise QualificationExecutionError(
+                "frozen preparation provider does not implement the dependency-cache contract"
+            ) from error
+    else:
+        preparations = {}
     preflight_failures = _frozen_preflight_failures(cells, preparations)
     if phase_adapters is None:
         # Local import preserves the adapter's one-way structural dependency:
@@ -795,7 +889,9 @@ def execute_quick_matrix(
     preflight_failure_recorded = False
 
     for cell in cells:
-        planned = _with_provenance(plan_cell(cell, repository_root, run_id, dry_run=False), provenance)
+        planned = _with_provenance(plan_cell(
+            cell, repository_root, run_id, dry_run=False, gradle_dependency_cache=gradle_dependency_cache,
+        ), provenance)
         paths = planned.paths
         loader = cell.get("loader")
         if preflight_failures:
@@ -892,10 +988,20 @@ def main(argv: list[str] | None = None, *, repository_root: Path = ROOT) -> int:
         manifest_path = (repository_root / args.manifest).resolve(strict=False) if not Path(args.manifest).is_absolute() else Path(args.manifest)
         manifest = load_manifest(manifest_path)
         cells = select_cells(manifest, args.cell, all_cells=args.all, all_supported=args.all_supported)
+        gradle_dependency_cache = validate_gradle_dependency_cache(
+            Path(args.gradle_dependency_cache) if args.gradle_dependency_cache is not None else None,
+            repository_root,
+        )
         report = (
-            plan_matrix(cells, repository_root, "dry-run", dry_run=True)
+            plan_matrix(
+                cells, repository_root, "dry-run", dry_run=True,
+                gradle_dependency_cache=gradle_dependency_cache,
+            )
             if args.dry_run
-            else execute_quick_matrix(cells, repository_root, manifest_path=manifest_path)
+            else execute_quick_matrix(
+                cells, repository_root, manifest_path=manifest_path,
+                gradle_dependency_cache=gradle_dependency_cache,
+            )
         )
     except (InvocationError, QualificationExecutionError, OSError) as error:
         print(f"INVOCATION ERROR: {error}", file=sys.stderr)

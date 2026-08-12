@@ -59,6 +59,7 @@ _SAFE_INHERITED_ENVIRONMENT = frozenset(
         "COMSPEC",
     }
 )
+_SAFE_SUPPLIED_ENVIRONMENT = _SAFE_INHERITED_ENVIRONMENT | frozenset({"GRADLE_RO_DEP_CACHE"})
 _SAFE_PREFIXED_ENVIRONMENT = ("LC_",)
 MAX_LOG_BYTES = 2 * 1024 * 1024
 _LOG_TRUNCATION_MARKER = b"\n[RingWorld qualification log truncated]\n"
@@ -288,7 +289,7 @@ def sanitized_environment(
         if _SECRET_KEY.search(key):
             raise QualificationExecutionError(f"command environment may not set secret-like key {key!r}")
         upper = key.upper()
-        if upper not in _SAFE_INHERITED_ENVIRONMENT and not any(upper.startswith(prefix) for prefix in _SAFE_PREFIXED_ENVIRONMENT):
+        if upper not in _SAFE_SUPPLIED_ENVIRONMENT and not any(upper.startswith(prefix) for prefix in _SAFE_PREFIXED_ENVIRONMENT):
             raise QualificationExecutionError(f"command environment key {key!r} is not allowlisted")
         result[key] = value
     return result

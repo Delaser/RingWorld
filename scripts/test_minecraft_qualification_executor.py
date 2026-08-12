@@ -92,6 +92,13 @@ class QualificationExecutorTest(unittest.TestCase):
                 inherited={"GITHUB_TOKEN": "secret", "PATH": "/bin", "JAVA_HOME": "/old", "ODD": "no"},
             )
             self.assertEqual(environment, {"PATH": "/bin", "JAVA_HOME": "/jdk"})
+            cache_environment = sanitized_environment(
+                (("GRADLE_USER_HOME", "/cell/gradle-home"), ("GRADLE_RO_DEP_CACHE", "/worker/cache")),
+                inherited={"GRADLE_RO_DEP_CACHE": "/untrusted/inherited", "PATH": "/bin"},
+            )
+            self.assertEqual(cache_environment, {
+                "PATH": "/bin", "GRADLE_USER_HOME": "/cell/gradle-home", "GRADLE_RO_DEP_CACHE": "/worker/cache",
+            })
             with self.assertRaises(Exception):
                 sanitized_environment((("API_TOKEN", "nope"),), inherited={})
 

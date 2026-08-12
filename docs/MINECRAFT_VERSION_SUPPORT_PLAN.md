@@ -353,6 +353,21 @@ immutable report. The shared-contract adapter is available only after the
 complete-triplet frozen preflight; the external runtime adapter is installed
 only under that same complete-triplet/provenance condition.
 
+An operator may optionally provide
+`--gradle-dependency-cache /absolute/worker-provisioned-cache` to reuse a
+Gradle read-only dependency-cache input across otherwise isolated builds. The path
+must already exist, be a directory with no symlink component, and remain
+outside the checkout, `dist/`, disposable cell/build/run state, and operator
+home. The runner passes it only as `GRADLE_RO_DEP_CACHE`; every diagnostic and
+frozen-candidate command still receives its own `GRADLE_USER_HOME`. Cache use
+is recorded as non-authoritative acceleration in input/frozen evidence. It
+does not enable `--offline` or any other offline qualification mode: pinned
+inputs must still resolve and qualify normally. The operator is responsible
+for provisioning this path from a compatible Gradle `caches/modules-2`
+directory without lock or cleanup files and for preventing writes while a
+qualification run reads it; the runner revalidates the path immediately at
+each Gradle command boundary but does not treat cache contents as trusted.
+
 The separately tested external runtime executor now implements the planned
 pinned/no-redirect downloads, official installer, installer-owned Mojang
 server hash, exact mod inventory, loopback port, loader/RingWorld/ready marker,

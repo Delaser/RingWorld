@@ -444,7 +444,9 @@ def gradle_properties(cell: Mapping[str, Any], paths: QualificationPaths) -> tup
     )
 
 
-def planned_commands(cell: Mapping[str, Any], paths: QualificationPaths) -> tuple[CommandRecord, ...]:
+def planned_commands(
+    cell: Mapping[str, Any], paths: QualificationPaths, *, gradle_dependency_cache: Path | None = None,
+) -> tuple[CommandRecord, ...]:
     loader = cell["loader"]
     profile = cell.get("profile")
     if not isinstance(profile, Mapping):
@@ -458,6 +460,12 @@ def planned_commands(cell: Mapping[str, Any], paths: QualificationPaths) -> tupl
     # invocations, so each cell receives an explicit disposable home. Other
     # runtime/cache paths remain owned by later phase adapters.
     environment = (("GRADLE_USER_HOME", str(paths.gradle_home)),)
+    if gradle_dependency_cache is not None:
+        # This is an optional worker-provisioned *read-only dependency* cache.
+        # It never replaces the disposable per-cell Gradle user home and must
+        # be validated by the execution runner before it reaches this pure
+        # command-planning seam.
+        environment += (("GRADLE_RO_DEP_CACHE", str(gradle_dependency_cache)),)
     if loader == "fabric":
         build_tasks = (":test", ":build")
     elif loader == "neoforge":
@@ -485,9 +493,12 @@ def aggregate_verdict(phases: Sequence[PhaseResult]) -> Verdict:
     return Verdict.PASS
 
 
-def plan_cell(cell: Mapping[str, Any], repository_root: Path, run_id: str, *, dry_run: bool) -> CellReport:
+def plan_cell(
+    cell: Mapping[str, Any], repository_root: Path, run_id: str, *, dry_run: bool,
+    gradle_dependency_cache: Path | None = None,
+) -> CellReport:
     paths = QualificationPaths.from_cell(repository_root, cell, run_id)
-    commands = planned_commands(cell, paths)
+    commands = planned_commands(cell, paths, gradle_dependency_cache=gradle_dependency_cache)
     command_by_phase = {command.phase: command for command in commands}
     reason = DRY_RUN_NO_EXECUTION if dry_run else QUALIFICATION_EXECUTION_NOT_IMPLEMENTED
     phases: list[PhaseResult] = []
@@ -499,10 +510,19 @@ def plan_cell(cell: Mapping[str, Any], repository_root: Path, run_id: str, *, dr
                 evidence=(EvidenceReference("manifest-cell", str(cell["id"]), "manifest validated before planning"),),
             ))
         elif phase is PhaseName.INPUT_PLAN:
+            evidence = [
+                EvidenceReference("input-plan", str(paths.cell_root), "pinned inputs and isolated paths selected"),
+            ]
+            if gradle_dependency_cache is not None:
+                evidence.append(EvidenceReference(
+                    "gradle-ro-dependency-cache",
+                    str(gradle_dependency_cache),
+                    "optional worker-provisioned read-only dependency cache; non-authoritative acceleration only",
+                ))
             phases.append(PhaseResult(
                 phase,
                 Verdict.PASS,
-                evidence=(EvidenceReference("input-plan", str(paths.cell_root), "pinned inputs and isolated paths selected"),),
+                evidence=tuple(evidence),
             ))
         else:
             command = command_by_phase.get(phase)
@@ -515,8 +535,14 @@ def plan_cell(cell: Mapping[str, Any], repository_root: Path, run_id: str, *, dr
     )
 
 
-def plan_matrix(cells: Sequence[Mapping[str, Any]], repository_root: Path, run_id: str, *, dry_run: bool) -> MatrixReport:
-    reports = tuple(plan_cell(cell, repository_root, run_id, dry_run=dry_run) for cell in cells)
+def plan_matrix(
+    cells: Sequence[Mapping[str, Any]], repository_root: Path, run_id: str, *, dry_run: bool,
+    gradle_dependency_cache: Path | None = None,
+) -> MatrixReport:
+    reports = tuple(
+        plan_cell(cell, repository_root, run_id, dry_run=dry_run, gradle_dependency_cache=gradle_dependency_cache)
+        for cell in cells
+    )
     verdict = aggregate_verdict(tuple(
         PhaseResult(
             PhaseName.MANIFEST_VALIDATION,

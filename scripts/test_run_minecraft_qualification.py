@@ -149,6 +149,21 @@ class MinecraftQualificationModelTest(unittest.TestCase):
             self.assertIn(":test", argv)
             self.assertNotIn("runQualificationSmokeServer", argv)
 
+    def test_optional_read_only_dependency_cache_is_explicit_for_both_loaders(self) -> None:
+        cache = Path("/worker/gradle-read-only-cache")
+        seen_loaders = set()
+        for cell in self.manifest["cells"]:
+            paths = MODEL.QualificationPaths.from_cell(ROOT, cell, "run")
+            command = MODEL.planned_commands(cell, paths, gradle_dependency_cache=cache)[0]
+            self.assertEqual(
+                (("GRADLE_USER_HOME", str(paths.gradle_home)), ("GRADLE_RO_DEP_CACHE", str(cache))),
+                command.environment,
+            )
+            self.assertNotIn("--offline", command.argv)
+            self.assertFalse(any(argument.startswith("-Dorg.gradle.offline") for argument in command.argv))
+            seen_loaders.add(cell["loader"])
+        self.assertEqual({"fabric", "neoforge"}, seen_loaders)
+
     def test_required_dependency_properties_fail_closed_for_missing_or_duplicate_coordinates(self) -> None:
         missing = copy.deepcopy(self.cell)
         missing["dependencies"] = [
@@ -201,6 +216,39 @@ class MinecraftQualificationCliTest(unittest.TestCase):
         self.assertEqual("", stderr)
         self.assertIn("DRY_RUN_NO_EXECUTION", stdout)
         self.assertIn('"format": 1', stdout)
+
+    def test_gradle_dependency_cache_is_opt_in_safe_and_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            cache = Path(temporary).resolve()
+            code, stdout, stderr = self.call([
+                "--tier", "quick", "--cell", "26.1-fabric", "--dry-run",
+                "--gradle-dependency-cache", str(cache),
+            ])
+        self.assertEqual(1, code)
+        self.assertEqual("", stderr)
+        self.assertIn('"GRADLE_RO_DEP_CACHE"', stdout)
+        self.assertIn("non-authoritative acceleration only", stdout)
+
+    def test_gradle_dependency_cache_rejects_unsafe_paths_before_planning(self) -> None:
+        with self.assertRaises(MODEL.InvocationError):
+            RUNNER.validate_gradle_dependency_cache(Path("relative-cache"), ROOT)
+        with self.assertRaises(MODEL.InvocationError):
+            RUNNER.validate_gradle_dependency_cache(Path("/definitely-missing-ringworld-cache"), ROOT)
+        with self.assertRaises(MODEL.InvocationError):
+            RUNNER.validate_gradle_dependency_cache(ROOT, ROOT)
+        with self.assertRaises(MODEL.InvocationError):
+            RUNNER.validate_gradle_dependency_cache(ROOT / "dist", ROOT)
+        with self.assertRaises(MODEL.InvocationError):
+            RUNNER.validate_gradle_dependency_cache(Path.home().resolve(), ROOT)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            cache = root / "cache"
+            cache.mkdir()
+            self.assertEqual(cache, RUNNER.validate_gradle_dependency_cache(cache, root / "repository"))
+            link = root / "cache-link"
+            link.symlink_to(cache, target_is_directory=True)
+            with self.assertRaises(MODEL.InvocationError):
+                RUNNER.validate_gradle_dependency_cache(link, root / "repository")
 
     def test_real_run_delegates_to_execution_state_machine_without_running_gradle_in_this_test(self) -> None:
         fake = MODEL.plan_matrix((self.manifest_cell(),), ROOT, "dry-run", dry_run=True)
@@ -342,6 +390,86 @@ class MinecraftQualificationExecutionTest(unittest.TestCase):
             self.assertEqual(1, len({item.artifacts[0].actual for item in results}))
             self.assertEqual(1, len({item.artifacts[0].path for item in results}))
 
+    def test_frozen_candidate_plans_preserve_cell_homes_and_opt_in_cache_for_both_loaders(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            cache = root / "worker-cache"
+            cache.mkdir()
+            repository = root / "repository"
+            repository.mkdir()
+            cache = RUNNER.validate_gradle_dependency_cache(cache, repository)
+            for loader in ("fabric", "neoforge"):
+                source = next(cell for cell in self.full_loader_triplet(loader) if cell["id"] == f"26.1-{loader}")
+                default_plan = RUNNER.frozen_candidate_plan(source, repository, self.run_id)
+                self.assertEqual(
+                    (("GRADLE_USER_HOME", str(default_plan.paths.gradle_home)),), default_plan.command.environment,
+                )
+                plan = RUNNER.frozen_candidate_plan(
+                    source, repository, self.run_id, gradle_dependency_cache=cache,
+                )
+                self.assertEqual(
+                    (("GRADLE_USER_HOME", str(plan.paths.gradle_home)), ("GRADLE_RO_DEP_CACHE", str(cache))),
+                    plan.command.environment,
+                )
+                self.assertNotIn("--offline", plan.command.argv)
+
+    def test_frozen_preparation_records_opt_in_cache_as_non_authoritative(self) -> None:
+        def fake_execute(command, paths, *, ordinal):
+            self.write_frozen_candidate(paths.build_directory, "fabric")
+            return SimpleNamespace(verdict=MODEL.Verdict.PASS, stdout_log="out", stderr_log="err", reason=None)
+
+        with tempfile.TemporaryDirectory() as temporary, patch.object(RUNNER, "execute_command", side_effect=fake_execute):
+            root = Path(temporary).resolve()
+            cache = root / "worker-cache"
+            cache.mkdir()
+            preparations = RUNNER.prepare_frozen_candidates(
+                self.full_loader_triplet("fabric"), root / "repository", self.run_id,
+                gradle_dependency_cache=RUNNER.validate_gradle_dependency_cache(cache, root / "repository"),
+            )
+        cache_evidence = [
+            item for item in preparations["fabric"].evidence if item.kind == "gradle-ro-dependency-cache"
+        ]
+        self.assertEqual(1, len(cache_evidence))
+        self.assertIn("non-authoritative", cache_evidence[0].detail)
+
+    def test_frozen_preparation_revalidates_cache_at_execution_boundary(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary, patch.object(RUNNER, "execute_command") as execute:
+            root = Path(temporary).resolve()
+            repository = root / "repository"
+            repository.mkdir()
+            unsafe = repository / "cache"
+            unsafe.mkdir()
+            with self.assertRaises(MODEL.InvocationError):
+                RUNNER.prepare_frozen_candidates(
+                    self.full_loader_triplet("fabric"), repository, self.run_id,
+                    gradle_dependency_cache=unsafe,
+                )
+        execute.assert_not_called()
+
+    def test_frozen_preparation_rejects_cache_replaced_after_initial_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary, patch.object(RUNNER, "execute_command") as execute:
+            root = Path(temporary).resolve()
+            repository = root / "repository"
+            repository.mkdir()
+            cache = root / "cache"
+            cache.mkdir()
+            replacement = root / "replacement"
+            replacement.mkdir()
+            original_create = RUNNER.create_contained_directories
+
+            def replace_after_create(paths):
+                original_create(paths)
+                cache.rmdir()
+                cache.symlink_to(replacement, target_is_directory=True)
+
+            with patch.object(RUNNER, "create_contained_directories", side_effect=replace_after_create):
+                preparations = RUNNER.prepare_frozen_candidates(
+                    self.full_loader_triplet("fabric"), repository, self.run_id,
+                    gradle_dependency_cache=cache,
+                )
+        self.assertEqual(MODEL.Verdict.FAIL, preparations["fabric"].verdict)
+        execute.assert_not_called()
+
     def test_partial_loader_selection_never_builds_a_frozen_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as temporary, patch.object(RUNNER, "execute_command") as execute:
             root = Path(temporary)
@@ -414,6 +542,21 @@ class MinecraftQualificationExecutionTest(unittest.TestCase):
                 provenance_provider=provenance, frozen_preparation_provider=frozen,
             )
         self.assertEqual(["provenance", "frozen"], order)
+
+    def test_cache_enabled_custom_preparation_provider_fails_closed_when_contract_is_old(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            repository = root / "repository"
+            repository.mkdir()
+            cache = root / "cache"
+            cache.mkdir()
+            with self.assertRaises(EXECUTOR.QualificationExecutionError):
+                RUNNER.execute_quick_matrix(
+                    (self.cell,), repository, run_id_factory=lambda: self.run_id,
+                    provenance_provider=self.provenance,
+                    frozen_preparation_provider=lambda cells, repo, run_id: {},
+                    gradle_dependency_cache=cache,
+                )
 
     def test_default_partial_selection_reaches_external_bridge_without_runtime_io(self) -> None:
         external = __import__("external_runtime_qualification_adapter")
