@@ -316,9 +316,12 @@ Fabric reached the loader-side Phase 3 exit on 2026-08-12 in run
 `20260812T170742Z-d5ff11778395`: 26.1, 26.1.1, and 26.1.2 all passed with the
 same frozen jar SHA-256
 `e1254b38cf811e7c68382c4ecc025dbede8b5effca54993e5bd403716bff5f39`.
-This is quick dedicated-server evidence, not the Phase 4 gameplay/rendering
-matrix or a publication decision. NeoForge still needs the equivalent
-three-cell run before Phase 3 is complete for both loaders.
+NeoForge reached the same loader-side exit in run
+`20260812T171404Z-a2d212243bb3`: 26.1, 26.1.1, and 26.1.2 passed with one
+unchanged frozen jar SHA-256
+`c264b1d389ef3e341e4bd7318c89b4c819568c114c811867c239ecbf9d6f8e2f`.
+These runs are quick dedicated-server evidence, not the Phase 4
+gameplay/rendering matrix or a publication decision.
 
 Current checkpoint: the runner and pure model implement selection, safe path
 and command planning, pinned download plans, lock/port policy, and
@@ -480,7 +483,14 @@ or persistence. Server worlds are rooted at each fixture runtime's `world`
 child. Fixtures never share state, except that Atlas prewarm recovery may
 restart only its own just-created world after validating an interrupted
 checkpoint. The model does not read, copy, create, or run any input. A concrete
-external-candidate executor remains a later phase.
+external-candidate executor remains a later phase. The companion pure
+`minecraft_atlas_recovery_qualification.py` contract now defines the first
+runtime slice precisely: one genuine partial schema-2 `INTERRUPTED` report,
+then a complete clean restart of the same disposable world. It binds the raw
+reports to separately inspected persisted settings and Atlas headers/files,
+including mapping 4, 2,048x416 geometry, wall height 160, stable world/layout
+identity and Atlas path, exact totals, hashes, and ordered stage markers. It
+does not yet execute Minecraft or establish a nightly PASS.
 
 ### Phase 5 — world-upgrade qualification
 

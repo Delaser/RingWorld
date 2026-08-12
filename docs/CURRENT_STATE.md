@@ -85,8 +85,22 @@ wide-range jar with SHA-256
 The exact strict-evidence SHA-256 values are `9df2b50f...ecd8` (26.1),
 `37c9a2e3...0072` (26.1.1), and `4fecc925...5cc3` (26.1.2). The optional
 checksum-pinned external Gradle ZIP seed removed the earlier wrapper-download
-interruption while preserving isolated cell homes. All three NeoForge
-external cells remain pending.
+interruption while preserving isolated cell homes. The complete NeoForge
+triplet then passed in run `20260812T171404Z-a2d212243bb3`: all three cells
+passed the same gates with frozen jar SHA-256
+`c264b1d389ef3e341e4bd7318c89b4c819568c114c811867c239ecbf9d6f8e2f`.
+Its strict-evidence SHA-256 values are `ecf0f169...421d` (26.1),
+`fb29c97f...eb4c` (26.1.1), and `03538bba...ce94` (26.1.2). Phase 3 quick
+qualification is therefore complete for both loaders; Phase 4 nightly
+gameplay/rendering qualification remains pending.
+Phase 4 now also has a pure, fail-closed Atlas recovery evidence contract. It
+requires a genuine partial schema-2 `INTERRUPTED` checkpoint and a later
+schema-2 `COMPLETE` report from the same disposable runtime/world and report
+target. Independent saved-settings and Atlas-file observations must match the
+mapping-4 2,048x416 identity, wall height, persistent Atlas path, hashes,
+totals, clean exits, and globally ordered stage ledgers. This is contract
+coverage only; the external interruption/restart executor and real dual-loader
+run are still pending.
 The accepted same-jar proof architecture builds one frozen candidate per
 loader against the oldest supported ABI and runs that unchanged file in
 external production-style profiles for every patch. Per-cell Gradle builds are
@@ -95,7 +109,7 @@ Qualification-only Fabric and NeoForge candidates now also compile from the
 26.1 source ABI with reviewed closed metadata covering 26.1 through 26.1.2.
 Normal builds were separately checked to retain their exact published 26.1.2
 metadata. Strict pure range checks prove that the six manifest targets are
-inside those declarations. The Fabric candidate now passes all three quick
+inside those declarations. Both loader candidates now pass all three quick
 external runtimes; this does not substitute for the Phase 4 nightly matrix.
 The runner now has a serial injected-phase state machine, isolated
 `GRADLE_USER_HOME`, `--no-daemon`, held cell locks, immutable per-cell/matrix

@@ -35,6 +35,11 @@ from minecraft_qualification_model import CommandRecord, PhaseName, Qualificatio
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def canonical_license_bytes() -> bytes:
+    """Mirror the repository's LF-pinned executable licence on every host."""
+    return (ROOT / "LICENSE").read_text(encoding="utf-8").replace("\r\n", "\n").encode("utf-8")
+
+
 def paths_at(root: Path) -> QualificationPaths:
     cell = root / "dist" / "qualification" / "run" / "fabric-26.1"
     return QualificationPaths(
@@ -79,8 +84,8 @@ class QualificationExecutorTest(unittest.TestCase):
             run_id = "20260812T120000Z-0123456789ab"
             path.write_text("not-json", encoding="utf-8")
             lock = QualificationLock.acquire(path, run_id, hostname="local")
-            self.assertIn('"run_id": "20260812T120000Z-0123456789ab"', path.read_text(encoding="utf-8"))
             lock.release()
+            self.assertIn('"run_id": "20260812T120000Z-0123456789ab"', path.read_text(encoding="utf-8"))
 
     def test_directories_and_sanitized_environment(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -215,7 +220,7 @@ class QualificationExecutorTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             jar = Path(temporary) / "ringworld.jar"
             with zipfile.ZipFile(jar, "w") as archive:
-                archive.writestr("LICENSE-RINGWORLD.txt", (ROOT / "LICENSE").read_bytes())
+                archive.writestr("LICENSE-RINGWORLD.txt", canonical_license_bytes())
                 archive.writestr("ringworld-build.properties", "artifactVersion=0.0.0-qualification+mc26.1\nreleaseLabel=qualification-26.1-fabric\n")
                 archive.writestr(
                     "fabric.mod.json",
@@ -237,7 +242,7 @@ class QualificationExecutorTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temporary:
             jar = Path(temporary) / "ringworld.jar"
             with zipfile.ZipFile(jar, "w") as archive:
-                archive.writestr("LICENSE-RINGWORLD.txt", (ROOT / "LICENSE").read_bytes())
+                archive.writestr("LICENSE-RINGWORLD.txt", canonical_license_bytes())
                 archive.writestr("ringworld-build.properties", "artifactVersion=0.0.0-qualification+mc26.1\nreleaseLabel=qualification-26.1-neoforge\n")
                 archive.writestr(
                     "META-INF/neoforge.mods.toml",

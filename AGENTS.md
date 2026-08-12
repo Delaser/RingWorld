@@ -345,8 +345,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   Fabric quick run `20260812T170742Z-d5ff11778395` passes 26.1, 26.1.1, and
   26.1.2 with one unchanged frozen jar
   (`e1254b38cf811e7c68382c4ecc025dbede8b5effca54993e5bd403716bff5f39`).
-  This is dedicated-server quick evidence only; NeoForge and the Phase 4
-  nightly gameplay/rendering matrix remain pending.
+  NeoForge quick run `20260812T171404Z-a2d212243bb3` also passes all three
+  versions with one unchanged frozen jar
+  (`c264b1d389ef3e341e4bd7318c89b4c819568c114c811867c239ecbf9d6f8e2f`).
+  These are dedicated-server quick evidence only; the Phase 4 nightly
+  gameplay/rendering matrix remains pending.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
@@ -379,6 +382,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   UI only; lifecycle and production rendering both require the immutable
   production-world input. A server fixture owns `runtime/world`, and only
   Atlas recovery may restart its own newly created world.
+- `scripts/minecraft_atlas_recovery_qualification.py`: pure Phase 4 evidence
+  contract for one clean interrupted headless-Atlas run followed by a clean
+  complete restart of that exact disposable world. It models the Java
+  schema-2 report exactly and binds it to independent persisted-settings and
+  Atlas-file observations; it performs no I/O or runtime work.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit

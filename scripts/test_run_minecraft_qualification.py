@@ -18,6 +18,28 @@ from types import SimpleNamespace
 
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def canonical_license_bytes() -> bytes:
+    """Mirror the repository's LF-pinned executable licence on every host."""
+    return (ROOT / "LICENSE").read_text(encoding="utf-8").replace("\r\n", "\n").encode("utf-8")
+
+
+class ExternalHomeTestCase(unittest.TestCase):
+    """Keep disposable Windows CI paths outside the simulated operator home."""
+
+    def setUp(self) -> None:
+        super().setUp()
+        self._home_patch = patch.object(
+            RUNNER.Path, "home", return_value=ROOT.parent / ".qualification-test-operator-home",
+        )
+        self._home_patch.start()
+
+    def tearDown(self) -> None:
+        self._home_patch.stop()
+        super().tearDown()
+
+
 MODEL_PATH = ROOT / "scripts" / "minecraft_qualification_model.py"
 RUNNER_PATH = ROOT / "scripts" / "run_minecraft_qualification.py"
 
@@ -242,7 +264,7 @@ class MinecraftQualificationModelTest(unittest.TestCase):
             MODEL.PhaseResult(MODEL.PhaseName.BUILD_AND_UNIT, MODEL.Verdict.PASS)
 
 
-class MinecraftQualificationCliTest(unittest.TestCase):
+class MinecraftQualificationCliTest(ExternalHomeTestCase):
     def call(self, argv: list[str]) -> tuple[int, str, str]:
         stdout, stderr = io.StringIO(), io.StringIO()
         with redirect_stdout(stdout), redirect_stderr(stderr):
@@ -322,8 +344,9 @@ class MinecraftQualificationCliTest(unittest.TestCase):
         self.assertEqual(("git", "status", "--porcelain", "--untracked-files=all"), checked.call_args.args[0])
 
 
-class GradleDistributionSeedTest(unittest.TestCase):
+class GradleDistributionSeedTest(ExternalHomeTestCase):
     def setUp(self) -> None:
+        super().setUp()
         self.manifest = json.loads((ROOT / "config/minecraft-version-matrix.json").read_text(encoding="utf-8"))
         self.run_id = "20260812T120000Z-0123456789ab"
 
@@ -418,8 +441,9 @@ class GradleDistributionSeedTest(unittest.TestCase):
             self.assertTrue(all(item.verdict is MODEL.Verdict.PASS for item in prepared.values()))
 
 
-class MinecraftQualificationExecutionTest(unittest.TestCase):
+class MinecraftQualificationExecutionTest(ExternalHomeTestCase):
     def setUp(self) -> None:
+        super().setUp()
         self.cell = json.loads((ROOT / "config/minecraft-version-matrix.json").read_text(encoding="utf-8"))["cells"][0]
         self.run_id = "20260812T120000Z-0123456789ab"
 
@@ -448,7 +472,7 @@ class MinecraftQualificationExecutionTest(unittest.TestCase):
         jar = paths / loader / "libs" / "ringworld-qualification.jar"
         jar.parent.mkdir(parents=True)
         with zipfile.ZipFile(jar, "w") as archive:
-            archive.writestr("LICENSE-RINGWORLD.txt", (ROOT / "LICENSE").read_bytes())
+            archive.writestr("LICENSE-RINGWORLD.txt", canonical_license_bytes())
             archive.writestr(
                 "ringworld-build.properties",
                 f"artifactVersion=0.0.0-qualification+mc26.1\nreleaseLabel=qualification-26.1-fabric\n",

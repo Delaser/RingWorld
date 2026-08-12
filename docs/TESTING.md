@@ -155,6 +155,11 @@ cross-platform `PYTHONPATH=scripts` import root. It intentionally does
 not invoke Gradle, download or install Minecraft, run a server, contact an
 external service, package artifacts, or publish anything. Its result is a
 portable static-tooling check only, not qualification or release evidence.
+The executable `LICENSE` input is pinned to LF in `.gitattributes`, and the
+synthetic jar tests canonicalize that text before hashing. Windows lock tests
+release the held byte-range lock before reading its advisory metadata, while
+disposable cache/ZIP tests use a simulated non-overlapping operator home; the
+production protections against home-directory state remain unchanged.
 
 A non-dry runner requires a completely clean, pushed checkout and Java 25.
 It executes the isolated source build/unit adapter and then verifies exactly
@@ -651,6 +656,19 @@ Minecraft exits zero. Stop during generation to verify checkpoint/restart: the
 first result is `INTERRUPTED` and the next run resumes from durable atlas cells.
 Use `-PringHeadlessPrewarmResume=true` for that second run; the default fresh
 task deliberately deletes its disposable world.
+
+The Phase 4 pure recovery contract is covered by:
+
+```sh
+PYTHONPATH=scripts python3 -m unittest \
+  scripts/test_minecraft_atlas_recovery_qualification.py
+```
+
+It does not launch a server. It rejects report-only claims by requiring
+independent saved-settings and Atlas-file observations, the same disposable
+world and Atlas path across stages, a real partial checkpoint, exact complete
+totals, clean exits, and ordered interruption/recovery ledgers. The real
+external dual-loader interruption/restart run remains a separate pending gate.
 
 Fresh format-3 fixtures default to `terrainNoiseMapping=4`. A deliberate copied
 legacy-world run must set `-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1`;
