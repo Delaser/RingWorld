@@ -264,7 +264,7 @@ class MinecraftQualificationExecutionTest(unittest.TestCase):
         jar = paths / loader / "libs" / "ringworld-qualification.jar"
         jar.parent.mkdir(parents=True)
         with zipfile.ZipFile(jar, "w") as archive:
-            archive.writestr("LICENSE-RINGWORLD.txt", "Mozilla Public License Version 2.0\nMPL-2.0\n")
+            archive.writestr("LICENSE-RINGWORLD.txt", (ROOT / "LICENSE").read_bytes())
             archive.writestr(
                 "ringworld-build.properties",
                 f"artifactVersion=0.0.0-qualification+mc26.1\nreleaseLabel=qualification-26.1-fabric\n",
