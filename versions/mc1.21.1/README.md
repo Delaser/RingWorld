@@ -88,9 +88,22 @@ The backport is deliberately split so contributors can work independently:
 9. automated unit, server, multiplayer, and graphical fixtures; and
 10. packaging, documentation, and release-host metadata.
 
-The GitHub milestone and epic are the authoritative task tracker. Issues
-should state their dependencies, accepted files, expected evidence, and
-whether Fabric, NeoForge, or both are in scope.
+The [backport epic](https://github.com/Delaser/RingWorld/issues/181) and
+[Minecraft 1.21.1 milestone](https://github.com/Delaser/RingWorld/milestone/1)
+are the authoritative task tracker:
+
+- [build, mappings, and dependency baseline](https://github.com/Delaser/RingWorld/issues/182);
+- [shared mixins and server topology](https://github.com/Delaser/RingWorld/issues/183);
+- [Fabric adapter](https://github.com/Delaser/RingWorld/issues/184);
+- [NeoForge adapter](https://github.com/Delaser/RingWorld/issues/185);
+- [worldgen, structures, dimensions, and portals](https://github.com/Delaser/RingWorld/issues/186);
+- [settings handshake, Atlas, and persistence](https://github.com/Delaser/RingWorld/issues/187);
+- [client rendering, shaders, sky, and clouds](https://github.com/Delaser/RingWorld/issues/188);
+- [gameplay and multiplayer qualification](https://github.com/Delaser/RingWorld/issues/189); and
+- [automation, packaging, documentation, and release gates](https://github.com/Delaser/RingWorld/issues/190).
+
+Issues state their dependencies, expected evidence, and whether Fabric,
+NeoForge, or both are in scope.
 
 ## Compatibility and save policy
 
