@@ -372,6 +372,9 @@ The separately tested external runtime executor now implements the planned
 pinned/no-redirect downloads, official installer, installer-owned Mojang
 server hash, exact mod inventory, loopback port, loader/RingWorld/ready marker,
 fatal-output, interactive stop, save, and clean-exit controls.
+Runner provenance normalizes the real `java -version` output to its Java 25
+version token before strict terminal validation; the full raw toolchain line
+remains in the ordinary source-provenance evidence.
 The installed server is revalidated with the manifest's declared algorithm
 (the official Mojang entries currently use SHA-1); its strict runtime inventory
 also records a separate SHA-256 digest.

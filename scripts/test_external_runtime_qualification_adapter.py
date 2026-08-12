@@ -294,6 +294,17 @@ class ExternalRuntimeQualificationAdapterTest(unittest.TestCase):
         self.assertEqual(reviewed_range_identities()["fabric"]["minecraft_range"], adapter._range_identities["fabric"]["minecraft_range"])
         self.assertEqual(True, strict_provenance_from_source(source)["clean"])
 
+    def test_runner_java_version_output_is_normalized_for_strict_evidence(self) -> None:
+        source = SimpleNamespace(
+            commit="1" * 40, manifest_sha256="a" * 64, gradle_wrapper_sha256="b" * 64,
+            java_version='openjdk version "25.0.4" 2026-07-21 LTS',
+            origin="https://github.com/Delaser/RingWorld.git",
+        )
+        self.assertEqual("25.0.4", strict_provenance_from_source(source)["java"]["version"])
+        source.java_version = 'openjdk version "21.0.8"'
+        with self.assertRaises(ExternalAdapterError):
+            strict_provenance_from_source(source)
+
     def test_changed_frozen_candidate_fails_before_executor_io(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -23,6 +23,7 @@ import json
 import os
 from pathlib import Path
 import platform
+import re
 import stat
 from typing import Any, Callable, Mapping, Protocol, Sequence
 
@@ -122,13 +123,21 @@ def strict_provenance_from_source(source: Any) -> dict[str, Any]:
     required = ("commit", "manifest_sha256", "gradle_wrapper_sha256", "java_version", "origin")
     if any(not isinstance(getattr(source, field, None), str) or not getattr(source, field) for field in required):
         raise ExternalAdapterError("source provenance is incomplete")
+    java_match = re.search(
+        r'(?:openjdk\s+version|java\s+version|version)\s+"?(25(?:\.[0-9A-Za-z+_.-]+)*)',
+        source.java_version,
+        re.IGNORECASE,
+    )
+    java_version = java_match.group(1) if java_match is not None else source.java_version
+    if not java_version.startswith("25"):
+        raise ExternalAdapterError("source provenance does not contain a Java 25 version")
     return {
         "commit": source.commit,
         "clean": True,
         "public_origin": source.origin,
         "manifest_sha256": source.manifest_sha256,
         "wrapper_sha256": source.gradle_wrapper_sha256,
-        "java": {"major": 25, "version": source.java_version},
+        "java": {"major": 25, "version": java_version},
         "platform": {"system": platform.system() or "unknown", "machine": platform.machine() or "unknown"},
     }
 
