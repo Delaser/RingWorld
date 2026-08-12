@@ -352,6 +352,9 @@ fatal-output, interactive stop, save, and clean-exit controls.
 The installed server is revalidated with the manifest's declared algorithm
 (the official Mojang entries currently use SHA-1); its strict runtime inventory
 also records a separate SHA-256 digest.
+The installer is bound to the reviewed command path and checksum; terminal
+validation then uses that reviewed loader-specific name instead of a
+hard-coded loader-neutral label.
 The executor creates one validated empty disposable runtime root before the
 official installer; this is required by Fabric Installer 1.1.1 and remains the
 same contained boundary for NeoForge.

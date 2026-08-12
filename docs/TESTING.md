@@ -92,7 +92,9 @@ official installer contract (including its pre-created empty contained target), 
 inventory, loopback port preflight, loader/RingWorld/ready markers, and an
 ordered stop/save/clean-exit sequence. The external adapter additionally
 rechecks the installed server with its official manifest algorithm while
-recording a separate SHA-256 inventory identity. It also
+recording a separate SHA-256 inventory identity. It carries the reviewed
+loader-specific installer name into terminal validation rather than requiring
+one hard-coded label. It also
 checks full-triplet same-file identity and clean source provenance before it
 can perform runtime I/O, then emits a separately schema-validated immutable
 `strict-terminal-evidence.json`. The focused bridge tests also replace the

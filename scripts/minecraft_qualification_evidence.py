@@ -335,9 +335,10 @@ def _validate_external_result_installer(result: Any, installer: Mapping[str, Any
     downloads = _external_field(result, "downloads")
     if not isinstance(downloads, Sequence) or isinstance(downloads, (str, bytes)):
         raise TerminalEvidenceError("external runtime result downloads must be an array")
-    matching = [item for item in downloads if _external_field(item, "name") == "runtime installer"]
+    installer_name = _string(installer["name"], "installer.name")
+    matching = [item for item in downloads if _external_field(item, "name") == installer_name]
     if len(matching) != 1:
-        raise TerminalEvidenceError("external runtime result must retain exactly one runtime-installer download")
+        raise TerminalEvidenceError("external runtime result must retain exactly one matching installer download")
     downloaded = matching[0]
     expected = _sha256(_external_field(downloaded, "expected"), "external runtime installer expected hash")
     actual = _sha256(_external_field(downloaded, "actual"), "external runtime installer actual hash")

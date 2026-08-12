@@ -99,7 +99,7 @@ def passing_external_result(*, verdict: str = "PASS", reason: str | None = None)
     return SimpleNamespace(
         cell_id="26.1-fabric", loader="fabric", minecraft_version="26.1", verdict=verdict, reason=reason,
         installer=SimpleNamespace(verdict="PASS", return_code=0),
-        downloads=(SimpleNamespace(name="runtime installer", expected=HASH, actual=HASH),),
+        downloads=(SimpleNamespace(name="Fabric Installer", expected=HASH, actual=HASH),),
         mods=(SimpleNamespace(name="RingWorld", expected_sha256=HASH, actual_sha256=HASH),),
         observed_markers=("atlas-disabled", "loader-bootstrap", "ringworld-bootstrap", "server-ready"),
         stop_marker="Stopping server", launcher_verified=True, server_return_code=0,
@@ -207,6 +207,11 @@ class TerminalEvidenceTest(unittest.TestCase):
         self.assertEqual("PASS", normalized["verdict"])
         self.assertEqual(0, normalized["runtime"]["exit_code"])
         self.assertEqual(HASH, normalized["frozen_candidate"]["installed_sha256"])
+
+        mismatched = passing_external_result()
+        mismatched.downloads = (SimpleNamespace(name="NeoForge Installer", expected=HASH, actual=HASH),)
+        with self.assertRaises(TerminalEvidenceError):
+            normalize_external_runtime_result(mismatched, external_support(), canonical_cells(), RANGES)
 
     def test_external_runtime_adapter_accepts_minimal_nonpass_and_rejects_incomplete_pass_binding(self) -> None:
         failed = normalize_external_runtime_result(

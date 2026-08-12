@@ -190,7 +190,7 @@ class ExternalRuntimeQualificationAdapterTest(unittest.TestCase):
             launcher.write_bytes(b"launcher")
             candidate.write_bytes(b"candidate")
             candidate_hash = digest(candidate)
-            download = DownloadResult("runtime installer", str(installer), "sha256", digest(installer), digest(installer), False)
+            download = DownloadResult("Fabric Installer", str(installer), "sha256", digest(installer), digest(installer), False)
             result = ExternalRuntimeSmokeResult(
                 "26.1-fabric", "fabric", "26.1", Verdict.PASS, None, (download,),
                 SimpleNamespace(verdict=Verdict.PASS, argv=("java", "-jar", str(installer)), return_code=0,
@@ -209,7 +209,7 @@ class ExternalRuntimeQualificationAdapterTest(unittest.TestCase):
                 "Stopping server", 0, str(server_log), "2026-08-12T12:00:00Z", 8.0,
             )
             plan = SimpleNamespace(
-                loader="fabric", downloads=(RuntimeDownload("runtime installer", "https://example.invalid/installer.jar", "sha256", digest(installer), installer),),
+                loader="fabric", downloads=(RuntimeDownload("Fabric Installer", "https://example.invalid/installer.jar", "sha256", digest(installer), installer),),
                 minecraft_server=RuntimeDownload(
                     "server", "https://example.invalid/server.jar", "sha1",
                     hashlib.sha1(minecraft_server.read_bytes()).hexdigest(), minecraft_server,

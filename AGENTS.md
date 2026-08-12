@@ -342,8 +342,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   frozen jar before any installer, download, or runtime activity. Preserve the
   Mojang server's declared hash algorithm (currently SHA-1) for pin validation;
   the separate installed-file inventory remains SHA-256. Bind the installer
-  download by the reviewed command path/checksum, not a loader-specific display
-  name.
+  download by the reviewed command path/checksum, then carry that reviewed
+  loader-specific display name into terminal validation rather than requiring
+  one hard-coded label.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit
