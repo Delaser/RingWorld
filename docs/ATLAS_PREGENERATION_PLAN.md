@@ -44,6 +44,26 @@ service also supports:
   production-world preparation;
 - deterministic integration and performance tests.
 
+## Player-facing generation layers
+
+The Atlas is intentionally progressive rather than a loading screen for the
+whole world:
+
+1. nearby vanilla chunks are real, playable, and authoritative immediately;
+2. world identity enables an opaque curved placeholder and temporary rim-wall
+   returns, with strong haze hiding unknown detail;
+3. real surface samples arrive in tile revisions and cross-fade into that
+   placeholder while progress is checkpointed;
+4. verified completion removes every fallback and haze contribution, then
+   upgrades once to the expanded texture and detailed terrain-height mesh.
+
+The top-left `Ring Atlas Generating: X%` label is the compact play-screen view
+of the same authoritative progress shown by the RingWorld Map. It disappears
+at completion. Players do not need to stay in the map, remain connected, or
+walk the circumference. Public documentation must not imply that the temporary
+proxy is missing real terrain, that completion is instant, or that one
+machine's benchmark is a guaranteed duration.
+
 ## Current implementation
 
 The extracted `RingAtlasPregenerationService` preserves the proven baseline:

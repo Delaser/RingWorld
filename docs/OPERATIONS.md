@@ -158,6 +158,33 @@ and remains valid only as a required validation-failure case; see
 
 ## Atlas cost
 
+### What players see
+
+A new world does not wait for the complete distant ring before joining. The
+client and server deliberately reveal it in four layers:
+
+1. ordinary authoritative chunks around the player;
+2. an immediate curved placeholder, biome-flavoured where trustworthy samples
+   exist, with heavy low-progress haze and temporary rim returns;
+3. checkpointed Atlas revisions that stream and cross-fade as canonical chunks
+   are sampled;
+4. the expanded full-detail texture and terrain-height mesh after verified
+   100% completion.
+
+The HUD displays `Ring Atlas Generating: X%` while the acknowledged Atlas is
+incomplete. The label and generation haze reach zero at completion. The
+RingWorld Map reports the authoritative job state, cell count, rate, and ETA;
+closing it does not stop the job. Player travel is not required. A disconnect,
+restart, pause, or clean shutdown retains captured cells, and a later start or
+resume continues from the first missing canonical chunk.
+
+Operators should set expectations accordingly: the world is usable before the
+Atlas completes, but the far ring will initially be coarser, foggier, and less
+colour-accurate. The job generates and saves real chunks, so duration and disk
+growth scale with ring size and vary with seed, storage, CPU, active players,
+and other mods. Use the current rate and ETA rather than promising the
+development benchmark on production hardware.
+
 Atlas pregeneration visits one missing canonical chunk at a time when the
 normal server chunk queue has fewer than 64 pending tasks.
 
