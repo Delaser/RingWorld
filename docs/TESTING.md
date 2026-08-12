@@ -47,9 +47,9 @@ The approved manifest, quick/nightly/release tiers, isolated-fixture rules,
 same-hash requirement, forward-only world-copy policy, and planned
 orchestrator interface are specified in
 [`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
-That orchestrator is not implemented yet; do not document its intended command
-as current evidence or broaden loader metadata before its initial six-cell
-matrix passes.
+The execution-capable orchestrator is not implemented yet; do not treat its
+planning command as current evidence or broaden loader metadata before its
+initial six-cell matrix passes.
 
 The Phase 1 pinned matrix and pure validator are implemented. They retain
 26.1/26.1.1 as `pending` cells despite exact Fabric inputs and pinned NeoForge
@@ -58,7 +58,7 @@ evidence:
 
 ```sh
 python3 scripts/validate_minecraft_version_matrix.py
-python3 -m unittest scripts/test_validate_minecraft_version_matrix.py
+python3 scripts/test_validate_minecraft_version_matrix.py
 ```
 
 The validator covers six unique cells, exact/non-floating dependency inputs,
@@ -71,12 +71,19 @@ validate the matrix policy; they do not qualify a Minecraft runtime.
 The current Phase 2/3 foundations are checked with:
 
 ```sh
-python3 -m unittest \
-  scripts/test_qualification_gradle_isolation.py \
-  scripts/test_run_minecraft_qualification.py
+python3 scripts/test_qualification_gradle_isolation.py
+python3 scripts/test_qualification_metadata_ranges.py
+python3 scripts/test_minecraft_qualification_ranges.py
+python3 scripts/test_run_minecraft_qualification.py
+python3 scripts/test_minecraft_qualification_executor.py
+python3 scripts/test_external_runtime_smoke.py
 python3 scripts/run_minecraft_qualification.py \
   --tier quick --cell 26.1-fabric --dry-run
 ```
+
+The executor and external-runtime planner checks cover only their isolated
+primitives and plan contracts. The CLI still cannot execute them, so this
+green command set is not runtime evidence.
 
 The dry run must exit nonzero with `INCOMPLETE` and
 `DRY_RUN_NO_EXECUTION`; it is planning output, not evidence. A non-dry run is
@@ -102,6 +109,30 @@ use `0.0.0-qualification+mc<version>` plus a qualification release label so
 they cannot be confused with release files. This is compile/package evidence
 only; it does not qualify a dedicated server, graphical client, or one frozen
 jar across patches.
+
+The reviewed qualification-only metadata ranges are Fabric
+`>=26.1 <=26.1.2`, NeoForge Minecraft `[26.1,26.1.2]`, and NeoForge loader
+`[26.1.0.19-beta,26.1.2.87]`. Real Java 25 builds from the 26.1 ABI produced
+both loader jars with those exact declarations; a separate normal resource
+generation check retained Fabric `26.1.2` and NeoForge `[26.1.2]` plus
+`[26.1.2.87,)`. This is candidate preparation only. External runtime smokes
+must still install one unchanged jar per loader into every patch cell.
+
+The raid/worldgen fixture routing checks are:
+
+```sh
+python3 scripts/test_prepare_raid_seam_fixture.py
+python3 scripts/test_run_worldgen_structure_matrix.py
+bash -n scripts/prepare_raid_seam_fixture.sh
+```
+
+Both fixtures keep their historical defaults. Qualification orchestration may
+instead supply `--qualification-cell-root <cell>` or
+`RINGWORLD_QUALIFICATION_CELL_ROOT`; the resolved cell must remain below
+`dist/qualification`, and all fixture-managed state then stays below that
+cell. Because it performs deletion, the raid preparer also rejects every
+existing symlink component on its managed paths before creating or deleting
+fixture state.
 
 Fresh Fabric and NeoForge dedicated-server launches reach `Done`; the NeoForge
 launch also starts and progresses atlas generation. The NeoForge client now

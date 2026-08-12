@@ -16,6 +16,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_REPORT_DIR = ROOT / "build" / "reports" / "ringworld-worldgen-matrix"
+QUALIFICATION_ROOT = ROOT / "dist" / "qualification"
+QUALIFICATION_CELL_NAME_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,95}")
 
 MATRIX_RE = re.compile(
     r"\[worldgen-matrix] seed=(?P<numeric_seed>-?\d+) "
@@ -56,9 +58,57 @@ class LoaderRuntime:
     task: str
     run_log: Path
     report_dir: Path
+    gradle_properties: tuple[tuple[str, str], ...] = ()
 
 
-def loader_runtime(loader: str) -> LoaderRuntime:
+def qualification_cell_root(value: Path | None) -> Path | None:
+    """Return one reviewed qualification cell, never a development path.
+
+    The Gradle build accepts the cell's parent root plus one safe cell
+    identifier. Keep the fixture scripts on the same reviewed-root contract:
+    it makes their destructive reset step incapable of targeting normal run
+    directories while allowing the orchestrator's per-run nesting.
+    """
+    if value is None:
+        return None
+    if ".." in value.parts:
+        raise ValueError("qualification cell root must not contain path traversal")
+    candidate = (ROOT / value if not value.is_absolute() else value).resolve()
+    allowed = QUALIFICATION_ROOT.resolve()
+    try:
+        candidate.relative_to(allowed)
+    except ValueError as error:
+        raise ValueError(
+            f"qualification cell root must be below {allowed}"
+        ) from error
+    if candidate == allowed or not QUALIFICATION_CELL_NAME_RE.fullmatch(candidate.name):
+        raise ValueError(
+            f"qualification cell root must have one safe cell identifier below {allowed}"
+        )
+    return candidate
+
+
+def qualification_gradle_properties(cell_root: Path | None) -> tuple[tuple[str, str], ...]:
+    if cell_root is None:
+        return ()
+    return (
+        ("ringQualificationRoot", str(cell_root.parent)),
+        ("ringQualificationCell", cell_root.name),
+    )
+
+
+def loader_runtime(loader: str, cell_root: Path | None = None) -> LoaderRuntime:
+    cell_root = qualification_cell_root(cell_root)
+    if loader not in {"fabric", "neoforge"}:
+        raise ValueError(f"unsupported loader: {loader}")
+    if cell_root is not None:
+        return LoaderRuntime(
+            ":runStrongholdTestServer"
+            if loader == "fabric" else ":neoforge:runStrongholdTestServer",
+            cell_root / "run" / "run-stronghold-test" / "logs" / "latest.log",
+            cell_root / "evidence" / "worldgen-matrix",
+            qualification_gradle_properties(cell_root),
+        )
     if loader == "fabric":
         return LoaderRuntime(
             ":runStrongholdTestServer",
@@ -71,7 +121,7 @@ def loader_runtime(loader: str) -> LoaderRuntime:
             ROOT / "neoforge" / "run-stronghold-test" / "logs" / "latest.log",
             ROOT / "neoforge" / "build" / "reports" / "ringworld-worldgen-matrix",
         )
-    raise ValueError(f"unsupported loader: {loader}")
+    raise AssertionError(f"unreachable supported loader: {loader}")
 
 
 DEFAULT_CASES = (
@@ -148,6 +198,7 @@ def run_case(case: Case, resume: bool, report_dir: Path,
         f"-PringStrongholdTestWallHeight={case.wall_height}",
         "-PringWorldgenMatrix=true",
         f"-PringStrongholdTestResume={'true' if resume else 'false'}",
+        *(f"-P{name}={value}" for name, value in runtime.gradle_properties),
     ]
     print(f"[worldgen-matrix-runner] {case.name} {phase}", flush=True)
     completed = subprocess.run(command, cwd=ROOT, env=os.environ.copy(), check=False)
@@ -172,6 +223,13 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                         help="Loader runtime to exercise (default: fabric).")
     parser.add_argument("--report-dir", type=Path,
                         help="Override the selected loader's report directory.")
+    parser.add_argument(
+        "--qualification-cell-root",
+        type=Path,
+        help=("Opt into one safe cell below dist/qualification. The runner passes "
+              "the matching Gradle cell properties and writes only below that cell. "
+              "Defaults to RINGWORLD_QUALIFICATION_CELL_ROOT when set."),
+    )
     parser.add_argument("--skip-resume", action="store_true",
                         help="Skip the production save/reload pass (discovery only).")
     parser.add_argument("--allow-incomplete-coverage", action="store_true",
@@ -181,7 +239,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
-    runtime = loader_runtime(args.loader)
+    environment_root = os.environ.get("RINGWORLD_QUALIFICATION_CELL_ROOT")
+    if args.qualification_cell_root is not None and environment_root is not None \
+            and qualification_cell_root(args.qualification_cell_root) != qualification_cell_root(Path(environment_root)):
+        raise ValueError("RINGWORLD_QUALIFICATION_CELL_ROOT and --qualification-cell-root disagree")
+    requested_cell_root = args.qualification_cell_root
+    if requested_cell_root is None and environment_root is not None:
+        requested_cell_root = Path(environment_root)
+    cell_root = qualification_cell_root(requested_cell_root)
+    if cell_root is not None and args.report_dir is not None:
+        raise ValueError("--report-dir cannot be combined with --qualification-cell-root")
+    runtime = loader_runtime(args.loader, cell_root)
     report_dir = (args.report_dir or runtime.report_dir).resolve()
     report_dir.mkdir(parents=True, exist_ok=True)
     records: list[dict[str, object]] = []

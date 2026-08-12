@@ -19,11 +19,15 @@ Existing 26.1.2 release evidence remains exact historical evidence and is not
 silently generalized to the rest of the patch line.
 
 Phase 0 is tracked by GitHub epic #168 and its Phase 1–10 child issues. Phase 1
-now has a fail-closed six-cell manifest and sixteen pure validator tests. The
+now has a fail-closed six-cell manifest and eighteen pure validator tests. The
 26.1.2 Fabric and NeoForge cells contain their immutable published hashes;
 26.1 and 26.1.1 remain pending. Exact Fabric inputs are available, while the
 only official NeoForge runtimes for those patches are pinned beta trial
 builds whose ModDevGradle/build/runtime compatibility is not yet proven.
+Every cell also pins the official runtime installer jar and SHA-256: Fabric
+Installer 1.1.1 for Fabric, and the exact matching NeoForge installer for each
+NeoForge runtime. Loader or universal jars are never treated as substitutes
+for a production server installer.
 Phase 2 now has its first opt-in Gradle isolation slice. Supplying the paired
 `ringQualificationRoot` and `ringQualificationCell` properties redirects both
 loaders' build output, declared game directories, fixture preparers, and
@@ -31,8 +35,12 @@ verifiers below one disposable cell root. Qualification-specific port
 properties cover multiplayer, raid, and dedicated-smoke profiles. Normal
 developer paths remain unchanged when those properties are absent. Seven
 static guardrail tests and real Java 25 default/isolated Gradle configuration
-checks pass. Script-owned fixture paths and a complete external runtime
-adapter still need routing before Phase 2 can close.
+checks pass. The raid and worldgen scripts now keep their fixture-managed
+state below an explicitly selected qualification cell and reject traversal or
+paths outside `dist/qualification`. The destructive raid preparer additionally
+rejects every existing symlink component on its managed paths before fixture
+creation or deletion. A complete external runtime adapter still needs routing
+before Phase 2 can close.
 The first source-build diagnostics also pass unchanged on all four earlier
 patch cells: Fabric 26.1/26.1.1 and NeoForge's pinned 26.1/26.1.1 beta trials
 each compile, package, and pass all 337 tests. Their generated loader metadata
@@ -46,10 +54,24 @@ argument vectors, and deterministic JSON/Markdown reports. It deliberately
 returns `INCOMPLETE` and performs no writes or process launches until the
 execution adapter exists; dry-run output cannot be mistaken for qualification
 evidence. Thirteen orchestration tests pass.
+The unwired executor foundation now has passing focused coverage for UTC run
+IDs, held operating-system cell locks, contained directories, process-group
+timeouts, bounded credential-pattern-redacted logs, immutable terminal
+reports, pinned-file hashing, and strict loader-aware diagnostic jar
+inspection. The external-runtime planner models the exact official installer,
+mods inventory, safe-small configuration, launch command, markers, and clean
+stop contract for all six cells without writing or launching anything. Neither
+component is wired to the CLI yet, so neither can execute or claim a quick
+qualification run.
 The accepted same-jar proof architecture builds one frozen candidate per
 loader against the oldest supported ABI and runs that unchanged file in
 external production-style profiles for every patch. Per-cell Gradle builds are
 ABI diagnostics, not compatibility proof.
+Qualification-only Fabric and NeoForge candidates now also compile from the
+26.1 source ABI with reviewed closed metadata covering 26.1 through 26.1.2.
+Normal builds were separately checked to retain their exact published 26.1.2
+metadata. Strict pure range checks prove that the six manifest targets are
+inside those declarations; no candidate has yet passed an external runtime.
 Publication is host-scoped: the current records describe Modrinth as published
 and independently hash-verified, while CurseForge remains Under Review for
 Fabric and Baking for NeoForge. One aggregate status never implies both hosts

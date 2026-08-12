@@ -128,6 +128,58 @@ def _validate_dependencies(value: Any, location: str, errors: list[str]) -> None
         _validate_checksum(item.get("checksum"), f"{item_location}.checksum", errors)
 
 
+def _dependency_version(value: Any, coordinate: str) -> str | None:
+    if not isinstance(value, list):
+        return None
+    matches = [item.get("version") for item in value if _is_mapping(item) and item.get("coordinate") == coordinate]
+    if len(matches) != 1 or not isinstance(matches[0], str):
+        return None
+    return matches[0]
+
+
+def _validate_runtime_install(
+    value: Any,
+    location: str,
+    loader: str | None,
+    dependencies: Any,
+    errors: list[str],
+) -> None:
+    install = _required_mapping(value, location, errors)
+    if install is None:
+        return
+    expected_name = "Fabric Installer" if loader == "fabric" else "NeoForge Installer"
+    expected_host = "maven.fabricmc.net" if loader == "fabric" else "maven.neoforged.net"
+    name = _required_string(install.get("name"), f"{location}.name", errors)
+    if loader in ALLOWED_LOADERS and name != expected_name:
+        _error(errors, f"{location}.name", f"must be {expected_name!r}")
+    version = _required_string(install.get("version"), f"{location}.version", errors)
+    _validate_version(version, f"{location}.version", errors)
+    url = install.get("url")
+    _validate_url(url, f"{location}.url", errors)
+    if isinstance(url, str) and isinstance(version, str) and loader in ALLOWED_LOADERS:
+        parsed = urlparse(url)
+        if loader == "fabric":
+            expected_path = f"/net/fabricmc/fabric-installer/{version}/fabric-installer-{version}.jar"
+        else:
+            neoforge_version = _dependency_version(dependencies, "net.neoforged:neoforge")
+            if neoforge_version is None:
+                _error(errors, f"{location}.version", "requires one pinned net.neoforged:neoforge dependency")
+                expected_path = ""
+            else:
+                if version != neoforge_version:
+                    _error(errors, f"{location}.version", "must match the pinned net.neoforged:neoforge version")
+                expected_path = (
+                    f"/releases/net/neoforged/neoforge/{neoforge_version}/"
+                    f"neoforge-{neoforge_version}-installer.jar"
+                )
+        if parsed.netloc != expected_host or parsed.path != expected_path or parsed.query or parsed.params or parsed.fragment:
+            _error(errors, f"{location}.url", f"must be the official {expected_name} jar")
+    _validate_checksum(install.get("checksum"), f"{location}.checksum", errors)
+    checksum = install.get("checksum")
+    if _is_mapping(checksum) and checksum.get("algorithm") != "sha256":
+        _error(errors, f"{location}.checksum.algorithm", "runtime installers require SHA-256")
+
+
 def _validate_path(
     value: Any,
     location: str,
@@ -362,6 +414,9 @@ def validate_manifest(manifest: Any) -> list[str]:
         if status not in ALLOWED_STATUSES:
             _error(errors, f"{location}.status", f"must be one of {sorted(ALLOWED_STATUSES)}")
         _validate_dependencies(cell.get("dependencies"), f"{location}.dependencies", errors)
+        _validate_runtime_install(
+            cell.get("runtime_install"), f"{location}.runtime_install", loader, cell.get("dependencies"), errors
+        )
         pending_inputs = cell.get("pending_inputs")
         if status == "pending" and (not isinstance(pending_inputs, list) or not pending_inputs):
             _error(errors, f"{location}.pending_inputs", "pending cells must name their unresolved inputs")

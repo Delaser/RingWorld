@@ -231,6 +231,10 @@ the complete gates pass. All four earlier-patch cells remain `pending`.
 Published state is host-specific: a host is counted only when its downloaded
 file hash matches the immutable artifact. Submission, review, and baking are
 recorded without being described as publication.
+Each cell additionally pins the official server-runtime installer and SHA-256.
+Fabric uses the exact Fabric Installer jar; NeoForge uses the installer jar
+matching that cell's NeoForge coordinate. Build plugin, Loader, and universal
+jars must not be substituted for these external-runtime inputs.
 Validate with:
 
 ```sh
@@ -277,6 +281,10 @@ below `dist/qualification`. Qualification multiplayer, raid, and smoke ports
 are independently routed. Omitting the pair preserves historical developer
 paths. This is an isolation foundation, not the Phase 2 exit: script-owned
 fixtures and the external production-runtime adapter remain outstanding.
+The raid-seam preparation script and worldgen matrix runner now accept an
+explicit qualification cell root below `dist/qualification`; their historic
+paths remain the default. In qualification mode they derive all destructive
+fixture paths below `<cell>/run` and reject traversal or user/live paths.
 As an initial ABI diagnostic, the unchanged common source now compiles and
 packages for Fabric 26.1 and 26.1.1 and the pinned NeoForge beta trials for
 26.1 and 26.1.1. Each isolated cell passes 337 tests and renders target-specific
@@ -310,6 +318,19 @@ plans, lock/port policy, and deterministic reports. The CLI accepts only
 Dry and non-dry invocations currently end `INCOMPLETE`; they create no
 evidence and launch no Gradle, network, or runtime work until the execution
 adapter is implemented and covered by fail-closed tests.
+The executor primitive layer is present but not wired: it owns held per-cell
+OS locks, contained directory creation, bounded credential-pattern-redacted
+process logs, process-group timeout cleanup, immutable reports, pinned hashes,
+and strict diagnostic jar inspection. The pure external-runtime planner now
+models official installers, exact mod inventories, safe-small files, launches,
+and terminal markers for all six cells. Wiring/downloads and real external
+server installation remain deliberately incomplete.
+
+Qualification-only Fabric and NeoForge candidates have also completed a real
+Java 25 build from the 26.1 ABI using reviewed closed 26.1–26.1.2 metadata.
+Normal resource generation remains exact to the existing 26.1.2 release. Pure
+range checks cover all six manifest targets, but this is not same-file runtime
+evidence and does not change support status.
 
 ### Phase 4 — nightly runtime matrix
 

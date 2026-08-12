@@ -42,6 +42,9 @@ class MinecraftQualificationModelTest(unittest.TestCase):
         paths = MODEL.QualificationPaths.from_cell(ROOT, self.cell, "run-1")
         self.assertTrue(MODEL.is_within(paths.cell_root, ROOT / "dist/qualification"))
         self.assertEqual("run-1", paths.run_id)
+        second = MODEL.QualificationPaths.from_cell(ROOT, self.cell, "run-2")
+        self.assertEqual(paths.lock_path, second.lock_path)
+        self.assertTrue(MODEL.is_within(paths.lock_path, ROOT / "dist/qualification" / ".locks"))
         with self.assertRaises(MODEL.InvocationError):
             MODEL.QualificationPaths.from_cell(ROOT, self.cell, "../escape")
         unsafe = copy.deepcopy(self.cell)
@@ -82,7 +85,8 @@ class MinecraftQualificationModelTest(unittest.TestCase):
             self.assertTrue(evidence.verified)
         paths = MODEL.QualificationPaths.from_cell(ROOT, self.cell, "run")
         plans = MODEL.download_plans(self.cell, paths)
-        self.assertEqual(5, len(plans))
+        self.assertEqual(6, len(plans))
+        self.assertEqual("Fabric Installer", plans[-1].name)
         self.assertTrue(all(plan.url.startswith("https://") for plan in plans))
         self.assertTrue(all(MODEL.is_within(plan.destination, paths.cache_directory) for plan in plans))
 

@@ -22,6 +22,12 @@
       },
       "loader": "fabric",
       "status": "pending",
+      "runtime_install": {
+        "name": "Fabric Installer",
+        "version": "1.1.1",
+        "url": "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.1/fabric-installer-1.1.1.jar",
+        "checksum": { "algorithm": "sha256", "value": "2487a69dd6f9d9c2605265a7142d77c26ab62edc620e6bcf810d581d2ee31b79" }
+      },
       "dependencies": [
         {
           "name": "Fabric Loader",
@@ -82,6 +88,12 @@
       },
       "loader": "neoforge",
       "status": "pending",
+      "runtime_install": {
+        "name": "NeoForge Installer",
+        "version": "26.1.0.19-beta",
+        "url": "https://maven.neoforged.net/releases/net/neoforged/neoforge/26.1.0.19-beta/neoforge-26.1.0.19-beta-installer.jar",
+        "checksum": { "algorithm": "sha256", "value": "8fba9309b78ffb14a3791ed64a42b28a4bc924bb38942046949d8b0c7ebd6cc0" }
+      },
       "dependencies": [
         {
           "name": "NeoForge",
@@ -135,6 +147,12 @@
       },
       "loader": "fabric",
       "status": "pending",
+      "runtime_install": {
+        "name": "Fabric Installer",
+        "version": "1.1.1",
+        "url": "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.1/fabric-installer-1.1.1.jar",
+        "checksum": { "algorithm": "sha256", "value": "2487a69dd6f9d9c2605265a7142d77c26ab62edc620e6bcf810d581d2ee31b79" }
+      },
       "dependencies": [
         {
           "name": "Fabric Loader",
@@ -195,6 +213,12 @@
       },
       "loader": "neoforge",
       "status": "pending",
+      "runtime_install": {
+        "name": "NeoForge Installer",
+        "version": "26.1.1.15-beta",
+        "url": "https://maven.neoforged.net/releases/net/neoforged/neoforge/26.1.1.15-beta/neoforge-26.1.1.15-beta-installer.jar",
+        "checksum": { "algorithm": "sha256", "value": "210855229fb30c2378e3734902c1d07ff62ed97ff55baac21e57f42594b7c063" }
+      },
       "dependencies": [
         {
           "name": "NeoForge",
@@ -248,6 +272,12 @@
       },
       "loader": "fabric",
       "status": "published",
+      "runtime_install": {
+        "name": "Fabric Installer",
+        "version": "1.1.1",
+        "url": "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.1/fabric-installer-1.1.1.jar",
+        "checksum": { "algorithm": "sha256", "value": "2487a69dd6f9d9c2605265a7142d77c26ab62edc620e6bcf810d581d2ee31b79" }
+      },
       "dependencies": [
         {
           "name": "Fabric Loader",
@@ -327,6 +357,12 @@
       },
       "loader": "neoforge",
       "status": "published",
+      "runtime_install": {
+        "name": "NeoForge Installer",
+        "version": "26.1.2.87",
+        "url": "https://maven.neoforged.net/releases/net/neoforged/neoforge/26.1.2.87/neoforge-26.1.2.87-installer.jar",
+        "checksum": { "algorithm": "sha256", "value": "534728d0e232fa82169b540694477cf57790440d5412313da1b0491ee8bea4da" }
+      },
       "dependencies": [
         {
           "name": "NeoForge",

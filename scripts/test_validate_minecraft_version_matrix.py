@@ -143,6 +143,39 @@ class MinecraftVersionMatrixValidationTest(unittest.TestCase):
         cell["evidence"] = copy.deepcopy(manifest["cells"][4]["evidence"])
         self.assertTrue(any("must not retain unresolved inputs" in error for error in self.errors(manifest)))
 
+    def test_rejects_missing_or_unofficial_runtime_installer(self) -> None:
+        for mutation in ("missing", "wrong-host", "weak-checksum", "query", "wrong-version-path"):
+            with self.subTest(mutation=mutation):
+                manifest = copy.deepcopy(self.manifest)
+                cell = manifest["cells"][0]
+                if mutation == "missing":
+                    del cell["runtime_install"]
+                elif mutation == "wrong-host":
+                    cell["runtime_install"]["url"] = "https://example.invalid/fabric-installer-1.1.1.jar"
+                elif mutation == "query":
+                    cell["runtime_install"]["url"] += "?redirect=1"
+                elif mutation == "wrong-version-path":
+                    cell["runtime_install"]["url"] = (
+                        "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.0/"
+                        "fabric-installer-1.1.0.jar"
+                    )
+                else:
+                    cell["runtime_install"]["checksum"] = {
+                        "algorithm": "sha1", "value": "0" * 40,
+                    }
+                self.assertTrue(any("runtime_install" in error for error in self.errors(manifest)))
+
+    def test_rejects_neoforge_installer_not_bound_to_the_pinned_runtime(self) -> None:
+        manifest = copy.deepcopy(self.manifest)
+        cell = manifest["cells"][1]
+        cell["runtime_install"]["version"] = "26.1.2.87"
+        cell["runtime_install"]["url"] = (
+            "https://maven.neoforged.net/releases/net/neoforged/neoforge/26.1.2.87/"
+            "neoforge-26.1.2.87-installer.jar"
+        )
+        self.assertTrue(any("must match the pinned net.neoforged:neoforge version" in error
+                            for error in self.errors(manifest)))
+
     def test_rejects_terminal_qualification_without_evidence_or_artifact(self) -> None:
         manifest = copy.deepcopy(self.manifest)
         cell = manifest["cells"][0]

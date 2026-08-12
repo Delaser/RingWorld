@@ -20,6 +20,52 @@ if ((qualificationRootProperty == null) != (qualificationCellProperty == null)) 
 }
 
 def qualificationEnabled = qualificationRootProperty != null
+
+// A qualification build may exercise broader loader metadata, but that is
+// never a normal-development or release default. Keep the raw values shared
+// here because Gradle configures both loader projects even when a command
+// selects one of them; loader-specific grammar checks run only in the task
+// that consumes the value.
+def qualificationMinecraftRangeProperty = providers.gradleProperty("ringQualificationMinecraftRange").orNull
+def qualificationNeoForgeRangeProperty = providers.gradleProperty("ringQualificationNeoForgeRange").orNull
+if (!qualificationEnabled
+		&& (qualificationMinecraftRangeProperty != null || qualificationNeoForgeRangeProperty != null)) {
+	throw new GradleException("ringQualificationMinecraftRange and ringQualificationNeoForgeRange require ringQualificationRoot and ringQualificationCell")
+}
+
+def normalizeQualificationRange = { String propertyName, String rawValue ->
+	if (rawValue == null) return null
+	def value = rawValue.trim()
+	if (value.isEmpty() || rawValue != value || value.length() > 80
+			|| ["\"", "'", "\r", "\n", "\t", '$', '{', '}'].any { value.contains(it) }) {
+		throw new GradleException("${propertyName} must be a short literal version range without quotes, whitespace padding, or placeholders")
+	}
+	return value
+}
+
+def qualificationMinecraftRange = normalizeQualificationRange(
+		"ringQualificationMinecraftRange", qualificationMinecraftRangeProperty)
+def qualificationNeoForgeRange = normalizeQualificationRange(
+		"ringQualificationNeoForgeRange", qualificationNeoForgeRangeProperty)
+
+def requireFabricQualificationMinecraftRange = { String value ->
+	// Fabric version predicates use comparison clauses separated by exactly one
+	// space. Requiring both bounds prevents a qualification invocation from
+	// accidentally claiming an open-ended compatibility range.
+	def clause = "(?:>=|>|<=|<|=|~|\\^)[0-9]+(?:\\.[0-9]+){1,3}(?:[-+._A-Za-z0-9]+)?"
+	def boundedPredicate = "^${clause} ${clause}(?: ${clause}){0,2}" + '$'
+	if (!(value ==~ boundedPredicate)) {
+		throw new GradleException("ringQualificationMinecraftRange is not a bounded Fabric version predicate")
+	}
+}
+
+def requireNeoForgeQualificationRange = { String propertyName, String value ->
+	// NeoForge uses Maven range syntax. Keep the accepted form deliberately
+	// small and bounded: one numeric-ish lower and upper release identifier.
+	if (!(value ==~ /^[\[(][0-9][0-9A-Za-z._-]{0,63},[0-9][0-9A-Za-z._-]{0,63}[\])]$/)) {
+		throw new GradleException("${propertyName} is not a bounded NeoForge/Minecraft Maven version range")
+	}
+}
 File qualificationCellRoot = null
 if (qualificationEnabled) {
 	def rawRoot = qualificationRootProperty.trim()
@@ -63,6 +109,10 @@ ext.ringQualificationCellRoot = qualificationCellRoot
 ext.ringQualificationRunDirectory = qualificationRunDirectory
 ext.ringQualificationBuildDirectory = qualificationEnabled
 		? new File(qualificationCellRoot, "build") : null
+ext.ringQualificationMinecraftRange = qualificationMinecraftRange
+ext.ringQualificationNeoForgeRange = qualificationNeoForgeRange
+ext.requireFabricQualificationMinecraftRange = requireFabricQualificationMinecraftRange
+ext.requireNeoForgeQualificationRange = requireNeoForgeQualificationRange
 
 def fabricMultiplayerPort = {
 	def raw = (qualificationEnabled
@@ -1639,12 +1689,23 @@ dependencies {
 processResources {
 	inputs.property 'version', project.version
 	inputs.property 'release_label', project.release_label
-	inputs.property 'minecraft_version', project.minecraft_version
+	def minecraftMetadataVersion = qualificationMinecraftRange ?: project.minecraft_version
+	inputs.property 'minecraft_version', minecraftMetadataVersion
 	filesMatching('fabric.mod.json') {
-		expand version: project.version, minecraft_version: project.minecraft_version
+		if (qualificationMinecraftRange == null) {
+			// Keep normal output byte-for-byte identical to the released 26.1.2 jar.
+			expand version: project.version, minecraft_version: project.minecraft_version
+		} else {
+			expand version: project.version, minecraft_version: minecraftMetadataVersion
+		}
 	}
 	filesMatching('ringworld-build.properties') {
 		expand version: project.version, release_label: project.release_label
+	}
+	doFirst {
+		if (qualificationMinecraftRange != null) {
+			requireFabricQualificationMinecraftRange(qualificationMinecraftRange)
+		}
 	}
 }
 

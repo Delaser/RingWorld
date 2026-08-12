@@ -17,6 +17,10 @@ base {
 def qualificationEnabled = rootProject.ext.ringQualificationEnabled
 def qualificationRunDirectory = rootProject.ext.ringQualificationRunDirectory
 def qualificationRunFile = { String historicPath -> project.file(qualificationRunDirectory(historicPath)) }
+def qualificationMinecraftRange = rootProject.ext.ringQualificationMinecraftRange
+def qualificationNeoForgeRange = rootProject.ext.ringQualificationNeoForgeRange
+def minecraftMetadataVersion = qualificationMinecraftRange ?: "[${rootProject.minecraft_version}]"
+def neoForgeMetadataVersion = qualificationNeoForgeRange ?: "[${rootProject.neoforge_version},)"
 def neoForgeRunPort = { String qualificationProperty, String historicProperty, String defaultValue ->
     def raw = (qualificationEnabled
             ? providers.gradleProperty(qualificationProperty)
@@ -265,16 +269,26 @@ dependencies {
 def generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
     inputs.properties([
         mod_version: project.version,
-        minecraft_version: rootProject.minecraft_version,
-        neoforge_version: rootProject.neoforge_version
+        minecraft_metadata_version: minecraftMetadataVersion,
+        neoforge_metadata_version: neoForgeMetadataVersion
     ])
     expand([
         mod_version: project.version,
-        minecraft_version: rootProject.minecraft_version,
-        neoforge_version: rootProject.neoforge_version
+        minecraft_metadata_version: minecraftMetadataVersion,
+        neoforge_metadata_version: neoForgeMetadataVersion
     ])
     from 'src/main/templates'
     into layout.buildDirectory.dir('generated/sources/modMetadata')
+    doFirst {
+        if (qualificationMinecraftRange != null) {
+            rootProject.ext.requireNeoForgeQualificationRange(
+                    'ringQualificationMinecraftRange', qualificationMinecraftRange)
+        }
+        if (qualificationNeoForgeRange != null) {
+            rootProject.ext.requireNeoForgeQualificationRange(
+                    'ringQualificationNeoForgeRange', qualificationNeoForgeRange)
+        }
+    }
 }
 
 sourceSets.main.resources.srcDir generateModMetadata

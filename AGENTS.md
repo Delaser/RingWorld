@@ -314,6 +314,16 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   planner/report seam. Until its execution adapter exists it must return
   `INCOMPLETE`, create no evidence, and never be described as runtime
   qualification.
+- `scripts/minecraft_qualification_executor.py`: stdlib-only execution
+  primitives for held cell locks, contained directories, bounded
+  credential-pattern-redacted subprocess logs, process-group timeout cleanup,
+  immutable reports, pinned hashes, and strict diagnostic jar inspection. It
+  is not yet connected to the runner.
+- `scripts/external_runtime_smoke.py`: pure production-style dedicated-server
+  plan for the official installer, exact mods inventory, safe-small config,
+  launch, markers, and clean-stop contract. It performs no I/O or execution.
+- `scripts/minecraft_qualification_ranges.py`: strict pure parser for the
+  reviewed qualification-only Fabric and NeoForge 26.1.x metadata ranges.
 - `docs/DIMENSION_SCALING_PLAN.md`: authoritative audit and staged plan for
   removing test-world assumptions from custom dimensions.
 - `docs/ATLAS_PREGENERATION_PLAN.md`: planned **Generate Entire Ring** UI and
@@ -375,6 +385,10 @@ Qualification source-build artifacts must use the diagnostic
 never stage or publish them. The 26.1 and 26.1.1 Fabric and NeoForge beta
 source-build cells currently pass 337 tests each, but remain pending until
 external runtime and frozen-jar gates pass.
+External runtime assembly must use the exact SHA-256-pinned installer in each
+manifest cell: Fabric Installer for Fabric and the matching NeoForge installer
+for NeoForge. Never count a Gradle development run, Fabric Loader jar, or
+NeoForge universal jar as production-style server evidence.
 
 Both loaders now provide several identically named runtime tasks. Always
 select the loader explicitly—for example `./gradlew :runServer` or

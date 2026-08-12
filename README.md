@@ -286,6 +286,12 @@ claim requires the same Fabric and NeoForge artifact hashes to pass the full
 The pinned six-cell manifest and fail-closed quick planner are now present,
 but the planner still reports `INCOMPLETE` without launching runtimes. This
 does not add a 26.1 or 26.1.1 support claim.
+Official loader installer inputs are now pinned for all six cells so later
+runtime checks can assemble clean dedicated servers outside Gradle. That
+execution gate is still pending.
+Qualification-only broad-metadata candidates compile from the oldest 26.1
+ABI, while normal artifacts remain exact to 26.1.2. This is preparation for
+the same-file external runtime matrix, not a new compatibility claim.
 
 ## Build and install
 

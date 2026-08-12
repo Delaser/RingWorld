@@ -135,7 +135,11 @@ class QualificationPaths:
             evidence_directory=contained_path(cell_root, "evidence", "evidence directory"),
             logs_directory=contained_path(cell_root, "logs", "logs directory"),
             world_directory=contained_path(cell_root, "world", "world directory"),
-            lock_path=contained_path(cell_root, ".qualification.lock", "lock path"),
+            lock_path=contained_path(
+                contained_path(required_base, ".locks", "lock directory"),
+                f"{cell_id}.lock",
+                "lock path",
+            ),
         )
 
 
@@ -285,6 +289,10 @@ def download_plans(cell: Mapping[str, Any], paths: QualificationPaths) -> tuple[
     if isinstance(downloads, Sequence):
         candidates.extend(item for item in downloads if isinstance(item, Mapping))
     candidates.extend(item for item in dependencies if isinstance(item, Mapping))
+    runtime_install = cell.get("runtime_install")
+    if not isinstance(runtime_install, Mapping):
+        raise InvocationError(f"cell {cell.get('id', '<unknown>')} has no runtime installer")
+    candidates.append(runtime_install)
     plans: list[DownloadPlan] = []
     for index, item in enumerate(candidates):
         checksum = item.get("checksum")
