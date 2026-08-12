@@ -4,7 +4,7 @@ Status: S1 audit complete; implementation unresolved
 
 Audit base: `1d7a2b3a756ddd03ee79394d34aec86af6acaeb3`
 
-Target: Minecraft Java 26.1.2, Fabric Loader 0.19.3, Loom 1.17-SNAPSHOT,
+Target: Minecraft Java 26.1.2, Fabric Loader 0.19.3, Loom 1.17.19,
 Fabric API 0.155.2+26.1.2, Java 25
 
 This document is a source audit, not permission to weaken an injection or a

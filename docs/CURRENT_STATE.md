@@ -19,12 +19,20 @@ Existing 26.1.2 release evidence remains exact historical evidence and is not
 silently generalized to the rest of the patch line.
 
 Phase 0 is tracked by GitHub epic #168 and its Phase 1–10 child issues. Phase 1
-now has a fail-closed six-cell manifest and twelve pure validator tests. The
+now has a fail-closed six-cell manifest and fifteen pure validator tests. The
 26.1.2 Fabric and NeoForge cells contain their immutable published hashes;
 26.1 and 26.1.1 remain pending. Exact Fabric inputs are available, while the
 only official NeoForge runtimes for those patches are pinned beta trial
 builds whose ModDevGradle/build/runtime compatibility is not yet proven.
 Phase 2 version-aware build isolation is the next implementation step.
+The accepted same-jar proof architecture builds one frozen candidate per
+loader against the oldest supported ABI and runs that unchanged file in
+external production-style profiles for every patch. Per-cell Gradle builds are
+ABI diagnostics, not compatibility proof.
+Publication is host-scoped: the current records describe Modrinth as published
+and independently hash-verified, while CurseForge remains Under Review for
+Fabric and Baking for NeoForge. One aggregate status never implies both hosts
+are downloadable.
 
 Owner Windows, gameplay, visual, and final-review gates #12, #13, #95, and
 #96 are complete. The active release metadata targets shared runtime version

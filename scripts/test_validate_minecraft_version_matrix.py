@@ -110,6 +110,34 @@ class MinecraftVersionMatrixValidationTest(unittest.TestCase):
         del manifest["cells"][4]["evidence"]
         self.assertTrue(any("published cells require immutable evidence" in error for error in self.errors(manifest)))
 
+    def test_rejects_published_cell_without_verified_host_state(self) -> None:
+        for mutation in ("missing", "no-published-host", "wrong-download-hash"):
+            with self.subTest(mutation=mutation):
+                manifest = copy.deepcopy(self.manifest)
+                cell = manifest["cells"][4]
+                if mutation == "missing":
+                    del cell["hosting"]
+                elif mutation == "no-published-host":
+                    cell["hosting"]["modrinth"]["state"] = "submitted"
+                    del cell["hosting"]["modrinth"]["version_number"]
+                    del cell["hosting"]["modrinth"]["download_verified_sha256"]
+                else:
+                    cell["hosting"]["modrinth"]["download_verified_sha256"] = "0" * 64
+                self.assertTrue(any("published" in error or "download_verified" in error for error in self.errors(manifest)))
+
+    def test_rejects_arbitrary_publication_evidence_url(self) -> None:
+        manifest = copy.deepcopy(self.manifest)
+        evidence = manifest["cells"][4]["evidence"][0]
+        evidence["uri"] = f"https://example.invalid/{evidence['source_revision']}/unrelated"
+        self.assertTrue(any("source-repository blob URL" in error for error in self.errors(manifest)))
+
+    def test_rejects_terminal_state_with_pending_inputs(self) -> None:
+        manifest = copy.deepcopy(self.manifest)
+        cell = manifest["cells"][0]
+        cell["status"] = "failing"
+        cell["evidence"] = copy.deepcopy(manifest["cells"][4]["evidence"])
+        self.assertTrue(any("must not retain unresolved inputs" in error for error in self.errors(manifest)))
+
     def test_rejects_terminal_qualification_without_evidence_or_artifact(self) -> None:
         manifest = copy.deepcopy(self.manifest)
         cell = manifest["cells"][0]

@@ -292,7 +292,20 @@
           "uri": "https://github.com/Delaser/RingWorld/blob/f3a5ce12a3d72a7e2253e893ca385e27f3fe7448/docs/MODRINTH_RELEASE.md",
           "artifact_sha256": "ec06f6dbf81a6ac1c662f87f2fdb6a3d30297222e61da7094212b125a568c421"
         }
-      ]
+      ],
+      "hosting": {
+        "modrinth": {
+          "state": "published",
+          "project_url": "https://modrinth.com/mod/ringworld",
+          "version_number": "1.0.0-fabric+mc26.1.2",
+          "download_verified_sha256": "ec06f6dbf81a6ac1c662f87f2fdb6a3d30297222e61da7094212b125a568c421"
+        },
+        "curseforge": {
+          "state": "under_review",
+          "project_url": "https://www.curseforge.com/minecraft/mc-mods/ringworld",
+          "project_id": "1645598"
+        }
+      }
     },
     {
       "id": "26.1.2-neoforge",
@@ -351,7 +364,20 @@
           "uri": "https://github.com/Delaser/RingWorld/blob/f3a5ce12a3d72a7e2253e893ca385e27f3fe7448/docs/MODRINTH_RELEASE.md",
           "artifact_sha256": "ad818e6aec7aaf64f4d0618975c667d8b9163965e83e32408d8fc98797e700d5"
         }
-      ]
+      ],
+      "hosting": {
+        "modrinth": {
+          "state": "published",
+          "project_url": "https://modrinth.com/mod/ringworld",
+          "version_number": "1.0.0-neoforge+mc26.1.2",
+          "download_verified_sha256": "ad818e6aec7aaf64f4d0618975c667d8b9163965e83e32408d8fc98797e700d5"
+        },
+        "curseforge": {
+          "state": "baking",
+          "project_url": "https://www.curseforge.com/minecraft/mc-mods/ringworld",
+          "project_id": "1645598"
+        }
+      }
     }
   ]
 }

@@ -14,6 +14,12 @@ from urllib.parse import urlparse
 
 ALLOWED_LOADERS = {"fabric", "neoforge"}
 ALLOWED_STATUSES = {"pending", "passing", "failing", "published"}
+HOST_STATES = {"not_submitted", "submitted", "under_review", "baking", "published", "rejected", "archived"}
+HOST_URL_PREFIXES = {
+    "modrinth": "https://modrinth.com/mod/ringworld",
+    "curseforge": "https://www.curseforge.com/minecraft/mc-mods/ringworld",
+}
+EVIDENCE_URL_PREFIX = "https://github.com/Delaser/RingWorld/blob/"
 PROFILE_PATH_PREFIXES = {
     "run_directory": PurePosixPath("run/qualification"),
     "cache_directory": PurePosixPath("run/qualification-cache"),
@@ -211,11 +217,54 @@ def _validate_artifact(cell: dict[str, Any], location: str, minecraft_version: s
                 _validate_url(uri, f"{evidence_location}.uri", errors)
                 if isinstance(uri, str) and isinstance(revision, str) and revision not in uri:
                     _error(errors, f"{evidence_location}.uri", "must name its immutable source revision")
+                if isinstance(uri, str) and not uri.startswith(f"{EVIDENCE_URL_PREFIX}{revision}/"):
+                    _error(errors, f"{evidence_location}.uri", "must be an immutable RingWorld source-repository blob URL")
                 digest = evidence_data.get("artifact_sha256")
-                if not isinstance(digest, str) or not HEX_64.fullmatch(digest):
-                    _error(errors, f"{evidence_location}.artifact_sha256", "must be a lower-case SHA-256")
-                elif _is_mapping(artifact) and digest != artifact.get("sha256"):
-                    _error(errors, f"{evidence_location}.artifact_sha256", "must match the cell artifact SHA-256")
+                if _is_mapping(artifact) or digest is not None:
+                    if not isinstance(digest, str) or not HEX_64.fullmatch(digest):
+                        _error(errors, f"{evidence_location}.artifact_sha256", "must be a lower-case SHA-256")
+                    elif _is_mapping(artifact) and digest != artifact.get("sha256"):
+                        _error(errors, f"{evidence_location}.artifact_sha256", "must match the cell artifact SHA-256")
+
+
+def _validate_hosting(cell: dict[str, Any], location: str, errors: list[str]) -> None:
+    hosting = cell.get("hosting")
+    if cell.get("status") == "published" and not _is_mapping(hosting):
+        _error(errors, f"{location}.hosting", "published cells require host-specific publication state")
+        return
+    if hosting is None:
+        return
+    hosts = _required_mapping(hosting, f"{location}.hosting", errors)
+    if hosts is None:
+        return
+    artifact = cell.get("artifact")
+    artifact_hash = artifact.get("sha256") if _is_mapping(artifact) else None
+    published_hosts = 0
+    for host, prefix in HOST_URL_PREFIXES.items():
+        host_location = f"{location}.hosting.{host}"
+        record = _required_mapping(hosts.get(host), host_location, errors)
+        if record is None:
+            continue
+        state = record.get("state")
+        if state not in HOST_STATES:
+            _error(errors, f"{host_location}.state", f"must be one of {sorted(HOST_STATES)}")
+        project_url = _required_string(record.get("project_url"), f"{host_location}.project_url", errors)
+        if project_url and not project_url.startswith(prefix):
+            _error(errors, f"{host_location}.project_url", f"must identify the official RingWorld {host} project")
+        if host == "curseforge" and record.get("project_id") != "1645598":
+            _error(errors, f"{host_location}.project_id", "must identify CurseForge project 1645598")
+        if state == "published":
+            published_hosts += 1
+            version_number = _required_string(record.get("version_number"), f"{host_location}.version_number", errors)
+            if version_number and _is_mapping(artifact) and version_number != artifact.get("host_version"):
+                _error(errors, f"{host_location}.version_number", "must match the immutable cell host version")
+            digest = record.get("download_verified_sha256")
+            if not isinstance(digest, str) or not HEX_64.fullmatch(digest):
+                _error(errors, f"{host_location}.download_verified_sha256", "must be a lower-case SHA-256")
+            elif digest != artifact_hash:
+                _error(errors, f"{host_location}.download_verified_sha256", "must match the immutable cell artifact")
+    if cell.get("status") == "published" and published_hosts == 0:
+        _error(errors, f"{location}.hosting", "published cells require at least one independently verified published host")
 
 
 def _validate_same_artifact_claims(cells: list[Any], errors: list[str]) -> None:
@@ -325,6 +374,8 @@ def validate_manifest(manifest: Any) -> list[str]:
                 if pending_data:
                     _required_string(pending_data.get("name"), f"{pending_location}.name", errors)
                     _required_string(pending_data.get("reason"), f"{pending_location}.reason", errors)
+        if status != "pending" and pending_inputs:
+            _error(errors, f"{location}.pending_inputs", "terminal cells must not retain unresolved inputs")
         profile_paths, port = _validate_profile(cell.get("profile"), f"{location}.profile", errors)
         for path in profile_paths:
             if path in paths:
@@ -336,6 +387,7 @@ def validate_manifest(manifest: Any) -> list[str]:
             ports.add(port)
         _validate_tags(cell, location, minecraft_version, errors)
         _validate_artifact(cell, location, minecraft_version, loader, errors)
+        _validate_hosting(cell, location, errors)
     _validate_same_artifact_claims(cells, errors)
     return errors
 

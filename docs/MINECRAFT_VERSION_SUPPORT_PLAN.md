@@ -228,6 +228,9 @@ artifact evidence. Exact Fabric inputs are pinned for 26.1 and 26.1.1. The
 only official NeoForge runtimes for those Minecraft patches are beta builds,
 so they are pinned only as trial inputs and cannot become support claims until
 the complete gates pass. All four earlier-patch cells remain `pending`.
+Published state is host-specific: a host is counted only when its downloaded
+file hash matches the immutable artifact. Submission, review, and baking are
+recorded without being described as publication.
 Validate with:
 
 ```sh
@@ -242,6 +245,8 @@ through shared topology code. Keep geometry, persistence, protocol, worldgen,
 render math, and tests common. Put genuine Minecraft ABI differences behind a
 narrow version-owned source set or adapter.
 
+Per-cell source builds are ABI diagnostics. They do not prove a same-jar
+runtime claim because Loom and ModDevGradle launch development source sets.
 For each cell:
 
 1. resolve only its pinned dependencies;
@@ -254,6 +259,13 @@ For each cell:
 First attempt the current 26.1.2 source unchanged on 26.1.1 and 26.1. Where
 it fails, use the smallest version adapter. Do not fork topology or gameplay
 logic merely to satisfy a build.
+
+If one jar per loader across 26.1.x remains viable, build that frozen candidate
+once against the oldest supported ABI (26.1), then copy the untouched jar into
+external production-style loader runtimes for 26.1, 26.1.1, and 26.1.2. Every
+runtime gate must record the loaded jar path and exact candidate hash. A
+per-cell rebuild can reveal ABI failures but can never substitute for this
+same-file evidence.
 
 Exit: all six cells compile and package, or each failed cell has a precise ABI
 report and remains unsupported.
@@ -271,7 +283,9 @@ Implement the planned `run_minecraft_qualification.py` interface with:
 
 Quick qualification runs the complete unit/build suite, jar/metadata/licence
 inspection, shared-contract comparison, mixin/ABI audit, and a fresh dedicated
-server boot/clean stop for every selected cell.
+server boot/clean stop for every selected cell. Runtime compatibility uses the
+frozen jar installed into an isolated production-style loader profile, never a
+Gradle development source-set run.
 
 Exit: one command produces a fail-closed six-cell quick report on a clean
 checkout, and deliberate corruptions are rejected by tests.
@@ -279,7 +293,8 @@ checkout, and deliberate corruptions are rejected by tests.
 ### Phase 4 — nightly runtime matrix
 
 Wrap the existing qualified fixtures rather than creating parallel test
-implementations. For every passing cell, automate:
+implementations. Adapt them to drive isolated production-style profiles with
+the exact candidate jar. For every passing cell, automate:
 
 - new-world creation, settings persistence, reload, and immutable dimensions;
 - cardinal/seam worldgen, structures, terrain mapping, portals, and rim bounds;
@@ -332,9 +347,11 @@ changing underneath it:
 - clean dedicated-server package smokes;
 - current unit/build/staging and distribution tests.
 
-If one 26.1.x jar per loader is the goal, the candidate jar for that loader
-must have one identical SHA-256 in all three version-cell reports. If it does
-not, publish distinct version-specific artifacts and say so clearly.
+If one 26.1.x jar per loader is the goal, the candidate jar for that loader is
+built once against 26.1 and must have one identical SHA-256 in all three
+external version-cell reports. Development/source-set launches are supporting
+ABI diagnostics only. If the frozen file cannot pass every cell, publish
+distinct version-specific artifacts and say so clearly.
 
 Exit: immutable release evidence is complete and the owner records a go/no-go.
 

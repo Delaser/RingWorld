@@ -64,7 +64,8 @@ python3 -m unittest scripts/test_validate_minecraft_version_matrix.py
 The validator covers six unique cells, exact/non-floating dependency inputs,
 checksums, qualification-only profile paths, port isolation, legal states,
 immutable artifacts/evidence for passing and published cells, evidence for
-every terminal result, and consistent same-artifact claims. These tests
+every terminal result, host-specific publication state and downloaded hashes,
+official evidence URLs, and consistent same-artifact claims. These tests
 validate the matrix policy; they do not qualify a Minecraft runtime.
 
 Fresh Fabric and NeoForge dedicated-server launches reach `Done`; the NeoForge
