@@ -1430,6 +1430,9 @@ The separate Prism executor remains an authenticated-disposable-profile or
 owner release gate: a fresh account-free Prism root stops at the official
 login setup wizard even when `--offline` is requested. Never copy a user's
 normal Prism account file into qualification state.
+The runner also sets a cell-contained Gradle project cache; do not remove it
+or Loom will route launch configuration through the checkout's `.gradle`
+directory despite the disposable Gradle user home.
 
 Each qualified task prepares its own ignored `run-creation-ui/` directory
 (NeoForge uses `neoforge/run-creation-ui/`), deleting only disposable saves,

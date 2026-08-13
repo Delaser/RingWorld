@@ -189,6 +189,7 @@ class MinecraftQualificationModelTest(unittest.TestCase):
                 self.assertEqual((("GRADLE_USER_HOME", str(paths.gradle_home)),), command.environment, cell["id"])
                 self.assertIn("--no-daemon", command.argv, cell["id"])
                 self.assertIn("--max-workers=1", command.argv, cell["id"])
+                self.assertIn("--project-cache-dir", command.argv, cell["id"])
                 self.assertFalse(any(fragment in argument for argument in command.argv for fragment in prohibited_fragments))
                 if cell["minecraft"]["version"] != "26.1.2":
                     self.assertNotIn("26.1.2", "\0".join(command.argv), cell["id"])

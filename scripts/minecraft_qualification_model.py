@@ -476,7 +476,11 @@ def planned_commands(
     return (
         CommandRecord(
             PhaseName.BUILD_AND_UNIT,
-            (executable, "--console=plain", "--no-daemon", "--max-workers=1", *property_args, *build_tasks),
+            (
+                executable, "--console=plain", "--no-daemon", "--max-workers=1",
+                "--project-cache-dir", str(paths.cache_directory / "gradle-project"),
+                *property_args, *build_tasks,
+            ),
             paths.repository_root,
             environment,
             timeout,

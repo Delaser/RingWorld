@@ -83,8 +83,11 @@ def _command(cell: Mapping[str, Any], paths: QualificationPaths) -> CommandRecor
     properties = tuple(f"-P{name}={value}" for name, value in gradle_properties(cell, paths))
     return CommandRecord(
         PhaseName.BUILD_AND_UNIT,
-        (str(paths.repository_root / "gradlew"), "--console=plain", "--no-daemon", "--max-workers=1",
-         *properties, task),
+        (
+            str(paths.repository_root / "gradlew"), "--console=plain", "--no-daemon", "--max-workers=1",
+            "--project-cache-dir", str(paths.cache_directory / "gradle-project"),
+            *properties, task,
+        ),
         paths.repository_root,
         (("GRADLE_USER_HOME", str(paths.gradle_home)),),
         timeout,

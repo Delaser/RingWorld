@@ -536,6 +536,7 @@ def frozen_candidate_plan(
         PhaseName.SHARED_CONTRACT,
         (
             str(repository_root / "gradlew"), "--console=plain", "--no-daemon", "--max-workers=1",
+            "--project-cache-dir", str(paths.cache_directory / "gradle-project"),
             *property_args, *tasks,
         ),
         repository_root,

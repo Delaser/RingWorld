@@ -37,6 +37,8 @@ class GradleCreationUiQualificationTest(unittest.TestCase):
         self.assertEqual(ordinal, 1)
         self.assertIn("-Pminecraft_version=26.1", command.argv)
         self.assertIn("-Pfabric_api_version=0.145.1+26.1", command.argv)
+        project_cache_index = command.argv.index("--project-cache-dir") + 1
+        self.assertEqual(Path(command.argv[project_cache_index]), paths.cache_directory / "gradle-project")
         self.assertEqual(command.argv[-1], ":runCreationUiClient")
         run_root = paths.run_directory / "run-creation-ui"
         (run_root / "logs").mkdir(parents=True)
