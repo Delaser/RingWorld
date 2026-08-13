@@ -16,6 +16,8 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
         source = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("PYTHONPATH: scripts", source)
         self.assertIn("python -m unittest", source)
+        self.assertIn('"scripts/external_graphical_*.py"', source)
+        self.assertIn('"scripts/run_*_qualification.py"', source)
         for test in (
             "test_validate_minecraft_version_matrix.py",
             "test_qualification_gradle_isolation.py",

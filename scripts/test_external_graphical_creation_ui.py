@@ -88,6 +88,18 @@ class ExternalGraphicalCreationUiTest(unittest.TestCase):
             with self.assertRaises(GraphicalCreationUiError):
                 _extract_prism(archive, root / "output")
 
+    def test_extract_rejects_escaping_symlink(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            archive = root / "bad-link.zip"
+            info = zipfile.ZipInfo("Prism Launcher.app/Contents/bad-link")
+            info.create_system = 3
+            info.external_attr = (0o120777 << 16)
+            with zipfile.ZipFile(archive, "w") as target:
+                target.writestr(info, "../../../../outside")
+            with self.assertRaises(GraphicalCreationUiError):
+                _extract_prism(archive, root / "output")
+
     def test_capture_contract_is_complete(self):
         self.assertEqual(13, len(CAPTURES))
         self.assertEqual(len(CAPTURES), len(set(CAPTURES)))
