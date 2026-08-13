@@ -1141,6 +1141,10 @@ testMode=false
 testViewDistanceChunks=12
 pregenerateTerrainAtlas=false
 '''
+        new File(configDirectory, 'fml.toml').text =
+                '# Automated graphical capture: disable only the separate early splash.\nearlyWindowControl = false\n'
+        new File(neoForgeCurvedObjectRun, 'options.txt').text =
+                'onboardAccessibility:false\npauseOnLostFocus:false\n'
     }
 }
 

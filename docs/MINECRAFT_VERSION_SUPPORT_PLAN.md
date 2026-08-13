@@ -683,6 +683,12 @@ passes all six cells from clean commit `9015857`. Fabric runs are
 `20260813T190435Z-9f27985cd623`. This is source-ABI gameplay evidence, not
 frozen-jar packaged-client proof.
 
+`scripts/run_gradle_curved_objects_qualification.py` is the matching bounded
+fixture-10 wrapper. It reuses the real curved-object client and requires its
+far/near captures of representative block entities, items, boats, passive and
+hostile entities. Fresh-profile startup guards are implemented and pure-tested;
+the six real patch cells remain to run.
+
 All qualification Gradle commands set both a disposable `GRADLE_USER_HOME`
 and a cell-contained `--project-cache-dir`. The latter is mandatory for Loom:
 without it, an otherwise isolated client launch reads its launch configuration
