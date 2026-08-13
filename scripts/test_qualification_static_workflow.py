@@ -46,11 +46,12 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
             "test_run_world_upgrade_qualification.py",
             "test_release_candidate_equivalence.py",
             "test_stage_qualified_release.py",
+            "test_publish_qualified_release.py",
             "test_external_graphical_creation_ui.py",
             "test_run_creation_ui_qualification.py",
         ):
             self.assertIn(test, source)
-        for prohibited in ("./gradlew", "curl ", "wget ", "java ", "publish", "upload"):
+        for prohibited in ("./gradlew", "curl ", "wget ", "java ", "--execute", "urlopen("):
             self.assertNotIn(prohibited, source.lower())
 
     def test_binary_recovery_evidence_uses_windows_binary_descriptors(self) -> None:

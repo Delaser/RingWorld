@@ -48,6 +48,13 @@ Modrinth/CurseForge metadata, loader-correct Fabric API relations, changelog,
 and rollback identity. The CLI contains no host client or credential input; a
 real staging run awaits a clean pushed commit.
 
+The Phase 8/9 host bridge is also implemented and no-network tested. It reads
+only the qualified local stage, defaults to a printed dry run, requests an
+unlisted Modrinth version or manually held CurseForge file, and has no route to
+edit/delete old releases. Execution is fail-closed behind an exact short-lived
+owner authorization, clean pushed source equality, and a host-specific token
+environment variable. No token was read and no submission was made.
+
 On 2026-08-13, local current-version Gradle development regressions passed on
 both loaders: the safe-small mapping-4 map/compass and curved-rigid-object
 fixtures, safe-small production visual parity, and the copied 16,384x256

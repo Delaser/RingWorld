@@ -832,6 +832,15 @@ payload shape.
 Exit: both hosted files are downloadable, independently hash-verified, and
 their listing metadata matches the frozen evidence.
 
+Implementation status: `scripts/publish_qualified_release.py` now produces a
+credential-free Modrinth multipart plan from one exact loader stage. Dry-run
+is the default and does not read a token. Execution requires `--execute`, a
+separate short-lived owner-authorization JSON bound to host, loader, staged
+source, and jar hash, a clean pushed checkout matching the stage, and a token
+available only through `MODRINTH_TOKEN`. New versions are requested unlisted;
+the tool has no edit, delete, promotion, or prior-version route. Submission and
+CDN re-download verification remain pending explicit owner authorization.
+
 ### Phase 9 — CurseForge publication
 
 CurseForge provides an official author Upload API. Implement a separate
@@ -890,6 +899,14 @@ release live until the replacement is confirmed.
 
 Exit: both loader files are approved/downloadable, hash-verified, and visible
 with correct dependency and version metadata.
+
+Implementation status: the same publisher has a separate CurseForge plan and
+endpoint path. Its execution gate reads only `CURSEFORGE_API_TOKEN`, uses the
+official `X-Api-Token` header, marks new files for manual release, and binds
+Client, Server, the three proven 26.1.x names, loader, changelog, and
+Fabric-only required project relation. It cannot update/archive/delete an
+existing file. Vocabulary lookup, submission, moderation tracking, and hosted
+download verification remain pending explicit owner authorization.
 
 ### Phase 10 — post-publication closure
 
