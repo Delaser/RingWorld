@@ -423,6 +423,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   `--project-cache-dir`; an isolated `GRADLE_USER_HOME` alone is insufficient
   because Loom otherwise writes launch configuration into the checkout's
   shared `.gradle` directory.
+  It accepts the quick runner's optional reviewed external dependency cache
+  and exact wrapper ZIP seed; both are acceleration only and never support
+  evidence.
 - `scripts/minecraft_worldgen_qualification.py`,
   `scripts/external_runtime_worldgen_plan.py`,
   `scripts/external_runtime_worldgen_executor.py`, and

@@ -32,7 +32,15 @@ from minecraft_qualification_model import (
     gradle_properties,
     select_cells,
 )
-from run_minecraft_qualification import ROOT, SourceProvenance, collect_source_provenance, load_manifest
+from run_minecraft_qualification import (
+    ROOT,
+    SourceProvenance,
+    collect_source_provenance,
+    load_manifest,
+    stage_gradle_distribution_zip,
+    validate_gradle_dependency_cache,
+    validate_gradle_distribution_zip,
+)
 
 
 FIXTURE = "creation-settings-ui"
@@ -71,7 +79,9 @@ def _one_cell(manifest: Mapping[str, Any], cell_id: str) -> Mapping[str, Any]:
     return selected[0]
 
 
-def _command(cell: Mapping[str, Any], paths: QualificationPaths) -> CommandRecord:
+def _command(
+    cell: Mapping[str, Any], paths: QualificationPaths, dependency_cache: Path | None = None,
+) -> CommandRecord:
     loader = cell.get("loader")
     task = ":runCreationUiClient" if loader == "fabric" else ":neoforge:runCreationUiClient"
     if loader not in {"fabric", "neoforge"}:
@@ -81,6 +91,9 @@ def _command(cell: Mapping[str, Any], paths: QualificationPaths) -> CommandRecor
     if not isinstance(timeout, int) or isinstance(timeout, bool) or timeout < 1:
         raise GradleCreationUiError("cell has no valid timeout")
     properties = tuple(f"-P{name}={value}" for name, value in gradle_properties(cell, paths))
+    environment = (("GRADLE_USER_HOME", str(paths.gradle_home)),)
+    if dependency_cache is not None:
+        environment += (("GRADLE_RO_DEP_CACHE", str(dependency_cache)),)
     return CommandRecord(
         PhaseName.BUILD_AND_UNIT,
         (
@@ -89,7 +102,7 @@ def _command(cell: Mapping[str, Any], paths: QualificationPaths) -> CommandRecor
             *properties, task,
         ),
         paths.repository_root,
-        (("GRADLE_USER_HOME", str(paths.gradle_home)),),
+        environment,
         timeout,
     )
 
@@ -168,21 +181,28 @@ def run(
     run_id_factory: Callable[[], str] = new_run_id,
     provenance_provider: Callable[[Path, Path], SourceProvenance] = collect_source_provenance,
     command_executor: Callable[..., Any] = execute_command,
+    gradle_dependency_cache: Path | None = None,
+    gradle_distribution_zip: Path | None = None,
 ) -> dict[str, Any]:
     root = repository_root.resolve(strict=False)
     manifest_path = (root / manifest_relative).resolve(strict=False)
     manifest = load_manifest(manifest_path)
     cell = _one_cell(manifest, cell_id)
+    dependency_cache = validate_gradle_dependency_cache(gradle_dependency_cache, root)
+    distribution_seed = validate_gradle_distribution_zip(gradle_distribution_zip, root)
     run_id = run_id_factory()
     if not isinstance(run_id, str) or _RUN_ID.fullmatch(run_id) is None:
         raise GradleCreationUiError("unsafe run ID")
     paths = QualificationPaths.from_cell(root, cell, run_id)
     provenance = provenance_provider(root, manifest_path)
     create_contained_directories(paths)
-    command = _command(cell, paths)
+    command = _command(cell, paths, dependency_cache)
     log = paths.run_directory / "run-creation-ui" / "logs" / "latest.log"
     captures: tuple[Path, ...] = ()
     with QualificationLock.acquire(paths.lock_path, run_id):
+        stage_gradle_distribution_zip(
+            distribution_seed.source if distribution_seed is not None else None, root, paths,
+        )
         result = command_executor(command, paths, ordinal=1)
     verdict = result.verdict
     reason = result.reason
@@ -207,13 +227,24 @@ def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument("--cell", required=True)
     result.add_argument("--manifest", default="config/minecraft-version-matrix.json")
+    result.add_argument("--gradle-dependency-cache")
+    result.add_argument("--gradle-distribution-zip")
     return result
 
 
 def main(argv: list[str] | None = None) -> int:
     arguments = parser().parse_args(argv)
     try:
-        result = run(arguments.cell, manifest_relative=arguments.manifest)
+        result = run(
+            arguments.cell,
+            manifest_relative=arguments.manifest,
+            gradle_dependency_cache=(
+                Path(arguments.gradle_dependency_cache) if arguments.gradle_dependency_cache else None
+            ),
+            gradle_distribution_zip=(
+                Path(arguments.gradle_distribution_zip) if arguments.gradle_distribution_zip else None
+            ),
+        )
     except (GradleCreationUiError, QualificationExecutionError, OSError, ValueError) as error:
         print("INVOCATION ERROR: " + str(error), file=sys.stderr)
         return 2
