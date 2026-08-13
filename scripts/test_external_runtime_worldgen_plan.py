@@ -61,6 +61,27 @@ class ExternalRuntimeWorldgenPlanTest(unittest.TestCase):
             external_runtime_worldgen_plan(cell, CandidateJar(frozen / "ringworld.jar", "a" * 64, "fabric"), paths,
                                            QuickTerminalEvidenceInput(ROOT / "outside.json", "b" * 64), frozen_candidate_root=frozen)
 
+    def test_patch_cell_accepts_only_its_exact_prior_quick_record(self):
+        cell = self.cells["26.1.2-fabric"]
+        paths = QualificationPaths.from_cell(ROOT, cell, "worldgen-current")
+        quick_paths = QualificationPaths.from_cell(ROOT, cell, "worldgen-prior-quick")
+        frozen = ROOT / "dist/qualification/ringworld/26.1/fabric/worldgen-prior-quick/frozen-candidates/fabric"
+        quick = QuickTerminalEvidenceInput(
+            quick_paths.evidence_directory / "strict-terminal-evidence.json", "b" * 64,
+        )
+        plan = external_runtime_worldgen_plan(
+            cell, CandidateJar(frozen / "ringworld.jar", "a" * 64, "fabric"), paths, quick,
+            frozen_candidate_root=frozen, quick_evidence_root=quick_paths.cell_root,
+        )
+        self.assertEqual("26.1.2-fabric", plan.cell_id)
+        wrong_cell_root = quick_paths.cell_root.parent / "26.1-fabric"
+        with self.assertRaises(InvocationError):
+            external_runtime_worldgen_plan(
+                cell, CandidateJar(frozen / "ringworld.jar", "a" * 64, "fabric"), paths,
+                QuickTerminalEvidenceInput(wrong_cell_root / "evidence/strict-terminal-evidence.json", "b" * 64),
+                frozen_candidate_root=frozen, quick_evidence_root=wrong_cell_root,
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

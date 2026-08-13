@@ -19,7 +19,7 @@ from external_runtime_atlas_recovery_plan import (  # noqa: E402
     external_runtime_atlas_recovery_plan,
 )
 from external_runtime_smoke import CandidateJar  # noqa: E402
-from minecraft_qualification_model import QualificationPaths  # noqa: E402
+from minecraft_qualification_model import InvocationError, QualificationPaths  # noqa: E402
 
 
 class ExternalRuntimeAtlasRecoveryPlanTest(unittest.TestCase):
@@ -69,6 +69,27 @@ class ExternalRuntimeAtlasRecoveryPlanTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             external_runtime_smoke_plan(cell, candidate, paths, frozen_candidate_root=candidate.path.parent,
                                         runtime_root=ROOT / "outside-runtime")
+
+    def test_patch_cell_binds_its_prior_quick_record_outside_oldest_abi_root(self) -> None:
+        cell = self.cells["26.1.1-neoforge"]
+        paths = QualificationPaths.from_cell(ROOT, cell, "atlas-current")
+        quick_paths = QualificationPaths.from_cell(ROOT, cell, "atlas-prior-quick")
+        frozen = ROOT / "dist/qualification/ringworld/26.1/neoforge/atlas-prior-quick/frozen-candidates/neoforge"
+        candidate = CandidateJar(frozen / "ringworld.jar", "a" * 64, "neoforge")
+        quick = QuickTerminalEvidenceInput(
+            quick_paths.evidence_directory / "strict-terminal-evidence.json", "b" * 64,
+        )
+        plan = external_runtime_atlas_recovery_plan(
+            cell, candidate, paths, quick, frozen_candidate_root=frozen,
+            quick_evidence_root=quick_paths.cell_root,
+        )
+        self.assertEqual("26.1.1-neoforge", plan.smoke.cell_id)
+        with self.assertRaises(InvocationError):
+            external_runtime_atlas_recovery_plan(
+                cell, candidate, paths,
+                QuickTerminalEvidenceInput(quick_paths.cell_root / "evidence/other.json", "b" * 64),
+                frozen_candidate_root=frozen, quick_evidence_root=quick_paths.cell_root,
+            )
 
 
 if __name__ == "__main__":

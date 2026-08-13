@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 from typing import Any, Mapping
 
-from external_runtime_atlas_recovery_plan import QuickTerminalEvidenceInput
+from external_runtime_atlas_recovery_plan import QuickTerminalEvidenceInput, validate_quick_evidence_input
 from external_runtime_smoke import CandidateJar, ExternalRuntimeSmokePlan, PlannedFile, external_runtime_smoke_plan
 from minecraft_qualification_model import InvocationError, QualificationPaths, contained_path, is_within, qualification_port
 from minecraft_worldgen_qualification import FIXTURE_NAME, REQUIRED_MARKERS
@@ -120,10 +120,10 @@ def external_runtime_worldgen_plan(cell: Mapping[str, Any], candidate: Candidate
         raise InvocationError("worldgen plan needs a hash-identified matching frozen candidate")
     if frozen_candidate_root is None or not frozen_candidate_root.is_absolute() or not is_within(candidate.path, frozen_candidate_root):
         raise InvocationError("worldgen plan needs the reviewed frozen candidate root")
-    quick_root = paths.cell_root if quick_evidence_root is None else quick_evidence_root
-    expected_prior_root = frozen_candidate_root.parent / paths.cell_id
-    if not isinstance(quick_terminal_evidence, QuickTerminalEvidenceInput) or not quick_terminal_evidence.path.is_absolute() or SHA256.fullmatch(quick_terminal_evidence.sha256) is None or not quick_root.is_absolute() or quick_root not in {paths.cell_root, expected_prior_root} or not is_within(quick_terminal_evidence.path, quick_root):
-        raise InvocationError("worldgen plan needs a contained hash-identified quick terminal record")
+    quick_root = validate_quick_evidence_input(
+        paths, quick_terminal_evidence, quick_evidence_root,
+        "worldgen plan",
+    )
     fixture = contained_path(paths.run_directory, f"nightly/{FIXTURE_NAME}", "worldgen fixture root")
     evidence = contained_path(paths.evidence_directory, f"nightly/{FIXTURE_NAME}", "worldgen evidence root")
     if not all(is_within(value, paths.cell_root) for value in (fixture, evidence)):
