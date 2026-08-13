@@ -614,6 +614,20 @@ created world in every cell. Fabric run IDs are
 slice only; it does not convert Gradle-launched classes into frozen-candidate
 or production-launcher evidence.
 
+The next source-ABI client slice reuses the integrated Atlas map/control
+fixture through `scripts/run_gradle_atlas_ui_qualification.py`. It keeps the
+same clean-source, exact dependency, Gradle user/project cache, and optional
+reviewed acceleration boundaries, but requires one disposable safe-small
+world, all eleven Atlas UI captures, complete generation, and the fixture's
+ordered placement/removal revision probe:
+
+```sh
+python3 scripts/run_gradle_atlas_ui_qualification.py --cell 26.1-fabric
+```
+
+The source and contract are implemented; no real cross-version Atlas UI PASS
+is claimed until each cell's immutable terminal record exists.
+
 All qualification Gradle commands set both a disposable `GRADLE_USER_HOME`
 and a cell-contained `--project-cache-dir`. The latter is mandatory for Loom:
 without it, an otherwise isolated client launch reads its launch configuration
