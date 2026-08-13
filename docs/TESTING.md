@@ -1416,6 +1416,21 @@ Run only one loader at a time:
 ./gradlew :neoforge:runCreationUiClient --console=plain
 ```
 
+For an exact 26.1.x manifest cell with isolated Gradle/build/game state and an
+immutable evidence record, use:
+
+```sh
+python3 scripts/run_gradle_creation_ui_qualification.py --cell 26.1-fabric
+```
+
+The equivalent `-neoforge` cell selects the NeoForge task. This proves the
+real graphical client and creation UI against that patch's exact source ABI;
+it intentionally does not claim a production launcher or frozen packaged jar.
+The separate Prism executor remains an authenticated-disposable-profile or
+owner release gate: a fresh account-free Prism root stops at the official
+login setup wizard even when `--offline` is requested. Never copy a user's
+normal Prism account file into qualification state.
+
 Each qualified task prepares its own ignored `run-creation-ui/` directory
 (NeoForge uses `neoforge/run-creation-ui/`), deleting only disposable saves,
 screenshots, RingWorld cache, and logs. The initial bootstrap configuration is
