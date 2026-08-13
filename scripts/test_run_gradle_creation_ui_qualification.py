@@ -11,8 +11,9 @@ import unittest
 
 from minecraft_qualification_executor import ExecutedCommand
 from minecraft_qualification_model import Verdict
-from run_gradle_creation_ui_qualification import CAPTURE_PREFIXES, PASS_MARKER, ROOT, run
-from run_minecraft_qualification import SourceProvenance
+from minecraft_qualification_model import QualificationPaths
+from run_gradle_creation_ui_qualification import CAPTURE_PREFIXES, PASS_MARKER, ROOT, _command, run
+from run_minecraft_qualification import SourceProvenance, load_manifest
 
 
 RUN_ID = "20260813T120000Z-123456789abc"
@@ -21,8 +22,6 @@ RUN_ID = "20260813T120000Z-123456789abc"
 class GradleCreationUiQualificationTest(unittest.TestCase):
     def setUp(self) -> None:
         self.temp = tempfile.TemporaryDirectory()
-        self.cache_temp = tempfile.TemporaryDirectory()
-        self.cache = Path(self.cache_temp.name).resolve(strict=True)
         self.root = Path(self.temp.name)
         (self.root / "config").mkdir()
         shutil.copy2(ROOT / "config/minecraft-version-matrix.json", self.root / "config/minecraft-version-matrix.json")
@@ -33,7 +32,6 @@ class GradleCreationUiQualificationTest(unittest.TestCase):
         )
 
     def tearDown(self) -> None:
-        self.cache_temp.cleanup()
         self.temp.cleanup()
 
     def executor(self, command, paths, *, ordinal):
@@ -42,7 +40,6 @@ class GradleCreationUiQualificationTest(unittest.TestCase):
         self.assertIn("-Pfabric_api_version=0.145.1+26.1", command.argv)
         project_cache_index = command.argv.index("--project-cache-dir") + 1
         self.assertEqual(Path(command.argv[project_cache_index]), paths.cache_directory / "gradle-project")
-        self.assertIn(("GRADLE_RO_DEP_CACHE", str(self.cache)), command.environment)
         self.assertEqual(command.argv[-1], ":runCreationUiClient")
         run_root = paths.run_directory / "run-creation-ui"
         (run_root / "logs").mkdir(parents=True)
@@ -63,7 +60,6 @@ class GradleCreationUiQualificationTest(unittest.TestCase):
         result = run(
             "26.1-fabric", repository_root=self.root, run_id_factory=lambda: RUN_ID,
             provenance_provider=lambda *_: self.provenance, command_executor=self.executor,
-            gradle_dependency_cache=self.cache,
         )
         self.assertEqual(result["verdict"], "PASS")
         self.assertEqual(len(result["captures"]), 13)
@@ -82,9 +78,16 @@ class GradleCreationUiQualificationTest(unittest.TestCase):
         result = run(
             "26.1-fabric", repository_root=self.root, run_id_factory=lambda: RUN_ID,
             provenance_provider=lambda *_: self.provenance, command_executor=incomplete,
-            gradle_dependency_cache=self.cache,
         )
         self.assertEqual(result["verdict"], "FAIL")
+
+    def test_validated_dependency_cache_reaches_command_environment(self) -> None:
+        manifest = load_manifest(self.root / "config/minecraft-version-matrix.json")
+        cell = next(item for item in manifest["cells"] if item["id"] == "26.1-fabric")
+        paths = QualificationPaths.from_cell(self.root, cell, RUN_ID)
+        cache = self.root.parent / "reviewed-read-only-cache"
+        command = _command(cell, paths, cache)
+        self.assertIn(("GRADLE_RO_DEP_CACHE", str(cache)), command.environment)
 
 
 if __name__ == "__main__":
