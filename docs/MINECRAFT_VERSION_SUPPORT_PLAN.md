@@ -2,8 +2,8 @@
 
 Status: approved policy and active implementation. Phases 0–3 are implemented;
 the six quick cells pass with one unchanged jar per loader. Phase 4 has real
-dual-loader 26.1 Atlas-recovery and worldgen/structure evidence, while its
-remaining patch-cell and client/gameplay/render fixtures remain pending.
+six-cell Atlas-recovery and worldgen/structure evidence; its client, gameplay,
+lifecycle, UI, and rendering fixtures remain pending.
 
 ## Support model
 
@@ -314,14 +314,14 @@ Gradle development source-set run.
 Exit: one command produces a fail-closed six-cell quick report on a clean
 checkout, and deliberate corruptions are rejected by tests.
 
-Fabric reached the loader-side Phase 3 exit on 2026-08-12 in run
-`20260812T170742Z-d5ff11778395`: 26.1, 26.1.1, and 26.1.2 all passed with the
+Fabric's refreshed loader-side Phase 3 run is
+`20260813T072608Z-b7c68e555818`: 26.1, 26.1.1, and 26.1.2 all passed with the
 same frozen jar SHA-256
-`e1254b38cf811e7c68382c4ecc025dbede8b5effca54993e5bd403716bff5f39`.
-NeoForge reached the same loader-side exit in run
-`20260812T171404Z-a2d212243bb3`: 26.1, 26.1.1, and 26.1.2 passed with one
+`d7a66942e275fb3fab9386230293bb5fee21adaa3f5eeecfc61b9f8a205c8296`.
+NeoForge reached the same refreshed exit in run
+`20260813T080722Z-377cfb994c93`: 26.1, 26.1.1, and 26.1.2 passed with one
 unchanged frozen jar SHA-256
-`c264b1d389ef3e341e4bd7318c89b4c819568c114c811867c239ecbf9d6f8e2f`.
+`53558ed53bfe73e856710b8fafe60cf81e353e1fde19d43782ebd2f7843d7314`.
 These runs are quick dedicated-server evidence, not the Phase 4
 gameplay/rendering matrix or a publication decision.
 
@@ -501,21 +501,23 @@ does not by itself establish a nightly PASS.
 The bounded persistence parser now decodes the real dimension-owned settings
 NBT and Atlas-v6 file independently, derives the Java-compatible layout and
 Atlas identities, counts durable cells and complete chunks, and binds an exact
-pre-restart checkpoint hash. This closes the report-only evidence gap. Real
-Fabric and NeoForge executions of the new process executor passed on
-2026-08-12 from clean pushed commit `1887692`. Fabric run
-`20260812T184342Z-cef57e3ac2a4` recovered 244/13,312 durable cells to complete;
-NeoForge run `20260812T185236Z-670720ec923e` recovered 280/13,312 to complete.
-Their terminal-evidence SHA-256 values are respectively
-`bc770cd1...5498d` and `f3459d31...01b3`. This qualifies the Atlas
-interruption/recovery fixture on the oldest supported patch for both frozen
-loader candidates; the remaining Phase 4 fixtures are still pending.
+pre-restart checkpoint hash. This closes the report-only evidence gap. The
+Atlas recovery fixture now passes all six 26.1.x cells using one exact frozen
+jar per loader. Fabric runs are `20260813T091340Z-0f6a75a06e36` (26.1),
+`20260813T084030Z-a3030342d49c` (26.1.1), and
+`20260813T084918Z-2a61b8523682` (26.1.2). NeoForge runs are
+`20260813T092207Z-56b8d1593d37` (26.1),
+`20260813T085803Z-abc3ee37973d` (26.1.1), and
+`20260813T090427Z-21cef9b5920b` (26.1.2). Every run proves a durable partial
+checkpoint, exact-byte resume, complete 13,312-cell Atlas, stable mapping-4
+identity, clean exits, and schema-2 `COMPLETE`. The remaining Phase 4 client,
+gameplay, lifecycle, UI, and rendering fixtures are still pending.
 The operator entry point is intentionally explicit:
 
 ```sh
 python3 scripts/run_atlas_recovery_qualification.py \
   --cell 26.1-fabric \
-  --quick-run-id 20260812T170742Z-d5ff11778395
+  --quick-run-id 20260813T072608Z-b7c68e555818
 ```
 
 Use the matching NeoForge quick run ID for a NeoForge cell. The command refuses
@@ -533,11 +535,14 @@ launcher boundary, independently decodes saved settings, and parses exactly
 one matrix/monument/PASS record per stage. It cannot pass without mapping 4,
 format 3, all fourteen biome families, nonzero caves/ores/logs/structures/
 references/loot, a seam-crossing structure, both monument policy outcomes,
-and clean self-halted exits. Real 26.1 runs now pass on both loaders: Fabric
-`20260813T073235Z-1e16c008e584` and NeoForge
-`20260813T082128Z-c2fae65dec2c`. Their terminal SHA-256 values are
-`782a9bc3...110f1` and `4c0c1ef1...6aea3`. These qualify the oldest-patch
-worldgen slice; 26.1.1 and 26.1.2 remain to be run per loader.
+and clean self-halted exits. The slice passes all six cells. Fabric runs are
+`20260813T073235Z-1e16c008e584` (26.1),
+`20260813T083349Z-0cdcffa76005` (26.1.1), and
+`20260813T083518Z-b942314e7e0d` (26.1.2). NeoForge runs are
+`20260813T082128Z-c2fae65dec2c` (26.1),
+`20260813T083644Z-e7ed932a1499` (26.1.1), and
+`20260813T083822Z-03549862d588` (26.1.2). Each loader used one unchanged
+frozen jar across all three patch runtimes.
 
 ```sh
 python3 scripts/run_worldgen_qualification.py \
