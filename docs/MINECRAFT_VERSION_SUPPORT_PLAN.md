@@ -968,6 +968,65 @@ manifest -> version-aware builds -> quick matrix -> nightly matrix
 -> Modrinth/CurseForge submission -> hosted-file verification
 ```
 
+## Follow-on execution checklist (2026-08-13)
+
+This is the concise checklist for continuing the 26.1.x support project.
+Earlier sections remain the detailed design and evidence record.
+
+### Completed foundation
+
+- [x] Define six pinned Fabric/NeoForge cells for 26.1, 26.1.1, and 26.1.2.
+- [x] Isolate every cell's build, runtime, world, cache, port, and evidence.
+- [x] Build one frozen candidate per loader against the oldest ABI and require
+  its unchanged hash across that loader's three patch versions.
+- [x] Pass the original six-cell quick dedicated-server matrix.
+- [x] Pass Atlas recovery and world-generation qualification on all six cells.
+- [x] Pass creation UI, Atlas UI/format-3 handshake, map/compass, and curved
+  object source-ABI fixtures on all six cells.
+- [x] Implement forward-save, candidate-equivalence, staging, and publication
+  dry-run tooling.
+- [x] Fix NeoForge qualification installs to reuse the verified Mojang server
+  jar instead of redundantly downloading it (PR #227).
+
+### Required before broad 26.1.x support
+
+- [ ] Re-run the complete six-cell quick matrix from current clean `main`.
+- [ ] Run the dedicated multiplayer fixture on all six cells with the exact
+  retained frozen candidate for each loader.
+- [ ] Run the raid fixture on all six cells.
+- [ ] Run production lifecycle qualification on all six cells: dimension
+  travel, save, disconnect, client-state cleanup, and reopen.
+- [ ] Run production rendering on all six cells: projection, natural seam
+  motion, Atlas handoff, rims, sky, weather, and frame observations.
+- [ ] Bind every nightly result to its quick record, frozen jar SHA-256, source
+  commit, runtime version, and immutable evidence hashes.
+- [ ] Run every supported forward-save path using the final candidates.
+- [ ] Generate and independently review one final six-cell report. Any failed
+  or missing cell leaves the support claim incomplete.
+
+### Release and publication
+
+- [ ] Freeze final Fabric and NeoForge candidates and confirm one unchanged jar
+  per loader covers all three Minecraft patch versions.
+- [ ] Re-run clean tests, builds, licence/package checks, and fail-closed
+  staging against the frozen commit.
+- [ ] Advertise only the support range proven by the final report.
+- [ ] Prepare Modrinth and CurseForge files, changelogs, hashes, source links,
+  rollback identifiers, and hosted-file verification steps.
+- [ ] Obtain explicit owner go/no-go approval.
+- [ ] Publish only after approval; independently download and verify hosted
+  files and hashes.
+- [ ] Update README, compatibility docs, website copy, and GitHub issues with
+  the exact published versions and limitations.
+
+### Later versions and backports
+
+- [ ] Add each later stable release as new manifest cells with exact pins.
+- [ ] Run ABI checks first, add narrow version adapters only where evidence
+  requires them, then repeat quick, nightly, upgrade, and release gates.
+- [ ] Keep backports in explicit adapters or maintained branches while shared
+  topology, protocol, saved-data, and rendering contracts remain common.
+
 Safe parallel work includes pure manifest/tooling tests, host-copy drafting,
 and loader-specific headless jobs with isolated files and ports. Do not run
 two graphical fixtures on one GPU, stage while the source tree is changing,
