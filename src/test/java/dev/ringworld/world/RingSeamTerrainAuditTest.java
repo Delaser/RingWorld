@@ -16,6 +16,7 @@ class RingSeamTerrainAuditTest {
 
         RingSeamTerrainAudit.Report report = RingSeamTerrainAudit.inspect(high, low);
         assertTrue(report.passes());
+        assertTrue(report.passesSmoothJoin(), "isolated natural cliffs are not a map boundary wall");
         assertEquals(1, report.longestCliffRun());
     }
 
@@ -46,5 +47,14 @@ class RingSeamTerrainAuditTest {
         low[30] = 8;
         assertTrue(RingSeamTerrainAudit.inspect(high, low).passesSmoothJoin(),
                 "one isolated natural feature is not a seam wall");
+    }
+
+    @Test
+    void acceptsMeasuredProductionJoinWithOneIsolatedTwelveBlockStep() {
+        RingSeamTerrainAudit.Report measured = new RingSeamTerrainAudit.Report(
+                12, 1, 1, 1.1991869918699187, true);
+
+        assertTrue(measured.passesSmoothJoin(),
+                "a single natural step across the full ring width is not the old flat seam wall");
     }
 }

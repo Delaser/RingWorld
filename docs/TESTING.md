@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 337
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 338
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -360,7 +360,7 @@ build/libs/ringworld-1.0.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-1.0.0+mc26.1.2.jar`.
 
-The active suite passes 337 unit/parameterized cases per loader:
+The active suite passes 338 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
@@ -729,6 +729,12 @@ fixture emits its matrix, monument, and PASS records. The executor rejects
 duplicate records, independently decodes saved settings, captures every log,
 and validates the four-stage aggregate before writing terminal evidence.
 Static tests do not substitute for these two real commands.
+
+The seam-height audit rejects a broad discontinuity, including a sub-threshold
+wall whose average adjacent-column delta exceeds two blocks. It deliberately
+allows isolated natural cliffs. A real production 16,384x256 qualification
+probe observed one isolated 12-block step, a longest run of one, and average
+delta 1.199; treating that as a full map-boundary wall was a false positive.
 
 Fresh format-3 fixtures default to `terrainNoiseMapping=4`. A deliberate copied
 legacy-world run must set `-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1`;
