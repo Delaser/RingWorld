@@ -342,14 +342,14 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   `--gradle-distribution-zip`; the runner rehashes it and exclusively copies it
   into each fresh cell's wrapper store without creating Gradle's `.ok` marker
   or bypassing wrapper verification.
-  Refreshed Fabric quick run `20260813T072608Z-b7c68e555818` passes 26.1,
-  26.1.1, and 26.1.2 with one unchanged frozen jar
-  (`d7a66942e275fb3fab9386230293bb5fee21adaa3f5eeecfc61b9f8a205c8296`).
-  Refreshed NeoForge quick run `20260813T080722Z-377cfb994c93` also passes all
-  three versions with one unchanged frozen jar
-  (`53558ed53bfe73e856710b8fafe60cf81e353e1fde19d43782ebd2f7843d7314`).
-  These are dedicated-server quick evidence only. The six-cell worldgen and
-  interrupted-Atlas-recovery nightly slices also pass with those exact jars.
+  Refreshed combined quick run `20260813T164933Z-8bee9268f799` passes all six
+  Fabric/NeoForge 26.1.x cells. Fabric uses one unchanged frozen jar
+  (`8b919c42e8a166c4f070a06e96518da8ca887e1955bd764c51281f17db9e7e31`)
+  and NeoForge uses one unchanged frozen jar
+  (`77389181684db006369400a4551eee6e98a3fd12266b01330d3357d5011c6f50`).
+  These are dedicated-server quick evidence only. Earlier six-cell worldgen
+  and interrupted-Atlas-recovery nightly slices also pass with their
+  then-current exact frozen jars.
   The six-cell creation/settings UI source-ABI slice passes thirteen captures
   per cell from clean commit `0776154`; it deliberately is not
   frozen-candidate or production-launcher evidence. The remaining client,
@@ -485,8 +485,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   release-staging guard. It proves a proposed public loader jar differs from
   the frozen wide-range candidate only in its reviewed loader descriptor and
   `ringworld-build.properties` public version/label fields. It is static
-  release-equivalence evidence, never runtime qualification; no proposed
-  public jars or equivalence records exist yet.
+  release-equivalence evidence, never runtime qualification. Local
+  `1.1.0+mc26.1` candidates now pass this guard against the refreshed combined
+  quick candidates; they remain ignored, unstaged, and unpublished.
 - `scripts/external_graphical_creation_ui.py` and
   `scripts/run_creation_ui_qualification.py`: the first production-style
   graphical-client automation slice. It consumes the retained frozen jar and

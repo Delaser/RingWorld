@@ -746,9 +746,15 @@ python3 scripts/release_candidate_equivalence.py \
 ```
 
 It validates MPL-2.0 contents and approved metadata ranges before comparison.
-It is not a build, upload, publication, or runtime test. No proposed public
-jars have been supplied and no equivalence evidence exists, so Phase 6 remains
-pending.
+It is not an upload, publication, or runtime test. On 2026-08-13, local
+`1.1.0+mc26.1` / label `1.1` candidates were built against the 26.1 ABI and
+passed all 338 tests per loader. The Fabric jar
+(`082cb697...5aef4`) is byte-equivalent outside approved metadata to frozen
+candidate `8b919c42...e7e31`; the NeoForge jar
+(`1b81d621...941aa`) is likewise equivalent to `77389181...6f50`. The files
+remain ignored local candidates. Phase 6 still requires the remaining
+candidate-bound graphical/gameplay matrix and owner go/no-go before it can
+close.
 
 ### Phase 7 — candidate staging and documentation freeze
 
