@@ -272,7 +272,7 @@ def external_runtime_adapter_from_qualification_inputs(
     provenance = strict_provenance_from_source(source_provenance)
     candidates: dict[str, CandidateJar] = {}
     support: dict[str, RuntimeSupportInputs] = {}
-    candidate_roots: set[Path] = set()
+    candidate_roots: dict[str, Path] = {}
     for loader in ("fabric", "neoforge"):
         preparation = preparations.get(loader)
         if preparation is None or getattr(preparation, "verdict", None) is not Verdict.PASS:
@@ -290,19 +290,13 @@ def external_runtime_adapter_from_qualification_inputs(
             raise ExternalAdapterError("frozen preparation has no complete same-file coverage") from error
         candidates[loader] = CandidateJar(plan.candidate_path, inspection.sha256, loader, inspection.minecraft_range)
         support[loader] = RuntimeSupportInputs(provenance, inspection, same_file)
-        candidate_roots.add(plan.candidate_path.parent.parent)
-    # A run can contain a Fabric-only triplet or both loader triplets.  Their
-    # frozen directories share a run root; use the common frozen-candidates
-    # parent when present, and retain the normal adapter INCOMPLETE behavior
-    # when no loader was prepared.
-    frozen_root: Path | None = None
-    if candidate_roots:
-        if len(candidate_roots) != 1:
-            raise ExternalAdapterError("frozen candidates do not share one qualification root")
-        frozen_root = next(iter(candidate_roots))
+        candidate_roots[loader] = plan.candidate_path.parent.parent
+    # Fabric and NeoForge profiles intentionally have distinct qualification
+    # roots. Keep the reviewed containment root loader-scoped when both full
+    # triplets are selected in one matrix run.
     return ExternalRuntimeQualificationAdapter(
         canonical, reviewed_range_identities(), candidates, support,
-        frozen_candidate_root=frozen_root, smoke_executor=smoke_executor,
+        frozen_candidate_root=candidate_roots, smoke_executor=smoke_executor,
     )
 
 
@@ -586,7 +580,7 @@ class ExternalRuntimeQualificationAdapter:
         candidates: Mapping[str, CandidateJar],
         support_inputs: Mapping[str, RuntimeSupportInputs],
         *,
-        frozen_candidate_root: Path | None = None,
+        frozen_candidate_root: Path | Mapping[str, Path] | None = None,
         smoke_executor: SmokeExecutor | None = None,
     ) -> None:
         self._canonical_cells = canonical_cells
@@ -595,6 +589,11 @@ class ExternalRuntimeQualificationAdapter:
         self._support_inputs = support_inputs
         self._frozen_candidate_root = frozen_candidate_root
         self._smoke_executor = smoke_executor
+
+    def _candidate_root(self, loader: str) -> Path | None:
+        if isinstance(self._frozen_candidate_root, Mapping):
+            return self._frozen_candidate_root.get(loader)
+        return self._frozen_candidate_root
 
     def __call__(self, context: PhaseContext) -> PhaseResult:
         if context.phase != PhaseName.DEDICATED_SMOKE or context.command is not None:
@@ -616,9 +615,10 @@ class ExternalRuntimeQualificationAdapter:
         if not isinstance(held_lock, QualificationLock):
             return PhaseResult(context.phase, Verdict.INCOMPLETE, HELD_LOCK_UNAVAILABLE)
         try:
-            _revalidate_frozen_candidate(candidate, inputs.frozen_candidate, self._frozen_candidate_root)
+            candidate_root = self._candidate_root(loader)
+            _revalidate_frozen_candidate(candidate, inputs.frozen_candidate, candidate_root)
             plan = external_runtime_smoke_plan(
-                context.cell, candidate, context.paths, frozen_candidate_root=self._frozen_candidate_root,
+                context.cell, candidate, context.paths, frozen_candidate_root=candidate_root,
             )
             result = self._smoke_executor(plan, context.paths, context.paths.run_id, held_lock=held_lock)
             support = capture_runtime_support(plan, result, context.paths, inputs) if result.verdict is Verdict.PASS else None
