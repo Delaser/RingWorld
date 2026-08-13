@@ -34,6 +34,8 @@ public final class AtlasPregenerationUiTestClient {
     private int editedBlockZ;
     private boolean worldScreenOpened;
     private boolean worldStarted;
+    private int menuTicks;
+    private String lastMenuScreen = "";
 
     public boolean enabled() { return Boolean.getBoolean(ENABLE_PROPERTY); }
     public void frameRendered() { renderedFrames++; }
@@ -44,7 +46,15 @@ public final class AtlasPregenerationUiTestClient {
      */
     public boolean startWorldIfEnabled(Minecraft client) {
         if (!enabled() || client.level != null || worldStarted) return false;
+        String currentScreen = client.screen == null ? "null" : client.screen.getClass().getName();
+        if (!currentScreen.equals(lastMenuScreen)) {
+            RingWorldMod.LOGGER.info("[atlas-ui-test] menu screen: {}", currentScreen);
+            lastMenuScreen = currentScreen;
+        }
+        if (++menuTicks > 2_400) return fail(client,
+                "timed out opening disposable world from " + currentScreen);
         if (!worldScreenOpened) {
+            RingWorldMod.LOGGER.info("[atlas-ui-test] opening fresh-world editor");
             CreateWorldScreen.openFresh(client, () -> worldScreenOpened = false);
             worldScreenOpened = true;
             return true;
@@ -55,6 +65,7 @@ public final class AtlasPregenerationUiTestClient {
             creator.setGameMode(WorldCreationUiState.SelectedGameMode.CREATIVE);
             creator.setAllowCommands(true);
             creator.setSeed("-2162056627494116761");
+            RingWorldMod.LOGGER.info("[atlas-ui-test] creating disposable world");
             ((CreateWorldScreenInvoker) screen).ringworld$createLevel();
             worldStarted = true;
         }

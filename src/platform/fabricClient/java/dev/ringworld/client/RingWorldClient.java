@@ -259,6 +259,11 @@ public final class RingWorldClient implements ClientModInitializer {
 
     private void startAutomatedTestWorld(Minecraft client) {
         if (atlasPregenerationUiTest.startWorldIfEnabled(client)) return;
+        // Once the Atlas fixture has invoked Create World there is a short
+        // interval before the integrated client player exists. Do not let the
+        // legacy test-mode launcher mistake that interval for an idle title
+        // screen and create a second world over the first connection.
+        if (atlasPregenerationUiTest.enabled()) return;
         if (!RingWorldConfig.load().testMode()) return;
         if (!testPerformanceProfileApplied) {
             // A representative, stable local profile. Production play still

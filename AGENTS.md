@@ -435,6 +435,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   captures, one disposable world, complete Atlas, and revisioned placement/
   removal PASS, and records the same explicit non-production/non-frozen
   claims. Run only one graphical cell at a time.
+  Fabric must keep the Atlas fixture exclusive after it invokes Create World;
+  before the integrated player exists, the generic `testMode` launcher must
+  not race it by creating a second automated world.
 - `scripts/minecraft_worldgen_qualification.py`,
   `scripts/external_runtime_worldgen_plan.py`,
   `scripts/external_runtime_worldgen_executor.py`, and
