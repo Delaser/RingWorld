@@ -100,6 +100,7 @@ jobs:
           scripts/test_run_gradle_creation_ui_qualification.py
           scripts/test_run_gradle_atlas_ui_qualification.py
           scripts/test_run_gradle_map_compass_qualification.py
+          scripts/test_run_gradle_curved_objects_qualification.py
           scripts/test_qualification_static_workflow.py
 
       # Static only: no Gradle, Minecraft runtime, installer, server, network,

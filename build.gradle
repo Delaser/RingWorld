@@ -1667,6 +1667,8 @@ testMode=false
 testViewDistanceChunks=12
 pregenerateTerrainAtlas=false
 """
+		new File(qualificationRunFile("run-curved-object-capture"), "options.txt").text =
+				"onboardAccessibility:false\npauseOnLostFocus:false\n"
 	}
 }
 

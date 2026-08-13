@@ -741,6 +741,16 @@ The six-cell fixture-08 matrix passes from clean commit `9015857`:
 Every cell passed all eight captures, both format-3 acknowledgements, normal
 disconnect and clean client teardown, reopen, and persistent map/compass state.
 
+Run the bounded curved block/entity renderer slice one cell at a time:
+
+```sh
+python3 scripts/run_gradle_curved_objects_qualification.py --cell 26.1-fabric
+```
+
+A PASS requires one disposable world, the real fixture-ready and terminal
+markers, and valid far/near PNGs. It is source-ABI graphical evidence, not a
+production-launcher or frozen-candidate claim.
+
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated
 26.1 source permits no intermediary residue. `ServerLevel` entity tick

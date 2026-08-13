@@ -6,6 +6,7 @@ import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.core.BlockPos;
@@ -46,6 +47,7 @@ public final class CurvedObjectCaptureClient {
             return false;
         }
         if (!worldScreenOpened) {
+            if (!(client.screen instanceof TitleScreen)) return true;
             CreateWorldScreen.openFresh(client, () -> worldScreenOpened = false);
             worldScreenOpened = true;
             return true;

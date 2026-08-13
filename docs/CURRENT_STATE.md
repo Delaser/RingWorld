@@ -312,6 +312,10 @@ six cells from clean commit `9015857`: Fabric runs are
 `20260813T185449Z-26282a7c51fb`, `20260813T185906Z-d67da65d189d`, and
 `20260813T190435Z-9f27985cd623`. This closes fixture 08 as source-ABI
 graphical/gameplay evidence; it is not frozen-jar packaged-client evidence.
+The fixture-10 curved-object wrapper is also implemented and pure-tested. It
+reuses the existing real renderer fixture, requires one disposable world plus
+the verified far/near captures, and applies the same fresh-title/onboarding/
+NeoForge-splash safeguards. Its six real patch cells remain to run.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

@@ -364,6 +364,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   claim production-launcher or frozen-candidate evidence. The six-cell matrix
   passes from clean commit `9015857`; exact run IDs and hashes are in
   `docs/TESTING.md`.
+- `scripts/run_gradle_curved_objects_qualification.py`: bounded source-ABI
+  wrapper for the existing curved block/entity fixture. It requires one
+  disposable world and valid verified far/near captures. It is not frozen-jar
+  or production-launcher evidence.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
