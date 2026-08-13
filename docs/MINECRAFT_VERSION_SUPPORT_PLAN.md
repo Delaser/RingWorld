@@ -625,8 +625,16 @@ ordered placement/removal revision probe:
 python3 scripts/run_gradle_atlas_ui_qualification.py --cell 26.1-fabric
 ```
 
-The source and contract are implemented; no real cross-version Atlas UI PASS
-is claimed until each cell's immutable terminal record exists.
+The gate passes all six cells from clean pushed commit
+`7a7c0449277dbb0be464b1fb972d77044132a1e6`. Fabric run IDs are
+`20260813T123311Z-a3ad7b5b5a58`, `20260813T124040Z-0d2aec6c29f2`, and
+`20260813T124816Z-bd3475d1bf21` for 26.1 through 26.1.2. NeoForge run IDs are
+`20260813T125559Z-789f027ffe4b`, `20260813T131059Z-721b4de15471`, and
+`20260813T132720Z-47169a2c9167`. Every cell produced all eleven captures,
+completed its 4,096-cell Small Atlas, exercised every map control, and passed
+the ordered live placement/removal revision probe. This completes the Atlas
+UI source-ABI slice only; packaged-client and broader gameplay/rendering
+nightlies remain separate.
 The fixture's build-label assertion is selected independently by Gradle from
 the active `release_label` and `mod_version`. This retains the published 1.0
 identity check for ordinary development runs while requiring each exact
