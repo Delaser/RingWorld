@@ -608,7 +608,9 @@ source-ABI evidence, not a production-launcher or frozen-candidate claim.
 Both loader preparers write `onboardAccessibility:false` into the disposable
 profile. Without it, a genuinely fresh game directory opens Minecraft's
 accessibility onboarding over the automated Create World flow and never
-exercises the fixture.
+exercises the fixture. The fixture must also wait for the real `TitleScreen`;
+opening the editor from Minecraft's temporary startup `GenericMessageScreen`
+allows the later title transition to discard it.
 The Fabric entrypoint must return immediately while this opt-in fixture is
 enabled, even after its world-creation invocation and before `client.player`
 exists. Falling through to the older generic `testMode` launcher in that
