@@ -783,6 +783,18 @@ its layered placeholder without promising a fixed completion time.
 Exit: a clean pushed commit can be restaged reproducibly, and an independent
 reviewer returns a release go decision for the exact hashes.
 
+Implementation status: `scripts/stage_qualified_release.py` is the no-upload
+Phase 7 staging bridge. It consumes one reviewed six-cell quick run plus the
+two public candidates, revalidates all strict terminal records and retained
+same-file hashes, reruns byte-level release equivalence, and writes ignored
+per-loader review directories containing exactly one runtime jar, SHA-256 and
+SHA-512, archive inventory, immutable source provenance, generated Modrinth
+metadata, CurseForge upload worksheet, changelog, and rollback data. Its
+reviewed `1.1.0+mc26.1` configuration names only 26.1, 26.1.1, and 26.1.2;
+Fabric API appears only in Fabric host relations. The tool accepts no token and
+has no upload, tag, deployment, or listing-mutation path. A real clean-source
+staging run remains pending until this implementation is merged.
+
 ### Phase 8 — Modrinth publication
 
 Modrinth's official version API accepts one or more jar files plus version

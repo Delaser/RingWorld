@@ -45,6 +45,7 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
             "test_minecraft_world_upgrade_qualification.py",
             "test_run_world_upgrade_qualification.py",
             "test_release_candidate_equivalence.py",
+            "test_stage_qualified_release.py",
             "test_external_graphical_creation_ui.py",
             "test_run_creation_ui_qualification.py",
         ):
