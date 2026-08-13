@@ -683,6 +683,16 @@ def execute_external_runtime_smoke(
         downloads.append(fetch_pinned_https(plan.minecraft_server, paths, opener=opener))
         for item in plan.downloads:
             downloads.append(fetch_pinned_https(item, paths, opener=opener))
+        if plan.loader == "neoforge":
+            # NeoForge's installer otherwise downloads the same Mojang server
+            # jar again. Seed its documented target from the already pinned,
+            # hash-verified cache so qualification is not exposed to a second
+            # redundant network transfer.
+            cached_server = Path(downloads[0].path)
+            installed_server = plan.layout.root / "server.jar"
+            _assert_no_symlink_components(cached_server, paths.cell_root, "cached Mojang server")
+            shutil.copyfile(cached_server, installed_server)
+            verify_pinned_file(installed_server, plan.minecraft_server.algorithm, plan.minecraft_server.checksum)
         ledger.add("installer-start")
         installer_record = CommandRecord(
             PhaseName.DEDICATED_SMOKE, plan.installer.argv, plan.installer.cwd, (), plan.launch.timeout_seconds,
