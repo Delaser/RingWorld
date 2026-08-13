@@ -289,9 +289,19 @@ requires the loader-specific server log to accept `settings_ack_v3`, binds a
 rendered client to mapping 4 and a nonzero layout fingerprint, performs
 Minecraft's normal integrated-server disconnect, and waits for
 `RingWorldClientSession.isCleared()` before passing. One atomic run writes
-separate fixture-04 and fixture-05 terminal records. This expanded contract is
-compiled and pure-tested but has not yet been rerun across the six cells;
-historical fixture-04 evidence is not silently promoted to fixture 05.
+separate fixture-04 and fixture-05 terminal records. The expanded contract now
+passes all six cells. Fabric runs are 26.1
+`20260813T174054Z-bdeeafa3a751`, 26.1.1
+`20260813T174418Z-b23550ef9a22`, and 26.1.2
+`20260813T174740Z-1995f7cf8b48` from clean commit `a037308`. NeoForge runs are
+26.1 `20260813T181123Z-5baa2ec6644c`, 26.1.1
+`20260813T181648Z-b2342a09e2e7`, and 26.1.2
+`20260813T182206Z-14d425cfb781` from clean commit `aa94e9a`. NeoForge's first
+attempt exposed only its optional early splash trying to open against a
+sleeping macOS display; the Atlas fixture now disables that splash exactly as
+the other automated NeoForge graphical fixtures do, while retaining the real
+Minecraft window. This closes fixture 05 as source-ABI client/session evidence;
+it remains distinct from frozen-jar packaged-client qualification.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

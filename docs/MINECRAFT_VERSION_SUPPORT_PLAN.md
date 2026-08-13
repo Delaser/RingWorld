@@ -650,9 +650,17 @@ qualification cell to display its diagnostic build identity.
 The expanded fixture writes separate immutable terminal records for nightly
 fixtures 04 and 05 from that one atomic client session. Fixture 04 owns Atlas
 controls and revisions; fixture 05 owns accepted settings, rendered client
-readiness, normal disconnect, and complete client-session teardown. The
-historical six-cell fixture-04 records predate this tail, so fixture 05 remains
-pending until every cell is rerun from one clean pushed revision.
+readiness, normal disconnect, and complete client-session teardown. Fixture 05
+now passes all six cells: Fabric run IDs are
+`20260813T174054Z-bdeeafa3a751`, `20260813T174418Z-b23550ef9a22`, and
+`20260813T174740Z-1995f7cf8b48`; NeoForge run IDs are
+`20260813T181123Z-5baa2ec6644c`, `20260813T181648Z-b2342a09e2e7`, and
+`20260813T182206Z-14d425cfb781`. Fabric ran from clean commit `a037308` and
+NeoForge from clean commit `aa94e9a`, whose only intervening behavior change
+disabled NeoForge's optional early splash for this automated graphical fixture.
+Every run accepted format 3/mapping 4, rendered the real client, completed all
+eleven Atlas captures, and proved normal disconnect plus complete session
+teardown. This is source-ABI evidence, not frozen-jar packaged-client proof.
 
 The current 26.1.2 development runtime also re-passed the copied production
 lifecycle and full production projection gates on both loaders on 2026-08-13,
