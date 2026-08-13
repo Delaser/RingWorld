@@ -751,6 +751,17 @@ A PASS requires one disposable world, the real fixture-ready and terminal
 markers, and valid far/near PNGs. It is source-ABI graphical evidence, not a
 production-launcher or frozen-candidate claim.
 
+The six-cell fixture-10 matrix passes from clean commit `f9cb4c2`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260813T191305Z-12bda076ad23` | `f40d79f9333ae11cd14be23700ad77c65037265ff579e075e14ed8d9d6cb8551` |
+| 26.1.1 Fabric | `20260813T191530Z-a9b6435145d8` | `fbe2d2efb2690cc3ff6aa16d622be80ec8745d8993e16b08c728d7f1ab185eea` |
+| 26.1.2 Fabric | `20260813T191738Z-34182794aaf3` | `b65df60a70c0e45cc0b40b7fb8df2e9fde0fb20cdbd5d3209e4c66e31d2705cc` |
+| 26.1 NeoForge | `20260813T191940Z-187e70e94c0c` | `ddc915091e92e16d9868617e16671fb8a1a099fd7e00149eb93473f2fa7b2c2b` |
+| 26.1.1 NeoForge | `20260813T192307Z-3acb0e5bbc29` | `d1674fd218ea904447a669aeb12eb57f83ccd78318c1e11258ff07d18e552df4` |
+| 26.1.2 NeoForge | `20260813T192619Z-7787ffdc1eee` | `077fb2ebd7c1e99099a719356bb2a8c0867ad913366ab359865427307a11b4c3` |
+
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated
 26.1 source permits no intermediary residue. `ServerLevel` entity tick
