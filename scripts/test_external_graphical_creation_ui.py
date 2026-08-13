@@ -43,8 +43,8 @@ class ExternalGraphicalCreationUiTest(unittest.TestCase):
         cell = self.cell(loader)
         paths = QualificationPaths.from_cell(root, cell, "20260813T120000Z-123456789abc")
         return creation_ui_plan(
-            cell, paths, CandidateJar(Path("/tmp/ring.jar"), "a" * 64, loader, ">=26.1 <=26.1.2"),
-            prism_archive=Path("/tmp/prism.zip"), java_executable=Path("/tmp/java"),
+            cell, paths, CandidateJar(root / "ring.jar", "a" * 64, loader, ">=26.1 <=26.1.2"),
+            prism_archive=root / "prism.zip", java_executable=root / "java",
             source_provenance={"commit": "b" * 40},
         )
 
@@ -75,8 +75,8 @@ class ExternalGraphicalCreationUiTest(unittest.TestCase):
             paths = QualificationPaths.from_cell(root, cell, "20260813T120000Z-123456789abc")
             with self.assertRaises(GraphicalCreationUiError):
                 creation_ui_plan(
-                    cell, paths, CandidateJar(Path("/tmp/ring.jar"), "a" * 64, "neoforge", "[26.1,26.1.2]"),
-                    prism_archive=Path("/tmp/prism.zip"), java_executable=Path("/tmp/java"), source_provenance={},
+                    cell, paths, CandidateJar(root / "ring.jar", "a" * 64, "neoforge", "[26.1,26.1.2]"),
+                    prism_archive=root / "prism.zip", java_executable=root / "java", source_provenance={},
                 )
 
     def test_extract_rejects_traversal(self):
