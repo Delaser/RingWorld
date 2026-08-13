@@ -1,7 +1,9 @@
 # Minecraft version support plan
 
-Status: approved policy and end-to-end delivery plan. Phase 0 tracking and
-the Phase 1 manifest/validator are implemented; later phases remain pending.
+Status: approved policy and active implementation. Phases 0–3 are implemented;
+the six quick cells pass with one unchanged jar per loader. Phase 4 has real
+dual-loader 26.1 Atlas-recovery and worldgen/structure evidence, while its
+remaining patch-cell and client/gameplay/render fixtures remain pending.
 
 ## Support model
 
@@ -531,16 +533,22 @@ launcher boundary, independently decodes saved settings, and parses exactly
 one matrix/monument/PASS record per stage. It cannot pass without mapping 4,
 format 3, all fourteen biome families, nonzero caves/ores/logs/structures/
 references/loot, a seam-crossing structure, both monument policy outcomes,
-and clean self-halted exits. Static fake-runtime coverage is green; real
-Fabric and NeoForge evidence is the next gate and is not claimed here.
+and clean self-halted exits. Real 26.1 runs now pass on both loaders: Fabric
+`20260813T073235Z-1e16c008e584` and NeoForge
+`20260813T082128Z-c2fae65dec2c`. Their terminal SHA-256 values are
+`782a9bc3...110f1` and `4c0c1ef1...6aea3`. These qualify the oldest-patch
+worldgen slice; 26.1.1 and 26.1.2 remain to be run per loader.
 
 ```sh
 python3 scripts/run_worldgen_qualification.py \
   --cell 26.1-fabric \
-  --quick-run-id 20260812T170742Z-d5ff11778395
+  --quick-run-id 20260813T072608Z-b7c68e555818
 ```
 
-Use quick run `20260812T171404Z-a2d212243bb3` for the NeoForge cell.
+Use quick run `20260813T080722Z-377cfb994c93` for NeoForge. The retained
+candidate exists once below that quick run's 26.1 loader root; selecting a
+26.1.1 or 26.1.2 cell uses its own strict quick record while resolving that
+single reviewed candidate. Missing or duplicate candidate roots fail closed.
 
 ### Phase 5 — world-upgrade qualification
 

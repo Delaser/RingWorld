@@ -118,21 +118,31 @@ Both retained mapping 4, world hash `8665210144080158345`, layout fingerprint
 `4064118068185880929`, an exact byte-identical restart checkpoint, clean
 stage exits, and self-halted only after schema-2 `COMPLETE`. This completes
 the Atlas recovery slice, not the broader Phase 4 nightly matrix.
-The next Phase 4 slice is now implemented but not yet runtime-qualified. The
+The second Phase 4 slice is now runtime-qualified on the oldest patch for both
+loaders. The
 external worldgen plan/executor/process runner consumes the retained quick jar,
 installs three official disposable runtimes, and drives the existing four-pass
 production reload/seam/terminal structure matrix. Its independent settings and
 log contract requires mapping 4, format 3, all major biome families, caves,
 ores, vegetation, structures, seam-crossing starts, references, loot, both
 monument outcomes, spawn overrides, and clean self-halt. Pure and fake-runtime
-tests pass on both loader shapes; no real Fabric or NeoForge PASS is recorded
-until the clean operator commands complete.
+tests pass on both loader shapes. Refreshed Fabric quick run
+`20260813T072608Z-b7c68e555818` supplied frozen jar
+`d7a66942...c8296`; its 26.1 worldgen run
+`20260813T073235Z-1e16c008e584` passed with terminal SHA-256
+`782a9bc3...110f1`. Refreshed NeoForge quick run
+`20260813T080722Z-377cfb994c93` supplied frozen jar
+`53558ed5...d7314`; its 26.1 worldgen run
+`20260813T082128Z-c2fae65dec2c` passed with terminal SHA-256
+`4c0c1ef1...6aea3`. Both prove the four-stage production reload, seam-crossing,
+stronghold/portal, and monument-policy contract. Patch-cell nightlies remain
+pending.
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its
 documented intent by retaining the broad-cliff gate and a two-block average
-delta limit while allowing isolated relief. This change still requires the
-full real dual-loader rerun.
+delta limit while allowing isolated relief. The refreshed real dual-loader
+26.1 runs above pass that corrected audit.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

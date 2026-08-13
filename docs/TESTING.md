@@ -715,11 +715,11 @@ The production-style worldgen/structure nightly slice is:
 ```sh
 python3 scripts/run_worldgen_qualification.py \
   --cell 26.1-fabric \
-  --quick-run-id 20260812T170742Z-d5ff11778395
+  --quick-run-id 20260813T072608Z-b7c68e555818
 
 python3 scripts/run_worldgen_qualification.py \
   --cell 26.1-neoforge \
-  --quick-run-id 20260812T171404Z-a2d212243bb3
+  --quick-run-id 20260813T080722Z-377cfb994c93
 ```
 
 Each command installs three fresh official dedicated runtimes. Production
@@ -728,7 +728,14 @@ separate. The processes self-halt after the existing stronghold/worldgen
 fixture emits its matrix, monument, and PASS records. The executor rejects
 duplicate records, independently decodes saved settings, captures every log,
 and validates the four-stage aggregate before writing terminal evidence.
-Static tests do not substitute for these two real commands.
+Static tests do not substitute for these real commands. The 26.1 executions
+passed on both loaders in runs `20260813T073235Z-1e16c008e584` (Fabric) and
+`20260813T082128Z-c2fae65dec2c` (NeoForge), with terminal SHA-256
+`782a9bc3...110f1` and `4c0c1ef1...6aea3`. Repeat the command with
+`--cell 26.1.1-<loader>` and `--cell 26.1.2-<loader>` to qualify the patch
+cells. Those selections validate their own quick evidence but deliberately
+reuse the one retained oldest-ABI jar; zero or multiple loader candidate roots
+are rejected.
 
 The seam-height audit rejects a broad discontinuity, including a sub-threshold
 wall whose average adjacent-column delta exceeds two blocks. It deliberately
