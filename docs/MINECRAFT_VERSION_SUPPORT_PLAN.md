@@ -686,8 +686,11 @@ frozen-jar packaged-client proof.
 `scripts/run_gradle_curved_objects_qualification.py` is the matching bounded
 fixture-10 wrapper. It reuses the real curved-object client and requires its
 far/near captures of representative block entities, items, boats, passive and
-hostile entities. Fresh-profile startup guards are implemented and pure-tested;
-the six real patch cells remain to run.
+hostile entities. It passes all six cells from clean commit `f9cb4c2`. Fabric
+runs are `20260813T191305Z-12bda076ad23`,
+`20260813T191530Z-a9b6435145d8`, and `20260813T191738Z-34182794aaf3`;
+NeoForge runs are `20260813T191940Z-187e70e94c0c`,
+`20260813T192307Z-3acb0e5bbc29`, and `20260813T192619Z-7787ffdc1eee`.
 
 All qualification Gradle commands set both a disposable `GRADLE_USER_HOME`
 and a cell-contained `--project-cache-dir`. The latter is mandatory for Loom:

@@ -367,7 +367,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
 - `scripts/run_gradle_curved_objects_qualification.py`: bounded source-ABI
   wrapper for the existing curved block/entity fixture. It requires one
   disposable world and valid verified far/near captures. It is not frozen-jar
-  or production-launcher evidence.
+  or production-launcher evidence. All six cells pass from clean commit
+  `f9cb4c2`; exact records are in `docs/TESTING.md`.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
