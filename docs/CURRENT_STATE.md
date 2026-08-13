@@ -302,6 +302,11 @@ sleeping macOS display; the Atlas fixture now disables that splash exactly as
 the other automated NeoForge graphical fixtures do, while retaining the real
 Minecraft window. This closes fixture 05 as source-ABI client/session evidence;
 it remains distinct from frozen-jar packaged-client qualification.
+The next source-ABI gameplay wrapper now targets the existing map/compass
+fixture. It requires both seam directions, map pixels and markers, banner and
+item-frame state, all vanilla compass targets, save/disconnect/session clear,
+reopen, and persisted state in one disposable world. Its fresh-profile startup
+guards and pure contract pass, but the six real patch cells remain to run.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

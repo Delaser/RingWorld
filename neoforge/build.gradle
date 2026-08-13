@@ -515,6 +515,8 @@ tasks.register('prepareNeoForgeMapCompassCaptureRun') {
         configFile.withOutputStream { config.store(it, 'Isolated NeoForge RingWorld map and compass capture') }
         def fmlFile = new File(neoForgeMapCompassRun, 'config/fml.toml')
         fmlFile.text = '# Automated graphical capture: disable only the separate early splash.\nearlyWindowControl = false\n'
+        new File(neoForgeMapCompassRun, 'options.txt').text =
+                'onboardAccessibility:false\npauseOnLostFocus:false\n'
     }
 }
 

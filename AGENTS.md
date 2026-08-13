@@ -357,6 +357,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   accepts format 3/mapping 4, produces all eleven captures, and proves normal
   disconnect plus complete session teardown. The remaining frozen-candidate
   gameplay, lifecycle, and rendering matrix remains pending.
+- `scripts/run_gradle_map_compass_qualification.py`: bounded source-ABI
+  gameplay wrapper for the existing map/compass fixture. It requires eight
+  captures, both seam directions, persistent map/banner/item-frame state, all
+  compass targets, normal disconnect/session clear, and reopen. It does not
+  claim production-launcher or frozen-candidate evidence.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,

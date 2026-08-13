@@ -1099,6 +1099,8 @@ tasks.register("prepareMapCompassCaptureRun") {
 		config.setProperty("testViewDistanceChunks", "6")
 		config.setProperty("pregenerateTerrainAtlas", "false")
 		configFile.withOutputStream { config.store(it, "Isolated RingWorld map and compass capture") }
+		new File(qualificationRunFile("run-map-compass-capture"), "options.txt").text =
+				"onboardAccessibility:false\npauseOnLostFocus:false\n"
 	}
 }
 

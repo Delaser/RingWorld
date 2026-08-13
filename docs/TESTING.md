@@ -714,6 +714,19 @@ NeoForge attempt exposed a sleeping-display host failure. Minecraft remains
 graphical. These records close fixture 05's source-ABI client/session claim,
 not production-launcher or frozen-candidate package evidence.
 
+Run the bounded map/compass gameplay slice one graphical cell at a time:
+
+```sh
+python3 scripts/run_gradle_map_compass_qualification.py --cell 26.1-fabric
+```
+
+The matching NeoForge cell selects its loader task. A PASS requires eight PNG
+captures, exactly one disposable world, two format-3 acknowledgements around a
+normal disconnect/reopen, clean client-session teardown, filled-map pixels and
+seam markers, persistent banner/item-frame state, and stable spawn, lodestone,
+and recovery compass targets. It is source-ABI gameplay evidence, not a
+production-launcher or frozen-candidate claim.
+
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated
 26.1 source permits no intermediary residue. `ServerLevel` entity tick
