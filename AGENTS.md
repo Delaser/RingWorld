@@ -348,8 +348,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   Refreshed NeoForge quick run `20260813T080722Z-377cfb994c93` also passes all
   three versions with one unchanged frozen jar
   (`53558ed53bfe73e856710b8fafe60cf81e353e1fde19d43782ebd2f7843d7314`).
-  These are dedicated-server quick evidence only; the Phase 4 nightly
-  gameplay/rendering matrix remains pending.
+  These are dedicated-server quick evidence only. The six-cell worldgen and
+  interrupted-Atlas-recovery nightly slices also pass with those exact jars;
+  the client/gameplay/lifecycle/UI/rendering matrix remains pending.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
@@ -405,8 +406,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   run ID, revalidates the prior strict PASS record and frozen jar, requires the
   current public branch to be clean/pushed under Java 25, and records that
   executor-source provenance before launching the concrete two-stage runner.
-  Real Fabric and NeoForge 26.1 runs passed on 2026-08-12 from commit
-  `1887692`; the retained run IDs and terminal-evidence hashes are recorded in
+  Real Fabric and NeoForge runs now pass all six 26.1.x cells with the
+  refreshed frozen jars; retained run IDs and terminal-evidence hashes are in
   `docs/CURRENT_STATE.md`. This qualifies Atlas recovery only, not the rest of
   the Phase 4 nightly matrix.
 - `scripts/minecraft_worldgen_qualification.py`,
@@ -426,8 +427,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   loader candidate below the reviewed quick run's oldest-ABI cell and reject
   zero or duplicate candidates. Stage-process failures write terminal `FAIL`
   evidence rather than escaping as an unclassified traceback. Real Fabric and
-  NeoForge 26.1 worldgen runs pass; the remaining patch-cell executions are
-  still required before this fixture is complete across the line.
+  NeoForge worldgen runs pass all six 26.1.x cells with one unchanged jar per
+  loader.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit
@@ -509,8 +510,9 @@ selected; it never synthesizes the claim from per-cell source builds.
 Qualification source-build artifacts must use the diagnostic
 `0.0.0-qualification+mc<version>` identity and a qualification release label;
 never stage or publish them. The 26.1 and 26.1.1 Fabric and NeoForge beta
-source-build cells currently pass 337 tests each, but remain pending until
-external runtime and frozen-jar gates pass.
+source-build cells currently pass 338 tests each, and their frozen-jar quick,
+worldgen, and Atlas-recovery gates pass; they remain pending in public support
+metadata until the rest of the nightly matrix passes.
 An operator may opt into an external worker-provisioned read-only dependency
 cache with `--gradle-dependency-cache /absolute/path`; it is rejected if it is
 missing, symlinked, or overlaps the checkout, `dist/`, per-cell build/run
