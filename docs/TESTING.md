@@ -727,6 +727,20 @@ seam markers, persistent banner/item-frame state, and stable spawn, lodestone,
 and recovery compass targets. It is source-ABI gameplay evidence, not a
 production-launcher or frozen-candidate claim.
 
+The six-cell fixture-08 matrix passes from clean commit `9015857`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260813T184333Z-82e19d55389b` | `f3741fb314f4408df64fb7d91a110ae308891cb3ff349f7cda65c80d84846747` |
+| 26.1.1 Fabric | `20260813T184752Z-6181972f0b5e` | `91f59fa6815b3c7cb49d1ca29480efa937e07af286d34c2bc6762c69eb993bed` |
+| 26.1.2 Fabric | `20260813T185208Z-746d5447411a` | `2d21981ae7fd5484c3c2b30f85f176e3de87f348b4f43705173026743ae2ddb7` |
+| 26.1 NeoForge | `20260813T185449Z-26282a7c51fb` | `8e9eb8aa0590b4b8177b61b948acf57a62605f3200416854293a8a9944c3b152` |
+| 26.1.1 NeoForge | `20260813T185906Z-d67da65d189d` | `72705276f208aa7b8e412a103ce7a398808eb6384bf216260f07714e0bd4adfc` |
+| 26.1.2 NeoForge | `20260813T190435Z-9f27985cd623` | `f528d43d522c32b94f6c9095f009bbb81d419bc2cce10f739025fbaf1070296f` |
+
+Every cell passed all eight captures, both format-3 acknowledgements, normal
+disconnect and clean client teardown, reopen, and persistent map/compass state.
+
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated
 26.1 source permits no intermediary residue. `ServerLevel` entity tick
