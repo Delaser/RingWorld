@@ -520,6 +520,28 @@ Use the matching NeoForge quick run ID for a NeoForge cell. The command refuses
 a dirty/unpushed checkout, a mismatched quick record or frozen jar, and any
 pre-existing destination. It creates only a new ignored qualification run.
 
+The second concrete external slice is the existing worldgen/structure matrix,
+now driven without Gradle or a development classpath. Its pure plan and
+contract plus a bounded process runner and official-runtime executor cover
+four ordered stages: production fresh/reload in one world, a deliberate
+seam-crossing safe-small seed, and the saved terminal monument-policy seed.
+The executor installs three fresh runtimes, reuses only the production world
+for its reload, injects the existing Java fixture properties at the real
+launcher boundary, independently decodes saved settings, and parses exactly
+one matrix/monument/PASS record per stage. It cannot pass without mapping 4,
+format 3, all fourteen biome families, nonzero caves/ores/logs/structures/
+references/loot, a seam-crossing structure, both monument policy outcomes,
+and clean self-halted exits. Static fake-runtime coverage is green; real
+Fabric and NeoForge evidence is the next gate and is not claimed here.
+
+```sh
+python3 scripts/run_worldgen_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260812T170742Z-d5ff11778395
+```
+
+Use quick run `20260812T171404Z-a2d212243bb3` for the NeoForge cell.
+
 ### Phase 5 — world-upgrade qualification
 
 Create immutable source-world fixtures for each supported starting version.

@@ -409,6 +409,20 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   `1887692`; the retained run IDs and terminal-evidence hashes are recorded in
   `docs/CURRENT_STATE.md`. This qualifies Atlas recovery only, not the rest of
   the Phase 4 nightly matrix.
+- `scripts/minecraft_worldgen_qualification.py`,
+  `scripts/external_runtime_worldgen_plan.py`,
+  `scripts/external_runtime_worldgen_executor.py`, and
+  `scripts/external_runtime_worldgen_stage_runner.py`: the second concrete
+  Phase 4 external fixture. It installs three disposable official runtimes,
+  runs fresh/reload production worldgen plus seam-crossing and terminal-policy
+  seeds, independently parses dimension-owned settings and the existing
+  worldgen matrix record, and requires all biome families, structures, caves,
+  ores, loot, seam-crossing starts, monument outcomes, mapping 4, and format 3.
+  The stage process must self-halt; the runner never sends `stop`.
+- `scripts/run_worldgen_qualification.py`: clean-source operator CLI for that
+  four-stage worldgen fixture. It consumes a passed quick run and retained
+  frozen jar exactly like the Atlas CLI. Static fake-runtime tests are tooling
+  evidence only until the real Fabric and NeoForge commands pass.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit

@@ -75,6 +75,11 @@ jobs:
           scripts/test_external_runtime_atlas_recovery_executor.py
           scripts/test_external_runtime_atlas_stage_runner.py
           scripts/test_run_atlas_recovery_qualification.py
+          scripts/test_minecraft_worldgen_qualification.py
+          scripts/test_external_runtime_worldgen_plan.py
+          scripts/test_external_runtime_worldgen_executor.py
+          scripts/test_external_runtime_worldgen_stage_runner.py
+          scripts/test_run_worldgen_qualification.py
           scripts/test_qualification_static_workflow.py
 
       # Static only: no Gradle, Minecraft runtime, installer, server, network,

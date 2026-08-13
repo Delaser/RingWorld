@@ -665,7 +665,12 @@ PYTHONPATH=scripts python3 -m unittest \
   scripts/test_minecraft_atlas_recovery_persistence.py \
   scripts/test_external_runtime_atlas_recovery_plan.py \
   scripts/test_external_runtime_atlas_recovery_executor.py \
-  scripts/test_external_runtime_atlas_stage_runner.py
+  scripts/test_external_runtime_atlas_stage_runner.py \
+  scripts/test_minecraft_worldgen_qualification.py \
+  scripts/test_external_runtime_worldgen_plan.py \
+  scripts/test_external_runtime_worldgen_executor.py \
+  scripts/test_external_runtime_worldgen_stage_runner.py \
+  scripts/test_run_worldgen_qualification.py
 ```
 
 This command does not launch Minecraft or use the network. The process tests
@@ -704,6 +709,26 @@ python3 scripts/run_atlas_recovery_qualification.py \
 The analogous NeoForge proof uses `--cell 26.1-neoforge` and quick run
 `20260812T171404Z-a2d212243bb3`. These are disposable local qualification
 worlds; they do not connect to or mutate the live demo server.
+
+The production-style worldgen/structure nightly slice is:
+
+```sh
+python3 scripts/run_worldgen_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260812T170742Z-d5ff11778395
+
+python3 scripts/run_worldgen_qualification.py \
+  --cell 26.1-neoforge \
+  --quick-run-id 20260812T171404Z-a2d212243bb3
+```
+
+Each command installs three fresh official dedicated runtimes. Production
+fresh/reload alone shares a world; the seam and terminal-policy seeds are
+separate. The processes self-halt after the existing stronghold/worldgen
+fixture emits its matrix, monument, and PASS records. The executor rejects
+duplicate records, independently decodes saved settings, captures every log,
+and validates the four-stage aggregate before writing terminal evidence.
+Static tests do not substitute for these two real commands.
 
 Fresh format-3 fixtures default to `terrainNoiseMapping=4`. A deliberate copied
 legacy-world run must set `-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1`;
