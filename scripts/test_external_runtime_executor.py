@@ -124,18 +124,22 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
         def run(record, paths, *, ordinal: int):
             assert ordinal == 1
             assert plan.layout.root.is_dir()
-            assert not any(plan.layout.root.iterdir())
             if plan.loader == "fabric":
+                assert not any(plan.layout.root.iterdir())
                 assert plan.layout.fabric_server_jar is not None
                 plan.layout.fabric_server_jar.write_bytes(b"fake fabric launcher")
             else:
+                seeded_server = plan.layout.root / "server.jar"
+                assert seeded_server.read_bytes() == b"fake-mojang-server-" + plan.cell_id.encode("ascii")
                 assert plan.layout.neoforge_run_script is not None
                 assert plan.layout.neoforge_user_jvm_args is not None
                 plan.layout.neoforge_run_script.write_text("#!/bin/sh\n", encoding="utf-8")
                 plan.layout.neoforge_run_script.chmod(0o700)
                 plan.layout.neoforge_user_jvm_args.write_text("-Xmx1G\n", encoding="utf-8")
-            server_body = b"wrong-mojang-server" if wrong_mojang_server else b"fake-mojang-server-" + plan.cell_id.encode("ascii")
-            (plan.layout.root / "server.jar").write_bytes(server_body)
+            if wrong_mojang_server:
+                (plan.layout.root / "server.jar").write_bytes(b"wrong-mojang-server")
+            elif plan.loader == "fabric":
+                (plan.layout.root / "server.jar").write_bytes(b"fake-mojang-server-" + plan.cell_id.encode("ascii"))
             if extra_ringworld:
                 plan.layout.mods_directory.mkdir()
                 (plan.layout.mods_directory / "ringworld-old.jar").write_bytes(b"wrong")
