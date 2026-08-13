@@ -627,6 +627,10 @@ python3 scripts/run_gradle_atlas_ui_qualification.py --cell 26.1-fabric
 
 The source and contract are implemented; no real cross-version Atlas UI PASS
 is claimed until each cell's immutable terminal record exists.
+The fixture's build-label assertion is selected independently by Gradle from
+the active `release_label` and `mod_version`. This retains the published 1.0
+identity check for ordinary development runs while requiring each exact
+qualification cell to display its diagnostic build identity.
 
 All qualification Gradle commands set both a disposable `GRADLE_USER_HOME`
 and a cell-contained `--project-cache-dir`. The latter is mandatory for Loom:

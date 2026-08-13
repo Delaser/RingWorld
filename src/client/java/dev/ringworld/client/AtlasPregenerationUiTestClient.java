@@ -19,6 +19,7 @@ import net.minecraft.client.input.InputWithModifiers;
 /** Opt-in real-client GUI-scale-4 acceptance fixture for the player atlas map. */
 public final class AtlasPregenerationUiTestClient {
     public static final String ENABLE_PROPERTY = "ringworld.atlasUiTest";
+    public static final String EXPECTED_BUILD_LABEL_PROPERTY = "ringworld.atlasUiExpectedBuildLabel";
     private static final int SETTLE_FRAMES = 3;
     private static final double PROGRESSIVE_CAPTURE_COMPLETION = 0.25;
     private static final int TIMEOUT_TICKS = 14_400;
@@ -93,9 +94,13 @@ public final class AtlasPregenerationUiTestClient {
             case 2 -> {
                 if (!(client.screen instanceof RingWorldMapScreen screen) || !settled()) return true;
                 if (status == null) return true;
-                if (!screen.buildLabelForAutomation().equals("1.0 · 1.0.0+mc26.1.2")) {
+                String expectedBuildLabel = System.getProperty(EXPECTED_BUILD_LABEL_PROPERTY, "").trim();
+                if (expectedBuildLabel.isEmpty()) {
+                    return fail(client, "missing expected embedded build identity property");
+                }
+                if (!screen.buildLabelForAutomation().equals(expectedBuildLabel)) {
                     return fail(client, "map screen showed the wrong embedded build identity: "
-                            + screen.buildLabelForAutomation());
+                            + screen.buildLabelForAutomation() + " (expected " + expectedBuildLabel + ")");
                 }
                 if (!screen.worldgenLabelForAutomation().equals("Worldgen: annular-complete-v2 (4)")) {
                     return fail(client, "map screen showed the wrong persisted worldgen identity: "

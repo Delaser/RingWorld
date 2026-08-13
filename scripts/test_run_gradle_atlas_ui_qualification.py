@@ -100,6 +100,16 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
         self.assertIn('onboardAccessibility:false', root_block)
         self.assertIn('onboardAccessibility:false', neo_block)
 
+    def test_both_loader_runs_supply_independent_build_identity_expectation(self) -> None:
+        root_build = (ROOT / "build.gradle").read_text(encoding="utf-8")
+        neo_build = (ROOT / "neoforge/build.gradle").read_text(encoding="utf-8")
+        self.assertIn(
+            '-Dringworld.atlasUiExpectedBuildLabel=${project.release_label} · ${project.mod_version}',
+            root_build,
+        )
+        self.assertIn("'ringworld.atlasUiExpectedBuildLabel'", neo_build)
+        self.assertIn('${rootProject.release_label} · ${rootProject.mod_version}', neo_build)
+
 
 if __name__ == "__main__":
     unittest.main()
