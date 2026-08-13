@@ -668,6 +668,16 @@ using one completed mapping-4 16,384x256 source. This is useful current-code
 regression evidence, but it does not replace running the frozen candidate in
 all six cells and therefore does not close the remaining Phase 4 matrix.
 
+The next bounded source-ABI gameplay slice is
+`scripts/run_gradle_map_compass_qualification.py`. It wraps the existing real
+map/compass fixture for one exact patch cell, requiring filled-map pixels,
+both seam directions, banner and item-frame state, spawn/lodestone/recovery
+needles, normal disconnect, complete client-state teardown, reopen, and
+persistence. The fresh-profile preparers disable onboarding and NeoForge's
+optional early splash, while the shared fixture waits for the final title
+screen and keeps the integrated server ticking when unfocused. This runner is
+implemented and pure-tested but has not yet produced six real PASS records.
+
 All qualification Gradle commands set both a disposable `GRADLE_USER_HOME`
 and a cell-contained `--project-cache-dir`. The latter is mandatory for Loom:
 without it, an otherwise isolated client launch reads its launch configuration
