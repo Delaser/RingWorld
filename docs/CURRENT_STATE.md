@@ -187,7 +187,11 @@ after the Atlas fixture invoked Create World but before its player existed,
 the legacy `testMode` launcher created a second world and Fabric networking
 disconnected. The Fabric client now keeps the Atlas fixture exclusive through
 that interval and the fixture records bounded menu-screen diagnostics. No
-cross-version runtime PASS is claimed until the corrected run completes.
+cross-version runtime PASS is claimed until the corrected run completes. The
+first corrected clean-profile attempt then stopped at Minecraft's accessibility
+onboarding screen. Both loader preparers now explicitly disable only that
+first-run screen and set the fixture's intended GUI scale, matching the
+already-qualified creation UI preparer.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java
