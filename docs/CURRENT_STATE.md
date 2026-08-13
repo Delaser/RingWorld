@@ -22,7 +22,9 @@ The Phase 5 forward-upgrade implementation is now present and covered by the
 232-test static qualification workflow. Its explicit CLI only permits copied
 same-loader `26.1 -> 26.1.1`, `26.1 -> 26.1.2`, and `26.1.1 -> 26.1.2` paths,
 revalidating a passed source-worldgen record and target quick record before it
-can create a new contained target fixture. No real forward path has run yet.
+can create a new contained target fixture. All six supported real forward paths
+pass from clean pushed commit `7983b8a`; their run IDs are recorded under
+Phase 5 in `MINECRAFT_VERSION_SUPPORT_PLAN.md` and GitHub issue #173.
 Phase 6 also now has a static-tested local equivalence guard: it permits a
 proposed public jar to differ from the frozen candidate only in approved public
 metadata/version fields. No proposed public jar or equivalence record exists;

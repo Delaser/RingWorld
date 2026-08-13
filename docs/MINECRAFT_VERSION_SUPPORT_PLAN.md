@@ -4,9 +4,9 @@ Status: approved policy and active implementation. Phases 0–3 are implemented;
 the six quick cells pass with one unchanged jar per loader. Phase 4 has real
 six-cell Atlas-recovery, worldgen/structure, and creation/settings UI
 source-ABI evidence; its remaining client, gameplay, lifecycle, and rendering
-fixtures are pending. Phase 5's copied-world implementation and Phase 6's
-release-equivalence guard are static-tested only: no real forward-upgrade path,
-proposed public jar, or release-equivalence evidence has been recorded.
+fixtures are pending. Phase 5's copied-world matrix passes all six supported
+same-loader forward paths. Phase 6's release-equivalence guard is static-tested,
+but no proposed public jar or release-equivalence evidence has been recorded.
 
 ## Support model
 
@@ -690,8 +690,14 @@ The CLI permits only the three forward paths above, requires source and target
 cells to use the same loader, rechecks the retained source world and target
 candidate/evidence before runtime work, copies into a new contained target
 fixture, and fails on an existing destination. It never downgrades or mutates
-the source world. These are safety and static-contract results only until all
-six real loader/version forward paths have terminal reports.
+the source world. All six real loader/version forward paths now have terminal
+`PASS` reports from clean pushed commit `7983b8a`. Fabric runs are
+`20260813T154817Z-49a8704da644`, `20260813T154908Z-3dd32c4a02d9`, and
+`20260813T154948Z-2c59e8f287e1`; NeoForge runs are
+`20260813T155036Z-16d04362acad`, `20260813T155119Z-87e77d39455b`, and
+`20260813T155207Z-9f8bc2f81de7`. Every target was a disposable copy and
+retained the dimension-owned mapping-4, format-3 settings and production-resume
+worldgen/stronghold facts.
 
 ### Phase 6 — release qualification
 

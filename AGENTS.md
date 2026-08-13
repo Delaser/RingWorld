@@ -479,8 +479,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   copied-world forward-upgrade contract and operator CLI. They accept only
   `26.1 -> 26.1.1`, `26.1 -> 26.1.2`, or `26.1.1 -> 26.1.2` within one loader;
   revalidate source worldgen and target quick evidence; and never operate on
-  the source world. The implementation and its static workflow tests exist,
-  but no real forward path has yet run.
+  the source world. The implementation, static workflow, and all six real
+  same-loader forward paths pass; see `docs/MINECRAFT_VERSION_SUPPORT_PLAN.md`.
 - `scripts/release_candidate_equivalence.py`: Phase 6's local, semantic
   release-staging guard. It proves a proposed public loader jar differs from
   the frozen wide-range candidate only in its reviewed loader descriptor and

@@ -53,9 +53,9 @@ candidate. Do not treat its planning output as current evidence or broaden
 loader metadata before its initial six-cell matrix passes.
 
 Phase 5's forward-upgrade bridge and Phase 6's release-equivalence guard are
-included in the 232-test static qualification workflow. They validate safety
-contracts only; no real world-forward path or proposed-release equivalence has
-run. To exercise one real copied world upgrade, use only a passed source
+included in the 232-test static qualification workflow. All six supported real
+world-forward paths now pass; no proposed-release equivalence has run. To
+repeat one copied world upgrade, use only a passed source
 worldgen record and a passed later target quick record:
 
 ```sh
