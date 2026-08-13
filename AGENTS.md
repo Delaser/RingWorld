@@ -488,6 +488,12 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   release-equivalence evidence, never runtime qualification. Local
   `1.1.0+mc26.1` candidates now pass this guard against the refreshed combined
   quick candidates; they remain ignored, unstaged, and unpublished.
+- `scripts/stage_qualified_release.py`: Phase 7's no-upload staging bridge.
+  It consumes a reviewed six-cell quick run and the two equivalent public
+  candidates, then revalidates every strict record and emits one ignored
+  review directory per loader with the runtime jar, checksums, archive
+  inventory, exact source route, host metadata, changelog, and rollback data.
+  It has no token, upload, tag, deployment, or listing-mutation interface.
 - `scripts/external_graphical_creation_ui.py` and
   `scripts/run_creation_ui_qualification.py`: the first production-style
   graphical-client automation slice. It consumes the retained frozen jar and

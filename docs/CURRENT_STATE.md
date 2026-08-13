@@ -39,6 +39,15 @@ matches frozen `77389181...6f50`. Only the reviewed loader descriptor and
 candidates are not staged, uploaded, published, or yet a broadened support
 claim.
 
+Phase 7's local staging bridge is now implemented and pure/static tested. It
+requires all six strict quick records, both exact frozen hashes, and successful
+metadata-only equivalence before it can create ignored Fabric and NeoForge
+review folders. Each folder carries one candidate jar, both hashes, complete
+archive inventory, exact source URL, three proven game-version tags, generated
+Modrinth/CurseForge metadata, loader-correct Fabric API relations, changelog,
+and rollback identity. The CLI contains no host client or credential input; a
+real staging run awaits a clean pushed commit.
+
 On 2026-08-13, local current-version Gradle development regressions passed on
 both loaders: the safe-small mapping-4 map/compass and curved-rigid-object
 fixtures, safe-small production visual parity, and the copied 16,384x256
