@@ -110,6 +110,12 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
         self.assertIn("'ringworld.atlasUiExpectedBuildLabel'", neo_build)
         self.assertIn('${rootProject.release_label} · ${rootProject.mod_version}', neo_build)
 
+    def test_unattended_fixture_keeps_integrated_server_ticking(self) -> None:
+        source = (ROOT / "src/client/java/dev/ringworld/client/AtlasPregenerationUiTestClient.java").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("client.options.pauseOnLostFocus = false;", source)
+
 
 if __name__ == "__main__":
     unittest.main()
