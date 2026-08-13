@@ -118,6 +118,15 @@ Both retained mapping 4, world hash `8665210144080158345`, layout fingerprint
 `4064118068185880929`, an exact byte-identical restart checkpoint, clean
 stage exits, and self-halted only after schema-2 `COMPLETE`. This completes
 the Atlas recovery slice, not the broader Phase 4 nightly matrix.
+The next Phase 4 slice is now implemented but not yet runtime-qualified. The
+external worldgen plan/executor/process runner consumes the retained quick jar,
+installs three official disposable runtimes, and drives the existing four-pass
+production reload/seam/terminal structure matrix. Its independent settings and
+log contract requires mapping 4, format 3, all major biome families, caves,
+ores, vegetation, structures, seam-crossing starts, references, loot, both
+monument outcomes, spawn overrides, and clean self-halt. Pure and fake-runtime
+tests pass on both loader shapes; no real Fabric or NeoForge PASS is recorded
+until the clean operator commands complete.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java
