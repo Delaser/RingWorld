@@ -429,6 +429,17 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   evidence rather than escaping as an unclassified traceback. Real Fabric and
   NeoForge worldgen runs pass all six 26.1.x cells with one unchanged jar per
   loader.
+- `scripts/external_graphical_creation_ui.py` and
+  `scripts/run_creation_ui_qualification.py`: the first production-style
+  graphical-client automation slice. It consumes the retained frozen jar and
+  selected cell's strict quick evidence, verifies the reviewed Prism 11.0.3
+  macOS archive, creates a fresh account-free/offline Prism root below fixture
+  01, installs only RingWorld plus Fabric API where required, and drives the
+  existing self-halting thirteen-capture creation-settings UI fixture. It
+  requires Java 25, bounded launcher/client logs, valid PNGs, exact mod hashes,
+  zero created worlds, and immutable terminal evidence. Pure/fake-process
+  tests are not a real graphical PASS; run the CLI only on an available GUI
+  host and never point it at a normal Prism directory.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit

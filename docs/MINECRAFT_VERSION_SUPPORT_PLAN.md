@@ -555,6 +555,29 @@ candidate exists once below that quick run's 26.1 loader root; selecting a
 26.1.1 or 26.1.2 cell uses its own strict quick record while resolving that
 single reviewed candidate. Missing or duplicate candidate roots fail closed.
 
+The first graphical-client slice reuses the existing menu-only creation UI
+fixture through a fresh production-style Prism profile. It verifies one
+reviewed Prism 11.0.3 macOS archive, the exact retained RingWorld jar, Java 25,
+and Fabric API when applicable; creates no account record and launches with an
+explicit offline fixture name; and requires the existing thirteen screenshots,
+PASS marker, clean self-halt, bounded logs, exact mod inventory, and no
+`level.dat`. Its pure/fake-process tests do not qualify a real client. The
+operator command is intentionally explicit and accepts no existing Prism data
+root:
+
+```sh
+python3 scripts/run_creation_ui_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260813T072608Z-b7c68e555818 \
+  --prism-archive /absolute/path/PrismLauncher-macOS-11.0.3.zip \
+  --java /absolute/path/to/java-25/bin/java
+```
+
+The archive must have SHA-256
+`b8e06ef55ec78fceddfa9f4270b3d4d93f2606b83f70ad6a2c6dde90f2b65408`.
+NeoForge uses its matching refreshed quick run. Real cross-version graphical
+execution remains pending until this executor checkpoint is merged.
+
 ### Phase 5 — world-upgrade qualification
 
 Create immutable source-world fixtures for each supported starting version.

@@ -744,6 +744,33 @@ allows isolated natural cliffs. A real production 16,384x256 qualification
 probe observed one isolated 12-block step, a longest run of one, and average
 delta 1.199; treating that as a full map-boundary wall was a false positive.
 
+The external graphical creation-settings fixture is separate from the Gradle
+development client:
+
+```sh
+python3 scripts/run_creation_ui_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260813T072608Z-b7c68e555818 \
+  --prism-archive /absolute/path/PrismLauncher-macOS-11.0.3.zip \
+  --java /absolute/path/to/java-25/bin/java
+```
+
+It creates a fresh offline Prism root only below the new qualification cell,
+loads the exact frozen candidate and selected loader versions, and must produce
+all thirteen existing creation-UI PNG captures plus a PASS marker and clean
+exit without a world. It rejects a Prism archive whose SHA-256 is not
+`b8e06ef55ec78fceddfa9f4270b3d4d93f2606b83f70ad6a2c6dde90f2b65408`.
+The pure gate is:
+
+```sh
+PYTHONPATH=scripts python3 -m unittest \
+  scripts/test_external_graphical_creation_ui.py \
+  scripts/test_run_creation_ui_qualification.py
+```
+
+Fake Prism children and synthetic PNG headers used by that unit test are
+contract evidence only, never a graphical-client PASS.
+
 Fresh format-3 fixtures default to `terrainNoiseMapping=4`. A deliberate copied
 legacy-world run must set `-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1`;
 the NeoForge equivalent is

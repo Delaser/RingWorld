@@ -149,6 +149,14 @@ being rejected as though it were a broad seam wall. The audit now follows its
 documented intent by retaining the broad-cliff gate and a two-block average
 delta limit while allowing isolated relief. The refreshed real dual-loader
 26.1 runs above pass that corrected audit.
+The next Phase 4 slice now has a production-style graphical-client executor
+and operator CLI for the existing menu-only creation-settings fixture. It
+verifies a pinned Prism 11.0.3 macOS archive, Java 25, the retained frozen jar,
+the selected loader component and Fabric API where required; launches an
+account-free disposable Prism root; and requires all thirteen valid PNGs,
+bounded logs, the existing PASS marker, clean self-halt, exact mod hashes, and
+no created world. Pure/fake-process tests pass. No real graphical client run is
+claimed yet.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java
