@@ -1423,6 +1423,11 @@ immutable evidence record, use:
 python3 scripts/run_gradle_creation_ui_qualification.py --cell 26.1-fabric
 ```
 
+Optional `--gradle-dependency-cache` and `--gradle-distribution-zip` arguments
+follow the same external-path, checksum, isolation, and non-authoritative
+rules as the quick runner. They reduce repeated matrix downloads but never
+replace the disposable Gradle user/project caches.
+
 The equivalent `-neoforge` cell selects the NeoForge task. This proves the
 real graphical client and creation UI against that patch's exact source ABI;
 it intentionally does not claim a production launcher or frozen packaged jar.

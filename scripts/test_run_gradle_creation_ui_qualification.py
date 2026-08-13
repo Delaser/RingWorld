@@ -11,8 +11,9 @@ import unittest
 
 from minecraft_qualification_executor import ExecutedCommand
 from minecraft_qualification_model import Verdict
-from run_gradle_creation_ui_qualification import CAPTURE_PREFIXES, PASS_MARKER, ROOT, run
-from run_minecraft_qualification import SourceProvenance
+from minecraft_qualification_model import QualificationPaths
+from run_gradle_creation_ui_qualification import CAPTURE_PREFIXES, PASS_MARKER, ROOT, _command, run
+from run_minecraft_qualification import SourceProvenance, load_manifest
 
 
 RUN_ID = "20260813T120000Z-123456789abc"
@@ -79,6 +80,14 @@ class GradleCreationUiQualificationTest(unittest.TestCase):
             provenance_provider=lambda *_: self.provenance, command_executor=incomplete,
         )
         self.assertEqual(result["verdict"], "FAIL")
+
+    def test_validated_dependency_cache_reaches_command_environment(self) -> None:
+        manifest = load_manifest(self.root / "config/minecraft-version-matrix.json")
+        cell = next(item for item in manifest["cells"] if item["id"] == "26.1-fabric")
+        paths = QualificationPaths.from_cell(self.root, cell, RUN_ID)
+        cache = self.root.parent / "reviewed-read-only-cache"
+        command = _command(cell, paths, cache)
+        self.assertIn(("GRADLE_RO_DEP_CACHE", str(cache)), command.environment)
 
 
 if __name__ == "__main__":

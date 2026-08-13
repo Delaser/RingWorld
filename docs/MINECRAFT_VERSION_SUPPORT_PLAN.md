@@ -594,6 +594,11 @@ or frozen-candidate-jar test:
 python3 scripts/run_gradle_creation_ui_qualification.py --cell 26.1-fabric
 ```
 
+The runner accepts the same optional reviewed acceleration inputs as quick
+qualification: `--gradle-dependency-cache` for an existing external read-only
+modules cache and `--gradle-distribution-zip` for the exact wrapper-pinned
+Gradle archive. Neither changes evidence identity or enables offline mode.
+
 This is the repeatable cross-version GUI ABI gate. Packaged-client login stays
 separate so the matrix cannot turn a credential workaround into false release
 evidence.
