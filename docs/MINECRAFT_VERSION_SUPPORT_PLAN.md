@@ -598,6 +598,11 @@ This is the repeatable cross-version GUI ABI gate. Packaged-client login stays
 separate so the matrix cannot turn a credential workaround into false release
 evidence.
 
+All qualification Gradle commands set both a disposable `GRADLE_USER_HOME`
+and a cell-contained `--project-cache-dir`. The latter is mandatory for Loom:
+without it, an otherwise isolated client launch reads its launch configuration
+from the checkout's shared `.gradle` directory.
+
 ### Phase 5 — world-upgrade qualification
 
 Create immutable source-world fixtures for each supported starting version.

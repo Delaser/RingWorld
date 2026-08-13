@@ -419,6 +419,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   a fresh profile reaches its offline launch path. Packaged-client proof stays
   an authenticated or human release gate; never copy a user's normal Prism
   account data into qualification state.
+  Every qualification Gradle command also supplies a cell-contained
+  `--project-cache-dir`; an isolated `GRADLE_USER_HOME` alone is insufficient
+  because Loom otherwise writes launch configuration into the checkout's
+  shared `.gradle` directory.
 - `scripts/minecraft_worldgen_qualification.py`,
   `scripts/external_runtime_worldgen_plan.py`,
   `scripts/external_runtime_worldgen_executor.py`, and
