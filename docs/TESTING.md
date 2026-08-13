@@ -592,6 +592,20 @@ visibly showed `1.0 · 1.0.0+mc26.1.2` and
 `Worldgen: annular-complete-v2 (4)` without overlapping the progress fields or
 controls.
 
+For an exact 26.1.x source-ABI cell with fully isolated Gradle/build/game
+state and immutable evidence, run one graphical cell at a time:
+
+```sh
+python3 scripts/run_gradle_atlas_ui_qualification.py --cell 26.1-fabric
+```
+
+The equivalent `-neoforge` cell selects its loader task. Optional reviewed
+dependency-cache and wrapper-ZIP inputs use the same flags and restrictions as
+the creation UI runner. A PASS requires the actual integrated Minecraft
+client, exactly one disposable world, all eleven PNGs, complete Atlas state,
+and the fixture's revisioned block placement/removal terminal marker. It is
+source-ABI evidence, not a production-launcher or frozen-candidate claim.
+
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated
 26.1 source permits no intermediary residue. `ServerLevel` entity tick

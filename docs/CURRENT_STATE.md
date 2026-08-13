@@ -178,6 +178,11 @@ attempt failed closed when Mojang's library host was temporarily unreachable;
 the successful fresh retry used the reviewed external read-only dependency
 cache. This completes the settings UI/source-ABI slice, not
 frozen-candidate packaged-client proof or the broader nightly matrix.
+The matching source-ABI Atlas UI runner and pure contract are now implemented.
+It selects exact cell dependencies, isolates both Gradle caches and game
+state, and fails closed unless the existing integrated fixture creates one
+disposable world, completes all eleven captures, and reaches its revisioned
+placement/removal PASS. No cross-version runtime PASS is claimed yet.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

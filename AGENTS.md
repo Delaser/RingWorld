@@ -429,6 +429,12 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   It accepts the quick runner's optional reviewed external dependency cache
   and exact wrapper ZIP seed; both are acceleration only and never support
   evidence.
+- `scripts/run_gradle_atlas_ui_qualification.py`: matching source-ABI
+  graphical runner for nightly fixture 04. It launches the existing integrated
+  Atlas map/control workflow with exact cell dependencies, requires its eleven
+  captures, one disposable world, complete Atlas, and revisioned placement/
+  removal PASS, and records the same explicit non-production/non-frozen
+  claims. Run only one graphical cell at a time.
 - `scripts/minecraft_worldgen_qualification.py`,
   `scripts/external_runtime_worldgen_plan.py`,
   `scripts/external_runtime_worldgen_executor.py`, and
