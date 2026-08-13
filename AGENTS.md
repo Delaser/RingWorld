@@ -410,6 +410,15 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   refreshed frozen jars; retained run IDs and terminal-evidence hashes are in
   `docs/CURRENT_STATE.md`. This qualifies Atlas recovery only, not the rest of
   the Phase 4 nightly matrix.
+- `scripts/run_gradle_creation_ui_qualification.py`: pinned source-ABI
+  graphical client runner for the existing thirteen-capture creation/settings
+  fixture. It uses isolated qualification Gradle, build, and game state,
+  selects exact manifest dependencies, and writes immutable log/screenshot
+  evidence. It deliberately records `production_launcher=false` and
+  `frozen_candidate_jar=false`: official Prism requires a valid account before
+  a fresh profile reaches its offline launch path. Packaged-client proof stays
+  an authenticated or human release gate; never copy a user's normal Prism
+  account data into qualification state.
 - `scripts/minecraft_worldgen_qualification.py`,
   `scripts/external_runtime_worldgen_plan.py`,
   `scripts/external_runtime_worldgen_executor.py`, and

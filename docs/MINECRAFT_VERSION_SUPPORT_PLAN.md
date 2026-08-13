@@ -576,7 +576,27 @@ python3 scripts/run_creation_ui_qualification.py \
 The archive must have SHA-256
 `b8e06ef55ec78fceddfa9f4270b3d4d93f2606b83f70ad6a2c6dde90f2b65408`.
 NeoForge uses its matching refreshed quick run. Real cross-version graphical
-execution remains pending until this executor checkpoint is merged.
+execution through a completely fresh Prism data root is blocked before
+Minecraft starts: official Prism requires a valid Microsoft account during
+its setup wizard even when the requested launch mode is offline. Qualification
+must never copy a user's normal `accounts.json` or tokens. Keep this path as an
+explicit authenticated-disposable-profile or owner release gate.
+
+The automated source-ABI alternative is
+`scripts/run_gradle_creation_ui_qualification.py`. It drives the same real
+Minecraft client fixture using the exact manifest Minecraft/loader/API pins
+inside a new qualification cell, requires all thirteen PNG captures and the
+fixture PASS marker, rejects any created `level.dat`, and writes immutable
+terminal evidence. Its report explicitly says it is not a production launcher
+or frozen-candidate-jar test:
+
+```sh
+python3 scripts/run_gradle_creation_ui_qualification.py --cell 26.1-fabric
+```
+
+This is the repeatable cross-version GUI ABI gate. Packaged-client login stays
+separate so the matrix cannot turn a credential workaround into false release
+evidence.
 
 ### Phase 5 — world-upgrade qualification
 
