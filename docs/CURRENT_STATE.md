@@ -182,7 +182,12 @@ The matching source-ABI Atlas UI runner and pure contract are now implemented.
 It selects exact cell dependencies, isolates both Gradle caches and game
 state, and fails closed unless the existing integrated fixture creates one
 disposable world, completes all eleven captures, and reaches its revisioned
-placement/removal PASS. No cross-version runtime PASS is claimed yet.
+placement/removal PASS. Its first 26.1 Fabric run exposed a fixture-only race:
+after the Atlas fixture invoked Create World but before its player existed,
+the legacy `testMode` launcher created a second world and Fabric networking
+disconnected. The Fabric client now keeps the Atlas fixture exclusive through
+that interval and the fixture records bounded menu-screen diagnostics. No
+cross-version runtime PASS is claimed until the corrected run completes.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

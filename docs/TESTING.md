@@ -605,6 +605,10 @@ the creation UI runner. A PASS requires the actual integrated Minecraft
 client, exactly one disposable world, all eleven PNGs, complete Atlas state,
 and the fixture's revisioned block placement/removal terminal marker. It is
 source-ABI evidence, not a production-launcher or frozen-candidate claim.
+The Fabric entrypoint must return immediately while this opt-in fixture is
+enabled, even after its world-creation invocation and before `client.player`
+exists. Falling through to the older generic `testMode` launcher in that
+interval creates a second integrated world and invalidates the connection.
 
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated
