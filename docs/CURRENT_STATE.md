@@ -208,6 +208,11 @@ failing closed at the live revision probe. The unattended window still had
 server immediately after `/setblock`, so no revision could be emitted. The
 shared Atlas fixture now disables lost-focus pausing itself, independent of
 the legacy generic test launcher.
+To keep this six-client GUI matrix proportionate, its disposable world now
+uses the supported Small 2,048×128 preset (4,096 Atlas cells). Broader
+2,048×416 coverage remains in the recovery, worldgen, and gameplay fixtures;
+the Atlas UI fixture still exercises every control, renderer transition, full
+completion, and live cell-revision assertion.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

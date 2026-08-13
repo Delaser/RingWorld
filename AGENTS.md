@@ -441,6 +441,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   diagnostic identity, and the fixture must independently verify it.
   The fixture also owns `pauseOnLostFocus=false`; its final revision probe
   needs the unattended integrated server to keep ticking after the map closes.
+  Its disposable world is the supported Small 2,048×128 preset. Do not widen
+  it merely to duplicate worldgen/recovery coverage; this fixture owns Atlas
+  controls, progressive rendering, completion, and live revision behavior.
   Fabric must keep the Atlas fixture exclusive after it invokes Create World;
   before the integrated player exists, the generic `testMode` launcher must
   not race it by creating a second automated world.
