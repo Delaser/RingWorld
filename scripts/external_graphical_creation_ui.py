@@ -226,12 +226,23 @@ def _extract_prism(archive: Path, destination: Path) -> Path:
             if relative.is_absolute() or not relative.parts or any(part in {"", ".", ".."} for part in relative.parts):
                 raise GraphicalCreationUiError("Prism archive contains an unsafe path")
             mode = member.external_attr >> 16
-            if stat.S_ISLNK(mode):
-                raise GraphicalCreationUiError("Prism archive contains a symbolic link")
             target = destination.joinpath(*relative.parts)
             if not is_within(target, destination):
                 raise GraphicalCreationUiError("Prism archive member escapes destination")
-            if member.is_dir():
+            if stat.S_ISLNK(mode):
+                try:
+                    link_text = source.read(member).decode("utf-8")
+                except (UnicodeError, OSError) as error:
+                    raise GraphicalCreationUiError("Prism archive contains an invalid symbolic link") from error
+                link = PurePosixPath(link_text)
+                if link.is_absolute() or not link.parts or any(part in {"", ".", ".."} for part in link.parts):
+                    raise GraphicalCreationUiError("Prism archive symbolic link is not a contained relative target")
+                resolved_target = target.parent.joinpath(*link.parts)
+                if not is_within(resolved_target, destination):
+                    raise GraphicalCreationUiError("Prism archive symbolic link escapes destination")
+                target.parent.mkdir(parents=True, exist_ok=True)
+                target.symlink_to(link_text)
+            elif member.is_dir():
                 target.mkdir(parents=True, exist_ok=True)
             else:
                 target.parent.mkdir(parents=True, exist_ok=True)
