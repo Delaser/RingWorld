@@ -474,6 +474,19 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   evidence rather than escaping as an unclassified traceback. Real Fabric and
   NeoForge worldgen runs pass all six 26.1.x cells with one unchanged jar per
   loader.
+- `scripts/minecraft_world_upgrade_qualification.py` and
+  `scripts/run_world_upgrade_qualification.py`: Phase 5's fail-closed
+  copied-world forward-upgrade contract and operator CLI. They accept only
+  `26.1 -> 26.1.1`, `26.1 -> 26.1.2`, or `26.1.1 -> 26.1.2` within one loader;
+  revalidate source worldgen and target quick evidence; and never operate on
+  the source world. The implementation and its static workflow tests exist,
+  but no real forward path has yet run.
+- `scripts/release_candidate_equivalence.py`: Phase 6's local, semantic
+  release-staging guard. It proves a proposed public loader jar differs from
+  the frozen wide-range candidate only in its reviewed loader descriptor and
+  `ringworld-build.properties` public version/label fields. It is static
+  release-equivalence evidence, never runtime qualification; no proposed
+  public jars or equivalence records exist yet.
 - `scripts/external_graphical_creation_ui.py` and
   `scripts/run_creation_ui_qualification.py`: the first production-style
   graphical-client automation slice. It consumes the retained frozen jar and

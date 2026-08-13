@@ -52,6 +52,46 @@ smoke only for a complete loader triplet with clean provenance and one frozen
 candidate. Do not treat its planning output as current evidence or broaden
 loader metadata before its initial six-cell matrix passes.
 
+Phase 5's forward-upgrade bridge and Phase 6's release-equivalence guard are
+included in the 232-test static qualification workflow. They validate safety
+contracts only; no real world-forward path or proposed-release equivalence has
+run. To exercise one real copied world upgrade, use only a passed source
+worldgen record and a passed later target quick record:
+
+```sh
+python3 scripts/run_world_upgrade_qualification.py \
+  --source-cell 26.1-fabric \
+  --source-worldgen-run-id <passed-source-worldgen-run-id> \
+  --target-cell 26.1.1-fabric \
+  --target-quick-run-id <passed-target-quick-run-id>
+```
+
+The CLI accepts only 26.1 -> 26.1.1, 26.1 -> 26.1.2, and 26.1.1 -> 26.1.2 for
+one loader. It creates a copied contained target world and refuses downgrades,
+cross-loader paths, missing evidence, or an existing destination. For staged
+release identity only (not runtime proof), run:
+
+```sh
+python3 scripts/release_candidate_equivalence.py \
+  <frozen-qualification.jar> <proposed-public.jar> \
+  --loader fabric --release-version <version> --release-label <label>
+```
+
+It accepts only approved descriptor/build-property differences and rejects
+every other archive-byte change. Do not treat a PASS as upload, publication,
+or a replacement for the frozen six-cell runtime matrix.
+
+### Current 26.1.2 local graphical regressions
+
+On 2026-08-13, current-version Gradle development fixtures passed separately
+on Fabric and NeoForge: map/compass seam and persistence coverage,
+curved-rigid-object rendering, and safe-small mapping-4 production visual
+parity. The last gate recorded Fabric 707 frames at 10.086 ms average and
+41.917 ms maximum, with zero frames over 50 ms; NeoForge recorded 681 frames
+at 10.554 ms average and 28.958 ms maximum, also with zero over 50 ms. These
+are useful local regressions only: they used Gradle dev runtime paths and do
+not constitute frozen-candidate, six-cell, package, or release evidence.
+
 The Phase 1 pinned matrix and pure validator are implemented. They retain
 26.1/26.1.1 as `pending` cells despite exact Fabric inputs and pinned NeoForge
 beta trial inputs, and reject promoting those cells without qualification

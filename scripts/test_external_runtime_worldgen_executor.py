@@ -21,7 +21,12 @@ from external_runtime_atlas_recovery_plan import QuickTerminalEvidenceInput  # n
 from external_runtime_executor import ExecutedCommand  # noqa: E402
 from external_runtime_smoke import CandidateJar, RuntimeDownload  # noqa: E402
 from external_runtime_worldgen_executor import execute_external_runtime_worldgen  # noqa: E402
-from external_runtime_worldgen_plan import external_runtime_worldgen_plan  # noqa: E402
+from external_runtime_worldgen_executor import (  # noqa: E402
+    ForwardUpgradeSource, execute_external_runtime_forward_upgrade,
+)
+from external_runtime_worldgen_plan import (  # noqa: E402
+    external_runtime_worldgen_plan, external_runtime_worldgen_resume_stage,
+)
 from external_runtime_worldgen_stage_runner import (  # noqa: E402
     ExternalRuntimeWorldgenStageError, ExternalRuntimeWorldgenStageObservation,
     WorldgenStageMarkerEvent,
@@ -235,6 +240,88 @@ class ExternalRuntimeWorldgenExecutorTest(unittest.TestCase):
             terminal = json.loads((plan.evidence_root / "terminal.json").read_text(encoding="utf-8"))
             self.assertEqual("FAIL", terminal["verdict"])
             self.assertEqual(result.reason, terminal["reason"])
+
+    def test_forward_upgrade_copies_only_source_world_and_runs_existing_resume_stage_under_fakes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            paths, base_plan, bodies, server = self.make_plan(root, "26.1.1-fabric")
+            cell = self.cells["26.1.1-fabric"]
+            fixture = paths.run_directory / "nightly/05-world-upgrade"
+            evidence = paths.evidence_directory / "nightly/05-world-upgrade"
+            stage = external_runtime_worldgen_resume_stage(
+                cell, base_plan.candidate, paths, frozen_candidate_root=base_plan.frozen_candidate_root,
+                fixture_root=fixture, evidence_root=evidence,
+            )
+            # Reuse the fake official-runtime inventory already used by the
+            # ordinary worldgen executor test.
+            production = base_plan.stages[0].smoke
+            stage = replace(stage, smoke=replace(
+                stage.smoke, minecraft_server=production.minecraft_server,
+                downloads=production.downloads,
+                mods=(stage.smoke.mods[0], replace(
+                    stage.smoke.mods[1], source=production.mods[1].source, sha256=production.mods[1].sha256,
+                )),
+            ))
+            source_root = root / "source/26.1-fabric"
+            source_world = source_root / "run/nightly/02-worldgen-seam-structures/production/runtime/world"
+            settings = source_world / "dimensions/minecraft/overworld/data/ringworld/settings.dat"
+            settings.parent.mkdir(parents=True)
+            settings.write_bytes(settings_bytes(256, 16384, 11))
+            raw = (
+                "Done (0.1s)!\n"
+                "[worldgen-matrix] seed=11 layout=16384x256 biomeFamilies=[badlands, beach, cave, desert, forest] "
+                "biomeIds=[minecraft:plains] chunks=10 caveAir=1 ores=1 logs=1 starts=1 "
+                "structureIds=[minecraft:village] crossingStarts=0 crossingStructureIds=[] references=1 lootContainers=1 "
+                "structuresWithSpawnOverrides=0 spawnOverrideStructureIds=[]\n"
+                "[worldgen-matrix] monumentStatus=SATISFIED monumentReason=reason monumentCandidate=0,0 spawnOverrideEntries=0\n"
+                "[stronghold-test] PASS\n"
+            ).encode()
+            source_evidence = source_root / "evidence/nightly/02-worldgen-seam-structures"
+            source_evidence.mkdir(parents=True)
+            source_log = source_evidence / "production-resume.log"
+            source_log.write_bytes(raw)
+            terminal = source_evidence / "terminal.json"
+            terminal.write_text(json.dumps({
+                "fixture": "worldgen-seam-structures", "cell_id": "26.1-fabric", "loader": "fabric",
+                "minecraft_version": "26.1", "verdict": "PASS", "qualification": {
+                    "frozenCandidateSha256": base_plan.candidate.sha256,
+                    "stages": ["production-fresh", "production-resume", "seam-crossing", "terminal-policy"],
+                    "captures": {"production-resume": {"logSha256": sha256(raw)}},
+                },
+                "assemblies": [{"runtimeRoot": str(source_world.parent)}],
+            }), encoding="utf-8")
+            source = ForwardUpgradeSource(
+                "26.1-fabric", "fabric", "26.1", source_root, terminal, sha256(terminal.read_bytes()),
+                source_world, source_log, sha256(raw),
+            )
+            fake_plan = type("ResumeOnly", (), {"stages": (stage,)})()
+            result = execute_external_runtime_forward_upgrade(
+                source, cell, base_plan.candidate, base_plan.quick_terminal_evidence, stage, paths, paths.run_id,
+                frozen_candidate_root=base_plan.frozen_candidate_root, quick_evidence_root=paths.cell_root,
+                fixture_root=fixture, evidence_root=evidence, canonical_cells=canonical_cells(), range_identities=RANGES,
+                opener=lambda url, *, timeout: Response(url, bodies[url]), command_executor=self.installer(fake_plan, server),
+                stage_runner=self.stage_runner(fake_plan), candidate_inspector=self.inspector(base_plan),
+                execution_source_provenance=PROVENANCE,
+            )
+            self.assertEqual(Verdict.PASS, result.verdict, result.reason)
+            self.assertTrue((stage.world_root / "dimensions/minecraft/overworld/data/ringworld/settings.dat").is_file())
+            terminal_result = json.loads((evidence / "terminal.json").read_text(encoding="utf-8"))
+            self.assertEqual("PASS", terminal_result["verdict"])
+            self.assertEqual("26.1-fabric", terminal_result["source_cell_id"])
+
+    def test_forward_upgrade_rejects_intermediate_source_world_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_root = root / "source"
+            outside = root / "outside"
+            outside.mkdir()
+            (outside / "world").mkdir()
+            source_root.mkdir()
+            (source_root / "linked").symlink_to(outside, target_is_directory=True)
+            from external_runtime_worldgen_executor import _regular_tree
+            with self.assertRaisesRegex(Exception, "contained regular directory|symlink"):
+                _regular_tree(source_root / "linked/world", source_root,
+                              "source upgrade world")
 
 
 if __name__ == "__main__":

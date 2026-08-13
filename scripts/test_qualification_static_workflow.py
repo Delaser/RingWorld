@@ -42,6 +42,9 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
             "test_external_runtime_worldgen_executor.py",
             "test_external_runtime_worldgen_stage_runner.py",
             "test_run_worldgen_qualification.py",
+            "test_minecraft_world_upgrade_qualification.py",
+            "test_run_world_upgrade_qualification.py",
+            "test_release_candidate_equivalence.py",
             "test_external_graphical_creation_ui.py",
             "test_run_creation_ui_qualification.py",
         ):

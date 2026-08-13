@@ -18,6 +18,24 @@ tiers, evidence contract, and intake order are defined in
 Existing 26.1.2 release evidence remains exact historical evidence and is not
 silently generalized to the rest of the patch line.
 
+The Phase 5 forward-upgrade implementation is now present and covered by the
+232-test static qualification workflow. Its explicit CLI only permits copied
+same-loader `26.1 -> 26.1.1`, `26.1 -> 26.1.2`, and `26.1.1 -> 26.1.2` paths,
+revalidating a passed source-worldgen record and target quick record before it
+can create a new contained target fixture. No real forward path has run yet.
+Phase 6 also now has a static-tested local equivalence guard: it permits a
+proposed public jar to differ from the frozen candidate only in approved public
+metadata/version fields. No proposed public jar or equivalence record exists;
+neither implementation broadens supported-version or release claims.
+
+On 2026-08-13, local current-version Gradle development regressions passed on
+both loaders: the safe-small mapping-4 map/compass and curved-rigid-object
+fixtures, plus safe-small production visual parity. Visual-parity seam windows
+recorded Fabric 707 frames (10.086 ms average, 41.917 ms maximum, zero over
+50 ms) and NeoForge 681 frames (10.554 ms average, 28.958 ms maximum, zero
+over 50 ms). These are local Gradle dev-runtime regressions, not frozen-jar
+six-cell qualification or release evidence.
+
 Phase 0 is tracked by GitHub epic #168 and its Phase 1–10 child issues. Phase 1
 now has a fail-closed six-cell manifest and eighteen pure validator tests. The
 26.1.2 Fabric and NeoForge cells contain their immutable published hashes;
