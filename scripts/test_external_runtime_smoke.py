@@ -14,6 +14,11 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def load(name: str, path: Path):
+    # Reuse an already imported shared module when unittest discovery runs the
+    # whole scripts directory. Replacing it creates a second InvocationError
+    # class and makes later assertRaises checks depend on test order.
+    if name in sys.modules:
+        return sys.modules[name]
     spec = importlib.util.spec_from_file_location(name, path)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)

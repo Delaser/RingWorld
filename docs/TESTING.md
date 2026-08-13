@@ -1442,6 +1442,13 @@ Overworld → Nether → Overworld → End → Overworld, saved and
 disconnected normally, proved client/GPU state clear, and reopened the same
 world with its exact format-3 fingerprint and complete Atlas restored.
 
+On 2026-08-13 the current mapping-4 16,384x256 source passed this gate again
+on Fabric and NeoForge. The gate now waits, within the existing bounded stage
+timeout, for the complete identity-bearing Atlas after reopen. A production
+Atlas is streamed in 256 tiles, so a fixed 20-tick sample could otherwise
+mistake an ordinary partial download for persistence failure even while the
+server had loaded and begun streaming the complete saved Atlas.
+
 The test client controls its integrated server directly through the Minecraft
 26.1 `TeleportTransition` API. After
 an initial Overworld-to-Nether setup move, the asserted sequence is Nether →

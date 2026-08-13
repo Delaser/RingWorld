@@ -45,10 +45,15 @@ RUNNER_PATH = ROOT / "scripts" / "run_minecraft_qualification.py"
 
 
 def load(name: str, path: Path):
+    # Keep one shared module identity under broad unittest discovery. Reloading
+    # the model here would create incompatible copies of its exception and
+    # dataclass types for tests imported earlier in the same process.
+    import sys
+    if name in sys.modules:
+        return sys.modules[name]
     spec = importlib.util.spec_from_file_location(name, path)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
-    import sys
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module

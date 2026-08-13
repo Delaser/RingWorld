@@ -22,6 +22,11 @@ if str(SCRIPTS) not in sys.path:
 
 
 def load(name: str, path: Path):
+    # Full-suite discovery may have imported the shared qualification model
+    # already. Preserve that module identity so exception/dataclass contracts
+    # do not change according to test order.
+    if name in sys.modules:
+        return sys.modules[name]
     spec = importlib.util.spec_from_file_location(name, path)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
