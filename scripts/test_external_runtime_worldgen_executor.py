@@ -22,7 +22,10 @@ from external_runtime_executor import ExecutedCommand  # noqa: E402
 from external_runtime_smoke import CandidateJar, RuntimeDownload  # noqa: E402
 from external_runtime_worldgen_executor import execute_external_runtime_worldgen  # noqa: E402
 from external_runtime_worldgen_plan import external_runtime_worldgen_plan  # noqa: E402
-from external_runtime_worldgen_stage_runner import ExternalRuntimeWorldgenStageObservation, WorldgenStageMarkerEvent  # noqa: E402
+from external_runtime_worldgen_stage_runner import (  # noqa: E402
+    ExternalRuntimeWorldgenStageError, ExternalRuntimeWorldgenStageObservation,
+    WorldgenStageMarkerEvent,
+)
 from minecraft_frozen_candidate import FrozenCandidateInspection  # noqa: E402
 from minecraft_qualification_model import QualificationPaths, Verdict  # noqa: E402
 from test_minecraft_qualification_evidence import RANGES, canonical_cells, passing_record  # noqa: E402
@@ -213,6 +216,25 @@ class ExternalRuntimeWorldgenExecutorTest(unittest.TestCase):
                 terminal = json.loads((plan.evidence_root / "terminal.json").read_text(encoding="utf-8"))
                 self.assertEqual(plan.candidate.sha256, terminal["qualification"]["frozenCandidateSha256"])
                 self.assertEqual(4, len(terminal["qualification"]["stages"]))
+
+    def test_stage_process_failure_records_terminal_fail_instead_of_escaping(self):
+        with tempfile.TemporaryDirectory() as directory:
+            paths, plan, bodies, server = self.make_plan(Path(directory), "26.1-fabric")
+
+            def fail_stage(*_args, **_kwargs):
+                raise ExternalRuntimeWorldgenStageError("fixture child exited before PASS")
+
+            result = execute_external_runtime_worldgen(
+                plan, paths, paths.run_id, canonical_cells=canonical_cells(), range_identities=RANGES,
+                opener=lambda url, *, timeout: Response(url, bodies[url]),
+                command_executor=self.installer(plan, server), stage_runner=fail_stage,
+                candidate_inspector=self.inspector(plan), execution_source_provenance=PROVENANCE,
+            )
+            self.assertEqual(Verdict.FAIL, result.verdict)
+            self.assertEqual("WORLDGEN_STAGE:fixture child exited before PASS", result.reason)
+            terminal = json.loads((plan.evidence_root / "terminal.json").read_text(encoding="utf-8"))
+            self.assertEqual("FAIL", terminal["verdict"])
+            self.assertEqual(result.reason, terminal["reason"])
 
 
 if __name__ == "__main__":

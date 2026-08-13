@@ -25,6 +25,7 @@ from external_runtime_executor import (
 )
 from external_runtime_worldgen_plan import ExternalRuntimeWorldgenPlan, WorldgenStagePlan
 from external_runtime_worldgen_stage_runner import (
+    ExternalRuntimeWorldgenStageError,
     ExternalRuntimeWorldgenStageObservation, ExternalRuntimeWorldgenStagePlan,
     WorldgenSemanticMarker, run_external_runtime_worldgen_stage,
 )
@@ -292,10 +293,16 @@ def execute_external_runtime_worldgen(
                 assemblies.append(unique[stage.runtime_root])
         stages: list[WorldgenStageEvidence] = []
         for stage in plan.stages:
-            observation = stage_runner(
-                _stage_process_plan(stage), cell_root=paths.cell_root,
-                logs_directory=paths.logs_directory,
-            )
+            try:
+                observation = stage_runner(
+                    _stage_process_plan(stage), cell_root=paths.cell_root,
+                    logs_directory=paths.logs_directory,
+                )
+            except ExternalRuntimeWorldgenStageError as error:
+                return _record(ExternalWorldgenResult(
+                    plan.cell_id, plan.loader, plan.minecraft_version, Verdict.FAIL,
+                    "WORLDGEN_STAGE:" + str(error), tuple(assemblies), None, None,
+                ), plan)
             stages.append(_parse_one_stage(stage, observation, plan, paths))
         identity = QualificationIdentity(
             plan.cell_id, plan.loader, plan.minecraft_version,

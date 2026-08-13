@@ -133,6 +133,40 @@ def _quick_run_id(value: str) -> str:
     return value
 
 
+def _frozen_candidate_quick_paths(
+    repository_root: Path,
+    manifest: Mapping[str, Any],
+    selected_cell: Mapping[str, Any],
+    quick_run_id: str,
+) -> QualificationPaths:
+    """Locate the one loader-triplet root that owns the retained candidate.
+
+    Quick evidence is stored below every selected patch cell, but the actual
+    same-file candidate is deliberately retained only once below the oldest
+    ABI cell.  Do not assume that a patch cell owns a duplicate jar, and do
+    not search arbitrary qualification state: enumerate only canonical cells
+    from the reviewed manifest and fail closed on zero or multiple matches.
+    """
+    cells = manifest.get("cells")
+    loader = selected_cell.get("loader")
+    if not isinstance(cells, Sequence) or isinstance(cells, (str, bytes)) \
+            or loader not in {"fabric", "neoforge"}:
+        raise AtlasRecoveryInvocationError("reviewed manifest cannot locate the frozen candidate owner")
+    matches: list[QualificationPaths] = []
+    for candidate_cell in cells:
+        if not isinstance(candidate_cell, Mapping) or candidate_cell.get("loader") != loader:
+            continue
+        paths = QualificationPaths.from_cell(repository_root, candidate_cell, quick_run_id)
+        candidate = paths.run_root / f"frozen-candidates/{loader}/ringworld-qualification.jar"
+        if candidate.exists():
+            matches.append(paths)
+    if len(matches) != 1:
+        raise AtlasRecoveryInvocationError(
+            "quick run must retain exactly one loader-wide frozen candidate"
+        )
+    return matches[0]
+
+
 def _quick_terminal_input(
     path: Path,
     quick_paths: QualificationPaths,
@@ -198,15 +232,18 @@ def prepare_invocation(
     loader = cell.get("loader")
     if loader not in {"fabric", "neoforge"}:
         raise AtlasRecoveryInvocationError("selected cell has an unsupported loader")
-    frozen_candidate_root = quick_paths.run_root / "frozen-candidates"
+    candidate_quick_paths = _frozen_candidate_quick_paths(
+        repository_root, manifest, cell, quick_paths.run_id,
+    )
+    frozen_candidate_root = candidate_quick_paths.run_root / "frozen-candidates"
     candidate_path = frozen_candidate_root / loader / "ringworld-qualification.jar"
-    _sha256_regular(candidate_path, quick_paths.run_root, "retained frozen candidate")
+    _sha256_regular(candidate_path, candidate_quick_paths.run_root, "retained frozen candidate")
     try:
         inspection = candidate_inspector(candidate_path, loader)
     except (OSError, ValueError) as error:
         raise AtlasRecoveryInvocationError("retained frozen candidate failed inspection") from error
     if inspection.loader != loader or inspection.sha256 != _sha256_regular(
-            candidate_path, quick_paths.run_root, "retained frozen candidate"):
+            candidate_path, candidate_quick_paths.run_root, "retained frozen candidate"):
         raise AtlasRecoveryInvocationError("retained frozen candidate inspection disagrees with its bytes")
     candidate = CandidateJar(candidate_path, inspection.sha256, loader, inspection.minecraft_range)
     canonical = canonical_cells_from_manifest(tuple(item for item in manifest["cells"] if isinstance(item, Mapping)))

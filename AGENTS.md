@@ -342,12 +342,12 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   `--gradle-distribution-zip`; the runner rehashes it and exclusively copies it
   into each fresh cell's wrapper store without creating Gradle's `.ok` marker
   or bypassing wrapper verification.
-  Fabric quick run `20260812T170742Z-d5ff11778395` passes 26.1, 26.1.1, and
-  26.1.2 with one unchanged frozen jar
-  (`e1254b38cf811e7c68382c4ecc025dbede8b5effca54993e5bd403716bff5f39`).
-  NeoForge quick run `20260812T171404Z-a2d212243bb3` also passes all three
-  versions with one unchanged frozen jar
-  (`c264b1d389ef3e341e4bd7318c89b4c819568c114c811867c239ecbf9d6f8e2f`).
+  Refreshed Fabric quick run `20260813T072608Z-b7c68e555818` passes 26.1,
+  26.1.1, and 26.1.2 with one unchanged frozen jar
+  (`d7a66942e275fb3fab9386230293bb5fee21adaa3f5eeecfc61b9f8a205c8296`).
+  Refreshed NeoForge quick run `20260813T080722Z-377cfb994c93` also passes all
+  three versions with one unchanged frozen jar
+  (`53558ed53bfe73e856710b8fafe60cf81e353e1fde19d43782ebd2f7843d7314`).
   These are dedicated-server quick evidence only; the Phase 4 nightly
   gameplay/rendering matrix remains pending.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
@@ -421,8 +421,13 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   The stage process must self-halt; the runner never sends `stop`.
 - `scripts/run_worldgen_qualification.py`: clean-source operator CLI for that
   four-stage worldgen fixture. It consumes a passed quick run and retained
-  frozen jar exactly like the Atlas CLI. Static fake-runtime tests are tooling
-  evidence only until the real Fabric and NeoForge commands pass.
+  frozen jar exactly like the Atlas CLI. Patch-cell evidence remains in the
+  selected patch directory, while both nightly CLIs locate exactly one shared
+  loader candidate below the reviewed quick run's oldest-ABI cell and reject
+  zero or duplicate candidates. Stage-process failures write terminal `FAIL`
+  evidence rather than escaping as an unclassified traceback. Real Fabric and
+  NeoForge 26.1 worldgen runs pass; the remaining patch-cell executions are
+  still required before this fixture is complete across the line.
 - `scripts/external_runtime_executor.py`: isolated external-server executor for
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit

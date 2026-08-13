@@ -35,14 +35,16 @@ NEW_RUN = "20260812T180000Z-abcdef123456"
 
 
 class AtlasRecoveryCliTest(unittest.TestCase):
-    def _repository(self, root: Path) -> tuple[dict, Path, Path]:
+    def _repository(self, root: Path, cell_id: str = "26.1-fabric") -> tuple[dict, Path, Path]:
         (root / "config").mkdir()
         manifest_path = root / "config/minecraft-version-matrix.json"
         shutil.copy2(ROOT / "config/minecraft-version-matrix.json", manifest_path)
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-        cell = next(item for item in manifest["cells"] if item["id"] == "26.1-fabric")
+        cell = next(item for item in manifest["cells"] if item["id"] == cell_id)
         quick = QualificationPaths.from_cell(root, cell, QUICK_RUN)
-        candidate = quick.run_root / "frozen-candidates/fabric/ringworld-qualification.jar"
+        oldest = next(item for item in manifest["cells"] if item["id"] == "26.1-fabric")
+        candidate_owner = QualificationPaths.from_cell(root, oldest, QUICK_RUN)
+        candidate = candidate_owner.run_root / "frozen-candidates/fabric/ringworld-qualification.jar"
         candidate.parent.mkdir(parents=True)
         candidate.write_bytes(b"test-frozen-candidate")
         digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
@@ -92,6 +94,32 @@ class AtlasRecoveryCliTest(unittest.TestCase):
             self.assertEqual(NEW_RUN, prepared.paths.run_id)
             self.assertEqual("d" * 40, prepared.source_provenance["commit"])
             self.assertEqual("d" * 40, prepared.source_provenance["upstream"])
+
+    def test_patch_cell_uses_one_oldest_abi_candidate_and_its_own_quick_record(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cell, manifest, candidate_path = self._repository(root, "26.1.2-fabric")
+            prepared = prepare_invocation(
+                repository_root=root, manifest_path=manifest, cell_id=cell["id"], quick_run_id=QUICK_RUN,
+                run_id=NEW_RUN, provenance_provider=self._provenance, candidate_inspector=self._inspection,
+            )
+            self.assertEqual(candidate_path, prepared.candidate.path)
+            self.assertEqual("26.1.2-fabric", prepared.quick_paths.cell_id)
+            self.assertEqual("26.1.2-fabric", prepared.paths.cell_id)
+
+    def test_duplicate_loader_candidate_roots_fail_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cell, manifest, candidate_path = self._repository(root, "26.1.1-fabric")
+            duplicate_owner = QualificationPaths.from_cell(root, cell, QUICK_RUN)
+            duplicate = duplicate_owner.run_root / "frozen-candidates/fabric/ringworld-qualification.jar"
+            duplicate.parent.mkdir(parents=True)
+            duplicate.write_bytes(candidate_path.read_bytes())
+            with self.assertRaisesRegex(AtlasRecoveryInvocationError, "exactly one"):
+                prepare_invocation(
+                    repository_root=root, manifest_path=manifest, cell_id=cell["id"], quick_run_id=QUICK_RUN,
+                    run_id=NEW_RUN, provenance_provider=self._provenance, candidate_inspector=self._inspection,
+                )
 
     def test_invalid_quick_record_stops_before_current_source_or_executor(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
