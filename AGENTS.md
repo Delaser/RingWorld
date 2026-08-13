@@ -444,6 +444,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   Its disposable world is the supported Small 2,048×128 preset. Do not widen
   it merely to duplicate worldgen/recovery coverage; this fixture owns Atlas
   controls, progressive rendering, completion, and live revision behavior.
+  The six-cell 26.1.x Fabric/NeoForge source-ABI matrix passes from clean
+  commit `7a7c044`; exact run IDs and terminal hashes are recorded in
+  `docs/TESTING.md`. This closes fixture 04 only and is not packaged-client or
+  frozen-candidate evidence.
   Fabric must keep the Atlas fixture exclusive after it invokes Create World;
   before the integrated player exists, the generic `testMode` launcher must
   not race it by creating a second automated world.

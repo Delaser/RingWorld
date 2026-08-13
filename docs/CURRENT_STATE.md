@@ -213,6 +213,21 @@ uses the supported Small 2,048×128 preset (4,096 Atlas cells). Broader
 2,048×416 coverage remains in the recovery, worldgen, and gameplay fixtures;
 the Atlas UI fixture still exercises every control, renderer transition, full
 completion, and live cell-revision assertion.
+The corrected source-ABI Atlas UI gate now passes all six 26.1.x cells from
+clean pushed commit `7a7c0449277dbb0be464b1fb972d77044132a1e6`. Fabric
+runs are 26.1 `20260813T123311Z-a3ad7b5b5a58`
+(`f3f9cc08...aace`), 26.1.1 `20260813T124040Z-0d2aec6c29f2`
+(`40c9a245...add1`), and 26.1.2 `20260813T124816Z-bd3475d1bf21`
+(`7305feb1...6fe0`). NeoForge runs are 26.1
+`20260813T125559Z-789f027ffe4b` (`035c2c69...4a30`), 26.1.1
+`20260813T131059Z-721b4de15471` (`5b9248de...55d9`), and 26.1.2
+`20260813T132720Z-47169a2c9167` (`3b450310...079e`). Parenthesized values
+are terminal-evidence SHA-256 prefixes/suffixes. Every cell launched the
+actual patch-specific client and integrated server, created one disposable
+world, produced all eleven captures, completed all 4,096 cells, and passed
+pause/resume/cancel/retry plus ordered placement/removal revisions. This
+closes nightly fixture 04 as source-ABI graphical evidence; it is not a
+production-launcher or frozen-client-package claim.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

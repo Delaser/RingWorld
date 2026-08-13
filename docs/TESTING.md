@@ -630,6 +630,23 @@ completion, and revision assertion while avoiding repeated generation of the
 broader 2,048×416 world already covered by recovery, worldgen, and gameplay
 fixtures.
 
+The six-cell source-ABI Atlas UI matrix passed from clean pushed commit
+`7a7c0449277dbb0be464b1fb972d77044132a1e6`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260813T123311Z-a3ad7b5b5a58` | `f3f9cc087c63ba407899e4e8612664483fdbd4dfe627d0e9320d30c0b758aace` |
+| 26.1.1 Fabric | `20260813T124040Z-0d2aec6c29f2` | `40c9a245368535c5221754fb901a4338dfe4bf8d7d29a02e0a85e57e06bbadd1` |
+| 26.1.2 Fabric | `20260813T124816Z-bd3475d1bf21` | `7305feb1a022c0a51ee707dd53697a236b3536ca3b3dddde583116469f3d6fe0` |
+| 26.1 NeoForge | `20260813T125559Z-789f027ffe4b` | `035c2c6945190ad98810a7c7b424c887e7da1e228774052287545dd644844a30` |
+| 26.1.1 NeoForge | `20260813T131059Z-721b4de15471` | `5b9248de4fde614251b5d7701d078b21ae267feed8ef755136c97b038ea055d9` |
+| 26.1.2 NeoForge | `20260813T132720Z-47169a2c9167` | `3b450310365cefbb6c506de9df5200bd2d46f9f36c07fdd84901608ef0bc079e` |
+
+These records prove exact patch dependency/client ABI, one disposable
+integrated-server world, eleven captures, complete Atlas controls, and live
+revision behavior. They deliberately do not claim a production launcher or
+the frozen candidate jar.
+
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated
 26.1 source permits no intermediary residue. `ServerLevel` entity tick
