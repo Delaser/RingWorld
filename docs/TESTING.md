@@ -615,6 +615,11 @@ The Fabric entrypoint must return immediately while this opt-in fixture is
 enabled, even after its world-creation invocation and before `client.player`
 exists. Falling through to the older generic `testMode` launcher in that
 interval creates a second integrated world and invalidates the connection.
+The Atlas screen build label is not hard-coded in the client fixture. Each
+loader run passes an expected label assembled independently from Gradle's
+selected `release_label` and `mod_version`; a qualification cell therefore
+must show its exact diagnostic identity, while the ordinary release run must
+still show the published identity.
 
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated

@@ -195,6 +195,13 @@ already-qualified creation UI preparer. The next clean run proved one further
 startup ordering requirement: Minecraft's temporary `GenericMessageScreen`
 can supersede an editor opened before the final title screen. The shared
 fixture now waits for `TitleScreen` before invoking `openFresh`.
+The next run reached the Atlas screen and correctly failed its former
+hard-coded published-build assertion: exact qualification cells intentionally
+embed `qualification-<cell> · 0.0.0-qualification+mc<version>`. Both loader
+run definitions now pass that independently constructed expected label into
+the client fixture. The screen must match the selected cell's embedded
+identity; the ordinary 26.1.2 development run continues to expect
+`1.0 · 1.0.0+mc26.1.2`.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

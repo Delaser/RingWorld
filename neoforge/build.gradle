@@ -80,6 +80,8 @@ neoForge {
             client()
             gameDirectory = qualificationRunFile('run-atlas-ui')
             systemProperty 'ringworld.atlasUiTest', 'true'
+            systemProperty 'ringworld.atlasUiExpectedBuildLabel',
+                    "${rootProject.release_label} · ${rootProject.mod_version}"
             programArgument '--username'
             programArgument 'AtlasUiTester'
         }

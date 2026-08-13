@@ -292,6 +292,7 @@ loom {
 			name "RingWorld Atlas UI Regression"
 			runDir qualificationRunDirectory("run-atlas-ui")
 			vmArg "-Dringworld.atlasUiTest=true"
+			vmArg "-Dringworld.atlasUiExpectedBuildLabel=${project.release_label} · ${project.mod_version}"
 			// Minecraft login names are limited to 16 characters.
 			programArgs "--username", "AtlasUiTester"
 		}

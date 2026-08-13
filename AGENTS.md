@@ -435,6 +435,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   captures, one disposable world, complete Atlas, and revisioned placement/
   removal PASS, and records the same explicit non-production/non-frozen
   claims. Run only one graphical cell at a time.
+  Each loader run must supply `ringworld.atlasUiExpectedBuildLabel` from its
+  selected Gradle release label and artifact version. Do not restore a
+  hard-coded published label: qualification builds deliberately use a
+  diagnostic identity, and the fixture must independently verify it.
   Fabric must keep the Atlas fixture exclusive after it invokes Create World;
   before the integrated player exists, the generic `testMode` launcher must
   not race it by creating a second automated world.
