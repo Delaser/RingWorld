@@ -620,6 +620,10 @@ loader run passes an expected label assembled independently from Gradle's
 selected `release_label` and `mod_version`; a qualification cell therefore
 must show its exact diagnostic identity, while the ordinary release run must
 still show the published identity.
+The fixture itself must set `client.options.pauseOnLostFocus = false`. Its
+final revision probe closes the map and issues real server commands; an
+unfocused automated window would otherwise pause the integrated server after
+the first command and eventually time out despite a complete Atlas.
 
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated

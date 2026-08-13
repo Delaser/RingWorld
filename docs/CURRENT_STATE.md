@@ -202,6 +202,12 @@ run definitions now pass that independently constructed expected label into
 the client fixture. The screen must match the selected cell's embedded
 identity; the ordinary 26.1.2 development run continues to expect
 `1.0 · 1.0.0+mc26.1.2`.
+That corrected run then completed the Atlas and all eleven captures before
+failing closed at the live revision probe. The unattended window still had
+`pauseOnLostFocus:true`; closing the final map screen paused the integrated
+server immediately after `/setblock`, so no revision could be emitted. The
+shared Atlas fixture now disables lost-focus pausing itself, independent of
+the legacy generic test launcher.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

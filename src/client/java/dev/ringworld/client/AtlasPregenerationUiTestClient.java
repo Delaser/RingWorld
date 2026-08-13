@@ -47,7 +47,12 @@ public final class AtlasPregenerationUiTestClient {
      * fixture. The map assertion itself never creates a second generation job.
      */
     public boolean startWorldIfEnabled(Minecraft client) {
-        if (!enabled() || client.level != null || worldStarted) return false;
+        if (!enabled()) return false;
+        // This fixture is launched unattended. Keep the integrated server
+        // ticking after the final map screen closes so its revisioned block
+        // placement/removal probe cannot be stranded by lost window focus.
+        client.options.pauseOnLostFocus = false;
+        if (client.level != null || worldStarted) return false;
         String currentScreen = client.screen == null ? "null" : client.screen.getClass().getName();
         if (!currentScreen.equals(lastMenuScreen)) {
             RingWorldMod.LOGGER.info("[atlas-ui-test] menu screen: {}", currentScreen);

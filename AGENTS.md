@@ -439,6 +439,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   selected Gradle release label and artifact version. Do not restore a
   hard-coded published label: qualification builds deliberately use a
   diagnostic identity, and the fixture must independently verify it.
+  The fixture also owns `pauseOnLostFocus=false`; its final revision probe
+  needs the unattended integrated server to keep ticking after the map closes.
   Fabric must keep the Atlas fixture exclusive after it invokes Create World;
   before the integrated player exists, the generic `testMode` launcher must
   not race it by creating a second automated world.
