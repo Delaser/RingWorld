@@ -513,7 +513,11 @@ jar per loader. Fabric runs are `20260813T091340Z-0f6a75a06e36` (26.1),
 `20260813T085803Z-abc3ee37973d` (26.1.1), and
 `20260813T090427Z-21cef9b5920b` (26.1.2). Every run proves a durable partial
 checkpoint, exact-byte resume, complete 13,312-cell Atlas, stable mapping-4
-identity, clean exits, and schema-2 `COMPLETE`. The remaining Phase 4 client,
+identity, clean exits, and schema-2 `COMPLETE`. The current clean merged quick
+baseline is combined run `20260813T164933Z-8bee9268f799` at commit `439e339`.
+All six cells pass with one Fabric jar (`8b919c42...9e7e31`) and one NeoForge
+jar (`77389181...f6f50`). This supersedes earlier quick hashes for any future
+candidate derived from the lifecycle-gate fix. The remaining Phase 4 client,
 gameplay, lifecycle, and rendering fixtures are still pending.
 The operator entry point is intentionally explicit:
 

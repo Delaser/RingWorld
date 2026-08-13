@@ -104,23 +104,26 @@ installs this phase only after clean provenance and a complete frozen loader
 triplet, lending its live exact cell lock to avoid re-acquisition. It persists
 a separately validated, immutable raw strict-terminal-evidence JSON record
 alongside the scheduler report. The refreshed Fabric triplet passed end to
-end on 2026-08-13 in run `20260813T072608Z-b7c68e555818`. Each of 26.1,
+end on 2026-08-13 in combined run `20260813T164933Z-8bee9268f799`. Each of 26.1,
 26.1.1, and 26.1.2 passed all 338 tests, strict diagnostic-jar inspection,
 official installer/runtime assembly, a fresh 2,048x416 mapping-4 server, and
 strict stop/save evidence. All three loaded the same frozen wide-range jar
 with SHA-256
-`d7a66942e275fb3fab9386230293bb5fee21adaa3f5eeecfc61b9f8a205c8296`.
-The strict-evidence SHA-256 values are `f6f4789d...33d` (26.1),
-`b7f4494b...532c` (26.1.1), and `81547bb1...2bf` (26.1.2). The refreshed
-NeoForge triplet passed in run `20260813T080722Z-377cfb994c93`; all three
+`8b919c42e8a166c4f070a06e96518da8ca887e1955bd764c51281f17db9e7e31`.
+The strict-evidence SHA-256 values are `fcde251d...6917` (26.1),
+`e2ef042a...96af` (26.1.1), and `a6207f13...50f3` (26.1.2). The refreshed
+NeoForge triplet passed in the same run; all three
 cells passed the same gates with frozen jar SHA-256
-`53558ed53bfe73e856710b8fafe60cf81e353e1fde19d43782ebd2f7843d7314`.
-Its strict-evidence SHA-256 values are `40ea58da...40d` (26.1),
-`8757369e...53e` (26.1.1), and `816c8495...ec4` (26.1.2). A first NeoForge
-attempt failed only because the host temporarily had no route to Maven; the
-successful retry used a checksum-preserving external read-only dependency
-cache and fresh cell state. Phase 3 quick qualification is complete for both
-loaders; the remaining Phase 4 client/gameplay/rendering fixtures are pending.
+`77389181684db006369400a4551eee6e98a3fd12266b01330d3357d5011c6f50`.
+Its strict-evidence SHA-256 values are `36c50cc0...bf9` (26.1),
+`31f12bd7...396` (26.1.1), and `289393f2...057` (26.1.2). The combined run
+also proves that one invocation safely retains distinct Fabric and NeoForge
+frozen roots. A failed precursor remained fail-closed before runtime evidence
+when Fabric could not resolve one JUnit artifact during a host routing outage;
+the passing retry used a refreshed checksum-preserving external read-only
+dependency cache and fresh cell state. Phase 3 quick qualification is complete
+for both loaders at commit `439e339`; the remaining Phase 4 client/gameplay/
+rendering fixtures are pending.
 Phase 4 now also has a pure, fail-closed Atlas recovery evidence contract. It
 requires a genuine partial schema-2 `INTERRUPTED` checkpoint and a later
 schema-2 `COMPLETE` report from the same disposable runtime/world and report
