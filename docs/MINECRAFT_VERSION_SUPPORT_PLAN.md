@@ -4,7 +4,9 @@ Status: approved policy and active implementation. Phases 0–3 are implemented;
 the six quick cells pass with one unchanged jar per loader. Phase 4 has real
 six-cell Atlas-recovery, worldgen/structure, and creation/settings UI
 source-ABI evidence; its remaining client, gameplay, lifecycle, and rendering
-fixtures are pending.
+fixtures are pending. Phase 5's copied-world implementation and Phase 6's
+release-equivalence guard are static-tested only: no real forward-upgrade path,
+proposed public jar, or release-equivalence evidence has been recorded.
 
 ## Support model
 
@@ -671,6 +673,26 @@ position. Never run reverse-version or downgrade tests against the same save.
 Exit: every advertised forward path has a passing copied-world report; all
 unsupported directions are documented.
 
+Implementation status: the fail-closed contract and external operator bridge
+now exist, and are included in the 232-test cross-platform static workflow.
+Run exactly one path at a time with explicit source-worldgen and target-quick
+evidence, for example:
+
+```sh
+python3 scripts/run_world_upgrade_qualification.py \
+  --source-cell 26.1-fabric \
+  --source-worldgen-run-id <passed-26.1-worldgen-run-id> \
+  --target-cell 26.1.1-fabric \
+  --target-quick-run-id <passed-26.1.1-quick-run-id>
+```
+
+The CLI permits only the three forward paths above, requires source and target
+cells to use the same loader, rechecks the retained source world and target
+candidate/evidence before runtime work, copies into a new contained target
+fixture, and fails on an existing destination. It never downgrades or mutates
+the source world. These are safety and static-contract results only until all
+six real loader/version forward paths have terminal reports.
+
 ### Phase 6 — release qualification
 
 Freeze one candidate commit and run the release tier without code or docs
@@ -693,6 +715,24 @@ ABI diagnostics only. If the frozen file cannot pass every cell, publish
 distinct version-specific artifacts and say so clearly.
 
 Exit: immutable release evidence is complete and the owner records a go/no-go.
+
+Implementation status: `scripts/release_candidate_equivalence.py` is a
+static-tested, local staging gate for a proposed public jar. It verifies that
+the archive member set and all non-metadata bytes match a frozen candidate;
+only the reviewed Fabric/NeoForge descriptor and
+`ringworld-build.properties` public version/label substitutions may differ.
+Use it explicitly per loader:
+
+```sh
+python3 scripts/release_candidate_equivalence.py \
+  <frozen-qualification.jar> <proposed-public.jar> \
+  --loader fabric --release-version <version> --release-label <label>
+```
+
+It validates MPL-2.0 contents and approved metadata ranges before comparison.
+It is not a build, upload, publication, or runtime test. No proposed public
+jars have been supplied and no equivalence evidence exists, so Phase 6 remains
+pending.
 
 ### Phase 7 — candidate staging and documentation freeze
 

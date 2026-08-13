@@ -172,3 +172,50 @@ def external_runtime_worldgen_plan(cell: Mapping[str, Any], candidate: Candidate
 
 
 plan_external_runtime_worldgen = external_runtime_worldgen_plan
+
+
+def external_runtime_worldgen_resume_stage(
+    cell: Mapping[str, Any], candidate: CandidateJar, paths: QualificationPaths, *,
+    frozen_candidate_root: Path, fixture_root: Path, evidence_root: Path,
+) -> WorldgenStagePlan:
+    """Build the existing production-resume stage for a copied-world fixture.
+
+    This deliberately exposes no new server/runtime dialect.  A forward-save
+    qualification assembles the same official runtime and runs the same
+    stronghold/worldgen resume assertion as fixture 02, but places a *copy* of
+    a prior fixture's production world at ``runtime/world`` before launch.
+    """
+    minecraft = cell.get("minecraft") if isinstance(cell, Mapping) else None
+    if not isinstance(cell.get("id"), str) or cell["id"] != paths.cell_id \
+            or cell.get("loader") not in {"fabric", "neoforge"} \
+            or not isinstance(minecraft, Mapping) or not isinstance(minecraft.get("version"), str):
+        raise InvocationError("worldgen resume stage must target one canonical qualification cell")
+    if not isinstance(candidate, CandidateJar) or candidate.loader != cell["loader"] \
+            or not candidate.path.is_absolute() or SHA256.fullmatch(candidate.sha256) is None \
+            or not frozen_candidate_root.is_absolute() or not is_within(candidate.path, frozen_candidate_root):
+        raise InvocationError("worldgen resume stage needs the reviewed frozen candidate")
+    if not fixture_root.is_absolute() or not evidence_root.is_absolute() \
+            or not is_within(fixture_root, paths.cell_root) or not is_within(evidence_root, paths.cell_root):
+        raise InvocationError("worldgen resume stage paths escape the qualification cell")
+    runtime = contained_path(fixture_root, "runtime", "worldgen upgrade runtime")
+    world = contained_path(runtime, "world", "worldgen upgrade world")
+    port = qualification_port(cell) + 5
+    seed, circumference, width = "ringworld-regression-1", 16_384, 256
+    smoke = _stage_smoke(
+        cell, candidate, paths, frozen_candidate_root, runtime,
+        seed=seed, circumference=circumference, width=width, port=port,
+    )
+    return WorldgenStagePlan(
+        "production-resume", seed, circumference, width, 160, True, runtime, world,
+        contained_path(evidence_root, "production-resume.log", "worldgen upgrade captured log"),
+        contained_path(evidence_root, "production-resume.json", "worldgen upgrade summary"),
+        REQUIRED_MARKERS,
+        (("level-name", "world"), ("level-seed", seed), ("online-mode", "false"),
+         ("server-port", str(port))),
+        (("circumferenceBlocks", str(circumference)), ("widthBlocks", str(width)),
+         ("wallHeightBlocks", "160"), ("pregenerateTerrainAtlas", "false"),
+         ("requestOceanMonument", "true")),
+        ("-Dringworld.strongholdTest=true", "-Dringworld.worldgenMatrix=true",
+         "-Dringworld.strongholdTestResume=true"),
+        smoke,
+    )

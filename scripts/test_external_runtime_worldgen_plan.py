@@ -14,7 +14,9 @@ if str(ROOT / "scripts") not in sys.path:
 
 from external_runtime_atlas_recovery_plan import QuickTerminalEvidenceInput  # noqa: E402
 from external_runtime_smoke import CandidateJar  # noqa: E402
-from external_runtime_worldgen_plan import external_runtime_worldgen_plan  # noqa: E402
+from external_runtime_worldgen_plan import (  # noqa: E402
+    external_runtime_worldgen_plan, external_runtime_worldgen_resume_stage,
+)
 from minecraft_qualification_model import InvocationError, QualificationPaths  # noqa: E402
 
 
@@ -81,6 +83,21 @@ class ExternalRuntimeWorldgenPlanTest(unittest.TestCase):
                 QuickTerminalEvidenceInput(wrong_cell_root / "evidence/strict-terminal-evidence.json", "b" * 64),
                 frozen_candidate_root=frozen, quick_evidence_root=wrong_cell_root,
             )
+
+    def test_copied_world_resume_stage_reuses_both_loader_runtime_contracts(self):
+        for cell_id in ("26.1.1-fabric", "26.1.1-neoforge"):
+            with self.subTest(cell=cell_id):
+                plan, paths = self.plan(cell_id)
+                stage = external_runtime_worldgen_resume_stage(
+                    self.cells[cell_id], plan.candidate, paths,
+                    frozen_candidate_root=plan.frozen_candidate_root,
+                    fixture_root=paths.run_directory / "nightly/05-world-upgrade",
+                    evidence_root=paths.evidence_directory / "nightly/05-world-upgrade",
+                )
+                self.assertEqual("production-resume", stage.name)
+                self.assertTrue(stage.resume)
+                self.assertEqual(stage.runtime_root / "world", stage.world_root)
+                self.assertEqual("true", stage.jvm_properties[-1].split("=", 1)[1])
 
 
 if __name__ == "__main__":
