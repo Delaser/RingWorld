@@ -624,6 +624,11 @@ The fixture itself must set `client.options.pauseOnLostFocus = false`. Its
 final revision probe closes the map and issues real server commands; an
 unfocused automated window would otherwise pause the integrated server after
 the first command and eventually time out despite a complete Atlas.
+The disposable Atlas UI world uses the supported Small 2,048×128 preset
+(4,096 Atlas cells). This preserves every map/control, progressive-render,
+completion, and revision assertion while avoiding repeated generation of the
+broader 2,048×416 world already covered by recovery, worldgen, and gameplay
+fixtures.
 
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated

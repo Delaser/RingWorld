@@ -967,7 +967,7 @@ tasks.register("prepareAtlasUiRun") {
 		def configFile = new File(qualificationRunFile("run-atlas-ui"), "config/ringworld.properties")
 		configFile.parentFile.mkdirs()
 		def config = new Properties()
-		config.setProperty("widthBlocks", "416")
+		config.setProperty("widthBlocks", "128")
 		config.setProperty("circumferenceBlocks", "2048")
 		config.setProperty("wallHeightBlocks", "160")
 		config.setProperty("testMode", "true")

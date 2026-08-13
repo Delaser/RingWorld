@@ -99,6 +99,8 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
                               neo_build.index("tasks.register('verifyNeoForgeAtlasUiClient')")]
         self.assertIn('onboardAccessibility:false', root_block)
         self.assertIn('onboardAccessibility:false', neo_block)
+        self.assertIn('config.setProperty("widthBlocks", "128")', root_block)
+        self.assertIn("config.setProperty('widthBlocks', '128')", neo_block)
 
     def test_both_loader_runs_supply_independent_build_identity_expectation(self) -> None:
         root_build = (ROOT / "build.gradle").read_text(encoding="utf-8")
