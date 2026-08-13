@@ -32,7 +32,15 @@ neither implementation broadens supported-version or release claims.
 
 On 2026-08-13, local current-version Gradle development regressions passed on
 both loaders: the safe-small mapping-4 map/compass and curved-rigid-object
-fixtures, plus safe-small production visual parity. Visual-parity seam windows
+fixtures, safe-small production visual parity, and the copied 16,384x256
+production lifecycle and projection gates. The lifecycle completed
+Overworld/Nether/Overworld/End/Overworld, normal save/disconnect, client-state
+clear, and reopen with the complete mapping-4 Atlas on both loaders. Its first
+Fabric attempt exposed a fixture timing error: a fixed 20-tick reopen sample
+ran after only the first streamed Atlas tiles. The corrected gate retains its
+existing timeout but waits for the complete matching Atlas identity; fresh
+Fabric and NeoForge reruns pass. Production tangent, 16-chunk handoff, and
+radial-up captures also pass on both loaders. Visual-parity seam windows
 recorded Fabric 707 frames (10.086 ms average, 41.917 ms maximum, zero over
 50 ms) and NeoForge 681 frames (10.554 ms average, 28.958 ms maximum, zero
 over 50 ms). These are local Gradle dev-runtime regressions, not frozen-jar

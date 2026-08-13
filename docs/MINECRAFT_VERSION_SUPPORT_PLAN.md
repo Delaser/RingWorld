@@ -650,6 +650,12 @@ readiness, normal disconnect, and complete client-session teardown. The
 historical six-cell fixture-04 records predate this tail, so fixture 05 remains
 pending until every cell is rerun from one clean pushed revision.
 
+The current 26.1.2 development runtime also re-passed the copied production
+lifecycle and full production projection gates on both loaders on 2026-08-13,
+using one completed mapping-4 16,384x256 source. This is useful current-code
+regression evidence, but it does not replace running the frozen candidate in
+all six cells and therefore does not close the remaining Phase 4 matrix.
+
 All qualification Gradle commands set both a disposable `GRADLE_USER_HOME`
 and a cell-contained `--project-cache-dir`. The latter is mandatory for Loom:
 without it, an otherwise isolated client launch reads its launch configuration
