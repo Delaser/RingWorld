@@ -11,6 +11,7 @@ on:
       - "scripts/external_graphical_*.py"
       - "scripts/run_*_qualification.py"
       - "scripts/stage_qualified_release.py"
+      - "scripts/publish_qualified_release.py"
       - "scripts/test_*qualification*.py"
       - "scripts/test_external_runtime_*.py"
       - "scripts/test_external_graphical_*.py"
@@ -30,6 +31,7 @@ on:
       - "scripts/external_graphical_*.py"
       - "scripts/run_*_qualification.py"
       - "scripts/stage_qualified_release.py"
+      - "scripts/publish_qualified_release.py"
       - "scripts/test_*qualification*.py"
       - "scripts/test_external_runtime_*.py"
       - "scripts/test_external_graphical_*.py"
@@ -92,6 +94,7 @@ jobs:
           scripts/test_run_world_upgrade_qualification.py
           scripts/test_release_candidate_equivalence.py
           scripts/test_stage_qualified_release.py
+          scripts/test_publish_qualified_release.py
           scripts/test_external_graphical_creation_ui.py
           scripts/test_run_creation_ui_qualification.py
           scripts/test_run_gradle_creation_ui_qualification.py

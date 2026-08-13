@@ -494,6 +494,13 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   review directory per loader with the runtime jar, checksums, archive
   inventory, exact source route, host metadata, changelog, and rollback data.
   It has no token, upload, tag, deployment, or listing-mutation interface.
+- `scripts/publish_qualified_release.py`: the dry-run-first Phase 8/9 host
+  bridge. It plans one exact Modrinth or CurseForge multipart submission from
+  the qualified stage without reading credentials. Execution needs an exact
+  short-lived owner authorization, clean pushed source equality, and the
+  host-specific token environment variable. It can create only a new unlisted
+  or manually held file and has no update, delete, archive, promotion, tag,
+  server, or deployment path.
 - `scripts/external_graphical_creation_ui.py` and
   `scripts/run_creation_ui_qualification.py`: the first production-style
   graphical-client automation slice. It consumes the retained frozen jar and
