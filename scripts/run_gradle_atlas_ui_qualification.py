@@ -104,7 +104,7 @@ def _verify_outputs(paths: QualificationPaths, loader: object) -> tuple[Path, tu
     if text.find(PASS_MARKER) <= previous:
         raise GradleAtlasUiError("Atlas UI fixture terminal PASS preceded disconnect clear")
     if text.find(_server_ack_marker(loader)) < 0 \
-            or text.find(_server_ack_marker(loader)) >= text.find(HANDSHAKE_MARKERS[0]):
+            or text.find(_server_ack_marker(loader)) >= text.find(HANDSHAKE_MARKERS[-1]):
         raise GradleAtlasUiError("Atlas UI integrated server did not accept format-3 settings acknowledgement")
     captures: list[Path] = []
     screenshots = run_root / "screenshots"

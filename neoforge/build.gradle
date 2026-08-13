@@ -422,7 +422,7 @@ tasks.register('verifyNeoForgeAtlasUiClient') {
             previousAtlasHandshakeMarker = markerIndex
         }
         def atlasSettingsAck = log.indexOf('RingWorld settings acknowledged by AtlasUiTester on NeoForge: format 3')
-        if (atlasSettingsAck < 0 || atlasSettingsAck >= log.indexOf('[atlas-ui-test] client-ready')) {
+        if (atlasSettingsAck < 0 || atlasSettingsAck >= log.indexOf('[atlas-ui-test] disconnect-clear')) {
             throw new GradleException("NeoForge Atlas UI integrated server did not accept the format-3 settings acknowledgement; inspect ${logFile}")
         }
         (1..11).each { index ->
