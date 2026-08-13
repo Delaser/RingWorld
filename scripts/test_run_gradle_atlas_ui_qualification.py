@@ -54,7 +54,8 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
             "RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 3"
         )
         (run_root / "logs/latest.log").write_text(
-            "\n".join((acknowledgement, *HANDSHAKE_MARKERS, PASS_MARKER)) + "\n", encoding="utf-8"
+            "\n".join((*HANDSHAKE_MARKERS[:2], acknowledgement,
+                        HANDSHAKE_MARKERS[2], PASS_MARKER)) + "\n", encoding="utf-8"
         )
         for prefix in CAPTURE_PREFIXES:
             (run_root / "screenshots" / f"{prefix}test.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"x" * 256)
