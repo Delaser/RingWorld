@@ -605,6 +605,10 @@ the creation UI runner. A PASS requires the actual integrated Minecraft
 client, exactly one disposable world, all eleven PNGs, complete Atlas state,
 and the fixture's revisioned block placement/removal terminal marker. It is
 source-ABI evidence, not a production-launcher or frozen-candidate claim.
+Both loader preparers write `onboardAccessibility:false` into the disposable
+profile. Without it, a genuinely fresh game directory opens Minecraft's
+accessibility onboarding over the automated Create World flow and never
+exercises the fixture.
 The Fabric entrypoint must return immediately while this opt-in fixture is
 enabled, even after its world-creation invocation and before `client.player`
 exists. Falling through to the older generic `testMode` launcher in that

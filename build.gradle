@@ -973,6 +973,8 @@ tasks.register("prepareAtlasUiRun") {
 		config.setProperty("testViewDistanceChunks", "6")
 		config.setProperty("pregenerateTerrainAtlas", "false")
 		configFile.withOutputStream { config.store(it, "Isolated RingWorld atlas UI regression") }
+		new File(qualificationRunFile("run-atlas-ui"), "options.txt").text =
+				"onboardAccessibility:false\nguiScale:4\n"
 	}
 }
 

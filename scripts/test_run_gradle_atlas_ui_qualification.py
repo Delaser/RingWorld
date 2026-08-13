@@ -90,6 +90,16 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
         self.assertEqual(command.argv[-1], ":neoforge:runAtlasUiClient")
         self.assertIn(("GRADLE_RO_DEP_CACHE", str(cache)), command.environment)
 
+    def test_both_loader_preparers_disable_first_run_onboarding(self) -> None:
+        root_build = (ROOT / "build.gradle").read_text(encoding="utf-8")
+        neo_build = (ROOT / "neoforge/build.gradle").read_text(encoding="utf-8")
+        root_block = root_build[root_build.index('tasks.register("prepareAtlasUiRun")'):
+                                root_build.index('tasks.named("runAtlasUiClient")')]
+        neo_block = neo_build[neo_build.index("tasks.register('prepareNeoForgeAtlasUiRun')"):
+                              neo_build.index("tasks.register('verifyNeoForgeAtlasUiClient')")]
+        self.assertIn('onboardAccessibility:false', root_block)
+        self.assertIn('onboardAccessibility:false', neo_block)
+
 
 if __name__ == "__main__":
     unittest.main()

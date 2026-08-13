@@ -395,6 +395,7 @@ tasks.register('prepareNeoForgeAtlasUiRun') {
         config.setProperty('testViewDistanceChunks', '6')
         config.setProperty('pregenerateTerrainAtlas', 'false')
         configFile.withOutputStream { config.store(it, 'Isolated NeoForge RingWorld atlas UI regression') }
+        new File(neoForgeAtlasUiRun, 'options.txt').text = 'onboardAccessibility:false\nguiScale:4\n'
     }
 }
 
