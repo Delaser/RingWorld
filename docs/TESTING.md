@@ -626,8 +626,7 @@ Prism instance or a production world.
 One atomic qualification invocation writes fixture 04's Atlas UI terminal and
 fixture 05's handshake/disconnect terminal separately. This avoids creating a
 second identical world while keeping the claims independently trackable. The
-six source-ABI records below predate the expanded tail and remain fixture-04
-evidence only until rerun.
+refreshed fixture-05 matrix is recorded below the original fixture-04 table.
 
 The 2026-08-02 NeoForge 26.1.2.87 run completed in 2m32s. It produced all
 eleven required screenshots, generated and durably verified 13,312/13,312
@@ -696,6 +695,24 @@ These records prove exact patch dependency/client ABI, one disposable
 integrated-server world, eleven captures, complete Atlas controls, and live
 revision behavior. They deliberately do not claim a production launcher or
 the frozen candidate jar.
+
+The expanded format-3 handshake and normal-disconnect tail passes all six
+cells. Its immutable fixture-05 terminal records are:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260813T174054Z-bdeeafa3a751` | `be294128de3c6e1379ac51399306cd0ba0a6468c3b466de700b5319a8515968b` |
+| 26.1.1 Fabric | `20260813T174418Z-b23550ef9a22` | `be0d97a39a5af380a82032e1c3a1e3057b75410e0ef1b1cb39801cfa2b3b0d3e` |
+| 26.1.2 Fabric | `20260813T174740Z-1995f7cf8b48` | `816bf743ca65008baafd4de3542eea76fcc014112164f9bb232550032810e0a8` |
+| 26.1 NeoForge | `20260813T181123Z-5baa2ec6644c` | `3def46387c77de67e060a1fcdfd8716f868767955deb5e2ecf0667eff2cbb215` |
+| 26.1.1 NeoForge | `20260813T181648Z-b2342a09e2e7` | `d7af677a27046eff6d6d965658fa60d7b6f766a2ac27d5d4b4be21d283d65f6a` |
+| 26.1.2 NeoForge | `20260813T182206Z-14d425cfb781` | `ef340ef877fda102e6ec2c578e26375857228b2be9c173c794243d3a20ec8c45` |
+
+The Fabric records use clean commit `a037308`; NeoForge uses clean commit
+`aa94e9a`, adding only the fixture's early-splash suppression after the first
+NeoForge attempt exposed a sleeping-display host failure. Minecraft remains
+graphical. These records close fixture 05's source-ABI client/session claim,
+not production-launcher or frozen-candidate package evidence.
 
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated

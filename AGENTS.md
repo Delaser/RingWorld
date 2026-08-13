@@ -352,7 +352,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   then-current exact frozen jars.
   The six-cell creation/settings UI source-ABI slice passes thirteen captures
   per cell from clean commit `0776154`; it deliberately is not
-  frozen-candidate or production-launcher evidence. The remaining client,
+  frozen-candidate or production-launcher evidence. The matching six-cell
+  Atlas UI/client-handshake slice also passes: each patch-specific client
+  accepts format 3/mapping 4, produces all eleven captures, and proves normal
+  disconnect plus complete session teardown. The remaining frozen-candidate
   gameplay, lifecycle, and rendering matrix remains pending.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
