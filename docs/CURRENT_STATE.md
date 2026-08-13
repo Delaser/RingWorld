@@ -141,7 +141,7 @@ tests pass on both loader shapes. Refreshed Fabric quick run
 `20260813T083822Z-03549862d588` (`f4896d60...1585`). All six prove the
 four-stage production reload, seam-crossing, stronghold/portal, biome/cave/
 ore/vegetation/loot, and monument-policy contract using one unchanged jar per
-loader. Client, multiplayer, lifecycle, UI, and rendering nightlies remain
+loader. Client, multiplayer, lifecycle, and rendering nightlies remain
 pending.
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
@@ -149,14 +149,35 @@ being rejected as though it were a broad seam wall. The audit now follows its
 documented intent by retaining the broad-cliff gate and a two-block average
 delta limit while allowing isolated relief. The refreshed real dual-loader
 26.1 runs above pass that corrected audit.
-The next Phase 4 slice now has a production-style graphical-client executor
+The next Phase 4 slice has a production-style graphical-client executor
 and operator CLI for the existing menu-only creation-settings fixture. It
 verifies a pinned Prism 11.0.3 macOS archive, Java 25, the retained frozen jar,
 the selected loader component and Fabric API where required; launches an
 account-free disposable Prism root; and requires all thirteen valid PNGs,
 bounded logs, the existing PASS marker, clean self-halt, exact mod hashes, and
-no created world. Pure/fake-process tests pass. No real graphical client run is
-claimed yet.
+no created world. Pure/fake-process tests pass. A fresh account-free Prism
+profile cannot reach Minecraft because official Prism requires a valid
+Microsoft account during first-run setup, even for its offline launch option.
+This remains an authenticated-disposable-profile or owner release gate;
+qualification never copies a user's normal Prism account data.
+
+The source-ABI graphical alternative passes all six 26.1.x cells from clean
+pushed commit `077615493e0f8a7b58e92aec51e9ec83535cb08f`. It launches the
+actual Minecraft client with each cell's exact Minecraft/loader/API
+dependencies, captures all thirteen creation/settings UI states, creates no
+world, and uses disposable Gradle user, project-cache, build, and game roots.
+Fabric runs are 26.1 `20260813T101541Z-e87eced07877`
+(`b7cbe6f9...5710`), 26.1.1 `20260813T101904Z-f32dbc8917e9`
+(`e4c513b3...a675`), and 26.1.2 `20260813T102213Z-d33b1a707c5b`
+(`9bd5f40c...c2b3`). NeoForge runs are 26.1
+`20260813T102535Z-618362c64a62` (`2c147161...9e79`), 26.1.1
+`20260813T105844Z-fdefa2c044f5` (`22eabdb5...270d`), and 26.1.2
+`20260813T110726Z-2e96621d7486` (`0f4255e1...dda6`). Parenthesized values
+are terminal-evidence SHA-256 prefixes/suffixes. One earlier NeoForge 26.1.1
+attempt failed closed when Mojang's library host was temporarily unreachable;
+the successful fresh retry used the reviewed external read-only dependency
+cache. This completes the settings UI/source-ABI slice, not
+frozen-candidate packaged-client proof or the broader nightly matrix.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

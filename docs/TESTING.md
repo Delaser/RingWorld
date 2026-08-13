@@ -1439,6 +1439,24 @@ The runner also sets a cell-contained Gradle project cache; do not remove it
 or Loom will route launch configuration through the checkout's `.gradle`
 directory despite the disposable Gradle user home.
 
+The six-cell source-ABI matrix passed on 2026-08-13 from clean pushed commit
+`077615493e0f8a7b58e92aec51e9ec83535cb08f`. Each run produced all thirteen
+captures and no `level.dat`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260813T101541Z-e87eced07877` | `b7cbe6f950dd0b6aa699ab06a32e6947c87fc905cba99954d04d2bf31b3b5710` |
+| 26.1.1 Fabric | `20260813T101904Z-f32dbc8917e9` | `e4c513b331494bf5316e9a16b91a68d50fe16383ffe44bca606307fc6833a675` |
+| 26.1.2 Fabric | `20260813T102213Z-d33b1a707c5b` | `9bd5f40cb4f6a19a9b1e06672f6b6fd58ef73a18c5442f33d5ae9648b450c2b3` |
+| 26.1 NeoForge | `20260813T102535Z-618362c64a62` | `2c147161cb82bc32f13c2b45ff1eb58a80baca231535e314b73a038ac1f29e79` |
+| 26.1.1 NeoForge | `20260813T105844Z-fdefa2c044f5` | `22eabdb5c5a01fac8b5a9e91aed7726ef2c6a0389566026a1b3498af7834270d` |
+| 26.1.2 NeoForge | `20260813T110726Z-2e96621d7486` | `0f4255e11c65701298a298cc2046924aad95dc83bef0cc340e971b2769d6dda6` |
+
+An earlier 26.1.1 NeoForge attempt failed closed on a transient `No route to
+host` from Mojang's library repository. It is retained as infrastructure
+failure evidence and is not counted as a mod failure or reused as a passing
+cell.
+
 Each qualified task prepares its own ignored `run-creation-ui/` directory
 (NeoForge uses `neoforge/run-creation-ui/`), deleting only disposable saves,
 screenshots, RingWorld cache, and logs. The initial bootstrap configuration is

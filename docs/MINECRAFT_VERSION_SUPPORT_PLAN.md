@@ -2,8 +2,9 @@
 
 Status: approved policy and active implementation. Phases 0–3 are implemented;
 the six quick cells pass with one unchanged jar per loader. Phase 4 has real
-six-cell Atlas-recovery and worldgen/structure evidence; its client, gameplay,
-lifecycle, UI, and rendering fixtures remain pending.
+six-cell Atlas-recovery, worldgen/structure, and creation/settings UI
+source-ABI evidence; its remaining client, gameplay, lifecycle, and rendering
+fixtures are pending.
 
 ## Support model
 
@@ -511,7 +512,7 @@ jar per loader. Fabric runs are `20260813T091340Z-0f6a75a06e36` (26.1),
 `20260813T090427Z-21cef9b5920b` (26.1.2). Every run proves a durable partial
 checkpoint, exact-byte resume, complete 13,312-cell Atlas, stable mapping-4
 identity, clean exits, and schema-2 `COMPLETE`. The remaining Phase 4 client,
-gameplay, lifecycle, UI, and rendering fixtures are still pending.
+gameplay, lifecycle, and rendering fixtures are still pending.
 The operator entry point is intentionally explicit:
 
 ```sh
@@ -602,6 +603,16 @@ Gradle archive. Neither changes evidence identity or enables offline mode.
 This is the repeatable cross-version GUI ABI gate. Packaged-client login stays
 separate so the matrix cannot turn a credential workaround into false release
 evidence.
+
+The source-ABI gate passes all six manifest cells from clean pushed commit
+`077615493e0f8a7b58e92aec51e9ec83535cb08f`, with thirteen captures and no
+created world in every cell. Fabric run IDs are
+`20260813T101541Z-e87eced07877`, `20260813T101904Z-f32dbc8917e9`, and
+`20260813T102213Z-d33b1a707c5b` for 26.1 through 26.1.2. NeoForge run IDs are
+`20260813T102535Z-618362c64a62`, `20260813T105844Z-fdefa2c044f5`, and
+`20260813T110726Z-2e96621d7486`. This closes the creation/settings UI ABI
+slice only; it does not convert Gradle-launched classes into frozen-candidate
+or production-launcher evidence.
 
 All qualification Gradle commands set both a disposable `GRADLE_USER_HOME`
 and a cell-contained `--project-cache-dir`. The latter is mandatory for Loom:

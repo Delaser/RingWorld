@@ -349,8 +349,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   three versions with one unchanged frozen jar
   (`53558ed53bfe73e856710b8fafe60cf81e353e1fde19d43782ebd2f7843d7314`).
   These are dedicated-server quick evidence only. The six-cell worldgen and
-  interrupted-Atlas-recovery nightly slices also pass with those exact jars;
-  the client/gameplay/lifecycle/UI/rendering matrix remains pending.
+  interrupted-Atlas-recovery nightly slices also pass with those exact jars.
+  The six-cell creation/settings UI source-ABI slice passes thirteen captures
+  per cell from clean commit `0776154`; it deliberately is not
+  frozen-candidate or production-launcher evidence. The remaining client,
+  gameplay, lifecycle, and rendering matrix remains pending.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
