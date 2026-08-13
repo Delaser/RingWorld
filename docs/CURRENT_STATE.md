@@ -27,8 +27,17 @@ pass from clean pushed commit `7983b8a`; their run IDs are recorded under
 Phase 5 in `MINECRAFT_VERSION_SUPPORT_PLAN.md` and GitHub issue #173.
 Phase 6 also now has a static-tested local equivalence guard: it permits a
 proposed public jar to differ from the frozen candidate only in approved public
-metadata/version fields. No proposed public jar or equivalence record exists;
-neither implementation broadens supported-version or release claims.
+metadata/version fields. Local `1.1.0+mc26.1` / label `1.1` candidates were
+built from clean public `main` on 2026-08-13 against the oldest 26.1 ABI. Both
+passed all 338 tests and byte-level equivalence against the exact refreshed
+frozen candidates: Fabric release SHA-256
+`082cb6977252da3e454c028e5a11e62f15c9be0697ebb47aa05635cda6e5aef4`
+matches frozen `8b919c42...e7e31`, and NeoForge release SHA-256
+`1b81d62142d06a52f96d4a7416f62bd15bb1fd0198d35d4abc4fa771ab9941aa`
+matches frozen `77389181...6f50`. Only the reviewed loader descriptor and
+`ringworld-build.properties` version/label bytes differ. These ignored local
+candidates are not staged, uploaded, published, or yet a broadened support
+claim.
 
 On 2026-08-13, local current-version Gradle development regressions passed on
 both loaders: the safe-small mapping-4 map/compass and curved-rigid-object
