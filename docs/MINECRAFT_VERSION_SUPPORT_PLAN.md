@@ -675,8 +675,13 @@ both seam directions, banner and item-frame state, spawn/lodestone/recovery
 needles, normal disconnect, complete client-state teardown, reopen, and
 persistence. The fresh-profile preparers disable onboarding and NeoForge's
 optional early splash, while the shared fixture waits for the final title
-screen and keeps the integrated server ticking when unfocused. This runner is
-implemented and pure-tested but has not yet produced six real PASS records.
+screen and keeps the integrated server ticking when unfocused. The slice now
+passes all six cells from clean commit `9015857`. Fabric runs are
+`20260813T184333Z-82e19d55389b`, `20260813T184752Z-6181972f0b5e`, and
+`20260813T185208Z-746d5447411a`; NeoForge runs are
+`20260813T185449Z-26282a7c51fb`, `20260813T185906Z-d67da65d189d`, and
+`20260813T190435Z-9f27985cd623`. This is source-ABI gameplay evidence, not
+frozen-jar packaged-client proof.
 
 All qualification Gradle commands set both a disposable `GRADLE_USER_HOME`
 and a cell-contained `--project-cache-dir`. The latter is mandatory for Loom:

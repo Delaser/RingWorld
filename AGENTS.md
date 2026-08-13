@@ -361,7 +361,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   gameplay wrapper for the existing map/compass fixture. It requires eight
   captures, both seam directions, persistent map/banner/item-frame state, all
   compass targets, normal disconnect/session clear, and reopen. It does not
-  claim production-launcher or frozen-candidate evidence.
+  claim production-launcher or frozen-candidate evidence. The six-cell matrix
+  passes from clean commit `9015857`; exact run IDs and hashes are in
+  `docs/TESTING.md`.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,

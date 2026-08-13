@@ -305,8 +305,13 @@ it remains distinct from frozen-jar packaged-client qualification.
 The next source-ABI gameplay wrapper now targets the existing map/compass
 fixture. It requires both seam directions, map pixels and markers, banner and
 item-frame state, all vanilla compass targets, save/disconnect/session clear,
-reopen, and persisted state in one disposable world. Its fresh-profile startup
-guards and pure contract pass, but the six real patch cells remain to run.
+reopen, and persisted state in one disposable world. The slice now passes all
+six cells from clean commit `9015857`: Fabric runs are
+`20260813T184333Z-82e19d55389b`, `20260813T184752Z-6181972f0b5e`, and
+`20260813T185208Z-746d5447411a`; NeoForge runs are
+`20260813T185449Z-26282a7c51fb`, `20260813T185906Z-d67da65d189d`, and
+`20260813T190435Z-9f27985cd623`. This closes fixture 08 as source-ABI
+graphical/gameplay evidence; it is not frozen-jar packaged-client evidence.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java
