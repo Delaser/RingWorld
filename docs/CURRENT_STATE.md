@@ -228,6 +228,14 @@ world, produced all eleven captures, completed all 4,096 cells, and passed
 pause/resume/cancel/retry plus ordered placement/removal revisions. This
 closes nightly fixture 04 as source-ABI graphical evidence; it is not a
 production-launcher or frozen-client-package claim.
+The same runner now has a bounded fixture-05 handshake/disconnect tail. It
+requires the loader-specific server log to accept `settings_ack_v3`, binds a
+rendered client to mapping 4 and a nonzero layout fingerprint, performs
+Minecraft's normal integrated-server disconnect, and waits for
+`RingWorldClientSession.isCleared()` before passing. One atomic run writes
+separate fixture-04 and fixture-05 terminal records. This expanded contract is
+compiled and pure-tested but has not yet been rerun across the six cells;
+historical fixture-04 evidence is not silently promoted to fixture 05.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

@@ -36,9 +36,15 @@ from run_minecraft_qualification import (
 
 
 FIXTURE = "atlas-ui-revision"
+HANDSHAKE_FIXTURE = "client-handshake"
 PASS_MARKER = "[atlas-ui-test] PASS"
 FAIL_MARKER = "[atlas-ui-test] FAIL"
 CAPTURE_PREFIXES = tuple(f"atlas-ui-{index:02d}-" for index in range(1, 12))
+HANDSHAKE_MARKERS = (
+    "[atlas-ui-test] client-ready",
+    "[atlas-ui-test] settings-v3-mapping-4",
+    "[atlas-ui-test] disconnect-clear",
+)
 
 
 class GradleAtlasUiError(QualificationExecutionError):
@@ -73,7 +79,15 @@ def _command(
     )
 
 
-def _verify_outputs(paths: QualificationPaths) -> tuple[Path, tuple[Path, ...]]:
+def _server_ack_marker(loader: object) -> str:
+    if loader == "fabric":
+        return "RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 3"
+    if loader == "neoforge":
+        return "RingWorld settings acknowledged by AtlasUiTester on NeoForge: format 3"
+    raise GradleAtlasUiError("unsupported loader")
+
+
+def _verify_outputs(paths: QualificationPaths, loader: object) -> tuple[Path, tuple[Path, ...]]:
     run_root = paths.run_directory / "run-atlas-ui"
     log = run_root / "logs" / "latest.log"
     if not log.is_file() or log.is_symlink():
@@ -81,6 +95,17 @@ def _verify_outputs(paths: QualificationPaths) -> tuple[Path, tuple[Path, ...]]:
     text = log.read_text(encoding="utf-8", errors="replace")
     if PASS_MARKER not in text or FAIL_MARKER in text:
         raise GradleAtlasUiError("Atlas UI fixture did not emit its terminal PASS marker")
+    previous = -1
+    for marker in HANDSHAKE_MARKERS:
+        position = text.find(marker)
+        if position <= previous:
+            raise GradleAtlasUiError(f"Atlas UI fixture did not emit ordered handshake marker: {marker}")
+        previous = position
+    if text.find(PASS_MARKER) <= previous:
+        raise GradleAtlasUiError("Atlas UI fixture terminal PASS preceded disconnect clear")
+    if text.find(_server_ack_marker(loader)) < 0 \
+            or text.find(_server_ack_marker(loader)) >= text.find(HANDSHAKE_MARKERS[0]):
+        raise GradleAtlasUiError("Atlas UI integrated server did not accept format-3 settings acknowledgement")
     captures: list[Path] = []
     screenshots = run_root / "screenshots"
     for prefix in CAPTURE_PREFIXES:
@@ -139,11 +164,32 @@ def _payload(
             "integrated_server": verdict is Verdict.PASS,
             "atlas_completed": verdict is Verdict.PASS,
             "revisioned_edit_verified": verdict is Verdict.PASS,
+            "format3_mapping4_handshake": verdict is Verdict.PASS,
+            "normal_disconnect_cleared_client_state": verdict is Verdict.PASS,
             "production_launcher": False,
             "frozen_candidate_jar": False,
             "disposable_world_created": True if verdict is Verdict.PASS else None,
         },
     }
+
+
+def _handshake_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Derive fixture-05 evidence from the same atomic client session."""
+    result = dict(payload)
+    result["fixture"] = HANDSHAKE_FIXTURE
+    result["derived_from_fixture"] = FIXTURE
+    result["captures"] = []
+    result["claims"] = {
+        "actual_minecraft_client": payload["claims"]["actual_minecraft_client"],
+        "exact_patch_dependencies": payload["claims"]["exact_patch_dependencies"],
+        "integrated_server": payload["claims"]["integrated_server"],
+        "format3_mapping4_handshake": payload["claims"]["format3_mapping4_handshake"],
+        "resources_and_render_pipeline_exercised": payload["claims"]["actual_minecraft_client"],
+        "normal_disconnect_cleared_client_state": payload["claims"]["normal_disconnect_cleared_client_state"],
+        "production_launcher": False,
+        "frozen_candidate_jar": False,
+    }
+    return result
 
 
 def run(
@@ -177,7 +223,7 @@ def run(
     verdict, reason = result.verdict, result.reason
     if verdict is Verdict.PASS:
         try:
-            log, captures = _verify_outputs(paths)
+            log, captures = _verify_outputs(paths, cell["loader"])
         except GradleAtlasUiError as error:
             verdict, reason = Verdict.FAIL, str(error)
     payload = _payload(cell, paths, provenance, result, log, captures, verdict, reason)
@@ -187,6 +233,14 @@ def run(
         payload,
         f"# {cell_id} Atlas UI qualification\n\nVerdict: **{verdict.value}**\n\n"
         "This is source-ABI graphical evidence, not a production-launcher claim.\n",
+        stem="terminal",
+    )
+    handshake_payload = _handshake_payload(payload)
+    write_terminal_report(
+        paths.evidence_directory / "nightly" / "05-client-handshake",
+        handshake_payload,
+        f"# {cell_id} client handshake qualification\n\nVerdict: **{verdict.value}**\n\n"
+        "This is the handshake/disconnect tail of the same source-ABI Atlas UI session.\n",
         stem="terminal",
     )
     return payload

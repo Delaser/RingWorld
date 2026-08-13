@@ -618,8 +618,10 @@ The next source-ABI client slice reuses the integrated Atlas map/control
 fixture through `scripts/run_gradle_atlas_ui_qualification.py`. It keeps the
 same clean-source, exact dependency, Gradle user/project cache, and optional
 reviewed acceleration boundaries, but requires one disposable safe-small
-world, all eleven Atlas UI captures, complete generation, and the fixture's
-ordered placement/removal revision probe:
+world, accepted format-3 settings acknowledgement, a rendered mapping-4
+client identity, normal disconnect/session clear, all eleven Atlas UI captures,
+complete generation, and the fixture's ordered placement/removal revision
+probe:
 
 ```sh
 python3 scripts/run_gradle_atlas_ui_qualification.py --cell 26.1-fabric
@@ -639,6 +641,12 @@ The fixture's build-label assertion is selected independently by Gradle from
 the active `release_label` and `mod_version`. This retains the published 1.0
 identity check for ordinary development runs while requiring each exact
 qualification cell to display its diagnostic build identity.
+The expanded fixture writes separate immutable terminal records for nightly
+fixtures 04 and 05 from that one atomic client session. Fixture 04 owns Atlas
+controls and revisions; fixture 05 owns accepted settings, rendered client
+readiness, normal disconnect, and complete client-session teardown. The
+historical six-cell fixture-04 records predate this tail, so fixture 05 remains
+pending until every cell is rerun from one clean pushed revision.
 
 All qualification Gradle commands set both a disposable `GRADLE_USER_HOME`
 and a cell-contained `--project-cache-dir`. The latter is mandatory for Loom:

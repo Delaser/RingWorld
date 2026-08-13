@@ -11,7 +11,9 @@ import unittest
 
 from minecraft_qualification_executor import ExecutedCommand
 from minecraft_qualification_model import QualificationPaths, Verdict
-from run_gradle_atlas_ui_qualification import CAPTURE_PREFIXES, PASS_MARKER, ROOT, _command, run
+from run_gradle_atlas_ui_qualification import (  # noqa: E402
+    CAPTURE_PREFIXES, HANDSHAKE_MARKERS, PASS_MARKER, ROOT, _command, run,
+)
 from run_minecraft_qualification import SourceProvenance, load_manifest
 
 
@@ -45,7 +47,15 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
         world = run_root / "saves" / "Atlas UI" / "level.dat"
         world.parent.mkdir(parents=True)
         world.write_bytes(b"world")
-        (run_root / "logs/latest.log").write_text(PASS_MARKER + "\n", encoding="utf-8")
+        loader = "neoforge" if command.argv[-1].startswith(":neoforge:") else "fabric"
+        acknowledgement = (
+            "RingWorld settings acknowledged by AtlasUiTester on NeoForge: format 3"
+            if loader == "neoforge" else
+            "RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 3"
+        )
+        (run_root / "logs/latest.log").write_text(
+            "\n".join((acknowledgement, *HANDSHAKE_MARKERS, PASS_MARKER)) + "\n", encoding="utf-8"
+        )
         for prefix in CAPTURE_PREFIXES:
             (run_root / "screenshots" / f"{prefix}test.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"x" * 256)
         stdout, stderr = paths.logs_directory / "01.stdout.log", paths.logs_directory / "01.stderr.log"
@@ -64,11 +74,19 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
         self.assertEqual(result["verdict"], "PASS")
         self.assertEqual(len(result["captures"]), 11)
         self.assertTrue(result["claims"]["revisioned_edit_verified"])
+        self.assertTrue(result["claims"]["format3_mapping4_handshake"])
+        self.assertTrue(result["claims"]["normal_disconnect_cleared_client_state"])
         terminal = (
             self.root / "dist/qualification/ringworld/26.1/fabric" / RUN_ID /
             "26.1-fabric/evidence/nightly/04-atlas-ui-revision/terminal.json"
         )
         self.assertEqual(json.loads(terminal.read_text(encoding="utf-8"))["cell"], "26.1-fabric")
+        handshake_terminal = terminal.parents[1] / "05-client-handshake/terminal.json"
+        handshake = json.loads(handshake_terminal.read_text(encoding="utf-8"))
+        self.assertEqual(handshake["fixture"], "client-handshake")
+        self.assertEqual(handshake["derived_from_fixture"], "atlas-ui-revision")
+        self.assertTrue(handshake["claims"]["normal_disconnect_cleared_client_state"])
+        self.assertEqual(handshake["captures"], [])
 
     def test_missing_disposable_world_fails(self) -> None:
         def missing_world(command, paths, *, ordinal):
@@ -78,6 +96,36 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
         result = run(
             "26.1-fabric", repository_root=self.root, run_id_factory=lambda: RUN_ID,
             provenance_provider=lambda *_: self.provenance, command_executor=missing_world,
+        )
+        self.assertEqual(result["verdict"], "FAIL")
+
+    def test_missing_server_acknowledgement_or_teardown_marker_fails(self) -> None:
+        def missing_handshake(command, paths, *, ordinal):
+            result = self.executor(command, paths, ordinal=ordinal)
+            log = paths.run_directory / "run-atlas-ui/logs/latest.log"
+            log.write_text(PASS_MARKER + "\n", encoding="utf-8")
+            return result
+        result = run(
+            "26.1-fabric", repository_root=self.root, run_id_factory=lambda: RUN_ID,
+            provenance_provider=lambda *_: self.provenance, command_executor=missing_handshake,
+        )
+        self.assertEqual(result["verdict"], "FAIL")
+
+    def test_out_of_order_handshake_markers_fail(self) -> None:
+        def unordered_handshake(command, paths, *, ordinal):
+            result = self.executor(command, paths, ordinal=ordinal)
+            log = paths.run_directory / "run-atlas-ui/logs/latest.log"
+            log.write_text(
+                "\n".join((
+                    "RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 3",
+                    HANDSHAKE_MARKERS[1], HANDSHAKE_MARKERS[0],
+                    HANDSHAKE_MARKERS[2], PASS_MARKER,
+                )) + "\n", encoding="utf-8"
+            )
+            return result
+        result = run(
+            "26.1-fabric", repository_root=self.root, run_id_factory=lambda: RUN_ID,
+            provenance_provider=lambda *_: self.provenance, command_executor=unordered_handshake,
         )
         self.assertEqual(result["verdict"], "FAIL")
 
@@ -117,6 +165,18 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn("client.options.pauseOnLostFocus = false;", source)
+        self.assertIn("client.disconnectFromWorld", source)
+        self.assertIn("RingWorldClientSession.isCleared()", source)
+        self.assertIn("[atlas-ui-test] settings-v3-mapping-4", source)
+
+    def test_both_loader_verifiers_require_format3_ack_and_disconnect_markers(self) -> None:
+        root_build = (ROOT / "build.gradle").read_text(encoding="utf-8")
+        neo_build = (ROOT / "neoforge/build.gradle").read_text(encoding="utf-8")
+        for marker in HANDSHAKE_MARKERS:
+            self.assertIn(marker, root_build)
+            self.assertIn(marker, neo_build)
+        self.assertIn("AtlasUiTester: 2048x128, format 3", root_build)
+        self.assertIn("AtlasUiTester on NeoForge: format 3", neo_build)
 
 
 if __name__ == "__main__":

@@ -411,6 +411,20 @@ tasks.register('verifyNeoForgeAtlasUiClient') {
         if (!log.contains('[atlas-ui-test] PASS') || log.contains('[atlas-ui-test] FAIL')) {
             throw new GradleException("NeoForge atlas UI client did not pass; inspect ${logFile}")
         }
+        def atlasHandshakeMarkers = ['[atlas-ui-test] client-ready', '[atlas-ui-test] settings-v3-mapping-4',
+         '[atlas-ui-test] disconnect-clear', '[atlas-ui-test] PASS']
+        def previousAtlasHandshakeMarker = -1
+        atlasHandshakeMarkers.each { marker ->
+            def markerIndex = log.indexOf(marker)
+            if (markerIndex <= previousAtlasHandshakeMarker) {
+                throw new GradleException("NeoForge atlas UI client is missing handshake marker '${marker}'; inspect ${logFile}")
+            }
+            previousAtlasHandshakeMarker = markerIndex
+        }
+        def atlasSettingsAck = log.indexOf('RingWorld settings acknowledged by AtlasUiTester on NeoForge: format 3')
+        if (atlasSettingsAck < 0 || atlasSettingsAck >= log.indexOf('[atlas-ui-test] client-ready')) {
+            throw new GradleException("NeoForge Atlas UI integrated server did not accept the format-3 settings acknowledgement; inspect ${logFile}")
+        }
         (1..11).each { index ->
             def prefix = String.format('atlas-ui-%02d-', index)
             if (fileTree(new File(neoForgeAtlasUiRun, 'screenshots')).matching { include prefix + '*.png' }.isEmpty()) {

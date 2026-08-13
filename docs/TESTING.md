@@ -568,16 +568,26 @@ hides the development coordinate overlay, waits three rendered frames after
 every screen change, and records an unobstructed pause-menu,
 map, confirmation, running, a partial-atlas gameplay view, background
 close/reopen, pause/resume, cancel/retry, and complete screens as
-`atlas-ui-*.png`. It presses the actual confirmation widget, stops after
-`[atlas-ui-test] PASS`, and its finalizer verifies the marker plus all eleven
-PNGs. After completion it also places and removes a sampled high surface block,
+`atlas-ui-*.png`. It presses the actual confirmation widget, proves a rendered
+integrated client has installed the fresh mapping-4 identity, and its finalizer
+verifies the format-3 server acknowledgement, ordered client-ready/identity/
+disconnect-clear markers, terminal `[atlas-ui-test] PASS`, and all eleven PNGs.
+After completion it also places and removes a sampled high surface block,
 requiring two changed tile broadcasts and ordered durable revision commits
-before passing. The initial map stage additionally requires the embedded
+before it makes Minecraft perform a normal integrated-server disconnect. The
+fixture waits at most 200 ticks for the level and integrated server to be gone
+and for every RingWorld-owned client-session component to be cleared. The
+initial map stage additionally requires the embedded
 `1.0 · 1.0.0+mc26.1.2` label and fresh-world
 `Worldgen: annular-complete-v2 (4)` identity. It is a real integrated-server test:
 generation remains active because `RingWorldMapScreen` is explicitly
 non-pausing. Keep its run directory ignored and do not point it at a personal
 Prism instance or a production world.
+One atomic qualification invocation writes fixture 04's Atlas UI terminal and
+fixture 05's handshake/disconnect terminal separately. This avoids creating a
+second identical world while keeping the claims independently trackable. The
+six source-ABI records below predate the expanded tail and remain fixture-04
+evidence only until rerun.
 
 The 2026-08-02 NeoForge 26.1.2.87 run completed in 2m32s. It produced all
 eleven required screenshots, generated and durably verified 13,312/13,312

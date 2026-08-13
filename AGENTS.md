@@ -448,6 +448,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   commit `7a7c044`; exact run IDs and terminal hashes are recorded in
   `docs/TESTING.md`. This closes fixture 04 only and is not packaged-client or
   frozen-candidate evidence.
+  The runner now also emits a distinct fixture-05 terminal record after an
+  accepted format-3/mapping-4 handshake and normal disconnect/session clear.
+  Do not count the earlier fixture-04 records as fixture-05 evidence; the
+  expanded six-cell matrix still needs a clean-revision rerun.
   Fabric must keep the Atlas fixture exclusive after it invokes Create World;
   before the integrated player exists, the generic `testMode` launcher must
   not race it by creating a second automated world.

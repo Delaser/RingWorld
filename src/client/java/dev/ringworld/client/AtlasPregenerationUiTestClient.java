@@ -6,6 +6,8 @@ import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import dev.ringworld.world.AtlasPregenerationAction;
 import dev.ringworld.world.AtlasPregenerationState;
 import dev.ringworld.world.AtlasPregenerationStatus;
+import dev.ringworld.world.RingTerrainNoiseMapping;
+import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;
@@ -15,6 +17,7 @@ import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.client.input.InputWithModifiers;
+import net.minecraft.network.chat.Component;
 
 /** Opt-in real-client GUI-scale-4 acceptance fixture for the player atlas map. */
 public final class AtlasPregenerationUiTestClient {
@@ -23,6 +26,7 @@ public final class AtlasPregenerationUiTestClient {
     private static final int SETTLE_FRAMES = 3;
     private static final double PROGRESSIVE_CAPTURE_COMPLETION = 0.25;
     private static final int TIMEOUT_TICKS = 14_400;
+    private static final int DISCONNECT_TIMEOUT_TICKS = 200;
     private long renderedFrames;
     private long readyAfterFrame;
     private int stage;
@@ -38,6 +42,8 @@ public final class AtlasPregenerationUiTestClient {
     private boolean worldStarted;
     private int menuTicks;
     private String lastMenuScreen = "";
+    private boolean clientReadyLogged;
+    private int disconnectTicks;
 
     public boolean enabled() { return Boolean.getBoolean(ENABLE_PROPERTY); }
     public void frameRendered() { renderedFrames++; }
@@ -85,12 +91,19 @@ public final class AtlasPregenerationUiTestClient {
     }
 
     public boolean tick(Minecraft client) {
-        if (!enabled() || client.player == null) return false;
+        if (!enabled()) return false;
         client.options.guiScale().set(4);
         if (++ticks > TIMEOUT_TICKS) return fail(client, "timed out before completion");
+        // A normal integrated-server disconnect clears player/level before
+        // this fixture may claim the final teardown evidence.
+        if (stage == 17) return verifyDisconnectClear(client);
+        if (client.player == null) return false;
         AtlasPregenerationStatus status = AtlasPregenerationClientState.status().orElse(null);
         switch (stage) {
-            case 0 -> { client.setScreen(new PauseScreen(true)); arm(); stage++; }
+            case 0 -> {
+                if (!verifyClientReady(client)) return true;
+                client.setScreen(new PauseScreen(true)); arm(); stage++;
+            }
             case 1 -> {
                 if (!(client.screen instanceof PauseScreen) || !settled()) return true;
                 capture(client, "atlas-ui-01-pause-menu", false);
@@ -224,8 +237,8 @@ public final class AtlasPregenerationUiTestClient {
                 if (atlas.cellHeight(editedCellColumn, editedCellRow) == 201) {
                     return fail(client, "removed surface block remained in the client atlas");
                 }
-                RingWorldMod.LOGGER.info("[atlas-ui-test] PASS: GUI scale 4 progressive-world/confirmation/running/background/reopen/pause/resume/cancel/retry/complete/revisioned-edit");
-                client.stop();
+                RingWorldMod.LOGGER.info("[atlas-ui-test] requesting normal integrated-server disconnect after revision proof");
+                client.disconnectFromWorld(Component.literal("RingWorld Atlas UI handshake teardown regression"));
                 stage++;
             }
             default -> { }
@@ -235,6 +248,49 @@ public final class AtlasPregenerationUiTestClient {
 
     private void arm() { readyAfterFrame = renderedFrames + SETTLE_FRAMES; }
     private boolean settled() { return renderedFrames >= readyAfterFrame; }
+
+    /**
+     * This runs only after the real integrated world has connected and at
+     * least one level frame has rendered. The server log separately proves
+     * acceptance of the format-3 acknowledgement; this client proof binds the
+     * resulting state to the fresh mapping-4 world actually being rendered.
+     */
+    private boolean verifyClientReady(Minecraft client) {
+        if (client.level == null || client.getSingleplayerServer() == null || renderedFrames == 0) {
+            return false;
+        }
+        if (ClientRingState.geometry() == null || ClientRingState.layoutFingerprint() == 0L) {
+            return false;
+        }
+        if (RingWorldSettings.FORMAT_VERSION != 3
+                || ClientRingState.terrainNoiseMapping() != RingTerrainNoiseMapping.CURRENT) {
+            fail(client, "live settings identity was not format-3/mapping-4");
+            return false;
+        }
+        if (!clientReadyLogged) {
+            clientReadyLogged = true;
+            RingWorldMod.LOGGER.info("[atlas-ui-test] client-ready renderedFrames={}", renderedFrames);
+            RingWorldMod.LOGGER.info("[atlas-ui-test] settings-v3-mapping-4 fingerprint={}",
+                    Long.toUnsignedString(ClientRingState.layoutFingerprint(), 16));
+        }
+        return true;
+    }
+
+    private boolean verifyDisconnectClear(Minecraft client) {
+        if (client.level != null || client.getSingleplayerServer() != null) {
+            if (++disconnectTicks <= DISCONNECT_TIMEOUT_TICKS) return true;
+            return fail(client, "normal disconnect did not complete");
+        }
+        if (!RingWorldClientSession.isCleared()) {
+            if (++disconnectTicks <= DISCONNECT_TIMEOUT_TICKS) return true;
+            return fail(client, "normal disconnect did not clear RingWorld client state");
+        }
+        RingWorldMod.LOGGER.info("[atlas-ui-test] disconnect-clear client-session=true");
+        RingWorldMod.LOGGER.info("[atlas-ui-test] PASS: GUI scale 4 progressive-world/confirmation/running/background/reopen/pause/resume/cancel/retry/complete/revisioned-edit/normal-disconnect");
+        client.stop();
+        stage++;
+        return true;
+    }
     private static boolean fail(Minecraft client, String reason) {
         RingWorldMod.LOGGER.error("[atlas-ui-test] FAIL: {}", reason);
         client.stop();
