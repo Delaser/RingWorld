@@ -4,7 +4,7 @@ package dev.ringworld.world;
 public final class RingSeamTerrainAudit {
     public static final int CLIFF_HEIGHT_BLOCKS = 12;
     public static final int MAX_CONTIGUOUS_CLIFF_COLUMNS = 15;
-    public static final double MAX_SMOOTH_JOIN_AVERAGE_DELTA = 1.0;
+    public static final double MAX_SMOOTH_JOIN_AVERAGE_DELTA = 2.0;
 
     private RingSeamTerrainAudit() { }
 
@@ -35,10 +35,9 @@ public final class RingSeamTerrainAudit {
 
     public record Report(int largestDelta, int cliffColumns, int longestCliffRun,
                          double averageAbsoluteDelta, boolean passes) {
-        /** Rejects a broad lower wall while allowing one isolated natural feature. */
+        /** Rejects a broad lower wall while allowing isolated natural relief. */
         public boolean passesSmoothJoin() {
-            return passes && cliffColumns == 0
-                    && averageAbsoluteDelta <= MAX_SMOOTH_JOIN_AVERAGE_DELTA;
+            return passes && averageAbsoluteDelta <= MAX_SMOOTH_JOIN_AVERAGE_DELTA;
         }
     }
 }

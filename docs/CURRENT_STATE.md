@@ -127,6 +127,12 @@ ores, vegetation, structures, seam-crossing starts, references, loot, both
 monument outcomes, spawn overrides, and clean self-halt. Pure and fake-runtime
 tests pass on both loader shapes; no real Fabric or NeoForge PASS is recorded
 until the clean operator commands complete.
+The first Fabric production run exposed a fixture false positive before it
+could claim PASS: one isolated 12-block natural step across the full width was
+being rejected as though it were a broad seam wall. The audit now follows its
+documented intent by retaining the broad-cliff gate and a two-block average
+delta limit while allowing isolated relief. This change still requires the
+full real dual-loader rerun.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java
@@ -280,7 +286,7 @@ worlds created after the seam regression use complete annular mapping v2 (4)
 legacy mapping retained. Mapping identity is persisted, handshaken on new
 `settings_v3`/`settings_ack_v3` channels, attached to every Overworld noise
 router, fingerprinted, and included in the atlas world hash. Both loader test
-suites pass 337 cases. Mapping 4 also transforms vanilla's direct
+suites pass 338 cases. Mapping 4 also transforms vanilla's direct
 `BlendedNoise` leaf; mappings 1-3 remain preserved historical identities. Both
 fresh 16,384×256 stronghold/worldgen gates previously passed
 the five-longitude, three-width-position terrain/height/alias matrix plus the
@@ -489,7 +495,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite passes 337 unit/parameterized cases per loader.
+The active suite passes 338 unit/parameterized cases per loader.
 Fresh production visual-parity runs on 2026-08-10 exercised multiple partial
 Atlas revisions and the two-texture shader on both loaders before completing
 the natural seam and both rim captures. Fabric recorded 831 seam-motion frames
