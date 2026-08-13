@@ -40,6 +40,8 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
             "test_external_runtime_worldgen_executor.py",
             "test_external_runtime_worldgen_stage_runner.py",
             "test_run_worldgen_qualification.py",
+            "test_external_graphical_creation_ui.py",
+            "test_run_creation_ui_qualification.py",
         ):
             self.assertIn(test, source)
         for prohibited in ("./gradlew", "curl ", "wget ", "java ", "publish", "upload"):
