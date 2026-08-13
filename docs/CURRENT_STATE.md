@@ -191,7 +191,10 @@ cross-version runtime PASS is claimed until the corrected run completes. The
 first corrected clean-profile attempt then stopped at Minecraft's accessibility
 onboarding screen. Both loader preparers now explicitly disable only that
 first-run screen and set the fixture's intended GUI scale, matching the
-already-qualified creation UI preparer.
+already-qualified creation UI preparer. The next clean run proved one further
+startup ordering requirement: Minecraft's temporary `GenericMessageScreen`
+can supersede an editor opened before the final title screen. The shared
+fixture now waits for `TitleScreen` before invoking `openFresh`.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java

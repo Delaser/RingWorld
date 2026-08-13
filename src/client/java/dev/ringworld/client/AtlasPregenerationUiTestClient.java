@@ -11,6 +11,7 @@ import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.PauseScreen;
+import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.client.input.InputWithModifiers;
@@ -54,6 +55,11 @@ public final class AtlasPregenerationUiTestClient {
         if (++menuTicks > 2_400) return fail(client,
                 "timed out opening disposable world from " + currentScreen);
         if (!worldScreenOpened) {
+            // Minecraft initially shows a GenericMessageScreen while its
+            // title resources finish loading. openFresh invoked there can be
+            // superseded by the later TitleScreen transition, leaving the
+            // fixture waiting forever for an editor that was discarded.
+            if (!(client.screen instanceof TitleScreen)) return true;
             RingWorldMod.LOGGER.info("[atlas-ui-test] opening fresh-world editor");
             CreateWorldScreen.openFresh(client, () -> worldScreenOpened = false);
             worldScreenOpened = true;
