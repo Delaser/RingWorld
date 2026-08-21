@@ -5,9 +5,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Relative;
+import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.GameType;
-import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.level.GameRules;
 
 import java.util.Set;
 import java.util.UUID;
@@ -51,22 +51,18 @@ final class RingIntegratedCaptureControl {
     }
 
     static void normalizeEnvironment(Context context, int timeTicks, boolean raining) {
-        var source = context.server().createCommandSourceStack()
-                .withPermission(context.server().operatorUserPermissions())
-                .withSuppressedOutput();
-        context.server().getCommands().performPrefixedCommand(
-                source, "time set " + timeTicks);
-        context.world().getGameRules().set(
-                GameRules.ADVANCE_TIME, false, context.server());
-        context.server().getCommands().performPrefixedCommand(
-                source, raining ? "weather rain" : "weather clear");
+        context.world().setDayTime(timeTicks);
+        context.world().getGameRules().getRule(GameRules.RULE_DAYLIGHT).set(false, context.server());
+        context.world().setWeatherParameters(raining ? 0 : 6000, raining ? 6000 : 0, raining, false);
+        context.world().setRainLevel(raining ? 1.0F : 0.0F);
+        context.world().setThunderLevel(0.0F);
         context.player().setGameMode(GameType.SPECTATOR);
     }
 
     static void teleport(Context context, double x, double y, double z) {
         context.player().teleportTo(context.world(), x, y, z,
-                Set.<Relative>of(), context.player().getYRot(),
-                context.player().getXRot(), false);
+                Set.<RelativeMovement>of(), context.player().getYRot(),
+                context.player().getXRot());
     }
 
     record Context(MinecraftServer server, ServerLevel world, ServerPlayer player) { }

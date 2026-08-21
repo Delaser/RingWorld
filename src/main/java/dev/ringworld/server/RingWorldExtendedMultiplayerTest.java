@@ -11,12 +11,11 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
-import net.minecraft.world.entity.Relative;
+import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.entity.player.Player;
-import net.minecraft.world.entity.monster.zombie.Zombie;
+import net.minecraft.world.entity.monster.Zombie;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
@@ -36,7 +35,7 @@ import net.minecraft.world.level.block.state.properties.ChestType;
 import net.minecraft.world.level.material.Fluids;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.phys.Vec3;
-
+import net.minecraft.BlockUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -117,19 +116,14 @@ final class RingWorldExtendedMultiplayerTest {
         baselinePassed = priorPassed;
         prepareCreativePlayer(playerA);
         prepareCreativePlayer(playerB);
-        var weather = world.getWeatherData();
-        weather.setClearWeatherTime(6_000);
-        weather.setRainTime(0);
-        weather.setThunderTime(0);
-        weather.setRaining(false);
-        weather.setThundering(false);
+        world.setWeatherParameters(6000, 0, false, false);
         world.setRainLevel(0.0F);
         world.setThunderLevel(0.0F);
         COLD_TELEMETRY.record("extended-fixture-before", world);
         playerA.teleportTo(world, geometry.circumferenceBlocks() - 2.5, 120.0, 0.5,
-                Set.<Relative>of(), 90.0f, 10.0f, false);
+                Set.<RelativeMovement>of(), 90.0F, 10.0F);
         playerB.teleportTo(world, 2.5, 120.0, 0.5,
-                Set.<Relative>of(), -90.0f, 10.0f, false);
+                Set.<RelativeMovement>of(), -90.0f, 10.0f);
 
         BlockPos chest = chestPos();
         BlockPos chestHigh = chestHighPos(geometry);
@@ -243,17 +237,13 @@ final class RingWorldExtendedMultiplayerTest {
         var base = Blocks.RED_BED.defaultBlockState().setValue(BedBlock.FACING, Direction.EAST);
         world.setBlock(foot, base.setValue(BedBlock.PART, BedPart.FOOT), 3);
         world.setBlock(head, base.setValue(BedBlock.PART, BedPart.HEAD), 3);
-        var clock = world.dimensionType().defaultClock()
-                .orElseThrow(() -> new IllegalStateException("Overworld has no default clock"));
-        // World clocks are monotonic in 26.1. A reused fixture may already be
-        // beyond day zero, so move to the next night's 13,000-tick phase
-        // instead of attempting to rewind the clock to absolute tick 13,000.
-        long currentTicks = world.clockManager().getTotalTicks(clock);
+        // Move to the next night's 13,000-tick phase without rewinding the world clock.
+        long currentTicks = world.getDayTime();
         long nextNight = (Math.floorDiv(currentTicks, 24_000L) + 1L) * 24_000L + 13_000L;
-        world.clockManager().setTotalTicks(clock, nextNight);
+        world.setDayTime(nextNight);
         prepareSurvivalPlayer(playerA);
         playerA.teleportTo(world, geometry.circumferenceBlocks() - 1.5, 120.0, -1.5,
-                Set.<Relative>of(), 90.0f, 10.0f, false);
+                Set.<RelativeMovement>of(), 90.0f, 10.0f);
         // NeoForge asks the environment-attribute system whether sleeping is
         // allowed before vanilla performs the same check. Let the clock change
         // advance through one server tick so both loaders observe the new
@@ -264,7 +254,7 @@ final class RingWorldExtendedMultiplayerTest {
     private static void armSeamNavigator(ServerLevel world, RingGeometry geometry) {
         List<Entity> staleNavigators = new ArrayList<>();
         for (Entity entity : world.getAllEntities()) {
-            if (entity.entityTags().contains(NAVIGATOR_TAG)) staleNavigators.add(entity);
+            if (entity.getTags().contains(NAVIGATOR_TAG)) staleNavigators.add(entity);
         }
         staleNavigators.forEach(Entity::discard);
         int circumference = geometry.circumferenceBlocks();
@@ -380,7 +370,7 @@ final class RingWorldExtendedMultiplayerTest {
                 && canonicalBed
                 && RingWorldMultiplayerTest.clientPassed("A", "bed_sleep_restart")) {
             BlockPos sleepingPosBeforeDamage = playerA.getSleepingPos().orElse(null);
-            boolean damaged = playerA.hurtServer(world, world.damageSources().generic(), 1.0F);
+            boolean damaged = playerA.hurt(world.damageSources().generic(), 1.0F);
             RingWorldMod.LOGGER.info(
                     "[multiplayer-extended] post-reconnect sleep result=true canonicalX={} canonicalBed={}; damage applied={}",
                     playerA.getX(), sleepingPosBeforeDamage, damaged);
@@ -420,7 +410,7 @@ final class RingWorldExtendedMultiplayerTest {
         if (ticks >= 20 && bedDestroyedPassed) {
             preDeathPlayer = playerA;
             prepareSurvivalPlayer(playerA);
-            playerA.kill(world);
+            playerA.kill();
             advance(5);
         } else if (ticks >= TIMEOUT_TICKS) {
             RingWorldMod.LOGGER.error("[multiplayer-extended] bed destruction result=false serverBed={} client={}",
@@ -455,7 +445,7 @@ final class RingWorldExtendedMultiplayerTest {
         prepareSurvivalPlayer(playerA);
         BlockPos requested = new BlockPos(geometry.circumferenceBlocks() - 8, 120, 12);
         COLD_TELEMETRY.record("nether-before-create", overworld);
-        Optional<net.minecraft.util.BlockUtil.FoundRectangle> created = overworld.getPortalForcer()
+        Optional<BlockUtil.FoundRectangle> created = overworld.getPortalForcer()
                 .createPortal(requested, Direction.Axis.Z);
         if (created.isEmpty()) {
             RingWorldMod.LOGGER.error("[multiplayer-extended] Nether portal result=false reason=source-create");
@@ -465,7 +455,7 @@ final class RingWorldExtendedMultiplayerTest {
         overworldNetherPortal = created.get().minCorner;
         playerA.teleportTo(overworld, overworldNetherPortal.getX() + 0.5,
                 overworldNetherPortal.getY(), overworldNetherPortal.getZ() + 0.5,
-                Set.<Relative>of(), playerA.getYRot(), playerA.getXRot(), false);
+                Set.<RelativeMovement>of(), playerA.getYRot(), playerA.getXRot());
         expectedPortalWait = ((Portal) Blocks.NETHER_PORTAL)
                 .getPortalTransitionTime(overworld, playerA);
         portalWaitStarted = overworld.getGameTime();
@@ -505,9 +495,9 @@ final class RingWorldExtendedMultiplayerTest {
                     new BlockPos(2, overworldNetherPortal.getY(), overworldNetherPortal.getZ()),
                     false,
                     overworld.getWorldBorder());
-            Optional<net.minecraft.util.BlockUtil.FoundRectangle> lowCreated =
+            Optional<BlockUtil.FoundRectangle> lowCreated =
                     overworld.getPortalForcer().createPortal(lowRawTarget, Direction.Axis.Z);
-            Optional<net.minecraft.util.BlockUtil.FoundRectangle> highCreated =
+            Optional<BlockUtil.FoundRectangle> highCreated =
                     overworld.getPortalForcer().createPortal(highRawTarget, Direction.Axis.Z);
             Optional<BlockPos> lowFound = overworld.getPortalForcer().findClosestPortalPosition(
                     lowRawTarget, false, overworld.getWorldBorder());
@@ -542,7 +532,7 @@ final class RingWorldExtendedMultiplayerTest {
                     highRawTarget.getX() / 8.0,
                     playerA.getY(),
                     highRawTarget.getZ() / 8.0,
-                    Set.<Relative>of(), playerA.getYRot(), playerA.getXRot(), false);
+                    Set.<RelativeMovement>of(), playerA.getYRot(), playerA.getXRot());
             var transition = ((Portal) Blocks.NETHER_PORTAL)
                     .getPortalDestination(nether, playerA, exit.get());
             if (transition == null) {
@@ -550,7 +540,7 @@ final class RingWorldExtendedMultiplayerTest {
                 advance(12);
                 return;
             }
-            playerA.teleport(transition);
+            playerA.changeDimension(transition);
             playerA.setPortalCooldown();
             RingWorldMod.LOGGER.info(
                     "[multiplayer-extended] ordinary Nether portal wait result={} elapsedTicks={} expectedTicks={}",
@@ -562,7 +552,7 @@ final class RingWorldExtendedMultiplayerTest {
             advance(8);
         } else if (ticks >= TIMEOUT_TICKS) {
             RingWorldMod.LOGGER.error("[multiplayer-extended] Nether portal result=false reason=enter-timeout dimension={} client={}",
-                    playerA.level().dimension().identifier(),
+                    playerA.level().dimension().location(),
                     RingWorldMultiplayerTest.clientPassed("A", "nether_enter"));
             advance(12);
         }
@@ -586,7 +576,7 @@ final class RingWorldExtendedMultiplayerTest {
             BlockPos endPortal = new BlockPos(geometry.circumferenceBlocks() - 12, 120, 16);
             overworld.setBlock(endPortal, Blocks.END_PORTAL.defaultBlockState(), 3);
             playerA.teleportTo(overworld, endPortal.getX() + 0.5, endPortal.getY() + 1.0,
-                    endPortal.getZ() + 0.5, Set.<Relative>of(), 0.0F, 0.0F, false);
+                    endPortal.getZ() + 0.5, Set.<RelativeMovement>of(), 0.0F, 0.0F);
             var transition = ((Portal) Blocks.END_PORTAL)
                     .getPortalDestination(overworld, playerA, endPortal);
             if (transition == null) {
@@ -594,7 +584,7 @@ final class RingWorldExtendedMultiplayerTest {
                 advance(12);
                 return;
             }
-            playerA.teleport(transition);
+            playerA.changeDimension(transition);
             playerA.setPortalCooldown();
             RingWorldMod.LOGGER.info("[multiplayer-extended] physical Nether portal result=true returnX={}; End outbound armed",
                     netherReturnX);
@@ -602,7 +592,7 @@ final class RingWorldExtendedMultiplayerTest {
             advance(9);
         } else if (ticks >= TIMEOUT_TICKS) {
             RingWorldMod.LOGGER.error("[multiplayer-extended] Nether portal result=false reason=return-timeout dimension={} x={} client={}",
-                    playerA.level().dimension().identifier(), playerA.getX(),
+                    playerA.level().dimension().location(), playerA.getX(),
                     RingWorldMultiplayerTest.clientPassed("A", "nether_return"));
             advance(12);
         }
@@ -623,13 +613,13 @@ final class RingWorldExtendedMultiplayerTest {
                 advance(12);
                 return;
             }
-            playerA.teleport(transition);
+            playerA.changeDimension(transition);
             playerA.setPortalCooldown();
             COLD_TELEMETRY.record("end-return-armed", overworld);
             advance(10);
         } else if (ticks >= TIMEOUT_TICKS) {
             RingWorldMod.LOGGER.error("[multiplayer-extended] End portal result=false reason=enter-timeout dimension={} client={}",
-                    playerA.level().dimension().identifier(),
+                    playerA.level().dimension().location(),
                     RingWorldMultiplayerTest.clientPassed("A", "end_enter"));
             advance(12);
         }
@@ -651,7 +641,7 @@ final class RingWorldExtendedMultiplayerTest {
             advance(11);
         } else if (ticks >= TIMEOUT_TICKS) {
             RingWorldMod.LOGGER.error("[multiplayer-extended] End portal result=false reason=return-timeout dimension={} x={} client={}",
-                    playerA.level().dimension().identifier(), playerA.getX(),
+                    playerA.level().dimension().location(), playerA.getX(),
                     RingWorldMultiplayerTest.clientPassed("A", "end_return"));
             advance(12);
         }
@@ -682,18 +672,15 @@ final class RingWorldExtendedMultiplayerTest {
             prepareCreativePlayer(playerA);
             prepareCreativePlayer(playerB);
             playerA.teleportTo(world, geometry.circumferenceBlocks() - 2.5, 120.0, 0.5,
-                    Set.<Relative>of(), 90.0F, 10.0F, false);
+                    Set.<RelativeMovement>of(), 90.0F, 10.0F);
             playerB.teleportTo(world, 2.5, 120.0, 0.5,
-                    Set.<Relative>of(), -90.0F, 10.0F, false);
-            var weather = world.getWeatherData();
-            weather.setClearWeatherTime(0);
-            weather.setRainTime(6_000);
-            weather.setThunderTime(6_000);
-            weather.setRaining(true);
-            weather.setThundering(true);
+                    Set.<RelativeMovement>of(), -90.0F, 10.0F);
+            world.setWeatherParameters(0, 6_000, true, true);
+            world.setRainLevel(1.0F);
+            world.setThunderLevel(1.0F);
         }
         if (ticks >= 40 && ticks % 10 == 0) {
-            LightningBolt lightning = EntityType.LIGHTNING_BOLT.create(world, EntitySpawnReason.TRIGGERED);
+            LightningBolt lightning = EntityType.LIGHTNING_BOLT.create(world);
             if (lightning != null) {
                 lightning.setVisualOnly(true);
                 lightning.setPos(0.5, 121.0, 0.5);
@@ -875,9 +862,9 @@ final class RingWorldExtendedMultiplayerTest {
                 ? chest : null;
         boolean preserved = canonicalChest != null && loadedAliasChest != null
                 && pendingAliasNbt != null
-                && pendingAliasNbt.getIntOr("x", Integer.MIN_VALUE) == alias.getX()
+                && (pendingAliasNbt.contains("x") ? pendingAliasNbt.getInt("x") : Integer.MIN_VALUE) == alias.getX()
                 && pendingCanonicalNbt != null
-                && pendingCanonicalNbt.getIntOr("x", Integer.MIN_VALUE) == canonical.getX()
+                && (pendingCanonicalNbt.contains("x") ? pendingCanonicalNbt.getInt("x") : Integer.MIN_VALUE) == canonical.getX()
                 && chunk.getBlockEntity(canonical) == canonicalChest
                 && chunk.getBlockEntity(alias) == loadedAliasChest
                 && canonicalChest.getItem(0).is(Items.GOLD_INGOT)
@@ -947,7 +934,7 @@ final class RingWorldExtendedMultiplayerTest {
 
     private static boolean connectedChestState(BlockState state) {
         return state.is(Blocks.CHEST) && state.getValue(ChestBlock.TYPE)
-                != net.minecraft.world.level.block.state.properties.ChestType.SINGLE;
+                != ChestType.SINGLE;
     }
 
     private static BlockPos chestPos() { return new BlockPos(0, 120, -3); }

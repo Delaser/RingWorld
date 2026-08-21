@@ -79,7 +79,7 @@ public final class RingWorldCreationUiTestClient {
             // and its injected footer instead of submitting another request.
             menuRequestSubmitted = true;
             RingWorldMod.LOGGER.info("[creation-ui-test] framebuffer ready; opening Create World");
-            CreateWorldScreen.openFresh(client, () -> { });
+            CreateWorldScreen.openFresh(client, client.screen);
             arm();
         }
         return true;
@@ -245,13 +245,12 @@ public final class RingWorldCreationUiTestClient {
     private void captureConfirmationAndAccept(Minecraft client) {
         if (!(client.screen instanceof ConfirmScreen confirm)
                 || !"Use layout".equals(((ConfirmScreenAccessor) confirm)
-                        .ringworld$yesButton().getMessage().getString())) {
+                        .ringworld$exitButtons().get(0).getMessage().getString())) {
             fail(client, "the real layout confirmation screen was not opened");
             return;
         }
         capture(client, "creation-ui-12-confirm-layout-scale4", () -> {
-            ((ConfirmScreenAccessor) confirm).ringworld$yesButton()
-                    .onPress(RingWorldCreationScreen.AutomationInput.INSTANCE);
+            ((ConfirmScreenAccessor) confirm).ringworld$exitButtons().get(0).onPress();
             armAndAdvance();
         });
     }
@@ -306,7 +305,7 @@ public final class RingWorldCreationUiTestClient {
 
     private void capture(Minecraft client, String name, Runnable afterCapture) {
         capturePending = true;
-        Screenshot.grab(client.gameDirectory, name + ".png", client.getMainRenderTarget(), 1, message -> {
+        Screenshot.grab(client.gameDirectory, name + ".png", client.getMainRenderTarget(), message -> {
             // Screenshot writes on Minecraft's I/O pool. Keep fixture state
             // and the shutdown path on the client thread.
             client.execute(() -> {
@@ -328,7 +327,14 @@ public final class RingWorldCreationUiTestClient {
 
     private void setGuiScale(Minecraft client, int scale) {
         client.options.guiScale().set(scale);
-        client.resizeGui();
+        client.getWindow().setGuiScale(scale);
+
+        if (client.screen != null) {
+            client.screen.resize(
+                    client,
+                    client.getWindow().getGuiScaledWidth(),
+                    client.getWindow().getGuiScaledHeight());
+        }
     }
 
     private static void resizeFramebuffer(Minecraft client, int targetWidth, int targetHeight) {

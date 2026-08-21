@@ -1,6 +1,6 @@
 # Current state
 
-Last audited: 2026-08-10 against public `main` and the 1.0 release branch.
+Last audited: 2026-08-13 against public `main` and the 1.0 release branch.
 The final
 Minecraft 1.21.11 implementation remains historical provenance at
 `mc-1.21.11-final` / `2c98650`.
@@ -17,6 +17,59 @@ tiers, evidence contract, and intake order are defined in
 [`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
 Existing 26.1.2 release evidence remains exact historical evidence and is not
 silently generalized to the rest of the patch line.
+
+The Phase 5 forward-upgrade implementation is now present and covered by the
+232-test static qualification workflow. Its explicit CLI only permits copied
+same-loader `26.1 -> 26.1.1`, `26.1 -> 26.1.2`, and `26.1.1 -> 26.1.2` paths,
+revalidating a passed source-worldgen record and target quick record before it
+can create a new contained target fixture. All six supported real forward paths
+pass from clean pushed commit `7983b8a`; their run IDs are recorded under
+Phase 5 in `MINECRAFT_VERSION_SUPPORT_PLAN.md` and GitHub issue #173.
+Phase 6 also now has a static-tested local equivalence guard: it permits a
+proposed public jar to differ from the frozen candidate only in approved public
+metadata/version fields. Local `1.1.0+mc26.1` / label `1.1` candidates were
+built from clean public `main` on 2026-08-13 against the oldest 26.1 ABI. Both
+passed all 338 tests and byte-level equivalence against the exact refreshed
+frozen candidates: Fabric release SHA-256
+`082cb6977252da3e454c028e5a11e62f15c9be0697ebb47aa05635cda6e5aef4`
+matches frozen `8b919c42...e7e31`, and NeoForge release SHA-256
+`1b81d62142d06a52f96d4a7416f62bd15bb1fd0198d35d4abc4fa771ab9941aa`
+matches frozen `77389181...6f50`. Only the reviewed loader descriptor and
+`ringworld-build.properties` version/label bytes differ. These ignored local
+candidates are not staged, uploaded, published, or yet a broadened support
+claim.
+
+Phase 7's local staging bridge is now implemented and pure/static tested. It
+requires all six strict quick records, both exact frozen hashes, and successful
+metadata-only equivalence before it can create ignored Fabric and NeoForge
+review folders. Each folder carries one candidate jar, both hashes, complete
+archive inventory, exact source URL, three proven game-version tags, generated
+Modrinth/CurseForge metadata, loader-correct Fabric API relations, changelog,
+and rollback identity. The CLI contains no host client or credential input; a
+real staging run awaits a clean pushed commit.
+
+The Phase 8/9 host bridge is also implemented and no-network tested. It reads
+only the qualified local stage, defaults to a printed dry run, requests an
+unlisted Modrinth version or manually held CurseForge file, and has no route to
+edit/delete old releases. Execution is fail-closed behind an exact short-lived
+owner authorization, clean pushed source equality, and a host-specific token
+environment variable. No token was read and no submission was made.
+
+On 2026-08-13, local current-version Gradle development regressions passed on
+both loaders: the safe-small mapping-4 map/compass and curved-rigid-object
+fixtures, safe-small production visual parity, and the copied 16,384x256
+production lifecycle and projection gates. The lifecycle completed
+Overworld/Nether/Overworld/End/Overworld, normal save/disconnect, client-state
+clear, and reopen with the complete mapping-4 Atlas on both loaders. Its first
+Fabric attempt exposed a fixture timing error: a fixed 20-tick reopen sample
+ran after only the first streamed Atlas tiles. The corrected gate retains its
+existing timeout but waits for the complete matching Atlas identity; fresh
+Fabric and NeoForge reruns pass. Production tangent, 16-chunk handoff, and
+radial-up captures also pass on both loaders. Visual-parity seam windows
+recorded Fabric 707 frames (10.086 ms average, 41.917 ms maximum, zero over
+50 ms) and NeoForge 681 frames (10.554 ms average, 28.958 ms maximum, zero
+over 50 ms). These are local Gradle dev-runtime regressions, not frozen-jar
+six-cell qualification or release evidence.
 
 Phase 0 is tracked by GitHub epic #168 and its Phase 1–10 child issues. Phase 1
 now has a fail-closed six-cell manifest and eighteen pure validator tests. The
@@ -42,7 +95,7 @@ rejects every existing symlink component on its managed paths before fixture
 creation or deletion.
 The first source-build diagnostics also pass unchanged on all four earlier
 patch cells: Fabric 26.1/26.1.1 and NeoForge's pinned 26.1/26.1.1 beta trials
-each compile, package, and pass all 337 tests. Their generated loader metadata
+each compile, package, and pass all 338 tests. Their generated loader metadata
 names the selected Minecraft/runtime versions. These are source-build ABI
 results only—not server/client runtime qualification or same-jar evidence—so
 the four manifest cells remain `pending`.
@@ -75,24 +128,27 @@ frozen-candidate identity, and same-file group evidence. The runner now
 installs this phase only after clean provenance and a complete frozen loader
 triplet, lending its live exact cell lock to avoid re-acquisition. It persists
 a separately validated, immutable raw strict-terminal-evidence JSON record
-alongside the scheduler report. The complete Fabric triplet passed end to end
-on 2026-08-12 in run `20260812T170742Z-d5ff11778395` at commit `b4d80ce`.
-Each of 26.1, 26.1.1, and 26.1.2 passed all 337 tests, strict diagnostic-jar
-inspection, official installer/runtime assembly, a fresh 2,048x416 mapping-4
-server, and strict stop/save evidence. All three loaded the same frozen
-wide-range jar with SHA-256
-`e1254b38cf811e7c68382c4ecc025dbede8b5effca54993e5bd403716bff5f39`.
-The exact strict-evidence SHA-256 values are `9df2b50f...ecd8` (26.1),
-`37c9a2e3...0072` (26.1.1), and `4fecc925...5cc3` (26.1.2). The optional
-checksum-pinned external Gradle ZIP seed removed the earlier wrapper-download
-interruption while preserving isolated cell homes. The complete NeoForge
-triplet then passed in run `20260812T171404Z-a2d212243bb3`: all three cells
-passed the same gates with frozen jar SHA-256
-`c264b1d389ef3e341e4bd7318c89b4c819568c114c811867c239ecbf9d6f8e2f`.
-Its strict-evidence SHA-256 values are `ecf0f169...421d` (26.1),
-`fb29c97f...eb4c` (26.1.1), and `03538bba...ce94` (26.1.2). Phase 3 quick
-qualification is therefore complete for both loaders; Phase 4 nightly
-gameplay/rendering qualification remains pending.
+alongside the scheduler report. The refreshed Fabric triplet passed end to
+end on 2026-08-13 in combined run `20260813T164933Z-8bee9268f799`. Each of 26.1,
+26.1.1, and 26.1.2 passed all 338 tests, strict diagnostic-jar inspection,
+official installer/runtime assembly, a fresh 2,048x416 mapping-4 server, and
+strict stop/save evidence. All three loaded the same frozen wide-range jar
+with SHA-256
+`8b919c42e8a166c4f070a06e96518da8ca887e1955bd764c51281f17db9e7e31`.
+The strict-evidence SHA-256 values are `fcde251d...6917` (26.1),
+`e2ef042a...96af` (26.1.1), and `a6207f13...50f3` (26.1.2). The refreshed
+NeoForge triplet passed in the same run; all three
+cells passed the same gates with frozen jar SHA-256
+`77389181684db006369400a4551eee6e98a3fd12266b01330d3357d5011c6f50`.
+Its strict-evidence SHA-256 values are `36c50cc0...bf9` (26.1),
+`31f12bd7...396` (26.1.1), and `289393f2...057` (26.1.2). The combined run
+also proves that one invocation safely retains distinct Fabric and NeoForge
+frozen roots. A failed precursor remained fail-closed before runtime evidence
+when Fabric could not resolve one JUnit artifact during a host routing outage;
+the passing retry used a refreshed checksum-preserving external read-only
+dependency cache and fresh cell state. Phase 3 quick qualification is complete
+for both loaders at commit `439e339`; the remaining Phase 4 client/gameplay/
+rendering fixtures are pending.
 Phase 4 now also has a pure, fail-closed Atlas recovery evidence contract. It
 requires a genuine partial schema-2 `INTERRUPTED` checkpoint and a later
 schema-2 `COMPLETE` report from the same disposable runtime/world and report
@@ -106,18 +162,165 @@ installer in a new contained runtime, and hash every capture and process log.
 The first process stops only after a durable independently parsed partial
 Atlas exists; the second receives those exact bytes, must show growth, and
 must halt itself with `COMPLETE`. Static tests use local fake children only.
-The first real external recovery slice passed on both loaders at clean pushed
-commit `1887692` on 2026-08-12. Fabric run
-`20260812T184342Z-cef57e3ac2a4` stopped at 244/13,312 cells and resumed to
-13,312/13,312; its terminal-evidence SHA-256 is
-`bc770cd1395c8a45203ef54e436ff3645bc0c32285a0ec2b2471849e4355498d`.
-NeoForge run `20260812T185236Z-670720ec923e` stopped at 280/13,312 and
-resumed to 13,312/13,312; its terminal-evidence SHA-256 is
-`f3459d31f906fcafd085540a46e5b989554ca129da717ac5f87fc87aacd801b3`.
-Both retained mapping 4, world hash `8665210144080158345`, layout fingerprint
-`4064118068185880929`, an exact byte-identical restart checkpoint, clean
-stage exits, and self-halted only after schema-2 `COMPLETE`. This completes
-the Atlas recovery slice, not the broader Phase 4 nightly matrix.
+The Atlas interruption/recovery slice now passes on all six 26.1.x cells with
+the exact refreshed frozen candidate for each loader. Fabric runs are 26.1
+`20260813T091340Z-0f6a75a06e36` (`53441db0...6dfb`), 26.1.1
+`20260813T084030Z-a3030342d49c` (`9e847882...d04`), and 26.1.2
+`20260813T084918Z-2a61b8523682` (`c826f4b1...f6ab`). NeoForge runs are 26.1
+`20260813T092207Z-56b8d1593d37` (`1eca3d90...4892`), 26.1.1
+`20260813T085803Z-abc3ee37973d` (`5a9e5213...6033`), and 26.1.2
+`20260813T090427Z-21cef9b5920b` (`858aedc7...60f3`). Parenthesized values are
+terminal-evidence SHA-256 prefixes/suffixes. Every run retained mapping 4,
+world hash `8665210144080158345`, layout fingerprint `4064118068185880929`,
+an exact byte-identical partial restart checkpoint, clean stage exits, and
+self-halted only after schema-2 `COMPLETE`. This completes the six-cell Atlas
+recovery slice, not the broader Phase 4 nightly matrix.
+The second Phase 4 slice is also runtime-qualified on all six cells. The
+external worldgen plan/executor/process runner consumes the retained quick jar,
+installs three official disposable runtimes, and drives the existing four-pass
+production reload/seam/terminal structure matrix. Its independent settings and
+log contract requires mapping 4, format 3, all major biome families, caves,
+ores, vegetation, structures, seam-crossing starts, references, loot, both
+monument outcomes, spawn overrides, and clean self-halt. Pure and fake-runtime
+tests pass on both loader shapes. Refreshed Fabric quick run
+`20260813T072608Z-b7c68e555818` supplied frozen jar
+`d7a66942...c8296`; its 26.1 worldgen run
+`20260813T073235Z-1e16c008e584` passed with terminal SHA-256
+`782a9bc3...110f1`. Its 26.1.1 and 26.1.2 runs are
+`20260813T083349Z-0cdcffa76005` (`fafd6e83...f482`) and
+`20260813T083518Z-b942314e7e0d` (`bc9c4cea...73cd`). Refreshed NeoForge quick run
+`20260813T080722Z-377cfb994c93` supplied frozen jar
+`53558ed5...d7314`; its 26.1 worldgen run
+`20260813T082128Z-c2fae65dec2c` passed with terminal SHA-256
+`4c0c1ef1...6aea3`. Its 26.1.1 and 26.1.2 runs are
+`20260813T083644Z-e7ed932a1499` (`193b2aa5...5578`) and
+`20260813T083822Z-03549862d588` (`f4896d60...1585`). All six prove the
+four-stage production reload, seam-crossing, stronghold/portal, biome/cave/
+ore/vegetation/loot, and monument-policy contract using one unchanged jar per
+loader. Client, multiplayer, lifecycle, and rendering nightlies remain
+pending.
+The first Fabric production run exposed a fixture false positive before it
+could claim PASS: one isolated 12-block natural step across the full width was
+being rejected as though it were a broad seam wall. The audit now follows its
+documented intent by retaining the broad-cliff gate and a two-block average
+delta limit while allowing isolated relief. The refreshed real dual-loader
+26.1 runs above pass that corrected audit.
+The next Phase 4 slice has a production-style graphical-client executor
+and operator CLI for the existing menu-only creation-settings fixture. It
+verifies a pinned Prism 11.0.3 macOS archive, Java 25, the retained frozen jar,
+the selected loader component and Fabric API where required; launches an
+account-free disposable Prism root; and requires all thirteen valid PNGs,
+bounded logs, the existing PASS marker, clean self-halt, exact mod hashes, and
+no created world. Pure/fake-process tests pass. A fresh account-free Prism
+profile cannot reach Minecraft because official Prism requires a valid
+Microsoft account during first-run setup, even for its offline launch option.
+This remains an authenticated-disposable-profile or owner release gate;
+qualification never copies a user's normal Prism account data.
+
+The source-ABI graphical alternative passes all six 26.1.x cells from clean
+pushed commit `077615493e0f8a7b58e92aec51e9ec83535cb08f`. It launches the
+actual Minecraft client with each cell's exact Minecraft/loader/API
+dependencies, captures all thirteen creation/settings UI states, creates no
+world, and uses disposable Gradle user, project-cache, build, and game roots.
+Fabric runs are 26.1 `20260813T101541Z-e87eced07877`
+(`b7cbe6f9...5710`), 26.1.1 `20260813T101904Z-f32dbc8917e9`
+(`e4c513b3...a675`), and 26.1.2 `20260813T102213Z-d33b1a707c5b`
+(`9bd5f40c...c2b3`). NeoForge runs are 26.1
+`20260813T102535Z-618362c64a62` (`2c147161...9e79`), 26.1.1
+`20260813T105844Z-fdefa2c044f5` (`22eabdb5...270d`), and 26.1.2
+`20260813T110726Z-2e96621d7486` (`0f4255e1...dda6`). Parenthesized values
+are terminal-evidence SHA-256 prefixes/suffixes. One earlier NeoForge 26.1.1
+attempt failed closed when Mojang's library host was temporarily unreachable;
+the successful fresh retry used the reviewed external read-only dependency
+cache. This completes the settings UI/source-ABI slice, not
+frozen-candidate packaged-client proof or the broader nightly matrix.
+The matching source-ABI Atlas UI runner and pure contract are now implemented.
+It selects exact cell dependencies, isolates both Gradle caches and game
+state, and fails closed unless the existing integrated fixture creates one
+disposable world, completes all eleven captures, and reaches its revisioned
+placement/removal PASS. Its first 26.1 Fabric run exposed a fixture-only race:
+after the Atlas fixture invoked Create World but before its player existed,
+the legacy `testMode` launcher created a second world and Fabric networking
+disconnected. The Fabric client now keeps the Atlas fixture exclusive through
+that interval and the fixture records bounded menu-screen diagnostics. No
+cross-version runtime PASS is claimed until the corrected run completes. The
+first corrected clean-profile attempt then stopped at Minecraft's accessibility
+onboarding screen. Both loader preparers now explicitly disable only that
+first-run screen and set the fixture's intended GUI scale, matching the
+already-qualified creation UI preparer. The next clean run proved one further
+startup ordering requirement: Minecraft's temporary `GenericMessageScreen`
+can supersede an editor opened before the final title screen. The shared
+fixture now waits for `TitleScreen` before invoking `openFresh`.
+The next run reached the Atlas screen and correctly failed its former
+hard-coded published-build assertion: exact qualification cells intentionally
+embed `qualification-<cell> · 0.0.0-qualification+mc<version>`. Both loader
+run definitions now pass that independently constructed expected label into
+the client fixture. The screen must match the selected cell's embedded
+identity; the ordinary 26.1.2 development run continues to expect
+`1.0 · 1.0.0+mc26.1.2`.
+That corrected run then completed the Atlas and all eleven captures before
+failing closed at the live revision probe. The unattended window still had
+`pauseOnLostFocus:true`; closing the final map screen paused the integrated
+server immediately after `/setblock`, so no revision could be emitted. The
+shared Atlas fixture now disables lost-focus pausing itself, independent of
+the legacy generic test launcher.
+To keep this six-client GUI matrix proportionate, its disposable world now
+uses the supported Small 2,048×128 preset (4,096 Atlas cells). Broader
+2,048×416 coverage remains in the recovery, worldgen, and gameplay fixtures;
+the Atlas UI fixture still exercises every control, renderer transition, full
+completion, and live cell-revision assertion.
+The corrected source-ABI Atlas UI gate now passes all six 26.1.x cells from
+clean pushed commit `7a7c0449277dbb0be464b1fb972d77044132a1e6`. Fabric
+runs are 26.1 `20260813T123311Z-a3ad7b5b5a58`
+(`f3f9cc08...aace`), 26.1.1 `20260813T124040Z-0d2aec6c29f2`
+(`40c9a245...add1`), and 26.1.2 `20260813T124816Z-bd3475d1bf21`
+(`7305feb1...6fe0`). NeoForge runs are 26.1
+`20260813T125559Z-789f027ffe4b` (`035c2c69...4a30`), 26.1.1
+`20260813T131059Z-721b4de15471` (`5b9248de...55d9`), and 26.1.2
+`20260813T132720Z-47169a2c9167` (`3b450310...079e`). Parenthesized values
+are terminal-evidence SHA-256 prefixes/suffixes. Every cell launched the
+actual patch-specific client and integrated server, created one disposable
+world, produced all eleven captures, completed all 4,096 cells, and passed
+pause/resume/cancel/retry plus ordered placement/removal revisions. This
+closes nightly fixture 04 as source-ABI graphical evidence; it is not a
+production-launcher or frozen-client-package claim.
+The same runner now has a bounded fixture-05 handshake/disconnect tail. It
+requires the loader-specific server log to accept `settings_ack_v3`, binds a
+rendered client to mapping 4 and a nonzero layout fingerprint, performs
+Minecraft's normal integrated-server disconnect, and waits for
+`RingWorldClientSession.isCleared()` before passing. One atomic run writes
+separate fixture-04 and fixture-05 terminal records. The expanded contract now
+passes all six cells. Fabric runs are 26.1
+`20260813T174054Z-bdeeafa3a751`, 26.1.1
+`20260813T174418Z-b23550ef9a22`, and 26.1.2
+`20260813T174740Z-1995f7cf8b48` from clean commit `a037308`. NeoForge runs are
+26.1 `20260813T181123Z-5baa2ec6644c`, 26.1.1
+`20260813T181648Z-b2342a09e2e7`, and 26.1.2
+`20260813T182206Z-14d425cfb781` from clean commit `aa94e9a`. NeoForge's first
+attempt exposed only its optional early splash trying to open against a
+sleeping macOS display; the Atlas fixture now disables that splash exactly as
+the other automated NeoForge graphical fixtures do, while retaining the real
+Minecraft window. This closes fixture 05 as source-ABI client/session evidence;
+it remains distinct from frozen-jar packaged-client qualification.
+The next source-ABI gameplay wrapper now targets the existing map/compass
+fixture. It requires both seam directions, map pixels and markers, banner and
+item-frame state, all vanilla compass targets, save/disconnect/session clear,
+reopen, and persisted state in one disposable world. The slice now passes all
+six cells from clean commit `9015857`: Fabric runs are
+`20260813T184333Z-82e19d55389b`, `20260813T184752Z-6181972f0b5e`, and
+`20260813T185208Z-746d5447411a`; NeoForge runs are
+`20260813T185449Z-26282a7c51fb`, `20260813T185906Z-d67da65d189d`, and
+`20260813T190435Z-9f27985cd623`. This closes fixture 08 as source-ABI
+graphical/gameplay evidence; it is not frozen-jar packaged-client evidence.
+The fixture-10 curved-object wrapper is also implemented and pure-tested. It
+reuses the existing real renderer fixture, requires one disposable world plus
+the verified far/near captures, and applies the same fresh-title/onboarding/
+NeoForge-splash safeguards. It now passes all six cells from clean commit
+`f9cb4c2`: Fabric runs are `20260813T191305Z-12bda076ad23`,
+`20260813T191530Z-a9b6435145d8`, and `20260813T191738Z-34182794aaf3`;
+NeoForge runs are `20260813T191940Z-187e70e94c0c`,
+`20260813T192307Z-3acb0e5bbc29`, and `20260813T192619Z-7787ffdc1eee`.
+This closes fixture 10 as source-ABI graphical evidence.
 The companion bounded persistence parser has been checked against an actual
 NeoForge qualification world. It independently decodes the dimension-owned
 gzip NBT settings and Atlas-v6 header/presence map, reproduces the Java
@@ -271,7 +474,7 @@ worlds created after the seam regression use complete annular mapping v2 (4)
 legacy mapping retained. Mapping identity is persisted, handshaken on new
 `settings_v3`/`settings_ack_v3` channels, attached to every Overworld noise
 router, fingerprinted, and included in the atlas world hash. Both loader test
-suites pass 337 cases. Mapping 4 also transforms vanilla's direct
+suites pass 338 cases. Mapping 4 also transforms vanilla's direct
 `BlendedNoise` leaf; mappings 1-3 remain preserved historical identities. Both
 fresh 16,384×256 stronghold/worldgen gates previously passed
 the five-longitude, three-width-position terrain/height/alias matrix plus the
@@ -480,7 +683,7 @@ complete-client tile subscriptions, ordered revision commits, and exact-
 revision reconnect reuse. The real safe-small atlas UI fixture completed all
 13,312 cells, committed revision 1, then placed and removed a sampled high
 surface block and observed revisions 2 and 3 plus matching client heights.
-The active suite passes 337 unit/parameterized cases per loader.
+The active suite passes 338 unit/parameterized cases per loader.
 Fresh production visual-parity runs on 2026-08-10 exercised multiple partial
 Atlas revisions and the two-texture shader on both loaders before completing
 the natural seam and both rim captures. Fabric recorded 831 seam-motion frames

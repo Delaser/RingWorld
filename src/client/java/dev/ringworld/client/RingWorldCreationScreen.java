@@ -5,12 +5,11 @@ import dev.ringworld.world.RingWorldConfig;
 import dev.ringworld.world.RingWorldCreationUiModel;
 import org.jetbrains.annotations.Nullable;
 
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
-import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
 
 /** Pre-creation editor and cost preview for immutable RingWorld layout. */
@@ -205,35 +204,29 @@ public final class RingWorldCreationScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
-        // Screen.extractRenderStateWithTooltipAndSubtitles already owns the
-        // panorama blur. This card adds hierarchy without requesting another
-        // background pass.
+    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+        renderBackground(context, mouseX, mouseY, deltaTicks);
         Layout layout = layout();
-        context.fill(layout.panelLeft(), layout.panelTop(), layout.panelRight(),
-                layout.panelBottom(), PANEL_COLOR);
-        context.outline(layout.panelLeft(), layout.panelTop(), layout.panelWidth(),
-                layout.panelHeight(), PANEL_BORDER_COLOR);
+        context.fill(layout.panelLeft(), layout.panelTop(), layout.panelRight(), layout.panelBottom(), PANEL_COLOR);
+        context.renderOutline(layout.panelLeft(), layout.panelTop(), layout.panelWidth(), layout.panelHeight(), PANEL_BORDER_COLOR);
         context.fill(layout.contentLeft() - 4, layout.factsY() - 5,
                 layout.contentRight() + 4, layout.factsBottom(), FACTS_COLOR);
-        context.outline(layout.contentLeft() - 4, layout.factsY() - 5,
-                layout.contentWidth() + 8, layout.factsBottom() - layout.factsY() + 5,
-                FACTS_BORDER_COLOR);
-        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
-        context.centeredText(font, title, width / 2, layout.titleY(), 0xFFFFFFFF);
+        context.renderOutline(layout.contentLeft() - 4, layout.factsY() - 5,
+                layout.contentWidth() + 8, layout.factsBottom() - layout.factsY() + 5, FACTS_BORDER_COLOR);
+        super.render(context, mouseX, mouseY, deltaTicks);
+        context.drawCenteredString(font, title, width / 2, layout.titleY(), 0xFFFFFFFF);
         if (!layout.compact()) {
-            context.centeredText(font, Component.literal("Choose a scale, then tune it."),
+            context.drawCenteredString(font, Component.literal("Choose a scale, then tune it."),
                     width / 2, layout.subtitleY(), LABEL_COLOR);
         }
+
         drawSectionLabel(context, "PRESET", layout.presetLabelY());
         drawSectionLabel(context, "CUSTOM", layout.customLabelY());
         drawFieldLabel(context, "Around", layout.contentLeft(), layout.fieldLabelY());
         int fieldGap = 6;
         int fieldWidth = (layout.contentWidth() - fieldGap * 2) / 3;
-        drawFieldLabel(context, "Across", layout.contentLeft() + fieldWidth + fieldGap,
-                layout.fieldLabelY());
-        drawFieldLabel(context, "Rim", layout.contentLeft() + (fieldWidth + fieldGap) * 2,
-                layout.fieldLabelY());
+        drawFieldLabel(context, "Across", layout.contentLeft() + fieldWidth + fieldGap, layout.fieldLabelY());
+        drawFieldLabel(context, "Rim", layout.contentLeft() + (fieldWidth + fieldGap) * 2, layout.fieldLabelY());
         drawSectionLabel(context, "RING MATHS", layout.factsLabelY());
         drawPresetAccent(context, layout, RingWorldCreationUiModel.SMALL, 0);
         drawPresetAccent(context, layout, RingWorldCreationUiModel.MEDIUM, 1);
@@ -244,21 +237,19 @@ public final class RingWorldCreationScreen extends Screen {
         if (!validationMessages.isEmpty()) {
             drawValidationMessages(context, layout);
         } else if (report != null) {
-            java.util.List<String> metricLines =
-                    RingWorldCreationUiModel.Validation.metricLines(report);
+            java.util.List<String> metricLines = RingWorldCreationUiModel.Validation.metricLines(report);
             for (int index = 0; index < metricLines.size(); index++) {
                 boolean advisory = index == metricLines.size() - 1
                         && (report.hasHighGenerationCost()
-                            || !RingWorldCreationUiModel.monumentAvailable(report.geometry()));
-                int color = advisory
-                        ? WARNING_COLOR : VALUE_COLOR;
-                context.text(font, Component.literal(metricLines.get(index)),
+                        || !RingWorldCreationUiModel.monumentAvailable(report.geometry()));
+                int color = advisory ? WARNING_COLOR : VALUE_COLOR;
+                context.drawString(font, Component.literal(metricLines.get(index)),
                         layout.contentLeft(), y + lineStep * index, color);
             }
         }
     }
 
-    private void drawValidationMessages(GuiGraphicsExtractor context, Layout layout) {
+    private void drawValidationMessages(GuiGraphics context, Layout layout) {
         int y = layout.factsY();
         int capacity = Math.max(1, (layout.factsBottom() - y) / layout.lineStep());
         java.util.List<net.minecraft.util.FormattedCharSequence> lines = new java.util.ArrayList<>();
@@ -267,25 +258,25 @@ public final class RingWorldCreationScreen extends Screen {
         }
         int shown = Math.min(capacity, lines.size());
         for (int index = 0; index < shown; index++) {
-            context.text(font, lines.get(index), layout.contentLeft(),
+            context.drawString(font, lines.get(index), layout.contentLeft(),
                     y + layout.lineStep() * index, ERROR_COLOR);
         }
         if (lines.size() > shown && shown > 0) {
-            context.text(font, Component.literal("…"), layout.contentRight() - 8,
+            context.drawString(font, Component.literal("…"), layout.contentRight() - 8,
                     y + layout.lineStep() * (shown - 1), ERROR_COLOR);
         }
     }
 
-    private void drawSectionLabel(GuiGraphicsExtractor context, String value, int y) {
-        context.text(font, Component.literal(value), layout().contentLeft(), y, SECTION_COLOR);
+    private void drawSectionLabel(GuiGraphics context, String value, int y) {
+        context.drawString(font, Component.literal(value), layout().contentLeft(), y, SECTION_COLOR);
     }
 
-    private void drawFieldLabel(GuiGraphicsExtractor context, String value, int x, int y) {
-        context.text(font, Component.literal(value), x, y, LABEL_COLOR);
+    private void drawFieldLabel(GuiGraphics context, String value, int x, int y) {
+        context.drawString(font, Component.literal(value), x, y, LABEL_COLOR);
     }
 
     private void drawPresetAccent(
-            GuiGraphicsExtractor context, Layout layout,
+            GuiGraphics context, Layout layout,
             RingWorldCreationUiModel.Preset preset, int index) {
         if (!matchesPreset(preset)) return;
         int gap = 4;
@@ -347,19 +338,19 @@ public final class RingWorldCreationScreen extends Screen {
      * callbacks. No production path invokes these methods.
      */
     void ringworld$automationPressSmall() {
-        smallButton.onPress(AutomationInput.INSTANCE);
+        smallButton.onPress();
     }
 
     void ringworld$automationPressMedium() {
-        mediumButton.onPress(AutomationInput.INSTANCE);
+        mediumButton.onPress();
     }
 
     void ringworld$automationPressLarge() {
-        largeButton.onPress(AutomationInput.INSTANCE);
+        largeButton.onPress();
     }
 
     void ringworld$automationPressSavedConfig() {
-        savedConfigButton.onPress(AutomationInput.INSTANCE);
+        savedConfigButton.onPress();
     }
 
     void ringworld$automationSetLayout(int circumference, int width, int wallHeight) {
@@ -369,11 +360,11 @@ public final class RingWorldCreationScreen extends Screen {
     }
 
     void ringworld$automationToggleMonument() {
-        monumentButton.onPress(AutomationInput.INSTANCE);
+        monumentButton.onPress();
     }
 
     void ringworld$automationApply() {
-        applyButton.onPress(AutomationInput.INSTANCE);
+        applyButton.onPress();
     }
 
     boolean ringworld$automationHasLayout(int circumference, int width, int wallHeight) {
@@ -401,14 +392,6 @@ public final class RingWorldCreationScreen extends Screen {
     java.util.List<String> ringworld$automationMetricLines() {
         return report == null ? java.util.List.of()
                 : RingWorldCreationUiModel.Validation.metricLines(report);
-    }
-
-    /** Shared non-pointer input for invoking a Button's normal onPress path. */
-    public enum AutomationInput implements InputWithModifiers {
-        INSTANCE;
-
-        @Override public int input() { return 0; }
-        @Override public int modifiers() { return 0; }
     }
 
     /** Parent-screen hook kept UI-local so accepting a layout refreshes its summary. */

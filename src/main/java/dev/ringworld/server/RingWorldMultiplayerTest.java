@@ -12,14 +12,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.Relative;
-import net.minecraft.world.entity.vehicle.boat.Boat;
+import net.minecraft.world.entity.RelativeMovement;
+import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.storage.LevelData;
 import net.minecraft.world.phys.Vec3;
 
 /** Dedicated-server half of the opt-in, two-real-client multiplayer regression. */
@@ -92,8 +90,7 @@ public final class RingWorldMultiplayerTest {
             prepareSeamChunks(world, geometry);
             prepareSeamLane(world, geometry, 120);
             clearStaleTestVehicles(world);
-            world.setRespawnData(LevelData.RespawnData.of(
-                    world.dimension(), new BlockPos(0, 120, 0), 0.0f, 0.0f));
+            world.setDefaultSpawnPos(new BlockPos(0, 120, 0), 0.0F);
             world.setBlock(seamArmMarker(), Blocks.RED_CONCRETE.defaultBlockState(), 3);
             world.setBlock(combatResultMarker(), Blocks.AIR.defaultBlockState(), 3);
             initialized = true;
@@ -155,9 +152,9 @@ public final class RingWorldMultiplayerTest {
             preparePlayer(playerA);
             preparePlayer(playerB);
             playerA.teleportTo(world, geometry.circumferenceBlocks() - 4.0, 120.0, 0.5,
-                    Set.<Relative>of(), 90.0f, 10.0f, false);
+                    Set.<RelativeMovement>of(), 90.0f, 10.0f);
             playerB.teleportTo(world, 2.0, 120.0, 0.5,
-                    Set.<Relative>of(), -90.0f, 10.0f, false);
+                    Set.<RelativeMovement>of(), -90.0f, 10.0f);
             world.setBlock(seamArmMarker(), Blocks.BLUE_CONCRETE.defaultBlockState(), 3);
             previousAX = playerA.getX();
             maximumAStep = 0.0;
@@ -372,7 +369,7 @@ public final class RingWorldMultiplayerTest {
                 && clientPassed("A", "vehicle_visibility")
                 && clientPassed("B", "vehicle_visibility")) || ticks >= 1_200)) {
             playerA.teleportTo(world, 64.5, 120.0, 0.5,
-                    Set.<Relative>of(), playerA.getYRot(), playerA.getXRot(), false);
+                    Set.<RelativeMovement>of(), playerA.getYRot(), playerA.getXRot());
             RingWorldMod.LOGGER.info("[multiplayer] intentional long teleport sent to A x={}", playerA.getX());
             stage = 6;
             ticks = 0;
@@ -383,9 +380,9 @@ public final class RingWorldMultiplayerTest {
                 && clientPassed("A", "intentional_teleport")) || ticks >= 1_200)) {
             boolean farTeleportPassed = Math.abs(playerA.getX() - 64.5) < 0.75;
             playerA.teleportTo(world, geometry.circumferenceBlocks() - 4.0, 120.0, 0.5,
-                    Set.<Relative>of(), 90.0f, 10.0f, false);
+                    Set.<RelativeMovement>of(), 90.0f, 10.0f);
             playerB.teleportTo(world, 2.0, 120.0, 0.5,
-                    Set.<Relative>of(), -90.0f, 10.0f, false);
+                    Set.<RelativeMovement>of(), -90.0f, 10.0f);
             reconnectBaselineB = playerB;
             RingWorldMod.LOGGER.info("[multiplayer] intentional long teleport server result={}; returned players to seam",
                     farTeleportPassed);
@@ -471,8 +468,8 @@ public final class RingWorldMultiplayerTest {
         player.containerMenu.broadcastChanges();
         player.teleportTo(world,
                 forward ? geometry.circumferenceBlocks() - 2.5 : 1.5,
-                120.0, forward ? 2.5 : 3.5, Set.<Relative>of(),
-                forward ? -90.0f : 90.0f, 0.0f, false);
+                120.0, forward ? 2.5 : 3.5, Set.<RelativeMovement>of(),
+                forward ? -90.0f : 90.0f, 0.0f);
         RingWorldMod.LOGGER.info(
                 "[multiplayer] {} seam placement armed support={} target={} playerX={}",
                 forward ? "forward" : "reverse", support, target, player.getX());
@@ -482,8 +479,9 @@ public final class RingWorldMultiplayerTest {
                                                 ServerPlayer player, boolean passed) {
         placementPassed = passed;
         prepareCreativePlayer(player);
-        Boat boat = EntityType.OAK_BOAT.create(world, EntitySpawnReason.COMMAND);
+        Boat boat = EntityType.BOAT.create(world);
         if (boat != null) {
+            boat.setVariant(Boat.Type.OAK);
             boat.setPos(geometry.circumferenceBlocks() - 2.0, 120.0, 3.5);
             boat.setYRot(37.0f);
             boat.setXRot(0.0f);
@@ -493,7 +491,7 @@ public final class RingWorldMultiplayerTest {
             boat.setDeltaMovement(Vec3.ZERO);
             world.addFreshEntity(boat);
             vehicleId = boat.getId();
-            Entity passenger = EntityType.ARMOR_STAND.create(world, EntitySpawnReason.COMMAND);
+            Entity passenger = EntityType.ARMOR_STAND.create(world);
             if (passenger != null) {
                 passenger.setPos(boat.getX(), boat.getY(), boat.getZ());
                 passenger.setYRot(boat.getYRot());

@@ -19,11 +19,9 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.server.permissions.Permission;
-import net.minecraft.server.permissions.PermissionLevel;
-import net.minecraft.server.players.NameAndId;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.chunk.LevelChunk;
 
@@ -59,8 +57,7 @@ public final class RingTerrainAtlasServer {
 
     public static void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
         dispatcher.register(Commands.literal("ringworld")
-                        .requires(source -> source.permissions().hasPermission(
-                                new Permission.HasCommandLevel(PermissionLevel.GAMEMASTERS)))
+                    .requires(source -> source.hasPermission(2))
                         .then(Commands.literal("atlas")
                                 .then(Commands.literal("status").executes(context -> {
                                     ServerLevel world = context.getSource().getServer().getLevel(Level.OVERWORLD);
@@ -150,7 +147,7 @@ public final class RingTerrainAtlasServer {
 
     /** Starts observing status; the request is ignored outside the loaded RingWorld Overworld. */
     public static void requestPregenerationStatus(ServerPlayer player, long worldHash) {
-        ServerLevel world = player.level();
+        ServerLevel world = player.serverLevel();
         if (world.dimension() != Level.OVERWORLD) return;
         RingTerrainAtlas atlas;
         try { atlas = RingAtlasPregenerationService.atlas(world); }
@@ -162,7 +159,7 @@ public final class RingTerrainAtlasServer {
 
     /** Server-thread action gateway. Every request rechecks world and player authority. */
     public static void controlPregeneration(ServerPlayer player, long worldHash, AtlasPregenerationAction action) {
-        ServerLevel world = player.level();
+        ServerLevel world = player.serverLevel();
         if (world.dimension() != Level.OVERWORLD) return;
         RingTerrainAtlas atlas;
         try { atlas = RingAtlasPregenerationService.atlas(world); }
@@ -236,10 +233,12 @@ public final class RingTerrainAtlasServer {
     public static String status(ServerLevel world) { return RingAtlasPregenerationService.status(world); }
 
     private static boolean canControl(ServerPlayer player) {
-        boolean integratedOwner = player.level().getServer().isSingleplayer()
-                && player.level().getServer().isSingleplayerOwner(new NameAndId(player.getGameProfile()));
-        boolean gamemaster = player.permissions().hasPermission(
-                new Permission.HasCommandLevel(PermissionLevel.GAMEMASTERS));
+        MinecraftServer server = player.getServer();
+        boolean integratedOwner = server != null && server.isSingleplayer()
+                && server.getSingleplayerProfile() != null
+                && server.getSingleplayerProfile().getId().equals(player.getUUID());
+
+        boolean gamemaster = player.createCommandSourceStack().hasPermission(2);
         return AtlasPregenerationAccess.canControl(integratedOwner, gamemaster);
     }
 

@@ -45,10 +45,15 @@ RUNNER_PATH = ROOT / "scripts" / "run_minecraft_qualification.py"
 
 
 def load(name: str, path: Path):
+    # Keep one shared module identity under broad unittest discovery. Reloading
+    # the model here would create incompatible copies of its exception and
+    # dataclass types for tests imported earlier in the same process.
+    import sys
+    if name in sys.modules:
+        return sys.modules[name]
     spec = importlib.util.spec_from_file_location(name, path)
     assert spec and spec.loader
     module = importlib.util.module_from_spec(spec)
-    import sys
     sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
@@ -189,6 +194,7 @@ class MinecraftQualificationModelTest(unittest.TestCase):
                 self.assertEqual((("GRADLE_USER_HOME", str(paths.gradle_home)),), command.environment, cell["id"])
                 self.assertIn("--no-daemon", command.argv, cell["id"])
                 self.assertIn("--max-workers=1", command.argv, cell["id"])
+                self.assertIn("--project-cache-dir", command.argv, cell["id"])
                 self.assertFalse(any(fragment in argument for argument in command.argv for fragment in prohibited_fragments))
                 if cell["minecraft"]["version"] != "26.1.2":
                     self.assertNotIn("26.1.2", "\0".join(command.argv), cell["id"])

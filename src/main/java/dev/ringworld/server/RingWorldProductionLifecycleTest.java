@@ -6,9 +6,7 @@ import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Relative;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
 
 import java.util.HashMap;
@@ -82,7 +80,7 @@ public final class RingWorldProductionLifecycleTest {
         if (progress.ticks() >= STAGE_TIMEOUT_TICKS) {
             RingWorldMod.LOGGER.error(
                     "[production-lifecycle] result=false reason=server-stage-timeout stage={} dimension={}",
-                    progress.stage(), player.level().dimension().identifier());
+                    progress.stage(), player.level().dimension().location());
             finish(false);
             return;
         }
@@ -144,7 +142,7 @@ public final class RingWorldProductionLifecycleTest {
     private static ServerLevel requireLevel(MinecraftServer server,
                                             net.minecraft.resources.ResourceKey<Level> key) {
         ServerLevel level = server.getLevel(key);
-        if (level == null) throw new IllegalStateException("Missing lifecycle test dimension " + key.identifier());
+        if (level == null) throw new IllegalStateException("Missing lifecycle test dimension " + key.location());
         return level;
     }
 
@@ -158,8 +156,7 @@ public final class RingWorldProductionLifecycleTest {
     private static void teleport(ServerPlayer player, ServerLevel target,
                                  double x, double y, double z, int nextStage, String targetName) {
         preparePlayer(player);
-        player.teleport(new TeleportTransition(target, new Vec3(x, y, z), Vec3.ZERO,
-                player.getYRot(), player.getXRot(), Set.<Relative>of(), TeleportTransition.DO_NOTHING));
+        player.teleportTo(target, x, y, z, player.getYRot(), player.getXRot());
         PROGRESS.put(player.getUUID(), new Progress(nextStage, 0));
         RingWorldMod.LOGGER.info("[production-lifecycle] server-transfer target={} stage={}",
                 targetName, nextStage);
@@ -172,14 +169,14 @@ public final class RingWorldProductionLifecycleTest {
     private static boolean validateDimensionState(
             ServerPlayer player, net.minecraft.resources.ResourceKey<Level> expected) {
         boolean expectedRingWorld = expected == Level.OVERWORLD;
-        boolean active = RingWorldApi.isRingWorld(player.level());
+        boolean active = RingWorldApi.isRingWorld(player.serverLevel());
         boolean canonical = !expectedRingWorld
                 || (active && player.getX() >= 0.0
-                && player.getX() < RingWorldApi.geometry(player.level()).circumferenceBlocks());
+                && player.getX() < RingWorldApi.geometry(player.serverLevel()).circumferenceBlocks());
         if (active == expectedRingWorld && canonical) return true;
         RingWorldMod.LOGGER.error(
                 "[production-lifecycle] result=false reason=server-dimension-state dimension={} active={} canonical={}",
-                expected.identifier(), active, canonical);
+                expected.location(), active, canonical);
         finish(false);
         return false;
     }

@@ -4,7 +4,6 @@ import dev.ringworld.RingWorldMod;
 import dev.ringworld.net.RingMultiplayerTestPayload;
 import dev.ringworld.client.chunk.RingClientChunkMaps;
 import dev.ringworld.world.RingGeometry;
-import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.ConnectScreen;
@@ -23,7 +22,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LightningBolt;
-import net.minecraft.world.entity.vehicle.boat.Boat;
+import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -111,7 +110,6 @@ public final class MultiplayerTestClient {
                     "ringworld.multiplayerTestViewDistanceChunks", 2), 2, 32));
             client.options.simulationDistance().set(5);
             client.options.enableVsync().set(false);
-            client.options.inactivityFpsLimit().set(InactivityFpsLimit.MINIMIZED);
             client.options.pauseOnLostFocus = false;
             client.options.onboardAccessibility = false;
             optionsApplied = true;
@@ -269,7 +267,7 @@ public final class MultiplayerTestClient {
             client.getConnection().send(new ServerboundMovePlayerPacket.PosRot(
                     nextX, client.player.getY(), client.player.getZ(),
                     client.player.getYRot(), client.player.getXRot(),
-                    client.player.onGround(), client.player.horizontalCollision));
+                    client.player.onGround()));
             return;
         }
 
@@ -287,7 +285,7 @@ public final class MultiplayerTestClient {
         sendResult("seam_visibility", passed, maximumRemoteStep);
         Screenshot.grab(client.gameDirectory,
                 "ringworld-multiplayer-" + role.toLowerCase() + ".png",
-                client.getMainRenderTarget(), 1,
+                client.getMainRenderTarget(),
                 message -> RingWorldMod.LOGGER.info(
                         "[multiplayer:{}] screenshot: {}", role, message.getString()));
         stage = 1;
@@ -369,7 +367,7 @@ public final class MultiplayerTestClient {
                 RingWorldMod.LOGGER.info(
                         "[multiplayer:{}] interaction chunk waiting targetChunk={},{} playerChunk={},{} cacheCenter={},{}",
                         role, target.getX() >> 4, target.getZ() >> 4,
-                        client.player.chunkPosition().x(), client.player.chunkPosition().z(),
+                        client.player.chunkPosition().x, client.player.chunkPosition().z,
                         storage == null ? Integer.MIN_VALUE : storage.ringworld$centerChunkX(),
                         storage == null ? Integer.MIN_VALUE : storage.ringworld$centerChunkZ());
             }
@@ -676,7 +674,7 @@ public final class MultiplayerTestClient {
                 sendResult("seam_weather", true, client.player.getX());
                 Screenshot.grab(client.gameDirectory,
                         "ringworld-multiplayer-weather-" + role.toLowerCase() + ".png",
-                        client.getMainRenderTarget(), 1,
+                        client.getMainRenderTarget(),
                         message -> RingWorldMod.LOGGER.info(
                                 "[multiplayer:{}] weather screenshot: {}", role, message.getString()));
                 RingWorldMod.LOGGER.info(

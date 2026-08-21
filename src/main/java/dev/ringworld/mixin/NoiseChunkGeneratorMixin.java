@@ -8,7 +8,7 @@ import dev.ringworld.world.RingNoiseSamplingContext;
 import dev.ringworld.world.RingTerrainNoiseMapping;
 import dev.ringworld.world.RingSurfaceSamplingContext;
 import dev.ringworld.world.RingWorldGeneratorAccess;
-import org.jetbrains.annotations.Nullable;
+import net.minecraft.world.level.levelgen.*;import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Shadow;
@@ -27,18 +27,6 @@ import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
-import net.minecraft.world.level.levelgen.Aquifer;
-import net.minecraft.world.level.levelgen.DensityFunctions;
-import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
-import net.minecraft.world.level.levelgen.NoiseChunk;
-import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
-import net.minecraft.world.level.levelgen.NoiseSettings;
-import net.minecraft.world.level.levelgen.NoiseRouter;
-import net.minecraft.world.level.levelgen.RandomState;
-import net.minecraft.world.level.levelgen.SurfaceRules;
-import net.minecraft.world.level.levelgen.SurfaceSystem;
-import net.minecraft.world.level.levelgen.WorldGenerationContext;
-import net.minecraft.world.level.levelgen.WorldgenRandom;
 import net.minecraft.world.level.levelgen.blending.Blender;
 import net.minecraft.core.Registry;
 import net.minecraft.world.level.biome.Biome;
@@ -154,7 +142,8 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     @Inject(method = "applyCarvers", at = @At("HEAD"), cancellable = true)
     private void ringworld$skipExteriorCarvers(WorldGenRegion region, long seed, RandomState noiseConfig,
                                                BiomeManager biomeAccess, StructureManager structures,
-                                               ChunkAccess chunk, CallbackInfo ci) {
+                                               ChunkAccess chunk, GenerationStep.Carving carvingStep,
+                                               CallbackInfo ci) {
         if (ringworld$geometry != null && RingGenerationBoundary.isExterior(chunk, ringworld$geometry)) ci.cancel();
     }
 

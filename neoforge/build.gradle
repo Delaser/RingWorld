@@ -41,7 +41,7 @@ if (qualificationEnabled) {
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(25)
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
     withSourcesJar()
 }
 
@@ -80,6 +80,8 @@ neoForge {
             client()
             gameDirectory = qualificationRunFile('run-atlas-ui')
             systemProperty 'ringworld.atlasUiTest', 'true'
+            systemProperty 'ringworld.atlasUiExpectedBuildLabel',
+                    "${rootProject.release_label} · ${rootProject.mod_version}"
             programArgument '--username'
             programArgument 'AtlasUiTester'
         }
@@ -295,7 +297,7 @@ sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
 
 tasks.withType(JavaCompile).configureEach {
-    options.release = 25
+    options.release = 21
     options.encoding = 'UTF-8'
 }
 
@@ -388,13 +390,16 @@ tasks.register('prepareNeoForgeAtlasUiRun') {
         def configFile = new File(neoForgeAtlasUiRun, 'config/ringworld.properties')
         configFile.parentFile.mkdirs()
         def config = new Properties()
-        config.setProperty('widthBlocks', '416')
+        config.setProperty('widthBlocks', '128')
         config.setProperty('circumferenceBlocks', '2048')
         config.setProperty('wallHeightBlocks', '160')
         config.setProperty('testMode', 'true')
         config.setProperty('testViewDistanceChunks', '6')
         config.setProperty('pregenerateTerrainAtlas', 'false')
         configFile.withOutputStream { config.store(it, 'Isolated NeoForge RingWorld atlas UI regression') }
+        def fmlFile = new File(neoForgeAtlasUiRun, 'config/fml.toml')
+        fmlFile.text = '# Automated graphical fixture: disable only the separate early splash.\nearlyWindowControl = false\n'
+        new File(neoForgeAtlasUiRun, 'options.txt').text = 'onboardAccessibility:false\nguiScale:4\n'
     }
 }
 
@@ -407,6 +412,20 @@ tasks.register('verifyNeoForgeAtlasUiClient') {
         def log = logFile.isFile() ? logFile.text : ''
         if (!log.contains('[atlas-ui-test] PASS') || log.contains('[atlas-ui-test] FAIL')) {
             throw new GradleException("NeoForge atlas UI client did not pass; inspect ${logFile}")
+        }
+        def atlasHandshakeMarkers = ['[atlas-ui-test] client-ready', '[atlas-ui-test] settings-v3-mapping-4',
+         '[atlas-ui-test] disconnect-clear', '[atlas-ui-test] PASS']
+        def previousAtlasHandshakeMarker = -1
+        atlasHandshakeMarkers.each { marker ->
+            def markerIndex = log.indexOf(marker)
+            if (markerIndex <= previousAtlasHandshakeMarker) {
+                throw new GradleException("NeoForge atlas UI client is missing handshake marker '${marker}'; inspect ${logFile}")
+            }
+            previousAtlasHandshakeMarker = markerIndex
+        }
+        def atlasSettingsAck = log.indexOf('RingWorld settings acknowledged by AtlasUiTester on NeoForge: format 3')
+        if (atlasSettingsAck < 0 || atlasSettingsAck >= log.indexOf('[atlas-ui-test] disconnect-clear')) {
+            throw new GradleException("NeoForge Atlas UI integrated server did not accept the format-3 settings acknowledgement; inspect ${logFile}")
         }
         (1..11).each { index ->
             def prefix = String.format('atlas-ui-%02d-', index)
@@ -496,6 +515,8 @@ tasks.register('prepareNeoForgeMapCompassCaptureRun') {
         configFile.withOutputStream { config.store(it, 'Isolated NeoForge RingWorld map and compass capture') }
         def fmlFile = new File(neoForgeMapCompassRun, 'config/fml.toml')
         fmlFile.text = '# Automated graphical capture: disable only the separate early splash.\nearlyWindowControl = false\n'
+        new File(neoForgeMapCompassRun, 'options.txt').text =
+                'onboardAccessibility:false\npauseOnLostFocus:false\n'
     }
 }
 
@@ -1120,6 +1141,10 @@ testMode=false
 testViewDistanceChunks=12
 pregenerateTerrainAtlas=false
 '''
+        new File(configDirectory, 'fml.toml').text =
+                '# Automated graphical capture: disable only the separate early splash.\nearlyWindowControl = false\n'
+        new File(neoForgeCurvedObjectRun, 'options.txt').text =
+                'onboardAccessibility:false\npauseOnLostFocus:false\n'
     }
 }
 

@@ -9,7 +9,6 @@ import dev.ringworld.client.LayoutSwitchTestClient;
 import dev.ringworld.client.MultiplayerTestClient;
 import dev.ringworld.client.ProductionLifecycleTestClient;
 import dev.ringworld.client.RingClientPayloadTransport;
-import dev.ringworld.client.RingMapCompassCaptureClient;
 import dev.ringworld.client.RingProjectionCaptureClient;
 import dev.ringworld.client.RingVisualParityCaptureClient;
 import dev.ringworld.client.RingWorldClientSession;
@@ -33,10 +32,10 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RegisterRenderPipelinesEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
+import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
+import net.neoforged.neoforge.network.registration.PayloadRegistrar;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.NetworkRegistry;
 
@@ -57,8 +56,6 @@ public final class NeoForgeRingWorldClient {
             new AtlasPregenerationUiTestClient();
     private static final RingWorldCreationUiTestClient CREATION_UI_TEST =
             new RingWorldCreationUiTestClient();
-    private static final RingMapCompassCaptureClient MAP_COMPASS_CAPTURE =
-            new RingMapCompassCaptureClient();
 
     private NeoForgeRingWorldClient() { }
 
@@ -66,23 +63,39 @@ public final class NeoForgeRingWorldClient {
         ClientRingState.configureCacheDirectory(FMLPaths.GAMEDIR.get().resolve("ringworld-cache"));
         RingClientPayloadTransport.configure(new NeoForgePayloadTransport());
         modEventBus.addListener(NeoForgeRingWorldClient::registerPayloadHandlers);
-        modEventBus.addListener(NeoForgeRingWorldClient::registerRenderPipelines);
         RingWorldMod.LOGGER.info("RingWorld NeoForge client bootstrap active");
     }
 
-    private static void registerRenderPipelines(RegisterRenderPipelinesEvent event) {
-        event.registerPipeline(dev.ringworld.client.render.RingSurfaceTextureRenderer.pipeline());
+    private static void registerPayloadHandlers(RegisterPayloadHandlersEvent event) {
+        PayloadRegistrar registrar = event.registrar("1");
+
+        registrar.playToClient(
+                RingSettingsPayload.ID,
+                RingSettingsPayload.CODEC,
+                NeoForgeRingWorldClient::handleSettings);
+
+        registrar.playToClient(
+                RingTerrainAtlasMetadataPayload.ID,
+                RingTerrainAtlasMetadataPayload.CODEC,
+                NeoForgeRingWorldClient::handleAtlasMetadata);
+
+        registrar.playToClient(
+                RingTerrainAtlasTilePayload.ID,
+                RingTerrainAtlasTilePayload.CODEC,
+                NeoForgeRingWorldClient::handleAtlasTile);
+
+        registrar.playToClient(
+                RingTerrainAtlasRevisionPayload.ID,
+                RingTerrainAtlasRevisionPayload.CODEC,
+                NeoForgeRingWorldClient::handleAtlasRevision);
+
+        registrar.playToClient(
+                RingAtlasPregenerationStatusPayload.ID,
+                RingAtlasPregenerationStatusPayload.CODEC,
+                NeoForgeRingWorldClient::handleAtlasStatus);
     }
 
-    private static void registerPayloadHandlers(RegisterClientPayloadHandlersEvent event) {
-        event.register(RingSettingsPayload.ID, NeoForgeRingWorldClient::handleSettings);
-        event.register(RingTerrainAtlasMetadataPayload.ID, NeoForgeRingWorldClient::handleAtlasMetadata);
-        event.register(RingTerrainAtlasTilePayload.ID, NeoForgeRingWorldClient::handleAtlasTile);
-        event.register(RingTerrainAtlasRevisionPayload.ID, NeoForgeRingWorldClient::handleAtlasRevision);
-        event.register(RingAtlasPregenerationStatusPayload.ID, NeoForgeRingWorldClient::handleAtlasStatus);
-    }
-
-    private static void handleSettings(RingSettingsPayload payload, IPayloadContext context) {
+    static void handleSettings(RingSettingsPayload payload, IPayloadContext context) {
         // Keep session teardown, static client state, and acknowledgement send
         // together on the client game thread. enqueueWork is immediate when the
         // client payload registry has already selected that thread.
@@ -123,7 +136,7 @@ public final class NeoForgeRingWorldClient {
                         dev.ringworld.net.RingAtlasPregenerationControlPayload.ID);
     }
 
-    private static void handleAtlasMetadata(
+    static void handleAtlasMetadata(
             RingTerrainAtlasMetadataPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> handleAtlasMetadataOnClientThread(payload, context));
     }
@@ -141,7 +154,7 @@ public final class NeoForgeRingWorldClient {
                 payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete));
     }
 
-    private static void handleAtlasTile(RingTerrainAtlasTilePayload payload, IPayloadContext context) {
+    static void handleAtlasTile(RingTerrainAtlasTilePayload payload, IPayloadContext context) {
         context.enqueueWork(() -> handleAtlasTileOnClientThread(payload));
     }
 
@@ -150,7 +163,7 @@ public final class NeoForgeRingWorldClient {
                 payload.worldHash(), payload.tileX(), payload.tileZ(), payload.data());
     }
 
-    private static void handleAtlasRevision(
+    static void handleAtlasRevision(
             RingTerrainAtlasRevisionPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> handleAtlasRevisionOnClientThread(payload));
     }
@@ -159,7 +172,7 @@ public final class NeoForgeRingWorldClient {
         ClientRingState.commitTerrainAtlasRevision(payload.worldHash(), payload.revision());
     }
 
-    private static void handleAtlasStatus(
+    static void handleAtlasStatus(
             RingAtlasPregenerationStatusPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> handleAtlasStatusOnClientThread(payload));
     }
@@ -176,7 +189,6 @@ public final class NeoForgeRingWorldClient {
             return;
         }
         if (CURVED_OBJECT_CAPTURE.startWorldIfEnabled(client)) return;
-        if (MAP_COMPASS_CAPTURE.startWorldIfEnabled(client)) return;
         if (ATLAS_PREGENERATION_UI_TEST.startWorldIfEnabled(client)) return;
         if (client.player != null) ClientRingState.updateCameraPosition(client.player.getX());
         if (!Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) {
@@ -188,12 +200,12 @@ public final class NeoForgeRingWorldClient {
         if (PROJECTION_CAPTURE.tick(client)) return;
         if (VISUAL_PARITY_CAPTURE.tick(client)) return;
         if (CURVED_OBJECT_CAPTURE.tick(client)) return;
-        if (MAP_COMPASS_CAPTURE.tick(client)) return;
         ATLAS_PREGENERATION_UI_TEST.tick(client);
     }
 
     @SubscribeEvent
-    public static void onAfterLevel(RenderLevelStageEvent.AfterLevel event) {
+    public static void onAfterLevel(RenderLevelStageEvent event) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
         PROJECTION_CAPTURE.frameRendered();
         VISUAL_PARITY_CAPTURE.frameRendered();
         ATLAS_PREGENERATION_UI_TEST.frameRendered();
@@ -213,7 +225,7 @@ public final class NeoForgeRingWorldClient {
 
         @Override
         public void send(CustomPacketPayload payload) {
-            ClientPacketDistributor.sendToServer(payload);
+            PacketDistributor.sendToServer(payload);
         }
     }
 }

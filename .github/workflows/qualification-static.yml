@@ -8,8 +8,13 @@ on:
       - "scripts/minecraft_qualification_*.py"
       - "scripts/run_minecraft_qualification.py"
       - "scripts/external_runtime_*.py"
+      - "scripts/external_graphical_*.py"
+      - "scripts/run_*_qualification.py"
+      - "scripts/stage_qualified_release.py"
+      - "scripts/publish_qualified_release.py"
       - "scripts/test_*qualification*.py"
       - "scripts/test_external_runtime_*.py"
+      - "scripts/test_external_graphical_*.py"
       - "scripts/test_minecraft_frozen_candidate.py"
       - "scripts/test_validate_minecraft_version_matrix.py"
       - "docs/MINECRAFT_VERSION_SUPPORT_PLAN.md"
@@ -23,8 +28,13 @@ on:
       - "scripts/minecraft_qualification_*.py"
       - "scripts/run_minecraft_qualification.py"
       - "scripts/external_runtime_*.py"
+      - "scripts/external_graphical_*.py"
+      - "scripts/run_*_qualification.py"
+      - "scripts/stage_qualified_release.py"
+      - "scripts/publish_qualified_release.py"
       - "scripts/test_*qualification*.py"
       - "scripts/test_external_runtime_*.py"
+      - "scripts/test_external_graphical_*.py"
       - "scripts/test_minecraft_frozen_candidate.py"
       - "scripts/test_validate_minecraft_version_matrix.py"
       - "docs/MINECRAFT_VERSION_SUPPORT_PLAN.md"
@@ -75,6 +85,22 @@ jobs:
           scripts/test_external_runtime_atlas_recovery_executor.py
           scripts/test_external_runtime_atlas_stage_runner.py
           scripts/test_run_atlas_recovery_qualification.py
+          scripts/test_minecraft_worldgen_qualification.py
+          scripts/test_external_runtime_worldgen_plan.py
+          scripts/test_external_runtime_worldgen_executor.py
+          scripts/test_external_runtime_worldgen_stage_runner.py
+          scripts/test_run_worldgen_qualification.py
+          scripts/test_minecraft_world_upgrade_qualification.py
+          scripts/test_run_world_upgrade_qualification.py
+          scripts/test_release_candidate_equivalence.py
+          scripts/test_stage_qualified_release.py
+          scripts/test_publish_qualified_release.py
+          scripts/test_external_graphical_creation_ui.py
+          scripts/test_run_creation_ui_qualification.py
+          scripts/test_run_gradle_creation_ui_qualification.py
+          scripts/test_run_gradle_atlas_ui_qualification.py
+          scripts/test_run_gradle_map_compass_qualification.py
+          scripts/test_run_gradle_curved_objects_qualification.py
           scripts/test_qualification_static_workflow.py
 
       # Static only: no Gradle, Minecraft runtime, installer, server, network,

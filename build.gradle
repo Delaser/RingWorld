@@ -1,5 +1,5 @@
 plugins {
-	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'fabric-loom' version "${loom_version}"
 	id 'maven-publish'
 }
 
@@ -292,6 +292,7 @@ loom {
 			name "RingWorld Atlas UI Regression"
 			runDir qualificationRunDirectory("run-atlas-ui")
 			vmArg "-Dringworld.atlasUiTest=true"
+			vmArg "-Dringworld.atlasUiExpectedBuildLabel=${project.release_label} · ${project.mod_version}"
 			// Minecraft login names are limited to 16 characters.
 			programArgs "--username", "AtlasUiTester"
 		}
@@ -966,13 +967,15 @@ tasks.register("prepareAtlasUiRun") {
 		def configFile = new File(qualificationRunFile("run-atlas-ui"), "config/ringworld.properties")
 		configFile.parentFile.mkdirs()
 		def config = new Properties()
-		config.setProperty("widthBlocks", "416")
+		config.setProperty("widthBlocks", "128")
 		config.setProperty("circumferenceBlocks", "2048")
 		config.setProperty("wallHeightBlocks", "160")
 		config.setProperty("testMode", "true")
 		config.setProperty("testViewDistanceChunks", "6")
 		config.setProperty("pregenerateTerrainAtlas", "false")
 		configFile.withOutputStream { config.store(it, "Isolated RingWorld atlas UI regression") }
+		new File(qualificationRunFile("run-atlas-ui"), "options.txt").text =
+				"onboardAccessibility:false\nguiScale:4\n"
 	}
 }
 
@@ -1096,6 +1099,8 @@ tasks.register("prepareMapCompassCaptureRun") {
 		config.setProperty("testViewDistanceChunks", "6")
 		config.setProperty("pregenerateTerrainAtlas", "false")
 		configFile.withOutputStream { config.store(it, "Isolated RingWorld map and compass capture") }
+		new File(qualificationRunFile("run-map-compass-capture"), "options.txt").text =
+				"onboardAccessibility:false\npauseOnLostFocus:false\n"
 	}
 }
 
@@ -1195,7 +1200,21 @@ tasks.register("verifyAtlasUiClient") {
 		if (!log.contains("[atlas-ui-test] PASS") || log.contains("[atlas-ui-test] FAIL")) {
 			throw new GradleException("Atlas UI client did not pass; inspect " + logFile)
 		}
-        (1..11).each { index ->
+		def atlasHandshakeMarkers = ["[atlas-ui-test] client-ready", "[atlas-ui-test] settings-v3-mapping-4",
+		 "[atlas-ui-test] disconnect-clear", "[atlas-ui-test] PASS"]
+		def previousAtlasHandshakeMarker = -1
+		atlasHandshakeMarkers.each { marker ->
+			def markerIndex = log.indexOf(marker)
+			if (markerIndex <= previousAtlasHandshakeMarker) {
+				throw new GradleException("Atlas UI client is missing handshake marker '${marker}'; inspect " + logFile)
+			}
+			previousAtlasHandshakeMarker = markerIndex
+		}
+		def atlasSettingsAck = log.indexOf("RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 3")
+		if (atlasSettingsAck < 0 || atlasSettingsAck >= log.indexOf("[atlas-ui-test] disconnect-clear")) {
+			throw new GradleException("Atlas UI integrated server did not accept the format-3 settings acknowledgement; inspect " + logFile)
+		}
+	    (1..11).each { index ->
 			def prefix = String.format("atlas-ui-%02d-", index)
 			if (fileTree(new File(qualificationRunFile("run-atlas-ui"), "screenshots")).matching { include prefix + "*.png" }.isEmpty()) {
 				throw new GradleException("Atlas UI client is missing screenshot " + prefix + "*.png")
@@ -1648,6 +1667,8 @@ testMode=false
 testViewDistanceChunks=12
 pregenerateTerrainAtlas=false
 """
+		new File(qualificationRunFile("run-curved-object-capture"), "options.txt").text =
+				"onboardAccessibility:false\npauseOnLostFocus:false\n"
 	}
 }
 
@@ -1678,12 +1699,11 @@ tasks.register("verifyCurvedObjectCaptureClient") {
 
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	testImplementation platform('org.junit:junit-bom:5.11.4')
-	testImplementation 'org.junit.jupiter:junit-jupiter'
-	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+	mappings loom.officialMojangMappings()
+
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 }
 
 processResources {
@@ -1710,13 +1730,13 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 25
+	it.options.release = 21
 }
 
 java {
 	withSourcesJar()
-	sourceCompatibility = JavaVersion.VERSION_25
-	targetCompatibility = JavaVersion.VERSION_25
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.named('test') {

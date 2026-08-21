@@ -41,7 +41,7 @@ final class RingMultiplayerPhaseTelemetry {
                         + "items={} fallingBlocks={} players={} loadedChunks={} pendingChunkTasks={} "
                         + "blockTicks={} fluidTicks={} usedMiB={} committedMiB={} atlas={}",
                 phase, elapsedNanos / 1_000_000.0, world.getGameTime(),
-                world.dimension().identifier(), entities, items, fallingBlocks,
+                world.dimension(), entities, items, fallingBlocks,
                 world.players().size(), world.getChunkSource().getLoadedChunksCount(),
                 world.getChunkSource().getPendingTasksCount(), world.getBlockTicks().count(),
                 world.getFluidTicks().count(), usedMemory / (1_024L * 1_024L),

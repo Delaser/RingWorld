@@ -294,6 +294,32 @@ class ExternalRuntimeQualificationAdapterTest(unittest.TestCase):
         self.assertEqual(reviewed_range_identities()["fabric"]["minecraft_range"], adapter._range_identities["fabric"]["minecraft_range"])
         self.assertEqual(True, strict_provenance_from_source(source)["clean"])
 
+    def test_factory_keeps_both_loader_frozen_roots_separate(self) -> None:
+        source = SimpleNamespace(
+            commit="1" * 40, manifest_sha256="a" * 64, gradle_wrapper_sha256="b" * 64,
+            java_version="25.0.1", origin="https://github.com/Delaser/RingWorld.git",
+        )
+        preparations = {}
+        for loader, minecraft_range, loader_range in (
+                ("fabric", ">=26.1 <=26.1.2", None),
+                ("neoforge", "[26.1,26.1.2]", "[26.1.0.19-beta,26.1.2.87]")):
+            candidate = Path(f"/tmp/qualification/{loader}/frozen-candidates/{loader}/ringworld-qualification.jar")
+            inspection = FrozenCandidateInspection(
+                str(candidate), loader, ("a" if loader == "fabric" else "b") * 64,
+                "0.0.0-qualification+mc26.1", f"qualification-26.1-{loader}",
+                minecraft_range, loader_range, ("26.1", "26.1.1", "26.1.2"),
+            )
+            preparations[loader] = SimpleNamespace(
+                verdict=Verdict.PASS, plan=SimpleNamespace(candidate_path=candidate), inspection=inspection,
+            )
+        adapter = external_runtime_adapter_from_qualification_inputs(
+            self.manifest_cells, source, preparations,
+            smoke_executor=lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("runtime must not run")),
+        )
+        self.assertNotEqual(adapter._candidate_root("fabric"), adapter._candidate_root("neoforge"))
+        self.assertIn("fabric", adapter._candidate_root("fabric").parts)
+        self.assertIn("neoforge", adapter._candidate_root("neoforge").parts)
+
     def test_runner_java_version_output_is_normalized_for_strict_evidence(self) -> None:
         source = SimpleNamespace(
             commit="1" * 40, manifest_sha256="a" * 64, gradle_wrapper_sha256="b" * 64,

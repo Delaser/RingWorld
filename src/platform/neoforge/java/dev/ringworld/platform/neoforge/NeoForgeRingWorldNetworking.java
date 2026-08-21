@@ -29,30 +29,32 @@ import java.util.UUID;
 
 /** NeoForge transport for the shared RingWorld payload records and handshake state. */
 public final class NeoForgeRingWorldNetworking {
-    private static final String CHANNEL_VERSION = "ringworld-26.1-v2";
+    private static final String CHANNEL_VERSION = "1";
     private static final RingHandshakeTracker HANDSHAKES = new RingHandshakeTracker();
 
     private NeoForgeRingWorldNetworking() { }
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar(CHANNEL_VERSION);
-        registrar.playToClient(RingSettingsPayload.ID, RingSettingsPayload.CODEC);
-        registrar.playToServer(RingSettingsAckPayload.ID, RingSettingsAckPayload.CODEC,
-                NeoForgeRingWorldNetworking::handleAcknowledgement);
-        registrar.playToServer(RingMultiplayerTestPayload.ID, RingMultiplayerTestPayload.CODEC,
-                NeoForgeRingWorldNetworking::handleMultiplayerTest);
-        registrar.playToClient(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC);
-        registrar.playToClient(RingTerrainAtlasTilePayload.ID, RingTerrainAtlasTilePayload.CODEC);
-        registrar.playToClient(RingTerrainAtlasRevisionPayload.ID, RingTerrainAtlasRevisionPayload.CODEC);
-        registrar.playToClient(RingAtlasPregenerationStatusPayload.ID, RingAtlasPregenerationStatusPayload.CODEC);
-        registrar.playToServer(RingTerrainAtlasRequestPayload.ID, RingTerrainAtlasRequestPayload.CODEC,
-                NeoForgeRingWorldNetworking::handleAtlasRequest);
-        registrar.playToServer(RingAtlasPregenerationStatusRequestPayload.ID,
-                RingAtlasPregenerationStatusRequestPayload.CODEC,
-                NeoForgeRingWorldNetworking::handleAtlasStatusRequest);
-        registrar.playToServer(RingAtlasPregenerationControlPayload.ID,
-                RingAtlasPregenerationControlPayload.CODEC,
-                NeoForgeRingWorldNetworking::handleAtlasControl);
+        registrar.playToServer(RingSettingsAckPayload.ID, RingSettingsAckPayload.CODEC, NeoForgeRingWorldNetworking::handleAcknowledgement);
+
+        registrar.playToServer(RingMultiplayerTestPayload.ID, RingMultiplayerTestPayload.CODEC, NeoForgeRingWorldNetworking::handleMultiplayerTest);
+
+//        registrar.playToClient(RingSettingsPayload.ID, RingSettingsPayload.CODEC, NeoForgeRingWorldClient::handleSettings);
+
+//        registrar.playToClient(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC, NeoForgeRingWorldClient::handleAtlasMetadata);
+
+//        registrar.playToClient(RingTerrainAtlasTilePayload.ID, RingTerrainAtlasTilePayload.CODEC, NeoForgeRingWorldClient::handleAtlasTile);
+
+//        registrar.playToClient(RingTerrainAtlasRevisionPayload.ID, RingTerrainAtlasRevisionPayload.CODEC, NeoForgeRingWorldClient::handleAtlasRevision);
+
+//        registrar.playToClient(RingAtlasPregenerationStatusPayload.ID, RingAtlasPregenerationStatusPayload.CODEC, NeoForgeRingWorldClient::handleAtlasStatus);
+
+        registrar.playToServer(RingTerrainAtlasRequestPayload.ID, RingTerrainAtlasRequestPayload.CODEC, NeoForgeRingWorldNetworking::handleAtlasRequest);
+
+        registrar.playToServer(RingAtlasPregenerationStatusRequestPayload.ID, RingAtlasPregenerationStatusRequestPayload.CODEC, NeoForgeRingWorldNetworking::handleAtlasStatusRequest);
+
+        registrar.playToServer(RingAtlasPregenerationControlPayload.ID, RingAtlasPregenerationControlPayload.CODEC, NeoForgeRingWorldNetworking::handleAtlasControl);
     }
 
     public static void sendSettings(ServerPlayer player) {

@@ -105,7 +105,7 @@ abstract class ChunkGeneratorLocateMixin {
         // This is the same canonical STRUCTURE_STARTS lookup vanilla uses. It
         // may generate the selected start, but never asks for an X alias chunk.
         ChunkAccess chunk = world.getChunk(
-                candidateChunk.x(), candidateChunk.z(), ChunkStatus.STRUCTURE_STARTS);
+                candidateChunk.x, candidateChunk.z, ChunkStatus.STRUCTURE_STARTS);
         StructureStart start = manager.getStartForStructure(
                 SectionPos.bottomOf(chunk), monument.value(), chunk);
         if (start == null || !start.isValid()) return null;

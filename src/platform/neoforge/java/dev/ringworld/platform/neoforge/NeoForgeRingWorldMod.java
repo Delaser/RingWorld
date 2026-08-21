@@ -22,7 +22,7 @@ public final class NeoForgeRingWorldMod {
         NeoForgeTerrainAtlasPlatform.configure();
         RingWorldServer.configurePreLoadRejectionHandler(HeadlessPrewarmCoordinator::recordPreLoadRejection);
         modEventBus.addListener(NeoForgeRingWorldNetworking::registerPayloads);
-        if (FMLEnvironment.getDist().isClient()) {
+        if (FMLEnvironment.dist.isClient()) {
             NeoForgeRingWorldClient.register(modEventBus);
         }
         NeoForge.EVENT_BUS.register(new NeoForgeRingWorldServer());

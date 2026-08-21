@@ -9,14 +9,14 @@ import java.util.Optional;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceLocation;
 
 /** Complete immutable status/progress snapshot for atlas generation, wire layout v1. */
 public record RingAtlasPregenerationStatusPayload(AtlasPregenerationStatus status)
         implements CustomPacketPayload {
     private static final int MAX_MESSAGE = 1_024;
     public static final Type<RingAtlasPregenerationStatusPayload> ID = new Type<>(
-            Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "atlas_pregen_status_v1"));
+            ResourceLocation.fromNamespaceAndPath(RingWorldMod.MOD_ID, "atlas_pregen_status_v1"));
     public static final StreamCodec<RegistryFriendlyByteBuf, RingAtlasPregenerationStatusPayload> CODEC =
             StreamCodec.of(RingAtlasPregenerationStatusPayload::encode, RingAtlasPregenerationStatusPayload::decode);
 

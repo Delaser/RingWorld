@@ -125,15 +125,10 @@ def external_runtime_atlas_recovery_plan(
     if frozen_candidate_root is None or not frozen_candidate_root.is_absolute() \
             or not is_within(candidate.path, frozen_candidate_root):
         raise InvocationError("Atlas recovery needs the reviewed frozen candidate root")
-    quick_root = paths.cell_root if quick_evidence_root is None else quick_evidence_root
-    expected_prior_cell_root = frozen_candidate_root.parent / paths.cell_id
-    if not isinstance(quick_terminal_evidence, QuickTerminalEvidenceInput) \
-            or not quick_terminal_evidence.path.is_absolute() \
-            or not quick_root.is_absolute() \
-            or quick_root not in {paths.cell_root, expected_prior_cell_root} \
-            or not is_within(quick_terminal_evidence.path, quick_root) \
-            or SHA256.fullmatch(quick_terminal_evidence.sha256) is None:
-        raise InvocationError("Atlas recovery needs a contained hash-identified quick terminal record")
+    quick_root = validate_quick_evidence_input(
+        paths, quick_terminal_evidence, quick_evidence_root,
+        "Atlas recovery",
+    )
     smoke = _fixture_world_files(external_runtime_smoke_plan(
         cell,
         candidate,
@@ -186,6 +181,34 @@ def external_runtime_atlas_recovery_plan(
             "Only a parsed COMPLETE report plus independently decoded complete Atlas may claim fixture PASS.",
         ),
     )
+
+
+def validate_quick_evidence_input(
+    paths: QualificationPaths,
+    quick_terminal_evidence: QuickTerminalEvidenceInput,
+    quick_evidence_root: Path | None,
+    label: str,
+) -> Path:
+    """Bind one selected patch cell to its exact prior strict quick record.
+
+    The retained same-file jar lives below the oldest ABI cell, while each
+    patch has its own quick cell/evidence directory.  The prior record may
+    therefore be in another version profile, but it must still be the exact
+    canonical cell path below ``dist/qualification`` and the fixed strict
+    evidence filename.  Its contents are independently parsed by the executor.
+    """
+    quick_root = paths.cell_root if quick_evidence_root is None else quick_evidence_root
+    qualification_root = paths.repository_root / "dist/qualification"
+    expected_record = quick_root / "evidence/strict-terminal-evidence.json"
+    if not isinstance(quick_terminal_evidence, QuickTerminalEvidenceInput) \
+            or not quick_terminal_evidence.path.is_absolute() \
+            or not quick_root.is_absolute() \
+            or not is_within(quick_root, qualification_root) \
+            or quick_root.name != paths.cell_id \
+            or quick_terminal_evidence.path != expected_record \
+            or SHA256.fullmatch(quick_terminal_evidence.sha256) is None:
+        raise InvocationError(f"{label} needs a contained hash-identified quick terminal record")
+    return quick_root
 
 
 plan_external_runtime_atlas_recovery = external_runtime_atlas_recovery_plan

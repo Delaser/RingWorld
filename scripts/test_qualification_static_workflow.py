@@ -16,6 +16,8 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
         source = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("PYTHONPATH: scripts", source)
         self.assertIn("python -m unittest", source)
+        self.assertIn('"scripts/external_graphical_*.py"', source)
+        self.assertIn('"scripts/run_*_qualification.py"', source)
         for test in (
             "test_validate_minecraft_version_matrix.py",
             "test_qualification_gradle_isolation.py",
@@ -35,9 +37,21 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
             "test_external_runtime_atlas_recovery_executor.py",
             "test_external_runtime_atlas_stage_runner.py",
             "test_run_atlas_recovery_qualification.py",
+            "test_minecraft_worldgen_qualification.py",
+            "test_external_runtime_worldgen_plan.py",
+            "test_external_runtime_worldgen_executor.py",
+            "test_external_runtime_worldgen_stage_runner.py",
+            "test_run_worldgen_qualification.py",
+            "test_minecraft_world_upgrade_qualification.py",
+            "test_run_world_upgrade_qualification.py",
+            "test_release_candidate_equivalence.py",
+            "test_stage_qualified_release.py",
+            "test_publish_qualified_release.py",
+            "test_external_graphical_creation_ui.py",
+            "test_run_creation_ui_qualification.py",
         ):
             self.assertIn(test, source)
-        for prohibited in ("./gradlew", "curl ", "wget ", "java ", "publish", "upload"):
+        for prohibited in ("./gradlew", "curl ", "wget ", "java ", "--execute", "urlopen("):
             self.assertNotIn(prohibited, source.lower())
 
     def test_binary_recovery_evidence_uses_windows_binary_descriptors(self) -> None:

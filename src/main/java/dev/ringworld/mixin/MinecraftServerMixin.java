@@ -10,8 +10,8 @@ import net.minecraft.resources.ResourceKey;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Climate;
-import net.minecraft.world.level.storage.LevelData;
 import net.minecraft.world.level.storage.LevelStorageSource;
+import net.minecraft.world.level.storage.ServerLevelData;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -54,16 +54,14 @@ abstract class MinecraftServerMixin implements RingWorldStorageAccess {
      */
     @Redirect(
             method = "setInitialSpawn",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/storage/LevelData$RespawnData;of(Lnet/minecraft/resources/ResourceKey;Lnet/minecraft/core/BlockPos;FF)Lnet/minecraft/world/level/storage/LevelData$RespawnData;"),
-            require = 3)
-    private static LevelData.RespawnData ringworld$canonicalInitialRespawnData(
-            ResourceKey<Level> dimension, BlockPos position, float yaw, float pitch) {
-        if (dimension != Level.OVERWORLD) {
-            return LevelData.RespawnData.of(dimension, position, yaw, pitch);
-        }
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/world/level/storage/ServerLevelData;setSpawn(Lnet/minecraft/core/BlockPos;F)V"
+            ))
+    private static void ringworld$canonicalInitialSpawn(ServerLevelData levelData, BlockPos position, float angle) {
         RingWorldConfig config = RingWorldConfig.load();
         RingGeometry geometry = new RingGeometry(config.widthBlocks(), config.circumferenceBlocks());
-        return LevelData.RespawnData.of(dimension,
-                RingSpawnBounds.canonicalInitialSpawn(position, geometry), yaw, pitch);
+
+        levelData.setSpawn(RingSpawnBounds.canonicalInitialSpawn(position, geometry), angle);
     }
 }

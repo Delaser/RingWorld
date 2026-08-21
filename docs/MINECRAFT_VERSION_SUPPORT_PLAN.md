@@ -1,7 +1,12 @@
 # Minecraft version support plan
 
-Status: approved policy and end-to-end delivery plan. Phase 0 tracking and
-the Phase 1 manifest/validator are implemented; later phases remain pending.
+Status: approved policy and active implementation. Phases 0–3 are implemented;
+the six quick cells pass with one unchanged jar per loader. Phase 4 has real
+six-cell Atlas-recovery, worldgen/structure, and creation/settings UI
+source-ABI evidence; its remaining client, gameplay, lifecycle, and rendering
+fixtures are pending. Phase 5's copied-world matrix passes all six supported
+same-loader forward paths. Phase 6's release-equivalence guard is static-tested,
+but no proposed public jar or release-equivalence evidence has been recorded.
 
 ## Support model
 
@@ -312,14 +317,14 @@ Gradle development source-set run.
 Exit: one command produces a fail-closed six-cell quick report on a clean
 checkout, and deliberate corruptions are rejected by tests.
 
-Fabric reached the loader-side Phase 3 exit on 2026-08-12 in run
-`20260812T170742Z-d5ff11778395`: 26.1, 26.1.1, and 26.1.2 all passed with the
+Fabric's refreshed loader-side Phase 3 run is
+`20260813T072608Z-b7c68e555818`: 26.1, 26.1.1, and 26.1.2 all passed with the
 same frozen jar SHA-256
-`e1254b38cf811e7c68382c4ecc025dbede8b5effca54993e5bd403716bff5f39`.
-NeoForge reached the same loader-side exit in run
-`20260812T171404Z-a2d212243bb3`: 26.1, 26.1.1, and 26.1.2 passed with one
+`d7a66942e275fb3fab9386230293bb5fee21adaa3f5eeecfc61b9f8a205c8296`.
+NeoForge reached the same refreshed exit in run
+`20260813T080722Z-377cfb994c93`: 26.1, 26.1.1, and 26.1.2 passed with one
 unchanged frozen jar SHA-256
-`c264b1d389ef3e341e4bd7318c89b4c819568c114c811867c239ecbf9d6f8e2f`.
+`53558ed53bfe73e856710b8fafe60cf81e353e1fde19d43782ebd2f7843d7314`.
 These runs are quick dedicated-server evidence, not the Phase 4
 gameplay/rendering matrix or a publication decision.
 
@@ -499,26 +504,198 @@ does not by itself establish a nightly PASS.
 The bounded persistence parser now decodes the real dimension-owned settings
 NBT and Atlas-v6 file independently, derives the Java-compatible layout and
 Atlas identities, counts durable cells and complete chunks, and binds an exact
-pre-restart checkpoint hash. This closes the report-only evidence gap. Real
-Fabric and NeoForge executions of the new process executor passed on
-2026-08-12 from clean pushed commit `1887692`. Fabric run
-`20260812T184342Z-cef57e3ac2a4` recovered 244/13,312 durable cells to complete;
-NeoForge run `20260812T185236Z-670720ec923e` recovered 280/13,312 to complete.
-Their terminal-evidence SHA-256 values are respectively
-`bc770cd1...5498d` and `f3459d31...01b3`. This qualifies the Atlas
-interruption/recovery fixture on the oldest supported patch for both frozen
-loader candidates; the remaining Phase 4 fixtures are still pending.
+pre-restart checkpoint hash. This closes the report-only evidence gap. The
+Atlas recovery fixture now passes all six 26.1.x cells using one exact frozen
+jar per loader. Fabric runs are `20260813T091340Z-0f6a75a06e36` (26.1),
+`20260813T084030Z-a3030342d49c` (26.1.1), and
+`20260813T084918Z-2a61b8523682` (26.1.2). NeoForge runs are
+`20260813T092207Z-56b8d1593d37` (26.1),
+`20260813T085803Z-abc3ee37973d` (26.1.1), and
+`20260813T090427Z-21cef9b5920b` (26.1.2). Every run proves a durable partial
+checkpoint, exact-byte resume, complete 13,312-cell Atlas, stable mapping-4
+identity, clean exits, and schema-2 `COMPLETE`. The current clean merged quick
+baseline is combined run `20260813T164933Z-8bee9268f799` at commit `439e339`.
+All six cells pass with one Fabric jar (`8b919c42...9e7e31`) and one NeoForge
+jar (`77389181...f6f50`). This supersedes earlier quick hashes for any future
+candidate derived from the lifecycle-gate fix. The remaining Phase 4 client,
+gameplay, lifecycle, and rendering fixtures are still pending.
 The operator entry point is intentionally explicit:
 
 ```sh
 python3 scripts/run_atlas_recovery_qualification.py \
   --cell 26.1-fabric \
-  --quick-run-id 20260812T170742Z-d5ff11778395
+  --quick-run-id 20260813T072608Z-b7c68e555818
 ```
 
 Use the matching NeoForge quick run ID for a NeoForge cell. The command refuses
 a dirty/unpushed checkout, a mismatched quick record or frozen jar, and any
 pre-existing destination. It creates only a new ignored qualification run.
+
+The second concrete external slice is the existing worldgen/structure matrix,
+now driven without Gradle or a development classpath. Its pure plan and
+contract plus a bounded process runner and official-runtime executor cover
+four ordered stages: production fresh/reload in one world, a deliberate
+seam-crossing safe-small seed, and the saved terminal monument-policy seed.
+The executor installs three fresh runtimes, reuses only the production world
+for its reload, injects the existing Java fixture properties at the real
+launcher boundary, independently decodes saved settings, and parses exactly
+one matrix/monument/PASS record per stage. It cannot pass without mapping 4,
+format 3, all fourteen biome families, nonzero caves/ores/logs/structures/
+references/loot, a seam-crossing structure, both monument policy outcomes,
+and clean self-halted exits. The slice passes all six cells. Fabric runs are
+`20260813T073235Z-1e16c008e584` (26.1),
+`20260813T083349Z-0cdcffa76005` (26.1.1), and
+`20260813T083518Z-b942314e7e0d` (26.1.2). NeoForge runs are
+`20260813T082128Z-c2fae65dec2c` (26.1),
+`20260813T083644Z-e7ed932a1499` (26.1.1), and
+`20260813T083822Z-03549862d588` (26.1.2). Each loader used one unchanged
+frozen jar across all three patch runtimes.
+
+```sh
+python3 scripts/run_worldgen_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260813T072608Z-b7c68e555818
+```
+
+Use quick run `20260813T080722Z-377cfb994c93` for NeoForge. The retained
+candidate exists once below that quick run's 26.1 loader root; selecting a
+26.1.1 or 26.1.2 cell uses its own strict quick record while resolving that
+single reviewed candidate. Missing or duplicate candidate roots fail closed.
+
+The first graphical-client slice reuses the existing menu-only creation UI
+fixture through a fresh production-style Prism profile. It verifies one
+reviewed Prism 11.0.3 macOS archive, the exact retained RingWorld jar, Java 25,
+and Fabric API when applicable; creates no account record and launches with an
+explicit offline fixture name; and requires the existing thirteen screenshots,
+PASS marker, clean self-halt, bounded logs, exact mod inventory, and no
+`level.dat`. Its pure/fake-process tests do not qualify a real client. The
+operator command is intentionally explicit and accepts no existing Prism data
+root:
+
+```sh
+python3 scripts/run_creation_ui_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260813T072608Z-b7c68e555818 \
+  --prism-archive /absolute/path/PrismLauncher-macOS-11.0.3.zip \
+  --java /absolute/path/to/java-25/bin/java
+```
+
+The archive must have SHA-256
+`b8e06ef55ec78fceddfa9f4270b3d4d93f2606b83f70ad6a2c6dde90f2b65408`.
+NeoForge uses its matching refreshed quick run. Real cross-version graphical
+execution through a completely fresh Prism data root is blocked before
+Minecraft starts: official Prism requires a valid Microsoft account during
+its setup wizard even when the requested launch mode is offline. Qualification
+must never copy a user's normal `accounts.json` or tokens. Keep this path as an
+explicit authenticated-disposable-profile or owner release gate.
+
+The automated source-ABI alternative is
+`scripts/run_gradle_creation_ui_qualification.py`. It drives the same real
+Minecraft client fixture using the exact manifest Minecraft/loader/API pins
+inside a new qualification cell, requires all thirteen PNG captures and the
+fixture PASS marker, rejects any created `level.dat`, and writes immutable
+terminal evidence. Its report explicitly says it is not a production launcher
+or frozen-candidate-jar test:
+
+```sh
+python3 scripts/run_gradle_creation_ui_qualification.py --cell 26.1-fabric
+```
+
+The runner accepts the same optional reviewed acceleration inputs as quick
+qualification: `--gradle-dependency-cache` for an existing external read-only
+modules cache and `--gradle-distribution-zip` for the exact wrapper-pinned
+Gradle archive. Neither changes evidence identity or enables offline mode.
+
+This is the repeatable cross-version GUI ABI gate. Packaged-client login stays
+separate so the matrix cannot turn a credential workaround into false release
+evidence.
+
+The source-ABI gate passes all six manifest cells from clean pushed commit
+`077615493e0f8a7b58e92aec51e9ec83535cb08f`, with thirteen captures and no
+created world in every cell. Fabric run IDs are
+`20260813T101541Z-e87eced07877`, `20260813T101904Z-f32dbc8917e9`, and
+`20260813T102213Z-d33b1a707c5b` for 26.1 through 26.1.2. NeoForge run IDs are
+`20260813T102535Z-618362c64a62`, `20260813T105844Z-fdefa2c044f5`, and
+`20260813T110726Z-2e96621d7486`. This closes the creation/settings UI ABI
+slice only; it does not convert Gradle-launched classes into frozen-candidate
+or production-launcher evidence.
+
+The next source-ABI client slice reuses the integrated Atlas map/control
+fixture through `scripts/run_gradle_atlas_ui_qualification.py`. It keeps the
+same clean-source, exact dependency, Gradle user/project cache, and optional
+reviewed acceleration boundaries, but requires one disposable safe-small
+world, accepted format-3 settings acknowledgement, a rendered mapping-4
+client identity, normal disconnect/session clear, all eleven Atlas UI captures,
+complete generation, and the fixture's ordered placement/removal revision
+probe:
+
+```sh
+python3 scripts/run_gradle_atlas_ui_qualification.py --cell 26.1-fabric
+```
+
+The gate passes all six cells from clean pushed commit
+`7a7c0449277dbb0be464b1fb972d77044132a1e6`. Fabric run IDs are
+`20260813T123311Z-a3ad7b5b5a58`, `20260813T124040Z-0d2aec6c29f2`, and
+`20260813T124816Z-bd3475d1bf21` for 26.1 through 26.1.2. NeoForge run IDs are
+`20260813T125559Z-789f027ffe4b`, `20260813T131059Z-721b4de15471`, and
+`20260813T132720Z-47169a2c9167`. Every cell produced all eleven captures,
+completed its 4,096-cell Small Atlas, exercised every map control, and passed
+the ordered live placement/removal revision probe. This completes the Atlas
+UI source-ABI slice only; packaged-client and broader gameplay/rendering
+nightlies remain separate.
+The fixture's build-label assertion is selected independently by Gradle from
+the active `release_label` and `mod_version`. This retains the published 1.0
+identity check for ordinary development runs while requiring each exact
+qualification cell to display its diagnostic build identity.
+The expanded fixture writes separate immutable terminal records for nightly
+fixtures 04 and 05 from that one atomic client session. Fixture 04 owns Atlas
+controls and revisions; fixture 05 owns accepted settings, rendered client
+readiness, normal disconnect, and complete client-session teardown. Fixture 05
+now passes all six cells: Fabric run IDs are
+`20260813T174054Z-bdeeafa3a751`, `20260813T174418Z-b23550ef9a22`, and
+`20260813T174740Z-1995f7cf8b48`; NeoForge run IDs are
+`20260813T181123Z-5baa2ec6644c`, `20260813T181648Z-b2342a09e2e7`, and
+`20260813T182206Z-14d425cfb781`. Fabric ran from clean commit `a037308` and
+NeoForge from clean commit `aa94e9a`, whose only intervening behavior change
+disabled NeoForge's optional early splash for this automated graphical fixture.
+Every run accepted format 3/mapping 4, rendered the real client, completed all
+eleven Atlas captures, and proved normal disconnect plus complete session
+teardown. This is source-ABI evidence, not frozen-jar packaged-client proof.
+
+The current 26.1.2 development runtime also re-passed the copied production
+lifecycle and full production projection gates on both loaders on 2026-08-13,
+using one completed mapping-4 16,384x256 source. This is useful current-code
+regression evidence, but it does not replace running the frozen candidate in
+all six cells and therefore does not close the remaining Phase 4 matrix.
+
+The next bounded source-ABI gameplay slice is
+`scripts/run_gradle_map_compass_qualification.py`. It wraps the existing real
+map/compass fixture for one exact patch cell, requiring filled-map pixels,
+both seam directions, banner and item-frame state, spawn/lodestone/recovery
+needles, normal disconnect, complete client-state teardown, reopen, and
+persistence. The fresh-profile preparers disable onboarding and NeoForge's
+optional early splash, while the shared fixture waits for the final title
+screen and keeps the integrated server ticking when unfocused. The slice now
+passes all six cells from clean commit `9015857`. Fabric runs are
+`20260813T184333Z-82e19d55389b`, `20260813T184752Z-6181972f0b5e`, and
+`20260813T185208Z-746d5447411a`; NeoForge runs are
+`20260813T185449Z-26282a7c51fb`, `20260813T185906Z-d67da65d189d`, and
+`20260813T190435Z-9f27985cd623`. This is source-ABI gameplay evidence, not
+frozen-jar packaged-client proof.
+
+`scripts/run_gradle_curved_objects_qualification.py` is the matching bounded
+fixture-10 wrapper. It reuses the real curved-object client and requires its
+far/near captures of representative block entities, items, boats, passive and
+hostile entities. It passes all six cells from clean commit `f9cb4c2`. Fabric
+runs are `20260813T191305Z-12bda076ad23`,
+`20260813T191530Z-a9b6435145d8`, and `20260813T191738Z-34182794aaf3`;
+NeoForge runs are `20260813T191940Z-187e70e94c0c`,
+`20260813T192307Z-3acb0e5bbc29`, and `20260813T192619Z-7787ffdc1eee`.
+
+All qualification Gradle commands set both a disposable `GRADLE_USER_HOME`
+and a cell-contained `--project-cache-dir`. The latter is mandatory for Loom:
+without it, an otherwise isolated client launch reads its launch configuration
+from the checkout's shared `.gradle` directory.
 
 ### Phase 5 — world-upgrade qualification
 
@@ -537,6 +714,32 @@ position. Never run reverse-version or downgrade tests against the same save.
 
 Exit: every advertised forward path has a passing copied-world report; all
 unsupported directions are documented.
+
+Implementation status: the fail-closed contract and external operator bridge
+now exist, and are included in the 232-test cross-platform static workflow.
+Run exactly one path at a time with explicit source-worldgen and target-quick
+evidence, for example:
+
+```sh
+python3 scripts/run_world_upgrade_qualification.py \
+  --source-cell 26.1-fabric \
+  --source-worldgen-run-id <passed-26.1-worldgen-run-id> \
+  --target-cell 26.1.1-fabric \
+  --target-quick-run-id <passed-26.1.1-quick-run-id>
+```
+
+The CLI permits only the three forward paths above, requires source and target
+cells to use the same loader, rechecks the retained source world and target
+candidate/evidence before runtime work, copies into a new contained target
+fixture, and fails on an existing destination. It never downgrades or mutates
+the source world. All six real loader/version forward paths now have terminal
+`PASS` reports from clean pushed commit `7983b8a`. Fabric runs are
+`20260813T154817Z-49a8704da644`, `20260813T154908Z-3dd32c4a02d9`, and
+`20260813T154948Z-2c59e8f287e1`; NeoForge runs are
+`20260813T155036Z-16d04362acad`, `20260813T155119Z-87e77d39455b`, and
+`20260813T155207Z-9f8bc2f81de7`. Every target was a disposable copy and
+retained the dimension-owned mapping-4, format-3 settings and production-resume
+worldgen/stronghold facts.
 
 ### Phase 6 — release qualification
 
@@ -560,6 +763,30 @@ ABI diagnostics only. If the frozen file cannot pass every cell, publish
 distinct version-specific artifacts and say so clearly.
 
 Exit: immutable release evidence is complete and the owner records a go/no-go.
+
+Implementation status: `scripts/release_candidate_equivalence.py` is a
+static-tested, local staging gate for a proposed public jar. It verifies that
+the archive member set and all non-metadata bytes match a frozen candidate;
+only the reviewed Fabric/NeoForge descriptor and
+`ringworld-build.properties` public version/label substitutions may differ.
+Use it explicitly per loader:
+
+```sh
+python3 scripts/release_candidate_equivalence.py \
+  <frozen-qualification.jar> <proposed-public.jar> \
+  --loader fabric --release-version <version> --release-label <label>
+```
+
+It validates MPL-2.0 contents and approved metadata ranges before comparison.
+It is not an upload, publication, or runtime test. On 2026-08-13, local
+`1.1.0+mc26.1` / label `1.1` candidates were built against the 26.1 ABI and
+passed all 338 tests per loader. The Fabric jar
+(`082cb697...5aef4`) is byte-equivalent outside approved metadata to frozen
+candidate `8b919c42...e7e31`; the NeoForge jar
+(`1b81d621...941aa`) is likewise equivalent to `77389181...6f50`. The files
+remain ignored local candidates. Phase 6 still requires the remaining
+candidate-bound graphical/gameplay matrix and owner go/no-go before it can
+close.
 
 ### Phase 7 — candidate staging and documentation freeze
 
@@ -587,6 +814,18 @@ its layered placeholder without promising a fixed completion time.
 
 Exit: a clean pushed commit can be restaged reproducibly, and an independent
 reviewer returns a release go decision for the exact hashes.
+
+Implementation status: `scripts/stage_qualified_release.py` is the no-upload
+Phase 7 staging bridge. It consumes one reviewed six-cell quick run plus the
+two public candidates, revalidates all strict terminal records and retained
+same-file hashes, reruns byte-level release equivalence, and writes ignored
+per-loader review directories containing exactly one runtime jar, SHA-256 and
+SHA-512, archive inventory, immutable source provenance, generated Modrinth
+metadata, CurseForge upload worksheet, changelog, and rollback data. Its
+reviewed `1.1.0+mc26.1` configuration names only 26.1, 26.1.1, and 26.1.2;
+Fabric API appears only in Fabric host relations. The tool accepts no token and
+has no upload, tag, deployment, or listing-mutation path. A real clean-source
+staging run remains pending until this implementation is merged.
 
 ### Phase 8 — Modrinth publication
 
@@ -624,6 +863,15 @@ payload shape.
 
 Exit: both hosted files are downloadable, independently hash-verified, and
 their listing metadata matches the frozen evidence.
+
+Implementation status: `scripts/publish_qualified_release.py` now produces a
+credential-free Modrinth multipart plan from one exact loader stage. Dry-run
+is the default and does not read a token. Execution requires `--execute`, a
+separate short-lived owner-authorization JSON bound to host, loader, staged
+source, and jar hash, a clean pushed checkout matching the stage, and a token
+available only through `MODRINTH_TOKEN`. New versions are requested unlisted;
+the tool has no edit, delete, promotion, or prior-version route. Submission and
+CDN re-download verification remain pending explicit owner authorization.
 
 ### Phase 9 — CurseForge publication
 
@@ -684,6 +932,14 @@ release live until the replacement is confirmed.
 Exit: both loader files are approved/downloadable, hash-verified, and visible
 with correct dependency and version metadata.
 
+Implementation status: the same publisher has a separate CurseForge plan and
+endpoint path. Its execution gate reads only `CURSEFORGE_API_TOKEN`, uses the
+official `X-Api-Token` header, marks new files for manual release, and binds
+Client, Server, the three proven 26.1.x names, loader, changelog, and
+Fabric-only required project relation. It cannot update/archive/delete an
+existing file. Vocabulary lookup, submission, moderation tracking, and hosted
+download verification remain pending explicit owner authorization.
+
 ### Phase 10 — post-publication closure
 
 After both hosts are verified:
@@ -711,6 +967,65 @@ manifest -> version-aware builds -> quick matrix -> nightly matrix
 -> upgrade matrix -> frozen release matrix -> staging -> owner approval
 -> Modrinth/CurseForge submission -> hosted-file verification
 ```
+
+## Follow-on execution checklist (2026-08-13)
+
+This is the concise checklist for continuing the 26.1.x support project.
+Earlier sections remain the detailed design and evidence record.
+
+### Completed foundation
+
+- [x] Define six pinned Fabric/NeoForge cells for 26.1, 26.1.1, and 26.1.2.
+- [x] Isolate every cell's build, runtime, world, cache, port, and evidence.
+- [x] Build one frozen candidate per loader against the oldest ABI and require
+  its unchanged hash across that loader's three patch versions.
+- [x] Pass the original six-cell quick dedicated-server matrix.
+- [x] Pass Atlas recovery and world-generation qualification on all six cells.
+- [x] Pass creation UI, Atlas UI/format-3 handshake, map/compass, and curved
+  object source-ABI fixtures on all six cells.
+- [x] Implement forward-save, candidate-equivalence, staging, and publication
+  dry-run tooling.
+- [x] Fix NeoForge qualification installs to reuse the verified Mojang server
+  jar instead of redundantly downloading it (PR #227).
+
+### Required before broad 26.1.x support
+
+- [ ] Re-run the complete six-cell quick matrix from current clean `main`.
+- [ ] Run the dedicated multiplayer fixture on all six cells with the exact
+  retained frozen candidate for each loader.
+- [ ] Run the raid fixture on all six cells.
+- [ ] Run production lifecycle qualification on all six cells: dimension
+  travel, save, disconnect, client-state cleanup, and reopen.
+- [ ] Run production rendering on all six cells: projection, natural seam
+  motion, Atlas handoff, rims, sky, weather, and frame observations.
+- [ ] Bind every nightly result to its quick record, frozen jar SHA-256, source
+  commit, runtime version, and immutable evidence hashes.
+- [ ] Run every supported forward-save path using the final candidates.
+- [ ] Generate and independently review one final six-cell report. Any failed
+  or missing cell leaves the support claim incomplete.
+
+### Release and publication
+
+- [ ] Freeze final Fabric and NeoForge candidates and confirm one unchanged jar
+  per loader covers all three Minecraft patch versions.
+- [ ] Re-run clean tests, builds, licence/package checks, and fail-closed
+  staging against the frozen commit.
+- [ ] Advertise only the support range proven by the final report.
+- [ ] Prepare Modrinth and CurseForge files, changelogs, hashes, source links,
+  rollback identifiers, and hosted-file verification steps.
+- [ ] Obtain explicit owner go/no-go approval.
+- [ ] Publish only after approval; independently download and verify hosted
+  files and hashes.
+- [ ] Update README, compatibility docs, website copy, and GitHub issues with
+  the exact published versions and limitations.
+
+### Later versions and backports
+
+- [ ] Add each later stable release as new manifest cells with exact pins.
+- [ ] Run ABI checks first, add narrow version adapters only where evidence
+  requires them, then repeat quick, nightly, upgrade, and release gates.
+- [ ] Keep backports in explicit adapters or maintained branches while shared
+  topology, protocol, saved-data, and rendering contracts remain common.
 
 Safe parallel work includes pure manifest/tooling tests, host-copy drafting,
 and loader-specific headless jobs with isolated files and ports. Do not run

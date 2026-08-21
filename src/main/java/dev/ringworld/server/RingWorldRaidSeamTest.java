@@ -15,7 +15,7 @@ import net.minecraft.tags.PoiTypeTags;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.Relative;
+import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.entity.ai.goal.PathfindToRaidGoal;
 import net.minecraft.world.entity.ai.village.poi.PoiManager;
 import net.minecraft.world.entity.ai.village.poi.PoiType;
@@ -24,7 +24,7 @@ import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.entity.raid.Raider;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
-import net.minecraft.world.level.gamerules.GameRules;
+import net.minecraft.world.level.GameRules;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -186,8 +186,8 @@ public final class RingWorldRaidSeamTest {
                     ((RaidFixtureAccessor) raid).ringworld$setFixtureGroupsSpawned(
                             raid.getNumGroups(world.getDifficulty()));
                     for (Raider raider : new ArrayList<>(raid.getAllRaiders())) {
-                        raider.hurtServer(world, world.damageSources().playerAttack(playerA), 1_000.0F);
-                        if (raider.isAlive()) raider.kill(world);
+                        raider.hurt(world.damageSources().playerAttack(playerA), 1_000.0F);
+                        if (raider.isAlive()) raider.kill();
                     }
                     stage = 3;
                     ticks = 0;
@@ -218,7 +218,7 @@ public final class RingWorldRaidSeamTest {
                                 ServerPlayer playerA, ServerPlayer playerB) {
         preparePlayers(world, geometry, playerA, playerB);
         prepareChunksAndLane(world, geometry);
-        world.getGameRules().set(GameRules.RAIDS, true, world.getServer());
+        world.getGameRules().getRule(GameRules.RULE_DISABLE_RAIDS).set(false, world.getServer());
 
         ensureOccupiedPois(world, geometry);
         if (terminal) return;
@@ -273,9 +273,9 @@ public final class RingWorldRaidSeamTest {
             player.setDeltaMovement(Vec3.ZERO);
         }
         playerA.teleportTo(world, geometry.circumferenceBlocks() - 5.0, Y, Z + 0.5,
-                Set.<Relative>of(), 90.0f, 0.0f, false);
+                Set.<RelativeMovement>of(), 90.0f, 0.0f);
         playerB.teleportTo(world, 2.5, Y, Z + 0.5,
-                Set.<Relative>of(), -90.0f, 0.0f, false);
+                Set.<RelativeMovement>of(), -90.0f, 0.0f);
     }
 
     private static void prepareChunksAndLane(ServerLevel world, RingGeometry geometry) {
@@ -305,7 +305,7 @@ public final class RingWorldRaidSeamTest {
 
     private static void armNavigation(ServerLevel world, RingGeometry geometry) {
         navigationRaider.teleportTo(world, geometry.circumferenceBlocks() - 5.5, Y, Z + 0.5,
-                Set.<Relative>of(), 90.0f, 0.0f, false);
+                Set.<RelativeMovement>of(), 90.0f, 0.0f);
         navigationRaider.setDeltaMovement(Vec3.ZERO);
         navigationRaider.getNavigation().stop();
         navigationGoal = new PathfindToRaidGoal<>(navigationRaider);
@@ -324,7 +324,7 @@ public final class RingWorldRaidSeamTest {
 
     private static Raider taggedRaider(ServerLevel world) {
         for (Entity entity : world.getAllEntities()) {
-            if (entity instanceof Raider raider && raider.entityTags().contains(RAIDER_TAG)) return raider;
+            if (entity instanceof Raider raider && raider.getTags().contains(RAIDER_TAG)) return raider;
         }
         return null;
     }

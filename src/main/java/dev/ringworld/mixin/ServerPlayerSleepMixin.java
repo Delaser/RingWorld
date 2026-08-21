@@ -21,7 +21,7 @@ abstract class ServerPlayerSleepMixin {
                                             CallbackInfoReturnable<Boolean> cir) {
         ServerPlayer player = (ServerPlayer) (Object) this;
         if (player.level().dimension() != Level.OVERWORLD) return;
-        RingGeometry geometry = RingWorldServer.geometryFor(player.level());
+        RingGeometry geometry = RingWorldServer.geometryFor(player.serverLevel());
         Vec3 bedCenter = Vec3.atBottomCenterOf(bedPos);
         cir.setReturnValue(geometry.isWithinPeriodicBox(
                 player.getX(), player.getY(), player.getZ(),

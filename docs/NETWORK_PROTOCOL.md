@@ -296,6 +296,12 @@ saved first when dirty. Reconnect starts a new presentation chart from the
 authoritative join position but may reuse the complete disk atlas by world
 hash.
 
+The dual-loader integrated Atlas UI regression makes this observable: after a
+server-side accepted `settings_ack_v3` for a fresh mapping-4 world, it performs
+Minecraft's normal disconnect path and waits for the level/integrated server to
+disappear and `RingWorldClientSession.isCleared()` to become true before it
+emits its terminal pass marker.
+
 The chart index is deliberately never serialized. Server entities are folded
 canonical before save and again before entity-manager indexing after load.
 

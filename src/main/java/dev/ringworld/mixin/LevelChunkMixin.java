@@ -31,12 +31,11 @@ abstract class LevelChunkMixin {
     @Shadow @Final private Level level;
 
     @ModifyVariable(
-            method = "setBlockState(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Lnet/minecraft/world/level/block/state/BlockState;",
+            method = "setBlockState(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Z)Lnet/minecraft/world/level/block/state/BlockState;",
             at = @At("HEAD"), argsOnly = true)
     private BlockPos ringworld$canonicalBlockStatePosition(BlockPos position) {
         return canonical(position);
     }
-
     /**
      * Preserve a pre-existing alias entry for explicit recovery rather than
      * hiding or overwriting it. Clean worlds never take this branch.

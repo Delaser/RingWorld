@@ -10,6 +10,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.raid.Raid;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
+import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -24,6 +25,7 @@ import java.util.Map;
 /** Keeps the active raid centre, retention, and wave probes local through X=0/C. */
 @Mixin(Raid.class)
 abstract class RaidMixin {
+    @Shadow @Final private ServerLevel level;
     @Shadow private BlockPos center;
 
     @Redirect(
@@ -40,10 +42,10 @@ abstract class RaidMixin {
     }
 
     @Inject(method = "moveRaidCenterToNearbyVillageSection", at = @At("HEAD"), cancellable = true)
-    private void ringworld$moveCenterPeriodically(ServerLevel world, CallbackInfo ci) {
-        if (world.dimension() != Level.OVERWORLD) return;
+    private void ringworld$moveCenterPeriodically(CallbackInfo ci) {
+        if (level.dimension() != Level.OVERWORLD) return;
 
-        RingGeometry geometry = RingWorldServer.geometryFor(world);
+        RingGeometry geometry = RingWorldServer.geometryFor(level);
         Map<Long, SectionPos> canonicalSections = new LinkedHashMap<>();
         SectionPos.cube(SectionPos.of(center), 2).forEach(section -> {
             int canonicalX = Math.floorMod(section.x(), geometry.circumferenceChunks());
@@ -55,7 +57,7 @@ abstract class RaidMixin {
         double nearestDistance = Double.POSITIVE_INFINITY;
         for (SectionPos section : canonicalSections.values()) {
             BlockPos candidate = section.center();
-            if (!ringworld$periodicVillage(world, candidate)) continue;
+            if (!ringworld$periodicVillage(level, candidate)) continue;
             double distance = RingRaidSupport.periodicDistanceSquared(
                     geometry,
                     center.getX(), center.getY(), center.getZ(),
@@ -65,6 +67,7 @@ abstract class RaidMixin {
                 nearestDistance = distance;
             }
         }
+
         if (nearest != null) center = ringworld$canonical(geometry, nearest);
         ci.cancel();
     }
@@ -73,11 +76,10 @@ abstract class RaidMixin {
             method = "updateRaiders",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/core/BlockPos;distSqr(Lnet/minecraft/core/Vec3i;)D"))
-    private double ringworld$periodicRaiderDistance(
-            BlockPos raidCenter, Vec3i raiderPos, ServerLevel world) {
-        if (world.dimension() != Level.OVERWORLD) return raidCenter.distSqr(raiderPos);
+    private double ringworld$periodicRaiderDistance(BlockPos raidCenter, Vec3i raiderPos) {
+        if (level.dimension() != Level.OVERWORLD) return raidCenter.distSqr(raiderPos);
         return RingRaidSupport.periodicDistanceSquared(
-                RingWorldServer.geometryFor(world),
+                RingWorldServer.geometryFor(level),
                 raidCenter.getX(), raidCenter.getY(), raidCenter.getZ(),
                 raiderPos.getX(), raiderPos.getY(), raiderPos.getZ());
     }
@@ -101,9 +103,10 @@ abstract class RaidMixin {
         if (world.dimension() != Level.OVERWORLD) {
             return world.hasChunksAt(minBlockX, minBlockZ, maxBlockX, maxBlockZ);
         }
+
         RingGeometry geometry = RingWorldServer.geometryFor(world);
-        for (RingRaidSupport.XWindow window
-                : RingRaidSupport.canonicalBlockWindows(geometry, minBlockX, maxBlockX)) {
+        for (RingRaidSupport.XWindow window :
+                RingRaidSupport.canonicalBlockWindows(geometry, minBlockX, maxBlockX)) {
             if (!world.hasChunksAt(window.minX(), minBlockZ, window.maxX(), maxBlockZ)) return false;
         }
         return true;
@@ -111,10 +114,10 @@ abstract class RaidMixin {
 
     @Inject(method = "findRandomSpawnPos", at = @At("RETURN"), cancellable = true)
     private void ringworld$canonicalSpawnResult(
-            ServerLevel world, int attempts, CallbackInfoReturnable<BlockPos> cir) {
+            int proximity, int tries, CallbackInfoReturnable<BlockPos> cir) {
         BlockPos result = cir.getReturnValue();
-        if (result == null || world.dimension() != Level.OVERWORLD) return;
-        cir.setReturnValue(ringworld$canonical(RingWorldServer.geometryFor(world), result));
+        if (result == null || level.dimension() != Level.OVERWORLD) return;
+        cir.setReturnValue(ringworld$canonical(RingWorldServer.geometryFor(level), result));
     }
 
     private static BlockPos ringworld$canonical(RingGeometry geometry, BlockPos pos) {

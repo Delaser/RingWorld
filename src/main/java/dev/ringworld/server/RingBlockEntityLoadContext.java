@@ -39,14 +39,14 @@ public final class RingBlockEntityLoadContext {
 
     static BlockPos restoreSavedAlias(RingGeometry geometry, ChunkPos owner,
                                       CompoundTag tag, BlockPos vanillaPosition) {
-        return restoreSavedAlias(geometry, owner.z(), tag, vanillaPosition);
+        return restoreSavedAlias(geometry, owner.z, tag, vanillaPosition);
     }
 
     static BlockPos restoreSavedAlias(RingGeometry geometry, int ownerChunkZ,
                                       CompoundTag tag, BlockPos vanillaPosition) {
-        int rawX = tag.getIntOr("x", 0);
-        int rawY = tag.getIntOr("y", 0);
-        int rawZ = tag.getIntOr("z", 0);
+        int rawX = tag.contains("x") ? tag.getInt("x") : 0;
+        int rawY = tag.contains("y") ? tag.getInt("y") : 0;
+        int rawZ = tag.contains("z") ? tag.getInt("z") : 0;
         if (rawX >= 0 && rawX < geometry.circumferenceBlocks()) return vanillaPosition;
         if (SectionPos.blockToSectionCoord(rawZ) != ownerChunkZ) return vanillaPosition;
         if (rawY != vanillaPosition.getY() || rawZ != vanillaPosition.getZ()) return vanillaPosition;

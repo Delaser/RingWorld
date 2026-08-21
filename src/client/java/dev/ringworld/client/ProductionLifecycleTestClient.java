@@ -135,7 +135,7 @@ public final class ProductionLifecycleTestClient {
         // thread races chunk/entity managers and can corrupt the test run.
         RingWorldMod.LOGGER.info(
                 "[production-lifecycle] overworld return restored baseline; requesting normal save-and-disconnect");
-        client.disconnectFromWorld(Component.literal("RingWorld production lifecycle regression"));
+        client.disconnect();
         advance(5);
     }
 
@@ -179,11 +179,26 @@ public final class ProductionLifecycleTestClient {
             return;
         }
         if (++dimensionTicks < DIMENSION_SETTLE_TICKS) return;
-        boolean restored = matchesBaseline();
-        finish(client, restored, "reopened geometry=" + geometryName(ClientRingState.geometry())
+        RingGeometry geometry = ClientRingState.geometry();
+        if (baselineGeometry == null || !baselineGeometry.equals(geometry)
+                || baselineFingerprint == 0L
+                || ClientRingState.layoutFingerprint() != baselineFingerprint) {
+            finish(client, false, "reopened geometry=" + geometryName(geometry)
+                    + " fingerprint=" + Long.toUnsignedString(ClientRingState.layoutFingerprint(), 16)
+                    + " atlasComplete=false disconnectedCleared=" + disconnectClearedState);
+            return;
+        }
+        RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
+        // A production Atlas arrives as hundreds of streamed tiles. The
+        // geometry handshake is ready first, so keep waiting for the complete
+        // identity-bearing Atlas instead of sampling an ordinary partial
+        // download after a fixed number of render ticks.
+        if (atlas == null || !atlas.isComplete()) return;
+        boolean restored = atlas.geometry().equals(baselineGeometry)
+                && atlas.worldHash() == baselineAtlasWorldHash;
+        finish(client, restored, "reopened geometry=" + geometryName(geometry)
                 + " fingerprint=" + Long.toUnsignedString(ClientRingState.layoutFingerprint(), 16)
-                + " atlasComplete=" + (ClientRingState.terrainAtlas() != null
-                && ClientRingState.terrainAtlas().isComplete())
+                + " atlasComplete=true"
                 + " disconnectedCleared=" + disconnectClearedState);
     }
 
@@ -208,7 +223,7 @@ public final class ProductionLifecycleTestClient {
     }
 
     private static String dimensionName(Minecraft client) {
-        return client.level == null ? "none" : client.level.dimension().identifier().toString();
+        return client.level == null ? "none" : client.level.dimension().location().toString();
     }
 
     private static String geometryName(RingGeometry geometry) {

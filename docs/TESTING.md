@@ -11,7 +11,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 ## Active port checkpoint
 
 The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 337
+and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 338
 unit/parameterized cases. Fabric common/client compilation also passes:
 
 ```sh
@@ -51,6 +51,46 @@ The execution-capable orchestrator is fail-closed and may run its external
 smoke only for a complete loader triplet with clean provenance and one frozen
 candidate. Do not treat its planning output as current evidence or broaden
 loader metadata before its initial six-cell matrix passes.
+
+Phase 5's forward-upgrade bridge and Phase 6's release-equivalence guard are
+included in the 232-test static qualification workflow. All six supported real
+world-forward paths now pass; no proposed-release equivalence has run. To
+repeat one copied world upgrade, use only a passed source
+worldgen record and a passed later target quick record:
+
+```sh
+python3 scripts/run_world_upgrade_qualification.py \
+  --source-cell 26.1-fabric \
+  --source-worldgen-run-id <passed-source-worldgen-run-id> \
+  --target-cell 26.1.1-fabric \
+  --target-quick-run-id <passed-target-quick-run-id>
+```
+
+The CLI accepts only 26.1 -> 26.1.1, 26.1 -> 26.1.2, and 26.1.1 -> 26.1.2 for
+one loader. It creates a copied contained target world and refuses downgrades,
+cross-loader paths, missing evidence, or an existing destination. For staged
+release identity only (not runtime proof), run:
+
+```sh
+python3 scripts/release_candidate_equivalence.py \
+  <frozen-qualification.jar> <proposed-public.jar> \
+  --loader fabric --release-version <version> --release-label <label>
+```
+
+It accepts only approved descriptor/build-property differences and rejects
+every other archive-byte change. Do not treat a PASS as upload, publication,
+or a replacement for the frozen six-cell runtime matrix.
+
+### Current 26.1.2 local graphical regressions
+
+On 2026-08-13, current-version Gradle development fixtures passed separately
+on Fabric and NeoForge: map/compass seam and persistence coverage,
+curved-rigid-object rendering, and safe-small mapping-4 production visual
+parity. The last gate recorded Fabric 707 frames at 10.086 ms average and
+41.917 ms maximum, with zero frames over 50 ms; NeoForge recorded 681 frames
+at 10.554 ms average and 28.958 ms maximum, also with zero over 50 ms. These
+are useful local regressions only: they used Gradle dev runtime paths and do
+not constitute frozen-candidate, six-cell, package, or release evidence.
 
 The Phase 1 pinned matrix and pure validator are implemented. They retain
 26.1/26.1.1 as `pending` cells despite exact Fabric inputs and pinned NeoForge
@@ -360,7 +400,7 @@ build/libs/ringworld-1.0.0+mc26.1.2.jar
 The NeoForge development artifact is
 `neoforge/build/libs/ringworld-neoforge-1.0.0+mc26.1.2.jar`.
 
-The active suite passes 337 unit/parameterized cases per loader:
+The active suite passes 338 unit/parameterized cases per loader:
 
 | Class | Coverage |
 | --- | --- |
@@ -568,16 +608,25 @@ hides the development coordinate overlay, waits three rendered frames after
 every screen change, and records an unobstructed pause-menu,
 map, confirmation, running, a partial-atlas gameplay view, background
 close/reopen, pause/resume, cancel/retry, and complete screens as
-`atlas-ui-*.png`. It presses the actual confirmation widget, stops after
-`[atlas-ui-test] PASS`, and its finalizer verifies the marker plus all eleven
-PNGs. After completion it also places and removes a sampled high surface block,
+`atlas-ui-*.png`. It presses the actual confirmation widget, proves a rendered
+integrated client has installed the fresh mapping-4 identity, and its finalizer
+verifies the format-3 server acknowledgement, ordered client-ready/identity/
+disconnect-clear markers, terminal `[atlas-ui-test] PASS`, and all eleven PNGs.
+After completion it also places and removes a sampled high surface block,
 requiring two changed tile broadcasts and ordered durable revision commits
-before passing. The initial map stage additionally requires the embedded
+before it makes Minecraft perform a normal integrated-server disconnect. The
+fixture waits at most 200 ticks for the level and integrated server to be gone
+and for every RingWorld-owned client-session component to be cleared. The
+initial map stage additionally requires the embedded
 `1.0 · 1.0.0+mc26.1.2` label and fresh-world
 `Worldgen: annular-complete-v2 (4)` identity. It is a real integrated-server test:
 generation remains active because `RingWorldMapScreen` is explicitly
 non-pausing. Keep its run directory ignored and do not point it at a personal
 Prism instance or a production world.
+One atomic qualification invocation writes fixture 04's Atlas UI terminal and
+fixture 05's handshake/disconnect terminal separately. This avoids creating a
+second identical world while keeping the claims independently trackable. The
+refreshed fixture-05 matrix is recorded below the original fixture-04 table.
 
 The 2026-08-02 NeoForge 26.1.2.87 run completed in 2m32s. It produced all
 eleven required screenshots, generated and durably verified 13,312/13,312
@@ -591,6 +640,127 @@ eleven captures and the revisioned-edit probe. Its initial GUI-scale-4 capture
 visibly showed `1.0 · 1.0.0+mc26.1.2` and
 `Worldgen: annular-complete-v2 (4)` without overlapping the progress fields or
 controls.
+
+For an exact 26.1.x source-ABI cell with fully isolated Gradle/build/game
+state and immutable evidence, run one graphical cell at a time:
+
+```sh
+python3 scripts/run_gradle_atlas_ui_qualification.py --cell 26.1-fabric
+```
+
+The equivalent `-neoforge` cell selects its loader task. Optional reviewed
+dependency-cache and wrapper-ZIP inputs use the same flags and restrictions as
+the creation UI runner. A PASS requires the actual integrated Minecraft
+client, exactly one disposable world, all eleven PNGs, complete Atlas state,
+and the fixture's revisioned block placement/removal terminal marker. It is
+source-ABI evidence, not a production-launcher or frozen-candidate claim.
+Both loader preparers write `onboardAccessibility:false` into the disposable
+profile. Without it, a genuinely fresh game directory opens Minecraft's
+accessibility onboarding over the automated Create World flow and never
+exercises the fixture. The fixture must also wait for the real `TitleScreen`;
+opening the editor from Minecraft's temporary startup `GenericMessageScreen`
+allows the later title transition to discard it.
+The Fabric entrypoint must return immediately while this opt-in fixture is
+enabled, even after its world-creation invocation and before `client.player`
+exists. Falling through to the older generic `testMode` launcher in that
+interval creates a second integrated world and invalidates the connection.
+The Atlas screen build label is not hard-coded in the client fixture. Each
+loader run passes an expected label assembled independently from Gradle's
+selected `release_label` and `mod_version`; a qualification cell therefore
+must show its exact diagnostic identity, while the ordinary release run must
+still show the published identity.
+The fixture itself must set `client.options.pauseOnLostFocus = false`. Its
+final revision probe closes the map and issues real server commands; an
+unfocused automated window would otherwise pause the integrated server after
+the first command and eventually time out despite a complete Atlas.
+The disposable Atlas UI world uses the supported Small 2,048×128 preset
+(4,096 Atlas cells). This preserves every map/control, progressive-render,
+completion, and revision assertion while avoiding repeated generation of the
+broader 2,048×416 world already covered by recovery, worldgen, and gameplay
+fixtures.
+
+The six-cell source-ABI Atlas UI matrix passed from clean pushed commit
+`7a7c0449277dbb0be464b1fb972d77044132a1e6`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260813T123311Z-a3ad7b5b5a58` | `f3f9cc087c63ba407899e4e8612664483fdbd4dfe627d0e9320d30c0b758aace` |
+| 26.1.1 Fabric | `20260813T124040Z-0d2aec6c29f2` | `40c9a245368535c5221754fb901a4338dfe4bf8d7d29a02e0a85e57e06bbadd1` |
+| 26.1.2 Fabric | `20260813T124816Z-bd3475d1bf21` | `7305feb1a022c0a51ee707dd53697a236b3536ca3b3dddde583116469f3d6fe0` |
+| 26.1 NeoForge | `20260813T125559Z-789f027ffe4b` | `035c2c6945190ad98810a7c7b424c887e7da1e228774052287545dd644844a30` |
+| 26.1.1 NeoForge | `20260813T131059Z-721b4de15471` | `5b9248de4fde614251b5d7701d078b21ae267feed8ef755136c97b038ea055d9` |
+| 26.1.2 NeoForge | `20260813T132720Z-47169a2c9167` | `3b450310365cefbb6c506de9df5200bd2d46f9f36c07fdd84901608ef0bc079e` |
+
+These records prove exact patch dependency/client ABI, one disposable
+integrated-server world, eleven captures, complete Atlas controls, and live
+revision behavior. They deliberately do not claim a production launcher or
+the frozen candidate jar.
+
+The expanded format-3 handshake and normal-disconnect tail passes all six
+cells. Its immutable fixture-05 terminal records are:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260813T174054Z-bdeeafa3a751` | `be294128de3c6e1379ac51399306cd0ba0a6468c3b466de700b5319a8515968b` |
+| 26.1.1 Fabric | `20260813T174418Z-b23550ef9a22` | `be0d97a39a5af380a82032e1c3a1e3057b75410e0ef1b1cb39801cfa2b3b0d3e` |
+| 26.1.2 Fabric | `20260813T174740Z-1995f7cf8b48` | `816bf743ca65008baafd4de3542eea76fcc014112164f9bb232550032810e0a8` |
+| 26.1 NeoForge | `20260813T181123Z-5baa2ec6644c` | `3def46387c77de67e060a1fcdfd8716f868767955deb5e2ecf0667eff2cbb215` |
+| 26.1.1 NeoForge | `20260813T181648Z-b2342a09e2e7` | `d7af677a27046eff6d6d965658fa60d7b6f766a2ac27d5d4b4be21d283d65f6a` |
+| 26.1.2 NeoForge | `20260813T182206Z-14d425cfb781` | `ef340ef877fda102e6ec2c578e26375857228b2be9c173c794243d3a20ec8c45` |
+
+The Fabric records use clean commit `a037308`; NeoForge uses clean commit
+`aa94e9a`, adding only the fixture's early-splash suppression after the first
+NeoForge attempt exposed a sleeping-display host failure. Minecraft remains
+graphical. These records close fixture 05's source-ABI client/session claim,
+not production-launcher or frozen-candidate package evidence.
+
+Run the bounded map/compass gameplay slice one graphical cell at a time:
+
+```sh
+python3 scripts/run_gradle_map_compass_qualification.py --cell 26.1-fabric
+```
+
+The matching NeoForge cell selects its loader task. A PASS requires eight PNG
+captures, exactly one disposable world, two format-3 acknowledgements around a
+normal disconnect/reopen, clean client-session teardown, filled-map pixels and
+seam markers, persistent banner/item-frame state, and stable spawn, lodestone,
+and recovery compass targets. It is source-ABI gameplay evidence, not a
+production-launcher or frozen-candidate claim.
+
+The six-cell fixture-08 matrix passes from clean commit `9015857`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260813T184333Z-82e19d55389b` | `f3741fb314f4408df64fb7d91a110ae308891cb3ff349f7cda65c80d84846747` |
+| 26.1.1 Fabric | `20260813T184752Z-6181972f0b5e` | `91f59fa6815b3c7cb49d1ca29480efa937e07af286d34c2bc6762c69eb993bed` |
+| 26.1.2 Fabric | `20260813T185208Z-746d5447411a` | `2d21981ae7fd5484c3c2b30f85f176e3de87f348b4f43705173026743ae2ddb7` |
+| 26.1 NeoForge | `20260813T185449Z-26282a7c51fb` | `8e9eb8aa0590b4b8177b61b948acf57a62605f3200416854293a8a9944c3b152` |
+| 26.1.1 NeoForge | `20260813T185906Z-d67da65d189d` | `72705276f208aa7b8e412a103ce7a398808eb6384bf216260f07714e0bd4adfc` |
+| 26.1.2 NeoForge | `20260813T190435Z-9f27985cd623` | `f528d43d522c32b94f6c9095f009bbb81d419bc2cce10f739025fbaf1070296f` |
+
+Every cell passed all eight captures, both format-3 acknowledgements, normal
+disconnect and clean client teardown, reopen, and persistent map/compass state.
+
+Run the bounded curved block/entity renderer slice one cell at a time:
+
+```sh
+python3 scripts/run_gradle_curved_objects_qualification.py --cell 26.1-fabric
+```
+
+A PASS requires one disposable world, the real fixture-ready and terminal
+markers, and valid far/near PNGs. It is source-ABI graphical evidence, not a
+production-launcher or frozen-candidate claim.
+
+The six-cell fixture-10 matrix passes from clean commit `f9cb4c2`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260813T191305Z-12bda076ad23` | `f40d79f9333ae11cd14be23700ad77c65037265ff579e075e14ed8d9d6cb8551` |
+| 26.1.1 Fabric | `20260813T191530Z-a9b6435145d8` | `fbe2d2efb2690cc3ff6aa16d622be80ec8745d8993e16b08c728d7f1ab185eea` |
+| 26.1.2 Fabric | `20260813T191738Z-34182794aaf3` | `b65df60a70c0e45cc0b40b7fb8df2e9fde0fb20cdbd5d3209e4c66e31d2705cc` |
+| 26.1 NeoForge | `20260813T191940Z-187e70e94c0c` | `ddc915091e92e16d9868617e16671fb8a1a099fd7e00149eb93473f2fa7b2c2b` |
+| 26.1.1 NeoForge | `20260813T192307Z-3acb0e5bbc29` | `d1674fd218ea904447a669aeb12eb57f83ccd78318c1e11258ff07d18e552df4` |
+| 26.1.2 NeoForge | `20260813T192619Z-7787ffdc1eee` | `077fb2ebd7c1e99099a719356bb2a8c0867ad913366ab359865427307a11b4c3` |
 
 After any mapping or game-version migration, also search active Java and
 descriptor text for `class_`, `field_`, and `method_`. The active unobfuscated
@@ -665,7 +835,12 @@ PYTHONPATH=scripts python3 -m unittest \
   scripts/test_minecraft_atlas_recovery_persistence.py \
   scripts/test_external_runtime_atlas_recovery_plan.py \
   scripts/test_external_runtime_atlas_recovery_executor.py \
-  scripts/test_external_runtime_atlas_stage_runner.py
+  scripts/test_external_runtime_atlas_stage_runner.py \
+  scripts/test_minecraft_worldgen_qualification.py \
+  scripts/test_external_runtime_worldgen_plan.py \
+  scripts/test_external_runtime_worldgen_executor.py \
+  scripts/test_external_runtime_worldgen_stage_runner.py \
+  scripts/test_run_worldgen_qualification.py
 ```
 
 This command does not launch Minecraft or use the network. The process tests
@@ -674,16 +849,16 @@ port, and immutable-log behavior. The combined gate rejects report-only claims
 by requiring independent saved-settings and Atlas-file observations, the same disposable
 world and Atlas path across stages, a real partial checkpoint, exact complete
 totals, clean exits, and ordered interruption/recovery ledgers. The real
-external dual-loader interruption/restart gate passed on 2026-08-12 at clean
-pushed commit `1887692`: Fabric run `20260812T184342Z-cef57e3ac2a4`
-recovered 244/13,312 cells to completion and NeoForge run
-`20260812T185236Z-670720ec923e` recovered 280/13,312. Their terminal-evidence
-SHA-256 values are
-`bc770cd1395c8a45203ef54e436ff3645bc0c32285a0ec2b2471849e4355498d`
-and `f3459d31f906fcafd085540a46e5b989554ca129da717ac5f87fc87aacd801b3`.
-Both runs independently captured settings, the partial restart bytes, the
-complete Atlas, both schema-2 reports, bounded logs, and ordered clean-exit
-markers. This is the Atlas-recovery nightly slice only.
+external gate passes all six 26.1.x cells with one unchanged jar per loader.
+Fabric runs are `20260813T091340Z-0f6a75a06e36` (26.1),
+`20260813T084030Z-a3030342d49c` (26.1.1), and
+`20260813T084918Z-2a61b8523682` (26.1.2). NeoForge runs are
+`20260813T092207Z-56b8d1593d37` (26.1),
+`20260813T085803Z-abc3ee37973d` (26.1.1), and
+`20260813T090427Z-21cef9b5920b` (26.1.2). Every run independently captured
+settings, the partial restart bytes, the complete Atlas, both schema-2
+reports, bounded logs, and ordered clean-exit markers. This is the
+Atlas-recovery nightly slice only.
 The persistence tests use hand-built gzip NBT and Atlas-v6 data and include a
 known Java hash vector. A local read-only check against the 26.1 NeoForge quick
 world independently reproduced layout fingerprint `4064118068185880929` and
@@ -698,12 +873,73 @@ with the exact quick evidence that supplied its frozen candidate:
 ```sh
 python3 scripts/run_atlas_recovery_qualification.py \
   --cell 26.1-fabric \
-  --quick-run-id 20260812T170742Z-d5ff11778395
+  --quick-run-id 20260813T072608Z-b7c68e555818
 ```
 
 The analogous NeoForge proof uses `--cell 26.1-neoforge` and quick run
-`20260812T171404Z-a2d212243bb3`. These are disposable local qualification
+`20260813T080722Z-377cfb994c93`. These are disposable local qualification
 worlds; they do not connect to or mutate the live demo server.
+
+The production-style worldgen/structure nightly slice is:
+
+```sh
+python3 scripts/run_worldgen_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260813T072608Z-b7c68e555818
+
+python3 scripts/run_worldgen_qualification.py \
+  --cell 26.1-neoforge \
+  --quick-run-id 20260813T080722Z-377cfb994c93
+```
+
+Each command installs three fresh official dedicated runtimes. Production
+fresh/reload alone shares a world; the seam and terminal-policy seeds are
+separate. The processes self-halt after the existing stronghold/worldgen
+fixture emits its matrix, monument, and PASS records. The executor rejects
+duplicate records, independently decodes saved settings, captures every log,
+and validates the four-stage aggregate before writing terminal evidence.
+Static tests do not substitute for these real commands. Fabric passes in runs
+`20260813T073235Z-1e16c008e584` (26.1),
+`20260813T083349Z-0cdcffa76005` (26.1.1), and
+`20260813T083518Z-b942314e7e0d` (26.1.2). NeoForge passes in runs
+`20260813T082128Z-c2fae65dec2c` (26.1),
+`20260813T083644Z-e7ed932a1499` (26.1.1), and
+`20260813T083822Z-03549862d588` (26.1.2). Patch selections validate their own
+quick evidence but deliberately reuse the one retained oldest-ABI jar; zero
+or multiple loader candidate roots are rejected.
+
+The seam-height audit rejects a broad discontinuity, including a sub-threshold
+wall whose average adjacent-column delta exceeds two blocks. It deliberately
+allows isolated natural cliffs. A real production 16,384x256 qualification
+probe observed one isolated 12-block step, a longest run of one, and average
+delta 1.199; treating that as a full map-boundary wall was a false positive.
+
+The external graphical creation-settings fixture is separate from the Gradle
+development client:
+
+```sh
+python3 scripts/run_creation_ui_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260813T072608Z-b7c68e555818 \
+  --prism-archive /absolute/path/PrismLauncher-macOS-11.0.3.zip \
+  --java /absolute/path/to/java-25/bin/java
+```
+
+It creates a fresh offline Prism root only below the new qualification cell,
+loads the exact frozen candidate and selected loader versions, and must produce
+all thirteen existing creation-UI PNG captures plus a PASS marker and clean
+exit without a world. It rejects a Prism archive whose SHA-256 is not
+`b8e06ef55ec78fceddfa9f4270b3d4d93f2606b83f70ad6a2c6dde90f2b65408`.
+The pure gate is:
+
+```sh
+PYTHONPATH=scripts python3 -m unittest \
+  scripts/test_external_graphical_creation_ui.py \
+  scripts/test_run_creation_ui_qualification.py
+```
+
+Fake Prism children and synthetic PNG headers used by that unit test are
+contract evidence only, never a graphical-client PASS.
 
 Fresh format-3 fixtures default to `terrainNoiseMapping=4`. A deliberate copied
 legacy-world run must set `-PringHeadlessPrewarmExpectedTerrainNoiseMapping=1`;
@@ -1271,6 +1507,13 @@ Overworld → Nether → Overworld → End → Overworld, saved and
 disconnected normally, proved client/GPU state clear, and reopened the same
 world with its exact format-3 fingerprint and complete Atlas restored.
 
+On 2026-08-13 the current mapping-4 16,384x256 source passed this gate again
+on Fabric and NeoForge. The gate now waits, within the existing bounded stage
+timeout, for the complete identity-bearing Atlas after reopen. A production
+Atlas is streamed in 256 tiles, so a fixed 20-tick sample could otherwise
+mistake an ordinary partial download for persistence failure even while the
+server had loaded and begun streaming the complete saved Atlas.
+
 The test client controls its integrated server directly through the Minecraft
 26.1 `TeleportTransition` API. After
 an initial Overworld-to-Nether setup move, the asserted sequence is Nether →
@@ -1349,6 +1592,47 @@ Run only one loader at a time:
 ./gradlew :runCreationUiClient --console=plain
 ./gradlew :neoforge:runCreationUiClient --console=plain
 ```
+
+For an exact 26.1.x manifest cell with isolated Gradle/build/game state and an
+immutable evidence record, use:
+
+```sh
+python3 scripts/run_gradle_creation_ui_qualification.py --cell 26.1-fabric
+```
+
+Optional `--gradle-dependency-cache` and `--gradle-distribution-zip` arguments
+follow the same external-path, checksum, isolation, and non-authoritative
+rules as the quick runner. They reduce repeated matrix downloads but never
+replace the disposable Gradle user/project caches.
+
+The equivalent `-neoforge` cell selects the NeoForge task. This proves the
+real graphical client and creation UI against that patch's exact source ABI;
+it intentionally does not claim a production launcher or frozen packaged jar.
+The separate Prism executor remains an authenticated-disposable-profile or
+owner release gate: a fresh account-free Prism root stops at the official
+login setup wizard even when `--offline` is requested. Never copy a user's
+normal Prism account file into qualification state.
+The runner also sets a cell-contained Gradle project cache; do not remove it
+or Loom will route launch configuration through the checkout's `.gradle`
+directory despite the disposable Gradle user home.
+
+The six-cell source-ABI matrix passed on 2026-08-13 from clean pushed commit
+`077615493e0f8a7b58e92aec51e9ec83535cb08f`. Each run produced all thirteen
+captures and no `level.dat`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260813T101541Z-e87eced07877` | `b7cbe6f950dd0b6aa699ab06a32e6947c87fc905cba99954d04d2bf31b3b5710` |
+| 26.1.1 Fabric | `20260813T101904Z-f32dbc8917e9` | `e4c513b331494bf5316e9a16b91a68d50fe16383ffe44bca606307fc6833a675` |
+| 26.1.2 Fabric | `20260813T102213Z-d33b1a707c5b` | `9bd5f40cb4f6a19a9b1e06672f6b6fd58ef73a18c5442f33d5ae9648b450c2b3` |
+| 26.1 NeoForge | `20260813T102535Z-618362c64a62` | `2c147161cb82bc32f13c2b45ff1eb58a80baca231535e314b73a038ac1f29e79` |
+| 26.1.1 NeoForge | `20260813T105844Z-fdefa2c044f5` | `22eabdb5c5a01fac8b5a9e91aed7726ef2c6a0389566026a1b3498af7834270d` |
+| 26.1.2 NeoForge | `20260813T110726Z-2e96621d7486` | `0f4255e11c65701298a298cc2046924aad95dc83bef0cc340e971b2769d6dda6` |
+
+An earlier 26.1.1 NeoForge attempt failed closed on a transient `No route to
+host` from Mojang's library repository. It is retained as infrastructure
+failure evidence and is not counted as a mod failure or reused as a passing
+cell.
 
 Each qualified task prepares its own ignored `run-creation-ui/` directory
 (NeoForge uses `neoforge/run-creation-ui/`), deleting only disposable saves,
