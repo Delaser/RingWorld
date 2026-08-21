@@ -88,9 +88,9 @@ public final class RingWorldStrongholdTest {
         RingStrongholdPlacement.StartChunk expected =
                 RingStrongholdPlacement.guaranteedStart(world.getSeed(), geometry);
 
-        Structure stronghold = world.registryAccess()
-                .lookupOrThrow(Registries.STRUCTURE)
-                .getValueOrThrow(BuiltinStructures.STRONGHOLD);
+        Structure stronghold = world.registryAccess().registryOrThrow(Registries.STRUCTURE)
+                .getOptional(BuiltinStructures.STRONGHOLD)
+                .orElseThrow(() -> new IllegalStateException("Stronghold structure is unavailable"));
         ChunkAccess startChunk = world.getChunkSource().getChunk(
                 expected.chunkX(), expected.chunkZ(), ChunkStatus.STRUCTURE_STARTS, true);
         if (startChunk == null) throw new IllegalStateException("Stronghold start chunk did not load");
@@ -183,7 +183,7 @@ public final class RingWorldStrongholdTest {
 
         EyeOfEnder eye = new EyeOfEnder(world,
                 geometry.circumferenceBlocks() - 0.25, 100.0, 0.0);
-        eye.signalTo(new Vec3(geometry.circumferenceBlocks() + 100.0, 100.0, 0.0));
+        eye.signalTo(new BlockPos(geometry.circumferenceBlocks() + 100, 100, 0));
         eye.setPos(geometry.circumferenceBlocks() + 0.25, 100.0, 0.0);
         RingWorldServer.canonicalizeEntityPosition(eye, geometry);
         eye.setPos(20.0, 100.0, 0.0);
@@ -242,7 +242,7 @@ public final class RingWorldStrongholdTest {
                                 + canonical.unwrapKey().orElse(null));
                     }
                     String biomeId = canonical.unwrapKey()
-                            .map(key -> key.identifier().toString())
+                            .map(key -> key.location().toString())
                             .orElse("unregistered");
                     sampledBiomes.add(biomeId);
                     classifyBiome(biomeId, sampledFamilies);
@@ -279,7 +279,7 @@ public final class RingWorldStrongholdTest {
         Set<String> spawnOverrideStructureIds = new HashSet<>();
         Set<String> lootPositions = new HashSet<>();
         Set<String> referenceKeys = new HashSet<>();
-        var structureRegistry = world.registryAccess().lookupOrThrow(Registries.STRUCTURE);
+        var structureRegistry = world.registryAccess().registryOrThrow(Registries.STRUCTURE);
 
         int interiorMinimumZ = geometry.minWidthZ() + RingGenerationBoundary.RIM_THICKNESS;
         int interiorMaximumZ = geometry.maxWidthZ() - RingGenerationBoundary.RIM_THICKNESS;
@@ -293,7 +293,7 @@ public final class RingWorldStrongholdTest {
                 chunk.findBlocks(state -> state.isAir() || state.is(BlockTags.LOGS) || isOre(state),
                         (position, state) -> {
                             if (state.isAir() && position.getY() < world.getSeaLevel() - 8
-                                    && position.getY() > world.getMinY() + 8) caveAir.incrementAndGet();
+                                    && position.getY() > world.getMinBuildHeight() + 8) caveAir.incrementAndGet();
                             if (state.is(BlockTags.LOGS)) logs.incrementAndGet();
                             if (isOre(state)) ores.incrementAndGet();
                         });
@@ -314,11 +314,11 @@ public final class RingWorldStrongholdTest {
                     validStarts++;
                     String structureId = String.valueOf(structureRegistry.getKey(entry.getKey()));
                     structureIds.add(structureId);
-                    String startKey = structureId + '@' + start.getChunkPos().x() + ',' + start.getChunkPos().z();
+                    String startKey = structureId + '@' + start.getChunkPos().x + ',' + start.getChunkPos().z;
                     if (!startKeys.add(startKey)) {
                         throw new IllegalStateException("Duplicate seam structure start ownership: " + startKey);
                     }
-                    if (start.getChunkPos().x() < 0 || start.getChunkPos().x() >= circumferenceChunks) {
+                    if (start.getChunkPos().x < 0 || start.getChunkPos().x >= circumferenceChunks) {
                         throw new IllegalStateException("Non-canonical seam structure start: " + startKey);
                     }
                     BoundingBox box = start.getBoundingBox();
@@ -339,7 +339,7 @@ public final class RingWorldStrongholdTest {
                             throw new IllegalStateException("Non-canonical seam structure reference X="
                                     + referenceX + " from " + chunk.getPos());
                         }
-                        String referenceKey = chunk.getPos().x() + "," + chunk.getPos().z()
+                        String referenceKey = chunk.getPos().x + "," + chunk.getPos().z
                                 + ':' + structureId + '@' + referenceX + ',' + ChunkPos.getZ(reference);
                         if (!referenceKeys.add(referenceKey)) {
                             throw new IllegalStateException("Duplicate seam structure reference: " + referenceKey);
@@ -502,20 +502,20 @@ public final class RingWorldStrongholdTest {
         int lowerRimZ = geometry.minWidthZ();
         int upperRimZ = geometry.maxWidthZ();
         int wallTopExclusive = RingGenerationBoundary.wallTopExclusive(
-                world.getMinY(), world.getMaxY() - world.getMinY(),
+                world.getMinBuildHeight(), world.getMaxBuildHeight() - world.getMinBuildHeight(),
                 RingWorldSettings.get(world).wallHeightBlocks());
         world.getChunk(chunkX, geometry.minChunkZ());
         world.getChunk(chunkX, geometry.maxChunkZ());
         world.getChunk(chunkX, geometry.minChunkZ() - 1);
         world.getChunk(chunkX, geometry.maxChunkZ() + 1);
-        for (int y = world.getMinY(); y < wallTopExclusive; y++) {
+        for (int y = world.getMinBuildHeight(); y < wallTopExclusive; y++) {
             if (!RingGenerationBoundary.isRimMaterial(world.getBlockState(new BlockPos(x, y, lowerRimZ)))
                     || !RingGenerationBoundary.isRimMaterial(world.getBlockState(new BlockPos(x, y, upperRimZ)))) {
                 throw new IllegalStateException("Finite rim material is missing at Y=" + y);
             }
         }
-        if (!world.getBlockState(new BlockPos(x, world.getMinY(), lowerRimZ - 1)).isAir()
-                || !world.getBlockState(new BlockPos(x, world.getMinY(), upperRimZ + 1)).isAir()) {
+        if (!world.getBlockState(new BlockPos(x, world.getMinBuildHeight(), lowerRimZ - 1)).isAir()
+                || !world.getBlockState(new BlockPos(x, world.getMinBuildHeight(), upperRimZ + 1)).isAir()) {
             throw new IllegalStateException("Exterior finite-width terrain is not void");
         }
         RingWorldMod.LOGGER.info(
@@ -573,7 +573,7 @@ public final class RingWorldStrongholdTest {
                 NoiseColumn canonicalColumn = generator.getBaseColumn(
                         canonicalX, z, world, randomState);
                 NoiseColumn aliasColumn = generator.getBaseColumn(aliasX, z, world, randomState);
-                for (int y = world.getMinY(); y < world.getMaxY(); y++) {
+                for (int y = world.getMinBuildHeight(); y < world.getMinBuildHeight(); y++) {
                     if (!canonicalColumn.getBlock(y).equals(aliasColumn.getBlock(y))) {
                         throw new IllegalStateException("Periodic base-column mismatch at canonicalX="
                                 + canonicalX + ", aliasX=" + aliasX + ", z=" + z + ", y=" + y);

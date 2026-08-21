@@ -4,7 +4,6 @@ import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingRenderProfile;
 import dev.ringworld.world.RingTerrainAtlas;
-import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.PauseScreen;
@@ -98,7 +97,7 @@ public final class RingProjectionCaptureClient {
         if (stage == 0) {
             Screenshot.grab(
                     client.gameDirectory, screenshotName("tangent"),
-                    client.getMainRenderTarget(), 1,
+                    client.getMainRenderTarget(),
                     message -> RingWorldMod.LOGGER.info(
                             "[projection-capture] tangent screenshot: {}",
                             message.getString()));
@@ -112,7 +111,7 @@ public final class RingProjectionCaptureClient {
         if (stage == 1) {
             Screenshot.grab(
                     client.gameDirectory, screenshotName("handoff"),
-                    client.getMainRenderTarget(), 1,
+                    client.getMainRenderTarget(),
                     message -> RingWorldMod.LOGGER.info(
                             "[projection-capture] live/proxy handoff screenshot: {}",
                             message.getString()));
@@ -125,7 +124,7 @@ public final class RingProjectionCaptureClient {
 
         Screenshot.grab(
                 client.gameDirectory, screenshotName("up"),
-                client.getMainRenderTarget(), 1,
+                client.getMainRenderTarget(),
                 message -> RingWorldMod.LOGGER.info(
                         "[projection-capture] radial-up screenshot: {}",
                         message.getString()));
@@ -181,7 +180,6 @@ public final class RingProjectionCaptureClient {
      */
     private void applyFocusPolicy(Minecraft client) {
         if (focusPolicyApplied) return;
-        client.options.inactivityFpsLimit().set(InactivityFpsLimit.MINIMIZED);
         client.options.pauseOnLostFocus = false;
         focusPolicyApplied = true;
         RingWorldMod.LOGGER.info("[projection-capture] applied unattended focus policy");

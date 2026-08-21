@@ -41,20 +41,14 @@ abstract class ServerChunkManagerMixin {
         if (!(world instanceof ServerLevel serverWorld) || serverWorld.dimension() != Level.OVERWORLD) {
             return packedPos;
         }
-        ChunkPos pos = ChunkPos.unpack(packedPos);
+        ChunkPos pos = new ChunkPos(packedPos);
         RingGeometry geometry = RingWorldServer.geometryFor(serverWorld);
-        return ChunkPos.pack(RingChunkCoordinates.wrapChunkX(pos.x(), geometry), pos.z());
+        return ChunkPos.asLong(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
     }
 
     /** Every external ticket source must enter the finite canonical graph. */
     @ModifyVariable(
-            method = {
-                    "addTicket(Lnet/minecraft/server/level/Ticket;Lnet/minecraft/world/level/ChunkPos;)V",
-                    "addTicketAndLoadWithRadius",
-                    "addTicketWithRadius(Lnet/minecraft/server/level/TicketType;Lnet/minecraft/world/level/ChunkPos;I)V",
-                    "removeTicketWithRadius",
-                    "updateChunkForced"
-            },
+            method = {"addRegionTicket", "removeRegionTicket", "updateChunkForced"},
             at = @At("HEAD"), argsOnly = true)
     private ChunkPos ringworld$canonicalTicketPosition(ChunkPos pos) {
         Level world = ((ServerChunkCache) (Object) this).getLevel();
@@ -62,7 +56,7 @@ abstract class ServerChunkManagerMixin {
             return pos;
         }
         RingGeometry geometry = RingWorldServer.geometryFor(serverWorld);
-        return new ChunkPos(RingChunkCoordinates.wrapChunkX(pos.x(), geometry), pos.z());
+        return new ChunkPos(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
     }
 
     @Redirect(

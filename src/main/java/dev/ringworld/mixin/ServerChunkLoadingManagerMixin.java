@@ -43,9 +43,9 @@ abstract class ServerChunkLoadingManagerMixin {
                                                         @Nullable ChunkHolder holder, int previousLevel,
                                                         CallbackInfoReturnable<ChunkHolder> cir) {
         if (level.dimension() != Level.OVERWORLD || !RingWorldConfig.load().testMode()) return;
-        ChunkPos pos = ChunkPos.unpack(packedPos);
+        ChunkPos pos = new ChunkPos(packedPos);
         int circumferenceChunks = RingWorldServer.geometryFor(level).circumferenceChunks();
-        if (pos.x() < 0 || pos.x() >= circumferenceChunks) {
+        if (pos.x < 0 || pos.x >= circumferenceChunks) {
             RingWorldServer.recordNonCanonicalHolderRequest();
         }
     }
@@ -53,20 +53,20 @@ abstract class ServerChunkLoadingManagerMixin {
     @ModifyVariable(method = "acquireGeneration", at = @At("HEAD"), argsOnly = true)
     private long ringworld$canonicalGenerationAcquire(long packedPos) {
         if (level.dimension() != Level.OVERWORLD) return packedPos;
-        ChunkPos pos = ChunkPos.unpack(packedPos);
+        ChunkPos pos = new ChunkPos(packedPos);
         RingGeometry geometry = RingWorldServer.geometryFor(level);
-        return ChunkPos.pack(RingChunkCoordinates.wrapChunkX(pos.x(), geometry), pos.z());
+        return ChunkPos.asLong(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
     }
 
     @Redirect(
             method = "getChunkRangeFuture",
             at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ChunkMap;getUpdatingChunkIfPresent(J)Lnet/minecraft/server/level/ChunkHolder;"))
     private ChunkHolder ringworld$getPeriodicRegionHolder(ChunkMap manager, long packedPos) {
-        if (level.dimension() != Level.OVERWORLD) return manager.getUpdatingChunkIfPresent(packedPos);
-        ChunkPos pos = ChunkPos.unpack(packedPos);
+        if (level.dimension() != Level.OVERWORLD) return ((ChunkMapAccessor)(Object)manager).ringworld$getUpdatingChunkIfPresent(packedPos);
+        ChunkPos pos = new ChunkPos(packedPos);
         RingGeometry geometry = RingWorldServer.geometryFor(level);
-        long canonical = ChunkPos.pack(RingChunkCoordinates.wrapChunkX(pos.x(), geometry), pos.z());
-        return manager.getUpdatingChunkIfPresent(canonical);
+        long canonical = ChunkPos.asLong(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
+        return ((ChunkMapAccessor)(Object)manager).ringworld$getUpdatingChunkIfPresent(canonical);
     }
 
     @Redirect(
@@ -81,7 +81,7 @@ abstract class ServerChunkLoadingManagerMixin {
 
     /** Keep the player's loading/watch center in the finite canonical graph. */
     @Redirect(
-            method = {"updatePlayerStatus", "updatePlayerPos", "move", "tick()V"},
+            method = {"updatePlayerStatus", "updatePlayerPos", "move"},
             at = @At(value = "INVOKE", target = "Lnet/minecraft/core/SectionPos;of(Lnet/minecraft/world/level/entity/EntityAccess;)Lnet/minecraft/core/SectionPos;"))
     private net.minecraft.core.SectionPos ringworld$canonicalWatchedSection(EntityAccess entity) {
         net.minecraft.core.SectionPos actual = net.minecraft.core.SectionPos.of(entity);
@@ -104,7 +104,7 @@ abstract class ServerChunkLoadingManagerMixin {
         // smooth 99 -> 100 presentation update.
         ChunkPos canonicalCenter = new ChunkPos(
                 ((int)Math.floor(player.getX())) >> 4,
-                center.z());
+                center.z);
         return new RingChunkFilter(canonicalCenter, viewDistance, geometry);
     }
 
@@ -115,9 +115,9 @@ abstract class ServerChunkLoadingManagerMixin {
         if (level.dimension() != Level.OVERWORLD || !(next instanceof RingChunkFilter ring)) return;
         ChunkTrackingView previous = player.getChunkTrackingView();
         if (!(previous instanceof RingChunkFilter old) || old.logicalCenterX() != ring.logicalCenterX()
-                || old.center().z() != ring.center().z()) {
+                || old.center().z != ring.center().z) {
             player.connection.send(
-                    new ClientboundSetChunkCacheCenterPacket(ring.logicalCenterX(), ring.center().z()));
+                    new ClientboundSetChunkCacheCenterPacket(ring.logicalCenterX(), ring.center().z));
         }
     }
 
@@ -141,7 +141,7 @@ abstract class ServerChunkLoadingManagerMixin {
         if (level.dimension() != Level.OVERWORLD) return;
         RingGeometry geometry = RingWorldServer.geometryFor(level);
         int canonicalX = RingChunkCoordinates.wrapChunkX(chunkX, geometry);
-        long canonicalChunk = ChunkPos.pack(canonicalX, chunkZ);
+        long canonicalChunk = ChunkPos.asLong(canonicalX, chunkZ);
         cir.setReturnValue(player.getChunkTrackingView().contains(canonicalX, chunkZ)
                 && !player.connection.chunkSender.isPending(canonicalChunk));
     }
@@ -152,9 +152,9 @@ abstract class ServerChunkLoadingManagerMixin {
         if (level.dimension() != Level.OVERWORLD) return;
         RingGeometry geometry = RingWorldServer.geometryFor(level);
         List<ServerPlayer> result = new ArrayList<>();
-        int canonicalX = RingChunkCoordinates.wrapChunkX(pos.x(), geometry);
+        int canonicalX = RingChunkCoordinates.wrapChunkX(pos.x, geometry);
         for (ServerPlayer player : level.players()) {
-            if (player.getChunkTrackingView().contains(canonicalX, pos.z())) result.add(player);
+            if (player.getChunkTrackingView().contains(canonicalX, pos.z)) result.add(player);
         }
         cir.setReturnValue(List.copyOf(result));
     }
@@ -166,10 +166,10 @@ abstract class ServerChunkLoadingManagerMixin {
         if (level.dimension() != Level.OVERWORLD) return;
         RingGeometry geometry = RingWorldServer.geometryFor(level);
         List<ServerPlayer> result = new ArrayList<>();
-        int canonicalX = RingChunkCoordinates.wrapChunkX(pos.x(), geometry);
+        int canonicalX = RingChunkCoordinates.wrapChunkX(pos.x, geometry);
         for (ServerPlayer player : level.players()) {
-            if (!player.getChunkTrackingView().contains(canonicalX, pos.z())) continue;
-            if (!onlyOnWatchDistanceEdge || isCanonicalTrackEdge(player, canonicalX, pos.z(), geometry)) result.add(player);
+            if (!player.getChunkTrackingView().contains(canonicalX, pos.z)) continue;
+            if (!onlyOnWatchDistanceEdge || isCanonicalTrackEdge(player, canonicalX, pos.z, geometry)) result.add(player);
         }
         cir.setReturnValue(List.copyOf(result));
     }
@@ -183,27 +183,27 @@ abstract class ServerChunkLoadingManagerMixin {
             return;
         }
         RingGeometry geometry = RingWorldServer.geometryFor(level);
-        double chunkCenterX = net.minecraft.core.SectionPos.sectionToBlockCoord(pos.x(), 8);
-        double chunkCenterZ = net.minecraft.core.SectionPos.sectionToBlockCoord(pos.z(), 8);
+        double chunkCenterX = net.minecraft.core.SectionPos.sectionToBlockCoord(pos.x, 8);
+        double chunkCenterZ = net.minecraft.core.SectionPos.sectionToBlockCoord(pos.z, 8);
         double dx = geometry.shortestCircumferenceDelta(player.getX(), chunkCenterX);
         double dz = chunkCenterZ - player.getZ();
         cir.setReturnValue(dx * dx + dz * dz < 16_384.0);
     }
-
-    @Inject(method = "playerIsCloseEnoughTo", at = @At("HEAD"), cancellable = true)
-    private void ringworld$periodicPlayerDistance(ServerPlayer player, Vec3 pos, int distance,
-                                                   CallbackInfoReturnable<Boolean> cir) {
-        if (level.dimension() != Level.OVERWORLD) return;
-        if (player.isSpectator()) {
-            cir.setReturnValue(false);
-            return;
-        }
-        RingGeometry geometry = RingWorldServer.geometryFor(level);
-        double dx = geometry.shortestCircumferenceDelta(player.getX(), pos.x);
-        double dy = pos.y - player.getY();
-        double dz = pos.z - player.getZ();
-        cir.setReturnValue(dx * dx + dy * dy + dz * dz < (double) distance * distance);
-    }
+//// Removed because it does not exist in 1.21.1
+//    @Inject(method = "playerIsCloseEnoughTo", at = @At("HEAD"), cancellable = true)
+//    private void ringworld$periodicPlayerDistance(ServerPlayer player, Vec3 pos, int distance,
+//                                                   CallbackInfoReturnable<Boolean> cir) {
+//        if (level.dimension() != Level.OVERWORLD) return;
+//        if (player.isSpectator()) {
+//            cir.setReturnValue(false);
+//            return;
+//        }
+//        RingGeometry geometry = RingWorldServer.geometryFor(level);
+//        double dx = geometry.shortestCircumferenceDelta(player.getX(), pos.x);
+//        double dy = pos.y - player.getY();
+//        double dz = pos.z - player.getZ();
+//        cir.setReturnValue(dx * dx + dy * dy + dz * dz < (double) distance * distance);
+//    }
 
     private static boolean isCanonicalTrackEdge(ServerPlayer player, int chunkX, int chunkZ,
                                                 RingGeometry geometry) {

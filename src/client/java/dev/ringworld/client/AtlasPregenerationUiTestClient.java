@@ -16,7 +16,6 @@ import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
-import net.minecraft.client.input.InputWithModifiers;
 import net.minecraft.network.chat.Component;
 
 /** Opt-in real-client GUI-scale-4 acceptance fixture for the player atlas map. */
@@ -73,7 +72,7 @@ public final class AtlasPregenerationUiTestClient {
             // fixture waiting forever for an editor that was discarded.
             if (!(client.screen instanceof TitleScreen)) return true;
             RingWorldMod.LOGGER.info("[atlas-ui-test] opening fresh-world editor");
-            CreateWorldScreen.openFresh(client, () -> worldScreenOpened = false);
+            CreateWorldScreen.openFresh(client, client.screen);
             worldScreenOpened = true;
             return true;
         }
@@ -138,7 +137,7 @@ public final class AtlasPregenerationUiTestClient {
                 if (!(client.screen instanceof ConfirmScreen confirm) || !settled()) return true;
                 capture(client, "atlas-ui-03-confirm-cost", false);
                 // Exercise the real affirmative widget/callback, not a direct packet.
-                ((ConfirmScreenAccessor)confirm).ringworld$yesButton().onPress(new TestInput()); arm(); stage++;
+                ((ConfirmScreenAccessor)confirm).ringworld$exitButtons().get(0).onPress(); arm(); stage++;
             }
             case 4 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.RUNNING || !settled()) return true;
@@ -181,12 +180,12 @@ public final class AtlasPregenerationUiTestClient {
                         .filter(button -> button.getMessage().getString().contains("Retry Generate Entire Ring"))
                         .findFirst().orElse(null);
                 if (retry == null) return fail(client, "retry button was not present after cancellation");
-                retry.onPress(new TestInput()); arm(); stage++;
+                retry.onPress(); arm(); stage++;
             }
             case 11 -> {
                 if (!(client.screen instanceof ConfirmScreen confirm) || !settled()) return true;
                 capture(client, "atlas-ui-10-retry-confirm", false);
-                ((ConfirmScreenAccessor)confirm).ringworld$yesButton().onPress(new TestInput()); arm(); stage++;
+                ((ConfirmScreenAccessor)confirm).ringworld$exitButtons().get(0).onPress(); arm(); stage++;
             }
             case 12 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.COMPLETE
@@ -238,7 +237,8 @@ public final class AtlasPregenerationUiTestClient {
                     return fail(client, "removed surface block remained in the client atlas");
                 }
                 RingWorldMod.LOGGER.info("[atlas-ui-test] requesting normal integrated-server disconnect after revision proof");
-                client.disconnectFromWorld(Component.literal("RingWorld Atlas UI handshake teardown regression"));
+                client.disconnect();
+                //Component.literal("RingWorld Atlas UI handshake teardown regression")
                 stage++;
             }
             default -> { }
@@ -305,14 +305,9 @@ public final class AtlasPregenerationUiTestClient {
         return buttons.size() == 1 && buttons.getFirst().getMessage().getString().equals(label);
     }
     private void capture(Minecraft client, String name, boolean finalCapture) {
-        Screenshot.grab(client.gameDirectory, name + ".png", client.getMainRenderTarget(), 1,
-                message -> {
-                    if (finalCapture) finalCaptureSaved = true;
-                    RingWorldMod.LOGGER.info("[atlas-ui-test] screenshot {}", message.getString());
-                });
-    }
-    private static final class TestInput implements InputWithModifiers {
-        @Override public int input() { return 0; }
-        @Override public int modifiers() { return 0; }
+        Screenshot.grab(client.gameDirectory, client.getMainRenderTarget(), message -> {
+            if (finalCapture) finalCaptureSaved = true;
+            RingWorldMod.LOGGER.info("[atlas-ui-test] screenshot {}: {}", name, message.getString());
+        });
     }
 }

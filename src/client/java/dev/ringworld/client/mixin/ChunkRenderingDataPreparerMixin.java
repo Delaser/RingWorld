@@ -33,15 +33,16 @@ abstract class ChunkRenderingDataPreparerMixin {
     private boolean ringworld$disableFlatSectionOcclusion(boolean useOcclusionCulling) {
         return ClientRingState.geometry() == null && useOcclusionCulling;
     }
-
-    @ModifyArg(
-            method = "addSectionsInFrustum",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/Octree;visitNodes(Lnet/minecraft/client/renderer/Octree$OctreeVisitor;Lnet/minecraft/client/renderer/culling/Frustum;I)V"),
-            index = 1)
-    private Frustum ringworld$curveCollectedChunkFrustum(Frustum frustum) {
-        return ringworld$wrap(frustum);
-    }
+//// TODO Enable this later on
+//
+//    @ModifyArg(
+//            method = "addSectionsInFrustum",
+//            at = @At(value = "INVOKE",
+//                    target = "Lnet/minecraft/client/renderer/Octree;visitNodes(Lnet/minecraft/client/renderer/Octree$OctreeVisitor;Lnet/minecraft/client/renderer/culling/Frustum;I)V"),
+//            index = 1)
+//    private Frustum ringworld$curveCollectedChunkFrustum(Frustum frustum) {
+//        return ringworld$wrap(frustum);
+//    }
 
     @Redirect(
             method = "runPartialUpdate",
@@ -56,7 +57,7 @@ abstract class ChunkRenderingDataPreparerMixin {
         Minecraft client = Minecraft.getInstance();
         if (geometry == null || client.gameRenderer == null
                 || !client.gameRenderer.getMainCamera().isInitialized()) return frustum;
-        Vec3 cameraPosition = client.gameRenderer.getMainCamera().position();
+        Vec3 cameraPosition = client.gameRenderer.getMainCamera().getPosition();
         return new CurvedRingFrustum(frustum, geometry, cameraPosition);
     }
 }

@@ -17,19 +17,19 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
 
     public RingChunkFilter(ChunkPos logicalCenter, int viewDistance, int circumferenceChunks,
                            int minChunkZ, int maxChunkZ) {
-        this(new ChunkPos(Math.floorMod(logicalCenter.x(), circumferenceChunks), logicalCenter.z()),
-                logicalCenter.x(), viewDistance, circumferenceChunks, minChunkZ, maxChunkZ);
+        this(new ChunkPos(Math.floorMod(logicalCenter.x, circumferenceChunks), logicalCenter.z),
+                logicalCenter.x, viewDistance, circumferenceChunks, minChunkZ, maxChunkZ);
     }
 
     public RingChunkFilter {
         if (circumferenceChunks <= 0) throw new IllegalArgumentException("circumferenceChunks must be positive");
         if (minChunkZ > maxChunkZ) throw new IllegalArgumentException("invalid width chunk bounds");
-        center = new ChunkPos(Math.floorMod(center.x(), circumferenceChunks), center.z());
+        center = new ChunkPos(Math.floorMod(center.x, circumferenceChunks), center.z);
     }
 
     @Override
     public boolean contains(int x, int z, boolean includeEdge) {
-        return isWithinRingDistance(circumferenceChunks, center.x(), center.z(),
+        return isWithinRingDistance(circumferenceChunks, center.x, center.z,
                 viewDistance, minChunkZ, maxChunkZ, x, z, includeEdge);
     }
 
@@ -46,13 +46,13 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
         LongSet emitted = new LongOpenHashSet();
         int extent = viewDistance + 1;
         for (int dx = -extent; dx <= extent; dx++) {
-            int x = Math.floorMod(center.x() + dx, circumferenceChunks);
-            int firstZ = Math.max(minChunkZ, center.z() - extent);
-            int lastZ = Math.min(maxChunkZ, center.z() + extent);
+            int x = Math.floorMod(center.x + dx, circumferenceChunks);
+            int firstZ = Math.max(minChunkZ, center.z - extent);
+            int lastZ = Math.min(maxChunkZ, center.z + extent);
             for (int z = firstZ; z <= lastZ; z++) {
                 if (!contains(x, z)) continue;
-                long packed = ChunkPos.pack(x, z);
-                if (emitted.add(packed)) consumer.accept(ChunkPos.unpack(packed));
+                long packed = ChunkPos.asLong(x, z);
+                if (emitted.add(packed)) consumer.accept(new ChunkPos(packed));
             }
         }
     }
@@ -62,7 +62,7 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
                                       Consumer<ChunkPos> newlyIncluded, Consumer<ChunkPos> justRemoved) {
         if (oldFilter.equals(newFilter)) return;
         if (oldFilter instanceof RingChunkFilter oldRing && newFilter instanceof RingChunkFilter newRing) {
-            if (requiresFullRekey(oldRing.center.x(), newRing.center.x(),
+            if (requiresFullRekey(oldRing.center.x, newRing.center.x,
                     oldRing.viewDistance, newRing.viewDistance,
                     oldRing.circumferenceChunks, newRing.circumferenceChunks,
                     oldRing.minChunkZ, oldRing.maxChunkZ,
@@ -78,10 +78,10 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
         LongSet oldChunks = collect(oldFilter);
         LongSet newChunks = collect(newFilter);
         for (long packed : oldChunks) {
-            if (!newChunks.contains(packed)) justRemoved.accept(ChunkPos.unpack(packed));
+            if (!newChunks.contains(packed)) justRemoved.accept(new ChunkPos(packed));
         }
         for (long packed : newChunks) {
-            if (!oldChunks.contains(packed)) newlyIncluded.accept(ChunkPos.unpack(packed));
+            if (!oldChunks.contains(packed)) newlyIncluded.accept(new ChunkPos(packed));
         }
     }
 
@@ -100,7 +100,7 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
 
     private static LongSet collect(ChunkTrackingView filter) {
         LongSet chunks = new LongOpenHashSet();
-        filter.forEach(pos -> chunks.add(pos.pack()));
+        filter.forEach(pos -> chunks.add(pos.toLong()));
         return chunks;
     }
 }

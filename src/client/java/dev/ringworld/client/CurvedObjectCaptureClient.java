@@ -2,7 +2,6 @@ package dev.ringworld.client;
 
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
-import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.PauseScreen;
@@ -14,7 +13,6 @@ import net.minecraft.core.Direction;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
@@ -48,7 +46,7 @@ public final class CurvedObjectCaptureClient {
         }
         if (!worldScreenOpened) {
             if (!(client.screen instanceof TitleScreen)) return true;
-            CreateWorldScreen.openFresh(client, () -> worldScreenOpened = false);
+            CreateWorldScreen.openFresh(client, client.screen);
             worldScreenOpened = true;
             return true;
         }
@@ -143,7 +141,7 @@ public final class CurvedObjectCaptureClient {
             if (player == null || !(player.level() instanceof ServerLevel world)) return;
             createFixture(world);
             player.teleportTo(world, 0.5, 122.0, 0.5,
-                    java.util.Set.of(), -90.0F, 0.0F, false);
+                    java.util.Set.of(), -90.0F, 0.0F);
             RingWorldMod.LOGGER.info("[curved-object-capture] fixture ready");
         });
     }
@@ -178,32 +176,33 @@ public final class CurvedObjectCaptureClient {
         world.setBlock(new BlockPos(62, 120, 2), Blocks.SHULKER_BOX.defaultBlockState(), 3);
         world.setBlock(new BlockPos(66, 120, 0), Blocks.WHITE_BANNER.defaultBlockState(), 3);
 
-        var copperGolem = EntityType.COPPER_GOLEM.create(world, EntitySpawnReason.COMMAND);
-        if (copperGolem != null) {
-            copperGolem.setPos(64.5, 120.0, -2.0);
-            copperGolem.setNoAi(true);
-            copperGolem.setPersistenceRequired();
-            world.addFreshEntity(copperGolem);
+        var ironGolem = EntityType.IRON_GOLEM.create(world);
+        if (ironGolem != null) {
+            ironGolem.setPos(64.5, 120.0, -2.0);
+            ironGolem.setNoAi(true);
+            ironGolem.setPersistenceRequired();
+            world.addFreshEntity(ironGolem);
         }
         ItemEntity item = new ItemEntity(world, 68.5, 120.25, 0.0,
                 new ItemStack(Items.DIAMOND));
         item.setNoGravity(true);
         item.setNeverPickUp();
         world.addFreshEntity(item);
-        var boat = EntityType.OAK_BOAT.create(world, EntitySpawnReason.COMMAND);
+        var boat = EntityType.BOAT.create(world);
         if (boat != null) {
+            boat.setVariant(net.minecraft.world.entity.vehicle.Boat.Type.OAK);
             boat.setPos(72.5, 120.15, 2.0);
             boat.setNoGravity(true);
             world.addFreshEntity(boat);
         }
-        var cow = EntityType.COW.create(world, EntitySpawnReason.COMMAND);
+        var cow = EntityType.COW.create(world);
         if (cow != null) {
             cow.setPos(76.5, 120.0, -2.0);
             cow.setNoAi(true);
             cow.setPersistenceRequired();
             world.addFreshEntity(cow);
         }
-        var zombie = EntityType.ZOMBIE.create(world, EntitySpawnReason.COMMAND);
+        var zombie = EntityType.ZOMBIE.create(world);
         if (zombie != null) {
             zombie.setPos(80.5, 120.0, 2.0);
             zombie.setNoAi(true);
@@ -214,7 +213,7 @@ public final class CurvedObjectCaptureClient {
     }
 
     private static void capture(Minecraft client, String name, String distance) {
-        Screenshot.grab(client.gameDirectory, name, client.getMainRenderTarget(), 1,
+        Screenshot.grab(client.gameDirectory, name, client.getMainRenderTarget(),
                 message -> RingWorldMod.LOGGER.info(
                         "[curved-object-capture] {} screenshot: {}",
                         distance, message.getString()));
@@ -222,7 +221,6 @@ public final class CurvedObjectCaptureClient {
 
     private void applyFocusPolicy(Minecraft client) {
         if (focusPolicyApplied) return;
-        client.options.inactivityFpsLimit().set(InactivityFpsLimit.MINIMIZED);
         client.options.pauseOnLostFocus = false;
         focusPolicyApplied = true;
     }

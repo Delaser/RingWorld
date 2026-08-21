@@ -27,13 +27,13 @@ public final class CurvedRingFrustum extends Frustum {
         this.cameraPosition = cameraPosition;
     }
 
-    @Override
-    public int cubeInFrustum(BoundingBox box) {
-        // Octree branches are only an acceleration structure. Always
-        // descending them prevents a flat parent box from discarding curved
-        // children which rise into the camera's view.
-        return INTERSECTING;
-    }
+//    @Override
+//    public int cubeInFrustum(BoundingBox box) {
+//        // Octree branches are only an acceleration structure. Always
+//        // descending them prevents a flat parent box from discarding curved
+//        // children which rise into the camera's view.
+//        return INTERSECTING;
+//    }
 
     @Override
     public boolean isVisible(AABB canonicalBox) {

@@ -50,14 +50,14 @@ public final class RingGenerationBoundary {
         for (int sectionIndex = 0; sectionIndex < sections.length; sectionIndex++) {
             LevelChunkSection section = sections[sectionIndex];
             if (section.hasOnlyAir()) continue;
-            int sectionBottomY = chunk.getMinY() + sectionIndex * 16;
+            int sectionBottomY = chunk.getMinBuildHeight() + sectionIndex * 16;
             for (int localY = 0; localY < 16; localY++) {
                 for (int localZ = 0; localZ < 16; localZ++) {
                     for (int localX = 0; localX < 16; localX++) {
                         if (section.getBlockState(localX, localY, localZ).isAir()) continue;
                         mutable.set(pos.getMinBlockX() + localX, sectionBottomY + localY, pos.getMinBlockZ() + localZ);
                         chunk.removeBlockEntity(mutable);
-                        chunk.setBlockState(mutable, Blocks.AIR.defaultBlockState(), 0);
+                        chunk.setBlockState(mutable, Blocks.AIR.defaultBlockState(), false);
                     }
                 }
             }
@@ -69,19 +69,19 @@ public final class RingGenerationBoundary {
         if (wallHeightBlocks <= 0 || !containsRim(chunk, geometry)) return;
         ChunkPos pos = chunk.getPos();
         int wallTopExclusive = wallTopExclusive(
-                chunk.getMinY(), chunk.getHeight(), wallHeightBlocks);
+                chunk.getMinBuildHeight(), chunk.getHeight(), wallHeightBlocks);
         BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
         int[] rimZs = {geometry.minWidthZ(), geometry.maxWidthZ()};
         for (int rimZ : rimZs) {
             if (!containsZ(pos, rimZ)) continue;
             int inwardDirection = rimZ == geometry.minWidthZ() ? 1 : -1;
             for (int x = pos.getMinBlockX(); x <= pos.getMaxBlockX(); x++) {
-                for (int y = chunk.getMinY(); y < wallTopExclusive; y++) {
+                for (int y = chunk.getMinBuildHeight(); y < wallTopExclusive; y++) {
                     for (int depth = 0; depth < RIM_THICKNESS; depth++) {
                         int z = rimZ + inwardDirection * depth;
                         mutable.set(x, y, z);
                         chunk.removeBlockEntity(mutable);
-                        chunk.setBlockState(mutable, texturedRimBlock(x, y, z), 0);
+                        chunk.setBlockState(mutable, texturedRimBlock(x, y, z), false);
                     }
                 }
             }
@@ -98,8 +98,8 @@ public final class RingGenerationBoundary {
         if (!containsRim(chunk, geometry)) return false;
         ChunkPos pos = chunk.getPos();
         int wallTopExclusive = wallTopExclusive(
-                chunk.getMinY(), chunk.getHeight(), wallHeightBlocks);
-        int chunkTopExclusive = chunk.getMinY() + chunk.getHeight();
+                chunk.getMinBuildHeight(), chunk.getHeight(), wallHeightBlocks);
+        int chunkTopExclusive = chunk.getMinBuildHeight() + chunk.getHeight();
         int[] rimZs = {geometry.minWidthZ(), geometry.maxWidthZ()};
         BlockPos.MutableBlockPos mutable = new BlockPos.MutableBlockPos();
 
@@ -123,20 +123,20 @@ public final class RingGenerationBoundary {
             for (int x = pos.getMinBlockX(); x <= pos.getMaxBlockX(); x++) {
                 for (int depth = 0; depth < RIM_THICKNESS; depth++) {
                     int z = rimZ + inwardDirection * depth;
-                    for (int y = chunk.getMinY(); y < chunkTopExclusive; y++) {
+                    for (int y = chunk.getMinBuildHeight(); y < chunkTopExclusive; y++) {
                         mutable.set(x, y, z);
                         if (y < wallTopExclusive) {
                             chunk.removeBlockEntity(mutable);
-                            chunk.setBlockState(mutable, texturedRimBlock(x, y, z), 0);
+                            chunk.setBlockState(mutable, texturedRimBlock(x, y, z), false);
                         } else if (chunk.getBlockState(mutable).is(Blocks.STONE_BRICKS)) {
                             chunk.removeBlockEntity(mutable);
-                            chunk.setBlockState(mutable, Blocks.AIR.defaultBlockState(), 0);
+                            chunk.setBlockState(mutable, Blocks.AIR.defaultBlockState(), false);
                         }
                     }
                 }
             }
         }
-        chunk.markUnsaved();
+        chunk.setUnsaved(true);
         return true;
     }
 

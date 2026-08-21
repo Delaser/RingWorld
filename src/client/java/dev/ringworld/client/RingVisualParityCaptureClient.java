@@ -4,7 +4,6 @@ import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingTerrainAtlas;
-import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.PauseScreen;
@@ -115,7 +114,7 @@ public final class RingVisualParityCaptureClient {
         if (++settleTicks < SETTLE_TICKS) return true;
 
         Screenshot.grab(client.gameDirectory, view.screenshotName,
-                client.getMainRenderTarget(), 1,
+                client.getMainRenderTarget(),
                 message -> RingWorldMod.LOGGER.info(
                         "[visual-parity-capture] {} screenshot: {}",
                         view.id, message.getString()));
@@ -176,7 +175,7 @@ public final class RingVisualParityCaptureClient {
             client.getConnection().send(new ServerboundMovePlayerPacket.PosRot(
                     nextX, client.player.getY(), client.player.getZ(),
                     client.player.getYRot(), client.player.getXRot(),
-                    client.player.onGround(), client.player.horizontalCollision));
+                    client.player.onGround()));
             return false;
         }
 
@@ -241,7 +240,6 @@ public final class RingVisualParityCaptureClient {
 
     private void applyFocusPolicy(Minecraft client) {
         if (focusPolicyApplied) return;
-        client.options.inactivityFpsLimit().set(InactivityFpsLimit.MINIMIZED);
         client.options.pauseOnLostFocus = false;
         focusPolicyApplied = true;
         RingWorldMod.LOGGER.info("[visual-parity-capture] applied unattended focus policy");
@@ -288,7 +286,7 @@ public final class RingVisualParityCaptureClient {
 
     private double cameraY(Minecraft client, CaptureView view) {
         if (view == CaptureView.SEAM || view == CaptureView.SEAM_JOIN) return SEAM_CAMERA_Y;
-        int wallTopExclusive = client.level.getMinY() + ClientRingState.wallHeightBlocks();
+        int wallTopExclusive = client.level.getMinBuildHeight() + ClientRingState.wallHeightBlocks();
         return wallTopExclusive - 8.0;
     }
 

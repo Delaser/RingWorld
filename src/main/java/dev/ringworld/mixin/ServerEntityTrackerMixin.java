@@ -31,7 +31,7 @@ abstract class ServerEntityTrackerMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/phys/Vec3;subtract(Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;"))
     private Vec3 ringworld$periodicTrackingDelta(Vec3 playerPosition, Vec3 entityPosition,
                                                   ServerPlayer player) {
-        ServerLevel world = player.level();
+        ServerLevel world = player.serverLevel();
         if (world.dimension() != Level.OVERWORLD) return playerPosition.subtract(entityPosition);
         RingGeometry geometry = RingWorldServer.geometryFor(world);
         return new Vec3(geometry.shortestCircumferenceDelta(entityPosition.x, playerPosition.x),
@@ -55,12 +55,9 @@ abstract class ServerEntityTrackerMixin {
             method = "updatePlayer(Lnet/minecraft/server/level/ServerPlayer;)V",
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/server/level/ChunkMap;isChunkTracked(Lnet/minecraft/server/level/ServerPlayer;II)Z"))
-    private boolean ringworld$preservePairingDuringCanonicalFold(ChunkMap chunkMap,
-                                                                 ServerPlayer player,
-                                                                 int chunkX,
-                                                                 int chunkZ) {
-        boolean vanillaChunkTracked = chunkMap.isChunkTracked(player, chunkX, chunkZ);
-        ServerLevel world = player.level();
+    private boolean ringworld$preservePairingDuringCanonicalFold(ChunkMap chunkMap, ServerPlayer player, int chunkX, int chunkZ) {
+        boolean vanillaChunkTracked = ((ChunkMapAccessor)(Object)chunkMap).ringworld$isChunkTracked(player, chunkX, chunkZ);
+        ServerLevel world = player.serverLevel();
         if (vanillaChunkTracked || world.dimension() != Level.OVERWORLD) {
             return vanillaChunkTracked;
         }

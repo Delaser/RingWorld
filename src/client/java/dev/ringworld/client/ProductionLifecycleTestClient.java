@@ -135,7 +135,7 @@ public final class ProductionLifecycleTestClient {
         // thread races chunk/entity managers and can corrupt the test run.
         RingWorldMod.LOGGER.info(
                 "[production-lifecycle] overworld return restored baseline; requesting normal save-and-disconnect");
-        client.disconnectFromWorld(Component.literal("RingWorld production lifecycle regression"));
+        client.disconnect();
         advance(5);
     }
 
@@ -223,7 +223,7 @@ public final class ProductionLifecycleTestClient {
     }
 
     private static String dimensionName(Minecraft client) {
-        return client.level == null ? "none" : client.level.dimension().identifier().toString();
+        return client.level == null ? "none" : client.level.dimension().location().toString();
     }
 
     private static String geometryName(RingGeometry geometry) {
