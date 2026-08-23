@@ -94,8 +94,16 @@ def publication_plan(stage: Path, host: str, loader: str) -> dict[str, Any]:
                      "requested_status": "unlisted"})
     else:
         relations = metadata.get("relations")
-        projects = [{"projectID": str(item["project_id"]), "type": item["relation_type"]}
-                    for item in relations] if isinstance(relations, list) else []
+        if not isinstance(relations, list):
+            raise PublishPlanError("curseforge relations must be a list")
+        projects = []
+        for item in relations:
+            if not isinstance(item, Mapping) or not isinstance(item.get("project_id"), int) \
+                    or not isinstance(item.get("slug"), str) or not item["slug"] \
+                    or not isinstance(item.get("relation_type"), str):
+                raise PublishPlanError("curseforge relation is invalid")
+            projects.append({"projectID": item["project_id"], "slug": item["slug"],
+                             "type": item["relation_type"]})
         data = {
             "changelog": metadata["changelog"], "changelogType": "markdown",
             "displayName": metadata["display_name"],
@@ -103,8 +111,9 @@ def publication_plan(stage: Path, host: str, loader: str) -> dict[str, Any]:
                                  "Fabric" if loader == "fabric" else "NeoForge"],
             "releaseType": metadata["release_type"],
             "isMarkedForManualRelease": True,
-            "relations": {"projects": projects},
         }
+        if projects:
+            data["relations"] = {"projects": projects}
     return {
         "format": 1, "dry_run": True, "host": host, "loader": loader,
         "method": "POST", "endpoint": ENDPOINT[host], "token_environment": TOKEN_ENV[host],

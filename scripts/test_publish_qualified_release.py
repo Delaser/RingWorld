@@ -35,9 +35,12 @@ class QualifiedPublisherTest(unittest.TestCase):
                 "featured": True, "game_versions": manifest["game_versions"], "loaders": [loader],
                 "dependencies": [], "changelog": "source",
             }))
+            relations = ([{"project_id": 306612, "slug": "fabric-api",
+                           "relation_type": "requiredDependency"}]
+                         if loader == "fabric" else [])
             (folder / "CURSEFORGE-UPLOAD.json").write_text(json.dumps({
                 "project_id": 1645598, "display_name": "release", "release_type": "release",
-                "game_versions": manifest["game_versions"], "loader": loader, "relations": [],
+                "game_versions": manifest["game_versions"], "loader": loader, "relations": relations,
                 "changelog": "source", "execution": "manual_owner_authorization_required",
             }))
 
@@ -52,6 +55,13 @@ class QualifiedPublisherTest(unittest.TestCase):
         self.assertTrue(curseforge["metadata"]["isMarkedForManualRelease"])
         self.assertEqual(["Client", "Server", "26.1", "26.1.1", "26.1.2", "NeoForge"],
                          curseforge["metadata"]["gameVersionNames"])
+        self.assertNotIn("relations", curseforge["metadata"])
+        fabric_curseforge = publication_plan(self.stage, "curseforge", "fabric")
+        self.assertEqual({"projects": [{
+            "projectID": 306612,
+            "slug": "fabric-api",
+            "type": "requiredDependency",
+        }]}, fabric_curseforge["metadata"]["relations"])
 
     def test_rejects_changed_jar_and_wrong_authorization(self) -> None:
         plan = publication_plan(self.stage, "modrinth", "fabric")

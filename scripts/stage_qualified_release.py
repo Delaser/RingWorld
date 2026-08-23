@@ -167,7 +167,9 @@ def _metadata(config: Mapping[str, Any], loader: str, changelog: str) -> tuple[d
         "game_versions": versions, "loaders": [loader],
         "dependencies": dependencies, "changelog": changelog,
     }
-    relations = ([{"project_id": curseforge["fabric_api_project_id"], "relation_type": "requiredDependency"}]
+    relations = ([{"project_id": curseforge["fabric_api_project_id"],
+                   "slug": curseforge["fabric_api_project_slug"],
+                   "relation_type": "requiredDependency"}]
                  if loader == "fabric" else [])
     curseforge_record = {
         "project_id": curseforge["project_id"],

@@ -27,6 +27,8 @@ class QualifiedReleaseStageTest(unittest.TestCase):
             self.assertEqual(["26.1", "26.1.1", "26.1.2"], fabric_modrinth["game_versions"])
             self.assertEqual("required", fabric_modrinth["dependencies"][0]["dependency_type"])
             self.assertEqual("requiredDependency", fabric_curseforge["relations"][0]["relation_type"])
+            self.assertEqual(306612, fabric_curseforge["relations"][0]["project_id"])
+            self.assertEqual("fabric-api", fabric_curseforge["relations"][0]["slug"])
             self.assertEqual([], neo_modrinth["dependencies"])
             self.assertEqual([], neo_curseforge["relations"])
 

@@ -10,7 +10,8 @@
   },
   "curseforge": {
     "project_id": 1645598,
-    "fabric_api_project_id": 306612
+    "fabric_api_project_id": 306612,
+    "fabric_api_project_slug": "fabric-api"
   },
   "rollback": {
     "version": "1.0.0+mc26.1.2",

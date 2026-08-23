@@ -23,6 +23,12 @@ manual-release hold, and dependency relations. Current game-version and
 dependency values are available from the corresponding official API
 endpoints.
 
+CurseForge currently requires each dependency relation to include both an
+integer `projectID` and its `slug`; omit `relations` entirely when a file has
+no relations. An empty `relations.projects` array is rejected. The Minecraft
+upload endpoint may also reject an otherwise listed numeric game-version ID,
+so the publisher uses its documented `gameVersionNames` alternative.
+
 The existing releases were uploaded manually. Future automation must remain
 dry-run-first, read its token only from an environment variable or OS
 credential store, redact authorization data, consume only a verified staged
@@ -33,6 +39,23 @@ archive, delete, update, or resubmit files automatically.
 
 Official reference:
 [CurseForge Upload API](https://support.curseforge.com/support/solutions/articles/9000197321-curseforge-upload-api).
+
+## Current Minecraft 1.21.1 beta uploads
+
+On 2026-08-23 the owner-authorized Java 21 backport files were submitted as
+`Beta` from exact public source commit
+`7010d2af3750cd040302b0a6bc580b6440a3b779`:
+
+| Loader | CurseForge file ID | SHA-256 | Initial host state |
+| --- | --- | --- | --- |
+| Fabric | `8714613` | `60f69edf232edbc64a3a8a92c3e52989294e69024a58114e660b3e5006de749d` | Submitted |
+| NeoForge | `8714619` | `8023561632484136004ce1ef4aa2a3bc1b7f80b9943161406d74facce467b0ed` | Submitted |
+
+Both files target Minecraft 1.21.1, Java 21, Client and Server, and only their
+matching loader. Fabric declares Fabric API project `306612` / `fabric-api`
+as a required dependency; NeoForge omits the relation field. Neither file uses
+CurseForge's additional manual-release hold. Review and malware-processing
+states may advance asynchronously without another source change.
 
 ## Current 1.0 uploads
 
