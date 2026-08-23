@@ -514,10 +514,10 @@ jar per loader. Fabric runs are `20260813T091340Z-0f6a75a06e36` (26.1),
 `20260813T090427Z-21cef9b5920b` (26.1.2). Every run proves a durable partial
 checkpoint, exact-byte resume, complete 13,312-cell Atlas, stable mapping-4
 identity, clean exits, and schema-2 `COMPLETE`. The current clean merged quick
-baseline is combined run `20260813T164933Z-8bee9268f799` at commit `439e339`.
-All six cells pass with one Fabric jar (`8b919c42...9e7e31`) and one NeoForge
-jar (`77389181...f6f50`). This supersedes earlier quick hashes for any future
-candidate derived from the lifecycle-gate fix. The remaining Phase 4 client,
+baseline is combined run `20260823T130347Z-a493af8d7261` at commit `3e94b04`.
+All six cells pass with one Fabric jar (`1fc01728...46216`) and one NeoForge
+jar (`5fd60d12...56823`). This supersedes earlier quick hashes for any future
+candidate derived from current `main`. The remaining Phase 4 client,
 gameplay, lifecycle, and rendering fixtures are still pending.
 The operator entry point is intentionally explicit:
 
@@ -987,10 +987,13 @@ Earlier sections remain the detailed design and evidence record.
   dry-run tooling.
 - [x] Fix NeoForge qualification installs to reuse the verified Mojang server
   jar instead of redundantly downloading it (PR #227).
+- [x] Distinguish the NeoForge installer's verified server copy from the
+  reviewed root seed in runtime evidence (PR #230).
 
 ### Required before broad 26.1.x support
 
-- [ ] Re-run the complete six-cell quick matrix from current clean `main`.
+- [x] Re-run the complete six-cell quick matrix from current clean `main`
+  (`20260823T130347Z-a493af8d7261`, commit `3e94b04`).
 - [ ] Run the dedicated multiplayer fixture on all six cells with the exact
   retained frozen candidate for each loader.
 - [ ] Run the raid fixture on all six cells.

@@ -342,11 +342,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   `--gradle-distribution-zip`; the runner rehashes it and exclusively copies it
   into each fresh cell's wrapper store without creating Gradle's `.ok` marker
   or bypassing wrapper verification.
-  Refreshed combined quick run `20260813T164933Z-8bee9268f799` passes all six
+  Current-main combined quick run `20260823T130347Z-a493af8d7261` passes all six
   Fabric/NeoForge 26.1.x cells. Fabric uses one unchanged frozen jar
-  (`8b919c42e8a166c4f070a06e96518da8ca887e1955bd764c51281f17db9e7e31`)
+  (`1fc017289ebcb102d9894ccb16a30a697e03104b5c8165b6799a1496c4486216`)
   and NeoForge uses one unchanged frozen jar
-  (`77389181684db006369400a4551eee6e98a3fd12266b01330d3357d5011c6f50`).
+  (`5fd60d12db03386866cc153b7921b180cd1e4a96d4f443443364d04357b56823`).
   These are dedicated-server quick evidence only. Earlier six-cell worldgen
   and interrupted-Atlas-recovery nightly slices also pass with their
   then-current exact frozen jars.
