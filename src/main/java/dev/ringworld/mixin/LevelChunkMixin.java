@@ -31,7 +31,7 @@ abstract class LevelChunkMixin {
     @Shadow @Final private Level level;
 
     @ModifyVariable(
-            method = "setBlockState(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Lnet/minecraft/world/level/block/state/BlockState;",
+            method = "setBlockState(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;Z)Lnet/minecraft/world/level/block/state/BlockState;",
             at = @At("HEAD"), argsOnly = true)
     private BlockPos ringworld$canonicalBlockStatePosition(BlockPos position) {
         return canonical(position);
@@ -74,7 +74,7 @@ abstract class LevelChunkMixin {
         if (level instanceof ServerLevel serverLevel && serverLevel.dimension() == Level.OVERWORLD) {
             RingGeometry geometry = RingWorldServer.geometryFor(serverLevel);
             RingBlockEntityLoadContext.withGeometry(
-                    geometry, () -> processor.run(chunk));
+                    geometry, chunk.getPos(), () -> processor.run(chunk));
             RingBlockEntityOwnership.reconcileLoadedAliases(chunk, geometry);
         } else {
             processor.run(chunk);

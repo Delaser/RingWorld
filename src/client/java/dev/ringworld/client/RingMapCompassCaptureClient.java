@@ -5,11 +5,11 @@ import dev.ringworld.client.mixin.CompassAngleStateFixtureAccessor;
 import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import dev.ringworld.world.RingGeometry;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
+import dev.ringworld.client.compat.Screenshot;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.client.gui.screens.TitleScreen;
-import net.minecraft.client.renderer.item.properties.numeric.CompassAngleState;
+import net.minecraft.client.renderer.item.CompassItemPropertyFunction;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.GlobalPos;
@@ -20,9 +20,10 @@ import net.minecraft.network.protocol.game.ServerboundSetCarriedItemPacket;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
-import net.minecraft.world.entity.Relative;
+import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.CompassItem;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MapItem;
 import net.minecraft.world.item.component.LodestoneTracker;
@@ -35,7 +36,6 @@ import net.minecraft.world.level.saveddata.maps.MapDecoration;
 import net.minecraft.world.level.saveddata.maps.MapDecorationTypes;
 import net.minecraft.world.level.saveddata.maps.MapId;
 import net.minecraft.world.level.saveddata.maps.MapItemSavedData;
-import net.minecraft.world.level.storage.LevelData;
 
 import java.util.Optional;
 import java.util.Set;
@@ -55,6 +55,16 @@ public final class RingMapCompassCaptureClient {
     private static final int SPAWN_COMPASS = 2;
     private static final int LODESTONE_COMPASS = 3;
     private static final int RECOVERY_COMPASS = 4;
+    private static final CompassItemPropertyFunction.CompassTarget SPAWN_TARGET =
+            (level, stack, entity) -> CompassItem.getSpawnPosition(level);
+    private static final CompassItemPropertyFunction.CompassTarget LODESTONE_TARGET =
+            (level, stack, entity) -> {
+                LodestoneTracker tracker = stack.get(DataComponents.LODESTONE_TRACKER);
+                return tracker == null ? null : tracker.target().orElse(null);
+            };
+    private static final CompassItemPropertyFunction.CompassTarget RECOVERY_TARGET =
+            (level, stack, entity) -> entity instanceof net.minecraft.world.entity.player.Player player
+                    ? player.getLastDeathLocation().orElse(null) : null;
 
     private boolean worldScreenOpened;
     private boolean worldStarted;
@@ -77,7 +87,7 @@ public final class RingMapCompassCaptureClient {
         client.options.pauseOnLostFocus = false;
         if (!worldScreenOpened) {
             if (!(client.screen instanceof TitleScreen)) return true;
-            CreateWorldScreen.openFresh(client, () -> worldScreenOpened = false);
+            CreateWorldScreen.openFresh(client, client.screen);
             worldScreenOpened = true;
             return true;
         }
@@ -199,7 +209,8 @@ public final class RingMapCompassCaptureClient {
             case 9 -> {
                 if (!serverMutationReady(9) || !compassSideReady(client, geometry, true) || !settled()) return true;
                 RingWorldMod.LOGGER.info("[map-compass-capture] requesting normal save-and-disconnect before persistence verification");
-                client.disconnectFromWorld(Component.literal("RingWorld map compass persistence regression"));
+                dev.ringworld.client.compat.ClientWorldLifecycle.disconnect(
+                        client, Component.literal("RingWorld map compass persistence regression"));
                 stage = 10;
                 stageTicks = 0;
             }
@@ -262,7 +273,7 @@ public final class RingMapCompassCaptureClient {
             player.getInventory().setItem(SPAWN_COMPASS, new ItemStack(Items.COMPASS));
             player.getInventory().setItem(LODESTONE_COMPASS, lodestoneCompass(2));
             player.getInventory().setItem(RECOVERY_COMPASS, new ItemStack(Items.RECOVERY_COMPASS));
-            player.getInventory().setSelectedSlot(SCALED_MAP);
+            player.getInventory().selected = SCALED_MAP;
             player.inventoryMenu.broadcastFullState();
             configureServerTargets(world, player, 2);
             refreshMap(world, player, high, 2, true);
@@ -298,9 +309,9 @@ public final class RingMapCompassCaptureClient {
         ItemStack map = MapItem.create(world, center, 0, (byte) 0, true, true);
         MapItemSavedData data = MapItem.getSavedData(map, world);
         player.teleportTo(world, playerX + 0.5, FIXTURE_Y + 2.0, 0.5,
-                Set.<Relative>of(), 0.0F, 0.0F, false);
+                Set.<RelativeMovement>of(), 0.0F, 0.0F);
         player.getInventory().add(map.copy());
-        data.tickCarriedBy(player, map, null);
+        data.tickCarriedBy(player, map);
         for (int i = 0; i < 32; i++) ((MapItem) map.getItem()).update(world, player, data);
         if (!data.toggleBanner(world, new BlockPos(bannerX, FIXTURE_Y, 5)))
             throw new IllegalStateException("map banner toggle failed");
@@ -312,7 +323,7 @@ public final class RingMapCompassCaptureClient {
         }
         if (highCentre) liveFrameId = frame.getUUID();
         frame.setItem(map.copy(), false);
-        data.tickCarriedBy(player, map, frame);
+        data.tickCarriedBy(player, frame.getItem());
         return map;
     }
 
@@ -326,9 +337,9 @@ public final class RingMapCompassCaptureClient {
     private static void refreshMap(ServerLevel world, ServerPlayer player, ItemStack stack, int playerX,
                                    boolean updatePixels) {
         player.teleportTo(world, playerX + 0.5, FIXTURE_Y + 2.0, 0.5,
-                Set.<Relative>of(), 0.0F, 0.0F, false);
+                Set.<RelativeMovement>of(), 0.0F, 0.0F);
         MapItemSavedData data = MapItem.getSavedData(stack, world);
-        data.tickCarriedBy(player, stack, null);
+        data.tickCarriedBy(player, stack);
         if (updatePixels && !data.locked) {
             for (int i = 0; i < 48; i++) ((MapItem) stack.getItem()).update(world, player, data);
         }
@@ -423,7 +434,7 @@ public final class RingMapCompassCaptureClient {
 
     private void ensureLiveFrame(ServerLevel world, ServerPlayer player, ItemStack map, int frameX) {
         ItemFrame frame = liveFrameId == null ? null
-                : world.getEntityInAnyDimension(liveFrameId) instanceof ItemFrame existing
+                : world.getEntity(liveFrameId) instanceof ItemFrame existing
                 ? existing : null;
         if (frame == null) {
             BlockPos framePosition = new BlockPos(frameX, FIXTURE_Y, -5);
@@ -447,7 +458,7 @@ public final class RingMapCompassCaptureClient {
         frame.setItem(map.copy(), false);
         MapItemSavedData data = MapItem.getSavedData(map, world);
         if (data == null) throw new IllegalStateException("live frame map data is unavailable");
-        data.tickCarriedBy(player, map, frame);
+        data.tickCarriedBy(player, map);
     }
 
     private static ItemStack lodestoneCompass(int targetX) {
@@ -459,9 +470,8 @@ public final class RingMapCompassCaptureClient {
 
     private static void configureServerTargets(ServerLevel world, ServerPlayer player, int targetX) {
         BlockPos target = new BlockPos(targetX, FIXTURE_Y + 2, 0);
-        LevelData.RespawnData respawn = LevelData.RespawnData.of(Level.OVERWORLD, target, 0.0F, 0.0F);
-        world.setRespawnData(respawn);
-        player.connection.send(new ClientboundSetDefaultSpawnPositionPacket(respawn));
+        world.setDefaultSpawnPos(target, 0.0F);
+        player.connection.send(new ClientboundSetDefaultSpawnPositionPacket(target, 0.0F));
         player.setLastDeathLocation(Optional.of(GlobalPos.of(Level.OVERWORLD, target)));
         player.getInventory().setItem(LODESTONE_COMPASS, lodestoneCompass(targetX));
         player.inventoryMenu.broadcastFullState();
@@ -477,7 +487,7 @@ public final class RingMapCompassCaptureClient {
             ServerLevel world = server.overworld();
             configureServerTargets(world, player, targetX);
             player.teleportTo(world, holderX + 0.5, FIXTURE_Y + 2.0, 0.5,
-                    Set.<Relative>of(), 0.0F, 0.0F, false);
+                    Set.<RelativeMovement>of(), 0.0F, 0.0F);
         });
     }
 
@@ -508,7 +518,7 @@ public final class RingMapCompassCaptureClient {
                 .get(DataComponents.LODESTONE_TRACKER);
         return tracker != null && tracker.target().map(GlobalPos::pos).map(BlockPos::getX)
                 .filter(x -> x == targetX).isPresent()
-                && client.level.getRespawnData().pos().getX() == targetX
+                && client.level.getSharedSpawnPos().getX() == targetX
                 && Math.abs(geometry.shortestCircumferenceDelta(holderX + 0.5, client.player.getX())) < 1.0;
     }
 
@@ -558,13 +568,13 @@ public final class RingMapCompassCaptureClient {
         int imageX = highHolder ? geometry.circumferenceBlocks() + 2 : -2;
         client.player.setLastDeathLocation(Optional.of(GlobalPos.of(Level.OVERWORLD,
                 new BlockPos(targetX, FIXTURE_Y + 2, 0))));
-        boolean spawn = stable(client, client.player.getInventory().getItem(SPAWN_COMPASS), CompassAngleState.CompassTarget.SPAWN);
+        boolean spawn = stable(client, client.player.getInventory().getItem(SPAWN_COMPASS), SPAWN_TARGET);
         boolean lodestone = matchesNearestImage(client, client.player.getInventory().getItem(LODESTONE_COMPASS), imageX);
         ItemStack recovery = client.player.getInventory().getItem(RECOVERY_COMPASS);
-        float actual = calculate(client, recovery, CompassAngleState.CompassTarget.RECOVERY, 41);
+        float actual = calculate(client, recovery, RECOVERY_TARGET, 41);
         client.player.setLastDeathLocation(Optional.of(GlobalPos.of(Level.OVERWORLD,
                 new BlockPos(imageX, FIXTURE_Y + 2, 0))));
-        float expected = calculate(client, recovery, CompassAngleState.CompassTarget.RECOVERY, 41);
+        float expected = calculate(client, recovery, RECOVERY_TARGET, 41);
         boolean recoveryMatches = circularDistance(actual, expected) < 0.001F;
         client.player.setLastDeathLocation(Optional.of(GlobalPos.of(Level.OVERWORLD,
                 new BlockPos(targetX, FIXTURE_Y + 2, 0))));
@@ -578,11 +588,12 @@ public final class RingMapCompassCaptureClient {
         ItemStack image = canonical.copy();
         image.set(DataComponents.LODESTONE_TRACKER, new LodestoneTracker(Optional.of(
                 GlobalPos.of(Level.OVERWORLD, new BlockPos(imageX, FIXTURE_Y + 2, 0))), false));
-        return circularDistance(calculate(client, canonical, CompassAngleState.CompassTarget.LODESTONE, 31),
-                calculate(client, image, CompassAngleState.CompassTarget.LODESTONE, 31)) < 0.001F;
+        return circularDistance(calculate(client, canonical, LODESTONE_TARGET, 31),
+                calculate(client, image, LODESTONE_TARGET, 31)) < 0.001F;
     }
 
-    private boolean stable(Minecraft client, ItemStack stack, CompassAngleState.CompassTarget target) {
+    private boolean stable(Minecraft client, ItemStack stack,
+                           CompassItemPropertyFunction.CompassTarget target) {
         return circularDistance(calculate(client, stack, target, 17),
                 calculate(client, stack, target, 53)) < 0.001F;
     }
@@ -595,8 +606,7 @@ public final class RingMapCompassCaptureClient {
         // same random base to both seeds. Constructing two states made this
         // assertion probabilistic because their independent random offsets
         // could occasionally cancel the deterministic seed difference.
-        CompassAngleState state = new CompassAngleState(
-                false, CompassAngleState.CompassTarget.LODESTONE);
+        CompassItemPropertyFunction state = new CompassItemPropertyFunction(LODESTONE_TARGET);
         CompassAngleStateFixtureAccessor fixture = (CompassAngleStateFixtureAccessor)(Object)state;
         float first = fixture.ringworld$calculate(lodestone, client.level, 7, client.player);
         float second = fixture.ringworld$calculate(lodestone, client.level, 71, client.player);
@@ -609,8 +619,9 @@ public final class RingMapCompassCaptureClient {
         return difference > 0.01F;
     }
 
-    private float calculate(Minecraft client, ItemStack stack, CompassAngleState.CompassTarget target, int seed) {
-        CompassAngleState state = new CompassAngleState(false, target);
+    private float calculate(Minecraft client, ItemStack stack,
+                            CompassItemPropertyFunction.CompassTarget target, int seed) {
+        CompassItemPropertyFunction state = new CompassItemPropertyFunction(target);
         return ((CompassAngleStateFixtureAccessor) (Object) state)
                 .ringworld$calculate(stack, client.level, seed, client.player);
     }
@@ -676,8 +687,8 @@ public final class RingMapCompassCaptureClient {
             boolean mapMatches = serverMap != null && serverMap.centerX == expected.centerX
                     && serverMap.centerZ == expected.centerZ
                     && serverMap.scale == 1 && serverMap.locked;
-            var entity = expectedFrameId == null ? null
-                    : server.overworld().getEntityInAnyDimension(expectedFrameId);
+            net.minecraft.world.entity.Entity entity = expectedFrameId == null ? null
+                    : server.overworld().getEntity(expectedFrameId);
             boolean frameLoaded = entity instanceof ItemFrame;
             boolean frameMatches = frameLoaded && expectedMapId != null
                     && expectedMapId.equals(((ItemFrame)entity).getItem().get(DataComponents.MAP_ID));
@@ -695,7 +706,7 @@ public final class RingMapCompassCaptureClient {
                 .get(DataComponents.LODESTONE_TRACKER);
         boolean lodestone = tracker != null && tracker.target().map(GlobalPos::pos).map(BlockPos::getX)
                 .filter(x -> x == targetX).isPresent();
-        boolean spawn = client.level.getRespawnData().pos().getX() == targetX;
+        boolean spawn = client.level.getSharedSpawnPos().getX() == targetX;
         boolean recovery = client.player.getLastDeathLocation().map(GlobalPos::pos).map(BlockPos::getX)
                 .filter(x -> x == targetX).isPresent();
         RingWorldMod.LOGGER.info("[map-compass-capture] reopened targets spawn={} lodestone={} recovery={} stateCleared={}",
@@ -706,7 +717,7 @@ public final class RingMapCompassCaptureClient {
     private boolean settled() { return ++stageTicks >= SETTLE_TICKS; }
 
     private static void select(Minecraft client, int slot) {
-        client.player.getInventory().setSelectedSlot(slot);
+        client.player.getInventory().selected = slot;
         client.getConnection().send(new ServerboundSetCarriedItemPacket(slot));
         client.setScreen(null);
     }

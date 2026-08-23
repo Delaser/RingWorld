@@ -163,8 +163,12 @@ There is also an open community contribution lane for the planned Minecraft
 - [1.21.1 milestone](https://github.com/Delaser/RingWorld/milestone/1)
 - [1.21.1 contributor guide](versions/mc1.21.1/README.md)
 
-The backport is not yet playable or supported. Contributors should take one
-of the linked issues and target the `port/mc-1.21.1` integration branch.
+The backport is not yet published or supported. Its pinned Java 21 Fabric and
+NeoForge graphs build, and the local dedicated, two-client gameplay, persisted
+raid, lifecycle, worldgen, and production-size visual matrices pass. Clean
+public integration, packaging, compatibility qualification, and owner release
+approval remain. Contributors should take one of the linked issues and target
+the `port/mc-1.21.1` integration branch.
 
 General bug reports, compatibility observations, documentation improvements,
 and code contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md)

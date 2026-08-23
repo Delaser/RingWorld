@@ -31,7 +31,7 @@ abstract class ServerEntityTrackerMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/world/phys/Vec3;subtract(Lnet/minecraft/world/phys/Vec3;)Lnet/minecraft/world/phys/Vec3;"))
     private Vec3 ringworld$periodicTrackingDelta(Vec3 playerPosition, Vec3 entityPosition,
                                                   ServerPlayer player) {
-        ServerLevel world = player.level();
+        ServerLevel world = player.serverLevel();
         if (world.dimension() != Level.OVERWORLD) return playerPosition.subtract(entityPosition);
         RingGeometry geometry = RingWorldServer.geometryFor(world);
         return new Vec3(geometry.shortestCircumferenceDelta(entityPosition.x, playerPosition.x),
@@ -59,8 +59,9 @@ abstract class ServerEntityTrackerMixin {
                                                                  ServerPlayer player,
                                                                  int chunkX,
                                                                  int chunkZ) {
-        boolean vanillaChunkTracked = chunkMap.isChunkTracked(player, chunkX, chunkZ);
-        ServerLevel world = player.level();
+        boolean vanillaChunkTracked = ((ChunkMapAccessor) (Object) chunkMap)
+                .ringworld$isChunkTracked(player, chunkX, chunkZ);
+        ServerLevel world = player.serverLevel();
         if (vanillaChunkTracked || world.dimension() != Level.OVERWORLD) {
             return vanillaChunkTracked;
         }

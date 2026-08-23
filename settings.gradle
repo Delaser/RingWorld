@@ -10,4 +10,12 @@ plugins {
 }
 
 rootProject.name = 'ringworld'
-include 'neoforge'
+
+def ringBackportCompilerScope = providers.gradleProperty('ringBackportCompilerScope')
+        .orElse('all').get()
+if (!(ringBackportCompilerScope in ['all', 'fabric'])) {
+    throw new GradleException('ringBackportCompilerScope must be all or fabric')
+}
+if (ringBackportCompilerScope == 'all') {
+    include 'neoforge'
+}

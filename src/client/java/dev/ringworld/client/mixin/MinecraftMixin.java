@@ -13,11 +13,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Minecraft.class)
 abstract class MinecraftMixin {
     @Inject(
-            method = "disconnect(Lnet/minecraft/client/gui/screens/Screen;ZZ)V",
+            method = "disconnect(Lnet/minecraft/client/gui/screens/Screen;Z)V",
             at = @At("HEAD"))
     private void ringworld$clearDisconnectSession(Screen nextScreen,
                                                   boolean keepResourcePacks,
-                                                  boolean showDisconnectScreen,
                                                   CallbackInfo ci) {
         RingWorldClientSession.clear();
     }
@@ -28,7 +27,7 @@ abstract class MinecraftMixin {
     }
 
     /** Menu rendering does not reach either loader's level-render callback. */
-    @Inject(method = "renderFrame", at = @At("TAIL"))
+    @Inject(method = "runTick", at = @At("TAIL"))
     private void ringworld$recordCreationUiTestFrame(boolean advanceGameTime, CallbackInfo ci) {
         RingWorldCreationUiTestClient.frameRendered();
     }

@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
@@ -75,8 +76,8 @@ public final class RingAtlasPregenerationService {
     }
 
     private static final class AtlasLoadingTicketHolder {
-        private static final TicketType INSTANCE = new TicketType(
-                TicketType.NO_TIMEOUT, TicketType.FLAG_LOADING);
+        private static final TicketType<ChunkPos> INSTANCE = TicketType.create(
+                "ringworld_atlas", Comparator.comparingLong(ChunkPos::toLong));
     }
 
     public static void load(ServerLevel world) { load(world, true); }
@@ -274,7 +275,7 @@ public final class RingAtlasPregenerationService {
                 if (levelChunk == null) {
                     throw new IllegalStateException("pregeneration returned no full chunk for " + job.selection.selected());
                 }
-                if (!job.selection.accepts(levelChunk.getPos().x(), levelChunk.getPos().z())) {
+                if (!job.selection.accepts(levelChunk.getPos().x, levelChunk.getPos().z)) {
                     throw new IllegalStateException("pregeneration returned unexpected chunk " + levelChunk.getPos()
                             + " for " + job.selection.selected());
                 }
@@ -309,8 +310,8 @@ public final class RingAtlasPregenerationService {
 
     private static CaptureResult captureChunk(ServerLevel world, LevelChunk chunk, WorldState state) {
         RingTerrainAtlas atlas = state.atlas;
-        int chunkX = chunk.getPos().x();
-        int chunkZ = chunk.getPos().z();
+        int chunkX = chunk.getPos().x;
+        int chunkZ = chunk.getPos().z;
         int minChunkZ = atlas.geometry().minChunkZ();
         int chunksAlong = atlas.geometry().circumferenceChunks();
         int chunksAcross = atlas.geometry().widthChunks();
@@ -597,12 +598,15 @@ public final class RingAtlasPregenerationService {
                 ChunkPos position = new ChunkPos(selected.chunkX(), selected.chunkZ());
                 TicketType ticket = atlasLoadingTicket();
                 request = RingAtlasChunkRequest.start(
-                        () -> world.getChunkSource().addTicketAndLoadWithRadius(
-                                ticket, position, 0),
+                        () -> {
+                            world.getChunkSource().addRegionTicket(ticket, position, 0, position);
+                            return world.getChunkSource().getChunkFuture(
+                                    position.x, position.z, net.minecraft.world.level.chunk.status.ChunkStatus.FULL,
+                                    true);
+                        },
                         () -> world.getChunkSource().getChunkNow(
                                 selected.chunkX(), selected.chunkZ()),
-                        () -> world.getChunkSource().removeTicketWithRadius(
-                                ticket, position, 0));
+                        () -> world.getChunkSource().removeRegionTicket(ticket, position, 0, position));
                 requestProcessed = false;
                 notifyProgress();
             } catch (RuntimeException exception) {

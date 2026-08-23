@@ -39,12 +39,12 @@ abstract class ServerEntityManagerMixin<T extends EntityAccess> implements RingE
     @Override
     public void ringworld$ensureLoaded(ChunkPos pos) {
         if (ringworld$geometry == null) return;
-        int x = Math.floorMod(pos.x(), ringworld$geometry.circumferenceChunks());
-        ChunkPos canonical = x == pos.x() ? pos : new ChunkPos(x, pos.z());
+        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceChunks());
+        ChunkPos canonical = x == pos.x ? pos : new ChunkPos(x, pos.z);
         // FRESH is represented by the load map's default value. Queue its
         // entity read directly: updateChunkStatus also changes visibility and
         // can downgrade an already-ticking seam chunk to merely TRACKED.
-        long key = canonical.pack();
+        long key = canonical.toLong();
         if (!chunkLoadStatuses.containsKey(key)) {
             ringworld$queueChunkEntityLoad(key);
         }
@@ -52,10 +52,7 @@ abstract class ServerEntityManagerMixin<T extends EntityAccess> implements RingE
 
     /** Canonicalize newly spawned and disk-loaded entities before indexing. */
     @Inject(
-            method = {
-                    "addEntity(Lnet/minecraft/world/level/entity/EntityAccess;Z)Z",
-                    "addEntityWithoutEvent(Lnet/minecraft/world/level/entity/EntityAccess;Z)Z"
-            },
+            method = "addEntity(Lnet/minecraft/world/level/entity/EntityAccess;Z)Z",
             at = @At("HEAD"))
     private void ringworld$canonicalEntityPosition(T entity, boolean existing,
                                                    CallbackInfoReturnable<Boolean> cir) {
@@ -76,29 +73,31 @@ abstract class ServerEntityManagerMixin<T extends EntityAccess> implements RingE
             at = @At("HEAD"), argsOnly = true)
     private ChunkPos ringworld$canonicalTrackingStatus(ChunkPos pos) {
         if (ringworld$geometry == null) return pos;
-        int x = Math.floorMod(pos.x(), ringworld$geometry.circumferenceChunks());
-        return x == pos.x() ? pos : new ChunkPos(x, pos.z());
+        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceChunks());
+        return x == pos.x ? pos : new ChunkPos(x, pos.z);
     }
 
     @ModifyVariable(method = "areEntitiesLoaded", at = @At("HEAD"), argsOnly = true)
     private long ringworld$canonicalLoadedStatus(long packedPos) {
         if (ringworld$geometry == null) return packedPos;
-        ChunkPos pos = ChunkPos.unpack(packedPos);
-        int x = Math.floorMod(pos.x(), ringworld$geometry.circumferenceChunks());
-        return x == pos.x() ? packedPos : ChunkPos.pack(x, pos.z());
+        ChunkPos pos = new ChunkPos(packedPos);
+        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceChunks());
+        return x == pos.x ? packedPos : ChunkPos.asLong(x, pos.z);
     }
 
-    @ModifyVariable(method = {
-            "canPositionTick(Lnet/minecraft/world/level/ChunkPos;)Z",
-            "isTicking(Lnet/minecraft/world/level/ChunkPos;)Z"
-    }, at = @At("HEAD"), argsOnly = true)
+    @ModifyVariable(method = "canPositionTick(Lnet/minecraft/world/level/ChunkPos;)Z",
+            at = @At("HEAD"), argsOnly = true)
     private ChunkPos ringworld$canonicalTickStatus(ChunkPos pos) {
         if (ringworld$geometry == null) return pos;
-        int x = Math.floorMod(pos.x(), ringworld$geometry.circumferenceChunks());
-        return x == pos.x() ? pos : new ChunkPos(x, pos.z());
+        int x = Math.floorMod(pos.x, ringworld$geometry.circumferenceChunks());
+        return x == pos.x ? pos : new ChunkPos(x, pos.z);
     }
 
     @Redirect(
+            // NeoForge moves the vanilla indexing body into its patched
+            // addEntityWithoutEvent helper.  Naming both owners keeps one
+            // fail-closed redirect (exactly one target must match) without
+            // duplicating the topology rule in loader-owned code.
             method = {
                     "addEntity(Lnet/minecraft/world/level/entity/EntityAccess;Z)Z",
                     "addEntityWithoutEvent(Lnet/minecraft/world/level/entity/EntityAccess;Z)Z"

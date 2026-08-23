@@ -8,14 +8,11 @@ import net.minecraft.network.Connection;
 import net.minecraft.network.protocol.Packet;
 import net.minecraft.network.protocol.game.ServerboundBlockEntityTagQueryPacket;
 import net.minecraft.network.protocol.game.ServerboundJigsawGeneratePacket;
-import net.minecraft.network.protocol.game.ServerboundPickItemFromBlockPacket;
 import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.network.protocol.game.ServerboundSetCommandBlockPacket;
 import net.minecraft.network.protocol.game.ServerboundSetJigsawBlockPacket;
 import net.minecraft.network.protocol.game.ServerboundSetStructureBlockPacket;
-import net.minecraft.network.protocol.game.ServerboundSetTestBlockPacket;
 import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
-import net.minecraft.network.protocol.game.ServerboundTestInstanceBlockActionPacket;
 import net.minecraft.network.protocol.game.ServerboundUseItemOnPacket;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.Vec3;
@@ -46,16 +43,13 @@ abstract class ClientConnectionMixin {
                     new Vec3(canonical.hitX(), hitPosition.y, hitPosition.z),
                     hit.getDirection(), new BlockPos(canonical.blockX(),
                             hit.getBlockPos().getY(), hit.getBlockPos().getZ()),
-                    hit.isInside(), hit.isWorldBorderHit());
+                    hit.isInside());
             return new ServerboundUseItemOnPacket(interaction.getHand(), canonicalHit, interaction.getSequence());
         }
         if (packet instanceof ServerboundSignUpdatePacket sign) {
             String[] lines = sign.getLines();
             return new ServerboundSignUpdatePacket(canonical(sign.getPos(), geometry), sign.isFrontText(),
                     lines[0], lines[1], lines[2], lines[3]);
-        }
-        if (packet instanceof ServerboundPickItemFromBlockPacket pick) {
-            return new ServerboundPickItemFromBlockPacket(canonical(pick.pos(), geometry), pick.includeData());
         }
         if (packet instanceof ServerboundBlockEntityTagQueryPacket query) {
             return new ServerboundBlockEntityTagQueryPacket(
@@ -72,7 +66,7 @@ abstract class ClientConnectionMixin {
                     canonical(structureBlock.getPos(), geometry), structureBlock.getUpdateType(),
                     structureBlock.getMode(), structureBlock.getName(), structureBlock.getOffset(),
                     structureBlock.getSize(), structureBlock.getMirror(), structureBlock.getRotation(),
-                    structureBlock.getData(), structureBlock.isIgnoreEntities(), structureBlock.isStrict(),
+                    structureBlock.getData(), structureBlock.isIgnoreEntities(),
                     structureBlock.isShowAir(), structureBlock.isShowBoundingBox(),
                     structureBlock.getIntegrity(), structureBlock.getSeed());
         }
@@ -88,14 +82,8 @@ abstract class ClientConnectionMixin {
                     canonical(jigsawGenerate.getPos(), geometry),
                     jigsawGenerate.levels(), jigsawGenerate.keepJigsaws());
         }
-        if (packet instanceof ServerboundSetTestBlockPacket testBlock) {
-            return new ServerboundSetTestBlockPacket(
-                    canonical(testBlock.position(), geometry), testBlock.mode(), testBlock.message());
-        }
-        if (packet instanceof ServerboundTestInstanceBlockActionPacket testInstance) {
-            return new ServerboundTestInstanceBlockActionPacket(
-                    canonical(testInstance.pos(), geometry), testInstance.action(), testInstance.data());
-        }
+        // 1.21.1 has neither position-bearing pick-block packets nor the
+        // later test-block protocol, so there is no coordinate payload to adapt.
         return packet;
     }
 

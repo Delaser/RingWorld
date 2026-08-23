@@ -10,7 +10,6 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
@@ -34,11 +33,11 @@ abstract class ChunkRenderingDataPreparerMixin {
         return ClientRingState.geometry() == null && useOcclusionCulling;
     }
 
-    @ModifyArg(
+    @ModifyVariable(
             method = "addSectionsInFrustum",
-            at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/Octree;visitNodes(Lnet/minecraft/client/renderer/Octree$OctreeVisitor;Lnet/minecraft/client/renderer/culling/Frustum;I)V"),
-            index = 1)
+            at = @At("HEAD"),
+            argsOnly = true,
+            ordinal = 0)
     private Frustum ringworld$curveCollectedChunkFrustum(Frustum frustum) {
         return ringworld$wrap(frustum);
     }
@@ -56,7 +55,7 @@ abstract class ChunkRenderingDataPreparerMixin {
         Minecraft client = Minecraft.getInstance();
         if (geometry == null || client.gameRenderer == null
                 || !client.gameRenderer.getMainCamera().isInitialized()) return frustum;
-        Vec3 cameraPosition = client.gameRenderer.getMainCamera().position();
+        Vec3 cameraPosition = client.gameRenderer.getMainCamera().getPosition();
         return new CurvedRingFrustum(frustum, geometry, cameraPosition);
     }
 }

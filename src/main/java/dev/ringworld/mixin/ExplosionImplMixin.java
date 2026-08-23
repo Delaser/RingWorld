@@ -5,8 +5,8 @@ import dev.ringworld.world.RingGeometry;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.level.Explosion;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.ServerExplosion;
 import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -15,10 +15,10 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 /** Uses the nearest ring image for explosion exposure rays and impulse direction. */
-@Mixin(ServerExplosion.class)
+@Mixin(Explosion.class)
 abstract class ExplosionImplMixin {
-    @Shadow @Final private ServerLevel level;
-    @Shadow @Final private Vec3 center;
+    @Shadow @Final private Level level;
+    @Shadow @Final private double x;
 
     @Redirect(
             method = "getSeenPercent",
@@ -35,17 +35,15 @@ abstract class ExplosionImplMixin {
     }
 
     @Redirect(
-            // NeoForge patches vanilla's no-argument method into a wrapper and
-            // moves the entity loop into hurtEntities(List<BlockPos>). Match
-            // both layouts while requiring the eye-position call in whichever
-            // implementation actually owns the loop.
-            method = {"hurtEntities()V", "hurtEntities(Ljava/util/List;)V"},
+            method = "explode",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/world/entity/Entity;getEyePosition()Lnet/minecraft/world/phys/Vec3;"))
-    private Vec3 ringworld$periodicKnockbackOrigin(Entity entity) {
-        Vec3 entityEye = entity.getEyePosition();
-        if (level.dimension() != Level.OVERWORLD) return entityEye;
-        RingGeometry geometry = RingWorldServer.geometryFor(level);
-        return new Vec3(geometry.nearestImageX(entityEye.x, center.x), entityEye.y, entityEye.z);
+                    target = "Lnet/minecraft/world/entity/Entity;getX()D"))
+    private double ringworld$periodicKnockbackX(Entity entity) {
+        double entityX = entity.getX();
+        if (!(level instanceof ServerLevel serverLevel) || level.dimension() != Level.OVERWORLD) {
+            return entityX;
+        }
+        RingGeometry geometry = RingWorldServer.geometryFor(serverLevel);
+        return geometry.nearestImageX(entityX, x);
     }
 }

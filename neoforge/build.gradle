@@ -5,6 +5,7 @@ plugins {
 
 tasks.named('check') {
 	dependsOn(rootProject.tasks.named('verifyOutboundPositionPacketInventory'))
+	dependsOn(rootProject.tasks.named('verifyBackportDependencyInventory'))
 }
 
 version = rootProject.mod_version
@@ -41,7 +42,7 @@ if (qualificationEnabled) {
 }
 
 java {
-    toolchain.languageVersion = JavaLanguageVersion.of(25)
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
     withSourcesJar()
 }
 
@@ -297,7 +298,7 @@ sourceSets.main.resources.srcDir generateModMetadata
 neoForge.ideSyncTask generateModMetadata
 
 tasks.withType(JavaCompile).configureEach {
-    options.release = 25
+    options.release = 21
     options.encoding = 'UTF-8'
 }
 
@@ -1188,6 +1189,18 @@ tasks.register('prepareCopiedNeoForgeLayoutSwitchWorlds') {
     outputs.dir(neoForgeLayoutSwitchSaves)
     outputs.upToDateWhen { false }
     doLast {
+        // Session/layout replacement is the gate. Do not let a deliberately
+        // partial source start unrelated full-Atlas tickets during shutdown.
+        def configDirectory = new File(neoForgeLayoutSwitchRun, 'config')
+        configDirectory.mkdirs()
+        new File(configDirectory, 'ringworld.properties').text = '''\
+widthBlocks=256
+circumferenceBlocks=16384
+wallHeightBlocks=160
+testMode=false
+testViewDistanceChunks=12
+pregenerateTerrainAtlas=false
+'''
         def copies = [
                 [providers.gradleProperty('ringNeoForgeLayoutSwitchFirstSource').orElse('').get(),
                  providers.gradleProperty('ringNeoForgeLayoutSwitchFirstDestination')

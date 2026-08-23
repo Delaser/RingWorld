@@ -3,20 +3,23 @@ package dev.ringworld.world;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.ringworld.RingWorldMod;
-import net.minecraft.resources.Identifier;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraft.world.level.saveddata.SavedDataType;
-import net.minecraft.world.level.storage.SavedDataStorage;
+import net.minecraft.world.level.storage.DimensionDataStorage;
 
 /** Immutable server-side structure guarantees, separate from the geometry wire format. */
 public final class RingStructurePolicy extends SavedData {
     public static final int FORMAT_VERSION = 2;
     public static final int GUARANTEE_STRONGHOLD = 1;
     public static final int REQUEST_OCEAN_MONUMENT = 1 << 1;
-    public static final Identifier STORAGE_ID =
-            Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "structure_policy");
+    public static final ResourceLocation STORAGE_ID =
+            ResourceLocation.fromNamespaceAndPath(RingWorldMod.MOD_ID, "structure_policy");
+    private static final String STORAGE_KEY = STORAGE_ID.getNamespace() + "/" + STORAGE_ID.getPath();
 
     private static final Codec<RingStructurePolicy> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.fieldOf("guarantees").forGetter(RingStructurePolicy::guarantees),
@@ -24,9 +27,9 @@ public final class RingStructurePolicy extends SavedData {
             RingMonumentResolution.CODEC.optionalFieldOf("ocean_monument", RingMonumentResolution.disabled())
                     .forGetter(RingStructurePolicy::oceanMonument)
     ).apply(instance, RingStructurePolicy::new));
-    private static final SavedDataType<RingStructurePolicy> TYPE = new SavedDataType<>(
-            STORAGE_ID, () -> new RingStructurePolicy(0, FORMAT_VERSION),
-            CODEC, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
+    private static final SavedData.Factory<RingStructurePolicy> FACTORY = new SavedData.Factory<>(
+            () -> new RingStructurePolicy(0, FORMAT_VERSION), RingStructurePolicy::load,
+            DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
 
     private final int guarantees;
     private final int formatVersion;
@@ -56,21 +59,35 @@ public final class RingStructurePolicy extends SavedData {
         this.oceanMonument = formatVersion == 1 ? RingMonumentResolution.disabled() : oceanMonument;
     }
 
+    private static RingStructurePolicy load(CompoundTag tag, HolderLookup.Provider registries) {
+        return CODEC.parse(NbtOps.INSTANCE, tag).result().orElseThrow(
+                () -> new IllegalStateException("Could not decode saved RingWorld structure policy"));
+    }
+
+    @Override
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+        return CODEC.encodeStart(NbtOps.INSTANCE, this).result()
+                .filter(CompoundTag.class::isInstance)
+                .map(CompoundTag.class::cast)
+                .orElseThrow(() -> new IllegalStateException("Could not encode RingWorld structure policy"));
+    }
+
     /** Called only in the same ownership path that creates first-world settings. */
-    static RingStructurePolicy createForNewWorld(SavedDataStorage storage, boolean requestOceanMonument) {
-        RingStructurePolicy existing = storage.get(TYPE);
+    static RingStructurePolicy createForNewWorld(
+            DimensionDataStorage storage, boolean requestOceanMonument) {
+        RingStructurePolicy existing = storage.get(FACTORY, STORAGE_KEY);
         if (existing != null) return existing;
         int guarantees = GUARANTEE_STRONGHOLD | (requestOceanMonument ? REQUEST_OCEAN_MONUMENT : 0);
         RingStructurePolicy created = new RingStructurePolicy(guarantees, FORMAT_VERSION,
                 requestOceanMonument ? RingMonumentResolution.pending() : RingMonumentResolution.disabled());
         created.setDirty();
-        storage.set(TYPE, created);
+        storage.set(STORAGE_KEY, created);
         return created;
     }
 
     /** Missing policy means a pre-feature world whose structure layout must remain unchanged. */
     public static RingStructurePolicy get(ServerLevel world) {
-        RingStructurePolicy saved = world.getDataStorage().get(TYPE);
+        RingStructurePolicy saved = world.getDataStorage().get(FACTORY, STORAGE_KEY);
         return saved != null ? saved : new RingStructurePolicy(0, FORMAT_VERSION);
     }
 
@@ -85,7 +102,7 @@ public final class RingStructurePolicy extends SavedData {
         }
         RingStructurePolicy resolved = new RingStructurePolicy(current.guarantees(), FORMAT_VERSION, resolution);
         resolved.setDirty();
-        world.getDataStorage().set(TYPE, resolved);
+        world.getDataStorage().set(STORAGE_KEY, resolved);
         return resolved;
     }
 

@@ -17,6 +17,7 @@ import dev.ringworld.server.RingWorldMultiplayerTest;
 import dev.ringworld.server.RingTerrainAtlasServer;
 import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -26,25 +27,32 @@ import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 
 import java.util.UUID;
+import java.util.function.BiConsumer;
 
 /** NeoForge transport for the shared RingWorld payload records and handshake state. */
 public final class NeoForgeRingWorldNetworking {
     private static final String CHANNEL_VERSION = "ringworld-26.1-v2";
     private static final RingHandshakeTracker HANDSHAKES = new RingHandshakeTracker();
+    private static volatile BiConsumer<CustomPacketPayload, IPayloadContext> clientPayloadHandler;
 
     private NeoForgeRingWorldNetworking() { }
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar(CHANNEL_VERSION);
-        registrar.playToClient(RingSettingsPayload.ID, RingSettingsPayload.CODEC);
+        registrar.playToClient(RingSettingsPayload.ID, RingSettingsPayload.CODEC,
+                NeoForgeRingWorldNetworking::handleClientPayload);
         registrar.playToServer(RingSettingsAckPayload.ID, RingSettingsAckPayload.CODEC,
                 NeoForgeRingWorldNetworking::handleAcknowledgement);
         registrar.playToServer(RingMultiplayerTestPayload.ID, RingMultiplayerTestPayload.CODEC,
                 NeoForgeRingWorldNetworking::handleMultiplayerTest);
-        registrar.playToClient(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC);
-        registrar.playToClient(RingTerrainAtlasTilePayload.ID, RingTerrainAtlasTilePayload.CODEC);
-        registrar.playToClient(RingTerrainAtlasRevisionPayload.ID, RingTerrainAtlasRevisionPayload.CODEC);
-        registrar.playToClient(RingAtlasPregenerationStatusPayload.ID, RingAtlasPregenerationStatusPayload.CODEC);
+        registrar.playToClient(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC,
+                NeoForgeRingWorldNetworking::handleClientPayload);
+        registrar.playToClient(RingTerrainAtlasTilePayload.ID, RingTerrainAtlasTilePayload.CODEC,
+                NeoForgeRingWorldNetworking::handleClientPayload);
+        registrar.playToClient(RingTerrainAtlasRevisionPayload.ID, RingTerrainAtlasRevisionPayload.CODEC,
+                NeoForgeRingWorldNetworking::handleClientPayload);
+        registrar.playToClient(RingAtlasPregenerationStatusPayload.ID, RingAtlasPregenerationStatusPayload.CODEC,
+                NeoForgeRingWorldNetworking::handleClientPayload);
         registrar.playToServer(RingTerrainAtlasRequestPayload.ID, RingTerrainAtlasRequestPayload.CODEC,
                 NeoForgeRingWorldNetworking::handleAtlasRequest);
         registrar.playToServer(RingAtlasPregenerationStatusRequestPayload.ID,
@@ -53,6 +61,20 @@ public final class NeoForgeRingWorldNetworking {
         registrar.playToServer(RingAtlasPregenerationControlPayload.ID,
                 RingAtlasPregenerationControlPayload.CODEC,
                 NeoForgeRingWorldNetworking::handleAtlasControl);
+    }
+
+    public static void configureClientPayloadHandler(
+            BiConsumer<CustomPacketPayload, IPayloadContext> handler) {
+        clientPayloadHandler = handler;
+    }
+
+    private static void handleClientPayload(CustomPacketPayload payload, IPayloadContext context) {
+        BiConsumer<CustomPacketPayload, IPayloadContext> handler = clientPayloadHandler;
+        if (handler == null) {
+            context.disconnect(Component.literal("RingWorld client payload handler is unavailable."));
+            return;
+        }
+        handler.accept(payload, context);
     }
 
     public static void sendSettings(ServerPlayer player) {

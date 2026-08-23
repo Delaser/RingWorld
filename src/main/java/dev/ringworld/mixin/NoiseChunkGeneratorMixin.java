@@ -29,6 +29,7 @@ import net.minecraft.world.level.biome.BiomeManager;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Aquifer;
 import net.minecraft.world.level.levelgen.DensityFunctions;
+import net.minecraft.world.level.levelgen.GenerationStep;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
 import net.minecraft.world.level.levelgen.NoiseChunk;
 import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
@@ -154,7 +155,8 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     @Inject(method = "applyCarvers", at = @At("HEAD"), cancellable = true)
     private void ringworld$skipExteriorCarvers(WorldGenRegion region, long seed, RandomState noiseConfig,
                                                BiomeManager biomeAccess, StructureManager structures,
-                                               ChunkAccess chunk, CallbackInfo ci) {
+                                               ChunkAccess chunk, GenerationStep.Carving carving,
+                                               CallbackInfo ci) {
         if (ringworld$geometry != null && RingGenerationBoundary.isExterior(chunk, ringworld$geometry)) ci.cancel();
     }
 

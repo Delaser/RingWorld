@@ -7,6 +7,7 @@ import dev.ringworld.server.RingWorldStrongholdTest;
 import dev.ringworld.server.RingTerrainAtlasServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.level.chunk.LevelChunk;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.neoforge.event.entity.player.PlayerEvent;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
@@ -48,11 +49,12 @@ public final class NeoForgeRingWorldServer {
 
     @SubscribeEvent
     public void onChunkLoad(ChunkEvent.Load event) {
-        if (event.getLevel() instanceof ServerLevel world) {
+        if (event.getLevel() instanceof ServerLevel world
+                && event.getChunk() instanceof LevelChunk chunk) {
             if (RingWorldServer.isOverworld(world)) {
-                RingTerrainAtlasServer.captureLoadedChunk(world, event.getChunk());
+                RingTerrainAtlasServer.captureLoadedChunk(world, chunk);
             }
-            RingWorldServer.onChunkLoaded(world, event.getChunk());
+            RingWorldServer.onChunkLoaded(world, chunk);
         }
     }
 

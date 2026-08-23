@@ -1,12 +1,13 @@
-#version 330
-
-#moj_import <minecraft:dynamictransforms.glsl>
-#moj_import <minecraft:globals.glsl>
-#moj_import <minecraft:projection.glsl>
+#version 150
 
 in vec3 Position;
 in vec2 UV0;
 in vec4 Color;
+
+uniform mat4 ModelViewMat;
+uniform mat4 ProjMat;
+uniform vec3 ModelOffset;
+uniform ivec4 RingWorldLayout;
 
 out vec2 texCoord0;
 out vec4 vertexColor;
@@ -14,27 +15,14 @@ out float intrinsicDistance;
 out float intrinsicHeight;
 
 const float TAU = 6.28318530717958647692;
-// The complete-ring surface is visual sky LOD, not ordinary world geometry.
-// Keep its physical X/Y perspective, but prevent Minecraft's chunk-derived
-// far plane from clipping large rings. A 16,384-block circumference has an
-// approximately 4,950-block diameter while the normal 28-chunk level far
-// plane is only about 1,792 blocks. Clamping clip-space Z leaves X/Y/W (and
-// therefore apparent curvature) untouched. Vertices behind the eye retain
-// normal frustum clipping.
 const float FAR_BACKGROUND_DEPTH = 0.9999;
 
 void main() {
     gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
     if (gl_Position.w > 0.0) {
-        gl_Position.z = min(
-            gl_Position.z,
-            gl_Position.w * FAR_BACKGROUND_DEPTH
-        );
+        gl_Position.z = min(gl_Position.z, gl_Position.w * FAR_BACKGROUND_DEPTH);
     }
 
-    // Position.xy is the global cylinder and ModelOffset.x is the canonical
-    // camera angle. atan(sin, cos) produces the shortest periodic angle even
-    // at U=0/1, so the handoff cannot acquire a second seam.
     float vertexAngle = atan(Position.x, -Position.y);
     float deltaAngle = atan(
         sin(vertexAngle - ModelOffset.x),

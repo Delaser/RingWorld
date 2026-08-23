@@ -1,5 +1,5 @@
 plugins {
-	id 'net.fabricmc.fabric-loom' version "${loom_version}"
+	id 'fabric-loom' version "${loom_version}"
 	id 'maven-publish'
 }
 
@@ -341,6 +341,7 @@ loom {
 // environment lookup, and launch adapters live in explicit platform trees so
 // the same common sources can be compiled by the future NeoForge module.
 sourceSets.main.java.srcDir 'src/platform/fabric/java'
+sourceSets.main.resources.srcDir 'src/platform/fabric/resources'
 sourceSets.client.java.srcDir 'src/platform/fabricClient/java'
 
 def checkedSaveId = { String value, String propertyName ->
@@ -1256,6 +1257,19 @@ tasks.register("prepareCopiedLayoutSwitchWorlds") {
 		["screenshots", "ringworld-cache", "logs", "crash-reports"].each {
 			delete(new File(qualificationRunFile("run-layout-switch"), it))
 		}
+		// This fixture owns session teardown and immutable-layout replacement,
+		// not Atlas completion. A partial source must not start unrelated full-
+		// ring tickets that keep the integrated server busy during final save.
+		def configDirectory = new File(qualificationRunFile("run-layout-switch"), "config")
+		configDirectory.mkdirs()
+		new File(configDirectory, "ringworld.properties").text = """\
+widthBlocks=256
+circumferenceBlocks=16384
+wallHeightBlocks=160
+testMode=false
+testViewDistanceChunks=12
+pregenerateTerrainAtlas=false
+"""
 		def copies = [
 			[providers.gradleProperty("ringLayoutSwitchFirstSource").orElse("RingWorld Automated Test (10)").get(),
 					providers.gradleProperty("ringLayoutSwitchFirstDestination").orElse("RingWorld Layout Switch A").get(),
@@ -1420,14 +1434,11 @@ tasks.register("verifyOutboundPositionPacketInventory") {
 				"ServerboundPlayerActionPacket",
 				"ServerboundUseItemOnPacket",
 				"ServerboundSignUpdatePacket",
-				"ServerboundPickItemFromBlockPacket",
 				"ServerboundBlockEntityTagQueryPacket",
 				"ServerboundSetCommandBlockPacket",
 				"ServerboundSetStructureBlockPacket",
 				"ServerboundSetJigsawBlockPacket",
-				"ServerboundJigsawGeneratePacket",
-				"ServerboundSetTestBlockPacket",
-				"ServerboundTestInstanceBlockActionPacket"
+				"ServerboundJigsawGeneratePacket"
 		].each { packetType ->
 			if (!outboundPositionMixin.contains("packet instanceof ${packetType}")) {
 				throw new GradleException(
@@ -1699,8 +1710,9 @@ tasks.register("verifyCurvedObjectCaptureClient") {
 
 dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
-	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
-	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
 	testImplementation platform('org.junit:junit-bom:5.11.4')
 	testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -1731,17 +1743,204 @@ processResources {
 }
 
 tasks.withType(JavaCompile).configureEach {
-	it.options.release = 25
+	it.options.release = 21
 }
 
 java {
 	withSourcesJar()
-	sourceCompatibility = JavaVersion.VERSION_25
-	targetCompatibility = JavaVersion.VERSION_25
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+def backportDependencyInventoryFile = file('versions/mc1.21.1/dependency-inventory.json')
+def dependencyVerificationMetadataFile = file('gradle/verification-metadata.xml')
+
+tasks.register('verifyBackportDependencyInventory') {
+	group = 'verification'
+	description = 'Fails unless the exact 1.21.1 toolchain, Mojang inputs, and Gradle dependency pins agree.'
+	inputs.files(backportDependencyInventoryFile, dependencyVerificationMetadataFile,
+			file('gradle.properties'), file('gradle/wrapper/gradle-wrapper.properties'))
+	doLast {
+		def rejectUnless = { boolean condition, String message ->
+			if (!condition) throw new GradleException('Backport dependency inventory: ' + message)
+		}
+		def sha1Pattern = ~/[0-9a-f]{40}/
+		def sha256Pattern = ~/[0-9a-f]{64}/
+		def inventory = new groovy.json.JsonSlurper().parse(backportDependencyInventoryFile)
+		rejectUnless(inventory.schemaVersion == 1, 'unsupported schemaVersion')
+		rejectUnless(inventory.minecraftVersion == '1.21.1', 'Minecraft version must remain exactly 1.21.1')
+		rejectUnless(inventory.javaRuntime.version == '21.0.12.1+1', 'unexpected Java runtime version')
+		rejectUnless(inventory.javaRuntime.archiveSha256 ==~ sha256Pattern,
+				'Java archive must have one lowercase SHA-256')
+
+		def buildProperties = new Properties()
+		file('gradle.properties').withInputStream { buildProperties.load(it) }
+		inventory.gradleProperties.each { propertyName, expectedValue ->
+			rejectUnless(buildProperties.getProperty(propertyName) == expectedValue,
+					"gradle.properties ${propertyName} does not match the reviewed inventory")
+		}
+
+		def wrapperProperties = new Properties()
+		file('gradle/wrapper/gradle-wrapper.properties').withInputStream { wrapperProperties.load(it) }
+		rejectUnless(wrapperProperties.getProperty('distributionUrl') == inventory.gradleWrapper.distributionUrl,
+				'Gradle distribution URL does not match the reviewed inventory')
+		rejectUnless(wrapperProperties.getProperty('distributionSha256Sum') ==
+				inventory.gradleWrapper.distributionSha256,
+				'Gradle distribution SHA-256 does not match the reviewed inventory')
+		rejectUnless(inventory.gradleWrapper.distributionSha256 ==~ sha256Pattern,
+				'Gradle distribution must have one lowercase SHA-256')
+
+		def manifest = inventory.mojangVersionManifest
+		rejectUnless(manifest.sha1 ==~ sha1Pattern && manifest.sha256 ==~ sha256Pattern,
+				'Mojang version manifest must have SHA-1 and SHA-256 pins')
+		rejectUnless(manifest.url.contains('/' + manifest.sha1 + '/'),
+				'Mojang immutable manifest URL must embed its declared SHA-1')
+		rejectUnless(inventory.mojangDownloads.keySet() as Set ==
+				['client', 'clientMappings', 'server', 'serverMappings'] as Set,
+				'Mojang download inventory must contain exactly client/server jars and mappings')
+		inventory.mojangDownloads.each { downloadName, download ->
+			rejectUnless(download.size instanceof Number && download.size.longValue() > 0,
+					"${downloadName} must declare a positive byte size")
+			rejectUnless(download.sha1 ==~ sha1Pattern && download.sha256 ==~ sha256Pattern,
+					"${downloadName} must have SHA-1 and SHA-256 pins")
+			rejectUnless(download.url.contains('/objects/' + download.sha1 + '/'),
+					"${downloadName} immutable URL must embed its declared SHA-1")
+		}
+		rejectUnless(inventory.mojangRuntimeMetadata.keySet() as Set ==
+				['assetIndex', 'clientLogging'] as Set,
+				'Mojang runtime metadata must contain exactly the asset index and client logging config')
+		inventory.mojangRuntimeMetadata.each { metadataName, metadata ->
+			rejectUnless(metadata.size instanceof Number && metadata.size.longValue() > 0,
+					"${metadataName} must declare a positive byte size")
+			rejectUnless(metadata.sha1 ==~ sha1Pattern && metadata.sha256 ==~ sha256Pattern,
+					"${metadataName} must have SHA-1 and SHA-256 pins")
+			rejectUnless(metadata.url.contains('/' + metadata.sha1 + '/'),
+					"${metadataName} immutable URL must embed its declared SHA-1")
+		}
+		rejectUnless(inventory.mojangRuntimeMetadata.assetIndex.id == '17',
+				'Minecraft 1.21.1 must retain asset index 17')
+
+		def verification = new groovy.xml.XmlSlurper(false, false)
+				.parse(dependencyVerificationMetadataFile)
+		def components = verification.components.component
+		def artifacts = components.collectMany { component -> component.artifact.collect { it } }
+		def hashes = artifacts.collectMany { artifact -> artifact.sha256.collect { it.@value.text() } }
+		def expected = inventory.gradleVerification
+		rejectUnless(verification.configuration.'verify-metadata'.text() ==
+				expected.verifyMetadata.toString(), 'verify-metadata mode changed')
+		rejectUnless(verification.configuration.'verify-signatures'.text() ==
+				expected.verifySignatures.toString(), 'verify-signatures mode changed')
+		rejectUnless(components.size() == expected.componentCount,
+				"expected ${expected.componentCount} components, found ${components.size()}")
+		rejectUnless(artifacts.size() == expected.artifactCount,
+				"expected ${expected.artifactCount} artifacts, found ${artifacts.size()}")
+		rejectUnless(hashes.size() == expected.sha256PinCount,
+				"expected ${expected.sha256PinCount} SHA-256 pins, found ${hashes.size()}")
+		rejectUnless(artifacts.every { it.sha256.size() > 0 },
+				'every resolved artifact must have a SHA-256 pin')
+		rejectUnless(hashes.every { it ==~ sha256Pattern },
+				'dependency metadata contains a malformed SHA-256')
+
+		expected.requiredArtifacts.each { required ->
+			def component = components.find {
+				it.@group.text() == required.group && it.@name.text() == required.name &&
+						it.@version.text() == required.version
+			}
+			rejectUnless(component != null,
+					"missing required component ${required.group}:${required.name}:${required.version}")
+			def artifact = component.artifact.find { it.@name.text() == required.artifact }
+			rejectUnless(artifact != null, "missing required artifact ${required.artifact}")
+			rejectUnless(artifact.sha256.any { it.@value.text() == required.sha256 },
+					"required artifact ${required.artifact} does not match its reviewed SHA-256")
+		}
+		logger.lifecycle('[backport-dependencies] verified {} components, {} artifacts, and Mojang 1.21.1 inputs',
+				components.size(), artifacts.size())
+	}
+}
+
+tasks.register('verifyBackportMojangDownloads') {
+	group = 'verification'
+	description = 'Re-downloads and hashes the immutable Mojang 1.21.1 manifest, jars, mappings, and runtime metadata.'
+	inputs.file(backportDependencyInventoryFile)
+	// This is an explicit online audit, not an incremental build output.
+	outputs.upToDateWhen { false }
+	doLast {
+		def rejectUnless = { boolean condition, String message ->
+			if (!condition) throw new GradleException('Backport Mojang download audit: ' + message)
+		}
+		def inventory = new groovy.json.JsonSlurper().parse(backportDependencyInventoryFile)
+		def downloadAndHash = { String label, item, boolean retainBytes ->
+			def connection = new URI(item.url).toURL().openConnection()
+			connection.connectTimeout = 15_000
+			connection.readTimeout = 60_000
+			connection.setRequestProperty('User-Agent', 'RingWorld-Backport-Dependency-Audit/1')
+			def sha1 = java.security.MessageDigest.getInstance('SHA-1')
+			def sha256 = java.security.MessageDigest.getInstance('SHA-256')
+			def retained = retainBytes ? new ByteArrayOutputStream() : null
+			long size = 0
+			connection.inputStream.withCloseable { input ->
+				byte[] buffer = new byte[64 * 1024]
+				int count
+				while ((count = input.read(buffer)) != -1) {
+					if (count == 0) continue
+					sha1.update(buffer, 0, count)
+					sha256.update(buffer, 0, count)
+					if (retained != null) retained.write(buffer, 0, count)
+					size += count
+				}
+			}
+			def observedSha1 = sha1.digest().encodeHex().toString()
+			def observedSha256 = sha256.digest().encodeHex().toString()
+			rejectUnless(observedSha1 == item.sha1, "${label} SHA-1 mismatch")
+			rejectUnless(observedSha256 == item.sha256, "${label} SHA-256 mismatch")
+			if (item.size != null) {
+				rejectUnless(size == item.size.longValue(), "${label} byte-size mismatch")
+			}
+			logger.lifecycle('[backport-dependencies] Mojang {} verified: {} bytes SHA-256={}',
+					label, size, observedSha256)
+			retained == null ? null : retained.toByteArray()
+		}
+
+		def manifestBytes = downloadAndHash(
+				'version manifest', inventory.mojangVersionManifest, true)
+		def manifest = new groovy.json.JsonSlurper().parse(manifestBytes)
+		rejectUnless(manifest.id == inventory.minecraftVersion,
+				'version manifest id does not match the inventory')
+		rejectUnless(manifest.javaVersion.majorVersion == 21,
+				'Minecraft 1.21.1 manifest no longer declares Java 21')
+		def manifestDownloadNames = [
+				client: 'client',
+				clientMappings: 'client_mappings',
+				server: 'server',
+				serverMappings: 'server_mappings'
+		]
+		manifestDownloadNames.each { inventoryName, manifestName ->
+			def expected = inventory.mojangDownloads[inventoryName]
+			def declared = manifest.downloads[manifestName]
+			rejectUnless(declared.url == expected.url && declared.sha1 == expected.sha1 &&
+					declared.size == expected.size,
+					"version manifest ${manifestName} declaration drifted")
+			downloadAndHash(inventoryName, expected, false)
+		}
+		def expectedAssets = inventory.mojangRuntimeMetadata.assetIndex
+		rejectUnless(manifest.assetIndex.id == expectedAssets.id &&
+				manifest.assetIndex.url == expectedAssets.url &&
+				manifest.assetIndex.sha1 == expectedAssets.sha1 &&
+				manifest.assetIndex.size == expectedAssets.size,
+				'version manifest asset-index declaration drifted')
+		downloadAndHash('asset index', expectedAssets, false)
+		def expectedLogging = inventory.mojangRuntimeMetadata.clientLogging
+		def declaredLogging = manifest.logging.client.file
+		rejectUnless(declaredLogging.url == expectedLogging.url &&
+				declaredLogging.sha1 == expectedLogging.sha1 &&
+				declaredLogging.size == expectedLogging.size,
+				'version manifest client-logging declaration drifted')
+		downloadAndHash('client logging config', expectedLogging, false)
+	}
 }
 
 tasks.register('verifyLoaderBoundary') {
@@ -1767,7 +1966,7 @@ tasks.register('verifyLoaderBoundary') {
 }
 
 tasks.named('check') {
-	dependsOn tasks.named('verifyLoaderBoundary')
+	dependsOn tasks.named('verifyLoaderBoundary'), tasks.named('verifyBackportDependencyInventory')
 }
 
 tasks.withType(Jar).configureEach {

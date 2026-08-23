@@ -6,6 +6,7 @@ from pathlib import Path
 from run_worldgen_structure_matrix import (
     QUALIFICATION_ROOT,
     ROOT,
+    gradle_wrapper_command,
     loader_runtime,
     parse_log,
     qualification_cell_root,
@@ -38,6 +39,13 @@ def record(**overrides):
 
 
 class WorldgenStructureMatrixTest(unittest.TestCase):
+    def test_selects_host_executable_gradle_wrapper(self):
+        self.assertEqual(("./gradlew",), gradle_wrapper_command("posix"))
+        self.assertEqual(
+            ("cmd.exe", "/d", "/c", "gradlew.bat"),
+            gradle_wrapper_command("nt"),
+        )
+
     def test_selects_isolated_loader_runtime(self):
         fabric = loader_runtime("fabric")
         neoforge = loader_runtime("neoforge")

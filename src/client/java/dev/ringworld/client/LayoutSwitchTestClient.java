@@ -93,7 +93,8 @@ public final class LayoutSwitchTestClient {
                 Long.toUnsignedString(firstAtlasWorldHash, 16),
                 Long.toUnsignedString(firstAtlasContentFingerprint, 16),
                 atlas.columns(), atlas.rows());
-        client.disconnectFromWorld(Component.literal("RingWorld layout-switch regression"));
+        dev.ringworld.client.compat.ClientWorldLifecycle.disconnect(
+                client, Component.literal("RingWorld layout-switch regression"));
         advanceTo(2);
     }
 

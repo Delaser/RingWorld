@@ -33,7 +33,7 @@ abstract class RaidsMixin {
             PoiManager poiManager, Predicate<Holder<PoiType>> typePredicate,
             BlockPos raidPosition, int range, PoiManager.Occupancy occupancy,
             ServerPlayer player, BlockPos triggerPosition) {
-        ServerLevel level = player.level();
+        ServerLevel level = player.serverLevel();
         if (level.dimension() != Level.OVERWORLD) {
             return poiManager.getInRange(typePredicate, raidPosition, range, occupancy);
         }

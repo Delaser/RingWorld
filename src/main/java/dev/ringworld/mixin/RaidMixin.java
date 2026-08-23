@@ -25,6 +25,7 @@ import java.util.Map;
 @Mixin(Raid.class)
 abstract class RaidMixin {
     @Shadow private BlockPos center;
+    @Shadow private ServerLevel level;
 
     @Redirect(
             method = {"tick", "updateRaiders", "findRandomSpawnPos"},
@@ -40,7 +41,8 @@ abstract class RaidMixin {
     }
 
     @Inject(method = "moveRaidCenterToNearbyVillageSection", at = @At("HEAD"), cancellable = true)
-    private void ringworld$moveCenterPeriodically(ServerLevel world, CallbackInfo ci) {
+    private void ringworld$moveCenterPeriodically(CallbackInfo ci) {
+        ServerLevel world = level;
         if (world.dimension() != Level.OVERWORLD) return;
 
         RingGeometry geometry = RingWorldServer.geometryFor(world);
@@ -74,7 +76,8 @@ abstract class RaidMixin {
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/core/BlockPos;distSqr(Lnet/minecraft/core/Vec3i;)D"))
     private double ringworld$periodicRaiderDistance(
-            BlockPos raidCenter, Vec3i raiderPos, ServerLevel world) {
+            BlockPos raidCenter, Vec3i raiderPos) {
+        ServerLevel world = level;
         if (world.dimension() != Level.OVERWORLD) return raidCenter.distSqr(raiderPos);
         return RingRaidSupport.periodicDistanceSquared(
                 RingWorldServer.geometryFor(world),
@@ -111,7 +114,8 @@ abstract class RaidMixin {
 
     @Inject(method = "findRandomSpawnPos", at = @At("RETURN"), cancellable = true)
     private void ringworld$canonicalSpawnResult(
-            ServerLevel world, int attempts, CallbackInfoReturnable<BlockPos> cir) {
+            int distance, int attempts, CallbackInfoReturnable<BlockPos> cir) {
+        ServerLevel world = level;
         BlockPos result = cir.getReturnValue();
         if (result == null || world.dimension() != Level.OVERWORLD) return;
         cir.setReturnValue(ringworld$canonical(RingWorldServer.geometryFor(world), result));

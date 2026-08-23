@@ -1,7 +1,7 @@
 {
   "required": true,
   "package": "dev.ringworld.client.mixin",
-  "compatibilityLevel": "JAVA_25",
+  "compatibilityLevel": "JAVA_21",
   "client": ["CompassAngleStateFixtureAccessor", "CompassAngleStateMixin", "CreateWorldScreenInvoker", "CreateWorldScreenMixin", "PauseScreenMixin", "ConfirmScreenAccessor", "EntityRenderManagerMixin", "GuiMixin", "LevelRendererMixin", "ClientChunkMapMixin", "ClientConnectionMixin", "ClientPlayNetworkHandlerMixin", "ChunkBuilderBuiltChunkMixin", "ChunkRenderingDataPreparerMixin", "GlobalSettingsMixin", "LivingEntitySleepingPositionMixin", "MinecraftMixin", "PlayerPositionDebugHudEntryMixin", "SkyRenderingMixin"],
   "injectors": {"defaultRequire": 1}
 }

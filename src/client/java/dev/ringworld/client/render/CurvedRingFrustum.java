@@ -2,7 +2,6 @@ package dev.ringworld.client.render;
 
 import dev.ringworld.world.RingGeometry;
 import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.world.level.levelgen.structure.BoundingBox;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
@@ -16,8 +15,6 @@ import net.minecraft.world.phys.Vec3;
  * fixes upward-looking chunk pop without drawing every section at distance.</p>
  */
 public final class CurvedRingFrustum extends Frustum {
-    private static final int INTERSECTING = -1;
-
     private final RingGeometry geometry;
     private final Vec3 cameraPosition;
 
@@ -25,14 +22,6 @@ public final class CurvedRingFrustum extends Frustum {
         super(original);
         this.geometry = geometry;
         this.cameraPosition = cameraPosition;
-    }
-
-    @Override
-    public int cubeInFrustum(BoundingBox box) {
-        // Octree branches are only an acceleration structure. Always
-        // descending them prevents a flat parent box from discarding curved
-        // children which rise into the camera's view.
-        return INTERSECTING;
     }
 
     @Override

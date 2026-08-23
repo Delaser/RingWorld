@@ -97,6 +97,53 @@ must queue immutable settings immediately after the play-login packet; its
 ordinary logged-in event is after the initial chunk-buffer flush. See
 `docs/VISUAL_POLISH_CHECKPOINT_2026-08-02.md`.
 
+Minecraft 1.21.1 backport checkpoint: the branch-local Java 21 Fabric and
+NeoForge graphs compile and build, pass all 338 unit and parameterized cases,
+and pass their isolated menu-only real-client resource/Mixin/UI gates with
+thirteen captures each. Both loaders also pass the integrated 2048x128 Atlas
+gate with format-3/mapping-4 acknowledgement, all 4,096 cells, progressive and
+complete ring-surface rendering, two ordered live revisions, all-dimension
+save, normal disconnect, and client-session teardown. This is bounded
+dual-loader client/integrated-server evidence. Both loaders additionally pass
+the shared map/compass persistence and nearest-image target fixture and the
+reviewed curved-object far/near captures. Both also pass a same-process real
+2048x128 to 2048x416 `different-layout` switch with raw session teardown,
+dimension-owned storage, partial-Atlas replacement, and normal saving. The
+complete safe-small 6/12/28-
+chunk visual matrix also passes natural seam travel and both textured rims;
+the reviewed 6- and 28-chunk captures are materially loader-matched. The
+6/12-chunk cells have zero frames over 50 ms, while each 28-chunk loader cell
+has one. Both loaders now also pass the dedicated settings/topology/persistence
+and aggregate worldgen/structure gates, the complete two-client seam/gameplay
+matrix, and the two-phase persisted-raid fixture through vanilla victory and
+Hero of the Village. An immutable complete 16,384x256 source save has all
+65,536 Atlas cells and matching copies under both loader roots. Both loaders
+pass its Overworld/Nether/End lifecycle/reopen gate, noon/dusk/night/rain
+tangent/handoff/radial projection captures, and production natural-seam/both-
+rim visual gate. Reviewed night and rain captures are materially
+loader-matched. This is local Windows source/runtime evidence, not clean public
+integration, packaging, broad compatibility, owner approval, or support
+evidence.
+Use the diagnostic
+`-PringBackportCompilerScope=fabric` only to isolate the Fabric configuration
+graph; the supported target remains dual-loader parity. See
+`versions/mc1.21.1/COMPILER_BASELINE.md`.
+Both backport loaders queue immutable settings immediately after the
+play-login packet, before initial position/chunk packets. Their loader-owned
+`PlayerList` mixins also reject headless-prewarm joins at method head; retain
+the later lifecycle event checks only as defensive fallbacks. Fabric play
+payload handlers already run on the render thread and must preserve arrival
+order; do not restore an extra executor hop that lets vanilla position/chunk
+packets overtake the immutable settings packet.
+The Windows-x64 1.21.1 compiler graph is fail-closed by
+`versions/mc1.21.1/dependency-inventory.json` and
+`gradle/verification-metadata.xml`: 369 components and all 748 resolved
+artifacts have SHA-256 pins. Both loader checks run the cross-file inventory
+verifier. Never use `--write-verification-metadata` for an ordinary build; it
+is only for a deliberate dependency update followed by exact diff review and
+a clean enforcement build. Later Linux/macOS runs must add reviewed
+platform-selected artifacts rather than weakening verification.
+
 For any later Modrinth or CurseForge build, use the fail-closed local staging procedure in
 [`docs/MODRINTH_RELEASE.md`](docs/MODRINTH_RELEASE.md). It stages only the
 runtime jar and records a checksum plus the exact clean, pushed public branch
@@ -1035,6 +1082,9 @@ version numbers.
   complete, distinct atlas identities/content fingerprints and raw GPU/session
   teardown between same-size worlds. Keep it non-destructive: it may save
   normally, but must not move players or edit terrain.
+  Its isolated preparation tasks write `pregenerateTerrainAtlas=false`: this
+  gate may deliberately open a partial second Atlas, and unrelated full-ring
+  tickets can otherwise dominate the final integrated-server save.
 - Outbound block-use packets must canonicalize the clicked block and translate
   the hit vector by the same whole-chart offset. Never wrap the hit vector
   independently: an east-face hit at `X=C` belongs locally to the canonical

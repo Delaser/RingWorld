@@ -6,7 +6,7 @@ import dev.ringworld.world.AtlasPregenerationStatus;
 import dev.ringworld.world.AtlasPregenerationView;
 import dev.ringworld.world.RingTerrainNoiseMapping;
 import java.util.Optional;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -130,15 +130,15 @@ public final class RingWorldMapScreen extends Screen {
     }
 
     @Override
-    public void extractRenderState(GuiGraphicsExtractor context, int mouseX, int mouseY, float deltaTicks) {
-        super.extractRenderState(context, mouseX, mouseY, deltaTicks);
+    public void render(GuiGraphics context, int mouseX, int mouseY, float deltaTicks) {
+        super.render(context, mouseX, mouseY, deltaTicks);
         int center = width / 2;
-        context.centeredText(font, title, center, 18, 0xFFFFFFFF);
-        context.centeredText(font, Component.literal(RingWorldBuildIdentity.displayLabel()),
+        context.drawCenteredString(font, title, center, 18, 0xFFFFFFFF);
+        context.drawCenteredString(font, Component.literal(RingWorldBuildIdentity.displayLabel()),
                 center, 30, 0xFF909090);
         Optional<AtlasPregenerationStatus> current = AtlasPregenerationClientState.status();
         if (current.isEmpty()) {
-            context.centeredText(font, Component.literal("Requesting authoritative generation status…"), center, 55, 0xFFD0D0D0);
+            context.drawCenteredString(font, Component.literal("Requesting authoritative generation status…"), center, 55, 0xFFD0D0D0);
             return;
         }
         AtlasPregenerationView view = AtlasPregenerationView.from(current.get());
@@ -148,13 +148,13 @@ public final class RingWorldMapScreen extends Screen {
                 "Rate: " + view.rate(), "ETA: " + view.eta()
         };
         for (int i = 0; i < lines.length; i++) {
-            context.centeredText(font, Component.literal(lines[i]), center, 43 + i * 15, 0xFFD0D0D0);
+            context.drawCenteredString(font, Component.literal(lines[i]), center, 43 + i * 15, 0xFFD0D0D0);
         }
         if (!current.get().canControl()) {
-            context.centeredText(font, Component.literal("Read-only: ask the owner or a gamemaster to control generation."),
+            context.drawCenteredString(font, Component.literal("Read-only: ask the owner or a gamemaster to control generation."),
                     center, 162, 0xFFFFD060);
         } else if (!view.error().isEmpty()) {
-            context.centeredText(font, Component.literal(view.error()), center, 162, 0xFFFF8080);
+            context.drawCenteredString(font, Component.literal(view.error()), center, 162, 0xFFFF8080);
         }
     }
 

@@ -18,11 +18,9 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArgs;
+import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-import org.spongepowered.asm.mixin.injection.invoke.arg.Args;
-import org.spongepowered.asm.mixin.gen.Invoker;
 
 import java.util.Map;
 
@@ -34,41 +32,25 @@ abstract class MapItemSavedDataMixin {
     @Shadow public byte scale;
     @Shadow private Map<String, MapBanner> bannerMarkers;
     @Shadow private Map<String, MapFrame> frameMarkers;
-    @Unique private RingGeometry ringworld$decorationGeometry;
-    @Unique private double ringworld$decorationCanonicalX;
     @Unique private boolean ringworld$storedDecorationImagesAligned;
 
-    @Invoker("addDecoration")
-    protected abstract void ringworld$addDecoration(
+    @Shadow
+    protected abstract void addDecoration(
             Holder<MapDecorationType> type, LevelAccessor level, String key,
             double xPos, double zPos, double yRot, Component name);
 
-    /** Captures the unrounded source X before vanilla reduces it to a float delta. */
-    @Inject(method = "addDecoration", at = @At("HEAD"))
-    private void ringworld$captureDecorationContext(
+    /** Selects the nearest periodic source image before vanilla computes its float delta. */
+    @ModifyVariable(method = "addDecoration", at = @At("HEAD"), argsOnly = true, ordinal = 0)
+    private double ringworld$nearestDecorationImage(
+            double xPos,
             Holder<MapDecorationType> type, LevelAccessor level, String key,
-            double xPos, double zPos, double yRot, Component name, CallbackInfo ci) {
-        ringworld$decorationGeometry = level instanceof ServerLevel world
-                && world.dimension() == Level.OVERWORLD && dimension == Level.OVERWORLD
-                ? RingWorldServer.geometryFor(world) : null;
-        ringworld$decorationCanonicalX = xPos;
-    }
-
-    @ModifyArgs(method = "addDecoration", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/world/level/saveddata/maps/MapItemSavedData;calculateDecorationLocationAndType(Lnet/minecraft/core/Holder;Lnet/minecraft/world/level/LevelAccessor;DFF)Lnet/minecraft/world/level/saveddata/maps/MapItemSavedData$MapDecorationLocation;"))
-    private void ringworld$nearestDecorationImage(Args args) {
-        RingGeometry geometry = ringworld$decorationGeometry;
-        if (geometry == null) return;
-        int scaling = 1 << scale;
-        args.set(3, RingMapCompassSupport.nearestMapDecorationDeltaX(
-                geometry, centerX, scaling, ringworld$decorationCanonicalX));
-    }
-
-    @Inject(method = "addDecoration", at = @At("RETURN"))
-    private void ringworld$clearDecorationContext(
-            Holder<MapDecorationType> type, LevelAccessor level, String key,
-            double xPos, double zPos, double yRot, Component name, CallbackInfo ci) {
-        ringworld$decorationGeometry = null;
+            double originalXPos, double zPos, double yRot, Component name) {
+        if (!(level instanceof ServerLevel world)
+                || world.dimension() != Level.OVERWORLD || dimension != Level.OVERWORLD) {
+            return xPos;
+        }
+        RingGeometry geometry = RingWorldServer.geometryFor(world);
+        return RingMapCompassSupport.nearestMapImageX(geometry, xPos, centerX);
     }
 
     /** Applies the nearest-image rule before vanilla's banner in-map gate. */
@@ -94,20 +76,19 @@ abstract class MapItemSavedDataMixin {
     private void ringworld$alignStoredDecorationImages(
             net.minecraft.world.entity.player.Player player,
             net.minecraft.world.item.ItemStack map,
-            net.minecraft.world.entity.decoration.ItemFrame frame,
             CallbackInfo ci) {
         if (ringworld$storedDecorationImagesAligned
                 || !(player.level() instanceof ServerLevel world)
                 || world.dimension() != Level.OVERWORLD || dimension != Level.OVERWORLD) return;
 
         for (MapBanner banner : bannerMarkers.values()) {
-            ringworld$addDecoration(banner.getDecoration(), world, banner.getId(),
+            addDecoration(banner.getDecoration(), world, banner.getId(),
                     banner.pos().getX(), banner.pos().getZ(), 180.0, banner.name().orElse(null));
         }
         for (MapFrame storedFrame : frameMarkers.values()) {
-            ringworld$addDecoration(net.minecraft.world.level.saveddata.maps.MapDecorationTypes.FRAME, world,
-                    "frame-" + storedFrame.entityId(), storedFrame.pos().getX(), storedFrame.pos().getZ(),
-                    storedFrame.rotation(), null);
+            addDecoration(net.minecraft.world.level.saveddata.maps.MapDecorationTypes.FRAME, world,
+                    "frame-" + storedFrame.getEntityId(), storedFrame.getPos().getX(),
+                    storedFrame.getPos().getZ(), storedFrame.getRotation(), null);
         }
         ringworld$storedDecorationImagesAligned = true;
     }

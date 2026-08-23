@@ -1,107 +1,146 @@
 package dev.ringworld.platform.fabric;
 
 import org.junit.jupiter.api.Test;
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 
 import java.io.InputStream;
+import java.lang.reflect.Method;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 final class FabricHeadlessNetworkingAdmissionTest {
-    private static final String NETWORKING_RESOURCE =
-            "dev/ringworld/net/RingWorldNetworking.class";
-    private static final String HEADLESS_OWNER =
-            "dev/ringworld/server/HeadlessPrewarmCoordinator";
-    private static final String NETWORKING_OWNER =
-            "dev/ringworld/net/RingWorldNetworking";
+    private static final String MIXIN_CLASS =
+            "dev.ringworld.platform.fabric.mixin.FabricPlayerListMixin";
+    private static final String MIXIN_RESOURCE = MIXIN_CLASS.replace('.', '/') + ".class";
+    private static final String HELPER_CLASS =
+            "dev.ringworld.platform.fabric.FabricHeadlessPlayerAdmission";
+    private static final String INJECT_DESCRIPTOR =
+            "Lorg/spongepowered/asm/mixin/injection/Inject;";
 
     @Test
-    void headlessJoinReturnsBeforeFabricStartsTheHandshake() throws Exception {
-        InputStream networkingBytes = getClass().getClassLoader().getResourceAsStream(NETWORKING_RESOURCE);
-        if (networkingBytes == null) {
+    void rejectsBeforePlayLoginAndQueuesSettingsBeforeInitialWorldPackets() throws Exception {
+        InputStream platformMixin = getClass().getClassLoader().getResourceAsStream(MIXIN_RESOURCE);
+        if (platformMixin == null) {
             // The same source test suite runs against both platform modules.
-            // NeoForge must not package the Fabric networking adapter.
-            assertNull(getClass().getClassLoader().getResource(NETWORKING_RESOURCE));
+            // NeoForge must not package Fabric admission code.
+            assertFalse(isPresent(HELPER_CLASS));
             return;
         }
 
-        GuardedJoin guardedJoin;
-        try (InputStream classBytes = networkingBytes) {
-            guardedJoin = readGuardedJoin(classBytes);
+        Class<?> helper = Class.forName(HELPER_CLASS);
+        Method decision = helper.getDeclaredMethod("rejectIfActive", boolean.class, Runnable.class);
+        decision.setAccessible(true);
+        AtomicInteger disconnects = new AtomicInteger();
+        assertFalse((boolean) decision.invoke(null, false, (Runnable) disconnects::incrementAndGet));
+        assertEquals(0, disconnects.get());
+        assertTrue((boolean) decision.invoke(null, true, (Runnable) disconnects::incrementAndGet));
+        assertEquals(1, disconnects.get());
+
+        InjectionMetadata admission;
+        try (InputStream mixinBytes = platformMixin) {
+            admission = readInjection(mixinBytes, "ringworld$rejectHeadlessBeforePlayLogin");
         }
-        assertNotNull(guardedJoin, "Fabric JOIN networking must consult headless admission");
-        assertTrue(guardedJoin.guardCall < guardedJoin.conditionalJump,
-                "headless admission must be evaluated before the branch");
-        assertTrue(guardedJoin.conditionalJump < guardedJoin.earlyReturn,
-                "the rejected branch must return from the JOIN listener");
-        assertTrue(guardedJoin.earlyReturn < guardedJoin.settingsCall,
-                "headless JOIN must return before settings and handshake work");
+        assertNotNull(admission);
+        assertTrue(admission.cancellable);
+        assertEquals("HEAD", admission.atValue);
+
+        try (InputStream secondRead = getClass().getClassLoader().getResourceAsStream(MIXIN_RESOURCE)) {
+            InjectionMetadata settings = readInjection(
+                    secondRead, "ringworld$sendSettingsBeforeInitialWorldPackets");
+            assertNotNull(settings);
+            assertFalse(settings.cancellable);
+            assertEquals("INVOKE", settings.atValue);
+            assertEquals("AFTER", settings.shift);
+            assertEquals(0, settings.ordinal);
+            assertEquals(
+                    "Lnet/minecraft/server/network/ServerGamePacketListenerImpl;send(Lnet/minecraft/network/protocol/Packet;)V",
+                    settings.target);
+        }
     }
 
-    private static GuardedJoin readGuardedJoin(InputStream classBytes) throws Exception {
-        GuardedJoin[] match = new GuardedJoin[1];
+    private static InjectionMetadata readInjection(InputStream classBytes, String methodName)
+            throws Exception {
+        InjectionMetadata metadata = new InjectionMetadata();
         new ClassReader(classBytes).accept(new ClassVisitor(Opcodes.ASM9) {
             @Override
             public MethodVisitor visitMethod(
                     int access, String name, String descriptor, String signature, String[] exceptions) {
-                GuardedJoin candidate = new GuardedJoin();
+                if (!name.equals(methodName)) return null;
                 return new MethodVisitor(Opcodes.ASM9) {
-                    private int instruction;
-
                     @Override
-                    public void visitMethodInsn(
-                            int opcode, String owner, String methodName, String methodDescriptor,
-                            boolean isInterface) {
-                        if (owner.equals(HEADLESS_OWNER) && methodName.equals("rejectPlayerJoins")) {
-                            candidate.guardCall = instruction;
-                        }
-                        if (owner.equals(NETWORKING_OWNER) && methodName.equals("sendSettings")) {
-                            candidate.settingsCall = instruction;
-                        }
-                        instruction++;
-                    }
-
-                    @Override
-                    public void visitJumpInsn(int opcode, org.objectweb.asm.Label label) {
-                        if ((opcode == Opcodes.IFEQ || opcode == Opcodes.IFNE)
-                                && candidate.guardCall >= 0 && candidate.conditionalJump < 0) {
-                            candidate.conditionalJump = instruction;
-                        }
-                        instruction++;
-                    }
-
-                    @Override
-                    public void visitInsn(int opcode) {
-                        if (opcode == Opcodes.RETURN && candidate.conditionalJump >= 0
-                                && candidate.earlyReturn < 0) {
-                            candidate.earlyReturn = instruction;
-                        }
-                        instruction++;
-                    }
-
-                    @Override
-                    public void visitEnd() {
-                        if (candidate.complete()) match[0] = candidate;
+                    public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+                        if (!descriptor.equals(INJECT_DESCRIPTOR)) return null;
+                        metadata.found = true;
+                        return injectVisitor(metadata);
                     }
                 };
             }
-        }, ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
-        return match[0];
+        }, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+        return metadata.found ? metadata : null;
     }
 
-    private static final class GuardedJoin {
-        private int guardCall = -1;
-        private int conditionalJump = -1;
-        private int earlyReturn = -1;
-        private int settingsCall = -1;
+    private static AnnotationVisitor injectVisitor(InjectionMetadata metadata) {
+        return new AnnotationVisitor(Opcodes.ASM9) {
+            @Override
+            public void visit(String name, Object value) {
+                if (name.equals("cancellable")) metadata.cancellable = (boolean) value;
+            }
 
-        private boolean complete() {
-            return guardCall >= 0 && conditionalJump >= 0 && earlyReturn >= 0 && settingsCall >= 0;
+            @Override
+            public AnnotationVisitor visitArray(String name) {
+                if (!name.equals("at")) return null;
+                return new AnnotationVisitor(Opcodes.ASM9) {
+                    @Override
+                    public AnnotationVisitor visitAnnotation(String ignored, String descriptor) {
+                        return atVisitor(metadata);
+                    }
+                };
+            }
+        };
+    }
+
+    private static AnnotationVisitor atVisitor(InjectionMetadata metadata) {
+        return new AnnotationVisitor(Opcodes.ASM9) {
+            @Override
+            public void visit(String name, Object value) {
+                switch (name) {
+                    case "value" -> metadata.atValue = (String) value;
+                    case "target" -> metadata.target = (String) value;
+                    case "ordinal" -> metadata.ordinal = (int) value;
+                    default -> { }
+                }
+            }
+
+            @Override
+            public void visitEnum(String name, String descriptor, String value) {
+                if (name.equals("shift")) metadata.shift = value;
+            }
+        };
+    }
+
+    private static boolean isPresent(String className) {
+        try {
+            Class.forName(className);
+            return true;
+        } catch (ClassNotFoundException absent) {
+            return false;
         }
+    }
+
+    private static final class InjectionMetadata {
+        private boolean found;
+        private boolean cancellable;
+        private String atValue;
+        private String target;
+        private String shift;
+        private int ordinal = -1;
     }
 }

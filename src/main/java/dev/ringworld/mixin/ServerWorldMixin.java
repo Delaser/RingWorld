@@ -50,23 +50,9 @@ abstract class ServerWorldMixin {
     private long ringworld$canonicalLoadedChunkKey(long packedPos) {
         ServerLevel world = (ServerLevel) (Object) this;
         if (world.dimension() != Level.OVERWORLD) return packedPos;
-        ChunkPos pos = ChunkPos.unpack(packedPos);
+        ChunkPos pos = new ChunkPos(packedPos);
         RingGeometry geometry = RingWorldServer.geometryFor(world);
-        return ChunkPos.pack(RingChunkCoordinates.wrapChunkX(pos.x(), geometry), pos.z());
-    }
-
-    @Inject(method = "waitForEntities", at = @At("HEAD"))
-    private void ringworld$preparePeriodicEntityRegion(ChunkPos center, int radius, CallbackInfo ci) {
-        ServerLevel world = (ServerLevel) (Object) this;
-        if (world.dimension() != Level.OVERWORLD) return;
-
-        RingEntityManagerAccess access = (RingEntityManagerAccess) entityManager;
-        ChunkPos.rangeClosed(center, radius).forEach(access::ringworld$ensureLoaded);
-
-        if (Boolean.getBoolean("ringworld.multiplayerTest")) {
-            RingWorldMod.LOGGER.info("[multiplayer] waiting for entity chunks around {},{} radius={}",
-                    center.x(), center.z(), radius);
-        }
+        return ChunkPos.asLong(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
     }
 
     /**
@@ -78,19 +64,24 @@ abstract class ServerWorldMixin {
      * only chunks vanilla intends the nearby player to simulate.
      */
     @Redirect(
-            method = "lambda$tick$0(Lnet/minecraft/world/TickRateManager;"
-                    + "Lnet/minecraft/util/profiling/ProfilerFiller;"
-                    + "Lnet/minecraft/world/entity/Entity;)V",
+            method = {
+                    "method_31420(Lnet/minecraft/world/TickRateManager;"
+                            + "Lnet/minecraft/util/profiling/ProfilerFiller;"
+                            + "Lnet/minecraft/world/entity/Entity;)V",
+                    "lambda$tick$2(Lnet/minecraft/world/TickRateManager;"
+                            + "Lnet/minecraft/util/profiling/ProfilerFiller;"
+                            + "Lnet/minecraft/world/entity/Entity;)V"
+            },
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/server/level/DistanceManager;inEntityTickingRange(J)Z"))
     private boolean ringworld$periodicEntityTickEligibility(DistanceManager manager, long packedPos) {
         ServerLevel world = (ServerLevel) (Object) this;
         if (world.dimension() != Level.OVERWORLD) return manager.inEntityTickingRange(packedPos);
 
-        ChunkPos pos = ChunkPos.unpack(packedPos);
+        ChunkPos pos = new ChunkPos(packedPos);
         RingGeometry geometry = RingWorldServer.geometryFor(world);
-        int canonicalX = RingChunkCoordinates.wrapChunkX(pos.x(), geometry);
-        long canonicalPos = ChunkPos.pack(canonicalX, pos.z());
+        int canonicalX = RingChunkCoordinates.wrapChunkX(pos.x, geometry);
+        long canonicalPos = ChunkPos.asLong(canonicalX, pos.z);
         if (manager.inEntityTickingRange(canonicalPos)) return true;
 
         int simulationDistance = world.getServer().getPlayerList().getSimulationDistance();
@@ -98,7 +89,7 @@ abstract class ServerWorldMixin {
             if (player.isSpectator()) continue;
             ChunkPos playerPos = player.chunkPosition();
             if (RingChunkCoordinates.isWithinSimulationDistance(
-                    canonicalX, pos.z(), playerPos.x(), playerPos.z(),
+                    canonicalX, pos.z, playerPos.x, playerPos.z,
                     simulationDistance, geometry)) {
                 return true;
             }
@@ -107,13 +98,13 @@ abstract class ServerWorldMixin {
     }
 
     @ModifyVariable(
-            method = {"areEntitiesActuallyLoadedAndTicking", "anyPlayerCloseEnoughForSpawning(Lnet/minecraft/world/level/ChunkPos;)Z", "canSpawnEntitiesInChunk"},
+            method = "isNaturalSpawningAllowed(Lnet/minecraft/world/level/ChunkPos;)Z",
             at = @At("HEAD"), argsOnly = true)
     private ChunkPos ringworld$canonicalTickQuery(ChunkPos pos) {
         ServerLevel world = (ServerLevel) (Object) this;
         if (world.dimension() != Level.OVERWORLD) return pos;
         RingGeometry geometry = RingWorldServer.geometryFor(world);
-        return new ChunkPos(RingChunkCoordinates.wrapChunkX(pos.x(), geometry), pos.z());
+        return new ChunkPos(RingChunkCoordinates.wrapChunkX(pos.x, geometry), pos.z);
     }
 
     @ModifyVariable(method = "isPositionEntityTicking", at = @At("HEAD"), argsOnly = true)

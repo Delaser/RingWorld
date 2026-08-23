@@ -9,18 +9,21 @@ import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
-import net.minecraft.resources.Identifier;
+import net.minecraft.core.HolderLookup;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.nbt.NbtOps;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.datafix.DataFixTypes;
 import net.minecraft.world.level.saveddata.SavedData;
-import net.minecraft.world.level.saveddata.SavedDataType;
-import net.minecraft.world.level.storage.SavedDataStorage;
+import net.minecraft.world.level.storage.DimensionDataStorage;
 import net.minecraft.world.level.storage.LevelResource;
 
 /** Immutable ring dimensions stored alongside a world once it is created. */
 public final class RingWorldSettings extends SavedData {
-    public static final Identifier STORAGE_ID =
-            Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "settings");
+    public static final ResourceLocation STORAGE_ID =
+            ResourceLocation.fromNamespaceAndPath(RingWorldMod.MOD_ID, "settings");
+    private static final String STORAGE_KEY = STORAGE_ID.getNamespace() + "/" + STORAGE_ID.getPath();
     public static final String LEGACY_STORAGE_KEY = RingWorldMod.MOD_ID + "_settings";
     public static final int FORMAT_VERSION = 3;
     public static final int DEFAULT_WIDTH = 256;
@@ -44,8 +47,8 @@ public final class RingWorldSettings extends SavedData {
                     .forGetter(RingWorldSettings::terrainNoiseMapping),
             Codec.INT.fieldOf("format").forGetter(RingWorldSettings::formatVersion)
     ).apply(instance, RingWorldSettings::new));
-    private static final SavedDataType<RingWorldSettings> TYPE = new SavedDataType<>(
-            STORAGE_ID, RingWorldSettings::new, CODEC, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
+    private static final SavedData.Factory<RingWorldSettings> FACTORY = new SavedData.Factory<>(
+            RingWorldSettings::new, RingWorldSettings::load, DataFixTypes.SAVED_DATA_COMMAND_STORAGE);
 
     private final int widthBlocks;
     private final int circumferenceBlocks;
@@ -103,15 +106,29 @@ public final class RingWorldSettings extends SavedData {
         this.formatVersion = formatVersion;
     }
 
+    private static RingWorldSettings load(CompoundTag tag, HolderLookup.Provider registries) {
+        return CODEC.parse(NbtOps.INSTANCE, tag).result().orElseThrow(
+                () -> new IllegalStateException("Could not decode saved RingWorld settings"));
+    }
+
+    @Override
+    public CompoundTag save(CompoundTag tag, HolderLookup.Provider registries) {
+        return CODEC.encodeStart(NbtOps.INSTANCE, this).result()
+                .filter(CompoundTag.class::isInstance)
+                .map(CompoundTag.class::cast)
+                .orElseThrow(() -> new IllegalStateException("Could not encode RingWorld settings"));
+    }
+
     public static RingWorldSettings get(ServerLevel world) {
         migrateLegacySettings(world);
-        SavedDataStorage manager = world.getDataStorage();
-        RingWorldSettings saved = manager.get(TYPE);
+        ensureStorageDirectory(world);
+        DimensionDataStorage manager = world.getDataStorage();
+        RingWorldSettings saved = manager.get(FACTORY, STORAGE_KEY);
         if (saved != null) {
             if (saved.formatVersion() == FORMAT_VERSION) return saved;
             RingWorldSettings upgraded = upgradeToCurrentFormat(saved);
             upgraded.setDirty();
-            manager.set(TYPE, upgraded);
+            manager.set(STORAGE_KEY, upgraded);
             RingWorldMod.LOGGER.info("Migrated RingWorld settings format {} to {} for {}x{} world",
                     saved.formatVersion(), FORMAT_VERSION,
                     saved.circumferenceBlocks(), saved.widthBlocks());
@@ -134,7 +151,7 @@ public final class RingWorldSettings extends SavedData {
                 config.wallHeightBlocks(), (int)RingGeometry.SURFACE_Y,
                 RingTerrainNoiseMapping.CURRENT, FORMAT_VERSION);
         created.setDirty();
-        manager.set(TYPE, created);
+        manager.set(STORAGE_KEY, created);
         boolean monumentRequest = RingWorldConfig.effectiveOceanMonumentRequest(
                 report.geometry(), config.requestOceanMonument());
         if (config.requestOceanMonument() && !monumentRequest) {
@@ -206,6 +223,15 @@ public final class RingWorldSettings extends SavedData {
                     "Could not migrate legacy RingWorld settings from " + legacy
                             + " to " + current,
                     exception);
+        }
+    }
+
+    private static void ensureStorageDirectory(ServerLevel world) {
+        Path directory = settingsPath(RingWorldStorageAccess.dimensionPath(world)).getParent();
+        try {
+            Files.createDirectories(directory);
+        } catch (IOException exception) {
+            throw new IllegalStateException("Could not create RingWorld data directory " + directory, exception);
         }
     }
 

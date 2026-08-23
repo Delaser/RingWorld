@@ -1,7 +1,6 @@
 package dev.ringworld.net;
 
 import dev.ringworld.RingWorldMod;
-import dev.ringworld.server.HeadlessPrewarmCoordinator;
 import dev.ringworld.server.RingWorldMultiplayerTest;
 import dev.ringworld.server.RingTerrainAtlasServer;
 import dev.ringworld.world.RingWorldSettings;
@@ -25,27 +24,23 @@ public final class RingWorldNetworking {
     private RingWorldNetworking() { }
 
     public static void registerPayloads() {
-        PayloadTypeRegistry.clientboundPlay().register(RingSettingsPayload.ID, RingSettingsPayload.CODEC);
-        PayloadTypeRegistry.serverboundPlay().register(RingSettingsAckPayload.ID, RingSettingsAckPayload.CODEC);
-        PayloadTypeRegistry.serverboundPlay().register(RingMultiplayerTestPayload.ID, RingMultiplayerTestPayload.CODEC);
-        PayloadTypeRegistry.clientboundPlay().register(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC);
-        PayloadTypeRegistry.clientboundPlay().register(RingTerrainAtlasTilePayload.ID, RingTerrainAtlasTilePayload.CODEC);
-        PayloadTypeRegistry.clientboundPlay().register(RingTerrainAtlasRevisionPayload.ID,
+        PayloadTypeRegistry.playS2C().register(RingSettingsPayload.ID, RingSettingsPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(RingSettingsAckPayload.ID, RingSettingsAckPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(RingMultiplayerTestPayload.ID, RingMultiplayerTestPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(RingTerrainAtlasTilePayload.ID, RingTerrainAtlasTilePayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(RingTerrainAtlasRevisionPayload.ID,
                 RingTerrainAtlasRevisionPayload.CODEC);
-        PayloadTypeRegistry.serverboundPlay().register(RingTerrainAtlasRequestPayload.ID, RingTerrainAtlasRequestPayload.CODEC);
-        PayloadTypeRegistry.serverboundPlay().register(RingAtlasPregenerationStatusRequestPayload.ID,
+        PayloadTypeRegistry.playC2S().register(RingTerrainAtlasRequestPayload.ID, RingTerrainAtlasRequestPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(RingAtlasPregenerationStatusRequestPayload.ID,
                 RingAtlasPregenerationStatusRequestPayload.CODEC);
-        PayloadTypeRegistry.serverboundPlay().register(RingAtlasPregenerationControlPayload.ID,
+        PayloadTypeRegistry.playC2S().register(RingAtlasPregenerationControlPayload.ID,
                 RingAtlasPregenerationControlPayload.CODEC);
-        PayloadTypeRegistry.clientboundPlay().register(RingAtlasPregenerationStatusPayload.ID,
+        PayloadTypeRegistry.playS2C().register(RingAtlasPregenerationStatusPayload.ID,
                 RingAtlasPregenerationStatusPayload.CODEC);
     }
 
     public static void registerServer() {
-        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
-            if (HeadlessPrewarmCoordinator.rejectPlayerJoins(server)) return;
-            sendSettings(handler);
-        });
         ServerPlayNetworking.registerGlobalReceiver(RingSettingsAckPayload.ID, (payload, context) ->
                 context.server().execute(() -> validateAcknowledgement(payload, context.player().connection)));
         ServerPlayNetworking.registerGlobalReceiver(RingMultiplayerTestPayload.ID, (payload, context) -> {
@@ -83,29 +78,35 @@ public final class RingWorldNetworking {
         ServerTickEvents.END_SERVER_TICK.register(RingWorldNetworking::expireAcknowledgements);
     }
 
-    private static void sendSettings(ServerGamePacketListenerImpl handler) {
-        ServerLevel overworld = handler.player.level().getServer().getLevel(Level.OVERWORLD);
+    /**
+     * Queues immutable geometry immediately behind vanilla's play-login
+     * packet.  The Fabric-owned PlayerList mixin calls this before any
+     * canonical position or chunk packet can reach a fresh client.
+     */
+    public static void sendSettings(ServerPlayer player) {
+        ServerGamePacketListenerImpl handler = player.connection;
+        ServerLevel overworld = player.level().getServer().getLevel(Level.OVERWORLD);
         if (overworld == null) {
             handler.disconnect(Component.literal(
                     "RingWorld could not load the authoritative Overworld settings."));
             return;
         }
-        if (!ServerPlayNetworking.canSend(handler.player, RingSettingsPayload.ID)) {
+        if (!ServerPlayNetworking.canSend(player, RingSettingsPayload.ID)) {
             handler.disconnect(Component.literal(
                     "RingWorld client is missing or out of date. Install a matching RingWorld client version."));
             return;
         }
-        if (!ServerPlayNetworking.canSend(handler.player, RingTerrainAtlasMetadataPayload.ID)
-                || !ServerPlayNetworking.canSend(handler.player, RingTerrainAtlasTilePayload.ID)
-                || !ServerPlayNetworking.canSend(handler.player, RingTerrainAtlasRevisionPayload.ID)
-                || !ServerPlayNetworking.canSend(handler.player, RingAtlasPregenerationStatusPayload.ID)) {
+        if (!ServerPlayNetworking.canSend(player, RingTerrainAtlasMetadataPayload.ID)
+                || !ServerPlayNetworking.canSend(player, RingTerrainAtlasTilePayload.ID)
+                || !ServerPlayNetworking.canSend(player, RingTerrainAtlasRevisionPayload.ID)
+                || !ServerPlayNetworking.canSend(player, RingAtlasPregenerationStatusPayload.ID)) {
             handler.disconnect(Component.literal(
                     "RingWorld client feature channels are missing or out of date. Install the matching version."));
             return;
         }
         RingWorldSettings settings = RingWorldSettings.get(overworld);
-        HANDSHAKES.begin(handler.player.getUUID(), handler.player.level().getServer().getTickCount());
-        ServerPlayNetworking.send(handler.player, RingSettingsHandshake.payloadFor(settings));
+        HANDSHAKES.begin(player.getUUID(), player.level().getServer().getTickCount());
+        ServerPlayNetworking.send(player, RingSettingsHandshake.payloadFor(settings));
     }
 
     private static void validateAcknowledgement(RingSettingsAckPayload payload,

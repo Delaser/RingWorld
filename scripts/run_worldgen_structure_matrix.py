@@ -131,6 +131,14 @@ DEFAULT_CASES = (
 )
 
 
+def gradle_wrapper_command(os_name: str | None = None) -> tuple[str, ...]:
+    """Return a directly executable Gradle-wrapper prefix for this host."""
+    selected_os = os.name if os_name is None else os_name
+    if selected_os == "nt":
+        return ("cmd.exe", "/d", "/c", "gradlew.bat")
+    return ("./gradlew",)
+
+
 def parse_list(value: str) -> list[str]:
     return [] if not value.strip() else [part.strip() for part in value.split(",")]
 
@@ -191,7 +199,7 @@ def run_case(case: Case, resume: bool, report_dir: Path,
              runtime: LoaderRuntime) -> dict[str, object]:
     phase = "resume" if resume else "fresh"
     command = [
-        "./gradlew", runtime.task, "--console=plain",
+        *gradle_wrapper_command(), runtime.task, "--console=plain",
         f"-PringStrongholdTestSeed={case.seed}",
         f"-PringStrongholdTestCircumference={case.circumference}",
         f"-PringStrongholdTestWidth={case.width}",

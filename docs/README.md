@@ -40,6 +40,11 @@ Start here:
 - [`MINECRAFT_26_1_COMPILER_BASELINE.md`](MINECRAFT_26_1_COMPILER_BASELINE.md):
   historical Java 25/26.1.2 95-error inventory and the subsequent green
   build/dedicated-server checkpoint.
+- [`../versions/mc1.21.1/COMPILER_BASELINE.md`](../versions/mc1.21.1/COMPILER_BASELINE.md):
+  pinned Java 21/1.21.1 compiler inputs, checksum evidence, focused Fabric
+  configuration scope, dual-loader dedicated/gameplay/production visual
+  results, and the remaining integration/release boundary for the unsupported
+  backport.
 - [`NETWORK_PROTOCOL.md`](NETWORK_PROTOCOL.md): login handshake, atlas
   transport, and canonical/presentation packet mapping.
 - [`COMPATIBILITY.md`](COMPATIBILITY.md): versioned read-only API, supported

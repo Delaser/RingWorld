@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.ringworld.platform.fabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": ["FabricPlayerListMixin"],
+  "injectors": {"defaultRequire": 1}
+}

@@ -5,7 +5,7 @@ import dev.ringworld.world.RingAtlasHudProgress;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -25,9 +25,9 @@ abstract class GuiMixin {
 
     @Shadow @Final private Minecraft minecraft;
 
-    @Inject(method = "extractRenderState", at = @At("TAIL"))
-    private void ringworld$extractAtlasProgress(
-            GuiGraphicsExtractor graphics, DeltaTracker deltaTracker, CallbackInfo callback) {
+    @Inject(method = "render", at = @At("TAIL"))
+    private void ringworld$renderAtlasProgress(
+            GuiGraphics graphics, DeltaTracker deltaTracker, CallbackInfo callback) {
         if (minecraft.options.hideGui || minecraft.level == null
                 || ClientRingState.geometry() == null) return;
         var atlas = ClientRingState.terrainAtlas();
@@ -37,7 +37,7 @@ abstract class GuiMixin {
             int width = minecraft.font.width(text);
             graphics.fill(LEFT, TOP, LEFT + width + PADDING * 2,
                     TOP + minecraft.font.lineHeight + PADDING * 2, BACKGROUND);
-            graphics.text(minecraft.font, text, LEFT + PADDING, TOP + PADDING, TEXT);
+            graphics.drawString(minecraft.font, text, LEFT + PADDING, TOP + PADDING, TEXT);
         });
     }
 }

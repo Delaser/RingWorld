@@ -22,19 +22,18 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
-import net.minecraft.client.InactivityFpsLimit;
+import net.fabricmc.fabric.api.client.rendering.v1.CoreShaderRegistrationCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.WorldRenderEvents;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.client.gui.components.debug.DebugScreenEntries;
-import net.minecraft.client.gui.components.debug.DebugScreenEntryStatus;
+import dev.ringworld.client.compat.Screenshot;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Blocks;
@@ -120,12 +119,17 @@ public final class RingWorldClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        RenderPipelines.register(RingSurfaceTextureRenderer.pipeline());
+        CoreShaderRegistrationCallback.EVENT.register(context -> context.register(
+                ResourceLocation.fromNamespaceAndPath("ringworld", "ring_surface"),
+                DefaultVertexFormat.POSITION_TEX_COLOR,
+                RingSurfaceTextureRenderer::installShader));
         RingClientPayloadTransport.configure(new FabricRingClientPayloadTransport());
         ClientRingState.configureCacheDirectory(
                 FabricLoader.getInstance().getGameDir().resolve("ringworld-cache"));
-        ClientPlayNetworking.registerGlobalReceiver(RingSettingsPayload.ID, (payload, context) ->
-                context.client().execute(() -> {
+        // Fabric 1.21.1 invokes play payload handlers on the render thread.
+        // Apply immutable geometry in packet order: re-queuing it lets later
+        // vanilla position/chunk handlers overtake the settings packet.
+        ClientPlayNetworking.registerGlobalReceiver(RingSettingsPayload.ID, (payload, context) -> {
                     if (payload.formatVersion() != dev.ringworld.world.RingWorldSettings.FORMAT_VERSION) {
                         var handler = context.client().getConnection();
                         if (handler != null) {
@@ -165,9 +169,8 @@ public final class RingWorldClient implements ClientModInitializer {
                             payload.wallHeight(), payload.surfaceReferenceY(),
                             payload.terrainNoiseMapping(), fingerprint);
                     RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
-                }));
-        ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasMetadataPayload.ID, (payload, context) ->
-                context.client().execute(() -> {
+                });
+        ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasMetadataPayload.ID, (payload, context) -> {
                     boolean cacheComplete = ClientRingState.installTerrainAtlas(payload);
                     // This short-lived capture validates live object/terrain
                     // alignment and intentionally does not download the LOD
@@ -183,22 +186,21 @@ public final class RingWorldClient implements ClientModInitializer {
                     }
                     RingClientPayloadTransport.send(new RingTerrainAtlasRequestPayload(
                             payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete));
-                }));
+                });
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasTilePayload.ID, (payload, context) ->
-                context.client().execute(() -> ClientRingState.applyTerrainAtlasTile(
-                        payload.worldHash(), payload.tileX(), payload.tileZ(), payload.data())));
+                ClientRingState.applyTerrainAtlasTile(
+                        payload.worldHash(), payload.tileX(), payload.tileZ(), payload.data()));
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasRevisionPayload.ID, (payload, context) ->
-                context.client().execute(() -> ClientRingState.commitTerrainAtlasRevision(
-                        payload.worldHash(), payload.revision())));
+                ClientRingState.commitTerrainAtlasRevision(payload.worldHash(), payload.revision()));
         ClientPlayNetworking.registerGlobalReceiver(RingAtlasPregenerationStatusPayload.ID, (payload, context) ->
-                context.client().execute(() -> AtlasPregenerationClientState.install(context.client(), payload)));
+                AtlasPregenerationClientState.install(context.client(), payload));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
                 // Fabric may fire this callback on Netty's local I/O thread.
                 // Cache saves and GPU teardown must stay on the client thread;
                 // otherwise disconnect can race the normal teardown mixin's
                 // final atlas save over the same temporary file.
                 client.execute(RingWorldClient::clearRingSession));
-        LevelRenderEvents.END_MAIN.register(context -> {
+        WorldRenderEvents.END.register(context -> {
             recordTestFrame();
             projectionCapture.frameRendered();
             visualParityCapture.frameRendered();
@@ -274,12 +276,7 @@ public final class RingWorldClient implements ClientModInitializer {
             client.options.renderDistance().set(
                     RingWorldConfig.load().testViewDistanceChunks());
             client.options.simulationDistance().set(5);
-            client.options.inactivityFpsLimit().set(InactivityFpsLimit.MINIMIZED);
             client.options.pauseOnLostFocus = false;
-            client.debugEntries.setStatus(DebugScreenEntries.PLAYER_POSITION,
-                    atlasPregenerationUiTest.enabled()
-                            ? DebugScreenEntryStatus.IN_OVERLAY
-                            : DebugScreenEntryStatus.ALWAYS_ON);
             testPerformanceProfileApplied = true;
         }
         if (client.level != null) {
@@ -299,7 +296,7 @@ public final class RingWorldClient implements ClientModInitializer {
         }
         if (testWorldStarted) return;
         if (!testScreenOpened) {
-            CreateWorldScreen.openFresh(client, () -> testScreenOpened = false);
+            CreateWorldScreen.openFresh(client, client.screen);
             testScreenOpened = true;
             return;
         }
@@ -474,8 +471,6 @@ public final class RingWorldClient implements ClientModInitializer {
                     ClientRingState.seamCorrectionPackets());
             Screenshot.grab(client.gameDirectory, "ringworld-seam.png", client.getMainRenderTarget(), 1,
                     message -> RingWorldMod.LOGGER.info("[test] seam renderer screenshot: {}", message.getString()));
-            client.debugEntries.setStatus(
-                    DebugScreenEntries.PLAYER_POSITION, DebugScreenEntryStatus.IN_OVERLAY);
         }
     }
 
@@ -546,7 +541,7 @@ public final class RingWorldClient implements ClientModInitializer {
             }
             testSecondCircuitWaitTicks = 0;
             double flightY = Math.max(client.player.getY(),
-                    client.level.getMaxY() - 16.0);
+                    client.level.getMaxBuildHeight() - 16.0);
             client.player.setPos(Math.min(approachX, client.player.getX() + fastStep),
                     flightY, client.player.getZ());
             return;

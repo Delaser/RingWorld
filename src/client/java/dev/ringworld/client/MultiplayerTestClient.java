@@ -4,9 +4,8 @@ import dev.ringworld.RingWorldMod;
 import dev.ringworld.net.RingMultiplayerTestPayload;
 import dev.ringworld.client.chunk.RingClientChunkMaps;
 import dev.ringworld.world.RingGeometry;
-import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
+import dev.ringworld.client.compat.Screenshot;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.gui.screens.PauseScreen;
@@ -23,7 +22,7 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LightningBolt;
-import net.minecraft.world.entity.vehicle.boat.Boat;
+import net.minecraft.world.entity.vehicle.Boat;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Blocks;
@@ -101,6 +100,7 @@ public final class MultiplayerTestClient {
     private boolean endReturnSent;
     private boolean sawSeamLightning;
     private boolean seamWeatherSent;
+    private int seamWeatherProbeTicks;
     private int completionGraceTicks;
     private boolean clientStopRequested;
 
@@ -111,7 +111,6 @@ public final class MultiplayerTestClient {
                     "ringworld.multiplayerTestViewDistanceChunks", 2), 2, 32));
             client.options.simulationDistance().set(5);
             client.options.enableVsync().set(false);
-            client.options.inactivityFpsLimit().set(InactivityFpsLimit.MINIMIZED);
             client.options.pauseOnLostFocus = false;
             client.options.onboardAccessibility = false;
             optionsApplied = true;
@@ -269,7 +268,7 @@ public final class MultiplayerTestClient {
             client.getConnection().send(new ServerboundMovePlayerPacket.PosRot(
                     nextX, client.player.getY(), client.player.getZ(),
                     client.player.getYRot(), client.player.getXRot(),
-                    client.player.onGround(), client.player.horizontalCollision));
+                    client.player.onGround()));
             return;
         }
 
@@ -369,7 +368,7 @@ public final class MultiplayerTestClient {
                 RingWorldMod.LOGGER.info(
                         "[multiplayer:{}] interaction chunk waiting targetChunk={},{} playerChunk={},{} cacheCenter={},{}",
                         role, target.getX() >> 4, target.getZ() >> 4,
-                        client.player.chunkPosition().x(), client.player.chunkPosition().z(),
+                        client.player.chunkPosition().x, client.player.chunkPosition().z,
                         storage == null ? Integer.MIN_VALUE : storage.ringworld$centerChunkX(),
                         storage == null ? Integer.MIN_VALUE : storage.ringworld$centerChunkZ());
             }
@@ -663,14 +662,23 @@ public final class MultiplayerTestClient {
         if (geometry == null) return;
 
         if (!seamWeatherSent && client.level.dimension() == Level.OVERWORLD) {
+            int lightningEntities = 0;
             for (Entity entity : client.level.entitiesForRendering()) {
                 if (entity instanceof LightningBolt) {
+                    lightningEntities++;
                     sawSeamLightning = true;
-                    break;
                 }
             }
+            int skyFlashTime = client.level.getSkyFlashTime();
+            if (skyFlashTime > 0) sawSeamLightning = true;
             boolean storm = client.level.getRainLevel(1.0F) >= 0.95F
                     && client.level.getThunderLevel(1.0F) >= 0.95F;
+            if (++seamWeatherProbeTicks % 100 == 0) {
+                RingWorldMod.LOGGER.info(
+                        "[multiplayer:{}] waiting for seam weather rain={} thunder={} lightningEntities={} skyFlashTime={} sawLightning={}",
+                        role, client.level.getRainLevel(1.0F), client.level.getThunderLevel(1.0F),
+                        lightningEntities, skyFlashTime, sawSeamLightning);
+            }
             if (storm && sawSeamLightning) {
                 seamWeatherSent = true;
                 sendResult("seam_weather", true, client.player.getX());

@@ -7,57 +7,70 @@ import dev.ringworld.client.ClientRingState;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingObjectTransform;
 import net.minecraft.client.renderer.LevelRenderer;
-import net.minecraft.client.renderer.ShapeRenderer;
-import net.minecraft.client.renderer.SubmitNodeCollector;
-import net.minecraft.client.renderer.SubmitNodeStorage;
-import net.minecraft.client.renderer.state.level.LevelRenderState;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.phys.shapes.VoxelShape;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 /** Curves object and interaction passes that bypass the terrain shader. */
 @Mixin(LevelRenderer.class)
 abstract class LevelRendererMixin {
-    @Redirect(
-            method = "submitBlockEntities",
-            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V"))
-    private void ringworld$curveBlockEntity(
-            PoseStack poseStack, double x, double y, double z,
-            PoseStack originalPoseStack, LevelRenderState state,
-            SubmitNodeStorage submitNodes) {
-        applyCurvedPose(poseStack, state.cameraRenderState.pos, x, y, z);
+    @Shadow
+    private static void renderShape(PoseStack poseStack, VertexConsumer vertices,
+                                    VoxelShape shape, double x, double y, double z,
+                                    float red, float green, float blue, float alpha) {
+        throw new AssertionError();
     }
 
     @Redirect(
-            method = "submitBlockDestroyAnimation",
-            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V"))
+            method = "renderLevel",
+            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V", ordinal = 0))
+    private void ringworld$curveBlockEntity(
+            PoseStack poseStack, double x, double y, double z) {
+        applyCurvedPose(poseStack, cameraPosition(), x, y, z);
+    }
+
+    @Redirect(
+            method = "renderLevel",
+            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V", ordinal = 1))
+    private void ringworld$curveGlobalBlockEntity(
+            PoseStack poseStack, double x, double y, double z) {
+        applyCurvedPose(poseStack, cameraPosition(), x, y, z);
+    }
+
+    @Redirect(
+            method = "renderLevel",
+            at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V", ordinal = 2))
     private void ringworld$curveBlockBreaking(
-            PoseStack poseStack, double x, double y, double z,
-            PoseStack originalPoseStack, SubmitNodeCollector submitNodes,
-            LevelRenderState state) {
-        applyCurvedPose(poseStack, state.cameraRenderState.pos, x, y, z);
+            PoseStack poseStack, double x, double y, double z) {
+        applyCurvedPose(poseStack, cameraPosition(), x, y, z);
     }
 
     @Redirect(
             method = "renderHitOutline",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/ShapeRenderer;renderShape(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/world/phys/shapes/VoxelShape;DDDIF)V"))
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;renderShape(Lcom/mojang/blaze3d/vertex/PoseStack;Lcom/mojang/blaze3d/vertex/VertexConsumer;Lnet/minecraft/world/phys/shapes/VoxelShape;DDDFFFF)V"))
     private void ringworld$curveBlockOutline(
             PoseStack poseStack, VertexConsumer vertices, VoxelShape shape,
-            double x, double y, double z, int color, float lineWidth) {
+            double x, double y, double z,
+            float red, float green, float blue, float alpha) {
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null) {
-            ShapeRenderer.renderShape(poseStack, vertices, shape, x, y, z, color, lineWidth);
+            renderShape(poseStack, vertices, shape, x, y, z, red, green, blue, alpha);
             return;
         }
 
-        Vec3 camera = net.minecraft.client.Minecraft.getInstance().gameRenderer
-                .getMainCamera().position();
         poseStack.pushPose();
-        applyCurvedPose(poseStack, camera, x, y, z);
-        ShapeRenderer.renderShape(poseStack, vertices, shape, 0.0, 0.0, 0.0, color, lineWidth);
+        applyCurvedPose(poseStack, cameraPosition(), x, y, z);
+        renderShape(poseStack, vertices, shape, 0.0, 0.0, 0.0,
+                red, green, blue, alpha);
         poseStack.popPose();
+    }
+
+    private static Vec3 cameraPosition() {
+        return net.minecraft.client.Minecraft.getInstance().gameRenderer
+                .getMainCamera().getPosition();
     }
 
     private static void applyCurvedPose(

@@ -4,9 +4,8 @@ import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingRenderProfile;
 import dev.ringworld.world.RingTerrainAtlas;
-import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
+import dev.ringworld.client.compat.Screenshot;
 import net.minecraft.client.gui.screens.PauseScreen;
 
 /**
@@ -26,6 +25,9 @@ public final class RingProjectionCaptureClient {
     private static final int WORLD_OPEN_TIMEOUT_TICKS = 2_400;
     private static final int POSITION_TIMEOUT_TICKS = 600;
     private static final int RENDER_TIMEOUT_TICKS = 1_200;
+    // Let asynchronous terrain and lightmap work reach the same steady state
+    // before comparing the first capture across loader render pipelines.
+    private static final int CAPTURE_SETTLE_TICKS = 200;
     private static final double CAPTURE_CAMERA_Y = 120.0;
     private int stage;
     private int settleTicks;
@@ -92,7 +94,7 @@ public final class RingProjectionCaptureClient {
         }
         client.player.setYRot(90.0F);
         client.player.setXRot(capturePitch);
-        if (++settleTicks < 100) return true;
+        if (++settleTicks < CAPTURE_SETTLE_TICKS) return true;
         settleTicks = 0;
 
         if (stage == 0) {
@@ -181,7 +183,6 @@ public final class RingProjectionCaptureClient {
      */
     private void applyFocusPolicy(Minecraft client) {
         if (focusPolicyApplied) return;
-        client.options.inactivityFpsLimit().set(InactivityFpsLimit.MINIMIZED);
         client.options.pauseOnLostFocus = false;
         focusPolicyApplied = true;
         RingWorldMod.LOGGER.info("[projection-capture] applied unattended focus policy");

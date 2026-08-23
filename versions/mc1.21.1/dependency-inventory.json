@@ -1,0 +1,128 @@
+{
+  "schemaVersion": 1,
+  "minecraftVersion": "1.21.1",
+  "javaRuntime": {
+    "vendor": "Eclipse Temurin",
+    "version": "21.0.12.1+1",
+    "platform": "windows-x64",
+    "archiveSha256": "f9d6e191ab098c0d416e7d588a24420a8621cd2f4720dab2459b8b7b2d2d8b4e"
+  },
+  "gradleWrapper": {
+    "version": "8.10",
+    "distributionUrl": "https://services.gradle.org/distributions/gradle-8.10-bin.zip",
+    "distributionSha256": "5b9c5eb3f9fc2c94abaea57d90bd78747ca117ddbbf96c859d3741181a12bf2a"
+  },
+  "gradleProperties": {
+    "minecraft_version": "1.21.1",
+    "loader_version": "0.16.14",
+    "loom_version": "1.8.13",
+    "fabric_api_version": "0.116.15+1.21.1",
+    "neoforge_version": "21.1.239",
+    "moddevgradle_version": "2.0.143"
+  },
+  "mojangVersionManifest": {
+    "url": "https://piston-meta.mojang.com/v1/packages/9d4b0811c18ea0e0968693b971233c49d89b9ced/1.21.1.json",
+    "sha1": "9d4b0811c18ea0e0968693b971233c49d89b9ced",
+    "sha256": "e2d05892df8168a689699c1d532f51b00de443b66f3b9a2f5e98f47c4cbefd38"
+  },
+  "mojangDownloads": {
+    "client": {
+      "url": "https://piston-data.mojang.com/v1/objects/30c73b1c5da787909b2f73340419fdf13b9def88/client.jar",
+      "size": 26836906,
+      "sha1": "30c73b1c5da787909b2f73340419fdf13b9def88",
+      "sha256": "499f6897d1837516680f3114072d8106e11c9adcd933fe5cf051b551089b0c99"
+    },
+    "clientMappings": {
+      "url": "https://piston-data.mojang.com/v1/objects/2244b6f072256667bcd9a73df124d6c58de77992/client.txt",
+      "size": 9598610,
+      "sha1": "2244b6f072256667bcd9a73df124d6c58de77992",
+      "sha256": "140c47931cccc8fc9e4c22d7603e2d714d1a953a146f51ea7397d95c955536ec"
+    },
+    "server": {
+      "url": "https://piston-data.mojang.com/v1/objects/59353fb40c36d304f2035d51e7d6e6baa98dc05c/server.jar",
+      "size": 51627615,
+      "sha1": "59353fb40c36d304f2035d51e7d6e6baa98dc05c",
+      "sha256": "e3bc55693e93cda0188f2e60aea28113fc647c5e85a15fa3d1b347349231b4bb"
+    },
+    "serverMappings": {
+      "url": "https://piston-data.mojang.com/v1/objects/03f8985492bda0afc0898465341eb0acef35f570/server.txt",
+      "size": 7456063,
+      "sha1": "03f8985492bda0afc0898465341eb0acef35f570",
+      "sha256": "9d0b04bead421c8229aff14b534432bbc927bea642e7c8593d1276b8df8ba53f"
+    }
+  },
+  "mojangRuntimeMetadata": {
+    "assetIndex": {
+      "id": "17",
+      "url": "https://piston-meta.mojang.com/v1/packages/e5cb391af96038a8af638bf7cc7f2be44bc4b843/17.json",
+      "size": 449557,
+      "sha1": "e5cb391af96038a8af638bf7cc7f2be44bc4b843",
+      "sha256": "dc6b5b45a405a3c2bc81df6c62745027be2df4c9e1f982cf714bebed25e20cdd"
+    },
+    "clientLogging": {
+      "url": "https://piston-data.mojang.com/v1/objects/bd65e7d2e3c237be76cfbef4c2405033d7f91521/client-1.12.xml",
+      "size": 888,
+      "sha1": "bd65e7d2e3c237be76cfbef4c2405033d7f91521",
+      "sha256": "03e30ee5bd5c1fc723d1049e2e4e8b3ad4c4992514f3206fc4b54637488b83e4"
+    }
+  },
+  "gradleVerification": {
+    "metadataPath": "gradle/verification-metadata.xml",
+    "verifyMetadata": true,
+    "verifySignatures": false,
+    "componentCount": 369,
+    "artifactCount": 748,
+    "sha256PinCount": 748,
+    "requiredArtifacts": [
+      {
+        "group": "net.fabricmc",
+        "name": "fabric-loom",
+        "version": "1.8.13",
+        "artifact": "fabric-loom-1.8.13.jar",
+        "sha256": "27a4fb8206ba9806b46663cc762ddbbbf43154cea9566f68f79673e220496771"
+      },
+      {
+        "group": "net.fabricmc",
+        "name": "fabric-loader",
+        "version": "0.16.14",
+        "artifact": "fabric-loader-0.16.14.jar",
+        "sha256": "9ed7b7f4197153ad97d71b4b9cd9148989e8f0c600934b035ce45f3ef003efc0"
+      },
+      {
+        "group": "net.fabricmc.fabric-api",
+        "name": "fabric-api",
+        "version": "0.116.15+1.21.1",
+        "artifact": "fabric-api-0.116.15+1.21.1.jar",
+        "sha256": "a61a10f730ab8aa45ff42486ee65699e6e51c28a0c168deb161e7d4029473aa3"
+      },
+      {
+        "group": "net.neoforged",
+        "name": "moddev-gradle",
+        "version": "2.0.143",
+        "artifact": "moddev-gradle-2.0.143.jar",
+        "sha256": "9fd57611921da8105d4342b2afb26c4cb0dfbd685af28f37263df0bf006789da"
+      },
+      {
+        "group": "net.neoforged",
+        "name": "neoforge",
+        "version": "21.1.239",
+        "artifact": "neoforge-21.1.239-universal.jar",
+        "sha256": "aa53f08215858b06f33e76582d390c9821a862d6d1a63a2c9f4d2d38a52fc405"
+      },
+      {
+        "group": "net.neoforged",
+        "name": "neoforge",
+        "version": "21.1.239",
+        "artifact": "neoforge-21.1.239-userdev.jar",
+        "sha256": "9cbb1c8165221e6c1fc5e92a9b942fa63835470e50e4678298dbf8264ebe3f11"
+      },
+      {
+        "group": "net.neoforged",
+        "name": "neoform",
+        "version": "1.21.1-20240808.144430",
+        "artifact": "neoform-1.21.1-20240808.144430.zip",
+        "sha256": "3fcdf0f0d115774cfceaf206a05a6dc964e2189bfd00f5b5f863e37f4b7733c7"
+      }
+    ]
+  }
+}

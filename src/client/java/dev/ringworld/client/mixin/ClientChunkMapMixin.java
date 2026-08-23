@@ -19,7 +19,7 @@ abstract class ClientChunkMapMixin implements RingClientChunkMapAccess {
     @Shadow @Final private AtomicReferenceArray<LevelChunk> chunks;
     @Shadow private volatile int viewCenterX;
     @Shadow private volatile int viewCenterZ;
-    @Shadow abstract void drop(int index, LevelChunk chunk);
+    @Shadow protected abstract LevelChunk replace(int index, LevelChunk expected, LevelChunk replacement);
 
     @Inject(method = "<init>", at = @At("TAIL"))
     private void ringworld$registerChunkMap(ClientChunkCache owner, int radius, CallbackInfo ci) {
@@ -40,7 +40,7 @@ abstract class ClientChunkMapMixin implements RingClientChunkMapAccess {
     public void ringworld$clearAllChunks() {
         for (int index = 0; index < chunks.length(); index++) {
             LevelChunk chunk = chunks.get(index);
-            if (chunk != null) drop(index, chunk);
+            if (chunk != null) replace(index, chunk, null);
         }
     }
 }

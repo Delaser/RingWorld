@@ -25,7 +25,6 @@ import net.minecraft.network.protocol.game.ClientboundBlockEventPacket;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundChunksBiomesPacket;
 import net.minecraft.network.protocol.game.ClientboundDamageEventPacket;
-import net.minecraft.network.protocol.game.ClientboundEntityPositionSyncPacket;
 import net.minecraft.network.protocol.game.ClientboundExplodePacket;
 import net.minecraft.network.protocol.game.ClientboundForgetLevelChunkPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelChunkWithLightPacket;
@@ -33,7 +32,6 @@ import net.minecraft.network.protocol.game.ClientboundLevelEventPacket;
 import net.minecraft.network.protocol.game.ClientboundLevelParticlesPacket;
 import net.minecraft.network.protocol.game.ClientboundLightUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundMoveVehiclePacket;
-import net.minecraft.network.protocol.game.ClientboundMoveMinecartPacket;
 import net.minecraft.network.protocol.game.ClientboundOpenSignEditorPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerLookAtPacket;
 import net.minecraft.network.protocol.game.ClientboundPlayerPositionPacket;
@@ -41,14 +39,11 @@ import net.minecraft.network.protocol.game.ClientboundSectionBlocksUpdatePacket;
 import net.minecraft.network.protocol.game.ClientboundSetChunkCacheCenterPacket;
 import net.minecraft.network.protocol.game.ClientboundSoundPacket;
 import net.minecraft.network.protocol.game.ClientboundTeleportEntityPacket;
-import net.minecraft.world.entity.PositionMoveRotation;
-import net.minecraft.world.entity.Relative;
-import net.minecraft.world.entity.vehicle.minecart.NewMinecartBehavior;
+import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.Vec3;
 import java.util.EnumSet;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -114,76 +109,43 @@ abstract class ClientPlayNetworkHandlerMixin {
         if (logicalX == packet.getX()) return packet;
         return new ClientboundAddEntityPacket(packet.getId(), packet.getUUID(),
                 logicalX, packet.getY(), packet.getZ(), packet.getXRot(), packet.getYRot(),
-                packet.getType(), packet.getData(), packet.getMovement(), packet.getYHeadRot());
+                packet.getType(), packet.getData(),
+                new Vec3(packet.getXa(), packet.getYa(), packet.getZa()), packet.getYHeadRot());
     }
 
-    @ModifyVariable(method = "handleEntityPositionSync", at = @At("HEAD"), argsOnly = true)
-    private ClientboundEntityPositionSyncPacket ringworld$projectEntitySync(ClientboundEntityPositionSyncPacket packet) {
+    /**
+     * 1.21.1 has no position-sync packet carrying a compound movement value.
+     * Its relative move packets decode from the entity's last absolute base,
+     * so projecting the teleport base here keeps every following delta in the
+     * same presentation chart.
+     */
+    @Redirect(
+            method = "handleTeleportEntity",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/network/protocol/game/ClientboundTeleportEntityPacket;getX()D"))
+    private double ringworld$projectEntityTeleportX(ClientboundTeleportEntityPacket packet) {
         Minecraft client = Minecraft.getInstance();
-        if (!client.isSameThread()) return packet;
+        double canonicalX = packet.getX();
+        if (!client.isSameThread()) return canonicalX;
         RingGeometry geometry = ClientRingState.geometry();
-        if (geometry == null || client.level == null || client.player == null) return packet;
-        PositionMoveRotation values = packet.values();
-        double logicalX = geometry.nearestImageX(values.position().x, client.player.getX());
-        if (logicalX == values.position().x) return packet;
-        PositionMoveRotation logical = new PositionMoveRotation(
-                new Vec3(logicalX, values.position().y, values.position().z),
-                values.deltaMovement(), values.yRot(), values.xRot());
-        return new ClientboundEntityPositionSyncPacket(packet.id(), logical, packet.onGround());
-    }
-
-    @ModifyVariable(method = "handleTeleportEntity", at = @At("HEAD"), argsOnly = true)
-    private ClientboundTeleportEntityPacket ringworld$projectEntityTeleport(ClientboundTeleportEntityPacket packet) {
-        Minecraft client = Minecraft.getInstance();
-        if (!client.isSameThread()) return packet;
-        RingGeometry geometry = ClientRingState.geometry();
-        if (geometry == null || client.level == null || client.player == null
-                || packet.relatives().contains(Relative.X)) return packet;
-        PositionMoveRotation change = packet.change();
-        double logicalX = geometry.nearestImageX(change.position().x, client.player.getX());
-        if (logicalX == change.position().x) return packet;
-        PositionMoveRotation logical = new PositionMoveRotation(
-                new Vec3(logicalX, change.position().y, change.position().z),
-                change.deltaMovement(), change.yRot(), change.xRot());
-        return new ClientboundTeleportEntityPacket(packet.id(), logical, packet.relatives(), packet.onGround());
+        if (geometry == null || client.level == null || client.player == null) return canonicalX;
+        var entity = client.level.getEntity(packet.getId());
+        double referenceX = entity == null ? client.player.getX() : entity.getX();
+        return geometry.nearestImageX(canonicalX, referenceX);
     }
 
     /** Keep authoritative vehicle corrections in the rider's current visual chart. */
-    @ModifyVariable(method = "handleMoveVehicle", at = @At("HEAD"), argsOnly = true)
-    private ClientboundMoveVehiclePacket ringworld$projectVehicleCorrection(ClientboundMoveVehiclePacket packet) {
+    @Redirect(
+            method = "handleMoveVehicle",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/network/protocol/game/ClientboundMoveVehiclePacket;getX()D"))
+    private double ringworld$projectVehicleCorrectionX(ClientboundMoveVehiclePacket packet) {
         Minecraft client = Minecraft.getInstance();
-        if (!client.isSameThread()) return packet;
+        double canonicalX = packet.getX();
+        if (!client.isSameThread()) return canonicalX;
         RingGeometry geometry = ClientRingState.geometry();
-        if (geometry == null || client.player == null) return packet;
-        Vec3 position = packet.position();
-        double logicalX = geometry.nearestImageX(position.x, client.player.getRootVehicle().getX());
-        if (logicalX == position.x) return packet;
-        return new ClientboundMoveVehiclePacket(
-                new Vec3(logicalX, position.y, position.z),
-                packet.yRot(), packet.xRot());
-    }
-
-    /** Project the absolute positions in 26.1's minecart interpolation batch. */
-    @ModifyVariable(method = "handleMinecartAlongTrack", at = @At("HEAD"), argsOnly = true)
-    private ClientboundMoveMinecartPacket ringworld$projectMinecartSteps(ClientboundMoveMinecartPacket packet) {
-        Minecraft client = Minecraft.getInstance();
-        if (!client.isSameThread()) return packet;
-        RingGeometry geometry = ClientRingState.geometry();
-        if (geometry == null || client.level == null || client.player == null) return packet;
-        var entity = packet.getEntity(client.level);
-        double referenceX = entity == null ? client.player.getX() : entity.getX();
-        List<NewMinecartBehavior.MinecartStep> projected = new ArrayList<>(packet.lerpSteps().size());
-        boolean changed = false;
-        for (NewMinecartBehavior.MinecartStep step : packet.lerpSteps()) {
-            Vec3 position = step.position();
-            double logicalX = geometry.nearestImageX(position.x, referenceX);
-            changed |= logicalX != position.x;
-            projected.add(new NewMinecartBehavior.MinecartStep(
-                    new Vec3(logicalX, position.y, position.z), step.movement(),
-                    step.yRot(), step.xRot(), step.weight()));
-            referenceX = logicalX;
-        }
-        return changed ? new ClientboundMoveMinecartPacket(packet.entityId(), projected) : packet;
+        if (geometry == null || client.player == null) return canonicalX;
+        return geometry.nearestImageX(canonicalX, client.player.getRootVehicle().getX());
     }
 
     /** Keep the client chunk chart aligned with explicit server teleports. */
@@ -203,26 +165,26 @@ abstract class ClientPlayNetworkHandlerMixin {
         // raw canonical X can make a two-block teleport look C blocks long,
         // clear the client chart, and discard chunks that the server still
         // considers continuously watched.
-        PositionMoveRotation current = PositionMoveRotation.of(player);
-        PositionMoveRotation target = PositionMoveRotation.calculateAbsolute(current, packet.change(), packet.relatives());
-        double presentationX = geometry.nearestImageX(target.position().x, player.getX());
-        if (presentationX != target.position().x) {
-            EnumSet<Relative> projectedRelatives = packet.relatives().isEmpty()
-                    ? EnumSet.noneOf(Relative.class)
-                    : EnumSet.copyOf(packet.relatives());
-            projectedRelatives.remove(Relative.X);
-            PositionMoveRotation change = packet.change();
+        Set<RelativeMovement> relatives = packet.getRelativeArguments();
+        double targetX = relatives.contains(RelativeMovement.X)
+                ? player.getX() + packet.getX() : packet.getX();
+        double targetZ = relatives.contains(RelativeMovement.Z)
+                ? player.getZ() + packet.getZ() : packet.getZ();
+        double presentationX = geometry.nearestImageX(targetX, player.getX());
+        if (presentationX != targetX) {
+            EnumSet<RelativeMovement> projectedRelatives = relatives.isEmpty()
+                    ? EnumSet.noneOf(RelativeMovement.class)
+                    : EnumSet.copyOf(relatives);
+            projectedRelatives.remove(RelativeMovement.X);
             packet = new ClientboundPlayerPositionPacket(
-                    packet.id(),
-                    new PositionMoveRotation(
-                            new Vec3(presentationX, change.position().y, change.position().z),
-                            change.deltaMovement(), change.yRot(), change.xRot()),
-                    Set.copyOf(projectedRelatives));
-            target = PositionMoveRotation.calculateAbsolute(current, packet.change(), packet.relatives());
+                    presentationX, packet.getY(), packet.getZ(),
+                    packet.getYRot(), packet.getXRot(),
+                    Set.copyOf(projectedRelatives), packet.getId());
+            targetX = presentationX;
         }
         rekeyClientChart(client,
-                Math.floorDiv((int) Math.floor(target.position().x), 16),
-                Math.floorDiv((int) Math.floor(target.position().z), 16));
+                Math.floorDiv((int) Math.floor(targetX), 16),
+                Math.floorDiv((int) Math.floor(targetZ), 16));
         // Natural seam folds do not use this packet. Explicit commands,
         // portals and respawns remain server-authoritative while using the
         // equivalent presentation image nearest the current camera.
@@ -253,7 +215,7 @@ abstract class ClientPlayNetworkHandlerMixin {
         if (geometry == null || client.player == null) return packet;
         List<ClientboundChunksBiomesPacket.ChunkBiomeData> mapped = packet.chunkBiomeData().stream()
                 .map(data -> new ClientboundChunksBiomesPacket.ChunkBiomeData(
-                        new ChunkPos(mapChunkX(data.pos().x()), data.pos().z()), data.buffer()))
+                        new ChunkPos(mapChunkX(data.pos().x), data.pos().z), data.buffer()))
                 .toList();
         return new ClientboundChunksBiomesPacket(mapped);
     }
@@ -271,7 +233,7 @@ abstract class ClientPlayNetworkHandlerMixin {
             at = @At(value = "INVOKE", target = "Lnet/minecraft/network/protocol/game/ClientboundForgetLevelChunkPacket;pos()Lnet/minecraft/world/level/ChunkPos;"))
     private ChunkPos ringworld$mapUnloadChunk(ClientboundForgetLevelChunkPacket packet) {
         ChunkPos pos = packet.pos();
-        return new ChunkPos(mapChunkX(pos.x()), pos.z());
+        return new ChunkPos(mapChunkX(pos.x), pos.z);
     }
 
     @Redirect(
@@ -357,19 +319,25 @@ abstract class ClientPlayNetworkHandlerMixin {
         if (!Minecraft.getInstance().isSameThread()) return packet;
         double x = mapX(packet.getX());
         if (x == packet.getX()) return packet;
-        return new ClientboundLevelParticlesPacket(packet.getParticle(), packet.isOverrideLimiter(), packet.alwaysShow(),
+        return new ClientboundLevelParticlesPacket(packet.getParticle(), packet.isOverrideLimiter(),
                 x, packet.getY(), packet.getZ(), packet.getXDist(), packet.getYDist(), packet.getZDist(),
                 packet.getMaxSpeed(), packet.getCount());
     }
 
-    @ModifyVariable(method = "handleExplosion", at = @At("HEAD"), argsOnly = true)
-    private ClientboundExplodePacket ringworld$mapExplosion(ClientboundExplodePacket packet) {
-        if (!Minecraft.getInstance().isSameThread()) return packet;
-        double x = mapX(packet.center().x);
-        if (x == packet.center().x) return packet;
-        return new ClientboundExplodePacket(new Vec3(x, packet.center().y, packet.center().z),
-                packet.radius(), packet.blockCount(), packet.playerKnockback(), packet.explosionParticle(),
-                packet.explosionSound(), packet.blockParticles());
+    @Redirect(
+            method = "handleExplosion",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/network/protocol/game/ClientboundExplodePacket;getX()D"))
+    private double ringworld$mapExplosionX(ClientboundExplodePacket packet) {
+        return mapX(packet.getX());
+    }
+
+    @Redirect(
+            method = "handleExplosion",
+            at = @At(value = "INVOKE",
+                    target = "Lnet/minecraft/network/protocol/game/ClientboundExplodePacket;getToBlow()Ljava/util/List;"))
+    private List<BlockPos> ringworld$mapExplosionBlocks(ClientboundExplodePacket packet) {
+        return packet.getToBlow().stream().map(this::mapBlockPos).toList();
     }
 
     @ModifyVariable(method = "handleSoundEvent", at = @At("HEAD"), argsOnly = true)

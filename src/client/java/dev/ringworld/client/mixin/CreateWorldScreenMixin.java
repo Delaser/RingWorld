@@ -68,7 +68,7 @@ abstract class CreateWorldScreenMixin extends Screen
         if (ringworld$layoutButton == null) {
             throw new IllegalStateException("RingWorld layout footer button was not initialized");
         }
-        ringworld$layoutButton.onPress(RingWorldCreationScreen.AutomationInput.INSTANCE);
+        ringworld$layoutButton.onPress();
     }
 
     @Override

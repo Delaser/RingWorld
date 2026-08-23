@@ -23,9 +23,14 @@ import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingWorldSettings;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
@@ -33,10 +38,9 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RegisterRenderPipelinesEvent;
+import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import net.neoforged.neoforge.client.network.event.RegisterClientPayloadHandlersEvent;
+import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.NetworkRegistry;
 
@@ -65,21 +69,31 @@ public final class NeoForgeRingWorldClient {
     public static void register(IEventBus modEventBus) {
         ClientRingState.configureCacheDirectory(FMLPaths.GAMEDIR.get().resolve("ringworld-cache"));
         RingClientPayloadTransport.configure(new NeoForgePayloadTransport());
-        modEventBus.addListener(NeoForgeRingWorldClient::registerPayloadHandlers);
-        modEventBus.addListener(NeoForgeRingWorldClient::registerRenderPipelines);
+        NeoForgeRingWorldNetworking.configureClientPayloadHandler(
+                NeoForgeRingWorldClient::handleClientPayload);
+        modEventBus.addListener(NeoForgeRingWorldClient::registerShaders);
         RingWorldMod.LOGGER.info("RingWorld NeoForge client bootstrap active");
     }
 
-    private static void registerRenderPipelines(RegisterRenderPipelinesEvent event) {
-        event.registerPipeline(dev.ringworld.client.render.RingSurfaceTextureRenderer.pipeline());
+    private static void registerShaders(RegisterShadersEvent event) {
+        try {
+            event.registerShader(new ShaderInstance(
+                            event.getResourceProvider(),
+                            ResourceLocation.fromNamespaceAndPath("ringworld", "ring_surface"),
+                            DefaultVertexFormat.POSITION_TEX_COLOR),
+                    dev.ringworld.client.render.RingSurfaceTextureRenderer::installShader);
+        } catch (IOException failure) {
+            throw new UncheckedIOException("Could not load the RingWorld surface shader", failure);
+        }
     }
 
-    private static void registerPayloadHandlers(RegisterClientPayloadHandlersEvent event) {
-        event.register(RingSettingsPayload.ID, NeoForgeRingWorldClient::handleSettings);
-        event.register(RingTerrainAtlasMetadataPayload.ID, NeoForgeRingWorldClient::handleAtlasMetadata);
-        event.register(RingTerrainAtlasTilePayload.ID, NeoForgeRingWorldClient::handleAtlasTile);
-        event.register(RingTerrainAtlasRevisionPayload.ID, NeoForgeRingWorldClient::handleAtlasRevision);
-        event.register(RingAtlasPregenerationStatusPayload.ID, NeoForgeRingWorldClient::handleAtlasStatus);
+    private static void handleClientPayload(CustomPacketPayload payload, IPayloadContext context) {
+        if (payload instanceof RingSettingsPayload settings) handleSettings(settings, context);
+        else if (payload instanceof RingTerrainAtlasMetadataPayload metadata) handleAtlasMetadata(metadata, context);
+        else if (payload instanceof RingTerrainAtlasTilePayload tile) handleAtlasTile(tile, context);
+        else if (payload instanceof RingTerrainAtlasRevisionPayload revision) handleAtlasRevision(revision, context);
+        else if (payload instanceof RingAtlasPregenerationStatusPayload status) handleAtlasStatus(status, context);
+        else context.disconnect(Component.literal("Unknown RingWorld client payload."));
     }
 
     private static void handleSettings(RingSettingsPayload payload, IPayloadContext context) {
@@ -193,7 +207,8 @@ public final class NeoForgeRingWorldClient {
     }
 
     @SubscribeEvent
-    public static void onAfterLevel(RenderLevelStageEvent.AfterLevel event) {
+    public static void onAfterLevel(RenderLevelStageEvent event) {
+        if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
         PROJECTION_CAPTURE.frameRendered();
         VISUAL_PARITY_CAPTURE.frameRendered();
         ATLAS_PREGENERATION_UI_TEST.frameRendered();
@@ -213,7 +228,7 @@ public final class NeoForgeRingWorldClient {
 
         @Override
         public void send(CustomPacketPayload payload) {
-            ClientPacketDistributor.sendToServer(payload);
+            PacketDistributor.sendToServer(payload);
         }
     }
 }
