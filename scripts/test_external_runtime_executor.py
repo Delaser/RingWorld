@@ -136,8 +136,17 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
                 plan.layout.neoforge_run_script.write_text("#!/bin/sh\n", encoding="utf-8")
                 plan.layout.neoforge_run_script.chmod(0o700)
                 plan.layout.neoforge_user_jvm_args.write_text("-Xmx1G\n", encoding="utf-8")
+                installed_server = plan.layout.root / "libraries" / "net" / "minecraft" / "server" / plan.minecraft_version
+                installed_server.mkdir(parents=True)
+                (installed_server / f"server-{plan.minecraft_version}.jar").write_bytes(
+                    b"fake-mojang-server-" + plan.cell_id.encode("ascii")
+                )
             if wrong_mojang_server:
-                (plan.layout.root / "server.jar").write_bytes(b"wrong-mojang-server")
+                if plan.loader == "neoforge":
+                    installed = plan.layout.root / "libraries" / "net" / "minecraft" / "server" / plan.minecraft_version
+                    (installed / f"server-{plan.minecraft_version}.jar").write_bytes(b"wrong-mojang-server")
+                else:
+                    (plan.layout.root / "server.jar").write_bytes(b"wrong-mojang-server")
             elif plan.loader == "fabric":
                 (plan.layout.root / "server.jar").write_bytes(b"fake-mojang-server-" + plan.cell_id.encode("ascii"))
             if extra_ringworld:
@@ -236,6 +245,14 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
             self.assertEqual(MODEL.Verdict.PASS, result.verdict)
             self.assertTrue(result.launcher_verified)
             self.assertEqual(["RingWorld"], [item.name for item in result.mods])
+            assert result.runtime_identity is not None
+            self.assertNotEqual(
+                str(plan.layout.root / "server.jar"), result.runtime_identity.minecraft_server_path,
+            )
+            self.assertIn(
+                "/libraries/net/minecraft/server/",
+                result.runtime_identity.minecraft_server_path.replace("\\", "/"),
+            )
 
     def test_redirect_or_checksum_failure_is_fail_closed_before_installer(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
