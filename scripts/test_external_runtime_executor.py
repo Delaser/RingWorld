@@ -249,7 +249,10 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
             self.assertNotEqual(
                 str(plan.layout.root / "server.jar"), result.runtime_identity.minecraft_server_path,
             )
-            self.assertIn("/libraries/net/minecraft/server/", result.runtime_identity.minecraft_server_path)
+            self.assertIn(
+                "/libraries/net/minecraft/server/",
+                result.runtime_identity.minecraft_server_path.replace("\\", "/"),
+            )
 
     def test_redirect_or_checksum_failure_is_fail_closed_before_installer(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
