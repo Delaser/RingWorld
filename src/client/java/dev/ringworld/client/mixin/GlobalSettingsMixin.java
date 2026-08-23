@@ -3,6 +3,7 @@ package dev.ringworld.client.mixin;
 import com.mojang.blaze3d.shaders.Uniform;
 import dev.ringworld.client.ClientRingState;
 import dev.ringworld.client.render.RingCloudShaderState;
+import dev.ringworld.client.render.RingHandoffViewDistance;
 import dev.ringworld.world.RingCloudBounds;
 import dev.ringworld.world.RingDimensionReport;
 import dev.ringworld.world.RingGenerationBoundary;
@@ -53,20 +54,32 @@ abstract class GlobalSettingsMixin {
         set(shader, "RingWorldVertical", surfaceReferenceY, wallTopY,
                 cloudBaseY, physicalCenterY);
 
-        float viewDistanceBlocks = geometry == null ? 0.0F
-                : client.options.renderDistance().get() * 16.0F;
+        // Match mainline's negotiated live-chunk radius. The configured slider
+        // can exceed the server/effective distance; using it delays both fade
+        // curves until after the authoritative chunks have already ended.
+        int effectiveViewDistanceChunks = geometry == null ? 0
+                : client.options.getEffectiveRenderDistance();
+        float requestedViewDistanceBlocks = effectiveViewDistanceChunks * 16.0F;
+        float handoffViewDistanceBlocks = geometry == null ? 0.0F
+                : (float)RingHandoffViewDistance.blocks(
+                        client, effectiveViewDistanceChunks);
         RingRenderProfile profile = geometry == null ? null
-                : RingRenderProfile.create(geometry, viewDistanceBlocks);
+                : RingRenderProfile.create(geometry, handoffViewDistanceBlocks);
         set(shader, "RingWorldRender",
                 geometry == null ? 0.0F : (float)geometry.minWidthZ(),
                 geometry == null ? 0.0F : (float)geometry.maxWidthZ() + 1.0F,
                 geometry == null ? 0.0F : geometry.circumferenceBlocks() * 0.5F,
-                viewDistanceBlocks);
+                requestedViewDistanceBlocks);
         set(shader, "RingWorldHandoff",
                 profile == null ? 0.0F : (float)profile.liveFadeStartBlocks(),
                 profile == null ? 0.0F : (float)profile.liveFadeEndBlocks(),
                 profile == null ? 0.0F : (float)profile.proxyFadeStartBlocks(),
-                profile == null ? 0.0F : (float)profile.proxyFadeEndBlocks());
+                // The 1.21.1 core-shader path blends this sky-stage draw
+                // through the legacy framebuffer. Make it opaque before the
+                // first live dither can expose it; otherwise those discarded
+                // pixels reveal partial Atlas plus bright sky as a dotted
+                // shelf. Mainline's distances still define both spans.
+                profile == null ? 0.0F : (float)profile.liveFadeStartBlocks());
         set(shader, "RingWorldDetail",
                 profile == null ? 0.0F : (float)profile.detailStartBlocks(),
                 profile == null ? 0.0F : (float)profile.detailEndBlocks(),

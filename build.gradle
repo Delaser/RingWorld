@@ -447,6 +447,85 @@ def requireNonUniformPng = { File screenshot, String label ->
 	}
 }
 
+// A complete production Atlas must contribute terrain detail when the camera
+// looks radially across the ring. A flat fog-colour strip previously passed
+// the readable-PNG check after 1.21.1 overwrote the proxy reveal state.
+def requireProjectionAtlasDetail = { File screenshot, String label ->
+	requireReadablePng(screenshot, label)
+	def image = javax.imageio.ImageIO.read(screenshot)
+	if (image == null) {
+		throw new GradleException("${label} did not decode correctly: ${screenshot}")
+	}
+	int x0 = Math.floor(image.width * 0.475) as int
+	int x1 = Math.ceil(image.width * 0.525) as int
+	int y0 = Math.floor(image.height * 0.05) as int
+	int y1 = Math.ceil(image.height * 0.95) as int
+	def quantizedColours = new HashSet<Integer>()
+	for (int y = y0; y < y1; y++) {
+		for (int x = x0; x < x1; x++) {
+			int pixel = image.getRGB(x, y)
+			if ((pixel >>> 24) != 0) {
+				int quantized = ((pixel >>> 19) & 0x1F) << 10
+				quantized |= ((pixel >>> 11) & 0x1F) << 5
+				quantized |= (pixel >>> 3) & 0x1F
+				quantizedColours.add(quantized)
+			}
+		}
+	}
+	if (quantizedColours.size() < 16) {
+		throw new GradleException(
+				"${label} has no textured Atlas detail in its radial-up band "
+						+ "(${quantizedColours.size()} quantized colours): ${screenshot}")
+	}
+}
+ext.requireProjectionAtlasDetail = requireProjectionAtlasDetail
+
+// The production handoff view is deliberately water-dominant. Average a
+// central band by scanline so terrain texture remains legal while the old
+// one-row live/proxy cutoff (or a pale sky leak) fails closed.
+def requireProjectionHandoffContinuity = { File screenshot, String label ->
+	requireReadablePng(screenshot, label)
+	def image = javax.imageio.ImageIO.read(screenshot)
+	if (image == null) {
+		throw new GradleException("${label} did not decode correctly: ${screenshot}")
+	}
+	int x0 = Math.floor(image.width * 0.42) as int
+	int x1 = Math.ceil(image.width * 0.67) as int
+	int y0 = Math.floor(image.height * 0.42) as int
+	int y1 = Math.ceil(image.height * 0.72) as int
+	if (x1 - x0 < 2 || y1 - y0 < 2) {
+		throw new GradleException("${label} is too small for handoff analysis: ${screenshot}")
+	}
+	double[] previous = null
+	double maximumAdjacentJump = 0.0D
+	for (int y = y0; y < y1; y++) {
+		long red = 0L
+		long green = 0L
+		long blue = 0L
+		for (int x = x0; x < x1; x++) {
+			int pixel = image.getRGB(x, y)
+			red += (pixel >>> 16) & 0xFF
+			green += (pixel >>> 8) & 0xFF
+			blue += pixel & 0xFF
+		}
+		double samples = x1 - x0
+		double[] current = [red / samples, green / samples, blue / samples]
+		if (previous != null) {
+			double jump = Math.abs(current[0] - previous[0])
+					+ Math.abs(current[1] - previous[1])
+					+ Math.abs(current[2] - previous[2])
+			maximumAdjacentJump = Math.max(maximumAdjacentJump, jump)
+		}
+		previous = current
+	}
+	if (maximumAdjacentJump > 75.0D) {
+		throw new GradleException(String.format(Locale.ROOT,
+				"%s has an abrupt live/Atlas handoff (adjacent-row RGB jump %.2f): %s",
+				label, maximumAdjacentJump, screenshot))
+	}
+}
+ext.requireProjectionHandoffContinuity = requireProjectionHandoffContinuity
+
 def verifyFabricProjectionOutputs = { File runDirectory, String environment ->
 	def normalizedEnvironment = environment.trim().toLowerCase(Locale.ROOT)
 	if (!(normalizedEnvironment in ["noon", "dusk", "night", "rain"])) {
@@ -463,6 +542,12 @@ def verifyFabricProjectionOutputs = { File runDirectory, String environment ->
 		requireReadablePng(new File(runDirectory, "screenshots/${prefix}${view}.png"),
 				"Fabric projection capture")
 	}
+	requireProjectionAtlasDetail(
+			new File(runDirectory, "screenshots/${prefix}up.png"),
+			"Fabric projection capture")
+	requireProjectionHandoffContinuity(
+			new File(runDirectory, "screenshots/${prefix}handoff.png"),
+			"Fabric projection capture")
 }
 
 def requireVisualParitySeamMotionMetrics = { File logFile, String label ->
@@ -1389,8 +1474,13 @@ tasks.register("prepareCopiedProductionProjectionWorld") {
 		def projectionOptions = new File(qualificationRunFile("run-production-projection"), "options.txt")
 		def optionLines = projectionOptions.isFile()
 				? projectionOptions.readLines("UTF-8") : []
-		optionLines.removeAll { it.startsWith("tutorialStep:") }
+		optionLines.removeAll {
+			it.startsWith("tutorialStep:") || it.startsWith("renderClouds:")
+		}
 		optionLines.add("tutorialStep:none")
+		// Isolate terrain/proxy continuity. Curved clouds have separate
+		// coverage and must not conceal a flat complete-Atlas render.
+		optionLines.add('renderClouds:"false"')
 		projectionOptions.parentFile.mkdirs()
 		projectionOptions.setText(optionLines.join("\n") + "\n", "UTF-8")
 		def source = requireSave(providers.gradleProperty("ringProjectionWorld").orNull,
@@ -1468,8 +1558,54 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 					16, 16, java.awt.image.BufferedImage.TYPE_INT_ARGB)
 			image.setRGB(0, 0, 0xFFFFFFFF as int)
 			image.setRGB(15, 15, 0xFF000000 as int)
+			// Deterministic terrain-like variation through the normalized centre
+			// band used by the production radial-up Atlas assertion.
+			for (int y = 0; y < 16; y++) {
+				image.setRGB(7, y, (0xFF000000L | (y * 13L << 16)
+						| ((255L - y * 11L) << 8) | (y * 7L)) as int)
+				image.setRGB(8, y, (0xFF000000L | ((255L - y * 9L) << 16)
+						| (y * 15L << 8) | (255L - y * 5L)) as int)
+			}
 			if (!javax.imageio.ImageIO.write(image, "png", destination)) {
 				throw new GradleException("Could not create PNG verifier fixture ${destination}")
+			}
+		}
+		def writeFlatProjectionPng = { File destination ->
+			destination.parentFile.mkdirs()
+			def image = new java.awt.image.BufferedImage(
+					16, 16, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+			def graphics = image.createGraphics()
+			try {
+				graphics.color = new java.awt.Color(0x78, 0xA7, 0xED)
+				graphics.fillRect(0, 0, 16, 16)
+			} finally {
+				graphics.dispose()
+			}
+			// Keep the image globally non-uniform while its proxy band stays flat.
+			image.setRGB(0, 0, 0xFFFFFFFF as int)
+			image.setRGB(15, 15, 0xFF000000 as int)
+			if (!javax.imageio.ImageIO.write(image, "png", destination)) {
+				throw new GradleException(
+						"Could not create flat projection verifier fixture ${destination}")
+			}
+		}
+		def writeHandoffPng = { File destination, boolean hardCutoff ->
+			destination.parentFile.mkdirs()
+			def image = new java.awt.image.BufferedImage(
+					32, 32, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+			for (int y = 0; y < image.height; y++) {
+				int step = hardCutoff && y >= 17 ? 110 : 0
+				for (int x = 0; x < image.width; x++) {
+					int red = Math.max(0, Math.min(255, 55 + y * 2 - step + x % 3))
+					int green = Math.max(0, Math.min(255, 75 + y * 2 - step + x % 3))
+					int blue = Math.max(0, Math.min(255, 125 + y * 2 - step + x % 3))
+					image.setRGB(x, y, (0xFF000000L | (red << 16)
+							| (green << 8) | blue) as int)
+				}
+			}
+			if (!javax.imageio.ImageIO.write(image, "png", destination)) {
+				throw new GradleException(
+						"Could not create handoff verifier fixture ${destination}")
 			}
 		}
 		def expectRejected = { String caseName, Closure verification ->
@@ -1492,7 +1628,22 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 			writePng(new File(projection,
 					"screenshots/ringworld-projection-${view}.png"))
 		}
+		def handoff = new File(projection,
+				"screenshots/ringworld-projection-handoff.png")
+		writeHandoffPng(handoff, false)
 		verifyFabricProjectionOutputs(projection, "noon")
+		writeHandoffPng(handoff, true)
+		expectRejected("abrupt live/Atlas projection handoff") {
+			verifyFabricProjectionOutputs(projection, "noon")
+		}
+		writeHandoffPng(handoff, false)
+		def radialUp = new File(projection,
+				"screenshots/ringworld-projection-up.png")
+		writeFlatProjectionPng(radialUp)
+		expectRejected("flat fog-only projection Atlas") {
+			verifyFabricProjectionOutputs(projection, "noon")
+		}
+		writePng(radialUp)
 		def tangent = new File(projection,
 				"screenshots/ringworld-projection-tangent.png")
 		delete(tangent)

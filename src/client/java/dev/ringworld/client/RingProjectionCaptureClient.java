@@ -233,24 +233,48 @@ public final class RingProjectionCaptureClient {
             capturePitch = 0.0F;
             RingWorldMod.LOGGER.info("[projection-capture] tangent capture armed");
         } else if (stage == 1) {
+            int effectiveViewDistanceChunks =
+                    client.options.getEffectiveRenderDistance();
+            int cameraChunkX = (int)Math.floor(client.player.getX()) >> 4;
+            int cameraChunkZ = (int)Math.floor(client.player.getZ()) >> 4;
+            int loadedPositiveX = contiguousLoadedChunks(
+                    client, cameraChunkX, cameraChunkZ, 1, effectiveViewDistanceChunks);
+            int loadedNegativeX = contiguousLoadedChunks(
+                    client, cameraChunkX, cameraChunkZ, -1, effectiveViewDistanceChunks);
+            double handoffViewDistanceBlocks =
+                    dev.ringworld.client.render.RingHandoffViewDistance.blocks(
+                            client, effectiveViewDistanceChunks);
             RingRenderProfile profile = RingRenderProfile.create(
-                    geometry, projectionViewDistanceChunks() * 16.0);
+                    geometry, handoffViewDistanceBlocks);
             double targetDistance = profile.effectiveViewDistanceBlocks();
             double targetHeight = atlas.sample(
-                    client.player.getX() + targetDistance,
+                    client.player.getX() - targetDistance,
                     client.player.getZ()).height();
             capturePitch = (float)geometry.pitchDegreesToIntrinsic(
                     client.player.getY(), targetHeight, targetDistance, 0.0);
             RingWorldMod.LOGGER.info(
-                    "[projection-capture] {}-chunk handoff capture armed at pitch={}, distance={}, surfaceY={}",
-                    projectionViewDistanceChunks(), capturePitch,
-                    targetDistance, targetHeight);
+                    "[projection-capture] handoff capture armed at requestedChunks={}, "
+                            + "effectiveChunks={}, loadedX=+{}/-{}, handoffBlocks={}, "
+                            + "pitch={}, surfaceY={}",
+                    projectionViewDistanceChunks(), effectiveViewDistanceChunks,
+                    loadedPositiveX, loadedNegativeX, targetDistance,
+                    capturePitch, targetHeight);
         } else {
             capturePitch = -90.0F;
             RingWorldMod.LOGGER.info("[projection-capture] radial-up capture armed");
         }
         resetFrameMetrics();
         captureStageArmed = true;
+    }
+
+    private static int contiguousLoadedChunks(Minecraft client, int cameraChunkX,
+                                              int cameraChunkZ, int stepX, int limit) {
+        int loaded = 0;
+        while (loaded < limit && client.level.getChunkSource().hasChunk(
+                cameraChunkX + stepX * (loaded + 1), cameraChunkZ)) {
+            loaded++;
+        }
+        return loaded;
     }
 
     private void completeCaptureStage(String label) {

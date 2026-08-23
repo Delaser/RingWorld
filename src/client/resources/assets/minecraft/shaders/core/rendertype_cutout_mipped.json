@@ -17,6 +17,8 @@
     { "name": "RingWorldLayout", "type": "int", "count": 4, "values": [ 0, 0, 0, 0 ] },
     { "name": "RingWorldVertical", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
     { "name": "RingWorldCamera", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
-    { "name": "RingWorldHandoff", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] }
+    { "name": "RingWorldHandoff", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+    { "name": "RingWorldDetail", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
+    { "name": "RingWorldAtmosphere", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] }
   ]
 }

@@ -31,6 +31,7 @@ import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.util.FastColor;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -115,9 +116,6 @@ public final class RingSurfaceTextureRenderer {
         // same local point used by curved real chunk vertices.
         modelView.translate(0.0F, (float)cameraRadius, (float)-camera.z);
         modelView.rotateZ((float)-cameraAngle);
-        if (shader.COLOR_MODULATOR != null) {
-            shader.COLOR_MODULATOR.set(1.0F, alpha, textureMorph, generationFog);
-        }
         Uniform modelOffset = shader.getUniform("ModelOffset");
         if (modelOffset != null) {
             modelOffset.set((float)cameraAngle, (float)camera.z, 0.0F);
@@ -135,13 +133,29 @@ public final class RingSurfaceTextureRenderer {
         // Unit two is Minecraft's live lightmap, preserving time, weather,
         // gamma, lightning, darkness, and night vision for atlas terrain.
         client.gameRenderer.lightTexture().turnOnLightLayer();
-        vertexBuffer.bind();
-        vertexBuffer.drawWithShader(modelView, RenderSystem.getProjectionMatrix(), shader);
-        VertexBuffer.unbind();
-        client.gameRenderer.lightTexture().turnOffLightLayer();
-        RenderSystem.disableBlend();
-        RenderSystem.enableCull();
-        RenderSystem.depthMask(true);
+        // In 1.21.1 VertexBuffer.drawWithShader calls setDefaultUniforms just
+        // before applying the shader. ColorModulator is replaced there from
+        // RenderSystem state, so publish the same four values carried by
+        // mainline's DynamicTransforms UBO through that authoritative path.
+        float[] previousShaderColor = RenderSystem.getShaderColor();
+        float previousRed = previousShaderColor[0];
+        float previousGreen = previousShaderColor[1];
+        float previousBlue = previousShaderColor[2];
+        float previousAlpha = previousShaderColor[3];
+        try {
+            RenderSystem.setShaderColor(1.0F, alpha, textureMorph, generationFog);
+            vertexBuffer.bind();
+            vertexBuffer.drawWithShader(
+                    modelView, RenderSystem.getProjectionMatrix(), shader);
+        } finally {
+            VertexBuffer.unbind();
+            RenderSystem.setShaderColor(
+                    previousRed, previousGreen, previousBlue, previousAlpha);
+            client.gameRenderer.lightTexture().turnOffLightLayer();
+            RenderSystem.disableBlend();
+            RenderSystem.enableCull();
+            RenderSystem.depthMask(true);
+        }
     }
 
     private static void ensureResources(RingGeometry geometry, RingTerrainAtlas atlas) {
@@ -296,7 +310,11 @@ public final class RingSurfaceTextureRenderer {
                 images[level] = image;
                 for (int y = 0; y < levelHeight; y++) {
                     for (int x = 0; x < levelWidth; x++) {
-                        image.setPixelRGBA(x, y, levelPixels[y * levelWidth + x]);
+                        // RingSurfaceLod is loader-neutral ARGB. NativeImage's
+                        // 1.21.1 upload API consumes ABGR32, unlike mainline's
+                        // ARGB setPixel API, so convert exactly at this adapter.
+                        image.setPixelRGBA(x, y, FastColor.ABGR32.fromArgb32(
+                                levelPixels[y * levelWidth + x]));
                     }
                 }
                 if (level + 1 < mipLevels) {

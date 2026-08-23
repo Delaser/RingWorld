@@ -1016,8 +1016,13 @@ tasks.register('prepareCopiedNeoForgeProductionProjectionWorld') {
         def projectionOptions = new File(neoForgeProjectionRun, 'options.txt')
         def optionLines = projectionOptions.isFile()
                 ? projectionOptions.readLines('UTF-8') : []
-        optionLines.removeAll { it.startsWith('tutorialStep:') }
+        optionLines.removeAll {
+            it.startsWith('tutorialStep:') || it.startsWith('renderClouds:')
+        }
         optionLines.add('tutorialStep:none')
+        // Isolate terrain/proxy continuity. Curved clouds have separate
+        // coverage and must not conceal a flat complete-Atlas render.
+        optionLines.add('renderClouds:"false"')
         projectionOptions.parentFile.mkdirs()
         projectionOptions.setText(optionLines.join('\n') + '\n', 'UTF-8')
         copy {
@@ -1050,6 +1055,12 @@ tasks.register('verifyNeoForgeProductionProjectionClient') {
                 throw new GradleException("NeoForge projection capture is missing ${screenshot}")
             }
         }
+        rootProject.ext.requireProjectionAtlasDetail(
+                new File(neoForgeProjectionRun, "screenshots/${prefix}up.png"),
+                'NeoForge projection capture')
+        rootProject.ext.requireProjectionHandoffContinuity(
+                new File(neoForgeProjectionRun, "screenshots/${prefix}handoff.png"),
+                'NeoForge projection capture')
     }
 }
 
