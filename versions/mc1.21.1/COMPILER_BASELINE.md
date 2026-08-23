@@ -1,10 +1,12 @@
 # Minecraft 1.21.1 compiler baseline
 
-Status: **FUNCTIONAL PARITY GATES COMPLETE; RELEASE INCOMPLETE** as of
-2026-08-23. The exact Windows Java 21 dual-loader compiler/dependency baseline,
-dedicated runtime matrix, two-client gameplay fixtures, and production-size
-client gates pass. Clean public integration, distribution packaging, broader
-compatibility, and owner release approval remain.
+Status: **PUBLIC BETA SUBMITTED; FUNCTIONAL PARITY GATES COMPLETE; BROAD
+COMPATIBILITY INCOMPLETE** as of 2026-08-23. The exact Windows Java 21
+dual-loader compiler/dependency baseline, dedicated runtime matrix, two-client
+gameplay fixtures, and production-size client gates pass. Matched release jars
+built from public commit `7010d2af3750cd040302b0a6bc580b6440a3b779`
+were submitted to CurseForge. Cross-platform and broad third-party
+compatibility remain outside this evidence.
 
 ## Purpose and authority
 
@@ -13,19 +15,22 @@ RingWorld behavior. Minecraft 26.1/26.1.2 `main` remains authoritative. The
 backport changes Minecraft and loader ABI boundaries while retaining shared
 topology, persistence, protocol meaning, worldgen policy, and rendering math.
 
-The work branch starts from public main commit
+The backport work started from public main commit
 `2312fc96bdc8a4a75b7fb7b84b84631b9f59e3fa`. The public
 `port/mc-1.21.1` ref was still its older 26.1.2 ancestor
-`25efbec21c2be319f9dd26768546fd8365eaf609` when this probe began.
+`25efbec21c2be319f9dd26768546fd8365eaf609` when this probe began. The reviewed
+implementation was later integrated as `72d6ec0`, the visual handoff checkpoint
+was frozen as release source `7010d2a`, and release tooling/documentation was
+then corrected at `4eac36b`.
 
 PR #229 (`96c8a43070d83022fa382437ef9b461f812acee6`) was inspected but not
-merged or cherry-picked. Its contributor commit is useful as an API-mapping
-reference, but it is not a compiler baseline: it removes JUnit dependencies,
-contains an artifact-name typo, leaves Fabric metadata on Java 25/newer
-Loader requirements, comments out classes still referenced by entrypoints,
-silently changes fixed-width protocol fields to VarLong under unchanged
-channel identifiers, and disables major storage, gameplay, and renderer
-contracts.
+merged or cherry-picked. Cosmos616's contributor commit provided a useful
+API-mapping reference. Sixteen files adapted there align byte-for-byte with
+the final port, including the Gradle 8.10 wrapper and mechanical 1.21.1
+mappings for resource identifiers, server levels, chunk positions, toast and
+button APIs, teleport/raid/chunk operations, NeoForge environment access, and
+Java 21 Mixin compatibility. The completed branch retains this exact commit
+identity as community-contribution provenance.
 
 ## Pinned primary inputs
 
@@ -57,6 +62,11 @@ The diagnostic artifact identity is:
 
 It is a qualification-only artifact. It must not be staged, published, or
 described as supported or as a release candidate.
+
+The owner-approved release-labelled rebuild uses artifact version
+`1.0.0-beta.1+mc1.21.1` and label
+`1.0 Beta 1 for Minecraft 1.21.1`. Release metadata does not weaken the pinned
+compiler, loader, protocol, licence, or runtime contracts below.
 
 ## Reproduction
 
@@ -227,21 +237,39 @@ After that bounded checkpoint, the 2026-08-23 runtime pass added:
   Both declare MPL-2.0, target exactly Minecraft 1.21.1/Java 21, contain
   `LICENSE-RINGWORLD.txt`, and contain no stale MIT/evaluation identifier.
 
-This is local Windows source/runtime evidence, not a published support claim.
-It does not qualify third-party compatibility, installer/outer-package
-assembly, authenticated production launchers, other operating systems, or a
-public release artifact.
+Those diagnostic jars remained unpublished. A clean release-labelled dual
+build from the same reviewed checkpoint then passed both loader builds,
+contract tests, dependency inventory checks, descriptor/licence inspection,
+archive inspection, and guarded staging. The submitted artifacts are:
 
-## Next gate
+| Loader | CurseForge file | Bytes | SHA-256 |
+| --- | --- | ---: | --- |
+| Fabric | `8714613` | 705,771 | `60f69edf232edbc64a3a8a92c3e52989294e69024a58114e660b3e5006de749d` |
+| NeoForge | `8714619` | 673,685 | `8023561632484136004ce1ef4aa2a3bc1b7f80b9943161406d74facce467b0ed` |
 
-1. Integrate the reviewed working tree onto the public `port/mc-1.21.1` branch
-   without weakening dependency verification or rewriting the shared
-   protocol/save contracts.
-2. Run the fail-closed staging/package procedure from that clean pushed
-   revision, then obtain owner release approval. Do not publish from this
-   diagnostic identity.
+Both declare Minecraft 1.21.1, Java 21, Client and Server, the matching loader,
+and MPL-2.0 with `LICENSE-RINGWORLD.txt`. Fabric alone declares Fabric API as
+a required dependency. Neither submission uses CurseForge's additional
+manual-release hold. Processing and moderation can delay public availability.
 
-The compiler, dependency, functional runtime, and production visual baselines
-are complete for the recorded Windows host. The remaining work is integration
-and release qualification, so the port is not yet supported or a release
-candidate.
+## Remaining boundary
+
+The compiler, dependency, functional runtime, production visual, clean public
+integration, owner release, release-labelled build, licence, staging, and
+CurseForge submission gates are complete for the recorded Windows host.
+
+The Beta does not qualify:
+
+- Linux or macOS build, graphical, server, or packaging behavior;
+- optional installers, launcher bundles, or outer server packages;
+- a Minecraft 1.21.1 Modrinth version;
+- broad renderer, shader-pack, worldgen, chunk, networking, or modpack
+  compatibility;
+- moving saves backward from 26.1/26.1.2 or forward to another Minecraft
+  line; or
+- minimum hardware requirements beyond the recorded Windows measurements.
+
+The maintained release overview, build-cache warning, visual handoff notes,
+CurseForge API findings, and future mainline-update procedure are in
+[`README.md`](README.md). Continue to describe this build as Beta rather than
+stable or broadly compatible.

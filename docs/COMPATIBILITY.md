@@ -4,13 +4,19 @@ RingWorld is an engine-level mod, not an ordinary content mod. Both the server
 and every client need the same build. Compatibility contract version 1 applies
 to Minecraft 26.1.2 and the `1.0.0+mc26.1.2` Fabric and NeoForge line.
 
+On `port/mc-1.21.1`, the same read-only compatibility API and coordinate
+semantics apply to the separate `1.0.0-beta.1+mc1.21.1` Fabric and NeoForge
+Beta. That does not make the two Minecraft lines binary-compatible: clients,
+servers, loaders, jars, worlds, Mixins, and shader assets must stay on their
+exact line.
+
 Minecraft 26.1 is the development compatibility floor, not yet a blanket
 runtime claim. The published contract remains 26.1.2 until the exact same
 loader-specific artifacts pass the 26.1, 26.1.1, and 26.1.2 qualification
 matrix. Later stable versions use the same fail-closed intake described in
 [`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
 
-## Supported baseline
+## Stable supported baseline
 
 The release gate covers this exact foundation:
 
@@ -33,6 +39,24 @@ Texture-only resource packs are expected to load, but the distant atlas uses
 sampled map/biome colour rather than every pack's live block textures. Shader
 packs are unsupported because RingWorld supplies its own terrain and cloud
 shader contract.
+
+## Minecraft 1.21.1 Beta baseline
+
+| Component | Validated Beta contract |
+| --- | --- |
+| Minecraft | Java Edition 1.21.1 exactly |
+| Java | 21 |
+| Fabric | Loader 0.16.14 and Fabric API 0.116.15+1.21.1 |
+| NeoForge | 21.1.239 |
+| Renderer | Minecraft 1.21.1 vanilla terrain/entity/cloud pipeline plus RingWorld's per-render-type shader overrides |
+| Server | Windows integrated and dedicated servers with the matching backport jar |
+| Client | Matching format-3/mapping-4 settings and Atlas channels before initial position/chunk packets |
+
+This Beta has extensive first-party Windows runtime evidence but no equivalent
+Linux/macOS or broad modpack matrix. The unsupported renderer/worldgen/chunk/
+topology families below should be treated at least as conservatively on the
+backport. See the complete
+[`1.21.1 limitations`](../versions/mc1.21.1/README.md#known-limitations-and-problems).
 
 ## Known unsupported combinations
 
@@ -107,7 +131,7 @@ occurs with only RingWorld and Fabric API. An unlisted combination is
 
 ## Validation
 
-- 337/337 Java unit and parameterized cases pass per loader. Coverage fixes the
+- 338/338 Java unit and parameterized cases pass per loader. Coverage fixes the
   compatibility/API versions, exact mod-ID matching, immutable inventory,
   cardinal physical-pose basis, measured production reference, checked
   maximum scaling, and exact atlas transport bounds.

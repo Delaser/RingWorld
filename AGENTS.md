@@ -121,9 +121,15 @@ Hero of the Village. An immutable complete 16,384x256 source save has all
 pass its Overworld/Nether/End lifecycle/reopen gate, noon/dusk/night/rain
 tangent/handoff/radial projection captures, and production natural-seam/both-
 rim visual gate. Reviewed night and rain captures are materially
-loader-matched. This is local Windows source/runtime evidence, not clean public
-integration, packaging, broad compatibility, owner approval, or support
-evidence.
+loader-matched. The reviewed implementation is publicly integrated on
+`port/mc-1.21.1`. Matched `1.0.0-beta.1+mc1.21.1` Fabric and NeoForge jars
+were built from release checkpoint `7010d2a`, passed the release-labelled
+dual build/licence/archive/staging gates, and were submitted to CurseForge as
+files `8714613` and `8714619`. Branch commit `4eac36b` records the corrected
+publisher schema after those exact artifacts. This remains Windows-x64 Beta
+evidence, not Linux/macOS or broad third-party compatibility evidence. See
+`versions/mc1.21.1/README.md` for artifact hashes, known limitations,
+backport-specific maintenance findings, and the future update procedure.
 Use the diagnostic
 `-PringBackportCompilerScope=fabric` only to isolate the Fabric configuration
 graph; the supported target remains dual-loader parity. See
@@ -142,7 +148,11 @@ artifacts have SHA-256 pins. Both loader checks run the cross-file inventory
 verifier. Never use `--write-verification-metadata` for an ordinary build; it
 is only for a deliberate dependency update followed by exact diff review and
 a clean enforcement build. Later Linux/macOS runs must add reviewed
-platform-selected artifacts rather than weakening verification.
+platform-selected artifacts rather than weakening verification. A fresh
+secondary worktree can make Loom regenerate local remapped modules with
+nondeterministic archive bytes and trip strict verification. For a same-source
+release rebuild, reuse the reviewed project cache; otherwise treat the new
+artifacts as a deliberate dependency update and review every changed pin.
 
 For any later Modrinth or CurseForge build, use the fail-closed local staging procedure in
 [`docs/MODRINTH_RELEASE.md`](docs/MODRINTH_RELEASE.md). It stages only the

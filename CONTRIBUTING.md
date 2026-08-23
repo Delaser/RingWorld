@@ -50,10 +50,10 @@ distribution guidance.
 
 ## Minecraft 1.21.1 backport
 
-The coordinated 1.21.1 backport uses the temporary integration branch
-`port/mc-1.21.1`. Contributors should begin with an assigned `mc:1.21.1`
-issue, branch from that integration branch, and open their pull request back
-against it. Do not target incomplete backport slices directly at `main`.
+The released 1.21.1 Beta is maintained on `port/mc-1.21.1`. Contributors
+should begin with an `mc:1.21.1` issue or a clearly described Beta regression,
+branch from that maintenance branch, and open their pull request back against
+it. Do not target 1.21.1-specific fixes directly at `main`.
 
 Read `versions/mc1.21.1/README.md` before changing build inputs, mappings,
 mixins, world generation, networking, or rendering. Shared RingWorld behavior

@@ -1,6 +1,27 @@
 # Configuration and operations
 
-## Active port stack
+## Minecraft 1.21.1 Beta stack
+
+| Component | Version |
+| --- | --- |
+| Minecraft Java | 1.21.1 exactly |
+| Java | 21 |
+| Fabric Loader/API | 0.16.14 / 0.116.15+1.21.1 |
+| NeoForge | 21.1.239 |
+| Mappings | Mojang official names; Fabric remaps its runtime jar to intermediary |
+| Fabric Loom | 1.8.13 |
+| ModDevGradle | 2.0.143 |
+| Gradle wrapper | 8.10 |
+
+The 1.21.1 Beta uses the same player-facing configuration, immutable saved
+layout, Atlas controls, backup requirements, and server/client installation
+model described below. Build commands, file metadata, platform limits,
+build-cache warning, and future update procedure differ from the mainline
+stack; use the
+[`1.21.1 backport guide`](../versions/mc1.21.1/README.md) as authority for
+those boundaries.
+
+## Stable mainline stack
 
 | Component | Version |
 | --- | --- |
@@ -393,7 +414,18 @@ format.
 
 ## Build
 
-Build the active branch under Java 25:
+Build `port/mc-1.21.1` under Java 21. The normal project graph includes both
+loaders:
+
+```powershell
+.\gradlew.bat clean build :neoforge:build --console=plain --no-daemon
+```
+
+Its default `0.0.0-backport+mc1.21.1` artifacts are diagnostic only. Use the
+[backport build and release record](../versions/mc1.21.1/README.md#building-the-branch)
+before producing or distributing a release-labelled jar.
+
+Build stable `main` under Java 25:
 
 ```sh
 JAVA_HOME=/path/to/jdk-25/Contents/Home \
@@ -408,7 +440,7 @@ build/libs/ringworld-1.0.0+mc26.1.2.jar
 build/libs/ringworld-1.0.0+mc26.1.2-sources.jar
 ```
 
-The current suite passes 337 unit/parameterized cases per loader. The
+The current suite passes 338 unit/parameterized cases per loader. The
 historical Phase 2 95-error inventory and the subsequent source-port
 checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable

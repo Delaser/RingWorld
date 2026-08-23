@@ -13,6 +13,12 @@ work across the join.
 [Project showcase](https://andwhatnotstudio.com/ringworld/) ·
 [Report a problem](https://github.com/Delaser/RingWorld/issues)
 
+> **Minecraft 1.21.1 backport branch:** this branch contains RingWorld 1.0
+> Beta 1 for Fabric and NeoForge on Java 21. The exact release jars, hashes,
+> validation scope, limitations, known build problems, and future update
+> guidance are recorded in the
+> [1.21.1 backport guide](versions/mc1.21.1/README.md).
+
 ## What does it look like?
 
 Nearby Minecraft terrain visibly curves away from you. Beyond normal render
@@ -43,27 +49,33 @@ on the finite Overworld ring, including after very long Nether journeys.
   to see the rest of the world.
 - **Custom dimensions.** Choose a preset or enter your own circumference,
   width, and wall height when creating the world.
-- **Fabric and NeoForge.** RingWorld 1.0 is available for both loaders.
+- **Fabric and NeoForge.** The 1.21.1 Beta is built and validated for both
+  loaders from one shared source revision.
 - **Server support.** The mod works in single-player and on dedicated
   multiplayer servers. Every connecting player needs the matching mod.
 
 ## Download and requirements
 
-The current public release is **RingWorld 1.0 for Minecraft Java 26.1.2**.
+This branch's current build is **RingWorld 1.0 Beta 1 for Minecraft Java
+1.21.1**. It is separate from the stable Minecraft 26.1.2 release on `main`.
 
 | Loader | Required software |
 | --- | --- |
-| Fabric | Minecraft 26.1.2, Java 25, Fabric Loader 0.19.3, Fabric API 0.155.2+26.1.2 |
-| NeoForge | Minecraft 26.1.2, Java 25, NeoForge 26.1.2.87 or later compatible 26.1.2 build |
+| Fabric | Minecraft 1.21.1, Java 21, Fabric Loader 0.16.14 or newer compatible build, Fabric API for 1.21.1 (validated with 0.116.15+1.21.1) |
+| NeoForge | Minecraft 1.21.1, Java 21, NeoForge 21.1.239 or newer compatible 1.21.1 build |
 
 Install the Fabric **or** NeoForge RingWorld jar in the normal `mods` folder.
 Do not install both. A Fabric client joins a Fabric RingWorld server; a
 NeoForge client joins a NeoForge RingWorld server. The server and every client
 must use compatible RingWorld builds.
 
-CurseForge and Modrinth provide the ordinary standalone mod files. The
-[showcase site](https://andwhatnotstudio.com/ringworld/) has additional project
-information and demo material.
+Matched standalone Beta jars were submitted to CurseForge as files
+[8714613](https://www.curseforge.com/minecraft/mc-mods/ringworld/files/8714613)
+(Fabric) and
+[8714619](https://www.curseforge.com/minecraft/mc-mods/ringworld/files/8714619)
+(NeoForge). Processing or moderation may delay public availability. There is
+currently no claimed 1.21.1 Modrinth version, installer, launcher bundle, or
+outer server package.
 
 ## Creating a RingWorld
 
@@ -134,6 +146,8 @@ sides of it should still be nearby, visible, and able to interact normally.
 
 ## Current limitations
 
+- The 1.21.1 build is a Beta with Windows-x64 runtime and release evidence;
+  equivalent Linux and macOS release gates have not run.
 - Shader packs and mods that assume an unmodified flat Overworld renderer may
   be incompatible.
 - Mods that assume infinite chunk X, ordinary global distance, or untouched
@@ -142,33 +156,35 @@ sides of it should still be nearby, visible, and able to interact normally.
   distant blocks, buildings, mobs, transparent layers, local block lights, or
   live weather volumes.
 - Existing worlds cannot be converted or resized in place.
-- Only Minecraft 26.1.2 is currently advertised as supported. Other versions
-  are not supported merely because they compile or begin loading.
+- Only Minecraft 1.21.1 is accepted by this branch's jars. Do not move a
+  26.1/26.1.2 world backwards into 1.21.1 or assume a later Minecraft version
+  is compatible merely because it begins loading.
+
+The [backport guide](versions/mc1.21.1/README.md#known-limitations-and-problems)
+records the complete platform, build-cache, mod-compatibility, Atlas,
+rendering, save, and coverage boundaries.
 
 Compatibility reports are welcome. Please include the Minecraft version,
 loader, RingWorld version, other installed mods, logs, and reproduction steps.
 
-## Version support and contributing
+## Backport status and contributing
 
-The project is building a repeatable qualification system for Minecraft
-26.1.x and later releases. It compiles each target, launches clean external
-servers and clients, runs gameplay/worldgen/Atlas/rendering fixtures, and
-records exactly which version or loader fails. A version is advertised only
-after the required automated and human checks pass.
+The Minecraft 1.21.1 backport is integrated on `port/mc-1.21.1`. Its matched
+Fabric and NeoForge Beta artifacts were built from exact public commit
+`7010d2af3750cd040302b0a6bc580b6440a3b779`; later branch work records release
+tooling and documentation without changing those jars.
 
-There is also an open community contribution lane for the planned Minecraft
-1.21.1 backport:
+Start with these records:
 
 - [1.21.1 backport epic](https://github.com/Delaser/RingWorld/issues/181)
 - [1.21.1 milestone](https://github.com/Delaser/RingWorld/milestone/1)
-- [1.21.1 contributor guide](versions/mc1.21.1/README.md)
+- [1.21.1 release, maintenance, limitations, and update guide](versions/mc1.21.1/README.md)
+- [exact compiler and runtime evidence](versions/mc1.21.1/COMPILER_BASELINE.md)
 
-The backport is not yet published or supported. Its pinned Java 21 Fabric and
-NeoForge graphs build, and the local dedicated, two-client gameplay, persisted
-raid, lifecycle, worldgen, and production-size visual matrices pass. Clean
-public integration, packaging, compatibility qualification, and owner release
-approval remain. Contributors should take one of the linked issues and target
-the `port/mc-1.21.1` integration branch.
+Contributors should branch from and target `port/mc-1.21.1`. Minecraft 26.1
+remains the behavioral authority: keep topology, storage, protocol, worldgen,
+Atlas formats, and tests shared, and isolate only genuine 1.21.1 API,
+descriptor, renderer, shader, lifecycle, and loader differences.
 
 General bug reports, compatibility observations, documentation improvements,
 and code contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md)
@@ -177,16 +193,20 @@ generation, persistence, or rendering.
 
 ## Building from source
 
-The current 26.1.2 source requires Java 25.
+This backport branch requires Java 21. The normal graph builds and tests both
+loaders:
 
-```sh
-./gradlew clean test build --console=plain
-./gradlew :neoforge:test :neoforge:build --console=plain
+```powershell
+.\gradlew.bat clean build :neoforge:build --console=plain --no-daemon
 ```
 
 The Fabric jar is written under `build/libs/`; the NeoForge jar is under
-`neoforge/build/libs/`. A green build is only a compiler/unit-test result. See
-the testing and release documentation before distributing a build.
+`neoforge/build/libs/`. The default artifact identity is deliberately
+`0.0.0-backport+mc1.21.1`; do not distribute it. A release-labelled rebuild
+requires explicit version/label overrides, strict dependency verification,
+loader metadata and licence inspection, clean pushed-source equality, and the
+relevant runtime/visual gates. See the
+[backport build notes](versions/mc1.21.1/README.md#building-the-branch).
 
 ## Technical documentation
 
@@ -196,6 +216,7 @@ the project documentation:
 | Document | What it covers |
 | --- | --- |
 | [Documentation index](docs/README.md) | Complete documentation map |
+| [Minecraft 1.21.1 backport guide](versions/mc1.21.1/README.md) | Beta identity, validated behavior, API/renderer/network findings, limitations, build hazards, and future update procedure |
 | [Current state](docs/CURRENT_STATE.md) | Implemented behavior, evidence, open work, and current qualification status |
 | [Architecture](docs/ARCHITECTURE.md) | Canonical coordinates, client charts, rendering, and data flow |
 | [Operations](docs/OPERATIONS.md) | World configuration, servers, commands, backups, Atlas recovery, and packaging |
