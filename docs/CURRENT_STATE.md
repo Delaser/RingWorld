@@ -128,26 +128,25 @@ frozen-candidate identity, and same-file group evidence. The runner now
 installs this phase only after clean provenance and a complete frozen loader
 triplet, lending its live exact cell lock to avoid re-acquisition. It persists
 a separately validated, immutable raw strict-terminal-evidence JSON record
-alongside the scheduler report. The refreshed Fabric triplet passed end to
-end on 2026-08-13 in combined run `20260813T164933Z-8bee9268f799`. Each of 26.1,
+alongside the scheduler report. The current-main Fabric triplet passed end to
+end on 2026-08-23 in combined run `20260823T130347Z-a493af8d7261`. Each of 26.1,
 26.1.1, and 26.1.2 passed all 338 tests, strict diagnostic-jar inspection,
 official installer/runtime assembly, a fresh 2,048x416 mapping-4 server, and
 strict stop/save evidence. All three loaded the same frozen wide-range jar
 with SHA-256
-`8b919c42e8a166c4f070a06e96518da8ca887e1955bd764c51281f17db9e7e31`.
-The strict-evidence SHA-256 values are `fcde251d...6917` (26.1),
-`e2ef042a...96af` (26.1.1), and `a6207f13...50f3` (26.1.2). The refreshed
+`1fc017289ebcb102d9894ccb16a30a697e03104b5c8165b6799a1496c4486216`.
+The strict-evidence SHA-256 values are `13ca41f6...b1be` (26.1),
+`ea3f70f6...8ae` (26.1.1), and `213d3a79...78c1` (26.1.2). The current-main
 NeoForge triplet passed in the same run; all three
 cells passed the same gates with frozen jar SHA-256
-`77389181684db006369400a4551eee6e98a3fd12266b01330d3357d5011c6f50`.
-Its strict-evidence SHA-256 values are `36c50cc0...bf9` (26.1),
-`31f12bd7...396` (26.1.1), and `289393f2...057` (26.1.2). The combined run
+`5fd60d12db03386866cc153b7921b180cd1e4a96d4f443443364d04357b56823`.
+Its strict-evidence SHA-256 values are `5078cb72...a8fc` (26.1),
+`def57821...0086` (26.1.1), and `7d86c2b1...9e6b` (26.1.2). The combined run
 also proves that one invocation safely retains distinct Fabric and NeoForge
-frozen roots. A failed precursor remained fail-closed before runtime evidence
-when Fabric could not resolve one JUnit artifact during a host routing outage;
-the passing retry used a refreshed checksum-preserving external read-only
-dependency cache and fresh cell state. Phase 3 quick qualification is complete
-for both loaders at commit `439e339`; the remaining Phase 4 client/gameplay/
+frozen roots. It runs from clean, pushed merge commit `3e94b04` after PR #230
+made the NeoForge runtime verifier distinguish the reviewed root seed from the
+installer-owned verified server copy. Phase 3 quick qualification is complete
+for both loaders on current `main`; the remaining Phase 4 client/gameplay/
 rendering fixtures are pending.
 Phase 4 now also has a pure, fail-closed Atlas recovery evidence contract. It
 requires a genuine partial schema-2 `INTERRUPTED` checkpoint and a later

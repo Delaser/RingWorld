@@ -210,6 +210,17 @@ loader selection additionally builds one frozen oldest-ABI jar and may run
 that exact file through the external dedicated-server adapter. It becomes
 compatibility evidence only when every strict terminal record passes.
 
+The current clean-`main` quick matrix passed on 2026-08-23 as run
+`20260823T130347Z-a493af8d7261` from merge commit `3e94b04`. All six
+Fabric/NeoForge cells for 26.1, 26.1.1, and 26.1.2 passed their 338-test
+build, strict jar inspection, same-file contract, official runtime install,
+mapping-4 server boot, and clean stop/save evidence. All Fabric cells loaded
+frozen jar SHA-256 `1fc01728...46216`; all NeoForge cells loaded
+`5fd60d12...56823`. The immutable matrix report is under
+`dist/qualification/matrix/20260823T130347Z-a493af8d7261/`. This is current
+quick dedicated-server evidence; it does not replace the remaining frozen
+multiplayer, raid, lifecycle, or production-render nightly gates.
+
 For a selected complete loader triplet, a failed frozen-candidate preflight
 stops before the per-cell diagnostic builds: they cannot repair the missing
 shared candidate. The immutable report keeps the failure attributable by
