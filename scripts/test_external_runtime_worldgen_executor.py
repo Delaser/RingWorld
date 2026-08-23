@@ -166,6 +166,12 @@ class ExternalRuntimeWorldgenExecutorTest(unittest.TestCase):
                 smoke.layout.neoforge_run_script.write_text("#!/bin/sh\n", encoding="utf-8")  # type: ignore[union-attr]
                 smoke.layout.neoforge_run_script.chmod(0o700)  # type: ignore[union-attr]
                 smoke.layout.neoforge_user_jvm_args.write_text("-Xmx1G\n", encoding="utf-8")  # type: ignore[union-attr]
+                installed_server = (
+                    smoke.layout.root / "libraries" / "net" / "minecraft" / "server"
+                    / smoke.minecraft_version
+                )
+                installed_server.mkdir(parents=True)
+                (installed_server / f"server-{smoke.minecraft_version}.jar").write_bytes(server)
             (smoke.layout.root / "server.jar").write_bytes(server)
             return ExecutedCommand("DEDICATED_SMOKE", Verdict.PASS, record.argv, 0, "now", 0.0, "", "")
         return execute
