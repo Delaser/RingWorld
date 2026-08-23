@@ -427,6 +427,11 @@ def _installed_minecraft_server(plan: ExternalRuntimeSmokePlan) -> RuntimeIdenti
     for path in plan.layout.root.rglob("*.jar"):
         if not is_within(path, plan.layout.root) or is_within(path, plan.layout.mods_directory):
             continue
+        if plan.loader == "neoforge" and path == plan.layout.root / "server.jar":
+            # This is the reviewed input seed copied before installation to
+            # prevent a redundant download. Runtime identity must bind the
+            # distinct installer-owned copy under libraries/, not its input.
+            continue
         if path.is_symlink() or not path.is_file():
             continue
         verified = verify_pinned_file(path, expected.algorithm, expected.checksum)
