@@ -122,11 +122,12 @@ pass its Overworld/Nether/End lifecycle/reopen gate, noon/dusk/night/rain
 tangent/handoff/radial projection captures, and production natural-seam/both-
 rim visual gate. Reviewed night and rain captures are materially
 loader-matched. The reviewed implementation is publicly integrated on
-`port/mc-1.21.1`. Matched `1.0.0-beta.1+mc1.21.1` Fabric and NeoForge jars
-were built from release checkpoint `7010d2a`, passed the release-labelled
-dual build/licence/archive/staging gates, and were submitted to CurseForge as
-files `8714613` and `8714619`. Branch commit `4eac36b` records the corrected
-publisher schema after those exact artifacts. This remains Windows-x64 Beta
+`port/mc-1.21.1`. Matched `1.0.0-beta.2+mc1.21.1` Fabric and NeoForge jars
+were built from release checkpoint `848b9cc`, passed the release-labelled
+dual build/licence/archive/staging gates with all 352 tests on each loader,
+and were submitted to CurseForge as files `8722177` and `8722178`. The earlier
+Beta 1 files `8714613` and `8714619` remain historical. This remains
+Windows-x64 Beta
 evidence, not Linux/macOS or broad third-party compatibility evidence. See
 `versions/mc1.21.1/README.md` for artifact hashes, known limitations,
 backport-specific maintenance findings, and the future update procedure.

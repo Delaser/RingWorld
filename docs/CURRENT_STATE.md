@@ -1,6 +1,6 @@
 # Current state
 
-Last audited: 2026-08-23 against public `main`, the 1.0 release branch, and
+Last audited: 2026-08-24 against public `main`, the 1.0 release branch, and
 the public `port/mc-1.21.1` backport branch.
 The final
 Minecraft 1.21.11 implementation remains historical provenance at
@@ -12,10 +12,10 @@ The Minecraft 26.1.2 port is integrated on `main`; see
 
 The Minecraft 1.21.1 Java 21 backport is integrated separately on
 `port/mc-1.21.1`. Its complete local Windows dual-loader functional and visual
-matrix passes. Matched RingWorld 1.0 Beta 1 Fabric/NeoForge jars were built
-from exact public checkpoint `7010d2a` and submitted to CurseForge as files
-`8714613` and `8714619`; subsequent `4eac36b` updates release tooling and
-records without changing those artifacts. This is a Beta and does not claim
+matrix passes. Matched RingWorld 1.0 Beta 2 Fabric/NeoForge jars were built
+from exact public checkpoint `848b9cc` and submitted to CurseForge as files
+`8722177` and `8722178`. The earlier Beta 1 files remain historical and were
+not edited or replaced. This is a Beta and does not claim
 Linux/macOS, optional packages, Modrinth delivery, save migration between
 Minecraft lines, or broad third-party compatibility. The maintained release
 identity, hashes, limitations, build-cache warning, porting discoveries, and

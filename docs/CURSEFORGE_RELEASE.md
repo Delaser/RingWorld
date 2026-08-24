@@ -42,20 +42,25 @@ Official reference:
 
 ## Current Minecraft 1.21.1 beta uploads
 
-On 2026-08-23 the owner-authorized Java 21 backport files were submitted as
+On 2026-08-24 the owner-authorized RingWorld 1.0 Beta 2 Java 21 backport files
+were submitted as
 `Beta` from exact public source commit
-`7010d2af3750cd040302b0a6bc580b6440a3b779`:
+`848b9cc5982ab473f84f91a4301ffb4176222ad6`:
 
 | Loader | CurseForge file ID | SHA-256 | Initial host state |
 | --- | --- | --- | --- |
-| Fabric | `8714613` | `60f69edf232edbc64a3a8a92c3e52989294e69024a58114e660b3e5006de749d` | Submitted |
-| NeoForge | `8714619` | `8023561632484136004ce1ef4aa2a3bc1b7f80b9943161406d74facce467b0ed` | Submitted |
+| Fabric | `8722177` | `a51431f118a781f7214bd1a0e9706d81c4ec583f3af82f712fa6ba8b42c1da4b` | Submitted |
+| NeoForge | `8722178` | `e137f0712c2fab5807a77a4177d2d706abe3c7b656fbca809dee0a154844650e` | Submitted |
 
 Both files target Minecraft 1.21.1, Java 21, Client and Server, and only their
 matching loader. Fabric declares Fabric API project `306612` / `fabric-api`
 as a required dependency; NeoForge omits the relation field. Neither file uses
 CurseForge's additional manual-release hold. Review and malware-processing
 states may advance asynchronously without another source change.
+
+The earlier Beta 1 files remain historical and were not edited or replaced:
+Fabric file `8714613` and NeoForge file `8714619`, both from exact source
+`7010d2af3750cd040302b0a6bc580b6440a3b779`.
 
 ## Current 1.0 uploads
 

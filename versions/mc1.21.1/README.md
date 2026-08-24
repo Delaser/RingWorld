@@ -3,10 +3,10 @@
 This is the maintenance and release record for RingWorld's Minecraft Java
 1.21.1 backport. The public integration branch is `port/mc-1.21.1`.
 
-The current build is **RingWorld 1.0 Beta 1 for Minecraft 1.21.1**. Matched
+The current build is **RingWorld 1.0 Beta 2 for Minecraft 1.21.1**. Matched
 Fabric and NeoForge jars were built from public commit
-`7010d2af3750cd040302b0a6bc580b6440a3b779` and submitted to CurseForge on
-2026-08-23. This is a playable public Beta, not a stable or broad modpack-
+`848b9cc5982ab473f84f91a4301ffb4176222ad6` and submitted to CurseForge on
+2026-08-24. This is a playable public Beta, not a stable or broad modpack-
 compatibility claim.
 
 ## Release identity
@@ -17,14 +17,14 @@ compatibility claim.
 | Java | 21 | 21 |
 | Loader | Fabric Loader 0.16.14 or newer compatible 1.21.1 build | NeoForge 21.1.239 or newer compatible 1.21.1 build |
 | Required dependency | Matching Fabric API; validated with 0.116.15+1.21.1 | None beyond NeoForge |
-| Artifact version | `1.0.0-beta.1+mc1.21.1` | `1.0.0-beta.1+mc1.21.1` |
-| CurseForge file | [8714613](https://www.curseforge.com/minecraft/mc-mods/ringworld/files/8714613) | [8714619](https://www.curseforge.com/minecraft/mc-mods/ringworld/files/8714619) |
-| SHA-256 | `60f69edf232edbc64a3a8a92c3e52989294e69024a58114e660b3e5006de749d` | `8023561632484136004ce1ef4aa2a3bc1b7f80b9943161406d74facce467b0ed` |
+| Artifact version | `1.0.0-beta.2+mc1.21.1` | `1.0.0-beta.2+mc1.21.1` |
+| CurseForge file | [8722177](https://www.curseforge.com/minecraft/mc-mods/ringworld/files/8722177) | [8722178](https://www.curseforge.com/minecraft/mc-mods/ringworld/files/8722178) |
+| SHA-256 | `a51431f118a781f7214bd1a0e9706d81c4ec583f3af82f712fa6ba8b42c1da4b` | `e137f0712c2fab5807a77a4177d2d706abe3c7b656fbca809dee0a154844650e` |
 
 CurseForge processing and moderation can delay public download availability.
 No 1.21.1 Modrinth version or optional installer/package is claimed by this
-record. The exact release source remains `7010d2a`; later branch commit
-`4eac36b` changes only release tooling and documentation.
+record. The earlier Beta 1 files `8714613` and `8714619` remain historical;
+Beta 2 is a new submission and did not edit or replace them.
 
 ## What the backport preserves
 
@@ -162,14 +162,21 @@ existing channel identifier.
 Minecraft 1.21.1 does not expose the same terrain shader arrangement as 26.1.
 The backport supplies loader-shared core shader definitions for solid,
 cutout, cutout-mipped, translucent, tripwire, clouds, and the ring surface.
-The shared `ringworld_handoff.glsl` policy and `RingHandoffViewDistance`
-coordinate the live-chunk fade, Atlas reveal, haze, and proxy exclusion.
+The shared `ringworld_handoff.glsl` policy, `RingStreamingProxyCoverage`, and
+post-compile section view coordinate the live-chunk fade, Atlas reveal, haze,
+finite-band coverage, and proxy exclusion. The accepted Experiment 19 policy
+uses a fixed `0.58V→0.68V` proxy ramp and keeps live terrain overlapping the
+Atlas through `1.02V`; an opaque Atlas floor remains until finite-band section
+coverage is safe.
 
 This per-render-type path is essential: disabling the 1.21.1 shader overrides
 or treating the Atlas as an unrelated sky object restores a visible hard
-cutoff. Future tuning should begin from the checkpoint at release commit
-`7010d2a`, preserve the common handoff equations, and compare Fabric and
-NeoForge captures at 6/12/28 chunks plus production tangent/radial views.
+cutoff. Future tuning should begin from Beta 2 source commit `848b9cc`, retain
+the post-compile draw order and fail-closed coverage proof, preserve the common
+handoff equations, and compare Fabric and NeoForge captures at 6/12/28 chunks
+plus production tangent/radial views. The full experiment ledger and reusable
+mainline findings are in
+[`HANDOFF_TRANSITION_RESEARCH_2026-08-24.md`](HANDOFF_TRANSITION_RESEARCH_2026-08-24.md).
 
 Cloud state is bridged separately through `RingCloudShaderState`. Shader and
 JSON assets are version-sensitive ABI and must be re-audited whenever a
@@ -300,8 +307,8 @@ The exact Beta label was produced with:
 
 ```powershell
 .\gradlew.bat build :neoforge:build `
-  -Pmod_version=1.0.0-beta.1+mc1.21.1 `
-  "-Prelease_label=1.0 Beta 1 for Minecraft 1.21.1"
+  "-Pmod_version=1.0.0-beta.2+mc1.21.1" `
+  "-Prelease_label=1.0 Beta 2 for Minecraft 1.21.1"
 ```
 
 A release build is not sufficient by itself. Verify both loader descriptors,

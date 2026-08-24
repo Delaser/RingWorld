@@ -1,10 +1,10 @@
 # Minecraft 1.21.1 compiler baseline
 
 Status: **PUBLIC BETA SUBMITTED; FUNCTIONAL PARITY GATES COMPLETE; BROAD
-COMPATIBILITY INCOMPLETE** as of 2026-08-23. The exact Windows Java 21
+COMPATIBILITY INCOMPLETE** as of 2026-08-24. The exact Windows Java 21
 dual-loader compiler/dependency baseline, dedicated runtime matrix, two-client
 gameplay fixtures, and production-size client gates pass. Matched release jars
-built from public commit `7010d2af3750cd040302b0a6bc580b6440a3b779`
+built from public commit `848b9cc5982ab473f84f91a4301ffb4176222ad6`
 were submitted to CurseForge. Cross-platform and broad third-party
 compatibility remain outside this evidence.
 
@@ -21,7 +21,9 @@ The backport work started from public main commit
 `25efbec21c2be319f9dd26768546fd8365eaf609` when this probe began. The reviewed
 implementation was later integrated as `72d6ec0`, the visual handoff checkpoint
 was frozen as release source `7010d2a`, and release tooling/documentation was
-then corrected at `4eac36b`.
+then corrected at `4eac36b`. The final compositor/streaming-coverage pass was
+validated at `8e34bc4` and merged with the public Beta history as Beta 2 source
+`848b9cc`.
 
 PR #229 (`96c8a43070d83022fa382437ef9b461f812acee6`) was inspected but not
 merged or cherry-picked. Cosmos616's contributor commit provided a useful
@@ -64,8 +66,8 @@ It is a qualification-only artifact. It must not be staged, published, or
 described as supported or as a release candidate.
 
 The owner-approved release-labelled rebuild uses artifact version
-`1.0.0-beta.1+mc1.21.1` and label
-`1.0 Beta 1 for Minecraft 1.21.1`. Release metadata does not weaken the pinned
+`1.0.0-beta.2+mc1.21.1` and label
+`1.0 Beta 2 for Minecraft 1.21.1`. Release metadata does not weaken the pinned
 compiler, loader, protocol, licence, or runtime contracts below.
 
 ## Reproduction
@@ -238,19 +240,21 @@ After that bounded checkpoint, the 2026-08-23 runtime pass added:
   `LICENSE-RINGWORLD.txt`, and contain no stale MIT/evaluation identifier.
 
 Those diagnostic jars remained unpublished. A clean release-labelled dual
-build from the same reviewed checkpoint then passed both loader builds,
+build from exact public checkpoint `848b9cc` then passed both loader builds,
 contract tests, dependency inventory checks, descriptor/licence inspection,
 archive inspection, and guarded staging. The submitted artifacts are:
 
 | Loader | CurseForge file | Bytes | SHA-256 |
 | --- | --- | ---: | --- |
-| Fabric | `8714613` | 705,771 | `60f69edf232edbc64a3a8a92c3e52989294e69024a58114e660b3e5006de749d` |
-| NeoForge | `8714619` | 673,685 | `8023561632484136004ce1ef4aa2a3bc1b7f80b9943161406d74facce467b0ed` |
+| Fabric | `8722177` | 748,746 | `a51431f118a781f7214bd1a0e9706d81c4ec583f3af82f712fa6ba8b42c1da4b` |
+| NeoForge | `8722178` | 716,609 | `e137f0712c2fab5807a77a4177d2d706abe3c7b656fbca809dee0a154844650e` |
 
 Both declare Minecraft 1.21.1, Java 21, Client and Server, the matching loader,
 and MPL-2.0 with `LICENSE-RINGWORLD.txt`. Fabric alone declares Fabric API as
 a required dependency. Neither submission uses CurseForge's additional
 manual-release hold. Processing and moderation can delay public availability.
+The earlier Beta 1 files `8714613` and `8714619` remain historical and were
+not edited or replaced.
 
 ## Remaining boundary
 
