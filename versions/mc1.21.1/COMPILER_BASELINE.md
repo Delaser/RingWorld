@@ -127,7 +127,7 @@ Verified before failure:
 - the primary Loom, Loader, Fabric API, ModDevGradle, NeoForge, and NeoForm
   artifacts matched the checked-in SHA-256 pins;
 - an ordinary clean combined build resolved under strict verification, rebuilt
-  both loaders, ran all 338 cases, and passed the inventory verifier without
+  both loaders, ran all 352 cases, and passed the inventory verifier without
   metadata-generation mode.
 
 The initial focused online `compileJava` did not reach `javac`. Gradle failed
@@ -153,7 +153,7 @@ produced these real results under Java 21:
   alternate-loader method names used by the fail-closed shared
   `ServerWorldMixin` and `ServerEntityManagerMixin` hooks; at runtime exactly
   one named target must match on each loader;
-- all 338 unit and parameterized tests pass;
+- all 352 unit and parameterized tests pass;
 - `build -PringBackportCompilerScope=fabric` passes, including the loader
   boundary, packet inventory, runtime-verifier contracts, remapped runtime jar,
   and sources jar;
@@ -161,7 +161,7 @@ produced these real results under Java 21:
   Mixins, initializes OpenGL, loads RingWorld resources and shader programs,
   produces all thirteen expected captures across GUI scales 1-4 and the compact
   view, and exits normally without creating a world;
-- `:neoforge:build` passes with the same 338 tests, packet inventory, and
+- `:neoforge:build` passes with the same 352 tests, packet inventory, and
   runtime-verifier contracts, and its isolated creation UI gate produces and
   verifies the same thirteen captures;
 - Fabric and NeoForge `runAtlasUiClient` gates each create a disposable
@@ -229,7 +229,7 @@ After that bounded checkpoint, the 2026-08-23 runtime pass added:
   frames, averaged 8.56/8.58 ms, recorded zero frames over 50 ms, and retained
   the same 0.25-block maximum step;
 - the final ordinary `clean build :neoforge:build` passes from the strict
-  369-component/748-artifact graph and reruns all 338 cases for both modules.
+  369-component/748-artifact graph and reruns all 352 cases for both modules.
   The diagnostic Fabric runtime jar is 700,682 bytes with SHA-256
   `55dd91f62a8670d7fe8e8d11ab594dc81f5e26bacd8dd45e08fbcc6360c5c45d`;
   the NeoForge runtime jar is 668,957 bytes with SHA-256

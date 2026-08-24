@@ -49,6 +49,12 @@ Start here:
   configuration scope, dual-loader dedicated/gameplay/production visual
   results, exact Beta artifact hashes, and the remaining platform and
   compatibility boundary.
+- [`../versions/mc1.21.1/HANDOFF_TRANSITION_RESEARCH_2026-08-24.md`](../versions/mc1.21.1/HANDOFF_TRANSITION_RESEARCH_2026-08-24.md):
+  reproducible 1.21.1 live-chunk/Atlas transition experiments, rejected
+  alternatives, Experiment 19's retained continuous overlap, exact dynamic
+  weather/progressive-Atlas envelope, post-compile finite-band streaming
+  coverage, final dual-loader screenshot index, limitations, and findings
+  reusable by mainline.
 - [`NETWORK_PROTOCOL.md`](NETWORK_PROTOCOL.md): login handshake, atlas
   transport, and canonical/presentation packet mapping.
 - [`COMPATIBILITY.md`](COMPATIBILITY.md): versioned read-only API, supported

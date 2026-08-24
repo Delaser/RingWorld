@@ -25,13 +25,19 @@ import dev.ringworld.world.RingSurfaceGenerationFog;
 import dev.ringworld.world.RingSurfaceMorph;
 import dev.ringworld.world.RingSurfacePlaceholder;
 import dev.ringworld.world.RingTerrainAtlas;
+import dev.ringworld.world.RingStreamingProxyCoverage;
 import org.joml.Matrix4f;
 
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.client.renderer.texture.DynamicTexture;
+import net.minecraft.server.level.ChunkTrackingView;
 import net.minecraft.util.FastColor;
+import net.minecraft.util.Mth;
+import net.minecraft.world.level.chunk.LevelChunk;
+import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -50,6 +56,29 @@ public final class RingSurfaceTextureRenderer {
     private static DynamicTexture previousSurfaceTexture;
     private static float surfaceCompletion;
     private static float previousSurfaceCompletion;
+    /**
+     * Exact dynamic reveal envelope used by the proxy drawn after section
+     * setup and immediately before live terrain in 1.21.1.
+     */
+    private static float legacyProxyRevealScale = 1.0F;
+    private static float legacyProxyVisibleCompletion = 1.0F;
+    private static float legacyProxyGenerationFog;
+    private static boolean legacyProxyDrawnThisFrame;
+    private static float legacyStreamingFadeStartBlocks;
+    private static float legacyStreamingOpaqueFromBlocks;
+    private static boolean legacyStreamingWindowComplete;
+    private static ClientLevel streamingCoverageLevel;
+    private static int streamingCoverageCameraChunkX = Integer.MIN_VALUE;
+    private static int streamingCoverageCameraChunkZ = Integer.MIN_VALUE;
+    private static int streamingCoverageEffectiveChunks = -1;
+    private static int streamingCoverageLoadedChunkCount = -1;
+    private static LevelChunk[] streamingCoverageChunkIdentities = new LevelChunk[0];
+    private static LevelChunk[] streamingCoverageObservedChunkIdentities =
+            new LevelChunk[0];
+    private static long streamingCoverageEvaluatedGameTime = Long.MIN_VALUE;
+    private static int streamingCoverageReadyObservations;
+    private static boolean streamingCoverageTransferPending;
+    private static boolean streamingCoverageComplete;
     private static long textureMorphStartedNanos;
     private static RingGeometry bufferedGeometry;
     private static long bufferedWorldHash;
@@ -72,6 +101,7 @@ public final class RingSurfaceTextureRenderer {
 
     public static void render(PoseStack matrices, RingGeometry geometry, Vec3 camera,
                               float alpha) {
+        beginLegacyProxyFrame();
         RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
         // Never fall through to buffers left by another world while the
         // current world's atlas is absent or has no trustworthy cells. Session
@@ -90,6 +120,10 @@ public final class RingSurfaceTextureRenderer {
                 : previousSurfaceCompletion
                         + (surfaceCompletion - previousSurfaceCompletion) * textureMorph;
         float generationFog = RingSurfaceGenerationFog.amount(visibleCompletion);
+        legacyProxyVisibleCompletion = visibleCompletion;
+        legacyProxyGenerationFog = generationFog;
+        legacyProxyRevealScale = Mth.clamp(alpha, 0.0F, 1.0F)
+                * (1.0F - Mth.clamp(generationFog, 0.0F, 1.0F));
         double cameraAngle = Math.PI * 2.0 * geometry.wrapX(camera.x)
                 / geometry.circumferenceBlocks();
         double cameraRadius = geometry.physicalRadiusAt(camera.y);
@@ -120,6 +154,22 @@ public final class RingSurfaceTextureRenderer {
         if (modelOffset != null) {
             modelOffset.set((float)cameraAngle, (float)camera.z, 0.0F);
         }
+        int effectiveChunks = client.options.getEffectiveRenderDistance();
+        int cameraChunkX = Mth.floor(camera.x) >> 4;
+        int cameraChunkZ = Mth.floor(camera.z) >> 4;
+        legacyStreamingWindowComplete = hasCompleteDrawableWindow(
+                client, geometry, camera, cameraChunkX, cameraChunkZ,
+                effectiveChunks);
+        RingStreamingProxyCoverage.Span streamingCoverage =
+                RingStreamingProxyCoverage.span(
+                        effectiveChunks, legacyStreamingWindowComplete);
+        legacyStreamingFadeStartBlocks = (float)streamingCoverage.fadeStartBlocks();
+        legacyStreamingOpaqueFromBlocks = (float)streamingCoverage.opaqueFromBlocks();
+        Uniform legacyStreaming = shader.getUniform("RingWorldLegacyStreaming");
+        if (legacyStreaming != null) {
+            legacyStreaming.set(
+                    legacyStreamingFadeStartBlocks, legacyStreamingOpaqueFromBlocks);
+        }
 
         RenderSystem.enableDepthTest();
         RenderSystem.depthMask(false);
@@ -144,6 +194,10 @@ public final class RingSurfaceTextureRenderer {
         float previousAlpha = previousShaderColor[3];
         try {
             RenderSystem.setShaderColor(1.0F, alpha, textureMorph, generationFog);
+            // Terrain renders later in this same frame. Publish ownership only
+            // once every resource and shader needed by the underlay is valid;
+            // until then its fragment shaders keep live chunks fully opaque.
+            legacyProxyDrawnThisFrame = true;
             vertexBuffer.bind();
             vertexBuffer.drawWithShader(
                     modelView, RenderSystem.getProjectionMatrix(), shader);
@@ -386,6 +440,212 @@ public final class RingSurfaceTextureRenderer {
         return true;
     }
 
+    /**
+     * Fails closed at the head of every RingWorld level frame. A blocked sky
+     * path (for example lava or blindness) skips the later Atlas proxy draw,
+     * while live terrain still renders and must therefore stay opaque.
+     */
+    public static void beginLegacyProxyFrame() {
+        legacyProxyRevealScale = 0.0F;
+        legacyProxyVisibleCompletion = 0.0F;
+        legacyProxyGenerationFog = RingSurfaceGenerationFog.amount(0.0F);
+        legacyProxyDrawnThisFrame = false;
+        legacyStreamingFadeStartBlocks = 0.0F;
+        legacyStreamingOpaqueFromBlocks = 0.0F;
+        legacyStreamingWindowComplete = false;
+    }
+
+    private static boolean hasCompleteDrawableWindow(
+            Minecraft client, RingGeometry geometry, Vec3 cameraPosition,
+            int cameraChunkX, int cameraChunkZ, int effectiveChunks) {
+        if (client.level == null) {
+            invalidateStreamingCoverageProof();
+            return false;
+        }
+        RingRenderProfile profile = RingRenderProfile.create(
+                geometry, effectiveChunks * 16.0);
+        // Queue-empty alone does not prove that the current drawable list has
+        // compiled buffers. The proxy is invoked after setupRender and
+        // compileSections but before terrain, so this bridge checks the exact
+        // sections the live layers will draw in this frame. Dirty rebuilds
+        // retain a compiled buffer and therefore keep the settled no-op stable.
+        boolean currentViewSectionsCompiled =
+                client.levelRenderer instanceof RingDrawableSectionView sectionView
+                        && sectionView.ringworld$hasCompiledSectionsInsideProxyHole(
+                                geometry, cameraPosition, effectiveChunks,
+                                profile.proxyFadeStartBlocks());
+        if (!currentViewSectionsCompiled) {
+            streamingCoverageReadyObservations = 0;
+            streamingCoverageTransferPending = false;
+            streamingCoverageComplete = false;
+            return false;
+        }
+        int loadedChunkCount = client.level.getChunkSource().getLoadedChunksCount();
+        long gameTime = client.level.getGameTime();
+        int previousCameraChunkX = streamingCoverageCameraChunkX;
+        int previousCameraChunkZ = streamingCoverageCameraChunkZ;
+        boolean sameLevelRadius = streamingCoverageLevel == client.level
+                && streamingCoverageEffectiveChunks == effectiveChunks;
+        boolean sameChart = sameLevelRadius
+                && previousCameraChunkX == cameraChunkX
+                && previousCameraChunkZ == cameraChunkZ;
+        boolean adjacentChart = sameLevelRadius && !sameChart
+                && Math.abs(previousCameraChunkX - cameraChunkX) <= 1
+                && Math.abs(previousCameraChunkZ - cameraChunkZ) <= 1;
+        boolean sameWindow = sameChart
+                && streamingCoverageLoadedChunkCount == loadedChunkCount;
+        // Render can run several times per client tick. Scan the complete
+        // vanilla-shaped finite-band window at most once per tick. A count
+        // change forces an immediate scan; a later tick also compares every
+        // required LevelChunk identity, so a balanced unload/replacement
+        // cannot inherit proof merely because the count stayed unchanged.
+        if (sameWindow && streamingCoverageEvaluatedGameTime == gameTime) {
+            return streamingCoverageComplete;
+        }
+        int diameter = effectiveChunks * 2 + 1;
+        int identitySlots = diameter * diameter;
+        if (streamingCoverageChunkIdentities.length != identitySlots
+                || streamingCoverageObservedChunkIdentities.length != identitySlots) {
+            streamingCoverageChunkIdentities = new LevelChunk[identitySlots];
+            streamingCoverageObservedChunkIdentities = new LevelChunk[identitySlots];
+            sameLevelRadius = false;
+            sameChart = false;
+            adjacentChart = false;
+        }
+        boolean identitiesMatch = sameChart;
+        boolean intersectionIdentitiesMatch = adjacentChart;
+        boolean loadedWindowComplete = true;
+        int identityIndex = 0;
+        for (int chunkX = cameraChunkX - effectiveChunks;
+             chunkX <= cameraChunkX + effectiveChunks; chunkX++) {
+            for (int chunkZ = cameraChunkZ - effectiveChunks;
+                 chunkZ <= cameraChunkZ + effectiveChunks; chunkZ++) {
+                boolean required = ChunkTrackingView.isInViewDistance(
+                        cameraChunkX, cameraChunkZ, effectiveChunks, chunkX, chunkZ)
+                        && !geometry.isExteriorChunkZ(chunkZ);
+                LevelChunk chunk = required
+                        ? client.level.getChunkSource().getChunk(
+                                chunkX, chunkZ, ChunkStatus.FULL, false)
+                        : null;
+                streamingCoverageObservedChunkIdentities[identityIndex] = chunk;
+                if (required && chunk == null) {
+                    loadedWindowComplete = false;
+                }
+                if (identitiesMatch
+                        && streamingCoverageChunkIdentities[identityIndex] != chunk) {
+                    identitiesMatch = false;
+                }
+                if (intersectionIdentitiesMatch && required
+                        && ChunkTrackingView.isInViewDistance(
+                                previousCameraChunkX, previousCameraChunkZ,
+                                effectiveChunks, chunkX, chunkZ)
+                        && previousStreamingChunkIdentity(
+                                chunkX, chunkZ, previousCameraChunkX,
+                                previousCameraChunkZ, effectiveChunks) != chunk) {
+                    intersectionIdentitiesMatch = false;
+                }
+                identityIndex++;
+            }
+        }
+        // First ownership still needs two distinct client-tick observations
+        // of the same exact chunks with an empty compile queue. An asynchronous
+        // graph reset can temporarily expose an empty drawable list before its
+        // replacement is installed, and that moment must not make proof sticky.
+        // Once proven, an ordinary dirty-section rebuild retains its previous
+        // vertex buffer and must not flash the emergency Atlas underlay through
+        // foliage/water.
+        boolean retainedProof = sameChart && identitiesMatch
+                && streamingCoverageComplete;
+        boolean adjacentTransfer = streamingCoverageComplete
+                && !streamingCoverageTransferPending
+                && adjacentChart && intersectionIdentitiesMatch
+                && loadedWindowComplete
+                && RingStreamingProxyCoverage.coversAdjacentNewFringe(
+                        effectiveChunks, profile.proxyFadeStartBlocks());
+        int readyObservations;
+        boolean transferPending;
+        boolean complete;
+        if (retainedProof) {
+            readyObservations = streamingCoverageReadyObservations;
+            transferPending = streamingCoverageTransferPending;
+            complete = true;
+            if (transferPending) {
+                if (loadedWindowComplete
+                        && client.levelRenderer.hasRenderedAllSections()) {
+                    readyObservations = streamingCoverageEvaluatedGameTime == gameTime
+                            ? readyObservations
+                            : Math.min(2, readyObservations + 1);
+                } else {
+                    readyObservations = 0;
+                }
+                transferPending = readyObservations < 2;
+            } else {
+                readyObservations = 2;
+            }
+        } else if (adjacentTransfer) {
+            // Only the new outer fringe lacks the old proof. Experiment 19 is
+            // already opaque there, so keep the near no-op while post-render
+            // discovery earns a fresh exact-window proof. Do not transfer a
+            // second time until two queue-empty ticks confirm that fringe.
+            readyObservations = 0;
+            transferPending = true;
+            complete = true;
+        } else if (loadedWindowComplete
+                && client.levelRenderer.hasRenderedAllSections()) {
+            readyObservations = sameChart && identitiesMatch
+                    && streamingCoverageReadyObservations > 0
+                    ? streamingCoverageEvaluatedGameTime == gameTime
+                            ? streamingCoverageReadyObservations
+                            : Math.min(2, streamingCoverageReadyObservations + 1)
+                    : 1;
+            transferPending = false;
+            complete = readyObservations >= 2;
+        } else {
+            readyObservations = 0;
+            transferPending = false;
+            complete = false;
+        }
+        LevelChunk[] previousIdentities = streamingCoverageChunkIdentities;
+        streamingCoverageChunkIdentities = streamingCoverageObservedChunkIdentities;
+        streamingCoverageObservedChunkIdentities = previousIdentities;
+        streamingCoverageLevel = client.level;
+        streamingCoverageCameraChunkX = cameraChunkX;
+        streamingCoverageCameraChunkZ = cameraChunkZ;
+        streamingCoverageEffectiveChunks = effectiveChunks;
+        streamingCoverageLoadedChunkCount = loadedChunkCount;
+        streamingCoverageEvaluatedGameTime = gameTime;
+        streamingCoverageReadyObservations = readyObservations;
+        streamingCoverageTransferPending = transferPending;
+        streamingCoverageComplete = complete;
+        return complete;
+    }
+
+    private static LevelChunk previousStreamingChunkIdentity(
+            int chunkX, int chunkZ, int cameraChunkX, int cameraChunkZ,
+            int effectiveChunks) {
+        int diameter = effectiveChunks * 2 + 1;
+        int localX = chunkX - (cameraChunkX - effectiveChunks);
+        int localZ = chunkZ - (cameraChunkZ - effectiveChunks);
+        if (localX < 0 || localX >= diameter || localZ < 0 || localZ >= diameter) {
+            return null;
+        }
+        return streamingCoverageChunkIdentities[localX * diameter + localZ];
+    }
+
+    private static void invalidateStreamingCoverageProof() {
+        streamingCoverageLevel = null;
+        streamingCoverageCameraChunkX = Integer.MIN_VALUE;
+        streamingCoverageCameraChunkZ = Integer.MIN_VALUE;
+        streamingCoverageEffectiveChunks = -1;
+        streamingCoverageLoadedChunkCount = -1;
+        streamingCoverageChunkIdentities = new LevelChunk[0];
+        streamingCoverageObservedChunkIdentities = new LevelChunk[0];
+        streamingCoverageEvaluatedGameTime = Long.MIN_VALUE;
+        streamingCoverageReadyObservations = 0;
+        streamingCoverageTransferPending = false;
+        streamingCoverageComplete = false;
+    }
+
     private static float updateTextureMorph(long nowNanos) {
         if (previousSurfaceTexture == null || textureMorphStartedNanos == 0L) return 1.0F;
         float progress = RingSurfaceMorph.progress(nowNanos - textureMorphStartedNanos);
@@ -475,6 +735,43 @@ public final class RingSurfaceTextureRenderer {
         bufferedMeshHeightFingerprint =
                 RingSurfaceBuildSnapshot.NO_DETAILED_HEIGHT_FINGERPRINT;
         projectionDiagnosticWorldHash = Long.MIN_VALUE;
+        legacyProxyRevealScale = 1.0F;
+        legacyProxyVisibleCompletion = 1.0F;
+        legacyProxyGenerationFog = 0.0F;
+        legacyProxyDrawnThisFrame = false;
+        legacyStreamingFadeStartBlocks = 0.0F;
+        legacyStreamingOpaqueFromBlocks = 0.0F;
+        legacyStreamingWindowComplete = false;
+        invalidateStreamingCoverageProof();
+    }
+
+    /** 1.21.1-only bridge; shared profile and wire fields remain unchanged. */
+    public static float legacyProxyRevealScale() {
+        return legacyProxyRevealScale;
+    }
+
+    public static float legacyProxyVisibleCompletion() {
+        return legacyProxyVisibleCompletion;
+    }
+
+    public static float legacyProxyGenerationFog() {
+        return legacyProxyGenerationFog;
+    }
+
+    public static float legacyProxyDrawnThisFrame() {
+        return legacyProxyDrawnThisFrame ? 1.0F : 0.0F;
+    }
+
+    public static float legacyStreamingFadeStartBlocks() {
+        return legacyStreamingFadeStartBlocks;
+    }
+
+    public static float legacyStreamingOpaqueFromBlocks() {
+        return legacyStreamingOpaqueFromBlocks;
+    }
+
+    public static boolean legacyStreamingWindowComplete() {
+        return legacyStreamingWindowComplete;
     }
 
     /** Testable raw teardown state, independent of whether a client level is open. */
@@ -482,7 +779,24 @@ public final class RingSurfaceTextureRenderer {
         return vertexBuffer == null && vertexCount == 0
                 && surfaceTexture == null && previousSurfaceTexture == null
                 && bufferedGeometry == null && bufferedWorldHash == 0L
-                && pendingTextureBuild == null;
+                && pendingTextureBuild == null && legacyProxyRevealScale == 1.0F
+                && legacyProxyVisibleCompletion == 1.0F
+                && legacyProxyGenerationFog == 0.0F
+                && !legacyProxyDrawnThisFrame
+                && legacyStreamingFadeStartBlocks == 0.0F
+                && legacyStreamingOpaqueFromBlocks == 0.0F
+                && !legacyStreamingWindowComplete
+                && streamingCoverageLevel == null
+                && streamingCoverageCameraChunkX == Integer.MIN_VALUE
+                && streamingCoverageCameraChunkZ == Integer.MIN_VALUE
+                && streamingCoverageEffectiveChunks == -1
+                && streamingCoverageLoadedChunkCount == -1
+                && streamingCoverageChunkIdentities.length == 0
+                && streamingCoverageObservedChunkIdentities.length == 0
+                && streamingCoverageEvaluatedGameTime == Long.MIN_VALUE
+                && streamingCoverageReadyObservations == 0
+                && !streamingCoverageTransferPending
+                && !streamingCoverageComplete;
     }
 
     private static void destroySurfaceTexture() {

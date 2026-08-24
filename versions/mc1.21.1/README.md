@@ -51,7 +51,7 @@ RingWorld design:
 
 The Windows Java 21 checkpoint passed on both loaders:
 
-- all 338 unit and parameterized cases and both loader build/contract gates;
+- all 352 unit and parameterized cases and both loader build/contract gates;
 - menu-only creation/settings clients with thirteen captures at GUI scales
   1-4, including the narrow 320x270 logical layout;
 - a complete 2,048x128 integrated Atlas with all 4,096 cells, progressive and
@@ -83,6 +83,17 @@ minimum hardware guarantees.
 Full commands, fixture boundaries, hashes, and the distinction between source
 runtime evidence and release evidence are in
 [`COMPILER_BASELINE.md`](COMPILER_BASELINE.md).
+The retained live-chunk/Atlas compositor, all rejected transition experiments,
+loader comparison metrics, screenshot index, and mainline-relevant findings
+are recorded separately in
+[`HANDOFF_TRANSITION_RESEARCH_2026-08-24.md`](HANDOFF_TRANSITION_RESEARCH_2026-08-24.md).
+Its accepted 1.21.1 policy keeps the Experiment 19 continuous overlap, adds a
+fail-closed Atlas floor for incomplete finite-band section coverage, and proves
+the final renderer on both loaders across foliage rebuild/motion, initial
+streaming, partial Atlas, settled Fabulous noon, Fabulous rain at 28 chunks,
+and full production lifecycle/reopen. This is local Windows source/runtime
+evidence, not packaging, public integration, broad compatibility, or release
+approval.
 
 ## Backport-specific implementation findings
 

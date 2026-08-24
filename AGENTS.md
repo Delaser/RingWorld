@@ -98,7 +98,7 @@ ordinary logged-in event is after the initial chunk-buffer flush. See
 `docs/VISUAL_POLISH_CHECKPOINT_2026-08-02.md`.
 
 Minecraft 1.21.1 backport checkpoint: the branch-local Java 21 Fabric and
-NeoForge graphs compile and build, pass all 338 unit and parameterized cases,
+NeoForge graphs compile and build, pass all 352 unit and parameterized cases,
 and pass their isolated menu-only real-client resource/Mixin/UI gates with
 thirteen captures each. Both loaders also pass the integrated 2048x128 Atlas
 gate with format-3/mapping-4 acknowledgement, all 4,096 cells, progressive and
@@ -130,6 +130,26 @@ publisher schema after those exact artifacts. This remains Windows-x64 Beta
 evidence, not Linux/macOS or broad third-party compatibility evidence. See
 `versions/mc1.21.1/README.md` for artifact hashes, known limitations,
 backport-specific maintenance findings, and the future update procedure.
+The final 1.21.1 handoff-smoothness pass retains Experiment 19's fixed
+`0.58V→0.68V` proxy ramp and continuous live/Atlas overlap through `1.02V`.
+Both loaders pass the post-compile foliage/rebuild fixture, deliberately early
+streaming with an opaque safety floor, partial-Atlas handoff, settled Fabulous
+noon, Fabulous rain at 28 chunks, and production lifecycle/reopen. Fresh
+settled Fabric/NeoForge captures have downsampled luma correlation above
+`0.99998`; both foliage runs record zero unsafe coverage frames. See
+`versions/mc1.21.1/HANDOFF_TRANSITION_RESEARCH_2026-08-24.md` for exact
+metrics, screenshot paths, rejected experiments, limitations, and mainline
+guidance.
+The 1.21.1 proxy and replacement star draw immediately after
+`LevelRenderer.compileSections(Camera)` and before terrain. Do not move them
+back to `renderSky` tail: that loses exact current-`visibleSections` readiness
+and lets the proxy overwrite the depth-mask-disabled replacement star. The
+streaming proof must retain its finite-Z exterior exclusion, exact `LevelChunk`
+identity checks, two-distinct-tick first proof, adjacent-fringe guard, and
+fail-closed `(0,0)` Atlas floor. `RingWorldLegacyProxyDrawn` must remain false
+until the proxy draw is valid so live shaders never fade toward a missing
+underlay. This post-sky placement means NeoForge `AFTER_SKY` callbacks precede
+RingWorld's ring/star draw; treat that as a documented compatibility limit.
 Use the diagnostic
 `-PringBackportCompilerScope=fabric` only to isolate the Fabric configuration
 graph; the supported target remains dual-loader parity. See

@@ -9,6 +9,7 @@ uniform ivec4 RingWorldLayout;
 uniform vec4 RingWorldHandoff;
 uniform vec4 RingWorldDetail;
 uniform vec4 RingWorldAtmosphere;
+uniform vec2 RingWorldLegacyStreaming;
 
 in vec2 texCoord0;
 in vec4 vertexColor;
@@ -45,16 +46,40 @@ void main() {
     if (sampled.a == 0.0) discard;
 
     float circumference = float(RingWorldLayout.y);
-    float proxyAlpha = smootherstep(
-        RingWorldHandoff.z, RingWorldHandoff.w, intrinsicDistance
+    // The legacy pre-terrain compositor must supply an opaque two-layer
+    // underlay before live terrain starts fading. Keep Handoff.w's shared
+    // proxy-end meaning intact and localize this 1.21.1 adapter here.
+    float sharedLiveFadeStart = RingWorldHandoff.x;
+    float legacyProxyFadeStart = max(
+        0.0,
+        RingWorldHandoff.z - (sharedLiveFadeStart - RingWorldHandoff.z)
     );
+    float proxyAlpha = smootherstep(
+        legacyProxyFadeStart, RingWorldHandoff.z, intrinsicDistance
+    );
+    // During initial chunk/section streaming, keep an opaque Atlas underlay
+    // beneath every positive distance. A proven complete finite-band window
+    // publishes a step at V, where Experiment 19 is already opaque, so this
+    // max becomes an exact visual no-op.
+    float streamingProxyAlpha = smootherstep(
+        RingWorldLegacyStreaming.x,
+        RingWorldLegacyStreaming.y,
+        intrinsicDistance
+    );
+    proxyAlpha = max(proxyAlpha, streamingProxyAlpha);
     if (proxyAlpha <= 0.001) discard;
 
     float terrainDetail = smootherstep(
-        RingWorldDetail.x, RingWorldDetail.y, intrinsicDistance
-    );
+        RingWorldDetail.x, RingWorldDetail.y, intrinsicDistance);
     float reveal = mix(RingWorldDetail.z, RingWorldDetail.w, terrainDetail)
                    * clamp(ColorModulator.y, 0.0, 1.0);
+    float handoffEnvelope = 1.0 - smootherstep(
+        RingWorldHandoff.z, RingWorldDetail.y, intrinsicDistance
+    );
+    float handoffRevealFloor = mix(
+        RingWorldDetail.w, 1.0, handoffEnvelope
+    ) * clamp(ColorModulator.y, 0.0, 1.0);
+    reveal = max(reveal, handoffRevealFloor);
     float farFraction = clamp(intrinsicDistance / (circumference * 0.5), 0.0, 1.0);
     float distanceHaze = mix(
         RingWorldAtmosphere.x,
@@ -64,8 +89,12 @@ void main() {
     reveal *= 1.0 - distanceHaze;
     reveal *= 1.0 - clamp(ColorModulator.w, 0.0, 1.0);
 
-    const vec2 fullSkyNoBlockLight = vec2(0.5 / 16.0, 15.5 / 16.0);
+    // Match 1.21.1 light.glsl and the lightmap's linear sampler exactly.
+    // UV2=(0,240) is clamped after division by 256, leaving Y=15/16 halfway
+    // between lightmap rows 14 and 15 rather than sampling row 15's centre.
+    const vec2 fullSkyNoBlockLight = vec2(0.5 / 16.0, 15.0 / 16.0);
     vec3 surfaceLight = texture(Sampler2, fullSkyNoBlockLight).rgb;
     vec3 litTerrain = sampled.rgb * surfaceLight;
-    fragColor = vec4(mix(FogColor.rgb, litTerrain, reveal), proxyAlpha * sampled.a);
+    fragColor = vec4(
+        mix(FogColor.rgb, litTerrain, reveal), proxyAlpha * sampled.a);
 }

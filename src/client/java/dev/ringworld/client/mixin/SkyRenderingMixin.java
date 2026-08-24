@@ -15,12 +15,15 @@ import dev.ringworld.client.render.RingCloudShaderState;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingSkyCycle;
 import net.minecraft.client.Camera;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.DimensionSpecialEffects;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.client.renderer.LevelRenderer;
+import net.minecraft.client.renderer.LightTexture;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.Mth;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.material.FogType;
@@ -36,7 +39,7 @@ import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/** Fixed toned centre-star plus the texture-backed complete-ring surface for 1.21.1's immediate sky pass. */
+/** Fixed toned centre-star plus the texture-backed complete-ring surface for 1.21.1. */
 @Mixin(LevelRenderer.class)
 abstract class SkyRenderingMixin {
     @Shadow @Final private static ResourceLocation SUN_LOCATION;
@@ -70,6 +73,16 @@ abstract class SkyRenderingMixin {
         RingCloudShaderState.update(tickProgress, cameraX, cameraY, cameraZ);
     }
 
+    @Inject(method = "renderLevel", at = @At("HEAD"))
+    private void ringworld$beginRingSurfaceFrame(
+            DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera,
+            GameRenderer gameRenderer, LightTexture lightTexture,
+            Matrix4f viewMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
+        if (ClientRingState.geometry() != null) {
+            RingSurfaceTextureRenderer.beginLegacyProxyFrame();
+        }
+    }
+
     @Redirect(
             method = "renderClouds",
             at = @At(value = "INVOKE",
@@ -79,26 +92,37 @@ abstract class SkyRenderingMixin {
                 ? effects.getCloudHeight() : RingCloudShaderState.cloudBaseY();
     }
 
-    @Inject(method = "renderSky", at = @At("TAIL"))
-    private void ringworld$renderRingAndSun(Matrix4f viewMatrix, Matrix4f projectionMatrix,
-                                            float tickProgress, Camera camera,
-                                            boolean renderBlocked, Runnable fogSetup,
-                                            CallbackInfo ci) {
+    @Inject(
+            method = "renderLevel",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/LevelRenderer;compileSections(Lnet/minecraft/client/Camera;)V",
+                    shift = At.Shift.AFTER))
+    private void ringworld$renderRingAndSunAfterSectionSetup(
+            DeltaTracker deltaTracker, boolean renderBlockOutline, Camera camera,
+            GameRenderer gameRenderer, LightTexture lightTexture,
+            Matrix4f viewMatrix, Matrix4f projectionMatrix, CallbackInfo ci) {
         RingGeometry geometry = ClientRingState.geometry();
         Minecraft client = Minecraft.getInstance();
         ClientLevel level = client.level;
+        Vec3 cameraPosition = camera.getPosition();
+        boolean renderBlocked = level != null
+                && (level.effects().isFoggyAt(
+                        Mth.floor(cameraPosition.x), Mth.floor(cameraPosition.y))
+                    || client.gui.getBossOverlay().shouldCreateWorldFog());
         if (geometry == null || level == null || renderBlocked
                 || level.effects().skyType() != DimensionSpecialEffects.SkyType.NORMAL
                 || skyBlockedByCamera(camera)) return;
 
+        float tickProgress = deltaTracker.getGameTimeDeltaPartialTick(false);
         float weatherAlpha = 1.0F - level.getRainLevel(tickProgress);
         PoseStack poseStack = new PoseStack();
         poseStack.mulPose(viewMatrix);
-        RingSurfaceTextureRenderer.render(poseStack, geometry, camera.getPosition(), weatherAlpha);
+        RingSurfaceTextureRenderer.render(poseStack, geometry, cameraPosition, weatherAlpha);
 
         RingSkyCycle.SunVisual visual = RingSkyCycle.sunVisual(
                 level.getGameTime() + tickProgress);
-        Vec3 starDirection = geometry.directionToRingCenter(camera.getPosition());
+        Vec3 starDirection = geometry.directionToRingCenter(cameraPosition);
         float starTiltRadians = (float)Math.atan2(starDirection.z, starDirection.y);
 
         poseStack.pushPose();

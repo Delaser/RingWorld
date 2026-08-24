@@ -51,6 +51,8 @@ public final class RingWorldClient implements ClientModInitializer {
             new ProductionLifecycleTestClient();
     private final RingProjectionCaptureClient projectionCapture =
             new RingProjectionCaptureClient();
+    private final RingHandoffFoliageCaptureClient handoffFoliageCapture =
+            new RingHandoffFoliageCaptureClient();
     private final RingVisualParityCaptureClient visualParityCapture =
             new RingVisualParityCaptureClient();
     private final CurvedObjectCaptureClient curvedObjectCapture =
@@ -203,6 +205,7 @@ public final class RingWorldClient implements ClientModInitializer {
         WorldRenderEvents.END.register(context -> {
             recordTestFrame();
             projectionCapture.frameRendered();
+            handoffFoliageCapture.frameRendered();
             visualParityCapture.frameRendered();
             atlasPregenerationUiTest.frameRendered();
         });
@@ -222,6 +225,7 @@ public final class RingWorldClient implements ClientModInitializer {
             if (layoutSwitchTest.tick(client)) return;
             if (multiplayerTest.tick(client)) return;
             if (projectionCapture.tick(client)) return;
+            if (handoffFoliageCapture.tick(client)) return;
             if (visualParityCapture.tick(client)) return;
             if (curvedObjectCapture.tick(client)) return;
             if (mapCompassCapture.startWorldIfEnabled(client)) return;
