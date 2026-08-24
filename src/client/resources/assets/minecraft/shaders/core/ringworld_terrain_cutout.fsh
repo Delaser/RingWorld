@@ -9,6 +9,7 @@ uniform float FogStart;
 uniform float FogEnd;
 uniform vec4 FogColor;
 uniform ivec4 RingWorldLayout;
+uniform int RingWorldCoverageMode;
 
 in float vertexDistance;
 in vec4 vertexColor;
@@ -20,15 +21,29 @@ void main() {
     vec4 color = texture(Sampler0, texCoord0) * vertexColor * ColorModulator;
     if (color.a < 0.1) discard;
     float coverageFade = 0.0;
-    if (RingWorldLayout.x != 0 && ringIntrinsicDistance >= 0.0) {
+    bool ringHandoffActive =
+        RingWorldLayout.x != 0 && ringIntrinsicDistance >= 0.0;
+    if (ringHandoffActive) {
         coverageFade = ringLiveCoverageFade(ringIntrinsicDistance);
-        if (ringDitherThreshold(gl_FragCoord.xy) < coverageFade) discard;
     }
     vec4 fogged = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
-    if (coverageFade > 0.0) {
-        vec3 proxyTone = ringProxyTone(color.rgb, ringIntrinsicDistance,
-            float(RingWorldLayout.y), FogColor.rgb);
-        fogged.rgb = mix(fogged.rgb, proxyTone, coverageFade);
+    if (ringHandoffActive) {
+        if (coverageFade > 0.0) {
+            vec3 proxyTone = ringProxyTone(color.rgb, ringIntrinsicDistance,
+                float(RingWorldLayout.y), FogColor.rgb);
+            fogged.rgb = mix(fogged.rgb, proxyTone,
+                ringToneConvergence(coverageFade));
+        }
+        if (RingWorldCoverageMode == 1) {
+            // Tripwire uses this same fragment program with its normal
+            // translucent state, so preserve source texture alpha there.
+            fogged.a *= 1.0 - coverageFade;
+        } else {
+            // Ordinary cutout is opaque after its cutoff; alpha represents
+            // only the live/Atlas coverage weight while RingWorld is active.
+            fogged.a = 1.0 - coverageFade;
+        }
+        if (fogged.a <= 0.001) discard;
     }
     fragColor = fogged;
 }

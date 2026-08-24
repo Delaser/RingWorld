@@ -1,13 +1,18 @@
 package dev.ringworld.client;
 
 import dev.ringworld.RingWorldMod;
+import dev.ringworld.client.render.RingSurfaceTextureRenderer;
 import dev.ringworld.client.mixin.ConfirmScreenAccessor;
 import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import dev.ringworld.world.AtlasPregenerationAction;
 import dev.ringworld.world.AtlasPregenerationState;
 import dev.ringworld.world.AtlasPregenerationStatus;
 import dev.ringworld.world.RingTerrainNoiseMapping;
+import dev.ringworld.world.RingGeometry;
+import dev.ringworld.world.RingRenderProfile;
 import dev.ringworld.world.RingWorldSettings;
+import net.minecraft.client.CloudStatus;
+import net.minecraft.client.GraphicsStatus;
 import net.minecraft.client.Minecraft;
 import dev.ringworld.client.compat.Screenshot;
 import dev.ringworld.client.compat.ClientWorldLifecycle;
@@ -24,6 +29,10 @@ public final class AtlasPregenerationUiTestClient {
     public static final String ENABLE_PROPERTY = "ringworld.atlasUiTest";
     public static final String EXPECTED_BUILD_LABEL_PROPERTY = "ringworld.atlasUiExpectedBuildLabel";
     private static final int SETTLE_FRAMES = 3;
+    private static final int PARTIAL_HANDOFF_SETTLE_FRAMES = 60;
+    private static final int PARTIAL_HANDOFF_VIEW_DISTANCE_CHUNKS = 6;
+    private static final int PARTIAL_HANDOFF_FOV = 70;
+    private static final long PARTIAL_HANDOFF_DAY_TIME = 6_000L;
     private static final double PROGRESSIVE_CAPTURE_COMPLETION = 0.25;
     private static final int TIMEOUT_TICKS = 14_400;
     private static final int DISCONNECT_TIMEOUT_TICKS = 200;
@@ -45,6 +54,11 @@ public final class AtlasPregenerationUiTestClient {
     private boolean clientReadyLogged;
     private int disconnectTicks;
     private boolean disconnectInProgress;
+    private boolean partialSetupRequested;
+    private volatile boolean partialSetupComplete;
+    private volatile String partialSetupFailure;
+    private boolean partialCaptureSettling;
+    private boolean capturePolicyLogged;
 
     public boolean enabled() { return Boolean.getBoolean(ENABLE_PROPERTY); }
     public void frameRendered() { renderedFrames++; }
@@ -59,6 +73,19 @@ public final class AtlasPregenerationUiTestClient {
         // ticking after the final map screen closes so its revisioned block
         // placement/removal probe cannot be stranded by lost window focus.
         client.options.pauseOnLostFocus = false;
+        // Publish the fixture radius before login so the integrated server
+        // actually supplies the entire window used by the handoff capture.
+        client.options.renderDistance().set(PARTIAL_HANDOFF_VIEW_DISTANCE_CHUNKS);
+        client.options.graphicsMode().set(GraphicsStatus.FANCY);
+        client.options.cloudStatus().set(CloudStatus.OFF);
+        client.options.fov().set(PARTIAL_HANDOFF_FOV);
+        if (!capturePolicyLogged) {
+            capturePolicyLogged = true;
+            RingWorldMod.LOGGER.info(
+                    "[atlas-ui-test] applied pre-login view distance={}, "
+                            + "graphics=fancy, clouds=off, fov={}",
+                    PARTIAL_HANDOFF_VIEW_DISTANCE_CHUNKS, PARTIAL_HANDOFF_FOV);
+        }
         if (client.level != null || worldStarted) return false;
         String currentScreen = client.screen == null ? "null" : client.screen.getClass().getName();
         if (!currentScreen.equals(lastMenuScreen)) {
@@ -97,7 +124,7 @@ public final class AtlasPregenerationUiTestClient {
         if (++ticks > TIMEOUT_TICKS) return fail(client, "timed out before completion");
         // A normal integrated-server disconnect clears player/level before
         // this fixture may claim the final teardown evidence.
-        if (stage == 17) return disconnectInProgress || verifyDisconnectClear(client);
+        if (stage == 18) return disconnectInProgress || verifyDisconnectClear(client);
         if (client.player == null) return false;
         AtlasPregenerationStatus status = AtlasPregenerationClientState.status().orElse(null);
         switch (stage) {
@@ -144,36 +171,162 @@ public final class AtlasPregenerationUiTestClient {
             case 4 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.RUNNING || !settled()) return true;
                 capture(client, "atlas-ui-04-running", false);
+                // The next capture is world-only evidence. Keep the map/UI
+                // screenshots unchanged while excluding HUD pixels from the
+                // terrain/proxy continuity measurement.
+                client.options.hideGui = true;
                 client.setScreen(null); arm(); stage++;
             }
             case 5 -> {
-                if (!settled() || status == null || status.progress().totalCells() == 0
+                if (!settled() || status == null
+                        || status.progress().state() != AtlasPregenerationState.RUNNING
+                        || status.progress().totalCells() == 0
                         || (double)status.progress().presentCells() / status.progress().totalCells()
                         < PROGRESSIVE_CAPTURE_COMPLETION) return true;
-                client.player.setYRot(90.0F);
-                client.player.setXRot(-65.0F);
-                capture(client, "atlas-ui-05-progressive-world", false); arm(); stage++;
+                AtlasPregenerationClientState.control(
+                        status.worldHash(), AtlasPregenerationAction.PAUSE);
+                arm(); stage++;
             }
             case 6 -> {
+                if (status == null) return true;
+                AtlasPregenerationState partialState = status.progress().state();
+                if (partialState.isTerminal()) {
+                    return fail(client, "Atlas generation reached " + partialState
+                            + " before the partial handoff could be captured");
+                }
+                if (partialState != AtlasPregenerationState.PAUSED) return true;
+                if (partialSetupFailure != null) {
+                    return fail(client, partialSetupFailure);
+                }
+                RingGeometry geometry = ClientRingState.geometry();
+                var atlas = ClientRingState.terrainAtlas();
+                if (geometry == null || atlas == null || atlas.isComplete()) {
+                    return fail(client, "partial handoff lost its incomplete Atlas");
+                }
+                double targetX = geometry.circumferenceBlocks() / 4.0;
+                double targetZ = 0.5;
+                if (!partialSetupRequested) {
+                    partialSetupRequested = true;
+                    RingIntegratedCaptureControl.execute(client, "partial Atlas handoff setup",
+                            context -> {
+                                RingIntegratedCaptureControl.normalizeEnvironment(
+                                        context, 6_000, false);
+                                RingIntegratedCaptureControl.teleport(
+                                        context, targetX, 120.0, targetZ);
+                            },
+                            () -> partialSetupComplete = true,
+                            detail -> partialSetupFailure = detail);
+                    return true;
+                }
+                if (!partialSetupComplete) return true;
+                boolean atPosition = Math.abs(geometry.shortestCircumferenceDelta(
+                        targetX, client.player.getX())) < 1.5
+                        && Math.abs(client.player.getY() - 120.0) < 1.5
+                        && Math.abs(client.player.getZ() - targetZ) < 1.5;
+                if (!atPosition) return true;
+                int effectiveChunks = client.options.getEffectiveRenderDistance();
+                int cameraChunkX = (int)Math.floor(client.player.getX()) >> 4;
+                int cameraChunkZ = (int)Math.floor(client.player.getZ()) >> 4;
+                int loadedPositiveX = contiguousLoadedChunks(
+                        client, cameraChunkX, cameraChunkZ, 1, effectiveChunks);
+                int loadedNegativeX = contiguousLoadedChunks(
+                        client, cameraChunkX, cameraChunkZ, -1, effectiveChunks);
+                if (effectiveChunks != PARTIAL_HANDOFF_VIEW_DISTANCE_CHUNKS
+                        || loadedPositiveX != effectiveChunks
+                        || loadedNegativeX != effectiveChunks
+                        || !client.levelRenderer.hasRenderedAllSections()
+                        || !RingSurfaceTextureRenderer
+                                .legacyStreamingWindowComplete()) return true;
+
+                if (client.options.graphicsMode().get() != GraphicsStatus.FANCY
+                        || client.options.cloudStatus().get() != CloudStatus.OFF
+                        || client.options.fov().get() != PARTIAL_HANDOFF_FOV
+                        || !client.options.hideGui) {
+                    return fail(client, "partial handoff capture policy changed: graphics="
+                            + client.options.graphicsMode().get() + ", clouds="
+                            + client.options.cloudStatus().get() + ", fov="
+                            + client.options.fov().get() + ", hudHidden="
+                            + client.options.hideGui);
+                }
+                long dayTime = Math.floorMod(client.level.getDayTime(), 24_000L);
+                float rainLevel = client.level.getRainLevel(1.0F);
+                if (dayTime != PARTIAL_HANDOFF_DAY_TIME || rainLevel > 0.001F) {
+                    partialCaptureSettling = false;
+                    return true;
+                }
+
+                RingRenderProfile profile = RingRenderProfile.create(
+                        geometry, effectiveChunks * 16.0);
+                double targetDistance = profile.effectiveViewDistanceBlocks();
+                float capturePitch = (float)geometry.pitchDegreesToIntrinsic(
+                        client.player.getY(), ClientRingState.surfaceReferenceY(),
+                        targetDistance, 0.0);
+                client.player.setYRot(90.0F);
+                client.player.setXRot(capturePitch);
+                if (!partialCaptureSettling) {
+                    partialCaptureSettling = true;
+                    readyAfterFrame = renderedFrames + PARTIAL_HANDOFF_SETTLE_FRAMES;
+                    return true;
+                }
                 if (!settled()) return true;
-                client.setScreen(new RingWorldMapScreen(new PauseScreen(true))); arm(); stage++;
+                if (!RingSurfaceTextureRenderer.legacyStreamingWindowComplete()) {
+                    partialCaptureSettling = false;
+                    return true;
+                }
+
+                float visibleCompletion =
+                        RingSurfaceTextureRenderer.legacyProxyVisibleCompletion();
+                float generationFog = RingSurfaceTextureRenderer.legacyProxyGenerationFog();
+                float revealScale = RingSurfaceTextureRenderer.legacyProxyRevealScale();
+                float expectedScale = 1.0F - generationFog;
+                if (!(visibleCompletion > 0.0F && visibleCompletion < 0.95F)
+                        || !(revealScale > 0.0F && revealScale < 0.95F)
+                        || Math.abs(revealScale - expectedScale) > 0.01F) {
+                    return fail(client, "partial handoff reveal envelope did not settle: "
+                            + "visibleCompletion=" + visibleCompletion
+                            + ", generationFog=" + generationFog
+                            + ", revealScale=" + revealScale
+                            + ", expectedScale=" + expectedScale);
+                }
+                RingWorldMod.LOGGER.info(
+                        "[atlas-ui-test] partial-handoff requestedChunks={}, "
+                                + "effectiveChunks={}, loadedX=+{}/-{}, presentCells={}, "
+                                + "totalCells={}, visibleCompletion={}, generationFog={}, "
+                                + "proxyRevealScale={}, streamingWindowComplete={}, pitch={}, "
+                                + "graphics=fancy, clouds=off, hudHidden=true, fov={}, "
+                                + "time={}, rain={}",
+                        PARTIAL_HANDOFF_VIEW_DISTANCE_CHUNKS, effectiveChunks,
+                        loadedPositiveX, loadedNegativeX,
+                        status.progress().presentCells(), status.progress().totalCells(),
+                        visibleCompletion, generationFog, revealScale, true, capturePitch,
+                        PARTIAL_HANDOFF_FOV, dayTime, rainLevel);
+                capture(client, "atlas-ui-05-progressive-handoff", false);
+                AtlasPregenerationClientState.control(
+                        status.worldHash(), AtlasPregenerationAction.RESUME);
+                arm(); stage++;
             }
             case 7 -> {
+                if (status == null || status.progress().state() != AtlasPregenerationState.RUNNING
+                        || !settled()) return true;
+                client.options.hideGui = false;
+                client.setScreen(new RingWorldMapScreen(new PauseScreen(true))); arm(); stage++;
+            }
+            case 8 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.RUNNING || !settled()) return true;
                 capture(client, "atlas-ui-06-reopened", false);
                 AtlasPregenerationClientState.control(status.worldHash(), AtlasPregenerationAction.PAUSE); arm(); stage++;
             }
-            case 8 -> {
+            case 9 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.PAUSED || !settled()) return true;
                 capture(client, "atlas-ui-07-paused", false);
                 AtlasPregenerationClientState.control(status.worldHash(), AtlasPregenerationAction.RESUME); arm(); stage++;
             }
-            case 9 -> {
+            case 10 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.RUNNING || !settled()) return true;
                 capture(client, "atlas-ui-08-resumed", false);
                 AtlasPregenerationClientState.control(status.worldHash(), AtlasPregenerationAction.CANCEL); arm(); stage++;
             }
-            case 10 -> {
+            case 11 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.CANCELLED || !settled()) return true;
                 capture(client, "atlas-ui-09-cancelled", false);
                 if (!(client.screen instanceof RingWorldMapScreen screen)) return true;
@@ -184,12 +337,12 @@ public final class AtlasPregenerationUiTestClient {
                 if (retry == null) return fail(client, "retry button was not present after cancellation");
                 retry.onPress(); arm(); stage++;
             }
-            case 11 -> {
+            case 12 -> {
                 if (!(client.screen instanceof ConfirmScreen confirm) || !settled()) return true;
                 capture(client, "atlas-ui-10-retry-confirm", false);
                 ((ConfirmScreenAccessor)confirm).ringworld$exitButtons().get(0).onPress(); arm(); stage++;
             }
-            case 12 -> {
+            case 13 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.COMPLETE
                         || ClientRingState.terrainAtlas() == null
                         || !ClientRingState.terrainAtlas().isComplete()) return true;
@@ -198,14 +351,14 @@ public final class AtlasPregenerationUiTestClient {
                 // texture/mesh transition, before accepting completion.
                 arm(); stage++;
             }
-            case 13 -> {
+            case 14 -> {
                 if (!(client.screen instanceof RingWorldMapScreen) || !settled()) return true;
                 if (!hasOnlyButton(client, "Done")) {
                     return fail(client, "completed screen retained an invalid action button");
                 }
                 capture(client, "atlas-ui-11-complete", true); arm(); stage++;
             }
-            case 14 -> {
+            case 15 -> {
                 if (!settled() || !finalCaptureSaved) return true;
                 var atlas = ClientRingState.terrainAtlas();
                 if (atlas == null) return fail(client, "complete atlas disappeared before revision test");
@@ -221,7 +374,7 @@ public final class AtlasPregenerationUiTestClient {
                         + " minecraft:gold_block");
                 stage++;
             }
-            case 15 -> {
+            case 16 -> {
                 var atlas = ClientRingState.terrainAtlas();
                 if (atlas == null || atlas.revision() <= revisionBeforeEdit) return true;
                 if (atlas.cellHeight(editedCellColumn, editedCellRow) != 201) {
@@ -232,7 +385,7 @@ public final class AtlasPregenerationUiTestClient {
                         + " minecraft:air");
                 stage++;
             }
-            case 16 -> {
+            case 17 -> {
                 var atlas = ClientRingState.terrainAtlas();
                 if (atlas == null || atlas.revision() <= revisionBeforeEdit) return true;
                 if (atlas.cellHeight(editedCellColumn, editedCellRow) == 201) {
@@ -293,7 +446,7 @@ public final class AtlasPregenerationUiTestClient {
             return fail(client, "normal disconnect did not clear RingWorld client state");
         }
         RingWorldMod.LOGGER.info("[atlas-ui-test] disconnect-clear client-session=true");
-        RingWorldMod.LOGGER.info("[atlas-ui-test] PASS: GUI scale 4 progressive-world/confirmation/running/background/reopen/pause/resume/cancel/retry/complete/revisioned-edit/normal-disconnect");
+        RingWorldMod.LOGGER.info("[atlas-ui-test] PASS: GUI scale 4 progressive-handoff/confirmation/running/background/reopen/pause/resume/cancel/retry/complete/revisioned-edit/normal-disconnect");
         client.stop();
         stage++;
         return true;
@@ -310,6 +463,15 @@ public final class AtlasPregenerationUiTestClient {
                 .map(Button.class::cast)
                 .toList();
         return buttons.size() == 1 && buttons.getFirst().getMessage().getString().equals(label);
+    }
+    private static int contiguousLoadedChunks(Minecraft client, int cameraChunkX,
+                                              int cameraChunkZ, int stepX, int limit) {
+        int loaded = 0;
+        while (loaded < limit && client.level.getChunkSource().hasChunk(
+                cameraChunkX + stepX * (loaded + 1), cameraChunkZ)) {
+            loaded++;
+        }
+        return loaded;
     }
     private void capture(Minecraft client, String name, boolean finalCapture) {
         Screenshot.grab(client.gameDirectory, name + ".png", client.getMainRenderTarget(), 1, message -> {

@@ -254,6 +254,42 @@ loom {
 			vmArg("-Dringworld.projectionEnvironment="
 					+ providers.gradleProperty("ringProjectionEnvironment")
 							.orElse("noon").get())
+			vmArg("-Dringworld.projectionGraphicsMode="
+					+ providers.gradleProperty("ringProjectionGraphicsMode")
+							.orElse("fancy").get())
+		}
+		productionStreamingProjectionClient {
+			client()
+			name "RingWorld Production Streaming Projection Capture"
+			// This is a distinct early-streaming gate over a disposable copy.
+			// The teleport occurs only after the complete Atlas arrives, leaving
+			// time to observe the fallback before real chunks reach 0.58V.
+			runDir qualificationRunDirectory("run-production-streaming-projection")
+			vmArg "-Dringworld.captureRingProjection=true"
+			vmArg "-Dringworld.projectionStreamingEdge=true"
+			vmArg("-Dringworld.projectionWorld="
+					+ providers.gradleProperty("ringStreamingProjectionDestination")
+							.orElse("RingWorld Fabric Streaming Projection").get())
+			vmArg("-Dringworld.projectionViewDistanceChunks="
+					+ providers.gradleProperty("ringStreamingProjectionViewDistanceChunks")
+							.orElse("16").get())
+			vmArg "-Dringworld.projectionEnvironment=noon"
+			vmArg("-Dringworld.projectionGraphicsMode="
+					+ providers.gradleProperty("ringStreamingProjectionGraphicsMode")
+							.orElse("fabulous").get())
+			programArgs "--username", "StreamingTester", "--width", "1280", "--height", "720"
+		}
+		handoffFoliageCaptureClient {
+			client()
+			name "RingWorld Handoff Foliage Capture"
+			// The fixture mutates only a disposable copy of the complete
+			// production save prepared below.
+			runDir qualificationRunDirectory("run-handoff-foliage-capture")
+			vmArg "-Dringworld.captureRingHandoffFoliage=true"
+			vmArg("-Dringworld.handoffFoliageWorld="
+					+ providers.gradleProperty("ringHandoffFoliageDestination")
+							.orElse("RingWorld Fabric Handoff Foliage").get())
+			programArgs "--username", "FoliageTester", "--width", "1280", "--height", "720"
 		}
 		productionVisualParityClient {
 			client()
@@ -366,6 +402,10 @@ def requireSave = { String value, String propertyName, File savesDirectory ->
 def sourceSavesDirectory = qualificationRunFile("run/saves")
 def layoutSwitchSavesDirectory = qualificationRunFile("run-layout-switch/saves")
 def projectionSavesDirectory = qualificationRunFile("run-production-projection/saves")
+def streamingProjectionRunDirectory = qualificationRunFile("run-production-streaming-projection")
+def streamingProjectionSavesDirectory = new File(streamingProjectionRunDirectory, "saves")
+def handoffFoliageRunDirectory = qualificationRunFile("run-handoff-foliage-capture")
+def handoffFoliageSavesDirectory = new File(handoffFoliageRunDirectory, "saves")
 def visualParitySavesDirectory = qualificationRunFile("run-production-visual-parity/saves")
 def lifecycleSavesDirectory = qualificationRunFile("run-production-lifecycle/saves")
 def strongholdTestDirectory = qualificationRunFile("run-stronghold-test")
@@ -379,6 +419,243 @@ def requireFabricRuntimeGateLog = { File logFile, String passMarker,
 		throw new GradleException("${label} did not pass; inspect ${logFile}")
 	}
 }
+
+// A rendered-all-sections result does not prove that the integrated server has
+// supplied the entire configured handoff radius. Require the capture client's
+// explicit contiguous-X observation plus the renderer's complete vanilla-
+// shaped 2-D window proof, so emergency Atlas coverage cannot masquerade as a
+// settled Experiment 19 handoff.
+def requireProjectionSettledRadius = { File logFile, String label ->
+	def log = logFile.isFile() ? logFile.getText("UTF-8") : ""
+	def markerLines = log.readLines().findAll {
+		it.contains("[projection-capture] handoff capture armed at requestedChunks=")
+	}
+	if (markerLines.isEmpty()) {
+		throw new GradleException(
+				"${label} is missing the settled handoff-radius marker: ${logFile}")
+	}
+	def matcher = (markerLines.last() =~ /requestedChunks=(\d+), effectiveChunks=(\d+), loadedX=\+(\d+)\/-(\d+)/)
+	if (!matcher.find()) {
+		throw new GradleException(
+				"${label} has a malformed settled handoff-radius marker: ${logFile}")
+	}
+	int requestedChunks = matcher.group(1).toInteger()
+	int effectiveChunks = matcher.group(2).toInteger()
+	int loadedPositiveX = matcher.group(3).toInteger()
+	int loadedNegativeX = matcher.group(4).toInteger()
+	if (requestedChunks <= 0 || effectiveChunks != requestedChunks
+			|| loadedPositiveX != effectiveChunks
+			|| loadedNegativeX != effectiveChunks
+			|| !markerLines.last().contains("streamingWindowComplete=true")) {
+		throw new GradleException(
+				"${label} did not capture a full settled drawable handoff window "
+						+ "(requested=${requestedChunks}, effective=${effectiveChunks}, "
+						+ "loadedX=+${loadedPositiveX}/-${loadedNegativeX}): ${logFile}")
+	}
+}
+ext.requireProjectionSettledRadius = requireProjectionSettledRadius
+
+// The early-streaming fixture is valid only while the real contiguous radius
+// remains inside the fixed 0.58V proxy onset. Bind the screenshot to both the
+// measured chunks and the renderer-published opaque-near fallback state.
+def requireProjectionStreamingFallback = { File logFile, String label ->
+	def log = logFile.isFile() ? logFile.getText("UTF-8") : ""
+	if (!log.contains("[projection-capture] result=true, streaming fallback capture complete")
+			|| log.contains("[projection-capture] result=false")) {
+		throw new GradleException("${label} did not pass; inspect ${logFile}")
+	}
+	def markerLines = log.readLines().findAll {
+		it.contains("[projection-capture] streaming fallback armed at requestedChunks=")
+	}
+	if (markerLines.size() != 1) {
+		throw new GradleException(
+				"${label} requires exactly one streaming fallback marker: ${logFile}")
+	}
+	def number = /([+\-0-9.Ee]+)/
+	def matcher = (markerLines.first() =~ /requestedChunks=(\d+), effectiveChunks=(\d+), loadedX=\+(\d+)\/-(\d+), incompleteWindow=(true|false), renderedAllSections=(true|false), missingChunks=(\d+), missingNonXChunk=(true|false), firstMissingChunk=\((-?\d+),(-?\d+)\), fixedProxyOnsetBlocks=${number}, fallbackStartBlocks=${number}, fallbackOpaqueFromBlocks=${number}, proxyDrawn=${number}, targetDistance=${number}, pitch=${number}, surfaceY=${number}, graphics=(fast|fancy|fabulous), clouds=off, hudHidden=(true|false), fov=(\d+), time=(\d+), rain=${number}, thunder=${number}, framebuffer=(\d+)x(\d+)/)
+	if (!matcher.find()) {
+		throw new GradleException(
+				"${label} has a malformed streaming fallback marker: ${logFile}")
+	}
+	int requested = matcher.group(1).toInteger()
+	int effective = matcher.group(2).toInteger()
+	int loadedPositive = matcher.group(3).toInteger()
+	int loadedNegative = matcher.group(4).toInteger()
+	boolean incompleteWindow = matcher.group(5).toBoolean()
+	boolean renderedAllSections = matcher.group(6).toBoolean()
+	int missingChunks = matcher.group(7).toInteger()
+	boolean missingNonXChunk = matcher.group(8).toBoolean()
+	double onset = Double.parseDouble(matcher.group(11))
+	double fallbackStart = Double.parseDouble(matcher.group(12))
+	double fallbackEnd = Double.parseDouble(matcher.group(13))
+	double proxyDrawn = Double.parseDouble(matcher.group(14))
+	double targetDistance = Double.parseDouble(matcher.group(15))
+	double pitch = Double.parseDouble(matcher.group(16))
+	double surfaceY = Double.parseDouble(matcher.group(17))
+	String graphics = matcher.group(18)
+	boolean hudHidden = matcher.group(19).toBoolean()
+	int fov = matcher.group(20).toInteger()
+	long dayTime = matcher.group(21).toLong()
+	double rain = Double.parseDouble(matcher.group(22))
+	double thunder = Double.parseDouble(matcher.group(23))
+	int framebufferWidth = matcher.group(24).toInteger()
+	int framebufferHeight = matcher.group(25).toInteger()
+	int minimumLoaded = Math.min(loadedPositive, loadedNegative)
+	if (requested <= 0 || effective != requested || minimumLoaded < 2
+			|| minimumLoaded * 16.0D >= onset
+			|| !incompleteWindow || (renderedAllSections && !missingNonXChunk)
+			|| (renderedAllSections && missingChunks <= 0)
+			|| !Double.isFinite(onset) || !Double.isFinite(fallbackStart)
+			|| !Double.isFinite(fallbackEnd) || !Double.isFinite(targetDistance)
+			|| !Double.isFinite(pitch) || !Double.isFinite(surfaceY)
+			|| Math.abs(fallbackStart) > 0.05D || Math.abs(fallbackEnd) > 0.05D
+			|| !Double.isFinite(proxyDrawn) || Math.abs(proxyDrawn - 1.0D) > 0.001D
+			|| !hudHidden || fov != 70 || dayTime != 6_000L
+			|| !Double.isFinite(rain) || Math.abs(rain) > 0.001D
+			|| !Double.isFinite(thunder) || Math.abs(thunder) > 0.001D
+			|| framebufferWidth != 1_280 || framebufferHeight != 720
+			|| targetDistance <= 0.0D || targetDistance >= onset) {
+		throw new GradleException(
+				"${label} did not prove bounded pre-onset fallback coverage "
+						+ "(requested=${requested}, effective=${effective}, "
+						+ "loadedX=+${loadedPositive}/-${loadedNegative}, "
+						+ "incomplete=${incompleteWindow}, renderedAll=${renderedAllSections}, "
+						+ "missing=${missingChunks}, missingNonX=${missingNonXChunk}, "
+						+ "onset=${onset}, fallback=${fallbackStart}..${fallbackEnd}): ${logFile}")
+	}
+	def policyLines = log.readLines().findAll {
+		it.contains("[projection-capture] applied unattended focus policy and pre-login ")
+	}
+	def policy = policyLines.size() == 1
+			? (policyLines.first() =~ /view distance=(\d+) chunks, graphics=(fast|fancy|fabulous), clouds=off, hudHidden=true, fov=(\d+)/)
+			: null
+	if (policy == null || !policy.find()
+			|| policy.group(1).toInteger() != requested
+			|| policy.group(2) != graphics || policy.group(3).toInteger() != fov) {
+		throw new GradleException(
+				"${label} did not bind its pre-login and capture-time policy: ${logFile}")
+	}
+	def drainLines = log.readLines().findAll {
+		it.contains("[projection-capture] streaming drain complete requestedChunks=")
+	}
+	if (drainLines.size() != 1) {
+		throw new GradleException(
+				"${label} requires exactly one post-capture drain marker: ${logFile}")
+	}
+	def drain = (drainLines.first() =~ /requestedChunks=(\d+), missingChunks=(\d+), renderedAllSections=(true|false), streamingWindowComplete=(true|false), stableTicks=(\d+)/)
+	if (!drain.find() || drain.group(1).toInteger() != requested
+			|| drain.group(2).toInteger() != 0
+			|| !drain.group(3).toBoolean() || !drain.group(4).toBoolean()
+			|| drain.group(5).toInteger() < 20
+			|| log.indexOf(drainLines.first()) <= log.indexOf(markerLines.first())
+			|| log.indexOf("[projection-capture] result=true, streaming fallback capture complete")
+					<= log.indexOf(drainLines.first())) {
+		throw new GradleException(
+				"${label} did not prove a drained post-capture window: ${logFile}")
+	}
+}
+ext.requireProjectionStreamingFallback = requireProjectionStreamingFallback
+
+// The legacy terrain shaders reconstruct the exact dynamic colour envelope of
+// the proxy drawn after section setup and before live terrain. Bind evidence to that
+// published state so a broad rain/Atlas tone drift cannot pass a one-row image
+// continuity check merely because it is gradual.
+def requireProjectionRevealScale = { File logFile, String label, String environment ->
+	def markerLines = logFile.isFile() ? logFile.readLines("UTF-8").findAll {
+		it.contains("[projection-capture] handoff capture armed at requestedChunks=")
+	} : []
+	if (markerLines.isEmpty()) {
+		throw new GradleException(
+				"${label} is missing the proxy reveal-scale marker: ${logFile}")
+	}
+	def matcher = (markerLines.last() =~ /proxyRevealScale=([+\-0-9.Ee]+)/)
+	if (!matcher.find()) {
+		throw new GradleException(
+				"${label} has a malformed proxy reveal-scale marker: ${logFile}")
+	}
+	double scale
+	try {
+		scale = Double.parseDouble(matcher.group(1))
+	} catch (NumberFormatException failure) {
+		throw new GradleException(
+				"${label} has an invalid proxy reveal scale: ${logFile}", failure)
+	}
+	boolean rain = environment == "rain"
+	if (!Double.isFinite(scale) || scale < 0.0D || scale > 1.0D
+			|| (rain ? scale > 0.05D : scale < 0.95D)) {
+		throw new GradleException(
+				"${label} has proxy reveal scale ${scale} for ${environment}: ${logFile}")
+	}
+}
+ext.requireProjectionRevealScale = requireProjectionRevealScale
+
+def requireProjectionGraphicsMode = { File logFile, String label, String expected ->
+	expected = expected.trim().toLowerCase(Locale.ROOT)
+	def markerLines = logFile.isFile() ? logFile.readLines("UTF-8").findAll {
+		it.contains("[projection-capture] applied unattended focus policy and pre-login ")
+	} : []
+	if (markerLines.size() != 1
+			|| !markerLines.first().contains("graphics=${expected}")) {
+		throw new GradleException(
+				"${label} did not bind graphics=${expected}: ${logFile}")
+	}
+}
+ext.requireProjectionGraphicsMode = requireProjectionGraphicsMode
+
+def requirePartialAtlasHandoff = { File logFile, String label ->
+	def policyLines = logFile.isFile() ? logFile.readLines("UTF-8").findAll {
+		it.contains("[atlas-ui-test] applied pre-login view distance=")
+	} : []
+	if (policyLines.size() != 1
+			|| !policyLines.first().contains(
+					"view distance=6, graphics=fancy, clouds=off, fov=70")) {
+		throw new GradleException(
+				"${label} did not bind its pre-login partial-capture policy: ${logFile}")
+	}
+	def markerLines = logFile.isFile() ? logFile.readLines("UTF-8").findAll {
+		it.contains("[atlas-ui-test] partial-handoff requestedChunks=")
+	} : []
+	if (markerLines.size() != 1) {
+		throw new GradleException(
+				"${label} requires exactly one partial-handoff marker: ${logFile}")
+	}
+	def matcher = (markerLines.first() =~ /requestedChunks=(\d+), effectiveChunks=(\d+), loadedX=\+(\d+)\/-(\d+), presentCells=(\d+), totalCells=(\d+), visibleCompletion=([+\-0-9.Ee]+), generationFog=([+\-0-9.Ee]+), proxyRevealScale=([+\-0-9.Ee]+), streamingWindowComplete=(true|false), pitch=([+\-0-9.Ee]+), graphics=fancy, clouds=off, hudHidden=true, fov=(\d+), time=(\d+), rain=([+\-0-9.Ee]+)/)
+	if (!matcher.find()) {
+		throw new GradleException(
+				"${label} has a malformed partial-handoff marker: ${logFile}")
+	}
+	int requested = matcher.group(1).toInteger()
+	int effective = matcher.group(2).toInteger()
+	int loadedPositive = matcher.group(3).toInteger()
+	int loadedNegative = matcher.group(4).toInteger()
+	int present = matcher.group(5).toInteger()
+	int total = matcher.group(6).toInteger()
+	double visible = Double.parseDouble(matcher.group(7))
+	double generationFog = Double.parseDouble(matcher.group(8))
+	double revealScale = Double.parseDouble(matcher.group(9))
+	boolean streamingWindowComplete = matcher.group(10).toBoolean()
+	double pitch = Double.parseDouble(matcher.group(11))
+	int fov = matcher.group(12).toInteger()
+	long dayTime = matcher.group(13).toLong()
+	double rain = Double.parseDouble(matcher.group(14))
+	if (requested != 6 || effective != requested
+			|| loadedPositive != effective || loadedNegative != effective
+			|| present <= 0 || present >= total || total <= 0
+			|| !Double.isFinite(visible) || visible <= 0.0D || visible >= 0.95D
+			|| !Double.isFinite(generationFog) || generationFog < 0.0D
+			|| generationFog >= 1.0D
+			|| !Double.isFinite(revealScale) || revealScale <= 0.0D
+			|| revealScale >= 0.95D
+			|| !streamingWindowComplete
+			|| !Double.isFinite(pitch)
+			|| fov != 70 || dayTime != 6_000L
+			|| !Double.isFinite(rain) || Math.abs(rain) > 0.001D
+			|| Math.abs(revealScale - (1.0D - generationFog)) > 0.01D) {
+		throw new GradleException(
+				"${label} did not prove a settled partial Atlas handoff: ${logFile}")
+	}
+}
+ext.requirePartialAtlasHandoff = requirePartialAtlasHandoff
 
 def requireReadablePng = { File screenshot, String label ->
 	if (!screenshot.isFile()) {
@@ -498,6 +775,7 @@ def requireProjectionHandoffContinuity = { File screenshot, String label ->
 	}
 	double[] previous = null
 	double maximumAdjacentJump = 0.0D
+	def quantizedColours = new HashSet<Integer>()
 	for (int y = y0; y < y1; y++) {
 		long red = 0L
 		long green = 0L
@@ -507,6 +785,10 @@ def requireProjectionHandoffContinuity = { File screenshot, String label ->
 			red += (pixel >>> 16) & 0xFF
 			green += (pixel >>> 8) & 0xFF
 			blue += pixel & 0xFF
+			int quantized = ((pixel >>> 19) & 0x1F) << 10
+			quantized |= ((pixel >>> 11) & 0x1F) << 5
+			quantized |= (pixel >>> 3) & 0x1F
+			quantizedColours.add(quantized)
 		}
 		double samples = x1 - x0
 		double[] current = [red / samples, green / samples, blue / samples]
@@ -517,6 +799,11 @@ def requireProjectionHandoffContinuity = { File screenshot, String label ->
 			maximumAdjacentJump = Math.max(maximumAdjacentJump, jump)
 		}
 		previous = current
+	}
+	if (quantizedColours.size() < 8) {
+		throw new GradleException(
+				"${label} has no visible terrain detail in its handoff band "
+						+ "(${quantizedColours.size()} quantized colours): ${screenshot}")
 	}
 	if (maximumAdjacentJump > 75.0D) {
 		throw new GradleException(String.format(Locale.ROOT,
@@ -536,6 +823,9 @@ def verifyFabricProjectionOutputs = { File runDirectory, String environment ->
 	requireFabricRuntimeGateLog(logFile,
 			"[projection-capture] result=true, captures complete",
 			"[projection-capture] result=false", "Fabric projection capture")
+	requireProjectionSettledRadius(logFile, "Fabric projection capture")
+	requireProjectionRevealScale(
+			logFile, "Fabric projection capture", normalizedEnvironment)
 	def prefix = normalizedEnvironment == "noon"
 			? "ringworld-projection-" : "ringworld-projection-${normalizedEnvironment}-"
 	["tangent", "handoff", "up"].each { view ->
@@ -549,6 +839,598 @@ def verifyFabricProjectionOutputs = { File runDirectory, String environment ->
 			new File(runDirectory, "screenshots/${prefix}handoff.png"),
 			"Fabric projection capture")
 }
+
+def handoffFoliageRoi = { java.awt.image.BufferedImage image ->
+	int x0 = Math.max(0, image.width.intdiv(8))
+	int x1 = Math.min(image.width, image.width - image.width.intdiv(8))
+	int y0 = Math.max(0, image.height.intdiv(8))
+	int y1 = Math.min(image.height, image.height - image.height.intdiv(8))
+	if (image.width < 320 || image.height < 180 || x1 <= x0 || y1 <= y0) {
+		throw new GradleException(
+				"handoff foliage screenshot is too small: ${image.width}x${image.height}")
+	}
+	[x0, x1, y0, y1]
+}
+
+// Every diagnostic plane is centred on the final Atlas ray. At the fixed
+// 1280x720/FOV-70 capture geometry this conservative box is covered by all
+// seven planes, while the broader ROI above remains useful as background
+// telemetry. Keep the two roles separate so animated water cannot dilute the
+// foliage-local history check.
+def handoffFoliageFocusedRoi = { java.awt.image.BufferedImage image ->
+	if (image.width != 1280 || image.height != 720) {
+		throw new GradleException(
+				"handoff foliage screenshot must be exactly 1280x720, got "
+						+ "${image.width}x${image.height}")
+	}
+	[image.width * 7 / 16, image.width * 9 / 16,
+			image.height * 3 / 8, image.height * 5 / 8]*.intValue()
+}
+
+def requireHandoffFoliageDetail = { File screenshot, String label ->
+	requireReadablePng(screenshot, label)
+	def image = javax.imageio.ImageIO.read(screenshot)
+	def roi = handoffFoliageFocusedRoi(image)
+	def quantizedColours = new HashSet<Integer>()
+	int minimumLuma = 255
+	int maximumLuma = 0
+	long greenDominant = 0L
+	long samples = 0L
+	for (int y = roi[2]; y < roi[3]; y++) {
+		for (int x = roi[0]; x < roi[1]; x++) {
+			int pixel = image.getRGB(x, y)
+			int red = (pixel >>> 16) & 0xFF
+			int green = (pixel >>> 8) & 0xFF
+			int blue = pixel & 0xFF
+			int quantized = (red >>> 3) << 10 | (green >>> 3) << 5 | blue >>> 3
+			quantizedColours.add(quantized)
+			int luma = (red * 3 + green * 6 + blue) / 10
+			minimumLuma = Math.min(minimumLuma, luma)
+			maximumLuma = Math.max(maximumLuma, luma)
+			if (green >= red + 5 && green >= blue + 5) greenDominant++
+			samples++
+		}
+	}
+	logger.lifecycle(
+			"[handoff-foliage-verifier] ${label} focused detail colours=${quantizedColours.size()}, "
+					+ "lumaRange=${maximumLuma - minimumLuma}, greenPixels=${greenDominant}/${samples}")
+	if (quantizedColours.size() < 32 || maximumLuma - minimumLuma < 24
+			|| greenDominant * 20L < samples) {
+		throw new GradleException(
+				"${label} has a trivial foliage ROI (colours=${quantizedColours.size()}, "
+						+ "lumaRange=${maximumLuma - minimumLuma}, "
+						+ "greenPixels=${greenDominant}/${samples}): ${screenshot}")
+	}
+}
+
+def handoffFoliageRgbL1 = { int first, int second ->
+	Math.abs(((first >>> 16) & 0xFF) - ((second >>> 16) & 0xFF))
+			+ Math.abs(((first >>> 8) & 0xFF) - ((second >>> 8) & 0xFF))
+			+ Math.abs((first & 0xFF) - (second & 0xFF))
+}
+
+def handoffFoliageAveragePixel = { int first, int second ->
+	int red = ((((first >>> 16) & 0xFF) + ((second >>> 16) & 0xFF)) / 2).intValue()
+	int green = ((((first >>> 8) & 0xFF) + ((second >>> 8) & 0xFF)) / 2).intValue()
+	int blue = (((first & 0xFF) + (second & 0xFF)) / 2).intValue()
+	(red << 16) | (green << 8) | blue
+}
+
+def logHandoffFoliageBroadDifference = { java.awt.image.BufferedImage first,
+		java.awt.image.BufferedImage second, String label ->
+	def roi = handoffFoliageRoi(first)
+	long total = 0L
+	int overTwentyFour = 0
+	int count = 0
+	for (int y = roi[2]; y < roi[3]; y++) {
+		for (int x = roi[0]; x < roi[1]; x++) {
+			int difference = handoffFoliageRgbL1(first.getRGB(x, y), second.getRGB(x, y))
+			total += difference
+			if (difference > 24) overTwentyFour++
+			count++
+		}
+	}
+	logger.lifecycle(String.format(Locale.ROOT,
+			"[handoff-foliage-verifier] %s broad-background meanRgbL1=%.6f, over24=%.6f",
+			label, total / (double)count, overTwentyFour / (double)count))
+}
+
+def requireHandoffFoliageRepeatability = { Map<String, File> files, String label ->
+	def images = files.collectEntries { id, file ->
+		def image = javax.imageio.ImageIO.read(file)
+		if (image == null || image.width != 1280 || image.height != 720) {
+			throw new GradleException(
+					"${label} ${id} is missing or not an exact 1280x720 PNG: ${file}")
+		}
+		[(id): image]
+	}
+	def roi = handoffFoliageFocusedRoi(images["center-a"])
+	def maskImage = new java.awt.image.BufferedImage(
+			1280, 720, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+	def residualImage = new java.awt.image.BufferedImage(
+			1280, 720, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+	def residuals = [] as ArrayList<Integer>
+	long residualTotal = 0L
+	int overTwentyFour = 0
+	int minimumX = Integer.MAX_VALUE
+	int maximumX = Integer.MIN_VALUE
+	int minimumY = Integer.MAX_VALUE
+	int maximumY = Integer.MIN_VALUE
+	for (int y = roi[2]; y < roi[3]; y++) {
+		for (int x = roi[0]; x < roi[1]; x++) {
+			int a0 = images["center-a"].getRGB(x, y)
+			int a1 = images["center-a-control"].getRGB(x, y)
+			int b0 = images["center-b"].getRGB(x, y)
+			int b1 = images["center-b-control"].getRGB(x, y)
+			int e0 = images["empty-a"].getRGB(x, y)
+			int e1 = images["empty-b"].getRGB(x, y)
+			int averageA = handoffFoliageAveragePixel(a0, a1)
+			int averageB = handoffFoliageAveragePixel(b0, b1)
+			int averageEmpty = handoffFoliageAveragePixel(e0, e1)
+			int temporalA = handoffFoliageRgbL1(a0, a1)
+			int temporalB = handoffFoliageRgbL1(b0, b1)
+			int temporalEmpty = handoffFoliageRgbL1(e0, e1)
+			int redA = (averageA >>> 16) & 0xFF
+			int greenA = (averageA >>> 8) & 0xFF
+			int blueA = averageA & 0xFF
+			int redB = (averageB >>> 16) & 0xFF
+			int greenB = (averageB >>> 8) & 0xFF
+			int blueB = averageB & 0xFF
+			boolean foliageChromaA = (greenA >= redA + 5 && greenA >= blueA + 5)
+					|| (redA >= greenA + 10 && blueA + 4 >= greenA)
+			boolean foliageChromaB = (greenB >= redB + 5 && greenB >= blueB + 5)
+					|| (redB >= greenB + 10 && blueB + 4 >= greenB)
+			int foregroundA = handoffFoliageRgbL1(averageA, averageEmpty)
+			int foregroundB = handoffFoliageRgbL1(averageB, averageEmpty)
+			boolean presentA = foliageChromaA
+					&& temporalA <= 18 && temporalEmpty <= 18 && foregroundA >= 30
+			boolean presentB = foliageChromaB
+					&& temporalB <= 18 && temporalEmpty <= 18 && foregroundB >= 30
+			// The union makes directionally missing foliage a large residual
+			// instead of silently dropping it from the acceptance mask.
+			boolean inMask = presentA || presentB
+			if (!inMask) continue
+			maskImage.setRGB(x, y, 0xFFFFFFFF as int)
+			minimumX = Math.min(minimumX, x)
+			maximumX = Math.max(maximumX, x)
+			minimumY = Math.min(minimumY, y)
+			maximumY = Math.max(maximumY, y)
+			int rawHistory = handoffFoliageRgbL1(averageA, averageB)
+			int temporalAllowance = Math.max(temporalEmpty, Math.max(temporalA, temporalB))
+			int residual = Math.max(0, rawHistory - temporalAllowance)
+			residuals.add(residual)
+			residualTotal += residual
+			if (residual > 24) overTwentyFour++
+			int heat = Math.min(255, residual * 8)
+			residualImage.setRGB(x, y, (0xFF000000 | heat << 16) as int)
+		}
+	}
+	int maskPixels = residuals.size()
+	int horizontalSpan = maskPixels == 0 ? 0 : maximumX - minimumX + 1
+	int verticalSpan = maskPixels == 0 ? 0 : maximumY - minimumY + 1
+	def maskFile = new File(files["center-a"].parentFile,
+			"ringworld-handoff-foliage-mask.png")
+	def residualFile = new File(files["center-a"].parentFile,
+			"ringworld-handoff-foliage-history-residual.png")
+	javax.imageio.ImageIO.write(maskImage, "PNG", maskFile)
+	javax.imageio.ImageIO.write(residualImage, "PNG", residualFile)
+	if (maskPixels < 512 || horizontalSpan < 80 || verticalSpan < 80) {
+		throw new GradleException(
+				"${label} does not expose the layered foliage fixture "
+						+ "(maskPixels=${maskPixels}, span=${horizontalSpan}x${verticalSpan}): "
+						+ maskFile)
+	}
+	java.util.Collections.sort(residuals)
+	double mean = residualTotal / (double)maskPixels
+	int p99 = residuals[Math.max(0, (int)Math.ceil(maskPixels * 0.99D) - 1)]
+	double overFraction = overTwentyFour / (double)maskPixels
+	logger.lifecycle(String.format(Locale.ROOT,
+			"[handoff-foliage-verifier] %s foliage-mask pixels=%d, span=%dx%d, "
+					+ "historyResidualMean=%.6f, p99=%d, over24=%.6f",
+			label, maskPixels, horizontalSpan, verticalSpan, mean, p99, overFraction))
+	logHandoffFoliageBroadDifference(
+			images["center-a"], images["center-b"], label)
+	if (mean > 1.5D || p99 > 12 || overFraction > 0.005D) {
+		throw new GradleException(String.format(Locale.ROOT,
+				"%s foliage is camera-history dependent after temporal-noise subtraction "
+						+ "(meanRgbL1=%.6f, p99=%d, over24=%.6f): %s",
+				label, mean, p99, overFraction, residualFile))
+	}
+}
+
+def requireHandoffShaderBindingContract = {
+	def shaderRoot = file("src/client/resources/assets/minecraft/shaders/core")
+	def programIds = ["rendertype_solid", "rendertype_cutout",
+			"rendertype_cutout_mipped", "rendertype_translucent", "rendertype_tripwire"]
+	def fragments = new HashSet<String>()
+	programIds.each { id ->
+		def programFile = new File(shaderRoot, "${id}.json")
+		if (!programFile.isFile()) {
+			throw new GradleException("missing legacy handoff shader program ${programFile}")
+		}
+		def program = new groovy.json.JsonSlurper().parse(programFile)
+		def revealUniforms = program.uniforms.findAll {
+			it.name == "RingWorldLegacyProxyRevealScale"
+		}
+		if (revealUniforms.size() != 1 || revealUniforms.first().type != "float"
+				|| revealUniforms.first().count != 1) {
+			throw new GradleException(
+					"${programFile} does not declare the exact proxy reveal uniform")
+		}
+		def drawnUniforms = program.uniforms.findAll {
+			it.name == "RingWorldLegacyProxyDrawn"
+		}
+		if (drawnUniforms.size() != 1 || drawnUniforms.first().type != "float"
+				|| drawnUniforms.first().count != 1) {
+			throw new GradleException(
+					"${programFile} does not declare the exact proxy-drawn uniform")
+		}
+		fragments.add(program.fragment.toString())
+	}
+	fragments.each { fragment ->
+		def fragmentFile = new File(shaderRoot, "${fragment}.fsh")
+		def source = fragmentFile.isFile() ? fragmentFile.getText("UTF-8") : ""
+		if (!source.contains("#moj_import <ringworld_handoff.glsl>")) {
+			throw new GradleException(
+					"${fragmentFile} does not consume the legacy handoff include")
+		}
+	}
+	def includeFile = file(
+			"src/client/resources/assets/minecraft/shaders/include/ringworld_handoff.glsl")
+	def include = includeFile.isFile() ? includeFile.getText("UTF-8") : ""
+	if (!include.contains("uniform float RingWorldLegacyProxyRevealScale;")
+			|| !include.contains("clamp(RingWorldLegacyProxyRevealScale, 0.0, 1.0)")
+			|| !include.contains("uniform float RingWorldLegacyProxyDrawn;")
+			|| !include.contains("clamp(RingWorldLegacyProxyDrawn, 0.0, 1.0)")) {
+		throw new GradleException("${includeFile} does not publish and consume the reveal scale")
+	}
+	def publisherFile = file(
+			"src/client/java/dev/ringworld/client/mixin/GlobalSettingsMixin.java")
+	def publisher = publisherFile.isFile() ? publisherFile.getText("UTF-8") : ""
+	if (!publisher.contains('set(shader, "RingWorldLegacyProxyRevealScale",')
+			|| !publisher.contains('set(shader, "RingWorldLegacyProxyDrawn",')) {
+		throw new GradleException("${publisherFile} does not publish the reveal scale")
+	}
+	def proxyProgramFile = file(
+			"src/client/resources/assets/ringworld/shaders/core/ring_surface.json")
+	def proxyProgram = proxyProgramFile.isFile()
+			? new groovy.json.JsonSlurper().parse(proxyProgramFile) : null
+	def streamingUniforms = proxyProgram == null ? [] : proxyProgram.uniforms.findAll {
+		it.name == "RingWorldLegacyStreaming"
+	}
+	if (streamingUniforms.size() != 1 || streamingUniforms.first().type != "float"
+			|| streamingUniforms.first().count != 2) {
+		throw new GradleException(
+				"${proxyProgramFile} does not declare the exact streaming-coverage uniform")
+	}
+	def proxyFragmentFile = file(
+			"src/client/resources/assets/ringworld/shaders/core/ring_surface.fsh")
+	def proxyFragment = proxyFragmentFile.isFile()
+			? proxyFragmentFile.getText("UTF-8") : ""
+	if (!proxyFragment.contains("uniform vec2 RingWorldLegacyStreaming;")
+			|| !proxyFragment.contains("proxyAlpha = max(proxyAlpha, streamingProxyAlpha);")) {
+		throw new GradleException(
+				"${proxyFragmentFile} does not consume the streaming-coverage uniform")
+	}
+	def proxyPublisherFile = file(
+			"src/client/java/dev/ringworld/client/render/RingSurfaceTextureRenderer.java")
+	def proxyPublisher = proxyPublisherFile.isFile()
+			? proxyPublisherFile.getText("UTF-8") : ""
+	if (!proxyPublisher.contains('shader.getUniform("RingWorldLegacyStreaming")')
+			|| !proxyPublisher.contains("RingStreamingProxyCoverage.span(")
+			|| !proxyPublisher.contains("instanceof RingDrawableSectionView")
+			|| !proxyPublisher.contains("legacyProxyDrawnThisFrame = true;")) {
+		throw new GradleException(
+				"${proxyPublisherFile} does not publish drawable-window streaming coverage")
+	}
+	def sectionBridgeFile = file(
+			"src/client/java/dev/ringworld/client/mixin/LevelRendererMixin.java")
+	def sectionBridge = sectionBridgeFile.isFile()
+			? sectionBridgeFile.getText("UTF-8") : ""
+	if (!sectionBridge.contains("RingDrawableSectionView")
+			|| !sectionBridge.contains("CompiledSection.UNCOMPILED")
+			|| !sectionBridge.contains("intersectsNonOpaqueProxyRegion(")
+			|| !sectionBridge.contains("capturedFrustum != null")
+			|| !sectionBridge.contains("visibleSections.isEmpty()")
+			|| !sectionBridge.contains(": visibleSections)")
+			|| !sectionBridge.contains("geometry.isExteriorChunkZ(chunkZ)")
+			|| !sectionBridge.contains("hasOnlyAir()")) {
+		throw new GradleException(
+				"${sectionBridgeFile} does not prove current drawable-section coverage")
+	}
+	def drawSiteFile = file(
+			"src/client/java/dev/ringworld/client/mixin/SkyRenderingMixin.java")
+	def drawSite = drawSiteFile.isFile() ? drawSiteFile.getText("UTF-8") : ""
+	if (!drawSite.contains('method = "renderLevel"')
+			|| !drawSite.contains(
+					'target = "Lnet/minecraft/client/renderer/LevelRenderer;compileSections(Lnet/minecraft/client/Camera;)V"')
+			|| !drawSite.contains("shift = At.Shift.AFTER")
+			|| !drawSite.contains("RingSurfaceTextureRenderer.render(")
+			|| drawSite.indexOf("RingSurfaceTextureRenderer.render(")
+					> drawSite.indexOf("RingSkyCycle.SunVisual")) {
+		throw new GradleException(
+				"${drawSiteFile} does not draw the proxy after section setup and before the star/terrain")
+	}
+}
+
+def verifyHandoffFoliageOutputs = { File runDirectory, String label ->
+	requireHandoffShaderBindingContract()
+	def logFile = new File(runDirectory, "logs/latest.log")
+	def log = logFile.isFile() ? logFile.getText("UTF-8") : ""
+	if (!log.contains(
+			"[handoff-foliage-capture] result=true, captures complete, screenshots=9")
+			|| log.contains("[handoff-foliage-capture] result=false")
+			|| log.contains("[handoff-foliage-capture] ")
+					&& log.contains(" screenshot failure:")) {
+		throw new GradleException("${label} did not pass; inspect ${logFile}")
+	}
+	def policyLines = log.readLines().findAll {
+		it.contains("[handoff-foliage-capture] applied pre-login view distance=")
+	}
+	if (policyLines.size() != 1
+			|| !policyLines.first().contains(
+					"view distance=16, graphics=fancy, clouds=off, hudHidden=true, camera=first_person, fov=70")) {
+		throw new GradleException("${label} did not bind its capture policy: ${logFile}")
+	}
+	def identityLines = log.readLines().findAll {
+		it.contains("[handoff-foliage-capture] requested initial placement at ")
+	}
+	if (identityLines.size() != 1) {
+		throw new GradleException("${label} requires one Atlas-identity marker: ${logFile}")
+	}
+	def identity = (identityLines.first() =~ /x=([+\-0-9.Ee]+), y=([+\-0-9.Ee]+), z=([+\-0-9.Ee]+), worldHash=([0-9a-f]+), sampleStep=(\d+), presentCells=(\d+)\/(\d+), framebuffer=(\d+)x(\d+)/)
+	if (!identity.find()
+			|| Math.abs(Double.parseDouble(identity.group(1)) - 4_096.5D) > 0.001D
+			|| Math.abs(Double.parseDouble(identity.group(2)) - 120.0D) > 0.001D
+			|| Math.abs(Double.parseDouble(identity.group(3)) + 17.5D) > 0.001D
+			|| identity.group(4) != "c4f99d1076b39de3"
+			|| identity.group(5).toInteger() != 8
+			|| identity.group(6).toInteger() != 65_536
+			|| identity.group(7).toInteger() != 65_536
+			|| identity.group(8).toInteger() != 1_280
+			|| identity.group(9).toInteger() != 720) {
+		throw new GradleException("${label} did not bind the immutable production Atlas: ${logFile}")
+	}
+	def quiescence = [:]
+	["pre-fixture", "post-fixture", "post-clear"].each { phase ->
+		def lines = log.readLines().findAll {
+			it.contains("[handoff-foliage-capture] Atlas quiescent phase=${phase},")
+		}
+		if (lines.size() != 1) {
+			throw new GradleException(
+					"${label} requires one ${phase} Atlas-quiescence marker: ${logFile}")
+		}
+		def marker = (lines.first() =~ /revision=(\d+), stableTicks=(\d+)/)
+		if (!marker.find() || marker.group(2).toInteger() != 200) {
+			throw new GradleException(
+					"${label} has malformed ${phase} Atlas quiescence: ${logFile}")
+		}
+		quiescence[phase] = marker.group(1).toLong()
+	}
+	def fixtureLines = log.readLines().findAll {
+		it.contains("[handoff-foliage-capture] fixture ready planes=")
+	}
+	if (fixtureLines.size() != 1) {
+		throw new GradleException("${label} requires one fixture marker: ${logFile}")
+	}
+	def fixture = (fixtureLines.first() =~ /planes=(\d+), blocks=(\d+), sentinels=(\d+), atlasRevision=(\d+), targetDistance=([+\-0-9.Ee]+), targetAtlasHeight=([+\-0-9.Ee]+), pitch=([+\-0-9.Ee]+), centers=\[([^\]]+)\]/)
+	if (!fixture.find() || fixture.group(1).toInteger() != 7
+			|| fixture.group(2).toInteger() != 7_508
+			|| fixture.group(3).toInteger() != 14
+			|| fixture.group(4).toLong() != quiescence["post-fixture"]
+			|| Math.abs(Double.parseDouble(fixture.group(5)) - 256.0D) > 0.001D
+			|| Math.abs(Double.parseDouble(fixture.group(6)) - 63.0D) > 0.001D
+			|| Math.abs(Double.parseDouble(fixture.group(7)) - 9.859631D) > 0.001D
+			|| fixture.group(8).split(/,\s*/)*.toInteger()
+					!= [81, 79, 77, 75, 73, 69, 65]) {
+		throw new GradleException("${label} has a malformed foliage fixture: ${logFile}")
+	}
+	long atlasRevision = fixture.group(4).toLong()
+	def settledLines = log.readLines().findAll {
+		it.contains("[handoff-foliage-capture] settled requestedChunks=")
+	}
+	if (settledLines.size() != 1) {
+		throw new GradleException("${label} requires one settled-radius marker: ${logFile}")
+	}
+	def settled = (settledLines.first() =~ /requestedChunks=(\d+), effectiveChunks=(\d+), loadedX=\+(\d+)\/-(\d+), atlasRevision=(\d+), proxyRevealScale=([+\-0-9.Ee]+), streamingWindowComplete=(true|false), camera=first_person, graphics=fancy, clouds=off, hudHidden=true, fov=(\d+), time=(\d+), rain=([+\-0-9.Ee]+), thunder=([+\-0-9.Ee]+), framebuffer=(\d+)x(\d+)/)
+	if (!settled.find() || settled.group(1).toInteger() != 16
+			|| settled.group(2).toInteger() != 16
+			|| settled.group(3).toInteger() != 16
+			|| settled.group(4).toInteger() != 16
+			|| settled.group(5).toLong() != atlasRevision
+			|| Double.parseDouble(settled.group(6)) < 0.95D
+			|| !settled.group(7).toBoolean()
+			|| settled.group(8).toInteger() != 70
+			|| settled.group(9).toLong() != 6_000L
+			|| Math.abs(Double.parseDouble(settled.group(10))) > 0.001D
+			|| Math.abs(Double.parseDouble(settled.group(11))) > 0.001D
+			|| settled.group(12).toInteger() != 1_280
+			|| settled.group(13).toInteger() != 720) {
+		throw new GradleException("${label} did not settle a full foliage radius: ${logFile}")
+	}
+	def resetRequestedLines = log.readLines().findAll {
+		it.contains("[handoff-foliage-capture] reset-view requested ")
+	}
+	if (resetRequestedLines.size() != 1
+			|| !resetRequestedLines.first().contains(
+					"queueEmptyImmediately=true, bridgeCompleteImmediately=false, camera=first_person")) {
+		throw new GradleException(
+				"${label} did not bind the queue-empty/uncompiled reset state: ${logFile}")
+	}
+	def resetFallbackLines = log.readLines().findAll {
+		it.contains("[handoff-foliage-capture] reset-view fallback ")
+	}
+	if (resetFallbackLines.size() != 1) {
+		throw new GradleException("${label} requires one reset fallback marker: ${logFile}")
+	}
+	def resetFallback = (resetFallbackLines.first() =~ /queueEmptyImmediately=true, bridgeCompleteImmediately=false, streamingWindowComplete=(true|false), fallbackStart=([+\-0-9.Ee]+), fallbackOpaqueFrom=([+\-0-9.Ee]+), proxyDrawn=([+\-0-9.Ee]+), camera=first_person, atlasRevision=(\d+)/)
+	if (!resetFallback.find() || resetFallback.group(1) != "false"
+			|| Math.abs(Double.parseDouble(resetFallback.group(2))) > 0.001D
+			|| Math.abs(Double.parseDouble(resetFallback.group(3))) > 0.001D
+			|| Math.abs(Double.parseDouble(resetFallback.group(4)) - 1.0D) > 0.001D
+			|| resetFallback.group(5).toLong() != atlasRevision) {
+		throw new GradleException("${label} did not restore Atlas ownership after reset: ${logFile}")
+	}
+	def resetRecoveryLines = log.readLines().findAll {
+		it.contains("[handoff-foliage-capture] reset-view recovery ")
+	}
+	if (resetRecoveryLines.size() != 1) {
+		throw new GradleException("${label} requires one reset recovery marker: ${logFile}")
+	}
+	def resetRecovery = (resetRecoveryLines.first() =~ /streamingWindowComplete=true, fadeStart=([+\-0-9.Ee]+), opaqueFrom=([+\-0-9.Ee]+), proxyDrawn=([+\-0-9.Ee]+), camera=first_person, atlasRevision=(\d+)/)
+	if (!resetRecovery.find()
+			|| Math.abs(Double.parseDouble(resetRecovery.group(1)) - 256.0D) > 0.001D
+			|| Math.abs(Double.parseDouble(resetRecovery.group(2)) - 256.0D) > 0.001D
+			|| Math.abs(Double.parseDouble(resetRecovery.group(3)) - 1.0D) > 0.001D
+			|| resetRecovery.group(4).toLong() != atlasRevision) {
+		throw new GradleException("${label} did not prove reset recovery: ${logFile}")
+	}
+	int resetRequestedIndex = log.indexOf(resetRequestedLines.first())
+	int resetFallbackIndex = log.indexOf(resetFallbackLines.first())
+	int resetRecoveryIndex = log.indexOf(resetRecoveryLines.first())
+	int resultIndex = log.indexOf(
+			"[handoff-foliage-capture] result=true, captures complete, screenshots=9")
+	if (!(resetRequestedIndex < resetFallbackIndex
+			&& resetFallbackIndex < resetRecoveryIndex
+			&& resetRecoveryIndex < resultIndex)) {
+		throw new GradleException(
+				"${label} reset evidence is not causally ordered: ${logFile}")
+	}
+	double fixturePitch = Double.parseDouble(fixture.group(7))
+	def expectedPoses = ["negative-z": -8.5D, "center-a": 0.5D,
+			"center-a-control": 0.5D, "positive-z": 9.5D,
+			"center-b": 0.5D, "center-b-control": 0.5D]
+	expectedPoses.each { id, expectedZ ->
+		def lines = log.readLines().findAll {
+			it.contains("[handoff-foliage-capture] captured ${id} at ")
+		}
+		if (lines.size() != 1) {
+			throw new GradleException("${label} requires one ${id} pose marker: ${logFile}")
+		}
+		def pose = (lines.first() =~ /x=([+\-0-9.Ee]+), y=([+\-0-9.Ee]+), z=([+\-0-9.Ee]+), yaw=([+\-0-9.Ee]+), pitch=([+\-0-9.Ee]+), atlasRevision=(\d+), proxyRevealScale=([+\-0-9.Ee]+), streamingWindowComplete=(true|false), camera=first_person, graphics=fancy, clouds=off, hudHidden=true, fov=(\d+), time=(\d+), rain=([+\-0-9.Ee]+), thunder=([+\-0-9.Ee]+), framebuffer=(\d+)x(\d+)/)
+		if (!pose.find()
+				|| Math.abs(Double.parseDouble(pose.group(1)) - 4_096.5D) > 0.001D
+				|| Math.abs(Double.parseDouble(pose.group(2)) - 120.0D) > 0.001D
+				|| Math.abs(Double.parseDouble(pose.group(3)) - expectedZ) > 0.001D
+				|| Math.abs(Double.parseDouble(pose.group(4)) - 90.0D) > 0.001D
+				|| Math.abs(Double.parseDouble(pose.group(5)) - fixturePitch) > 0.001D
+				|| pose.group(6).toLong() != atlasRevision
+				|| Double.parseDouble(pose.group(7)) < 0.95D
+				|| !pose.group(8).toBoolean()
+				|| pose.group(9).toInteger() != 70
+				|| pose.group(10).toLong() != 6_000L
+				|| Math.abs(Double.parseDouble(pose.group(11))) > 0.001D
+				|| Math.abs(Double.parseDouble(pose.group(12))) > 0.001D
+				|| pose.group(13).toInteger() != 1_280
+				|| pose.group(14).toInteger() != 720) {
+			throw new GradleException("${label} has an invalid ${id} capture pose: ${logFile}")
+		}
+	}
+	def motionLines = log.readLines().findAll {
+		it.contains("[handoff-foliage-capture] motion metrics steps=")
+	}
+	if (motionLines.size() != 1) {
+		throw new GradleException("${label} requires one motion marker: ${logFile}")
+	}
+	def motion = (motionLines.first() =~ /steps=(\d+), maxStep=([+\-0-9.Ee]+), frameSamples=(\d+), averageMs=([+\-0-9.Ee]+), maxMs=([+\-0-9.Ee]+), over50Ms=(\d+), streamingCoverageDropFrames=(\d+), maximumStreamingCoverageDropRun=(\d+), unsafeStreamingCoverageFrames=(\d+)/)
+	if (!motion.find()) {
+		throw new GradleException("${label} has invalid motion telemetry: ${logFile}")
+	}
+	double maximumStep = Double.parseDouble(motion.group(2))
+	int frameSamples = motion.group(3).toInteger()
+	double averageMs = Double.parseDouble(motion.group(4))
+	double maximumMs = Double.parseDouble(motion.group(5))
+	int over50Ms = motion.group(6).toInteger()
+	int coverageDrops = motion.group(7).toInteger()
+	int maximumCoverageDropRun = motion.group(8).toInteger()
+	int unsafeCoverageFrames = motion.group(9).toInteger()
+	if (motion.group(1).toInteger() != 144
+			|| !Double.isFinite(maximumStep) || maximumStep <= 0.0D
+			|| maximumStep > 0.26D || frameSamples <= 0
+			|| !Double.isFinite(averageMs) || averageMs < 0.0D
+			|| !Double.isFinite(maximumMs) || maximumMs < averageMs
+			|| over50Ms < 0 || over50Ms > frameSamples
+			|| coverageDrops < 0 || coverageDrops > 64
+			|| coverageDrops * 50L > frameSamples
+			|| maximumCoverageDropRun < 0 || maximumCoverageDropRun > 32
+			|| maximumCoverageDropRun > coverageDrops
+			|| unsafeCoverageFrames != 0) {
+		throw new GradleException("${label} has invalid motion telemetry: ${logFile}")
+	}
+	def envelopeLines = log.readLines().findAll {
+		it.contains("[handoff-foliage-capture] blocked-sky envelope blockedScale=")
+	}
+	if (envelopeLines.size() != 1) {
+		throw new GradleException("${label} requires one blocked-sky marker: ${logFile}")
+	}
+	def envelope = (envelopeLines.first() =~ /blockedScale=([+\-0-9.Ee]+), blockedDrawn=([+\-0-9.Ee]+), recoveredScale=([+\-0-9.Ee]+), recoveredDrawn=([+\-0-9.Ee]+), atlasRevision=(\d+)/)
+	if (!envelope.find()
+			|| Math.abs(Double.parseDouble(envelope.group(1))) > 0.001D
+			|| Math.abs(Double.parseDouble(envelope.group(2))) > 0.001D
+			|| Double.parseDouble(envelope.group(3)) < 0.95D
+			|| Math.abs(Double.parseDouble(envelope.group(4)) - 1.0D) > 0.001D
+			|| envelope.group(5).toLong() != atlasRevision) {
+		throw new GradleException("${label} failed its blocked-sky envelope: ${logFile}")
+	}
+	def clearedLines = log.readLines().findAll {
+		it.contains("[handoff-foliage-capture] fixture cleared blocks=")
+	}
+	if (clearedLines.size() != 1) {
+		throw new GradleException("${label} requires one cleared-fixture marker: ${logFile}")
+	}
+	def cleared = (clearedLines.first() =~ /blocks=(\d+), atlasRevision=(\d+)/)
+	if (!cleared.find() || cleared.group(1).toInteger() != 7_508
+			|| cleared.group(2).toLong() != quiescence["post-clear"]
+			|| quiescence["pre-fixture"] != quiescence["post-fixture"]
+			|| quiescence["post-fixture"] != quiescence["post-clear"]
+			|| atlasRevision != quiescence["post-fixture"]) {
+		throw new GradleException(
+				"${label} did not isolate live foliage from Atlas revisions: ${logFile}")
+	}
+	["empty-a", "empty-b"].each { id ->
+		def lines = log.readLines().findAll {
+			it.contains("[handoff-foliage-capture] captured ${id} at ")
+		}
+		if (lines.size() != 1) {
+			throw new GradleException("${label} requires one ${id} pose marker: ${logFile}")
+		}
+		def pose = (lines.first() =~ /x=([+\-0-9.Ee]+), y=([+\-0-9.Ee]+), z=([+\-0-9.Ee]+), yaw=([+\-0-9.Ee]+), pitch=([+\-0-9.Ee]+), atlasRevision=(\d+), proxyRevealScale=([+\-0-9.Ee]+), streamingWindowComplete=(true|false), camera=first_person, graphics=fancy, clouds=off, hudHidden=true, fov=(\d+), time=(\d+), rain=([+\-0-9.Ee]+), thunder=([+\-0-9.Ee]+), framebuffer=(\d+)x(\d+)/)
+		if (!pose.find()
+				|| Math.abs(Double.parseDouble(pose.group(1)) - 4_096.5D) > 0.001D
+				|| Math.abs(Double.parseDouble(pose.group(2)) - 120.0D) > 0.001D
+				|| Math.abs(Double.parseDouble(pose.group(3)) - 0.5D) > 0.001D
+				|| Math.abs(Double.parseDouble(pose.group(4)) - 90.0D) > 0.001D
+				|| Math.abs(Double.parseDouble(pose.group(5)) - fixturePitch) > 0.001D
+				|| pose.group(6).toLong() != quiescence["post-clear"]
+				|| Double.parseDouble(pose.group(7)) < 0.95D
+				|| !pose.group(8).toBoolean()
+				|| pose.group(9).toInteger() != 70
+				|| pose.group(10).toLong() != 6_000L
+				|| Math.abs(Double.parseDouble(pose.group(11))) > 0.001D
+				|| Math.abs(Double.parseDouble(pose.group(12))) > 0.001D
+				|| pose.group(13).toInteger() != 1_280
+				|| pose.group(14).toInteger() != 720) {
+			throw new GradleException("${label} has an invalid ${id} control pose: ${logFile}")
+		}
+	}
+	def screenshots = [:]
+	expectedPoses.keySet().each { id ->
+		def screenshot = new File(runDirectory,
+				"screenshots/ringworld-handoff-foliage-${id}.png")
+		requireHandoffFoliageDetail(screenshot, label)
+		screenshots[id] = screenshot
+	}
+	["empty-a", "empty-b"].each { id ->
+		def screenshot = new File(runDirectory,
+				"screenshots/ringworld-handoff-foliage-${id}.png")
+		requireReadablePng(screenshot, label)
+		screenshots[id] = screenshot
+	}
+	requireReadablePng(new File(runDirectory,
+			"screenshots/ringworld-handoff-foliage-reset-fallback.png"), label)
+	requireHandoffFoliageRepeatability(screenshots, label)
+}
+ext.verifyHandoffFoliageOutputs = verifyHandoffFoliageOutputs
 
 def requireVisualParitySeamMotionMetrics = { File logFile, String label ->
 	def metrics = logFile.readLines("UTF-8").findAll {
@@ -1061,7 +1943,8 @@ tasks.register("prepareAtlasUiRun") {
 		config.setProperty("pregenerateTerrainAtlas", "false")
 		configFile.withOutputStream { config.store(it, "Isolated RingWorld atlas UI regression") }
 		new File(qualificationRunFile("run-atlas-ui"), "options.txt").text =
-				"onboardAccessibility:false\nguiScale:4\n"
+				"onboardAccessibility:false\nguiScale:4\ntutorialStep:none\n" +
+				'renderClouds:"false"\ngraphicsMode:1\nfov:0.0\npauseOnLostFocus:false\n'
 	}
 }
 
@@ -1300,12 +2183,22 @@ tasks.register("verifyAtlasUiClient") {
 		if (atlasSettingsAck < 0 || atlasSettingsAck >= log.indexOf("[atlas-ui-test] disconnect-clear")) {
 			throw new GradleException("Atlas UI integrated server did not accept the format-3 settings acknowledgement; inspect " + logFile)
 		}
+		requirePartialAtlasHandoff(logFile, "Fabric Atlas UI client")
 	    (1..11).each { index ->
 			def prefix = String.format("atlas-ui-%02d-", index)
 			if (fileTree(new File(qualificationRunFile("run-atlas-ui"), "screenshots")).matching { include prefix + "*.png" }.isEmpty()) {
 				throw new GradleException("Atlas UI client is missing screenshot " + prefix + "*.png")
 			}
 		}
+		def partialCaptures = fileTree(
+				new File(qualificationRunFile("run-atlas-ui"), "screenshots"))
+				.matching { include "atlas-ui-05-*.png" }.files
+		if (partialCaptures.size() != 1) {
+			throw new GradleException(
+					"Fabric Atlas UI client requires exactly one partial-handoff screenshot")
+		}
+		requireProjectionHandoffContinuity(
+				partialCaptures.first(), "Fabric partial Atlas handoff")
 	}
 }
 
@@ -1508,8 +2401,141 @@ tasks.register("verifyProductionProjectionClient") {
 	description = "Fails unless the Fabric projection client completed three decodable captures."
 	mustRunAfter("runProductionProjectionClient")
 	doLast {
-		verifyFabricProjectionOutputs(qualificationRunFile("run-production-projection"),
+		def runDirectory = qualificationRunFile("run-production-projection")
+		verifyFabricProjectionOutputs(runDirectory,
 				providers.gradleProperty("ringProjectionEnvironment").orElse("noon").get())
+		requireProjectionGraphicsMode(
+				new File(runDirectory, "logs/latest.log"), "Fabric projection capture",
+				providers.gradleProperty("ringProjectionGraphicsMode").orElse("fancy").get())
+	}
+}
+
+tasks.register("prepareCopiedProductionStreamingProjectionWorld") {
+	group = "ringworld verification"
+	description = "Copies the production save into the isolated Fabric early-streaming projection run."
+	inputs.property("ringStreamingProjectionSource",
+			providers.gradleProperty("ringStreamingProjectionSource")
+					.orElse("Backport Production 16384"))
+	inputs.property("ringStreamingProjectionDestination",
+			providers.gradleProperty("ringStreamingProjectionDestination")
+					.orElse("RingWorld Fabric Streaming Projection"))
+	outputs.dir(streamingProjectionSavesDirectory)
+	outputs.upToDateWhen { false }
+	doLast {
+		def source = requireSave(
+				providers.gradleProperty("ringStreamingProjectionSource")
+						.orElse("Backport Production 16384").get(),
+				"ringStreamingProjectionSource", sourceSavesDirectory)
+		def destinationId = checkedSaveId(
+				providers.gradleProperty("ringStreamingProjectionDestination")
+						.orElse("RingWorld Fabric Streaming Projection").get(),
+				"ringStreamingProjectionDestination")
+		def destination = new File(streamingProjectionSavesDirectory, destinationId)
+		delete(destination)
+		["screenshots", "ringworld-cache", "logs", "crash-reports"].each {
+			delete(new File(streamingProjectionRunDirectory, it))
+		}
+		def optionsFile = new File(streamingProjectionRunDirectory, "options.txt")
+		def optionLines = optionsFile.isFile() ? optionsFile.readLines("UTF-8") : []
+		optionLines.removeAll {
+			it.startsWith("tutorialStep:") || it.startsWith("renderClouds:")
+					|| it.startsWith("fullscreen:")
+		}
+		optionLines.add("tutorialStep:none")
+		optionLines.add('renderClouds:"false"')
+		optionLines.add("fullscreen:false")
+		optionsFile.parentFile.mkdirs()
+		optionsFile.setText(optionLines.join("\n") + "\n", "UTF-8")
+		copy {
+			from(source.directory)
+			into(destination)
+		}
+		if (!new File(destination, "level.dat").isFile()) {
+			throw new GradleException(
+					"copied Fabric streaming-projection save is missing level.dat: ${destination}")
+		}
+		logger.lifecycle("[streaming-projection] copied source={} destination={}",
+				source.directory, destination)
+	}
+}
+
+tasks.register("verifyProductionStreamingProjectionClient") {
+	group = "ringworld verification"
+	description = "Fails unless Fabric captures bounded Atlas fallback coverage before the fixed proxy onset."
+	mustRunAfter("runProductionStreamingProjectionClient")
+	doLast {
+		def logFile = new File(streamingProjectionRunDirectory, "logs/latest.log")
+		requireProjectionStreamingFallback(logFile, "Fabric streaming projection capture")
+		requireProjectionGraphicsMode(
+				logFile, "Fabric streaming projection capture",
+				providers.gradleProperty("ringStreamingProjectionGraphicsMode")
+						.orElse("fabulous").get())
+		requireProjectionHandoffContinuity(
+				new File(streamingProjectionRunDirectory,
+						"screenshots/ringworld-projection-streaming-fallback.png"),
+				"Fabric streaming projection capture")
+	}
+}
+
+tasks.register("prepareCopiedHandoffFoliageWorld") {
+	group = "ringworld verification"
+	description = "Copies the complete production save into the isolated Fabric handoff-foliage run."
+	inputs.property("ringHandoffFoliageSource",
+			providers.gradleProperty("ringHandoffFoliageSource")
+					.orElse("Backport Production 16384"))
+	inputs.property("ringHandoffFoliageDestination",
+			providers.gradleProperty("ringHandoffFoliageDestination")
+					.orElse("RingWorld Fabric Handoff Foliage"))
+	outputs.dir(handoffFoliageSavesDirectory)
+	outputs.upToDateWhen { false }
+	doLast {
+		def source = requireSave(
+				providers.gradleProperty("ringHandoffFoliageSource")
+						.orElse("Backport Production 16384").get(),
+				"ringHandoffFoliageSource", sourceSavesDirectory)
+		def destinationId = checkedSaveId(
+				providers.gradleProperty("ringHandoffFoliageDestination")
+						.orElse("RingWorld Fabric Handoff Foliage").get(),
+				"ringHandoffFoliageDestination")
+		def destination = new File(handoffFoliageSavesDirectory, destinationId)
+		delete(destination)
+		["screenshots", "ringworld-cache", "logs", "crash-reports"].each {
+			delete(new File(handoffFoliageRunDirectory, it))
+		}
+		def optionsFile = new File(handoffFoliageRunDirectory, "options.txt")
+		def optionLines = optionsFile.isFile() ? optionsFile.readLines("UTF-8") : []
+		optionLines.removeAll {
+			it.startsWith("tutorialStep:") || it.startsWith("renderClouds:")
+					|| it.startsWith("graphicsMode:") || it.startsWith("pauseOnLostFocus:")
+					|| it.startsWith("fullscreen:")
+		}
+		optionLines.add("tutorialStep:none")
+		optionLines.add('renderClouds:"false"')
+		optionLines.add("graphicsMode:1")
+		optionLines.add("pauseOnLostFocus:false")
+		optionLines.add("fullscreen:false")
+		optionsFile.parentFile.mkdirs()
+		optionsFile.setText(optionLines.join("\n") + "\n", "UTF-8")
+		copy {
+			from(source.directory)
+			into(destination)
+		}
+		if (!new File(destination, "level.dat").isFile()) {
+			throw new GradleException(
+					"copied Fabric handoff-foliage save is missing level.dat: ${destination}")
+		}
+		logger.lifecycle("[handoff-foliage-capture] copied source={} destination={}",
+				source.directory, destination)
+	}
+}
+
+tasks.register("verifyHandoffFoliageCaptureClient") {
+	group = "ringworld verification"
+	description = "Fails unless the Fabric layered-foliage handoff and blocked-sky probes pass."
+	mustRunAfter("runHandoffFoliageCaptureClient")
+	doLast {
+		verifyHandoffFoliageOutputs(
+				handoffFoliageRunDirectory, "Fabric handoff-foliage capture")
 	}
 }
 
@@ -1543,6 +2569,7 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 	description = "Proves the Fabric projection/layout/lifecycle verifiers reject stale or corrupt evidence."
 	outputs.upToDateWhen { false }
 	doLast {
+		requireHandoffShaderBindingContract()
 		def fixtureRoot = layout.buildDirectory.dir(
 				"tmp/fabric-runtime-gate-verifiers").get().asFile
 		delete(fixtureRoot)
@@ -1621,9 +2648,50 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 			}
 		}
 
+		def partialAtlas = new File(fixtureRoot, "partial-atlas")
+		def partialAtlasLog = new File(partialAtlas, "logs/latest.log")
+		def partialCapturePolicy =
+				"[atlas-ui-test] applied pre-login view distance=6, " +
+						"graphics=fancy, clouds=off, fov=70\n"
+		def validPartialMarker =
+				"[atlas-ui-test] partial-handoff requestedChunks=6, " +
+						"effectiveChunks=6, loadedX=+6/-6, presentCells=1536, " +
+						"totalCells=4096, visibleCompletion=0.36, " +
+						"generationFog=0.66, proxyRevealScale=0.34, " +
+						"streamingWindowComplete=true, pitch=12.0, " +
+						"graphics=fancy, clouds=off, hudHidden=true, fov=70, " +
+						"time=6000, rain=0.0\n"
+		writeText(partialAtlasLog, partialCapturePolicy + validPartialMarker)
+		requirePartialAtlasHandoff(partialAtlasLog, "partial Atlas contract fixture")
+		writeText(partialAtlasLog,
+				partialCapturePolicy + validPartialMarker.replace(
+						"streamingWindowComplete=true",
+						"streamingWindowComplete=false"))
+		expectRejected("emergency streaming coverage in partial-Atlas handoff") {
+			requirePartialAtlasHandoff(partialAtlasLog,
+					"partial Atlas contract fixture")
+		}
+		writeText(partialAtlasLog,
+				partialCapturePolicy + validPartialMarker.replace(
+						"proxyRevealScale=0.34", "proxyRevealScale=0.75"))
+		expectRejected("inconsistent partial-Atlas reveal envelope") {
+			requirePartialAtlasHandoff(partialAtlasLog,
+					"partial Atlas contract fixture")
+		}
+		writeText(partialAtlasLog,
+				partialCapturePolicy + "[atlas-ui-test] partial-handoff malformed\n")
+		expectRejected("malformed partial-Atlas marker") {
+			requirePartialAtlasHandoff(partialAtlasLog,
+					"partial Atlas contract fixture")
+		}
+
 		def projection = new File(fixtureRoot, "projection")
 		writeText(new File(projection, "logs/latest.log"),
-				"[projection-capture] result=true, captures complete\n")
+				"[projection-capture] handoff capture armed at requestedChunks=16, "
+						+ "effectiveChunks=16, loadedX=+16/-16, handoffBlocks=256.0, "
+						+ "pitch=12.0, surfaceY=63.0, proxyRevealScale=1.0, "
+						+ "streamingWindowComplete=true\n"
+						+ "[projection-capture] result=true, captures complete\n")
 		["tangent", "handoff", "up"].each { view ->
 			writePng(new File(projection,
 					"screenshots/ringworld-projection-${view}.png"))
@@ -1632,11 +2700,45 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 				"screenshots/ringworld-projection-handoff.png")
 		writeHandoffPng(handoff, false)
 		verifyFabricProjectionOutputs(projection, "noon")
+		writeText(new File(projection, "logs/latest.log"),
+				"[projection-capture] handoff capture armed at requestedChunks=16, "
+						+ "effectiveChunks=16, loadedX=+16/-16, handoffBlocks=256.0, "
+						+ "pitch=12.0, surfaceY=63.0, proxyRevealScale=1.0, "
+						+ "streamingWindowComplete=false\n"
+						+ "[projection-capture] result=true, captures complete\n")
+		expectRejected("emergency streaming coverage in settled projection") {
+			verifyFabricProjectionOutputs(projection, "noon")
+		}
+		writeText(new File(projection, "logs/latest.log"),
+				"[projection-capture] handoff capture armed at requestedChunks=16, "
+						+ "effectiveChunks=16, loadedX=+16/-16, handoffBlocks=256.0, "
+						+ "pitch=12.0, surfaceY=63.0, proxyRevealScale=1.0, "
+						+ "streamingWindowComplete=true\n"
+						+ "[projection-capture] result=true, captures complete\n")
 		writeHandoffPng(handoff, true)
 		expectRejected("abrupt live/Atlas projection handoff") {
 			verifyFabricProjectionOutputs(projection, "noon")
 		}
+		writeFlatProjectionPng(handoff)
+		expectRejected("flat fog-only projection handoff") {
+			verifyFabricProjectionOutputs(projection, "noon")
+		}
 		writeHandoffPng(handoff, false)
+		writeText(new File(projection, "logs/latest.log"),
+				"[projection-capture] handoff capture armed at requestedChunks=16, "
+						+ "effectiveChunks=16, loadedX=+16/-16, handoffBlocks=256.0, "
+						+ "pitch=12.0, surfaceY=63.0, proxyRevealScale=0.5, "
+						+ "streamingWindowComplete=true\n"
+						+ "[projection-capture] result=true, captures complete\n")
+		expectRejected("wrong clear-weather proxy reveal scale") {
+			verifyFabricProjectionOutputs(projection, "noon")
+		}
+		writeText(new File(projection, "logs/latest.log"),
+				"[projection-capture] handoff capture armed at requestedChunks=16, "
+						+ "effectiveChunks=16, loadedX=+16/-16, handoffBlocks=256.0, "
+						+ "pitch=12.0, surfaceY=63.0, proxyRevealScale=1.0, "
+						+ "streamingWindowComplete=true\n"
+						+ "[projection-capture] result=true, captures complete\n")
 		def radialUp = new File(projection,
 				"screenshots/ringworld-projection-up.png")
 		writeFlatProjectionPng(radialUp)
@@ -1656,13 +2758,123 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 		}
 		writePng(tangent)
 		writeText(new File(projection, "logs/latest.log"),
-				"[projection-capture] result=true, captures complete\n"
+				"[projection-capture] handoff capture armed at requestedChunks=16, "
+						+ "effectiveChunks=16, loadedX=+16/-16, handoffBlocks=256.0, "
+						+ "pitch=12.0, surfaceY=63.0, streamingWindowComplete=true\n"
+						+ "[projection-capture] result=true, captures complete\n"
 						+ "[projection-capture] result=false, fixture failure\n")
 		expectRejected("failed projection log") {
 			verifyFabricProjectionOutputs(projection, "noon")
 		}
+		writeText(new File(projection, "logs/latest.log"),
+				"[projection-capture] result=true, captures complete\n")
+		expectRejected("missing settled projection radius") {
+			verifyFabricProjectionOutputs(projection, "noon")
+		}
+		writeText(new File(projection, "logs/latest.log"),
+				"[projection-capture] handoff capture armed at requestedChunks=16, "
+						+ "effectiveChunks=16, loadedX=+15/-16, handoffBlocks=256.0, "
+						+ "pitch=12.0, surfaceY=63.0, streamingWindowComplete=true\n"
+						+ "[projection-capture] result=true, captures complete\n")
+		expectRejected("incomplete positive-X projection radius") {
+			verifyFabricProjectionOutputs(projection, "noon")
+		}
+		writeText(new File(projection, "logs/latest.log"),
+				"[projection-capture] handoff capture armed at requestedChunks=16, "
+						+ "effectiveChunks=16, loadedX=+16/-15, handoffBlocks=256.0, "
+						+ "pitch=12.0, surfaceY=63.0, streamingWindowComplete=true\n"
+						+ "[projection-capture] result=true, captures complete\n")
+		expectRejected("incomplete negative-X projection radius") {
+			verifyFabricProjectionOutputs(projection, "noon")
+		}
+		writeText(new File(projection, "logs/latest.log"),
+				"[projection-capture] handoff capture armed at requestedChunks=16, "
+						+ "effectiveChunks=12, loadedX=+12/-12, handoffBlocks=192.0, "
+						+ "pitch=12.0, surfaceY=63.0, streamingWindowComplete=true\n"
+						+ "[projection-capture] result=true, captures complete\n")
+		expectRejected("requested/effective projection radius mismatch") {
+			verifyFabricProjectionOutputs(projection, "noon")
+		}
 		expectRejected("invalid projection environment") {
 			verifyFabricProjectionOutputs(projection, "invalid")
+		}
+
+		def streamingProjectionLog = new File(
+				fixtureRoot, "streaming-projection/logs/latest.log")
+		def validStreamingPolicy =
+				"[projection-capture] applied unattended focus policy and pre-login " +
+						"view distance=16 chunks, graphics=fabulous, clouds=off, " +
+						"hudHidden=true, fov=70\n"
+		def validStreamingMarker =
+				"[projection-capture] streaming fallback armed at requestedChunks=16, " +
+						"effectiveChunks=16, loadedX=+2/-3, incompleteWindow=true, " +
+						"renderedAllSections=false, missingChunks=888, " +
+						"missingNonXChunk=true, firstMissingChunk=(240,-5), " +
+						"fixedProxyOnsetBlocks=148.48, fallbackStartBlocks=0.0, " +
+						"fallbackOpaqueFromBlocks=0.0, proxyDrawn=1.0, targetDistance=32.0, " +
+						"pitch=59.0, surfaceY=66.0, graphics=fabulous, " +
+						"clouds=off, hudHidden=true, fov=70, time=6000, " +
+						"rain=0.0, thunder=0.0, framebuffer=1280x720\n"
+		def validStreamingDrain =
+				"[projection-capture] streaming drain complete requestedChunks=16, " +
+						"missingChunks=0, renderedAllSections=true, " +
+						"streamingWindowComplete=true, stableTicks=20\n"
+		writeText(streamingProjectionLog, validStreamingPolicy + validStreamingMarker
+				+ validStreamingDrain
+				+ "[projection-capture] result=true, streaming fallback capture complete\n")
+		requireProjectionStreamingFallback(
+				streamingProjectionLog, "streaming projection contract fixture")
+		writeText(streamingProjectionLog,
+				validStreamingPolicy + validStreamingMarker.replace(
+						"fallbackOpaqueFromBlocks=0.0",
+						"fallbackOpaqueFromBlocks=16.0")
+						+ validStreamingDrain
+						+ "[projection-capture] result=true, streaming fallback capture complete\n")
+		expectRejected("non-opaque-near streaming fallback") {
+			requireProjectionStreamingFallback(
+					streamingProjectionLog, "streaming projection contract fixture")
+		}
+		writeText(streamingProjectionLog,
+				validStreamingPolicy + validStreamingMarker.replace(
+						"proxyDrawn=1.0", "proxyDrawn=0.0")
+						+ validStreamingDrain
+						+ "[projection-capture] result=true, streaming fallback capture complete\n")
+		expectRejected("undrawn early-streaming proxy") {
+			requireProjectionStreamingFallback(
+					streamingProjectionLog, "streaming projection contract fixture")
+		}
+		writeText(streamingProjectionLog,
+				validStreamingPolicy + validStreamingMarker.replace(
+						"framebuffer=1280x720", "framebuffer=1028x720")
+						+ validStreamingDrain
+						+ "[projection-capture] result=true, streaming fallback capture complete\n")
+		expectRejected("wrong early-streaming framebuffer") {
+			requireProjectionStreamingFallback(
+					streamingProjectionLog, "streaming projection contract fixture")
+		}
+		writeText(streamingProjectionLog,
+				validStreamingPolicy + validStreamingMarker.replace(
+						"incompleteWindow=true", "incompleteWindow=false")
+						+ validStreamingDrain
+						+ "[projection-capture] result=true, streaming fallback capture complete\n")
+		expectRejected("complete window in early-streaming fixture") {
+			requireProjectionStreamingFallback(
+					streamingProjectionLog, "streaming projection contract fixture")
+		}
+		writeText(streamingProjectionLog,
+				validStreamingPolicy + validStreamingMarker.replace(
+						"rain=0.0", "rain=1.0")
+						+ validStreamingDrain
+						+ "[projection-capture] result=true, streaming fallback capture complete\n")
+		expectRejected("rain-obscured early-streaming fixture") {
+			requireProjectionStreamingFallback(
+					streamingProjectionLog, "streaming projection contract fixture")
+		}
+		writeText(streamingProjectionLog, validStreamingPolicy + validStreamingMarker
+				+ "[projection-capture] result=true, streaming fallback capture complete\n")
+		expectRejected("undrained early-streaming fixture") {
+			requireProjectionStreamingFallback(
+					streamingProjectionLog, "streaming projection contract fixture")
 		}
 
 		def visualParity = new File(fixtureRoot, "visual-parity")
@@ -1794,6 +3006,16 @@ tasks.named("runLayoutSwitchClient") {
 tasks.named("runProductionProjectionClient") {
 	dependsOn(tasks.named("prepareCopiedProductionProjectionWorld"))
 	finalizedBy(tasks.named("verifyProductionProjectionClient"))
+}
+
+tasks.named("runProductionStreamingProjectionClient") {
+	dependsOn(tasks.named("prepareCopiedProductionStreamingProjectionWorld"))
+	finalizedBy(tasks.named("verifyProductionStreamingProjectionClient"))
+}
+
+tasks.named("runHandoffFoliageCaptureClient") {
+	dependsOn(tasks.named("prepareCopiedHandoffFoliageWorld"))
+	finalizedBy(tasks.named("verifyHandoffFoliageCaptureClient"))
 }
 
 tasks.named("runProductionVisualParityClient") {

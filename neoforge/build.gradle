@@ -122,6 +122,45 @@ neoForge {
                     providers.gradleProperty('ringNeoForgeProjectionViewDistanceChunks').orElse('16').get()
             systemProperty 'ringworld.projectionEnvironment',
                     providers.gradleProperty('ringNeoForgeProjectionEnvironment').orElse('noon').get()
+            systemProperty 'ringworld.projectionGraphicsMode',
+                    providers.gradleProperty('ringNeoForgeProjectionGraphicsMode').orElse('fancy').get()
+        }
+        productionStreamingProjectionClient {
+            client()
+            gameDirectory = qualificationRunFile('run-production-streaming-projection')
+            systemProperty 'ringworld.captureRingProjection', 'true'
+            systemProperty 'ringworld.projectionStreamingEdge', 'true'
+            systemProperty 'ringworld.projectionWorld',
+                    providers.gradleProperty('ringNeoForgeStreamingProjectionDestination')
+                            .orElse('RingWorld NeoForge Streaming Projection').get()
+            systemProperty 'ringworld.projectionViewDistanceChunks',
+                    providers.gradleProperty('ringNeoForgeStreamingProjectionViewDistanceChunks')
+                            .orElse('16').get()
+            systemProperty 'ringworld.projectionEnvironment', 'noon'
+            systemProperty 'ringworld.projectionGraphicsMode',
+                    providers.gradleProperty('ringNeoForgeStreamingProjectionGraphicsMode')
+                            .orElse('fabulous').get()
+            programArgument '--username'
+            programArgument 'StreamingTester'
+            programArgument '--width'
+            programArgument '1280'
+            programArgument '--height'
+            programArgument '720'
+        }
+        handoffFoliageCaptureClient {
+            client()
+            // A fresh copied production save is the only fixture this run may mutate.
+            gameDirectory = qualificationRunFile('run-handoff-foliage-capture')
+            systemProperty 'ringworld.captureRingHandoffFoliage', 'true'
+            systemProperty 'ringworld.handoffFoliageWorld',
+                    providers.gradleProperty('ringNeoForgeHandoffFoliageDestination')
+                            .orElse('RingWorld NeoForge Handoff Foliage').get()
+            programArgument '--username'
+            programArgument 'FoliageTester'
+            programArgument '--width'
+            programArgument '1280'
+            programArgument '--height'
+            programArgument '720'
         }
         productionVisualParityClient {
             client()
@@ -335,6 +374,10 @@ def neoForgeCreationUiRun = qualificationRunFile('run-creation-ui')
 def neoForgeMapCompassRun = qualificationRunFile('run-map-compass-capture')
 def neoForgeProjectionRun = qualificationRunFile('run-production-projection')
 def neoForgeProjectionSaves = new File(neoForgeProjectionRun, 'saves')
+def neoForgeStreamingProjectionRun = qualificationRunFile('run-production-streaming-projection')
+def neoForgeStreamingProjectionSaves = new File(neoForgeStreamingProjectionRun, 'saves')
+def neoForgeHandoffFoliageRun = qualificationRunFile('run-handoff-foliage-capture')
+def neoForgeHandoffFoliageSaves = new File(neoForgeHandoffFoliageRun, 'saves')
 def neoForgeVisualParityRun = qualificationRunFile('run-production-visual-parity')
 def neoForgeVisualParitySaves = new File(neoForgeVisualParityRun, 'saves')
 def neoForgeCurvedObjectRun = qualificationRunFile('run-curved-object-capture')
@@ -400,7 +443,9 @@ tasks.register('prepareNeoForgeAtlasUiRun') {
         configFile.withOutputStream { config.store(it, 'Isolated NeoForge RingWorld atlas UI regression') }
         def fmlFile = new File(neoForgeAtlasUiRun, 'config/fml.toml')
         fmlFile.text = '# Automated graphical fixture: disable only the separate early splash.\nearlyWindowControl = false\n'
-        new File(neoForgeAtlasUiRun, 'options.txt').text = 'onboardAccessibility:false\nguiScale:4\n'
+        new File(neoForgeAtlasUiRun, 'options.txt').text =
+                'onboardAccessibility:false\nguiScale:4\ntutorialStep:none\n' +
+                'renderClouds:"false"\ngraphicsMode:1\nfov:0.0\npauseOnLostFocus:false\n'
     }
 }
 
@@ -428,12 +473,22 @@ tasks.register('verifyNeoForgeAtlasUiClient') {
         if (atlasSettingsAck < 0 || atlasSettingsAck >= log.indexOf('[atlas-ui-test] disconnect-clear')) {
             throw new GradleException("NeoForge Atlas UI integrated server did not accept the format-3 settings acknowledgement; inspect ${logFile}")
         }
+        rootProject.ext.requirePartialAtlasHandoff(
+                logFile, 'NeoForge Atlas UI client')
         (1..11).each { index ->
             def prefix = String.format('atlas-ui-%02d-', index)
             if (fileTree(new File(neoForgeAtlasUiRun, 'screenshots')).matching { include prefix + '*.png' }.isEmpty()) {
                 throw new GradleException("NeoForge atlas UI client is missing screenshot ${prefix}*.png")
             }
         }
+        def partialCaptures = fileTree(new File(neoForgeAtlasUiRun, 'screenshots'))
+                .matching { include 'atlas-ui-05-*.png' }.files
+        if (partialCaptures.size() != 1) {
+            throw new GradleException(
+                    'NeoForge Atlas UI client requires exactly one partial-handoff screenshot')
+        }
+        rootProject.ext.requireProjectionHandoffContinuity(
+                partialCaptures.first(), 'NeoForge partial Atlas handoff')
     }
 }
 
@@ -1046,8 +1101,16 @@ tasks.register('verifyNeoForgeProductionProjectionClient') {
         if (!log.contains('[projection-capture] result=true, captures complete')) {
             throw new GradleException("NeoForge projection capture did not pass; inspect ${logFile}")
         }
+        rootProject.ext.requireProjectionSettledRadius(
+                logFile, 'NeoForge projection capture')
         def environment = providers.gradleProperty('ringNeoForgeProjectionEnvironment')
                 .orElse('noon').get().trim().toLowerCase(Locale.ROOT)
+        rootProject.ext.requireProjectionRevealScale(
+                logFile, 'NeoForge projection capture', environment)
+        rootProject.ext.requireProjectionGraphicsMode(
+                logFile, 'NeoForge projection capture',
+                providers.gradleProperty('ringNeoForgeProjectionGraphicsMode')
+                        .orElse('fancy').get())
         def prefix = environment == 'noon' ? 'ringworld-projection-' : "ringworld-projection-${environment}-"
         ['tangent', 'handoff', 'up'].each { view ->
             def screenshot = new File(neoForgeProjectionRun, "screenshots/${prefix}${view}.png")
@@ -1061,6 +1124,148 @@ tasks.register('verifyNeoForgeProductionProjectionClient') {
         rootProject.ext.requireProjectionHandoffContinuity(
                 new File(neoForgeProjectionRun, "screenshots/${prefix}handoff.png"),
                 'NeoForge projection capture')
+    }
+}
+
+tasks.register('prepareCopiedNeoForgeProductionStreamingProjectionWorld') {
+    group = 'ringworld verification'
+    description = 'Copies the production save into the isolated NeoForge early-streaming projection run.'
+    inputs.property('ringNeoForgeStreamingProjectionSource',
+            providers.gradleProperty('ringNeoForgeStreamingProjectionSource')
+                    .orElse('Backport Production 16384'))
+    inputs.property('ringNeoForgeStreamingProjectionDestination',
+            providers.gradleProperty('ringNeoForgeStreamingProjectionDestination')
+                    .orElse('RingWorld NeoForge Streaming Projection'))
+    outputs.dir(neoForgeStreamingProjectionSaves)
+    outputs.upToDateWhen { false }
+    doLast {
+        def sourceId = checkedProjectionSaveId(
+                providers.gradleProperty('ringNeoForgeStreamingProjectionSource')
+                        .orElse('Backport Production 16384').get(),
+                'ringNeoForgeStreamingProjectionSource')
+        def destinationId = checkedProjectionSaveId(
+                providers.gradleProperty('ringNeoForgeStreamingProjectionDestination')
+                        .orElse('RingWorld NeoForge Streaming Projection').get(),
+                'ringNeoForgeStreamingProjectionDestination')
+        def source = new File(neoForgeProjectionSourceSaves, sourceId)
+        if (!new File(source, 'level.dat').isFile()) {
+            throw new GradleException(
+                    "ringNeoForgeStreamingProjectionSource must name a save under "
+                            + "${neoForgeProjectionSourceSaves}: ${sourceId}")
+        }
+        def destination = new File(neoForgeStreamingProjectionSaves, destinationId)
+        delete(destination)
+        ['screenshots', 'ringworld-cache', 'logs', 'crash-reports'].each {
+            delete(new File(neoForgeStreamingProjectionRun, it))
+        }
+        def optionsFile = new File(neoForgeStreamingProjectionRun, 'options.txt')
+        def optionLines = optionsFile.isFile() ? optionsFile.readLines('UTF-8') : []
+        optionLines.removeAll {
+            it.startsWith('tutorialStep:') || it.startsWith('renderClouds:')
+                    || it.startsWith('fullscreen:')
+        }
+        optionLines.add('tutorialStep:none')
+        optionLines.add('renderClouds:"false"')
+        optionLines.add('fullscreen:false')
+        optionsFile.parentFile.mkdirs()
+        optionsFile.setText(optionLines.join('\n') + '\n', 'UTF-8')
+        copy {
+            from(source)
+            into(destination)
+        }
+        if (!new File(destination, 'level.dat').isFile()) {
+            throw new GradleException(
+                    "copied NeoForge streaming-projection save is missing level.dat: ${destination}")
+        }
+        logger.lifecycle('[neoforge-streaming-projection] copied source={} destination={}',
+                source, destination)
+    }
+}
+
+tasks.register('verifyNeoForgeProductionStreamingProjectionClient') {
+    group = 'ringworld verification'
+    description = 'Fails unless NeoForge captures bounded Atlas fallback coverage before the fixed proxy onset.'
+    mustRunAfter('runProductionStreamingProjectionClient')
+    doLast {
+        def logFile = new File(neoForgeStreamingProjectionRun, 'logs/latest.log')
+        rootProject.ext.requireProjectionStreamingFallback(
+                logFile, 'NeoForge streaming projection capture')
+        rootProject.ext.requireProjectionGraphicsMode(
+                logFile, 'NeoForge streaming projection capture',
+                providers.gradleProperty('ringNeoForgeStreamingProjectionGraphicsMode')
+                        .orElse('fabulous').get())
+        rootProject.ext.requireProjectionHandoffContinuity(
+                new File(neoForgeStreamingProjectionRun,
+                        'screenshots/ringworld-projection-streaming-fallback.png'),
+                'NeoForge streaming projection capture')
+    }
+}
+
+tasks.register('prepareCopiedNeoForgeHandoffFoliageWorld') {
+    group = 'ringworld verification'
+    description = 'Copies the complete production save into the isolated NeoForge handoff-foliage run.'
+    inputs.property('ringNeoForgeHandoffFoliageSource',
+            providers.gradleProperty('ringNeoForgeHandoffFoliageSource')
+                    .orElse('Backport Production 16384'))
+    inputs.property('ringNeoForgeHandoffFoliageDestination',
+            providers.gradleProperty('ringNeoForgeHandoffFoliageDestination')
+                    .orElse('RingWorld NeoForge Handoff Foliage'))
+    outputs.dir(neoForgeHandoffFoliageSaves)
+    outputs.upToDateWhen { false }
+    doLast {
+        def sourceId = checkedProjectionSaveId(
+                providers.gradleProperty('ringNeoForgeHandoffFoliageSource')
+                        .orElse('Backport Production 16384').get(),
+                'ringNeoForgeHandoffFoliageSource')
+        def destinationId = checkedProjectionSaveId(
+                providers.gradleProperty('ringNeoForgeHandoffFoliageDestination')
+                        .orElse('RingWorld NeoForge Handoff Foliage').get(),
+                'ringNeoForgeHandoffFoliageDestination')
+        def source = new File(neoForgeProjectionSourceSaves, sourceId)
+        if (!new File(source, 'level.dat').isFile()) {
+            throw new GradleException(
+                    "ringNeoForgeHandoffFoliageSource must name a save under "
+                            + "${neoForgeProjectionSourceSaves}: ${sourceId}")
+        }
+        def destination = new File(neoForgeHandoffFoliageSaves, destinationId)
+        delete(destination)
+        ['screenshots', 'ringworld-cache', 'logs', 'crash-reports'].each {
+            delete(new File(neoForgeHandoffFoliageRun, it))
+        }
+        def optionsFile = new File(neoForgeHandoffFoliageRun, 'options.txt')
+        def optionLines = optionsFile.isFile() ? optionsFile.readLines('UTF-8') : []
+        optionLines.removeAll {
+            it.startsWith('tutorialStep:') || it.startsWith('renderClouds:')
+                    || it.startsWith('graphicsMode:') || it.startsWith('pauseOnLostFocus:')
+                    || it.startsWith('fullscreen:')
+        }
+        optionLines.add('tutorialStep:none')
+        optionLines.add('renderClouds:"false"')
+        optionLines.add('graphicsMode:1')
+        optionLines.add('pauseOnLostFocus:false')
+        optionLines.add('fullscreen:false')
+        optionsFile.parentFile.mkdirs()
+        optionsFile.setText(optionLines.join('\n') + '\n', 'UTF-8')
+        copy {
+            from(source)
+            into(destination)
+        }
+        if (!new File(destination, 'level.dat').isFile()) {
+            throw new GradleException(
+                    "copied NeoForge handoff-foliage save is missing level.dat: ${destination}")
+        }
+        logger.lifecycle('[neoforge-handoff-foliage] copied source={} destination={}',
+                source, destination)
+    }
+}
+
+tasks.register('verifyNeoForgeHandoffFoliageCaptureClient') {
+    group = 'ringworld verification'
+    description = 'Fails unless the NeoForge layered-foliage handoff and blocked-sky probes pass.'
+    mustRunAfter('runHandoffFoliageCaptureClient')
+    doLast {
+        rootProject.ext.verifyHandoffFoliageOutputs(
+                neoForgeHandoffFoliageRun, 'NeoForge handoff-foliage capture')
     }
 }
 
@@ -1347,6 +1552,16 @@ tasks.register('verifyNeoForgeProductionLifecycleClient') {
 tasks.named('runProductionProjectionClient') {
     dependsOn('prepareCopiedNeoForgeProductionProjectionWorld')
     finalizedBy('verifyNeoForgeProductionProjectionClient')
+}
+
+tasks.named('runProductionStreamingProjectionClient') {
+    dependsOn('prepareCopiedNeoForgeProductionStreamingProjectionWorld')
+    finalizedBy('verifyNeoForgeProductionStreamingProjectionClient')
+}
+
+tasks.named('runHandoffFoliageCaptureClient') {
+    dependsOn('prepareCopiedNeoForgeHandoffFoliageWorld')
+    finalizedBy('verifyNeoForgeHandoffFoliageCaptureClient')
 }
 
 tasks.named('runProductionVisualParityClient') {

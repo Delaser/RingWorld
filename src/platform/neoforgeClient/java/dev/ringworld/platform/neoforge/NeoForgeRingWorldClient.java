@@ -9,6 +9,7 @@ import dev.ringworld.client.LayoutSwitchTestClient;
 import dev.ringworld.client.MultiplayerTestClient;
 import dev.ringworld.client.ProductionLifecycleTestClient;
 import dev.ringworld.client.RingClientPayloadTransport;
+import dev.ringworld.client.RingHandoffFoliageCaptureClient;
 import dev.ringworld.client.RingMapCompassCaptureClient;
 import dev.ringworld.client.RingProjectionCaptureClient;
 import dev.ringworld.client.RingVisualParityCaptureClient;
@@ -53,6 +54,8 @@ public final class NeoForgeRingWorldClient {
     private static final MultiplayerTestClient MULTIPLAYER_TEST = new MultiplayerTestClient();
     private static final RingProjectionCaptureClient PROJECTION_CAPTURE =
             new RingProjectionCaptureClient();
+    private static final RingHandoffFoliageCaptureClient HANDOFF_FOLIAGE_CAPTURE =
+            new RingHandoffFoliageCaptureClient();
     private static final RingVisualParityCaptureClient VISUAL_PARITY_CAPTURE =
             new RingVisualParityCaptureClient();
     private static final CurvedObjectCaptureClient CURVED_OBJECT_CAPTURE =
@@ -200,6 +203,7 @@ public final class NeoForgeRingWorldClient {
         if (LAYOUT_SWITCH.tick(client)) return;
         if (MULTIPLAYER_TEST.tick(client)) return;
         if (PROJECTION_CAPTURE.tick(client)) return;
+        if (HANDOFF_FOLIAGE_CAPTURE.tick(client)) return;
         if (VISUAL_PARITY_CAPTURE.tick(client)) return;
         if (CURVED_OBJECT_CAPTURE.tick(client)) return;
         if (MAP_COMPASS_CAPTURE.tick(client)) return;
@@ -210,6 +214,7 @@ public final class NeoForgeRingWorldClient {
     public static void onAfterLevel(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
         PROJECTION_CAPTURE.frameRendered();
+        HANDOFF_FOLIAGE_CAPTURE.frameRendered();
         VISUAL_PARITY_CAPTURE.frameRendered();
         ATLAS_PREGENERATION_UI_TEST.frameRendered();
     }

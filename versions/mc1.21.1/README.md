@@ -27,7 +27,7 @@ wrapper, primary hashes, inventory counts, or dependency artifacts drift.
 
 After the transient DNS failure cleared, the 2026-08-22 Windows work reached
 a real dual-loader checkpoint. Fabric and NeoForge common/client sources
-compile on Java 21, both builds pass all 338 tests and their contract checks,
+compile on Java 21, both builds pass all 352 tests and their contract checks,
 and both isolated menu clients apply the required Mixins, load resources and
 shaders, produce all thirteen creation/settings captures, and exit normally.
 Both loaders also pass the integrated Atlas client gate: a fresh 2048x128
@@ -66,6 +66,17 @@ Packaging, clean public integration, broad compatibility, and owner release
 approval remain. Exact inputs, commands, evidence boundaries, and the
 fail-closed scope are recorded in
 [`COMPILER_BASELINE.md`](COMPILER_BASELINE.md).
+The retained live-chunk/Atlas compositor, all rejected transition experiments,
+loader comparison metrics, screenshot index, and mainline-relevant findings
+are recorded separately in
+[`HANDOFF_TRANSITION_RESEARCH_2026-08-24.md`](HANDOFF_TRANSITION_RESEARCH_2026-08-24.md).
+Its accepted 1.21.1 policy keeps the Experiment 19 continuous overlap, adds a
+fail-closed Atlas floor for incomplete finite-band section coverage, and proves
+the final renderer on both loaders across foliage rebuild/motion, initial
+streaming, partial Atlas, settled Fabulous noon, Fabulous rain at 28 chunks,
+and full production lifecycle/reopen. This is local Windows source/runtime
+evidence, not packaging, public integration, broad compatibility, or release
+approval.
 
 Use `-PringBackportCompilerScope=fabric` for the focused Fabric compiler
 probe. Omitting the property retains the normal combined Fabric/NeoForge

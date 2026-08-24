@@ -19,15 +19,21 @@ out vec4 fragColor;
 void main() {
     vec4 color = texture(Sampler0, texCoord0) * vertexColor * ColorModulator;
     float coverageFade = 0.0;
-    if (RingWorldLayout.x != 0 && ringIntrinsicDistance >= 0.0) {
+    bool ringHandoffActive =
+        RingWorldLayout.x != 0 && ringIntrinsicDistance >= 0.0;
+    if (ringHandoffActive) {
         coverageFade = ringLiveCoverageFade(ringIntrinsicDistance);
-        if (ringDitherThreshold(gl_FragCoord.xy) < coverageFade) discard;
     }
     vec4 fogged = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
-    if (coverageFade > 0.0) {
-        vec3 proxyTone = ringProxyTone(color.rgb, ringIntrinsicDistance,
-            float(RingWorldLayout.y), FogColor.rgb);
-        fogged.rgb = mix(fogged.rgb, proxyTone, coverageFade);
+    if (ringHandoffActive) {
+        if (coverageFade > 0.0) {
+            vec3 proxyTone = ringProxyTone(color.rgb, ringIntrinsicDistance,
+                float(RingWorldLayout.y), FogColor.rgb);
+            fogged.rgb = mix(fogged.rgb, proxyTone,
+                ringToneConvergence(coverageFade));
+        }
+        fogged.a = 1.0 - coverageFade;
+        if (fogged.a <= 0.001) discard;
     }
     fragColor = fogged;
 }

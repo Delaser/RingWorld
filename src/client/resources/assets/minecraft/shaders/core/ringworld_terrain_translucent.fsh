@@ -26,7 +26,8 @@ void main() {
     if (coverageFade > 0.0) {
         vec3 proxyTone = ringProxyTone(color.rgb, ringIntrinsicDistance,
             float(RingWorldLayout.y), FogColor.rgb);
-        fogged.rgb = mix(fogged.rgb, proxyTone, coverageFade);
+        fogged.rgb = mix(fogged.rgb, proxyTone,
+            ringToneConvergence(coverageFade));
         fogged.a *= 1.0 - coverageFade;
         if (fogged.a <= 0.001) discard;
     }
