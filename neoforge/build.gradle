@@ -162,6 +162,7 @@ neoForge {
         }
         productionLifecycleClient {
             client()
+            if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-production-lifecycle')
             systemProperty 'ringworld.productionLifecycleTest', 'true'
             systemProperty 'ringworld.productionLifecycleWorld',

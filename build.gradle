@@ -346,6 +346,7 @@ loom {
 		}
 		productionLifecycleClient {
 			client()
+			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Production Lifecycle Regression"
 			// The client opens only the disposable copied world prepared below.
 			// Do not use quick-play: its macOS launch path is nondeterministic.

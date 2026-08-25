@@ -2082,6 +2082,24 @@ All Fabric cells used frozen candidate
 all NeoForge cells used
 `5fd60d12db03386866cc153b7921b180cd1e4a96d4f443443364d04357b56823`.
 
+For frozen-candidate production lifecycle qualification, supply a reviewed
+complete production world by absolute path:
+
+```sh
+python3 scripts/run_gradle_production_lifecycle_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --source-world /absolute/path/to/complete-production-world \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+The operator runner inventories every regular source file and rejects links,
+special files, incomplete Atlas data, non-production geometry, stale saved
+format, or mapping mismatch. It copies the source into the cell-owned runtime,
+installs and rehashes the retained jar, excludes checkout classes, and binds
+the final dimension-transfer/save/disconnect/reopen log and world identities
+into fixture-11 evidence. The source directory remains read-only input.
+
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
 or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge

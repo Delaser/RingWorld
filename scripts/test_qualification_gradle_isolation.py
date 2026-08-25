@@ -87,6 +87,8 @@ class QualificationGradleIsolationTest(unittest.TestCase):
         self.assertIn('qualificationFrozenRuntimeSourceSet', self.neoforge)
         self.assertIn("prepareNeoForgeRaidSeamTestWorld", self.neoforge)
         self.assertIn("neoForgeRaidSeamServerRun", self.neoforge)
+        self.assertIn("productionLifecycleClient", self.fabric)
+        self.assertIn("productionLifecycleClient", self.neoforge)
 
     def test_fabric_metadata_uses_selected_minecraft_version(self) -> None:
         metadata = (ROOT / "src" / "main" / "resources" / "fabric.mod.json").read_text(encoding="utf-8")

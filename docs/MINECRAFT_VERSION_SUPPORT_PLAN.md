@@ -575,6 +575,25 @@ pushed commit `daaa1da`: Fabric runs are
 passed arm/save, both-player bossbar membership, exact-world reload,
 canonical seam-side raider handling, victory, and exact patch/candidate
 identity.
+
+The production lifecycle slice uses the same frozen-candidate isolation and
+requires an explicit read-only source world:
+
+```sh
+python3 scripts/run_gradle_production_lifecycle_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --source-world /absolute/path/to/complete-production-world \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+The source must be a complete 16,384x256 format-3/mapping-4 world. The runner
+hash-inventories it before and after copying, validates its dimension-owned
+settings and complete Atlas independently, then opens only the disposable
+copy. It requires Overworld/Nether/End transfer state, normal save/disconnect,
+client-state teardown, exact-world reopen, and exact patch/frozen-jar identity.
+It never mutates the source world.
+
 The operator entry point is intentionally explicit:
 
 ```sh

@@ -394,6 +394,14 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   fixture-07 evidence. Run one graphical cell at a time. The formal six-cell
   matrix passes from clean commit `daaa1da`; exact run IDs and terminal hashes
   are recorded in `docs/TESTING.md`.
+- `scripts/run_gradle_production_lifecycle_qualification.py`: exact
+  frozen-candidate Phase 4 runner for one independently inventoried complete
+  16,384x256 format-3/mapping-4 source world. It copies rather than mutates the
+  source, launches one real integrated client with checkout classes excluded,
+  and verifies Overworld/Nether/End transfers, normal save/disconnect, raw
+  client-state teardown, and same-world reopen. Run one graphical cell at a
+  time; the six-cell checkbox remains open until one clean pushed runner
+  revision passes every cell.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
