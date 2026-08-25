@@ -17,7 +17,7 @@ if str(SCRIPTS) not in sys.path:
 
 from run_gradle_production_lifecycle_qualification import (  # noqa: E402
     ATLAS_MAGIC, ATLAS_VERSION, GradleProductionLifecycleError,
-    _atlas_observation, _tasks, _world_inventory,
+    _atlas_observation, _tasks, _validate_source_version, _world_inventory,
 )
 
 
@@ -64,6 +64,14 @@ class GradleProductionLifecycleQualificationTest(unittest.TestCase):
                 self.skipTest("symlinks are unavailable")
             with self.assertRaisesRegex(GradleProductionLifecycleError, "symlink"):
                 _world_inventory(root)
+
+    def test_source_version_allows_only_forward_patch_use(self) -> None:
+        _validate_source_version("26.1", "26.1")
+        _validate_source_version("26.1", "26.1.2")
+        with self.assertRaisesRegex(GradleProductionLifecycleError, "older target"):
+            _validate_source_version("26.1.2", "26.1")
+        with self.assertRaisesRegex(GradleProductionLifecycleError, "outside"):
+            _validate_source_version("26.0", "26.1")
 
     def test_gradle_profiles_use_frozen_source_sets(self) -> None:
         fabric = (ROOT / "build.gradle").read_text(encoding="utf-8")

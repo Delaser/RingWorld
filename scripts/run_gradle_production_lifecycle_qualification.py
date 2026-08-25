@@ -220,9 +220,20 @@ def _source_world(value: str) -> Path:
     return resolved
 
 
+def _validate_source_version(saved_version: object, target_version: object) -> None:
+    versions = ("26.1", "26.1.1", "26.1.2")
+    if saved_version not in versions or target_version not in versions:
+        raise GradleProductionLifecycleError("production source/target version is outside 26.1.x")
+    if versions.index(saved_version) > versions.index(target_version):
+        raise GradleProductionLifecycleError(
+            f"production source {saved_version} cannot be opened as older target {target_version}")
+
+
 def _prepare_world(prepared: Any, source: Path) -> tuple[dict[str, Any], dict[str, Any]]:
     before = _world_inventory(source)
     source_observation = _world_observation(source)
+    _validate_source_version(source_observation.get("minecraft_version"),
+                             str(prepared.cell["minecraft"]["version"]))
     runtime = prepared.paths.run_directory / "run-production-lifecycle"
     destination = runtime / "saves" / DESTINATION
     if destination.exists() or destination.is_symlink():
@@ -289,14 +300,6 @@ def _execute(prepared: Any, source_world: Path, dependency_cache: Path | None,
     stage_gradle_distribution_zip(distribution_zip, paths.repository_root, paths)
     _stage_loom_seed(loom_seed, paths.gradle_home, str(cell["minecraft"]["version"]))
     source, destination_record = _prepare_world(prepared, source_world)
-    versions = ("26.1", "26.1.1", "26.1.2")
-    saved_version = source.get("minecraft_version")
-    target_version = str(cell["minecraft"]["version"])
-    if saved_version not in versions or target_version not in versions:
-        raise GradleProductionLifecycleError("production source/target version is outside 26.1.x")
-    if versions.index(saved_version) > versions.index(target_version):
-        raise GradleProductionLifecycleError(
-            f"production source {saved_version} cannot be opened as older target {target_version}")
     destination = Path(destination_record["path"])
     tasks = _tasks(cell["loader"])
     timeout = _timeout(cell)
