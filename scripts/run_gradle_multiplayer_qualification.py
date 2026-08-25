@@ -315,7 +315,10 @@ def _verify_fixture(prepared: AtlasRecoveryInvocation) -> tuple[dict[str, Any], 
         text = _read_log(path)
         if not text or any(marker not in text for marker in markers):
             raise GradleMultiplayerError(f"{role} markers are incomplete")
-        if f"Loading Minecraft {expected_version} " not in text:
+        patch_marker = (f"Loading Minecraft {expected_version} "
+                        if prepared.cell["loader"] == "fabric"
+                        else f"Minecraft {expected_version} (minecraft)")
+        if patch_marker not in text:
             raise GradleMultiplayerError(f"{role} did not launch the selected Minecraft patch")
         logs.append({"role": role, "path": str(path), "sha256": _sha256(path)})
     for relative in CAPTURES:

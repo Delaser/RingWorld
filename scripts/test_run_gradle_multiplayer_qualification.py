@@ -116,6 +116,34 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
             with self.assertRaisesRegex(GradleMultiplayerError, "markers"):
                 _verify_fixture(prepared)
 
+    def test_neoforge_fixture_uses_exact_mod_list_patch_marker(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            prepared = self._prepared(Path(directory), loader="neoforge")
+            runtime = prepared.paths.run_directory / "run-multiplayer"
+            server = runtime / "server/logs/latest.log"
+            server.parent.mkdir(parents=True)
+            server.write_text(
+                "Starting minecraft server version 26.1\n" + "\n".join((
+                    "[multiplayer] full scenario result=true",
+                    "[multiplayer-extended] ordinary Nether portal wait result=true",
+                    "[multiplayer-extended] multi-lap Nether portal routing result=true",
+                    "[multiplayer-extended] seam thunder/lightning result=true",
+                    "[multiplayer] bidirectional seam placement result=true",
+                    "[multiplayer-extended] alias block-entity recovery policy result=true",
+                )), encoding="utf-8")
+            for role, letter in (("client-a", "A"), ("client-b", "B")):
+                log = runtime / role / "logs/latest.log"
+                log.parent.mkdir(parents=True)
+                log.write_text(
+                    f"Minecraft 26.1 (minecraft)\n[multiplayer:{letter}] client world fully loaded\n"
+                    f"[multiplayer:{letter}] local scenario result=true; stopping client\n",
+                    encoding="utf-8")
+            for relative in CAPTURES:
+                capture = runtime / relative
+                capture.parent.mkdir(parents=True, exist_ok=True)
+                capture.write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 128)
+            self.assertEqual(3, len(_verify_fixture(prepared)))
+
 
 if __name__ == "__main__":
     unittest.main()
