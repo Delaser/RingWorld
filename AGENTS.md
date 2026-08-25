@@ -376,6 +376,13 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   all three isolated `mods/` directories, warms assets serially, drives the
   seam/gameplay matrix, stops the server normally, and hashes logs/captures.
   This is exact-patch frozen-jar evidence but not a packaged-launcher claim.
+  On an offline worker, `--gradle-loom-cache` may point at an external seed
+  containing Mojang's version manifest plus the selected patch's version JSON
+  and client/server jars. The runner independently verifies the manifest-bound
+  SHA-1 and size of every copied file; it never exposes the operator's normal
+  Gradle home. Server shutdown uses authenticated RCON enabled only inside the
+  disposable runtime because NeoForge's Gradle launcher does not forward
+  standard input to the game process.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,

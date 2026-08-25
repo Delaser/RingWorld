@@ -19,7 +19,7 @@ if str(SCRIPTS) not in sys.path:
 from minecraft_qualification_model import QualificationPaths  # noqa: E402
 from run_gradle_multiplayer_qualification import (  # noqa: E402
     CAPTURES, GradleMultiplayerError, _base_argv, _configure_rcon, _tasks,
-    _verify_fixture, _verify_installed_candidates,
+    _stage_loom_seed, _validated_loom_seed, _verify_fixture, _verify_installed_candidates,
 )
 
 
@@ -82,6 +82,45 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
             self.assertIn("rcon.password=test-password\n", text)
             with self.assertRaisesRegex(GradleMultiplayerError, "port"):
                 _configure_rcon(server, 70000, "test-password")
+
+    def test_loom_seed_stages_only_reviewed_files(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            sources = [root / "mojang_versions_manifest.json"]
+            sources.extend(root / "26.1" / name for name in (
+                "mojang_minecraft_info.json", "minecraft-client.jar", "minecraft-server.jar"))
+            for source in sources:
+                source.parent.mkdir(parents=True, exist_ok=True)
+                source.write_bytes(source.name.encode("utf-8"))
+            home = root / "cell-home"
+            _stage_loom_seed(sources, home, "26.1")
+            self.assertEqual(
+                b"minecraft-client.jar",
+                (home / "caches/fabric-loom/26.1/minecraft-client.jar").read_bytes(),
+            )
+
+    def test_loom_seed_is_bound_to_mojang_metadata_hashes(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            cache = Path(directory).resolve()
+            version = cache / "26.1"
+            version.mkdir()
+            client, server = version / "minecraft-client.jar", version / "minecraft-server.jar"
+            client.write_bytes(b"client")
+            server.write_bytes(b"server")
+            metadata_data = {"downloads": {
+                "client": {"size": 6, "sha1": hashlib.sha1(b"client").hexdigest()},
+                "server": {"size": 6, "sha1": hashlib.sha1(b"server").hexdigest()},
+            }}
+            metadata = version / "mojang_minecraft_info.json"
+            metadata.write_text(json.dumps(metadata_data), encoding="utf-8")
+            manifest = cache / "mojang_versions_manifest.json"
+            manifest.write_text(json.dumps({"versions": [{
+                "id": "26.1", "sha1": hashlib.sha1(metadata.read_bytes()).hexdigest(),
+            }]}), encoding="utf-8")
+            self.assertEqual(4, len(_validated_loom_seed(cache, ROOT, "26.1")))
+            client.write_bytes(b"tamper")
+            with self.assertRaisesRegex(GradleMultiplayerError, "identity"):
+                _validated_loom_seed(cache, ROOT, "26.1")
 
     def test_fixture_verifier_binds_patch_markers_and_pngs(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

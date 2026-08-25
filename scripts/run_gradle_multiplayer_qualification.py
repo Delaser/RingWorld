@@ -15,6 +15,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import signal
 import socket
 import struct
@@ -148,6 +149,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--manifest", default="config/minecraft-version-matrix.json")
     result.add_argument("--gradle-dependency-cache")
     result.add_argument("--gradle-distribution-zip")
+    result.add_argument("--gradle-loom-cache", help="validated external Mojang client/server cache seed")
     return result
 
 
@@ -157,6 +159,54 @@ def _sha256(path: Path) -> str:
         for block in iter(lambda: source.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def _file_hash(path: Path, algorithm: str) -> str:
+    digest = hashlib.new(algorithm)
+    with path.open("rb") as source:
+        for block in iter(lambda: source.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _validated_loom_seed(cache: Path | None, repository_root: Path,
+                         version: str) -> tuple[Path, ...]:
+    if cache is None:
+        return ()
+    resolved = validate_gradle_dependency_cache(cache, repository_root)
+    assert resolved is not None
+    manifest = resolved / "mojang_versions_manifest.json"
+    version_directory = resolved / version
+    metadata = version_directory / "mojang_minecraft_info.json"
+    required = (manifest, metadata, version_directory / "minecraft-client.jar",
+                version_directory / "minecraft-server.jar")
+    if any(path.is_symlink() or not path.is_file() for path in required):
+        raise GradleMultiplayerError("Loom seed is missing a plain required file")
+    try:
+        manifest_data = json.loads(manifest.read_text(encoding="utf-8"))
+        entry = next(item for item in manifest_data["versions"] if item["id"] == version)
+        if _file_hash(metadata, "sha1") != entry["sha1"]:
+            raise GradleMultiplayerError("Loom seed version metadata SHA-1 mismatch")
+        metadata_data = json.loads(metadata.read_text(encoding="utf-8"))
+        for side in ("client", "server"):
+            path = version_directory / f"minecraft-{side}.jar"
+            expected = metadata_data["downloads"][side]
+            if path.stat().st_size != int(expected["size"]) or _file_hash(path, "sha1") != expected["sha1"]:
+                raise GradleMultiplayerError(f"Loom seed {side} jar identity mismatch")
+    except (KeyError, StopIteration, TypeError, ValueError, json.JSONDecodeError) as error:
+        raise GradleMultiplayerError("Loom seed metadata is malformed") from error
+    return required
+
+
+def _stage_loom_seed(files: Sequence[Path], gradle_home: Path, version: str) -> None:
+    if not files:
+        return
+    destination = gradle_home / "caches/fabric-loom"
+    version_destination = destination / version
+    version_destination.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(files[0], destination / files[0].name)
+    for source in files[1:]:
+        shutil.copy2(source, version_destination / source.name)
 
 
 def _tasks(loader: str) -> Mapping[str, str]:
@@ -330,12 +380,13 @@ def _verify_fixture(prepared: AtlasRecoveryInvocation) -> tuple[dict[str, Any], 
 
 
 def _execute(prepared: AtlasRecoveryInvocation, dependency_cache: Path | None,
-             distribution_zip: Path | None) -> dict[str, Any]:
+             distribution_zip: Path | None, loom_seed: Sequence[Path]) -> dict[str, Any]:
     paths, cell = prepared.paths, prepared.cell
     timeout = _timeout(cell)
     tasks = _tasks(str(cell["loader"]))
     create_contained_directories(paths)
     stage_gradle_distribution_zip(distribution_zip, paths.repository_root, paths)
+    _stage_loom_seed(loom_seed, paths.gradle_home, str(cell["minecraft"]["version"]))
     eula = paths.run_directory / "run-multiplayer/server/eula.txt"
     eula.parent.mkdir(parents=True, exist_ok=True)
     eula.write_text("# Disposable qualification runtime only.\neula=true\n", encoding="utf-8")
@@ -430,10 +481,15 @@ def run(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict[
         repository_root=root, manifest_path=manifest, cell_id=arguments.cell,
         quick_run_id=arguments.quick_run_id, run_id=run_id,
     )
+    loom_seed = _validated_loom_seed(
+        Path(arguments.gradle_loom_cache) if arguments.gradle_loom_cache else None,
+        root, str(prepared.cell["minecraft"]["version"]),
+    )
     payload: dict[str, Any]
     with QualificationLock.acquire(prepared.paths.lock_path, run_id):
         try:
-            details = _execute(prepared, dependency_cache, distribution.source if distribution else None)
+            details = _execute(
+                prepared, dependency_cache, distribution.source if distribution else None, loom_seed)
             verdict, reason = Verdict.PASS, None
         except (GradleMultiplayerError, OSError, ValueError) as error:
             details, verdict, reason = {}, Verdict.FAIL, str(error)

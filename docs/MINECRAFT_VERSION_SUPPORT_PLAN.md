@@ -525,7 +525,8 @@ The multiplayer slice now has a concrete exact-candidate operator runner:
 ```sh
 python3 scripts/run_gradle_multiplayer_qualification.py \
   --cell 26.1-fabric \
-  --quick-run-id 20260823T130347Z-a493af8d7261
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --gradle-loom-cache /absolute/read-only/loom-seed
 ```
 
 It removes checkout RingWorld classes from Loom/ModDevGradle runtime source
@@ -536,6 +537,11 @@ normal server stop, and writes hashed terminal evidence below nightly fixture
 this isolation seam was developed. That prototype is not the six-cell
 immutable runner matrix; the checklist stays open until all six operator runs
 pass from clean pushed source.
+The optional Loom seed is acceleration for network-constrained workers, not
+support evidence. It must be external to the checkout and home directory and
+contain only Mojang's version manifest plus the selected patch's version JSON
+and client/server jars. Their sizes and SHA-1 values are revalidated against
+the manifest before being copied into disposable Gradle state.
 The operator entry point is intentionally explicit:
 
 ```sh

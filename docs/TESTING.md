@@ -2012,18 +2012,23 @@ than the checkout source-set mod:
 ```sh
 python3 scripts/run_gradle_multiplayer_qualification.py \
   --cell 26.1-fabric \
-  --quick-run-id 20260823T130347Z-a493af8d7261
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --gradle-loom-cache /absolute/read-only/loom-seed
 ```
 
 Run one graphical cell at a time and substitute each canonical Fabric or
 NeoForge cell ID. The command requires clean pushed source, validates that
 cell's strict quick record, installs one hash-identical candidate into the
 server and both clients, warms client assets serially, drives all three
-processes, sends the normal server `stop` command after PASS, invokes the
+processes, sends a loopback-authenticated RCON `stop` command after PASS, invokes the
 existing Gradle verifier, and records immutable fixture-06 evidence. The
 loader development classpath intentionally uses an empty source set in this
 mode so checkout classes cannot shadow the retained jar. This is exact-patch
 frozen-jar evidence, not authenticated packaged-launcher evidence.
+The optional external Loom seed is revalidated against Mojang's version
+manifest and selected version JSON before the exact client/server jars are
+copied into the isolated cell. It avoids depending on live Mojang downloads
+without reading or sharing the operator's ordinary Gradle home.
 
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
