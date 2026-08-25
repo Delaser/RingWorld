@@ -2064,6 +2064,24 @@ disposable loopback RCON, and terminates the two clients only after their game
 logs have been copied and hashed. This is exact frozen-jar evidence, not a
 packaged-launcher claim.
 
+The formal six-cell fixture-07 matrix passed from clean pushed commit
+`daaa1da7a0836b1afedb57722fbc5f8d0c01b113` with quick run
+`20260823T130347Z-a493af8d7261`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260825T221028Z-466a9d85a0a8` | `3fd34a4b3f056abff4d3b2104e7960958531b40ccfa71eecd9734c872df22952` |
+| 26.1.1 Fabric | `20260825T221240Z-0f1e832eeeb0` | `616cf2b10623e09d78aecaf581bbc1f15f112c11565dec163bf6504825d49b17` |
+| 26.1.2 Fabric | `20260825T221522Z-a58ea89ecbf1` | `c3b9ec716bdf8093bb4c07ba6d8db5849a02c3a6604471c770fc9b1fb7d6adaa` |
+| 26.1 NeoForge | `20260825T221751Z-ccdb777c556a` | `740627753a762ba8c82c9938a2e7a6d2cc4d848b280e38396aea21a9af9b160c` |
+| 26.1.1 NeoForge | `20260825T222236Z-d1d14d2036ff` | `fd073c649a99a6a49b6c6749f8faa5bba8a537fdcf17f35380128684ab0465a2` |
+| 26.1.2 NeoForge | `20260825T222743Z-3614fad43309` | `3414e4cc852c9c9879f8716b79d7e5e44401c69223c6a4407ad0ae875c4aa181` |
+
+All Fabric cells used frozen candidate
+`1fc017289ebcb102d9894ccb16a30a697e03104b5c8165b6799a1496c4486216`;
+all NeoForge cells used
+`5fd60d12db03386866cc153b7921b180cd1e4a96d4f443443364d04357b56823`.
+
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
 or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge

@@ -196,7 +196,7 @@ tests pass on both loader shapes. Refreshed Fabric quick run
 `20260813T083822Z-03549862d588` (`f4896d60...1585`). All six prove the
 four-stage production reload, seam-crossing, stronghold/portal, biome/cave/
 ore/vegetation/loot, and monument-policy contract using one unchanged jar per
-loader. Raid, lifecycle, and rendering nightlies remain pending.
+loader. Lifecycle and rendering nightlies remain pending.
 
 The Phase 4 multiplayer path now has an exact-frozen-jar runner. It prevents
 Loom and ModDevGradle from silently loading checkout classes, verifies the
@@ -214,6 +214,16 @@ NeoForge is
 `5fd60d12db03386866cc153b7921b180cd1e4a96d4f443443364d04357b56823`.
 All six cells passed exact patch identity, the full server/two-client matrix,
 graceful RCON save/shutdown, and immutable log/capture hashing.
+The following frozen-candidate raid slice also passes all six cells from clean
+pushed commit `daaa1da`. Fabric run IDs are
+`20260825T221028Z-466a9d85a0a8`, `20260825T221240Z-0f1e832eeeb0`, and
+`20260825T221522Z-a58ea89ecbf1`; NeoForge run IDs are
+`20260825T221751Z-ccdb777c556a`, `20260825T222236Z-d1d14d2036ff`, and
+`20260825T222743Z-3614fad43309`. The same Fabric and NeoForge candidate hashes
+as fixture 06 were retained across their respective patch triplets. Every
+cell passed real two-client arm/save, bossbar persistence, exact-world reload,
+canonical seam-side raider handling, victory, patch identity, and immutable
+fixture-07 evidence.
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its

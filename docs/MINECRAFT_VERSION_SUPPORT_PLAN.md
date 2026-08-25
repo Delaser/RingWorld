@@ -517,8 +517,8 @@ identity, clean exits, and schema-2 `COMPLETE`. The current clean merged quick
 baseline is combined run `20260823T130347Z-a493af8d7261` at commit `3e94b04`.
 All six cells pass with one Fabric jar (`1fc01728...46216`) and one NeoForge
 jar (`5fd60d12...56823`). This supersedes earlier quick hashes for any future
-candidate derived from current `main`. The remaining Phase 4 raid, lifecycle,
-and rendering fixtures are still pending.
+candidate derived from current `main`. The remaining Phase 4 lifecycle and
+rendering fixtures are still pending.
 
 The multiplayer slice now has a concrete exact-candidate operator runner:
 
@@ -566,8 +566,15 @@ python3 scripts/run_gradle_raid_qualification.py \
 It creates one disposable arm world, requires a real saved first wave with
 both seam-side players in the bossbar, reopens that exact world, requires
 canonical raider navigation and victory, and records exact candidate/client/
-server/log/world identities. Its matrix checkbox remains open until all six
-cells pass from one clean pushed runner commit.
+server/log/world identities. The formal fixture-07 matrix passes from clean
+pushed commit `daaa1da`: Fabric runs are
+`20260825T221028Z-466a9d85a0a8`, `20260825T221240Z-0f1e832eeeb0`, and
+`20260825T221522Z-a58ea89ecbf1`; NeoForge runs are
+`20260825T221751Z-ccdb777c556a`, `20260825T222236Z-d1d14d2036ff`, and
+`20260825T222743Z-3614fad43309`, in 26.1/26.1.1/26.1.2 order. Every cell
+passed arm/save, both-player bossbar membership, exact-world reload,
+canonical seam-side raider handling, victory, and exact patch/candidate
+identity.
 The operator entry point is intentionally explicit:
 
 ```sh

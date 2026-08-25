@@ -391,7 +391,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   and two graphical clients for arm/save and reload/victory, preserves only
   the disposable world between phases, verifies canonical seam navigation,
   raid/bossbar persistence and client patch identity, and writes hash-bound
-  fixture-07 evidence. Run one graphical cell at a time.
+  fixture-07 evidence. Run one graphical cell at a time. The formal six-cell
+  matrix passes from clean commit `daaa1da`; exact run IDs and terminal hashes
+  are recorded in `docs/TESTING.md`.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
