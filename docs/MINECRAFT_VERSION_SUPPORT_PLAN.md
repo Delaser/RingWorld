@@ -593,6 +593,10 @@ settings and complete Atlas independently, then opens only the disposable
 copy. It requires Overworld/Nether/End transfer state, normal save/disconnect,
 client-state teardown, exact-world reopen, and exact patch/frozen-jar identity.
 It never mutates the source world.
+For a multi-patch matrix, generate the immutable source with the oldest target
+runtime. Minecraft 26.1 worlds may move forward through the supported patch
+line, but a 26.1.2 save is not silently opened by 26.1; the runner reads
+`level.dat` and rejects that downgrade direction before copying.
 
 The production rendering slice consumes the same immutable source input and
 exact candidate:

@@ -401,7 +401,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   and verifies Overworld/Nether/End transfers, normal save/disconnect, raw
   client-state teardown, and same-world reopen. Run one graphical cell at a
   time; the six-cell checkbox remains open until one clean pushed runner
-  revision passes every cell.
+  revision passes every cell. A range-wide source must be saved by the oldest
+  target patch (26.1); the runner rejects later-save-to-earlier-runtime
+  downgrade attempts before copying.
 - `scripts/run_gradle_production_render_qualification.py`: exact
   frozen-candidate Phase 4 runner for the complete production Atlas/render
   slice. It inventories one reviewed 16,384x256 source, opens only fresh

@@ -2099,6 +2099,10 @@ format, or mapping mismatch. It copies the source into the cell-owned runtime,
 installs and rehashes the retained jar, excludes checkout classes, and binds
 the final dimension-transfer/save/disconnect/reopen log and world identities
 into fixture-11 evidence. The source directory remains read-only input.
+A source used across 26.1.x must have last been saved by 26.1. The lifecycle
+and render operators allow forward patch use and reject a 26.1.1/26.1.2 save
+when the selected target is older, avoiding Minecraft's interactive downgrade
+warning and invalid evidence.
 
 The matching exact-candidate production rendering operator is:
 
