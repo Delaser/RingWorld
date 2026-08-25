@@ -9,6 +9,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 from types import SimpleNamespace
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -138,10 +139,12 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
             manifest.write_text(json.dumps({"versions": [{
                 "id": "26.1", "sha1": hashlib.sha1(metadata.read_bytes()).hexdigest(),
             }]}), encoding="utf-8")
-            self.assertEqual(6, len(_validated_loom_seed(cache, ROOT, "26.1")))
-            client.write_bytes(b"tamper")
-            with self.assertRaisesRegex(GradleMultiplayerError, "identity"):
-                _validated_loom_seed(cache, ROOT, "26.1")
+            with patch("run_gradle_multiplayer_qualification.validate_gradle_dependency_cache",
+                       return_value=cache):
+                self.assertEqual(6, len(_validated_loom_seed(cache, ROOT, "26.1")))
+                client.write_bytes(b"tamper")
+                with self.assertRaisesRegex(GradleMultiplayerError, "identity"):
+                    _validated_loom_seed(cache, ROOT, "26.1")
 
     def test_fixture_verifier_binds_patch_markers_and_pngs(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
