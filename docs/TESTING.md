@@ -2115,6 +2115,20 @@ parity; requires all twelve projection and four natural-seam/rim PNGs; hashes
 each per-mode game log; and requires tangent, handoff, radial-up, and seam
 motion frame metrics. It does not claim authenticated packaged-client proof.
 
+Plan the whole ordered nightly matrix without writing runtime state:
+
+```sh
+python3 scripts/run_minecraft_nightly_matrix.py \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --production-world /absolute/path/below/dist/qualification/to/26.1-world
+```
+
+After reviewing the command inventory, repeat with `--execute`. The
+coordinator serializes every graphical fixture, records each child command and
+terminal payload, blocks only the rest of a failed cell, and exclusive-creates
+one six-cell aggregate report. It has no upload, deployment, tag, or live
+server interface.
+
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
 or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge

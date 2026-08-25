@@ -611,6 +611,20 @@ motion, seam join, and both finite-width rims. Exact patch identity, frozen
 jar hashes, PNGs, logs, and frame observations are bound into fixture-12
 terminal evidence.
 
+The unattended coordinator is dry-run-first:
+
+```sh
+python3 scripts/run_minecraft_nightly_matrix.py \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --production-world /absolute/path/below/dist/qualification/to/26.1-world
+```
+
+Add `--execute` to run the fixed ordered matrix. It invokes one graphical cell
+at a time, prevents a failed cell from advancing to dependent fixtures,
+continues independent cells, and writes one aggregate terminal report. Cell or
+fixture subsets are useful diagnostics but remain `INCOMPLETE` even when every
+selected command passes.
+
 The operator entry point is intentionally explicit:
 
 ```sh

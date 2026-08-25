@@ -408,6 +408,12 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   disposable copies, captures tangent/handoff/radial projection at noon,
   dusk, night, and rain, then runs natural seam/both-rim visual parity and
   records all frame logs and PNG hashes. Run one graphical cell at a time.
+- `scripts/run_minecraft_nightly_matrix.py`: dry-run-first Phase 4 coordinator
+  for the fixed ordered fixture sequence. With `--execute` it invokes each
+  existing isolated operator serially, stops later fixtures in a failed cell,
+  continues other cells, and exclusive-creates one aggregate report. A
+  partial cell/fixture selection is always `INCOMPLETE`, never a matrix PASS.
+  Its production-world input must already be below `dist/qualification`.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,

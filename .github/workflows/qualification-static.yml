@@ -105,6 +105,7 @@ jobs:
           scripts/test_run_gradle_raid_qualification.py
           scripts/test_run_gradle_production_lifecycle_qualification.py
           scripts/test_run_gradle_production_render_qualification.py
+          scripts/test_run_minecraft_nightly_matrix.py
           scripts/test_qualification_static_workflow.py
 
       # Static only: no Gradle, Minecraft runtime, installer, server, network,
