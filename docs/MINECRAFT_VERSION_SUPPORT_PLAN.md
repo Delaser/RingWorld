@@ -594,6 +594,23 @@ copy. It requires Overworld/Nether/End transfer state, normal save/disconnect,
 client-state teardown, exact-world reopen, and exact patch/frozen-jar identity.
 It never mutates the source world.
 
+The production rendering slice consumes the same immutable source input and
+exact candidate:
+
+```sh
+python3 scripts/run_gradle_production_render_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --source-world /absolute/path/to/complete-production-world \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+It refreshes only cell-owned world copies, captures tangent, Atlas handoff,
+and radial-up views at noon, dusk, night, and rain, then captures natural seam
+motion, seam join, and both finite-width rims. Exact patch identity, frozen
+jar hashes, PNGs, logs, and frame observations are bound into fixture-12
+terminal evidence.
+
 The operator entry point is intentionally explicit:
 
 ```sh

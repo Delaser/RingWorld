@@ -2100,6 +2100,21 @@ installs and rehashes the retained jar, excludes checkout classes, and binds
 the final dimension-transfer/save/disconnect/reopen log and world identities
 into fixture-11 evidence. The source directory remains read-only input.
 
+The matching exact-candidate production rendering operator is:
+
+```sh
+python3 scripts/run_gradle_production_render_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --source-world /absolute/path/to/complete-production-world \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+It creates fresh cell-owned copies for noon, dusk, night, rain, and visual
+parity; requires all twelve projection and four natural-seam/rim PNGs; hashes
+each per-mode game log; and requires tangent, handoff, radial-up, and seam
+motion frame metrics. It does not claim authenticated packaged-client proof.
+
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
 or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge

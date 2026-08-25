@@ -402,6 +402,12 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   client-state teardown, and same-world reopen. Run one graphical cell at a
   time; the six-cell checkbox remains open until one clean pushed runner
   revision passes every cell.
+- `scripts/run_gradle_production_render_qualification.py`: exact
+  frozen-candidate Phase 4 runner for the complete production Atlas/render
+  slice. It inventories one reviewed 16,384x256 source, opens only fresh
+  disposable copies, captures tangent/handoff/radial projection at noon,
+  dusk, night, and rain, then runs natural seam/both-rim visual parity and
+  records all frame logs and PNG hashes. Run one graphical cell at a time.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,

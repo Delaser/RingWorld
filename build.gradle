@@ -316,6 +316,7 @@ loom {
 		}
 		productionProjectionClient {
 			client()
+			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Production Projection Capture"
 			// The projection run opens only the disposable copied world prepared
 			// below. It must never open a source checkpoint in place.
@@ -332,6 +333,7 @@ loom {
 		}
 		productionVisualParityClient {
 			client()
+			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Production Visual Parity"
 			// This run receives a fresh copied save and uses server-authoritative
 			// poses for the natural seam and both finite-width rims.

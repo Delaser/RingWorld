@@ -124,6 +124,7 @@ neoForge {
         }
         productionProjectionClient {
             client()
+            if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-production-projection')
             systemProperty 'ringworld.captureRingProjection', 'true'
             systemProperty 'ringworld.projectionWorld', providers.gradleProperty('ringNeoForgeProjectionDestination')
@@ -135,6 +136,7 @@ neoForge {
         }
         productionVisualParityClient {
             client()
+            if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             // This run receives a fresh copied save for every invocation.
             // Keep it separate from the projection checkpoint so its seam and
             // rim screenshots are disposable, unambiguous gate evidence.
