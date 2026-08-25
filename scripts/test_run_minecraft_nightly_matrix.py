@@ -4,8 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import json
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -15,6 +17,7 @@ if str(SCRIPTS) not in sys.path:
 
 from run_minecraft_nightly_matrix import (  # noqa: E402
     FIXTURES, NightlyMatrixError, _child_argv, _selected_fixtures,
+    _verify_terminals,
 )
 
 
@@ -48,6 +51,29 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
         self.assertIn("--quick-run-id quick-run", joined)
         self.assertNotIn("--source-world", joined)
         self.assertNotIn("--gradle-dependency-cache", joined)
+
+    def test_terminal_binding_rejects_wrong_candidate(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cell = {"id": "26.1-fabric", "loader": "fabric",
+                    "minecraft": {"version": "26.1"}}
+            run_id = "20260826T000000Z-0123456789ab"
+            path = (root / "dist/qualification/ringworld/26.1/fabric" / run_id
+                    / "26.1-fabric/evidence/nightly/06-seam-gameplay-multiplayer/terminal.json")
+            path.parent.mkdir(parents=True)
+            path.write_text(json.dumps({
+                "verdict": "PASS", "cell": "26.1-fabric",
+                "source": {"commit": "abc"},
+                "frozen_candidate": {"sha256": "candidate"},
+                "quick_evidence": {"sha256": "quick"},
+            }), encoding="utf-8")
+            payload = {"run_id": run_id}
+            records = _verify_terminals(root, cell, "multiplayer", payload,
+                                        "abc", "candidate", "quick")
+            self.assertEqual(1, len(records))
+            with self.assertRaisesRegex(NightlyMatrixError, "candidate"):
+                _verify_terminals(root, cell, "multiplayer", payload,
+                                  "abc", "wrong", "quick")
 
 
 if __name__ == "__main__":

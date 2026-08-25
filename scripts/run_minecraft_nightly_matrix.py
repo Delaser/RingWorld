@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from datetime import datetime, timezone
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -18,6 +19,7 @@ from minecraft_qualification_model import CommandRecord, PhaseName, Qualificatio
 from run_gradle_production_lifecycle_qualification import (
     _source_world, _validate_source_version, _world_inventory, _world_observation,
 )
+from run_atlas_recovery_qualification import prepare_invocation
 from run_minecraft_qualification import (
     ROOT, collect_source_provenance, load_manifest, validate_gradle_dependency_cache,
     validate_gradle_distribution_zip,
@@ -46,6 +48,20 @@ PRODUCTION_FIXTURES = {"production-lifecycle", "production-render"}
 GRADLE_FIXTURES = {"creation-ui", "atlas-ui", "multiplayer", "raid", "map-compass",
                    "production-lifecycle", "curved-objects", "production-render"}
 LOOM_SEED_FIXTURES = {"multiplayer", "raid", "production-lifecycle", "production-render"}
+EXACT_CANDIDATE_FIXTURES = {"worldgen", "atlas-recovery", "multiplayer", "raid",
+                            "production-lifecycle", "production-render"}
+EVIDENCE_DIRECTORY = {
+    "creation-ui": "01-creation-settings-ui",
+    "worldgen": "02-worldgen-seam-structures",
+    "atlas-recovery": "03-atlas-prewarm-recovery",
+    "atlas-ui": "04-atlas-ui-revision",
+    "multiplayer": "06-seam-gameplay-multiplayer",
+    "raid": "07-raid-seam",
+    "map-compass": "08-map-compass-reconnect",
+    "curved-objects": "10-curved-objects",
+    "production-lifecycle": "11-production-lifecycle",
+    "production-render": "12-production-atlas-render",
+}
 
 
 class NightlyMatrixError(QualificationExecutionError):
@@ -120,6 +136,75 @@ def _last_json(path: Path) -> dict[str, Any]:
     raise NightlyMatrixError("nightly child emitted no JSON result")
 
 
+def _sha256(path: Path) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as stream:
+        for block in iter(lambda: stream.read(1024 * 1024), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _terminal_paths(root: Path, cell: Mapping[str, Any], fixture: str,
+                    payload: Mapping[str, Any]) -> tuple[Path, ...]:
+    direct = payload.get("terminal_evidence")
+    if isinstance(direct, str) and direct:
+        paths = (Path(direct),)
+    else:
+        run_id = payload.get("run_id")
+        if not isinstance(run_id, str) or not run_id:
+            raise NightlyMatrixError("nightly child result has no run ID or terminal path")
+        base = (root / "dist/qualification/ringworld" / str(cell["minecraft"]["version"])
+                / str(cell["loader"]) / run_id / str(cell["id"]) / "evidence/nightly")
+        paths = (base / EVIDENCE_DIRECTORY[fixture] / "terminal.json",)
+        if fixture == "atlas-ui":
+            paths += (base / "05-client-handshake/terminal.json",)
+    qualification_root = (root / "dist/qualification").resolve(strict=False)
+    resolved = tuple(path.resolve(strict=False) for path in paths)
+    if any(not path.is_relative_to(qualification_root) for path in resolved):
+        raise NightlyMatrixError("nightly terminal evidence escapes qualification state")
+    return resolved
+
+
+def _verify_terminals(root: Path, cell: Mapping[str, Any], fixture: str,
+                      payload: Mapping[str, Any], source_commit: str,
+                      candidate_hash: str, quick_hash: str) -> tuple[dict[str, str], ...]:
+    records = []
+    for path in _terminal_paths(root, cell, fixture, payload):
+        if path.is_symlink() or not path.is_file():
+            raise NightlyMatrixError(f"nightly terminal evidence is missing: {path}")
+        try:
+            terminal = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as error:
+            raise NightlyMatrixError("nightly terminal evidence is not valid JSON") from error
+        terminal_cell = terminal.get("cell", terminal.get("cell_id"))
+        if terminal.get("verdict") != "PASS" or terminal_cell != cell["id"]:
+            raise NightlyMatrixError("nightly terminal verdict/cell identity is invalid")
+        qualification = terminal.get("qualification")
+        source = terminal.get("source")
+        if isinstance(source, Mapping):
+            recorded_commit = source.get("commit")
+        elif isinstance(qualification, Mapping) and isinstance(
+                qualification.get("executionSourceProvenance"), Mapping):
+            recorded_commit = qualification["executionSourceProvenance"].get("commit")
+        else:
+            recorded_commit = None
+        if recorded_commit != source_commit:
+            raise NightlyMatrixError("nightly terminal source commit differs from coordinator")
+        if fixture in EXACT_CANDIDATE_FIXTURES:
+            if isinstance(qualification, Mapping):
+                recorded_candidate = qualification.get("frozenCandidateSha256")
+                recorded_quick = qualification.get("quickTerminalEvidenceSha256")
+            else:
+                frozen = terminal.get("frozen_candidate")
+                quick = terminal.get("quick_evidence")
+                recorded_candidate = frozen.get("sha256") if isinstance(frozen, Mapping) else None
+                recorded_quick = quick.get("sha256") if isinstance(quick, Mapping) else None
+            if recorded_candidate != candidate_hash or recorded_quick != quick_hash:
+                raise NightlyMatrixError("nightly exact-candidate/quick identity is invalid")
+        records.append({"path": str(path), "sha256": _sha256(path)})
+    return tuple(records)
+
+
 def plan(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict[str, Any]:
     root = repository_root.resolve(strict=False)
     manifest_path = (root / arguments.manifest).resolve(strict=False)
@@ -162,6 +247,15 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
     run_id = new_run_id()
     manifest = load_manifest(manifest_path)
     by_id = {cell["id"]: cell for cell in manifest["cells"]}
+    expected: dict[str, dict[str, str]] = {}
+    for cell_id in planned["cells"]:
+        prepared = prepare_invocation(
+            repository_root=root, manifest_path=manifest_path, cell_id=str(cell_id),
+            quick_run_id=arguments.quick_run_id, run_id=new_run_id())
+        expected[str(cell_id)] = {
+            "frozen_candidate_sha256": prepared.candidate.sha256,
+            "quick_terminal_sha256": prepared.quick_terminal_evidence.sha256,
+        }
     results: list[dict[str, Any]] = []
     ordinal = 1
     blocked_cells: set[str] = set()
@@ -188,11 +282,21 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
         else:
             child_reason = child.reason or payload.get("reason")
         verdict = payload.get("verdict") if child.verdict is Verdict.PASS else "FAIL"
+        terminals: tuple[dict[str, str], ...] = ()
+        if verdict == "PASS":
+            try:
+                identity = expected[cell_id]
+                terminals = _verify_terminals(
+                    root, by_id[cell_id], fixture, payload, provenance.commit,
+                    identity["frozen_candidate_sha256"], identity["quick_terminal_sha256"])
+            except NightlyMatrixError as error:
+                verdict, child_reason = "FAIL", str(error)
         if verdict != "PASS":
             blocked_cells.add(cell_id)
         results.append({
             "cell": cell_id, "fixture": fixture, "verdict": verdict or "FAIL",
             "reason": child_reason, "child": payload,
+            "expected_identity": expected[cell_id], "terminal_evidence": terminals,
             "command": {"argv": list(child.argv), "exit_code": child.return_code,
                         "started_at": child.started_at_utc, "elapsed_seconds": child.elapsed_seconds,
                         "stdout": child.stdout_log, "stderr": child.stderr_log},
