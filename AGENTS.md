@@ -400,10 +400,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   source, launches one real integrated client with checkout classes excluded,
   and verifies Overworld/Nether/End transfers, normal save/disconnect, raw
   client-state teardown, and same-world reopen. Run one graphical cell at a
-  time; the six-cell checkbox remains open until one clean pushed runner
-  revision passes every cell. A range-wide source must be saved by the oldest
-  target patch (26.1); the runner rejects later-save-to-earlier-runtime
-  downgrade attempts before copying.
+  time. The formal six-cell matrix passes from clean pushed runner commit
+  `d9ae051`; exact run IDs and terminal hashes are recorded in
+  `docs/TESTING.md`. A range-wide source must be saved by the oldest target
+  patch (26.1); the runner rejects later-save-to-earlier-runtime downgrade
+  attempts before copying.
 - `scripts/run_gradle_production_render_qualification.py`: exact
   frozen-candidate Phase 4 runner for the complete production Atlas/render
   slice. It inventories one reviewed 16,384x256 source, opens only fresh

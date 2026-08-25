@@ -224,6 +224,20 @@ as fixture 06 were retained across their respective patch triplets. Every
 cell passed real two-client arm/save, bossbar persistence, exact-world reload,
 canonical seam-side raider handling, victory, patch identity, and immutable
 fixture-07 evidence.
+The exact-frozen production lifecycle slice now passes all six cells from
+clean pushed runner commit `d9ae051` using one independently inventoried
+Minecraft 26.1 production world. Fabric run IDs are
+`20260825T232710Z-952a555c46c0`, `20260825T232829Z-b0aae351351b`, and
+`20260825T232936Z-087e4043ed96`; NeoForge run IDs are
+`20260825T233044Z-dba4e089a8ea`, `20260825T233410Z-a95bc86f19f9`, and
+`20260825T233831Z-7747e410ff19`. Every cell passed Overworld/Nether/End
+transfer, normal save/disconnect, raw client-state teardown, and same-world
+reopen with the unchanged frozen jar for its loader. The shared source is a
+16,384x256 format-3/mapping-4 world last saved by 26.1 with a complete
+65,536-cell Atlas. One earlier 26.1.2 NeoForge attempt failed before launch
+when its disposable Loom cache exhausted local disk; the preserved failure is
+not counted, and the fresh rerun passed after only disposable caches were
+removed.
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its

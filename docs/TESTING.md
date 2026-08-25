@@ -2104,6 +2104,28 @@ and render operators allow forward patch use and reject a 26.1.1/26.1.2 save
 when the selected target is older, avoiding Minecraft's interactive downgrade
 warning and invalid evidence.
 
+The formal six-cell fixture-11 matrix passed from clean pushed runner commit
+`d9ae051c7c0f838a242dc2afc97f785691c62e3f` with quick run
+`20260823T130347Z-a493af8d7261` and the same frozen candidate hashes recorded
+above:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260825T232710Z-952a555c46c0` | `f022a7354eadd24b51c7c04380dad2b2e5fbe08322dc64017af6c7ba88f427c9` |
+| 26.1.1 Fabric | `20260825T232829Z-b0aae351351b` | `8da2d32a580d1b90e95ae6fbbe5bbd0032d86f4520e721506899c14f7d3aa420` |
+| 26.1.2 Fabric | `20260825T232936Z-087e4043ed96` | `bdd56a0e205bb0fcd138b7992610a6233baa2bceaa4659e85efc0d465cd63199` |
+| 26.1 NeoForge | `20260825T233044Z-dba4e089a8ea` | `fd9ff3edad18c3ba5c733b804038c629a9e016c82a399b706a897ef63a11f298` |
+| 26.1.1 NeoForge | `20260825T233410Z-a95bc86f19f9` | `fe74466a35a64b4833f4f92a6989e446cfe3219b9cf791fb9f47f5c87d8bc873` |
+| 26.1.2 NeoForge | `20260825T233831Z-7747e410ff19` | `04a8d8c9ad7a61c35516db6abb5ba28d8580ebe42936a1feecb4fb8a3eabbe9c` |
+
+The source-world inventory SHA-256 was
+`8c450de590c2dec6ff70d17190c03204ef29048c50a887564a9704c53a9d13e5`;
+its complete Atlas SHA-256 was
+`ee9301b55595539f5abc98f1cf4d8a8796b9e633cd88914377a9227b91ef9be8`.
+The first 26.1 Fabric cell was also executed through the coordinator. Its child
+passed, while the intentionally partial one-cell/one-fixture aggregate
+correctly remained `INCOMPLETE`.
+
 The matching exact-candidate production rendering operator is:
 
 ```sh

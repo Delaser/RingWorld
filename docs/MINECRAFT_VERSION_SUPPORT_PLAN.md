@@ -1106,8 +1106,8 @@ Earlier sections remain the detailed design and evidence record.
   (`20260823T130347Z-a493af8d7261`, commit `3e94b04`).
 - [x] Run the dedicated multiplayer fixture on all six cells with the exact
   retained frozen candidate for each loader.
-- [ ] Run the raid fixture on all six cells.
-- [ ] Run production lifecycle qualification on all six cells: dimension
+- [x] Run the raid fixture on all six cells.
+- [x] Run production lifecycle qualification on all six cells: dimension
   travel, save, disconnect, client-state cleanup, and reopen.
 - [ ] Run production rendering on all six cells: projection, natural seam
   motion, Atlas handoff, rims, sky, weather, and frame observations.
