@@ -74,6 +74,8 @@ class GradleProductionLifecycleQualificationTest(unittest.TestCase):
                               neoforge.index("strongholdTestServer {")]
         self.assertIn("qualificationFrozenRuntimeSourceSet", fabric_profile)
         self.assertIn("qualificationFrozenRuntimeSourceSet", neo_profile)
+        self.assertIn("headlessPrewarmServer", fabric)
+        self.assertIn("headlessPrewarmServer", neoforge)
 
 
 if __name__ == "__main__":

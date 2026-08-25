@@ -400,6 +400,7 @@ loom {
 		}
 		headlessPrewarmServer {
 			server()
+			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Headless Atlas Prewarm"
 			// This is the only launch directory accepted by the checked-in
 			// disposable fixture. Never point this launch at a source save.

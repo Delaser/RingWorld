@@ -181,6 +181,7 @@ neoForge {
         }
         headlessPrewarmServer {
             server()
+            if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-headless-prewarm')
             systemProperty 'ringworld.headlessPrewarm', 'true'
             systemProperty 'ringworld.headlessPrewarmReport',

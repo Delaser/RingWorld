@@ -15,7 +15,7 @@ import struct
 import sys
 from typing import Any, Mapping, Sequence
 
-from minecraft_atlas_recovery_persistence import parse_persisted_ring_settings
+from minecraft_atlas_recovery_persistence import _NbtReader, parse_persisted_ring_settings
 from minecraft_qualification_executor import (
     QualificationExecutionError, QualificationLock, create_contained_directories,
     execute_command, new_run_id, write_terminal_report,
@@ -39,6 +39,7 @@ MAX_WORLD_FILES = 100_000
 MAX_WORLD_BYTES = 8 * 1024 * 1024 * 1024
 MAX_ATLAS_COMPRESSED_BYTES = 32 * 1024 * 1024
 MAX_ATLAS_UNCOMPRESSED_BYTES = 64 * 1024 * 1024
+MAX_LEVEL_UNCOMPRESSED_BYTES = 16 * 1024 * 1024
 ATLAS_MAGIC = 0x52574154
 ATLAS_VERSION = 6
 
@@ -175,6 +176,23 @@ def _world_observation(root: Path) -> dict[str, Any]:
     for label, path in (("level.dat", level), ("saved settings", settings_path)):
         if path.is_symlink() or not path.is_file():
             raise GradleProductionLifecycleError(f"production world {label} is missing")
+    try:
+        with gzip.open(level, "rb") as stream:
+            level_data = stream.read(MAX_LEVEL_UNCOMPRESSED_BYTES + 1)
+    except (OSError, EOFError) as error:
+        raise GradleProductionLifecycleError("production level.dat is not valid gzip") from error
+    if len(level_data) > MAX_LEVEL_UNCOMPRESSED_BYTES:
+        raise GradleProductionLifecycleError("production level.dat exceeds its bounded size")
+    reader = _NbtReader(level_data)
+    if reader.read(1)[0] != 10:
+        raise GradleProductionLifecycleError("production level.dat root is invalid")
+    reader.string()
+    level_root = reader.payload(10)
+    values = level_root.get("Data")
+    version_record = values.get("Version") if isinstance(values, dict) else None
+    version_name = version_record.get("Name") if isinstance(version_record, dict) else None
+    if not isinstance(version_name, str) or not version_name:
+        raise GradleProductionLifecycleError("production level.dat has no saved version name")
     settings = parse_persisted_ring_settings(settings_path.read_bytes(), settings_path)
     if (settings.circumference_blocks, settings.width_blocks) != (16_384, 256):
         raise GradleProductionLifecycleError("production source must use the 16384x256 layout")
@@ -183,6 +201,7 @@ def _world_observation(root: Path) -> dict[str, Any]:
     atlas = _atlas_observation(atlas_path, settings.width_blocks, settings.circumference_blocks)
     return {
         "level_dat_sha256": _sha256(level),
+        "minecraft_version": version_name,
         "settings": {**asdict(settings), "settings_path": str(settings.settings_path)},
         "atlas": atlas,
     }
@@ -270,6 +289,14 @@ def _execute(prepared: Any, source_world: Path, dependency_cache: Path | None,
     stage_gradle_distribution_zip(distribution_zip, paths.repository_root, paths)
     _stage_loom_seed(loom_seed, paths.gradle_home, str(cell["minecraft"]["version"]))
     source, destination_record = _prepare_world(prepared, source_world)
+    versions = ("26.1", "26.1.1", "26.1.2")
+    saved_version = source.get("minecraft_version")
+    target_version = str(cell["minecraft"]["version"])
+    if saved_version not in versions or target_version not in versions:
+        raise GradleProductionLifecycleError("production source/target version is outside 26.1.x")
+    if versions.index(saved_version) > versions.index(target_version):
+        raise GradleProductionLifecycleError(
+            f"production source {saved_version} cannot be opened as older target {target_version}")
     destination = Path(destination_record["path"])
     tasks = _tasks(cell["loader"])
     timeout = _timeout(cell)
