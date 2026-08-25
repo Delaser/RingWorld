@@ -18,7 +18,7 @@ if str(SCRIPTS) not in sys.path:
 
 from minecraft_qualification_model import QualificationPaths  # noqa: E402
 from run_gradle_multiplayer_qualification import (  # noqa: E402
-    CAPTURES, GradleMultiplayerError, _base_argv, _tasks,
+    CAPTURES, GradleMultiplayerError, _base_argv, _configure_rcon, _tasks,
     _verify_fixture, _verify_installed_candidates,
 )
 
@@ -68,6 +68,18 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
             extra.write_bytes(b"source leak")
             with self.assertRaisesRegex(GradleMultiplayerError, "only"):
                 _verify_installed_candidates(prepared)
+
+    def test_disposable_rcon_configuration_preserves_other_properties(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            server = Path(directory)
+            properties = server / "server.properties"
+            properties.write_text("server-port=26101\nenable-rcon=false\n", encoding="utf-8")
+            self.assertEqual(properties, _configure_rcon(server, 27101, "test-password"))
+            text = properties.read_text(encoding="utf-8")
+            self.assertIn("server-port=26101\n", text)
+            self.assertIn("enable-rcon=true\n", text)
+            self.assertIn("rcon.port=27101\n", text)
+            self.assertIn("rcon.password=test-password\n", text)
 
     def test_fixture_verifier_binds_patch_markers_and_pngs(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

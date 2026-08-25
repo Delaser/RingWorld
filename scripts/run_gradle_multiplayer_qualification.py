@@ -16,6 +16,8 @@ import os
 from pathlib import Path
 import re
 import signal
+import socket
+import struct
 import subprocess
 import sys
 import time
@@ -69,6 +71,74 @@ _RUN_ID = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}$")
 
 class GradleMultiplayerError(QualificationExecutionError):
     """Frozen multiplayer evidence is unsafe or incomplete."""
+
+
+def _configure_rcon(server_directory: Path, port: int, password: str) -> Path:
+    """Enable loopback RCON for graceful control of the disposable server."""
+    if not (1 <= port <= 65535):
+        raise GradleMultiplayerError("invalid disposable RCON port")
+    properties = server_directory / "server.properties"
+    values: dict[str, str] = {}
+    if properties.is_file():
+        for line in properties.read_text(encoding="utf-8").splitlines():
+            if line and not line.lstrip().startswith("#") and "=" in line:
+                key, value = line.split("=", 1)
+                values[key] = value
+    values.update({
+        "enable-rcon": "true",
+        "rcon.password": password,
+        "rcon.port": str(port),
+        "broadcast-rcon-to-ops": "false",
+    })
+    properties.parent.mkdir(parents=True, exist_ok=True)
+    properties.write_text(
+        "# Disposable qualification runtime only.\n"
+        + "".join(f"{key}={values[key]}\n" for key in sorted(values)),
+        encoding="utf-8",
+    )
+    return properties
+
+
+def _receive_rcon_packet(connection: socket.socket) -> tuple[int, int, bytes]:
+    def receive_exact(size: int) -> bytes:
+        payload = b""
+        while len(payload) < size:
+            block = connection.recv(size - len(payload))
+            if not block:
+                raise GradleMultiplayerError("RCON connection closed unexpectedly")
+            payload += block
+        return payload
+
+    length = struct.unpack("<i", receive_exact(4))[0]
+    if length < 10 or length > 1024 * 1024:
+        raise GradleMultiplayerError("invalid RCON response length")
+    packet = receive_exact(length)
+    request_id, packet_type = struct.unpack("<ii", packet[:8])
+    if packet[-2:] != b"\x00\x00":
+        raise GradleMultiplayerError("malformed RCON response")
+    return request_id, packet_type, packet[8:-2]
+
+
+def _send_rcon_packet(connection: socket.socket, request_id: int,
+                      packet_type: int, payload: str) -> None:
+    body = struct.pack("<ii", request_id, packet_type) + payload.encode("utf-8") + b"\x00\x00"
+    connection.sendall(struct.pack("<i", len(body)) + body)
+
+
+def _graceful_rcon_stop(port: int, password: str) -> None:
+    try:
+        with socket.create_connection(("127.0.0.1", port), timeout=10) as connection:
+            connection.settimeout(10)
+            _send_rcon_packet(connection, 41, 3, password)
+            auth_id, _auth_type, _auth_payload = _receive_rcon_packet(connection)
+            if auth_id != 41:
+                raise GradleMultiplayerError("disposable RCON authentication failed")
+            _send_rcon_packet(connection, 42, 2, "stop")
+            command_id, _command_type, _command_payload = _receive_rcon_packet(connection)
+            if command_id != 42:
+                raise GradleMultiplayerError("disposable RCON stop was not acknowledged")
+    except OSError as error:
+        raise GradleMultiplayerError(f"could not stop disposable server through RCON: {error}") from error
 
 
 def parser() -> argparse.ArgumentParser:
@@ -278,6 +348,10 @@ def _execute(prepared: AtlasRecoveryInvocation, dependency_cache: Path | None,
     if assets.verdict is not Verdict.PASS:
         raise GradleMultiplayerError("serial asset warmup failed")
 
+    rcon_port = int(cell["profile"]["server_port"]) + 1000
+    rcon_password = f"ringworld-{prepared.run_id[-12:]}"
+    _configure_rcon(paths.run_directory / "run-multiplayer/server", rcon_port, rcon_password)
+
     prepare_task = tasks["prepare"]
     server_record = _record(prepared, (tasks["server"], "-x", prepare_task), timeout, dependency_cache)
     client_a_record = _record(prepared, (tasks["client_a"],), timeout, dependency_cache)
@@ -308,10 +382,7 @@ def _execute(prepared: AtlasRecoveryInvocation, dependency_cache: Path | None,
                 raise GradleMultiplayerError(f"{name} exited {process.returncode}")
         _wait_marker(running["server"][0], server_log, PASS_MARKERS[0], min(timeout, 300))
         server = running["server"][0]
-        if server.stdin is None:
-            raise GradleMultiplayerError("server has no controlled standard input")
-        server.stdin.write(b"stop\n")
-        server.stdin.flush()
+        _graceful_rcon_stop(rcon_port, rcon_password)
         try:
             server.wait(timeout=60)
         except subprocess.TimeoutExpired as error:
