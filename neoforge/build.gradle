@@ -19,6 +19,8 @@ def qualificationRunDirectory = rootProject.ext.ringQualificationRunDirectory
 def qualificationRunFile = { String historicPath -> project.file(qualificationRunDirectory(historicPath)) }
 def qualificationMinecraftRange = rootProject.ext.ringQualificationMinecraftRange
 def qualificationNeoForgeRange = rootProject.ext.ringQualificationNeoForgeRange
+def qualificationFrozenCandidateJar = rootProject.ext.ringQualificationFrozenCandidateJar
+def verifyQualificationFrozenCandidate = rootProject.ext.verifyRingQualificationFrozenCandidate
 def minecraftMetadataVersion = qualificationMinecraftRange ?: "[${rootProject.minecraft_version}]"
 def neoForgeMetadataVersion = qualificationNeoForgeRange ?: "[${rootProject.neoforge_version},)"
 def neoForgeRunPort = { String qualificationProperty, String historicProperty, String defaultValue ->
@@ -57,6 +59,15 @@ sourceSets.main.resources.setSrcDirs([
         rootProject.file('src/platform/neoforge/resources')
 ])
 sourceSets.main.resources.exclude('fabric.mod.json')
+
+// A frozen-candidate run must not expose the checkout's compiled RingWorld
+// classes through ModDevGradle's selected source set. Keep only the resolved
+// loader/game dependency graph and load the retained jar from mods/.
+def qualificationFrozenRuntimeSourceSet = null
+if (qualificationFrozenCandidateJar != null) {
+    qualificationFrozenRuntimeSourceSet = sourceSets.create('qualificationFrozenRuntime')
+    qualificationFrozenRuntimeSourceSet.runtimeClasspath = configurations.runtimeClasspath
+}
 
 // Run the same loader-neutral contract suite against the NeoForge-compiled
 // common sources. Platform-specific runtime gates remain separate.
@@ -177,6 +188,7 @@ neoForge {
         }
         multiplayerServer {
             server()
+            if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             // This intentionally lives below the NeoForge subproject so it
             // never shares a world, logs, or port configuration with Fabric's
             // run-multiplayer harness.
@@ -186,6 +198,7 @@ neoForge {
         }
         multiplayerClientA {
             client()
+            if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-multiplayer/client-a')
             systemProperty 'ringworld.multiplayerTestRole', 'A'
             systemProperty 'ringworld.multiplayerTestPort',
@@ -196,6 +209,7 @@ neoForge {
         }
         multiplayerClientB {
             client()
+            if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-multiplayer/client-b')
             systemProperty 'ringworld.multiplayerTestRole', 'B'
             systemProperty 'ringworld.multiplayerTestPort',
@@ -251,14 +265,18 @@ neoForge {
     }
 
     mods {
-        ringworld {
-            sourceSet sourceSets.main
+        if (qualificationFrozenCandidateJar == null) {
+            ringworld {
+                sourceSet sourceSets.main
+            }
         }
     }
 
-    unitTest {
-        enable()
-        testedMod = mods.ringworld
+    if (qualificationFrozenCandidateJar == null) {
+        unitTest {
+            enable()
+            testedMod = mods.ringworld
+        }
     }
 }
 
@@ -610,6 +628,7 @@ tasks.register('prepareNeoForgeMultiplayerHarness') {
     outputs.dir(neoForgeMultiplayerRun)
     outputs.upToDateWhen { false }
     doLast {
+        verifyQualificationFrozenCandidate()
         def port = neoForgeMultiplayerPort()
         def eula = new File(neoForgeMultiplayerServerRun, 'eula.txt')
         if (!eula.isFile()) {
@@ -627,16 +646,31 @@ tasks.register('prepareNeoForgeMultiplayerHarness') {
          new File(neoForgeMultiplayerServerRun, 'logs'),
          new File(neoForgeMultiplayerServerRun, 'ringworld-cache'),
          new File(neoForgeMultiplayerServerRun, 'crash-reports'),
+         new File(neoForgeMultiplayerServerRun, 'mods'),
          new File(neoForgeMultiplayerClientARun, 'logs'),
          new File(neoForgeMultiplayerClientARun, 'screenshots'),
          new File(neoForgeMultiplayerClientARun, 'ringworld-cache'),
          new File(neoForgeMultiplayerClientARun, 'crash-reports'),
+         new File(neoForgeMultiplayerClientARun, 'mods'),
          new File(neoForgeMultiplayerClientBRun, 'logs'),
          new File(neoForgeMultiplayerClientBRun, 'screenshots'),
          new File(neoForgeMultiplayerClientBRun, 'ringworld-cache'),
-         new File(neoForgeMultiplayerClientBRun, 'crash-reports')].each { delete(it) }
+         new File(neoForgeMultiplayerClientBRun, 'crash-reports'),
+         new File(neoForgeMultiplayerClientBRun, 'mods')].each { delete(it) }
         [neoForgeMultiplayerServerRun, neoForgeMultiplayerClientARun,
          neoForgeMultiplayerClientBRun].each { it.mkdirs() }
+        if (qualificationFrozenCandidateJar != null) {
+            [neoForgeMultiplayerServerRun, neoForgeMultiplayerClientARun,
+             neoForgeMultiplayerClientBRun].each { runtime ->
+                def mods = new File(runtime, 'mods')
+                mods.mkdirs()
+                copy {
+                    from qualificationFrozenCandidateJar
+                    into mods
+                    rename { 'ringworld-qualification.jar' }
+                }
+            }
+        }
 
         // The automated clients do not need NeoForge's separate early splash.
         // Disabling only that window avoids a GLFW primary-monitor failure

@@ -198,6 +198,15 @@ four-stage production reload, seam-crossing, stronghold/portal, biome/cave/
 ore/vegetation/loot, and monument-policy contract using one unchanged jar per
 loader. Client, multiplayer, lifecycle, and rendering nightlies remain
 pending.
+
+The Phase 4 multiplayer path now has an exact-frozen-jar runner. It prevents
+Loom and ModDevGradle from silently loading checkout classes, verifies the
+retained jar hash in the dedicated server and both real-client `mods/`
+directories, serializes asset warmup, drives the existing complete seam/
+gameplay fixture, stops the server normally, and emits hash-bound fixture-06
+evidence. A 26.1 Fabric development prototype completed the full verifier;
+the formal six-cell matrix remains pending until the runner is executed from
+clean pushed source on every cell.
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its

@@ -21,6 +21,19 @@ if ((qualificationRootProperty == null) != (qualificationCellProperty == null)) 
 
 def qualificationEnabled = qualificationRootProperty != null
 
+// Nightly fixtures may load the exact retained production jar instead of the
+// checkout's source-set mod. This mode is qualification-only and requires an
+// independently supplied SHA-256; normal development and release invocations
+// cannot enable it accidentally.
+def qualificationFrozenCandidateProperty = providers.gradleProperty("ringQualificationFrozenCandidateJar").orNull
+def qualificationFrozenCandidateSha256Property = providers.gradleProperty("ringQualificationFrozenCandidateSha256").orNull
+if ((qualificationFrozenCandidateProperty == null) != (qualificationFrozenCandidateSha256Property == null)) {
+	throw new GradleException("ringQualificationFrozenCandidateJar and ringQualificationFrozenCandidateSha256 must be supplied together")
+}
+if (!qualificationEnabled && qualificationFrozenCandidateProperty != null) {
+	throw new GradleException("a frozen candidate requires ringQualificationRoot and ringQualificationCell")
+}
+
 // A qualification build may exercise broader loader metadata, but that is
 // never a normal-development or release default. Keep the raw values shared
 // here because Gradle configures both loader projects even when a command
@@ -67,6 +80,7 @@ def requireNeoForgeQualificationRange = { String propertyName, String value ->
 	}
 }
 File qualificationCellRoot = null
+File qualificationFrozenCandidateJar = null
 if (qualificationEnabled) {
 	def rawRoot = qualificationRootProperty.trim()
 	def rawCell = qualificationCellProperty.trim()
@@ -95,7 +109,36 @@ if (qualificationEnabled) {
 	if (!isWithin(qualificationCellRoot, requestedRoot)) {
 		throw new GradleException("ringQualificationCell resolves outside ringQualificationRoot")
 	}
+	if (qualificationFrozenCandidateProperty != null) {
+		def rawCandidate = qualificationFrozenCandidateProperty.trim()
+		def expectedHash = qualificationFrozenCandidateSha256Property.trim()
+		if (rawCandidate.isEmpty() || !(expectedHash ==~ /[0-9a-f]{64}/)) {
+			throw new GradleException("the frozen candidate needs a path and lowercase SHA-256")
+		}
+		qualificationFrozenCandidateJar = file(rawCandidate).canonicalFile
+		def qualificationState = new File(repositoryRoot, "dist/qualification").canonicalFile
+		if (!isWithin(qualificationFrozenCandidateJar, qualificationState)
+				|| !qualificationFrozenCandidateJar.isFile()
+				|| java.nio.file.Files.isSymbolicLink(file(rawCandidate).toPath())) {
+			throw new GradleException("the frozen candidate must be a regular non-symlink file below dist/qualification")
+		}
+	}
 	layout.buildDirectory.set(new File(qualificationCellRoot, "build/fabric"))
+}
+
+def verifyQualificationFrozenCandidate = {
+	if (qualificationFrozenCandidateJar == null) return
+	def digest = java.security.MessageDigest.getInstance("SHA-256")
+	qualificationFrozenCandidateJar.withInputStream { input ->
+		byte[] buffer = new byte[1024 * 1024]
+		for (int count = input.read(buffer); count >= 0; count = input.read(buffer)) {
+			if (count > 0) digest.update(buffer, 0, count)
+		}
+	}
+	def actual = digest.digest().collect { String.format('%02x', it & 0xff) }.join()
+	if (actual != qualificationFrozenCandidateSha256Property.trim()) {
+		throw new GradleException("the frozen candidate changed after qualification planning")
+	}
 }
 
 def qualificationRunDirectory = { String historicPath ->
@@ -111,8 +154,31 @@ ext.ringQualificationBuildDirectory = qualificationEnabled
 		? new File(qualificationCellRoot, "build") : null
 ext.ringQualificationMinecraftRange = qualificationMinecraftRange
 ext.ringQualificationNeoForgeRange = qualificationNeoForgeRange
+ext.ringQualificationFrozenCandidateJar = qualificationFrozenCandidateJar
+ext.verifyRingQualificationFrozenCandidate = verifyQualificationFrozenCandidate
 ext.requireFabricQualificationMinecraftRange = requireFabricQualificationMinecraftRange
 ext.requireNeoForgeQualificationRange = requireNeoForgeQualificationRange
+
+// Loom normally puts the selected source set's compiled output on every
+// development-run classpath. Frozen-candidate qualification must not expose
+// the checkout's RingWorld classes at all, otherwise Fabric silently loads
+// those classes instead of the retained jar copied into mods/. The empty
+// source set inherits only runtime dependencies (Fabric API/loader), never
+// main/client output.
+def qualificationFrozenRuntimeSourceSet = null
+if (qualificationFrozenCandidateJar != null) {
+	qualificationFrozenRuntimeSourceSet = sourceSets.create("qualificationFrozenRuntime")
+	configurations.named(qualificationFrozenRuntimeSourceSet.implementationConfigurationName) {
+		extendsFrom(configurations.implementation)
+	}
+	configurations.named(qualificationFrozenRuntimeSourceSet.runtimeOnlyConfigurationName) {
+		extendsFrom(configurations.runtimeOnly, configurations.loomDevelopmentDependencies)
+	}
+	// Use the resolved runtime dependency graph directly. SourceSet's default
+	// runtimeClasspath would otherwise prepend its own output and omit Loom's
+	// Minecraft/ASM launch dependencies.
+	qualificationFrozenRuntimeSourceSet.runtimeClasspath = configurations.runtimeClasspath
+}
 
 def fabricMultiplayerPort = {
 	def raw = (qualificationEnabled
@@ -153,9 +219,11 @@ repositories {
 loom {
 	splitEnvironmentSourceSets()
 	mods {
-		"ringworld" {
-			sourceSet sourceSets.main
-			sourceSet sourceSets.client
+		if (qualificationFrozenCandidateJar == null) {
+			"ringworld" {
+				sourceSet sourceSets.main
+				sourceSet sourceSets.client
+			}
 		}
 	}
 	runs {
@@ -172,6 +240,7 @@ loom {
 		}
 		multiplayerServer {
 			server()
+			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Multiplayer Server"
 			runDir qualificationRunDirectory("run-multiplayer/server")
 			vmArg "-Dringworld.multiplayerTest=true"
@@ -179,6 +248,7 @@ loom {
 		}
 		multiplayerClientA {
 			client()
+			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Multiplayer Client A"
 			runDir qualificationRunDirectory("run-multiplayer/client-a")
 			vmArg "-Dringworld.multiplayerTestRole=A"
@@ -187,6 +257,7 @@ loom {
 		}
 		multiplayerClientB {
 			client()
+			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Multiplayer Client B"
 			runDir qualificationRunDirectory("run-multiplayer/client-b")
 			vmArg "-Dringworld.multiplayerTestRole=B"
@@ -568,6 +639,7 @@ tasks.register("prepareMultiplayerHarness") {
 	outputs.dir(multiplayerHarnessDirectory)
 	outputs.upToDateWhen { false }
 	doLast {
+		verifyQualificationFrozenCandidate()
 		def server = new File(multiplayerHarnessDirectory, "server")
 		def eula = new File(server, "eula.txt")
 		if (!eula.isFile()) {
@@ -578,14 +650,26 @@ tasks.register("prepareMultiplayerHarness") {
 			throw new GradleException("Review ${eula}, then set eula=true to run this disposable server")
 		}
 
-		["world", "logs", "ringworld-cache", "crash-reports"].each { delete(new File(server, it)) }
+		["world", "logs", "ringworld-cache", "crash-reports", "mods"].each { delete(new File(server, it)) }
 		["client-a", "client-b"].each { client ->
-			["logs", "screenshots", "ringworld-cache", "crash-reports"].each {
+			["logs", "screenshots", "ringworld-cache", "crash-reports", "mods"].each {
 				delete(new File(multiplayerHarnessDirectory, client + "/" + it))
 			}
 		}
 		[server, new File(multiplayerHarnessDirectory, "client-a"),
 		 new File(multiplayerHarnessDirectory, "client-b")].each { it.mkdirs() }
+		if (qualificationFrozenCandidateJar != null) {
+			[server, new File(multiplayerHarnessDirectory, "client-a"),
+			 new File(multiplayerHarnessDirectory, "client-b")].each { runtime ->
+				def mods = new File(runtime, "mods")
+				mods.mkdirs()
+				copy {
+					from qualificationFrozenCandidateJar
+					into mods
+					rename { "ringworld-qualification.jar" }
+				}
+			}
+		}
 
 		def configDirectory = new File(server, "config")
 		configDirectory.mkdirs()

@@ -519,6 +519,23 @@ All six cells pass with one Fabric jar (`1fc01728...46216`) and one NeoForge
 jar (`5fd60d12...56823`). This supersedes earlier quick hashes for any future
 candidate derived from current `main`. The remaining Phase 4 client,
 gameplay, lifecycle, and rendering fixtures are still pending.
+
+The multiplayer slice now has a concrete exact-candidate operator runner:
+
+```sh
+python3 scripts/run_gradle_multiplayer_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261
+```
+
+It removes checkout RingWorld classes from Loom/ModDevGradle runtime source
+sets, installs and rehashes the retained jar in the isolated server and both
+clients, warms shared assets before concurrent client launch, performs a
+normal server stop, and writes hashed terminal evidence below nightly fixture
+06. A real 26.1 Fabric prototype passed the complete existing verifier while
+this isolation seam was developed. That prototype is not the six-cell
+immutable runner matrix; the checklist stays open until all six operator runs
+pass from clean pushed source.
 The operator entry point is intentionally explicit:
 
 ```sh

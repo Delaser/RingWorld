@@ -2006,6 +2006,25 @@ increase. A `generation complete` status is accepted by the same rule. This is a
 advancement gate, not a requirement to complete all 3,328 chunks during the
 multiplayer scenario.
 
+For the rolling 26.1.x matrix, use the exact retained quick candidate rather
+than the checkout source-set mod:
+
+```sh
+python3 scripts/run_gradle_multiplayer_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261
+```
+
+Run one graphical cell at a time and substitute each canonical Fabric or
+NeoForge cell ID. The command requires clean pushed source, validates that
+cell's strict quick record, installs one hash-identical candidate into the
+server and both clients, warms client assets serially, drives all three
+processes, sends the normal server `stop` command after PASS, invokes the
+existing Gradle verifier, and records immutable fixture-06 evidence. The
+loader development classpath intentionally uses an empty source set in this
+mode so checkout classes cannot shadow the retained jar. This is exact-patch
+frozen-jar evidence, not authenticated packaged-launcher evidence.
+
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
 or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge

@@ -369,6 +369,13 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   disposable world and valid verified far/near captures. It is not frozen-jar
   or production-launcher evidence. All six cells pass from clean commit
   `f9cb4c2`; exact records are in `docs/TESTING.md`.
+- `scripts/run_gradle_multiplayer_qualification.py`: exact frozen-candidate
+  Phase 4 wrapper for the existing dedicated server plus two real graphical
+  clients. It selects one quick-qualified cell, removes checkout classes from
+  the loader development classpath, rehashes the retained jar installed in
+  all three isolated `mods/` directories, warms assets serially, drives the
+  seam/gameplay matrix, stops the server normally, and hashes logs/captures.
+  This is exact-patch frozen-jar evidence but not a packaged-launcher claim.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
