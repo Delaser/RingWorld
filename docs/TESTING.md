@@ -2048,6 +2048,22 @@ All Fabric cells used frozen candidate
 all NeoForge cells used
 `5fd60d12db03386866cc153b7921b180cd1e4a96d4f443443364d04357b56823`.
 
+For the frozen-candidate raid slice, run one graphical cell at a time:
+
+```sh
+python3 scripts/run_gradle_raid_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+The runner owns both phases and never touches the historical manual fixture
+directories. It requires the arm server to save and self-stop, preserves that
+world for reload, requires the reload `PASS`, stops the reload server through
+disposable loopback RCON, and terminates the two clients only after their game
+logs have been copied and hashed. This is exact frozen-jar evidence, not a
+packaged-launcher claim.
+
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
 or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge

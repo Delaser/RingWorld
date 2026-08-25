@@ -553,6 +553,21 @@ Fabric runs are `20260825T214555Z-944190e851f2` (26.1),
 unchanged candidate `1fc01728...46216`; NeoForge used one unchanged candidate
 `5fd60d12...56823`. Every cell passed two-client seam/gameplay, normal RCON
 save/shutdown, exact patch identity, and immutable log/capture hashing.
+
+The next exact-candidate operator slice is the two-phase raid fixture:
+
+```sh
+python3 scripts/run_gradle_raid_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+It creates one disposable arm world, requires a real saved first wave with
+both seam-side players in the bossbar, reopens that exact world, requires
+canonical raider navigation and victory, and records exact candidate/client/
+server/log/world identities. Its matrix checkbox remains open until all six
+cells pass from one clean pushed runner commit.
 The operator entry point is intentionally explicit:
 
 ```sh

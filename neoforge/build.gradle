@@ -220,6 +220,7 @@ neoForge {
         }
         raidSeamArmServer {
             server()
+            if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-raid-seam/server')
             systemProperty 'ringworld.raidSeamTest', 'true'
             systemProperty 'ringworld.raidSeamTestPhase', 'arm'
@@ -228,6 +229,7 @@ neoForge {
         }
         raidSeamReloadServer {
             server()
+            if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-raid-seam/server')
             systemProperty 'ringworld.raidSeamTest', 'true'
             systemProperty 'ringworld.raidSeamTestPhase', 'reload'
@@ -235,6 +237,7 @@ neoForge {
         }
         raidSeamClientA {
             client()
+            if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-raid-seam/client-a')
             systemProperty 'ringworld.multiplayerTestRole', 'A'
             systemProperty 'ringworld.multiplayerTestPort',
@@ -244,6 +247,7 @@ neoForge {
         }
         raidSeamClientB {
             client()
+            if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-raid-seam/client-b')
             systemProperty 'ringworld.multiplayerTestRole', 'B'
             systemProperty 'ringworld.multiplayerTestPort',
@@ -365,6 +369,10 @@ def neoForgeMultiplayerRun = qualificationRunFile('run-multiplayer')
 def neoForgeMultiplayerServerRun = new File(neoForgeMultiplayerRun, 'server')
 def neoForgeMultiplayerClientARun = new File(neoForgeMultiplayerRun, 'client-a')
 def neoForgeMultiplayerClientBRun = new File(neoForgeMultiplayerRun, 'client-b')
+def neoForgeRaidSeamRun = qualificationRunFile('run-raid-seam')
+def neoForgeRaidSeamServerRun = new File(neoForgeRaidSeamRun, 'server')
+def neoForgeRaidSeamClientARun = new File(neoForgeRaidSeamRun, 'client-a')
+def neoForgeRaidSeamClientBRun = new File(neoForgeRaidSeamRun, 'client-b')
 def neoForgeMultiplayerPregenerateTerrainAtlas = providers.gradleProperty('ringMultiplayerPregenerateTerrainAtlas')
         .orElse('false')
 def neoForgeMultiplayerHarnessDimension = { String propertyName, String defaultValue, int minimum, boolean chunkAligned ->
@@ -614,6 +622,83 @@ tasks.register('verifyNeoForgeMapCompassCaptureClient') {
 tasks.named('runMapCompassCaptureClient') {
     dependsOn('prepareNeoForgeMapCompassCaptureRun')
     finalizedBy('verifyNeoForgeMapCompassCaptureClient')
+}
+
+tasks.register('prepareNeoForgeRaidSeamTestWorld') {
+    group = 'ringworld verification'
+    description = 'Creates a fresh, isolated NeoForge two-phase seam-raid fixture.'
+    outputs.upToDateWhen { false }
+    doLast {
+        verifyQualificationFrozenCandidate()
+        def port = neoForgeRunPort('ringQualificationNeoForgeRaidSeamPort', 'ringNeoForgeRaidSeamPort', '25567')
+        def eula = new File(neoForgeRaidSeamServerRun, 'eula.txt')
+        if (!eula.isFile()) {
+            eula.parentFile.mkdirs()
+            eula.text = '# Review https://aka.ms/MinecraftEULA before changing this value.\neula=false\n'
+        }
+        if (!eula.text.readLines().any { it.trim() == 'eula=true' }) {
+            throw new GradleException("Review ${eula}, then set eula=true to run this disposable server")
+        }
+        [new File(neoForgeRaidSeamServerRun, 'world'),
+         new File(neoForgeRaidSeamServerRun, 'logs'),
+         new File(neoForgeRaidSeamServerRun, 'ringworld-cache'),
+         new File(neoForgeRaidSeamServerRun, 'crash-reports'),
+         new File(neoForgeRaidSeamServerRun, 'mods'),
+         new File(neoForgeRaidSeamClientARun, 'logs'),
+         new File(neoForgeRaidSeamClientARun, 'screenshots'),
+         new File(neoForgeRaidSeamClientARun, 'ringworld-cache'),
+         new File(neoForgeRaidSeamClientARun, 'crash-reports'),
+         new File(neoForgeRaidSeamClientARun, 'mods'),
+         new File(neoForgeRaidSeamClientBRun, 'logs'),
+         new File(neoForgeRaidSeamClientBRun, 'screenshots'),
+         new File(neoForgeRaidSeamClientBRun, 'ringworld-cache'),
+         new File(neoForgeRaidSeamClientBRun, 'crash-reports'),
+         new File(neoForgeRaidSeamClientBRun, 'mods')].each { delete(it) }
+        [neoForgeRaidSeamServerRun, neoForgeRaidSeamClientARun, neoForgeRaidSeamClientBRun].each { runtime ->
+            runtime.mkdirs()
+            if (qualificationFrozenCandidateJar != null) {
+                def mods = new File(runtime, 'mods')
+                mods.mkdirs()
+                copy {
+                    from qualificationFrozenCandidateJar
+                    into mods
+                    rename { 'ringworld-qualification.jar' }
+                }
+            }
+        }
+        [neoForgeRaidSeamClientARun, neoForgeRaidSeamClientBRun].each { clientRun ->
+            def fmlConfig = new File(clientRun, 'config/fml.toml')
+            fmlConfig.parentFile.mkdirs()
+            fmlConfig.text = '# Automated raid fixture: disable only the separate early splash.\nearlyWindowControl = false\n'
+        }
+        def config = new File(neoForgeRaidSeamServerRun, 'config')
+        config.mkdirs()
+        new File(config, 'ringworld.properties').text = '''\
+widthBlocks=416
+circumferenceBlocks=2048
+wallHeightBlocks=160
+testMode=false
+testViewDistanceChunks=2
+pregenerateTerrainAtlas=false
+'''
+        def properties = new Properties()
+        properties.setProperty('server-port', port.toString())
+        properties.setProperty('online-mode', 'false')
+        properties.setProperty('gamemode', 'creative')
+        properties.setProperty('difficulty', 'normal')
+        properties.setProperty('level-name', 'world')
+        properties.setProperty('level-seed', 'ringworld-raid-seam')
+        properties.setProperty('view-distance', '5')
+        properties.setProperty('simulation-distance', '5')
+        properties.setProperty('pause-when-empty-seconds', '-1')
+        new File(neoForgeRaidSeamServerRun, 'server.properties').withOutputStream {
+            properties.store(it, 'Disposable RingWorld NeoForge seam-raid fixture')
+        }
+    }
+}
+
+tasks.named('runRaidSeamArmServer') {
+    dependsOn('prepareNeoForgeRaidSeamTestWorld')
 }
 
 tasks.register('prepareNeoForgeMultiplayerHarness') {
