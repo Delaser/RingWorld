@@ -374,7 +374,7 @@ def run(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict[
             },
             "frozen_candidate": {
                 "path": str(prepared.candidate.path), "sha256": prepared.candidate.sha256,
-                "minecraft_range": prepared.candidate.minecraft_range,
+                "minecraft_range": prepared.candidate.declared_target_range,
             },
             **details,
             "claims": {
