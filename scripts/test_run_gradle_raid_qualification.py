@@ -20,6 +20,13 @@ from run_gradle_raid_qualification import (  # noqa: E402
 
 
 class GradleRaidQualificationTest(unittest.TestCase):
+    def test_terminal_writer_uses_directory_and_markdown_contract(self) -> None:
+        source = (ROOT / "scripts" / "run_gradle_raid_qualification.py").read_text(
+            encoding="utf-8")
+        self.assertIn("prepared.paths.evidence_directory / EVIDENCE_SUBDIRECTORY,", source)
+        self.assertIn('stem="terminal"', source)
+        self.assertNotIn('EVIDENCE_SUBDIRECTORY / "terminal.json"', source)
+
     def test_task_inventory_is_loader_symmetric(self) -> None:
         fabric, neoforge = _tasks("fabric"), _tasks("neoforge")
         self.assertEqual(set(fabric), set(neoforge))

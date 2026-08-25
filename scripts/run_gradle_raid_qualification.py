@@ -255,8 +255,15 @@ def run(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict[
                        "frozen_candidate_jar": verdict is Verdict.PASS,
                        "production_launcher": False},
         }
-        terminal = prepared.paths.evidence_directory / EVIDENCE_SUBDIRECTORY / "terminal.json"
-        write_terminal_report(terminal, payload)
+        write_terminal_report(
+            prepared.paths.evidence_directory / EVIDENCE_SUBDIRECTORY,
+            payload,
+            f"# {prepared.cell['id']} frozen raid qualification\n\n"
+            f"Verdict: **{verdict.value}**\n\n"
+            "Exact retained-jar, two-phase dedicated-server and two-client raid evidence. "
+            "This is not a packaged production-launcher claim.\n",
+            stem="terminal",
+        )
     return payload
 
 
