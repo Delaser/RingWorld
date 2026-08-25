@@ -349,7 +349,7 @@ def _execute(prepared: AtlasRecoveryInvocation, dependency_cache: Path | None,
         raise GradleMultiplayerError("serial asset warmup failed")
 
     rcon_port = int(cell["profile"]["server_port"]) + 1000
-    rcon_password = f"ringworld-{prepared.run_id[-12:]}"
+    rcon_password = f"ringworld-{paths.run_id[-12:]}"
     _configure_rcon(paths.run_directory / "run-multiplayer/server", rcon_port, rcon_password)
 
     prepare_task = tasks["prepare"]

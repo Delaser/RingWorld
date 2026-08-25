@@ -80,6 +80,8 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
             self.assertIn("enable-rcon=true\n", text)
             self.assertIn("rcon.port=27101\n", text)
             self.assertIn("rcon.password=test-password\n", text)
+            with self.assertRaisesRegex(GradleMultiplayerError, "port"):
+                _configure_rcon(server, 70000, "test-password")
 
     def test_fixture_verifier_binds_patch_markers_and_pngs(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
