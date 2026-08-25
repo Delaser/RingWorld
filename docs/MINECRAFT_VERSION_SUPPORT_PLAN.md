@@ -2,8 +2,8 @@
 
 Status: approved policy and active implementation. Phases 0–3 are implemented;
 the six quick cells pass with one unchanged jar per loader. Phase 4 has real
-six-cell Atlas-recovery, worldgen/structure, and creation/settings UI
-source-ABI evidence; its remaining client, gameplay, lifecycle, and rendering
+six-cell Atlas-recovery, worldgen/structure, frozen-candidate multiplayer, and
+creation/settings UI evidence; its remaining raid, lifecycle, and rendering
 fixtures are pending. Phase 5's copied-world matrix passes all six supported
 same-loader forward paths. Phase 6's release-equivalence guard is static-tested,
 but no proposed public jar or release-equivalence evidence has been recorded.
@@ -517,8 +517,8 @@ identity, clean exits, and schema-2 `COMPLETE`. The current clean merged quick
 baseline is combined run `20260823T130347Z-a493af8d7261` at commit `3e94b04`.
 All six cells pass with one Fabric jar (`1fc01728...46216`) and one NeoForge
 jar (`5fd60d12...56823`). This supersedes earlier quick hashes for any future
-candidate derived from current `main`. The remaining Phase 4 client,
-gameplay, lifecycle, and rendering fixtures are still pending.
+candidate derived from current `main`. The remaining Phase 4 raid, lifecycle,
+and rendering fixtures are still pending.
 
 The multiplayer slice now has a concrete exact-candidate operator runner:
 
@@ -543,6 +543,16 @@ contain Mojang's version manifest, the selected patch's version JSON and
 client/server jars, and its asset index/objects. Their sizes and SHA-1 values
 are revalidated through the manifest, version JSON, and asset index before
 being copied into disposable Gradle state.
+
+The formal fixture-06 matrix passes from clean pushed commit `351056c`.
+Fabric runs are `20260825T214555Z-944190e851f2` (26.1),
+`20260825T214848Z-6b762555368c` (26.1.1), and
+`20260825T215133Z-7c1ee4314c33` (26.1.2). NeoForge runs are
+`20260825T205441Z-67ab6c18f772`, `20260825T213540Z-1d2e6b1e6b26`, and
+`20260825T214008Z-ea4e5e2fd2c6` in the same version order. Fabric used one
+unchanged candidate `1fc01728...46216`; NeoForge used one unchanged candidate
+`5fd60d12...56823`. Every cell passed two-client seam/gameplay, normal RCON
+save/shutdown, exact patch identity, and immutable log/capture hashing.
 The operator entry point is intentionally explicit:
 
 ```sh
@@ -1018,7 +1028,7 @@ Earlier sections remain the detailed design and evidence record.
 
 - [x] Re-run the complete six-cell quick matrix from current clean `main`
   (`20260823T130347Z-a493af8d7261`, commit `3e94b04`).
-- [ ] Run the dedicated multiplayer fixture on all six cells with the exact
+- [x] Run the dedicated multiplayer fixture on all six cells with the exact
   retained frozen candidate for each loader.
 - [ ] Run the raid fixture on all six cells.
 - [ ] Run production lifecycle qualification on all six cells: dimension

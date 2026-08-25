@@ -384,6 +384,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   Gradle home. Server shutdown uses authenticated RCON enabled only inside the
   disposable runtime because NeoForge's Gradle launcher does not forward
   standard input to the game process.
+  The formal six-cell matrix passes from clean commit `351056c`; exact run IDs
+  and terminal hashes are recorded in `docs/TESTING.md`.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,

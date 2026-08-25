@@ -2031,6 +2031,23 @@ jars and every indexed asset object are copied into the isolated cell. It
 avoids depending on live Mojang downloads without reading or sharing the
 operator's ordinary Gradle home.
 
+The formal six-cell fixture-06 matrix passed from clean pushed commit
+`351056c` with quick run `20260823T130347Z-a493af8d7261`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260825T214555Z-944190e851f2` | `ef1351856f4244cfc9cfb0ba6b2a143fbcd1dc442661aa94d48b44412fddb3ce` |
+| 26.1.1 Fabric | `20260825T214848Z-6b762555368c` | `de7efbf4ee7192e1e13c26f4cb17ddc9021485d7ce5501f6f5f0f229ad2a8848` |
+| 26.1.2 Fabric | `20260825T215133Z-7c1ee4314c33` | `a7edd16dfc7ea617238005054578de4125b99f7e02bdd894a2dd4aaeaed81681` |
+| 26.1 NeoForge | `20260825T205441Z-67ab6c18f772` | `141edca6097b3f85d75ad0e31b68960347c85e2b8ef435276ff7978ed25ad7a4` |
+| 26.1.1 NeoForge | `20260825T213540Z-1d2e6b1e6b26` | `54873ef55ab475621e40e53087ba4d3aba389470a84f0012fd427e985fce636a` |
+| 26.1.2 NeoForge | `20260825T214008Z-ea4e5e2fd2c6` | `eb16896062fc4f7e8f5c0a9b1a36e7f7bacc732803d580a4aa37460c53494af5` |
+
+All Fabric cells used frozen candidate
+`1fc017289ebcb102d9894ccb16a30a697e03104b5c8165b6799a1496c4486216`;
+all NeoForge cells used
+`5fd60d12db03386866cc153b7921b180cd1e4a96d4f443443364d04357b56823`.
+
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
 or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge
