@@ -193,20 +193,39 @@ def _validated_loom_seed(cache: Path | None, repository_root: Path,
             expected = metadata_data["downloads"][side]
             if path.stat().st_size != int(expected["size"]) or _file_hash(path, "sha1") != expected["sha1"]:
                 raise GradleMultiplayerError(f"Loom seed {side} jar identity mismatch")
+        asset = metadata_data["assetIndex"]
+        asset_index = resolved / "assets/indexes" / f"{version}-{asset['id']}.json"
+        if asset_index.is_symlink() or not asset_index.is_file():
+            raise GradleMultiplayerError("Loom seed asset index is missing")
+        if asset_index.stat().st_size != int(asset["size"]) or _file_hash(asset_index, "sha1") != asset["sha1"]:
+            raise GradleMultiplayerError("Loom seed asset index identity mismatch")
+        asset_data = json.loads(asset_index.read_text(encoding="utf-8"))
+        asset_files: list[Path] = [asset_index]
+        for item in asset_data["objects"].values():
+            asset_hash = item["hash"]
+            if not isinstance(asset_hash, str) or not re.fullmatch(r"[0-9a-f]{40}", asset_hash):
+                raise GradleMultiplayerError("Loom seed asset hash is malformed")
+            asset_file = resolved / "assets/objects" / asset_hash[:2] / asset_hash
+            if asset_file.is_symlink() or not asset_file.is_file():
+                raise GradleMultiplayerError("Loom seed asset object is missing")
+            if asset_file.stat().st_size != int(item["size"]) or _file_hash(asset_file, "sha1") != asset_hash:
+                raise GradleMultiplayerError("Loom seed asset object identity mismatch")
+            asset_files.append(asset_file)
     except (KeyError, StopIteration, TypeError, ValueError, json.JSONDecodeError) as error:
         raise GradleMultiplayerError("Loom seed metadata is malformed") from error
-    return required
+    return (*required, *asset_files)
 
 
 def _stage_loom_seed(files: Sequence[Path], gradle_home: Path, version: str) -> None:
     if not files:
         return
+    source_root = files[0].parent
     destination = gradle_home / "caches/fabric-loom"
-    version_destination = destination / version
-    version_destination.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(files[0], destination / files[0].name)
-    for source in files[1:]:
-        shutil.copy2(source, version_destination / source.name)
+    for source in files:
+        relative = source.relative_to(source_root)
+        target = destination / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(source, target)
 
 
 def _tasks(loader: str) -> Mapping[str, str]:

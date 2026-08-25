@@ -86,9 +86,12 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
     def test_loom_seed_stages_only_reviewed_files(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            sources = [root / "mojang_versions_manifest.json"]
-            sources.extend(root / "26.1" / name for name in (
+            source_root = root / "seed"
+            sources = [source_root / "mojang_versions_manifest.json"]
+            sources.extend(source_root / "26.1" / name for name in (
                 "mojang_minecraft_info.json", "minecraft-client.jar", "minecraft-server.jar"))
+            sources.append(source_root / "assets/indexes/26.1-30.json")
+            sources.append(source_root / "assets/objects/ab/abcdef")
             for source in sources:
                 source.parent.mkdir(parents=True, exist_ok=True)
                 source.write_bytes(source.name.encode("utf-8"))
@@ -98,6 +101,8 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
                 b"minecraft-client.jar",
                 (home / "caches/fabric-loom/26.1/minecraft-client.jar").read_bytes(),
             )
+            self.assertEqual(
+                b"abcdef", (home / "caches/fabric-loom/assets/objects/ab/abcdef").read_bytes())
 
     def test_loom_seed_is_bound_to_mojang_metadata_hashes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -110,14 +115,30 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
             metadata_data = {"downloads": {
                 "client": {"size": 6, "sha1": hashlib.sha1(b"client").hexdigest()},
                 "server": {"size": 6, "sha1": hashlib.sha1(b"server").hexdigest()},
-            }}
+            }, "assetIndex": {"id": "30"}}
+            asset_object = cache / "assets/objects/ab/abcdef12345678901234567890123456789012"
+            asset_object.parent.mkdir(parents=True)
+            asset_object.write_bytes(b"asset")
+            asset_hash = hashlib.sha1(b"asset").hexdigest()
+            correct_object = cache / "assets/objects" / asset_hash[:2] / asset_hash
+            correct_object.parent.mkdir(parents=True, exist_ok=True)
+            asset_object.rename(correct_object)
+            asset_index = cache / "assets/indexes/26.1-30.json"
+            asset_index.parent.mkdir(parents=True)
+            asset_index.write_text(json.dumps({"objects": {
+                "test": {"hash": asset_hash, "size": 5},
+            }}), encoding="utf-8")
+            metadata_data["assetIndex"].update({
+                "size": asset_index.stat().st_size,
+                "sha1": hashlib.sha1(asset_index.read_bytes()).hexdigest(),
+            })
             metadata = version / "mojang_minecraft_info.json"
             metadata.write_text(json.dumps(metadata_data), encoding="utf-8")
             manifest = cache / "mojang_versions_manifest.json"
             manifest.write_text(json.dumps({"versions": [{
                 "id": "26.1", "sha1": hashlib.sha1(metadata.read_bytes()).hexdigest(),
             }]}), encoding="utf-8")
-            self.assertEqual(4, len(_validated_loom_seed(cache, ROOT, "26.1")))
+            self.assertEqual(6, len(_validated_loom_seed(cache, ROOT, "26.1")))
             client.write_bytes(b"tamper")
             with self.assertRaisesRegex(GradleMultiplayerError, "identity"):
                 _validated_loom_seed(cache, ROOT, "26.1")

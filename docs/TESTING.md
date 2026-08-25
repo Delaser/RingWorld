@@ -2026,9 +2026,10 @@ loader development classpath intentionally uses an empty source set in this
 mode so checkout classes cannot shadow the retained jar. This is exact-patch
 frozen-jar evidence, not authenticated packaged-launcher evidence.
 The optional external Loom seed is revalidated against Mojang's version
-manifest and selected version JSON before the exact client/server jars are
-copied into the isolated cell. It avoids depending on live Mojang downloads
-without reading or sharing the operator's ordinary Gradle home.
+manifest, selected version JSON, and asset index before the exact client/server
+jars and every indexed asset object are copied into the isolated cell. It
+avoids depending on live Mojang downloads without reading or sharing the
+operator's ordinary Gradle home.
 
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`

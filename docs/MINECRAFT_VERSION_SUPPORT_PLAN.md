@@ -539,9 +539,10 @@ immutable runner matrix; the checklist stays open until all six operator runs
 pass from clean pushed source.
 The optional Loom seed is acceleration for network-constrained workers, not
 support evidence. It must be external to the checkout and home directory and
-contain only Mojang's version manifest plus the selected patch's version JSON
-and client/server jars. Their sizes and SHA-1 values are revalidated against
-the manifest before being copied into disposable Gradle state.
+contain Mojang's version manifest, the selected patch's version JSON and
+client/server jars, and its asset index/objects. Their sizes and SHA-1 values
+are revalidated through the manifest, version JSON, and asset index before
+being copied into disposable Gradle state.
 The operator entry point is intentionally explicit:
 
 ```sh
