@@ -38,11 +38,13 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
         command = _child_argv(ROOT, "26.1-fabric", "production-render",
                               self.arguments(), Path("/world"))
         joined = " ".join(command)
-        for value in ("--quick-run-id quick-run", "--source-world /world",
+        for value in ("--quick-run-id quick-run",
                       "--gradle-dependency-cache /cache",
                       "--gradle-distribution-zip /gradle.zip",
                       "--gradle-loom-cache /loom"):
             self.assertIn(value, joined)
+        source_index = command.index("--source-world")
+        self.assertEqual(str(Path("/world")), command[source_index + 1])
 
     def test_worldgen_command_does_not_receive_gradle_or_world_options(self) -> None:
         command = _child_argv(ROOT, "26.1-neoforge", "worldgen",
