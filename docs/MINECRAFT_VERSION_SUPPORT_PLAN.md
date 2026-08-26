@@ -1120,9 +1120,10 @@ Earlier sections remain the detailed design and evidence record.
   recorded pre-arm and inter-phase settle (`20260826T080924Z-6dfcb2ee422f`).
 - [x] Make external worldgen/Atlas child cleanup derive strict run identity
   from their verified terminal path so the 60-command run stays disk-bounded.
-- [x] Bound concurrent multiplayer/raid game JVMs on both loaders, fail fast
-  when a multiplayer server exits, and retain hash-verified PNG/log artifacts
-  before deleting each heavy runtime tree.
+- [x] Bound concurrent multiplayer/raid game JVMs on both loaders, cap the two
+  disposable multiplayer render loops at 30 FPS, fail fast when their server
+  exits, and retain hash-verified PNG/log artifacts before deleting each heavy
+  runtime tree.
 - [ ] Pass one clean complete 60-command aggregate from that same commit.
 - [ ] Bind every nightly result to its quick record, frozen jar SHA-256, source
   commit, runtime version, and immutable evidence hashes.

@@ -19,7 +19,8 @@ if str(SCRIPTS) not in sys.path:
 
 from minecraft_qualification_model import QualificationPaths  # noqa: E402
 from run_gradle_multiplayer_qualification import (  # noqa: E402
-    CAPTURES, GradleMultiplayerError, _base_argv, _configure_rcon, _tasks,
+    CAPTURES, GradleMultiplayerError, _base_argv, _configure_client_frame_caps,
+    _configure_rcon, _tasks,
     _post_prepare_settle, _stage_loom_seed, _validated_loom_seed, _verify_fixture,
     _verify_installed_candidates, _wait_for_clients,
 )
@@ -110,6 +111,20 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
             self.assertIn("rcon.password=test-password\n", text)
             with self.assertRaisesRegex(GradleMultiplayerError, "port"):
                 _configure_rcon(server, 70000, "test-password")
+
+    def test_disposable_clients_are_frame_capped_without_losing_options(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            existing = root / "client-a/options.txt"
+            existing.parent.mkdir(parents=True)
+            existing.write_text("guiScale:4\nmaxFps:120\n", encoding="utf-8")
+            configured = _configure_client_frame_caps(root)
+            self.assertEqual(2, len(configured))
+            for options in configured:
+                text = options.read_text(encoding="utf-8")
+                self.assertIn("maxFps:30\n", text)
+                self.assertIn("enableVsync:false\n", text)
+            self.assertIn("guiScale:4\n", existing.read_text(encoding="utf-8"))
 
     def test_loom_seed_stages_only_reviewed_files(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

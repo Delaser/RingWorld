@@ -336,6 +336,19 @@ exited server immediately. The coordinator also preserves terminal-hash-bound
 PNG/log artifacts under immutable evidence before deleting heavy child run
 trees. A targeted multiplayer rerun and a clean full aggregate remain required.
 
+The first capped-heap targeted rerun, Fabric 26.1
+`20260826T100752Z-3428554196a4`, confirmed all three game processes received
+`-Xms256m -Xmx2g` and that server exit now terminates the child immediately.
+It also showed heap reservation was not the only pressure source: both clients
+loaded with `renderDistance:2`, but their disposable options retained
+VSync-off `maxFps:120`; the readiness window accumulated another 37.207-second
+server delay and halted before gameplay. Terminal SHA-256 is
+`e5a9a63f4ba2a6a1c49936bef7dba2e37af8925e5b3e5caee47e80a5789cc70d`.
+The operator now writes `maxFps:30` for both disposable clients before launch,
+preserving any other existing options. This qualification-only cap does not
+change a distributed jar or normal player settings. A second targeted rerun is
+required before restarting the aggregate.
+
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its

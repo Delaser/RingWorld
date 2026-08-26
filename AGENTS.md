@@ -439,9 +439,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
 - The Fabric and NeoForge multiplayer/raid qualification server and client
   runs cap each game JVM at 2 GiB (`-Xms256m -Xmx2g`). Keep those caps
   loader-symmetric: two default 4 GiB client heaps plus a server can exhaust a
-  16 GiB qualification host. The multiplayer operator must also fail as soon
-  as its server exits instead of leaving disconnected graphical clients alive
-  until the outer timeout.
+  16 GiB qualification host. The multiplayer operator also writes a disposable
+  `maxFps:30` cap for both clients before launch; their normal VSync-off 120 FPS
+  default can starve the eight-core test server even at a two-chunk view
+  distance. It must fail as soon as its server exits instead of leaving
+  disconnected graphical clients alive until the outer timeout.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,

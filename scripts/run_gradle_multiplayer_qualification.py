@@ -45,6 +45,7 @@ FIXTURE = "frozen-multiplayer"
 EVIDENCE_SUBDIRECTORY = "nightly/06-seam-gameplay-multiplayer"
 DEFAULT_POST_PREPARE_SETTLE_SECONDS = 120
 MAXIMUM_POST_PREPARE_SETTLE_SECONDS = 600
+AUTOMATED_CLIENT_MAX_FPS = 30
 PASS_MARKERS = (
     "[multiplayer] full scenario result=true",
     "[multiplayer-extended] ordinary Nether portal wait result=true",
@@ -100,6 +101,34 @@ def _configure_rcon(server_directory: Path, port: int, password: str) -> Path:
         encoding="utf-8",
     )
     return properties
+
+
+def _configure_client_frame_caps(run_root: Path) -> tuple[Path, Path]:
+    """Bound disposable client render load so it cannot starve the test server."""
+    configured: list[Path] = []
+    for role in ("client-a", "client-b"):
+        options = run_root / role / "options.txt"
+        if options.is_symlink():
+            raise GradleMultiplayerError("multiplayer client options path is a symlink")
+        options.parent.mkdir(parents=True, exist_ok=True)
+        values: dict[str, str] = {}
+        order: list[str] = []
+        if options.is_file():
+            for line in options.read_text(encoding="utf-8").splitlines():
+                if ":" not in line:
+                    continue
+                key, value = line.split(":", 1)
+                if key not in values:
+                    order.append(key)
+                values[key] = value
+        for key, value in (("enableVsync", "false"),
+                           ("maxFps", str(AUTOMATED_CLIENT_MAX_FPS))):
+            if key not in values:
+                order.append(key)
+            values[key] = value
+        options.write_text("".join(f"{key}:{values[key]}\n" for key in order), encoding="utf-8")
+        configured.append(options)
+    return configured[0], configured[1]
 
 
 def _receive_rcon_packet(connection: socket.socket) -> tuple[int, int, bytes]:
@@ -463,6 +492,7 @@ def _execute(prepared: AtlasRecoveryInvocation, dependency_cache: Path | None,
     commands.append(_executed_record("assets", assets))
     if assets.verdict is not Verdict.PASS:
         raise GradleMultiplayerError("serial asset warmup failed")
+    _configure_client_frame_caps(paths.run_directory / "run-multiplayer")
     _post_prepare_settle(post_prepare_settle_seconds)
 
     rcon_port = int(cell["profile"]["server_port"]) + 1000

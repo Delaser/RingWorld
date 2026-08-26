@@ -2246,6 +2246,18 @@ contained file with the exact recorded SHA-256, copies it into
 path/size/hash in the aggregate. Per-file and per-child byte bounds fail closed.
 Worlds, caches, and unreferenced runtime files remain disposable.
 
+Fabric 26.1 targeted rerun `20260826T100752Z-3428554196a4` verified that the
+2 GiB heap arguments reached the server and both clients and that the new
+server-first polling ended the child promptly. The readiness gate still failed
+before gameplay: both clients used the intended two-chunk render distance, but
+their generated options showed VSync disabled and `maxFps:120`; the server
+accumulated 37.207 seconds behind while both render loops ran. Its terminal
+SHA-256 is `e5a9a63f4ba2a6a1c49936bef7dba2e37af8925e5b3e5caee47e80a5789cc70d`.
+The operator now writes a contained `maxFps:30`/`enableVsync:false` override to
+each disposable client options file after asset preparation and before the
+host-settle window. This is harness resource isolation, not runtime support
+evidence or a normal-client setting change.
+
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
 or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge
