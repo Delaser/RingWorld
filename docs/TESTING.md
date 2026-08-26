@@ -2205,7 +2205,12 @@ only one client connected. It was deliberately interrupted before the outer
 30-minute timeout, so it has no aggregate terminal and is not support
 evidence. The stalled reload server/client logs are retained below that child
 run. Raid now uses the recorded bounded settle before both runtime phases; it
-requires a corrected targeted rerun before another full aggregate.
+passes corrected targeted 26.1 Fabric run
+`20260826T080924Z-6dfcb2ee422f`. The record binds
+`phase_settle_seconds: 120`, both real clients, both persisted phases, and
+terminal SHA-256
+`3fe71c211254df06d0e660da1bcdd62f8ab58f798e80d61cbf7abaa8934d535e`.
+A clean full aggregate is still required.
 
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`

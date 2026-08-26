@@ -1116,8 +1116,8 @@ Earlier sections remain the detailed design and evidence record.
   preparation and replace the flaky exact-target two-sample assertion.
 - [x] Pass targeted NeoForge 26.1.1 map/compass plus Fabric/NeoForge 26.1.2
   multiplayer regression reruns from corrected commit `d953b02`.
-- [ ] Pass a targeted 26.1 Fabric raid arm/reload regression with the new
-  recorded pre-arm and inter-phase settle.
+- [x] Pass a targeted 26.1 Fabric raid arm/reload regression with the new
+  recorded pre-arm and inter-phase settle (`20260826T080924Z-6dfcb2ee422f`).
 - [ ] Pass one clean complete 60-command aggregate from that same commit.
 - [ ] Bind every nightly result to its quick record, frozen jar SHA-256, source
   commit, runtime version, and immutable evidence hashes.

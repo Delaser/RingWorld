@@ -300,8 +300,12 @@ advancing after 23.377 seconds of accumulated tick delay. The operator stopped
 the still-bounded but unproductive 30-minute wait and preserved the three
 stalled reload logs. This interrupted diagnostic is not an aggregate report
 or support evidence. The raid runner now applies and records the same bounded
-120-second host settle before arm and again between arm and reload. A targeted
-raid rerun and clean full aggregate remain required.
+120-second host settle before arm and again between arm and reload. Targeted
+26.1 Fabric raid run `20260826T080924Z-6dfcb2ee422f` passes both phases with
+five saved raiders, both boss bars, reload folding, Hero of the Village, and
+canonical raider ownership. Its terminal SHA-256 is
+`3fe71c211254df06d0e660da1bcdd62f8ab58f798e80d61cbf7abaa8934d535e`.
+A clean full aggregate remains required.
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its
