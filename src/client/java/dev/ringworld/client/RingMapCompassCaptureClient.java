@@ -598,15 +598,24 @@ public final class RingMapCompassCaptureClient {
         CompassAngleState state = new CompassAngleState(
                 false, CompassAngleState.CompassTarget.LODESTONE);
         CompassAngleStateFixtureAccessor fixture = (CompassAngleStateFixtureAccessor)(Object)state;
-        float first = fixture.ringworld$calculate(lodestone, client.level, 7, client.player);
-        float second = fixture.ringworld$calculate(lodestone, client.level, 71, client.player);
-        float difference = circularDistance(first, second);
+        int[] seeds = {7, 71, 137, 251};
+        float[] rotations = new float[seeds.length];
+        float maximumDifference = 0.0F;
+        for (int i = 0; i < seeds.length; i++) {
+            rotations[i] = fixture.ringworld$calculate(
+                    lodestone, client.level, seeds[i], client.player);
+            for (int earlier = 0; earlier < i; earlier++) {
+                maximumDifference = Math.max(
+                        maximumDifference,
+                        circularDistance(rotations[earlier], rotations[i]));
+            }
+        }
         RingWorldMod.LOGGER.info(
-                "[map-compass-capture] exact-target holder=({}, {}, {}) imageX={} rotations={}/{} delta={}",
+                "[map-compass-capture] exact-target holder=({}, {}, {}) imageX={} rotations={} maximumDelta={}",
                 client.player.getX(), client.player.getY(), client.player.getZ(), targetImageX,
-                first, second, difference);
+                java.util.Arrays.toString(rotations), maximumDifference);
         client.player.setPos(oldX, oldY, oldZ);
-        return difference > 0.01F;
+        return maximumDifference > 0.01F;
     }
 
     private float calculate(Minecraft client, ItemStack stack, CompassAngleState.CompassTarget target, int seed) {

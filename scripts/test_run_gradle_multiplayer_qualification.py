@@ -20,7 +20,8 @@ if str(SCRIPTS) not in sys.path:
 from minecraft_qualification_model import QualificationPaths  # noqa: E402
 from run_gradle_multiplayer_qualification import (  # noqa: E402
     CAPTURES, GradleMultiplayerError, _base_argv, _configure_rcon, _tasks,
-    _stage_loom_seed, _validated_loom_seed, _verify_fixture, _verify_installed_candidates,
+    _post_prepare_settle, _stage_loom_seed, _validated_loom_seed, _verify_fixture,
+    _verify_installed_candidates,
 )
 
 
@@ -45,6 +46,13 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
         self.assertIn(":neoforge:runMultiplayerServer", neoforge["server"])
         with self.assertRaises(GradleMultiplayerError):
             _tasks("forge")
+
+    def test_post_prepare_settle_is_bounded_and_chunked(self) -> None:
+        intervals: list[int] = []
+        _post_prepare_settle(12, sleeper=intervals.append)
+        self.assertEqual([5, 5, 2], intervals)
+        with self.assertRaisesRegex(GradleMultiplayerError, "bounded"):
+            _post_prepare_settle(601, sleeper=intervals.append)
 
     def test_command_binds_cell_candidate_and_hash(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

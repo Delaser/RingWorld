@@ -43,6 +43,8 @@ from run_minecraft_qualification import (
 
 FIXTURE = "frozen-multiplayer"
 EVIDENCE_SUBDIRECTORY = "nightly/06-seam-gameplay-multiplayer"
+DEFAULT_POST_PREPARE_SETTLE_SECONDS = 120
+MAXIMUM_POST_PREPARE_SETTLE_SECONDS = 600
 PASS_MARKERS = (
     "[multiplayer] full scenario result=true",
     "[multiplayer-extended] ordinary Nether portal wait result=true",
@@ -150,7 +152,24 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--gradle-dependency-cache")
     result.add_argument("--gradle-distribution-zip")
     result.add_argument("--gradle-loom-cache", help="validated external Mojang client/server cache seed")
+    result.add_argument(
+        "--post-prepare-settle-seconds",
+        type=int,
+        default=DEFAULT_POST_PREPARE_SETTLE_SECONDS,
+        help="bounded host settle interval after Gradle preparation and before runtime launch",
+    )
     return result
+
+
+def _post_prepare_settle(seconds: int, *, sleeper: Any = time.sleep) -> None:
+    if not isinstance(seconds, int) or isinstance(seconds, bool) or not (
+            0 <= seconds <= MAXIMUM_POST_PREPARE_SETTLE_SECONDS):
+        raise GradleMultiplayerError("post-prepare settle interval is outside the bounded range")
+    remaining = seconds
+    while remaining:
+        interval = min(5, remaining)
+        sleeper(interval)
+        remaining -= interval
 
 
 def _sha256(path: Path) -> str:
@@ -399,7 +418,8 @@ def _verify_fixture(prepared: AtlasRecoveryInvocation) -> tuple[dict[str, Any], 
 
 
 def _execute(prepared: AtlasRecoveryInvocation, dependency_cache: Path | None,
-             distribution_zip: Path | None, loom_seed: Sequence[Path]) -> dict[str, Any]:
+             distribution_zip: Path | None, loom_seed: Sequence[Path],
+             post_prepare_settle_seconds: int) -> dict[str, Any]:
     paths, cell = prepared.paths, prepared.cell
     timeout = _timeout(cell)
     tasks = _tasks(str(cell["loader"]))
@@ -420,6 +440,7 @@ def _execute(prepared: AtlasRecoveryInvocation, dependency_cache: Path | None,
     commands.append(_executed_record("assets", assets))
     if assets.verdict is not Verdict.PASS:
         raise GradleMultiplayerError("serial asset warmup failed")
+    _post_prepare_settle(post_prepare_settle_seconds)
 
     rcon_port = int(cell["profile"]["server_port"]) + 1000
     rcon_password = f"ringworld-{paths.run_id[-12:]}"
@@ -504,11 +525,13 @@ def run(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict[
         Path(arguments.gradle_loom_cache) if arguments.gradle_loom_cache else None,
         root, str(prepared.cell["minecraft"]["version"]),
     )
+    _post_prepare_settle(arguments.post_prepare_settle_seconds, sleeper=lambda _seconds: None)
     payload: dict[str, Any]
     with QualificationLock.acquire(prepared.paths.lock_path, run_id):
         try:
             details = _execute(
-                prepared, dependency_cache, distribution.source if distribution else None, loom_seed)
+                prepared, dependency_cache, distribution.source if distribution else None, loom_seed,
+                arguments.post_prepare_settle_seconds)
             verdict, reason = Verdict.PASS, None
         except (GradleMultiplayerError, OSError, ValueError) as error:
             details, verdict, reason = {}, Verdict.FAIL, str(error)
@@ -516,6 +539,7 @@ def run(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict[
             "format": 1, "fixture": FIXTURE, "cell": prepared.cell["id"],
             "loader": prepared.cell["loader"], "minecraft": prepared.cell["minecraft"]["version"],
             "run_id": run_id, "verdict": verdict.value, "reason": reason,
+            "post_prepare_settle_seconds": arguments.post_prepare_settle_seconds,
             "source": prepared.source_provenance,
             "quick_evidence": {
                 "path": str(prepared.quick_terminal_evidence.path),

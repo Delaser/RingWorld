@@ -28,6 +28,7 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             manifest="config/minecraft-version-matrix.json", quick_run_id="quick-run",
             gradle_dependency_cache="/cache", gradle_distribution_zip="/gradle.zip",
             gradle_loom_cache="/loom", production_world="/world",
+            multiplayer_cooldown_seconds=120,
         )
 
     def test_default_fixture_order_is_complete_and_duplicates_fail(self) -> None:
@@ -54,6 +55,12 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
         self.assertIn("--quick-run-id quick-run", joined)
         self.assertNotIn("--source-world", joined)
         self.assertNotIn("--gradle-dependency-cache", joined)
+
+    def test_multiplayer_settle_is_forwarded_after_child_preparation(self) -> None:
+        command = _child_argv(ROOT, "26.1-neoforge", "multiplayer",
+                              self.arguments(), Path("/world"))
+        index = command.index("--post-prepare-settle-seconds")
+        self.assertEqual("120", command[index + 1])
 
     def test_terminal_binding_rejects_wrong_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

@@ -258,10 +258,29 @@ work, before any topology assertion. Fabric observed 691 ticks and reached 69
 consecutive on-time ticks; NeoForge observed 485 and reached one. Their
 servers stopped normally, but disconnected clients required bounded operator
 termination rather than waiting for the outer 30-minute timeout. The
-coordinator now takes and records a 120-second quiescence window before each
-multiplayer fixture and discards validated child runtime/caches while
+coordinator originally took and recorded a 120-second quiescence window before each
+multiplayer fixture and discarded validated child runtime/caches while
 retaining logs, captures, and immutable evidence. A fresh full rerun is still
 required; this failed aggregate is regression evidence, not support evidence.
+
+The clean follow-up aggregate `20260826T035240Z-55d20f097651` also failed
+closed. It recorded 44 PASS, three FAIL, and thirteen downstream INCOMPLETE
+results; aggregate terminal SHA-256 is
+`fb261365004d507d29d8f4c8a48c7c239aca1a4c92791d8c79388ad43aa7e025`.
+NeoForge 26.1.1 reached the exact-target compass random-spin assertion, but
+the fixture's two samples differed by `0.008853078` against an arbitrary
+`>0.01` threshold. The assertion now reuses one wobble state across four
+fixed seeds and measures their maximum circular separation. The last Fabric
+and NeoForge multiplayer cells then exposed why the coordinator-level pause
+was insufficient: each child performed heavy isolated Gradle/NeoForm
+preparation after that pause and immediately launched its runtime. Fabric's
+client B stopped rendering for roughly two minutes and invalidated dependent
+interaction stages; NeoForge's server failed the strict readiness barrier
+before topology began. The recorded settle interval is now forwarded into
+the multiplayer runner and applied after preparation/assets, immediately
+before server/client launch. This aggregate remains diagnostic evidence, not
+support evidence; a clean targeted rerun and final full aggregate are still
+required.
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its

@@ -1111,6 +1111,12 @@ Earlier sections remain the detailed design and evidence record.
   travel, save, disconnect, client-state cleanup, and reopen.
 - [x] Run production rendering on all six cells: projection, natural seam
   motion, Atlas handoff, rims, sky, weather, and frame observations.
+- [x] Implement the fail-closed 60-command coordinator and retain its first
+  two diagnostic aggregates; move multiplayer settling after isolated child
+  preparation and replace the flaky exact-target two-sample assertion.
+- [ ] Pass targeted NeoForge 26.1.1 map/compass plus Fabric/NeoForge 26.1.2
+  multiplayer regression reruns from the corrected clean commit.
+- [ ] Pass one clean complete 60-command aggregate from that same commit.
 - [ ] Bind every nightly result to its quick record, frozen jar SHA-256, source
   commit, runtime version, and immutable evidence hashes.
 - [ ] Run every supported forward-save path using the final candidates.

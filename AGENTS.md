@@ -419,8 +419,12 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   continues other cells, and exclusive-creates one aggregate report. A
   partial cell/fixture selection is always `INCOMPLETE`, never a matrix PASS.
   Its production-world input must already be below `dist/qualification`.
-  It takes a recorded 120-second quiescence window before each multiplayer
-  fixture. After each independently verified child result it deletes that
+  It forwards a recorded 120-second settle interval to each multiplayer
+  runner; the runner applies it after isolated Gradle preparation/assets and
+  immediately before runtime launch. Do not move it back ahead of child
+  preparation: two retained aggregates proved that placement does not protect
+  the strict readiness barrier from sustained host load. After each
+  independently verified child result it deletes that
   child's disposable `gradle-home`, `cache`, `build`, and `run` directories;
   logs, captures, and immutable evidence are retained.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution

@@ -126,6 +126,9 @@ def _child_argv(root: Path, cell_id: str, fixture: str,
                                           "--gradle-distribution-zip"))
     if fixture in LOOM_SEED_FIXTURES:
         command.extend(_optional_argument(arguments, "gradle_loom_cache", "--gradle-loom-cache"))
+    if fixture == "multiplayer":
+        command.extend(("--post-prepare-settle-seconds",
+                        str(arguments.multiplayer_cooldown_seconds)))
     return tuple(command)
 
 
@@ -335,7 +338,6 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
         create_contained_directories(paths)
         cooldown_seconds = (int(planned["multiplayer_cooldown_seconds"])
                             if fixture == "multiplayer" else 0)
-        _cooldown(cooldown_seconds)
         timeout = 7_500 if fixture == "production-render" else 3_900
         record = CommandRecord(PhaseName.INPUT_PLAN, tuple(item["argv"]), root, (), timeout)
         child = execute_command(record, paths, ordinal=ordinal)
@@ -374,7 +376,8 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
             "reason": child_reason, "child": payload,
             "expected_identity": expected[cell_id], "terminal_evidence": terminals,
             "discarded_disposable_paths": list(removed),
-            "pre_fixture_cooldown_seconds": cooldown_seconds,
+            "pre_fixture_cooldown_seconds": 0,
+            "post_prepare_settle_seconds": cooldown_seconds,
             "command": {"argv": list(child.argv), "exit_code": child.return_code,
                         "started_at": child.started_at_utc, "elapsed_seconds": child.elapsed_seconds,
                         "stdout": child.stdout_log, "stderr": child.stderr_log},

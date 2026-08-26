@@ -2168,15 +2168,25 @@ python3 scripts/run_minecraft_nightly_matrix.py \
 After reviewing the command inventory, repeat with `--execute`. The
 coordinator serializes every graphical fixture, records each child command and
 terminal payload, blocks only the rest of a failed cell, and exclusive-creates
-one six-cell aggregate report. It records a bounded 120-second quiescence
-window before each multiplayer fixture so earlier graphical work cannot turn
-the frozen candidate's strict 100-tick readiness barrier into a thermal/load
-false failure. After independently validating a child result, it removes that
+one six-cell aggregate report. It forwards a bounded, recorded 120-second
+settle interval into each multiplayer child. The child applies it after its
+isolated Gradle preparation and asset warmup, immediately before server/client
+launch; a coordinator-side pause before preparation does not protect the
+strict 100-tick readiness barrier from that preparation load. After
+independently validating a child result, it removes that
 child's disposable `gradle-home`, `cache`, `build`, and `run` directories so
 the 60-command matrix remains bounded on disk. Logs, captures, and immutable
 evidence remain untouched; required world identities are already hash-bound in
 the terminal record. It has no upload, deployment, tag, or live-server
 interface.
+
+Aggregate `20260826T035240Z-55d20f097651` is retained as fail-closed
+diagnostic evidence: 44 PASS, three FAIL, thirteen INCOMPLETE, terminal
+SHA-256
+`fb261365004d507d29d8f4c8a48c7c239aca1a4c92791d8c79388ad43aa7e025`.
+It exposed one flaky two-sample exact-target compass assertion and proved the
+old coordinator-side pause occurred before, rather than after, each child's
+expensive preparation. Neither failure broadens support evidence.
 
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
