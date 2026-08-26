@@ -16,7 +16,8 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from run_minecraft_nightly_matrix import (  # noqa: E402
-    FIXTURES, NightlyMatrixError, _child_argv, _selected_fixtures,
+    FIXTURES, NightlyMatrixError, _child_argv, _cleanup_disposable_child_state,
+    _selected_fixtures,
     _verify_terminals,
 )
 
@@ -76,6 +77,43 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             with self.assertRaisesRegex(NightlyMatrixError, "candidate"):
                 _verify_terminals(root, cell, "multiplayer", payload,
                                   "abc", "wrong", "quick")
+
+    def test_cleanup_removes_only_disposable_child_caches(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cell = {"id": "26.1-fabric", "loader": "fabric",
+                    "minecraft": {"version": "26.1"}}
+            run_id = "20260826T000000Z-0123456789ab"
+            cell_root = (root / "dist/qualification/ringworld/26.1/fabric" / run_id
+                         / "26.1-fabric")
+            for name in ("gradle-home", "cache", "build"):
+                path = cell_root / name / "nested"
+                path.mkdir(parents=True)
+                (path / "temporary.bin").write_bytes(b"temporary")
+            evidence = cell_root / "evidence/nightly/terminal.json"
+            evidence.parent.mkdir(parents=True)
+            evidence.write_text("{}", encoding="utf-8")
+            runtime = cell_root / "run/world/level.dat"
+            runtime.parent.mkdir(parents=True)
+            runtime.write_bytes(b"world")
+
+            removed = _cleanup_disposable_child_state(
+                root, cell, {"run_id": run_id})
+
+            self.assertEqual(3, len(removed))
+            self.assertTrue(evidence.is_file())
+            self.assertTrue(runtime.is_file())
+            for name in ("gradle-home", "cache", "build"):
+                self.assertFalse((cell_root / name).exists())
+
+    def test_cleanup_rejects_escaping_run_id(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cell = {"id": "26.1-fabric", "loader": "fabric",
+                    "minecraft": {"version": "26.1"}}
+            with self.assertRaisesRegex(NightlyMatrixError, "escapes"):
+                _cleanup_disposable_child_state(
+                    root, cell, {"run_id": "../../../../../../outside"})
 
 
 if __name__ == "__main__":

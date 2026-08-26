@@ -7,6 +7,7 @@ import argparse
 from datetime import datetime, timezone
 import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 from typing import Any, Mapping, Sequence
@@ -142,6 +143,53 @@ def _sha256(path: Path) -> str:
         for block in iter(lambda: stream.read(1024 * 1024), b""):
             digest.update(block)
     return digest.hexdigest()
+
+
+def _child_cell_root(root: Path, cell: Mapping[str, Any],
+                     payload: Mapping[str, Any]) -> Path:
+    run_id = payload.get("run_id")
+    if not isinstance(run_id, str) or not run_id:
+        raise NightlyMatrixError("nightly child result has no run ID")
+    qualification_root = (root / "dist/qualification").resolve(strict=False)
+    cell_root = (qualification_root / "ringworld" / str(cell["minecraft"]["version"])
+                 / str(cell["loader"]) / run_id / str(cell["id"])).resolve(strict=False)
+    if not cell_root.is_relative_to(qualification_root):
+        raise NightlyMatrixError("nightly child state escapes qualification root")
+    return cell_root
+
+
+def _delete_disposable_tree(path: Path) -> None:
+    if path.is_symlink():
+        path.unlink()
+        return
+    if not path.exists():
+        return
+    if not path.is_dir():
+        raise NightlyMatrixError(f"nightly disposable path is not a directory: {path}")
+    with os.scandir(path) as entries:
+        for entry in entries:
+            child = Path(entry.path)
+            if entry.is_symlink():
+                child.unlink()
+            elif entry.is_dir(follow_symlinks=False):
+                _delete_disposable_tree(child)
+            else:
+                child.unlink()
+    path.rmdir()
+
+
+def _cleanup_disposable_child_state(root: Path, cell: Mapping[str, Any],
+                                    payload: Mapping[str, Any]) -> tuple[str, ...]:
+    cell_root = _child_cell_root(root, cell, payload)
+    if cell_root.is_symlink():
+        raise NightlyMatrixError("nightly child cell root is a symlink")
+    removed = []
+    for name in ("gradle-home", "cache", "build"):
+        target = cell_root / name
+        if target.exists() or target.is_symlink():
+            _delete_disposable_tree(target)
+            removed.append(str(target))
+    return tuple(removed)
 
 
 def _terminal_paths(root: Path, cell: Mapping[str, Any], fixture: str,
@@ -291,12 +339,20 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
                     identity["frozen_candidate_sha256"], identity["quick_terminal_sha256"])
             except NightlyMatrixError as error:
                 verdict, child_reason = "FAIL", str(error)
+        removed: tuple[str, ...] = ()
+        if payload.get("run_id"):
+            try:
+                removed = _cleanup_disposable_child_state(
+                    root, by_id[cell_id], payload)
+            except (NightlyMatrixError, OSError) as error:
+                verdict, child_reason = "FAIL", f"disposable child cleanup failed: {error}"
         if verdict != "PASS":
             blocked_cells.add(cell_id)
         results.append({
             "cell": cell_id, "fixture": fixture, "verdict": verdict or "FAIL",
             "reason": child_reason, "child": payload,
             "expected_identity": expected[cell_id], "terminal_evidence": terminals,
+            "discarded_disposable_paths": list(removed),
             "command": {"argv": list(child.argv), "exit_code": child.return_code,
                         "started_at": child.started_at_utc, "elapsed_seconds": child.elapsed_seconds,
                         "stdout": child.stdout_log, "stderr": child.stderr_log},

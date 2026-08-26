@@ -2168,8 +2168,11 @@ python3 scripts/run_minecraft_nightly_matrix.py \
 After reviewing the command inventory, repeat with `--execute`. The
 coordinator serializes every graphical fixture, records each child command and
 terminal payload, blocks only the rest of a failed cell, and exclusive-creates
-one six-cell aggregate report. It has no upload, deployment, tag, or live
-server interface.
+one six-cell aggregate report. After recording and independently validating a
+child result, it removes only that child's `gradle-home`, `cache`, and `build`
+directories so the 60-command matrix remains bounded on disk. Runtime worlds,
+logs, captures, and evidence remain untouched. It has no upload, deployment,
+tag, or live-server interface.
 
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`

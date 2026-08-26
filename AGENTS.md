@@ -419,6 +419,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   continues other cells, and exclusive-creates one aggregate report. A
   partial cell/fixture selection is always `INCOMPLETE`, never a matrix PASS.
   Its production-world input must already be below `dist/qualification`.
+  After each independently verified child result it deletes only that child's
+  disposable `gradle-home`, `cache`, and `build` directories; runtime worlds,
+  logs, captures, and evidence are retained.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,
