@@ -15,7 +15,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from run_gradle_raid_qualification import (  # noqa: E402
-    GradleRaidError, _tasks, _verify_phase,
+    GradleRaidError, _phase_settle, _tasks, _verify_phase,
 )
 
 
@@ -34,6 +34,13 @@ class GradleRaidQualificationTest(unittest.TestCase):
         self.assertEqual(":neoforge:prepareNeoForgeRaidSeamTestWorld", neoforge["prepare"])
         with self.assertRaises(GradleRaidError):
             _tasks("forge")
+
+    def test_phase_settle_is_bounded_and_chunked(self) -> None:
+        intervals = []
+        _phase_settle(12, sleeper=intervals.append)
+        self.assertEqual([5, 5, 2], intervals)
+        with self.assertRaisesRegex(GradleRaidError, "outside the bounded range"):
+            _phase_settle(601, sleeper=intervals.append)
 
     def test_phase_verifier_requires_patch_clients_and_terminal_markers(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

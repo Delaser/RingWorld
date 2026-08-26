@@ -34,6 +34,8 @@ from run_gradle_multiplayer_qualification import (
 
 FIXTURE = "frozen-raid-seam"
 EVIDENCE_SUBDIRECTORY = "nightly/07-raid-seam"
+DEFAULT_PHASE_SETTLE_SECONDS = 120
+MAXIMUM_PHASE_SETTLE_SECONDS = 600
 _RUN_ID = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}$")
 
 
@@ -49,7 +51,22 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--gradle-dependency-cache")
     result.add_argument("--gradle-distribution-zip")
     result.add_argument("--gradle-loom-cache")
+    result.add_argument(
+        "--phase-settle-seconds", type=int, default=DEFAULT_PHASE_SETTLE_SECONDS,
+        help="bounded host settle interval before each raid runtime phase",
+    )
     return result
+
+
+def _phase_settle(seconds: int, *, sleeper: Any = time.sleep) -> None:
+    if not isinstance(seconds, int) or isinstance(seconds, bool) or not (
+            0 <= seconds <= MAXIMUM_PHASE_SETTLE_SECONDS):
+        raise GradleRaidError("raid phase settle interval is outside the bounded range")
+    remaining = seconds
+    while remaining:
+        interval = min(5, remaining)
+        sleeper(interval)
+        remaining -= interval
 
 
 def _tasks(loader: str) -> Mapping[str, str]:
@@ -175,7 +192,7 @@ def _run_phase(prepared: Any, tasks: Mapping[str, str], phase: str,
 
 
 def _execute(prepared: Any, dependency_cache: Path | None, distribution_zip: Path | None,
-             loom_seed: Sequence[Path]) -> dict[str, Any]:
+             loom_seed: Sequence[Path], phase_settle_seconds: int) -> dict[str, Any]:
     paths, cell = prepared.paths, prepared.cell
     timeout, tasks = _timeout(cell), _tasks(str(cell["loader"]))
     create_contained_directories(paths)
@@ -197,10 +214,12 @@ def _execute(prepared: Any, dependency_cache: Path | None, distribution_zip: Pat
     port = int(cell["profile"]["server_port"])
     rcon_port, password = port + 1000, f"ringworld-{paths.run_id[-12:]}"
     _configure_rcon(paths.run_directory / "run-raid-seam/server", rcon_port, password)
+    _phase_settle(phase_settle_seconds)
     arm_commands, arm_logs, arm_terminal = _run_phase(
         prepared, tasks, "arm", dependency_cache, timeout, rcon_port, password, 3)
     commands.extend(arm_commands)
     _configure_rcon(paths.run_directory / "run-raid-seam/server", rcon_port, password)
+    _phase_settle(phase_settle_seconds)
     reload_commands, reload_logs, reload_terminal = _run_phase(
         prepared, tasks, "reload", dependency_cache, timeout, rcon_port, password, 6)
     commands.extend(reload_commands)
@@ -231,10 +250,12 @@ def run(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict[
     loom_seed = _validated_loom_seed(
         Path(arguments.gradle_loom_cache) if arguments.gradle_loom_cache else None,
         root, str(prepared.cell["minecraft"]["version"]))
+    _phase_settle(arguments.phase_settle_seconds, sleeper=lambda _seconds: None)
     with QualificationLock.acquire(prepared.paths.lock_path, run_id):
         try:
             details = _execute(prepared, dependency_cache,
-                               distribution.source if distribution else None, loom_seed)
+                               distribution.source if distribution else None, loom_seed,
+                               arguments.phase_settle_seconds)
             verdict, reason = Verdict.PASS, None
         except (QualificationExecutionError, OSError, ValueError) as error:
             details, verdict, reason = {}, Verdict.FAIL, str(error)
@@ -242,6 +263,7 @@ def run(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict[
             "format": 1, "fixture": FIXTURE, "cell": prepared.cell["id"],
             "loader": prepared.cell["loader"], "minecraft": prepared.cell["minecraft"]["version"],
             "run_id": run_id, "verdict": verdict.value, "reason": reason,
+            "phase_settle_seconds": arguments.phase_settle_seconds,
             "source": prepared.source_provenance,
             "quick_evidence": {"path": str(prepared.quick_terminal_evidence.path),
                                "sha256": prepared.quick_terminal_evidence.sha256},

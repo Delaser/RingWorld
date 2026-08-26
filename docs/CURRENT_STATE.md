@@ -281,6 +281,27 @@ the multiplayer runner and applied after preparation/assets, immediately
 before server/client launch. This aggregate remains diagnostic evidence, not
 support evidence; a clean targeted rerun and final full aggregate are still
 required.
+
+Corrected targeted evidence on pushed commit `d953b02` now passes: NeoForge
+26.1.1 map/compass run `20260826T071728Z-3cd837095d5b`, Fabric 26.1.2
+multiplayer run `20260826T072112Z-ea3503a09b11`, and NeoForge 26.1.2
+multiplayer run `20260826T072608Z-26e04e212f30`. The multiplayer records bind
+the post-preparation 120-second settle; their terminal SHA-256 values are
+`251f8cf5092d312cfec9a76a20fe77613dd6ca53fae598ead3fddae358d066a4` and
+`2363a8a3972d5bd5cf7191b8e58fd14604fc6614af8a6690ff3645c2648701cd`.
+
+A subsequent complete-selection diagnostic started under coordinator run
+`20260826T073421Z-f6d5d2fe9980`. Its first five child commands produced six
+PASS records for 26.1 Fabric: creation/settings, worldgen, Atlas recovery,
+Atlas UI, client handshake, and multiplayer. The raid arm phase also saved
+normally, but its immediate reload launched into host pressure: one client
+connected, the other retried a refused connection, and the server stopped
+advancing after 23.377 seconds of accumulated tick delay. The operator stopped
+the still-bounded but unproductive 30-minute wait and preserved the three
+stalled reload logs. This interrupted diagnostic is not an aggregate report
+or support evidence. The raid runner now applies and records the same bounded
+120-second host settle before arm and again between arm and reload. A targeted
+raid rerun and clean full aggregate remain required.
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its

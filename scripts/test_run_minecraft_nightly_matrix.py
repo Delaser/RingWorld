@@ -62,6 +62,12 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
         index = command.index("--post-prepare-settle-seconds")
         self.assertEqual("120", command[index + 1])
 
+    def test_raid_settle_is_forwarded_to_both_runtime_phases(self) -> None:
+        command = _child_argv(ROOT, "26.1-fabric", "raid",
+                              self.arguments(), Path("/world"))
+        index = command.index("--phase-settle-seconds")
+        self.assertEqual("120", command[index + 1])
+
     def test_terminal_binding_rejects_wrong_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

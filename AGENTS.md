@@ -420,10 +420,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   partial cell/fixture selection is always `INCOMPLETE`, never a matrix PASS.
   Its production-world input must already be below `dist/qualification`.
   It forwards a recorded 120-second settle interval to each multiplayer
-  runner; the runner applies it after isolated Gradle preparation/assets and
-  immediately before runtime launch. Do not move it back ahead of child
-  preparation: two retained aggregates proved that placement does not protect
-  the strict readiness barrier from sustained host load. After each
+  runner after isolated Gradle preparation/assets and to each raid runner
+  both before its arm runtime and between its arm/reload runtimes. Do not move
+  these waits ahead of child preparation: retained aggregate diagnostics
+  proved that placement does not protect the strict readiness barrier or a
+  freshly restarted two-client fixture from sustained host load. After each
   independently verified child result it deletes that
   child's disposable `gradle-home`, `cache`, `build`, and `run` directories;
   logs, captures, and immutable evidence are retained.

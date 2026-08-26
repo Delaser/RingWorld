@@ -1114,8 +1114,10 @@ Earlier sections remain the detailed design and evidence record.
 - [x] Implement the fail-closed 60-command coordinator and retain its first
   two diagnostic aggregates; move multiplayer settling after isolated child
   preparation and replace the flaky exact-target two-sample assertion.
-- [ ] Pass targeted NeoForge 26.1.1 map/compass plus Fabric/NeoForge 26.1.2
-  multiplayer regression reruns from the corrected clean commit.
+- [x] Pass targeted NeoForge 26.1.1 map/compass plus Fabric/NeoForge 26.1.2
+  multiplayer regression reruns from corrected commit `d953b02`.
+- [ ] Pass a targeted 26.1 Fabric raid arm/reload regression with the new
+  recorded pre-arm and inter-phase settle.
 - [ ] Pass one clean complete 60-command aggregate from that same commit.
 - [ ] Bind every nightly result to its quick record, frozen jar SHA-256, source
   commit, runtime version, and immutable evidence hashes.

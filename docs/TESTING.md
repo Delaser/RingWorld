@@ -2169,10 +2169,12 @@ After reviewing the command inventory, repeat with `--execute`. The
 coordinator serializes every graphical fixture, records each child command and
 terminal payload, blocks only the rest of a failed cell, and exclusive-creates
 one six-cell aggregate report. It forwards a bounded, recorded 120-second
-settle interval into each multiplayer child. The child applies it after its
-isolated Gradle preparation and asset warmup, immediately before server/client
-launch; a coordinator-side pause before preparation does not protect the
-strict 100-tick readiness barrier from that preparation load. After
+settle interval into each multiplayer child after isolated Gradle preparation
+and asset warmup. It also forwards the interval into each raid child, which
+applies it before arm and again between the saved arm phase and reload. A
+coordinator-side pause before preparation does not protect a runtime from that
+preparation load, and an immediate two-client raid reload can retain pressure
+from its arm phase. After
 independently validating a child result, it removes that
 child's disposable `gradle-home`, `cache`, `build`, and `run` directories so
 the 60-command matrix remains bounded on disk. Logs, captures, and immutable
@@ -2187,6 +2189,23 @@ SHA-256
 It exposed one flaky two-sample exact-target compass assertion and proved the
 old coordinator-side pause occurred before, rather than after, each child's
 expensive preparation. Neither failure broadens support evidence.
+
+The corrected targeted runs on commit `d953b02` pass:
+
+- NeoForge 26.1.1 map/compass `20260826T071728Z-3cd837095d5b`;
+- Fabric 26.1.2 multiplayer `20260826T072112Z-ea3503a09b11`, terminal
+  SHA-256 `251f8cf5092d312cfec9a76a20fe77613dd6ca53fae598ead3fddae358d066a4`;
+- NeoForge 26.1.2 multiplayer `20260826T072608Z-26e04e212f30`, terminal
+  SHA-256 `2363a8a3972d5bd5cf7191b8e58fd14604fc6614af8a6690ff3645c2648701cd`.
+
+Complete-selection diagnostic `20260826T073421Z-f6d5d2fe9980` then produced
+six 26.1 Fabric PASS records through multiplayer. Its raid arm saved normally,
+but the immediate reload stopped advancing under sustained host pressure with
+only one client connected. It was deliberately interrupted before the outer
+30-minute timeout, so it has no aggregate terminal and is not support
+evidence. The stalled reload server/client logs are retained below that child
+run. Raid now uses the recorded bounded settle before both runtime phases; it
+requires a corrected targeted rerun before another full aggregate.
 
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
