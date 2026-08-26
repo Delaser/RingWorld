@@ -2212,6 +2212,17 @@ terminal SHA-256
 `3fe71c211254df06d0e660da1bcdd62f8ab58f798e80d61cbf7abaa8934d535e`.
 A clean full aggregate is still required.
 
+Complete-selection coordinator run `20260826T081615Z-42881cab0db9` passed all
+26.1 Fabric records and the first five 26.1 NeoForge records, then stopped
+fail-closed on `ENOSPC`. External worldgen/Atlas compact results expose
+`terminal_evidence` rather than top-level `run_id`; the coordinator had
+verified those records but skipped their disposable runtime cleanup. Cleanup
+now derives the run ID only from a canonical contained
+`ringworld/<version>/<loader>/<run>/<cell>/evidence/nightly/...` path, rejects
+wrong identities, symlinks, traversal, and malformed IDs, and retains the
+evidence/log directories. This interrupted run is infrastructure diagnostic
+evidence only and has no aggregate terminal.
+
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
 or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge

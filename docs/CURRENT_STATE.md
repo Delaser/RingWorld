@@ -306,6 +306,18 @@ five saved raiders, both boss bars, reload folding, Hero of the Village, and
 canonical raider ownership. Its terminal SHA-256 is
 `3fe71c211254df06d0e660da1bcdd62f8ab58f798e80d61cbf7abaa8934d535e`.
 A clean full aggregate remains required.
+
+The next complete-selection run, coordinator ID
+`20260826T081615Z-42881cab0db9`, passed every 26.1 Fabric record and the first
+five 26.1 NeoForge records through Atlas UI/handshake. It then stopped
+fail-closed on `ENOSPC`, not a RingWorld assertion. The cause was a coordinator
+cleanup mismatch: external worldgen and Atlas runners return a canonical
+`terminal_evidence` path but no top-level `run_id`, so their verified
+disposable runtime trees accumulated. The coordinator now derives a run ID
+only from a contained terminal path with the exact version/loader/cell/evidence
+layout and strict run-ID syntax, then uses the existing containment-checked
+cleanup. Tests cover that external shape and preserve terminal evidence. This
+interrupted run has no aggregate terminal and is not support evidence.
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its

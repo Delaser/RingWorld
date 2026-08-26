@@ -119,12 +119,34 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             for name in ("gradle-home", "cache", "build", "run"):
                 self.assertFalse((cell_root / name).exists())
 
+    def test_cleanup_derives_external_child_run_id_from_verified_layout(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cell = {"id": "26.1-fabric", "loader": "fabric",
+                    "minecraft": {"version": "26.1"}}
+            run_id = "20260826T000000Z-0123456789ab"
+            cell_root = (root / "dist/qualification/ringworld/26.1/fabric" / run_id
+                         / "26.1-fabric")
+            runtime = cell_root / "run/world/level.dat"
+            runtime.parent.mkdir(parents=True)
+            runtime.write_bytes(b"world")
+            terminal = cell_root / "evidence/nightly/02-worldgen/terminal.json"
+            terminal.parent.mkdir(parents=True)
+            terminal.write_text("{}", encoding="utf-8")
+
+            removed = _cleanup_disposable_child_state(
+                root, cell, {"terminal_evidence": str(terminal)})
+
+            self.assertEqual((str((cell_root / "run").resolve(strict=False)),), removed)
+            self.assertTrue(terminal.is_file())
+            self.assertFalse(runtime.exists())
+
     def test_cleanup_rejects_escaping_run_id(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             cell = {"id": "26.1-fabric", "loader": "fabric",
                     "minecraft": {"version": "26.1"}}
-            with self.assertRaisesRegex(NightlyMatrixError, "escapes"):
+            with self.assertRaisesRegex(NightlyMatrixError, "unsafe|escapes"):
                 _cleanup_disposable_child_state(
                     root, cell, {"run_id": "../../../../../../outside"})
 

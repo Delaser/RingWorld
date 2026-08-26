@@ -427,7 +427,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   freshly restarted two-client fixture from sustained host load. After each
   independently verified child result it deletes that
   child's disposable `gradle-home`, `cache`, `build`, and `run` directories;
-  logs, captures, and immutable evidence are retained.
+  logs, captures, and immutable evidence are retained. External worldgen and
+  Atlas runners intentionally emit `terminal_evidence` rather than `run_id`;
+  cleanup must derive their run ID only from the already-contained canonical
+  `<version>/<loader>/<run>/<cell>/evidence/nightly/...` terminal path. Never
+  skip those external runtimes or trust an arbitrary path for cleanup.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,

@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import sys
 import time
 from typing import Any, Mapping, Sequence
@@ -54,6 +55,7 @@ EXACT_CANDIDATE_FIXTURES = {"worldgen", "atlas-recovery", "multiplayer", "raid",
                             "production-lifecycle", "production-render"}
 DEFAULT_MULTIPLAYER_COOLDOWN_SECONDS = 120
 MAXIMUM_MULTIPLAYER_COOLDOWN_SECONDS = 600
+_RUN_ID = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}$")
 EVIDENCE_DIRECTORY = {
     "creation-ui": "01-creation-settings-ui",
     "worldgen": "02-worldgen-seam-structures",
@@ -159,9 +161,23 @@ def _sha256(path: Path) -> str:
 def _child_cell_root(root: Path, cell: Mapping[str, Any],
                      payload: Mapping[str, Any]) -> Path:
     run_id = payload.get("run_id")
-    if not isinstance(run_id, str) or not run_id:
-        raise NightlyMatrixError("nightly child result has no run ID")
     qualification_root = (root / "dist/qualification").resolve(strict=False)
+    if not isinstance(run_id, str) or not run_id:
+        direct = payload.get("terminal_evidence")
+        if not isinstance(direct, str) or not direct:
+            raise NightlyMatrixError("nightly child result has no run ID")
+        terminal = Path(direct).resolve(strict=False)
+        if terminal.is_symlink() or not terminal.is_relative_to(qualification_root):
+            raise NightlyMatrixError("nightly child terminal escapes qualification state")
+        parts = terminal.relative_to(qualification_root).parts
+        expected = ("ringworld", str(cell["minecraft"]["version"]),
+                    str(cell["loader"]))
+        if (len(parts) < 8 or parts[:3] != expected or parts[4] != str(cell["id"])
+                or parts[5:7] != ("evidence", "nightly")):
+            raise NightlyMatrixError("nightly child terminal path has invalid cell identity")
+        run_id = parts[3]
+    if _RUN_ID.fullmatch(run_id) is None:
+        raise NightlyMatrixError("nightly child result has unsafe run ID")
     cell_root = (qualification_root / "ringworld" / str(cell["minecraft"]["version"])
                  / str(cell["loader"]) / run_id / str(cell["id"])).resolve(strict=False)
     if not cell_root.is_relative_to(qualification_root):
@@ -366,7 +382,7 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
             except NightlyMatrixError as error:
                 verdict, child_reason = "FAIL", str(error)
         removed: tuple[str, ...] = ()
-        if payload.get("run_id"):
+        if payload.get("run_id") or payload.get("terminal_evidence"):
             try:
                 removed = _cleanup_disposable_child_state(
                     root, by_id[cell_id], payload)
