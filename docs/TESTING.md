@@ -2223,6 +2223,29 @@ wrong identities, symlinks, traversal, and malformed IDs, and retains the
 evidence/log directories. This interrupted run is infrastructure diagnostic
 evidence only and has no aggregate terminal.
 
+The following clean attempt from `3aba403` passed the first four Fabric 26.1
+commands (five terminal records through client handshake). Its multiplayer
+child `20260826T094142Z-b23586bdcf3a` connected both real clients, then the
+server readiness barrier observed a 30.755-second tick interval and halted
+before gameplay assertions. The 16 GiB host was running three qualification
+game JVMs without explicit heap ceilings; each could inherit an approximately
+4 GiB default maximum. The disconnected clients were terminated after the
+server's conclusive failure so the child could write terminal SHA-256
+`18b684a5c5b91f668ba66dda0e584953b88c3b5d74787d5b97b8dda26cb82b68`.
+The remaining matrix was stopped and has no aggregate terminal. Both loader
+builds now cap multiplayer and raid server/client game JVMs at 2 GiB, and the
+multiplayer operator polls the server while waiting for clients so a halted
+server ends the child immediately. Static multiplayer and coordinator
+contracts pass 23/23, and Gradle configuration succeeds.
+
+Coordinator cleanup now retains evidence rather than only retaining references
+to deleted captures. Before removing a child `run` directory, it recursively
+finds terminal-bound PNG/log paths, requires each source to be a regular
+contained file with the exact recorded SHA-256, copies it into
+`evidence/retained-artifacts` under a hash-addressed name, and records that new
+path/size/hash in the aggregate. Per-file and per-child byte bounds fail closed.
+Worlds, caches, and unreferenced runtime files remain disposable.
+
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
 or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge

@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 import sys
@@ -17,7 +18,7 @@ if str(SCRIPTS) not in sys.path:
 
 from run_minecraft_nightly_matrix import (  # noqa: E402
     FIXTURES, NightlyMatrixError, _child_argv, _cleanup_disposable_child_state, _cooldown,
-    _selected_fixtures,
+    _retain_terminal_artifacts, _selected_fixtures,
     _verify_terminals,
 )
 
@@ -140,6 +141,33 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             self.assertEqual((str((cell_root / "run").resolve(strict=False)),), removed)
             self.assertTrue(terminal.is_file())
             self.assertFalse(runtime.exists())
+
+    def test_cleanup_retains_hash_bound_runtime_capture(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cell = {"id": "26.1-fabric", "loader": "fabric",
+                    "minecraft": {"version": "26.1"}}
+            run_id = "20260826T000000Z-0123456789ab"
+            cell_root = (root / "dist/qualification/ringworld/26.1/fabric" / run_id
+                         / "26.1-fabric")
+            capture = cell_root / "run/client/screenshots/view.png"
+            capture.parent.mkdir(parents=True)
+            capture.write_bytes(b"capture")
+            digest = hashlib.sha256(b"capture").hexdigest()
+            terminal = cell_root / "evidence/nightly/04-atlas/terminal.json"
+            terminal.parent.mkdir(parents=True)
+            terminal.write_text(json.dumps({
+                "captures": [{"path": str(capture), "sha256": digest}],
+            }), encoding="utf-8")
+
+            retained = _retain_terminal_artifacts(
+                root, cell, {"run_id": run_id}, ({"path": str(terminal)},))
+            self.assertEqual(1, len(retained))
+            retained_path = Path(retained[0]["retained_path"])
+            self.assertEqual(b"capture", retained_path.read_bytes())
+            _cleanup_disposable_child_state(root, cell, {"run_id": run_id})
+            self.assertTrue(retained_path.is_file())
+            self.assertFalse(capture.exists())
 
     def test_cleanup_rejects_escaping_run_id(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

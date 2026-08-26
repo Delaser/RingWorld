@@ -431,7 +431,17 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   Atlas runners intentionally emit `terminal_evidence` rather than `run_id`;
   cleanup must derive their run ID only from the already-contained canonical
   `<version>/<loader>/<run>/<cell>/evidence/nightly/...` terminal path. Never
-  skip those external runtimes or trust an arbitrary path for cleanup.
+  skip those external runtimes or trust an arbitrary path for cleanup. Before
+  deleting a child `run` tree, copy every terminal-hash-bound PNG and log below
+  that tree into `evidence/retained-artifacts`, rehash it, and record the
+  retained path in the aggregate. Do not claim captures survive cleanup merely
+  because their former paths and hashes remain in a terminal record.
+- The Fabric and NeoForge multiplayer/raid qualification server and client
+  runs cap each game JVM at 2 GiB (`-Xms256m -Xmx2g`). Keep those caps
+  loader-symmetric: two default 4 GiB client heaps plus a server can exhaust a
+  16 GiB qualification host. The multiplayer operator must also fail as soon
+  as its server exits instead of leaving disconnected graphical clients alive
+  until the outer timeout.
 - `scripts/minecraft_qualification_executor.py`: stdlib-only execution
   primitives for held cell locks, contained directories, bounded
   credential-pattern-redacted subprocess logs, process-group timeout cleanup,

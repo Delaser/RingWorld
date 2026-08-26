@@ -21,7 +21,7 @@ from minecraft_qualification_model import QualificationPaths  # noqa: E402
 from run_gradle_multiplayer_qualification import (  # noqa: E402
     CAPTURES, GradleMultiplayerError, _base_argv, _configure_rcon, _tasks,
     _post_prepare_settle, _stage_loom_seed, _validated_loom_seed, _verify_fixture,
-    _verify_installed_candidates,
+    _verify_installed_candidates, _wait_for_clients,
 )
 
 
@@ -53,6 +53,25 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
         self.assertEqual([5, 5, 2], intervals)
         with self.assertRaisesRegex(GradleMultiplayerError, "bounded"):
             _post_prepare_settle(601, sleeper=intervals.append)
+
+    def test_concurrent_game_processes_have_bounded_heaps_on_both_loaders(self) -> None:
+        fabric = (ROOT / "build.gradle").read_text(encoding="utf-8")
+        neoforge = (ROOT / "neoforge/build.gradle").read_text(encoding="utf-8")
+        self.assertEqual(7, fabric.count('vmArg "-Xmx2g"'))
+        self.assertEqual(7, neoforge.count("jvmArgument '-Xmx2g'"))
+
+    def test_client_wait_fails_as_soon_as_server_exits(self) -> None:
+        server = SimpleNamespace(returncode=0, poll=lambda: 0)
+        client = SimpleNamespace(returncode=None, poll=lambda: None)
+        with self.assertRaisesRegex(GradleMultiplayerError, "server exited 0"):
+            _wait_for_clients(server, {"client-a": client, "client-b": client}, 60,
+                              sleeper=lambda _seconds: None)
+
+    def test_client_wait_accepts_two_clean_client_exits(self) -> None:
+        server = SimpleNamespace(returncode=None, poll=lambda: None)
+        client = SimpleNamespace(returncode=0, poll=lambda: 0)
+        _wait_for_clients(server, {"client-a": client, "client-b": client}, 60,
+                          sleeper=lambda _seconds: None)
 
     def test_command_binds_cell_candidate_and_hash(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

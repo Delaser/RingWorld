@@ -417,6 +417,29 @@ def _verify_fixture(prepared: AtlasRecoveryInvocation) -> tuple[dict[str, Any], 
     return tuple(logs)
 
 
+def _wait_for_clients(server: Any, clients: Mapping[str, Any], timeout: int,
+                      *, clock: Any = time.monotonic, sleeper: Any = time.sleep) -> None:
+    """Wait for both clients, but fail immediately when their server is gone."""
+    pending = set(clients)
+    deadline = clock() + timeout
+    while pending:
+        if server.poll() is not None:
+            raise GradleMultiplayerError(
+                f"server exited {server.returncode} before clients completed")
+        for name in tuple(pending):
+            process = clients[name]
+            if process.poll() is None:
+                continue
+            if process.returncode != 0:
+                raise GradleMultiplayerError(f"{name} exited {process.returncode}")
+            pending.remove(name)
+        if pending:
+            if clock() >= deadline:
+                raise GradleMultiplayerError(
+                    "timed out waiting for " + ", ".join(sorted(pending)))
+            sleeper(0.25)
+
+
 def _execute(prepared: AtlasRecoveryInvocation, dependency_cache: Path | None,
              distribution_zip: Path | None, loom_seed: Sequence[Path],
              post_prepare_settle_seconds: int) -> dict[str, Any]:
@@ -466,14 +489,10 @@ def _execute(prepared: AtlasRecoveryInvocation, dependency_cache: Path | None,
         for name, record, output, with_stdin in process_specs[1:]:
             process, stream = _start(record, output, stdin=with_stdin)
             running[name] = (process, stream, output, datetime.now(timezone.utc).isoformat(), time.monotonic())
-        for name in ("client-a", "client-b"):
-            process = running[name][0]
-            try:
-                process.wait(timeout=timeout)
-            except subprocess.TimeoutExpired as error:
-                raise GradleMultiplayerError(f"{name} timed out") from error
-            if process.returncode != 0:
-                raise GradleMultiplayerError(f"{name} exited {process.returncode}")
+        _wait_for_clients(
+            running["server"][0],
+            {name: running[name][0] for name in ("client-a", "client-b")}, timeout,
+        )
         _wait_marker(running["server"][0], server_log, PASS_MARKERS[0], min(timeout, 300))
         server = running["server"][0]
         _graceful_rcon_stop(rcon_port, rcon_password)

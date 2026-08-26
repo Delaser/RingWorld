@@ -55,6 +55,9 @@ EXACT_CANDIDATE_FIXTURES = {"worldgen", "atlas-recovery", "multiplayer", "raid",
                             "production-lifecycle", "production-render"}
 DEFAULT_MULTIPLAYER_COOLDOWN_SECONDS = 120
 MAXIMUM_MULTIPLAYER_COOLDOWN_SECONDS = 600
+MAXIMUM_RETAINED_ARTIFACT_BYTES = 512 * 1024 * 1024
+MAXIMUM_RETAINED_ARTIFACT_FILE_BYTES = 256 * 1024 * 1024
+RETAINED_ARTIFACT_SUFFIXES = {".log", ".png"}
 _RUN_ID = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}$")
 EVIDENCE_DIRECTORY = {
     "creation-ui": "01-creation-settings-ui",
@@ -291,6 +294,67 @@ def _verify_terminals(root: Path, cell: Mapping[str, Any], fixture: str,
     return tuple(records)
 
 
+def _hash_bound_artifacts(value: Any) -> tuple[tuple[str, str], ...]:
+    records: list[tuple[str, str]] = []
+    if isinstance(value, Mapping):
+        path, digest = value.get("path"), value.get("sha256")
+        if isinstance(path, str) and isinstance(digest, str):
+            records.append((path, digest))
+        for child in value.values():
+            records.extend(_hash_bound_artifacts(child))
+    elif isinstance(value, (list, tuple)):
+        for child in value:
+            records.extend(_hash_bound_artifacts(child))
+    return tuple(records)
+
+
+def _retain_terminal_artifacts(root: Path, cell: Mapping[str, Any],
+                               payload: Mapping[str, Any],
+                               terminals: Sequence[Mapping[str, str]]) -> tuple[dict[str, Any], ...]:
+    """Retain hash-bound captures/logs before the disposable run tree is removed."""
+    cell_root = _child_cell_root(root, cell, payload)
+    run_root = (cell_root / "run").resolve(strict=False)
+    retained_root = cell_root / "evidence/retained-artifacts"
+    records: list[dict[str, Any]] = []
+    seen: set[tuple[str, str]] = set()
+    total = 0
+    for terminal_record in terminals:
+        terminal_path = Path(str(terminal_record["path"]))
+        terminal = json.loads(terminal_path.read_text(encoding="utf-8"))
+        for raw_path, expected_hash in _hash_bound_artifacts(terminal):
+            key = (raw_path, expected_hash)
+            if key in seen:
+                continue
+            seen.add(key)
+            source = Path(raw_path).resolve(strict=False)
+            if not source.is_relative_to(run_root) or source.suffix.lower() not in RETAINED_ARTIFACT_SUFFIXES:
+                continue
+            if source.is_symlink() or not source.is_file():
+                raise NightlyMatrixError(f"hash-bound runtime artifact is missing: {source}")
+            size = source.stat().st_size
+            if size > MAXIMUM_RETAINED_ARTIFACT_FILE_BYTES \
+                    or total + size > MAXIMUM_RETAINED_ARTIFACT_BYTES:
+                raise NightlyMatrixError("hash-bound runtime artifacts exceed retention bound")
+            actual_hash = _sha256(source)
+            if actual_hash != expected_hash:
+                raise NightlyMatrixError("hash-bound runtime artifact digest is invalid")
+            retained_root.mkdir(parents=True, exist_ok=True)
+            target = retained_root / f"{expected_hash}-{source.name}"
+            if target.exists() or target.is_symlink():
+                if target.is_symlink() or not target.is_file() or _sha256(target) != expected_hash:
+                    raise NightlyMatrixError("retained runtime artifact destination is invalid")
+            else:
+                with source.open("rb") as incoming, target.open("xb") as outgoing:
+                    for block in iter(lambda: incoming.read(1024 * 1024), b""):
+                        outgoing.write(block)
+            records.append({
+                "source_path": str(source), "retained_path": str(target),
+                "sha256": expected_hash, "bytes": size,
+            })
+            total += size
+    return tuple(records)
+
+
 def plan(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict[str, Any]:
     root = repository_root.resolve(strict=False)
     manifest_path = (root / arguments.manifest).resolve(strict=False)
@@ -373,12 +437,15 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
             child_reason = child.reason or payload.get("reason")
         verdict = payload.get("verdict") if child.verdict is Verdict.PASS else "FAIL"
         terminals: tuple[dict[str, str], ...] = ()
+        retained_artifacts: tuple[dict[str, Any], ...] = ()
         if verdict == "PASS":
             try:
                 identity = expected[cell_id]
                 terminals = _verify_terminals(
                     root, by_id[cell_id], fixture, payload, provenance.commit,
                     identity["frozen_candidate_sha256"], identity["quick_terminal_sha256"])
+                retained_artifacts = _retain_terminal_artifacts(
+                    root, by_id[cell_id], payload, terminals)
             except NightlyMatrixError as error:
                 verdict, child_reason = "FAIL", str(error)
         removed: tuple[str, ...] = ()
@@ -394,6 +461,7 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
             "cell": cell_id, "fixture": fixture, "verdict": verdict or "FAIL",
             "reason": child_reason, "child": payload,
             "expected_identity": expected[cell_id], "terminal_evidence": terminals,
+            "retained_artifacts": list(retained_artifacts),
             "discarded_disposable_paths": list(removed),
             "pre_fixture_cooldown_seconds": 0,
             "post_prepare_settle_seconds": (cooldown_seconds

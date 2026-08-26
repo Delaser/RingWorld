@@ -197,6 +197,8 @@ neoForge {
             // never shares a world, logs, or port configuration with Fabric's
             // run-multiplayer harness.
             gameDirectory = qualificationRunFile('run-multiplayer/server')
+            jvmArgument '-Xms256m'
+            jvmArgument '-Xmx2g'
             systemProperty 'ringworld.multiplayerTest', 'true'
             programArgument '--nogui'
         }
@@ -204,6 +206,8 @@ neoForge {
             client()
             if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-multiplayer/client-a')
+            jvmArgument '-Xms256m'
+            jvmArgument '-Xmx2g'
             systemProperty 'ringworld.multiplayerTestRole', 'A'
             systemProperty 'ringworld.multiplayerTestPort',
                     neoForgeRunPort('ringQualificationNeoForgeMultiplayerPort', 'ringNeoForgeMultiplayerPort', '25566').toString()
@@ -215,6 +219,8 @@ neoForge {
             client()
             if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-multiplayer/client-b')
+            jvmArgument '-Xms256m'
+            jvmArgument '-Xmx2g'
             systemProperty 'ringworld.multiplayerTestRole', 'B'
             systemProperty 'ringworld.multiplayerTestPort',
                     neoForgeRunPort('ringQualificationNeoForgeMultiplayerPort', 'ringNeoForgeMultiplayerPort', '25566').toString()
@@ -226,6 +232,8 @@ neoForge {
             server()
             if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-raid-seam/server')
+            jvmArgument '-Xms256m'
+            jvmArgument '-Xmx2g'
             systemProperty 'ringworld.raidSeamTest', 'true'
             systemProperty 'ringworld.raidSeamTestPhase', 'arm'
             systemProperty 'ringworld.raidSeamTestStopAfterSave', 'true'
@@ -235,6 +243,8 @@ neoForge {
             server()
             if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-raid-seam/server')
+            jvmArgument '-Xms256m'
+            jvmArgument '-Xmx2g'
             systemProperty 'ringworld.raidSeamTest', 'true'
             systemProperty 'ringworld.raidSeamTestPhase', 'reload'
             programArgument '--nogui'
@@ -243,6 +253,8 @@ neoForge {
             client()
             if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-raid-seam/client-a')
+            jvmArgument '-Xms256m'
+            jvmArgument '-Xmx2g'
             systemProperty 'ringworld.multiplayerTestRole', 'A'
             systemProperty 'ringworld.multiplayerTestPort',
                     neoForgeRunPort('ringQualificationNeoForgeRaidSeamPort', 'ringNeoForgeRaidSeamPort', '25567').toString()
@@ -253,6 +265,8 @@ neoForge {
             client()
             if (qualificationFrozenRuntimeSourceSet != null) sourceSet = qualificationFrozenRuntimeSourceSet
             gameDirectory = qualificationRunFile('run-raid-seam/client-b')
+            jvmArgument '-Xms256m'
+            jvmArgument '-Xmx2g'
             systemProperty 'ringworld.multiplayerTestRole', 'B'
             systemProperty 'ringworld.multiplayerTestPort',
                     neoForgeRunPort('ringQualificationNeoForgeRaidSeamPort', 'ringNeoForgeRaidSeamPort', '25567').toString()

@@ -318,6 +318,24 @@ only from a contained terminal path with the exact version/loader/cell/evidence
 layout and strict run-ID syntax, then uses the existing containment-checked
 cleanup. Tests cover that external shape and preserve terminal evidence. This
 interrupted run has no aggregate terminal and is not support evidence.
+
+The clean rerun from `3aba403` then passed Fabric 26.1 creation/settings,
+worldgen, Atlas recovery, Atlas UI, and format-3 handshake before its
+multiplayer readiness gate observed a 30.755-second tick hitch and no stable
+100-tick window. Both real clients had connected; the server halted the
+disposable harness before topology assertions. On this 16 GiB host the three
+concurrent game JVMs had no qualification heap ceiling and could each inherit
+the JVM's roughly 4 GiB default maximum. The already-failed clients also
+remained on their disconnect screens because the Python operator waited for
+them before checking the exited server. The operator was deliberately stopped
+after child FAIL evidence `20260826T094142Z-b23586bdcf3a` was written (terminal
+SHA-256 `18b684a5c5b91f668ba66dda0e584953b88c3b5d74787d5b97b8dda26cb82b68`);
+there is no aggregate terminal and no support claim. Fabric and NeoForge now
+cap concurrent multiplayer/raid game JVMs at 2 GiB, and multiplayer detects an
+exited server immediately. The coordinator also preserves terminal-hash-bound
+PNG/log artifacts under immutable evidence before deleting heavy child run
+trees. A targeted multiplayer rerun and a clean full aggregate remain required.
+
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its

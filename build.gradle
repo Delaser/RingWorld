@@ -243,6 +243,8 @@ loom {
 			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Multiplayer Server"
 			runDir qualificationRunDirectory("run-multiplayer/server")
+			vmArg "-Xms256m"
+			vmArg "-Xmx2g"
 			vmArg "-Dringworld.multiplayerTest=true"
 			programArg "nogui"
 		}
@@ -251,6 +253,8 @@ loom {
 			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Multiplayer Client A"
 			runDir qualificationRunDirectory("run-multiplayer/client-a")
+			vmArg "-Xms256m"
+			vmArg "-Xmx2g"
 			vmArg "-Dringworld.multiplayerTestRole=A"
 			vmArg "-Dringworld.multiplayerTestPort=${fabricMultiplayerPort()}"
 			programArgs "--username", "RingTesterA"
@@ -260,6 +264,8 @@ loom {
 			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Multiplayer Client B"
 			runDir qualificationRunDirectory("run-multiplayer/client-b")
+			vmArg "-Xms256m"
+			vmArg "-Xmx2g"
 			vmArg "-Dringworld.multiplayerTestRole=B"
 			vmArg "-Dringworld.multiplayerTestPort=${fabricMultiplayerPort()}"
 			programArgs "--username", "RingTesterB"
@@ -269,6 +275,8 @@ loom {
 			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Raid Seam Arm Server"
 			runDir qualificationRunDirectory("run-raid-seam/server")
+			vmArg "-Xms256m"
+			vmArg "-Xmx2g"
 			vmArg "-Dringworld.raidSeamTest=true"
 			vmArg "-Dringworld.raidSeamTestPhase=arm"
 			vmArg "-Dringworld.raidSeamTestStopAfterSave=true"
@@ -279,6 +287,8 @@ loom {
 			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Raid Seam Reload Server"
 			runDir qualificationRunDirectory("run-raid-seam/server")
+			vmArg "-Xms256m"
+			vmArg "-Xmx2g"
 			vmArg "-Dringworld.raidSeamTest=true"
 			vmArg "-Dringworld.raidSeamTestPhase=reload"
 			programArg "nogui"
@@ -288,6 +298,8 @@ loom {
 			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Raid Seam Client A"
 			runDir qualificationRunDirectory("run-raid-seam/client-a")
+			vmArg "-Xms256m"
+			vmArg "-Xmx2g"
 			vmArg "-Dringworld.multiplayerTestRole=A"
 			vmArg "-Dringworld.multiplayerTestPort=${fabricRaidSeamPort()}"
 			programArgs "--username", "RingTesterA"
@@ -297,6 +309,8 @@ loom {
 			if (qualificationFrozenRuntimeSourceSet != null) source qualificationFrozenRuntimeSourceSet
 			name "RingWorld Raid Seam Client B"
 			runDir qualificationRunDirectory("run-raid-seam/client-b")
+			vmArg "-Xms256m"
+			vmArg "-Xmx2g"
 			vmArg "-Dringworld.multiplayerTestRole=B"
 			vmArg "-Dringworld.multiplayerTestPort=${fabricRaidSeamPort()}"
 			programArgs "--username", "RingTesterB"
