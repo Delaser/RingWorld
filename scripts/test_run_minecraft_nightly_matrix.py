@@ -17,7 +17,8 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from run_minecraft_nightly_matrix import (  # noqa: E402
-    FIXTURES, NightlyMatrixError, _child_argv, _cleanup_disposable_child_state, _cooldown,
+    FIXTURES, GRADLE_DOWNLOAD_FAILURE_REASON, NightlyMatrixError, _child_argv,
+    _classified_infrastructure_reason, _cleanup_disposable_child_state, _cooldown,
     _retain_terminal_artifacts, _retryable_infrastructure_failure,
     _schedule_infrastructure_retry, _selected_fixtures,
     _verify_terminals,
@@ -205,6 +206,31 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             1, "FAIL", startup_timeout, {"claims": untouched_claims}))
         self.assertFalse(_schedule_infrastructure_retry(
             2, "FAIL", startup_timeout, {"claims": untouched_claims}))
+
+    def test_retry_classifies_only_exact_unclaimed_gradle_download_failure(self) -> None:
+        payload = {"claims": {
+            "actual_minecraft_client": False,
+            "disposable_world_created": None,
+            "exact_patch_dependencies": False,
+        }}
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "stderr.log"
+            log.write_text(
+                "A problem occurred configuring root project 'ringworld'.\n"
+                "> Failed to setup Minecraft, net.fabricmc.loom.util.download.DownloadException: Failed to download\n"
+                "BUILD FAILED in 7m 5s\n",
+                encoding="utf-8",
+            )
+            reason = _classified_infrastructure_reason("EXIT_1", payload, log)
+            self.assertEqual(GRADLE_DOWNLOAD_FAILURE_REASON, reason)
+            self.assertTrue(_retryable_infrastructure_failure(
+                "FAIL", reason, payload))
+
+            self.assertEqual("EXIT_1", _classified_infrastructure_reason(
+                "EXIT_1", {"claims": {"actual_minecraft_client": True}}, log))
+            log.write_text("BUILD FAILED\ncompileJava failed\n", encoding="utf-8")
+            self.assertEqual("EXIT_1", _classified_infrastructure_reason(
+                "EXIT_1", payload, log))
 
 
 if __name__ == "__main__":

@@ -57,9 +57,16 @@ DEFAULT_MULTIPLAYER_COOLDOWN_SECONDS = 120
 MAXIMUM_MULTIPLAYER_COOLDOWN_SECONDS = 600
 INFRASTRUCTURE_RETRY_LIMIT = 1
 INFRASTRUCTURE_RETRY_COOLDOWN_SECONDS = 120
+GRADLE_DOWNLOAD_FAILURE_REASON = "Gradle dependency download failed before fixture launch"
 RETRYABLE_INFRASTRUCTURE_REASONS = frozenset({
     "timed out waiting for marker 'Done ('",
+    GRADLE_DOWNLOAD_FAILURE_REASON,
 })
+GRADLE_DOWNLOAD_FAILURE_MARKERS = (
+    "Failed to setup Minecraft, net.fabricmc.loom.util.download.DownloadException: Failed to download",
+    "BUILD FAILED",
+)
+MAXIMUM_INFRASTRUCTURE_CLASSIFICATION_LOG_BYTES = 4 * 1024 * 1024
 MAXIMUM_RETAINED_ARTIFACT_BYTES = 512 * 1024 * 1024
 MAXIMUM_RETAINED_ARTIFACT_FILE_BYTES = 256 * 1024 * 1024
 RETAINED_ARTIFACT_SUFFIXES = {".log", ".png"}
@@ -245,8 +252,39 @@ def _retryable_infrastructure_failure(verdict: str | None, reason: Any,
             or reason not in RETRYABLE_INFRASTRUCTURE_REASONS):
         return False
     claims = payload.get("claims")
-    return (isinstance(claims, Mapping) and bool(claims)
-            and all(value is False for value in claims.values()))
+    if not isinstance(claims, Mapping) or not claims:
+        return False
+    if reason == GRADLE_DOWNLOAD_FAILURE_REASON:
+        return (any(value is False for value in claims.values())
+                and all(value is False or value is None for value in claims.values()))
+    return all(value is False for value in claims.values())
+
+
+def _classified_infrastructure_reason(reason: Any, payload: Mapping[str, Any],
+                                      stderr_log: Path) -> Any:
+    """Normalize one exact pre-launch Gradle download failure for bounded retry."""
+    if reason in RETRYABLE_INFRASTRUCTURE_REASONS:
+        return reason
+    claims = payload.get("claims")
+    if (reason != "EXIT_1" or not isinstance(claims, Mapping) or not claims
+            or not any(value is False for value in claims.values())
+            or any(value is not False and value is not None for value in claims.values())):
+        return reason
+    if stderr_log.is_symlink() or not stderr_log.is_file():
+        return reason
+    try:
+        size = stderr_log.stat().st_size
+    except OSError:
+        return reason
+    if size > MAXIMUM_INFRASTRUCTURE_CLASSIFICATION_LOG_BYTES:
+        return reason
+    try:
+        text = stderr_log.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return reason
+    if all(marker in text for marker in GRADLE_DOWNLOAD_FAILURE_MARKERS):
+        return GRADLE_DOWNLOAD_FAILURE_REASON
+    return reason
 
 
 def _schedule_infrastructure_retry(attempt_number: int, verdict: str | None,
@@ -463,6 +501,8 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
                     child_reason = child.reason
             else:
                 child_reason = child.reason or payload.get("reason")
+            child_reason = _classified_infrastructure_reason(
+                child_reason, payload, Path(child.stderr_log))
             verdict = payload.get("verdict") if child.verdict is Verdict.PASS else "FAIL"
             terminals: tuple[dict[str, str], ...] = ()
             retained_artifacts: tuple[dict[str, Any], ...] = ()

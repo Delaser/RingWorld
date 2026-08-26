@@ -2184,12 +2184,14 @@ interface.
 
 Every fixture also has one narrowly classified infrastructure retry. It is
 scheduled only when the child reports the exact pre-game readiness failure
-`timed out waiting for marker 'Done ('` with a non-empty claims map whose
-values are all still false. The failed attempt is cleaned first, the host gets
-a recorded 120-second cooldown, and the repeated command receives a new child
-run ID while both attempts remain in the aggregate report. Gameplay or test
-assertions, crashes, evidence failures, generic command timeouts, and an
-already-retried readiness timeout remain immediate failures.
+`timed out waiting for marker 'Done ('` with a non-empty all-false claims map,
+or exits 1 before launch with no positive claim and bounded stderr containing
+both Loom's exact `DownloadException: Failed to download` setup marker and
+`BUILD FAILED`. The failed attempt is cleaned first, the host gets a recorded
+120-second cooldown, and the repeated command receives a new child run ID
+while both attempts remain in the aggregate report. Gameplay or test
+assertions, compilation failures, crashes, evidence failures, generic command
+timeouts, and an already-retried failure remain immediate failures.
 
 Aggregate `20260826T035240Z-55d20f097651` is retained as fail-closed
 diagnostic evidence: 44 PASS, three FAIL, thirteen INCOMPLETE, terminal
@@ -2294,6 +2296,21 @@ SHA-256 is
 `2a65eb626faf2b1f8496d361b814cb48ab3eb6a69bd6c0ad9b6218b14ff2d1ef`.
 No retry was consumed. A clean complete 60-command aggregate remains the final
 nightly-matrix gate.
+
+The next complete attempt began cleanly from pushed commit `bf0ae27` and passed
+the first 13 commands: every Fabric 26.1 command plus NeoForge 26.1 creation,
+worldgen, and interrupted-Atlas recovery. During NeoForge Atlas UI preparation,
+the Mac lost all outbound HTTPS connectivity while its local gateway remained
+reachable. Child run `20260826T212553Z-95a9f246b50a` failed before Minecraft
+launched with Loom's exact dependency `DownloadException`; every positive
+fixture claim remained false. The Atlas-UI and handshake diagnostic terminal
+hashes are respectively
+`a93fa427f4f37d4a5eafabd7738104d6555987c35bcdb22c8518003958372c66` and
+`83095e86e1bc1742b119b2d70a6ab66705844ab0fa01ac52e89e209715dfe050`.
+The doomed aggregate was stopped after the coordinator advanced to the next
+independent cell, so it intentionally has no aggregate terminal and is not
+support evidence. The exact pre-launch network failure is now the second
+bounded retry class; static coordinator tests pass 15/15.
 
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`

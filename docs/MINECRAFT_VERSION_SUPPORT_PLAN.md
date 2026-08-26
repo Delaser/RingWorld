@@ -629,12 +629,14 @@ continues independent cells, and writes one aggregate terminal report. Cell or
 fixture subsets are useful diagnostics but remain `INCOMPLETE` even when every
 selected command passes.
 
-The coordinator permits one automatic retry per command only for the exact
-pre-game server `Done (` readiness timeout with no fixture claim yet true. It
-cleans the failed child state, cools down for 120 seconds, gives the retry a new
-child run ID, and records both attempts. All assertions, crashes, evidence
-validation failures, unclassified timeouts, and second failures still fail
-closed without retry.
+The coordinator permits one automatic infrastructure retry per command. It
+recognizes only the exact pre-game server `Done (` readiness timeout with every
+fixture claim false, or an exit-1 Gradle setup failure whose bounded stderr has
+both Loom's exact dependency-download exception and `BUILD FAILED` and whose
+claims contain no positive value. It cleans the failed child state, cools down
+for 120 seconds, gives the retry a new child run ID, and records both attempts.
+All assertions, compilation failures, crashes, evidence validation failures,
+unclassified timeouts, and second failures still fail closed without retry.
 
 The operator entry point is intentionally explicit:
 
@@ -1134,9 +1136,10 @@ Earlier sections remain the detailed design and evidence record.
 - [x] Pass the corrected Fabric 26.1 targeted multiplayer regression with the
   2 GiB game heaps and 30 FPS disposable-client cap
   (`20260826T101522Z-6ec8d904431b`).
-- [x] Add one fail-closed retry for only an unclaimed pre-game `Done (` timeout,
-  and pass the failed NeoForge 26.1 raid plus its four formerly skipped
-  fixtures on their first attempts (`20260826T145215Z-b593bba25512`).
+- [x] Add one fail-closed retry for only an unclaimed pre-game `Done (` timeout
+  or an exact pre-launch Loom dependency-download failure, and pass the failed
+  NeoForge 26.1 raid plus its four formerly skipped fixtures on their first
+  attempts (`20260826T145215Z-b593bba25512`).
 - [ ] Pass one clean complete 60-command aggregate from that same commit.
 - [ ] Bind every nightly result to its quick record, frozen jar SHA-256, source
   commit, runtime version, and immutable evidence hashes.

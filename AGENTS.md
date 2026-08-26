@@ -436,13 +436,16 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   that tree into `evidence/retained-artifacts`, rehash it, and record the
   retained path in the aggregate. Do not claim captures survive cleanup merely
   because their former paths and hashes remain in a terminal record.
-  Every fixture is eligible for exactly one automatic retry only when its
-  immutable child result reports the exact pre-game server-readiness timeout
-  `timed out waiting for marker 'Done ('` and every recorded claim is still
-  false. The coordinator cleans the failed attempt, waits 120 seconds, records
-  both attempts, and reruns the same command. Never broaden this to gameplay
-  assertions, crashes, malformed or missing evidence, arbitrary command
-  timeouts, or a second retry; those remain immediate fail-closed results.
+  Every fixture is eligible for exactly one automatic infrastructure retry.
+  The accepted classes are the exact pre-game server-readiness timeout
+  `timed out waiting for marker 'Done ('` with every recorded claim false, or
+  an exit-1 Gradle configuration failure whose bounded stderr contains both
+  Loom's exact `DownloadException: Failed to download` setup marker and
+  `BUILD FAILED`, with no positive fixture claim. The coordinator cleans the
+  failed attempt, waits 120 seconds, records both attempts, and reruns the same
+  command. Never broaden this to gameplay assertions, compilation failures,
+  crashes, malformed or missing evidence, arbitrary command timeouts, or a
+  second retry; those remain immediate fail-closed results.
   Targeted coordinator run `20260826T145215Z-b593bba25512` on pushed commit
   `aa64b3f` passes the previously failed NeoForge 26.1 raid and all four
   formerly skipped fixtures without consuming the retry. It is intentionally

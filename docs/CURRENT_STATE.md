@@ -387,6 +387,20 @@ No automatic retry was consumed. Current evidence therefore covers every
 individual command, but one clean unified 60-command aggregate is still
 required before the broad-support claim.
 
+A subsequent complete attempt from pushed commit `bf0ae27` passed the first 13
+commands, covering the full Fabric 26.1 cell and NeoForge 26.1 creation,
+worldgen, and Atlas recovery. The Mac then lost all outbound HTTPS while its
+local gateway remained reachable. NeoForge Atlas UI child
+`20260826T212553Z-95a9f246b50a` failed during Gradle setup with Loom's exact
+dependency `DownloadException`, before Minecraft launched and without a
+positive fixture claim. The coordinator correctly blocked that cell's later
+fixtures and continued independently; the already-doomed aggregate was then
+stopped and has no aggregate terminal. This is infrastructure diagnostic
+evidence, not a RingWorld regression or support evidence. The coordinator now
+also gives that exact exit-1, pre-launch, log-bound failure one cleanup and
+120-second retry. Compilation failures, arbitrary network/Gradle errors, and
+all gameplay/evidence failures remain non-retryable.
+
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its
