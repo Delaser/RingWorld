@@ -2182,6 +2182,15 @@ evidence remain untouched; required world identities are already hash-bound in
 the terminal record. It has no upload, deployment, tag, or live-server
 interface.
 
+Every fixture also has one narrowly classified infrastructure retry. It is
+scheduled only when the child reports the exact pre-game readiness failure
+`timed out waiting for marker 'Done ('` with a non-empty claims map whose
+values are all still false. The failed attempt is cleaned first, the host gets
+a recorded 120-second cooldown, and the repeated command receives a new child
+run ID while both attempts remain in the aggregate report. Gameplay or test
+assertions, crashes, evidence failures, generic command timeouts, and an
+already-retried readiness timeout remain immediate failures.
+
 Aggregate `20260826T035240Z-55d20f097651` is retained as fail-closed
 diagnostic evidence: 44 PASS, three FAIL, thirteen INCOMPLETE, terminal
 SHA-256

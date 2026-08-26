@@ -55,6 +55,11 @@ EXACT_CANDIDATE_FIXTURES = {"worldgen", "atlas-recovery", "multiplayer", "raid",
                             "production-lifecycle", "production-render"}
 DEFAULT_MULTIPLAYER_COOLDOWN_SECONDS = 120
 MAXIMUM_MULTIPLAYER_COOLDOWN_SECONDS = 600
+INFRASTRUCTURE_RETRY_LIMIT = 1
+INFRASTRUCTURE_RETRY_COOLDOWN_SECONDS = 120
+RETRYABLE_INFRASTRUCTURE_REASONS = frozenset({
+    "timed out waiting for marker 'Done ('",
+})
 MAXIMUM_RETAINED_ARTIFACT_BYTES = 512 * 1024 * 1024
 MAXIMUM_RETAINED_ARTIFACT_FILE_BYTES = 256 * 1024 * 1024
 RETAINED_ARTIFACT_SUFFIXES = {".log", ".png"}
@@ -233,6 +238,23 @@ def _cooldown(seconds: int, *, sleeper: Any = time.sleep) -> None:
         remaining -= interval
 
 
+def _retryable_infrastructure_failure(verdict: str | None, reason: Any,
+                                      payload: Mapping[str, Any]) -> bool:
+    """Return true only for a recognized failure before a fixture made any claim."""
+    if (verdict != "FAIL" or not isinstance(reason, str)
+            or reason not in RETRYABLE_INFRASTRUCTURE_REASONS):
+        return False
+    claims = payload.get("claims")
+    return (isinstance(claims, Mapping) and bool(claims)
+            and all(value is False for value in claims.values()))
+
+
+def _schedule_infrastructure_retry(attempt_number: int, verdict: str | None,
+                                   reason: Any, payload: Mapping[str, Any]) -> bool:
+    return (1 <= attempt_number <= INFRASTRUCTURE_RETRY_LIMIT
+            and _retryable_infrastructure_failure(verdict, reason, payload))
+
+
 def _terminal_paths(root: Path, cell: Mapping[str, Any], fixture: str,
                     payload: Mapping[str, Any]) -> tuple[Path, ...]:
     direct = payload.get("terminal_evidence")
@@ -368,6 +390,7 @@ def plan(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict
     observation = _world_observation(source)
     inventory = _world_inventory(source)
     _cooldown(arguments.multiplayer_cooldown_seconds, sleeper=lambda _seconds: None)
+    _cooldown(INFRASTRUCTURE_RETRY_COOLDOWN_SECONDS, sleeper=lambda _seconds: None)
     for cell in cells:
         _validate_source_version(observation.get("minecraft_version"),
                                  str(cell["minecraft"]["version"]))
@@ -382,6 +405,9 @@ def plan(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict
         "quick_run_id": arguments.quick_run_id, "cells": [cell["id"] for cell in cells],
         "fixtures": list(fixtures), "complete_matrix_selection": complete,
         "multiplayer_cooldown_seconds": arguments.multiplayer_cooldown_seconds,
+        "infrastructure_retry_limit": INFRASTRUCTURE_RETRY_LIMIT,
+        "infrastructure_retry_cooldown_seconds": INFRASTRUCTURE_RETRY_COOLDOWN_SECONDS,
+        "retryable_infrastructure_reasons": sorted(RETRYABLE_INFRASTRUCTURE_REASONS),
         "production_world": {"path": str(source), "inventory": inventory, **observation},
         "commands": commands,
     }
@@ -423,38 +449,63 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
                             if fixture in {"multiplayer", "raid"} else 0)
         timeout = 7_500 if fixture == "production-render" else 3_900
         record = CommandRecord(PhaseName.INPUT_PLAN, tuple(item["argv"]), root, (), timeout)
-        child = execute_command(record, paths, ordinal=ordinal)
-        ordinal += 1
-        try:
-            payload = _last_json(Path(child.stdout_log))
-        except NightlyMatrixError as error:
-            payload = {}
-            if child.verdict is Verdict.PASS:
-                child_reason = str(error)
-            else:
-                child_reason = child.reason
-        else:
-            child_reason = child.reason or payload.get("reason")
-        verdict = payload.get("verdict") if child.verdict is Verdict.PASS else "FAIL"
-        terminals: tuple[dict[str, str], ...] = ()
-        retained_artifacts: tuple[dict[str, Any], ...] = ()
-        if verdict == "PASS":
+        attempts: list[dict[str, Any]] = []
+        for attempt_number in range(1, INFRASTRUCTURE_RETRY_LIMIT + 2):
+            child = execute_command(record, paths, ordinal=ordinal)
+            ordinal += 1
             try:
-                identity = expected[cell_id]
-                terminals = _verify_terminals(
-                    root, by_id[cell_id], fixture, payload, provenance.commit,
-                    identity["frozen_candidate_sha256"], identity["quick_terminal_sha256"])
-                retained_artifacts = _retain_terminal_artifacts(
-                    root, by_id[cell_id], payload, terminals)
+                payload = _last_json(Path(child.stdout_log))
             except NightlyMatrixError as error:
-                verdict, child_reason = "FAIL", str(error)
-        removed: tuple[str, ...] = ()
-        if payload.get("run_id") or payload.get("terminal_evidence"):
-            try:
-                removed = _cleanup_disposable_child_state(
-                    root, by_id[cell_id], payload)
-            except (NightlyMatrixError, OSError) as error:
-                verdict, child_reason = "FAIL", f"disposable child cleanup failed: {error}"
+                payload = {}
+                if child.verdict is Verdict.PASS:
+                    child_reason = str(error)
+                else:
+                    child_reason = child.reason
+            else:
+                child_reason = child.reason or payload.get("reason")
+            verdict = payload.get("verdict") if child.verdict is Verdict.PASS else "FAIL"
+            terminals: tuple[dict[str, str], ...] = ()
+            retained_artifacts: tuple[dict[str, Any], ...] = ()
+            if verdict == "PASS":
+                try:
+                    identity = expected[cell_id]
+                    terminals = _verify_terminals(
+                        root, by_id[cell_id], fixture, payload, provenance.commit,
+                        identity["frozen_candidate_sha256"], identity["quick_terminal_sha256"])
+                    retained_artifacts = _retain_terminal_artifacts(
+                        root, by_id[cell_id], payload, terminals)
+                except NightlyMatrixError as error:
+                    verdict, child_reason = "FAIL", str(error)
+            removed: tuple[str, ...] = ()
+            if payload.get("run_id") or payload.get("terminal_evidence"):
+                try:
+                    removed = _cleanup_disposable_child_state(
+                        root, by_id[cell_id], payload)
+                except (NightlyMatrixError, OSError) as error:
+                    verdict, child_reason = "FAIL", f"disposable child cleanup failed: {error}"
+            retryable = _retryable_infrastructure_failure(verdict, child_reason, payload)
+            retry_scheduled = _schedule_infrastructure_retry(
+                attempt_number, verdict, child_reason, payload)
+            attempts.append({
+                "attempt": attempt_number, "verdict": verdict or "FAIL",
+                "reason": child_reason,
+                "retryable_infrastructure_failure": retryable,
+                "retry_scheduled": retry_scheduled,
+                "child_result_reference": {
+                    "run_id": payload.get("run_id"),
+                    "terminal_evidence": payload.get("terminal_evidence"),
+                },
+                "terminal_evidence": list(terminals),
+                "retained_artifacts": list(retained_artifacts),
+                "discarded_disposable_paths": list(removed),
+                "command": {"argv": list(child.argv), "exit_code": child.return_code,
+                            "started_at": child.started_at_utc,
+                            "elapsed_seconds": child.elapsed_seconds,
+                            "stdout": child.stdout_log, "stderr": child.stderr_log},
+            })
+            if not retry_scheduled:
+                break
+            _cooldown(INFRASTRUCTURE_RETRY_COOLDOWN_SECONDS)
         if verdict != "PASS":
             blocked_cells.add(cell_id)
         results.append({
@@ -463,6 +514,9 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
             "expected_identity": expected[cell_id], "terminal_evidence": terminals,
             "retained_artifacts": list(retained_artifacts),
             "discarded_disposable_paths": list(removed),
+            "attempt_count": len(attempts),
+            "infrastructure_retry_count": len(attempts) - 1,
+            "attempts": attempts,
             "pre_fixture_cooldown_seconds": 0,
             "post_prepare_settle_seconds": (cooldown_seconds
                                              if fixture == "multiplayer" else 0),

@@ -629,6 +629,13 @@ continues independent cells, and writes one aggregate terminal report. Cell or
 fixture subsets are useful diagnostics but remain `INCOMPLETE` even when every
 selected command passes.
 
+The coordinator permits one automatic retry per command only for the exact
+pre-game server `Done (` readiness timeout with no fixture claim yet true. It
+cleans the failed child state, cools down for 120 seconds, gives the retry a new
+child run ID, and records both attempts. All assertions, crashes, evidence
+validation failures, unclassified timeouts, and second failures still fail
+closed without retry.
+
 The operator entry point is intentionally explicit:
 
 ```sh

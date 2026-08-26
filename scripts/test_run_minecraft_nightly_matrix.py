@@ -18,7 +18,8 @@ if str(SCRIPTS) not in sys.path:
 
 from run_minecraft_nightly_matrix import (  # noqa: E402
     FIXTURES, NightlyMatrixError, _child_argv, _cleanup_disposable_child_state, _cooldown,
-    _retain_terminal_artifacts, _selected_fixtures,
+    _retain_terminal_artifacts, _retryable_infrastructure_failure,
+    _schedule_infrastructure_retry, _selected_fixtures,
     _verify_terminals,
 )
 
@@ -184,6 +185,26 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
         self.assertEqual([5, 5, 2], intervals)
         with self.assertRaisesRegex(NightlyMatrixError, "bounded"):
             _cooldown(601, sleeper=intervals.append)
+
+    def test_retry_is_narrowly_limited_to_pre_claim_server_startup_timeout(self) -> None:
+        startup_timeout = "timed out waiting for marker 'Done ('"
+        untouched_claims = {"dedicated_server": False, "two_real_clients": False}
+        self.assertTrue(_retryable_infrastructure_failure(
+            "FAIL", startup_timeout, {"claims": untouched_claims}))
+        self.assertFalse(_retryable_infrastructure_failure(
+            "PASS", startup_timeout, {"claims": untouched_claims}))
+        self.assertFalse(_retryable_infrastructure_failure(
+            "FAIL", startup_timeout, {"claims": {"dedicated_server": True}}))
+        self.assertFalse(_retryable_infrastructure_failure(
+            "FAIL", startup_timeout, {}))
+        self.assertFalse(_retryable_infrastructure_failure(
+            "FAIL", [startup_timeout], {"claims": untouched_claims}))
+        self.assertFalse(_retryable_infrastructure_failure(
+            "FAIL", "raid terminal marker is missing", {"claims": untouched_claims}))
+        self.assertTrue(_schedule_infrastructure_retry(
+            1, "FAIL", startup_timeout, {"claims": untouched_claims}))
+        self.assertFalse(_schedule_infrastructure_retry(
+            2, "FAIL", startup_timeout, {"claims": untouched_claims}))
 
 
 if __name__ == "__main__":

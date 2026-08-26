@@ -436,6 +436,13 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   that tree into `evidence/retained-artifacts`, rehash it, and record the
   retained path in the aggregate. Do not claim captures survive cleanup merely
   because their former paths and hashes remain in a terminal record.
+  Every fixture is eligible for exactly one automatic retry only when its
+  immutable child result reports the exact pre-game server-readiness timeout
+  `timed out waiting for marker 'Done ('` and every recorded claim is still
+  false. The coordinator cleans the failed attempt, waits 120 seconds, records
+  both attempts, and reruns the same command. Never broaden this to gameplay
+  assertions, crashes, malformed or missing evidence, arbitrary command
+  timeouts, or a second retry; those remain immediate fail-closed results.
 - The Fabric and NeoForge multiplayer/raid qualification server and client
   runs cap each game JVM at 2 GiB (`-Xms256m -Xmx2g`). Keep those caps
   loader-symmetric: two default 4 GiB client heaps plus a server can exhaust a

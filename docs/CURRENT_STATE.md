@@ -352,7 +352,21 @@ seam, combat, interaction, placement, vehicle, reconnect, bed/death,
 Nether/End, navigation, weather, and alias block-entity recovery matrix. Its
 terminal SHA-256 is
 `d29533d8dfaf28b19e0a8f135c8e84fd755e0fd24ecf4cb518ec5655d1c6cde3`.
-The final complete aggregate remains pending.
+Complete aggregate `20260826T102251Z-9ebec5b424d2` then ran all independent
+cells to terminal evidence and recorded 55 PASS, one FAIL, and four downstream
+INCOMPLETE results. Aggregate terminal SHA-256 is
+`4a1f1e3baa103c1a73d38fc004fd4aad3691a25f2689a92474bf82068b949ae0`.
+Only NeoForge 26.1 raid failed: its arm server loaded NeoForge, RingWorld, and
+MixinExtras but never emitted Minecraft's `Done (` marker within the bounded
+startup wait. It produced no crash or gameplay assertion, while the same cell
+has three earlier raid passes and both later NeoForge patches passed in this
+aggregate. The four later NeoForge 26.1 fixtures were therefore skipped. The
+coordinator now gives every command exactly one automatic retry only for that
+exact pre-game timeout when every recorded claim remains false; it cleans the
+failed child, waits 120 seconds, and records both attempts. No assertion,
+crash, evidence failure, generic timeout, or second failure is retried. A
+targeted retry plus the four skipped fixtures and a final clean aggregate
+remain required.
 
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
