@@ -2258,6 +2258,17 @@ each disposable client options file after asset preparation and before the
 host-settle window. This is harness resource isolation, not runtime support
 evidence or a normal-client setting change.
 
+The corrected 30 FPS targeted Fabric 26.1 run
+`20260826T101522Z-6ec8d904431b` passes the full frozen-candidate multiplayer
+matrix. It cleared the readiness barrier, completed both natural seam
+directions, combat, stateful interaction and bidirectional placement,
+vehicle/reconnect, bed/death, physical Nether and End travel, multi-lap portal
+routing, hostile navigation, seam weather, and alias block-entity recovery.
+Terminal SHA-256 is
+`d29533d8dfaf28b19e0a8f135c8e84fd755e0fd24ecf4cb518ec5655d1c6cde3`.
+The next aggregate records `automated_client_max_fps: 30` explicitly in every
+multiplayer child terminal.
+
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
 or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge

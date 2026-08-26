@@ -589,6 +589,7 @@ def run(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict[
             "loader": prepared.cell["loader"], "minecraft": prepared.cell["minecraft"]["version"],
             "run_id": run_id, "verdict": verdict.value, "reason": reason,
             "post_prepare_settle_seconds": arguments.post_prepare_settle_seconds,
+            "automated_client_max_fps": AUTOMATED_CLIENT_MAX_FPS,
             "source": prepared.source_provenance,
             "quick_evidence": {
                 "path": str(prepared.quick_terminal_evidence.path),

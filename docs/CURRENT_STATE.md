@@ -334,7 +334,7 @@ there is no aggregate terminal and no support claim. Fabric and NeoForge now
 cap concurrent multiplayer/raid game JVMs at 2 GiB, and multiplayer detects an
 exited server immediately. The coordinator also preserves terminal-hash-bound
 PNG/log artifacts under immutable evidence before deleting heavy child run
-trees. A targeted multiplayer rerun and a clean full aggregate remain required.
+trees. A clean full aggregate remains required.
 
 The first capped-heap targeted rerun, Fabric 26.1
 `20260826T100752Z-3428554196a4`, confirmed all three game processes received
@@ -346,8 +346,13 @@ server delay and halted before gameplay. Terminal SHA-256 is
 `e5a9a63f4ba2a6a1c49936bef7dba2e37af8925e5b3e5caee47e80a5789cc70d`.
 The operator now writes `maxFps:30` for both disposable clients before launch,
 preserving any other existing options. This qualification-only cap does not
-change a distributed jar or normal player settings. A second targeted rerun is
-required before restarting the aggregate.
+change a distributed jar or normal player settings. Corrected targeted Fabric
+26.1 run `20260826T101522Z-6ec8d904431b` then passed the complete two-client
+seam, combat, interaction, placement, vehicle, reconnect, bed/death,
+Nether/End, navigation, weather, and alias block-entity recovery matrix. Its
+terminal SHA-256 is
+`d29533d8dfaf28b19e0a8f135c8e84fd755e0fd24ecf4cb518ec5655d1c6cde3`.
+The final complete aggregate remains pending.
 
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was

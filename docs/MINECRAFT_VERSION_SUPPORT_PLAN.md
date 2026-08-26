@@ -1124,6 +1124,9 @@ Earlier sections remain the detailed design and evidence record.
   disposable multiplayer render loops at 30 FPS, fail fast when their server
   exits, and retain hash-verified PNG/log artifacts before deleting each heavy
   runtime tree.
+- [x] Pass the corrected Fabric 26.1 targeted multiplayer regression with the
+  2 GiB game heaps and 30 FPS disposable-client cap
+  (`20260826T101522Z-6ec8d904431b`).
 - [ ] Pass one clean complete 60-command aggregate from that same commit.
 - [ ] Bind every nightly result to its quick record, frozen jar SHA-256, source
   commit, runtime version, and immutable evidence hashes.
