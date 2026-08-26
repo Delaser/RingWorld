@@ -1109,7 +1109,7 @@ Earlier sections remain the detailed design and evidence record.
 - [x] Run the raid fixture on all six cells.
 - [x] Run production lifecycle qualification on all six cells: dimension
   travel, save, disconnect, client-state cleanup, and reopen.
-- [ ] Run production rendering on all six cells: projection, natural seam
+- [x] Run production rendering on all six cells: projection, natural seam
   motion, Atlas handoff, rims, sky, weather, and frame observations.
 - [ ] Bind every nightly result to its quick record, frozen jar SHA-256, source
   commit, runtime version, and immutable evidence hashes.

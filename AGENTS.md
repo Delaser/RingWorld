@@ -411,6 +411,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   disposable copies, captures tangent/handoff/radial projection at noon,
   dusk, night, and rain, then runs natural seam/both-rim visual parity and
   records all frame logs and PNG hashes. Run one graphical cell at a time.
+  The formal six-cell matrix passes from clean pushed runner commit `425cbcf`;
+  exact run IDs and terminal hashes are recorded in `docs/TESTING.md`.
 - `scripts/run_minecraft_nightly_matrix.py`: dry-run-first Phase 4 coordinator
   for the fixed ordered fixture sequence. With `--execute` it invokes each
   existing isolated operator serially, stops later fixtures in a failed cell,

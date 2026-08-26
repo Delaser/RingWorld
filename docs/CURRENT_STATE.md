@@ -238,6 +238,15 @@ reopen with the unchanged frozen jar for its loader. The shared source is a
 when its disposable Loom cache exhausted local disk; the preserved failure is
 not counted, and the fresh rerun passed after only disposable caches were
 removed.
+The matching exact-frozen production Atlas/render slice also passes all six
+cells from clean pushed runner commit `425cbcf`. Fabric run IDs are
+`20260825T234304Z-5ab300e78cc3`, `20260825T234729Z-80e30d8296fc`, and
+`20260825T235159Z-fe8322982a43`; NeoForge run IDs are
+`20260825T235644Z-7c6a194b372d`, `20260826T000338Z-d0fd305a1bde`, and
+`20260826T001058Z-433b22bc0ff0`. Every cell opened fresh copies of the same
+reviewed production source and passed noon, dusk, night, rain, tangent,
+handoff, radial-up, natural seam, seam join, both textured rims, capture
+hashing, and frame-log validation with its loader's unchanged frozen jar.
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its

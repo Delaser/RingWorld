@@ -2141,6 +2141,22 @@ parity; requires all twelve projection and four natural-seam/rim PNGs; hashes
 each per-mode game log; and requires tangent, handoff, radial-up, and seam
 motion frame metrics. It does not claim authenticated packaged-client proof.
 
+The formal six-cell fixture-12 matrix passed from clean pushed runner commit
+`425cbcf` with quick run `20260823T130347Z-a493af8d7261`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260825T234304Z-5ab300e78cc3` | `55d4cebdcd35a38a255c18dbd4a22368bf7eb3da0600f6b778de58ddb35c6ed1` |
+| 26.1.1 Fabric | `20260825T234729Z-80e30d8296fc` | `fac0cf968365922c0716946c001ed0f1bab6a5f12bad3fc3b40b558f3ed7f5b3` |
+| 26.1.2 Fabric | `20260825T235159Z-fe8322982a43` | `52230a038d9e30e2589b976d7ce126c0d02156d74421de62dc2e8701e90736d1` |
+| 26.1 NeoForge | `20260825T235644Z-7c6a194b372d` | `ff81a44d48f5d07d5979d50dcbcacea9241b6292734de3106068b7252ea4cf42` |
+| 26.1.1 NeoForge | `20260826T000338Z-d0fd305a1bde` | `1484dab90dbdf4bfddb73775f92e45057f7d810b1dcdbf05a6d18715b18d9058` |
+| 26.1.2 NeoForge | `20260826T001058Z-433b22bc0ff0` | `7c558f00ad46b4e8b4ec861f464e8f1be80a119651a8b225ed9857c0fd398af7` |
+
+All six records bind the reviewed source inventory and Atlas, exact quick
+terminal, unchanged frozen candidate hash, selected patch/loader dependencies,
+mode logs, sixteen PNGs, frame evidence, and immutable terminal evidence.
+
 Plan the whole ordered nightly matrix without writing runtime state:
 
 ```sh
