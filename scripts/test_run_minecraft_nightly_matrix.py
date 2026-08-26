@@ -16,7 +16,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from run_minecraft_nightly_matrix import (  # noqa: E402
-    FIXTURES, NightlyMatrixError, _child_argv, _cleanup_disposable_child_state,
+    FIXTURES, NightlyMatrixError, _child_argv, _cleanup_disposable_child_state, _cooldown,
     _selected_fixtures,
     _verify_terminals,
 )
@@ -100,10 +100,10 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             removed = _cleanup_disposable_child_state(
                 root, cell, {"run_id": run_id})
 
-            self.assertEqual(3, len(removed))
+            self.assertEqual(4, len(removed))
             self.assertTrue(evidence.is_file())
-            self.assertTrue(runtime.is_file())
-            for name in ("gradle-home", "cache", "build"):
+            self.assertFalse(runtime.exists())
+            for name in ("gradle-home", "cache", "build", "run"):
                 self.assertFalse((cell_root / name).exists())
 
     def test_cleanup_rejects_escaping_run_id(self) -> None:
@@ -114,6 +114,13 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             with self.assertRaisesRegex(NightlyMatrixError, "escapes"):
                 _cleanup_disposable_child_state(
                     root, cell, {"run_id": "../../../../../../outside"})
+
+    def test_cooldown_is_bounded_and_uses_short_intervals(self) -> None:
+        intervals: list[int] = []
+        _cooldown(12, sleeper=intervals.append)
+        self.assertEqual([5, 5, 2], intervals)
+        with self.assertRaisesRegex(NightlyMatrixError, "bounded"):
+            _cooldown(601, sleeper=intervals.append)
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import sys
+import time
 from typing import Any, Mapping, Sequence
 
 from minecraft_qualification_executor import (
@@ -51,6 +52,8 @@ GRADLE_FIXTURES = {"creation-ui", "atlas-ui", "multiplayer", "raid", "map-compas
 LOOM_SEED_FIXTURES = {"multiplayer", "raid", "production-lifecycle", "production-render"}
 EXACT_CANDIDATE_FIXTURES = {"worldgen", "atlas-recovery", "multiplayer", "raid",
                             "production-lifecycle", "production-render"}
+DEFAULT_MULTIPLAYER_COOLDOWN_SECONDS = 120
+MAXIMUM_MULTIPLAYER_COOLDOWN_SECONDS = 600
 EVIDENCE_DIRECTORY = {
     "creation-ui": "01-creation-settings-ui",
     "worldgen": "02-worldgen-seam-structures",
@@ -79,6 +82,8 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--gradle-dependency-cache")
     result.add_argument("--gradle-distribution-zip")
     result.add_argument("--gradle-loom-cache")
+    result.add_argument("--multiplayer-cooldown-seconds", type=int,
+                        default=DEFAULT_MULTIPLAYER_COOLDOWN_SECONDS)
     result.add_argument("--execute", action="store_true")
     return result
 
@@ -184,12 +189,23 @@ def _cleanup_disposable_child_state(root: Path, cell: Mapping[str, Any],
     if cell_root.is_symlink():
         raise NightlyMatrixError("nightly child cell root is a symlink")
     removed = []
-    for name in ("gradle-home", "cache", "build"):
+    for name in ("gradle-home", "cache", "build", "run"):
         target = cell_root / name
         if target.exists() or target.is_symlink():
             _delete_disposable_tree(target)
             removed.append(str(target))
     return tuple(removed)
+
+
+def _cooldown(seconds: int, *, sleeper: Any = time.sleep) -> None:
+    if not isinstance(seconds, int) or isinstance(seconds, bool) or not (
+            0 <= seconds <= MAXIMUM_MULTIPLAYER_COOLDOWN_SECONDS):
+        raise NightlyMatrixError("multiplayer cooldown is outside the bounded range")
+    remaining = seconds
+    while remaining:
+        interval = min(5, remaining)
+        sleeper(interval)
+        remaining -= interval
 
 
 def _terminal_paths(root: Path, cell: Mapping[str, Any], fixture: str,
@@ -265,6 +281,7 @@ def plan(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict
         raise NightlyMatrixError("coordinator production world must be below dist/qualification")
     observation = _world_observation(source)
     inventory = _world_inventory(source)
+    _cooldown(arguments.multiplayer_cooldown_seconds, sleeper=lambda _seconds: None)
     for cell in cells:
         _validate_source_version(observation.get("minecraft_version"),
                                  str(cell["minecraft"]["version"]))
@@ -278,6 +295,7 @@ def plan(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict
         "format": 1, "mode": "EXECUTE" if arguments.execute else "DRY_RUN",
         "quick_run_id": arguments.quick_run_id, "cells": [cell["id"] for cell in cells],
         "fixtures": list(fixtures), "complete_matrix_selection": complete,
+        "multiplayer_cooldown_seconds": arguments.multiplayer_cooldown_seconds,
         "production_world": {"path": str(source), "inventory": inventory, **observation},
         "commands": commands,
     }
@@ -315,6 +333,9 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
             continue
         paths = QualificationPaths.from_cell(root, by_id[cell_id], run_id)
         create_contained_directories(paths)
+        cooldown_seconds = (int(planned["multiplayer_cooldown_seconds"])
+                            if fixture == "multiplayer" else 0)
+        _cooldown(cooldown_seconds)
         timeout = 7_500 if fixture == "production-render" else 3_900
         record = CommandRecord(PhaseName.INPUT_PLAN, tuple(item["argv"]), root, (), timeout)
         child = execute_command(record, paths, ordinal=ordinal)
@@ -353,6 +374,7 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
             "reason": child_reason, "child": payload,
             "expected_identity": expected[cell_id], "terminal_evidence": terminals,
             "discarded_disposable_paths": list(removed),
+            "pre_fixture_cooldown_seconds": cooldown_seconds,
             "command": {"argv": list(child.argv), "exit_code": child.return_code,
                         "started_at": child.started_at_utc, "elapsed_seconds": child.elapsed_seconds,
                         "stdout": child.stdout_log, "stderr": child.stderr_log},

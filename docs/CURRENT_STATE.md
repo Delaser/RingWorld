@@ -247,6 +247,21 @@ cells from clean pushed runner commit `425cbcf`. Fabric run IDs are
 reviewed production source and passed noon, dusk, night, rain, tangent,
 handoff, radial-up, natural seam, seam join, both textured rims, capture
 hashing, and frame-log validation with its loader's unchanged frozen jar.
+The first complete unattended coordinator attempt
+`20260826T002122Z-76d2f96bc705` correctly failed closed rather than claiming
+the matrix. It recorded 48 PASS, two FAIL, and ten downstream INCOMPLETE
+results; aggregate terminal SHA-256 is
+`ff91c891dabfd3c9c64950f0eb4abb5f67137e55e8465dacab6ec3618db46f81`.
+Both failures were the strict pre-seam multiplayer readiness barrier on the
+last Fabric and NeoForge cells after several hours of continuous graphical
+work, before any topology assertion. Fabric observed 691 ticks and reached 69
+consecutive on-time ticks; NeoForge observed 485 and reached one. Their
+servers stopped normally, but disconnected clients required bounded operator
+termination rather than waiting for the outer 30-minute timeout. The
+coordinator now takes and records a 120-second quiescence window before each
+multiplayer fixture and discards validated child runtime/caches while
+retaining logs, captures, and immutable evidence. A fresh full rerun is still
+required; this failed aggregate is regression evidence, not support evidence.
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its
