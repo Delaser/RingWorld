@@ -2278,6 +2278,23 @@ Terminal SHA-256 is
 The next aggregate records `automated_client_max_fps: 30` explicitly in every
 multiplayer child terminal.
 
+Complete aggregate `20260826T102251Z-9ebec5b424d2` recorded 55 PASS, one FAIL,
+and four downstream INCOMPLETE results. NeoForge 26.1 raid alone timed out
+waiting for the pre-game server `Done (` marker before any claim; its four
+later fixtures were skipped. Aggregate terminal SHA-256 is
+`4a1f1e3baa103c1a73d38fc004fd4aad3691a25f2689a92474bf82068b949ae0`.
+
+After the narrowly classified one-retry coordinator change, targeted
+coordinator run `20260826T145215Z-b593bba25512` on pushed commit `aa64b3f`
+passed the NeoForge 26.1 raid, map/compass, production lifecycle, curved-object,
+and production-render fixtures on their first attempts. Their child run IDs
+and terminal hashes are recorded in `CURRENT_STATE.md`. Because this was an
+explicit subset, the aggregate correctly reports `INCOMPLETE`; terminal
+SHA-256 is
+`2a65eb626faf2b1f8496d361b814cb48ab3eb6a69bd6c0ad9b6218b14ff2d1ef`.
+No retry was consumed. A clean complete 60-command aggregate remains the final
+nightly-matrix gate.
+
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
 or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge

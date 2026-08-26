@@ -1134,6 +1134,9 @@ Earlier sections remain the detailed design and evidence record.
 - [x] Pass the corrected Fabric 26.1 targeted multiplayer regression with the
   2 GiB game heaps and 30 FPS disposable-client cap
   (`20260826T101522Z-6ec8d904431b`).
+- [x] Add one fail-closed retry for only an unclaimed pre-game `Done (` timeout,
+  and pass the failed NeoForge 26.1 raid plus its four formerly skipped
+  fixtures on their first attempts (`20260826T145215Z-b593bba25512`).
 - [ ] Pass one clean complete 60-command aggregate from that same commit.
 - [ ] Bind every nightly result to its quick record, frozen jar SHA-256, source
   commit, runtime version, and immutable evidence hashes.

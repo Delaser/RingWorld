@@ -443,6 +443,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   both attempts, and reruns the same command. Never broaden this to gameplay
   assertions, crashes, malformed or missing evidence, arbitrary command
   timeouts, or a second retry; those remain immediate fail-closed results.
+  Targeted coordinator run `20260826T145215Z-b593bba25512` on pushed commit
+  `aa64b3f` passes the previously failed NeoForge 26.1 raid and all four
+  formerly skipped fixtures without consuming the retry. It is intentionally
+  `INCOMPLETE` because it is a subset; one clean complete aggregate remains.
 - The Fabric and NeoForge multiplayer/raid qualification server and client
   runs cap each game JVM at 2 GiB (`-Xms256m -Xmx2g`). Keep those caps
   loader-symmetric: two default 4 GiB client heaps plus a server can exhaust a

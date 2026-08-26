@@ -365,8 +365,27 @@ coordinator now gives every command exactly one automatic retry only for that
 exact pre-game timeout when every recorded claim remains false; it cleans the
 failed child, waits 120 seconds, and records both attempts. No assertion,
 crash, evidence failure, generic timeout, or second failure is retried. A
-targeted retry plus the four skipped fixtures and a final clean aggregate
-remain required.
+targeted five-fixture follow-up on pushed commit `aa64b3f`, coordinator run
+`20260826T145215Z-b593bba25512`, then passed the failed NeoForge 26.1 raid and
+all four formerly skipped fixtures on their first attempts. The child run IDs
+and terminal SHA-256 values were:
+
+- raid `20260826T145215Z-9652fee324b2`,
+  `c3c9c8fcb92b92d7551a6b7ef89dcf405908410fc5e16e362435906e669c5b06`;
+- map/compass `20260826T145948Z-be0d10f5b156`,
+  `cb9e5885cf508cc5ff77818fa444f9453224e5aa5a20c0b0eedd4abf00aea371`;
+- production lifecycle `20260826T150329Z-47e9bc914f01`,
+  `f998e84ad1a319b3c2e3cc1ece021ff3a3c472158f645b468ed9b23df722ad1a`;
+- curved objects `20260826T150619Z-0c233074d365`,
+  `436d4c26a0b8b89c4a5f097e74405754e50b12885c5b45000ff49c3c87899cf8`;
+- production rendering `20260826T150920Z-6cb83986ee05`,
+  `8924c1f0f81d08e4f11e96a16cae2ce90ed3beff180159490aab8302073d7b0b`.
+
+The partial coordinator correctly remains `INCOMPLETE`; its terminal SHA-256
+is `2a65eb626faf2b1f8496d361b814cb48ab3eb6a69bd6c0ad9b6218b14ff2d1ef`.
+No automatic retry was consumed. Current evidence therefore covers every
+individual command, but one clean unified 60-command aggregate is still
+required before the broad-support claim.
 
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
