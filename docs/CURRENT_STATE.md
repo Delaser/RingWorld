@@ -4,8 +4,19 @@
 and nightly operators consume manifest-derived candidate groups, removing the
 fixed three-patch assumption. Both 26.2 loaders compile/package and pass 338
 unit cases each; the 26.1.2 dual-loader source regression also passes 338 each.
-These exploratory builds are not runtime qualification. No 26.2 runtime pass
-or publication is claimed; see [VERSION_QUALIFICATION.md](VERSION_QUALIFICATION.md).
+These exploratory builds are not frozen-candidate qualification. Both loader
+26.2 development clients now pass thirteen creation/settings captures and
+the eleven-capture Atlas UI fixture, including complete generation, live
+revisions, normal disconnect, and session teardown. Exact-candidate dedicated,
+multiplayer, production-render, and upgrade gates remain pending; no 26.2
+publication is claimed. See [VERSION_QUALIFICATION.md](VERSION_QUALIFICATION.md).
+
+Initial clean quick attempt `20260827T052449Z-59cbd51ae3cd` was deliberately
+stopped during NeoForge preparation after bytecode review found two invalid
+26.2 mixin targets (removed `WeirdScaledSampler` and relocated surface-noise
+suppliers). Its recorded `EXIT_143` is operator cancellation, not a game crash
+or compatibility verdict. No dedicated runtime ran in that attempt. The next
+candidate must include the version-owned replacement hooks.
 
 Last audited: 2026-08-13 against public `main` and the 1.0 release branch.
 The final

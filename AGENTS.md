@@ -9,6 +9,14 @@ implementation identified in the private development archive as
 `mc-1.21.11-final` at commit `2c98650`. That pre-public ref is provenance only
 and is intentionally not present in the clean public Git history.
 
+26.2 port checkpoint (2026-08-27): both loaders compile and pass the exploratory
+creation/settings and Atlas UI fixtures, including complete generation and
+clean session teardown. Version-owned source adapters preserve the 26.1 ABI;
+manifest-derived qualification/staging contracts support separate stable
+lines. These development runs are not frozen-candidate or release evidence.
+Follow `docs/VERSION_QUALIFICATION.md`; publication and live-server changes
+remain paused while the 26.2 quick/nightly/upgrade gates are incomplete.
+
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
 gate. The Fabric and NeoForge builds each pass all 338 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge

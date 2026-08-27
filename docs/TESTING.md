@@ -8,6 +8,15 @@ Java/resource inclusion without invoking Gradle. Exploratory 26.2 Fabric and
 NeoForge builds each pass 338 unit/parameterized cases; the 26.1.2 dual-loader
 regression also passes 338 each. Runtime qualification is still separate.
 
+The cached exploratory Fabric and NeoForge 26.2 development runs below
+`dist/qualification/ringworld/26.2/<loader>/20260827T050609Z-f449d4b66919/frozen-<loader>/run`
+pass `run-creation-ui` (thirteen captures each) and `run-atlas-ui` (eleven
+captures, complete 4,096-cell atlas, ordered live revisions, normal disconnect,
+and cleared client state). This is dirty-source debugging evidence, not an
+immutable quick/nightly verdict or a production-launcher claim. It exposed and
+verified fixes for duplicate inherited GPU bindings and moved worldgen/client
+readiness mixin targets. Formal qualification must use a fresh clean candidate.
+
 `test_minecraft_support_contract.py` checks historical 26.1.x identity,
 single-version 26.2 and synthetic future groups, exact candidate metadata,
 same-file coverage, missing loader rejection, and forbidden patch-range gaps.

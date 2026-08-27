@@ -14,6 +14,7 @@ from release_candidate_equivalence import (
     ReleaseEquivalenceError,
     verify_release_candidate_equivalence,
 )
+from minecraft_support_contract import LEGACY_CONTRACT, SupportContract
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,16 +23,16 @@ RELEASE_VERSION = "1.0.0+mc26.1.2"
 RELEASE_LABEL = "1.0"
 
 
-def _fabric_metadata(version: str) -> bytes:
+def _fabric_metadata(version: str, contract: SupportContract = LEGACY_CONTRACT) -> bytes:
     return json.dumps({
         "id": "ringworld",
         "version": version,
         "license": "MPL-2.0",
-        "depends": {"minecraft": ">=26.1 <=26.1.2"},
+        "depends": {"minecraft": contract.minecraft_range("fabric")},
     }, sort_keys=True).encode("utf-8")
 
 
-def _neoforge_metadata(version: str) -> bytes:
+def _neoforge_metadata(version: str, contract: SupportContract = LEGACY_CONTRACT) -> bytes:
     return "\n".join((
         'license="MPL-2.0"',
         "[[mods]]",
@@ -39,19 +40,21 @@ def _neoforge_metadata(version: str) -> bytes:
         f'version="{version}"',
         "[[dependencies.ringworld]]",
         'modId="neoforge"',
-        'versionRange="[26.1.0.19-beta,26.1.2.87]"',
+        f'versionRange="{contract.neoforge_range}"',
         "[[dependencies.ringworld]]",
         'modId="minecraft"',
-        'versionRange="[26.1,26.1.2]"',
+        f'versionRange="{contract.minecraft_range("neoforge")}"',
     )).encode("utf-8")
 
 
 def _entries(loader: str, *, release: bool, changed_class: bool = False,
-             added: bool = False, source: bool = False) -> dict[str, bytes]:
-    version = RELEASE_VERSION if release else "0.0.0-qualification+mc26.1"
-    label = RELEASE_LABEL if release else f"qualification-26.1-{loader}"
+             added: bool = False, source: bool = False,
+             contract: SupportContract = LEGACY_CONTRACT) -> dict[str, bytes]:
+    version = RELEASE_VERSION if release else contract.artifact_version
+    label = RELEASE_LABEL if release else contract.release_label(loader)
     metadata_name = "fabric.mod.json" if loader == "fabric" else "META-INF/neoforge.mods.toml"
-    metadata = _fabric_metadata(version) if loader == "fabric" else _neoforge_metadata(version)
+    metadata = (_fabric_metadata(version, contract) if loader == "fabric"
+                else _neoforge_metadata(version, contract))
     result = {
         "LICENSE-RINGWORLD.txt": LICENSE,
         "ringworld-build.properties": (
@@ -82,7 +85,8 @@ def _write_jar(path: Path, entries: dict[str, bytes], *, reverse: bool = False,
                 archive.writestr(duplicate, entries[duplicate])
 
 
-def _verify(qualification: Path, release: Path, loader: str) -> object:
+def _verify(qualification: Path, release: Path, loader: str,
+            contract: SupportContract = LEGACY_CONTRACT) -> object:
     return verify_release_candidate_equivalence(
         qualification,
         release,
@@ -90,6 +94,7 @@ def _verify(qualification: Path, release: Path, loader: str) -> object:
         expected_license=LICENSE,
         release_version=RELEASE_VERSION,
         release_label=RELEASE_LABEL,
+        contract=contract,
     )
 
 
@@ -152,7 +157,7 @@ class ReleaseCandidateEquivalenceTest(unittest.TestCase):
                 "depends": {"minecraft": ">=26.1 <=26.1.3"},
             }).encode("utf-8")
             _write_jar(release, bad_range)
-            with self.assertRaisesRegex(ReleaseEquivalenceError, "approved 26.1"):
+            with self.assertRaisesRegex(ReleaseEquivalenceError, "manifest-approved"):
                 _verify(qualification, release, "fabric")
 
     def test_rejects_unapproved_fabric_descriptor_and_build_property_changes(self) -> None:
@@ -193,6 +198,26 @@ class ReleaseCandidateEquivalenceTest(unittest.TestCase):
             _write_jar(release, _entries("neoforge", release=True))
             with self.assertRaises(ReleaseEquivalenceError):
                 _verify(qualification, release, "fabric")
+
+    def test_accepts_the_manifest_derived_26_2_range(self) -> None:
+        contract = SupportContract("26.2", ("26.2",), ("26.2.0.69",))
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            qualification, release = root / "qualification.jar", root / "release.jar"
+            version = "1.2.0+mc26.2"
+            label = "1.2"
+            _write_jar(qualification, _entries("fabric", release=False, contract=contract))
+            release_entries = _entries("fabric", release=True, contract=contract)
+            release_entries["ringworld-build.properties"] = (
+                f"artifactVersion={version}\nreleaseLabel={label}\n".encode()
+            )
+            release_entries["fabric.mod.json"] = _fabric_metadata(version, contract)
+            _write_jar(release, release_entries)
+            result = verify_release_candidate_equivalence(
+                qualification, release, loader="fabric", expected_license=LICENSE,
+                release_version=version, release_label=label, contract=contract,
+            )
+            self.assertEqual(version, result.release_version)
 
 
 if __name__ == "__main__":

@@ -26,11 +26,8 @@ from minecraft_frozen_candidate import (
     FrozenCandidateInspection,
     inspect_frozen_candidate,
 )
-from minecraft_qualification_ranges import (
-    APPROVED_FABRIC_MINECRAFT_RANGE,
-    APPROVED_NEOFORGE_LOADER_RANGE,
-    APPROVED_NEOFORGE_MINECRAFT_RANGE,
-)
+from minecraft_support_contract import LEGACY_CONTRACT, SupportContract, contract_from_manifest
+from run_minecraft_qualification import load_manifest
 from verify_distribution_license import (
     VerificationError,
     read_jar_metadata,
@@ -141,6 +138,7 @@ def _verify_release_metadata(
     expected_license: bytes,
     release_version: str,
     release_label: str,
+    contract: SupportContract,
 ) -> None:
     """Apply the existing license/loader verifier, then enforce public identity."""
     try:
@@ -169,8 +167,8 @@ def _verify_release_metadata(
             raise ReleaseEquivalenceError("release Fabric identity does not match approved version")
         dependencies = metadata.get("depends")
         if not isinstance(dependencies, Mapping) \
-                or dependencies.get("minecraft") != APPROVED_FABRIC_MINECRAFT_RANGE:
-            raise ReleaseEquivalenceError("release Fabric jar does not declare the approved 26.1–26.1.2 range")
+                or dependencies.get("minecraft") != contract.minecraft_range(loader):
+            raise ReleaseEquivalenceError("release Fabric jar does not declare the manifest-approved range")
         return
 
     mod = _neoforge_mod(metadata)
@@ -178,14 +176,14 @@ def _verify_release_metadata(
         raise ReleaseEquivalenceError("release NeoForge identity does not match approved version")
     minecraft = _neoforge_dependency(metadata, "minecraft")
     neoforge = _neoforge_dependency(metadata, "neoforge")
-    if minecraft.get("versionRange") != APPROVED_NEOFORGE_MINECRAFT_RANGE:
-        raise ReleaseEquivalenceError("release NeoForge jar does not declare the approved 26.1–26.1.2 range")
-    if neoforge.get("versionRange") != APPROVED_NEOFORGE_LOADER_RANGE:
+    if minecraft.get("versionRange") != contract.minecraft_range(loader):
+        raise ReleaseEquivalenceError("release NeoForge jar does not declare the manifest-approved Minecraft range")
+    if neoforge.get("versionRange") != contract.neoforge_range:
         raise ReleaseEquivalenceError("release NeoForge jar does not declare the approved loader range")
 
 
 def _expected_release_metadata(
-    qualification_metadata: Mapping[str, Any], loader: str, release_version: str
+    qualification_metadata: Mapping[str, Any], loader: str, release_version: str, contract: SupportContract,
 ) -> Mapping[str, Any]:
     """Copy frozen metadata and apply the only reviewed public substitutions."""
     expected = copy.deepcopy(qualification_metadata)
@@ -194,7 +192,7 @@ def _expected_release_metadata(
         if not isinstance(dependencies, dict):
             raise ReleaseEquivalenceError("qualification Fabric metadata has no depends object")
         expected["version"] = release_version
-        dependencies["minecraft"] = APPROVED_FABRIC_MINECRAFT_RANGE
+        dependencies["minecraft"] = contract.minecraft_range(loader)
         return expected
 
     mod = _neoforge_mod(expected)
@@ -202,8 +200,8 @@ def _expected_release_metadata(
     neoforge = _neoforge_dependency(expected, "neoforge")
     # These are the only TOML fields a public release is allowed to alter.
     mod["version"] = release_version
-    minecraft["versionRange"] = APPROVED_NEOFORGE_MINECRAFT_RANGE
-    neoforge["versionRange"] = APPROVED_NEOFORGE_LOADER_RANGE
+    minecraft["versionRange"] = contract.minecraft_range(loader)
+    neoforge["versionRange"] = contract.neoforge_range
     return expected
 
 
@@ -213,6 +211,7 @@ def _verify_semantic_metadata_transforms(
     loader: str,
     release_version: str,
     release_label: str,
+    contract: SupportContract,
 ) -> None:
     """Reject hidden descriptor/property changes inside the byte allowlist."""
     try:
@@ -228,7 +227,7 @@ def _verify_semantic_metadata_transforms(
     if qualification_loader != loader or release_loader != loader:
         raise ReleaseEquivalenceError("release-equivalence metadata loader mismatch")
 
-    if release_metadata != _expected_release_metadata(qualification_metadata, loader, release_version):
+    if release_metadata != _expected_release_metadata(qualification_metadata, loader, release_version, contract):
         raise ReleaseEquivalenceError(
             "release descriptor changes fields outside the approved public version transform"
         )
@@ -274,6 +273,7 @@ def verify_release_candidate_equivalence(
     expected_license: bytes,
     release_version: str,
     release_label: str,
+    contract: SupportContract = LEGACY_CONTRACT,
 ) -> ReleaseCandidateEquivalence:
     """Prove one release jar differs only in reviewed public version metadata.
 
@@ -285,7 +285,7 @@ def verify_release_candidate_equivalence(
         raise ReleaseEquivalenceError("loader must be fabric or neoforge")
     if not expected_license:
         raise ReleaseEquivalenceError("expected MPL license bytes are required")
-    if not release_version or not release_label:
+    if not isinstance(contract, SupportContract) or not release_version or not release_label:
         raise ReleaseEquivalenceError("release version and release label are required")
     qualification_jar, release_jar = Path(qualification_jar), Path(release_jar)
     _require_jar(qualification_jar, "qualification jar")
@@ -293,19 +293,19 @@ def verify_release_candidate_equivalence(
 
     # Verify each file independently before comparing them.  The frozen
     # inspection also proves the qualification jar carries the reviewed broad
-    # 26.1.x declaration, not merely a similarly-shaped descriptor.
+    # declaration from the selected candidate group, not merely a similarly-shaped descriptor.
     _archive_members(qualification_jar, "qualification jar")
     _archive_members(release_jar, "release jar")
     try:
         qualification_loader = verify_jar_path(qualification_jar, expected_license, loader=loader)
-        qualification = inspect_frozen_candidate(qualification_jar, loader)
+        qualification = inspect_frozen_candidate(qualification_jar, loader, contract=contract)
     except (OSError, zipfile.BadZipFile, VerificationError, FrozenCandidateError) as error:
         raise ReleaseEquivalenceError(f"qualification jar failed verification: {error}") from error
     if qualification_loader != loader or qualification.loader != loader:
         raise ReleaseEquivalenceError("qualification jar loader does not match requested loader")
-    _verify_release_metadata(release_jar, loader, expected_license, release_version, release_label)
+    _verify_release_metadata(release_jar, loader, expected_license, release_version, release_label, contract)
     _verify_semantic_metadata_transforms(
-        qualification_jar, release_jar, loader, release_version, release_label
+        qualification_jar, release_jar, loader, release_version, release_label, contract
     )
     _compare_members(qualification_jar, release_jar, loader)
     return ReleaseCandidateEquivalence(
@@ -329,8 +329,10 @@ def main() -> int:
     parser.add_argument("--release-version", required=True)
     parser.add_argument("--release-label", required=True)
     parser.add_argument("--license", type=Path, default=Path("LICENSE"))
+    parser.add_argument("--manifest", type=Path, default=Path("config/minecraft-version-matrix.json"))
     args = parser.parse_args()
     try:
+        contract = contract_from_manifest(load_manifest(args.manifest))
         result = verify_release_candidate_equivalence(
             args.qualification_jar,
             args.release_jar,
@@ -338,8 +340,9 @@ def main() -> int:
             expected_license=args.license.read_bytes(),
             release_version=args.release_version,
             release_label=args.release_label,
+            contract=contract,
         )
-    except (OSError, ReleaseEquivalenceError) as error:
+    except (OSError, ValueError, ReleaseEquivalenceError) as error:
         print(f"FAIL {error}", file=sys.stderr)
         return 1
     print(

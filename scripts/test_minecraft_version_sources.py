@@ -71,14 +71,51 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
             names,
         )
 
-    def test_gui_and_level_renderer_mixins_are_version_owned(self):
+    def test_version_specific_mixins_are_owned_and_have_audited_targets(self):
         for version in ("26.1", "26.2"):
-            root = VERSION_ROOT / version / "client/java/dev/ringworld/client/mixin"
-            self.assertTrue((root / "GuiMixin.java").is_file())
-            self.assertTrue((root / "LevelRendererMixin.java").is_file())
-        shared_root = ROOT / "src/client/java/dev/ringworld/client/mixin"
-        self.assertFalse((shared_root / "GuiMixin.java").exists())
-        self.assertFalse((shared_root / "LevelRendererMixin.java").exists())
+            client_root = VERSION_ROOT / version / "client/java/dev/ringworld/client/mixin"
+            self.assertTrue((client_root / "GuiMixin.java").is_file())
+            self.assertTrue((client_root / "LevelRendererMixin.java").is_file())
+            self.assertTrue((client_root / "ChunkBuilderBuiltChunkMixin.java").is_file())
+            main_root = VERSION_ROOT / version / "main/java/dev/ringworld/mixin"
+            self.assertTrue((main_root / "SurfaceNoiseThresholdMixin.java").is_file())
+            self.assertTrue((main_root / "DensityCoordinateConsumerMixin.java").is_file())
+        self.assertFalse((ROOT / "src/client/java/dev/ringworld/client/mixin/GuiMixin.java").exists())
+        self.assertFalse((ROOT / "src/client/java/dev/ringworld/client/mixin/LevelRendererMixin.java").exists())
+        self.assertFalse((ROOT / "src/client/java/dev/ringworld/client/mixin/ChunkBuilderBuiltChunkMixin.java").exists())
+        self.assertFalse((ROOT / "src/main/java/dev/ringworld/mixin/SurfaceNoiseThresholdMixin.java").exists())
+        self.assertFalse((ROOT / "src/main/java/dev/ringworld/mixin/DensityCoordinateConsumerMixin.java").exists())
+        chunk_region = (ROOT / "src/main/java/dev/ringworld/mixin/ChunkRegionMixin.java").read_text()
+        self.assertIn('method = {"markPosForPostprocessing", "markPosForPostProcessing"}', chunk_region)
+        self.assertIn(
+            "WorldGenRegion;getChunk(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/chunk/ChunkAccess;",
+            chunk_region,
+        )
+
+        threshold_26_1 = (VERSION_ROOT / "26.1/main/java/dev/ringworld/mixin/SurfaceNoiseThresholdMixin.java").read_text()
+        threshold_26_2 = (VERSION_ROOT / "26.2/main/java/dev/ringworld/mixin/SurfaceNoiseThresholdMixin.java").read_text()
+        self.assertIn("NoiseThresholdConditionSource$1NoiseThresholdCondition", threshold_26_1)
+        self.assertIn('method = "compute"', threshold_26_1)
+        self.assertIn("SurfaceRules$Context$1", threshold_26_2)
+        self.assertIn("SurfaceRules$Context$2", threshold_26_2)
+        self.assertIn('method = "getAsDouble"', threshold_26_2)
+
+        density_26_1 = (VERSION_ROOT / "26.1/main/java/dev/ringworld/mixin/DensityCoordinateConsumerMixin.java").read_text()
+        density_26_2 = (VERSION_ROOT / "26.2/main/java/dev/ringworld/mixin/DensityCoordinateConsumerMixin.java").read_text()
+        self.assertIn("DensityFunctions$WeirdScaledSampler", density_26_1)
+        self.assertNotIn("DensityFunctions$WeirdScaledSampler", density_26_2)
+
+        readiness = (VERSION_ROOT / "26.2/client/java/dev/ringworld/client/mixin/ChunkBuilderBuiltChunkMixin.java").read_text()
+        self.assertIn("@Mixin(SectionUpdateTracker.class)", readiness)
+        self.assertIn("geometry.isExteriorChunkZ(SectionPos.z(sectionPos))", readiness)
+        self.assertIn("return doesChunkExistAt(level, sectionPos)", readiness)
+
+
+    def test_26_2_gpu_does_not_duplicate_inherited_dynamic_transforms(self):
+        source = (VERSION_ROOT / "26.2/client/java/dev/ringworld/client/render/RingSurfaceGpu.java").read_text()
+        self.assertIn("RenderPipelines.GUI_TEXTURED_SNIPPET", source)
+        self.assertNotIn(".withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)", source)
+        self.assertIn("pass.draw(vertexCount, 1, 0, 0)", source)
 
     def test_fabric_and_neoforge_include_selected_java_and_resource_roots(self):
         fabric = FABRIC_BUILD.read_text(encoding="utf-8")

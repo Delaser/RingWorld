@@ -123,6 +123,17 @@ def _selected_fixtures(selected: Sequence[str] | None) -> tuple[str, ...]:
     return tuple(fixture for fixture in FIXTURES if fixture in values)
 
 
+def _terminal_markdown(cells: Sequence[str], verdict: str) -> str:
+    """Describe the manifest-selected matrix without assuming a historic cell count."""
+    count = len(cells)
+    noun = "cell" if count == 1 else "cells"
+    return (
+        f"# RingWorld nightly matrix ({count} manifest-selected {noun})\n\n"
+        f"Verdict: **{verdict}**\n\n"
+        "Ordered isolated qualification only; no publication or deployment was performed.\n"
+    )
+
+
 def _optional_argument(arguments: argparse.Namespace, name: str, flag: str) -> tuple[str, ...]:
     value = getattr(arguments, name)
     return (flag, value) if value else ()
@@ -577,8 +588,7 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
     evidence = root / "dist/qualification/nightly-matrix" / run_id
     write_terminal_report(
         evidence, report,
-        f"# RingWorld six-cell nightly matrix\n\nVerdict: **{verdict}**\n\n"
-        "Ordered isolated qualification only; no publication or deployment was performed.\n",
+        _terminal_markdown(planned["cells"], verdict),
         stem="terminal",
     )
     return report

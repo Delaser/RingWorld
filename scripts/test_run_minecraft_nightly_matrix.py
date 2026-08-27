@@ -20,7 +20,7 @@ from run_minecraft_nightly_matrix import (  # noqa: E402
     FIXTURES, GRADLE_DOWNLOAD_FAILURE_REASON, NightlyMatrixError, _child_argv,
     _classified_infrastructure_reason, _cleanup_disposable_child_state, _cooldown,
     _retain_terminal_artifacts, _retryable_infrastructure_failure,
-    _schedule_infrastructure_retry, _selected_fixtures,
+    _schedule_infrastructure_retry, _selected_fixtures, _terminal_markdown,
     _verify_terminals,
 )
 
@@ -70,6 +70,18 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
                               self.arguments(), Path("/world"))
         index = command.index("--phase-settle-seconds")
         self.assertEqual("120", command[index + 1])
+
+    def test_26_2_two_cell_selection_has_manifest_derived_command_and_report(self) -> None:
+        arguments = self.arguments()
+        arguments.manifest = "config/minecraft-version-matrix-26.2.json"
+        command = _child_argv(ROOT, "26.2-neoforge", "atlas-ui",
+                              arguments, Path("/world"))
+        self.assertEqual("26.2-neoforge", command[command.index("--cell") + 1])
+        self.assertIn("--manifest config/minecraft-version-matrix-26.2.json", " ".join(command))
+
+        markdown = _terminal_markdown(("26.2-fabric", "26.2-neoforge"), "PASS")
+        self.assertIn("2 manifest-selected cells", markdown)
+        self.assertNotIn("six-cell", markdown)
 
     def test_terminal_binding_rejects_wrong_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

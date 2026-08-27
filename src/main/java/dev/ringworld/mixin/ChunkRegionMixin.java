@@ -63,7 +63,7 @@ abstract class ChunkRegionMixin {
 
     /** Select the holder through its nearby alias while retaining canonical NBT coordinates. */
     @Redirect(
-            method = "markPosForPostprocessing",
+            method = {"markPosForPostprocessing", "markPosForPostProcessing"},
             at = @At(value = "INVOKE",
                     target = "Lnet/minecraft/server/level/WorldGenRegion;getChunk(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/chunk/ChunkAccess;"))
     private ChunkAccess ringworld$getPostProcessingChunkThroughLocalAlias(WorldGenRegion region, BlockPos canonicalPos) {

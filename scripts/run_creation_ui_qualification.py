@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the external Prism creation-UI fixture for one qualified 26.1.x cell."""
+"""Run the external Prism creation-UI fixture for one selected manifest cell."""
 
 from __future__ import annotations
 
@@ -88,4 +88,3 @@ def main(argv: list[str] | None = None, *, repository_root: Path = ROOT) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

@@ -13,3 +13,12 @@ materials or entity behavior.
 ore block tags.  The stronghold fixture therefore names each corresponding
 overworld and deepslate vanilla ore block explicitly.  It does not treat a
 missing tag as an empty assertion.
+
+The threshold-noise and coordinate-density marker mixins are source-ABI-owned:
+26.1 retains its original threshold condition and `WeirdScaledSampler` target,
+while 26.2 maps the cached `SurfaceRules.Context` 2D/3D suppliers and omits
+the removed density class.
+
+`WorldGenRegion` preserves the same seam-local post-processing redirect and
+`getChunk(BlockPos)` call in 26.2, but renames the enclosing method to
+`markPosForPostProcessing`; the shared mixin lists both ABI spellings.

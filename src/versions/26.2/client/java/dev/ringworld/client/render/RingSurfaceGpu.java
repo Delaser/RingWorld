@@ -38,8 +38,8 @@ public final class RingSurfaceGpu {
             .withLocation(Identifier.fromNamespaceAndPath("ringworld", "pipeline/textured_ring_surface"))
             .withVertexShader(Identifier.fromNamespaceAndPath("ringworld", "core/ring_surface"))
             .withFragmentShader(Identifier.fromNamespaceAndPath("ringworld", "core/ring_surface"))
-            // GUI_TEXTURED_SNIPPET already owns Globals, MATRICES_PROJECTION and Sampler0.
-            .withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)
+            // MATRICES_PROJECTION already contains DynamicTransforms as well
+            // as Projection. Adding DYNAMIC_TRANSFORMS duplicates that name.
             .withBindGroupLayout(BindGroupLayouts.FOG)
             .withBindGroupLayout(BindGroupLayouts.SAMPLER1)
             .withBindGroupLayout(BindGroupLayouts.SAMPLER2)

@@ -44,6 +44,11 @@ Neither adding a manifest nor compiling changes public support claims.
 6. Qualify copied-world upgrades, then complete release equivalence, packaging,
    staging, and explicit owner approval. Publishing is separate from testing.
 
+Release equivalence and staging derive frozen-candidate metadata ranges,
+quick-evidence cell counts, and public metadata version labels from the selected
+manifest contract. The release descriptor's game-version list must match that
+contract exactly; publication still requires separate owner authorization.
+
 ## What is derived rather than hard-coded
 
 `scripts/minecraft_support_contract.py` derives the oldest build ABI,
@@ -55,8 +60,10 @@ old evidence; operator paths pass the selected manifest contract explicitly.
 
 The scripts do not yet guarantee support for a different Java generation,
 loader versioning scheme, or changed Minecraft ABI. Those are explicit porting
-changes, not reasons to duplicate the entire test pipeline. Release staging
-still needs a separate extension pass before a 26.2 publication can proceed.
+changes, not reasons to duplicate the entire test pipeline. Release-equivalence
+and staging support are implemented and static-tested; a 26.2 publication still
+requires its real clean frozen-candidate evidence, staging execution, and owner
+approval.
 
 Version-owned source APIs live under `src/versions/<oldest-ABI>/main/java` and
 `client/java`. Both loader builds use the same selected directories:
@@ -82,6 +89,15 @@ stays ignored under `dist/`; it is not contributed or distributed source.
   all 338 cases after selecting the older source ABI. These are exploratory
   source-build results, not clean frozen-candidate runtime evidence.
 - Version adapters cover the changed density/surface, registry fixture, GUI,
-  render submission, and GPU APIs. Real runtime/mixin/shader validation,
-  full nightly qualification, and release gates remain pending.
+  render submission, neighbor-readiness, and GPU APIs. Cached exploratory
+  Fabric 26.2 creation UI passes all thirteen captures after fixing duplicate
+  inherited `DynamicTransforms` binding; its Atlas UI passes all eleven
+  captures plus the ordered live-revision and session-clear probe. These do
+  not prove world rendering or frozen-candidate compatibility. Matching cached
+  exploratory NeoForge creation and Atlas UI checks also pass all thirteen and
+  eleven captures respectively, including revision, normal-disconnect, and
+  session-clear checks; the full nightly/release gates remain pending. Removed
+  density classes and relocated surface suppliers are kept in version-owned
+  mixins; a capitalization-only region method rename uses shared alternative
+  selectors and retains its required alias redirect.
 - Existing 26.1.x evidence is retained; no new publication or live-world change.

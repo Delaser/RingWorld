@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage qualified 26.1.x RingWorld candidates without publishing them."""
+"""Stage one manifest-qualified RingWorld candidate group without publishing it."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ from pathlib import Path
 import shutil
 import stat
 import tempfile
+import re
 from typing import Any, Mapping, Sequence
 import zipfile
 
@@ -20,6 +21,7 @@ from external_runtime_qualification_adapter import (
 )
 from minecraft_qualification_evidence import TerminalEvidenceError, validate_terminal_evidence
 from minecraft_qualification_model import QualificationPaths, Verdict, require_safe_identifier
+from minecraft_support_contract import LEGACY_CONTRACT, SupportContract, contract_from_manifest
 from release_candidate_equivalence import (
     ReleaseEquivalenceError,
     verify_release_candidate_equivalence,
@@ -38,6 +40,8 @@ FORMAT = 1
 MARKER = ".ringworld-qualified-stage"
 LOADERS = ("fabric", "neoforge")
 SHA256 = frozenset("0123456789abcdef")
+_PUBLIC_VERSION = re.compile(r"[0-9]+\.[0-9]+\.[0-9]+\+mc[0-9]+\.[0-9]+(?:\.[0-9]+)?")
+_RELEASE_LABEL = re.compile(r"[0-9]+(?:\.[0-9]+)*")
 
 
 class QualifiedStageError(ValueError):
@@ -62,7 +66,9 @@ def _regular(path: Path, label: str) -> Path:
     return path
 
 
-def _load_config(path: Path) -> dict[str, Any]:
+def _load_config(path: Path, contract: SupportContract = LEGACY_CONTRACT) -> dict[str, Any]:
+    if not isinstance(contract, SupportContract):
+        raise QualifiedStageError("release config requires a reviewed support contract")
     try:
         value = json.loads(_regular(path, "release config").read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as error:
@@ -73,10 +79,13 @@ def _load_config(path: Path) -> dict[str, Any]:
     if set(value) != required:
         raise QualifiedStageError("release config fields do not match the qualified schema")
     versions = value["game_versions"]
-    if versions != ["26.1", "26.1.1", "26.1.2"]:
-        raise QualifiedStageError("release config must name exactly the qualified 26.1.x versions")
-    if value["artifact_version"] != "1.1.0+mc26.1" or value["release_label"] != "1.1":
-        raise QualifiedStageError("release config has an unreviewed public identity")
+    if versions != list(contract.versions):
+        raise QualifiedStageError("release config game versions must exactly match its candidate group")
+    artifact, label = value["artifact_version"], value["release_label"]
+    if not isinstance(artifact, str) or _PUBLIC_VERSION.fullmatch(artifact) is None \
+            or not artifact.endswith("+mc" + contract.oldest) \
+            or not isinstance(label, str) or _RELEASE_LABEL.fullmatch(label) is None:
+        raise QualifiedStageError("release config has an unsafe public identity for its candidate group")
     return value
 
 
@@ -94,14 +103,23 @@ def _frozen_candidate(repository: Path, manifest: Mapping[str, Any], loader: str
 
 
 def validate_quick_matrix(
-    repository: Path, manifest: Mapping[str, Any], run_id: str,
+    repository: Path, manifest: Mapping[str, Any], run_id: str, contract: SupportContract = LEGACY_CONTRACT,
 ) -> tuple[dict[str, str], tuple[dict[str, str], ...]]:
+    repository = Path(repository).resolve(strict=False)
     require_safe_identifier(run_id, "quick run id")
+    if not isinstance(contract, SupportContract):
+        raise QualifiedStageError("quick matrix requires a reviewed support contract")
+    try:
+        manifest_contract = contract_from_manifest(manifest)
+    except ValueError as error:
+        raise QualifiedStageError("reviewed manifest does not define a candidate group") from error
+    if contract != manifest_contract:
+        raise QualifiedStageError("supplied support contract does not match the reviewed manifest")
     cells = manifest.get("cells")
-    if not isinstance(cells, Sequence) or isinstance(cells, (str, bytes)) or len(cells) != 6:
-        raise QualifiedStageError("reviewed manifest must contain the six 26.1.x cells")
+    if not isinstance(cells, Sequence) or isinstance(cells, (str, bytes)) or len(cells) != len(contract.versions) * len(LOADERS):
+        raise QualifiedStageError("reviewed manifest does not contain every candidate-group loader cell")
     canonical = canonical_cells_from_manifest(cells)
-    ranges = reviewed_range_identities()
+    ranges = reviewed_range_identities(contract)
     candidates = {loader: _frozen_candidate(repository, manifest, loader, run_id) for loader in LOADERS}
     candidate_hashes = {loader: _digest(path, "sha256") for loader, path in candidates.items()}
     records: list[dict[str, str]] = []
@@ -143,7 +161,7 @@ def _inventory(jar: Path) -> list[dict[str, Any]]:
 def _render_changelog(template: str, loader: str, source_url: str) -> str:
     if template.count(SOURCE_URL_PLACEHOLDER) != 1:
         raise QualifiedStageError("qualified changelog must contain one source placeholder")
-    note = ("Install Fabric Loader 0.19.3 or newer and the matching Fabric API for your "
+    note = ("Install the matching Fabric Loader and Fabric API for your "
             "Minecraft patch. RingWorld is required on the server and every client."
             if loader == "fabric" else
             "Install the matching NeoForge build for your Minecraft patch. RingWorld is "
@@ -155,13 +173,15 @@ def _render_changelog(template: str, loader: str, source_url: str) -> str:
 
 def _metadata(config: Mapping[str, Any], loader: str, changelog: str) -> tuple[dict[str, Any], dict[str, Any]]:
     versions = list(config["game_versions"])
+    version_label = versions[0] if len(versions) == 1 else versions[0] + "–" + versions[-1]
+    release_label = config["release_label"]
     modrinth = config["modrinth"]
     curseforge = config["curseforge"]
     dependencies = ([{"project_id": modrinth["fabric_api_project_id"], "dependency_type": "required"}]
                     if loader == "fabric" else [])
     modrinth_record = {
         "project_id": modrinth["project_id"],
-        "name": f"RingWorld 1.1 for Minecraft 26.1–26.1.2 ({'Fabric' if loader == 'fabric' else 'NeoForge'})",
+        "name": f"RingWorld {release_label} for Minecraft {version_label} ({'Fabric' if loader == 'fabric' else 'NeoForge'})",
         "version_number": modrinth[f"{loader}_version_number"],
         "version_type": "release", "featured": True,
         "game_versions": versions, "loaders": [loader],
@@ -171,7 +191,7 @@ def _metadata(config: Mapping[str, Any], loader: str, changelog: str) -> tuple[d
                  if loader == "fabric" else [])
     curseforge_record = {
         "project_id": curseforge["project_id"],
-        "display_name": f"RingWorld 1.1 for {'Fabric' if loader == 'fabric' else 'NeoForge'}",
+        "display_name": f"RingWorld {release_label} for {'Fabric' if loader == 'fabric' else 'NeoForge'}",
         "release_type": "release", "game_versions": versions,
         "loader": loader, "relations": relations, "changelog": changelog,
         "execution": "manual_owner_authorization_required",
@@ -196,8 +216,9 @@ def stage_qualified_release(
     repository = repository.resolve(strict=True)
     source = current_public_source(repository)
     manifest = load_manifest(_regular(manifest_path, "qualification manifest"))
-    config = _load_config(config_path)
-    frozen_hashes, evidence = validate_quick_matrix(repository, manifest, quick_run_id)
+    contract = contract_from_manifest(manifest)
+    config = _load_config(config_path, contract)
+    frozen_hashes, evidence = validate_quick_matrix(repository, manifest, quick_run_id, contract)
     jars = {"fabric": _regular(fabric_jar, "Fabric release jar"),
             "neoforge": _regular(neoforge_jar, "NeoForge release jar")}
     frozen = {loader: _frozen_candidate(repository, manifest, loader, quick_run_id) for loader in LOADERS}
@@ -207,6 +228,7 @@ def stage_qualified_release(
             frozen[loader], jars[loader], loader=loader,
             expected_license=(repository / "LICENSE").read_bytes(),
             release_version=config["artifact_version"], release_label=config["release_label"],
+            contract=contract,
         )
         if result.qualification.sha256 != frozen_hashes[loader]:
             raise QualifiedStageError(f"{loader} equivalence does not bind the quick candidate")
