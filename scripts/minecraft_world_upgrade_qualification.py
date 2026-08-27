@@ -14,14 +14,12 @@ from typing import Any, Mapping
 
 from minecraft_atlas_recovery_qualification import PersistedRingSettingsObservation
 from minecraft_qualification_model import InvocationError
+from minecraft_qualification_ranges import CompatibilityRangeError, parse_minecraft_version
 from run_worldgen_structure_matrix import validate_reload
 
 
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 FIXTURE_NAME = "05-world-upgrade"
-SUPPORTED_FORWARD_PATHS = frozenset({
-    ("26.1", "26.1.1"), ("26.1", "26.1.2"), ("26.1.1", "26.1.2"),
-})
 
 
 @dataclass(frozen=True)
@@ -53,9 +51,10 @@ class ForwardUpgradeEvidence:
 class ForwardUpgradeQualification:
     identity: ForwardUpgradeIdentity
     evidence: ForwardUpgradeEvidence
+    generator_sample_comparison: Mapping[str, object] | None
 
     def as_dict(self) -> dict[str, Any]:
-        return {
+        result = {
             "fixture": FIXTURE_NAME,
             "sourceCell": self.identity.source_cell_id,
             "targetCell": self.identity.target_cell_id,
@@ -65,6 +64,9 @@ class ForwardUpgradeQualification:
             "sourceSettingsSha256": self.evidence.source_settings.settings_sha256,
             "targetSettingsSha256": self.evidence.target_settings.settings_sha256,
         }
+        if self.generator_sample_comparison is not None:
+            result["generatorSampleComparison"] = dict(self.generator_sample_comparison)
+        return result
 
 
 def _path(value: object, label: str) -> Path:
@@ -107,16 +109,57 @@ def _settings(value: object, world: Path, label: str) -> tuple[object, ...]:
     )
 
 
+def _generator_sample_list(record: Mapping[str, object], field: str, label: str) -> tuple[str, ...]:
+    """Read one current-generator sampling list without treating it as save data."""
+    value = record.get(field)
+    if not isinstance(value, list) or not value or any(not isinstance(item, str) or not item for item in value):
+        raise InvocationError(f"{label} generator-sampled {field} must be a non-empty string list")
+    if len(value) != len(set(value)):
+        raise InvocationError(f"{label} generator-sampled {field} must not contain duplicates")
+    return tuple(value)
+
+
+def _generator_sample_comparison(
+    source_record: Mapping[str, object], target_record: Mapping[str, object],
+) -> dict[str, object]:
+    source_families = _generator_sample_list(source_record, "families", "source")
+    source_biomes = _generator_sample_list(source_record, "biomes", "source")
+    target_families = _generator_sample_list(target_record, "families", "target")
+    target_biomes = _generator_sample_list(target_record, "biomes", "target")
+    def compared(before: tuple[str, ...], after: tuple[str, ...]) -> dict[str, list[str]]:
+        return {
+            "before": list(before), "after": list(after),
+            "added": sorted(set(after) - set(before)), "removed": sorted(set(before) - set(after)),
+        }
+
+    return {
+        "mode": "reported-cross-stable-generator-sample",
+        "families": compared(source_families, target_families),
+        "biomes": compared(source_biomes, target_biomes),
+    }
+
+
 def validate_forward_world_upgrade(
     source_cell: Mapping[str, Any], target_cell: Mapping[str, Any],
     identity: ForwardUpgradeIdentity, evidence: ForwardUpgradeEvidence,
 ) -> ForwardUpgradeQualification:
-    """Validate one supported copied-world forward path, never a downgrade."""
+    """Validate one numerically later copied-world path, never a downgrade.
+
+    The caller establishes that each exact cell came from its own reviewed
+    candidate-group manifest.  This deliberately has no line-specific path
+    table: a later stable Minecraft version is the only supported direction.
+    """
     if not isinstance(identity, ForwardUpgradeIdentity) or not isinstance(evidence, ForwardUpgradeEvidence):
         raise InvocationError("forward upgrade requires structural identity and evidence")
     source_id, source_loader, source_version = _cell(source_cell, "source cell")
     target_id, target_loader, target_version = _cell(target_cell, "target cell")
-    if source_loader != target_loader or (source_version, target_version) not in SUPPORTED_FORWARD_PATHS:
+    try:
+        source_game = parse_minecraft_version(source_version)
+        target_game = parse_minecraft_version(target_version)
+        forward = source_game < target_game
+    except CompatibilityRangeError as error:
+        raise InvocationError("upgrade cells have invalid stable Minecraft versions") from error
+    if source_loader != target_loader or not forward:
         raise InvocationError("upgrade direction is not a supported forward path")
     if (identity.source_cell_id, identity.target_cell_id, identity.loader,
             identity.source_minecraft_version, identity.target_minecraft_version) != (
@@ -144,8 +187,21 @@ def validate_forward_world_upgrade(
     target_facts = _settings(evidence.target_settings, target_world, "target")
     if source_facts != target_facts:
         raise InvocationError("forward upgrade changed persisted RingWorld settings")
+    cross_stable_line = (source_game.major, source_game.minor) != (target_game.major, target_game.minor)
     try:
-        validate_reload(dict(evidence.source_record), dict(evidence.target_record))
+        # BiomeSource sampling uses the current target generator rather than a
+        # persisted chunk-biome inventory. Cross-stable ports may legitimately
+        # change that prediction; every other parsed worldgen fact remains
+        # strict, and ordinary reloads retain exact sample equality.
+        source_record = dict(evidence.source_record)
+        target_record = dict(evidence.target_record)
+        if cross_stable_line:
+            comparison = _generator_sample_comparison(source_record, target_record)
+            target_record["families"] = source_record["families"]
+            target_record["biomes"] = source_record["biomes"]
+        else:
+            comparison = None
+        validate_reload(source_record, target_record)
     except (KeyError, TypeError, ValueError) as error:
         raise InvocationError(f"forward upgrade worldgen/stronghold resume drift: {error}") from error
-    return ForwardUpgradeQualification(identity, evidence)
+    return ForwardUpgradeQualification(identity, evidence, comparison)

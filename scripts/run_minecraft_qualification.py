@@ -3,9 +3,9 @@
 
 Source build/unit, diagnostic-artifact, and frozen same-file preparation have
 execution adapters. The frozen candidate is built once per loader against the
-oldest ABI and only exposed to a complete three-version loader triplet.
+oldest ABI and only exposed to a complete manifest-declared loader group.
 External-runtime smoke is installed only after a complete frozen loader
-triplet and clean provenance exist; partial selections remain ``INCOMPLETE``
+group and clean provenance exist; partial selections remain ``INCOMPLETE``
 without runtime I/O.
 """
 
@@ -43,6 +43,7 @@ from minecraft_frozen_candidate import (
     inspect_frozen_candidate,
     verify_same_file_coverage,
 )
+from minecraft_loom_seed import LoomSeedError, stage_loom_seed, validated_loom_seed
 from minecraft_qualification_ranges import (
     APPROVED_FABRIC_MINECRAFT_RANGE,
     APPROVED_NEOFORGE_LOADER_RANGE,
@@ -73,6 +74,7 @@ from minecraft_qualification_model import (
     select_cells,
 )
 from validate_minecraft_version_matrix import validate_manifest
+from minecraft_support_contract import LEGACY_CONTRACT, SupportContract, contract_from_manifest
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -220,26 +222,27 @@ def _direct_runtime_jar(root: Path) -> Path:
     return runtime[0]
 
 
-def _frozen_properties(cell: Mapping[str, Any], paths: QualificationPaths) -> tuple[tuple[str, str], ...]:
+def _frozen_properties(cell: Mapping[str, Any], paths: QualificationPaths,
+                       contract: SupportContract = LEGACY_CONTRACT) -> tuple[tuple[str, str], ...]:
     """Return the deliberately broader, reviewed metadata only for a frozen jar."""
     loader = cell.get("loader")
     minecraft = cell.get("minecraft")
-    if loader not in {"fabric", "neoforge"} or not isinstance(minecraft, Mapping) or minecraft.get("version") != "26.1":
-        raise QualificationExecutionError("a frozen candidate must use the oldest 26.1 matrix cell")
+    if loader not in {"fabric", "neoforge"} or not isinstance(minecraft, Mapping) or minecraft.get("version") != contract.oldest:
+        raise QualificationExecutionError("a frozen candidate must use the manifest's oldest matrix cell")
     common = (
         ("ringQualificationRoot", str(paths.run_root)),
         ("ringQualificationCell", paths.cell_id),
         ("ringQualificationPort", str(qualification_port(cell))),
-        ("minecraft_version", "26.1"),
-        ("mod_version", "0.0.0-qualification+mc26.1"),
-        ("release_label", f"qualification-26.1-{loader}"),
+        ("minecraft_version", contract.oldest),
+        ("mod_version", contract.artifact_version),
+        ("release_label", contract.release_label(loader)),
         *required_dependency_properties(cell),
     )
     if loader == "fabric":
-        return (*common, ("ringQualificationMinecraftRange", APPROVED_FABRIC_MINECRAFT_RANGE))
+        return (*common, ("ringQualificationMinecraftRange", contract.minecraft_range(loader)))
     return (*common,
-            ("ringQualificationMinecraftRange", APPROVED_NEOFORGE_MINECRAFT_RANGE),
-            ("ringQualificationNeoForgeRange", APPROVED_NEOFORGE_LOADER_RANGE))
+            ("ringQualificationMinecraftRange", contract.minecraft_range(loader)),
+            ("ringQualificationNeoForgeRange", contract.neoforge_range))
 
 
 def _paths_overlap(first: Path, second: Path) -> bool:
@@ -298,6 +301,25 @@ def _gradle_cache_evidence(cache: Path | None) -> tuple[EvidenceReference, ...]:
         str(cache),
         "optional worker-provisioned read-only dependency cache; non-authoritative acceleration only",
     ),)
+
+
+def _stage_validated_loom_seed(cache: Path | None, repository_root: Path,
+                               paths: QualificationPaths, cell: Mapping[str, Any]) -> None:
+    """Copy one rehashed Mojang seed into this isolated Gradle home only."""
+    if cache is None:
+        return
+    minecraft = cell.get("minecraft")
+    loader = cell.get("loader")
+    if not isinstance(minecraft, Mapping) or not isinstance(minecraft.get("version"), str) \
+            or loader not in {"fabric", "neoforge"}:
+        raise QualificationExecutionError("Loom seed staging requires a reviewed Minecraft version and loader")
+    try:
+        files = validated_loom_seed(
+            cache, repository_root, minecraft["version"], cache_validator=validate_gradle_dependency_cache,
+        )
+        stage_loom_seed(files, paths.gradle_home, minecraft["version"], loader)
+    except LoomSeedError as error:
+        raise QualificationExecutionError(str(error)) from error
 
 
 _GRADLE_WRAPPER_PROPERTIES = Path("gradle/wrapper/gradle-wrapper.properties")
@@ -498,6 +520,7 @@ def _validated_command_gradle_cache(command: CommandRecord, repository_root: Pat
 
 def frozen_candidate_plan(
     cell: Mapping[str, Any], repository_root: Path, run_id: str, *, gradle_dependency_cache: Path | None = None,
+    contract: SupportContract = LEGACY_CONTRACT,
 ) -> FrozenCandidatePlan:
     """Purely plan the contained oldest-ABI candidate build for one loader."""
     source_paths = QualificationPaths.from_cell(repository_root, cell, run_id)
@@ -529,7 +552,7 @@ def frozen_candidate_plan(
     profile = cell.get("profile")
     if not isinstance(profile, Mapping) or not isinstance(profile.get("timeout_seconds"), int):
         raise InvocationError("frozen candidate source cell has no timeout")
-    properties = _frozen_properties(cell, paths)
+    properties = _frozen_properties(cell, paths, contract)
     property_args = tuple(f"-P{name}={value}" for name, value in properties)
     tasks = (":test", ":build") if loader == "fabric" else (":neoforge:test", ":neoforge:build")
     command = CommandRecord(
@@ -552,7 +575,8 @@ def frozen_candidate_plan(
     )
 
 
-def _freeze_candidate(source: Path, destination: Path, loader: str) -> FrozenCandidateInspection:
+def _freeze_candidate(source: Path, destination: Path, loader: str,
+                      contract: SupportContract = LEGACY_CONTRACT) -> FrozenCandidateInspection:
     """Atomically retain and re-inspect one wide-range candidate below the run."""
     if destination.exists() or destination.is_symlink():
         raise QualificationExecutionError("frozen candidate destination already exists or is unsafe")
@@ -565,7 +589,7 @@ def _freeze_candidate(source: Path, destination: Path, loader: str) -> FrozenCan
             shutil.copyfileobj(input_file, output_file, length=1024 * 1024)
             output_file.flush()
             os.fsync(output_file.fileno())
-        inspection = inspect_frozen_candidate(destination, loader)
+        inspection = inspect_frozen_candidate(destination, loader, contract=contract)
         source_hash = _sha256(source)
         if inspection.sha256 != source_hash:
             raise QualificationExecutionError("frozen candidate copy differs from its inspected source jar")
@@ -582,12 +606,13 @@ def _freeze_candidate(source: Path, destination: Path, loader: str) -> FrozenCan
         raise
 
 
-def _full_loader_triplet(cells: Sequence[Mapping[str, Any]], loader: str) -> tuple[Mapping[str, Any], ...] | None:
+def _full_loader_triplet(cells: Sequence[Mapping[str, Any]], loader: str,
+                         contract: SupportContract = LEGACY_CONTRACT) -> tuple[Mapping[str, Any], ...] | None:
     selected = tuple(cell for cell in cells if cell.get("loader") == loader)
-    expected_ids = {f"{version}-{loader}" for version in EXPECTED_VERSIONS}
-    if {cell.get("id") for cell in selected} != expected_ids or len(selected) != len(EXPECTED_VERSIONS):
+    expected_ids = set(contract.cell_ids(loader))
+    if {cell.get("id") for cell in selected} != expected_ids or len(selected) != len(contract.versions):
         return None
-    oldest = next((cell for cell in selected if cell.get("id") == f"26.1-{loader}"), None)
+    oldest = next((cell for cell in selected if cell.get("id") == f"{contract.oldest}-{loader}"), None)
     if oldest is None:
         return None
     return tuple(sorted(selected, key=lambda cell: str(cell["id"])))
@@ -595,7 +620,8 @@ def _full_loader_triplet(cells: Sequence[Mapping[str, Any]], loader: str) -> tup
 
 def prepare_frozen_candidates(
     cells: Sequence[Mapping[str, Any]], repository_root: Path, run_id: str, *, gradle_dependency_cache: Path | None = None,
-    gradle_distribution_zip: Path | None = None,
+    gradle_distribution_zip: Path | None = None, gradle_loom_cache: Path | None = None,
+    contract: SupportContract = LEGACY_CONTRACT,
 ) -> Mapping[str, FrozenCandidatePreparation]:
     """Build and freeze at most one candidate per complete loader triplet.
 
@@ -605,29 +631,31 @@ def prepare_frozen_candidates(
     separately unavailable phase.
     """
     gradle_dependency_cache = validate_gradle_dependency_cache(gradle_dependency_cache, repository_root)
+    gradle_loom_cache = validate_gradle_dependency_cache(gradle_loom_cache, repository_root)
     gradle_distribution_zip = (
         validate_gradle_distribution_zip(gradle_distribution_zip, repository_root).source
         if gradle_distribution_zip is not None else None
     )
     preparations: dict[str, FrozenCandidatePreparation] = {}
     for loader in ("fabric", "neoforge"):
-        triplet = _full_loader_triplet(cells, loader)
+        triplet = _full_loader_triplet(cells, loader, contract)
         if triplet is None:
             preparations[loader] = FrozenCandidatePreparation(
                 loader, Verdict.INCOMPLETE, SHARED_CONTRACT_REQUIRES_FULL_LOADER_TRIPLET,
             )
             continue
-        source = next(cell for cell in triplet if cell["id"] == f"26.1-{loader}")
+        source = next(cell for cell in triplet if cell["id"] == f"{contract.oldest}-{loader}")
         plan: FrozenCandidatePlan | None = None
         try:
             plan = frozen_candidate_plan(
-                source, repository_root, run_id, gradle_dependency_cache=gradle_dependency_cache,
+                source, repository_root, run_id, gradle_dependency_cache=gradle_dependency_cache, contract=contract,
             )
             with QualificationLock.acquire(plan.paths.lock_path, run_id):
                 if plan.paths.cell_root.exists() or plan.candidate_path.exists():
                     raise QualificationExecutionError("frozen candidate output already exists and cannot be reused")
                 create_contained_directories(plan.paths)
                 stage_gradle_distribution_zip(gradle_distribution_zip, repository_root, plan.paths)
+                _stage_validated_loom_seed(gradle_loom_cache, repository_root, plan.paths, source)
                 _validated_command_gradle_cache(plan.command, repository_root)
                 executed = execute_command(plan.command, plan.paths, ordinal=1)
                 if executed.verdict is not Verdict.PASS:
@@ -641,9 +669,9 @@ def prepare_frozen_candidates(
                     continue
                 source_jar = _direct_runtime_jar(plan.source_runtime_directory)
                 # Inspect the exact retained jar, not merely Gradle's output.
-                inspection = _freeze_candidate(source_jar, plan.candidate_path, loader)
+                inspection = _freeze_candidate(source_jar, plan.candidate_path, loader, contract)
                 coverage = verify_same_file_coverage(
-                    loader, {f"{version}-{loader}": inspection for version in EXPECTED_VERSIONS},
+                    loader, {cell_id: inspection for cell_id in contract.cell_ids(loader)}, contract=contract,
                 )
                 artifact = ArtifactEvidence(str(plan.candidate_path), "sha256", inspection.sha256, inspection.sha256, True)
                 preparations[loader] = FrozenCandidatePreparation(
@@ -774,6 +802,10 @@ def parser() -> argparse.ArgumentParser:
         "--gradle-distribution-zip",
         help="optional absolute external copy of the exact Gradle wrapper distribution ZIP",
     )
+    result.add_argument(
+        "--gradle-loom-cache",
+        help="optional absolute hash-checked Mojang client/server/assets seed; never enables offline mode",
+    )
     return result
 
 
@@ -873,7 +905,7 @@ def shared_contract_adapter(
             if preparation.plan is None or preparation.inspection is None:
                 raise QualificationExecutionError("passing frozen preparation has no candidate identity")
             cell_id = context.cell.get("id")
-            expected_ids = {f"{version}-{loader}" for version in EXPECTED_VERSIONS}
+            expected_ids = set(preparation.inspection.contract.cell_ids(loader))
             if cell_id not in expected_ids:
                 return PhaseResult(context.phase, Verdict.INCOMPLETE, SHARED_CONTRACT_REQUIRES_FULL_LOADER_TRIPLET)
             evidence = preparation.evidence + (
@@ -992,6 +1024,7 @@ def _write_cell_report(report: CellReport) -> None:
 def _frozen_preflight_failures(
     cells: Sequence[Mapping[str, Any]],
     preparations: Mapping[str, FrozenCandidatePreparation],
+    contract: SupportContract = LEGACY_CONTRACT,
 ) -> Mapping[str, FrozenCandidatePreparation]:
     """Return failed preparations only for selected complete loader triplets.
 
@@ -1004,7 +1037,7 @@ def _frozen_preflight_failures(
         loader: preparation
         for loader, preparation in preparations.items()
         if getattr(preparation, "verdict", None) is Verdict.FAIL
-        and _full_loader_triplet(cells, loader) is not None
+        and _full_loader_triplet(cells, loader, contract) is not None
     }
 
 
@@ -1061,6 +1094,8 @@ def execute_quick_matrix(
     manifest_path: Path | None = None,
     gradle_dependency_cache: Path | None = None,
     gradle_distribution_zip: Path | None = None,
+    gradle_loom_cache: Path | None = None,
+    contract: SupportContract = LEGACY_CONTRACT,
 ) -> MatrixReport:
     """Execute serial cell work and leave immutable terminal evidence.
 
@@ -1087,11 +1122,15 @@ def execute_quick_matrix(
     # remain hermetic; an omitted shared adapter stays explicitly incomplete.
     if phase_adapters is None:
         try:
-            frozen_options: dict[str, Path] = {}
+            frozen_options: dict[str, Any] = {}
+            if contract != LEGACY_CONTRACT:
+                frozen_options["contract"] = contract
             if gradle_dependency_cache is not None:
                 frozen_options["gradle_dependency_cache"] = gradle_dependency_cache
             if gradle_distribution_zip is not None:
                 frozen_options["gradle_distribution_zip"] = gradle_distribution_zip
+            if gradle_loom_cache is not None:
+                frozen_options["gradle_loom_cache"] = gradle_loom_cache
             preparations = frozen_preparation_provider(cells, repository_root, run_id, **frozen_options)
         except TypeError as error:
             raise QualificationExecutionError(
@@ -1099,7 +1138,7 @@ def execute_quick_matrix(
             ) from error
     else:
         preparations = {}
-    preflight_failures = _frozen_preflight_failures(cells, preparations)
+    preflight_failures = _frozen_preflight_failures(cells, preparations, contract)
     if phase_adapters is None:
         # Local import preserves the adapter's one-way structural dependency:
         # it accepts runner values but never imports the scheduler.
@@ -1108,7 +1147,7 @@ def execute_quick_matrix(
         adapters = dict(default_phase_adapters(preparations))
         if not preflight_failures:
             adapters[PhaseName.DEDICATED_SMOKE] = external_runtime_adapter_from_qualification_inputs(
-                cells, provenance, preparations,
+                cells, provenance, preparations, contract=contract,
             )
     else:
         adapters = dict(phase_adapters)
@@ -1121,6 +1160,7 @@ def execute_quick_matrix(
             cell, repository_root, run_id, dry_run=False,
             gradle_dependency_cache=gradle_dependency_cache,
             gradle_distribution_zip=gradle_distribution_zip,
+            gradle_loom_cache=gradle_loom_cache,
         ), provenance)
         paths = planned.paths
         loader = cell.get("loader")
@@ -1173,6 +1213,7 @@ def execute_quick_matrix(
                     )
                 create_contained_directories(paths)
                 state = transition_cell_state(state, CellExecutionState.RUNNING)
+                _stage_validated_loom_seed(gradle_loom_cache, repository_root, paths, cell)
                 for planned_phase in planned.phases:
                     phase = planned_phase.phase
                     if phase in {PhaseName.MANIFEST_VALIDATION, PhaseName.INPUT_PLAN}:
@@ -1219,6 +1260,7 @@ def main(argv: list[str] | None = None, *, repository_root: Path = ROOT) -> int:
     try:
         manifest_path = (repository_root / args.manifest).resolve(strict=False) if not Path(args.manifest).is_absolute() else Path(args.manifest)
         manifest = load_manifest(manifest_path)
+        contract = contract_from_manifest(manifest)
         cells = select_cells(manifest, args.cell, all_cells=args.all, all_supported=args.all_supported)
         gradle_dependency_cache = validate_gradle_dependency_cache(
             Path(args.gradle_dependency_cache) if args.gradle_dependency_cache is not None else None,
@@ -1228,20 +1270,26 @@ def main(argv: list[str] | None = None, *, repository_root: Path = ROOT) -> int:
             validate_gradle_distribution_zip(Path(args.gradle_distribution_zip), repository_root).source
             if args.gradle_distribution_zip is not None else None
         )
+        gradle_loom_cache = validate_gradle_dependency_cache(
+            Path(args.gradle_loom_cache) if args.gradle_loom_cache is not None else None, repository_root,
+        )
         report = (
             plan_matrix(
                 cells, repository_root, "dry-run", dry_run=True,
                 gradle_dependency_cache=gradle_dependency_cache,
                 gradle_distribution_zip=gradle_distribution_zip,
+                gradle_loom_cache=gradle_loom_cache,
             )
             if args.dry_run
             else execute_quick_matrix(
                 cells, repository_root, manifest_path=manifest_path,
+                contract=contract,
                 gradle_dependency_cache=gradle_dependency_cache,
                 gradle_distribution_zip=gradle_distribution_zip,
+                gradle_loom_cache=gradle_loom_cache,
             )
         )
-    except (InvocationError, QualificationExecutionError, OSError) as error:
+    except (InvocationError, QualificationExecutionError, OSError, ValueError) as error:
         print(f"INVOCATION ERROR: {error}", file=sys.stderr)
         return 2
     print(render_markdown(report), end="")

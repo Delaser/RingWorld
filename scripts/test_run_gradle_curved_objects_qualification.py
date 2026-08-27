@@ -69,9 +69,30 @@ class GradleCurvedObjectsQualificationTest(unittest.TestCase):
     def test_fresh_profile_guards(self) -> None:
         source = (ROOT / "src/client/java/dev/ringworld/client/CurvedObjectCaptureClient.java").read_text()
         neo = (ROOT / "neoforge/build.gradle").read_text()
-        self.assertIn("client.screen instanceof TitleScreen", source)
+        self.assertIn("RingMinecraftClientAccess.screen(client) instanceof TitleScreen", source)
         self.assertIn("pauseOnLostFocus = false", source)
         self.assertIn("earlyWindowControl = false", neo)
+
+    def test_capture_readiness_is_chart_aware_and_timeout_is_diagnostic(self) -> None:
+        source = (ROOT / "src/client/java/dev/ringworld/client/CurvedObjectCaptureClient.java").read_text()
+        self.assertIn("atCapturePosition(client, FAR_CAPTURE_X)", source)
+        self.assertIn("atCapturePosition(client, NEAR_CAPTURE_X)", source)
+        self.assertIn("geometry.shortestCircumferenceDelta(", source)
+        self.assertIn("geometry.nearestImageX(canonicalX, client.player.getX())", source)
+        self.assertIn("capture timeout stage={} captureTicks={} settleTicks={}", source)
+        self.assertIn("fixtureProbe={} renderReady={}", source)
+        self.assertIn("BuiltInRegistries.BLOCK.getKey(state.getBlock())", source)
+        self.assertIn("/loaded=", source)
+        self.assertIn("fixture server probe={}", source)
+        self.assertIn("isFixtureBed(client.level.getBlockState(bedFoot), BedPart.FOOT)", source)
+        self.assertIn("isFixtureBed(client.level.getBlockState(bedHead), BedPart.HEAD)", source)
+        self.assertIn("instanceof EntityBlock", source)
+        self.assertIn("far fixture client probe={}", source)
+        self.assertIn("near fixture client probe={}", source)
+        self.assertIn("private static final int MAX_CAPTURE_TICKS = 1_200;", source)
+        self.assertIn("client.levelRenderer.hasRenderedAllSections()", source)
+        self.assertNotIn("client.player.getX() < 2.0", source)
+        self.assertNotIn("client.player.getX() > 31.0", source)
 
 
 if __name__ == "__main__":

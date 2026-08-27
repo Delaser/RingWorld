@@ -74,6 +74,77 @@ class ForwardUpgradeQualificationTest(unittest.TestCase):
                     self.source, self.target, identity,
                     replace(evidence, target_record={**evidence.target_record, "loot": 2}),
                 )
+            with self.assertRaises(InvocationError):
+                validate_forward_world_upgrade(
+                    self.source, self.target, identity,
+                    replace(evidence, target_record={**evidence.target_record, "structures": ["minecraft:fortress"]}),
+                )
+            with self.assertRaises(InvocationError):
+                validate_forward_world_upgrade(
+                    self.source, self.target, identity,
+                    replace(evidence, target_record={**evidence.target_record, "biomes": ["minecraft:sulfur_caves"]}),
+                )
+
+    def test_accepts_a_later_candidate_group_without_a_path_allowlist(self):
+        with tempfile.TemporaryDirectory() as directory:
+            identity, evidence = self.valid(Path(directory))
+            source = {**self.source, "id": "26.1-fabric", "minecraft": {"version": "26.1"}}
+            target = {**self.target, "id": "26.2-fabric", "minecraft": {"version": "26.2"}}
+            identity = replace(identity, target_cell_id="26.2-fabric", target_minecraft_version="26.2")
+            target_record = {
+                **evidence.target_record,
+                "families": [*evidence.target_record["families"], "sulfur_caves"],
+                "biomes": [*evidence.target_record["biomes"], "minecraft:sulfur_caves"],
+            }
+            result = validate_forward_world_upgrade(
+                source, target, identity, replace(evidence, target_record=target_record),
+            )
+            self.assertEqual("26.2", result.as_dict()["targetMinecraft"])
+            comparison = result.as_dict()["generatorSampleComparison"]
+            self.assertEqual("reported-cross-stable-generator-sample", comparison["mode"])
+            self.assertEqual(["sulfur_caves"], comparison["families"]["added"])
+            self.assertEqual(["minecraft:sulfur_caves"], comparison["biomes"]["added"])
+            with self.assertRaises(InvocationError):
+                validate_forward_world_upgrade(source, source, identity, evidence)
+
+    def test_rejects_malformed_cross_line_generator_sample_lists(self):
+        with tempfile.TemporaryDirectory() as directory:
+            identity, evidence = self.valid(Path(directory))
+            source = {**self.source, "minecraft": {"version": "26.1"}}
+            target = {**self.target, "id": "26.2-fabric", "minecraft": {"version": "26.2"}}
+            identity = replace(identity, target_cell_id="26.2-fabric", target_minecraft_version="26.2")
+            for record in (
+                {**evidence.target_record, "biomes": ["minecraft:plains", "minecraft:plains"]},
+                {**evidence.target_record, "biomes": []},
+                {**evidence.target_record, "families": []},
+            ):
+                with self.subTest(record=record):
+                    with self.assertRaises(InvocationError):
+                        validate_forward_world_upgrade(source, target, identity, replace(evidence, target_record=record))
+
+    def test_cross_line_sample_exception_keeps_settings_and_worldgen_facts_strict(self):
+        with tempfile.TemporaryDirectory() as directory:
+            identity, evidence = self.valid(Path(directory))
+            source = {**self.source, "minecraft": {"version": "26.1"}}
+            target = {**self.target, "id": "26.2-fabric", "minecraft": {"version": "26.2"}}
+            identity = replace(identity, target_cell_id="26.2-fabric", target_minecraft_version="26.2")
+            changed_sample = {
+                **evidence.target_record,
+                "families": [*evidence.target_record["families"], "sulfur_caves"],
+                "biomes": [*evidence.target_record["biomes"], "minecraft:sulfur_caves"],
+            }
+            with self.assertRaises(InvocationError):
+                validate_forward_world_upgrade(
+                    source, target, identity,
+                    replace(evidence, target_settings=replace(evidence.target_settings, width_blocks=128), target_record=changed_sample),
+                )
+            for record in (
+                {**changed_sample, "chunks": 11},
+                {**changed_sample, "structures": ["minecraft:fortress"]},
+            ):
+                with self.subTest(record=record):
+                    with self.assertRaises(InvocationError):
+                        validate_forward_world_upgrade(source, target, identity, replace(evidence, target_record=record))
 
 
 if __name__ == "__main__":

@@ -302,8 +302,8 @@ def _validate_same_file(value: Any, candidate_hash: str, expected_cell: Mapping[
     if _sha256(data["sha256"], "same_file.sha256") != candidate_hash:
         raise TerminalEvidenceError("same_file hash differs from frozen candidate hash")
     ids = data["cell_ids"]
-    if not isinstance(ids, Sequence) or isinstance(ids, (str, bytes)) or len(ids) != 3 or any(not isinstance(item, str) for item in ids):
-        raise TerminalEvidenceError("same_file.cell_ids must list the three loader cells")
+    if not isinstance(ids, Sequence) or isinstance(ids, (str, bytes)) or not ids or any(not isinstance(item, str) for item in ids):
+        raise TerminalEvidenceError("same_file.cell_ids must list the manifest's loader cells")
     if len(set(ids)) != len(ids):
         raise TerminalEvidenceError("same_file.cell_ids cannot duplicate a cell")
     loader = expected_cell["loader"]

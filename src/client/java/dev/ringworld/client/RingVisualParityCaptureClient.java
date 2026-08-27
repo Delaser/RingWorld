@@ -6,7 +6,6 @@ import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingTerrainAtlas;
 import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.util.Mth;
@@ -41,6 +40,8 @@ public final class RingVisualParityCaptureClient {
     private int settleTicks;
     private int completionTicks;
     private boolean worldOpenRequested;
+    private final CopiedWorldFileFixUpgrade copiedWorldFileFixUpgrade =
+            new CopiedWorldFileFixUpgrade();
     private boolean focusPolicyApplied;
     private boolean environmentRequested;
     private volatile boolean environmentReady;
@@ -68,8 +69,8 @@ public final class RingVisualParityCaptureClient {
             return true;
         }
         if (!ensureWorldOpen(client)) return true;
-        if (client.screen instanceof PauseScreen) client.setScreen(null);
-        if (client.screen != null) return true;
+        if (RingMinecraftClientAccess.screen(client) instanceof PauseScreen) RingMinecraftClientAccess.setScreen(client, null);
+        if (RingMinecraftClientAccess.screen(client) != null) return true;
 
         RingGeometry geometry = ClientRingState.geometry();
         RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
@@ -114,8 +115,8 @@ public final class RingVisualParityCaptureClient {
         }
         if (++settleTicks < SETTLE_TICKS) return true;
 
-        Screenshot.grab(client.gameDirectory, view.screenshotName,
-                client.getMainRenderTarget(), 1,
+        RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, view.screenshotName,
+                RingMinecraftClientAccess.mainRenderTarget(client), 1,
                 message -> RingWorldMod.LOGGER.info(
                         "[visual-parity-capture] {} screenshot: {}",
                         view.id, message.getString()));
@@ -225,9 +226,12 @@ public final class RingVisualParityCaptureClient {
     private boolean ensureWorldOpen(Minecraft client) {
         if (client.player != null && client.level != null) return true;
         if (++worldOpenTicks > WORLD_OPEN_TIMEOUT_TICKS) {
-            finish(client, false, "timed out opening save '" + worldName() + "'");
+            finish(client, false, "timed out opening save '" + worldName()
+                    + "' screen=" + CopiedWorldFileFixUpgrade.currentScreen(client));
             return false;
         }
+        if (worldOpenRequested && copiedWorldFileFixUpgrade.handleIfRequired(
+                client, "visual-parity-capture", worldName())) return false;
         if (!worldOpenRequested && client.isGameLoadFinished()
                 && client.getSingleplayerServer() == null) {
             worldOpenRequested = true;

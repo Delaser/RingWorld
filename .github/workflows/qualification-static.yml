@@ -4,12 +4,19 @@ on:
   pull_request:
     paths:
       - ".github/workflows/qualification-static.yml"
-      - "config/minecraft-version-matrix.json"
+      - "config/minecraft-version-matrix*.json"
+      - "scripts/minecraft_support_contract.py"
+      - "scripts/test_minecraft_support_contract.py"
+      - "scripts/test_minecraft_version_sources.py"
+      - "gradle/version-sources.gradle"
+      - "src/versions/**"
       - "scripts/minecraft_qualification_*.py"
       - "scripts/run_minecraft_qualification.py"
       - "scripts/external_runtime_*.py"
       - "scripts/external_graphical_*.py"
       - "scripts/run_*_qualification.py"
+      - "scripts/review_composite_nightly_evidence.py"
+      - "scripts/test_review_composite_nightly_evidence.py"
       - "scripts/stage_qualified_release.py"
       - "scripts/publish_qualified_release.py"
       - "scripts/test_*qualification*.py"
@@ -19,17 +26,25 @@ on:
       - "scripts/test_validate_minecraft_version_matrix.py"
       - "docs/MINECRAFT_VERSION_SUPPORT_PLAN.md"
       - "docs/TESTING.md"
+      - "AGENTS.md"
   push:
     branches:
       - main
     paths:
       - ".github/workflows/qualification-static.yml"
-      - "config/minecraft-version-matrix.json"
+      - "config/minecraft-version-matrix*.json"
+      - "scripts/minecraft_support_contract.py"
+      - "scripts/test_minecraft_support_contract.py"
+      - "scripts/test_minecraft_version_sources.py"
+      - "gradle/version-sources.gradle"
+      - "src/versions/**"
       - "scripts/minecraft_qualification_*.py"
       - "scripts/run_minecraft_qualification.py"
       - "scripts/external_runtime_*.py"
       - "scripts/external_graphical_*.py"
       - "scripts/run_*_qualification.py"
+      - "scripts/review_composite_nightly_evidence.py"
+      - "scripts/test_review_composite_nightly_evidence.py"
       - "scripts/stage_qualified_release.py"
       - "scripts/publish_qualified_release.py"
       - "scripts/test_*qualification*.py"
@@ -39,6 +54,7 @@ on:
       - "scripts/test_validate_minecraft_version_matrix.py"
       - "docs/MINECRAFT_VERSION_SUPPORT_PLAN.md"
       - "docs/TESTING.md"
+      - "AGENTS.md"
   workflow_dispatch:
 
 permissions:
@@ -68,6 +84,8 @@ jobs:
         run: >-
           python -m unittest
           scripts/test_validate_minecraft_version_matrix.py
+          scripts/test_minecraft_support_contract.py
+          scripts/test_minecraft_version_sources.py
           scripts/test_qualification_gradle_isolation.py
           scripts/test_qualification_metadata_ranges.py
           scripts/test_minecraft_qualification_ranges.py
@@ -101,6 +119,13 @@ jobs:
           scripts/test_run_gradle_atlas_ui_qualification.py
           scripts/test_run_gradle_map_compass_qualification.py
           scripts/test_run_gradle_curved_objects_qualification.py
+          scripts/test_run_gradle_multiplayer_qualification.py
+          scripts/test_run_gradle_raid_qualification.py
+          scripts/test_run_gradle_production_lifecycle_qualification.py
+          scripts/test_run_gradle_production_render_qualification.py
+          scripts/test_copied_world_file_fix_upgrade.py
+          scripts/test_run_minecraft_nightly_matrix.py
+          scripts/test_review_composite_nightly_evidence.py
           scripts/test_qualification_static_workflow.py
 
       # Static only: no Gradle, Minecraft runtime, installer, server, network,

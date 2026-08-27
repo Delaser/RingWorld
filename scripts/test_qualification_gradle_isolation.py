@@ -66,6 +66,30 @@ class QualificationGradleIsolationTest(unittest.TestCase):
         self.assertIn("ringQualificationNeoForgeSmokePort", self.neoforge)
         self.assertIn('new File(new File(qualificationCellRoot, "run"), relative)', self.fabric)
 
+    def test_frozen_candidate_mode_is_qualification_only_and_loader_symmetric(self) -> None:
+        self.assertIn(
+            'ringQualificationFrozenCandidateJar and ringQualificationFrozenCandidateSha256 must be supplied together',
+            self.fabric,
+        )
+        self.assertIn('a frozen candidate requires ringQualificationRoot and ringQualificationCell', self.fabric)
+        self.assertIn('the frozen candidate changed after qualification planning', self.fabric)
+        self.assertIn('if (qualificationFrozenCandidateJar == null)', self.fabric)
+        self.assertIn('if (qualificationFrozenCandidateJar == null)', self.neoforge)
+        self.assertIn('rename { "ringworld-qualification.jar" }', self.fabric)
+        self.assertIn("rename { 'ringworld-qualification.jar' }", self.neoforge)
+        for runtime in ('server', 'client-a', 'client-b'):
+            self.assertIn(runtime, self.fabric)
+        for runtime in ('neoForgeMultiplayerServerRun', 'neoForgeMultiplayerClientARun',
+                        'neoForgeMultiplayerClientBRun'):
+            self.assertIn(runtime, self.neoforge)
+        self.assertIn('qualificationFrozenRuntimeSourceSet', self.fabric)
+        self.assertIn('runtimeClasspath = configurations.runtimeClasspath', self.fabric)
+        self.assertIn('qualificationFrozenRuntimeSourceSet', self.neoforge)
+        self.assertIn("prepareNeoForgeRaidSeamTestWorld", self.neoforge)
+        self.assertIn("neoForgeRaidSeamServerRun", self.neoforge)
+        self.assertIn("productionLifecycleClient", self.fabric)
+        self.assertIn("productionLifecycleClient", self.neoforge)
+
     def test_fabric_metadata_uses_selected_minecraft_version(self) -> None:
         metadata = (ROOT / "src" / "main" / "resources" / "fabric.mod.json").read_text(encoding="utf-8")
         self.assertIn('"minecraft": "${minecraft_version}"', metadata)

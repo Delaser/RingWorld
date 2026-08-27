@@ -13,6 +13,9 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Group;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /** Makes terrain visibility use the same cylindrical space as its shader. */
 @Mixin(SectionOcclusionGraph.class)
@@ -26,7 +29,7 @@ abstract class ChunkRenderingDataPreparerMixin {
      * sections.
      */
     @ModifyVariable(
-            method = "update",
+            method = "runUpdates",
             at = @At("HEAD"),
             argsOnly = true,
             ordinal = 0)
@@ -43,20 +46,28 @@ abstract class ChunkRenderingDataPreparerMixin {
         return ringworld$wrap(frustum);
     }
 
+    @Group(name = "ringworldOffsetFrustum", min = 1, max = 1)
     @Redirect(
             method = "runPartialUpdate",
             at = @At(value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/LevelRenderer;offsetFrustum(Lnet/minecraft/client/renderer/culling/Frustum;)Lnet/minecraft/client/renderer/culling/Frustum;"))
+                    target = "Lnet/minecraft/client/renderer/LevelRenderer;offsetFrustum(Lnet/minecraft/client/renderer/culling/Frustum;)Lnet/minecraft/client/renderer/culling/Frustum;"), require = 0)
     private Frustum ringworld$curveNewChunkFrustum(Frustum frustum) {
-        return ringworld$wrap(LevelRenderer.offsetFrustum(frustum));
+        return ringworld$wrap(new Frustum(frustum).offsetToFullyIncludeCameraCube(8));
+    }
+
+    @Group(name = "ringworldOffsetFrustum", min = 1, max = 1)
+    @Inject(method = "offsetFrustum", at = @At("RETURN"), cancellable = true, require = 0)
+    private static void ringworld$curveOffsetFrustum26_2(Frustum original, CallbackInfoReturnable<Frustum> cir) {
+        cir.setReturnValue(ringworld$wrap(cir.getReturnValue()));
     }
 
     private static Frustum ringworld$wrap(Frustum frustum) {
+        if (frustum instanceof CurvedRingFrustum) return frustum;
         RingGeometry geometry = ClientRingState.geometry();
         Minecraft client = Minecraft.getInstance();
         if (geometry == null || client.gameRenderer == null
-                || !client.gameRenderer.getMainCamera().isInitialized()) return frustum;
-        Vec3 cameraPosition = client.gameRenderer.getMainCamera().position();
+                || !dev.ringworld.client.RingMinecraftClientAccess.camera(client).isInitialized()) return frustum;
+        Vec3 cameraPosition = dev.ringworld.client.RingMinecraftClientAccess.camera(client).position();
         return new CurvedRingFrustum(frustum, geometry, cameraPosition);
     }
 }

@@ -20,6 +20,7 @@ import org.spongepowered.asm.mixin.gen.Invoker;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Group;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -83,13 +84,14 @@ abstract class SkyRenderingMixin {
                 ? RingSkyCycle.SUN_HALF_WIDTH : vanillaHalfWidth;
     }
 
+    @Group(name = "ringworldSunTint", min = 1, max = 1)
     @ModifyArg(
             method = "renderSun",
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4fc;Lorg/joml/Vector4fc;Lorg/joml/Vector3fc;Lorg/joml/Matrix4fc;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"),
             index = 1,
-            require = 1)
+            require = 0)
     private Vector4fc ringworld$tintCenteredSun(Vector4fc vanillaColor) {
         if (ClientRingState.geometry() == null || !ringworld$renderingCenteredSun) {
             return vanillaColor;
@@ -99,6 +101,14 @@ abstract class SkyRenderingMixin {
                 ringworld$sunVisual.green(),
                 ringworld$sunVisual.blue(),
                 vanillaColor.w() * ringworld$sunVisual.brightness());
+    }
+
+    @Group(name = "ringworldSunTint", min = 1, max = 1)
+    @ModifyArg(method = "renderSun", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4f;Lorg/joml/Vector4f;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"),
+            index = 1, require = 0)
+    private Vector4f ringworld$tintCenteredSun26_2(Vector4f vanillaColor) {
+        return new Vector4f(ringworld$tintCenteredSun(vanillaColor));
     }
 
     @Inject(method = "renderSunMoonAndStars", at = @At("TAIL"))

@@ -67,6 +67,16 @@ elif [[ "$FRESH_INSTANCE" == true ]]; then
     find "$MODS" -maxdepth 1 -type f -name 'fabric-api-*.jar' -delete
 fi
 cp -f "$SOURCE/mmc-pack.json" "$INSTANCE/mmc-pack.json"
+if [[ "$LOADER" == "neoforge" ]]; then
+    if [[ -f "$SOURCE/ringworld-managed-neoforge-patch.txt" ]]; then
+        mkdir -p "$INSTANCE/patches"
+        cp -f "$SOURCE/patches/net.neoforged.json" "$INSTANCE/patches/net.neoforged.json"
+        cp -f "$SOURCE/ringworld-managed-neoforge-patch.txt" "$INSTANCE/"
+    elif [[ -f "$INSTANCE/ringworld-managed-neoforge-patch.txt" ]]; then
+        # Retire only our own loader patch when returning to official metadata.
+        rm -f "$INSTANCE/patches/net.neoforged.json" "$INSTANCE/ringworld-managed-neoforge-patch.txt"
+    fi
+fi
 if [[ ! -f "$INSTANCE/.minecraft/config/ringworld.properties" ]]; then
     cp "$SOURCE/.minecraft/config/ringworld.properties" \
         "$INSTANCE/.minecraft/config/ringworld.properties"

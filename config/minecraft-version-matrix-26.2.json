@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "line": "26.2",
+  "cells": [
+    {
+      "id": "26.2-fabric",
+      "minecraft": {
+        "version": "26.2",
+        "java_major": 25,
+        "downloads": [
+          {
+            "name": "client",
+            "url": "https://piston-data.mojang.com/v1/objects/2dc72797acbc1b63fc16a11c4ac393605f453754/client.jar",
+            "checksum": {
+              "algorithm": "sha1",
+              "value": "2dc72797acbc1b63fc16a11c4ac393605f453754"
+            }
+          },
+          {
+            "name": "server",
+            "url": "https://piston-data.mojang.com/v1/objects/823e2250d24b3ddac457a60c92a6a941943fcd6a/server.jar",
+            "checksum": {
+              "algorithm": "sha1",
+              "value": "823e2250d24b3ddac457a60c92a6a941943fcd6a"
+            }
+          }
+        ]
+      },
+      "loader": "fabric",
+      "status": "pending",
+      "runtime_install": {
+        "name": "Fabric Installer",
+        "version": "1.1.1",
+        "url": "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.1/fabric-installer-1.1.1.jar",
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "2487a69dd6f9d9c2605265a7142d77c26ab62edc620e6bcf810d581d2ee31b79"
+        }
+      },
+      "dependencies": [
+        {
+          "name": "Fabric Loader",
+          "coordinate": "net.fabricmc:fabric-loader",
+          "version": "0.19.3",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.19.3/fabric-loader-0.19.3.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "73eed8c34bbad0320a2a3cba5346351e822f74f82b3f3c060574068474132958"
+          }
+        },
+        {
+          "name": "Fabric Loom",
+          "coordinate": "net.fabricmc:fabric-loom",
+          "version": "1.17.20",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-loom/1.17.20/fabric-loom-1.17.20.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "3aa6f0f7107f8f63762b0a014214e9341b7e4a33c05769f3e8783e750d5eb167"
+          }
+        },
+        {
+          "name": "Fabric API",
+          "coordinate": "net.fabricmc.fabric-api:fabric-api",
+          "version": "0.158.0+26.2",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.158.0+26.2/fabric-api-0.158.0+26.2.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "a4510eb2e9d4057ff20f751e420d0618598813ab9695b6f793a53c2883808dac"
+          }
+        },
+        {
+          "name": "NeoForge",
+          "coordinate": "net.neoforged:neoforge",
+          "version": "26.2.0.69",
+          "url": "https://maven.neoforged.net/releases/net/neoforged/neoforge/26.2.0.69/neoforge-26.2.0.69-universal.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "d280a2d9599387c63a69c09745429f5f53b433c757181df6c0430d2fce567036"
+          }
+        },
+        {
+          "name": "ModDevGradle",
+          "coordinate": "net.neoforged:moddev-gradle",
+          "version": "2.0.144",
+          "url": "https://maven.neoforged.net/releases/net/neoforged/moddev-gradle/2.0.144/moddev-gradle-2.0.144.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "c0b902829645cc8911ada362e5ebbb62c500b3b912872ba438c8ec818b303393"
+          }
+        }
+      ],
+      "pending_inputs": [
+        {
+          "name": "Qualification evidence",
+          "reason": "Official dependencies are pinned; 26.2 build, ABI, and complete runtime qualification have not passed."
+        }
+      ],
+      "profile": {
+        "run_directory": "run/qualification/26.2/fabric",
+        "cache_directory": "run/qualification-cache/26.2/fabric",
+        "evidence_directory": "dist/qualification/ringworld/26.2/fabric",
+        "server_port": 26201,
+        "fixture": "safe-small",
+        "timeout_seconds": 1800,
+        "allowed_parallelism": 1
+      },
+      "expected_game_version_tags": {
+        "modrinth": [
+          "26.2"
+        ],
+        "curseforge": [
+          "26.2"
+        ]
+      }
+    },
+    {
+      "id": "26.2-neoforge",
+      "minecraft": {
+        "version": "26.2",
+        "java_major": 25,
+        "downloads": [
+          {
+            "name": "client",
+            "url": "https://piston-data.mojang.com/v1/objects/2dc72797acbc1b63fc16a11c4ac393605f453754/client.jar",
+            "checksum": {
+              "algorithm": "sha1",
+              "value": "2dc72797acbc1b63fc16a11c4ac393605f453754"
+            }
+          },
+          {
+            "name": "server",
+            "url": "https://piston-data.mojang.com/v1/objects/823e2250d24b3ddac457a60c92a6a941943fcd6a/server.jar",
+            "checksum": {
+              "algorithm": "sha1",
+              "value": "823e2250d24b3ddac457a60c92a6a941943fcd6a"
+            }
+          }
+        ]
+      },
+      "loader": "neoforge",
+      "status": "pending",
+      "runtime_install": {
+        "name": "NeoForge Installer",
+        "version": "26.2.0.69",
+        "url": "https://maven.neoforged.net/releases/net/neoforged/neoforge/26.2.0.69/neoforge-26.2.0.69-installer.jar",
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "3644b1dee55a62abc992be3417f7a257e3fd409cf9463e040b3e1bdbcf9548b2"
+        }
+      },
+      "dependencies": [
+        {
+          "name": "Fabric Loader",
+          "coordinate": "net.fabricmc:fabric-loader",
+          "version": "0.19.3",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.19.3/fabric-loader-0.19.3.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "73eed8c34bbad0320a2a3cba5346351e822f74f82b3f3c060574068474132958"
+          }
+        },
+        {
+          "name": "Fabric Loom",
+          "coordinate": "net.fabricmc:fabric-loom",
+          "version": "1.17.20",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-loom/1.17.20/fabric-loom-1.17.20.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "3aa6f0f7107f8f63762b0a014214e9341b7e4a33c05769f3e8783e750d5eb167"
+          }
+        },
+        {
+          "name": "Fabric API",
+          "coordinate": "net.fabricmc.fabric-api:fabric-api",
+          "version": "0.158.0+26.2",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.158.0+26.2/fabric-api-0.158.0+26.2.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "a4510eb2e9d4057ff20f751e420d0618598813ab9695b6f793a53c2883808dac"
+          }
+        },
+        {
+          "name": "NeoForge",
+          "coordinate": "net.neoforged:neoforge",
+          "version": "26.2.0.69",
+          "url": "https://maven.neoforged.net/releases/net/neoforged/neoforge/26.2.0.69/neoforge-26.2.0.69-universal.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "d280a2d9599387c63a69c09745429f5f53b433c757181df6c0430d2fce567036"
+          }
+        },
+        {
+          "name": "ModDevGradle",
+          "coordinate": "net.neoforged:moddev-gradle",
+          "version": "2.0.144",
+          "url": "https://maven.neoforged.net/releases/net/neoforged/moddev-gradle/2.0.144/moddev-gradle-2.0.144.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "c0b902829645cc8911ada362e5ebbb62c500b3b912872ba438c8ec818b303393"
+          }
+        }
+      ],
+      "pending_inputs": [
+        {
+          "name": "Qualification evidence",
+          "reason": "Official dependencies are pinned; 26.2 build, ABI, and complete runtime qualification have not passed."
+        }
+      ],
+      "profile": {
+        "run_directory": "run/qualification/26.2/neoforge",
+        "cache_directory": "run/qualification-cache/26.2/neoforge",
+        "evidence_directory": "dist/qualification/ringworld/26.2/neoforge",
+        "server_port": 26202,
+        "fixture": "safe-small",
+        "timeout_seconds": 1800,
+        "allowed_parallelism": 1
+      },
+      "expected_game_version_tags": {
+        "modrinth": [
+          "26.2"
+        ],
+        "curseforge": [
+          "26.2"
+        ]
+      }
+    }
+  ]
+}

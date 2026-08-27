@@ -32,6 +32,36 @@ or other runtime state. The generated `PACKAGE-MANIFEST.json` points to the
 exact MPL-covered public source revision, and root `SHA256SUMS.txt` covers every
 archive.
 
+## Qualified NeoForge packages when Prism metadata lags
+
+For a format-1 qualified stage, the optional `--neoforge-installer PATH` accepts
+only the exact official installer SHA-256 pinned by `--runtime-cell` in the
+selected qualification manifest. The builder reads its client/profile metadata
+and generates Prism's native `patches/net.neoforged.json`, including official
+download URLs, sizes and hashes plus the reviewed Prism ForgeWrapper. It does
+not execute or bundle the installer, NeoForge libraries, or Minecraft jars.
+Prism downloads/verifies those files at launch. No loader version is substituted.
+An unpinned, wrong-version or malformed installer fails package assembly.
+
+Example for the staged 26.2 candidate:
+
+```sh
+python3 scripts/prepare_release_packages.py --loader neoforge \
+  --stage-manifest dist/qualified-release/fixture-fix-20260827/1.1.0+mc26.2/neoforge/STAGING-MANIFEST.json \
+  --qualification-manifest config/minecraft-version-matrix-26.2.json \
+  --runtime-cell 26.2-neoforge \
+  --neoforge-installer /path/to/official/neoforge-26.2.0.69-installer.jar \
+  --output dist/new-neoforge-review
+```
+
+The identical component is included in the nested Prism import ZIP and both OS
+bundles, and its SHA-256 is recorded in `PACKAGE-MANIFEST.json`. Each launcher
+updates only this owned component and its ownership marker. A later package
+without the fallback removes only a previously RingWorld-owned loader patch;
+unrelated custom components and player data are preserved. Do not place a
+hand-written loader patch in the clean instance template to bypass the pin.
+This is launcher metadata compatibility, not a new mod-runtime qualification.
+
 Client packages generate a minimal `servers.dat` containing only **RingWorld
 Test Server** at `andwhatnotstudio.com:25565`. It is a public convenience entry,
 not client state, and the launcher writes it only while creating its managed
@@ -71,3 +101,6 @@ sentinel account/save/config files before publishing.
 Windows runner whenever package inputs change. It uses a local harmless Prism
 stand-in and makes no account, network-login, or Minecraft launch claim; an
 actual graphical Windows client remains a release-candidate runtime gate.
+The fixture adds `/wait` to its temporary launcher's final stub launch so
+Windows can release the executable before cleanup; shipped launchers retain
+their normal detached Prism launch.

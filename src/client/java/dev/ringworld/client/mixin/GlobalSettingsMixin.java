@@ -127,8 +127,7 @@ abstract class GlobalSettingsMixin {
                             cloudBounds == null ? 0.0F : (float)cloudBounds.minimumZ(),
                             cloudBounds == null ? 0.0F : (float)cloudBounds.maximumZ())
                     .get();
-            RenderSystem.getDevice().createCommandEncoder()
-                    .writeToBuffer(buffer.slice(), data);
+            dev.ringworld.client.render.RingSurfaceGpu.writeBuffer(buffer.slice(), data);
         }
         RenderSystem.setGlobalSettingsUniform(buffer);
         ci.cancel();

@@ -1,12 +1,11 @@
 # Minecraft version support plan
 
 Status: approved policy and active implementation. Phases 0–3 are implemented;
-the six quick cells pass with one unchanged jar per loader. Phase 4 has real
-six-cell Atlas-recovery, worldgen/structure, and creation/settings UI
-source-ABI evidence; its remaining client, gameplay, lifecycle, and rendering
-fixtures are pending. Phase 5's copied-world matrix passes all six supported
-same-loader forward paths. Phase 6's release-equivalence guard is static-tested,
-but no proposed public jar or release-equivalence evidence has been recorded.
+the historical six quick cells pass with one unchanged jar per loader. Historical
+Phase 4 and Phase 5 evidence is retained separately from final-candidate work.
+The current candidate still requires its bound nightly and copied-world gates.
+Phase 6's release-equivalence guard is static-tested, while local staged
+candidates remain review material rather than a release claim.
 
 ## Support model
 
@@ -135,6 +134,11 @@ parallel only when their run directories, caches, ports, and GPUs do not
 overlap.
 
 ## Stable-version intake
+
+The active 26.2 implementation uses one manifest per same-jar candidate group;
+see [the operator guide](VERSION_QUALIFICATION.md). The runner derives build
+identity, bounded metadata, and complete cell coverage from that manifest.
+Publication is paused until the requested 26.2 qualification is complete.
 
 For every new stable Minecraft release:
 
@@ -517,8 +521,127 @@ identity, clean exits, and schema-2 `COMPLETE`. The current clean merged quick
 baseline is combined run `20260823T130347Z-a493af8d7261` at commit `3e94b04`.
 All six cells pass with one Fabric jar (`1fc01728...46216`) and one NeoForge
 jar (`5fd60d12...56823`). This supersedes earlier quick hashes for any future
-candidate derived from current `main`. The remaining Phase 4 client,
-gameplay, lifecycle, and rendering fixtures are still pending.
+candidate derived from current `main`. The remaining Phase 4 lifecycle and
+rendering fixtures are still pending.
+
+The multiplayer slice now has a concrete exact-candidate operator runner:
+
+```sh
+python3 scripts/run_gradle_multiplayer_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+It removes checkout RingWorld classes from Loom/ModDevGradle runtime source
+sets, installs and rehashes the retained jar in the isolated server and both
+clients, warms shared assets before concurrent client launch, performs a
+normal server stop, and writes hashed terminal evidence below nightly fixture
+06. A real 26.1 Fabric prototype passed the complete existing verifier while
+this isolation seam was developed. That prototype is not the six-cell
+immutable runner matrix; the checklist stays open until all six operator runs
+pass from clean pushed source.
+The optional Loom seed is acceleration for network-constrained workers, not
+support evidence. It must be external to the checkout and home directory and
+contain Mojang's version manifest, the selected patch's version JSON and
+client/server jars, and its asset index/objects. Their sizes and SHA-1 values
+are revalidated through the manifest, version JSON, and asset index before
+being copied into disposable Gradle state.
+
+The formal fixture-06 matrix passes from clean pushed commit `351056c`.
+Fabric runs are `20260825T214555Z-944190e851f2` (26.1),
+`20260825T214848Z-6b762555368c` (26.1.1), and
+`20260825T215133Z-7c1ee4314c33` (26.1.2). NeoForge runs are
+`20260825T205441Z-67ab6c18f772`, `20260825T213540Z-1d2e6b1e6b26`, and
+`20260825T214008Z-ea4e5e2fd2c6` in the same version order. Fabric used one
+unchanged candidate `1fc01728...46216`; NeoForge used one unchanged candidate
+`5fd60d12...56823`. Every cell passed two-client seam/gameplay, normal RCON
+save/shutdown, exact patch identity, and immutable log/capture hashing.
+
+The next exact-candidate operator slice is the two-phase raid fixture:
+
+```sh
+python3 scripts/run_gradle_raid_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+It creates one disposable arm world, requires a real saved first wave with
+both seam-side players in the bossbar, reopens that exact world, requires
+canonical raider navigation and victory, and records exact candidate/client/
+server/log/world identities. The formal fixture-07 matrix passes from clean
+pushed commit `daaa1da`: Fabric runs are
+`20260825T221028Z-466a9d85a0a8`, `20260825T221240Z-0f1e832eeeb0`, and
+`20260825T221522Z-a58ea89ecbf1`; NeoForge runs are
+`20260825T221751Z-ccdb777c556a`, `20260825T222236Z-d1d14d2036ff`, and
+`20260825T222743Z-3614fad43309`, in 26.1/26.1.1/26.1.2 order. Every cell
+passed arm/save, both-player bossbar membership, exact-world reload,
+canonical seam-side raider handling, victory, and exact patch/candidate
+identity.
+
+The production lifecycle slice uses the same frozen-candidate isolation and
+requires an explicit read-only source world:
+
+```sh
+python3 scripts/run_gradle_production_lifecycle_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --source-world /absolute/path/to/complete-production-world \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+The source must be a complete 16,384x256 format-3/mapping-4 world. The runner
+hash-inventories it before and after copying, validates its dimension-owned
+settings and complete Atlas independently, then opens only the disposable
+copy. It requires Overworld/Nether/End transfer state, normal save/disconnect,
+client-state teardown, exact-world reopen, and exact patch/frozen-jar identity.
+It never mutates the source world.
+For a multi-patch matrix, generate the immutable source with the oldest target
+runtime. Minecraft 26.1 worlds may move forward through the supported patch
+line, but a 26.1.2 save is not silently opened by 26.1; the runner reads
+`level.dat` and rejects that downgrade direction before copying.
+
+The production rendering slice consumes the same immutable source input and
+exact candidate:
+
+```sh
+python3 scripts/run_gradle_production_render_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --source-world /absolute/path/to/complete-production-world \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+It refreshes only cell-owned world copies, captures tangent, Atlas handoff,
+and radial-up views at noon, dusk, night, and rain, then captures natural seam
+motion, seam join, and both finite-width rims. Exact patch identity, frozen
+jar hashes, PNGs, logs, and frame observations are bound into fixture-12
+terminal evidence.
+
+The unattended coordinator is dry-run-first:
+
+```sh
+python3 scripts/run_minecraft_nightly_matrix.py \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --production-world /absolute/path/below/dist/qualification/to/26.1-world
+```
+
+Add `--execute` to run the fixed ordered matrix. It invokes one graphical cell
+at a time, prevents a failed cell from advancing to dependent fixtures,
+continues independent cells, and writes one aggregate terminal report. Cell or
+fixture subsets are useful diagnostics but remain `INCOMPLETE` even when every
+selected command passes.
+
+The coordinator permits one automatic infrastructure retry per command. It
+recognizes only the exact pre-game server `Done (` readiness timeout with every
+fixture claim false, or an exit-1 Gradle setup failure whose bounded stderr has
+both Loom's exact dependency-download exception and `BUILD FAILED` and whose
+claims contain no positive value. It cleans the failed child state, cools down
+for 120 seconds, gives the retry a new child run ID, and records both attempts.
+All assertions, compilation failures, crashes, evidence validation failures,
+unclassified timeouts, and second failures still fail closed without retry.
+
 The operator entry point is intentionally explicit:
 
 ```sh
@@ -728,12 +851,14 @@ python3 scripts/run_world_upgrade_qualification.py \
   --target-quick-run-id <passed-26.1.1-quick-run-id>
 ```
 
-The CLI permits only the three forward paths above, requires source and target
-cells to use the same loader, rechecks the retained source world and target
-candidate/evidence before runtime work, copies into a new contained target
-fixture, and fails on an existing destination. It never downgrades or mutates
-the source world. All six real loader/version forward paths now have terminal
-`PASS` reports from clean pushed commit `7983b8a`. Fabric runs are
+The CLI permits any numerically later stable path across independently reviewed
+source and target manifests, requires source and target cells to use the same
+loader, rechecks the retained source world and target candidate/evidence before
+runtime work, copies into a new contained target fixture, and fails on an
+existing destination. It never downgrades or mutates the source world. The six
+historical 26.1.x loader/version paths have terminal `PASS` reports from clean
+pushed commit `7983b8a`; they are not final-candidate or 26.2 upgrade evidence.
+Fabric runs are
 `20260813T154817Z-49a8704da644`, `20260813T154908Z-3dd32c4a02d9`, and
 `20260813T154948Z-2c59e8f287e1`; NeoForge runs are
 `20260813T155036Z-16d04362acad`, `20260813T155119Z-87e77d39455b`, and
@@ -994,13 +1119,39 @@ Earlier sections remain the detailed design and evidence record.
 
 - [x] Re-run the complete six-cell quick matrix from current clean `main`
   (`20260823T130347Z-a493af8d7261`, commit `3e94b04`).
-- [ ] Run the dedicated multiplayer fixture on all six cells with the exact
+- [x] Run the dedicated multiplayer fixture on all six cells with the exact
   retained frozen candidate for each loader.
-- [ ] Run the raid fixture on all six cells.
-- [ ] Run production lifecycle qualification on all six cells: dimension
+- [x] Run the raid fixture on all six cells.
+- [x] Run production lifecycle qualification on all six cells: dimension
   travel, save, disconnect, client-state cleanup, and reopen.
-- [ ] Run production rendering on all six cells: projection, natural seam
+- [x] Run production rendering on all six cells: projection, natural seam
   motion, Atlas handoff, rims, sky, weather, and frame observations.
+- [x] Implement the fail-closed 60-command coordinator and retain its first
+  two diagnostic aggregates; move multiplayer settling after isolated child
+  preparation and replace the flaky exact-target two-sample assertion.
+- [x] Pass targeted NeoForge 26.1.1 map/compass plus Fabric/NeoForge 26.1.2
+  multiplayer regression reruns from corrected commit `d953b02`.
+- [x] Pass a targeted 26.1 Fabric raid arm/reload regression with the new
+  recorded pre-arm and inter-phase settle (`20260826T080924Z-6dfcb2ee422f`).
+- [x] Make external worldgen/Atlas child cleanup derive strict run identity
+  from their verified terminal path so the 60-command run stays disk-bounded.
+- [x] Bound concurrent multiplayer/raid game JVMs on both loaders, cap the two
+  disposable multiplayer render loops at 30 FPS, fail fast when their server
+  exits, and retain hash-verified PNG/log artifacts before deleting each heavy
+  runtime tree.
+- [x] Pass the corrected Fabric 26.1 targeted multiplayer regression with the
+  2 GiB game heaps and 30 FPS disposable-client cap
+  (`20260826T101522Z-6ec8d904431b`).
+- [x] Add one fail-closed retry for only an unclaimed pre-game `Done (` timeout
+  or an exact pre-launch Loom dependency-download failure, and pass the failed
+  NeoForge 26.1 raid plus its four formerly skipped fixtures on their first
+  attempts (`20260826T145215Z-b593bba25512`).
+- [x] Execute one complete 60-command aggregate and repair only its failed
+  NeoForge 26.1 raid stage. Aggregate `20260826T215217Z-68410e5f8e85`
+  retained 55 PASS results; owner-directed targeted run
+  `20260827T040412Z-ee7ba84a5b3b` passed the stale-startup-marker failure after
+  the operator was corrected. Final reporting must identify this as composite
+  evidence, not a monolithic all-PASS invocation.
 - [ ] Bind every nightly result to its quick record, frozen jar SHA-256, source
   commit, runtime version, and immutable evidence hashes.
 - [ ] Run every supported forward-save path using the final candidates.

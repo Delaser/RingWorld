@@ -4,7 +4,6 @@ import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.mixin.ConfirmScreenAccessor;
 import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
@@ -67,7 +66,7 @@ public final class RingWorldCreationUiTestClient {
             return true;
         }
         if (hasRequiredFramebuffer(client) && !menuRequestSubmitted
-                && client.screen instanceof TitleScreen) {
+                && RingMinecraftClientAccess.screen(client) instanceof TitleScreen) {
             if (!titleScreenObserved) {
                 titleScreenObserved = true;
                 readyAfterFrame = renderedFrames + STARTUP_SETTLE_FRAMES;
@@ -93,7 +92,7 @@ public final class RingWorldCreationUiTestClient {
         if (++ticks > TIMEOUT_TICKS) return fail(client, "timed out in stage " + stage
                 + "; framebuffer=" + client.getWindow().getWidth() + "x" + client.getWindow().getHeight()
                 + ", window=" + client.getWindow().getScreenWidth() + "x" + client.getWindow().getScreenHeight()
-                + ", screen=" + (client.screen == null ? "none" : client.screen.getClass().getSimpleName())
+                + ", screen=" + (RingMinecraftClientAccess.screen(client) == null ? "none" : RingMinecraftClientAccess.screen(client).getClass().getSimpleName())
                 + ", menuRequestSubmitted=" + menuRequestSubmitted);
         if (capturePending || !settled()) return true;
 
@@ -243,7 +242,7 @@ public final class RingWorldCreationUiTestClient {
     }
 
     private void captureConfirmationAndAccept(Minecraft client) {
-        if (!(client.screen instanceof ConfirmScreen confirm)
+        if (!(RingMinecraftClientAccess.screen(client) instanceof ConfirmScreen confirm)
                 || !"Use layout".equals(((ConfirmScreenAccessor) confirm)
                         .ringworld$yesButton().getMessage().getString())) {
             fail(client, "the real layout confirmation screen was not opened");
@@ -263,7 +262,7 @@ public final class RingWorldCreationUiTestClient {
     }
 
     private void openLayoutFromFooter(Minecraft client) {
-        if (!(client.screen instanceof CreateWorldScreen screen)
+        if (!(RingMinecraftClientAccess.screen(client) instanceof CreateWorldScreen screen)
                 || !(screen instanceof RingWorldCreationScreen.LayoutButtonOwner owner)
                 || !owner.ringworld$layoutButtonReadyForAutomation()) return;
         capture(client, "creation-ui-01-footer-scale1", () -> {
@@ -289,7 +288,7 @@ public final class RingWorldCreationUiTestClient {
     }
 
     private void verifyAppliedFooterAndStop(Minecraft client) {
-        if (!(client.screen instanceof CreateWorldScreen screen)
+        if (!(RingMinecraftClientAccess.screen(client) instanceof CreateWorldScreen screen)
                 || !(screen instanceof RingWorldCreationScreen.LayoutButtonOwner owner)
                 || !"RingWorld 4096×640".equals(owner.ringworld$layoutButtonMessageForAutomation().getString())) {
             fail(client, "the accepted confirmation did not refresh the real Create World footer");
@@ -306,7 +305,7 @@ public final class RingWorldCreationUiTestClient {
 
     private void capture(Minecraft client, String name, Runnable afterCapture) {
         capturePending = true;
-        Screenshot.grab(client.gameDirectory, name + ".png", client.getMainRenderTarget(), 1, message -> {
+        RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, name + ".png", RingMinecraftClientAccess.mainRenderTarget(client), 1, message -> {
             // Screenshot writes on Minecraft's I/O pool. Keep fixture state
             // and the shutdown path on the client thread.
             client.execute(() -> {
@@ -354,7 +353,7 @@ public final class RingWorldCreationUiTestClient {
     }
 
     private RingWorldCreationScreen creationScreen(Minecraft client) {
-        return client.screen instanceof RingWorldCreationScreen screen ? screen : null;
+        return RingMinecraftClientAccess.screen(client) instanceof RingWorldCreationScreen screen ? screen : null;
     }
 
     private void arm() {

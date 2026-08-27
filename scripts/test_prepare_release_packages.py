@@ -23,6 +23,11 @@ VERSION = "1.0.0+mc26.1.2"
 FABRIC_API_VERSION = "0.155.2+26.1.2"
 REVISION = "a" * 40
 
+if str(ROOT / "scripts") not in sys.path:
+    sys.path.insert(0, str(ROOT / "scripts"))
+from prepare_release_packages import PackageError, _qualified_pins, load_staged_release  # noqa: E402
+from scripts import test_prism_neoforge_component as prism_tests  # noqa: E402
+
 
 def release_config(loader: str) -> dict:
     public_loader = "Fabric" if loader == "fabric" else "NeoForge"
@@ -61,10 +66,194 @@ def release_config(loader: str) -> dict:
 
 
 class ReleasePackagePreparationTest(unittest.TestCase):
+    def test_qualified_format_one_requires_explicit_validated_runtime_profile(self) -> None:
+        manifest = ROOT / "config" / "minecraft-version-matrix-26.2.json"
+        pins = _qualified_pins(manifest, "26.2-fabric", "fabric", ["26.2"])
+        self.assertEqual(("26.2", "0.19.3", "0.158.0+26.2"),
+                         (pins.minecraft, pins.fabric_loader, pins.fabric_api))
+        self.assertIsNone(pins.neoforge)
+        with self.assertRaisesRegex(PackageError, "another loader"):
+            _qualified_pins(manifest, "26.2-neoforge", "fabric", ["26.2"])
+        with self.assertRaisesRegex(PackageError, "invalid"):
+            _qualified_pins(ROOT / "config" / "absent.json", "26.2-fabric", "fabric", ["26.2"])
+
+    def test_qualified_26_1_x_uses_only_the_selected_loader_pins(self) -> None:
+        manifest = ROOT / "config" / "minecraft-version-matrix.json"
+        fabric = _qualified_pins(manifest, "26.1.2-fabric", "fabric", ["26.1", "26.1.1", "26.1.2"])
+        self.assertEqual(("26.1.2", "0.19.3", "0.155.2+26.1.2"),
+                         (fabric.minecraft, fabric.fabric_loader, fabric.fabric_api))
+        self.assertIsNone(fabric.neoforge)
+        self.assertTrue(fabric.managed_profile)
+        neoforge = _qualified_pins(manifest, "26.1.2-neoforge", "neoforge", ["26.1", "26.1.1", "26.1.2"])
+        self.assertEqual(("26.1.2", "26.1.2.87"), (neoforge.minecraft, neoforge.neoforge))
+        self.assertIsNone(neoforge.fabric_loader)
+        self.assertIsNone(neoforge.fabric_api)
+        self.assertTrue(neoforge.managed_profile)
+
+    def test_qualified_runtime_requires_its_selected_loader_pin(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            versions = ["26.1", "26.1.1", "26.1.2"]
+            for cell_id, loader, missing_name in (
+                ("26.1.2-fabric", "fabric", "Fabric API"),
+                ("26.1.2-neoforge", "neoforge", "NeoForge"),
+            ):
+                with self.subTest(cell=cell_id):
+                    matrix = json.loads((ROOT / "config" / "minecraft-version-matrix.json").read_text())
+                    cells = {cell["id"]: cell for cell in matrix["cells"]}
+                    cells[cell_id]["dependencies"] = [
+                        item for item in cells[cell_id]["dependencies"] if item["name"] != missing_name
+                    ]
+                    path = temporary / f"missing-{loader}.json"
+                    path.write_text(json.dumps(matrix), encoding="utf-8")
+                    with self.assertRaisesRegex(PackageError, missing_name):
+                        _qualified_pins(path, cell_id, loader, versions)
+
+    def test_qualified_format_one_rejects_missing_runtime_profile_stale_hash_and_credentials(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            jar, fabric, instance = self.inputs(temporary)
+            stage = temporary / "qualified" / "fabric"
+            stage.mkdir(parents=True)
+            staged = stage / jar.name
+            shutil.copy2(jar, staged)
+            payload = staged.read_bytes()
+            record = {
+                "format": 1, "generated": True, "loader": "fabric", "upload_file_only": True,
+                "upload_file": staged.name, "size": len(payload),
+                "hashes": {"sha256": hashlib.sha256(payload).hexdigest(), "sha512": hashlib.sha512(payload).hexdigest()},
+                "artifact_version": VERSION, "release_label": "1.0", "game_versions": ["26.2"],
+                "source": {"revision": REVISION, "url": f"https://github.com/Delaser/RingWorld/commit/{REVISION}"},
+            }
+            (stage.parent / ".ringworld-qualified-stage").write_text("generated\n", encoding="utf-8")
+            manifest = stage / "STAGING-MANIFEST.json"
+            manifest.write_text(json.dumps(record), encoding="utf-8")
+            with self.assertRaisesRegex(PackageError, "requires --qualification-manifest"):
+                load_staged_release(manifest, loader="fabric", expected_license=(ROOT / "LICENSE").read_bytes())
+            staged.write_bytes(payload + b"stale")
+            with self.assertRaisesRegex(PackageError, "sha256 does not match"):
+                load_staged_release(manifest, loader="fabric", expected_license=(ROOT / "LICENSE").read_bytes(),
+                                    qualification_manifest=ROOT / "config" / "minecraft-version-matrix-26.2.json",
+                                    runtime_cell="26.2-fabric")
+            instance.joinpath(".minecraft", "accounts.json").write_text('{"token":"never"}', encoding="utf-8")
+            result = self.run_prepare(temporary, jar, fabric, instance)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("forbidden credential/runtime path", result.stderr)
+
+    def test_qualified_26_2_packages_generate_runtime_profiles_for_both_loaders(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            matrix = json.loads((ROOT / "config" / "minecraft-version-matrix-26.2.json").read_text())
+            installer = prism_tests.PrismNeoForgeComponentTest().fixture(temporary)
+            fabric_api = temporary / "fabric-api-0.158.0+26.2.jar"
+            self.make_jar(fabric_api, mod_id="fabric-api", version="0.158.0+26.2")
+            pin = hashlib.sha256(fabric_api.read_bytes()).hexdigest()
+            for cell in matrix["cells"]:
+                if cell["loader"] == "neoforge":
+                    cell["runtime_install"]["checksum"]["value"] = hashlib.sha256(installer.read_bytes()).hexdigest()
+                for dependency in cell["dependencies"]:
+                    if dependency["name"] == "Fabric API":
+                        dependency["checksum"]["value"] = pin
+            matrix_path = temporary / "matrix-26.2.json"
+            matrix_path.write_text(json.dumps(matrix), encoding="utf-8")
+            for loader, runtime_cell in (("fabric", "26.2-fabric"), ("neoforge", "26.2-neoforge")):
+                with self.subTest(loader=loader):
+                    jar = temporary / ("ringworld-1.1.0+mc26.2.jar" if loader == "fabric"
+                                       else "ringworld-neoforge-1.1.0+mc26.2.jar")
+                    minecraft_range = ">=26.2 <=26.2" if loader == "fabric" else "26.2,26.2"
+                    self.make_jar(jar, mod_id="ringworld", loader=loader, version="1.1.0+mc26.2",
+                                  minecraft=minecraft_range, neoforge_version="26.2.0.69", release_label="1.1",
+                                  neoforge_range="[26.2.0.69,26.2.0.69]" if loader == "neoforge" else None)
+                    instance = self.make_instance(temporary / loader, loader=loader)
+                    stage = self.make_qualified_stage(temporary / loader, jar, loader=loader)
+                    result = self.run_prepare(temporary / loader, jar, fabric_api, instance, loader=loader,
+                                              stage_manifest=stage, qualification_manifest=matrix_path,
+                                              runtime_cell=runtime_cell,
+                                              neoforge_installer=installer if loader == "neoforge" else None)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    bundle = temporary / loader / "out" / (
+                        f"RingWorld-1.1.0+mc26.2-{'Fabric' if loader == 'fabric' else 'NeoForge'}-Client-macOS-universal.zip"
+                    )
+                    with zipfile.ZipFile(bundle) as archive:
+                        nested = zipfile.ZipFile(io.BytesIO(archive.read("RingWorld-Prism-Instance.zip")))
+                        pack = json.loads(nested.read("mmc-pack.json"))
+                        components = {item["uid"]: item["version"] for item in pack["components"]}
+                        self.assertEqual("26.2", components["net.minecraft"])
+                        self.assertEqual("0.19.3" if loader == "fabric" else "26.2.0.69",
+                                         components["net.fabricmc.fabric-loader" if loader == "fabric" else "net.neoforged"])
+                        package = json.loads(archive.read("PACKAGE-MANIFEST.json"))
+                        self.assertEqual("26.2", package["minecraft"])
+                        if loader == "neoforge":
+                            component = nested.read("patches/net.neoforged.json")
+                            self.assertEqual(component, archive.read("instance/patches/net.neoforged.json"))
+                            self.assertEqual(hashlib.sha256(component).hexdigest(), package["prismComponent"]["sha256"])
+                            self.assertEqual("26.2.0.69", json.loads(component)["version"])
+                            self.assertNotIn("installer.jar", nested.namelist())
+                        else:
+                            self.assertNotIn("prismComponent", package)
+                    server = temporary / loader / "out" / (
+                        f"RingWorld-1.1.0+mc26.2-{'Fabric' if loader == 'fabric' else 'NeoForge'}-Server-Overlay.zip"
+                    )
+                    with zipfile.ZipFile(server) as archive:
+                        self.assertIn("26.2", archive.read("DEPLOYMENT.md").decode("utf-8"))
+                        self.assertIn("26.2", archive.read("server.properties.example").decode("utf-8"))
+
+    def test_qualified_26_1_x_packages_accept_loader_specific_manifest_cells(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            matrix = json.loads((ROOT / "config" / "minecraft-version-matrix.json").read_text())
+            fabric_api = temporary / "fabric-api-0.155.2+26.1.2.jar"
+            self.make_jar(fabric_api, mod_id="fabric-api", version="0.155.2+26.1.2")
+            for cell in matrix["cells"]:
+                if cell["id"] == "26.1.2-fabric":
+                    for dependency in cell["dependencies"]:
+                        if dependency["name"] == "Fabric API":
+                            dependency["checksum"]["value"] = hashlib.sha256(fabric_api.read_bytes()).hexdigest()
+            matrix_path = temporary / "matrix-26.1.json"
+            matrix_path.write_text(json.dumps(matrix), encoding="utf-8")
+            versions = ["26.1", "26.1.1", "26.1.2"]
+            for loader, runtime_cell in (("fabric", "26.1.2-fabric"), ("neoforge", "26.1.2-neoforge")):
+                with self.subTest(loader=loader):
+                    jar = temporary / loader / f"ringworld{'-neoforge' if loader == 'neoforge' else ''}-1.1.0+mc26.1.jar"
+                    jar.parent.mkdir(parents=True)
+                    self.make_jar(
+                        jar, mod_id="ringworld", loader=loader, version="1.1.0+mc26.1",
+                        minecraft=">=26.1 <=26.1.2" if loader == "fabric" else "26.1,26.1.2",
+                        neoforge_version="26.1.2.87", release_label="1.1",
+                        neoforge_range="[26.1.0.19-beta,26.1.2.87]" if loader == "neoforge" else None,
+                    )
+                    instance = self.make_instance(temporary / loader, loader=loader)
+                    stage = self.make_qualified_stage(
+                        temporary / loader, jar, loader=loader, artifact_version="1.1.0+mc26.1",
+                        game_versions=versions,
+                    )
+                    result = self.run_prepare(temporary / loader, jar, fabric_api, instance, loader=loader,
+                                              stage_manifest=stage, qualification_manifest=matrix_path,
+                                              runtime_cell=runtime_cell)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_qualified_format_one_rejects_wrong_fabric_api_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            jar = temporary / "ringworld-1.1.0+mc26.2.jar"
+            self.make_jar(jar, mod_id="ringworld", version="1.1.0+mc26.2", minecraft=">=26.2 <=26.2",
+                          release_label="1.1")
+            fabric = temporary / "fabric-api-0.158.0+26.2.jar"
+            self.make_jar(fabric, mod_id="fabric-api", version="0.158.0+26.2")
+            instance = self.make_instance(temporary, loader="fabric")
+            stage = self.make_qualified_stage(temporary, jar, loader="fabric")
+            result = self.run_prepare(temporary, jar, fabric, instance, stage_manifest=stage,
+                                      qualification_manifest=ROOT / "config" / "minecraft-version-matrix-26.2.json",
+                                      runtime_cell="26.2-fabric")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Fabric API SHA-256", result.stderr)
+
     def make_jar(
         self, path: Path, *, mod_id: str, license_id: str = "MPL-2.0",
         version: str = VERSION, compatibility_api: int = 1,
-        loader: str = "fabric",
+        loader: str = "fabric", minecraft: str = "26.1.2",
+        fabric_api_version: str = FABRIC_API_VERSION, neoforge_version: str = "26.1.2.87",
+        release_label: str = "1.0", neoforge_range: str | None = None,
     ) -> None:
         with zipfile.ZipFile(path, "w") as archive:
             if loader == "neoforge" and mod_id == "ringworld":
@@ -76,15 +265,15 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                     '[[mixins]]\nconfig="ringworld.mixins.json"\n\n'
                     '[[mixins]]\nconfig="ringworld.client.mixins.json"\n\n'
                     '[[dependencies.ringworld]]\nmodId="neoforge"\ntype="required"\n'
-                    'versionRange="[26.1.2.87,)"\n\n[[dependencies.ringworld]]\n'
-                    'modId="minecraft"\ntype="required"\nversionRange="[26.1.2]"\n',
+                    f'versionRange="{neoforge_range or "[" + neoforge_version + ",)"}"\n\n[[dependencies.ringworld]]\n'
+                    f'modId="minecraft"\ntype="required"\nversionRange="[{minecraft}]"\n',
                 )
                 archive.writestr("LICENSE-RINGWORLD.txt", (ROOT / "LICENSE").read_bytes())
                 archive.writestr("ringworld.mixins.json", "{}")
                 archive.writestr("ringworld.client.mixins.json", "{}")
                 archive.writestr(
                     "ringworld-build.properties",
-                    f"artifactVersion={VERSION}\nreleaseLabel=1.0\n",
+                    f"artifactVersion={version}\nreleaseLabel={release_label}\n",
                 )
                 archive.writestr("dev/ringworld/RingWorld.class", b"compiled")
                 return
@@ -94,7 +283,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                     "schemaVersion": 1, "authors": ["Delaser"],
                     "contact": {"homepage": "https://andwhatnotstudio.com/ringworld/"},
                     "license": license_id, "environment": "*",
-                    "depends": {"fabricloader": ">=0.19.3", "minecraft": "26.1.2",
+                    "depends": {"fabricloader": ">=0.19.3", "minecraft": minecraft,
                                 "java": ">=25", "fabric-api": "*"},
                 })
                 metadata["custom"] = {
@@ -107,7 +296,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                 archive.writestr("ringworld.client.mixins.json", "{}")
                 archive.writestr(
                     "ringworld-build.properties",
-                    f"artifactVersion={VERSION}\nreleaseLabel=1.0\n",
+                    f"artifactVersion={version}\nreleaseLabel={release_label}\n",
                 )
                 archive.writestr("dev/ringworld/RingWorld.class", b"compiled")
 
@@ -174,6 +363,8 @@ class ReleasePackagePreparationTest(unittest.TestCase):
         self, temporary: Path, jar: Path, fabric: Path, instance: Path,
         *, loader: str = "fabric", include_fabric_api: bool | None = None,
         output_name: str = "out", revision: str = REVISION, stage_manifest: Path | None = None,
+        qualification_manifest: Path | None = None, runtime_cell: str | None = None,
+        neoforge_installer: Path | None = None,
     ) -> subprocess.CompletedProcess[str]:
         stage_manifest = stage_manifest or self.make_stage_manifest(
             temporary, jar, loader=loader, revision=revision,
@@ -184,6 +375,12 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             "--loader", loader,
             "--stage-manifest", str(stage_manifest),
         ]
+        if qualification_manifest is not None:
+            command += ["--qualification-manifest", str(qualification_manifest)]
+        if runtime_cell is not None:
+            command += ["--runtime-cell", runtime_cell]
+        if neoforge_installer is not None:
+            command += ["--neoforge-installer", str(neoforge_installer)]
         if include_fabric_api is None:
             include_fabric_api = loader == "fabric"
         if include_fabric_api:
@@ -199,6 +396,28 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             text=True,
             check=False,
         )
+
+    def make_qualified_stage(
+        self, root: Path, jar: Path, *, loader: str, artifact_version: str = "1.1.0+mc26.2",
+        game_versions: list[str] | None = None,
+    ) -> Path:
+        stage = root / "qualified" / loader
+        stage.mkdir(parents=True, exist_ok=True)
+        staged = stage / jar.name
+        shutil.copy2(jar, staged)
+        data = staged.read_bytes()
+        record = {
+            "format": 1, "generated": True, "loader": loader, "upload_file_only": True,
+            "upload_file": staged.name, "size": len(data),
+            "hashes": {"sha256": hashlib.sha256(data).hexdigest(), "sha512": hashlib.sha512(data).hexdigest()},
+            "artifact_version": artifact_version, "release_label": "1.1",
+            "game_versions": game_versions or ["26.2"],
+            "source": {"revision": REVISION, "url": f"https://github.com/Delaser/RingWorld/commit/{REVISION}"},
+        }
+        (stage.parent / ".ringworld-qualified-stage").write_text("generated\n", encoding="utf-8")
+        manifest = stage / "STAGING-MANIFEST.json"
+        manifest.write_text(json.dumps(record), encoding="utf-8")
+        return manifest
 
     def test_builds_reproducible_client_and_server_packages_without_web_content(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -336,6 +555,23 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("missing META-INF/neoforge.mods.toml", result.stderr)
 
+    def test_rejects_duplicate_or_opposite_prism_loader_components(self) -> None:
+        for mutation, expected in (
+            (lambda components: components.append(dict(components[1])), "duplicate Prism component UID"),
+            (lambda components: components.append({"uid": "net.neoforged", "version": "26.1.2.87"}),
+             "opposite loader component"),
+        ):
+            with self.subTest(expected=expected), tempfile.TemporaryDirectory() as directory:
+                temporary = Path(directory)
+                jar, fabric, instance = self.inputs(temporary)
+                pack_path = instance / "mmc-pack.json"
+                pack = json.loads(pack_path.read_text(encoding="utf-8"))
+                mutation(pack["components"])
+                pack_path.write_text(json.dumps(pack), encoding="utf-8")
+                result = self.run_prepare(temporary, jar, fabric, instance)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(expected, result.stderr)
+
     def test_rejects_empty_and_malformed_or_decoy_staged_runtime_jars(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             temporary = Path(directory)
@@ -422,6 +658,14 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             prism.chmod(0o755)
             launcher = bundle / "Launch RingWorld.command"
             launcher.chmod(0o755)
+            # This fixture asserts the automatic-Java branch.  Do not let the
+            # host's /usr/libexec/java_home make that branch machine-dependent.
+            launcher.write_text(
+                launcher.read_text(encoding="utf-8").replace(
+                    'JAVA_HOME_25="$(/usr/libexec/java_home -v 25 2>/dev/null || true)"',
+                    'JAVA_HOME_25="" # fixture isolates host Java discovery',
+                ), encoding="utf-8",
+            )
             home = temporary / "home"
             home.mkdir()
             environment = os.environ | {"HOME": str(home)}
@@ -519,6 +763,33 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             self.assertEqual(upgraded.returncode, 0, upgraded.stderr)
             self.assertFalse((mods / "ringworld-neoforge-old.jar").exists())
             self.assertTrue((mods / "fabric-api-user-installed.jar").exists())
+            self.assert_managed_patch_updates(bundle, mods.parent.parent, lambda: subprocess.run(
+                [str(launcher)], capture_output=True, text=True, check=False, env=environment))
+
+    def assert_managed_patch_updates(self, bundle, installed, launch):
+        source = bundle / "instance"
+        (source / "patches").mkdir(exist_ok=True)
+        (installed / "patches").mkdir(exist_ok=True)
+        unrelated = installed / "patches/user-addon.json"
+        unrelated.write_text("keep", encoding="utf-8")
+        owned = installed / "patches/net.neoforged.json"
+        # An unowned custom loader patch is not deleted by packages without a fallback.
+        owned.write_text("user-owned", encoding="utf-8")
+        self.assertEqual(0, launch().returncode)
+        self.assertEqual("user-owned", owned.read_text())
+        marker = source / "ringworld-managed-neoforge-patch.txt"
+        marker.write_text("managed", encoding="utf-8")
+        for version in ("first", "second"):
+            (source / "patches/net.neoforged.json").write_text(version, encoding="utf-8")
+            self.assertEqual(0, launch().returncode)
+            self.assertEqual(version, owned.read_text())
+            self.assertEqual("keep", unrelated.read_text())
+        marker.unlink()
+        (source / "patches/net.neoforged.json").unlink()
+        self.assertEqual(0, launch().returncode)
+        self.assertFalse(owned.exists())
+        self.assertFalse((installed / marker.name).exists())
+        self.assertEqual("keep", unrelated.read_text())
 
     @unittest.skipIf(os.name == "nt", "POSIX launcher fixture")
     def test_mac_fabric_and_neoforge_packages_keep_separate_instances(self) -> None:
@@ -580,6 +851,17 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                              f"ringworld-neoforge-{VERSION}.jar").is_file())
             self.assertFalse(any((neo_installed / ".minecraft" / "mods").glob("fabric-api-*.jar")))
 
+    def windows_fixture_launcher(self, bundle: Path) -> Path:
+        # Production intentionally detaches Prism. Only the temporary test copy
+        # waits for the harmless where.exe stand-in before Windows deletes it.
+        source = (bundle / "Launch RingWorld.bat").read_text(encoding="utf-8")
+        needle = 'start "" "!PRISM!" -d "%DATA%" -l "%INSTANCE_ID%"'
+        self.assertEqual(1, source.count(needle))
+        target = bundle / "Launch Fixture.bat"
+        target.write_text(source.replace(needle, needle.replace('start "" ', 'start "" /wait ')),
+                          encoding="utf-8")
+        return target
+
     @unittest.skipUnless(os.name == "nt", "Windows launcher fixture")
     def test_windows_launcher_fresh_and_upgrade_preserve_existing_user_state(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -596,7 +878,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             prism = bundle / ".launcher" / "windows" / "prismlauncher.exe"
             prism.parent.mkdir(parents=True)
             shutil.copy2(shutil.which("where.exe"), prism)
-            launcher = bundle / "Launch RingWorld.bat"
+            launcher = self.windows_fixture_launcher(bundle)
             fresh = subprocess.run(
                 ["cmd.exe", "/d", "/c", str(launcher)],
                 cwd=bundle, capture_output=True, text=True, check=False,
@@ -650,7 +932,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             prism = bundle / ".launcher" / "windows" / "prismlauncher.exe"
             prism.parent.mkdir(parents=True)
             shutil.copy2(shutil.which("where.exe"), prism)
-            launcher = bundle / "Launch RingWorld.bat"
+            launcher = self.windows_fixture_launcher(bundle)
             fresh = subprocess.run(
                 ["cmd.exe", "/d", "/c", str(launcher)],
                 cwd=bundle, capture_output=True, text=True, check=False,
@@ -669,6 +951,9 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             self.assertEqual(upgraded.returncode, 0, upgraded.stderr + upgraded.stdout)
             self.assertFalse((mods / "ringworld-neoforge-old.jar").exists())
             self.assertTrue((mods / "fabric-api-user-installed.jar").exists())
+            self.assert_managed_patch_updates(bundle, mods.parent.parent, lambda: subprocess.run(
+                ["cmd.exe", "/d", "/c", str(launcher)], cwd=bundle,
+                capture_output=True, text=True, check=False))
 
     def test_rejects_runtime_source_stale_licence_and_bad_revision(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

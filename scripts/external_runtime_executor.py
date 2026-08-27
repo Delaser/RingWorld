@@ -16,6 +16,7 @@ from contextlib import nullcontext
 import os
 from pathlib import Path
 import queue
+import re
 import shutil
 import stat
 import subprocess
@@ -249,6 +250,61 @@ def _atomic_link_new(temporary: Path, destination: Path) -> None:
         raise ExternalRuntimeExecutionError(f"refusing to replace existing qualification input {destination}") from error
 
 
+def _worker_download_cache(paths: QualificationPaths) -> Path | None:
+    """Return the optional immutable worker seed cache, never a normal home/cache."""
+    configured = os.environ.get("RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE")
+    if configured is None:
+        return None
+    root = Path(configured)
+    qualification_root = paths.repository_root / "dist" / "qualification"
+    if not root.is_absolute() or root.is_symlink() or any(
+            is_within(root, forbidden) for forbidden in (paths.repository_root, Path.home(), qualification_root)):
+        raise ExternalRuntimeExecutionError("worker download cache must be an absolute non-symlink directory outside checkout, home, and qualification")
+    try:
+        status = root.stat()
+    except OSError as error:
+        raise ExternalRuntimeExecutionError("worker download cache is unavailable") from error
+    if not stat.S_ISDIR(status.st_mode) or status.st_mode & 0o222:
+        raise ExternalRuntimeExecutionError("worker download cache must be a read-only directory")
+    current = Path(root.anchor)
+    for part in root.parts[1:]:
+        current /= part
+        if current.is_symlink():
+            raise ExternalRuntimeExecutionError("worker download cache may not traverse symlinks")
+    return root
+
+
+def _cache_key(download: RuntimeDownload) -> tuple[str, str]:
+    algorithm = download.algorithm.lower()
+    expected_length = {"sha1": 40, "sha256": 64}.get(algorithm)
+    if expected_length is None or download.algorithm != algorithm \
+            or not isinstance(download.checksum, str) \
+            or re.fullmatch(rf"[0-9a-f]{{{expected_length}}}", download.checksum) is None:
+        raise ExternalRuntimeExecutionError("runtime download has an invalid cache checksum algorithm or digest")
+    return algorithm, download.checksum
+
+
+def _seeded_download(download: RuntimeDownload, paths: QualificationPaths) -> Path | None:
+    root = _worker_download_cache(paths)
+    if root is None:
+        return None
+    algorithm, digest = _cache_key(download)
+    entry = root / algorithm / digest
+    if (root / algorithm).is_symlink() or entry.is_symlink():
+        raise ExternalRuntimeExecutionError("worker download cache entry may not traverse symlinks")
+    if not entry.exists() and not entry.is_symlink():
+        return None
+    _regular_file(entry, "worker download cache entry")
+    if entry.stat().st_size > MAX_DOWNLOAD_BYTES:
+        raise ExternalRuntimeExecutionError("worker download cache entry exceeds qualification size limit")
+    if entry.stat().st_mode & 0o222:
+        raise ExternalRuntimeExecutionError("worker download cache entry must be read-only")
+    checked = verify_pinned_file(entry, download.algorithm, download.checksum)
+    if not checked.verified:
+        raise ExternalRuntimeExecutionError(f"worker download cache entry fails its pin: {download.name}")
+    return entry
+
+
 def fetch_pinned_https(
     download: RuntimeDownload,
     paths: QualificationPaths,
@@ -263,6 +319,7 @@ def fetch_pinned_https(
     """
     if timeout_seconds < 1 or not is_within(download.destination, paths.cache_directory):
         raise ExternalRuntimeExecutionError("runtime download has an unsafe destination or timeout")
+    _cache_key(download)
     _validate_https_url(download.url)
     destination = download.destination
     if destination.exists() or destination.is_symlink():
@@ -275,10 +332,23 @@ def fetch_pinned_https(
     destination.parent.mkdir(parents=True, exist_ok=True)
     if not is_within(destination.parent, paths.cell_root):
         raise ExternalRuntimeExecutionError("runtime download parent escapes qualification cell")
-    descriptor, name = tempfile.mkstemp(prefix=f".{destination.name}.", suffix=".partial", dir=destination.parent)
-    temporary = Path(name)
+    seed = _seeded_download(download, paths)
+    descriptor: int | None = None
+    temporary: Path | None = None
     try:
+        descriptor, name = tempfile.mkstemp(prefix=f".{destination.name}.", suffix=".partial", dir=destination.parent)
+        temporary = Path(name)
+        if seed is not None:
+            os.close(descriptor)
+            descriptor = None
+            shutil.copyfile(seed, temporary)
+            checked = verify_pinned_file(temporary, download.algorithm, download.checksum)
+            if not checked.verified:
+                raise ExternalRuntimeExecutionError(f"worker download cache copy fails its pin: {download.name}")
+            _atomic_link_new(temporary, destination)
+            return DownloadResult(download.name, str(destination), checked.algorithm, checked.expected, checked.actual, True)
         with os.fdopen(descriptor, "wb") as sink:
+            descriptor = None
             response = opener(download.url, timeout=timeout_seconds)
             try:
                 final_url = response.geturl() if hasattr(response, "geturl") else download.url
@@ -310,10 +380,10 @@ def fetch_pinned_https(
         _atomic_link_new(temporary, destination)
         return DownloadResult(download.name, str(destination), checked.algorithm, checked.expected, checked.actual, False)
     finally:
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
+        if descriptor is not None:
+            os.close(descriptor)
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def _write_planned_file(path: Path, contents: str, runtime_root: Path) -> None:
@@ -421,16 +491,34 @@ def _loader_identity(plan: ExternalRuntimeSmokePlan) -> str:
 
 
 def _installed_minecraft_server(plan: ExternalRuntimeSmokePlan) -> RuntimeIdentity:
-    """Find the installer-owned Mojang server copy by its reviewed SHA-1 pin."""
+    """Bind the official launcher's reviewed Mojang server jar."""
     expected = plan.minecraft_server
+    if plan.loader == "fabric":
+        # Fabric's reviewed launcher properties name root/server.jar directly.
+        # This is the verified launcher target, not a redundant installer
+        # input, and Mojang's bundled versions/ jar is created only on launch.
+        path = plan.layout.root / "server.jar"
+        if path.is_symlink() or not path.is_file():
+            raise ExternalRuntimeExecutionError("Fabric installer has no regular launcher-target server jar")
+        verified = verify_pinned_file(path, expected.algorithm, expected.checksum)
+        if not verified.verified:
+            raise ExternalRuntimeExecutionError("Fabric launcher-target server jar differs from its reviewed pin")
+        return RuntimeIdentity(
+            loader=plan.loader,
+            loader_identity=_loader_identity(plan),
+            launcher_path=str(_launcher_path(plan)),
+            minecraft_server_path=str(path),
+            minecraft_server_expected=expected.checksum,
+            minecraft_server_actual=verified.actual,
+        )
     candidates: list[tuple[Path, str]] = []
     for path in plan.layout.root.rglob("*.jar"):
         if not is_within(path, plan.layout.root) or is_within(path, plan.layout.mods_directory):
             continue
-        if plan.loader == "neoforge" and path == plan.layout.root / "server.jar":
+        if path == plan.layout.root / "server.jar":
             # This is the reviewed input seed copied before installation to
             # prevent a redundant download. Runtime identity must bind the
-            # distinct installer-owned copy under libraries/, not its input.
+            # distinct NeoForge installer-owned copy, not its input.
             continue
         if path.is_symlink() or not path.is_file():
             continue
@@ -449,6 +537,26 @@ def _installed_minecraft_server(plan: ExternalRuntimeSmokePlan) -> RuntimeIdenti
         minecraft_server_expected=expected.checksum,
         minecraft_server_actual=actual,
     )
+
+
+def preseed_minecraft_server(plan: ExternalRuntimeSmokePlan, cached_server: Path,
+                             paths: QualificationPaths) -> Path:
+    """Install one already hash-verified Mojang server input for the official installer.
+
+    The fresh runtime root must not already contain a competing server input.
+    The later runtime identity check binds Fabric's actual launcher target or
+    NeoForge's distinct installed copy. Seeding alone is not runtime evidence.
+    """
+    destination = plan.layout.root / "server.jar"
+    _assert_no_symlink_components(cached_server, paths.cell_root, "cached Mojang server")
+    _assert_no_symlink_components(destination, plan.layout.root, "Mojang server seed")
+    if destination.exists():
+        raise ExternalRuntimeExecutionError("external runtime already has a Mojang server seed")
+    shutil.copyfile(cached_server, destination)
+    verified = verify_pinned_file(destination, plan.minecraft_server.algorithm, plan.minecraft_server.checksum)
+    if not verified.verified:
+        raise ExternalRuntimeExecutionError("Mojang server seed differs from its reviewed pin")
+    return destination
 
 
 def _drain_server_output(source: BinaryIO, received: "queue.Queue[bytes | None]") -> None:
@@ -688,16 +796,10 @@ def execute_external_runtime_smoke(
         downloads.append(fetch_pinned_https(plan.minecraft_server, paths, opener=opener))
         for item in plan.downloads:
             downloads.append(fetch_pinned_https(item, paths, opener=opener))
-        if plan.loader == "neoforge":
-            # NeoForge's installer otherwise downloads the same Mojang server
-            # jar again. Seed its documented target from the already pinned,
-            # hash-verified cache so qualification is not exposed to a second
-            # redundant network transfer.
-            cached_server = Path(downloads[0].path)
-            installed_server = plan.layout.root / "server.jar"
-            _assert_no_symlink_components(cached_server, paths.cell_root, "cached Mojang server")
-            shutil.copyfile(cached_server, installed_server)
-            verify_pinned_file(installed_server, plan.minecraft_server.algorithm, plan.minecraft_server.checksum)
+        # Both official installers accept this documented root input. Fabric's
+        # optional -downloadMinecraft flag is intentionally absent from the
+        # reviewed plan because this independently rehashed seed is present.
+        preseed_minecraft_server(plan, Path(downloads[0].path), paths)
         ledger.add("installer-start")
         installer_record = CommandRecord(
             PhaseName.DEDICATED_SMOKE, plan.installer.argv, plan.installer.cwd, (), plan.launch.timeout_seconds,

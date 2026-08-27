@@ -9,7 +9,6 @@ import dev.ringworld.world.AtlasPregenerationStatus;
 import dev.ringworld.world.RingTerrainNoiseMapping;
 import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.PauseScreen;
@@ -59,7 +58,7 @@ public final class AtlasPregenerationUiTestClient {
         // placement/removal probe cannot be stranded by lost window focus.
         client.options.pauseOnLostFocus = false;
         if (client.level != null || worldStarted) return false;
-        String currentScreen = client.screen == null ? "null" : client.screen.getClass().getName();
+        String currentScreen = RingMinecraftClientAccess.screen(client) == null ? "null" : RingMinecraftClientAccess.screen(client).getClass().getName();
         if (!currentScreen.equals(lastMenuScreen)) {
             RingWorldMod.LOGGER.info("[atlas-ui-test] menu screen: {}", currentScreen);
             lastMenuScreen = currentScreen;
@@ -71,13 +70,13 @@ public final class AtlasPregenerationUiTestClient {
             // title resources finish loading. openFresh invoked there can be
             // superseded by the later TitleScreen transition, leaving the
             // fixture waiting forever for an editor that was discarded.
-            if (!(client.screen instanceof TitleScreen)) return true;
+            if (!(RingMinecraftClientAccess.screen(client) instanceof TitleScreen)) return true;
             RingWorldMod.LOGGER.info("[atlas-ui-test] opening fresh-world editor");
             CreateWorldScreen.openFresh(client, () -> worldScreenOpened = false);
             worldScreenOpened = true;
             return true;
         }
-        if (client.screen instanceof CreateWorldScreen screen) {
+        if (RingMinecraftClientAccess.screen(client) instanceof CreateWorldScreen screen) {
             WorldCreationUiState creator = screen.getUiState();
             creator.setName("RingWorld Atlas UI Regression");
             creator.setGameMode(WorldCreationUiState.SelectedGameMode.CREATIVE);
@@ -102,15 +101,15 @@ public final class AtlasPregenerationUiTestClient {
         switch (stage) {
             case 0 -> {
                 if (!verifyClientReady(client)) return true;
-                client.setScreen(new PauseScreen(true)); arm(); stage++;
+                RingMinecraftClientAccess.setScreen(client, new PauseScreen(true)); arm(); stage++;
             }
             case 1 -> {
-                if (!(client.screen instanceof PauseScreen) || !settled()) return true;
+                if (!(RingMinecraftClientAccess.screen(client) instanceof PauseScreen) || !settled()) return true;
                 capture(client, "atlas-ui-01-pause-menu", false);
-                client.setScreen(new RingWorldMapScreen(client.screen)); arm(); stage++;
+                RingMinecraftClientAccess.setScreen(client, new RingWorldMapScreen(RingMinecraftClientAccess.screen(client))); arm(); stage++;
             }
             case 2 -> {
-                if (!(client.screen instanceof RingWorldMapScreen screen) || !settled()) return true;
+                if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldMapScreen screen) || !settled()) return true;
                 if (status == null) return true;
                 String expectedBuildLabel = System.getProperty(EXPECTED_BUILD_LABEL_PROPERTY, "").trim();
                 if (expectedBuildLabel.isEmpty()) {
@@ -135,7 +134,7 @@ public final class AtlasPregenerationUiTestClient {
                 }
             }
             case 3 -> {
-                if (!(client.screen instanceof ConfirmScreen confirm) || !settled()) return true;
+                if (!(RingMinecraftClientAccess.screen(client) instanceof ConfirmScreen confirm) || !settled()) return true;
                 capture(client, "atlas-ui-03-confirm-cost", false);
                 // Exercise the real affirmative widget/callback, not a direct packet.
                 ((ConfirmScreenAccessor)confirm).ringworld$yesButton().onPress(new TestInput()); arm(); stage++;
@@ -143,7 +142,7 @@ public final class AtlasPregenerationUiTestClient {
             case 4 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.RUNNING || !settled()) return true;
                 capture(client, "atlas-ui-04-running", false);
-                client.setScreen(null); arm(); stage++;
+                RingMinecraftClientAccess.setScreen(client, null); arm(); stage++;
             }
             case 5 -> {
                 if (!settled() || status == null || status.progress().totalCells() == 0
@@ -155,7 +154,7 @@ public final class AtlasPregenerationUiTestClient {
             }
             case 6 -> {
                 if (!settled()) return true;
-                client.setScreen(new RingWorldMapScreen(new PauseScreen(true))); arm(); stage++;
+                RingMinecraftClientAccess.setScreen(client, new RingWorldMapScreen(new PauseScreen(true))); arm(); stage++;
             }
             case 7 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.RUNNING || !settled()) return true;
@@ -175,7 +174,7 @@ public final class AtlasPregenerationUiTestClient {
             case 10 -> {
                 if (status == null || status.progress().state() != AtlasPregenerationState.CANCELLED || !settled()) return true;
                 capture(client, "atlas-ui-09-cancelled", false);
-                if (!(client.screen instanceof RingWorldMapScreen screen)) return true;
+                if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldMapScreen screen)) return true;
                 Button retry = screen.children().stream().filter(Button.class::isInstance)
                         .map(Button.class::cast)
                         .filter(button -> button.getMessage().getString().contains("Retry Generate Entire Ring"))
@@ -184,7 +183,7 @@ public final class AtlasPregenerationUiTestClient {
                 retry.onPress(new TestInput()); arm(); stage++;
             }
             case 11 -> {
-                if (!(client.screen instanceof ConfirmScreen confirm) || !settled()) return true;
+                if (!(RingMinecraftClientAccess.screen(client) instanceof ConfirmScreen confirm) || !settled()) return true;
                 capture(client, "atlas-ui-10-retry-confirm", false);
                 ((ConfirmScreenAccessor)confirm).ringworld$yesButton().onPress(new TestInput()); arm(); stage++;
             }
@@ -198,7 +197,7 @@ public final class AtlasPregenerationUiTestClient {
                 arm(); stage++;
             }
             case 13 -> {
-                if (!(client.screen instanceof RingWorldMapScreen) || !settled()) return true;
+                if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldMapScreen) || !settled()) return true;
                 if (!hasOnlyButton(client, "Done")) {
                     return fail(client, "completed screen retained an invalid action button");
                 }
@@ -208,7 +207,7 @@ public final class AtlasPregenerationUiTestClient {
                 if (!settled() || !finalCaptureSaved) return true;
                 var atlas = ClientRingState.terrainAtlas();
                 if (atlas == null) return fail(client, "complete atlas disappeared before revision test");
-                client.setScreen(null);
+                RingMinecraftClientAccess.setScreen(client, null);
                 int step = atlas.sampleStep();
                 editedCellColumn = atlas.geometry().wrapBlockX(client.player.getBlockX()) / step;
                 editedCellRow = Math.floorDiv(client.player.getBlockZ() - atlas.geometry().minWidthZ(), step);
@@ -297,15 +296,15 @@ public final class AtlasPregenerationUiTestClient {
         return true;
     }
     private static boolean hasOnlyButton(Minecraft client, String label) {
-        if (client.screen == null) return false;
-        var buttons = client.screen.children().stream()
+        if (RingMinecraftClientAccess.screen(client) == null) return false;
+        var buttons = RingMinecraftClientAccess.screen(client).children().stream()
                 .filter(Button.class::isInstance)
                 .map(Button.class::cast)
                 .toList();
         return buttons.size() == 1 && buttons.getFirst().getMessage().getString().equals(label);
     }
     private void capture(Minecraft client, String name, boolean finalCapture) {
-        Screenshot.grab(client.gameDirectory, name + ".png", client.getMainRenderTarget(), 1,
+        RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, name + ".png", RingMinecraftClientAccess.mainRenderTarget(client), 1,
                 message -> {
                     if (finalCapture) finalCaptureSaved = true;
                     RingWorldMod.LOGGER.info("[atlas-ui-test] screenshot {}", message.getString());

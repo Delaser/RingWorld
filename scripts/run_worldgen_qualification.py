@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from functools import partial
 import json
 from pathlib import Path
 import re
@@ -59,8 +60,9 @@ def run(arguments: argparse.Namespace, *, repository_root: Path = ROOT,
     )
     return executor(
         plan, prepared.paths, run_id, canonical_cells=canonical,
-        range_identities=reviewed_range_identities(),
-        candidate_inspector=candidate_inspector,
+        range_identities=reviewed_range_identities(prepared.contract),
+        candidate_inspector=(partial(inspect_frozen_candidate, contract=prepared.contract)
+                             if candidate_inspector is inspect_frozen_candidate else candidate_inspector),
         execution_source_provenance=prepared.source_provenance,
     )
 

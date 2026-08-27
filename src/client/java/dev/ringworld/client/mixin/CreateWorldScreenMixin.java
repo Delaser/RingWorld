@@ -41,7 +41,7 @@ abstract class CreateWorldScreenMixin extends Screen
         ringworld$layoutButton = footer.addChild(Button.builder(
                 Component.literal("RingWorld %d×%d".formatted(
                         config.circumferenceBlocks(), config.widthBlocks())),
-                button -> minecraft.setScreen(new RingWorldCreationScreen(this)))
+                button -> dev.ringworld.client.RingMinecraftClientAccess.setScreen(minecraft, new RingWorldCreationScreen(this)))
                 .width(120)
                 .build());
         return layout.addToFooter(footerElement);

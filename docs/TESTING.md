@@ -1,5 +1,171 @@
 # Testing
 
+The #234 NeoForge package repair adds offline installer-to-Prism component
+contracts and extends the platform launcher tests to cover owned-patch updates
+and retirement while preserving unrelated custom components. See
+[`deploy/client/README.md`](../deploy/client/README.md) for the exact-pin assembly
+path. These tests are package metadata/update evidence, not graphical gameplay.
+The Windows fixture's temporary launcher copy adds `/wait` only to the final
+`start` of its harmless `where.exe` stand-in. This prevents cleanup racing the
+still-running executable; production launcher bytes and behavior are unchanged.
+The first #234 Windows run passed its assertions but failed that cleanup, so
+it remains a failed attempt rather than being relabelled PASS.
+On `b27b44e`, the corrected [Windows package workflow](https://github.com/Delaser/RingWorld/actions/runs/33107075427)
+passes, as does [static qualification on Windows and Ubuntu](https://github.com/Delaser/RingWorld/actions/runs/33107075444).
+
+Latest 26.2 run IDs, candidate/package hashes and remaining owner checks are
+in [the current checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
+The static qualification workflow passes **342 tests locally** after the
+portable cache-fixture correction below. On `a2ba721`, hosted static CI passes
+on both Ubuntu and Windows, and the separate Windows package launcher check
+passes. [Authenticated macOS package review](MACOS_PACKAGE_REVIEW_2026-08-27.md)
+records all four runtime smokes passing after the targeted #234 metadata repair.
+Nightly `20260827T104447Z-6af7691cc891` remains 16 PASS / 2 FAIL /
+2 INCOMPLETE. The four selected repairs pass in
+`20260827T122329Z-768fe4857612`; that partial aggregate is intentionally
+INCOMPLETE. Composite review covers all 20 slots and rehashes 22 terminals
+and 124 retained artifacts; never label either invocation a monolithic PASS.
+All eight forward-upgrade routes and all four server-overlay smokes pass;
+their exact records and test limits are in the checkpoint. Source-ABI fixture
+changes remain distinct from the unchanged frozen runtime candidates.
+Earlier attempts below remain historical.
+
+The 2026-08-27 release review found two hosted static-test failures caused by
+hard-coded `/private/tmp` fixtures, a macOS-only path. Cache tests now use the
+platform temporary directory, resolve its real path, and model a separate
+operator home so Windows' usual home-contained temp directory does not bypass
+the intended cache-path scenario. A dedicated regression still proves caches
+inside the operator home are rejected before network access. Runtime cache
+validation and candidate jars are unchanged. The focused executor suite passes
+18 tests; the full static workflow passes 342 locally in 5.45 seconds.
+Hosted evidence: [static workflow](https://github.com/Delaser/RingWorld/actions/runs/33104644337)
+and [Windows launcher workflow](https://github.com/Delaser/RingWorld/actions/runs/33104644393).
+
+2026-08-27: the complete static qualification workflow passes **333 tests**
+after copied-world prompt handling, verified cache coverage, and quick Loom
+seed staging plus verified server preseeding. The focused external smoke and
+quick/worldgen/Atlas assembly subset passes 32 tests, including Fabric's real
+installer-only file layout and corrupt-seed rejection. The package-pin correction
+`49c0d53` passes 20 executed tests
+(22 total with two expected Windows-only skips). Metadata-only 26.1.x stages
+assembled Fabric/NeoForge macOS and Windows client bundles plus server overlays;
+those are archive assemblies, not package-launch smokes. Four dry publication
+plans validated without an API call or token.
+
+Current quick `20260827T094338Z-ceae3f67c0d7` on clean pushed `078b96d`
+**passes both 26.2 loader cells**: frozen and diagnostic build/unit suites,
+artifact verification and strict external dedicated-server startup/clean stop.
+The retained frozen candidates independently rehash to:
+
+- Fabric: `271322a3589e72bd54c837576c3b9ea0508176975cb7fbb695206e6122c7f790`.
+- NeoForge: `19a428615f074e31c1c2ef4f407d1703a69f84711d2d2eff159713abcc9227d7`.
+
+Nightly `20260827T100055Z-c2686d8aeaa8` records **4 PASS / 2 FAIL /
+14 INCOMPLETE**. Its passing Fabric creation/worldgen/Atlas recovery/Atlas UI
+checks precede multiplayer `20260827T101615Z-ea895c544862`, which passes seam
+placement then rejects `oak_boat`'s widened `EntityType` metadata. Common fix
+`cbd0814` validates the actual factory instance. NeoForge creation preparation
+`20260827T102021Z-301b24f954b5` was operator-cancelled, not a game regression.
+No automatic retry was consumed; the immutable aggregate and retained artifacts
+remain under `dist/qualification/nightly-matrix/20260827T100055Z-c2686d8aeaa8`.
+New frozen jars and fresh targeted multiplayer evidence are required after the
+fix; the above hashes and staged packages are historical, not changed-byte proof.
+
+Source-worldgen `20260827T094339Z-636659deb3ad` passes 26.1 Fabric.
+`20260827T094626Z-b5265759bec4` fails the 26.1.1 Fabric seam scan with a
+60-second watchdog (`RingWorldStrongholdTest.verifySeamWorldgenSample`), after
+production fresh/reload passed. Heavy NeoForge compilation overlapped; preserve
+the crash and retest serially before assigning cause. No watchdog relaxation
+or automatic crash retry is allowed. Controlled serial rerun
+`20260827T095814Z-05ec2a7057b2` passes 26.1.1 Fabric unchanged, supporting host
+contention. These source fixtures do not complete the upgrade matrix.
+
+The current 26.2 metadata-only review stage also assembled six client/server
+archives, all passing SHA-256 and nested MPL checks. Four local publication
+plans validate without a token or network call. This does not prove actual
+packaged clients and does not authorize an upload.
+
+Quick `20260827T083411Z` was cancelled during NeoForge asset download before a
+game launched; `20260827T085115Z` failed both build paths on a Mojang library
+POM (Fabric `FAIL`, NeoForge `INCOMPLETE`). Quick
+`20260827T090236Z-fdb8f0cf5e65` on `7fae756` passed both frozen 338-test builds
+(Fabric 7m35s, NeoForge 16m40s), then failed Fabric's diagnostic build on Maven
+POM `No route to host` errors after 6m26s. NeoForge diagnostics were incomplete;
+neither dedicated runtime launched. That failed attempt remains unchanged.
+Source-worldgen attempt `20260827T093000Z-f153f86ae12b` stopped at Fabric
+installer `EXIT_1` after a Mojang 26.1 version-JSON connection timeout, before
+world generation. All six assembled 26.1.x archives pass independent SHA-256
+and nested MPL checks; that is not a packaged game launch. The optional
+`--gradle-loom-cache` and 13-entry external-runtime download cache rehash and
+copy only pinned bytes into isolated state; neither enables offline mode.
+
+The source-ABI Fabric 26.2 diagnostic on clean `0ca305b`, stored below
+`dist/qualification/diagnostics/file-fix-20260827/fabric`, passes production
+noon projection after automatically accepting only the exact file-fix backup
+and completion prompts. The copied 26.1 source opens with 65,536/65,536 Atlas
+cells. Tangent/handoff/radial captures are present and visually reviewed;
+respective SHA-256 values are
+`d3f401b06e4a66e959d929bb40a3afbf22c5ba006f628d3611f76f09d4f985c2`,
+`6336639ff501e2e92c14266b400fbd112acf12310ecd9ccd752563c1cae30bc9`,
+and `924d688e09c46fac508f19010460314bf4e44949676018bc2c857d2b6f8124ce`.
+This is not frozen-candidate, complete-nightly, or packaged-launcher evidence.
+
+Corrected-depth quick run `20260827T073004Z-4c80e38c9d6b` from `97654ab`
+retains Fabric candidate SHA-256
+`9ee0b1a987ce64004b86f7cdcbe7e7a551b4d7479399afee92f518f61a095bac`
+and NeoForge candidate SHA-256
+`f1a7faec145b014951ee0da501c78fd7015e40fcce92db4bc31dd1e758925083`.
+Both frozen and per-cell builds/unit suites pass. Fabric's strict dedicated
+record passes; NeoForge fails installer retrieval before any server process
+starts (`URLError`). The aggregate therefore remains FAIL, not qualified.
+
+The current package subset passes 20 executed tests (22 total with two
+Windows-only launcher checks skipped on macOS). It covers positive 26.1.x and
+26.2 Fabric/NeoForge assembly, selected runtime profiles, Fabric API hashes,
+stale input and credential rejection, duplicate/opposite loader components,
+and deterministic macOS Java-discovery fixture behavior. These are assembly
+tests, not real packaged Windows graphical evidence.
+
+The 26.2 depth-port regression is guarded by two additional source-ABI tests
+in `scripts/test_minecraft_version_sources.py`: adapter comparison/range
+selection and shader far-clamp direction/perspective preservation. These are
+static contracts, not graphical proof. The production projection/parity
+fixtures must pass with the corrected frozen candidates before release.
+
+## Manifest-driven extension checkpoint (2026-08-27)
+
+`scripts/test_minecraft_version_sources.py` statically checks reviewed source-ABI
+selection, matching version-owned client adapters/mixins, and both loaders'
+Java/resource inclusion without invoking Gradle. Exploratory 26.2 Fabric and
+NeoForge builds each pass 338 unit/parameterized cases; the 26.1.2 dual-loader
+regression also passes 338 each. Runtime qualification is still separate.
+
+The cached exploratory Fabric and NeoForge 26.2 development runs below
+`dist/qualification/ringworld/26.2/<loader>/20260827T050609Z-f449d4b66919/frozen-<loader>/run`
+pass `run-creation-ui` (thirteen captures each) and `run-atlas-ui` (eleven
+captures, complete 4,096-cell atlas, ordered live revisions, normal disconnect,
+and cleared client state). This is dirty-source debugging evidence, not an
+immutable quick/nightly verdict or a production-launcher claim. It exposed and
+verified fixes for duplicate inherited GPU bindings and moved worldgen/client
+readiness mixin targets. Formal qualification must use a fresh clean candidate.
+
+Fresh quick run `20260827T054844Z-eab4ee8cebfb` from clean pushed `8048871`
+passes Fabric and NeoForge 26.2 dedicated-server qualification. Both strict
+terminal records were independently schema-validated and matched against the
+retained candidate jars. Frozen SHA-256 values:
+
+- Fabric: `20963c5bd150ccdec265079b27d5a665d143bfb3460fc7f218523ef67b9a442d`.
+- NeoForge: `02b1daebcffee9da28f900488ee1a02fa90db9f118a11287f344b2e578bf4c18`.
+
+Full nightly/gameplay/render and copied-world upgrade evidence is still pending.
+
+`test_minecraft_support_contract.py` checks historical 26.1.x identity,
+single-version 26.2 and synthetic future groups, exact candidate metadata,
+same-file coverage, missing loader rejection, and forbidden patch-range gaps.
+The static GitHub workflow includes these tests and watches all version
+manifests. See [VERSION_QUALIFICATION.md](VERSION_QUALIFICATION.md) for commands.
+This is automation coverage, not a 26.2 runtime support claim.
+
 RingWorld needs tests at three levels:
 
 1. pure geometry/topology unit tests;
@@ -132,6 +298,13 @@ at `<fixture-runtime>/world`; lifecycle/portal and production-render entries
 both require an immutable production-world input. Its creation entry covers
 the existing settings UI only. Atlas prewarm recovery is the sole planned
 same-fixture restart.
+
+For a copied 26.1 production world first opened by 26.2, the three explicitly
+enabled production client fixtures accept only the bounded file-fix backup and
+completion sequence documented in
+[`COPIED_WORLD_FILE_FIXTURE_UPGRADE.md`](COPIED_WORLD_FILE_FIXTURE_UPGRADE.md).
+This is fixture automation for a contained copy, never a live-world warning
+bypass or downgrade path.
 
 Both the frozen-candidate build and each diagnostic cell use
 `--max-workers=1`. This keeps dependency resolution serial on constrained
@@ -2005,6 +2178,326 @@ cells must never decrease, and at least two statuses must demonstrate a real
 increase. A `generation complete` status is accepted by the same rule. This is an
 advancement gate, not a requirement to complete all 3,328 chunks during the
 multiplayer scenario.
+
+For the rolling 26.1.x matrix, use the exact retained quick candidate rather
+than the checkout source-set mod:
+
+```sh
+python3 scripts/run_gradle_multiplayer_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+Run one graphical cell at a time and substitute each canonical Fabric or
+NeoForge cell ID. The command requires clean pushed source, validates that
+cell's strict quick record, installs one hash-identical candidate into the
+server and both clients, warms client assets serially, drives all three
+processes, sends a loopback-authenticated RCON `stop` command after PASS, invokes the
+existing Gradle verifier, and records immutable fixture-06 evidence. The
+loader development classpath intentionally uses an empty source set in this
+mode so checkout classes cannot shadow the retained jar. This is exact-patch
+frozen-jar evidence, not authenticated packaged-launcher evidence.
+The optional external Loom seed is revalidated against Mojang's version
+manifest, selected version JSON, and asset index before the exact client/server
+jars and every indexed asset object are copied into the isolated cell. It
+avoids depending on live Mojang downloads without reading or sharing the
+operator's ordinary Gradle home.
+
+The formal six-cell fixture-06 matrix passed from clean pushed commit
+`351056c` with quick run `20260823T130347Z-a493af8d7261`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260825T214555Z-944190e851f2` | `ef1351856f4244cfc9cfb0ba6b2a143fbcd1dc442661aa94d48b44412fddb3ce` |
+| 26.1.1 Fabric | `20260825T214848Z-6b762555368c` | `de7efbf4ee7192e1e13c26f4cb17ddc9021485d7ce5501f6f5f0f229ad2a8848` |
+| 26.1.2 Fabric | `20260825T215133Z-7c1ee4314c33` | `a7edd16dfc7ea617238005054578de4125b99f7e02bdd894a2dd4aaeaed81681` |
+| 26.1 NeoForge | `20260825T205441Z-67ab6c18f772` | `141edca6097b3f85d75ad0e31b68960347c85e2b8ef435276ff7978ed25ad7a4` |
+| 26.1.1 NeoForge | `20260825T213540Z-1d2e6b1e6b26` | `54873ef55ab475621e40e53087ba4d3aba389470a84f0012fd427e985fce636a` |
+| 26.1.2 NeoForge | `20260825T214008Z-ea4e5e2fd2c6` | `eb16896062fc4f7e8f5c0a9b1a36e7f7bacc732803d580a4aa37460c53494af5` |
+
+All Fabric cells used frozen candidate
+`1fc017289ebcb102d9894ccb16a30a697e03104b5c8165b6799a1496c4486216`;
+all NeoForge cells used
+`5fd60d12db03386866cc153b7921b180cd1e4a96d4f443443364d04357b56823`.
+
+For the frozen-candidate raid slice, run one graphical cell at a time:
+
+```sh
+python3 scripts/run_gradle_raid_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+The runner owns both phases and never touches the historical manual fixture
+directories. It requires the arm server to save and self-stop, preserves that
+world for reload, requires the reload `PASS`, stops the reload server through
+disposable loopback RCON, and terminates the two clients only after their game
+logs have been copied and hashed. This is exact frozen-jar evidence, not a
+packaged-launcher claim.
+
+The formal six-cell fixture-07 matrix passed from clean pushed commit
+`daaa1da7a0836b1afedb57722fbc5f8d0c01b113` with quick run
+`20260823T130347Z-a493af8d7261`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260825T221028Z-466a9d85a0a8` | `3fd34a4b3f056abff4d3b2104e7960958531b40ccfa71eecd9734c872df22952` |
+| 26.1.1 Fabric | `20260825T221240Z-0f1e832eeeb0` | `616cf2b10623e09d78aecaf581bbc1f15f112c11565dec163bf6504825d49b17` |
+| 26.1.2 Fabric | `20260825T221522Z-a58ea89ecbf1` | `c3b9ec716bdf8093bb4c07ba6d8db5849a02c3a6604471c770fc9b1fb7d6adaa` |
+| 26.1 NeoForge | `20260825T221751Z-ccdb777c556a` | `740627753a762ba8c82c9938a2e7a6d2cc4d848b280e38396aea21a9af9b160c` |
+| 26.1.1 NeoForge | `20260825T222236Z-d1d14d2036ff` | `fd073c649a99a6a49b6c6749f8faa5bba8a537fdcf17f35380128684ab0465a2` |
+| 26.1.2 NeoForge | `20260825T222743Z-3614fad43309` | `3414e4cc852c9c9879f8716b79d7e5e44401c69223c6a4407ad0ae875c4aa181` |
+
+All Fabric cells used frozen candidate
+`1fc017289ebcb102d9894ccb16a30a697e03104b5c8165b6799a1496c4486216`;
+all NeoForge cells used
+`5fd60d12db03386866cc153b7921b180cd1e4a96d4f443443364d04357b56823`.
+
+For frozen-candidate production lifecycle qualification, supply a reviewed
+complete production world by absolute path:
+
+```sh
+python3 scripts/run_gradle_production_lifecycle_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --source-world /absolute/path/to/complete-production-world \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+The operator runner inventories every regular source file and rejects links,
+special files, incomplete Atlas data, non-production geometry, stale saved
+format, or mapping mismatch. It copies the source into the cell-owned runtime,
+installs and rehashes the retained jar, excludes checkout classes, and binds
+the final dimension-transfer/save/disconnect/reopen log and world identities
+into fixture-11 evidence. The source directory remains read-only input.
+A source used across 26.1.x must have last been saved by 26.1. The lifecycle
+and render operators allow forward patch use and reject a 26.1.1/26.1.2 save
+when the selected target is older, avoiding Minecraft's interactive downgrade
+warning and invalid evidence.
+
+The formal six-cell fixture-11 matrix passed from clean pushed runner commit
+`d9ae051c7c0f838a242dc2afc97f785691c62e3f` with quick run
+`20260823T130347Z-a493af8d7261` and the same frozen candidate hashes recorded
+above:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260825T232710Z-952a555c46c0` | `f022a7354eadd24b51c7c04380dad2b2e5fbe08322dc64017af6c7ba88f427c9` |
+| 26.1.1 Fabric | `20260825T232829Z-b0aae351351b` | `8da2d32a580d1b90e95ae6fbbe5bbd0032d86f4520e721506899c14f7d3aa420` |
+| 26.1.2 Fabric | `20260825T232936Z-087e4043ed96` | `bdd56a0e205bb0fcd138b7992610a6233baa2bceaa4659e85efc0d465cd63199` |
+| 26.1 NeoForge | `20260825T233044Z-dba4e089a8ea` | `fd9ff3edad18c3ba5c733b804038c629a9e016c82a399b706a897ef63a11f298` |
+| 26.1.1 NeoForge | `20260825T233410Z-a95bc86f19f9` | `fe74466a35a64b4833f4f92a6989e446cfe3219b9cf791fb9f47f5c87d8bc873` |
+| 26.1.2 NeoForge | `20260825T233831Z-7747e410ff19` | `04a8d8c9ad7a61c35516db6abb5ba28d8580ebe42936a1feecb4fb8a3eabbe9c` |
+
+The source-world inventory SHA-256 was
+`8c450de590c2dec6ff70d17190c03204ef29048c50a887564a9704c53a9d13e5`;
+its complete Atlas SHA-256 was
+`ee9301b55595539f5abc98f1cf4d8a8796b9e633cd88914377a9227b91ef9be8`.
+The first 26.1 Fabric cell was also executed through the coordinator. Its child
+passed, while the intentionally partial one-cell/one-fixture aggregate
+correctly remained `INCOMPLETE`.
+
+The matching exact-candidate production rendering operator is:
+
+```sh
+python3 scripts/run_gradle_production_render_qualification.py \
+  --cell 26.1-fabric \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --source-world /absolute/path/to/complete-production-world \
+  --gradle-loom-cache /absolute/read-only/loom-seed
+```
+
+It creates fresh cell-owned copies for noon, dusk, night, rain, and visual
+parity; requires all twelve projection and four natural-seam/rim PNGs; hashes
+each per-mode game log; and requires tangent, handoff, radial-up, and seam
+motion frame metrics. It does not claim authenticated packaged-client proof.
+
+The formal six-cell fixture-12 matrix passed from clean pushed runner commit
+`425cbcf` with quick run `20260823T130347Z-a493af8d7261`:
+
+| Cell | Run ID | Terminal SHA-256 |
+| --- | --- | --- |
+| 26.1 Fabric | `20260825T234304Z-5ab300e78cc3` | `55d4cebdcd35a38a255c18dbd4a22368bf7eb3da0600f6b778de58ddb35c6ed1` |
+| 26.1.1 Fabric | `20260825T234729Z-80e30d8296fc` | `fac0cf968365922c0716946c001ed0f1bab6a5f12bad3fc3b40b558f3ed7f5b3` |
+| 26.1.2 Fabric | `20260825T235159Z-fe8322982a43` | `52230a038d9e30e2589b976d7ce126c0d02156d74421de62dc2e8701e90736d1` |
+| 26.1 NeoForge | `20260825T235644Z-7c6a194b372d` | `ff81a44d48f5d07d5979d50dcbcacea9241b6292734de3106068b7252ea4cf42` |
+| 26.1.1 NeoForge | `20260826T000338Z-d0fd305a1bde` | `1484dab90dbdf4bfddb73775f92e45057f7d810b1dcdbf05a6d18715b18d9058` |
+| 26.1.2 NeoForge | `20260826T001058Z-433b22bc0ff0` | `7c558f00ad46b4e8b4ec861f464e8f1be80a119651a8b225ed9857c0fd398af7` |
+
+All six records bind the reviewed source inventory and Atlas, exact quick
+terminal, unchanged frozen candidate hash, selected patch/loader dependencies,
+mode logs, sixteen PNGs, frame evidence, and immutable terminal evidence.
+
+Plan the whole ordered nightly matrix without writing runtime state:
+
+```sh
+python3 scripts/run_minecraft_nightly_matrix.py \
+  --quick-run-id 20260823T130347Z-a493af8d7261 \
+  --production-world /absolute/path/below/dist/qualification/to/26.1-world
+```
+
+After reviewing the command inventory, repeat with `--execute`. The
+coordinator serializes every graphical fixture, records each child command and
+terminal payload, blocks only the rest of a failed cell, and exclusive-creates
+one six-cell aggregate report. It forwards a bounded, recorded 120-second
+settle interval into each multiplayer child after isolated Gradle preparation
+and asset warmup. It also forwards the interval into each raid child, which
+applies it before arm and again between the saved arm phase and reload. A
+coordinator-side pause before preparation does not protect a runtime from that
+preparation load, and an immediate two-client raid reload can retain pressure
+from its arm phase. After
+independently validating a child result, it removes that
+child's disposable `gradle-home`, `cache`, `build`, and `run` directories so
+the 60-command matrix remains bounded on disk. Logs, captures, and immutable
+evidence remain untouched; required world identities are already hash-bound in
+the terminal record. It has no upload, deployment, tag, or live-server
+interface.
+
+Every fixture also has one narrowly classified infrastructure retry. It is
+scheduled only when the child reports the exact pre-game readiness failure
+`timed out waiting for marker 'Done ('` with a non-empty all-false claims map,
+or exits 1 before launch with no positive claim and bounded stderr containing
+both Loom's exact `DownloadException: Failed to download` setup marker and
+`BUILD FAILED`. The failed attempt is cleaned first, the host gets a recorded
+120-second cooldown, and the repeated command receives a new child run ID
+while both attempts remain in the aggregate report. Gameplay or test
+assertions, compilation failures, crashes, evidence failures, generic command
+timeouts, and an already-retried failure remain immediate failures.
+
+Aggregate `20260826T035240Z-55d20f097651` is retained as fail-closed
+diagnostic evidence: 44 PASS, three FAIL, thirteen INCOMPLETE, terminal
+SHA-256
+`fb261365004d507d29d8f4c8a48c7c239aca1a4c92791d8c79388ad43aa7e025`.
+It exposed one flaky two-sample exact-target compass assertion and proved the
+old coordinator-side pause occurred before, rather than after, each child's
+expensive preparation. Neither failure broadens support evidence.
+
+The corrected targeted runs on commit `d953b02` pass:
+
+- NeoForge 26.1.1 map/compass `20260826T071728Z-3cd837095d5b`;
+- Fabric 26.1.2 multiplayer `20260826T072112Z-ea3503a09b11`, terminal
+  SHA-256 `251f8cf5092d312cfec9a76a20fe77613dd6ca53fae598ead3fddae358d066a4`;
+- NeoForge 26.1.2 multiplayer `20260826T072608Z-26e04e212f30`, terminal
+  SHA-256 `2363a8a3972d5bd5cf7191b8e58fd14604fc6614af8a6690ff3645c2648701cd`.
+
+Complete-selection diagnostic `20260826T073421Z-f6d5d2fe9980` then produced
+six 26.1 Fabric PASS records through multiplayer. Its raid arm saved normally,
+but the immediate reload stopped advancing under sustained host pressure with
+only one client connected. It was deliberately interrupted before the outer
+30-minute timeout, so it has no aggregate terminal and is not support
+evidence. The stalled reload server/client logs are retained below that child
+run. Raid now uses the recorded bounded settle before both runtime phases; it
+passes corrected targeted 26.1 Fabric run
+`20260826T080924Z-6dfcb2ee422f`. The record binds
+`phase_settle_seconds: 120`, both real clients, both persisted phases, and
+terminal SHA-256
+`3fe71c211254df06d0e660da1bcdd62f8ab58f798e80d61cbf7abaa8934d535e`.
+A clean full aggregate is still required.
+
+Complete-selection coordinator run `20260826T081615Z-42881cab0db9` passed all
+26.1 Fabric records and the first five 26.1 NeoForge records, then stopped
+fail-closed on `ENOSPC`. External worldgen/Atlas compact results expose
+`terminal_evidence` rather than top-level `run_id`; the coordinator had
+verified those records but skipped their disposable runtime cleanup. Cleanup
+now derives the run ID only from a canonical contained
+`ringworld/<version>/<loader>/<run>/<cell>/evidence/nightly/...` path, rejects
+wrong identities, symlinks, traversal, and malformed IDs, and retains the
+evidence/log directories. This interrupted run is infrastructure diagnostic
+evidence only and has no aggregate terminal.
+
+The following clean attempt from `3aba403` passed the first four Fabric 26.1
+commands (five terminal records through client handshake). Its multiplayer
+child `20260826T094142Z-b23586bdcf3a` connected both real clients, then the
+server readiness barrier observed a 30.755-second tick interval and halted
+before gameplay assertions. The 16 GiB host was running three qualification
+game JVMs without explicit heap ceilings; each could inherit an approximately
+4 GiB default maximum. The disconnected clients were terminated after the
+server's conclusive failure so the child could write terminal SHA-256
+`18b684a5c5b91f668ba66dda0e584953b88c3b5d74787d5b97b8dda26cb82b68`.
+The remaining matrix was stopped and has no aggregate terminal. Both loader
+builds now cap multiplayer and raid server/client game JVMs at 2 GiB, and the
+multiplayer operator polls the server while waiting for clients so a halted
+server ends the child immediately. Static multiplayer and coordinator
+contracts pass 23/23, and Gradle configuration succeeds.
+
+Coordinator cleanup now retains evidence rather than only retaining references
+to deleted captures. Before removing a child `run` directory, it recursively
+finds terminal-bound PNG/log paths, requires each source to be a regular
+contained file with the exact recorded SHA-256, copies it into
+`evidence/retained-artifacts` under a hash-addressed name, and records that new
+path/size/hash in the aggregate. Per-file and per-child byte bounds fail closed.
+Worlds, caches, and unreferenced runtime files remain disposable.
+
+Fabric 26.1 targeted rerun `20260826T100752Z-3428554196a4` verified that the
+2 GiB heap arguments reached the server and both clients and that the new
+server-first polling ended the child promptly. The readiness gate still failed
+before gameplay: both clients used the intended two-chunk render distance, but
+their generated options showed VSync disabled and `maxFps:120`; the server
+accumulated 37.207 seconds behind while both render loops ran. Its terminal
+SHA-256 is `e5a9a63f4ba2a6a1c49936bef7dba2e37af8925e5b3e5caee47e80a5789cc70d`.
+The operator now writes a contained `maxFps:30`/`enableVsync:false` override to
+each disposable client options file after asset preparation and before the
+host-settle window. This is harness resource isolation, not runtime support
+evidence or a normal-client setting change.
+
+The corrected 30 FPS targeted Fabric 26.1 run
+`20260826T101522Z-6ec8d904431b` passes the full frozen-candidate multiplayer
+matrix. It cleared the readiness barrier, completed both natural seam
+directions, combat, stateful interaction and bidirectional placement,
+vehicle/reconnect, bed/death, physical Nether and End travel, multi-lap portal
+routing, hostile navigation, seam weather, and alias block-entity recovery.
+Terminal SHA-256 is
+`d29533d8dfaf28b19e0a8f135c8e84fd755e0fd24ecf4cb518ec5655d1c6cde3`.
+The next aggregate records `automated_client_max_fps: 30` explicitly in every
+multiplayer child terminal.
+
+Complete aggregate `20260826T102251Z-9ebec5b424d2` recorded 55 PASS, one FAIL,
+and four downstream INCOMPLETE results. NeoForge 26.1 raid alone timed out
+waiting for the pre-game server `Done (` marker before any claim; its four
+later fixtures were skipped. Aggregate terminal SHA-256 is
+`4a1f1e3baa103c1a73d38fc004fd4aad3691a25f2689a92474bf82068b949ae0`.
+
+After the narrowly classified one-retry coordinator change, targeted
+coordinator run `20260826T145215Z-b593bba25512` on pushed commit `aa64b3f`
+passed the NeoForge 26.1 raid, map/compass, production lifecycle, curved-object,
+and production-render fixtures on their first attempts. Their child run IDs
+and terminal hashes are recorded in `CURRENT_STATE.md`. Because this was an
+explicit subset, the aggregate correctly reports `INCOMPLETE`; terminal
+SHA-256 is
+`2a65eb626faf2b1f8496d361b814cb48ab3eb6a69bd6c0ad9b6218b14ff2d1ef`.
+No retry was consumed. A clean complete 60-command aggregate remains the final
+nightly-matrix gate.
+
+The next complete attempt began cleanly from pushed commit `bf0ae27` and passed
+the first 13 commands: every Fabric 26.1 command plus NeoForge 26.1 creation,
+worldgen, and interrupted-Atlas recovery. During NeoForge Atlas UI preparation,
+the Mac lost all outbound HTTPS connectivity while its local gateway remained
+reachable. Child run `20260826T212553Z-95a9f246b50a` failed before Minecraft
+launched with Loom's exact dependency `DownloadException`; every positive
+fixture claim remained false. The Atlas-UI and handshake diagnostic terminal
+hashes are respectively
+`a93fa427f4f37d4a5eafabd7738104d6555987c35bcdb22c8518003958372c66` and
+`83095e86e1bc1742b119b2d70a6ab66705844ab0fa01ac52e89e209715dfe050`.
+The doomed aggregate was stopped after the coordinator advanced to the next
+independent cell, so it intentionally has no aggregate terminal and is not
+support evidence. The exact pre-launch network failure is now the second
+bounded retry class; static coordinator tests pass 15/15.
+
+Complete aggregate `20260826T215217Z-68410e5f8e85` subsequently executed all
+60 commands and retained 55 PASS results. Its NeoForge 26.1 raid reload saw a
+stale arm-phase `Done (` marker in the persistent game `latest.log`; client A
+then attempted its one connection before the new server socket was ready,
+while client B connected one second later. The operator now waits for `Done (`
+in the newly created per-phase process log. At the owner's direction, only
+that failed fixture was rerun. Targeted run
+`20260827T040412Z-ee7ba84a5b3b` on pushed commit `f27a180` passed both phases;
+its terminal SHA-256 is
+`300a0f7a92cb210f46224141c9076dd3f3ce8ed3882ff139328140eb5271a0da`.
+Use the aggregate's retained 55 PASS records plus this repair record and the
+already retained four exact-candidate downstream PASS records for final
+review. Do not describe the combined evidence as a single all-PASS process.
 
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`

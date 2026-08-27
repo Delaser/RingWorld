@@ -20,7 +20,9 @@ if str(ROOT / "scripts") not in sys.path:
 from external_runtime_atlas_recovery_plan import QuickTerminalEvidenceInput  # noqa: E402
 from external_runtime_executor import ExecutedCommand  # noqa: E402
 from external_runtime_smoke import CandidateJar, RuntimeDownload  # noqa: E402
-from external_runtime_worldgen_executor import execute_external_runtime_worldgen  # noqa: E402
+from external_runtime_worldgen_executor import (  # noqa: E402
+    WorldgenExecutionError, execute_external_runtime_worldgen,
+)
 from external_runtime_worldgen_executor import (  # noqa: E402
     ForwardUpgradeSource, execute_external_runtime_forward_upgrade,
 )
@@ -160,6 +162,7 @@ class ExternalRuntimeWorldgenExecutorTest(unittest.TestCase):
 
         def execute(record, paths, *, ordinal):
             smoke = next(value for value in by_root.values() if str(value.layout.root) in record.argv)
+            assert (smoke.layout.root / "server.jar").read_bytes() == server
             if smoke.loader == "fabric":
                 smoke.layout.fabric_server_jar.write_bytes(b"launcher")  # type: ignore[union-attr]
             else:
@@ -172,7 +175,6 @@ class ExternalRuntimeWorldgenExecutorTest(unittest.TestCase):
                 )
                 installed_server.mkdir(parents=True)
                 (installed_server / f"server-{smoke.minecraft_version}.jar").write_bytes(server)
-            (smoke.layout.root / "server.jar").write_bytes(server)
             return ExecutedCommand("DEDICATED_SMOKE", Verdict.PASS, record.argv, 0, "now", 0.0, "", "")
         return execute
 
@@ -298,13 +300,36 @@ class ExternalRuntimeWorldgenExecutorTest(unittest.TestCase):
             }), encoding="utf-8")
             source = ForwardUpgradeSource(
                 "26.1-fabric", "fabric", "26.1", source_root, terminal, sha256(terminal.read_bytes()),
-                source_world, source_log, sha256(raw),
+                base_plan.candidate.sha256, source_world, source_log, sha256(raw),
             )
             fake_plan = type("ResumeOnly", (), {"stages": (stage,)})()
+            # The forward fixture receives independent source and target
+            # manifests. Deliberately corrupt only the target map's source
+            # identity: the target quick still needs its complete loader group,
+            # while forward validation must read the separate source map.
+            target_cells = canonical_cells()
+            target_cells[source.cell_id] = {
+                **target_cells[source.cell_id], "minecraft_version": "26.2",
+            }
+            source_cells = {source.cell_id: canonical_cells()[source.cell_id]}
+            bad_source_cells = {source.cell_id: {
+                **source_cells[source.cell_id], "minecraft_version": "26.1.1",
+            }}
+            with self.assertRaisesRegex(WorldgenExecutionError, "source manifest identity/range is inconsistent"):
+                execute_external_runtime_forward_upgrade(
+                    source, cell, base_plan.candidate, base_plan.quick_terminal_evidence, stage, paths, paths.run_id,
+                    frozen_candidate_root=base_plan.frozen_candidate_root, quick_evidence_root=paths.cell_root,
+                    fixture_root=fixture, evidence_root=evidence, canonical_cells=target_cells, range_identities=RANGES,
+                    source_canonical_cells=bad_source_cells, source_range_identities=RANGES,
+                    opener=lambda url, *, timeout: Response(url, bodies[url]), command_executor=self.installer(fake_plan, server),
+                    stage_runner=self.stage_runner(fake_plan), candidate_inspector=self.inspector(base_plan),
+                    execution_source_provenance=PROVENANCE,
+                )
             result = execute_external_runtime_forward_upgrade(
                 source, cell, base_plan.candidate, base_plan.quick_terminal_evidence, stage, paths, paths.run_id,
                 frozen_candidate_root=base_plan.frozen_candidate_root, quick_evidence_root=paths.cell_root,
-                fixture_root=fixture, evidence_root=evidence, canonical_cells=canonical_cells(), range_identities=RANGES,
+                fixture_root=fixture, evidence_root=evidence, canonical_cells=target_cells, range_identities=RANGES,
+                source_canonical_cells=source_cells, source_range_identities=RANGES,
                 opener=lambda url, *, timeout: Response(url, bodies[url]), command_executor=self.installer(fake_plan, server),
                 stage_runner=self.stage_runner(fake_plan), candidate_inspector=self.inspector(base_plan),
                 execution_source_provenance=PROVENANCE,

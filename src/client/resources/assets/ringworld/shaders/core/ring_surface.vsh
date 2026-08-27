@@ -20,16 +20,21 @@ const float TAU = 6.28318530717958647692;
 // approximately 4,950-block diameter while the normal 28-chunk level far
 // plane is only about 1,792 blocks. Clamping clip-space Z leaves X/Y/W (and
 // therefore apparent curvature) untouched. Vertices behind the eye retain
-// normal frustum clipping.
+// normal frustum clipping. The 26.2 adapter supplies the reversed far boundary
+// in ModelOffset.z, using the active backend's [-1,1] or [0,1] depth range.
 const float FAR_BACKGROUND_DEPTH = 0.9999;
 
 void main() {
     gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
     if (gl_Position.w > 0.0) {
+#ifdef RINGWORLD_REVERSED_DEPTH
+        gl_Position.z = max(gl_Position.z, gl_Position.w * ModelOffset.z);
+#else
         gl_Position.z = min(
             gl_Position.z,
             gl_Position.w * FAR_BACKGROUND_DEPTH
         );
+#endif
     }
 
     // Position.xy is the global cylinder and ModelOffset.x is the canonical

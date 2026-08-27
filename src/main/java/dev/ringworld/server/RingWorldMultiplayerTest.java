@@ -13,7 +13,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.decoration.ArmorStand;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.entity.vehicle.boat.Boat;
 import net.minecraft.world.item.ItemStack;
@@ -94,7 +94,8 @@ public final class RingWorldMultiplayerTest {
             clearStaleTestVehicles(world);
             world.setRespawnData(LevelData.RespawnData.of(
                     world.dimension(), new BlockPos(0, 120, 0), 0.0f, 0.0f));
-            world.setBlock(seamArmMarker(), Blocks.RED_CONCRETE.defaultBlockState(), 3);
+            world.setBlock(seamArmMarker(), RingWorldVanillaFixtureRegistries
+                    .block("red_concrete").defaultBlockState(), 3);
             world.setBlock(combatResultMarker(), Blocks.AIR.defaultBlockState(), 3);
             initialized = true;
             RingWorldMod.LOGGER.info("[multiplayer] seam test region ready; waiting for clients");
@@ -158,7 +159,8 @@ public final class RingWorldMultiplayerTest {
                     Set.<Relative>of(), 90.0f, 10.0f, false);
             playerB.teleportTo(world, 2.0, 120.0, 0.5,
                     Set.<Relative>of(), -90.0f, 10.0f, false);
-            world.setBlock(seamArmMarker(), Blocks.BLUE_CONCRETE.defaultBlockState(), 3);
+            world.setBlock(seamArmMarker(), RingWorldVanillaFixtureRegistries
+                    .block("blue_concrete").defaultBlockState(), 3);
             previousAX = playerA.getX();
             maximumAStep = 0.0;
             maximumAPacketStep = 0.0;
@@ -205,7 +207,8 @@ public final class RingWorldMultiplayerTest {
         if (stage == 2) {
             if (playerB.getHealth() < playerB.getMaxHealth()) {
                 combatPassed = true;
-                world.setBlock(combatResultMarker(), Blocks.LIME_CONCRETE.defaultBlockState(), 3);
+                world.setBlock(combatResultMarker(), RingWorldVanillaFixtureRegistries
+                        .block("lime_concrete").defaultBlockState(), 3);
                 RingWorldMod.LOGGER.info(
                         "[multiplayer] cross-seam melee result=true (A={}, B={}, B health={})",
                         playerA.getX(), playerB.getX(), playerB.getHealth());
@@ -214,7 +217,8 @@ public final class RingWorldMultiplayerTest {
                 stage = 3;
                 ticks = 0;
             } else if (ticks >= 1_200) {
-                world.setBlock(combatResultMarker(), Blocks.RED_CONCRETE.defaultBlockState(), 3);
+                world.setBlock(combatResultMarker(), RingWorldVanillaFixtureRegistries
+                        .block("red_concrete").defaultBlockState(), 3);
                 RingWorldMod.LOGGER.error(
                         "[multiplayer] cross-seam melee result=false (A={}, B={}, periodicDistance={})",
                         playerA.getX(), playerB.getX(), playerA.distanceTo(playerB));
@@ -482,7 +486,8 @@ public final class RingWorldMultiplayerTest {
                                                 ServerPlayer player, boolean passed) {
         placementPassed = passed;
         prepareCreativePlayer(player);
-        Boat boat = EntityType.OAK_BOAT.create(world, EntitySpawnReason.COMMAND);
+        Boat boat = RingWorldVanillaFixtureRegistries.createEntity(
+                "oak_boat", Boat.class, world, EntitySpawnReason.COMMAND);
         if (boat != null) {
             boat.setPos(geometry.circumferenceBlocks() - 2.0, 120.0, 3.5);
             boat.setYRot(37.0f);
@@ -493,7 +498,8 @@ public final class RingWorldMultiplayerTest {
             boat.setDeltaMovement(Vec3.ZERO);
             world.addFreshEntity(boat);
             vehicleId = boat.getId();
-            Entity passenger = EntityType.ARMOR_STAND.create(world, EntitySpawnReason.COMMAND);
+            Entity passenger = RingWorldVanillaFixtureRegistries.createEntity(
+                    "armor_stand", ArmorStand.class, world, EntitySpawnReason.COMMAND);
             if (passenger != null) {
                 passenger.setPos(boat.getX(), boat.getY(), boat.getZ());
                 passenger.setYRot(boat.getYRot());

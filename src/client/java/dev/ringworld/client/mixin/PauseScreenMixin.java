@@ -19,7 +19,7 @@ abstract class PauseScreenMixin extends Screen {
     private void ringworld$addMapButton(CallbackInfo callback) {
         if (!RingWorldMapScreen.canOpen()) return;
         addRenderableWidget(Button.builder(Component.literal("RingWorld Map"),
-                        button -> minecraft.setScreen(new RingWorldMapScreen((Screen)(Object)this)))
+                        button -> dev.ringworld.client.RingMinecraftClientAccess.setScreen(minecraft, new RingWorldMapScreen((Screen)(Object)this)))
                 // Keep this independent of vanilla's vertically packed menu.
                 // At GUI scale 4, adding another full-width row to that stack
                 // overlaps Save and Quit on a 1080p window.

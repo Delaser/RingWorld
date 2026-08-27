@@ -7,6 +7,7 @@ from dataclasses import replace
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import socket
 import sys
@@ -124,13 +125,12 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
         def run(record, paths, *, ordinal: int):
             assert ordinal == 1
             assert plan.layout.root.is_dir()
+            seeded_server = plan.layout.root / "server.jar"
+            assert seeded_server.read_bytes() == b"fake-mojang-server-" + plan.cell_id.encode("ascii")
             if plan.loader == "fabric":
-                assert not any(plan.layout.root.iterdir())
                 assert plan.layout.fabric_server_jar is not None
                 plan.layout.fabric_server_jar.write_bytes(b"fake fabric launcher")
             else:
-                seeded_server = plan.layout.root / "server.jar"
-                assert seeded_server.read_bytes() == b"fake-mojang-server-" + plan.cell_id.encode("ascii")
                 assert plan.layout.neoforge_run_script is not None
                 assert plan.layout.neoforge_user_jvm_args is not None
                 plan.layout.neoforge_run_script.write_text("#!/bin/sh\n", encoding="utf-8")
@@ -147,8 +147,6 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
                     (installed / f"server-{plan.minecraft_version}.jar").write_bytes(b"wrong-mojang-server")
                 else:
                     (plan.layout.root / "server.jar").write_bytes(b"wrong-mojang-server")
-            elif plan.loader == "fabric":
-                (plan.layout.root / "server.jar").write_bytes(b"fake-mojang-server-" + plan.cell_id.encode("ascii"))
             if extra_ringworld:
                 plan.layout.mods_directory.mkdir()
                 (plan.layout.mods_directory / "ringworld-old.jar").write_bytes(b"wrong")
@@ -187,6 +185,7 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
             assert result.runtime_identity is not None
             self.assertEqual(plan.minecraft_server.checksum, result.runtime_identity.minecraft_server_expected)
             self.assertEqual(plan.minecraft_server.checksum, result.runtime_identity.minecraft_server_actual)
+            self.assertEqual(str(plan.layout.root / "server.jar"), result.runtime_identity.minecraft_server_path)
             self.assertEqual(
                 ("installer-start", "installer-complete", "runtime-start", "loader-bootstrap", "ringworld-bootstrap", "atlas-disabled", "server-ready", "stop-sent", "server-stop", "world-save", "clean-stop", "runtime-exit"),
                 tuple(item.name for item in result.marker_ledger),
@@ -269,6 +268,20 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
             self.assertTrue(plan.layout.root.is_dir())
             self.assertEqual([], list(plan.layout.root.iterdir()))
 
+    def test_corrupt_mojang_server_seed_prevents_installer(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths, plan, bodies = self.plan(Path(directory), "26.1-fabric")
+            bodies[plan.minecraft_server.url] = b"corrupt-mojang-server"
+            called = []
+            with self.assertRaises(EXECUTOR.ExternalRuntimeExecutionError):
+                EXECUTOR.execute_external_runtime_smoke(
+                    plan, paths, paths.run_id, opener=self.opener(bodies),
+                    command_executor=lambda *args, **kwargs: called.append(True),
+                )
+            self.assertEqual([], called)
+            self.assertTrue(plan.layout.root.is_dir())
+            self.assertEqual([], list(plan.layout.root.iterdir()))
+
     def test_query_url_is_rejected_before_network_access(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             paths, plan, _ = self.plan(Path(directory), "26.1-fabric")
@@ -295,6 +308,85 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
             download.destination.write_bytes(b"corrupt")
             with self.assertRaises(EXECUTOR.ExternalRuntimeExecutionError):
                 EXECUTOR.fetch_pinned_https(download, paths, opener=self.opener(bodies))
+
+    def test_optional_worker_download_cache_seeds_without_network_and_rehashes_copy(self) -> None:
+        # Windows commonly places its temp directory inside the real home;
+        # model a separate operator home without requiring a macOS-only path.
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as cache_directory, \
+                patch.object(Path, "home", return_value=Path(directory) / "operator-home"):
+            paths, plan, bodies = self.plan(Path(directory), "26.1-fabric")
+            download = plan.downloads[0]
+            root = Path(cache_directory).resolve()
+            entry = root / download.algorithm / download.checksum
+            entry.parent.mkdir()
+            entry.write_bytes(bodies[download.url])
+            entry.chmod(0o444)
+            entry.parent.chmod(0o555)
+            root.chmod(0o555)
+            with patch.dict(os.environ, {"RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE": str(root)}):
+                result = EXECUTOR.fetch_pinned_https(
+                    download, paths,
+                    opener=lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("network must not run")),
+                )
+            self.assertTrue(result.reused_cache)
+            self.assertEqual(bodies[download.url], download.destination.read_bytes())
+
+    def test_worker_download_cache_rejects_bad_path_symlink_and_wrong_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as cache_directory, \
+                patch.object(Path, "home", return_value=Path(directory) / "operator-home"):
+            paths, plan, _ = self.plan(Path(directory), "26.1-fabric")
+            download = plan.downloads[0]
+            with patch.dict(os.environ, {"RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE": "relative-cache"}):
+                with self.assertRaisesRegex(EXECUTOR.ExternalRuntimeExecutionError, "absolute"):
+                    EXECUTOR.fetch_pinned_https(download, paths)
+            root = Path(cache_directory).resolve()
+            entry = root / download.algorithm / download.checksum
+            entry.parent.mkdir()
+            entry.write_bytes(b"wrong")
+            entry.chmod(0o444)
+            entry.parent.chmod(0o555)
+            root.chmod(0o555)
+            with patch.dict(os.environ, {"RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE": str(root)}):
+                with self.assertRaisesRegex(EXECUTOR.ExternalRuntimeExecutionError, "fails its pin"):
+                    EXECUTOR.fetch_pinned_https(download, paths)
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as cache_directory, \
+                patch.object(Path, "home", return_value=Path(directory) / "operator-home"):
+            paths, plan, _ = self.plan(Path(directory), "26.1-fabric")
+            target = Path(cache_directory).resolve() / "target"
+            target.mkdir()
+            root = Path(cache_directory).resolve() / "cache"
+            root.symlink_to(target, target_is_directory=True)
+            with patch.dict(os.environ, {"RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE": str(root)}):
+                with self.assertRaisesRegex(EXECUTOR.ExternalRuntimeExecutionError, "non-symlink"):
+                    EXECUTOR.fetch_pinned_https(plan.downloads[0], paths)
+
+    def test_worker_download_cache_rejects_operator_home_before_network(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as home:
+            paths, plan, _ = self.plan(Path(directory), "26.1-fabric")
+            root = Path(home).resolve() / "cache"
+            root.mkdir()
+            with patch.object(Path, "home", return_value=Path(home).resolve()), \
+                    patch.dict(os.environ, {"RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE": str(root)}):
+                with self.assertRaisesRegex(EXECUTOR.ExternalRuntimeExecutionError, "outside checkout, home"):
+                    EXECUTOR.fetch_pinned_https(
+                        plan.downloads[0], paths,
+                        opener=lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("network must not run")),
+                    )
+
+    def test_worker_download_cache_rejects_untrusted_algorithm_and_digest_before_path_join(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths, plan, _ = self.plan(Path(directory), "26.1-fabric")
+            for changed in (
+                replace(plan.downloads[0], algorithm="md5"),
+                replace(plan.downloads[0], checksum="../outside"),
+                replace(plan.downloads[0], checksum="A" * 64),
+            ):
+                with self.subTest(changed=changed.algorithm + ":" + changed.checksum):
+                    with self.assertRaisesRegex(EXECUTOR.ExternalRuntimeExecutionError, "algorithm or digest"):
+                        EXECUTOR.fetch_pinned_https(
+                            changed, paths,
+                            opener=lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("network must not run")),
+                        )
 
     def test_extra_ringworld_jar_is_rejected_after_copy(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

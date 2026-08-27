@@ -110,14 +110,14 @@ def parse_neoforge_version(value: str) -> NeoForgeVersion:
     )
 
 
-def parse_fabric_minecraft_range(value: str) -> FabricMinecraftRange:
+def parse_fabric_minecraft_range(value: str, *, approved_range: str = APPROVED_FABRIC_MINECRAFT_RANGE) -> FabricMinecraftRange:
     """Accept only the approved closed Fabric 26.1.x predicate."""
     if not isinstance(value, str):
         raise CompatibilityRangeError("Fabric Minecraft range must be a string")
     match = _FABRIC_RANGE.fullmatch(value)
     if match is None:
         raise CompatibilityRangeError("Fabric Minecraft range must be exactly '>=lower <=upper'")
-    if value != APPROVED_FABRIC_MINECRAFT_RANGE:
+    if value != approved_range:
         raise CompatibilityRangeError("Fabric Minecraft range is not the approved 26.1.x frozen-candidate range")
     result = FabricMinecraftRange(
         parse_minecraft_version(match.group("lower")),
@@ -128,10 +128,10 @@ def parse_fabric_minecraft_range(value: str) -> FabricMinecraftRange:
     return result
 
 
-def parse_neoforge_minecraft_range(value: str) -> NeoForgeRange:
+def parse_neoforge_minecraft_range(value: str, *, approved_range: str = APPROVED_NEOFORGE_MINECRAFT_RANGE) -> NeoForgeRange:
     """Accept only the approved closed NeoForge Minecraft range."""
     lower, upper = _parse_closed_neoforge_range(value)
-    if value != APPROVED_NEOFORGE_MINECRAFT_RANGE:
+    if value != approved_range:
         raise CompatibilityRangeError("NeoForge Minecraft range is not the approved 26.1.x frozen-candidate range")
     result = NeoForgeRange(parse_minecraft_version(lower), parse_minecraft_version(upper))
     if result.lower > result.upper:
@@ -139,10 +139,10 @@ def parse_neoforge_minecraft_range(value: str) -> NeoForgeRange:
     return result
 
 
-def parse_neoforge_loader_range(value: str) -> NeoForgeRange:
+def parse_neoforge_loader_range(value: str, *, approved_range: str = APPROVED_NEOFORGE_LOADER_RANGE) -> NeoForgeRange:
     """Accept only the approved closed NeoForge loader range."""
     lower, upper = _parse_closed_neoforge_range(value)
-    if value != APPROVED_NEOFORGE_LOADER_RANGE:
+    if value != approved_range:
         raise CompatibilityRangeError("NeoForge loader range is not the approved 26.1.x frozen-candidate range")
     result = NeoForgeRange(parse_neoforge_version(lower), parse_neoforge_version(upper))
     if result.lower > result.upper:

@@ -37,7 +37,7 @@ public final class AtlasPregenerationClientState {
         if (previous != null && previous.worldHash() == next.worldHash()
                 && previous.progress().state() != AtlasPregenerationState.COMPLETE
                 && next.progress().state() == AtlasPregenerationState.COMPLETE) {
-            SystemToast.add(client.getToastManager(), SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+            SystemToast.add(RingMinecraftClientAccess.toastManager(client), SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
                     Component.literal("RingWorld Map"), Component.literal("Entire Ring generation is complete."));
         }
     }

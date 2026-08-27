@@ -22,7 +22,7 @@ from external_runtime_executor import (
     CommandExecutor, DownloadResult, ExternalRuntimeExecutionError, ModCopyResult,
     UrlOpen, _assert_contained, _assert_no_symlink_components, _copy_pinned_mod,
     _installed_minecraft_server, _no_redirect_urlopen, _verify_exact_mod_inventory,
-    _verify_launcher, _write_planned_file, fetch_pinned_https,
+    _verify_launcher, _write_planned_file, fetch_pinned_https, preseed_minecraft_server,
 )
 from external_runtime_worldgen_plan import ExternalRuntimeWorldgenPlan, WorldgenStagePlan
 from external_runtime_worldgen_stage_runner import (
@@ -34,6 +34,10 @@ from minecraft_atlas_recovery_persistence import parse_persisted_ring_settings
 from minecraft_frozen_candidate import FrozenCandidateError, FrozenCandidateInspection, inspect_frozen_candidate
 from minecraft_qualification_executor import ExecutedCommand, QualificationLock, create_contained_directories, write_terminal_report
 from minecraft_qualification_model import CommandRecord, InvocationError, PhaseName, QualificationPaths, Verdict, is_within
+from minecraft_qualification_ranges import (
+    CompatibilityRangeError, parse_fabric_minecraft_range, parse_minecraft_version,
+    parse_neoforge_minecraft_range,
+)
 from minecraft_worldgen_qualification import (
     QualificationIdentity, TimedMarker, WorldgenLogFact,
     WorldgenQualificationEvidence, WorldgenStageEvidence,
@@ -95,6 +99,7 @@ def _assemble(smoke, paths: QualificationPaths, ordinal: int, opener: UrlOpen,
     smoke.layout.root.mkdir(parents=True, exist_ok=False)
     downloads = [fetch_pinned_https(smoke.minecraft_server, paths, opener=opener)]
     downloads.extend(fetch_pinned_https(item, paths, opener=opener) for item in smoke.downloads)
+    preseed_minecraft_server(smoke, Path(downloads[0].path), paths)
     record = CommandRecord(
         PhaseName.DEDICATED_SMOKE, smoke.installer.argv, smoke.installer.cwd, (),
         smoke.launch.timeout_seconds,
@@ -367,6 +372,7 @@ class ForwardUpgradeSource:
     cell_root: Path
     terminal_path: Path
     terminal_sha256: str
+    frozen_candidate_sha256: str
     world_root: Path
     resume_log_path: Path
     resume_log_sha256: str
@@ -413,7 +419,7 @@ def _copy_world(source: Path, source_root: Path, destination: Path, destination_
     _regular_tree(destination, destination_root, "copied upgrade world")
 
 
-def _source_terminal(source: ForwardUpgradeSource, candidate: CandidateJar) -> None:
+def _source_terminal(source: ForwardUpgradeSource) -> str:
     raw = _read_regular(source.terminal_path, source.cell_root, "source worldgen terminal")
     if _sha256_bytes(raw) != source.terminal_sha256:
         raise WorldgenExecutionError("source worldgen terminal changed before upgrade execution")
@@ -429,7 +435,8 @@ def _source_terminal(source: ForwardUpgradeSource, candidate: CandidateJar) -> N
     if not isinstance(qualification, Mapping) or (
         record.get("fixture"), record.get("cell_id"), record.get("loader"), record.get("minecraft_version"), record.get("verdict"),
     ) != ("worldgen-seam-structures", source.cell_id, source.loader, source.minecraft_version, "PASS") \
-            or qualification.get("frozenCandidateSha256") != candidate.sha256 \
+            or not isinstance(qualification.get("frozenCandidateSha256"), str) \
+            or re.fullmatch(r"[0-9a-f]{64}", qualification["frozenCandidateSha256"]) is None \
             or tuple(qualification.get("stages", ())) != (
                 "production-fresh", "production-resume", "seam-crossing", "terminal-policy",
             ) or not isinstance(resume_capture, Mapping) \
@@ -440,6 +447,10 @@ def _source_terminal(source: ForwardUpgradeSource, candidate: CandidateJar) -> N
     raw_log = _read_regular(source.resume_log_path, source.cell_root, "source production-resume log")
     if _sha256_bytes(raw_log) != source.resume_log_sha256:
         raise WorldgenExecutionError("source production-resume log changed before upgrade execution")
+    candidate_hash = qualification["frozenCandidateSha256"]
+    if candidate_hash != source.frozen_candidate_sha256:
+        raise WorldgenExecutionError("source worldgen terminal candidate hash changed before upgrade execution")
+    return candidate_hash
 
 
 def _forward_upgrade_payload(result: ExternalForwardUpgradeResult) -> dict[str, Any]:
@@ -481,6 +492,8 @@ def execute_external_runtime_forward_upgrade(
     frozen_candidate_root: Path, quick_evidence_root: Path,
     fixture_root: Path, evidence_root: Path,
     canonical_cells: Mapping[str, Mapping[str, Any]], range_identities: Mapping[str, Mapping[str, str]],
+    source_canonical_cells: Mapping[str, Mapping[str, Any]] | None = None,
+    source_range_identities: Mapping[str, Mapping[str, str]] | None = None,
     opener: UrlOpen = _no_redirect_urlopen, command_executor: CommandExecutor | None = None,
     stage_runner: StageRunner = run_external_runtime_worldgen_stage,
     candidate_inspector: CandidateInspector = inspect_frozen_candidate,
@@ -494,6 +507,12 @@ def execute_external_runtime_forward_upgrade(
     if source.loader != candidate.loader or target_cell.get("loader") != source.loader \
             or not isinstance(minecraft, Mapping) or not isinstance(minecraft.get("version"), str):
         raise WorldgenExecutionError("forward upgrade loader/cell identity is inconsistent")
+    try:
+        forward = parse_minecraft_version(source.minecraft_version) < parse_minecraft_version(minecraft["version"])
+    except CompatibilityRangeError as error:
+        raise WorldgenExecutionError("forward upgrade has invalid stable Minecraft versions") from error
+    if not forward:
+        raise WorldgenExecutionError("forward upgrade must target a numerically later Minecraft version")
     result_base = dict(
         source_cell_id=source.cell_id, target_cell_id=paths.cell_id, loader=source.loader,
         source_minecraft_version=source.minecraft_version, target_minecraft_version=minecraft["version"],
@@ -508,7 +527,35 @@ def execute_external_runtime_forward_upgrade(
             raise WorldgenExecutionError("forward upgrade fixture paths must be absent")
         _assert_no_symlink_components(paths.cell_root, paths.repository_root, "upgrade qualification cell")
         _revalidate_candidate(type("Plan", (), {"candidate": candidate, "frozen_candidate_root": frozen_candidate_root})(), candidate_inspector)
-        _source_terminal(source, candidate)
+        source_candidate_hash = _source_terminal(source)
+        # Source and target may belong to different reviewed candidate groups.
+        # Keep their identities distinct even though only the target quick
+        # evidence drives the runtime assembly.
+        source_cells = source_canonical_cells or canonical_cells
+        source_ranges = source_range_identities or range_identities
+        source_identity = source_cells.get(source.cell_id)
+        source_range = source_ranges.get(source.loader)
+        if not isinstance(source_identity, Mapping) or source_identity.get("minecraft_version") != source.minecraft_version \
+                or source_identity.get("loader") != source.loader \
+                or not isinstance(source_range, Mapping) \
+                or not isinstance(source_range.get("minecraft_range"), str) \
+                or not isinstance(source_range.get("oldest_abi_minecraft_version"), str):
+            raise WorldgenExecutionError("source manifest identity/range is inconsistent")
+        try:
+            source_version = parse_minecraft_version(source.minecraft_version)
+            if source.loader == "fabric":
+                source_coverage = parse_fabric_minecraft_range(
+                    source_range["minecraft_range"], approved_range=source_range["minecraft_range"],
+                )
+            else:
+                source_coverage = parse_neoforge_minecraft_range(
+                    source_range["minecraft_range"], approved_range=source_range["minecraft_range"],
+                )
+            if parse_minecraft_version(source_range["oldest_abi_minecraft_version"]) > source_version \
+                    or not source_coverage.contains(source_version):
+                raise WorldgenExecutionError("source manifest range does not cover its source cell")
+        except (CompatibilityRangeError, ValueError) as error:
+            raise WorldgenExecutionError("source manifest range is invalid") from error
         source_settings_path = source.world_root / "dimensions/minecraft/overworld/data/ringworld/settings.dat"
         try:
             source_settings = parse_persisted_ring_settings(
@@ -547,7 +594,7 @@ def execute_external_runtime_forward_upgrade(
         )
         try:
             qualified = validate_forward_world_upgrade(
-                canonical_cells[source.cell_id], canonical_cells[paths.cell_id], identity,
+                source_cells[source.cell_id], canonical_cells[paths.cell_id], identity,
                 ForwardUpgradeEvidence(
                     fixture_root, evidence_root, paths.logs_directory, source.world_root, target_stage.world_root,
                     source_settings, target_stage.settings, source_record, target_stage.log.record,
@@ -562,6 +609,7 @@ def execute_external_runtime_forward_upgrade(
         summary.update({
             "frozenCandidateSha256": candidate.sha256,
             "sourceWorldgenTerminalSha256": source.terminal_sha256,
+            "sourceFrozenCandidateSha256": source_candidate_hash,
             "targetQuickTerminalSha256": target_quick_terminal.sha256,
             "executionSourceProvenance": source_provenance,
             "sourceResumeLogSha256": source.resume_log_sha256,

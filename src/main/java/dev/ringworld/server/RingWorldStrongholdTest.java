@@ -403,10 +403,13 @@ public final class RingWorldStrongholdTest {
     }
 
     private static boolean isOre(net.minecraft.world.level.block.state.BlockState state) {
-        return state.is(BlockTags.COAL_ORES) || state.is(BlockTags.COPPER_ORES)
-                || state.is(BlockTags.IRON_ORES) || state.is(BlockTags.GOLD_ORES)
-                || state.is(BlockTags.REDSTONE_ORES) || state.is(BlockTags.LAPIS_ORES)
-                || state.is(BlockTags.DIAMOND_ORES) || state.is(BlockTags.EMERALD_ORES);
+        return state.is(Blocks.COAL_ORE) || state.is(Blocks.DEEPSLATE_COAL_ORE)
+                || state.is(BlockTags.COPPER_ORES) || state.is(BlockTags.IRON_ORES)
+                || state.is(BlockTags.GOLD_ORES)
+                || state.is(Blocks.REDSTONE_ORE) || state.is(Blocks.DEEPSLATE_REDSTONE_ORE)
+                || state.is(Blocks.LAPIS_ORE) || state.is(Blocks.DEEPSLATE_LAPIS_ORE)
+                || state.is(Blocks.DIAMOND_ORE) || state.is(Blocks.DEEPSLATE_DIAMOND_ORE)
+                || state.is(Blocks.EMERALD_ORE) || state.is(Blocks.DEEPSLATE_EMERALD_ORE);
     }
 
     /** Runtime proof for policy persistence, forced placement, bounds, and periodic locate. */

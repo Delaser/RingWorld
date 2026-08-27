@@ -19,6 +19,8 @@ public final class ProductionLifecycleTestClient {
     private int stageTicks;
     private int dimensionTicks;
     private boolean initialOpenRequested;
+    private final CopiedWorldFileFixUpgrade copiedWorldFileFixUpgrade =
+            new CopiedWorldFileFixUpgrade();
     private RingGeometry baselineGeometry;
     private long baselineFingerprint;
     private long baselineAtlasWorldHash;
@@ -35,9 +37,14 @@ public final class ProductionLifecycleTestClient {
             return true;
         }
         if (++stageTicks > STAGE_TIMEOUT_TICKS) {
-            finish(client, false, "timeout stage=" + stage + " dimension=" + dimensionName(client));
+            finish(client, false, "timeout stage=" + stage + " dimension=" + dimensionName(client)
+                    + " screen=" + CopiedWorldFileFixUpgrade.currentScreen(client));
             return true;
         }
+
+        if ((initialOpenRequested || stage == 6)
+                && copiedWorldFileFixUpgrade.handleIfRequired(
+                client, "production-lifecycle", worldName)) return true;
 
         switch (stage) {
             case 0 -> captureProductionBaseline(client);

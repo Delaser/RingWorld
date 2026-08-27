@@ -49,6 +49,13 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
             "test_publish_qualified_release.py",
             "test_external_graphical_creation_ui.py",
             "test_run_creation_ui_qualification.py",
+            "test_run_gradle_multiplayer_qualification.py",
+            "test_run_gradle_raid_qualification.py",
+            "test_run_gradle_production_lifecycle_qualification.py",
+            "test_run_gradle_production_render_qualification.py",
+            "test_copied_world_file_fix_upgrade.py",
+            "test_run_minecraft_nightly_matrix.py",
+            "test_review_composite_nightly_evidence.py",
         ):
             self.assertIn(test, source)
         for prohibited in ("./gradlew", "curl ", "wget ", "java ", "--execute", "urlopen("):
