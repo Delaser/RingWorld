@@ -10,6 +10,8 @@ The Windows fixture's temporary launcher copy adds `/wait` only to the final
 still-running executable; production launcher bytes and behavior are unchanged.
 The first #234 Windows run passed its assertions but failed that cleanup, so
 it remains a failed attempt rather than being relabelled PASS.
+On `b27b44e`, the corrected [Windows package workflow](https://github.com/Delaser/RingWorld/actions/runs/33107075427)
+passes, as does [static qualification on Windows and Ubuntu](https://github.com/Delaser/RingWorld/actions/runs/33107075444).
 
 Latest 26.2 run IDs, candidate/package hashes and remaining owner checks are
 in [the current checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).

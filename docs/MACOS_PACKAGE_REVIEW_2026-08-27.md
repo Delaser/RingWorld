@@ -76,6 +76,9 @@ Both OS import ZIPs contain the identical component and unchanged staged jar.
 The local package/installer/launcher suite passes 30 executed cases (32 total,
 two Windows-only skips); hosted Windows launcher/update regression remains the
 platform-specific check. This does not claim a new graphical Windows run.
+That [Windows launcher/update check](https://github.com/Delaser/RingWorld/actions/runs/33107075427)
+passes on `b27b44e`. The first run failed only while cleaning up its still-running
+stub; the test-only fix waits for the stub without changing shipped launchers.
 Corrected packages are local only; the earlier public test kit is not rewritten
 by this repair. Release, merge and live deployment remain unauthorized.
 
