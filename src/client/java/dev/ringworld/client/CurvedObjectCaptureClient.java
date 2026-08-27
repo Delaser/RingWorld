@@ -23,6 +23,7 @@ import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.block.BedBlock;
+import net.minecraft.world.level.block.EntityBlock;
 import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
 import net.minecraft.world.level.block.state.properties.BedPart;
@@ -101,6 +102,7 @@ public final class CurvedObjectCaptureClient {
             client.player.setXRot(0.0F);
             if (++settleTicks < SETTLE_TICKS || !fixtureIsPresent(client)
                     || !client.levelRenderer.hasRenderedAllSections()) return true;
+            RingWorldMod.LOGGER.info("[curved-object-capture] far fixture client probe={}", fixtureProbe(client));
             capture(client, "ringworld-curved-objects-far.png", "far");
             settleTicks = 0;
             stage = 1;
@@ -112,6 +114,7 @@ public final class CurvedObjectCaptureClient {
             client.player.setXRot(8.0F);
             if (++settleTicks < SETTLE_TICKS || !fixtureIsPresent(client)
                     || !client.levelRenderer.hasRenderedAllSections()) return true;
+            RingWorldMod.LOGGER.info("[curved-object-capture] near fixture client probe={}", fixtureProbe(client));
             capture(client, "ringworld-curved-objects-near.png", "near");
             stage = 2;
         }
@@ -124,24 +127,37 @@ public final class CurvedObjectCaptureClient {
         BlockPos lectern = fixturePosition(client, 48, 120, 0);
         BlockPos enderChest = fixturePosition(client, 56, 120, 2);
         BlockPos sign = fixturePosition(client, 52, 120, -2);
-        BlockPos bed = fixturePosition(client, 60, 120, 0);
+        BlockPos bedFoot = fixturePosition(client, 60, 120, 0);
+        BlockPos bedHead = fixturePosition(client, 61, 120, 0);
         BlockPos shulker = fixturePosition(client, 62, 120, 2);
         BlockPos banner = fixturePosition(client, 66, 120, 0);
         return client.level.getBlockState(chest).is(RingWorldVanillaFixtureRegistries.block("chest"))
-                && client.level.getBlockEntity(chest) != null
+                && hasExpectedBlockEntity(client, chest)
                 && client.level.getBlockState(lectern).is(RingWorldVanillaFixtureRegistries.block("lectern"))
-                && client.level.getBlockEntity(lectern) != null
+                && hasExpectedBlockEntity(client, lectern)
                 && client.level.getBlockState(enderChest).is(RingWorldVanillaFixtureRegistries.block("ender_chest"))
-                && client.level.getBlockEntity(enderChest) != null
+                && hasExpectedBlockEntity(client, enderChest)
                 && client.level.getBlockState(sign).is(RingWorldVanillaFixtureRegistries.block("oak_sign"))
-                && client.level.getBlockEntity(sign) != null
-                && client.level.getBlockState(bed)
-                        .is(RingWorldVanillaFixtureRegistries.block("red_bed"))
-                && client.level.getBlockEntity(bed) != null
+                && hasExpectedBlockEntity(client, sign)
+                && isFixtureBed(client.level.getBlockState(bedFoot), BedPart.FOOT)
+                && hasExpectedBlockEntity(client, bedFoot)
+                && isFixtureBed(client.level.getBlockState(bedHead), BedPart.HEAD)
+                && hasExpectedBlockEntity(client, bedHead)
                 && client.level.getBlockState(shulker).is(RingWorldVanillaFixtureRegistries.block("shulker_box"))
-                && client.level.getBlockEntity(shulker) != null
+                && hasExpectedBlockEntity(client, shulker)
                 && client.level.getBlockState(banner).is(RingWorldVanillaFixtureRegistries.block("white_banner"))
-                && client.level.getBlockEntity(banner) != null;
+                && hasExpectedBlockEntity(client, banner);
+    }
+
+    private static boolean isFixtureBed(net.minecraft.world.level.block.state.BlockState state, BedPart part) {
+        return state.is(RingWorldVanillaFixtureRegistries.block("red_bed"))
+                && state.getValue(BedBlock.PART) == part
+                && state.getValue(BedBlock.FACING) == Direction.EAST;
+    }
+
+    private static boolean hasExpectedBlockEntity(Minecraft client, BlockPos position) {
+        return !(client.level.getBlockState(position).getBlock() instanceof EntityBlock)
+                || client.level.getBlockEntity(position) != null;
     }
 
     private static boolean atCapturePosition(Minecraft client, double canonicalX) {
@@ -181,7 +197,8 @@ public final class CurvedObjectCaptureClient {
                 fixtureProbe(client, "lectern", 48, 120, 0, "lectern"),
                 fixtureProbe(client, "ender_chest", 56, 120, 2, "ender_chest"),
                 fixtureProbe(client, "oak_sign", 52, 120, -2, "oak_sign"),
-                fixtureProbe(client, "red_bed", 60, 120, 0, "red_bed"),
+                fixtureProbe(client, "red_bed_foot", 60, 120, 0, "red_bed"),
+                fixtureProbe(client, "red_bed_head", 61, 120, 0, "red_bed"),
                 fixtureProbe(client, "shulker_box", 62, 120, 2, "shulker_box"),
                 fixtureProbe(client, "white_banner", 66, 120, 0, "white_banner"));
     }
@@ -205,11 +222,9 @@ public final class CurvedObjectCaptureClient {
         server.execute(() -> {
             ServerPlayer player = server.getPlayerList().getPlayer(playerId);
             if (player == null || !(player.level() instanceof ServerLevel world)) return;
+            createFixture(world);
             player.teleportTo(world, 0.5, 122.0, 0.5,
                     java.util.Set.of(), -90.0F, 0.0F, false);
-            // Send the chart-changing player position before any fixture block
-            // updates. The client maps each update to its current nearest chart.
-            createFixture(world);
             RingWorldMod.LOGGER.info("[curved-object-capture] fixture server probe={}",
                     fixtureServerProbe(world));
             RingWorldMod.LOGGER.info("[curved-object-capture] fixture ready");
@@ -222,7 +237,8 @@ public final class CurvedObjectCaptureClient {
                 fixtureServerProbe(world, "lectern", 48, 120, 0, "lectern"),
                 fixtureServerProbe(world, "ender_chest", 56, 120, 2, "ender_chest"),
                 fixtureServerProbe(world, "oak_sign", 52, 120, -2, "oak_sign"),
-                fixtureServerProbe(world, "red_bed", 60, 120, 0, "red_bed"),
+                fixtureServerProbe(world, "red_bed_foot", 60, 120, 0, "red_bed"),
+                fixtureServerProbe(world, "red_bed_head", 61, 120, 0, "red_bed"),
                 fixtureServerProbe(world, "shulker_box", 62, 120, 2, "shulker_box"),
                 fixtureServerProbe(world, "white_banner", 66, 120, 0, "white_banner"));
     }

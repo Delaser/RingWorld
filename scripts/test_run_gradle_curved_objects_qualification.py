@@ -84,8 +84,11 @@ class GradleCurvedObjectsQualificationTest(unittest.TestCase):
         self.assertIn("BuiltInRegistries.BLOCK.getKey(state.getBlock())", source)
         self.assertIn("/loaded=", source)
         self.assertIn("fixture server probe={}", source)
-        self.assertLess(source.index("player.teleportTo(world, 0.5, 122.0, 0.5,"),
-                        source.index("createFixture(world);"))
+        self.assertIn("isFixtureBed(client.level.getBlockState(bedFoot), BedPart.FOOT)", source)
+        self.assertIn("isFixtureBed(client.level.getBlockState(bedHead), BedPart.HEAD)", source)
+        self.assertIn("instanceof EntityBlock", source)
+        self.assertIn("far fixture client probe={}", source)
+        self.assertIn("near fixture client probe={}", source)
         self.assertIn("private static final int MAX_CAPTURE_TICKS = 1_200;", source)
         self.assertIn("client.levelRenderer.hasRenderedAllSections()", source)
         self.assertNotIn("client.player.getX() < 2.0", source)

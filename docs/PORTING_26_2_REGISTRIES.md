@@ -19,10 +19,11 @@ canonical. Its client stage arrivals and block-entity probes use the nearest
 periodic image of those coordinates, rather than assuming the client remains
 on chart zero after a seam-adjacent teleport. A timeout records chart position,
 canonical position, target distance, fixture presence, and renderer readiness;
-it does not bypass the existing rendered-sections gate. The server sends its
-canonical player teleport before fixture block updates so client packet mapping
-uses that chart, and timeout probes name every expected/actual block registry
-entry plus block-entity presence.
+it does not bypass the existing rendered-sections gate. Timeout and successful
+capture probes name every expected/actual block registry entry plus
+block-entity presence. Bed assertions require the actual foot/head states and
+east-facing orientation; they require a block entity only when that runtime's
+bed block implements `EntityBlock` (26.2 does not).
 
 26.2 also removed the individual coal, redstone, lapis, diamond, and emerald
 ore block tags.  The stronghold fixture therefore names each corresponding
