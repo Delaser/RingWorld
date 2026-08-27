@@ -23,6 +23,10 @@ VERSION = "1.0.0+mc26.1.2"
 FABRIC_API_VERSION = "0.155.2+26.1.2"
 REVISION = "a" * 40
 
+if str(ROOT / "scripts") not in sys.path:
+    sys.path.insert(0, str(ROOT / "scripts"))
+from prepare_release_packages import PackageError, _qualified_pins, load_staged_release  # noqa: E402
+
 
 def release_config(loader: str) -> dict:
     public_loader = "Fabric" if loader == "fabric" else "NeoForge"
@@ -61,6 +65,48 @@ def release_config(loader: str) -> dict:
 
 
 class ReleasePackagePreparationTest(unittest.TestCase):
+    def test_qualified_format_one_requires_explicit_validated_runtime_profile(self) -> None:
+        manifest = ROOT / "config" / "minecraft-version-matrix-26.2.json"
+        pins = _qualified_pins(manifest, "26.2-fabric", "fabric", ["26.2"])
+        self.assertEqual(("26.2", "0.19.3", "0.158.0+26.2"),
+                         (pins.minecraft, pins.fabric_loader, pins.fabric_api))
+        self.assertEqual("26.2.0.69", pins.neoforge)
+        with self.assertRaisesRegex(PackageError, "another loader"):
+            _qualified_pins(manifest, "26.2-neoforge", "fabric", ["26.2"])
+        with self.assertRaisesRegex(PackageError, "invalid"):
+            _qualified_pins(ROOT / "config" / "absent.json", "26.2-fabric", "fabric", ["26.2"])
+
+    def test_qualified_format_one_rejects_missing_runtime_profile_stale_hash_and_credentials(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            jar, fabric, instance = self.inputs(temporary)
+            stage = temporary / "qualified" / "fabric"
+            stage.mkdir(parents=True)
+            staged = stage / jar.name
+            shutil.copy2(jar, staged)
+            payload = staged.read_bytes()
+            record = {
+                "format": 1, "generated": True, "loader": "fabric", "upload_file_only": True,
+                "upload_file": staged.name, "size": len(payload),
+                "hashes": {"sha256": hashlib.sha256(payload).hexdigest(), "sha512": hashlib.sha512(payload).hexdigest()},
+                "artifact_version": VERSION, "release_label": "1.0", "game_versions": ["26.2"],
+                "source": {"revision": REVISION, "url": f"https://github.com/Delaser/RingWorld/commit/{REVISION}"},
+            }
+            (stage.parent / ".ringworld-qualified-stage").write_text("generated\n", encoding="utf-8")
+            manifest = stage / "STAGING-MANIFEST.json"
+            manifest.write_text(json.dumps(record), encoding="utf-8")
+            with self.assertRaisesRegex(PackageError, "requires --qualification-manifest"):
+                load_staged_release(manifest, loader="fabric", expected_license=(ROOT / "LICENSE").read_bytes())
+            staged.write_bytes(payload + b"stale")
+            with self.assertRaisesRegex(PackageError, "sha256 does not match"):
+                load_staged_release(manifest, loader="fabric", expected_license=(ROOT / "LICENSE").read_bytes(),
+                                    qualification_manifest=ROOT / "config" / "minecraft-version-matrix-26.2.json",
+                                    runtime_cell="26.2-fabric")
+            instance.joinpath(".minecraft", "accounts.json").write_text('{"token":"never"}', encoding="utf-8")
+            result = self.run_prepare(temporary, jar, fabric, instance)
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("forbidden credential/runtime path", result.stderr)
+
     def make_jar(
         self, path: Path, *, mod_id: str, license_id: str = "MPL-2.0",
         version: str = VERSION, compatibility_api: int = 1,

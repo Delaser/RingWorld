@@ -57,6 +57,24 @@ quick-evidence cell counts, and public metadata version labels from the selected
 manifest contract. The release descriptor's game-version list must match that
 contract exactly; publication still requires separate owner authorization.
 
+Optional client bundles and server overlays may be built for Phase 6 package
+smokes from a format-1 qualified stage. Select the reviewed manifest and one
+explicit loader runtime cell; this derives the exact Minecraft, loader, and
+Fabric API pins rather than reusing 26.1.2 defaults:
+
+```sh
+python3 scripts/prepare_release_packages.py --loader fabric \
+  --stage-manifest dist/qualified-release/1.1.0+mc26.2/fabric/STAGING-MANIFEST.json \
+  --qualification-manifest config/minecraft-version-matrix-26.2.json \
+  --runtime-cell 26.2-fabric --fabric-api /absolute/path/fabric-api.jar \
+  --output /absolute/path/package-review
+```
+
+The legacy format-2 `stage_modrinth_release.py` path remains separately
+supported. A format-1 stage requires both new arguments and rejects a missing,
+wrong-loader, stale-hash, or unpinned dependency input. Package creation is
+still local and optional; it is not publication authorization.
+
 For the retained 26.1.x 55-PASS aggregate plus its explicitly selected repair
 terminals, use `scripts/review_composite_nightly_evidence.py`. It rehashes the
 selected aggregate/terminal/retained-artifact inputs and emits a read-only

@@ -1083,13 +1083,16 @@ version numbers.
   is absent, preserve Prism automatic selection. Test both paths with an
   isolated `HOME`, plus fresh and in-place upgrade paths, before publishing.
 - Optional packages must be built with `scripts/prepare_release_packages.py`
-  from a format-2 staging manifest created by the mandatory clean dual-build
-  release gate. Never restore free-form jar or source-revision inputs. The
+  from either the legacy format-2 clean-dual-build stage or the format-1
+  qualified stage. Never restore free-form jar or source-revision inputs. The
   builder emits no web content and has no publish/deploy path. The staging
   tool alone renders public release text: both description and changelog
   templates must carry exactly one source-link placeholder, never a hard-coded
   GitHub commit/tree/blob URL or short/full SHA. Keep reproducible ZIPs and
   checksum manifests under ignored local staging only.
+  A format-1 qualified stage requires its reviewed qualification
+  manifest and an explicit same-loader runtime cell, from which package pins
+  are derived; never feed it a hard-coded 26.1.2 component profile.
 - `/ringworld atlas status|start|pause|resume` controls background pregeneration.
   Pause is process-local and does not alter immutable saved layout.
 - Atlas format 6 represents exposed top-face height and
