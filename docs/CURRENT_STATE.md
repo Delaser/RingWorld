@@ -1,7 +1,7 @@
 # Current state
 
 2026-08-27 current qualification checkpoint: the complete static workflow now
-passes 331 tests. The package-pin correction `49c0d53` passes 20 executed
+passes 332 tests. The package-pin correction `49c0d53` passes 20 executed
 tests (22 total, with two expected Windows-only skips). Metadata-only 26.1.x
 stages with the recorded replacement hashes assembled Fabric and NeoForge macOS
 and Windows client bundles plus server overlays. This is package assembly only,
@@ -33,6 +33,14 @@ All six assembled 26.1.x review archives also pass independent checksum and
 nested licence checks. These changes do not turn failed runtime attempts into
 passing evidence. Further qualification needs functioning upstream dependency
 retrieval; avoid repeatedly rerunning the same unchanged failing matrix.
+
+The shared external-runtime assemblers now copy and rehash the pinned Mojang
+server before either official installer runs. Fabric's invocation omits only
+the duplicate `-downloadMinecraft` step and verifies the launcher's root
+`server.jar`; NeoForge still verifies its separate installed copy. The 32
+focused smoke/assembly tests pass, including the installer-only Fabric layout
+and corrupted-input rejection. This correction still needs real runtime
+qualification; it does not establish a passed upgrade or quick matrix.
 
 Remaining before any publication decision: complete the 20-cell-result 26.2
 nightly matrix; recreate six retained source worlds and run the six historical

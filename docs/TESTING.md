@@ -1,8 +1,11 @@
 # Testing
 
-2026-08-27: the complete static qualification workflow passes **331 tests**
+2026-08-27: the complete static qualification workflow passes **332 tests**
 after copied-world prompt handling, verified cache coverage, and quick Loom
-seed staging. The package-pin correction `49c0d53` passes 20 executed tests
+seed staging plus verified server preseeding. The focused external smoke and
+quick/worldgen/Atlas assembly subset passes 32 tests, including Fabric's real
+installer-only file layout and corrupt-seed rejection. The package-pin correction
+`49c0d53` passes 20 executed tests
 (22 total with two expected Windows-only skips). Metadata-only 26.1.x stages
 assembled Fabric/NeoForge macOS and Windows client bundles plus server overlays;
 those are archive assemblies, not package-launch smokes. Four dry publication

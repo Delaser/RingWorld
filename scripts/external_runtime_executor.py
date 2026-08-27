@@ -544,8 +544,8 @@ def preseed_minecraft_server(plan: ExternalRuntimeSmokePlan, cached_server: Path
     """Install one already hash-verified Mojang server input for the official installer.
 
     The fresh runtime root must not already contain a competing server input.
-    The later runtime identity check still requires a distinct installer-owned
-    copy, so this acceleration never becomes runtime evidence by itself.
+    The later runtime identity check binds Fabric's actual launcher target or
+    NeoForge's distinct installed copy. Seeding alone is not runtime evidence.
     """
     destination = plan.layout.root / "server.jar"
     _assert_no_symlink_components(cached_server, paths.cell_root, "cached Mojang server")

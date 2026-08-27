@@ -35,7 +35,7 @@ installer's Mojang version-JSON download, before a game launched. The optional
 runtime byte cache are independently rehashed acceleration only; they never
 enable offline mode or establish runtime evidence. See `docs/TESTING.md` for
 exact retained candidate hashes and current status. The static workflow passes
-331 tests; package-pin correction `49c0d53` passes 20 executed package tests
+332 tests; package-pin correction `49c0d53` passes 20 executed package tests
 (22 total with two expected Windows skips). Current metadata-only package
 assembly is not an OS/client/server smoke, and publication remains held.
 
