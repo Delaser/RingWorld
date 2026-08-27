@@ -130,11 +130,6 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
             if plan.loader == "fabric":
                 assert plan.layout.fabric_server_jar is not None
                 plan.layout.fabric_server_jar.write_bytes(b"fake fabric launcher")
-                installed_server = plan.layout.root / "versions" / plan.minecraft_version
-                installed_server.mkdir(parents=True)
-                (installed_server / f"server-{plan.minecraft_version}.jar").write_bytes(
-                    b"fake-mojang-server-" + plan.cell_id.encode("ascii")
-                )
             else:
                 assert plan.layout.neoforge_run_script is not None
                 assert plan.layout.neoforge_user_jvm_args is not None
@@ -151,8 +146,7 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
                     installed = plan.layout.root / "libraries" / "net" / "minecraft" / "server" / plan.minecraft_version
                     (installed / f"server-{plan.minecraft_version}.jar").write_bytes(b"wrong-mojang-server")
                 else:
-                    installed = plan.layout.root / "versions" / plan.minecraft_version
-                    (installed / f"server-{plan.minecraft_version}.jar").write_bytes(b"wrong-mojang-server")
+                    (plan.layout.root / "server.jar").write_bytes(b"wrong-mojang-server")
             if extra_ringworld:
                 plan.layout.mods_directory.mkdir()
                 (plan.layout.mods_directory / "ringworld-old.jar").write_bytes(b"wrong")
@@ -191,6 +185,7 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
             assert result.runtime_identity is not None
             self.assertEqual(plan.minecraft_server.checksum, result.runtime_identity.minecraft_server_expected)
             self.assertEqual(plan.minecraft_server.checksum, result.runtime_identity.minecraft_server_actual)
+            self.assertEqual(str(plan.layout.root / "server.jar"), result.runtime_identity.minecraft_server_path)
             self.assertEqual(
                 ("installer-start", "installer-complete", "runtime-start", "loader-bootstrap", "ringworld-bootstrap", "atlas-disabled", "server-ready", "stop-sent", "server-stop", "world-save", "clean-stop", "runtime-exit"),
                 tuple(item.name for item in result.marker_ledger),

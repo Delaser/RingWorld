@@ -117,8 +117,8 @@ pinned Mojang server input before invoking the reviewed official installer.
 It seeds that verified input at the installer-owned `server.jar` location for
 both loaders, avoiding only the installers' duplicate Minecraft transfer;
 Fabric's reviewed argv consequently omits `-downloadMinecraft`. The installed
-launcher must still create a separate hash-bound server copy before any runtime
-can pass.
+Fabric launcher binds that verified root file directly; NeoForge must still
+create a separate hash-bound server copy before any runtime can pass.
 
 For quick and nightly Gradle preparation, `--gradle-loom-cache` may likewise
 name an external read-only Mojang seed. It is revalidated from the version

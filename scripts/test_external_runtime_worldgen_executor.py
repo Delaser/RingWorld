@@ -163,9 +163,6 @@ class ExternalRuntimeWorldgenExecutorTest(unittest.TestCase):
             assert (smoke.layout.root / "server.jar").read_bytes() == server
             if smoke.loader == "fabric":
                 smoke.layout.fabric_server_jar.write_bytes(b"launcher")  # type: ignore[union-attr]
-                installed_server = smoke.layout.root / "versions" / smoke.minecraft_version
-                installed_server.mkdir(parents=True)
-                (installed_server / f"server-{smoke.minecraft_version}.jar").write_bytes(server)
             else:
                 smoke.layout.neoforge_run_script.write_text("#!/bin/sh\n", encoding="utf-8")  # type: ignore[union-attr]
                 smoke.layout.neoforge_run_script.chmod(0o700)  # type: ignore[union-attr]

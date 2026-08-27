@@ -491,8 +491,26 @@ def _loader_identity(plan: ExternalRuntimeSmokePlan) -> str:
 
 
 def _installed_minecraft_server(plan: ExternalRuntimeSmokePlan) -> RuntimeIdentity:
-    """Find the installer-owned Mojang server copy by its reviewed SHA-1 pin."""
+    """Bind the official launcher's reviewed Mojang server jar."""
     expected = plan.minecraft_server
+    if plan.loader == "fabric":
+        # Fabric's reviewed launcher properties name root/server.jar directly.
+        # This is the verified launcher target, not a redundant installer
+        # input, and Mojang's bundled versions/ jar is created only on launch.
+        path = plan.layout.root / "server.jar"
+        if path.is_symlink() or not path.is_file():
+            raise ExternalRuntimeExecutionError("Fabric installer has no regular launcher-target server jar")
+        verified = verify_pinned_file(path, expected.algorithm, expected.checksum)
+        if not verified.verified:
+            raise ExternalRuntimeExecutionError("Fabric launcher-target server jar differs from its reviewed pin")
+        return RuntimeIdentity(
+            loader=plan.loader,
+            loader_identity=_loader_identity(plan),
+            launcher_path=str(_launcher_path(plan)),
+            minecraft_server_path=str(path),
+            minecraft_server_expected=expected.checksum,
+            minecraft_server_actual=verified.actual,
+        )
     candidates: list[tuple[Path, str]] = []
     for path in plan.layout.root.rglob("*.jar"):
         if not is_within(path, plan.layout.root) or is_within(path, plan.layout.mods_directory):
@@ -500,7 +518,7 @@ def _installed_minecraft_server(plan: ExternalRuntimeSmokePlan) -> RuntimeIdenti
         if path == plan.layout.root / "server.jar":
             # This is the reviewed input seed copied before installation to
             # prevent a redundant download. Runtime identity must bind the
-            # distinct installer-owned copy, not its input.
+            # distinct NeoForge installer-owned copy, not its input.
             continue
         if path.is_symlink() or not path.is_file():
             continue
