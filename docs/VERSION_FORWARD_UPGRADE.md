@@ -11,7 +11,7 @@ older reviewed source candidate-group file with `--source-manifest`:
 
 ```sh
 python3 scripts/run_world_upgrade_qualification.py \
-  --source-manifest config/minecraft-version-matrix-26.1.json \
+  --source-manifest config/minecraft-version-matrix.json \
   --source-cell 26.1-fabric \
   --source-worldgen-run-id <passed-source-worldgen-run> \
   --manifest config/minecraft-version-matrix-26.2.json \

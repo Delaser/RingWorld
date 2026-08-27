@@ -187,7 +187,8 @@ def _execute(prepared: Any, source_world: Path, dependency_cache: Path | None,
     paths, cell = prepared.paths, prepared.cell
     create_contained_directories(paths)
     stage_gradle_distribution_zip(distribution_zip, paths.repository_root, paths)
-    _stage_loom_seed(loom_seed, paths.gradle_home, str(cell["minecraft"]["version"]))
+    _stage_loom_seed(loom_seed, paths.gradle_home, str(cell["minecraft"]["version"]),
+                     str(cell["loader"]))
     source_inventory = _world_inventory(source_world)
     source_observation = _world_observation(source_world)
     _validate_source_version(source_observation.get("minecraft_version"),

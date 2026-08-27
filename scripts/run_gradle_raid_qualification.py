@@ -200,7 +200,8 @@ def _execute(prepared: Any, dependency_cache: Path | None, distribution_zip: Pat
     timeout, tasks = _timeout(cell), _tasks(str(cell["loader"]))
     create_contained_directories(paths)
     stage_gradle_distribution_zip(distribution_zip, paths.repository_root, paths)
-    _stage_loom_seed(loom_seed, paths.gradle_home, str(cell["minecraft"]["version"]))
+    _stage_loom_seed(loom_seed, paths.gradle_home, str(cell["minecraft"]["version"]),
+                     str(cell["loader"]))
     eula = paths.run_directory / "run-raid-seam/server/eula.txt"
     eula.parent.mkdir(parents=True, exist_ok=True)
     eula.write_text("# Disposable qualification runtime only.\neula=true\n", encoding="utf-8")

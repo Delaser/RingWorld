@@ -147,6 +147,37 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
             self.assertEqual(
                 b"abcdef", (home / "caches/fabric-loom/assets/objects/ab/abcdef").read_bytes())
 
+    def test_neoforge_loom_seed_stages_only_assets_in_neoformruntime_layout(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source_root = root / "seed"
+            sources = [source_root / "mojang_versions_manifest.json"]
+            sources.extend(source_root / "26.2" / name for name in (
+                "mojang_minecraft_info.json", "minecraft-client.jar", "minecraft-server.jar"))
+            sources.append(source_root / "assets/indexes/26.2-32.json")
+            sources.append(source_root / "assets/objects/ab/abcdef")
+            for source in sources:
+                source.parent.mkdir(parents=True, exist_ok=True)
+                source.write_bytes(source.name.encode("utf-8"))
+            home = root / "cell-home"
+
+            _stage_loom_seed(sources, home, "26.2", loader="neoforge")
+
+            self.assertEqual(
+                b"26.2-32.json",
+                (home / "caches/neoformruntime/assets/indexes/32.json").read_bytes(),
+            )
+            self.assertEqual(
+                b"abcdef",
+                (home / "caches/neoformruntime/assets/objects/ab/abcdef").read_bytes(),
+            )
+            self.assertFalse((home / "caches/fabric-loom").exists())
+            self.assertFalse((home / "caches/neoformruntime/26.2").exists())
+
+    def test_loom_seed_rejects_unsupported_loader(self) -> None:
+        with self.assertRaisesRegex(GradleMultiplayerError, "unsupported loader"):
+            _stage_loom_seed((), Path("/unused"), "26.2", loader="unsupported")
+
     def test_loom_seed_is_bound_to_mojang_metadata_hashes(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             cache = Path(directory).resolve()

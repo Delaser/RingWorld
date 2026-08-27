@@ -264,8 +264,37 @@ def _validated_loom_seed(cache: Path | None, repository_root: Path,
     return (*required, *asset_files)
 
 
-def _stage_loom_seed(files: Sequence[Path], gradle_home: Path, version: str) -> None:
+def _stage_loom_seed(files: Sequence[Path], gradle_home: Path, version: str,
+                     loader: str = "fabric") -> None:
+    if loader not in {"fabric", "neoforge"}:
+        raise GradleMultiplayerError("unsupported loader")
     if not files:
+        return
+    if loader == "neoforge":
+        if len(files) < 5:
+            raise GradleMultiplayerError("Loom seed has no validated asset index")
+        asset_index, asset_objects = files[4], files[5:]
+        expected_prefix = f"{version}-"
+        if (asset_index.parent.name != "indexes" or asset_index.parent.parent.name != "assets"
+                or not asset_index.name.startswith(expected_prefix)
+                or not asset_index.name.endswith(".json")):
+            raise GradleMultiplayerError("Loom seed asset index layout is invalid")
+        asset_id = asset_index.name.removeprefix(expected_prefix).removesuffix(".json")
+        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", asset_id):
+            raise GradleMultiplayerError("Loom seed asset index filename is unsafe")
+        source_assets = asset_index.parent.parent
+        destination = gradle_home / "caches/neoformruntime/assets"
+        target_index = destination / "indexes" / f"{asset_id}.json"
+        target_index.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(asset_index, target_index)
+        for source in asset_objects:
+            try:
+                relative = source.relative_to(source_assets / "objects")
+            except ValueError as error:
+                raise GradleMultiplayerError("Loom seed asset object layout is invalid") from error
+            target = destination / "objects" / relative
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, target)
         return
     source_root = files[0].parent
     destination = gradle_home / "caches/fabric-loom"
@@ -477,7 +506,8 @@ def _execute(prepared: AtlasRecoveryInvocation, dependency_cache: Path | None,
     tasks = _tasks(str(cell["loader"]))
     create_contained_directories(paths)
     stage_gradle_distribution_zip(distribution_zip, paths.repository_root, paths)
-    _stage_loom_seed(loom_seed, paths.gradle_home, str(cell["minecraft"]["version"]))
+    _stage_loom_seed(loom_seed, paths.gradle_home, str(cell["minecraft"]["version"]),
+                     str(cell["loader"]))
     eula = paths.run_directory / "run-multiplayer/server/eula.txt"
     eula.parent.mkdir(parents=True, exist_ok=True)
     eula.write_text("# Disposable qualification runtime only.\neula=true\n", encoding="utf-8")

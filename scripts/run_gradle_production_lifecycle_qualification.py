@@ -303,7 +303,8 @@ def _execute(prepared: Any, source_world: Path, dependency_cache: Path | None,
     paths, cell = prepared.paths, prepared.cell
     create_contained_directories(paths)
     stage_gradle_distribution_zip(distribution_zip, paths.repository_root, paths)
-    _stage_loom_seed(loom_seed, paths.gradle_home, str(cell["minecraft"]["version"]))
+    _stage_loom_seed(loom_seed, paths.gradle_home, str(cell["minecraft"]["version"]),
+                     str(cell["loader"]))
     source, destination_record = _prepare_world(prepared, source_world)
     destination = Path(destination_record["path"])
     tasks = _tasks(cell["loader"])

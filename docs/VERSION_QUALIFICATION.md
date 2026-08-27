@@ -39,8 +39,9 @@ Neither adding a manifest nor compiling changes public support claims.
 
    It derives the cell count from the manifest and runs the same ten fixtures
    per cell. No version-specific coordinator edits are needed. Optional
-   read-only dependency and official wrapper ZIP caches accelerate setup;
-   they never substitute for runtime evidence. After a successful worldgen
+   read-only dependency, official wrapper ZIP, and hash-checked Loom seed
+   caches accelerate both loader setups; they never substitute for runtime
+   evidence. After a successful worldgen
    child only, the coordinator retains its verified source world at its
    original `run/nightly/02-worldgen-seam-structures/production/runtime/world`
    path for later copied-world forward-upgrade qualification; other disposable
