@@ -38,6 +38,7 @@ try:
     from minecraft_support_contract import contract_from_manifest
     from run_minecraft_qualification import load_manifest
     from release_candidate_equivalence import _verify_release_metadata
+    from prism_neoforge_component import ComponentError, component_from_installer
 except ModuleNotFoundError:
     from scripts.verify_distribution_license import (
         EXPECTED_IDENTIFIER,
@@ -54,6 +55,7 @@ except ModuleNotFoundError:
     from scripts.minecraft_support_contract import contract_from_manifest
     from scripts.run_minecraft_qualification import load_manifest
     from scripts.release_candidate_equivalence import _verify_release_metadata
+    from scripts.prism_neoforge_component import ComponentError, component_from_installer
 
 
 SOURCE_SUFFIXES = ("-sources.jar", ".java", ".kt", ".groovy")
@@ -105,6 +107,7 @@ class PackagePins:
     fabric_api_sha256: str | None
     neoforge: str | None
     managed_profile: bool = False
+    neoforge_installer_sha256: str | None = None
 
 
 LEGACY_PINS = PackagePins(MINECRAFT_VERSION, FABRIC_LOADER_VERSION, FABRIC_API_VERSION, None, NEOFORGE_VERSION)
@@ -207,7 +210,12 @@ def _qualified_pins(manifest_path: Path, runtime_cell: str, loader: str, staged_
         return PackagePins(minecraft["version"], fabric_loader["version"], fabric_api["version"],
                            checksum["value"], None, managed_profile=True)
     neoforge = dependency("NeoForge")
-    return PackagePins(minecraft["version"], None, None, None, neoforge["version"], managed_profile=True)
+    installer = cell.get("runtime_install", {})
+    checksum = installer.get("checksum", {})
+    if installer.get("version") != neoforge["version"] or checksum.get("algorithm") != "sha256":
+        raise PackageError("qualified NeoForge installer does not match loader pin")
+    return PackagePins(minecraft["version"], None, None, None, neoforge["version"], managed_profile=True,
+                       neoforge_installer_sha256=checksum.get("value"))
 
 
 def load_staged_release(
@@ -354,6 +362,9 @@ def validate_inputs(
     elif fabric_api is not None:
         raise PackageError("NeoForge packages must not include --fabric-api")
     validate_tree(instance_template, label="instance template")
+    if any((instance_template / name).exists() for name in
+           ("patches/net.neoforged.json", "ringworld-managed-neoforge-patch.txt")):
+        raise PackageError("NeoForge component overrides must be generated from --neoforge-installer")
     required = (
         instance_template / "mmc-pack.json",
         instance_template / "instance.cfg",
@@ -550,6 +561,7 @@ def add_client_package(
     version: str,
     source_revision: str,
     pins: PackagePins,
+    neoforge_component: dict | None = None,
 ) -> Path:
     archive_name = f"RingWorld-{version}-{LOADER_SPECS[loader]['display']}-Client-{platform}.zip"
     with tempfile.TemporaryDirectory(prefix="ringworld-client-") as directory:
@@ -571,6 +583,10 @@ def add_client_package(
         instance = root / "instance"
         populate_instance(instance_template, instance, release_jar, fabric_api,
                           loader=loader, pins=pins, version=version)
+        if neoforge_component is not None:
+            (instance / "patches").mkdir(exist_ok=True)
+            write_json(instance / "patches/net.neoforged.json", neoforge_component)
+            (instance / "ringworld-managed-neoforge-patch.txt").write_bytes(b"RingWorld managed NeoForge component\n")
         for launcher in launchers:
             render_runtime_text(root / launcher, pins=pins, loader=loader, version=version)
 
@@ -583,6 +599,13 @@ def add_client_package(
             loader=loader, kind=f"client-{platform}", version=version, source_revision=source_revision,
             release_jar=release_jar, fabric_api=fabric_api, pins=pins,
         )
+        if neoforge_component is not None:
+            package_manifest["prismComponent"] = {
+                "path": "patches/net.neoforged.json",
+                "sha256": sha256(instance / "patches/net.neoforged.json"),
+                "installerSha256": pins.neoforge_installer_sha256,
+                "source": "official NeoForge installer; Prism native custom component",
+            }
         write_json(root / "PACKAGE-MANIFEST.json", package_manifest)
         (root / "README-FIRST.txt").write_text(
             f"RingWorld optional {LOADER_SPECS[loader]['display']} Prism client bundle.\n"
@@ -679,6 +702,18 @@ def build_packages(args: argparse.Namespace) -> tuple[Path, ...]:
         args.loader, args.jar, args.fabric_api, args.instance_template, args.license, pins,
     )
     validate_tree(args.launcher_dir, label="launcher templates")
+    neoforge_component = None
+    installer = getattr(args, "neoforge_installer", None)
+    if installer is not None:
+        if args.loader != "neoforge" or not pins.managed_profile:
+            raise PackageError("--neoforge-installer requires a qualified NeoForge stage/runtime cell")
+        try:
+            neoforge_component = component_from_installer(
+                installer, minecraft=pins.minecraft, version=pins.neoforge,
+                expected_sha256=pins.neoforge_installer_sha256,
+            )
+        except ComponentError as exc:
+            raise PackageError(str(exc)) from exc
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="ringworld-release-", dir=args.output.parent) as directory:
         staging = Path(directory) / "staging"
@@ -689,6 +724,7 @@ def build_packages(args: argparse.Namespace) -> tuple[Path, ...]:
             expected_license=expected_license, launcher_dir=args.launcher_dir,
             version=args.version, source_revision=args.source_revision,
             pins=pins,
+            neoforge_component=neoforge_component,
         )
         windows = add_client_package(
             staging, loader=args.loader, platform="Windows", instance_template=args.instance_template,
@@ -696,6 +732,7 @@ def build_packages(args: argparse.Namespace) -> tuple[Path, ...]:
             expected_license=expected_license, launcher_dir=args.launcher_dir,
             version=args.version, source_revision=args.source_revision,
             pins=pins,
+            neoforge_component=neoforge_component,
         )
         server = add_server_package(
             staging, loader=args.loader, server_template=args.server_template, release_jar=args.jar,
@@ -737,6 +774,8 @@ def main() -> int:
                         help="reviewed matrix required only for format-1 qualified staging")
     parser.add_argument("--runtime-cell", help="exact matrix cell used for optional package runtime pins")
     parser.add_argument("--fabric-api", type=Path)
+    parser.add_argument("--neoforge-installer", type=Path,
+                        help="optional exact pinned official installer: embed Prism component metadata, not binaries")
     parser.add_argument(
         "--instance-template", type=Path
     )

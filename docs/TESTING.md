@@ -1,12 +1,18 @@
 # Testing
 
+The #234 NeoForge package repair adds offline installer-to-Prism component
+contracts and extends the platform launcher tests to cover owned-patch updates
+and retirement while preserving unrelated custom components. See
+[`deploy/client/README.md`](../deploy/client/README.md) for the exact-pin assembly
+path. These tests are package metadata/update evidence, not graphical gameplay.
+
 Latest 26.2 run IDs, candidate/package hashes and remaining owner checks are
 in [the current checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
 The static qualification workflow passes **342 tests locally** after the
 portable cache-fixture correction below. On `a2ba721`, hosted static CI passes
 on both Ubuntu and Windows, and the separate Windows package launcher check
 passes. [Authenticated macOS package review](MACOS_PACKAGE_REVIEW_2026-08-27.md)
-records three runtime smokes passing and one pre-launch metadata blocker (#234).
+records all four runtime smokes passing after the targeted #234 metadata repair.
 Nightly `20260827T104447Z-6af7691cc891` remains 16 PASS / 2 FAIL /
 2 INCOMPLETE. The four selected repairs pass in
 `20260827T122329Z-768fe4857612`; that partial aggregate is intentionally

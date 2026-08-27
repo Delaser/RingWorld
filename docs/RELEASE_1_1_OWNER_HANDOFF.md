@@ -1,6 +1,6 @@
 # 1.1 pre-publication owner handoff
 
-Status: **three macOS package smokes pass; final package blocked by #234; do not publish.** This handoff records local staging
+Status: **all four macOS package smokes pass; final approval pending; do not publish.** This handoff records local staging
 inputs and owner review work. The 20-item nightly review and all eight bounded
 copied-world forward-upgrade routes have completed with independently rehashed
 local evidence. This does not establish public 26.2 support.
@@ -32,7 +32,7 @@ following delivery of `RingWorld-1.1-Windows-Testing-Kit-20260827.zip`
 This accepts the Windows package-review gate as an owner-reported result;
 it is not a new machine-evidence report or a claim of individually recorded
 passes for every checklist action. It does not prove a fresh install of the
-specific NeoForge 26.2 package now blocked by #234. The final
+specific corrected NeoForge 26.2 package from #234. The final
 release/publication decision remains pending.
 
 macOS preparation (2026-08-27): all four archive checksums, nested runtime-jar
@@ -43,11 +43,15 @@ The 26.2 Fabric outer launcher detected Java 25 and downloaded official Prism
 11.0.3. Owner authentication succeeded through the device-code flow. Separate
 fresh imported instances in that authenticated test root pass the packaged
 Atlas capture smoke on 26.1.2 Fabric, 26.1.2 NeoForge and 26.2 Fabric.
-NeoForge 26.2 cannot launch: Prism's metadata URL for pinned 26.2.0.69 returns
-404; its latest listed 26.2 build is 26.2.0.67. Track the exact-pin packaging
-repair in [#234](https://github.com/Delaser/RingWorld/issues/234), then rerun only
-that blocked case and verify its Windows import path. Do not downgrade the
-qualified loader silently. Full evidence and scope limits are in the
+NeoForge 26.2 initially could not launch because Prism lacked pinned 26.2.0.69
+metadata. The [#234](https://github.com/Delaser/RingWorld/issues/234) repair now
+passes that exact packaged runtime using a native Prism component derived from
+the official installer's pinned bytes. Neither the loader nor mod jar changed.
+Replace only the NeoForge 26.2 convenience archives with those under
+`dist/prism-neoforge-repair-20260827/final-packages/`; the Windows nested import
+contains the identical repaired component and jar. These replacements remain
+local; the earlier downloadable test kit has not been silently changed.
+Full evidence and scope limits are in the
 [macOS review](MACOS_PACKAGE_REVIEW_2026-08-27.md).
 Keep the test directory private: Prism now stores account credentials there.
 

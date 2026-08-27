@@ -13,9 +13,10 @@ All eight copied-world forward-upgrade routes and all four staged server-overlay
 startup/normal-stop smokes pass. Later source-ABI fixture and report fixes do
 not change the retained runtime jars. Windows package review has owner sign-off
 (2026-08-27). Fresh authenticated macOS package smokes pass on 26.1.2 Fabric,
-26.1.2 NeoForge and 26.2 Fabric. NeoForge 26.2 is blocked before game launch:
-Prism lacks metadata for the qualified 26.2.0.69 loader (issue #234). Do not
-silently downgrade that pin. See `docs/MACOS_PACKAGE_REVIEW_2026-08-27.md`.
+26.1.2 NeoForge and 26.2 Fabric. NeoForge 26.2 also passes after the #234
+package-only repair: a native Prism component derived from the SHA-256-pinned
+official 26.2.0.69 installer, with no loader downgrade or mod-jar changes.
+See `docs/MACOS_PACKAGE_REVIEW_2026-08-27.md` for exact replacement archives.
 Static CI is green on Windows/Linux after test-only correction `a2ba721`;
 owner final release approval remains separate.
 Publication and live-world changes remain held. Older checkpoints below are
@@ -1153,6 +1154,12 @@ version numbers.
   manifest and an explicit same-loader runtime cell, from which package pins
   are derived; the assembly rewrites only its temporary Prism component profile
   and copied operator text. Never feed it a hard-coded 26.1.2 component profile.
+  If Prism lacks the qualified NeoForge version, `--neoforge-installer` may
+  generate a native custom component only from that cell's SHA-256-pinned
+  official installer. The helper does not run or bundle the installer, and
+  must preserve exact versions and official hashed downloads. Keep the nested
+  import ZIP, macOS/Linux/Windows managed-patch copy/retirement paths, package
+  manifest hashes and tests synchronized. Never silently downgrade a loader.
 - `/ringworld atlas status|start|pause|resume` controls background pregeneration.
   Pause is process-local and does not alter immutable saved layout.
 - Atlas format 6 represents exposed top-face height and

@@ -3,9 +3,9 @@
 **Automated qualification is complete; pause before publication.**
 No merge, release publication or live-server/world change occurred. The owner
 subsequently authorized distribution of the Windows test kit, not a release.
-Windows owner sign-off is recorded. Three authenticated macOS packaged-runtime
-smokes pass; NeoForge 26.2 is blocked before game launch by missing Prism loader
-metadata ([#234](https://github.com/Delaser/RingWorld/issues/234)). See the
+Windows owner sign-off is recorded. All four authenticated macOS packaged-runtime
+smokes pass after the [#234](https://github.com/Delaser/RingWorld/issues/234)
+NeoForge metadata repair, preserving the qualified loader and mod jar. See the
 [macOS package review](MACOS_PACKAGE_REVIEW_2026-08-27.md). Final owner release
 approval remains. The static qualification workflow passes **342 tests locally**;
 Windows/Linux static CI and the Windows launcher check pass on `a2ba721`.
@@ -136,10 +136,10 @@ Measured frame gates pass, but isolated long-frame spikes are not zero.
 
 Remaining owner gates:
 
-1. Resolve #234 and finish the remaining NeoForge 26.2 packaged-client check on
-   macOS, then confirm its Windows import path. Retain the other three macOS
-   passes and the owner's general Windows sign-off; neither proves this blocked
-   fresh-install case. Never copy an existing account/token store into qualification state.
+1. Use the corrected NeoForge 26.2 convenience archives, not the earlier test-kit
+   package. Its macOS runtime passes and its Windows import ZIP contains the
+   identical component/jar. The Windows launcher regression is separate from
+   the owner's earlier graphical sign-off; no new Windows gameplay run is claimed.
 2. Exact-candidate gameplay/visual confirmation and release go/no-go.
 3. Separate explicit publication authorization bound to each stage's source
    revision and jar hash. The publishing checkout must match that source;

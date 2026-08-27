@@ -8,6 +8,8 @@ on:
       - "deploy/alpha/**"
       - "deploy/server/**"
       - "scripts/prepare_release_packages.py"
+      - "scripts/prism_neoforge_component.py"
+      - "scripts/test_prism_neoforge_component.py"
       - "scripts/test_alpha_installer.py"
       - "scripts/test_prepare_release_packages.py"
       - "scripts/test_verify_distribution_license.py"
@@ -31,3 +33,4 @@ jobs:
           scripts/test_alpha_installer.py
           scripts/test_verify_distribution_license.py
           scripts/test_prepare_release_packages.py
+          scripts/test_prism_neoforge_component.py

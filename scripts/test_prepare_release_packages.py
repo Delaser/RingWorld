@@ -26,6 +26,7 @@ REVISION = "a" * 40
 if str(ROOT / "scripts") not in sys.path:
     sys.path.insert(0, str(ROOT / "scripts"))
 from prepare_release_packages import PackageError, _qualified_pins, load_staged_release  # noqa: E402
+from scripts import test_prism_neoforge_component as prism_tests  # noqa: E402
 
 
 def release_config(loader: str) -> dict:
@@ -143,10 +144,13 @@ class ReleasePackagePreparationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             temporary = Path(directory)
             matrix = json.loads((ROOT / "config" / "minecraft-version-matrix-26.2.json").read_text())
+            installer = prism_tests.PrismNeoForgeComponentTest().fixture(temporary)
             fabric_api = temporary / "fabric-api-0.158.0+26.2.jar"
             self.make_jar(fabric_api, mod_id="fabric-api", version="0.158.0+26.2")
             pin = hashlib.sha256(fabric_api.read_bytes()).hexdigest()
             for cell in matrix["cells"]:
+                if cell["loader"] == "neoforge":
+                    cell["runtime_install"]["checksum"]["value"] = hashlib.sha256(installer.read_bytes()).hexdigest()
                 for dependency in cell["dependencies"]:
                     if dependency["name"] == "Fabric API":
                         dependency["checksum"]["value"] = pin
@@ -164,7 +168,8 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                     stage = self.make_qualified_stage(temporary / loader, jar, loader=loader)
                     result = self.run_prepare(temporary / loader, jar, fabric_api, instance, loader=loader,
                                               stage_manifest=stage, qualification_manifest=matrix_path,
-                                              runtime_cell=runtime_cell)
+                                              runtime_cell=runtime_cell,
+                                              neoforge_installer=installer if loader == "neoforge" else None)
                     self.assertEqual(result.returncode, 0, result.stderr)
                     bundle = temporary / loader / "out" / (
                         f"RingWorld-1.1.0+mc26.2-{'Fabric' if loader == 'fabric' else 'NeoForge'}-Client-macOS-universal.zip"
@@ -178,6 +183,14 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                                          components["net.fabricmc.fabric-loader" if loader == "fabric" else "net.neoforged"])
                         package = json.loads(archive.read("PACKAGE-MANIFEST.json"))
                         self.assertEqual("26.2", package["minecraft"])
+                        if loader == "neoforge":
+                            component = nested.read("patches/net.neoforged.json")
+                            self.assertEqual(component, archive.read("instance/patches/net.neoforged.json"))
+                            self.assertEqual(hashlib.sha256(component).hexdigest(), package["prismComponent"]["sha256"])
+                            self.assertEqual("26.2.0.69", json.loads(component)["version"])
+                            self.assertNotIn("installer.jar", nested.namelist())
+                        else:
+                            self.assertNotIn("prismComponent", package)
                     server = temporary / loader / "out" / (
                         f"RingWorld-1.1.0+mc26.2-{'Fabric' if loader == 'fabric' else 'NeoForge'}-Server-Overlay.zip"
                     )
@@ -351,6 +364,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
         *, loader: str = "fabric", include_fabric_api: bool | None = None,
         output_name: str = "out", revision: str = REVISION, stage_manifest: Path | None = None,
         qualification_manifest: Path | None = None, runtime_cell: str | None = None,
+        neoforge_installer: Path | None = None,
     ) -> subprocess.CompletedProcess[str]:
         stage_manifest = stage_manifest or self.make_stage_manifest(
             temporary, jar, loader=loader, revision=revision,
@@ -365,6 +379,8 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             command += ["--qualification-manifest", str(qualification_manifest)]
         if runtime_cell is not None:
             command += ["--runtime-cell", runtime_cell]
+        if neoforge_installer is not None:
+            command += ["--neoforge-installer", str(neoforge_installer)]
         if include_fabric_api is None:
             include_fabric_api = loader == "fabric"
         if include_fabric_api:
@@ -747,6 +763,33 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             self.assertEqual(upgraded.returncode, 0, upgraded.stderr)
             self.assertFalse((mods / "ringworld-neoforge-old.jar").exists())
             self.assertTrue((mods / "fabric-api-user-installed.jar").exists())
+            self.assert_managed_patch_updates(bundle, mods.parent.parent, lambda: subprocess.run(
+                [str(launcher)], capture_output=True, text=True, check=False, env=environment))
+
+    def assert_managed_patch_updates(self, bundle, installed, launch):
+        source = bundle / "instance"
+        (source / "patches").mkdir(exist_ok=True)
+        (installed / "patches").mkdir(exist_ok=True)
+        unrelated = installed / "patches/user-addon.json"
+        unrelated.write_text("keep", encoding="utf-8")
+        owned = installed / "patches/net.neoforged.json"
+        # An unowned custom loader patch is not deleted by packages without a fallback.
+        owned.write_text("user-owned", encoding="utf-8")
+        self.assertEqual(0, launch().returncode)
+        self.assertEqual("user-owned", owned.read_text())
+        marker = source / "ringworld-managed-neoforge-patch.txt"
+        marker.write_text("managed", encoding="utf-8")
+        for version in ("first", "second"):
+            (source / "patches/net.neoforged.json").write_text(version, encoding="utf-8")
+            self.assertEqual(0, launch().returncode)
+            self.assertEqual(version, owned.read_text())
+            self.assertEqual("keep", unrelated.read_text())
+        marker.unlink()
+        (source / "patches/net.neoforged.json").unlink()
+        self.assertEqual(0, launch().returncode)
+        self.assertFalse(owned.exists())
+        self.assertFalse((installed / marker.name).exists())
+        self.assertEqual("keep", unrelated.read_text())
 
     @unittest.skipIf(os.name == "nt", "POSIX launcher fixture")
     def test_mac_fabric_and_neoforge_packages_keep_separate_instances(self) -> None:
@@ -897,6 +940,9 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             self.assertEqual(upgraded.returncode, 0, upgraded.stderr + upgraded.stdout)
             self.assertFalse((mods / "ringworld-neoforge-old.jar").exists())
             self.assertTrue((mods / "fabric-api-user-installed.jar").exists())
+            self.assert_managed_patch_updates(bundle, mods.parent.parent, lambda: subprocess.run(
+                ["cmd.exe", "/d", "/c", str(launcher)], cwd=bundle,
+                capture_output=True, text=True, check=False))
 
     def test_rejects_runtime_source_stale_licence_and_bad_revision(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

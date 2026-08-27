@@ -7,10 +7,11 @@ All eight copied-world upgrade routes and all four staged server-overlay
 startup/normal-stop smokes pass. Local packages are staged, not published.
 Windows package review has owner sign-off (2026-08-27); this is owner-reported,
 not new per-case machine evidence. Authenticated macOS packaged-runtime smokes
-pass for 26.1.2 Fabric, 26.1.2 NeoForge and 26.2 Fabric. NeoForge 26.2 is blocked
-before game launch because Prism returns HTTP 404 for pinned loader 26.2.0.69
-([#234](https://github.com/Delaser/RingWorld/issues/234)). The exact jars remain
-unchanged; no silent loader downgrade is permitted. See the
+pass for all four combinations after the
+[#234](https://github.com/Delaser/RingWorld/issues/234) NeoForge 26.2 package-only
+repair. Its native Prism component comes from the pinned official installer;
+the exact 26.2.0.69 loader and RingWorld jar are unchanged. Corrected macOS and
+Windows packages are staged locally, not uploaded over the prior test kit. See the
 [package evidence](MACOS_PACKAGE_REVIEW_2026-08-27.md) and
 [owner handoff](RELEASE_1_1_OWNER_HANDOFF.md). Final release approval remains.
 The static suite passes 342 tests locally; Windows/Linux static CI and the

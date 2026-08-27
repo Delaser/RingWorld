@@ -64,6 +64,17 @@ if /I "%LOADER%"=="fabric" (
 )
 
 copy /Y "%SOURCE%\mmc-pack.json" "%INSTANCE%\mmc-pack.json" >nul || goto :error
+if /I "%LOADER%"=="neoforge" (
+    if exist "%SOURCE%\ringworld-managed-neoforge-patch.txt" (
+        if not exist "%INSTANCE%\patches" mkdir "%INSTANCE%\patches"
+        copy /Y "%SOURCE%\patches\net.neoforged.json" "%INSTANCE%\patches\net.neoforged.json" >nul || goto :error
+        copy /Y "%SOURCE%\ringworld-managed-neoforge-patch.txt" "%INSTANCE%\" >nul || goto :error
+    ) else if exist "%INSTANCE%\ringworld-managed-neoforge-patch.txt" (
+        rem Retire only our own loader patch when returning to official metadata.
+        del /Q "%INSTANCE%\patches\net.neoforged.json" 2>nul
+        del /Q "%INSTANCE%\ringworld-managed-neoforge-patch.txt"
+    )
+)
 if not exist "%INSTANCE%\.minecraft\config\ringworld.properties" (
     mkdir "%INSTANCE%\.minecraft\config" 2>nul
     copy /Y "%SOURCE%\.minecraft\config\ringworld.properties" ^
