@@ -118,7 +118,7 @@ public final class RingSurfaceTextureRenderer {
         GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(
                 modelView,
                 new Vector4f(1.0F, alpha, textureMorph, generationFog),
-                new Vector3f((float)cameraAngle, (float)camera.z, 0.0F),
+                new Vector3f((float)cameraAngle, (float)camera.z, RingSurfaceGpu.farBackgroundDepth()),
                 new Matrix4f());
 
         RingSurfaceGpu.draw(client, vertexBuffer, vertexCount, surfaceTextureView,

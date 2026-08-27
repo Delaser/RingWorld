@@ -1,5 +1,14 @@
 # Current state
 
+2026-08-27 depth-port correction: the pre-publication audit found a retained
+26.1 depth comparison in the 26.2 distant-ring pipeline. The 26.2 adapter now
+uses reversed depth and a backend-aware far clamp; 26.1 keeps its original
+depth convention. Earlier `8048871` quick jars remain valid historical
+server evidence but predate this rendering correction. Nightly attempt
+`20260827T072408Z-1cd4f98ad748` was deliberately interrupted during its first
+pre-game Gradle setup to avoid qualifying that superseded candidate. No game
+or live-world state was changed. Fresh candidate/render evidence is required.
+
 2026-08-27 work-in-progress: 26.2 is pinned in its own pending manifest. Quick
 and nightly operators consume manifest-derived candidate groups, removing the
 fixed three-patch assumption. Both 26.2 loaders compile/package and pass 338

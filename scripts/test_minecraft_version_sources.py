@@ -129,6 +129,35 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         self.assertIn("apply from: 'gradle/version-sources.gradle'", fabric)
         self.assertIn("rootProject.ext.ringSourceAbiDirectory", neoforge)
 
+    def test_gpu_depth_conventions_are_version_owned(self):
+        paths = [VERSION_ROOT / version / "client/java/dev/ringworld/client/render/RingSurfaceGpu.java"
+                 for version in ("26.1", "26.2")]
+        old, new = (path.read_text() for path in paths)
+        self.assertEqual(adapter_contract(paths[0]), adapter_contract(paths[1]))
+        self.assertIn("CompareOp.LESS_THAN_OR_EQUAL", old)
+        self.assertNotIn('withShaderDefine("RINGWORLD_REVERSED_DEPTH")', old)
+        self.assertIn("CompareOp.GREATER_THAN_OR_EQUAL", new)
+        self.assertNotIn("CompareOp.LESS_THAN_OR_EQUAL", new)
+        self.assertIn('withShaderDefine("RINGWORLD_REVERSED_DEPTH")', new)
+        self.assertIn("isZZeroToOne() ? 0.0001F : -0.9999F", new)
+
+    def test_proxy_far_clamp_preserves_perspective_and_uses_backend_depth(self):
+        shader = (ROOT / "src/client/resources/assets/ringworld/shaders/core/ring_surface.vsh").read_text()
+        renderer = (ROOT / "src/client/java/dev/ringworld/client/render/RingSurfaceTextureRenderer.java").read_text()
+        self.assertIn("new Vector3f((float)cameraAngle, (float)camera.z, RingSurfaceGpu.farBackgroundDepth())", renderer)
+        self.assertIn("if (gl_Position.w > 0.0)", shader)
+        reversed_branch = shader.split("#ifdef RINGWORLD_REVERSED_DEPTH", 1)[1].split("#else", 1)[0]
+        self.assertIn("gl_Position.z = max(gl_Position.z, gl_Position.w * ModelOffset.z)", reversed_branch)
+        self.assertNotRegex(reversed_branch, r"gl_Position\.[xyw]\s*=")
+        self.assertIn("gl_Position.z = min(", shader)
+        # The two supported reversed NDC ranges must keep far geometry just
+        # inside their clip boundary without moving any nearer depth.
+        for lower, far in ((-1.0, -0.9999), (0.0, 0.0001)):
+            for w in (1.0, 512.0, 8000.0):
+                self.assertGreater(max((lower - 0.1) * w, far * w) / w, lower)
+                near = 0.8 * w
+                self.assertEqual(near, max(near, far * w))
+
 
 if __name__ == "__main__":
     unittest.main()

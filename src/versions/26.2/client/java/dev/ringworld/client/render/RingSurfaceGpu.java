@@ -38,18 +38,23 @@ public final class RingSurfaceGpu {
             .withLocation(Identifier.fromNamespaceAndPath("ringworld", "pipeline/textured_ring_surface"))
             .withVertexShader(Identifier.fromNamespaceAndPath("ringworld", "core/ring_surface"))
             .withFragmentShader(Identifier.fromNamespaceAndPath("ringworld", "core/ring_surface"))
+            .withShaderDefine("RINGWORLD_REVERSED_DEPTH")
             // MATRICES_PROJECTION already contains DynamicTransforms as well
             // as Projection. Adding DYNAMIC_TRANSFORMS duplicates that name.
             .withBindGroupLayout(BindGroupLayouts.FOG)
             .withBindGroupLayout(BindGroupLayouts.SAMPLER1)
             .withBindGroupLayout(BindGroupLayouts.SAMPLER2)
             .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT)).withCull(false)
-            .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
+            .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, false))
             .withVertexBinding(0, DefaultVertexFormat.POSITION_TEX_COLOR)
             .withPrimitiveTopology(PrimitiveTopology.TRIANGLES).build();
 
     private RingSurfaceGpu() { }
     public static RenderPipeline pipeline() { return PIPELINE; }
+    /** Reversed far clip boundary; Metal/Vulkan and OpenGL can use different NDC ranges. */
+    public static float farBackgroundDepth() {
+        return RenderSystem.getDevice().getDeviceInfo().isZZeroToOne() ? 0.0001F : -0.9999F;
+    }
     public static GpuBuffer createVertexBuffer(RingSurfaceMesh.Mesh mesh) {
         VertexFormat format = DefaultVertexFormat.POSITION_TEX_COLOR;
         try (ByteBufferBuilder allocator = ByteBufferBuilder.exactlySized(mesh.vertexCount() * format.getVertexSize())) {

@@ -1,5 +1,11 @@
 # Testing
 
+The 26.2 depth-port regression is guarded by two additional source-ABI tests
+in `scripts/test_minecraft_version_sources.py`: adapter comparison/range
+selection and shader far-clamp direction/perspective preservation. These are
+static contracts, not graphical proof. The production projection/parity
+fixtures must pass with the corrected frozen candidates before release.
+
 ## Manifest-driven extension checkpoint (2026-08-27)
 
 `scripts/test_minecraft_version_sources.py` statically checks reviewed source-ABI

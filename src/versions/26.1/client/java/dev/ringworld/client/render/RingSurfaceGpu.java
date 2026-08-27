@@ -44,6 +44,7 @@ public final class RingSurfaceGpu {
 
     private RingSurfaceGpu() { }
     public static RenderPipeline pipeline() { return PIPELINE; }
+    public static float farBackgroundDepth() { return 0.9999F; }
 
     public static GpuBuffer createVertexBuffer(RingSurfaceMesh.Mesh mesh) {
         VertexFormat format = DefaultVertexFormat.POSITION_TEX_COLOR;
