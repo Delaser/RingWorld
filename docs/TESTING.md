@@ -1,5 +1,19 @@
 # Testing
 
+2026-08-27: the complete static qualification workflow passes **328 tests**
+after adding copied-world prompt handling and verified public-download cache
+coverage. Focused staging/equivalence/prompt/workflow checks pass 25 tests.
+The source-ABI Fabric 26.2 diagnostic on clean `0ca305b`, stored below
+`dist/qualification/diagnostics/file-fix-20260827/fabric`, passes production
+noon projection after automatically accepting only the exact file-fix backup
+and completion prompts. The copied 26.1 source opens with 65,536/65,536 Atlas
+cells. Tangent/handoff/radial captures are present and visually reviewed;
+respective SHA-256 values are
+`d3f401b06e4a66e959d929bb40a3afbf22c5ba006f628d3611f76f09d4f985c2`,
+`6336639ff501e2e92c14266b400fbd112acf12310ecd9ccd752563c1cae30bc9`,
+and `924d688e09c46fac508f19010460314bf4e44949676018bc2c857d2b6f8124ce`.
+This is not frozen-candidate, complete-nightly, or packaged-launcher evidence.
+
 Corrected-depth quick run `20260827T073004Z-4c80e38c9d6b` from `97654ab`
 retains Fabric candidate SHA-256
 `9ee0b1a987ce64004b86f7cdcbe7e7a551b4d7479399afee92f518f61a095bac`
