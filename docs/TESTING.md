@@ -2312,6 +2312,20 @@ independent cell, so it intentionally has no aggregate terminal and is not
 support evidence. The exact pre-launch network failure is now the second
 bounded retry class; static coordinator tests pass 15/15.
 
+Complete aggregate `20260826T215217Z-68410e5f8e85` subsequently executed all
+60 commands and retained 55 PASS results. Its NeoForge 26.1 raid reload saw a
+stale arm-phase `Done (` marker in the persistent game `latest.log`; client A
+then attempted its one connection before the new server socket was ready,
+while client B connected one second later. The operator now waits for `Done (`
+in the newly created per-phase process log. At the owner's direction, only
+that failed fixture was rerun. Targeted run
+`20260827T040412Z-ee7ba84a5b3b` on pushed commit `f27a180` passed both phases;
+its terminal SHA-256 is
+`300a0f7a92cb210f46224141c9076dd3f3ce8ed3882ff139328140eb5271a0da`.
+Use the aggregate's retained 55 PASS records plus this repair record and the
+already retained four exact-candidate downstream PASS records for final
+review. Do not describe the combined evidence as a single all-PASS process.
+
 The historical expanded isolated Minecraft 26.1.2/Java 25 run on 2026-08-01
 achieved that result on the reused 2,048×416 server with no `moved too quickly`
 or `moved wrongly` warning. The corrected fresh Fabric and cold NeoForge

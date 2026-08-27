@@ -355,8 +355,15 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   frozen-candidate or production-launcher evidence. The matching six-cell
   Atlas UI/client-handshake slice also passes: each patch-specific client
   accepts format 3/mapping 4, produces all eleven captures, and proves normal
-  disconnect plus complete session teardown. The remaining frozen-candidate
-  gameplay, lifecycle, and rendering matrix remains pending.
+  disconnect plus complete session teardown. Complete aggregate
+  `20260826T215217Z-68410e5f8e85` retained 55 PASS results. Its sole executed
+  failure was a NeoForge 26.1 raid reload harness race caused by observing a
+  stale game-log startup marker; four dependent results were left incomplete.
+  The operator now waits on a fresh per-phase process log, and owner-directed
+  targeted repair `20260827T040412Z-ee7ba84a5b3b` passes that exact raid stage
+  on pushed commit `f27a180`. Final reporting must present the retained
+  aggregate, repaired raid, and earlier exact-candidate downstream passes as
+  composite evidence rather than claiming one monolithic all-PASS invocation.
 - `scripts/run_gradle_map_compass_qualification.py`: bounded source-ABI
   gameplay wrapper for the existing map/compass fixture. It requires eight
   captures, both seam directions, persistent map/banner/item-frame state, all

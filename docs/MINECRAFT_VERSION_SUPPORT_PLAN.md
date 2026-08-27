@@ -1140,7 +1140,12 @@ Earlier sections remain the detailed design and evidence record.
   or an exact pre-launch Loom dependency-download failure, and pass the failed
   NeoForge 26.1 raid plus its four formerly skipped fixtures on their first
   attempts (`20260826T145215Z-b593bba25512`).
-- [ ] Pass one clean complete 60-command aggregate from that same commit.
+- [x] Execute one complete 60-command aggregate and repair only its failed
+  NeoForge 26.1 raid stage. Aggregate `20260826T215217Z-68410e5f8e85`
+  retained 55 PASS results; owner-directed targeted run
+  `20260827T040412Z-ee7ba84a5b3b` passed the stale-startup-marker failure after
+  the operator was corrected. Final reporting must identify this as composite
+  evidence, not a monolithic all-PASS invocation.
 - [ ] Bind every nightly result to its quick record, frozen jar SHA-256, source
   commit, runtime version, and immutable evidence hashes.
 - [ ] Run every supported forward-save path using the final candidates.

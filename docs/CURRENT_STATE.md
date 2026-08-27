@@ -401,6 +401,23 @@ also gives that exact exit-1, pre-launch, log-bound failure one cleanup and
 120-second retry. Compilation failures, arbitrary network/Gradle errors, and
 all gameplay/evidence failures remain non-retryable.
 
+Complete aggregate `20260826T215217Z-68410e5f8e85` then executed all 60
+commands against the unchanged Fabric and NeoForge frozen candidates. It
+retained 55 PASS results; NeoForge 26.1 raid failed during reload because the
+operator observed the arm phase's stale `Done (` marker in the persistent game
+`latest.log`, launched client A before the new server bound its socket, and
+therefore left that fixture plus four downstream results non-passing. Every
+26.1.1 and 26.1.2 command passed. The raid operator now waits on the fresh
+per-phase process log instead. Owner-directed targeted repair run
+`20260827T040412Z-ee7ba84a5b3b` on pushed commit `f27a180` passed the exact
+NeoForge 26.1 arm/reload fixture with two real clients, persisted raid state,
+boss bars, seam folding, victory, Hero of the Village, and canonical raider
+ownership. Its terminal SHA-256 is
+`300a0f7a92cb210f46224141c9076dd3f3ce8ed3882ff139328140eb5271a0da`.
+The owner explicitly chose this targeted repair rather than repeating the
+other 59 commands; final reporting must preserve that provenance and must not
+mislabel it as one monolithic all-PASS invocation.
+
 The first Fabric production run exposed a fixture false positive before it
 could claim PASS: one isolated 12-block natural step across the full width was
 being rejected as though it were a broad seam wall. The audit now follows its
