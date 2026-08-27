@@ -27,3 +27,17 @@ hashes as distinct provenance.
 Only stable numeric forward ordering is accepted. Same-version and reverse
 paths are rejected, the source world is never modified, and a passing report
 does not broaden advertised compatibility.
+
+The eight reviewed 26.1.x patch and 26.1.2-to-26.2 routes now pass; exact
+run IDs are in the [current checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
+Source validation uses the independently selected source manifest, never a
+lookup in the target manifest's cell map.
+
+RingWorld settings and the fixture's saved-worldgen counts, structures and loot
+remain strict. Its biome/family lists instead sample the current generator's
+`BiomeSource`; they are not persisted chunk-biome palettes. Same-stable-line
+upgrades keep exact equality, while cross-stable-line upgrades record explicit
+before/after/add/remove sample deltas. For 26.1.2-to-26.2, the observed delta is
+the addition of `minecraft:sulfur_caves` with unchanged family sets. Empty or
+malformed sample lists still fail. This is not a complete block, biome-palette
+or Atlas inventory audit, and passing it does not authorize publication.

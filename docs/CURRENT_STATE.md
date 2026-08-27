@@ -1,9 +1,14 @@
 # Current state
 
 Latest: [26.2 qualification checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
-The corrected paired quick passes; the current nightly retains 16 PASS with
-four capture/render slots awaiting targeted repair. Static checks: 339 PASS.
-Local packages are staged, not published. Dated attempts below are historical.
+The paired 26.2 quick passes on both loaders. All 20 nightly slots are covered
+by reviewed composite evidence (16 retained passes plus four targeted repairs).
+All eight copied-world upgrade routes and all four staged server-overlay
+startup/normal-stop smokes pass. Local packages are staged, not published.
+Fresh authenticated packaged-client/Windows review and owner release approval
+remain. See the [owner handoff](RELEASE_1_1_OWNER_HANDOFF.md).
+Dated attempts below are historical; no full-matrix rerun is required merely
+to replace the explicitly reviewed composite evidence.
 
 2026-08-27 current qualification checkpoint: the complete static workflow now
 passes 333 tests. The package-pin correction `49c0d53` passes 20 executed

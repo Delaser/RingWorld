@@ -2,6 +2,10 @@
 
 Current execution status and exact candidate identities:
 [26.2 checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
+Both loaders now have complete 26.2 composite nightly coverage, eight passing
+copied-world upgrade routes, staged packages and passing server-overlay smokes.
+Fresh packaged-client owner review and publication are still held; use the
+[owner handoff](RELEASE_1_1_OWNER_HANDOFF.md), not an older staging directory.
 
 The current retained 26.1.x composite evidence review is recorded in
 [QUALIFICATION_REVIEW_2026-08-27.md](QUALIFICATION_REVIEW_2026-08-27.md).

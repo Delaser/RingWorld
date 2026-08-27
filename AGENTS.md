@@ -6,13 +6,15 @@ rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
 Latest qualification checkpoint: see
 [`docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md`](docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
-Paired 26.2 quick `103705Z` passes on frozen source `1cfac9b`; nightly `104447Z`
-retains 16 PASS, two chart-coordinate capture fixture failures and two skipped
-render checks. Apply only targeted fixture/render repairs; preserve candidate
-hashes and distinguish later source-ABI harness evidence from frozen runtime
-evidence. The static workflow passes 339 tests. Publication and live-world
-changes remain held. Older checkpoints below are provenance, not the current
-completion claim.
+Both 26.2 loaders pass quick qualification on frozen source `1cfac9b`.
+The 20-slot nightly coverage is complete as reviewed composite evidence:
+16 retained passes plus four targeted repairs, not one monolithic PASS.
+All eight copied-world forward-upgrade routes and all four staged server-overlay
+startup/normal-stop smokes pass. Later source-ABI fixture and report fixes do
+not change the retained runtime jars. Fresh authenticated packaged-client
+review, Windows confirmation and owner release approval remain separate gates.
+Publication and live-world changes remain held. Older checkpoints below are
+provenance, not the current completion claim.
 
 Last playable code audit: 2026-07-28, covering the final Minecraft 1.21.11
 implementation identified in the private development archive as
