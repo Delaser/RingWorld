@@ -45,6 +45,7 @@ its retained frozen candidates for the remaining nightly/upgrade gates; do not
 substitute the earlier pre-depth or failed quick attempts. Source-worldgen
 `094339Z` passes 26.1 Fabric. `094626Z` hits the 26.1.1 Fabric seam-scan watchdog
 while a heavy NeoForge build overlaps; preserve the failure and retest alone.
+Controlled serial rerun `095814Z` passes unchanged, supporting host contention.
 Serialize heavy builds and worldgen/runtime fixtures on this worker, including
 headless fixtures. Never disable the watchdog or relabel a crash as a retryable
 download failure. See `docs/TESTING.md` for hashes and exact evidence boundaries.

@@ -24,7 +24,14 @@ Source-worldgen `20260827T094339Z-636659deb3ad` passes 26.1 Fabric.
 60-second watchdog (`RingWorldStrongholdTest.verifySeamWorldgenSample`), after
 production fresh/reload passed. Heavy NeoForge compilation overlapped; preserve
 the crash and retest serially before assigning cause. No watchdog relaxation
-or automatic crash retry is allowed. These do not complete the upgrade matrix.
+or automatic crash retry is allowed. Controlled serial rerun
+`20260827T095814Z-05ec2a7057b2` passes 26.1.1 Fabric unchanged, supporting host
+contention. These source fixtures do not complete the upgrade matrix.
+
+The current 26.2 metadata-only review stage also assembled six client/server
+archives, all passing SHA-256 and nested MPL checks. Four local publication
+plans validate without a token or network call. This does not prove actual
+packaged clients and does not authorize an upload.
 
 Quick `20260827T083411Z` was cancelled during NeoForge asset download before a
 game launched; `20260827T085115Z` failed both build paths on a Mojang library

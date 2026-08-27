@@ -54,10 +54,23 @@ its production world. The 26.1.1 Fabric attempt `20260827T094626Z-b5265759bec4`
 passed production fresh/reload but hit the 60-second watchdog during the
 seam fixture's synchronous block scan, while NeoForge compilation overlapped.
 Retain that failed record; host contention is only a hypothesis until a quiet
-rerun. Serialize heavy builds and runtime fixtures, not only graphical clients.
+rerun. The controlled, otherwise unchanged serial rerun
+`20260827T095814Z-05ec2a7057b2` passes all 26.1.1 Fabric stages, supporting
+contention as the explanation. Serialize heavy builds and runtime fixtures,
+not only graphical clients; do not relax the watchdog.
+
+Local 26.2 review jars are staged from the passing quick candidates, with only
+approved public metadata changed: Fabric SHA-256
+`abc21c93e31b7f6b9cec3be1b333b7d06aa653ffe78279e854771a2bebab827b` and NeoForge
+`e26f93ade647284a185681830a4e22c63c6063df5ac8dedb4c9c505ca71e4062`.
+Both loaders' macOS/Windows client archives and server overlays assembled and
+pass SHA-256/nested MPL checks under
+`dist/qualified-package-review/1.1.0-mc26.2`. Four local host/loader publication
+plans validate without tokens or API calls. These remain review packages,
+not packaged-runtime or release approval; nothing was uploaded.
 
 Remaining before any publication decision: complete the 20-cell-result 26.2
-nightly matrix; finish recreating the other five source worlds and run the six
+nightly matrix; finish recreating the other four source worlds and run the six
 26.1.x final-candidate upgrades plus the two 26.1.2→26.2 upgrades; perform real
 staged-package OS/client/server smokes; obtain independent owner review. Keep
 publication held.
