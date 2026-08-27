@@ -22,6 +22,22 @@ RUN_ID = "20260827T120000Z-0123456789ab"
 
 
 class QualifiedReleaseStageTest(unittest.TestCase):
+    def test_checked_in_26_2_release_inputs_are_separate_and_renderable(self) -> None:
+        contract = contract_from_manifest(load_manifest(ROOT / "config/minecraft-version-matrix-26.2.json"))
+        config = _load_config(ROOT / "deploy/qualified/26.2-release.json", contract)
+        self.assertEqual(["26.2"], config["game_versions"])
+        self.assertEqual("1.1.0+mc26.2", config["artifact_version"])
+        for loader in ("fabric", "neoforge"):
+            source = "https://github.com/Delaser/RingWorld/commit/" + "b" * 40
+            notes = _render_changelog((ROOT / "deploy/qualified/26.2-changelog.md").read_text(), loader, source)
+            self.assertNotIn("{{", notes)
+            self.assertIn(source, notes)
+            self.assertIn("pre-upgrade backup", notes)
+            modrinth, curseforge = _metadata(config, loader, notes)
+            self.assertEqual(["26.2"], modrinth["game_versions"])
+            self.assertEqual(["26.2"], curseforge["game_versions"])
+            self.assertTrue(modrinth["version_number"].endswith("+mc26.2"))
+
     @staticmethod
     def _write_26_2_quick(repository: Path) -> tuple[dict, SupportContract, dict[str, str]]:
         manifest = load_manifest(ROOT / "config/minecraft-version-matrix-26.2.json")

@@ -631,6 +631,9 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   `1.1.0+mc26.1` candidates now pass this guard against the refreshed combined
   quick candidates; they remain ignored, unstaged, and unpublished.
 - `scripts/stage_qualified_release.py`: Phase 7's no-upload staging bridge.
+  Planned 1.1 inputs are split between `deploy/qualified/26.1.x-*` and
+  `deploy/qualified/26.2-*`; select the matching manifest and candidate group.
+  Templates alone never qualify a support claim or authorize publication.
   It consumes a reviewed six-cell quick run and the two equivalent public
   candidates, then revalidates every strict record and emits one ignored
   review directory per loader with the runtime jar, checksums, archive

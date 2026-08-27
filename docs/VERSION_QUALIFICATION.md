@@ -70,6 +70,15 @@ and staging support are implemented and static-tested; a 26.2 publication still
 requires its real clean frozen-candidate evidence, staging execution, and owner
 approval.
 
+Local staging inputs for the planned 1.1 release are separate:
+`deploy/qualified/26.1.x-release.json` / `26.1.x-changelog.md` and
+`deploy/qualified/26.2-release.json` / `26.2-changelog.md`. Their existence is
+not a support or release claim. Stage each with its own manifest, quick run
+and byte-equivalent public candidates only after its remaining release gates
+pass. The 26.2 notes explicitly distinguish the qualified OpenGL path from
+unqualified experimental Vulkan and explain that rollback requires a matching
+pre-upgrade world backup. Nothing in this preparation uploads or publishes.
+
 Version-owned source APIs live under `src/versions/<oldest-ABI>/main/java` and
 `client/java`. Both loader builds use the same selected directories:
 `gradle/version-sources.gradle` selects the newest checked-in ABI not newer
