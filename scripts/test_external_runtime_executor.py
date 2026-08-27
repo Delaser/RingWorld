@@ -7,6 +7,7 @@ from dataclasses import replace
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import socket
 import sys
@@ -295,6 +296,52 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
             download.destination.write_bytes(b"corrupt")
             with self.assertRaises(EXECUTOR.ExternalRuntimeExecutionError):
                 EXECUTOR.fetch_pinned_https(download, paths, opener=self.opener(bodies))
+
+    def test_optional_worker_download_cache_seeds_without_network_and_rehashes_copy(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory(dir="/private/tmp") as cache_directory:
+            paths, plan, bodies = self.plan(Path(directory), "26.1-fabric")
+            download = plan.downloads[0]
+            root = Path(cache_directory)
+            entry = root / download.algorithm / download.checksum
+            entry.parent.mkdir()
+            entry.write_bytes(bodies[download.url])
+            entry.chmod(0o444)
+            entry.parent.chmod(0o555)
+            root.chmod(0o555)
+            with patch.dict(os.environ, {"RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE": str(root)}):
+                result = EXECUTOR.fetch_pinned_https(
+                    download, paths,
+                    opener=lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("network must not run")),
+                )
+            self.assertTrue(result.reused_cache)
+            self.assertEqual(bodies[download.url], download.destination.read_bytes())
+
+    def test_worker_download_cache_rejects_bad_path_symlink_and_wrong_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory(dir="/private/tmp") as cache_directory:
+            paths, plan, _ = self.plan(Path(directory), "26.1-fabric")
+            download = plan.downloads[0]
+            with patch.dict(os.environ, {"RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE": "relative-cache"}):
+                with self.assertRaisesRegex(EXECUTOR.ExternalRuntimeExecutionError, "absolute"):
+                    EXECUTOR.fetch_pinned_https(download, paths)
+            root = Path(cache_directory)
+            entry = root / download.algorithm / download.checksum
+            entry.parent.mkdir()
+            entry.write_bytes(b"wrong")
+            entry.chmod(0o444)
+            entry.parent.chmod(0o555)
+            root.chmod(0o555)
+            with patch.dict(os.environ, {"RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE": str(root)}):
+                with self.assertRaisesRegex(EXECUTOR.ExternalRuntimeExecutionError, "fails its pin"):
+                    EXECUTOR.fetch_pinned_https(download, paths)
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory(dir="/private/tmp") as cache_directory:
+            paths, plan, _ = self.plan(Path(directory), "26.1-fabric")
+            target = Path(cache_directory) / "target"
+            target.mkdir()
+            root = Path(cache_directory) / "cache"
+            root.symlink_to(target, target_is_directory=True)
+            with patch.dict(os.environ, {"RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE": str(root)}):
+                with self.assertRaisesRegex(EXECUTOR.ExternalRuntimeExecutionError, "non-symlink"):
+                    EXECUTOR.fetch_pinned_https(plan.downloads[0], paths)
 
     def test_extra_ringworld_jar_is_rejected_after_copy(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

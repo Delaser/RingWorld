@@ -249,6 +249,48 @@ def _atomic_link_new(temporary: Path, destination: Path) -> None:
         raise ExternalRuntimeExecutionError(f"refusing to replace existing qualification input {destination}") from error
 
 
+def _worker_download_cache(paths: QualificationPaths) -> Path | None:
+    """Return the optional immutable worker seed cache, never a normal home/cache."""
+    configured = os.environ.get("RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE")
+    if configured is None:
+        return None
+    root = Path(configured)
+    qualification_root = paths.repository_root / "dist" / "qualification"
+    if not root.is_absolute() or root.is_symlink() or any(
+            is_within(root, forbidden) for forbidden in (paths.repository_root, Path.home(), qualification_root)):
+        raise ExternalRuntimeExecutionError("worker download cache must be an absolute non-symlink directory outside checkout, home, and qualification")
+    try:
+        status = root.stat()
+    except OSError as error:
+        raise ExternalRuntimeExecutionError("worker download cache is unavailable") from error
+    if not stat.S_ISDIR(status.st_mode) or status.st_mode & 0o222:
+        raise ExternalRuntimeExecutionError("worker download cache must be a read-only directory")
+    current = Path(root.anchor)
+    for part in root.parts[1:]:
+        current /= part
+        if current.is_symlink():
+            raise ExternalRuntimeExecutionError("worker download cache may not traverse symlinks")
+    return root
+
+
+def _seeded_download(download: RuntimeDownload, paths: QualificationPaths) -> Path | None:
+    root = _worker_download_cache(paths)
+    if root is None:
+        return None
+    entry = root / download.algorithm.lower() / download.checksum.lower()
+    if (root / download.algorithm.lower()).is_symlink() or entry.is_symlink():
+        raise ExternalRuntimeExecutionError("worker download cache entry may not traverse symlinks")
+    if not entry.exists() and not entry.is_symlink():
+        return None
+    _regular_file(entry, "worker download cache entry")
+    if entry.stat().st_size > MAX_DOWNLOAD_BYTES:
+        raise ExternalRuntimeExecutionError("worker download cache entry exceeds qualification size limit")
+    checked = verify_pinned_file(entry, download.algorithm, download.checksum)
+    if not checked.verified:
+        raise ExternalRuntimeExecutionError(f"worker download cache entry fails its pin: {download.name}")
+    return entry
+
+
 def fetch_pinned_https(
     download: RuntimeDownload,
     paths: QualificationPaths,
@@ -278,6 +320,15 @@ def fetch_pinned_https(
     descriptor, name = tempfile.mkstemp(prefix=f".{destination.name}.", suffix=".partial", dir=destination.parent)
     temporary = Path(name)
     try:
+        seed = _seeded_download(download, paths)
+        if seed is not None:
+            os.close(descriptor)
+            shutil.copyfile(seed, temporary)
+            checked = verify_pinned_file(temporary, download.algorithm, download.checksum)
+            if not checked.verified:
+                raise ExternalRuntimeExecutionError(f"worker download cache copy fails its pin: {download.name}")
+            _atomic_link_new(temporary, destination)
+            return DownloadResult(download.name, str(destination), checked.algorithm, checked.expected, checked.actual, True)
         with os.fdopen(descriptor, "wb") as sink:
             response = opener(download.url, timeout=timeout_seconds)
             try:

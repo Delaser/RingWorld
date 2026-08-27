@@ -100,6 +100,16 @@ and staging support are implemented and static-tested; a 26.2 publication still
 requires its real clean frozen-candidate evidence, staging execution, and owner
 approval.
 
+For external dedicated-runtime inputs only, a worker may set
+`RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE` to an existing absolute, read-only,
+non-symlink directory outside the checkout, home, and qualification tree. Its
+entries are `<algorithm>/<digest>`, using the manifest's exact checksum. Each
+entry is copied into the disposable cell and rehashed before use; a missing
+entry falls back to the pinned no-redirect HTTPS fetch, while a bad path,
+symlink, oversize entry, or hash mismatch fails closed. This cache is an
+optional verified byte seed, never a download bypass or runtime-evidence
+substitute.
+
 Local staging inputs for the planned 1.1 release are separate:
 `deploy/qualified/26.1.x-release.json` / `26.1.x-changelog.md` and
 `deploy/qualified/26.2-release.json` / `26.2-changelog.md`. Their existence is
