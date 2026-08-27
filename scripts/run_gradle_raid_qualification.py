@@ -164,8 +164,11 @@ def _run_phase(prepared: Any, tasks: Mapping[str, str], phase: str,
             process, stream = _start(record, output)
             running[name] = (process, stream, output, datetime.now(timezone.utc).isoformat(), time.monotonic())
             if index == 0:
-                server_log = prepared.paths.run_directory / "run-raid-seam/server/logs/latest.log"
-                _wait_marker(process, server_log, "Done (", min(timeout, 300))
+                # The game latest.log survives the arm/reload boundary. Waiting on it
+                # can observe the arm phase's stale startup marker and launch a reload
+                # client before the new server has bound its socket. The process log is
+                # created fresh for each phase, so its marker proves this server is ready.
+                _wait_marker(process, output, "Done (", min(timeout, 300))
         server = running["server"][0]
         server_log = prepared.paths.run_directory / "run-raid-seam/server/logs/latest.log"
         marker = "[raid-seam] arm-save-ready=true" if phase == "arm" else "[raid-seam] PASS"

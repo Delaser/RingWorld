@@ -27,6 +27,12 @@ class GradleRaidQualificationTest(unittest.TestCase):
         self.assertIn('stem="terminal"', source)
         self.assertNotIn('EVIDENCE_SUBDIRECTORY / "terminal.json"', source)
 
+    def test_phase_startup_waits_on_fresh_process_log(self) -> None:
+        source = (ROOT / "scripts" / "run_gradle_raid_qualification.py").read_text(
+            encoding="utf-8")
+        self.assertIn('_wait_marker(process, output, "Done (", min(timeout, 300))', source)
+        self.assertNotIn('_wait_marker(process, server_log, "Done (", min(timeout, 300))', source)
+
     def test_task_inventory_is_loader_symmetric(self) -> None:
         fabric, neoforge = _tasks("fabric"), _tasks("neoforge")
         self.assertEqual(set(fabric), set(neoforge))
