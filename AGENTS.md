@@ -11,8 +11,13 @@ The 20-slot nightly coverage is complete as reviewed composite evidence:
 16 retained passes plus four targeted repairs, not one monolithic PASS.
 All eight copied-world forward-upgrade routes and all four staged server-overlay
 startup/normal-stop smokes pass. Later source-ABI fixture and report fixes do
-not change the retained runtime jars. Fresh authenticated packaged-client
-review, Windows confirmation and owner release approval remain separate gates.
+not change the retained runtime jars. Windows package review has owner sign-off
+(2026-08-27). Fresh authenticated macOS package smokes pass on 26.1.2 Fabric,
+26.1.2 NeoForge and 26.2 Fabric. NeoForge 26.2 is blocked before game launch:
+Prism lacks metadata for the qualified 26.2.0.69 loader (issue #234). Do not
+silently downgrade that pin. See `docs/MACOS_PACKAGE_REVIEW_2026-08-27.md`.
+Static CI is green on Windows/Linux after test-only correction `a2ba721`;
+owner final release approval remains separate.
 Publication and live-world changes remain held. Older checkpoints below are
 provenance, not the current completion claim.
 

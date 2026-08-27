@@ -1,6 +1,6 @@
 # 1.1 pre-publication owner handoff
 
-Status: **ready for owner package review; do not publish.** This handoff records local staging
+Status: **three macOS package smokes pass; final package blocked by #234; do not publish.** This handoff records local staging
 inputs and owner review work. The 20-item nightly review and all eight bounded
 copied-world forward-upgrade routes have completed with independently rehashed
 local evidence. This does not establish public 26.2 support.
@@ -25,6 +25,31 @@ startup/normal-stop checks; they do not cover installer/network provisioning,
 graphical clients, or publication.
 
 ## Owner review checklist
+
+Windows owner sign-off received on 2026-08-27: "seems fine windows good",
+following delivery of `RingWorld-1.1-Windows-Testing-Kit-20260827.zip`
+(SHA-256 `3fb9663645f1a38a8b107179ca7f44f76399a8a83f5417b4c0d85afb4aa86073`).
+This accepts the Windows package-review gate as an owner-reported result;
+it is not a new machine-evidence report or a claim of individually recorded
+passes for every checklist action. It does not prove a fresh install of the
+specific NeoForge 26.2 package now blocked by #234. The final
+release/publication decision remains pending.
+
+macOS preparation (2026-08-27): all four archive checksums, nested runtime-jar
+hashes, MPL licences and pinned Minecraft/loader components verified. Exact
+archives were extracted into new isolated folders under
+`dist/macos-package-review-20260827/`; no account, options or saves were copied.
+The 26.2 Fabric outer launcher detected Java 25 and downloaded official Prism
+11.0.3. Owner authentication succeeded through the device-code flow. Separate
+fresh imported instances in that authenticated test root pass the packaged
+Atlas capture smoke on 26.1.2 Fabric, 26.1.2 NeoForge and 26.2 Fabric.
+NeoForge 26.2 cannot launch: Prism's metadata URL for pinned 26.2.0.69 returns
+404; its latest listed 26.2 build is 26.2.0.67. Track the exact-pin packaging
+repair in [#234](https://github.com/Delaser/RingWorld/issues/234), then rerun only
+that blocked case and verify its Windows import path. Do not downgrade the
+qualified loader silently. Full evidence and scope limits are in the
+[macOS review](MACOS_PACKAGE_REVIEW_2026-08-27.md).
+Keep the test directory private: Prism now stores account credentials there.
 
 1. On macOS, start fresh authenticated Prism instances for each loader and both
    version lines (26.1.x packages use 26.1.2; the separate line uses 26.2). Do not copy an
