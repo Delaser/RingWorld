@@ -37,6 +37,7 @@ from external_runtime_executor import (
     _verify_launcher,
     _write_planned_file,
     fetch_pinned_https,
+    preseed_minecraft_server,
 )
 from minecraft_atlas_recovery_persistence import parse_persisted_ring_settings, parse_ring_terrain_atlas
 from minecraft_atlas_recovery_qualification import (
@@ -425,6 +426,7 @@ def execute_external_runtime_atlas_recovery(
         downloads.append(fetch_pinned_https(smoke.minecraft_server, paths, opener=opener))
         for item in smoke.downloads:
             downloads.append(fetch_pinned_https(item, paths, opener=opener))
+        preseed_minecraft_server(smoke, Path(downloads[0].path), paths)
         record = CommandRecord(PhaseName.DEDICATED_SMOKE, smoke.installer.argv, smoke.installer.cwd, (), smoke.launch.timeout_seconds)
         installer = command_executor(record, paths, ordinal=1)
         if installer.verdict is not Verdict.PASS:

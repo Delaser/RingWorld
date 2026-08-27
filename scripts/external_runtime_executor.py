@@ -497,10 +497,10 @@ def _installed_minecraft_server(plan: ExternalRuntimeSmokePlan) -> RuntimeIdenti
     for path in plan.layout.root.rglob("*.jar"):
         if not is_within(path, plan.layout.root) or is_within(path, plan.layout.mods_directory):
             continue
-        if plan.loader == "neoforge" and path == plan.layout.root / "server.jar":
+        if path == plan.layout.root / "server.jar":
             # This is the reviewed input seed copied before installation to
             # prevent a redundant download. Runtime identity must bind the
-            # distinct installer-owned copy under libraries/, not its input.
+            # distinct installer-owned copy, not its input.
             continue
         if path.is_symlink() or not path.is_file():
             continue
@@ -519,6 +519,26 @@ def _installed_minecraft_server(plan: ExternalRuntimeSmokePlan) -> RuntimeIdenti
         minecraft_server_expected=expected.checksum,
         minecraft_server_actual=actual,
     )
+
+
+def preseed_minecraft_server(plan: ExternalRuntimeSmokePlan, cached_server: Path,
+                             paths: QualificationPaths) -> Path:
+    """Install one already hash-verified Mojang server input for the official installer.
+
+    The fresh runtime root must not already contain a competing server input.
+    The later runtime identity check still requires a distinct installer-owned
+    copy, so this acceleration never becomes runtime evidence by itself.
+    """
+    destination = plan.layout.root / "server.jar"
+    _assert_no_symlink_components(cached_server, paths.cell_root, "cached Mojang server")
+    _assert_no_symlink_components(destination, plan.layout.root, "Mojang server seed")
+    if destination.exists():
+        raise ExternalRuntimeExecutionError("external runtime already has a Mojang server seed")
+    shutil.copyfile(cached_server, destination)
+    verified = verify_pinned_file(destination, plan.minecraft_server.algorithm, plan.minecraft_server.checksum)
+    if not verified.verified:
+        raise ExternalRuntimeExecutionError("Mojang server seed differs from its reviewed pin")
+    return destination
 
 
 def _drain_server_output(source: BinaryIO, received: "queue.Queue[bytes | None]") -> None:
@@ -758,16 +778,10 @@ def execute_external_runtime_smoke(
         downloads.append(fetch_pinned_https(plan.minecraft_server, paths, opener=opener))
         for item in plan.downloads:
             downloads.append(fetch_pinned_https(item, paths, opener=opener))
-        if plan.loader == "neoforge":
-            # NeoForge's installer otherwise downloads the same Mojang server
-            # jar again. Seed its documented target from the already pinned,
-            # hash-verified cache so qualification is not exposed to a second
-            # redundant network transfer.
-            cached_server = Path(downloads[0].path)
-            installed_server = plan.layout.root / "server.jar"
-            _assert_no_symlink_components(cached_server, paths.cell_root, "cached Mojang server")
-            shutil.copyfile(cached_server, installed_server)
-            verify_pinned_file(installed_server, plan.minecraft_server.algorithm, plan.minecraft_server.checksum)
+        # Both official installers accept this documented root input. Fabric's
+        # optional -downloadMinecraft flag is intentionally absent from the
+        # reviewed plan because this independently rehashed seed is present.
+        preseed_minecraft_server(plan, Path(downloads[0].path), paths)
         ledger.add("installer-start")
         installer_record = CommandRecord(
             PhaseName.DEDICATED_SMOKE, plan.installer.argv, plan.installer.cwd, (), plan.launch.timeout_seconds,

@@ -177,9 +177,15 @@ class ExternalRuntimeAtlasRecoveryExecutorTest(unittest.TestCase):
     def installer(plan):
         def run(record, paths, *, ordinal: int):
             assert ordinal == 1
+            assert (plan.runtime_root / "server.jar").read_bytes() == b"mojang-" + plan.smoke.cell_id.encode("ascii")
             if plan.smoke.loader == "fabric":
                 assert plan.smoke.layout.fabric_server_jar is not None
                 plan.smoke.layout.fabric_server_jar.write_bytes(b"launcher")
+                installed_server = plan.runtime_root / "versions" / plan.smoke.minecraft_version
+                installed_server.mkdir(parents=True)
+                (installed_server / f"server-{plan.smoke.minecraft_version}.jar").write_bytes(
+                    b"mojang-" + plan.smoke.cell_id.encode("ascii")
+                )
             else:
                 assert plan.smoke.layout.neoforge_run_script is not None
                 assert plan.smoke.layout.neoforge_user_jvm_args is not None
@@ -194,7 +200,6 @@ class ExternalRuntimeAtlasRecoveryExecutorTest(unittest.TestCase):
                 (installed_server / f"server-{plan.smoke.minecraft_version}.jar").write_bytes(
                     b"mojang-" + plan.smoke.cell_id.encode("ascii")
                 )
-            (plan.runtime_root / "server.jar").write_bytes(b"mojang-" + plan.smoke.cell_id.encode("ascii"))
             return ExecutedCommand("DEDICATED_SMOKE", Verdict.PASS, record.argv, 0, "now", 0.0, "", "")
         return run
 

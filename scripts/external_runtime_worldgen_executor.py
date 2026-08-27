@@ -22,7 +22,7 @@ from external_runtime_executor import (
     CommandExecutor, DownloadResult, ExternalRuntimeExecutionError, ModCopyResult,
     UrlOpen, _assert_contained, _assert_no_symlink_components, _copy_pinned_mod,
     _installed_minecraft_server, _no_redirect_urlopen, _verify_exact_mod_inventory,
-    _verify_launcher, _write_planned_file, fetch_pinned_https,
+    _verify_launcher, _write_planned_file, fetch_pinned_https, preseed_minecraft_server,
 )
 from external_runtime_worldgen_plan import ExternalRuntimeWorldgenPlan, WorldgenStagePlan
 from external_runtime_worldgen_stage_runner import (
@@ -99,6 +99,7 @@ def _assemble(smoke, paths: QualificationPaths, ordinal: int, opener: UrlOpen,
     smoke.layout.root.mkdir(parents=True, exist_ok=False)
     downloads = [fetch_pinned_https(smoke.minecraft_server, paths, opener=opener)]
     downloads.extend(fetch_pinned_https(item, paths, opener=opener) for item in smoke.downloads)
+    preseed_minecraft_server(smoke, Path(downloads[0].path), paths)
     record = CommandRecord(
         PhaseName.DEDICATED_SMOKE, smoke.installer.argv, smoke.installer.cwd, (),
         smoke.launch.timeout_seconds,

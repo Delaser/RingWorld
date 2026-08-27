@@ -112,6 +112,14 @@ symlink, oversize entry, or hash mismatch fails closed. This cache is an
 optional verified byte seed, never a download bypass or runtime-evidence
 substitute.
 
+Every external dedicated fixture independently downloads and rehashes its
+pinned Mojang server input before invoking the reviewed official installer.
+It seeds that verified input at the installer-owned `server.jar` location for
+both loaders, avoiding only the installers' duplicate Minecraft transfer;
+Fabric's reviewed argv consequently omits `-downloadMinecraft`. The installed
+launcher must still create a separate hash-bound server copy before any runtime
+can pass.
+
 For quick and nightly Gradle preparation, `--gradle-loom-cache` may likewise
 name an external read-only Mojang seed. It is revalidated from the version
 manifest, version JSON, and asset-index SHA-1/size records before each copy

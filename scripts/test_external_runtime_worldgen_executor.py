@@ -160,8 +160,12 @@ class ExternalRuntimeWorldgenExecutorTest(unittest.TestCase):
 
         def execute(record, paths, *, ordinal):
             smoke = next(value for value in by_root.values() if str(value.layout.root) in record.argv)
+            assert (smoke.layout.root / "server.jar").read_bytes() == server
             if smoke.loader == "fabric":
                 smoke.layout.fabric_server_jar.write_bytes(b"launcher")  # type: ignore[union-attr]
+                installed_server = smoke.layout.root / "versions" / smoke.minecraft_version
+                installed_server.mkdir(parents=True)
+                (installed_server / f"server-{smoke.minecraft_version}.jar").write_bytes(server)
             else:
                 smoke.layout.neoforge_run_script.write_text("#!/bin/sh\n", encoding="utf-8")  # type: ignore[union-attr]
                 smoke.layout.neoforge_run_script.chmod(0o700)  # type: ignore[union-attr]
@@ -172,7 +176,6 @@ class ExternalRuntimeWorldgenExecutorTest(unittest.TestCase):
                 )
                 installed_server.mkdir(parents=True)
                 (installed_server / f"server-{smoke.minecraft_version}.jar").write_bytes(server)
-            (smoke.layout.root / "server.jar").write_bytes(server)
             return ExecutedCommand("DEDICATED_SMOKE", Verdict.PASS, record.argv, 0, "now", 0.0, "", "")
         return execute
 

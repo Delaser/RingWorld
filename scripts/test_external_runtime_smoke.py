@@ -90,7 +90,7 @@ class ExternalRuntimeSmokePlanTest(unittest.TestCase):
             self.assertIn("server", plan.installer.argv)
             self.assertIn("-mcversion", plan.installer.argv)
             self.assertIn("-loader", plan.installer.argv)
-            self.assertIn("-downloadMinecraft", plan.installer.argv)
+            self.assertNotIn("-downloadMinecraft", plan.installer.argv)
             self.assertIn("-dir", plan.installer.argv)
             self.assertIn("fabric-server-launch.jar", " ".join(plan.launch.argv))
             self.assertIsNone(plan.generated_run_script)

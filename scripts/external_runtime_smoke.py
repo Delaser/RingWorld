@@ -362,7 +362,7 @@ def external_runtime_smoke_plan(
         installer = InstallerInvocation(
             "fabric",
             ("java", "-jar", str(installer_download.destination), "server", "-mcversion", version,
-             "-loader", _fabric_loader_version(cell), "-downloadMinecraft", "-dir", str(layout.root)),
+             "-loader", _fabric_loader_version(cell), "-dir", str(layout.root)),
             paths.cell_root,
         )
         assert layout.fabric_server_jar is not None

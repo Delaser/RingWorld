@@ -125,13 +125,17 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
         def run(record, paths, *, ordinal: int):
             assert ordinal == 1
             assert plan.layout.root.is_dir()
+            seeded_server = plan.layout.root / "server.jar"
+            assert seeded_server.read_bytes() == b"fake-mojang-server-" + plan.cell_id.encode("ascii")
             if plan.loader == "fabric":
-                assert not any(plan.layout.root.iterdir())
                 assert plan.layout.fabric_server_jar is not None
                 plan.layout.fabric_server_jar.write_bytes(b"fake fabric launcher")
+                installed_server = plan.layout.root / "versions" / plan.minecraft_version
+                installed_server.mkdir(parents=True)
+                (installed_server / f"server-{plan.minecraft_version}.jar").write_bytes(
+                    b"fake-mojang-server-" + plan.cell_id.encode("ascii")
+                )
             else:
-                seeded_server = plan.layout.root / "server.jar"
-                assert seeded_server.read_bytes() == b"fake-mojang-server-" + plan.cell_id.encode("ascii")
                 assert plan.layout.neoforge_run_script is not None
                 assert plan.layout.neoforge_user_jvm_args is not None
                 plan.layout.neoforge_run_script.write_text("#!/bin/sh\n", encoding="utf-8")
@@ -147,9 +151,8 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
                     installed = plan.layout.root / "libraries" / "net" / "minecraft" / "server" / plan.minecraft_version
                     (installed / f"server-{plan.minecraft_version}.jar").write_bytes(b"wrong-mojang-server")
                 else:
-                    (plan.layout.root / "server.jar").write_bytes(b"wrong-mojang-server")
-            elif plan.loader == "fabric":
-                (plan.layout.root / "server.jar").write_bytes(b"fake-mojang-server-" + plan.cell_id.encode("ascii"))
+                    installed = plan.layout.root / "versions" / plan.minecraft_version
+                    (installed / f"server-{plan.minecraft_version}.jar").write_bytes(b"wrong-mojang-server")
             if extra_ringworld:
                 plan.layout.mods_directory.mkdir()
                 (plan.layout.mods_directory / "ringworld-old.jar").write_bytes(b"wrong")
@@ -267,6 +270,20 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
             with self.assertRaises(EXECUTOR.ExternalRuntimeExecutionError):
                 EXECUTOR.execute_external_runtime_smoke(plan, paths, paths.run_id, opener=redirect, command_executor=never)
             self.assertEqual([], calls)
+            self.assertTrue(plan.layout.root.is_dir())
+            self.assertEqual([], list(plan.layout.root.iterdir()))
+
+    def test_corrupt_mojang_server_seed_prevents_installer(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths, plan, bodies = self.plan(Path(directory), "26.1-fabric")
+            bodies[plan.minecraft_server.url] = b"corrupt-mojang-server"
+            called = []
+            with self.assertRaises(EXECUTOR.ExternalRuntimeExecutionError):
+                EXECUTOR.execute_external_runtime_smoke(
+                    plan, paths, paths.run_id, opener=self.opener(bodies),
+                    command_executor=lambda *args, **kwargs: called.append(True),
+                )
+            self.assertEqual([], called)
             self.assertTrue(plan.layout.root.is_dir())
             self.assertEqual([], list(plan.layout.root.iterdir()))
 
