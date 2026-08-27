@@ -851,6 +851,17 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                              f"ringworld-neoforge-{VERSION}.jar").is_file())
             self.assertFalse(any((neo_installed / ".minecraft" / "mods").glob("fabric-api-*.jar")))
 
+    def windows_fixture_launcher(self, bundle: Path) -> Path:
+        # Production intentionally detaches Prism. Only the temporary test copy
+        # waits for the harmless where.exe stand-in before Windows deletes it.
+        source = (bundle / "Launch RingWorld.bat").read_text(encoding="utf-8")
+        needle = 'start "" "!PRISM!" -d "%DATA%" -l "%INSTANCE_ID%"'
+        self.assertEqual(1, source.count(needle))
+        target = bundle / "Launch Fixture.bat"
+        target.write_text(source.replace(needle, needle.replace('start "" ', 'start "" /wait ')),
+                          encoding="utf-8")
+        return target
+
     @unittest.skipUnless(os.name == "nt", "Windows launcher fixture")
     def test_windows_launcher_fresh_and_upgrade_preserve_existing_user_state(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -867,7 +878,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             prism = bundle / ".launcher" / "windows" / "prismlauncher.exe"
             prism.parent.mkdir(parents=True)
             shutil.copy2(shutil.which("where.exe"), prism)
-            launcher = bundle / "Launch RingWorld.bat"
+            launcher = self.windows_fixture_launcher(bundle)
             fresh = subprocess.run(
                 ["cmd.exe", "/d", "/c", str(launcher)],
                 cwd=bundle, capture_output=True, text=True, check=False,
@@ -921,7 +932,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             prism = bundle / ".launcher" / "windows" / "prismlauncher.exe"
             prism.parent.mkdir(parents=True)
             shutil.copy2(shutil.which("where.exe"), prism)
-            launcher = bundle / "Launch RingWorld.bat"
+            launcher = self.windows_fixture_launcher(bundle)
             fresh = subprocess.run(
                 ["cmd.exe", "/d", "/c", str(launcher)],
                 cwd=bundle, capture_output=True, text=True, check=False,

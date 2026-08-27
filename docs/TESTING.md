@@ -5,6 +5,11 @@ contracts and extends the platform launcher tests to cover owned-patch updates
 and retirement while preserving unrelated custom components. See
 [`deploy/client/README.md`](../deploy/client/README.md) for the exact-pin assembly
 path. These tests are package metadata/update evidence, not graphical gameplay.
+The Windows fixture's temporary launcher copy adds `/wait` only to the final
+`start` of its harmless `where.exe` stand-in. This prevents cleanup racing the
+still-running executable; production launcher bytes and behavior are unchanged.
+The first #234 Windows run passed its assertions but failed that cleanup, so
+it remains a failed attempt rather than being relabelled PASS.
 
 Latest 26.2 run IDs, candidate/package hashes and remaining owner checks are
 in [the current checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).

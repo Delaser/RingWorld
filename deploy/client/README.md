@@ -101,3 +101,6 @@ sentinel account/save/config files before publishing.
 Windows runner whenever package inputs change. It uses a local harmless Prism
 stand-in and makes no account, network-login, or Minecraft launch claim; an
 actual graphical Windows client remains a release-candidate runtime gate.
+The fixture adds `/wait` to its temporary launcher's final stub launch so
+Windows can release the executable before cleanup; shipped launchers retain
+their normal detached Prism launch.
