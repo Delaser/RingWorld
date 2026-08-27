@@ -12,6 +12,7 @@ import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -167,9 +168,31 @@ public final class CurvedObjectCaptureClient {
         RingWorldMod.LOGGER.error(
                 "[curved-object-capture] result=FAIL, capture timeout stage={} captureTicks={} settleTicks={} "
                         + "presentationX={} canonicalX={} targetX={} targetDistance={} geometryReady={} "
-                        + "fixturePresent={} renderReady={}",
+                        + "fixturePresent={} fixtureProbe={} renderReady={}",
                 stage, captureTicks, settleTicks, presentationX, canonicalX, targetX, targetDistance,
-                geometry != null, fixturePresent, renderReady);
+                geometry != null, fixturePresent, fixtureProbe(client), renderReady);
+    }
+
+    private static String fixtureProbe(Minecraft client) {
+        RingGeometry geometry = ClientRingState.geometry();
+        if (geometry == null) return "geometry=missing";
+        return String.join(",",
+                fixtureProbe(client, "chest", 40, 120, -2, "chest"),
+                fixtureProbe(client, "lectern", 48, 120, 0, "lectern"),
+                fixtureProbe(client, "ender_chest", 56, 120, 2, "ender_chest"),
+                fixtureProbe(client, "oak_sign", 52, 120, -2, "oak_sign"),
+                fixtureProbe(client, "red_bed", 60, 120, 0, "red_bed"),
+                fixtureProbe(client, "shulker_box", 62, 120, 2, "shulker_box"),
+                fixtureProbe(client, "white_banner", 66, 120, 0, "white_banner"));
+    }
+
+    private static String fixtureProbe(Minecraft client, String name, int canonicalX, int y, int z,
+                                       String expected) {
+        BlockPos position = fixturePosition(client, canonicalX, y, z);
+        var state = client.level.getBlockState(position);
+        return name + "@" + position + "=" + BuiltInRegistries.BLOCK.getKey(state.getBlock())
+                + "/expected=" + expected + "/blockEntity=" + (client.level.getBlockEntity(position) != null)
+                + "/loaded=" + client.level.getChunkSource().hasChunk(position.getX() >> 4, position.getZ() >> 4);
     }
 
     private static void requestFixture(Minecraft client) {
@@ -182,11 +205,34 @@ public final class CurvedObjectCaptureClient {
         server.execute(() -> {
             ServerPlayer player = server.getPlayerList().getPlayer(playerId);
             if (player == null || !(player.level() instanceof ServerLevel world)) return;
-            createFixture(world);
             player.teleportTo(world, 0.5, 122.0, 0.5,
                     java.util.Set.of(), -90.0F, 0.0F, false);
+            // Send the chart-changing player position before any fixture block
+            // updates. The client maps each update to its current nearest chart.
+            createFixture(world);
+            RingWorldMod.LOGGER.info("[curved-object-capture] fixture server probe={}",
+                    fixtureServerProbe(world));
             RingWorldMod.LOGGER.info("[curved-object-capture] fixture ready");
         });
+    }
+
+    private static String fixtureServerProbe(ServerLevel world) {
+        return String.join(",",
+                fixtureServerProbe(world, "chest", 40, 120, -2, "chest"),
+                fixtureServerProbe(world, "lectern", 48, 120, 0, "lectern"),
+                fixtureServerProbe(world, "ender_chest", 56, 120, 2, "ender_chest"),
+                fixtureServerProbe(world, "oak_sign", 52, 120, -2, "oak_sign"),
+                fixtureServerProbe(world, "red_bed", 60, 120, 0, "red_bed"),
+                fixtureServerProbe(world, "shulker_box", 62, 120, 2, "shulker_box"),
+                fixtureServerProbe(world, "white_banner", 66, 120, 0, "white_banner"));
+    }
+
+    private static String fixtureServerProbe(ServerLevel world, String name, int x, int y, int z,
+                                             String expected) {
+        BlockPos position = new BlockPos(x, y, z);
+        var state = world.getBlockState(position);
+        return name + "@" + position + "=" + BuiltInRegistries.BLOCK.getKey(state.getBlock())
+                + "/expected=" + expected + "/blockEntity=" + (world.getBlockEntity(position) != null);
     }
 
     private static void createFixture(ServerLevel world) {

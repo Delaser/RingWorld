@@ -80,7 +80,12 @@ class GradleCurvedObjectsQualificationTest(unittest.TestCase):
         self.assertIn("geometry.shortestCircumferenceDelta(", source)
         self.assertIn("geometry.nearestImageX(canonicalX, client.player.getX())", source)
         self.assertIn("capture timeout stage={} captureTicks={} settleTicks={}", source)
-        self.assertIn("fixturePresent={} renderReady={}", source)
+        self.assertIn("fixtureProbe={} renderReady={}", source)
+        self.assertIn("BuiltInRegistries.BLOCK.getKey(state.getBlock())", source)
+        self.assertIn("/loaded=", source)
+        self.assertIn("fixture server probe={}", source)
+        self.assertLess(source.index("player.teleportTo(world, 0.5, 122.0, 0.5,"),
+                        source.index("createFixture(world);"))
         self.assertIn("private static final int MAX_CAPTURE_TICKS = 1_200;", source)
         self.assertIn("client.levelRenderer.hasRenderedAllSections()", source)
         self.assertNotIn("client.player.getX() < 2.0", source)
