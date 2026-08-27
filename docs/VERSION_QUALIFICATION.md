@@ -1,5 +1,8 @@
 # Adding a Minecraft version
 
+The current retained 26.1.x composite evidence review is recorded in
+[QUALIFICATION_REVIEW_2026-08-27.md](QUALIFICATION_REVIEW_2026-08-27.md).
+
 Each stable Minecraft line has a pinned qualification manifest. The original
 `config/minecraft-version-matrix.json` covers 26.1, 26.1.1, and 26.1.2;
 `config/minecraft-version-matrix-26.2.json` is the pending 26.2 candidate.
