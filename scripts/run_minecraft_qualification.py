@@ -43,6 +43,7 @@ from minecraft_frozen_candidate import (
     inspect_frozen_candidate,
     verify_same_file_coverage,
 )
+from minecraft_loom_seed import LoomSeedError, stage_loom_seed, validated_loom_seed
 from minecraft_qualification_ranges import (
     APPROVED_FABRIC_MINECRAFT_RANGE,
     APPROVED_NEOFORGE_LOADER_RANGE,
@@ -300,6 +301,25 @@ def _gradle_cache_evidence(cache: Path | None) -> tuple[EvidenceReference, ...]:
         str(cache),
         "optional worker-provisioned read-only dependency cache; non-authoritative acceleration only",
     ),)
+
+
+def _stage_validated_loom_seed(cache: Path | None, repository_root: Path,
+                               paths: QualificationPaths, cell: Mapping[str, Any]) -> None:
+    """Copy one rehashed Mojang seed into this isolated Gradle home only."""
+    if cache is None:
+        return
+    minecraft = cell.get("minecraft")
+    loader = cell.get("loader")
+    if not isinstance(minecraft, Mapping) or not isinstance(minecraft.get("version"), str) \
+            or loader not in {"fabric", "neoforge"}:
+        raise QualificationExecutionError("Loom seed staging requires a reviewed Minecraft version and loader")
+    try:
+        files = validated_loom_seed(
+            cache, repository_root, minecraft["version"], cache_validator=validate_gradle_dependency_cache,
+        )
+        stage_loom_seed(files, paths.gradle_home, minecraft["version"], loader)
+    except LoomSeedError as error:
+        raise QualificationExecutionError(str(error)) from error
 
 
 _GRADLE_WRAPPER_PROPERTIES = Path("gradle/wrapper/gradle-wrapper.properties")
@@ -600,7 +620,7 @@ def _full_loader_triplet(cells: Sequence[Mapping[str, Any]], loader: str,
 
 def prepare_frozen_candidates(
     cells: Sequence[Mapping[str, Any]], repository_root: Path, run_id: str, *, gradle_dependency_cache: Path | None = None,
-    gradle_distribution_zip: Path | None = None,
+    gradle_distribution_zip: Path | None = None, gradle_loom_cache: Path | None = None,
     contract: SupportContract = LEGACY_CONTRACT,
 ) -> Mapping[str, FrozenCandidatePreparation]:
     """Build and freeze at most one candidate per complete loader triplet.
@@ -611,6 +631,7 @@ def prepare_frozen_candidates(
     separately unavailable phase.
     """
     gradle_dependency_cache = validate_gradle_dependency_cache(gradle_dependency_cache, repository_root)
+    gradle_loom_cache = validate_gradle_dependency_cache(gradle_loom_cache, repository_root)
     gradle_distribution_zip = (
         validate_gradle_distribution_zip(gradle_distribution_zip, repository_root).source
         if gradle_distribution_zip is not None else None
@@ -634,6 +655,7 @@ def prepare_frozen_candidates(
                     raise QualificationExecutionError("frozen candidate output already exists and cannot be reused")
                 create_contained_directories(plan.paths)
                 stage_gradle_distribution_zip(gradle_distribution_zip, repository_root, plan.paths)
+                _stage_validated_loom_seed(gradle_loom_cache, repository_root, plan.paths, source)
                 _validated_command_gradle_cache(plan.command, repository_root)
                 executed = execute_command(plan.command, plan.paths, ordinal=1)
                 if executed.verdict is not Verdict.PASS:
@@ -779,6 +801,10 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument(
         "--gradle-distribution-zip",
         help="optional absolute external copy of the exact Gradle wrapper distribution ZIP",
+    )
+    result.add_argument(
+        "--gradle-loom-cache",
+        help="optional absolute hash-checked Mojang client/server/assets seed; never enables offline mode",
     )
     return result
 
@@ -1068,6 +1094,7 @@ def execute_quick_matrix(
     manifest_path: Path | None = None,
     gradle_dependency_cache: Path | None = None,
     gradle_distribution_zip: Path | None = None,
+    gradle_loom_cache: Path | None = None,
     contract: SupportContract = LEGACY_CONTRACT,
 ) -> MatrixReport:
     """Execute serial cell work and leave immutable terminal evidence.
@@ -1102,6 +1129,8 @@ def execute_quick_matrix(
                 frozen_options["gradle_dependency_cache"] = gradle_dependency_cache
             if gradle_distribution_zip is not None:
                 frozen_options["gradle_distribution_zip"] = gradle_distribution_zip
+            if gradle_loom_cache is not None:
+                frozen_options["gradle_loom_cache"] = gradle_loom_cache
             preparations = frozen_preparation_provider(cells, repository_root, run_id, **frozen_options)
         except TypeError as error:
             raise QualificationExecutionError(
@@ -1131,6 +1160,7 @@ def execute_quick_matrix(
             cell, repository_root, run_id, dry_run=False,
             gradle_dependency_cache=gradle_dependency_cache,
             gradle_distribution_zip=gradle_distribution_zip,
+            gradle_loom_cache=gradle_loom_cache,
         ), provenance)
         paths = planned.paths
         loader = cell.get("loader")
@@ -1183,6 +1213,7 @@ def execute_quick_matrix(
                     )
                 create_contained_directories(paths)
                 state = transition_cell_state(state, CellExecutionState.RUNNING)
+                _stage_validated_loom_seed(gradle_loom_cache, repository_root, paths, cell)
                 for planned_phase in planned.phases:
                     phase = planned_phase.phase
                     if phase in {PhaseName.MANIFEST_VALIDATION, PhaseName.INPUT_PLAN}:
@@ -1239,11 +1270,15 @@ def main(argv: list[str] | None = None, *, repository_root: Path = ROOT) -> int:
             validate_gradle_distribution_zip(Path(args.gradle_distribution_zip), repository_root).source
             if args.gradle_distribution_zip is not None else None
         )
+        gradle_loom_cache = validate_gradle_dependency_cache(
+            Path(args.gradle_loom_cache) if args.gradle_loom_cache is not None else None, repository_root,
+        )
         report = (
             plan_matrix(
                 cells, repository_root, "dry-run", dry_run=True,
                 gradle_dependency_cache=gradle_dependency_cache,
                 gradle_distribution_zip=gradle_distribution_zip,
+                gradle_loom_cache=gradle_loom_cache,
             )
             if args.dry_run
             else execute_quick_matrix(
@@ -1251,6 +1286,7 @@ def main(argv: list[str] | None = None, *, repository_root: Path = ROOT) -> int:
                 contract=contract,
                 gradle_dependency_cache=gradle_dependency_cache,
                 gradle_distribution_zip=gradle_distribution_zip,
+                gradle_loom_cache=gradle_loom_cache,
             )
         )
     except (InvocationError, QualificationExecutionError, OSError, ValueError) as error:

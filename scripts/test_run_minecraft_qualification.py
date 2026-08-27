@@ -296,6 +296,24 @@ class MinecraftQualificationCliTest(ExternalHomeTestCase):
         self.assertIn('"GRADLE_RO_DEP_CACHE"', stdout)
         self.assertIn("non-authoritative acceleration only", stdout)
 
+    def test_gradle_loom_cache_is_opt_in_safe_and_reported(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            cache = Path(temporary).resolve()
+            code, stdout, stderr = self.call([
+                "--tier", "quick", "--cell", "26.1-fabric", "--dry-run",
+                "--gradle-loom-cache", str(cache),
+            ])
+        self.assertEqual(1, code)
+        self.assertEqual("", stderr)
+        self.assertIn('"gradle-loom-cache"', stdout)
+        self.assertIn("non-authoritative acceleration only", stdout)
+        code, _, stderr = self.call([
+            "--tier", "quick", "--cell", "26.1-fabric", "--dry-run",
+            "--gradle-loom-cache", "relative-seed",
+        ])
+        self.assertEqual(2, code)
+        self.assertIn("must be an absolute path", stderr)
+
     def test_gradle_dependency_cache_rejects_unsafe_paths_before_planning(self) -> None:
         with self.assertRaises(MODEL.InvocationError):
             RUNNER.validate_gradle_dependency_cache(Path("relative-cache"), ROOT)
@@ -535,7 +553,7 @@ class MinecraftQualificationExecutionTest(ExternalHomeTestCase):
             )
 
         with tempfile.TemporaryDirectory() as temporary, patch.object(RUNNER, "execute_command", side_effect=fake_execute):
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             cells = self.full_loader_triplet("fabric")
             preparations = RUNNER.prepare_frozen_candidates(cells, root, self.run_id)
             prepared = preparations["fabric"]
@@ -637,7 +655,7 @@ class MinecraftQualificationExecutionTest(ExternalHomeTestCase):
 
     def test_partial_loader_selection_never_builds_a_frozen_candidate(self) -> None:
         with tempfile.TemporaryDirectory() as temporary, patch.object(RUNNER, "execute_command") as execute:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             preparations = RUNNER.prepare_frozen_candidates((self.cell,), root, self.run_id)
             self.assertEqual(MODEL.Verdict.INCOMPLETE, preparations["fabric"].verdict)
             self.assertEqual(RUNNER.SHARED_CONTRACT_REQUIRES_FULL_LOADER_TRIPLET, preparations["fabric"].reason)
@@ -655,9 +673,25 @@ class MinecraftQualificationExecutionTest(ExternalHomeTestCase):
             self.assertEqual(MODEL.Verdict.FAIL, preparations["fabric"].verdict)
             self.assertTrue(preparations["fabric"].reason.startswith(RUNNER.FROZEN_CANDIDATE_PREPARATION_FAILED))
 
+    def test_frozen_candidate_build_stages_the_same_validated_loom_seed(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            repository, cache = root / "repository", root / "loom-seed"
+            repository.mkdir()
+            cache.mkdir()
+            failed = SimpleNamespace(verdict=MODEL.Verdict.FAIL, stdout_log="out", stderr_log="err", reason="BUILD_FAILED")
+            with patch.object(RUNNER, "execute_command", return_value=failed), \
+                    patch.object(RUNNER, "_stage_validated_loom_seed") as stage:
+                preparations = RUNNER.prepare_frozen_candidates(
+                    self.full_loader_triplet("fabric"), repository, self.run_id, gradle_loom_cache=cache,
+                )
+            plan = preparations["fabric"].plan
+            assert plan is not None
+            stage.assert_called_once_with(cache, repository, plan.paths, self.cell)
+
     def test_injected_adapters_write_immutable_cell_and_matrix_evidence_without_gradle(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             report = RUNNER.execute_quick_matrix(
                 (self.cell,), root,
                 run_id_factory=lambda: self.run_id,
@@ -670,6 +704,30 @@ class MinecraftQualificationExecutionTest(ExternalHomeTestCase):
             self.assertTrue((root / "dist" / "qualification" / "matrix" / self.run_id / "matrix-report.json").is_file())
             self.assertTrue(all(phase.evidence for phase in cell.phases if phase.verdict is MODEL.Verdict.PASS))
             self.assertIn(("GRADLE_USER_HOME", str(cell.paths.gradle_home)), next(phase for phase in cell.phases if phase.phase is MODEL.PhaseName.BUILD_AND_UNIT).commands[0].environment)
+
+    def test_quick_loom_seed_is_staged_per_cell_without_offline_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            repository, cache = root / "repository", root / "loom-seed"
+            repository.mkdir()
+            cache.mkdir()
+            with patch.object(RUNNER, "_stage_validated_loom_seed") as stage:
+                report = RUNNER.execute_quick_matrix(
+                    (self.cell,), repository, run_id_factory=lambda: self.run_id,
+                    phase_adapters={
+                        phase: self.passing_adapter for phase in MODEL.PhaseName
+                        if phase not in {MODEL.PhaseName.MANIFEST_VALIDATION, MODEL.PhaseName.INPUT_PLAN}
+                    },
+                    provenance_provider=self.provenance, gradle_loom_cache=cache,
+                )
+            cell = report.cells[0]
+            stage.assert_called_once_with(cache, repository, cell.paths, self.cell)
+            input_phase = next(phase for phase in cell.phases if phase.phase is MODEL.PhaseName.INPUT_PLAN)
+            self.assertEqual([str(cache)], [item.location for item in input_phase.evidence
+                                            if item.kind == "gradle-loom-cache"])
+            commands = [command for phase in cell.phases for command in phase.commands]
+            self.assertFalse(any(argument == "--offline" or argument.startswith("-Dorg.gradle.offline")
+                                 for command in commands for argument in command.argv))
 
     def test_runner_lends_the_current_cell_lock_to_every_phase_adapter(self) -> None:
         seen = []

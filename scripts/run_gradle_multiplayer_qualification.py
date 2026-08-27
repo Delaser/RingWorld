@@ -15,7 +15,6 @@ import json
 import os
 from pathlib import Path
 import re
-import shutil
 import signal
 import socket
 import struct
@@ -31,6 +30,7 @@ from minecraft_qualification_executor import (
 from minecraft_qualification_model import (
     CommandRecord, PhaseName, QualificationPaths, Verdict, gradle_properties,
 )
+from minecraft_loom_seed import LoomSeedError, stage_loom_seed, validated_loom_seed
 from run_atlas_recovery_qualification import (
     AtlasRecoveryInvocation, AtlasRecoveryInvocationError, _manifest_path,
     prepare_invocation,
@@ -209,100 +209,22 @@ def _sha256(path: Path) -> str:
     return digest.hexdigest()
 
 
-def _file_hash(path: Path, algorithm: str) -> str:
-    digest = hashlib.new(algorithm)
-    with path.open("rb") as source:
-        for block in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
 def _validated_loom_seed(cache: Path | None, repository_root: Path,
                          version: str) -> tuple[Path, ...]:
-    if cache is None:
-        return ()
-    resolved = validate_gradle_dependency_cache(cache, repository_root)
-    assert resolved is not None
-    manifest = resolved / "mojang_versions_manifest.json"
-    version_directory = resolved / version
-    metadata = version_directory / "mojang_minecraft_info.json"
-    required = (manifest, metadata, version_directory / "minecraft-client.jar",
-                version_directory / "minecraft-server.jar")
-    if any(path.is_symlink() or not path.is_file() for path in required):
-        raise GradleMultiplayerError("Loom seed is missing a plain required file")
     try:
-        manifest_data = json.loads(manifest.read_text(encoding="utf-8"))
-        entry = next(item for item in manifest_data["versions"] if item["id"] == version)
-        if _file_hash(metadata, "sha1") != entry["sha1"]:
-            raise GradleMultiplayerError("Loom seed version metadata SHA-1 mismatch")
-        metadata_data = json.loads(metadata.read_text(encoding="utf-8"))
-        for side in ("client", "server"):
-            path = version_directory / f"minecraft-{side}.jar"
-            expected = metadata_data["downloads"][side]
-            if path.stat().st_size != int(expected["size"]) or _file_hash(path, "sha1") != expected["sha1"]:
-                raise GradleMultiplayerError(f"Loom seed {side} jar identity mismatch")
-        asset = metadata_data["assetIndex"]
-        asset_index = resolved / "assets/indexes" / f"{version}-{asset['id']}.json"
-        if asset_index.is_symlink() or not asset_index.is_file():
-            raise GradleMultiplayerError("Loom seed asset index is missing")
-        if asset_index.stat().st_size != int(asset["size"]) or _file_hash(asset_index, "sha1") != asset["sha1"]:
-            raise GradleMultiplayerError("Loom seed asset index identity mismatch")
-        asset_data = json.loads(asset_index.read_text(encoding="utf-8"))
-        asset_files: list[Path] = [asset_index]
-        for item in asset_data["objects"].values():
-            asset_hash = item["hash"]
-            if not isinstance(asset_hash, str) or not re.fullmatch(r"[0-9a-f]{40}", asset_hash):
-                raise GradleMultiplayerError("Loom seed asset hash is malformed")
-            asset_file = resolved / "assets/objects" / asset_hash[:2] / asset_hash
-            if asset_file.is_symlink() or not asset_file.is_file():
-                raise GradleMultiplayerError("Loom seed asset object is missing")
-            if asset_file.stat().st_size != int(item["size"]) or _file_hash(asset_file, "sha1") != asset_hash:
-                raise GradleMultiplayerError("Loom seed asset object identity mismatch")
-            asset_files.append(asset_file)
-    except (KeyError, StopIteration, TypeError, ValueError, json.JSONDecodeError) as error:
-        raise GradleMultiplayerError("Loom seed metadata is malformed") from error
-    return (*required, *asset_files)
+        return validated_loom_seed(
+            cache, repository_root, version, cache_validator=validate_gradle_dependency_cache,
+        )
+    except LoomSeedError as error:
+        raise GradleMultiplayerError(str(error)) from error
 
 
 def _stage_loom_seed(files: Sequence[Path], gradle_home: Path, version: str,
                      loader: str = "fabric") -> None:
-    if loader not in {"fabric", "neoforge"}:
-        raise GradleMultiplayerError("unsupported loader")
-    if not files:
-        return
-    if loader == "neoforge":
-        if len(files) < 5:
-            raise GradleMultiplayerError("Loom seed has no validated asset index")
-        asset_index, asset_objects = files[4], files[5:]
-        expected_prefix = f"{version}-"
-        if (asset_index.parent.name != "indexes" or asset_index.parent.parent.name != "assets"
-                or not asset_index.name.startswith(expected_prefix)
-                or not asset_index.name.endswith(".json")):
-            raise GradleMultiplayerError("Loom seed asset index layout is invalid")
-        asset_id = asset_index.name.removeprefix(expected_prefix).removesuffix(".json")
-        if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", asset_id):
-            raise GradleMultiplayerError("Loom seed asset index filename is unsafe")
-        source_assets = asset_index.parent.parent
-        destination = gradle_home / "caches/neoformruntime/assets"
-        target_index = destination / "indexes" / f"{asset_id}.json"
-        target_index.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(asset_index, target_index)
-        for source in asset_objects:
-            try:
-                relative = source.relative_to(source_assets / "objects")
-            except ValueError as error:
-                raise GradleMultiplayerError("Loom seed asset object layout is invalid") from error
-            target = destination / "objects" / relative
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, target)
-        return
-    source_root = files[0].parent
-    destination = gradle_home / "caches/fabric-loom"
-    for source in files:
-        relative = source.relative_to(source_root)
-        target = destination / relative
-        target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(source, target)
+    try:
+        stage_loom_seed(files, gradle_home, version, loader)
+    except LoomSeedError as error:
+        raise GradleMultiplayerError(str(error)) from error
 
 
 def _tasks(loader: str) -> Mapping[str, str]:

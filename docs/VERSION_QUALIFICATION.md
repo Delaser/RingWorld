@@ -112,6 +112,12 @@ symlink, oversize entry, or hash mismatch fails closed. This cache is an
 optional verified byte seed, never a download bypass or runtime-evidence
 substitute.
 
+For quick and nightly Gradle preparation, `--gradle-loom-cache` may likewise
+name an external read-only Mojang seed. It is revalidated from the version
+manifest, version JSON, and asset-index SHA-1/size records before each copy
+into an isolated Gradle home. It never enables Gradle offline mode: missing
+cache entries continue through ordinary pinned network resolution.
+
 Local staging inputs for the planned 1.1 release are separate:
 `deploy/qualified/26.1.x-release.json` / `26.1.x-changelog.md` and
 `deploy/qualified/26.2-release.json` / `26.2-changelog.md`. Their existence is
