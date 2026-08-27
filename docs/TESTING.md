@@ -10,9 +10,15 @@ plans validated without an API call or token.
 
 Quick `20260827T083411Z` was cancelled during NeoForge asset download before a
 game launched; `20260827T085115Z` failed both build paths on a Mojang library
-POM (Fabric `FAIL`, NeoForge `INCOMPLETE`). Quick `20260827T090236Z` on
-`7fae756` is still running: Fabric's frozen build passed 338 tests in 7m35s and
-NeoForge is ongoing. No current 26.2 quick PASS is claimed. The optional
+POM (Fabric `FAIL`, NeoForge `INCOMPLETE`). Quick
+`20260827T090236Z-fdb8f0cf5e65` on `7fae756` passed both frozen 338-test builds
+(Fabric 7m35s, NeoForge 16m40s), then failed Fabric's diagnostic build on Maven
+POM `No route to host` errors after 6m26s. NeoForge diagnostics were incomplete;
+neither dedicated runtime launched. No current 26.2 quick PASS is claimed.
+Source-worldgen attempt `20260827T093000Z-f153f86ae12b` stopped at Fabric
+installer `EXIT_1` after a Mojang 26.1 version-JSON connection timeout, before
+world generation. All six assembled 26.1.x archives pass independent SHA-256
+and nested MPL checks; that is not a packaged game launch. The optional
 `--gradle-loom-cache` and 13-entry external-runtime download cache rehash and
 copy only pinned bytes into isolated state; neither enables offline mode.
 

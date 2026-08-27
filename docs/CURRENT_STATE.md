@@ -12,9 +12,13 @@ The corrected 26.2 quick attempts remain non-passing: `20260827T083411Z` was
 cancelled during NeoForge asset download (`EXIT_143`) before any game launched;
 `20260827T085115Z` failed both build paths while retrieving a Mojang library
 POM, so its matrix remains Fabric `FAIL` and NeoForge `INCOMPLETE`. Quick
-`20260827T090236Z` on `7fae756` is running with the new qualified read-only
-cache: its Fabric frozen build passed all 338 tests in 7m35s, while NeoForge is
-still running. None of these facts is a quick-matrix PASS claim.
+`20260827T090236Z-fdb8f0cf5e65` on `7fae756` passed both frozen builds and
+338-test suites (Fabric 7m35s, NeoForge 16m40s), then failed Fabric's independent
+diagnostic build on Maven POM `No route to host` errors. NeoForge diagnostics
+were left incomplete and no dedicated runtime launched. This is not a
+quick-matrix PASS. The separate source-world recreation attempt
+`20260827T093000Z-f153f86ae12b` also stopped before a game launched: Fabric's
+installer timed out retrieving Mojang's 26.1 version JSON.
 
 `--gradle-loom-cache` is optional acceleration only: its shared verifier
 rehashes the Mojang version metadata, client/server jars, asset index, and
@@ -22,6 +26,13 @@ objects before copying them into each isolated Gradle home. The separate
 13-entry `RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE` similarly seeds exact
 external-runtime bytes. Neither enables offline mode, weakens checks, or
 substitutes for a network/runtime qualification result.
+
+The NeoForge seed now includes the same independently verified Mojang manifest,
+version JSON and client/server jars as Fabric, in NeoForm's artifact layout.
+All six assembled 26.1.x review archives also pass independent checksum and
+nested licence checks. These changes do not turn failed runtime attempts into
+passing evidence. Further qualification needs functioning upstream dependency
+retrieval; avoid repeatedly rerunning the same unchanged failing matrix.
 
 Remaining before any publication decision: complete the 20-cell-result 26.2
 nightly matrix; recreate six retained source worlds and run the six historical

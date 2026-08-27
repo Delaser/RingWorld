@@ -27,8 +27,11 @@ Corrected quick run `20260827T073004Z-4c80e38c9d6b` on `97654ab` passes both
 loader builds and Fabric's strict dedicated smoke. NeoForge's installer fetch
 failed with `URLError` before runtime launch; never label that aggregate PASS.
 Later quick `083411Z` was cancelled before games, `085115Z` failed Mojang POM
-retrieval, and `090236Z` on `7fae756` remains in progress after a Fabric frozen
-338-test build pass. The optional `--gradle-loom-cache` and 13-entry external
+retrieval, and `090236Z` on `7fae756` passed both frozen 338-test builds but
+failed Fabric diagnostics on Maven POM `No route to host` errors; no dedicated
+runtime launched. Source-world recreation `093000Z` failed at the Fabric
+installer's Mojang version-JSON download, before a game launched. The optional
+`--gradle-loom-cache` and 13-entry external
 runtime byte cache are independently rehashed acceleration only; they never
 enable offline mode or establish runtime evidence. See `docs/TESTING.md` for
 exact retained candidate hashes and current status. The static workflow passes
