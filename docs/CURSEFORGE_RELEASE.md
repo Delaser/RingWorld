@@ -34,6 +34,15 @@ archive, delete, update, or resubmit files automatically.
 Official reference:
 [CurseForge Upload API](https://support.curseforge.com/support/solutions/articles/9000197321-curseforge-upload-api).
 
+The 2026-08-27 live submission preflight confirmed that the author API rejects
+`relations.projects: []` with HTTP 400/error 1002. Dependency-free NeoForge
+submissions must omit `relations` entirely; Fabric retains its required Fabric
+API relation. The publisher and focused regression test enforce this shape.
+The same live schema requires `projectID` as a JSON integer and a `slug` on
+each relation, despite the older example's string ID. Fabric API uses the
+reviewed pair `306612` / `fabric-api`; unknown dependency IDs without an
+explicit slug fail before submission.
+
 ## Current 1.0 uploads
 
 On 2026-08-10 the owner-authorized 1.0 files were submitted as `Release`:
