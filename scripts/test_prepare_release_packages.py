@@ -107,10 +107,74 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("forbidden credential/runtime path", result.stderr)
 
+    def test_qualified_26_2_packages_generate_runtime_profiles_for_both_loaders(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            matrix = json.loads((ROOT / "config" / "minecraft-version-matrix-26.2.json").read_text())
+            fabric_api = temporary / "fabric-api-0.158.0+26.2.jar"
+            self.make_jar(fabric_api, mod_id="fabric-api", version="0.158.0+26.2")
+            pin = hashlib.sha256(fabric_api.read_bytes()).hexdigest()
+            for cell in matrix["cells"]:
+                for dependency in cell["dependencies"]:
+                    if dependency["name"] == "Fabric API":
+                        dependency["checksum"]["value"] = pin
+            matrix_path = temporary / "matrix-26.2.json"
+            matrix_path.write_text(json.dumps(matrix), encoding="utf-8")
+            for loader, runtime_cell in (("fabric", "26.2-fabric"), ("neoforge", "26.2-neoforge")):
+                with self.subTest(loader=loader):
+                    jar = temporary / ("ringworld-1.1.0+mc26.2.jar" if loader == "fabric"
+                                       else "ringworld-neoforge-1.1.0+mc26.2.jar")
+                    minecraft_range = ">=26.2 <=26.2" if loader == "fabric" else "26.2,26.2"
+                    self.make_jar(jar, mod_id="ringworld", loader=loader, version="1.1.0+mc26.2",
+                                  minecraft=minecraft_range, neoforge_version="26.2.0.69", release_label="1.1",
+                                  neoforge_range="[26.2.0.69,26.2.0.69]" if loader == "neoforge" else None)
+                    instance = self.make_instance(temporary / loader, loader=loader)
+                    stage = self.make_qualified_stage(temporary / loader, jar, loader=loader)
+                    result = self.run_prepare(temporary / loader, jar, fabric_api, instance, loader=loader,
+                                              stage_manifest=stage, qualification_manifest=matrix_path,
+                                              runtime_cell=runtime_cell)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    bundle = temporary / loader / "out" / (
+                        f"RingWorld-1.1.0+mc26.2-{'Fabric' if loader == 'fabric' else 'NeoForge'}-Client-macOS-universal.zip"
+                    )
+                    with zipfile.ZipFile(bundle) as archive:
+                        nested = zipfile.ZipFile(io.BytesIO(archive.read("RingWorld-Prism-Instance.zip")))
+                        pack = json.loads(nested.read("mmc-pack.json"))
+                        components = {item["uid"]: item["version"] for item in pack["components"]}
+                        self.assertEqual("26.2", components["net.minecraft"])
+                        self.assertEqual("0.19.3" if loader == "fabric" else "26.2.0.69",
+                                         components["net.fabricmc.fabric-loader" if loader == "fabric" else "net.neoforged"])
+                        package = json.loads(archive.read("PACKAGE-MANIFEST.json"))
+                        self.assertEqual("26.2", package["minecraft"])
+                    server = temporary / loader / "out" / (
+                        f"RingWorld-1.1.0+mc26.2-{'Fabric' if loader == 'fabric' else 'NeoForge'}-Server-Overlay.zip"
+                    )
+                    with zipfile.ZipFile(server) as archive:
+                        self.assertIn("26.2", archive.read("DEPLOYMENT.md").decode("utf-8"))
+                        self.assertIn("26.2", archive.read("server.properties.example").decode("utf-8"))
+
+    def test_qualified_format_one_rejects_wrong_fabric_api_hash(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            jar = temporary / "ringworld-1.1.0+mc26.2.jar"
+            self.make_jar(jar, mod_id="ringworld", version="1.1.0+mc26.2", minecraft=">=26.2 <=26.2",
+                          release_label="1.1")
+            fabric = temporary / "fabric-api-0.158.0+26.2.jar"
+            self.make_jar(fabric, mod_id="fabric-api", version="0.158.0+26.2")
+            instance = self.make_instance(temporary, loader="fabric")
+            stage = self.make_qualified_stage(temporary, jar, loader="fabric")
+            result = self.run_prepare(temporary, jar, fabric, instance, stage_manifest=stage,
+                                      qualification_manifest=ROOT / "config" / "minecraft-version-matrix-26.2.json",
+                                      runtime_cell="26.2-fabric")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("Fabric API SHA-256", result.stderr)
+
     def make_jar(
         self, path: Path, *, mod_id: str, license_id: str = "MPL-2.0",
         version: str = VERSION, compatibility_api: int = 1,
-        loader: str = "fabric",
+        loader: str = "fabric", minecraft: str = "26.1.2",
+        fabric_api_version: str = FABRIC_API_VERSION, neoforge_version: str = "26.1.2.87",
+        release_label: str = "1.0", neoforge_range: str | None = None,
     ) -> None:
         with zipfile.ZipFile(path, "w") as archive:
             if loader == "neoforge" and mod_id == "ringworld":
@@ -122,15 +186,15 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                     '[[mixins]]\nconfig="ringworld.mixins.json"\n\n'
                     '[[mixins]]\nconfig="ringworld.client.mixins.json"\n\n'
                     '[[dependencies.ringworld]]\nmodId="neoforge"\ntype="required"\n'
-                    'versionRange="[26.1.2.87,)"\n\n[[dependencies.ringworld]]\n'
-                    'modId="minecraft"\ntype="required"\nversionRange="[26.1.2]"\n',
+                    f'versionRange="{neoforge_range or "[" + neoforge_version + ",)"}"\n\n[[dependencies.ringworld]]\n'
+                    f'modId="minecraft"\ntype="required"\nversionRange="[{minecraft}]"\n',
                 )
                 archive.writestr("LICENSE-RINGWORLD.txt", (ROOT / "LICENSE").read_bytes())
                 archive.writestr("ringworld.mixins.json", "{}")
                 archive.writestr("ringworld.client.mixins.json", "{}")
                 archive.writestr(
                     "ringworld-build.properties",
-                    f"artifactVersion={VERSION}\nreleaseLabel=1.0\n",
+                    f"artifactVersion={version}\nreleaseLabel={release_label}\n",
                 )
                 archive.writestr("dev/ringworld/RingWorld.class", b"compiled")
                 return
@@ -140,7 +204,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                     "schemaVersion": 1, "authors": ["Delaser"],
                     "contact": {"homepage": "https://andwhatnotstudio.com/ringworld/"},
                     "license": license_id, "environment": "*",
-                    "depends": {"fabricloader": ">=0.19.3", "minecraft": "26.1.2",
+                    "depends": {"fabricloader": ">=0.19.3", "minecraft": minecraft,
                                 "java": ">=25", "fabric-api": "*"},
                 })
                 metadata["custom"] = {
@@ -153,7 +217,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                 archive.writestr("ringworld.client.mixins.json", "{}")
                 archive.writestr(
                     "ringworld-build.properties",
-                    f"artifactVersion={VERSION}\nreleaseLabel=1.0\n",
+                    f"artifactVersion={version}\nreleaseLabel={release_label}\n",
                 )
                 archive.writestr("dev/ringworld/RingWorld.class", b"compiled")
 
@@ -220,6 +284,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
         self, temporary: Path, jar: Path, fabric: Path, instance: Path,
         *, loader: str = "fabric", include_fabric_api: bool | None = None,
         output_name: str = "out", revision: str = REVISION, stage_manifest: Path | None = None,
+        qualification_manifest: Path | None = None, runtime_cell: str | None = None,
     ) -> subprocess.CompletedProcess[str]:
         stage_manifest = stage_manifest or self.make_stage_manifest(
             temporary, jar, loader=loader, revision=revision,
@@ -230,6 +295,10 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             "--loader", loader,
             "--stage-manifest", str(stage_manifest),
         ]
+        if qualification_manifest is not None:
+            command += ["--qualification-manifest", str(qualification_manifest)]
+        if runtime_cell is not None:
+            command += ["--runtime-cell", runtime_cell]
         if include_fabric_api is None:
             include_fabric_api = loader == "fabric"
         if include_fabric_api:
@@ -245,6 +314,24 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             text=True,
             check=False,
         )
+
+    def make_qualified_stage(self, root: Path, jar: Path, *, loader: str) -> Path:
+        stage = root / "qualified" / loader
+        stage.mkdir(parents=True, exist_ok=True)
+        staged = stage / jar.name
+        shutil.copy2(jar, staged)
+        data = staged.read_bytes()
+        record = {
+            "format": 1, "generated": True, "loader": loader, "upload_file_only": True,
+            "upload_file": staged.name, "size": len(data),
+            "hashes": {"sha256": hashlib.sha256(data).hexdigest(), "sha512": hashlib.sha512(data).hexdigest()},
+            "artifact_version": "1.1.0+mc26.2", "release_label": "1.1", "game_versions": ["26.2"],
+            "source": {"revision": REVISION, "url": f"https://github.com/Delaser/RingWorld/commit/{REVISION}"},
+        }
+        (stage.parent / ".ringworld-qualified-stage").write_text("generated\n", encoding="utf-8")
+        manifest = stage / "STAGING-MANIFEST.json"
+        manifest.write_text(json.dumps(record), encoding="utf-8")
+        return manifest
 
     def test_builds_reproducible_client_and_server_packages_without_web_content(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

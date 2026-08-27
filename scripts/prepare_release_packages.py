@@ -367,7 +367,7 @@ def validate_inputs(
         spec["component"]: pins.fabric_loader if loader == "fabric" else pins.neoforge,
     }
     for component, expected in expected_components.items():
-        if components.get(component) != expected:
+        if component not in components or (pins.fabric_api_sha256 is None and components[component] != expected):
             raise PackageError(
                 f"instance template {component} version {components.get(component)!r} "
                 f"does not match {expected!r}"
@@ -389,6 +389,44 @@ def validate_inputs(
     if mods.exists() and (list(mods.glob("ringworld-*.jar")) or list(mods.glob("fabric-api-*.jar"))):
         raise PackageError("instance template contains a managed RingWorld or Fabric API jar")
     return expected_license
+
+
+def apply_runtime_profile(instance: Path, *, loader: str, pins: PackagePins) -> None:
+    """Rewrite only managed Prism component versions after template validation."""
+    pack_path = instance / "mmc-pack.json"
+    try:
+        pack = json.loads(pack_path.read_text(encoding="utf-8"))
+        components = pack["components"]
+    except (KeyError, TypeError, ValueError) as exc:
+        raise PackageError("instance template has invalid mmc-pack.json") from exc
+    expected = {
+        "net.minecraft": pins.minecraft,
+        "net.fabricmc.fabric-loader" if loader == "fabric" else "net.neoforged":
+            pins.fabric_loader if loader == "fabric" else pins.neoforge,
+    }
+    seen: set[str] = set()
+    for component in components:
+        if not isinstance(component, dict) or not isinstance(component.get("uid"), str):
+            raise PackageError("instance template has invalid component entry")
+        uid = component["uid"]
+        if uid in expected:
+            component["version"] = expected[uid]
+            seen.add(uid)
+    if seen != set(expected):
+        raise PackageError("instance template cannot receive selected runtime profile")
+    pack_path.write_text(json.dumps(pack, indent=2) + "\n", encoding="utf-8")
+
+
+def render_runtime_text(path: Path, *, pins: PackagePins, loader: str, version: str) -> None:
+    """Keep copied operator text accurate without altering checked-in templates."""
+    if not path.is_file():
+        return
+    text = path.read_text(encoding="utf-8")
+    text = text.replace("Minecraft 26.1.2", f"Minecraft {pins.minecraft}")
+    text = text.replace("Fabric API 0.155.2+26.1.2", f"Fabric API {pins.fabric_api}")
+    text = text.replace("NeoForge 26.1.2.87", f"NeoForge {pins.neoforge}")
+    text = text.replace("RingWorld 1.0.0+mc26.1.2", f"RingWorld {version}")
+    path.write_text(text, encoding="utf-8")
 
 
 def manifest(
@@ -455,8 +493,10 @@ def write_preconfigured_server_list(destination: Path) -> None:
 
 def populate_instance(
     instance_template: Path, destination: Path, release_jar: Path, fabric_api: Path | None,
+    *, loader: str, pins: PackagePins, version: str,
 ) -> None:
     shutil.copytree(instance_template, destination)
+    apply_runtime_profile(destination, loader=loader, pins=pins)
     mods = destination / ".minecraft" / "mods"
     mods.mkdir(parents=True, exist_ok=True)
     shutil.copy2(release_jar, mods / release_jar.name)
@@ -498,7 +538,10 @@ def add_client_package(
                 raise PackageError(f"missing launcher template: {source}")
             shutil.copy2(source, root / launcher)
         instance = root / "instance"
-        populate_instance(instance_template, instance, release_jar, fabric_api)
+        populate_instance(instance_template, instance, release_jar, fabric_api,
+                          loader=loader, pins=pins, version=version)
+        for launcher in launchers:
+            render_runtime_text(root / launcher, pins=pins, loader=loader, version=version)
 
         nested_root = Path(directory) / "prism-instance"
         shutil.copytree(instance, nested_root)
@@ -563,6 +606,8 @@ def add_server_package(
                 ),
                 encoding="utf-8",
             )
+        for text_path in (root / "DEPLOYMENT.md", root / "ringworld.service"):
+            render_runtime_text(text_path, pins=pins, loader=loader, version=version)
         shutil.copy2(license_file, root / "LICENSE")
         mods = root / "mods"
         mods.mkdir(exist_ok=True)

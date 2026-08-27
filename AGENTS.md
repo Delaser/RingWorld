@@ -1092,7 +1092,8 @@ version numbers.
   checksum manifests under ignored local staging only.
   A format-1 qualified stage requires its reviewed qualification
   manifest and an explicit same-loader runtime cell, from which package pins
-  are derived; never feed it a hard-coded 26.1.2 component profile.
+  are derived; the assembly rewrites only its temporary Prism component profile
+  and copied operator text. Never feed it a hard-coded 26.1.2 component profile.
 - `/ringworld atlas status|start|pause|resume` controls background pregeneration.
   Pause is process-local and does not alter immutable saved layout.
 - Atlas format 6 represents exposed top-face height and

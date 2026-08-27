@@ -74,6 +74,9 @@ The legacy format-2 `stage_modrinth_release.py` path remains separately
 supported. A format-1 stage requires both new arguments and rejects a missing,
 wrong-loader, stale-hash, or unpinned dependency input. Package creation is
 still local and optional; it is not publication authorization.
+The checked-in Prism templates are structural inputs only: format-1 assembly
+rewrites their managed Minecraft and loader component versions in its temporary
+copy from the validated runtime cell, so operators do not hand-edit JSON.
 
 For the retained 26.1.x 55-PASS aggregate plus its explicitly selected repair
 terminals, use `scripts/review_composite_nightly_evidence.py`. It rehashes the
