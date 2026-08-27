@@ -1,6 +1,7 @@
 package dev.ringworld.client;
 
 import dev.ringworld.RingWorldMod;
+import dev.ringworld.server.RingWorldVanillaFixtureRegistries;
 import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import dev.ringworld.client.render.RingSurfaceTextureRenderer;
 import dev.ringworld.net.RingSettingsPayload;
@@ -25,7 +26,6 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.gui.components.debug.DebugScreenEntries;
 import net.minecraft.client.gui.components.debug.DebugScreenEntryStatus;
@@ -36,8 +36,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.item.ItemEntity;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.chunk.status.ChunkStatus;
 
 /** Client entrypoint. Rendering and pose mixins consume ClientRingState. */
@@ -247,13 +245,13 @@ public final class RingWorldClient implements ClientModInitializer {
     private void saveDiagnosticJoinScreenshot(Minecraft client) {
         if (!Boolean.getBoolean("ringworld.captureJoinFrame")
                 || diagnosticJoinScreenshotSaved || client.player == null) return;
-        if (client.screen instanceof PauseScreen) client.setScreen(null);
-        if (client.screen != null || ++diagnosticJoinTicks < 160) return;
+        if (RingMinecraftClientAccess.screen(client) instanceof PauseScreen) RingMinecraftClientAccess.setScreen(client, null);
+        if (RingMinecraftClientAccess.screen(client) != null || ++diagnosticJoinTicks < 160) return;
         if (!client.levelRenderer.hasRenderedAllSections() && diagnosticJoinTicks < 600) return;
 
         diagnosticJoinScreenshotSaved = true;
-        Screenshot.grab(client.gameDirectory, "ringworld-join-diagnostic.png",
-                client.getMainRenderTarget(), 1,
+        RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "ringworld-join-diagnostic.png",
+                RingMinecraftClientAccess.mainRenderTarget(client), 1,
                 message -> RingWorldMod.LOGGER.info("[diagnostic] join screenshot: {}", message.getString()));
     }
 
@@ -286,8 +284,8 @@ public final class RingWorldClient implements ClientModInitializer {
             // The development client can lose foreground focus while Gradle
             // hands it off to the desktop app. Do not let that one-time pause
             // turn the captured smoke-test frame into a menu screenshot.
-            if (client.screen instanceof PauseScreen) client.setScreen(null);
-            if (client.screen != null) return;
+            if (RingMinecraftClientAccess.screen(client) instanceof PauseScreen) RingMinecraftClientAccess.setScreen(client, null);
+            if (RingMinecraftClientAccess.screen(client) != null) return;
             saveAutomatedScreenshot(client);
             runAutomatedBedPresentationProbe(client);
             runAutomatedSeamTraversal(client);
@@ -303,7 +301,7 @@ public final class RingWorldClient implements ClientModInitializer {
             testScreenOpened = true;
             return;
         }
-        if (client.screen instanceof CreateWorldScreen screen) {
+        if (RingMinecraftClientAccess.screen(client) instanceof CreateWorldScreen screen) {
             WorldCreationUiState creator = screen.getUiState();
             creator.setName("RingWorld Automated Test");
             creator.setGameMode(WorldCreationUiState.SelectedGameMode.CREATIVE);
@@ -347,7 +345,7 @@ public final class RingWorldClient implements ClientModInitializer {
         RingWorldMod.LOGGER.info("[test] renderer camera: x={}, y={}, z={}, yaw={}, pitch={}",
                 client.player.getX(), client.player.getY(), client.player.getZ(),
                 client.player.getYRot(), client.player.getXRot());
-        Screenshot.grab(client.gameDirectory, "ringworld-automated.png", client.getMainRenderTarget(), 1,
+        RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "ringworld-automated.png", RingMinecraftClientAccess.mainRenderTarget(client), 1,
                 message -> RingWorldMod.LOGGER.info("[test] renderer screenshot: {}", message.getString()));
     }
 
@@ -397,7 +395,7 @@ public final class RingWorldClient implements ClientModInitializer {
                 double expectedItemX = geometry.nearestImageX(2.5, client.player.getX());
                 for (var entity : client.level.entitiesForRendering()) {
                     if (entity instanceof ItemEntity item
-                            && item.getItem().is(Items.DIAMOND)
+                            && item.getItem().is(RingWorldVanillaFixtureRegistries.item("diamond"))
                             && Math.abs(item.getX() - expectedItemX) < 1.0) {
                         testSeamEntityProjected = true;
                         RingWorldMod.LOGGER.info("[test] seam entity projected into local chart at x={}", item.getX());
@@ -436,7 +434,7 @@ public final class RingWorldClient implements ClientModInitializer {
                 BlockPos logicalTestBlock = new BlockPos(
                         (int)Math.floor(logicalBlockX), 119, 0);
                 var state = client.level.getBlockState(logicalTestBlock);
-                if (!state.is(Blocks.GOLD_BLOCK)) {
+                if (!state.is(RingWorldVanillaFixtureRegistries.block("gold_block"))) {
                     testSeamInteractionWaitTicks++;
                     if (testSeamInteractionWaitTicks == 1
                             || testSeamInteractionWaitTicks % 200 == 0) {
@@ -472,7 +470,7 @@ public final class RingWorldClient implements ClientModInitializer {
                     client.player.getYRot(), client.player.getYRot() - testSeamStartYaw,
                     client.player.getXRot(), client.player.getXRot() - testSeamStartPitch,
                     ClientRingState.seamCorrectionPackets());
-            Screenshot.grab(client.gameDirectory, "ringworld-seam.png", client.getMainRenderTarget(), 1,
+            RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "ringworld-seam.png", RingMinecraftClientAccess.mainRenderTarget(client), 1,
                     message -> RingWorldMod.LOGGER.info("[test] seam renderer screenshot: {}", message.getString()));
             client.debugEntries.setStatus(
                     DebugScreenEntries.PLAYER_POSITION, DebugScreenEntryStatus.IN_OVERLAY);
@@ -572,7 +570,7 @@ public final class RingWorldClient implements ClientModInitializer {
 
         double projectedMovingEntityX = Double.NaN;
         for (var entity : client.level.entitiesForRendering()) {
-            if (entity instanceof ItemEntity item && item.getItem().is(Items.EMERALD)) {
+            if (entity instanceof ItemEntity item && item.getItem().is(RingWorldVanillaFixtureRegistries.item("emerald"))) {
                 projectedMovingEntityX = item.getX();
                 break;
             }
@@ -588,7 +586,7 @@ public final class RingWorldClient implements ClientModInitializer {
         RingWorldMod.LOGGER.info("[test] moving entity projected near second client chart={}, x={}",
                 Math.abs(projectedMovingEntityX - client.player.getX()) < 8.0,
                 projectedMovingEntityX);
-        Screenshot.grab(client.gameDirectory, "ringworld-second-wrap.png", client.getMainRenderTarget(), 1,
+        RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "ringworld-second-wrap.png", RingMinecraftClientAccess.mainRenderTarget(client), 1,
                 message -> RingWorldMod.LOGGER.info("[test] second-wrap renderer screenshot: {}", message.getString()));
     }
 
@@ -616,7 +614,7 @@ public final class RingWorldClient implements ClientModInitializer {
                 : testTotalFrameNanos / 1_000_000.0 / testFrameSamples;
         RingWorldMod.LOGGER.info("[test] boundary frame pacing samples={}, averageMs={}, maxMs={}, over50Ms={}",
                 testFrameSamples, averageFrameMs, testMaxFrameNanos / 1_000_000.0, testSlowFrames);
-        Screenshot.grab(client.gameDirectory, "ringworld-boundary.png", client.getMainRenderTarget(), 1,
+        RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "ringworld-boundary.png", RingMinecraftClientAccess.mainRenderTarget(client), 1,
                 message -> RingWorldMod.LOGGER.info("[test] boundary renderer screenshot: {}", message.getString()));
     }
 
@@ -648,8 +646,8 @@ public final class RingWorldClient implements ClientModInitializer {
         if (!testSkyDayScreenshotSaved) {
             if (++testSkySettleTicks < 80) return;
             testSkyDayScreenshotSaved = true;
-            Screenshot.grab(client.gameDirectory, "ringworld-fixed-sun-day.png",
-                    client.getMainRenderTarget(), 1,
+            RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "ringworld-fixed-sun-day.png",
+                    RingMinecraftClientAccess.mainRenderTarget(client), 1,
                     message -> RingWorldMod.LOGGER.info("[test] fixed-sun noon screenshot: {}", message.getString()));
             return;
         }
@@ -663,8 +661,8 @@ public final class RingWorldClient implements ClientModInitializer {
         if (!testSkyDuskScreenshotSaved) {
             if (++testSkySettleTicks < 80) return;
             testSkyDuskScreenshotSaved = true;
-            Screenshot.grab(client.gameDirectory, "ringworld-tone-dusk.png",
-                    client.getMainRenderTarget(), 1,
+            RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "ringworld-tone-dusk.png",
+                    RingMinecraftClientAccess.mainRenderTarget(client), 1,
                     message -> RingWorldMod.LOGGER.info("[test] dusk tone screenshot: {}", message.getString()));
             return;
         }
@@ -678,8 +676,8 @@ public final class RingWorldClient implements ClientModInitializer {
         if (!testSkyNightScreenshotSaved) {
             if (++testSkySettleTicks < 80) return;
             testSkyNightScreenshotSaved = true;
-            Screenshot.grab(client.gameDirectory, "ringworld-tone-night.png",
-                    client.getMainRenderTarget(), 1,
+            RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "ringworld-tone-night.png",
+                    RingMinecraftClientAccess.mainRenderTarget(client), 1,
                     message -> RingWorldMod.LOGGER.info(
                             "[test] midnight tone screenshot: {}", message.getString()));
             return;
@@ -695,8 +693,8 @@ public final class RingWorldClient implements ClientModInitializer {
         if (!testSkyRainScreenshotSaved) {
             if (++testSkySettleTicks < 100) return;
             testSkyRainScreenshotSaved = true;
-            Screenshot.grab(client.gameDirectory, "ringworld-weather-rain.png",
-                    client.getMainRenderTarget(), 1,
+            RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "ringworld-weather-rain.png",
+                    RingMinecraftClientAccess.mainRenderTarget(client), 1,
                     message -> RingWorldMod.LOGGER.info(
                             "[test] rainy-noon screenshot: {}", message.getString()));
             return;
@@ -774,8 +772,8 @@ public final class RingWorldClient implements ClientModInitializer {
             if (++testSkySettleTicks < 80) return;
             testRingVisibilityTangentScreenshotSaved = true;
             testSkySettleTicks = 0;
-            Screenshot.grab(client.gameDirectory, "ringworld-visible-arch.png",
-                    client.getMainRenderTarget(), 1,
+            RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "ringworld-visible-arch.png",
+                    RingMinecraftClientAccess.mainRenderTarget(client), 1,
                     message -> RingWorldMod.LOGGER.info(
                             "[test] tangent complete-ring screenshot: {}", message.getString()));
             return;
@@ -803,8 +801,8 @@ public final class RingWorldClient implements ClientModInitializer {
         // would test disk generation speed instead of seam playability.
         client.options.renderDistance().set(6);
         client.getConnection().sendCommand("gamerule advance_time true");
-        Screenshot.grab(client.gameDirectory, "ringworld-visible-up.png",
-                client.getMainRenderTarget(), 1,
+        RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "ringworld-visible-up.png",
+                RingMinecraftClientAccess.mainRenderTarget(client), 1,
                 message -> RingWorldMod.LOGGER.info(
                         "[test] radial-up complete-ring screenshot: {}", message.getString()));
     }

@@ -298,7 +298,7 @@ class ExternalRuntimeWorldgenExecutorTest(unittest.TestCase):
             }), encoding="utf-8")
             source = ForwardUpgradeSource(
                 "26.1-fabric", "fabric", "26.1", source_root, terminal, sha256(terminal.read_bytes()),
-                source_world, source_log, sha256(raw),
+                base_plan.candidate.sha256, source_world, source_log, sha256(raw),
             )
             fake_plan = type("ResumeOnly", (), {"stages": (stage,)})()
             result = execute_external_runtime_forward_upgrade(

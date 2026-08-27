@@ -170,11 +170,11 @@ public final class RingWorldCreationScreen extends Screen {
     private void apply() {
         if (report == null || !report.isValid()) return;
         RingDimensionReport confirmedReport = report;
-        minecraft.setScreen(new ConfirmScreen(confirmed -> {
+        RingMinecraftClientAccess.setScreen(minecraft, new ConfirmScreen(confirmed -> {
             if (confirmed) {
                 persistLayout(confirmedReport);
             } else {
-                minecraft.setScreen(this);
+                RingMinecraftClientAccess.setScreen(minecraft, this);
             }
         }, Component.literal("Use this RingWorld?"),
                 Component.literal(RingWorldCreationUiModel.confirmationCopy(
@@ -191,17 +191,17 @@ public final class RingWorldCreationScreen extends Screen {
             if (parent instanceof LayoutButtonOwner owner) {
                 owner.ringworld$refreshLayoutButton();
             }
-            minecraft.setScreen(parent);
+            RingMinecraftClientAccess.setScreen(minecraft, parent);
         } catch (RuntimeException exception) {
             validationMessages = java.util.List.of(exception.getMessage());
             applyButton.active = false;
-            minecraft.setScreen(this);
+            RingMinecraftClientAccess.setScreen(minecraft, this);
         }
     }
 
     @Override
     public void onClose() {
-        minecraft.setScreen(parent);
+        RingMinecraftClientAccess.setScreen(minecraft, parent);
     }
 
     @Override

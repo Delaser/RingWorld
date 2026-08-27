@@ -1,5 +1,12 @@
 # Current state
 
+2026-08-27 work-in-progress: 26.2 is pinned in its own pending manifest. Quick
+and nightly operators consume manifest-derived candidate groups, removing the
+fixed three-patch assumption. Both 26.2 loaders compile/package and pass 338
+unit cases each; the 26.1.2 dual-loader source regression also passes 338 each.
+These exploratory builds are not runtime qualification. No 26.2 runtime pass
+or publication is claimed; see [VERSION_QUALIFICATION.md](VERSION_QUALIFICATION.md).
+
 Last audited: 2026-08-13 against public `main` and the 1.0 release branch.
 The final
 Minecraft 1.21.11 implementation remains historical provenance at
@@ -18,11 +25,12 @@ tiers, evidence contract, and intake order are defined in
 Existing 26.1.2 release evidence remains exact historical evidence and is not
 silently generalized to the rest of the patch line.
 
-The Phase 5 forward-upgrade implementation is now present and covered by the
-232-test static qualification workflow. Its explicit CLI only permits copied
-same-loader `26.1 -> 26.1.1`, `26.1 -> 26.1.2`, and `26.1.1 -> 26.1.2` paths,
+The Phase 5 forward-upgrade implementation now accepts independently pinned
+source and target manifests and permits only copied, same-loader, stable
+forward-version paths. Its historically qualified paths are
+`26.1 -> 26.1.1`, `26.1 -> 26.1.2`, and `26.1.1 -> 26.1.2`,
 revalidating a passed source-worldgen record and target quick record before it
-can create a new contained target fixture. All six supported real forward paths
+can create a new contained target fixture. All six historical real forward paths
 pass from clean pushed commit `7983b8a`; their run IDs are recorded under
 Phase 5 in `MINECRAFT_VERSION_SUPPORT_PLAN.md` and GitHub issue #173.
 Phase 6 also now has a static-tested local equivalence guard: it permits a

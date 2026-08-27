@@ -753,7 +753,8 @@ class MinecraftQualificationExecutionTest(ExternalHomeTestCase):
         preparation = {"fabric": object()}
         factory_inputs, locks = [], []
 
-        def factory(selected, provenance, preparations):
+        def factory(selected, provenance, preparations, *, contract):
+            self.assertEqual(RUNNER.LEGACY_CONTRACT, contract)
             factory_inputs.append((tuple(selected), provenance, preparations))
 
             def dedicated(context):

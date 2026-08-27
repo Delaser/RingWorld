@@ -114,7 +114,8 @@ public final class RingWorldRaidSeamTest {
                         return;
                     }
                     navigationRaider.addTag(RAIDER_TAG);
-                    world.setBlock(marker(), Blocks.LIME_CONCRETE.defaultBlockState(), 3);
+                    world.setBlock(marker(), RingWorldVanillaFixtureRegistries
+                            .block("lime_concrete").defaultBlockState(), 3);
                     boolean saved = world.getServer().saveEverything(false, true, false);
                     RingWorldMod.LOGGER.info("[raid-seam] arm-save-ready=true saved={} center={} raiders={} bossbarA={} bossbarB={}",
                             saved, raid.getCenter(), raid.getTotalRaidersAlive(),
@@ -134,7 +135,7 @@ public final class RingWorldRaidSeamTest {
         switch (stage) {
             case 0 -> {
                 preparePlayers(world, geometry, playerA, playerB);
-                if (!world.getBlockState(marker()).is(Blocks.LIME_CONCRETE)) {
+                if (!world.getBlockState(marker()).is(RingWorldVanillaFixtureRegistries.block("lime_concrete"))) {
                     fail(world, geometry, "missing arm marker; run arm phase first in the same disposable world");
                     return;
                 }
@@ -244,7 +245,7 @@ public final class RingWorldRaidSeamTest {
         Holder<PoiType> home = world.registryAccess()
                 .lookupOrThrow(Registries.POINT_OF_INTEREST_TYPE).getOrThrow(PoiTypes.HOME);
         for (BlockPos poi : List.of(highSidePoi(geometry), lowSidePoi())) {
-            world.setBlock(poi, Blocks.RED_BED.defaultBlockState(), 3);
+            world.setBlock(poi, RingWorldVanillaFixtureRegistries.block("red_bed").defaultBlockState(), 3);
             pois.remove(poi);
             pois.add(poi, home);
             boolean occupied = pois.take(holder -> holder.is(PoiTypeTags.VILLAGE),
@@ -366,7 +367,7 @@ public final class RingWorldRaidSeamTest {
 
     private static void fail(ServerLevel world, RingGeometry geometry, String reason) {
         if (terminal) return;
-        world.setBlock(marker(), Blocks.RED_CONCRETE.defaultBlockState(), 3);
+        world.setBlock(marker(), RingWorldVanillaFixtureRegistries.block("red_concrete").defaultBlockState(), 3);
         RingWorldMod.LOGGER.error("[raid-seam] FAIL stage={} ticks={} reason={}", stage, ticks, reason);
         terminal = true;
     }

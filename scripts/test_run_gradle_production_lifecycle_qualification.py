@@ -68,6 +68,10 @@ class GradleProductionLifecycleQualificationTest(unittest.TestCase):
     def test_source_version_allows_only_forward_patch_use(self) -> None:
         _validate_source_version("26.1", "26.1")
         _validate_source_version("26.1", "26.1.2")
+        _validate_source_version("26.1.2", "26.2")
+        _validate_source_version("26.2", "27.4")
+        with self.assertRaisesRegex(GradleProductionLifecycleError, "outside"):
+            _validate_source_version("26.2-snapshot-1", "26.2")
         with self.assertRaisesRegex(GradleProductionLifecycleError, "older target"):
             _validate_source_version("26.1.2", "26.1")
         with self.assertRaisesRegex(GradleProductionLifecycleError, "outside"):

@@ -69,7 +69,7 @@ class GradleCurvedObjectsQualificationTest(unittest.TestCase):
     def test_fresh_profile_guards(self) -> None:
         source = (ROOT / "src/client/java/dev/ringworld/client/CurvedObjectCaptureClient.java").read_text()
         neo = (ROOT / "neoforge/build.gradle").read_text()
-        self.assertIn("client.screen instanceof TitleScreen", source)
+        self.assertIn("RingMinecraftClientAccess.screen(client) instanceof TitleScreen", source)
         self.assertIn("pauseOnLostFocus = false", source)
         self.assertIn("earlyWindowControl = false", neo)
 

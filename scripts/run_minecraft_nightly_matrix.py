@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Plan or execute the ordered 26.1.x RingWorld nightly qualification matrix."""
+"""Plan or execute the ordered manifest-selected RingWorld nightly matrix."""
 
 from __future__ import annotations
 

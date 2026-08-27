@@ -51,6 +51,10 @@ on the finite Overworld ring, including after very long Nether journeys.
 
 The current public release is **RingWorld 1.0 for Minecraft Java 26.1.2**.
 
+Work on broader version support, including 26.2, is in progress. A version
+being in the test matrix does not mean the published mod supports it yet.
+Contributors can follow the [version qualification guide](docs/VERSION_QUALIFICATION.md).
+
 | Loader | Required software |
 | --- | --- |
 | Fabric | Minecraft 26.1.2, Java 25, Fabric Loader 0.19.3, Fabric API 0.155.2+26.1.2 |

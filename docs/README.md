@@ -29,6 +29,10 @@ Start here:
   approved Minecraft 26.1 compatibility floor, initial patch matrix, rolling
   stable-version intake, automation tiers, evidence contract, and complete
   Modrinth/CurseForge delivery plan.
+- [`VERSION_QUALIFICATION.md`](VERSION_QUALIFICATION.md): repeatable manifest-driven
+  version intake, commands, and the pending 26.2 checkpoint.
+- [`VERSION_FORWARD_UPGRADE.md`](VERSION_FORWARD_UPGRADE.md): copied-world
+  qualification across independently pinned stable version lines.
 - [`DUAL_LOADER_STANDALONE_PLAN.md`](DUAL_LOADER_STANDALONE_PLAN.md): approved
   NeoForge-first implementation, standalone gameplay/visual polish, release,
   and deferred third-party compatibility sequence.

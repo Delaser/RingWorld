@@ -102,20 +102,10 @@ class RuntimeSupportInputs:
     same_file: SameFileCoverage | None
 
 
-def reviewed_range_identities() -> dict[str, dict[str, str]]:
+def reviewed_range_identities(contract=None) -> dict[str, dict[str, str]]:
     """Return the immutable range declarations expected by the strict schema."""
-    return {
-        "fabric": {
-            "oldest_abi_minecraft_version": "26.1",
-            "minecraft_range": ">=26.1 <=26.1.2",
-            "loader_range": "",
-        },
-        "neoforge": {
-            "oldest_abi_minecraft_version": "26.1",
-            "minecraft_range": "[26.1,26.1.2]",
-            "loader_range": "[26.1.0.19-beta,26.1.2.87]",
-        },
-    }
+    from minecraft_support_contract import LEGACY_CONTRACT
+    return (contract or LEGACY_CONTRACT).range_identities()
 
 
 def strict_provenance_from_source(source: Any) -> dict[str, Any]:
@@ -260,6 +250,7 @@ def external_runtime_adapter_from_qualification_inputs(
     preparations: Mapping[str, Any],
     *,
     smoke_executor: SmokeExecutor = execute_external_runtime_smoke,
+    contract=None,
 ) -> "ExternalRuntimeQualificationAdapter":
     """Build the default dedicated-smoke adapter from runner-owned inputs.
 
@@ -268,6 +259,8 @@ def external_runtime_adapter_from_qualification_inputs(
     Only a complete frozen preparation produces a candidate/support entry;
     partial selections therefore have no possible route to runtime I/O.
     """
+    from minecraft_support_contract import LEGACY_CONTRACT
+    contract = contract or LEGACY_CONTRACT
     canonical = canonical_cells_from_manifest(cells)
     provenance = strict_provenance_from_source(source_provenance)
     candidates: dict[str, CandidateJar] = {}
@@ -283,9 +276,9 @@ def external_runtime_adapter_from_qualification_inputs(
             raise ExternalAdapterError("passing frozen preparation lacks an inspected candidate")
         if inspection.loader != loader or Path(inspection.path) != plan.candidate_path:
             raise ExternalAdapterError("frozen preparation candidate identity disagrees with its plan")
-        inspected_by_cell = {f"{version}-{loader}": inspection for version in EXPECTED_VERSIONS}
+        inspected_by_cell = {cell_id: inspection for cell_id in contract.cell_ids(loader)}
         try:
-            same_file = verify_same_file_coverage(loader, inspected_by_cell)
+            same_file = verify_same_file_coverage(loader, inspected_by_cell, contract=contract)
         except Exception as error:
             raise ExternalAdapterError("frozen preparation has no complete same-file coverage") from error
         candidates[loader] = CandidateJar(plan.candidate_path, inspection.sha256, loader, inspection.minecraft_range)
@@ -295,7 +288,7 @@ def external_runtime_adapter_from_qualification_inputs(
     # roots. Keep the reviewed containment root loader-scoped when both full
     # triplets are selected in one matrix run.
     return ExternalRuntimeQualificationAdapter(
-        canonical, reviewed_range_identities(), candidates, support,
+        canonical, reviewed_range_identities(contract), candidates, support,
         frozen_candidate_root=candidate_roots, smoke_executor=smoke_executor,
     )
 
@@ -331,7 +324,7 @@ def _revalidate_frozen_candidate(
             or not is_within(source, frozen_root):
         raise ExternalAdapterError("frozen candidate is not a regular file below its reviewed root")
     try:
-        observed = inspect_frozen_candidate(source, candidate.loader)
+        observed = inspect_frozen_candidate(source, candidate.loader, contract=expected.contract)
     except (OSError, FrozenCandidateError) as error:
         raise ExternalAdapterError("frozen candidate failed its pre-runtime inspection") from error
     if observed != expected or observed.sha256 != candidate.sha256 \
@@ -517,7 +510,7 @@ def _frozen_candidate_record(
         "source_sha256": inspection.sha256,
         "installed_path": installed_path,
         "installed_sha256": installed_sha256,
-        "oldest_abi_minecraft_version": "26.1",
+        "oldest_abi_minecraft_version": inspection.contract.oldest,
         "minecraft_range": inspection.minecraft_range,
         "loader_range": loader_range,
     }
@@ -529,7 +522,7 @@ def _same_file_record(inputs: RuntimeSupportInputs, loader: str, candidate_sha25
         raise ExternalAdapterError(SAME_FILE_GROUP_UNAVAILABLE)
     if coverage.loader != loader or coverage.sha256 != candidate_sha256:
         raise ExternalAdapterError("same-file coverage disagrees with the frozen candidate")
-    return {"group": f"26.1.x-{loader}", "sha256": coverage.sha256, "cell_ids": list(coverage.cell_ids)}
+    return {"group": f"{coverage.group}-{loader}", "sha256": coverage.sha256, "cell_ids": list(coverage.cell_ids)}
 
 
 def capture_runtime_support(

@@ -26,6 +26,7 @@ from minecraft_qualification_ranges import (
     parse_neoforge_minecraft_range,
 )
 from verify_distribution_license import parse_neoforge_metadata
+from minecraft_support_contract import LEGACY_CONTRACT, SupportContract
 
 
 EXPECTED_VERSIONS = ("26.1", "26.1.1", "26.1.2")
@@ -49,6 +50,7 @@ class FrozenCandidateInspection:
     minecraft_range: str
     loader_range: str | None
     covered_minecraft_versions: tuple[str, ...]
+    contract: SupportContract = LEGACY_CONTRACT
 
 
 @dataclass(frozen=True)
@@ -57,6 +59,7 @@ class SameFileCoverage:
     sha256: str
     cell_ids: tuple[str, ...]
     minecraft_versions: tuple[str, ...]
+    group: str = LEGACY_CONTRACT.group
 
 
 def _sha256(path: Path) -> str:
@@ -105,7 +108,7 @@ def _neoforge_dependency(metadata: Mapping[str, Any], mod_id: str) -> Mapping[st
     return matches[0]
 
 
-def inspect_frozen_candidate(path: Path, loader: str) -> FrozenCandidateInspection:
+def inspect_frozen_candidate(path: Path, loader: str, *, contract: SupportContract = LEGACY_CONTRACT) -> FrozenCandidateInspection:
     """Inspect one candidate built once against the oldest supported ABI."""
     if loader not in {"fabric", "neoforge"}:
         raise FrozenCandidateError("loader must be fabric or neoforge")
@@ -126,10 +129,10 @@ def inspect_frozen_candidate(path: Path, loader: str) -> FrozenCandidateInspecti
             build = _properties(_single_text(archive, "ringworld-build.properties"))
             artifact_version = build.get("artifactVersion")
             release_label = build.get("releaseLabel")
-            expected_artifact = "0.0.0-qualification+mc26.1"
-            expected_label = f"qualification-26.1-{loader}"
+            expected_artifact = contract.artifact_version
+            expected_label = contract.release_label(loader)
             if artifact_version != expected_artifact or release_label != expected_label:
-                raise FrozenCandidateError("candidate was not built once from the approved 26.1 ABI identity")
+                raise FrozenCandidateError("candidate was not built once from the manifest's oldest ABI identity")
             license_text = _single_text(archive, "LICENSE-RINGWORLD.txt")
             if hashlib.sha256(license_text.encode("utf-8")).hexdigest() != _CANONICAL_MPL_SHA256:
                 raise FrozenCandidateError("candidate does not embed the canonical RingWorld MPL-2.0 license")
@@ -146,9 +149,9 @@ def inspect_frozen_candidate(path: Path, loader: str) -> FrozenCandidateInspecti
                     raise FrozenCandidateError("Fabric candidate identity does not match")
                 dependencies = metadata.get("depends")
                 minecraft_range = dependencies.get("minecraft") if isinstance(dependencies, Mapping) else None
-                if minecraft_range != APPROVED_FABRIC_MINECRAFT_RANGE:
+                if minecraft_range != contract.minecraft_range(loader):
                     raise FrozenCandidateError("Fabric candidate does not declare the approved Minecraft range")
-                parsed_minecraft_range = parse_fabric_minecraft_range(minecraft_range)
+                parsed_minecraft_range = parse_fabric_minecraft_range(minecraft_range, approved_range=contract.minecraft_range(loader))
             else:
                 try:
                     metadata = parse_neoforge_metadata(_single_text(archive, "META-INF/neoforge.mods.toml"))
@@ -161,34 +164,35 @@ def inspect_frozen_candidate(path: Path, loader: str) -> FrozenCandidateInspecti
                     raise FrozenCandidateError("NeoForge candidate identity does not match")
                 minecraft_range = _neoforge_dependency(metadata, "minecraft").get("versionRange")
                 loader_range = _neoforge_dependency(metadata, "neoforge").get("versionRange")
-                if minecraft_range != APPROVED_NEOFORGE_MINECRAFT_RANGE \
-                        or loader_range != APPROVED_NEOFORGE_LOADER_RANGE:
+                if minecraft_range != contract.minecraft_range(loader) \
+                        or loader_range != contract.neoforge_range:
                     raise FrozenCandidateError("NeoForge candidate does not declare the approved closed ranges")
-                parsed_minecraft_range = parse_neoforge_minecraft_range(minecraft_range)
-                parse_neoforge_loader_range(loader_range)
+                parsed_minecraft_range = parse_neoforge_minecraft_range(minecraft_range, approved_range=contract.minecraft_range(loader))
+                parse_neoforge_loader_range(loader_range, approved_range=contract.neoforge_range)
 
             covered = tuple(
-                version for version in EXPECTED_VERSIONS
+                version for version in contract.versions
                 if parsed_minecraft_range.contains(parse_minecraft_version(version))
             )
-            if covered != EXPECTED_VERSIONS:
-                raise FrozenCandidateError("candidate range does not cover every 26.1.x matrix target")
+            if covered != contract.versions:
+                raise FrozenCandidateError("candidate range does not cover every manifest target")
     except (OSError, zipfile.BadZipFile) as error:
         raise FrozenCandidateError(f"cannot inspect frozen candidate: {error}") from error
     return FrozenCandidateInspection(
         str(path), loader, _sha256(path), artifact_version, release_label,
-        minecraft_range, loader_range, covered,
+        minecraft_range, loader_range, covered, contract,
     )
 
 
 def verify_same_file_coverage(
     loader: str,
     inspections_by_cell: Mapping[str, FrozenCandidateInspection],
+    *, contract: SupportContract = LEGACY_CONTRACT,
 ) -> SameFileCoverage:
     """Require all three loader cells to reference one byte-identical file."""
-    expected_cells = tuple(f"{version}-{loader}" for version in EXPECTED_VERSIONS)
+    expected_cells = contract.cell_ids(loader)
     if tuple(sorted(inspections_by_cell)) != tuple(sorted(expected_cells)):
-        raise FrozenCandidateError("same-file evidence must contain exactly three expected loader cells")
+        raise FrozenCandidateError("same-file evidence must contain exactly the expected loader group cells")
     inspections = tuple(inspections_by_cell[cell] for cell in expected_cells)
     if any(item.loader != loader for item in inspections):
         raise FrozenCandidateError("same-file evidence mixes loaders")
@@ -196,6 +200,6 @@ def verify_same_file_coverage(
     paths = {item.path for item in inspections}
     if len(hashes) != 1 or len(paths) != 1:
         raise FrozenCandidateError("same-file evidence must use one unchanged candidate path and SHA-256")
-    if any(item.covered_minecraft_versions != EXPECTED_VERSIONS for item in inspections):
+    if any(item.covered_minecraft_versions != contract.versions or item.contract != contract for item in inspections):
         raise FrozenCandidateError("same-file candidate declaration does not cover the full matrix")
-    return SameFileCoverage(loader, inspections[0].sha256, expected_cells, EXPECTED_VERSIONS)
+    return SameFileCoverage(loader, inspections[0].sha256, expected_cells, contract.versions, contract.group)

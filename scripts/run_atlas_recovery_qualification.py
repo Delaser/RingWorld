@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 from dataclasses import asdict, dataclass
+from functools import partial
 import hashlib
 import json
 from pathlib import Path
@@ -36,6 +37,7 @@ from external_runtime_qualification_adapter import (
 )
 from external_runtime_smoke import CandidateJar
 from minecraft_frozen_candidate import FrozenCandidateInspection, inspect_frozen_candidate
+from minecraft_support_contract import LEGACY_CONTRACT, SupportContract, contract_from_manifest
 from minecraft_qualification_evidence import TerminalEvidenceError, validate_terminal_evidence
 from minecraft_qualification_executor import QualificationExecutionError, new_run_id
 from minecraft_qualification_model import InvocationError, QualificationPaths, Verdict, is_within, require_safe_identifier
@@ -67,6 +69,7 @@ class AtlasRecoveryInvocation:
     frozen_candidate_root: Path
     quick_terminal_evidence: QuickTerminalEvidenceInput
     source_provenance: Mapping[str, str]
+    contract: SupportContract = LEGACY_CONTRACT
 
 
 def parser() -> argparse.ArgumentParser:
@@ -224,6 +227,7 @@ def prepare_invocation(
     repository_root = repository_root.resolve(strict=False)
     require_safe_identifier(run_id, "run id")
     manifest = load_manifest(manifest_path)
+    contract = contract_from_manifest(manifest)
     cell = _exact_cell(manifest, cell_id)
     quick_paths = QualificationPaths.from_cell(repository_root, cell, _quick_run_id(quick_run_id))
     paths = QualificationPaths.from_cell(repository_root, cell, run_id)
@@ -239,7 +243,9 @@ def prepare_invocation(
     candidate_path = frozen_candidate_root / loader / "ringworld-qualification.jar"
     _sha256_regular(candidate_path, candidate_quick_paths.run_root, "retained frozen candidate")
     try:
-        inspection = candidate_inspector(candidate_path, loader)
+        inspection = (inspect_frozen_candidate(candidate_path, loader, contract=contract)
+                      if candidate_inspector is inspect_frozen_candidate
+                      else candidate_inspector(candidate_path, loader))
     except (OSError, ValueError) as error:
         raise AtlasRecoveryInvocationError("retained frozen candidate failed inspection") from error
     if inspection.loader != loader or inspection.sha256 != _sha256_regular(
@@ -249,10 +255,10 @@ def prepare_invocation(
     canonical = canonical_cells_from_manifest(tuple(item for item in manifest["cells"] if isinstance(item, Mapping)))
     quick = _quick_terminal_input(
         quick_paths.evidence_directory / f"{STRICT_EVIDENCE_STEM}.json",
-        quick_paths, canonical, reviewed_range_identities(), cell, candidate,
+        quick_paths, canonical, reviewed_range_identities(contract), cell, candidate,
     )
     source = _execution_provenance(provenance_provider(repository_root, manifest_path))
-    return AtlasRecoveryInvocation(cell, quick_paths, paths, candidate, frozen_candidate_root, quick, source)
+    return AtlasRecoveryInvocation(cell, quick_paths, paths, candidate, frozen_candidate_root, quick, source, contract)
 
 
 Executor = Callable[..., ExternalAtlasRecoveryResult]
@@ -289,7 +295,9 @@ def run(
     return executor(
         plan, prepared.paths, run_id,
         canonical_cells=canonical,
-        range_identities=reviewed_range_identities(),
+        range_identities=reviewed_range_identities(prepared.contract),
+        candidate_inspector=(partial(inspect_frozen_candidate, contract=prepared.contract)
+                             if candidate_inspector is inspect_frozen_candidate else candidate_inspector),
         stage_runner=run_external_runtime_atlas_recovery_stage,
         execution_source_provenance=prepared.source_provenance,
     )

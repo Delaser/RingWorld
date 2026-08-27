@@ -1,12 +1,12 @@
 package dev.ringworld.client;
 
 import dev.ringworld.RingWorldMod;
+import dev.ringworld.server.RingWorldVanillaFixtureRegistries;
 import dev.ringworld.net.RingMultiplayerTestPayload;
 import dev.ringworld.client.chunk.RingClientChunkMaps;
 import dev.ringworld.world.RingGeometry;
 import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.ConnectScreen;
 import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.gui.screens.PauseScreen;
@@ -26,7 +26,6 @@ import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.vehicle.boat.Boat;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.entity.ChestBlockEntity;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
@@ -120,7 +119,7 @@ public final class MultiplayerTestClient {
             connectWhenReady(client);
             return true;
         }
-        if (client.screen instanceof PauseScreen) client.setScreen(null);
+        if (RingMinecraftClientAccess.screen(client) instanceof PauseScreen) RingMinecraftClientAccess.setScreen(client, null);
         if (!readySent && client.isGameLoadFinished()) {
             if (sendResult("client_ready", true, client.player.getX())) {
                 readySent = true;
@@ -176,7 +175,7 @@ public final class MultiplayerTestClient {
             menuTicks = 0;
             return;
         }
-        if (reconnectPending && client.screen != null) {
+        if (reconnectPending && RingMinecraftClientAccess.screen(client) != null) {
             connectionRequested = false;
             reconnectPending = false;
             menuTicks = 0;
@@ -186,13 +185,13 @@ public final class MultiplayerTestClient {
         if (connectionRequested) {
             if (++stalledConnectionTicks % 200 == 0) {
                 RingWorldMod.LOGGER.info("[multiplayer:{}] connection state screen={} networkHandler={}",
-                        role, client.screen == null ? "none" : client.screen.getClass().getSimpleName()
-                                + " title=" + client.screen.getNarrationMessage().getString(),
+                        role, RingMinecraftClientAccess.screen(client) == null ? "none" : RingMinecraftClientAccess.screen(client).getClass().getSimpleName()
+                                + " title=" + RingMinecraftClientAccess.screen(client).getNarrationMessage().getString(),
                         client.getConnection() != null);
             }
             return;
         }
-        Screen parent = client.screen;
+        Screen parent = RingMinecraftClientAccess.screen(client);
         if (parent == null) return;
         if (++menuTicks < 40) return;
         int port = Integer.getInteger("ringworld.multiplayerTestPort", 25566);
@@ -285,9 +284,9 @@ public final class MultiplayerTestClient {
                 "[multiplayer:{}] client seam result={} localX={} remoteX={} maxRemoteStep={} missingTicks={}",
                 role, passed, client.player.getX(), remote.getX(), maximumRemoteStep, remoteMissingTicks);
         sendResult("seam_visibility", passed, maximumRemoteStep);
-        Screenshot.grab(client.gameDirectory,
+        RingMinecraftClientAccess.grabScreenshot(client.gameDirectory,
                 "ringworld-multiplayer-" + role.toLowerCase() + ".png",
-                client.getMainRenderTarget(), 1,
+                RingMinecraftClientAccess.mainRenderTarget(client), 1,
                 message -> RingWorldMod.LOGGER.info(
                         "[multiplayer:{}] screenshot: {}", role, message.getString()));
         stage = 1;
@@ -323,7 +322,7 @@ public final class MultiplayerTestClient {
 
         int markerX = (int)Math.floor(geometry.nearestImageX(0.0, client.player.getX()));
         BlockPos marker = new BlockPos(markerX, 123, 4);
-        if (client.level.getBlockState(marker).is(Blocks.LIME_CONCRETE)) {
+        if (client.level.getBlockState(marker).is(RingWorldVanillaFixtureRegistries.block("lime_concrete"))) {
             RingWorldMod.LOGGER.info("[multiplayer:{}] cross-seam melee result=true attacksSent={}",
                     role, attacksSent);
             sendResult("melee_combat", true, attacksSent);
@@ -331,7 +330,7 @@ public final class MultiplayerTestClient {
             stageTicks = 0;
             return;
         }
-        if (client.level.getBlockState(marker).is(Blocks.RED_CONCRETE) || stageTicks >= 1_300) {
+        if (client.level.getBlockState(marker).is(RingWorldVanillaFixtureRegistries.block("red_concrete")) || stageTicks >= 1_300) {
             RingWorldMod.LOGGER.error("[multiplayer:{}] cross-seam melee result=false attacksSent={}",
                     role, attacksSent);
             sendResult("melee_combat", false, attacksSent);
@@ -375,7 +374,7 @@ public final class MultiplayerTestClient {
             }
             return;
         }
-        boolean targetPresent = client.level.getBlockState(target).is(Blocks.GOLD_BLOCK);
+        boolean targetPresent = client.level.getBlockState(target).is(RingWorldVanillaFixtureRegistries.block("gold_block"));
         blockSeen |= targetPresent;
         if (stageTicks % 100 == 0) {
             RingWorldMod.LOGGER.info(
@@ -426,13 +425,13 @@ public final class MultiplayerTestClient {
         BlockPos reverseSupport = new BlockPos(zeroX, 119, 3);
         BlockPos reverseTarget = new BlockPos(zeroX - 1, 119, 3);
 
-        boolean forwardFixture = client.level.getBlockState(forwardSupport).is(Blocks.STONE);
-        boolean forwardPlaced = client.level.getBlockState(forwardTarget).is(Blocks.STONE);
+        boolean forwardFixture = client.level.getBlockState(forwardSupport).is(RingWorldVanillaFixtureRegistries.block("stone"));
+        boolean forwardPlaced = client.level.getBlockState(forwardTarget).is(RingWorldVanillaFixtureRegistries.block("stone"));
         if (!forwardPlacementResultSent) {
             if (role.equals("A") && forwardFixture && !forwardPlaced
                     && !forwardPlacementSent
                     && client.gameMode.getPlayerMode() == GameType.SURVIVAL
-                    && client.player.getMainHandItem().is(Blocks.STONE.asItem())
+                    && client.player.getMainHandItem().is(RingWorldVanillaFixtureRegistries.block("stone").asItem())
                     && client.player.getMainHandItem().getCount() == 2) {
                 BlockHitResult hit = new BlockHitResult(
                         new Vec3(forwardSupport.getX() + 1.0, 119.5, 2.5),
@@ -461,13 +460,13 @@ public final class MultiplayerTestClient {
             return false;
         }
 
-        boolean reverseFixture = client.level.getBlockState(reverseSupport).is(Blocks.STONE);
-        boolean reversePlaced = client.level.getBlockState(reverseTarget).is(Blocks.STONE);
+        boolean reverseFixture = client.level.getBlockState(reverseSupport).is(RingWorldVanillaFixtureRegistries.block("stone"));
+        boolean reversePlaced = client.level.getBlockState(reverseTarget).is(RingWorldVanillaFixtureRegistries.block("stone"));
         if (!reversePlacementResultSent) {
             if (role.equals("A") && reverseFixture && !reversePlaced
                     && !reversePlacementSent
                     && client.gameMode.getPlayerMode() == GameType.SURVIVAL
-                    && client.player.getMainHandItem().is(Blocks.STONE.asItem())
+                    && client.player.getMainHandItem().is(RingWorldVanillaFixtureRegistries.block("stone").asItem())
                     && client.player.getMainHandItem().getCount() == 2) {
                 BlockHitResult hit = new BlockHitResult(
                         new Vec3(reverseSupport.getX(), 119.5, 3.5),
@@ -674,9 +673,9 @@ public final class MultiplayerTestClient {
             if (storm && sawSeamLightning) {
                 seamWeatherSent = true;
                 sendResult("seam_weather", true, client.player.getX());
-                Screenshot.grab(client.gameDirectory,
+                RingMinecraftClientAccess.grabScreenshot(client.gameDirectory,
                         "ringworld-multiplayer-weather-" + role.toLowerCase() + ".png",
-                        client.getMainRenderTarget(), 1,
+                        RingMinecraftClientAccess.mainRenderTarget(client), 1,
                         message -> RingWorldMod.LOGGER.info(
                                 "[multiplayer:{}] weather screenshot: {}", role, message.getString()));
                 RingWorldMod.LOGGER.info(
@@ -797,7 +796,8 @@ public final class MultiplayerTestClient {
             boolean overworldSessionReady = client.level.dimension() == Level.OVERWORLD
                     && ClientRingState.geometry() != null;
             boolean bedStillLoaded = client.level.hasChunkAt(presentedBed)
-                    && client.level.getBlockState(presentedBed).is(Blocks.RED_BED);
+                    && client.level.getBlockState(presentedBed)
+                            .is(RingWorldVanillaFixtureRegistries.block("red_bed"));
             boolean vanillaAwake = !client.player.isSleeping()
                     && client.player.getSleepingPos().isEmpty();
             sleepingReconnectResultSent = true;
@@ -824,7 +824,7 @@ public final class MultiplayerTestClient {
             }
         }
 
-        if (client.screen instanceof DeathScreen && !respawnRequested) {
+        if (RingMinecraftClientAccess.screen(client) instanceof DeathScreen && !respawnRequested) {
             deathSeenSent = true;
             respawnRequested = true;
             sendResult("death_seen", true, client.player.getX());
@@ -833,7 +833,7 @@ public final class MultiplayerTestClient {
             client.player.respawn();
             return;
         }
-        if (respawnRequested && !deathRespawnSent && !(client.screen instanceof DeathScreen)
+        if (respawnRequested && !deathRespawnSent && !(RingMinecraftClientAccess.screen(client) instanceof DeathScreen)
                 && client.player.isAlive() && client.player.getHealth() > 0.0F) {
             double canonicalX = geometry.wrapX(client.player.getX());
             boolean canonical = canonicalX >= 0.0

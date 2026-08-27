@@ -14,14 +14,12 @@ from typing import Any, Mapping
 
 from minecraft_atlas_recovery_qualification import PersistedRingSettingsObservation
 from minecraft_qualification_model import InvocationError
+from minecraft_qualification_ranges import CompatibilityRangeError, parse_minecraft_version
 from run_worldgen_structure_matrix import validate_reload
 
 
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 FIXTURE_NAME = "05-world-upgrade"
-SUPPORTED_FORWARD_PATHS = frozenset({
-    ("26.1", "26.1.1"), ("26.1", "26.1.2"), ("26.1.1", "26.1.2"),
-})
 
 
 @dataclass(frozen=True)
@@ -111,12 +109,21 @@ def validate_forward_world_upgrade(
     source_cell: Mapping[str, Any], target_cell: Mapping[str, Any],
     identity: ForwardUpgradeIdentity, evidence: ForwardUpgradeEvidence,
 ) -> ForwardUpgradeQualification:
-    """Validate one supported copied-world forward path, never a downgrade."""
+    """Validate one numerically later copied-world path, never a downgrade.
+
+    The caller establishes that each exact cell came from its own reviewed
+    candidate-group manifest.  This deliberately has no line-specific path
+    table: a later stable Minecraft version is the only supported direction.
+    """
     if not isinstance(identity, ForwardUpgradeIdentity) or not isinstance(evidence, ForwardUpgradeEvidence):
         raise InvocationError("forward upgrade requires structural identity and evidence")
     source_id, source_loader, source_version = _cell(source_cell, "source cell")
     target_id, target_loader, target_version = _cell(target_cell, "target cell")
-    if source_loader != target_loader or (source_version, target_version) not in SUPPORTED_FORWARD_PATHS:
+    try:
+        forward = parse_minecraft_version(source_version) < parse_minecraft_version(target_version)
+    except CompatibilityRangeError as error:
+        raise InvocationError("upgrade cells have invalid stable Minecraft versions") from error
+    if source_loader != target_loader or not forward:
         raise InvocationError("upgrade direction is not a supported forward path")
     if (identity.source_cell_id, identity.target_cell_id, identity.loader,
             identity.source_minecraft_version, identity.target_minecraft_version) != (

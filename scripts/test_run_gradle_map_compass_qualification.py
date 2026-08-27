@@ -97,7 +97,7 @@ class GradleMapCompassQualificationTest(unittest.TestCase):
         source = (ROOT / "src/client/java/dev/ringworld/client/RingMapCompassCaptureClient.java").read_text()
         root_build = (ROOT / "build.gradle").read_text()
         neo_build = (ROOT / "neoforge/build.gradle").read_text()
-        self.assertIn("client.screen instanceof TitleScreen", source)
+        self.assertIn("RingMinecraftClientAccess.screen(client) instanceof TitleScreen", source)
         self.assertIn("client.options.pauseOnLostFocus = false", source)
         self.assertIn("onboardAccessibility:false", root_build)
         self.assertIn("onboardAccessibility:false", neo_build)

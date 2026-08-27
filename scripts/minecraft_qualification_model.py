@@ -375,7 +375,10 @@ def required_dependency_properties(cell: Mapping[str, Any]) -> tuple[tuple[str, 
         raise InvocationError(f"cell {cell.get('id', '<unknown>')} has no dependency list")
 
     expected = DEPENDENCY_PROPERTIES[loader]
-    required_coordinates = {coordinate for coordinate, _ in expected}
+    # Gradle configures both loader projects. Optional, explicitly pinned
+    # companion inputs must override checkout defaults too (e.g. Loom/Fabric
+    # setup during a NeoForge build of a newer Minecraft release).
+    known = dict(item for entries in DEPENDENCY_PROPERTIES.values() for item in entries)
     found: dict[str, str] = {}
     for dependency in dependencies:
         if not isinstance(dependency, Mapping):
@@ -383,7 +386,7 @@ def required_dependency_properties(cell: Mapping[str, Any]) -> tuple[tuple[str, 
         coordinate = dependency.get("coordinate")
         if not isinstance(coordinate, str):
             raise InvocationError(f"cell {cell.get('id', '<unknown>')} has a dependency without a coordinate")
-        if coordinate not in required_coordinates:
+        if coordinate not in known:
             continue
         if coordinate in found:
             raise InvocationError(
@@ -402,7 +405,8 @@ def required_dependency_properties(cell: Mapping[str, Any]) -> tuple[tuple[str, 
             f"cell {cell.get('id', '<unknown>')} is missing required dependency "
             + ", ".join(missing)
         )
-    return tuple((property_name, found[coordinate]) for coordinate, property_name in expected)
+    ordered = (*expected, *(item for item in known.items() if item not in expected))
+    return tuple((property_name, found[coordinate]) for coordinate, property_name in ordered if coordinate in found)
 
 
 def required_minecraft_version(cell: Mapping[str, Any]) -> str:

@@ -6,7 +6,6 @@ import dev.ringworld.world.RingRenderProfile;
 import dev.ringworld.world.RingTerrainAtlas;
 import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.PauseScreen;
 
 /**
@@ -59,8 +58,8 @@ public final class RingProjectionCaptureClient {
             if (++completionTicks >= 20) finish(client, true, "captures complete");
             return true;
         }
-        if (client.screen instanceof PauseScreen) client.setScreen(null);
-        if (client.screen != null) return true;
+        if (RingMinecraftClientAccess.screen(client) instanceof PauseScreen) RingMinecraftClientAccess.setScreen(client, null);
+        if (RingMinecraftClientAccess.screen(client) != null) return true;
 
         RingGeometry geometry = ClientRingState.geometry();
         var atlas = ClientRingState.terrainAtlas();
@@ -96,9 +95,9 @@ public final class RingProjectionCaptureClient {
         settleTicks = 0;
 
         if (stage == 0) {
-            Screenshot.grab(
+            RingMinecraftClientAccess.grabScreenshot(
                     client.gameDirectory, screenshotName("tangent"),
-                    client.getMainRenderTarget(), 1,
+                    RingMinecraftClientAccess.mainRenderTarget(client), 1,
                     message -> RingWorldMod.LOGGER.info(
                             "[projection-capture] tangent screenshot: {}",
                             message.getString()));
@@ -110,9 +109,9 @@ public final class RingProjectionCaptureClient {
         }
 
         if (stage == 1) {
-            Screenshot.grab(
+            RingMinecraftClientAccess.grabScreenshot(
                     client.gameDirectory, screenshotName("handoff"),
-                    client.getMainRenderTarget(), 1,
+                    RingMinecraftClientAccess.mainRenderTarget(client), 1,
                     message -> RingWorldMod.LOGGER.info(
                             "[projection-capture] live/proxy handoff screenshot: {}",
                             message.getString()));
@@ -123,9 +122,9 @@ public final class RingProjectionCaptureClient {
             return true;
         }
 
-        Screenshot.grab(
+        RingMinecraftClientAccess.grabScreenshot(
                 client.gameDirectory, screenshotName("up"),
-                client.getMainRenderTarget(), 1,
+                RingMinecraftClientAccess.mainRenderTarget(client), 1,
                 message -> RingWorldMod.LOGGER.info(
                         "[projection-capture] radial-up screenshot: {}",
                         message.getString()));

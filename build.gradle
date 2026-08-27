@@ -435,6 +435,11 @@ loom {
 // the same common sources can be compiled by the future NeoForge module.
 sourceSets.main.java.srcDir 'src/platform/fabric/java'
 sourceSets.client.java.srcDir 'src/platform/fabricClient/java'
+apply from: 'gradle/version-sources.gradle'
+sourceSets.main.java.srcDir new File(ringSourceAbiDirectory, 'main/java')
+sourceSets.client.java.srcDir new File(ringSourceAbiDirectory, 'client/java')
+sourceSets.main.resources.srcDir new File(ringSourceAbiDirectory, 'main/resources')
+sourceSets.client.resources.srcDir new File(ringSourceAbiDirectory, 'client/resources')
 
 def checkedSaveId = { String value, String propertyName ->
 	def saveId = value == null ? "" : value.trim()

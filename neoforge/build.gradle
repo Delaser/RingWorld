@@ -51,12 +51,16 @@ sourceSets.main.java.setSrcDirs([
         rootProject.file('src/main/java'),
         rootProject.file('src/client/java'),
         rootProject.file('src/platform/neoforge/java'),
-        rootProject.file('src/platform/neoforgeClient/java')
+        rootProject.file('src/platform/neoforgeClient/java'),
+        new File(rootProject.ext.ringSourceAbiDirectory, 'main/java'),
+        new File(rootProject.ext.ringSourceAbiDirectory, 'client/java')
 ])
 sourceSets.main.resources.setSrcDirs([
         rootProject.file('src/main/resources'),
         rootProject.file('src/client/resources'),
-        rootProject.file('src/platform/neoforge/resources')
+        rootProject.file('src/platform/neoforge/resources'),
+        new File(rootProject.ext.ringSourceAbiDirectory, 'main/resources'),
+        new File(rootProject.ext.ringSourceAbiDirectory, 'client/resources')
 ])
 sourceSets.main.resources.exclude('fabric.mod.json')
 

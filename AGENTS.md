@@ -176,6 +176,14 @@ under it.
 
 ## Minecraft version support policy
 
+Active 26.2 work uses `config/minecraft-version-matrix-26.2.json`. Derive
+candidate identities, ranges, oldest ABI, and cell coverage through
+`scripts/minecraft_support_contract.py`; do not add another fixed version
+tuple or assume every loader group has three cells. The original 26.1.x
+manifest and its historical evidence remain separate. See
+`docs/VERSION_QUALIFICATION.md` for the repeatable operator procedure. 26.2
+remains pending until its full runtime gates pass; publishing is paused.
+
 Minecraft 26.1 is the source/build compatibility floor. This is not permission
 to advertise the current jar for 26.1 or 26.1.1: 26.1.2 remains the exact
 verified and published runtime until the six-cell Fabric/NeoForge 26.1.x
@@ -285,6 +293,10 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   lifecycle, command, and payload-transport adapters.
 - `src/platform/neoforgeClient/java/`: NeoForge client lifecycle, payload,
   render-pipeline, cache-path, and diagnostic-world adapters.
+- `src/versions/<oldest-ABI>/`: narrow shared-by-loader Minecraft API adapters.
+  `gradle/version-sources.gradle` selects the newest reviewed source ABI not
+  newer than the requested stable Minecraft version. Selection is not runtime
+  support evidence; a later version must still pass the complete qualification.
 - `neoforge/`: NeoForge 26.1.2.87 ModDevGradle 2.0.143 Java 25 module and its
   isolated development run directories.
 - `src/main/java/dev/ringworld/mixin/`: authoritative server/worldgen patches.
@@ -318,8 +330,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   `<cell>/build/<loader>/libs`, strict-checks loader/canonical-MPL/build identity, and
   records SHA-256. Frozen preparation builds once from the oldest ABI under the
   run root, retains/re-inspects one MPL-covered candidate, and records one
-  path/hash for all three loader cells. It is not external-runtime
-  qualification. Once clean provenance and a complete frozen loader triplet
+  path/hash for all manifest-declared cells of that loader. It is not external-runtime
+  qualification. Once clean provenance and a complete frozen loader group
   exist, the default runner also installs the external dedicated-smoke bridge,
   lends its held cell lock, and stores a separately schema-validated immutable
   `strict-terminal-evidence.json` before a runtime phase can pass. Partial
@@ -699,7 +711,7 @@ With neither property, all historical paths and ports remain unchanged. This
 is build isolation, not cross-version proof; a same-jar claim requires one
 frozen jar built once against the oldest ABI and then exercised in external
 production-style runtimes. The runner's `SHARED_CONTRACT` preflight records
-that one frozen path/hash only when a complete three-version loader triplet is
+that one frozen path/hash only when a complete manifest-defined loader group is
 selected; it never synthesizes the claim from per-cell source builds.
 Qualification source-build artifacts must use the diagnostic
 `0.0.0-qualification+mc<version>` identity and a qualification release label;

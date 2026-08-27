@@ -12,7 +12,6 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LightningBolt;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.entity.player.Player;
@@ -240,7 +239,8 @@ final class RingWorldExtendedMultiplayerTest {
     private static void prepareBed(ServerLevel world, RingGeometry geometry, ServerPlayer playerA) {
         BlockPos foot = bedFoot();
         BlockPos head = bedHead();
-        var base = Blocks.RED_BED.defaultBlockState().setValue(BedBlock.FACING, Direction.EAST);
+        var base = RingWorldVanillaFixtureRegistries.block("red_bed")
+                .defaultBlockState().setValue(BedBlock.FACING, Direction.EAST);
         world.setBlock(foot, base.setValue(BedBlock.PART, BedPart.FOOT), 3);
         world.setBlock(head, base.setValue(BedBlock.PART, BedPart.HEAD), 3);
         var clock = world.dimensionType().defaultClock()
@@ -355,7 +355,7 @@ final class RingWorldExtendedMultiplayerTest {
                 && Math.abs(playerA.getY() - bedHead().getY()) < 4.0
                 && Math.abs(playerA.getZ() - bedHead().getZ()) < 4.0;
         boolean bedStillLoaded = world.hasChunkAt(bedHead())
-                && world.getBlockState(bedHead()).is(Blocks.RED_BED);
+                && world.getBlockState(bedHead()).is(RingWorldVanillaFixtureRegistries.block("red_bed"));
         if (replacement && !playerA.isSleeping() && playerA.getSleepingPos().isEmpty()
                 && canonicalPlayer && adjacentToBed && bedStillLoaded
                 && RingWorldMultiplayerTest.clientPassed("A", "bed_reconnect")
@@ -693,7 +693,9 @@ final class RingWorldExtendedMultiplayerTest {
             weather.setThundering(true);
         }
         if (ticks >= 40 && ticks % 10 == 0) {
-            LightningBolt lightning = EntityType.LIGHTNING_BOLT.create(world, EntitySpawnReason.TRIGGERED);
+            LightningBolt lightning = RingWorldVanillaFixtureRegistries
+                    .entityType("lightning_bolt", LightningBolt.class)
+                    .create(world, EntitySpawnReason.TRIGGERED);
             if (lightning != null) {
                 lightning.setVisualOnly(true);
                 lightning.setPos(0.5, 121.0, 0.5);

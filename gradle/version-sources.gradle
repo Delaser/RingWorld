@@ -1,0 +1,25 @@
+// A small source-ABI layer, shared by both loaders. Select the newest checked-in
+// ABI not newer than the target; a future target still has to compile and pass
+// qualification before it is supported. No release metadata is widened here.
+def components = { String value ->
+    if (!(value ==~ /[0-9]+\.[0-9]+(?:\.[0-9]+)?/)) {
+        throw new GradleException("Version source selection requires a stable Minecraft version: ${value}")
+    }
+    def numbers = value.tokenize('.').collect { it as int }
+    while (numbers.size() < 3) numbers.add(0)
+    numbers
+}
+def compare = { List a, List b ->
+    for (int i = 0; i < 3; i++) {
+        int result = a[i] <=> b[i]
+        if (result != 0) return result
+    }
+    0
+}
+def target = components(rootProject.minecraft_version.toString())
+def candidates = rootProject.file('src/versions').listFiles()
+        .findAll { it.directory && compare(components(it.name), target) <= 0 }
+        .sort { a, b -> compare(components(a.name), components(b.name)) }
+if (candidates.isEmpty()) throw new GradleException('No reviewed source ABI exists for the target version')
+rootProject.ext.ringSourceAbiDirectory = candidates.last()
+logger.lifecycle("RingWorld source ABI: ${candidates.last().name}")

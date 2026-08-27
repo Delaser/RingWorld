@@ -21,7 +21,6 @@ import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.entity.item.ItemEntity;
@@ -560,7 +559,8 @@ public final class RingWorldServer {
 
         // An unoccupied vehicle exercises the same periodic entity motion
         // and client tracking path with vehicle-specific physics enabled.
-        Boat boat = EntityType.OAK_BOAT.create(world, EntitySpawnReason.COMMAND);
+        Boat boat = RingWorldVanillaFixtureRegistries.entityType("oak_boat", Boat.class)
+                .create(world, EntitySpawnReason.COMMAND);
         if (boat != null) {
             boat.setPos(circumference - 1.5, 123.0, 16.5);
             boat.setNoGravity(true);

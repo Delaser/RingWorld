@@ -136,6 +136,11 @@ overlap.
 
 ## Stable-version intake
 
+The active 26.2 implementation uses one manifest per same-jar candidate group;
+see [the operator guide](VERSION_QUALIFICATION.md). The runner derives build
+identity, bounded metadata, and complete cell coverage from that manifest.
+Publication is paused until the requested 26.2 qualification is complete.
+
 For every new stable Minecraft release:
 
 1. add a pinned manifest entry without changing any support claim;

@@ -221,10 +221,15 @@ def _source_world(value: str) -> Path:
 
 
 def _validate_source_version(saved_version: object, target_version: object) -> None:
-    versions = ("26.1", "26.1.1", "26.1.2")
-    if saved_version not in versions or target_version not in versions:
-        raise GradleProductionLifecycleError("production source/target version is outside 26.1.x")
-    if versions.index(saved_version) > versions.index(target_version):
+    from minecraft_qualification_ranges import parse_minecraft_version
+    from minecraft_support_contract import LEGACY_CONTRACT
+    try:
+        saved, target = parse_minecraft_version(saved_version), parse_minecraft_version(target_version)
+        if min(saved, target) < parse_minecraft_version(LEGACY_CONTRACT.oldest):
+            raise ValueError("older than the source compatibility floor")
+    except ValueError as error:
+        raise GradleProductionLifecycleError("production source/target version is outside stable supported-era releases") from error
+    if saved > target:
         raise GradleProductionLifecycleError(
             f"production source {saved_version} cannot be opened as older target {target_version}")
 

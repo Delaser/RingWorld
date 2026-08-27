@@ -1,5 +1,20 @@
 # Testing
 
+## Manifest-driven extension checkpoint (2026-08-27)
+
+`scripts/test_minecraft_version_sources.py` statically checks reviewed source-ABI
+selection, matching version-owned client adapters/mixins, and both loaders'
+Java/resource inclusion without invoking Gradle. Exploratory 26.2 Fabric and
+NeoForge builds each pass 338 unit/parameterized cases; the 26.1.2 dual-loader
+regression also passes 338 each. Runtime qualification is still separate.
+
+`test_minecraft_support_contract.py` checks historical 26.1.x identity,
+single-version 26.2 and synthetic future groups, exact candidate metadata,
+same-file coverage, missing loader rejection, and forbidden patch-range gaps.
+The static GitHub workflow includes these tests and watches all version
+manifests. See [VERSION_QUALIFICATION.md](VERSION_QUALIFICATION.md) for commands.
+This is automation coverage, not a 26.2 runtime support claim.
+
 RingWorld needs tests at three levels:
 
 1. pure geometry/topology unit tests;

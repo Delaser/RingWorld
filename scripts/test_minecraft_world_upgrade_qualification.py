@@ -75,6 +75,17 @@ class ForwardUpgradeQualificationTest(unittest.TestCase):
                     replace(evidence, target_record={**evidence.target_record, "loot": 2}),
                 )
 
+    def test_accepts_a_later_candidate_group_without_a_path_allowlist(self):
+        with tempfile.TemporaryDirectory() as directory:
+            identity, evidence = self.valid(Path(directory))
+            source = {**self.source, "id": "26.1-fabric", "minecraft": {"version": "26.1"}}
+            target = {**self.target, "id": "26.2-fabric", "minecraft": {"version": "26.2"}}
+            identity = replace(identity, target_cell_id="26.2-fabric", target_minecraft_version="26.2")
+            result = validate_forward_world_upgrade(source, target, identity, evidence)
+            self.assertEqual("26.2", result.as_dict()["targetMinecraft"])
+            with self.assertRaises(InvocationError):
+                validate_forward_world_upgrade(source, source, identity, evidence)
+
 
 if __name__ == "__main__":
     unittest.main()

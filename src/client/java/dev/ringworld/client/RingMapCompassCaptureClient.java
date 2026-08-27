@@ -1,11 +1,11 @@
 package dev.ringworld.client;
 
 import dev.ringworld.RingWorldMod;
+import dev.ringworld.server.RingWorldVanillaFixtureRegistries;
 import dev.ringworld.client.mixin.CompassAngleStateFixtureAccessor;
 import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import dev.ringworld.world.RingGeometry;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -23,13 +23,11 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.entity.decoration.ItemFrame;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.item.MapItem;
 import net.minecraft.world.item.component.LodestoneTracker;
 import net.minecraft.world.item.component.MapPostProcessing;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.Level;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraft.world.level.saveddata.maps.MapDecoration;
 import net.minecraft.world.level.saveddata.maps.MapDecorationTypes;
@@ -76,12 +74,12 @@ public final class RingMapCompassCaptureClient {
         if (!enabled() || client.level != null || worldStarted) return false;
         client.options.pauseOnLostFocus = false;
         if (!worldScreenOpened) {
-            if (!(client.screen instanceof TitleScreen)) return true;
+            if (!(RingMinecraftClientAccess.screen(client) instanceof TitleScreen)) return true;
             CreateWorldScreen.openFresh(client, () -> worldScreenOpened = false);
             worldScreenOpened = true;
             return true;
         }
-        if (client.screen instanceof CreateWorldScreen screen) {
+        if (RingMinecraftClientAccess.screen(client) instanceof CreateWorldScreen screen) {
             WorldCreationUiState creator = screen.getUiState();
             creator.setName(WORLD_NAME);
             creator.setGameMode(WorldCreationUiState.SelectedGameMode.CREATIVE);
@@ -259,9 +257,9 @@ public final class RingMapCompassCaptureClient {
             player.getInventory().clearContent();
             player.getInventory().setItem(SCALED_MAP, high);
             player.getInventory().setItem(UNSCALED_MAP, low);
-            player.getInventory().setItem(SPAWN_COMPASS, new ItemStack(Items.COMPASS));
+            player.getInventory().setItem(SPAWN_COMPASS, new ItemStack(RingWorldVanillaFixtureRegistries.item("compass")));
             player.getInventory().setItem(LODESTONE_COMPASS, lodestoneCompass(2));
-            player.getInventory().setItem(RECOVERY_COMPASS, new ItemStack(Items.RECOVERY_COMPASS));
+            player.getInventory().setItem(RECOVERY_COMPASS, new ItemStack(RingWorldVanillaFixtureRegistries.item("recovery_compass")));
             player.getInventory().setSelectedSlot(SCALED_MAP);
             player.inventoryMenu.broadcastFullState();
             configureServerTargets(world, player, 2);
@@ -277,14 +275,14 @@ public final class RingMapCompassCaptureClient {
         int circumference = geometry.circumferenceBlocks();
         for (int dz = -3; dz <= 3; dz++) for (int dx = -2; dx <= 2; dx++) {
             world.setBlockAndUpdate(new BlockPos(geometry.wrapBlockX(dx), FIXTURE_Y, dz),
-                    Blocks.RED_WOOL.defaultBlockState());
+                    RingWorldVanillaFixtureRegistries.block("red_wool").defaultBlockState());
             world.setBlockAndUpdate(new BlockPos(geometry.wrapBlockX(circumference - 1 + dx), FIXTURE_Y, dz),
-                    Blocks.BLUE_WOOL.defaultBlockState());
+                    RingWorldVanillaFixtureRegistries.block("blue_wool").defaultBlockState());
         }
         for (int x : new int[] {1, circumference - 2}) {
             BlockPos banner = new BlockPos(x, FIXTURE_Y, 5);
-            world.setBlockAndUpdate(banner.below(), Blocks.STONE.defaultBlockState());
-            world.setBlockAndUpdate(banner, Blocks.WHITE_BANNER.defaultBlockState());
+            world.setBlockAndUpdate(banner.below(), RingWorldVanillaFixtureRegistries.block("stone").defaultBlockState());
+            world.setBlockAndUpdate(banner, RingWorldVanillaFixtureRegistries.block("white_banner").defaultBlockState());
         }
     }
 
@@ -305,7 +303,7 @@ public final class RingMapCompassCaptureClient {
         if (!data.toggleBanner(world, new BlockPos(bannerX, FIXTURE_Y, 5)))
             throw new IllegalStateException("map banner toggle failed");
         BlockPos framePosition = new BlockPos(frameX, FIXTURE_Y, -5);
-        world.setBlockAndUpdate(framePosition.relative(Direction.SOUTH), Blocks.STONE.defaultBlockState());
+        world.setBlockAndUpdate(framePosition.relative(Direction.SOUTH), RingWorldVanillaFixtureRegistries.block("stone").defaultBlockState());
         ItemFrame frame = new ItemFrame(world, framePosition, Direction.NORTH);
         if (!frame.survives() || !world.addFreshEntity(frame)) {
             throw new IllegalStateException("could not add initial live map frame");
@@ -387,7 +385,7 @@ public final class RingMapCompassCaptureClient {
             ServerPlayer player = server.getPlayerList().getPlayer(playerId);
             ServerLevel world = server.overworld();
             BlockPos banner = highBanner(geometry);
-            world.setBlockAndUpdate(banner, Blocks.WHITE_BANNER.defaultBlockState());
+            world.setBlockAndUpdate(banner, RingWorldVanillaFixtureRegistries.block("white_banner").defaultBlockState());
             MapItemSavedData data = MapItem.getSavedData(player.getInventory().getItem(SCALED_MAP), world);
             if (data == null || !data.toggleBanner(world, banner)) {
                 throw new IllegalStateException("scaled map banner restore toggle failed");
@@ -428,7 +426,7 @@ public final class RingMapCompassCaptureClient {
         if (frame == null) {
             BlockPos framePosition = new BlockPos(frameX, FIXTURE_Y, -5);
             world.setBlockAndUpdate(framePosition.relative(Direction.SOUTH),
-                    Blocks.STONE.defaultBlockState());
+                    RingWorldVanillaFixtureRegistries.block("stone").defaultBlockState());
             frame = new ItemFrame(world, framePosition, Direction.NORTH);
             if (!frame.survives()) {
                 throw new IllegalStateException("live map frame has no valid support");
@@ -451,7 +449,7 @@ public final class RingMapCompassCaptureClient {
     }
 
     private static ItemStack lodestoneCompass(int targetX) {
-        ItemStack stack = new ItemStack(Items.COMPASS);
+        ItemStack stack = new ItemStack(RingWorldVanillaFixtureRegistries.item("compass"));
         stack.set(DataComponents.LODESTONE_TRACKER, new LodestoneTracker(Optional.of(
                 GlobalPos.of(Level.OVERWORLD, new BlockPos(targetX, FIXTURE_Y + 2, 0))), false));
         return stack;
@@ -717,11 +715,11 @@ public final class RingMapCompassCaptureClient {
     private static void select(Minecraft client, int slot) {
         client.player.getInventory().setSelectedSlot(slot);
         client.getConnection().send(new ServerboundSetCarriedItemPacket(slot));
-        client.setScreen(null);
+        RingMinecraftClientAccess.setScreen(client, null);
     }
 
     private static void capture(Minecraft client, String name) {
-        Screenshot.grab(client.gameDirectory, name + ".png", client.getMainRenderTarget(), 1,
+        RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, name + ".png", RingMinecraftClientAccess.mainRenderTarget(client), 1,
                 message -> RingWorldMod.LOGGER.info("[map-compass-capture] screenshot {}: {}", name, message.getString()));
     }
 

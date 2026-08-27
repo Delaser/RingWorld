@@ -21,6 +21,7 @@ from external_runtime_qualification_adapter import canonical_cells_from_manifest
 from minecraft_frozen_candidate import FrozenCandidateInspection  # noqa: E402
 from minecraft_qualification_model import QualificationPaths  # noqa: E402
 from run_minecraft_qualification import SourceProvenance  # noqa: E402
+import run_world_upgrade_qualification as world_upgrade_cli  # noqa: E402
 from run_world_upgrade_qualification import run  # noqa: E402
 from test_external_runtime_worldgen_executor import settings_bytes  # noqa: E402
 from test_minecraft_qualification_evidence import passing_record  # noqa: E402
@@ -109,6 +110,63 @@ class RunWorldUpgradeQualificationTest(unittest.TestCase):
             self.assertTrue(source_input.world_root.name == "world")
             self.assertEqual("production-resume", stage.name)
             self.assertTrue(stage.resume)
+
+    def test_cli_wires_target_contract_and_distinct_source_target_ranges(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source, _, source_manifest = self.repository(root)
+            target_manifest = root / "config/minecraft-version-matrix-26.2.json"
+            shutil.copy2(ROOT / "config/minecraft-version-matrix-26.2.json", target_manifest)
+            target_matrix = json.loads(target_manifest.read_text(encoding="utf-8"))
+            target = next(item for item in target_matrix["cells"] if item["id"] == "26.2-fabric")
+            quick = QualificationPaths.from_cell(root, target, QUICK_RUN)
+            candidate = quick.run_root / "frozen-candidates/fabric/ringworld-qualification.jar"
+            candidate.parent.mkdir(parents=True)
+            candidate.write_bytes(b"26.2 candidate")
+            digest = hashlib.sha256(candidate.read_bytes()).hexdigest()
+            record = passing_record()
+            expected = canonical_cells_from_manifest(target_matrix["cells"])[target["id"]]
+            record["cell"] = {name: expected[name] for name in ("id", "minecraft_version", "loader", "port", "world_config")}
+            record["frozen_candidate"].update({  # type: ignore[index]
+                "source_sha256": digest, "installed_sha256": digest,
+                "oldest_abi_minecraft_version": "26.2", "minecraft_range": ">=26.2 <=26.2",
+            })
+            record["runtime_inventory"][0]["sha256"] = digest  # type: ignore[index]
+            record["same_file"] = {"group": "26.2-fabric", "sha256": digest, "cell_ids": ["26.2-fabric"]}
+            quick.evidence_directory.mkdir(parents=True)
+            (quick.evidence_directory / "strict-terminal-evidence.json").write_text(json.dumps(record), encoding="utf-8")
+            received, contracts = {}, []
+
+            def inspect(path: Path, loader: str, *, contract):
+                contracts.append(contract)
+                return FrozenCandidateInspection(
+                    str(path), loader, hashlib.sha256(path.read_bytes()).hexdigest(),
+                    contract.artifact_version, contract.release_label(loader), contract.minecraft_range(loader),
+                    None, contract.versions, contract,
+                )
+
+            def executor(*args, **kwargs):
+                received["kwargs"] = kwargs
+                return SimpleNamespace(source_cell_id=source["id"], target_cell_id=target["id"], loader="fabric",
+                                       verdict=SimpleNamespace(value="PASS"), reason=None, evidence_json="terminal.json")
+
+            original = world_upgrade_cli.inspect_frozen_candidate
+            world_upgrade_cli.inspect_frozen_candidate = inspect
+            try:
+                result = run(
+                    argparse.Namespace(source_cell=source["id"], source_worldgen_run_id=SOURCE_RUN,
+                                       target_cell=target["id"], target_quick_run_id=QUICK_RUN,
+                                       manifest=str(target_manifest.relative_to(root)),
+                                       source_manifest=str(source_manifest.relative_to(root))),
+                    repository_root=root, provenance_provider=self.provenance,
+                    candidate_inspector=inspect, run_id_factory=lambda: NEW_RUN, executor=executor,
+                )
+            finally:
+                world_upgrade_cli.inspect_frozen_candidate = original
+            self.assertEqual("PASS", result.verdict.value)
+            self.assertEqual(["26.2"], [contract.oldest for contract in contracts])
+            self.assertEqual(">=26.2 <=26.2", received["kwargs"]["range_identities"]["fabric"]["minecraft_range"])
+            self.assertEqual(">=26.1 <=26.1.2", received["kwargs"]["source_range_identities"]["fabric"]["minecraft_range"])
 
 
 if __name__ == "__main__":

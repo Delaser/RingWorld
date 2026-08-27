@@ -97,9 +97,9 @@ public final class RingWorldMapScreen extends Screen {
     }
 
     private void confirmStart(AtlasPregenerationStatus status) {
-        minecraft.setScreen(new ConfirmScreen(confirmed -> {
+        RingMinecraftClientAccess.setScreen(minecraft, new ConfirmScreen(confirmed -> {
             if (confirmed) AtlasPregenerationClientState.control(status.worldHash(), AtlasPregenerationAction.START);
-            minecraft.setScreen(this);
+            RingMinecraftClientAccess.setScreen(minecraft, this);
         }, Component.literal("Generate Entire Ring?"),
                 Component.literal("This generates and saves %,d canonical terrain chunks. "
                         .formatted(status.canonicalChunks())
@@ -126,7 +126,7 @@ public final class RingWorldMapScreen extends Screen {
     public void onClose() {
         // Do not return to PauseScreen: this is intentionally a backgroundable
         // integrated-server workflow, so Done resumes normal play immediately.
-        minecraft.setScreen(null);
+        RingMinecraftClientAccess.setScreen(minecraft, null);
     }
 
     @Override

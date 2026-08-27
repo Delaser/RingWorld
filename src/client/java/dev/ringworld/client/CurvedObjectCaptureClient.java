@@ -2,9 +2,9 @@ package dev.ringworld.client;
 
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
+import dev.ringworld.server.RingWorldVanillaFixtureRegistries;
 import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.Screenshot;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
@@ -15,11 +15,11 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.EntitySpawnReason;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.animal.cow.Cow;
+import net.minecraft.world.entity.animal.golem.CopperGolem;
+import net.minecraft.world.entity.monster.zombie.Zombie;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
-import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.BedBlock;
 import net.minecraft.world.level.block.LecternBlock;
 import net.minecraft.world.level.block.entity.LecternBlockEntity;
@@ -47,12 +47,12 @@ public final class CurvedObjectCaptureClient {
             return false;
         }
         if (!worldScreenOpened) {
-            if (!(client.screen instanceof TitleScreen)) return true;
+            if (!(RingMinecraftClientAccess.screen(client) instanceof TitleScreen)) return true;
             CreateWorldScreen.openFresh(client, () -> worldScreenOpened = false);
             worldScreenOpened = true;
             return true;
         }
-        if (client.screen instanceof CreateWorldScreen screen) {
+        if (RingMinecraftClientAccess.screen(client) instanceof CreateWorldScreen screen) {
             WorldCreationUiState creator = screen.getUiState();
             creator.setName("RingWorld Curved Object Capture");
             creator.setGameMode(WorldCreationUiState.SelectedGameMode.CREATIVE);
@@ -69,8 +69,8 @@ public final class CurvedObjectCaptureClient {
         if (startWorldIfEnabled(client)) return true;
         applyFocusPolicy(client);
         if (client.player == null || client.level == null) return true;
-        if (client.screen instanceof PauseScreen) client.setScreen(null);
-        if (client.screen != null) return true;
+        if (RingMinecraftClientAccess.screen(client) instanceof PauseScreen) RingMinecraftClientAccess.setScreen(client, null);
+        if (RingMinecraftClientAccess.screen(client) != null) return true;
 
         if (++captureTicks > MAX_CAPTURE_TICKS) {
             RingWorldMod.LOGGER.error(
@@ -115,19 +115,20 @@ public final class CurvedObjectCaptureClient {
     }
 
     private static boolean fixtureIsPresent(Minecraft client) {
-        return client.level.getBlockState(new BlockPos(40, 120, -2)).is(Blocks.CHEST)
+        return client.level.getBlockState(new BlockPos(40, 120, -2)).is(RingWorldVanillaFixtureRegistries.block("chest"))
                 && client.level.getBlockEntity(new BlockPos(40, 120, -2)) != null
-                && client.level.getBlockState(new BlockPos(48, 120, 0)).is(Blocks.LECTERN)
+                && client.level.getBlockState(new BlockPos(48, 120, 0)).is(RingWorldVanillaFixtureRegistries.block("lectern"))
                 && client.level.getBlockEntity(new BlockPos(48, 120, 0)) != null
-                && client.level.getBlockState(new BlockPos(56, 120, 2)).is(Blocks.ENDER_CHEST)
+                && client.level.getBlockState(new BlockPos(56, 120, 2)).is(RingWorldVanillaFixtureRegistries.block("ender_chest"))
                 && client.level.getBlockEntity(new BlockPos(56, 120, 2)) != null
-                && client.level.getBlockState(new BlockPos(52, 120, -2)).is(Blocks.OAK_SIGN)
+                && client.level.getBlockState(new BlockPos(52, 120, -2)).is(RingWorldVanillaFixtureRegistries.block("oak_sign"))
                 && client.level.getBlockEntity(new BlockPos(52, 120, -2)) != null
-                && client.level.getBlockState(new BlockPos(60, 120, 0)).is(Blocks.RED_BED)
+                && client.level.getBlockState(new BlockPos(60, 120, 0))
+                        .is(RingWorldVanillaFixtureRegistries.block("red_bed"))
                 && client.level.getBlockEntity(new BlockPos(60, 120, 0)) != null
-                && client.level.getBlockState(new BlockPos(62, 120, 2)).is(Blocks.SHULKER_BOX)
+                && client.level.getBlockState(new BlockPos(62, 120, 2)).is(RingWorldVanillaFixtureRegistries.block("shulker_box"))
                 && client.level.getBlockEntity(new BlockPos(62, 120, 2)) != null
-                && client.level.getBlockState(new BlockPos(66, 120, 0)).is(Blocks.WHITE_BANNER)
+                && client.level.getBlockState(new BlockPos(66, 120, 0)).is(RingWorldVanillaFixtureRegistries.block("white_banner"))
                 && client.level.getBlockEntity(new BlockPos(66, 120, 0)) != null;
     }
 
@@ -153,32 +154,34 @@ public final class CurvedObjectCaptureClient {
             for (int z = -4; z <= 4; z++) {
                 world.setBlock(new BlockPos(x, 119, z),
                         (x + z & 1) == 0
-                                ? Blocks.STONE_BRICKS.defaultBlockState()
-                                : Blocks.MOSSY_STONE_BRICKS.defaultBlockState(), 3);
+                                ? RingWorldVanillaFixtureRegistries.block("stone_bricks").defaultBlockState()
+                                : RingWorldVanillaFixtureRegistries.block("mossy_stone_bricks").defaultBlockState(), 3);
                 for (int y = 120; y <= 140; y++) {
-                    world.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 3);
+                    world.setBlock(new BlockPos(x, y, z), RingWorldVanillaFixtureRegistries.block("air").defaultBlockState(), 3);
                 }
             }
         }
-        world.setBlock(new BlockPos(40, 120, -2), Blocks.CHEST.defaultBlockState(), 3);
+        world.setBlock(new BlockPos(40, 120, -2), RingWorldVanillaFixtureRegistries.block("chest").defaultBlockState(), 3);
         BlockPos lecternPos = new BlockPos(48, 120, 0);
-        world.setBlock(lecternPos, Blocks.LECTERN.defaultBlockState()
+        world.setBlock(lecternPos, RingWorldVanillaFixtureRegistries.block("lectern").defaultBlockState()
                 .setValue(LecternBlock.HAS_BOOK, true), 3);
         if (world.getBlockEntity(lecternPos) instanceof LecternBlockEntity lectern) {
-            lectern.setBook(new ItemStack(Items.WRITABLE_BOOK));
+            lectern.setBook(new ItemStack(RingWorldVanillaFixtureRegistries.item("writable_book")));
             lectern.setChanged();
             world.sendBlockUpdated(lecternPos, world.getBlockState(lecternPos),
                     world.getBlockState(lecternPos), 3);
         }
-        world.setBlock(new BlockPos(52, 120, -2), Blocks.OAK_SIGN.defaultBlockState(), 3);
-        world.setBlock(new BlockPos(56, 120, 2), Blocks.ENDER_CHEST.defaultBlockState(), 3);
-        var bedState = Blocks.RED_BED.defaultBlockState().setValue(BedBlock.FACING, Direction.EAST);
+        world.setBlock(new BlockPos(52, 120, -2), RingWorldVanillaFixtureRegistries.block("oak_sign").defaultBlockState(), 3);
+        world.setBlock(new BlockPos(56, 120, 2), RingWorldVanillaFixtureRegistries.block("ender_chest").defaultBlockState(), 3);
+        var bedState = RingWorldVanillaFixtureRegistries.block("red_bed")
+                .defaultBlockState().setValue(BedBlock.FACING, Direction.EAST);
         world.setBlock(new BlockPos(60, 120, 0), bedState.setValue(BedBlock.PART, BedPart.FOOT), 2);
         world.setBlock(new BlockPos(61, 120, 0), bedState.setValue(BedBlock.PART, BedPart.HEAD), 2);
-        world.setBlock(new BlockPos(62, 120, 2), Blocks.SHULKER_BOX.defaultBlockState(), 3);
-        world.setBlock(new BlockPos(66, 120, 0), Blocks.WHITE_BANNER.defaultBlockState(), 3);
+        world.setBlock(new BlockPos(62, 120, 2), RingWorldVanillaFixtureRegistries.block("shulker_box").defaultBlockState(), 3);
+        world.setBlock(new BlockPos(66, 120, 0), RingWorldVanillaFixtureRegistries.block("white_banner").defaultBlockState(), 3);
 
-        var copperGolem = EntityType.COPPER_GOLEM.create(world, EntitySpawnReason.COMMAND);
+        var copperGolem = RingWorldVanillaFixtureRegistries
+                .entityType("copper_golem", CopperGolem.class).create(world, EntitySpawnReason.COMMAND);
         if (copperGolem != null) {
             copperGolem.setPos(64.5, 120.0, -2.0);
             copperGolem.setNoAi(true);
@@ -186,24 +189,27 @@ public final class CurvedObjectCaptureClient {
             world.addFreshEntity(copperGolem);
         }
         ItemEntity item = new ItemEntity(world, 68.5, 120.25, 0.0,
-                new ItemStack(Items.DIAMOND));
+                new ItemStack(RingWorldVanillaFixtureRegistries.item("diamond")));
         item.setNoGravity(true);
         item.setNeverPickUp();
         world.addFreshEntity(item);
-        var boat = EntityType.OAK_BOAT.create(world, EntitySpawnReason.COMMAND);
+        var boat = RingWorldVanillaFixtureRegistries.entityType("oak_boat",
+                net.minecraft.world.entity.vehicle.boat.Boat.class).create(world, EntitySpawnReason.COMMAND);
         if (boat != null) {
             boat.setPos(72.5, 120.15, 2.0);
             boat.setNoGravity(true);
             world.addFreshEntity(boat);
         }
-        var cow = EntityType.COW.create(world, EntitySpawnReason.COMMAND);
+        var cow = RingWorldVanillaFixtureRegistries.entityType("cow", Cow.class)
+                .create(world, EntitySpawnReason.COMMAND);
         if (cow != null) {
             cow.setPos(76.5, 120.0, -2.0);
             cow.setNoAi(true);
             cow.setPersistenceRequired();
             world.addFreshEntity(cow);
         }
-        var zombie = EntityType.ZOMBIE.create(world, EntitySpawnReason.COMMAND);
+        var zombie = RingWorldVanillaFixtureRegistries.entityType("zombie", Zombie.class)
+                .create(world, EntitySpawnReason.COMMAND);
         if (zombie != null) {
             zombie.setPos(80.5, 120.0, 2.0);
             zombie.setNoAi(true);
@@ -214,7 +220,7 @@ public final class CurvedObjectCaptureClient {
     }
 
     private static void capture(Minecraft client, String name, String distance) {
-        Screenshot.grab(client.gameDirectory, name, client.getMainRenderTarget(), 1,
+        RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, name, RingMinecraftClientAccess.mainRenderTarget(client), 1,
                 message -> RingWorldMod.LOGGER.info(
                         "[curved-object-capture] {} screenshot: {}",
                         distance, message.getString()));

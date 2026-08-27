@@ -2,26 +2,12 @@ package dev.ringworld.client.render;
 
 import com.mojang.blaze3d.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.GpuBufferSlice;
-import com.mojang.blaze3d.pipeline.BlendFunction;
-import com.mojang.blaze3d.pipeline.ColorTargetState;
-import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.NativeImage;
-import com.mojang.blaze3d.platform.CompareOp;
-import com.mojang.blaze3d.shaders.UniformType;
-import com.mojang.blaze3d.systems.RenderPass;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.AddressMode;
-import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
-import com.mojang.blaze3d.textures.TextureFormat;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.ByteBufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.ClientRingState;
 import dev.ringworld.world.RingGeometry;
@@ -41,12 +27,8 @@ import org.joml.Matrix4fStack;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
-import java.util.OptionalDouble;
-import java.util.OptionalInt;
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.RenderPipelines;
-import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
 
 /**
@@ -58,23 +40,6 @@ import net.minecraft.world.phys.Vec3;
  * mesh or allocates distant vanilla chunk sections.</p>
  */
 public final class RingSurfaceTextureRenderer {
-    private static final RenderPipeline PIPELINE =
-            RenderPipeline.builder(RenderPipelines.GUI_TEXTURED_SNIPPET)
-                    .withLocation(Identifier.fromNamespaceAndPath("ringworld", "pipeline/textured_ring_surface"))
-                    .withVertexShader(Identifier.fromNamespaceAndPath("ringworld", "core/ring_surface"))
-                    .withFragmentShader(Identifier.fromNamespaceAndPath("ringworld", "core/ring_surface"))
-                    .withSampler("Sampler1")
-                    .withSampler("Sampler2")
-                    .withUniform("Fog", UniformType.UNIFORM_BUFFER)
-                    .withUniform("Globals", UniformType.UNIFORM_BUFFER)
-                    .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT))
-                    .withCull(false)
-                    .withDepthStencilState(
-                            new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
-                    .withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR,
-                            VertexFormat.Mode.TRIANGLES)
-                    .build();
-
     private static GpuBuffer vertexBuffer;
     private static int vertexCount;
     private static GpuTexture surfaceTexture;
@@ -99,7 +64,7 @@ public final class RingSurfaceTextureRenderer {
     private RingSurfaceTextureRenderer() { }
 
     /** Loader adapters register this pipeline during their client setup event. */
-    public static RenderPipeline pipeline() { return PIPELINE; }
+    public static RenderPipeline pipeline() { return RingSurfaceGpu.pipeline(); }
 
     public static void render(PoseStack matrices, RingGeometry geometry, Vec3 camera,
                               float alpha) {
@@ -156,34 +121,9 @@ public final class RingSurfaceTextureRenderer {
                 new Vector3f((float)cameraAngle, (float)camera.z, 0.0F),
                 new Matrix4f());
 
-        GpuTextureView color = client.getMainRenderTarget().getColorTextureView();
-        GpuTextureView depth = client.getMainRenderTarget().getDepthTextureView();
-        try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
-                () -> "RingWorld textured surface", color, OptionalInt.empty(),
-                depth, OptionalDouble.empty())) {
-            pass.setPipeline(PIPELINE);
-            RenderSystem.bindDefaultUniforms(pass);
-            pass.setUniform("DynamicTransforms", transforms);
-            pass.bindTexture("Sampler0", surfaceTextureView, RenderSystem.getSamplerCache().getSampler(
-                    AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE,
-                    FilterMode.LINEAR, FilterMode.LINEAR, true));
-            pass.bindTexture("Sampler1",
-                    previousSurfaceTextureView == null
-                            ? surfaceTextureView : previousSurfaceTextureView,
-                    RenderSystem.getSamplerCache().getSampler(
-                            AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE,
-                            FilterMode.LINEAR, FilterMode.LINEAR, true));
-            // The atlas contains surface albedo, while real chunk vertices are
-            // multiplied by Minecraft's live lightmap. Sampling the same
-            // full-skylight/no-block-light texel keeps exposed proxy terrain
-            // synchronized with time, weather, gamma, lightning, darkness,
-            // and night vision instead of applying a hand-tuned grey scalar.
-            pass.bindTexture("Sampler2",
-                    client.gameRenderer.levelLightmap(),
-                    RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
-            pass.setVertexBuffer(0, vertexBuffer);
-            pass.draw(0, vertexCount);
-        }
+        RingSurfaceGpu.draw(client, vertexBuffer, vertexCount, surfaceTextureView,
+                previousSurfaceTextureView == null ? surfaceTextureView : previousSurfaceTextureView,
+                transforms);
         modelView.popMatrix();
     }
 
@@ -369,22 +309,11 @@ public final class RingSurfaceTextureRenderer {
         int mipLevels = images.levels().length;
         // Each revision gets a new target so the shader can retain and blend
         // the previous visible texture without another CPU upload per frame.
-        GpuTexture targetTexture = RenderSystem.getDevice().createTexture(
-                "RingWorld canonical surface atlas",
-                GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_TEXTURE_BINDING,
-                TextureFormat.RGBA8, textureColumns, textureRows, 1, mipLevels);
+        GpuTexture targetTexture = RingSurfaceGpu.createSurfaceTexture(
+                textureColumns, textureRows, mipLevels);
         GpuTextureView targetView = RenderSystem.getDevice().createTextureView(targetTexture);
-        int levelWidth = textureColumns;
-        int levelHeight = textureRows;
         try {
-            for (int level = 0; level < mipLevels; level++) {
-                NativeImage image = images.levels()[level];
-                RenderSystem.getDevice().createCommandEncoder().writeToTexture(
-                        targetTexture, image, level, 0, 0, 0,
-                        levelWidth, levelHeight, 0, 0);
-                levelWidth = Math.max(1, levelWidth >> 1);
-                levelHeight = Math.max(1, levelHeight >> 1);
-            }
+            RingSurfaceGpu.uploadSurfaceTexture(targetTexture, images.levels());
         } catch (RuntimeException | Error exception) {
             targetView.close();
             targetTexture.close();
@@ -453,23 +382,10 @@ public final class RingSurfaceTextureRenderer {
         RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(
                 geometry, atlas, detailed, ClientRingState.surfaceReferenceY(), wallTopY,
                 RingGenerationBoundary.RIM_THICKNESS);
-        int count = mesh.vertexCount();
-        VertexFormat format = DefaultVertexFormat.POSITION_TEX_COLOR;
-        try (ByteBufferBuilder allocator = ByteBufferBuilder.exactlySized(count * format.getVertexSize())) {
-            BufferBuilder builder = new BufferBuilder(
-                    allocator, VertexFormat.Mode.TRIANGLES, format);
-            mesh.emitTriangles((x, y, z, u, v) -> builder.addVertex(x, y, z)
-                    .setUv(u, v)
-                    .setColor(0xFFFFFFFF));
-            try (MeshData built = builder.buildOrThrow()) {
-                GpuBuffer replacement = RenderSystem.getDevice().createBuffer(
-                        () -> "RingWorld textured surface mesh", GpuBuffer.USAGE_VERTEX,
-                        built.vertexBuffer());
-                if (vertexBuffer != null) vertexBuffer.close();
-                vertexBuffer = replacement;
-            }
-        }
-        vertexCount = count;
+        GpuBuffer replacement = RingSurfaceGpu.createVertexBuffer(mesh);
+        if (vertexBuffer != null) vertexBuffer.close();
+        vertexBuffer = replacement;
+        vertexCount = mesh.vertexCount();
     }
 
     private static int mipLevels(int width, int height) {
