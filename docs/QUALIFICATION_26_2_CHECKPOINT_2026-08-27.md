@@ -1,13 +1,14 @@
 # 26.2 qualification checkpoint — 2026-08-27
 
-**Automated qualification is complete; pause before publication.**
-No merge, release publication or live-server/world change occurred. The owner
-subsequently authorized distribution of the Windows test kit, not a release.
+**Automated qualification and owner approval are complete.** PR #232 merged
+and all four 1.1 jars were subsequently submitted to both hosts. See the
+[publication record](RELEASE_1_1_PUBLICATION_2026-08-27.md) for downloaded-byte
+verification and pending moderation. No live-server/world change occurred.
 Windows owner sign-off is recorded. All four authenticated macOS packaged-runtime
 smokes pass after the [#234](https://github.com/Delaser/RingWorld/issues/234)
 NeoForge metadata repair, preserving the qualified loader and mod jar. See the
 [macOS package review](MACOS_PACKAGE_REVIEW_2026-08-27.md). Final owner release
-approval remains. The static qualification workflow passes **342 tests locally**;
+approval was received on 2026-08-27. The static qualification workflow passes **342 tests locally**;
 Windows/Linux static CI and the Windows launcher check pass on `a2ba721`.
 
 ## Completed coverage
@@ -26,7 +27,8 @@ Windows/Linux static CI and the Windows launcher check pass on `a2ba721`.
 - Eight copied-world forward-upgrade routes pass.
 - Four staged server overlays pass disposable localhost startup/normal-stop
   checks. Twelve client/server archives pass package inspection.
-- No public support claim or host metadata was changed.
+- Qualification itself did not change host metadata; the later authorized
+  publication step did so using the exact staged bytes.
 
 The 26.2 composite report is
 `dist/qualification/nightly-matrix/20260827T122329Z-768fe4857612/composite-review.json`.

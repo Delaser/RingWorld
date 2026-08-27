@@ -1,18 +1,19 @@
 # Minecraft version support plan
 
-Status: approved policy and active implementation. Phases 0–3 are implemented;
-the historical six quick cells pass with one unchanged jar per loader. Historical
-Phase 4 and Phase 5 evidence is retained separately from final-candidate work.
-The current candidate still requires its bound nightly and copied-world gates.
-Phase 6's release-equivalence guard is static-tested, while local staged
-candidates remain review material rather than a release claim.
+Status (2026-08-27): qualification, composite evidence review, copied-world
+upgrades, package review and owner approval are complete for 26.1.x and 26.2.
+PR #232 is merged. Phases 8–9 delivered all four exact 1.1 jars to both hosts;
+all eight CDN downloads match. Remaining closure concerns are host moderation,
+fresh host-managed installs, and successful unattended API-upload integration
+(the actual submissions used the author UIs after API errors).
+See [the publication record](RELEASE_1_1_PUBLICATION_2026-08-27.md).
+Detailed dated implementation checkpoints below remain historical evidence.
 
 ## Support model
 
-Minecraft 26.1 is RingWorld's source and build compatibility floor. The
-currently proven and published release remains Minecraft 26.1.2. Minecraft
-26.1 and 26.1.1 must not be advertised as compatible until the qualification
-matrix in this document passes on both Fabric and NeoForge.
+Minecraft 26.1 is RingWorld's source and build compatibility floor.
+RingWorld 1.1 is qualified for 26.1, 26.1.1, 26.1.2 and separate 26.2 builds
+on both Fabric and NeoForge. Host review may still delay launcher discovery.
 
 For the 26.1 patch line, the preferred outcome is one Fabric jar and one
 NeoForge jar that each work unchanged on every stable 26.1.x release. That
@@ -40,9 +41,9 @@ The first qualification project covers six cells:
 
 | Minecraft | Fabric | NeoForge |
 | --- | --- | --- |
-| 26.1 | qualification pending | qualification pending |
-| 26.1.1 | qualification pending | qualification pending |
-| 26.1.2 | published and proven | published and proven |
+| 26.1 | qualified; 1.1 submitted | qualified; 1.1 submitted |
+| 26.1.1 | qualified; 1.1 submitted | qualified; 1.1 submitted |
+| 26.1.2 | qualified; 1.1 submitted | qualified; 1.1 submitted |
 
 All six cells use Java 25 and isolated Minecraft, loader, API, run-directory,
 cache, port, and evidence definitions. A 26.1.x-wide artifact is permitted
@@ -1152,26 +1153,30 @@ Earlier sections remain the detailed design and evidence record.
   `20260827T040412Z-ee7ba84a5b3b` passed the stale-startup-marker failure after
   the operator was corrected. Final reporting must identify this as composite
   evidence, not a monolithic all-PASS invocation.
-- [ ] Bind every nightly result to its quick record, frozen jar SHA-256, source
+- [x] Bind every nightly result to its quick record, frozen jar SHA-256, source
   commit, runtime version, and immutable evidence hashes.
-- [ ] Run every supported forward-save path using the final candidates.
-- [ ] Generate and independently review one final six-cell report. Any failed
+- [x] Run every supported forward-save path using the final candidates.
+- [x] Generate and independently review one final six-cell report. Any failed
   or missing cell leaves the support claim incomplete.
 
 ### Release and publication
 
-- [ ] Freeze final Fabric and NeoForge candidates and confirm one unchanged jar
+- [x] Freeze final Fabric and NeoForge candidates and confirm one unchanged jar
   per loader covers all three Minecraft patch versions.
-- [ ] Re-run clean tests, builds, licence/package checks, and fail-closed
+- [x] Re-run clean tests, builds, licence/package checks, and fail-closed
   staging against the frozen commit.
-- [ ] Advertise only the support range proven by the final report.
-- [ ] Prepare Modrinth and CurseForge files, changelogs, hashes, source links,
+- [x] Advertise only the support range proven by the final report.
+- [x] Prepare Modrinth and CurseForge files, changelogs, hashes, source links,
   rollback identifiers, and hosted-file verification steps.
-- [ ] Obtain explicit owner go/no-go approval.
-- [ ] Publish only after approval; independently download and verify hosted
+- [x] Obtain explicit owner go/no-go approval.
+- [x] Submit only after approval; independently download and verify hosted
   files and hashes.
-- [ ] Update README, compatibility docs, website copy, and GitHub issues with
+- [x] Update README, compatibility docs, website copy, and GitHub issues with
   the exact published versions and limitations.
+- [ ] Confirm remaining host moderation and launcher discovery, then perform
+  fresh host-managed installs. CDN verification is already complete.
+- [ ] Resolve CurseForge's HTTP 500 API-upload integration separately; do not
+  resubmit existing release files to test it.
 
 ### Later versions and backports
 

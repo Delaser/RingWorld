@@ -1,5 +1,13 @@
 # Current state
 
+Current release: **RingWorld 1.1**, covering 26.1, 26.1.1, 26.1.2 and separate
+26.2 builds on Fabric and NeoForge. Owner-authorized PR #232 is merged; all
+four jars are submitted to both hosts and all eight CDN downloads match.
+Some host moderation remains pending. The live server/world is unchanged.
+See the [publication record](RELEASE_1_1_PUBLICATION_2026-08-27.md).
+The dated qualification checkpoints below preserve the earlier approval
+boundaries; their “held” status is superseded only by this release record.
+
 Latest: [26.2 qualification checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
 The paired 26.2 quick passes on both loaders. All 20 nightly slots are covered
 by reviewed composite evidence (16 retained passes plus four targeted repairs).

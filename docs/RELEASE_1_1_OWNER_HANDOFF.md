@@ -1,9 +1,12 @@
-# 1.1 pre-publication owner handoff
+# 1.1 exact-candidate owner handoff
 
-Status: **all four macOS package smokes pass; final approval pending; do not publish.** This handoff records local staging
+Status: **owner approved merge and publication on 2026-08-27; submissions complete.**
+See the [host IDs and verified hashes](RELEASE_1_1_PUBLICATION_2026-08-27.md).
+This handoff records local staging
 inputs and owner review work. The 20-item nightly review and all eight bounded
 copied-world forward-upgrade routes have completed with independently rehashed
-local evidence. This does not establish public 26.2 support.
+local evidence. The publication record establishes the subsequent release
+boundary; historical observations below are not rewritten as new tests.
 
 ## Local staged inputs
 
@@ -33,7 +36,7 @@ This accepts the Windows package-review gate as an owner-reported result;
 it is not a new machine-evidence report or a claim of individually recorded
 passes for every checklist action. It does not prove a fresh install of the
 specific corrected NeoForge 26.2 package from #234. The final
-release/publication decision remains pending.
+release/publication decision was subsequently approved by the owner.
 
 macOS preparation (2026-08-27): all four archive checksums, nested runtime-jar
 hashes, MPL licences and pinned Minecraft/loader components verified. Exact
@@ -50,7 +53,8 @@ the official installer's pinned bytes. Neither the loader nor mod jar changed.
 Replace only the NeoForge 26.2 convenience archives with those under
 `dist/prism-neoforge-repair-20260827/final-packages/`; the Windows nested import
 contains the identical repaired component and jar. These replacements remain
-local; the earlier downloadable test kit has not been silently changed.
+the reviewed replacement inputs; publication provides a new revision-2 kit
+rather than silently rewriting the earlier downloadable archive.
 Full evidence and scope limits are in the
 [macOS review](MACOS_PACKAGE_REVIEW_2026-08-27.md).
 Keep the test directory private: Prism now stores account credentials there.
@@ -67,10 +71,11 @@ Keep the test directory private: Prism now stores account credentials there.
    loader and game-version metadata. Then make the explicit final release
    go/no-go decision.
 
-## Pause before publication
+## Publication authorization boundary
 
-Do not merge, deploy, mutate a live world/server, or place tokens in the
-repository. For every version line, host, and loader (four host×loader actions
+The owner authorized the 1.1 merge and host submissions. This does not authorize
+a live world/server change or placing tokens in the repository. For any
+future API execution, for every version line, host, and loader (four host×loader actions
 per line), create fresh owner authorization bound to the exact staged source
 revision and jar SHA-256, expiring within one hour. `--execute` also requires
 the current clean pushed checkout to equal that stage's frozen source revision;

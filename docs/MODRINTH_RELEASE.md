@@ -1,9 +1,13 @@
 # Modrinth release workflow
 
-Last updated: 2026-08-10. Issues
+Last updated: 2026-08-27. Issues
 [#33](https://github.com/Delaser/RingWorld/issues/33) and
 [#94](https://github.com/Delaser/RingWorld/issues/94) track this workflow.
-The current document remains the exact 26.1.2 runbook. The qualification and
+The [1.1 publication record](RELEASE_1_1_PUBLICATION_2026-08-27.md) contains all
+four current version IDs, corresponding sources and verified CDN hashes.
+The Modrinth project remained Under review at submission, despite successful
+file creation. The older sections below retain the exact 1.0/26.1.2 runbook.
+The qualification and
 publication process for 26.1.x and later stable lines is governed by
 [`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md); it
 must reuse, not bypass, the fail-closed staging controls below.

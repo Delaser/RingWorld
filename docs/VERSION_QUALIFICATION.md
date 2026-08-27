@@ -4,15 +4,19 @@ Current execution status and exact candidate identities:
 [26.2 checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
 Both loaders now have complete 26.2 composite nightly coverage, eight passing
 copied-world upgrade routes, staged packages and passing server-overlay smokes.
-Fresh packaged-client owner review and publication are still held; use the
-[owner handoff](RELEASE_1_1_OWNER_HANDOFF.md), not an older staging directory.
+Packaged-client review and owner release approval are complete.
+The [1.1 publication record](RELEASE_1_1_PUBLICATION_2026-08-27.md) lists the
+eight verified host downloads and remaining moderation/API-automation limits.
+Use the [owner handoff](RELEASE_1_1_OWNER_HANDOFF.md), not an older staging directory.
 
 The current retained 26.1.x composite evidence review is recorded in
 [QUALIFICATION_REVIEW_2026-08-27.md](QUALIFICATION_REVIEW_2026-08-27.md).
 
 Each stable Minecraft line has a pinned qualification manifest. The original
 `config/minecraft-version-matrix.json` covers 26.1, 26.1.1, and 26.1.2;
-`config/minecraft-version-matrix-26.2.json` is the pending 26.2 candidate.
+`config/minecraft-version-matrix-26.2.json` supplies the qualified 26.2 inputs.
+Manifests remain immutable qualification inputs; current host release status
+is recorded separately in the publication record.
 Neither adding a manifest nor compiling changes public support claims.
 
 ## Repeatable procedure
