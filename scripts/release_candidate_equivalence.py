@@ -17,6 +17,7 @@ from dataclasses import dataclass
 import hashlib
 import json
 from pathlib import Path
+import re
 import sys
 from typing import Any, Mapping
 import zipfile
@@ -263,6 +264,92 @@ def _compare_members(
                     )
     except (OSError, zipfile.BadZipFile) as error:
         raise ReleaseEquivalenceError(f"cannot compare jar contents: {error}") from error
+
+
+def _replace_toml_table_field(text: str, table: str, mod_id: str | None, field: str, value: str) -> str:
+    pattern = re.compile(rf"(?ms)(^\[\[{re.escape(table)}\]\][\s\S]*?)(?=^\[\[|\Z)")
+    matches = list(pattern.finditer(text))
+    changed = 0
+    parts: list[str] = []
+    cursor = 0
+    for match in matches:
+        block = match.group(1)
+        if mod_id is not None and re.search(rf'(?m)^modId\s*=\s*"{re.escape(mod_id)}"\s*$', block) is None:
+            continue
+        replacement, count = re.subn(rf'(?m)^({re.escape(field)}[ \t]*=[ \t]*)"[^"]*"[ \t]*$',
+                                     rf'\g<1>"{value}"', block)
+        if count != 1:
+            raise ReleaseEquivalenceError(f"qualification TOML has no unique {table}.{field} field")
+        parts.extend((text[cursor:match.start(1)], replacement))
+        cursor = match.end(1)
+        changed += 1
+    if changed != 1:
+        raise ReleaseEquivalenceError(f"qualification TOML has no unique {table} table")
+    parts.append(text[cursor:])
+    return "".join(parts)
+
+
+def _materialized_metadata(data: bytes, loader: str, release_version: str, contract: SupportContract) -> bytes:
+    if loader == "fabric":
+        try:
+            metadata = json.loads(data.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as error:
+            raise ReleaseEquivalenceError("qualification Fabric descriptor is invalid JSON") from error
+        if not isinstance(metadata, Mapping):
+            raise ReleaseEquivalenceError("qualification Fabric descriptor is not an object")
+        expected = _expected_release_metadata(metadata, loader, release_version, contract)
+        return json.dumps(expected, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ReleaseEquivalenceError("qualification NeoForge descriptor is not UTF-8") from error
+    text = _replace_toml_table_field(text, "mods", "ringworld", "version", release_version)
+    text = _replace_toml_table_field(text, "dependencies.ringworld", "minecraft", "versionRange",
+                                     contract.minecraft_range(loader))
+    return _replace_toml_table_field(text, "dependencies.ringworld", "neoforge", "versionRange",
+                                     contract.neoforge_range).encode("utf-8")
+
+
+def _materialized_build_properties(data: bytes, release_version: str, release_label: str) -> bytes:
+    try:
+        text = data.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise ReleaseEquivalenceError("qualification ringworld-build.properties is not UTF-8") from error
+    for key, value in (("artifactVersion", release_version), ("releaseLabel", release_label)):
+        text, count = re.subn(rf"(?m)^({key}=).*?$", rf"\g<1>{value}", text)
+        if count != 1:
+            raise ReleaseEquivalenceError(f"qualification ringworld-build.properties has no unique {key}")
+    return text.encode("utf-8")
+
+
+def materialize_release_candidate(
+    qualification_jar: Path, release_jar: Path, *, loader: str, expected_license: bytes,
+    release_version: str, release_label: str, contract: SupportContract = LEGACY_CONTRACT,
+) -> ReleaseCandidateEquivalence:
+    """Create and then verify the sole allowed metadata-only public jar transform."""
+    qualification_jar, release_jar = Path(qualification_jar), Path(release_jar)
+    if release_jar.exists() or release_jar.is_symlink():
+        raise ReleaseEquivalenceError("refusing to replace an existing materialized release jar")
+    _require_jar(qualification_jar, "qualification jar")
+    if loader not in LOADERS or not isinstance(contract, SupportContract):
+        raise ReleaseEquivalenceError("materialization requires a reviewed loader and support contract")
+    metadata_name = "fabric.mod.json" if loader == "fabric" else "META-INF/neoforge.mods.toml"
+    try:
+        with zipfile.ZipFile(qualification_jar) as source, zipfile.ZipFile(release_jar, "w") as output:
+            for info in source.infolist():
+                payload = source.read(info)
+                if info.filename == metadata_name:
+                    payload = _materialized_metadata(payload, loader, release_version, contract)
+                elif info.filename == BUILD_PROPERTIES:
+                    payload = _materialized_build_properties(payload, release_version, release_label)
+                output.writestr(info, payload)
+    except Exception:
+        release_jar.unlink(missing_ok=True)
+        raise
+    return verify_release_candidate_equivalence(
+        qualification_jar, release_jar, loader=loader, expected_license=expected_license,
+        release_version=release_version, release_label=release_label, contract=contract,
+    )
 
 
 def verify_release_candidate_equivalence(

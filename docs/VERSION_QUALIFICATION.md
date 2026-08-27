@@ -120,6 +120,16 @@ pass. The 26.2 notes explicitly distinguish the qualified OpenGL path from
 unqualified experimental Vulkan and explain that rollback requires a matching
 pre-upgrade world backup. Nothing in this preparation uploads or publishes.
 
+After a qualified quick run, `scripts/stage_qualified_release.py --from-frozen`
+may materialize local public candidates without rebuilding Java. It copies every
+non-metadata archive member byte-for-byte and changes only the equivalence
+allowlisted loader descriptor ranges/version and `ringworld-build.properties`,
+then verifies equivalence again. This mode has no `--fabric-jar` or
+`--neoforge-jar` inputs. Its public corresponding-source URL is the hash-bound
+frozen-build commit from strict quick evidence (which must be in pushed public
+history), while the current clean staging checkout is recorded separately as
+operator provenance. It neither reruns nor claims runtime qualification.
+
 Version-owned source APIs live under `src/versions/<oldest-ABI>/main/java` and
 `client/java`. Both loader builds use the same selected directories:
 `gradle/version-sources.gradle` selects the newest checked-in ABI not newer

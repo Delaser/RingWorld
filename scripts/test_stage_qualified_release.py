@@ -8,12 +8,16 @@ import hashlib
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from external_runtime_qualification_adapter import canonical_cells_from_manifest
 from minecraft_qualification_model import QualificationPaths
 from minecraft_support_contract import SupportContract, contract_from_manifest
 from run_minecraft_qualification import load_manifest
-from stage_qualified_release import QualifiedStageError, _load_config, _metadata, _render_changelog, validate_quick_matrix
+from stage_qualified_release import (
+    QualifiedStageError, _frozen_build_source, _load_config, _metadata, _render_changelog,
+    validate_quick_matrix,
+)
 from test_minecraft_qualification_evidence import passing_record
 
 
@@ -22,6 +26,23 @@ RUN_ID = "20260827T120000Z-0123456789ab"
 
 
 class QualifiedReleaseStageTest(unittest.TestCase):
+    def test_frozen_materialization_provenance_is_hash_bound_and_public(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            repository = Path(temporary)
+            evidence = repository / "strict.json"
+            evidence.write_text(json.dumps({"provenance": {"commit": "a" * 40}}))
+            records = ({"cell": "26.2-fabric", "path": "strict.json",
+                        "sha256": hashlib.sha256(evidence.read_bytes()).hexdigest()},)
+            completed = type("Completed", (), {"returncode": 0, "stdout": "  origin/main\n"})()
+            with patch("stage_qualified_release.subprocess.run", return_value=completed):
+                source = _frozen_build_source(repository, records, "fabric")
+            self.assertEqual("a" * 40, source["revision"])
+            with self.assertRaisesRegex(QualifiedStageError, "changed"):
+                _frozen_build_source(repository, ({**records[0], "sha256": "0" * 64},), "fabric")
+            evidence.write_text(json.dumps({"provenance": {"commit": "BAD"}}))
+            records = ({**records[0], "sha256": hashlib.sha256(evidence.read_bytes()).hexdigest()},)
+            with self.assertRaisesRegex(QualifiedStageError, "valid frozen build commit"):
+                _frozen_build_source(repository, records, "fabric")
     def test_checked_in_26_2_release_inputs_are_separate_and_renderable(self) -> None:
         contract = contract_from_manifest(load_manifest(ROOT / "config/minecraft-version-matrix-26.2.json"))
         config = _load_config(ROOT / "deploy/qualified/26.2-release.json", contract)

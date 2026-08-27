@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import shutil
 import stat
+import subprocess
 import tempfile
 import re
 from typing import Any, Mapping, Sequence
@@ -24,6 +25,7 @@ from minecraft_qualification_model import QualificationPaths, Verdict, require_s
 from minecraft_support_contract import LEGACY_CONTRACT, SupportContract, contract_from_manifest
 from release_candidate_equivalence import (
     ReleaseEquivalenceError,
+    materialize_release_candidate,
     verify_release_candidate_equivalence,
 )
 from run_minecraft_qualification import load_manifest
@@ -145,6 +147,32 @@ def validate_quick_matrix(
     return candidate_hashes, tuple(records)
 
 
+def _frozen_build_source(repository: Path, records: Sequence[Mapping[str, str]], loader: str) -> dict[str, str]:
+    commits: set[str] = set()
+    for record in records:
+        if not record["cell"].endswith("-" + loader):
+            continue
+        path = repository / record["path"]
+        if _digest(path, "sha256") != record["sha256"]:
+            raise QualifiedStageError("quick evidence changed while reading frozen build provenance")
+        try:
+            provenance = json.loads(path.read_text(encoding="utf-8")).get("provenance")
+        except (OSError, UnicodeError, json.JSONDecodeError) as error:
+            raise QualifiedStageError("quick evidence provenance is unreadable") from error
+        commit = provenance.get("commit") if isinstance(provenance, Mapping) else None
+        if not isinstance(commit, str) or re.fullmatch(r"[0-9a-f]{40}", commit) is None:
+            raise QualifiedStageError("quick evidence has no valid frozen build commit")
+        commits.add(commit)
+    if len(commits) != 1:
+        raise QualifiedStageError("quick evidence has conflicting frozen build commits")
+    commit = commits.pop()
+    contained = subprocess.run(["git", "branch", "-r", "--contains", commit], cwd=repository,
+                               capture_output=True, text=True, check=False)
+    if contained.returncode != 0 or not any(line.strip().startswith("origin/") for line in contained.stdout.splitlines()):
+        raise QualifiedStageError("frozen build commit is not in pushed public Git history")
+    return {"revision": commit, "url": GITHUB_COMMIT_PREFIX + commit}
+
+
 def _inventory(jar: Path) -> list[dict[str, Any]]:
     with zipfile.ZipFile(jar) as archive:
         names = archive.namelist()
@@ -210,31 +238,67 @@ def _replace_stage(target: Path) -> None:
 
 def stage_qualified_release(
     *, repository: Path, manifest_path: Path, quick_run_id: str,
-    fabric_jar: Path, neoforge_jar: Path, config_path: Path,
+    fabric_jar: Path | None, neoforge_jar: Path | None, config_path: Path,
     changelog_path: Path, output_root: Path,
+    from_frozen: bool = False,
 ) -> Path:
     repository = repository.resolve(strict=True)
-    source = current_public_source(repository)
+    operator_source = current_public_source(repository)
     manifest = load_manifest(_regular(manifest_path, "qualification manifest"))
     contract = contract_from_manifest(manifest)
     config = _load_config(config_path, contract)
     frozen_hashes, evidence = validate_quick_matrix(repository, manifest, quick_run_id, contract)
-    jars = {"fabric": _regular(fabric_jar, "Fabric release jar"),
-            "neoforge": _regular(neoforge_jar, "NeoForge release jar")}
     frozen = {loader: _frozen_candidate(repository, manifest, loader, quick_run_id) for loader in LOADERS}
+    if from_frozen:
+        if fabric_jar is not None or neoforge_jar is not None:
+            raise QualifiedStageError("--from-frozen does not accept caller-supplied release jars")
+        sources = [_frozen_build_source(repository, evidence, loader) for loader in LOADERS]
+        if len({item["revision"] for item in sources}) != 1:
+            raise QualifiedStageError("frozen candidates were built from conflicting commits")
+        source = sources[0]
+    else:
+        if fabric_jar is None or neoforge_jar is None:
+            raise QualifiedStageError("staging requires both release jars unless --from-frozen is selected")
+        source = operator_source
+    jars = ({"fabric": _regular(fabric_jar, "Fabric release jar"),
+             "neoforge": _regular(neoforge_jar, "NeoForge release jar")}
+            if not from_frozen else {})
+    materialized: tempfile.TemporaryDirectory[str] | None = None
+    if from_frozen:
+        materialized = tempfile.TemporaryDirectory(prefix="ringworld-qualified-materialized-")
+        root = Path(materialized.name)
+        try:
+            for loader in LOADERS:
+                candidate = root / (f"ringworld-{config['artifact_version']}.jar" if loader == "fabric"
+                                    else f"ringworld-neoforge-{config['artifact_version']}.jar")
+                result = materialize_release_candidate(
+                    frozen[loader], candidate, loader=loader, expected_license=(repository / "LICENSE").read_bytes(),
+                    release_version=config["artifact_version"], release_label=config["release_label"], contract=contract,
+                )
+                if result.qualification.sha256 != frozen_hashes[loader]:
+                    raise QualifiedStageError(f"{loader} materialization does not bind the quick candidate")
+                jars[loader] = candidate
+        except Exception:
+            materialized.cleanup()
+            raise
     equivalence: dict[str, Any] = {}
-    for loader in LOADERS:
-        result = verify_release_candidate_equivalence(
-            frozen[loader], jars[loader], loader=loader,
-            expected_license=(repository / "LICENSE").read_bytes(),
-            release_version=config["artifact_version"], release_label=config["release_label"],
-            contract=contract,
-        )
-        if result.qualification.sha256 != frozen_hashes[loader]:
-            raise QualifiedStageError(f"{loader} equivalence does not bind the quick candidate")
-        equivalence[loader] = result
-    if current_public_source(repository) != source:
-        raise QualifiedStageError("public source changed while staging")
+    try:
+        for loader in LOADERS:
+            result = verify_release_candidate_equivalence(
+                frozen[loader], jars[loader], loader=loader,
+                expected_license=(repository / "LICENSE").read_bytes(),
+                release_version=config["artifact_version"], release_label=config["release_label"],
+                contract=contract,
+            )
+            if result.qualification.sha256 != frozen_hashes[loader]:
+                raise QualifiedStageError(f"{loader} equivalence does not bind the quick candidate")
+            equivalence[loader] = result
+        if current_public_source(repository) != operator_source:
+            raise QualifiedStageError("public source changed while staging")
+    except Exception:
+        if materialized is not None:
+            materialized.cleanup()
+        raise
     template = _regular(changelog_path, "qualified changelog").read_text(encoding="utf-8")
     target = output_root / config["artifact_version"]
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -255,6 +319,7 @@ def stage_qualified_release(
                 "upload_file": staged_jar.name, "upload_file_only": True,
                 "size": staged_jar.stat().st_size, "hashes": hashes,
                 "source": source, "game_versions": config["game_versions"],
+                "staging_operator_provenance": operator_source,
                 "quick_run_id": quick_run_id, "quick_evidence": list(evidence),
                 "frozen_candidate_sha256": frozen_hashes[loader],
                 "equivalence_allowed_differences": list(equivalence[loader].allowed_differences),
@@ -272,14 +337,19 @@ def stage_qualified_release(
     except Exception:
         shutil.rmtree(temporary, ignore_errors=True)
         raise
+    finally:
+        if materialized is not None:
+            materialized.cleanup()
     return target
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--quick-run-id", required=True)
-    parser.add_argument("--fabric-jar", type=Path, required=True)
-    parser.add_argument("--neoforge-jar", type=Path, required=True)
+    parser.add_argument("--fabric-jar", type=Path)
+    parser.add_argument("--neoforge-jar", type=Path)
+    parser.add_argument("--from-frozen", action="store_true",
+                        help="materialize only approved public metadata from retained frozen candidates")
     parser.add_argument("--manifest", type=Path, default=Path("config/minecraft-version-matrix.json"))
     parser.add_argument("--config", type=Path, default=Path("deploy/qualified/26.1.x-release.json"))
     parser.add_argument("--changelog", type=Path, default=Path("deploy/qualified/26.1.x-changelog.md"))
@@ -290,6 +360,7 @@ def main() -> int:
             repository=Path.cwd(), manifest_path=args.manifest, quick_run_id=args.quick_run_id,
             fabric_jar=args.fabric_jar, neoforge_jar=args.neoforge_jar,
             config_path=args.config, changelog_path=args.changelog, output_root=args.output_root,
+            from_frozen=args.from_frozen,
         )
     except (OSError, ValueError, zipfile.BadZipFile, VerificationError, ReleaseEquivalenceError) as error:
         print(f"FAIL {error}")

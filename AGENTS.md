@@ -521,6 +521,11 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   use read-only `<algorithm>/<digest>` entries with exact lowercase SHA-1 or
   SHA-256 digests. Each copied seed is independently
   rehashed and a malformed or mismatched seed fails closed.
+- `scripts/stage_qualified_release.py --from-frozen` may materialize a local
+  public candidate from hash-bound quick frozen jars. It must alter only the
+  semantic equivalence allowlist and must record the frozen build's pushed
+  commit as corresponding source separately from the current staging operator
+  provenance. It does not create runtime evidence or publish anything.
 - `scripts/external_runtime_smoke.py`: pure production-style dedicated-server
   plan for the pinned Mojang server, official installer, exact mods inventory,
   safe-small config, launch, markers, and clean-stop contract. It performs no

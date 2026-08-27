@@ -12,6 +12,7 @@ import zipfile
 
 from release_candidate_equivalence import (
     ReleaseEquivalenceError,
+    materialize_release_candidate,
     verify_release_candidate_equivalence,
 )
 from minecraft_support_contract import LEGACY_CONTRACT, SupportContract
@@ -99,6 +100,38 @@ def _verify(qualification: Path, release: Path, loader: str,
 
 
 class ReleaseCandidateEquivalenceTest(unittest.TestCase):
+    def test_materializes_only_allowed_public_metadata_for_both_loaders(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            for loader in ("fabric", "neoforge"):
+                qualification, release = root / f"{loader}-q.jar", root / f"{loader}-r.jar"
+                _write_jar(qualification, _entries(loader, release=False))
+                result = materialize_release_candidate(
+                    qualification, release, loader=loader, expected_license=LICENSE,
+                    release_version=RELEASE_VERSION, release_label=RELEASE_LABEL,
+                )
+                self.assertEqual(RELEASE_VERSION, result.release_version)
+                with zipfile.ZipFile(qualification) as before, zipfile.ZipFile(release) as after:
+                    allowed = {"fabric.mod.json", "ringworld-build.properties"} if loader == "fabric" \
+                        else {"META-INF/neoforge.mods.toml", "ringworld-build.properties"}
+                    for name in set(before.namelist()) - allowed:
+                        self.assertEqual(before.read(name), after.read(name))
+
+    def test_materialization_rejects_missing_approved_metadata_or_existing_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            qualification, release = root / "qualification.jar", root / "release.jar"
+            entries = _entries("fabric", release=False)
+            entries["ringworld-build.properties"] = b"artifactVersion=0.0.0-qualification+mc26.1\n"
+            _write_jar(qualification, entries)
+            with self.assertRaisesRegex(ReleaseEquivalenceError, "releaseLabel"):
+                materialize_release_candidate(qualification, release, loader="fabric", expected_license=LICENSE,
+                                              release_version=RELEASE_VERSION, release_label=RELEASE_LABEL)
+            release.write_bytes(b"existing")
+            with self.assertRaisesRegex(ReleaseEquivalenceError, "existing"):
+                materialize_release_candidate(qualification, release, loader="fabric", expected_license=LICENSE,
+                                              release_version=RELEASE_VERSION, release_label=RELEASE_LABEL)
+
     def test_accepts_metadata_only_difference_despite_zip_order_and_timestamps(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
