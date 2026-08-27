@@ -198,6 +198,11 @@ stays ignored under `dist/`; it is not contributed or distributed source.
   dedicated runtime launched. The full nightly matrix and copied-world upgrades
   remain pending. No publication is authorized by these partial results.
 - Current corrected quick `20260827T094338Z-ceae3f67c0d7` on pushed `078b96d`
-  passes both loaders after verified cache/server-seed improvements. Use those
-  frozen jars for the still-pending complete nightly and forward-upgrade gates.
+  passes both loaders after verified cache/server-seed improvements. Subsequent
+  nightly `20260827T100055Z-c2686d8aeaa8` passes four Fabric checks but reveals
+  a boat fixture metadata assumption. Common fix `cbd0814` checks the created
+  instance; refresh frozen candidates and target multiplayer before continuing.
+  The stopped aggregate is 4 PASS / 2 FAIL / 14 INCOMPLETE, including one
+  deliberately cancelled NeoForge preparation. Existing local 26.2 packages
+  predate the fix and must be restaged; no historical evidence is relabelled.
   Quick success alone does not authorize support metadata or publication.

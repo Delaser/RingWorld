@@ -1,6 +1,6 @@
 # Testing
 
-2026-08-27: the complete static qualification workflow passes **332 tests**
+2026-08-27: the complete static qualification workflow passes **333 tests**
 after copied-world prompt handling, verified cache coverage, and quick Loom
 seed staging plus verified server preseeding. The focused external smoke and
 quick/worldgen/Atlas assembly subset passes 32 tests, including Fabric's real
@@ -18,6 +18,17 @@ The retained frozen candidates independently rehash to:
 
 - Fabric: `271322a3589e72bd54c837576c3b9ea0508176975cb7fbb695206e6122c7f790`.
 - NeoForge: `19a428615f074e31c1c2ef4f407d1703a69f84711d2d2eff159713abcc9227d7`.
+
+Nightly `20260827T100055Z-c2686d8aeaa8` records **4 PASS / 2 FAIL /
+14 INCOMPLETE**. Its passing Fabric creation/worldgen/Atlas recovery/Atlas UI
+checks precede multiplayer `20260827T101615Z-ea895c544862`, which passes seam
+placement then rejects `oak_boat`'s widened `EntityType` metadata. Common fix
+`cbd0814` validates the actual factory instance. NeoForge creation preparation
+`20260827T102021Z-301b24f954b5` was operator-cancelled, not a game regression.
+No automatic retry was consumed; the immutable aggregate and retained artifacts
+remain under `dist/qualification/nightly-matrix/20260827T100055Z-c2686d8aeaa8`.
+New frozen jars and fresh targeted multiplayer evidence are required after the
+fix; the above hashes and staged packages are historical, not changed-byte proof.
 
 Source-worldgen `20260827T094339Z-636659deb3ad` passes 26.1 Fabric.
 `20260827T094626Z-b5265759bec4` fails the 26.1.1 Fabric seam scan with a

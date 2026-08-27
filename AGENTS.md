@@ -35,14 +35,19 @@ installer's Mojang version-JSON download, before a game launched. The optional
 runtime byte cache are independently rehashed acceleration only; they never
 enable offline mode or establish runtime evidence. See `docs/TESTING.md` for
 exact retained candidate hashes and current status. The static workflow passes
-332 tests; package-pin correction `49c0d53` passes 20 executed package tests
+333 tests; package-pin correction `49c0d53` passes 20 executed package tests
 (22 total with two expected Windows skips). Current metadata-only package
 assembly is not an OS/client/server smoke, and publication remains held.
 
 Current corrected quick `20260827T094338Z-ceae3f67c0d7` on pushed `078b96d`
-passes both 26.2 loaders, including strict dedicated startup/clean stop. Use
-its retained frozen candidates for the remaining nightly/upgrade gates; do not
-substitute the earlier pre-depth or failed quick attempts. Source-worldgen
+passes both 26.2 loaders, including strict dedicated startup/clean stop.
+Nightly `20260827T100055Z-c2686d8aeaa8` retains four Fabric PASS checks, then
+fails during boat fixture setup: 26.2 widens `EntityType.getBaseClass()` to
+`Entity`. Fix `cbd0814` validates the actual factory-created instance instead.
+The deliberately cancelled NeoForge preparation is the second FAIL; fourteen
+checks remain INCOMPLETE. No retry was consumed. Refresh frozen candidates and
+local 26.2 packages after this fixture fix; earlier hashes are not evidence for
+changed bytes. Target multiplayer before repeating the full matrix. Source-worldgen
 `094339Z` passes 26.1 Fabric. `094626Z` hits the 26.1.1 Fabric seam-scan watchdog
 while a heavy NeoForge build overlaps; preserve the failure and retest alone.
 Controlled serial rerun `095814Z` passes unchanged, supporting host contention.

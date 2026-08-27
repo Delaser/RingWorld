@@ -1,7 +1,7 @@
 # Current state
 
 2026-08-27 current qualification checkpoint: the complete static workflow now
-passes 332 tests. The package-pin correction `49c0d53` passes 20 executed
+passes 333 tests. The package-pin correction `49c0d53` passes 20 executed
 tests (22 total, with two expected Windows-only skips). Metadata-only 26.1.x
 stages with the recorded replacement hashes assembled Fabric and NeoForge macOS
 and Windows client bundles plus server overlays. This is package assembly only,
@@ -14,6 +14,16 @@ suites, artifact inspection and strict dedicated-server startup/clean stop.
 Fabric's frozen build took 3m08s; NeoForge's took 4m59s. This is quick evidence,
 not complete nightly, upgrade or packaged-launcher approval. Exact retained
 candidate hashes are in `TESTING.md`.
+
+Nightly `20260827T100055Z-c2686d8aeaa8` finished with **4 PASS, 2 FAIL,
+14 INCOMPLETE**. Fabric creation UI, worldgen, Atlas recovery and Atlas UI pass;
+multiplayer completes seam placement but fails creating its boat fixture because
+26.2's registry metadata reports base class `Entity`, not `Boat`. Shared fix
+`cbd0814` checks the actual factory-created instance instead. NeoForge preparation
+was deliberately cancelled to avoid repeating the known bug; it is not a second
+Minecraft defect. Logs/captures remain retained and no retry was consumed.
+Next: refresh the frozen candidate, verify multiplayer first, then the remaining
+matrix. The existing local 26.2 review packages predate this fix and need restaging.
 
 Earlier corrected 26.2 attempts remain non-passing: `20260827T083411Z` was
 cancelled during NeoForge asset download (`EXIT_143`) before any game launched;
