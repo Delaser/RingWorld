@@ -26,7 +26,15 @@ predate this correction and are not final rendering candidates.
 Corrected quick run `20260827T073004Z-4c80e38c9d6b` on `97654ab` passes both
 loader builds and Fabric's strict dedicated smoke. NeoForge's installer fetch
 failed with `URLError` before runtime launch; never label that aggregate PASS.
-See `docs/TESTING.md` for exact retained corrected-candidate hashes.
+Later quick `083411Z` was cancelled before games, `085115Z` failed Mojang POM
+retrieval, and `090236Z` on `7fae756` remains in progress after a Fabric frozen
+338-test build pass. The optional `--gradle-loom-cache` and 13-entry external
+runtime byte cache are independently rehashed acceleration only; they never
+enable offline mode or establish runtime evidence. See `docs/TESTING.md` for
+exact retained candidate hashes and current status. The static workflow passes
+331 tests; package-pin correction `49c0d53` passes 20 executed package tests
+(22 total with two expected Windows skips). Current metadata-only package
+assembly is not an OS/client/server smoke, and publication remains held.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
 gate. The Fabric and NeoForge builds each pass all 338 unit/parameterized
@@ -682,7 +690,7 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   exact pinned downloads, official installer runs, installed Mojang-server
   identity, exact mod copies, port and marker checks, ordered stop/save/exit
   observations, and immutable local results. The default runner reaches it
-  only for a clean, complete loader triplet and it is never a release
+  only for a clean, complete manifest-selected loader candidate group and it is never a release
   publisher. It creates the already-validated empty runtime root before the
   official installer; Fabric Installer rejects a missing target directory.
 - `scripts/minecraft_qualification_ranges.py`: strict pure parser for the

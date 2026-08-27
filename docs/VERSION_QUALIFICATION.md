@@ -122,6 +122,10 @@ names as well as indexed assets under `neoformruntime/assets`. It never enables
 Gradle offline mode: missing cache entries continue through ordinary pinned
 network resolution.
 
+The external-runtime download cache and Gradle Loom seed are independent
+optional accelerators. The former currently holds 13 exact runtime download
+entries; neither cache changes candidate identity, retries, or PASS criteria.
+
 Local staging inputs for the planned 1.1 release are separate:
 `deploy/qualified/26.1.x-release.json` / `26.1.x-changelog.md` and
 `deploy/qualified/26.2-release.json` / `26.2-changelog.md`. Their existence is
@@ -177,6 +181,10 @@ stays ignored under `dist/`; it is not contributed or distributed source.
   mixins; a capitalization-only region method rename uses shared alternative
   selectors and retains its required alias redirect.
 - Existing 26.1.x evidence is retained; no new publication or live-world change.
-- Fresh clean quick run `20260827T054844Z-eab4ee8cebfb` on pushed `8048871`
-  passes both 26.2 dedicated-server cells with independently verified frozen
-  jar hashes. The full nightly matrix and copied-world upgrades remain pending.
+- Historical pre-depth quick run `20260827T054844Z-eab4ee8cebfb` on pushed
+  `8048871` passed both dedicated-server cells with independently verified
+  frozen hashes, but predates the rendering correction. Current attempts
+  `083411Z` (cancelled before games) and `085115Z` (Mojang POM failure) do not
+  qualify the line; `090236Z` on `7fae756` is still running after Fabric's
+  frozen 338-test build pass. The full nightly matrix and copied-world upgrades
+  remain pending.

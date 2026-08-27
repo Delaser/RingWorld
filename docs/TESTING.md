@@ -1,8 +1,21 @@
 # Testing
 
-2026-08-27: the complete static qualification workflow passes **328 tests**
-after adding copied-world prompt handling and verified public-download cache
-coverage. Focused staging/equivalence/prompt/workflow checks pass 25 tests.
+2026-08-27: the complete static qualification workflow passes **331 tests**
+after copied-world prompt handling, verified cache coverage, and quick Loom
+seed staging. The package-pin correction `49c0d53` passes 20 executed tests
+(22 total with two expected Windows-only skips). Metadata-only 26.1.x stages
+assembled Fabric/NeoForge macOS and Windows client bundles plus server overlays;
+those are archive assemblies, not package-launch smokes. Four dry publication
+plans validated without an API call or token.
+
+Quick `20260827T083411Z` was cancelled during NeoForge asset download before a
+game launched; `20260827T085115Z` failed both build paths on a Mojang library
+POM (Fabric `FAIL`, NeoForge `INCOMPLETE`). Quick `20260827T090236Z` on
+`7fae756` is still running: Fabric's frozen build passed 338 tests in 7m35s and
+NeoForge is ongoing. No current 26.2 quick PASS is claimed. The optional
+`--gradle-loom-cache` and 13-entry external-runtime download cache rehash and
+copy only pinned bytes into isolated state; neither enables offline mode.
+
 The source-ABI Fabric 26.2 diagnostic on clean `0ca305b`, stored below
 `dist/qualification/diagnostics/file-fix-20260827/fabric`, passes production
 noon projection after automatically accepting only the exact file-fix backup
@@ -23,12 +36,12 @@ Both frozen and per-cell builds/unit suites pass. Fabric's strict dedicated
 record passes; NeoForge fails installer retrieval before any server process
 starts (`URLError`). The aggregate therefore remains FAIL, not qualified.
 
-Qualified package/reviewer/staging/static-workflow checks pass 30 tests with
-two Windows-only launcher checks skipped on macOS. The package subset covers
-positive 26.2 Fabric/NeoForge assembly, selected runtime profiles, Fabric API
-hashes, stale input and credential rejection, duplicate/opposite loader
-components, and deterministic macOS Java-discovery fixture behavior. These
-are assembly tests, not real packaged Windows graphical evidence.
+The current package subset passes 20 executed tests (22 total with two
+Windows-only launcher checks skipped on macOS). It covers positive 26.1.x and
+26.2 Fabric/NeoForge assembly, selected runtime profiles, Fabric API hashes,
+stale input and credential rejection, duplicate/opposite loader components,
+and deterministic macOS Java-discovery fixture behavior. These are assembly
+tests, not real packaged Windows graphical evidence.
 
 The 26.2 depth-port regression is guarded by two additional source-ABI tests
 in `scripts/test_minecraft_version_sources.py`: adapter comparison/range
