@@ -9,6 +9,7 @@ import tempfile
 import unittest
 import warnings
 import zipfile
+from unittest.mock import patch
 
 from release_candidate_equivalence import (
     ReleaseEquivalenceError,
@@ -117,20 +118,55 @@ class ReleaseCandidateEquivalenceTest(unittest.TestCase):
                     for name in set(before.namelist()) - allowed:
                         self.assertEqual(before.read(name), after.read(name))
 
-    def test_materialization_rejects_missing_approved_metadata_or_existing_output(self) -> None:
+    def test_materialization_rejects_missing_approved_metadata_before_output_creation(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             qualification, release = root / "qualification.jar", root / "release.jar"
             entries = _entries("fabric", release=False)
             entries["ringworld-build.properties"] = b"artifactVersion=0.0.0-qualification+mc26.1\n"
             _write_jar(qualification, entries)
-            with self.assertRaisesRegex(ReleaseEquivalenceError, "releaseLabel"):
+            with self.assertRaisesRegex(ReleaseEquivalenceError, "pre-materialization verification"):
                 materialize_release_candidate(qualification, release, loader="fabric", expected_license=LICENSE,
                                               release_version=RELEASE_VERSION, release_label=RELEASE_LABEL)
-            release.write_bytes(b"existing")
-            with self.assertRaisesRegex(ReleaseEquivalenceError, "existing"):
+            self.assertFalse(release.exists())
+
+    def test_materialization_never_replaces_existing_or_racing_output(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            qualification, release = root / "qualification.jar", root / "release.jar"
+            _write_jar(qualification, _entries("fabric", release=False))
+
+            release.write_bytes(b"pre-existing competitor")
+            with self.assertRaises(FileExistsError):
                 materialize_release_candidate(qualification, release, loader="fabric", expected_license=LICENSE,
                                               release_version=RELEASE_VERSION, release_label=RELEASE_LABEL)
+            self.assertEqual(b"pre-existing competitor", release.read_bytes())
+
+            release.unlink()
+            real_zip_file = zipfile.ZipFile
+
+            def race_output_creation(path: object, mode: str = "r", *args: object, **kwargs: object) -> zipfile.ZipFile:
+                if Path(path) == release and mode == "x":
+                    release.write_bytes(b"racing competitor")
+                return real_zip_file(path, mode, *args, **kwargs)
+
+            with patch("release_candidate_equivalence.zipfile.ZipFile", side_effect=race_output_creation):
+                with self.assertRaises(FileExistsError):
+                    materialize_release_candidate(qualification, release, loader="fabric", expected_license=LICENSE,
+                                                  release_version=RELEASE_VERSION, release_label=RELEASE_LABEL)
+            self.assertEqual(b"racing competitor", release.read_bytes())
+
+    def test_materialization_removes_only_its_output_after_equivalence_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            qualification, release = root / "qualification.jar", root / "release.jar"
+            _write_jar(qualification, _entries("fabric", release=False))
+            with patch("release_candidate_equivalence.verify_release_candidate_equivalence",
+                       side_effect=ReleaseEquivalenceError("forced verification failure")):
+                with self.assertRaisesRegex(ReleaseEquivalenceError, "forced verification failure"):
+                    materialize_release_candidate(qualification, release, loader="fabric", expected_license=LICENSE,
+                                                  release_version=RELEASE_VERSION, release_label=RELEASE_LABEL)
+            self.assertFalse(release.exists())
 
     def test_accepts_metadata_only_difference_despite_zip_order_and_timestamps(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

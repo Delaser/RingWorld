@@ -328,14 +328,21 @@ def materialize_release_candidate(
 ) -> ReleaseCandidateEquivalence:
     """Create and then verify the sole allowed metadata-only public jar transform."""
     qualification_jar, release_jar = Path(qualification_jar), Path(release_jar)
-    if release_jar.exists() or release_jar.is_symlink():
-        raise ReleaseEquivalenceError("refusing to replace an existing materialized release jar")
     _require_jar(qualification_jar, "qualification jar")
     if loader not in LOADERS or not isinstance(contract, SupportContract):
         raise ReleaseEquivalenceError("materialization requires a reviewed loader and support contract")
-    metadata_name = "fabric.mod.json" if loader == "fabric" else "META-INF/neoforge.mods.toml"
     try:
-        with zipfile.ZipFile(qualification_jar) as source, zipfile.ZipFile(release_jar, "w") as output:
+        verified_loader = verify_jar_path(qualification_jar, expected_license, loader=loader)
+        inspection = inspect_frozen_candidate(qualification_jar, loader, contract=contract)
+    except (OSError, zipfile.BadZipFile, VerificationError, FrozenCandidateError) as error:
+        raise ReleaseEquivalenceError(f"qualification jar failed pre-materialization verification: {error}") from error
+    if verified_loader != loader or inspection.loader != loader:
+        raise ReleaseEquivalenceError("qualification jar loader does not match requested loader")
+    metadata_name = "fabric.mod.json" if loader == "fabric" else "META-INF/neoforge.mods.toml"
+    created = False
+    try:
+        with zipfile.ZipFile(qualification_jar) as source, zipfile.ZipFile(release_jar, "x") as output:
+            created = True
             for info in source.infolist():
                 payload = source.read(info)
                 if info.filename == metadata_name:
@@ -343,13 +350,14 @@ def materialize_release_candidate(
                 elif info.filename == BUILD_PROPERTIES:
                     payload = _materialized_build_properties(payload, release_version, release_label)
                 output.writestr(info, payload)
+        return verify_release_candidate_equivalence(
+            qualification_jar, release_jar, loader=loader, expected_license=expected_license,
+            release_version=release_version, release_label=release_label, contract=contract,
+        )
     except Exception:
-        release_jar.unlink(missing_ok=True)
+        if created:
+            release_jar.unlink(missing_ok=True)
         raise
-    return verify_release_candidate_equivalence(
-        qualification_jar, release_jar, loader=loader, expected_license=expected_license,
-        release_version=release_version, release_label=release_label, contract=contract,
-    )
 
 
 def verify_release_candidate_equivalence(
