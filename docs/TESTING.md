@@ -17,6 +17,16 @@ immutable quick/nightly verdict or a production-launcher claim. It exposed and
 verified fixes for duplicate inherited GPU bindings and moved worldgen/client
 readiness mixin targets. Formal qualification must use a fresh clean candidate.
 
+Fresh quick run `20260827T054844Z-eab4ee8cebfb` from clean pushed `8048871`
+passes Fabric and NeoForge 26.2 dedicated-server qualification. Both strict
+terminal records were independently schema-validated and matched against the
+retained candidate jars. Frozen SHA-256 values:
+
+- Fabric: `20963c5bd150ccdec265079b27d5a665d143bfb3460fc7f218523ef67b9a442d`.
+- NeoForge: `02b1daebcffee9da28f900488ee1a02fa90db9f118a11287f344b2e578bf4c18`.
+
+Full nightly/gameplay/render and copied-world upgrade evidence is still pending.
+
 `test_minecraft_support_contract.py` checks historical 26.1.x identity,
 single-version 26.2 and synthetic future groups, exact candidate metadata,
 same-file coverage, missing loader rejection, and forbidden patch-range gaps.

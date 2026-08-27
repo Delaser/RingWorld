@@ -106,3 +106,6 @@ stays ignored under `dist/`; it is not contributed or distributed source.
   mixins; a capitalization-only region method rename uses shared alternative
   selectors and retains its required alias redirect.
 - Existing 26.1.x evidence is retained; no new publication or live-world change.
+- Fresh clean quick run `20260827T054844Z-eab4ee8cebfb` on pushed `8048871`
+  passes both 26.2 dedicated-server cells with independently verified frozen
+  jar hashes. The full nightly matrix and copied-world upgrades remain pending.

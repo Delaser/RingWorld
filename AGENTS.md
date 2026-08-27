@@ -14,8 +14,10 @@ creation/settings and Atlas UI fixtures, including complete generation and
 clean session teardown. Version-owned source adapters preserve the 26.1 ABI;
 manifest-derived qualification/staging contracts support separate stable
 lines. These development runs are not frozen-candidate or release evidence.
-Follow `docs/VERSION_QUALIFICATION.md`; publication and live-server changes
-remain paused while the 26.2 quick/nightly/upgrade gates are incomplete.
+Separate clean quick run `20260827T054844Z-eab4ee8cebfb` on `8048871` passes
+both 26.2 dedicated-server cells. Follow `docs/VERSION_QUALIFICATION.md`;
+publication and live-server changes remain paused while nightly/upgrade
+gates are incomplete.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
 gate. The Fabric and NeoForge builds each pass all 338 unit/parameterized
