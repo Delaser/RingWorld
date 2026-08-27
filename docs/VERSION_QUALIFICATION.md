@@ -55,6 +55,16 @@ Neither adding a manifest nor compiling changes public support claims.
 6. Qualify copied-world upgrades, then complete release equivalence, packaging,
    staging, and explicit owner approval. Publishing is separate from testing.
 
+Forward upgrades keep persisted RingWorld settings and every persisted-world
+worldgen/structure fact strict. `RingWorldStrongholdTest`'s `biomeFamilies` and
+`biomeIds` fields are deliberately different: they sample the **currently
+running generator's** `BiomeSource`, not a saved-chunk biome-palette audit.
+The normal same-stable-line reload comparator therefore still requires those
+lists to match exactly. A cross-stable-line upgrade records an explicit
+before/after/add/remove generator-sample comparison instead, while retaining
+all other checks; it must not be described as an audit of persisted chunk
+biomes.
+
 Release equivalence and staging derive frozen-candidate metadata ranges,
 quick-evidence cell counts, and public metadata version labels from the selected
 manifest contract. The release descriptor's game-version list must match that
