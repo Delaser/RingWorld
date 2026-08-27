@@ -4,6 +4,16 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
+Latest qualification checkpoint: see
+[`docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md`](docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
+Paired 26.2 quick `103705Z` passes on frozen source `1cfac9b`; nightly `104447Z`
+retains 16 PASS, two chart-coordinate capture fixture failures and two skipped
+render checks. Apply only targeted fixture/render repairs; preserve candidate
+hashes and distinguish later source-ABI harness evidence from frozen runtime
+evidence. The static workflow passes 339 tests. Publication and live-world
+changes remain held. Older checkpoints below are provenance, not the current
+completion claim.
+
 Last playable code audit: 2026-07-28, covering the final Minecraft 1.21.11
 implementation identified in the private development archive as
 `mc-1.21.11-final` at commit `2c98650`. That pre-public ref is provenance only

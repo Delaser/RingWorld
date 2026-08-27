@@ -3,6 +3,7 @@ package dev.ringworld.client;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import dev.ringworld.server.RingWorldVanillaFixtureRegistries;
+import dev.ringworld.world.RingGeometry;
 import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.PauseScreen;
@@ -33,6 +34,9 @@ public final class CurvedObjectCaptureClient {
     public static final String ENABLE_PROPERTY = "ringworld.curvedObjectCapture";
     private static final int SETTLE_TICKS = 160;
     private static final int MAX_CAPTURE_TICKS = 1_200;
+    private static final double FAR_CAPTURE_X = 0.5;
+    private static final double NEAR_CAPTURE_X = 32.5;
+    private static final double CAPTURE_POSITION_TOLERANCE = 1.0;
     private boolean focusPolicyApplied;
     private boolean fixtureRequested;
     private int stage;
@@ -73,8 +77,7 @@ public final class CurvedObjectCaptureClient {
         if (RingMinecraftClientAccess.screen(client) != null) return true;
 
         if (++captureTicks > MAX_CAPTURE_TICKS) {
-            RingWorldMod.LOGGER.error(
-                    "[curved-object-capture] result=FAIL, fixture chunks never became render-ready");
+            logCaptureTimeout(client);
             client.stop();
             return true;
         }
@@ -92,7 +95,7 @@ public final class CurvedObjectCaptureClient {
             return true;
         }
 
-        if (stage == 0 && client.player.getX() < 2.0) {
+        if (stage == 0 && atCapturePosition(client, FAR_CAPTURE_X)) {
             client.player.setYRot(-90.0F);
             client.player.setXRot(0.0F);
             if (++settleTicks < SETTLE_TICKS || !fixtureIsPresent(client)
@@ -103,7 +106,7 @@ public final class CurvedObjectCaptureClient {
             client.getConnection().sendCommand("tp @s 32.5 122 0.5 -90 8");
             return true;
         }
-        if (stage == 1 && client.player.getX() > 31.0) {
+        if (stage == 1 && atCapturePosition(client, NEAR_CAPTURE_X)) {
             client.player.setYRot(-90.0F);
             client.player.setXRot(8.0F);
             if (++settleTicks < SETTLE_TICKS || !fixtureIsPresent(client)
@@ -115,21 +118,58 @@ public final class CurvedObjectCaptureClient {
     }
 
     private static boolean fixtureIsPresent(Minecraft client) {
-        return client.level.getBlockState(new BlockPos(40, 120, -2)).is(RingWorldVanillaFixtureRegistries.block("chest"))
-                && client.level.getBlockEntity(new BlockPos(40, 120, -2)) != null
-                && client.level.getBlockState(new BlockPos(48, 120, 0)).is(RingWorldVanillaFixtureRegistries.block("lectern"))
-                && client.level.getBlockEntity(new BlockPos(48, 120, 0)) != null
-                && client.level.getBlockState(new BlockPos(56, 120, 2)).is(RingWorldVanillaFixtureRegistries.block("ender_chest"))
-                && client.level.getBlockEntity(new BlockPos(56, 120, 2)) != null
-                && client.level.getBlockState(new BlockPos(52, 120, -2)).is(RingWorldVanillaFixtureRegistries.block("oak_sign"))
-                && client.level.getBlockEntity(new BlockPos(52, 120, -2)) != null
-                && client.level.getBlockState(new BlockPos(60, 120, 0))
+        if (ClientRingState.geometry() == null) return false;
+        BlockPos chest = fixturePosition(client, 40, 120, -2);
+        BlockPos lectern = fixturePosition(client, 48, 120, 0);
+        BlockPos enderChest = fixturePosition(client, 56, 120, 2);
+        BlockPos sign = fixturePosition(client, 52, 120, -2);
+        BlockPos bed = fixturePosition(client, 60, 120, 0);
+        BlockPos shulker = fixturePosition(client, 62, 120, 2);
+        BlockPos banner = fixturePosition(client, 66, 120, 0);
+        return client.level.getBlockState(chest).is(RingWorldVanillaFixtureRegistries.block("chest"))
+                && client.level.getBlockEntity(chest) != null
+                && client.level.getBlockState(lectern).is(RingWorldVanillaFixtureRegistries.block("lectern"))
+                && client.level.getBlockEntity(lectern) != null
+                && client.level.getBlockState(enderChest).is(RingWorldVanillaFixtureRegistries.block("ender_chest"))
+                && client.level.getBlockEntity(enderChest) != null
+                && client.level.getBlockState(sign).is(RingWorldVanillaFixtureRegistries.block("oak_sign"))
+                && client.level.getBlockEntity(sign) != null
+                && client.level.getBlockState(bed)
                         .is(RingWorldVanillaFixtureRegistries.block("red_bed"))
-                && client.level.getBlockEntity(new BlockPos(60, 120, 0)) != null
-                && client.level.getBlockState(new BlockPos(62, 120, 2)).is(RingWorldVanillaFixtureRegistries.block("shulker_box"))
-                && client.level.getBlockEntity(new BlockPos(62, 120, 2)) != null
-                && client.level.getBlockState(new BlockPos(66, 120, 0)).is(RingWorldVanillaFixtureRegistries.block("white_banner"))
-                && client.level.getBlockEntity(new BlockPos(66, 120, 0)) != null;
+                && client.level.getBlockEntity(bed) != null
+                && client.level.getBlockState(shulker).is(RingWorldVanillaFixtureRegistries.block("shulker_box"))
+                && client.level.getBlockEntity(shulker) != null
+                && client.level.getBlockState(banner).is(RingWorldVanillaFixtureRegistries.block("white_banner"))
+                && client.level.getBlockEntity(banner) != null;
+    }
+
+    private static boolean atCapturePosition(Minecraft client, double canonicalX) {
+        RingGeometry geometry = ClientRingState.geometry();
+        return geometry != null && Math.abs(geometry.shortestCircumferenceDelta(
+                client.player.getX(), canonicalX)) < CAPTURE_POSITION_TOLERANCE;
+    }
+
+    private static BlockPos fixturePosition(Minecraft client, int canonicalX, int y, int z) {
+        RingGeometry geometry = ClientRingState.geometry();
+        if (geometry == null) throw new IllegalStateException("Curved fixture requires ring geometry");
+        return new BlockPos((int)Math.floor(geometry.nearestImageX(canonicalX, client.player.getX())), y, z);
+    }
+
+    private void logCaptureTimeout(Minecraft client) {
+        RingGeometry geometry = ClientRingState.geometry();
+        double presentationX = client.player.getX();
+        double targetX = stage == 0 ? FAR_CAPTURE_X : stage == 1 ? NEAR_CAPTURE_X : Double.NaN;
+        double canonicalX = geometry == null ? Double.NaN : geometry.wrapX(presentationX);
+        double targetDistance = geometry == null || Double.isNaN(targetX) ? Double.NaN
+                : Math.abs(geometry.shortestCircumferenceDelta(presentationX, targetX));
+        boolean fixturePresent = fixtureIsPresent(client);
+        boolean renderReady = client.levelRenderer.hasRenderedAllSections();
+        RingWorldMod.LOGGER.error(
+                "[curved-object-capture] result=FAIL, capture timeout stage={} captureTicks={} settleTicks={} "
+                        + "presentationX={} canonicalX={} targetX={} targetDistance={} geometryReady={} "
+                        + "fixturePresent={} renderReady={}",
+                stage, captureTicks, settleTicks, presentationX, canonicalX, targetX, targetDistance,
+                geometry != null, fixturePresent, renderReady);
     }
 
     private static void requestFixture(Minecraft client) {

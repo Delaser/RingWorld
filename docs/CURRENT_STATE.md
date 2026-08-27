@@ -1,5 +1,10 @@
 # Current state
 
+Latest: [26.2 qualification checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
+The corrected paired quick passes; the current nightly retains 16 PASS with
+four capture/render slots awaiting targeted repair. Static checks: 339 PASS.
+Local packages are staged, not published. Dated attempts below are historical.
+
 2026-08-27 current qualification checkpoint: the complete static workflow now
 passes 333 tests. The package-pin correction `49c0d53` passes 20 executed
 tests (22 total, with two expected Windows-only skips). Metadata-only 26.1.x

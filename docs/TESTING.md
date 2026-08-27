@@ -1,5 +1,11 @@
 # Testing
 
+Latest 26.2 run IDs, candidate/package hashes and remaining targeted checks are
+in [the current checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
+The complete static workflow passes 339 tests. Nightly
+`20260827T104447Z-6af7691cc891` is 16 PASS / 2 FAIL / 2 INCOMPLETE;
+never label it a monolithic PASS. Earlier attempts below remain historical.
+
 2026-08-27: the complete static qualification workflow passes **333 tests**
 after copied-world prompt handling, verified cache coverage, and quick Loom
 seed staging plus verified server preseeding. The focused external smoke and

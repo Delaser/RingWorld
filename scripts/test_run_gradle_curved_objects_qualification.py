@@ -73,6 +73,19 @@ class GradleCurvedObjectsQualificationTest(unittest.TestCase):
         self.assertIn("pauseOnLostFocus = false", source)
         self.assertIn("earlyWindowControl = false", neo)
 
+    def test_capture_readiness_is_chart_aware_and_timeout_is_diagnostic(self) -> None:
+        source = (ROOT / "src/client/java/dev/ringworld/client/CurvedObjectCaptureClient.java").read_text()
+        self.assertIn("atCapturePosition(client, FAR_CAPTURE_X)", source)
+        self.assertIn("atCapturePosition(client, NEAR_CAPTURE_X)", source)
+        self.assertIn("geometry.shortestCircumferenceDelta(", source)
+        self.assertIn("geometry.nearestImageX(canonicalX, client.player.getX())", source)
+        self.assertIn("capture timeout stage={} captureTicks={} settleTicks={}", source)
+        self.assertIn("fixturePresent={} renderReady={}", source)
+        self.assertIn("private static final int MAX_CAPTURE_TICKS = 1_200;", source)
+        self.assertIn("client.levelRenderer.hasRenderedAllSections()", source)
+        self.assertNotIn("client.player.getX() < 2.0", source)
+        self.assertNotIn("client.player.getX() > 31.0", source)
+
 
 if __name__ == "__main__":
     unittest.main()

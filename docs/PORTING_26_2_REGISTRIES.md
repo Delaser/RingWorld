@@ -14,6 +14,13 @@ The same create-time check covers curved-object client fixtures (copper golem,
 boat, cow and zombie); the static contract rejects obsolete helper calls across
 both common and client Java sources.
 
+The curved-object capture also treats its server fixture coordinates as
+canonical. Its client stage arrivals and block-entity probes use the nearest
+periodic image of those coordinates, rather than assuming the client remains
+on chart zero after a seam-adjacent teleport. A timeout records chart position,
+canonical position, target distance, fixture presence, and renderer readiness;
+it does not bypass the existing rendered-sections gate.
+
 26.2 also removed the individual coal, redstone, lapis, diamond, and emerald
 ore block tags.  The stronghold fixture therefore names each corresponding
 overworld and deepslate vanilla ore block explicitly.  It does not treat a

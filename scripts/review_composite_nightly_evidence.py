@@ -141,10 +141,13 @@ def _terminal(path: Path, expected_cell: str, fixture: str, *, candidate_hash: s
             raise CompositeEvidenceError("source-ABI terminal must explicitly disclaim frozen-candidate evidence")
         evidence_class = "source-abi"
     source = terminal.get("source")
-    source_commit = _commit(source.get("commit") if isinstance(source, Mapping) else terminal.get("started_source_commit"),
-                            "terminal source")
+    qualification = terminal.get("qualification")
+    execution = qualification.get("executionSourceProvenance") if isinstance(qualification, Mapping) else None
+    source_commit = _commit(source.get("commit") if isinstance(source, Mapping)
+                            else execution.get("commit") if isinstance(execution, Mapping)
+                            else terminal.get("started_source_commit"), "terminal source")
     return {"path": str(path), "sha256": _sha256(path), "evidence_class": evidence_class,
-            "source_commit": source_commit,
+            "source_commit": source_commit, "fixture": actual_fixture,
             "hash_bound": _resolve_terminal_paths(path, _bound_files(terminal))}
 
 
@@ -188,6 +191,138 @@ def _verify_retained(result: Mapping[str, Any], terminal_hashes: set[tuple[str, 
         if (source, digest) not in retained_sources:
             raise CompositeEvidenceError(f"hash-bound PNG/log is neither present nor retained: {source}")
     return verified
+
+
+def _manifest_identities(manifest: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    cells = manifest.get("cells")
+    if not isinstance(cells, Sequence) or isinstance(cells, (str, bytes)):
+        raise CompositeEvidenceError("manifest has no cells")
+    identities = {str(cell.get("id")): cell for cell in cells
+                  if isinstance(cell, Mapping) and isinstance(cell.get("id"), str)}
+    if len(identities) != len(cells):
+        raise CompositeEvidenceError("manifest cell identities are malformed or duplicated")
+    for cell in identities.values():
+        minecraft = cell.get("minecraft")
+        if not isinstance(cell.get("loader"), str) or not isinstance(minecraft, Mapping) \
+                or not isinstance(minecraft.get("version"), str):
+            raise CompositeEvidenceError("manifest cell metadata is malformed")
+    return identities
+
+
+def _coverage_details(*, identities: Mapping[str, Mapping[str, Any]], hashes: Mapping[str, str],
+                      quick_records: Sequence[Mapping[str, str]], selected: Mapping[tuple[str, str], Mapping[str, Any]],
+                      source_commits: Mapping[tuple[str, str], str], require_terminal_source: bool) -> list[dict[str, Any]]:
+    coverage = []
+    for (item_cell, fixture), item in sorted(selected.items()):
+        if item.get("verdict") != "PASS":
+            raise CompositeEvidenceError("composite leaves a non-PASS result")
+        refs = item.get("terminal_evidence")
+        if not isinstance(refs, Sequence) or isinstance(refs, (str, bytes)) or not refs:
+            raise CompositeEvidenceError("composite result has no terminal reference")
+        details = []
+        for ref in refs:
+            if not isinstance(ref, Mapping) or not isinstance(ref.get("path"), str) or not isinstance(ref.get("sha256"), str):
+                raise CompositeEvidenceError("terminal reference is malformed")
+            path = Path(ref["path"])
+            if path.is_symlink() or not path.is_file() or _sha256(path) != ref["sha256"]:
+                raise CompositeEvidenceError("terminal reference hash is invalid")
+            cell_metadata = identities.get(item_cell)
+            if cell_metadata is None:
+                raise CompositeEvidenceError("terminal cell is not in selected manifest")
+            minecraft_metadata = cell_metadata["minecraft"]
+            loader = cell_metadata["loader"]
+            if loader not in hashes:
+                raise CompositeEvidenceError("manifest cell has unsupported loader")
+            detail = _terminal(path, item_cell, fixture, candidate_hash=hashes[loader],
+                               quick_hash=next(record["sha256"] for record in quick_records if record["cell"] == item_cell),
+                               loader=loader, minecraft=minecraft_metadata["version"])
+            expected_source = source_commits[(item_cell, fixture)]
+            if require_terminal_source and detail["source_commit"] != expected_source:
+                raise CompositeEvidenceError("terminal source commit differs from its aggregate")
+            details.append(detail)
+        if fixture == "atlas-ui":
+            if len(details) != 2 or {detail["fixture"] for detail in details} != {"atlas-ui-revision", "client-handshake"}:
+                raise CompositeEvidenceError("Atlas UI coverage requires exactly its UI and client-handshake terminals")
+        elif len(details) != 1:
+            raise CompositeEvidenceError("nightly fixture coverage requires exactly one terminal")
+        terminal_hashes = set().union(*(detail["hash_bound"] for detail in details))
+        audit_terminals = [{key: detail[key] for key in ("path", "sha256", "evidence_class", "source_commit")}
+                           for detail in details]
+        coverage.append({"cell": item_cell, "fixture": fixture, "terminals": audit_terminals,
+                         "retained_artifacts": _verify_retained(item, terminal_hashes)})
+    return coverage
+
+
+def review_repairs(*, repository: Path, manifest_path: Path, quick_run_id: str, primary: Path,
+                   repairs: Sequence[Path]) -> dict[str, Any]:
+    """Review explicit targeted PASS repairs without rewriting primary evidence.
+
+    Every repair aggregate may cover only a unique non-PASS primary key.  The
+    result remains a read-only composite review, never a new matrix execution.
+    """
+    if not repairs:
+        raise CompositeEvidenceError("generic composite review needs a repair aggregate")
+    manifest = load_manifest(manifest_path)
+    hashes, quick_records = validate_quick_matrix(repository, manifest, quick_run_id, contract_from_manifest(manifest))
+    identities = _manifest_identities(manifest)
+    expected_keys = {(cell_id, fixture) for cell_id in identities for fixture in FIXTURES}
+    base = _load(primary)
+    if base.get("verdict") != "FAIL" or base.get("quick_run_id") != quick_run_id:
+        raise CompositeEvidenceError("primary aggregate must be a failed aggregate bound to selected quick run")
+    primary_commit = _commit(base.get("started_source_commit"), "primary aggregate source")
+    if primary_commit is None:
+        raise CompositeEvidenceError("primary aggregate source commit is required")
+    primary_results = _result_by_identity(base)
+    if set(primary_results) != expected_keys:
+        raise CompositeEvidenceError("primary aggregate does not contain the exact manifest cell/fixture keyset")
+    if any(item.get("verdict") not in {"PASS", "FAIL", "INCOMPLETE"} for item in primary_results.values()):
+        raise CompositeEvidenceError("primary aggregate has an invalid result verdict")
+    gaps = {key for key, item in primary_results.items() if item.get("verdict") != "PASS"}
+    if not gaps:
+        raise CompositeEvidenceError("primary aggregate has no repairable gaps")
+    selected = dict(primary_results)
+    source_commits = {key: primary_commit for key in selected}
+    repaired: set[tuple[str, str]] = set()
+    repair_reports = []
+    for path in repairs:
+        report = _load(path)
+        if report.get("quick_run_id") != quick_run_id:
+            raise CompositeEvidenceError("repair aggregate does not bind selected quick run")
+        if report.get("verdict") not in {"PASS", "INCOMPLETE"}:
+            raise CompositeEvidenceError("repair aggregate must be PASS or partial-selected INCOMPLETE")
+        commit = _commit(report.get("started_source_commit"), "repair aggregate source")
+        if commit is None:
+            raise CompositeEvidenceError("repair aggregate source commit is required")
+        results = _result_by_identity(report)
+        if not results:
+            raise CompositeEvidenceError("repair aggregate has no results")
+        keys = set(results)
+        if not keys <= gaps:
+            raise CompositeEvidenceError("repair aggregate replaces a primary PASS or unknown key")
+        if repaired & keys:
+            raise CompositeEvidenceError("repair aggregates duplicate a replacement key")
+        for key, item in results.items():
+            if item.get("verdict") != "PASS":
+                raise CompositeEvidenceError("repair aggregate leaves a non-PASS result")
+            selected[key] = item
+            source_commits[key] = commit
+        repaired.update(keys)
+        repair_reports.append({"path": str(path), "sha256": _sha256(path), "source_commit": commit,
+                               "replaces": [{"cell": cell, "fixture": fixture} for cell, fixture in sorted(keys)]})
+    if repaired != gaps:
+        raise CompositeEvidenceError("repair aggregates do not cover every primary non-PASS key")
+    coverage = _coverage_details(identities=identities, hashes=hashes, quick_records=quick_records,
+                                 selected=selected, source_commits=source_commits, require_terminal_source=True)
+    return {"format": 2, "verdict": "COMPOSITE_COVERAGE_REVIEWED", "monolithic_pass": False,
+            "primary_aggregate": str(primary), "primary_aggregate_sha256": _sha256(primary),
+            "primary_verdict": "FAIL", "quick_run_id": quick_run_id,
+            "manifest_cells": [{"id": cell_id, "loader": cell["loader"], "minecraft": cell["minecraft"]["version"]}
+                               for cell_id, cell in sorted(identities.items())],
+            "source_commits": {"primary_aggregate": primary_commit}, "quick_records": list(quick_records),
+            "repair_aggregates": repair_reports, "coverage": coverage,
+            "limitations": ["Composite review is not a monolithic nightly PASS.",
+                            "Source-ABI fixtures remain distinct from exact frozen-candidate fixtures.",
+                            "This report is release-audit input, not runtime qualification or publication evidence."]}
 
 
 def review(*, repository: Path, manifest_path: Path, quick_run_id: str, primary: Path,
@@ -292,15 +427,25 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--quick-run-id", required=True)
     parser.add_argument("--primary-aggregate", type=Path, required=True)
-    parser.add_argument("--raid-repair", type=Path, required=True)
-    parser.add_argument("--downstream-aggregate", type=Path, required=True)
-    parser.add_argument("--downstream-fixture", action="append", required=True)
+    parser.add_argument("--raid-repair", type=Path)
+    parser.add_argument("--downstream-aggregate", type=Path)
+    parser.add_argument("--downstream-fixture", action="append")
+    parser.add_argument("--repair-aggregate", type=Path, action="append",
+                        help="generic explicit targeted PASS aggregate; repeat for multiple repairs")
     parser.add_argument("--manifest", type=Path, default=Path("config/minecraft-version-matrix.json"))
     args = parser.parse_args(argv)
     try:
-        result = review(repository=Path.cwd(), manifest_path=args.manifest, quick_run_id=args.quick_run_id,
-                        primary=args.primary_aggregate, raid_repair=args.raid_repair,
-                        downstream=args.downstream_aggregate, downstream_fixtures=args.downstream_fixture)
+        if args.repair_aggregate:
+            if args.raid_repair or args.downstream_aggregate or args.downstream_fixture:
+                raise CompositeEvidenceError("generic repair mode cannot combine historical repair arguments")
+            result = review_repairs(repository=Path.cwd(), manifest_path=args.manifest, quick_run_id=args.quick_run_id,
+                                    primary=args.primary_aggregate, repairs=args.repair_aggregate)
+        else:
+            if args.raid_repair is None or args.downstream_aggregate is None or not args.downstream_fixture:
+                raise CompositeEvidenceError("historical mode needs raid and downstream repair arguments")
+            result = review(repository=Path.cwd(), manifest_path=args.manifest, quick_run_id=args.quick_run_id,
+                            primary=args.primary_aggregate, raid_repair=args.raid_repair,
+                            downstream=args.downstream_aggregate, downstream_fixtures=args.downstream_fixture)
     except (OSError, ValueError, StopIteration) as error:
         print(f"COMPOSITE REVIEW FAIL: {error}", file=sys.stderr)
         return 2

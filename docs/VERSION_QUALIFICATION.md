@@ -1,5 +1,8 @@
 # Adding a Minecraft version
 
+Current execution status and exact candidate identities:
+[26.2 checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
+
 The current retained 26.1.x composite evidence review is recorded in
 [QUALIFICATION_REVIEW_2026-08-27.md](QUALIFICATION_REVIEW_2026-08-27.md).
 
@@ -84,6 +87,16 @@ terminals, use `scripts/review_composite_nightly_evidence.py`. It rehashes the
 selected aggregate/terminal/retained-artifact inputs and emits a read-only
 coverage review which remains explicitly non-monolithic. It is release-audit
 input, not replacement runtime evidence or publication authorization.
+
+For a later targeted repair set, the same reviewer also accepts one or more
+explicit `--repair-aggregate` inputs. Its generic mode requires the primary
+aggregate's complete manifest cell×fixture key set; a repair may replace only
+one of that primary's non-PASS keys, exactly once. It rechecks the selected
+quick candidate/evidence hashes, each terminal's fixture class and aggregate
+source provenance, and every retained PNG/log hash. Source-ABI terminals stay
+source-ABI even when the retained candidate is unchanged. The output remains
+non-monolithic release-audit input, never a new runtime PASS or publication
+authorization.
 
 ## What is derived rather than hard-coded
 
