@@ -197,3 +197,7 @@ stays ignored under `dist/`; it is not contributed or distributed source.
   failed Fabric's diagnostic build on Maven POM connection errors before either
   dedicated runtime launched. The full nightly matrix and copied-world upgrades
   remain pending. No publication is authorized by these partial results.
+- Current corrected quick `20260827T094338Z-ceae3f67c0d7` on pushed `078b96d`
+  passes both loaders after verified cache/server-seed improvements. Use those
+  frozen jars for the still-pending complete nightly and forward-upgrade gates.
+  Quick success alone does not authorize support metadata or publication.

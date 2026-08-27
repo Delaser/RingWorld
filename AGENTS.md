@@ -39,6 +39,16 @@ exact retained candidate hashes and current status. The static workflow passes
 (22 total with two expected Windows skips). Current metadata-only package
 assembly is not an OS/client/server smoke, and publication remains held.
 
+Current corrected quick `20260827T094338Z-ceae3f67c0d7` on pushed `078b96d`
+passes both 26.2 loaders, including strict dedicated startup/clean stop. Use
+its retained frozen candidates for the remaining nightly/upgrade gates; do not
+substitute the earlier pre-depth or failed quick attempts. Source-worldgen
+`094339Z` passes 26.1 Fabric. `094626Z` hits the 26.1.1 Fabric seam-scan watchdog
+while a heavy NeoForge build overlaps; preserve the failure and retest alone.
+Serialize heavy builds and worldgen/runtime fixtures on this worker, including
+headless fixtures. Never disable the watchdog or relabel a crash as a retryable
+download failure. See `docs/TESTING.md` for hashes and exact evidence boundaries.
+
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
 gate. The Fabric and NeoForge builds each pass all 338 unit/parameterized
 cases. Fabric has completed the client/runtime gates described below. NeoForge

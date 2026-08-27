@@ -11,13 +11,28 @@ assembled Fabric/NeoForge macOS and Windows client bundles plus server overlays;
 those are archive assemblies, not package-launch smokes. Four dry publication
 plans validated without an API call or token.
 
+Current quick `20260827T094338Z-ceae3f67c0d7` on clean pushed `078b96d`
+**passes both 26.2 loader cells**: frozen and diagnostic build/unit suites,
+artifact verification and strict external dedicated-server startup/clean stop.
+The retained frozen candidates independently rehash to:
+
+- Fabric: `271322a3589e72bd54c837576c3b9ea0508176975cb7fbb695206e6122c7f790`.
+- NeoForge: `19a428615f074e31c1c2ef4f407d1703a69f84711d2d2eff159713abcc9227d7`.
+
+Source-worldgen `20260827T094339Z-636659deb3ad` passes 26.1 Fabric.
+`20260827T094626Z-b5265759bec4` fails the 26.1.1 Fabric seam scan with a
+60-second watchdog (`RingWorldStrongholdTest.verifySeamWorldgenSample`), after
+production fresh/reload passed. Heavy NeoForge compilation overlapped; preserve
+the crash and retest serially before assigning cause. No watchdog relaxation
+or automatic crash retry is allowed. These do not complete the upgrade matrix.
+
 Quick `20260827T083411Z` was cancelled during NeoForge asset download before a
 game launched; `20260827T085115Z` failed both build paths on a Mojang library
 POM (Fabric `FAIL`, NeoForge `INCOMPLETE`). Quick
 `20260827T090236Z-fdb8f0cf5e65` on `7fae756` passed both frozen 338-test builds
 (Fabric 7m35s, NeoForge 16m40s), then failed Fabric's diagnostic build on Maven
 POM `No route to host` errors after 6m26s. NeoForge diagnostics were incomplete;
-neither dedicated runtime launched. No current 26.2 quick PASS is claimed.
+neither dedicated runtime launched. That failed attempt remains unchanged.
 Source-worldgen attempt `20260827T093000Z-f153f86ae12b` stopped at Fabric
 installer `EXIT_1` after a Mojang 26.1 version-JSON connection timeout, before
 world generation. All six assembled 26.1.x archives pass independent SHA-256
