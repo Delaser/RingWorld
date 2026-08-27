@@ -3,8 +3,10 @@ package dev.ringworld.server;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntitySpawnReason;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 
 /**
@@ -25,16 +27,25 @@ public final class RingWorldVanillaFixtureRegistries {
                 .orElseThrow(() -> new IllegalStateException("Missing vanilla fixture item: " + path));
     }
 
-    public static <T extends Entity> EntityType<T> entityType(String path, Class<T> expectedClass) {
+    /**
+     * Creates a fixture entity and checks its actual factory result.  In 26.2
+     * some vanilla registry entries, including {@code oak_boat}, intentionally
+     * expose {@code Entity} as their type's base class even though their factory
+     * still creates the specialized runtime entity.
+     */
+    public static <T extends Entity> T createEntity(String path, Class<T> expectedClass,
+                                                     Level level, EntitySpawnReason reason) {
         EntityType<?> type = BuiltInRegistries.ENTITY_TYPE
                 .getOptional(Identifier.withDefaultNamespace(path))
                 .orElseThrow(() -> new IllegalStateException("Missing vanilla fixture entity type: " + path));
-        if (!expectedClass.isAssignableFrom(type.getBaseClass())) {
-            throw new IllegalStateException("Vanilla fixture entity type " + path + " is "
-                    + type.getBaseClass().getName() + ", not " + expectedClass.getName());
+        Entity entity = type.create(level, reason);
+        if (entity == null) {
+            return null;
         }
-        @SuppressWarnings("unchecked")
-        EntityType<T> typed = (EntityType<T>) type;
-        return typed;
+        if (!expectedClass.isInstance(entity)) {
+            throw new IllegalStateException("Vanilla fixture entity type " + path + " created "
+                    + entity.getClass().getName() + ", not " + expectedClass.getName());
+        }
+        return expectedClass.cast(entity);
     }
 }

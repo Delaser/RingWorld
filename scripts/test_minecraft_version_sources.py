@@ -71,6 +71,21 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
             names,
         )
 
+    def test_fixture_entity_registry_checks_created_instance_not_widened_type_metadata(self):
+        registry = (ROOT / "src/main/java/dev/ringworld/server/RingWorldVanillaFixtureRegistries.java") \
+                .read_text(encoding="utf-8")
+        self.assertIn("createEntity(String path, Class<T> expectedClass", registry)
+        self.assertIn("Entity entity = type.create(level, reason);", registry)
+        self.assertIn("expectedClass.isInstance(entity)", registry)
+        self.assertNotIn("type.getBaseClass()", registry)
+        for relative in (
+            "src/main/java/dev/ringworld/server/RingWorldMultiplayerTest.java",
+            "src/main/java/dev/ringworld/server/RingWorldServer.java",
+            "src/main/java/dev/ringworld/server/RingWorldExtendedMultiplayerTest.java",
+        ):
+            self.assertIn("RingWorldVanillaFixtureRegistries.createEntity(",
+                          (ROOT / relative).read_text(encoding="utf-8"))
+
     def test_version_specific_mixins_are_owned_and_have_audited_targets(self):
         for version in ("26.1", "26.2"):
             client_root = VERSION_ROOT / version / "client/java/dev/ringworld/client/mixin"

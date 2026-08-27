@@ -693,9 +693,8 @@ final class RingWorldExtendedMultiplayerTest {
             weather.setThundering(true);
         }
         if (ticks >= 40 && ticks % 10 == 0) {
-            LightningBolt lightning = RingWorldVanillaFixtureRegistries
-                    .entityType("lightning_bolt", LightningBolt.class)
-                    .create(world, EntitySpawnReason.TRIGGERED);
+            LightningBolt lightning = RingWorldVanillaFixtureRegistries.createEntity(
+                    "lightning_bolt", LightningBolt.class, world, EntitySpawnReason.TRIGGERED);
             if (lightning != null) {
                 lightning.setVisualOnly(true);
                 lightning.setPos(0.5, 121.0, 0.5);

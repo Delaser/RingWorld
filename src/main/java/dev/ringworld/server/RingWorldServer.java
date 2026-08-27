@@ -559,8 +559,8 @@ public final class RingWorldServer {
 
         // An unoccupied vehicle exercises the same periodic entity motion
         // and client tracking path with vehicle-specific physics enabled.
-        Boat boat = RingWorldVanillaFixtureRegistries.entityType("oak_boat", Boat.class)
-                .create(world, EntitySpawnReason.COMMAND);
+        Boat boat = RingWorldVanillaFixtureRegistries.createEntity(
+                "oak_boat", Boat.class, world, EntitySpawnReason.COMMAND);
         if (boat != null) {
             boat.setPos(circumference - 1.5, 123.0, 16.5);
             boat.setNoGravity(true);

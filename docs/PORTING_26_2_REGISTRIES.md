@@ -5,9 +5,11 @@ used by RingWorld's opt-in server and client runtime smoke fixtures, including
 coloured beds/concrete/wool, fixture blocks and items, lightning bolts, boats,
 armour stands, mobs, and copper golems. Those fixtures now resolve the same
 vanilla identifiers through `BuiltInRegistries`, fail closed if an entry is
-absent, and validate an entity type's base class before making the required
-generic cast. This works with both 26.1.2 and 26.2 without changing fixture
-materials or entity behavior.
+absent, and validate the entity factory's actual created instance. In 26.2,
+`oak_boat` intentionally reports the widened `Entity` base class even though
+its factory creates a `Boat`, so descriptor-class checking would incorrectly
+reject the unchanged fixture. This works with both 26.1.2 and 26.2 without
+changing fixture materials or entity behavior.
 
 26.2 also removed the individual coal, redstone, lapis, diamond, and emerald
 ore block tags.  The stronghold fixture therefore names each corresponding

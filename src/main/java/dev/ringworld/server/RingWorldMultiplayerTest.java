@@ -486,8 +486,8 @@ public final class RingWorldMultiplayerTest {
                                                 ServerPlayer player, boolean passed) {
         placementPassed = passed;
         prepareCreativePlayer(player);
-        Boat boat = RingWorldVanillaFixtureRegistries.entityType("oak_boat", Boat.class)
-                .create(world, EntitySpawnReason.COMMAND);
+        Boat boat = RingWorldVanillaFixtureRegistries.createEntity(
+                "oak_boat", Boat.class, world, EntitySpawnReason.COMMAND);
         if (boat != null) {
             boat.setPos(geometry.circumferenceBlocks() - 2.0, 120.0, 3.5);
             boat.setYRot(37.0f);
@@ -498,8 +498,8 @@ public final class RingWorldMultiplayerTest {
             boat.setDeltaMovement(Vec3.ZERO);
             world.addFreshEntity(boat);
             vehicleId = boat.getId();
-            Entity passenger = RingWorldVanillaFixtureRegistries.entityType("armor_stand", ArmorStand.class)
-                    .create(world, EntitySpawnReason.COMMAND);
+            Entity passenger = RingWorldVanillaFixtureRegistries.createEntity(
+                    "armor_stand", ArmorStand.class, world, EntitySpawnReason.COMMAND);
             if (passenger != null) {
                 passenger.setPos(boat.getX(), boat.getY(), boat.getZ());
                 passenger.setYRot(boat.getYRot());
