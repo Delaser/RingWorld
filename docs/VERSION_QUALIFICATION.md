@@ -103,7 +103,8 @@ approval.
 For external dedicated-runtime inputs only, a worker may set
 `RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE` to an existing absolute, read-only,
 non-symlink directory outside the checkout, home, and qualification tree. Its
-entries are `<algorithm>/<digest>`, using the manifest's exact checksum. Each
+read-only regular entries are `<algorithm>/<digest>` (`sha1` or `sha256` with
+lowercase exact-length hex), using the manifest's exact checksum. Each
 entry is copied into the disposable cell and rehashed before use; a missing
 entry falls back to the pinned no-redirect HTTPS fetch, while a bad path,
 symlink, oversize entry, or hash mismatch fails closed. This cache is an

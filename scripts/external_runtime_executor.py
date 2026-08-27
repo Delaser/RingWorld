@@ -16,6 +16,7 @@ from contextlib import nullcontext
 import os
 from pathlib import Path
 import queue
+import re
 import shutil
 import stat
 import subprocess
@@ -273,18 +274,31 @@ def _worker_download_cache(paths: QualificationPaths) -> Path | None:
     return root
 
 
+def _cache_key(download: RuntimeDownload) -> tuple[str, str]:
+    algorithm = download.algorithm.lower()
+    expected_length = {"sha1": 40, "sha256": 64}.get(algorithm)
+    if expected_length is None or download.algorithm != algorithm \
+            or not isinstance(download.checksum, str) \
+            or re.fullmatch(rf"[0-9a-f]{{{expected_length}}}", download.checksum) is None:
+        raise ExternalRuntimeExecutionError("runtime download has an invalid cache checksum algorithm or digest")
+    return algorithm, download.checksum
+
+
 def _seeded_download(download: RuntimeDownload, paths: QualificationPaths) -> Path | None:
     root = _worker_download_cache(paths)
     if root is None:
         return None
-    entry = root / download.algorithm.lower() / download.checksum.lower()
-    if (root / download.algorithm.lower()).is_symlink() or entry.is_symlink():
+    algorithm, digest = _cache_key(download)
+    entry = root / algorithm / digest
+    if (root / algorithm).is_symlink() or entry.is_symlink():
         raise ExternalRuntimeExecutionError("worker download cache entry may not traverse symlinks")
     if not entry.exists() and not entry.is_symlink():
         return None
     _regular_file(entry, "worker download cache entry")
     if entry.stat().st_size > MAX_DOWNLOAD_BYTES:
         raise ExternalRuntimeExecutionError("worker download cache entry exceeds qualification size limit")
+    if entry.stat().st_mode & 0o222:
+        raise ExternalRuntimeExecutionError("worker download cache entry must be read-only")
     checked = verify_pinned_file(entry, download.algorithm, download.checksum)
     if not checked.verified:
         raise ExternalRuntimeExecutionError(f"worker download cache entry fails its pin: {download.name}")
@@ -305,6 +319,7 @@ def fetch_pinned_https(
     """
     if timeout_seconds < 1 or not is_within(download.destination, paths.cache_directory):
         raise ExternalRuntimeExecutionError("runtime download has an unsafe destination or timeout")
+    _cache_key(download)
     _validate_https_url(download.url)
     destination = download.destination
     if destination.exists() or destination.is_symlink():
@@ -317,12 +332,15 @@ def fetch_pinned_https(
     destination.parent.mkdir(parents=True, exist_ok=True)
     if not is_within(destination.parent, paths.cell_root):
         raise ExternalRuntimeExecutionError("runtime download parent escapes qualification cell")
-    descriptor, name = tempfile.mkstemp(prefix=f".{destination.name}.", suffix=".partial", dir=destination.parent)
-    temporary = Path(name)
+    seed = _seeded_download(download, paths)
+    descriptor: int | None = None
+    temporary: Path | None = None
     try:
-        seed = _seeded_download(download, paths)
+        descriptor, name = tempfile.mkstemp(prefix=f".{destination.name}.", suffix=".partial", dir=destination.parent)
+        temporary = Path(name)
         if seed is not None:
             os.close(descriptor)
+            descriptor = None
             shutil.copyfile(seed, temporary)
             checked = verify_pinned_file(temporary, download.algorithm, download.checksum)
             if not checked.verified:
@@ -330,6 +348,7 @@ def fetch_pinned_https(
             _atomic_link_new(temporary, destination)
             return DownloadResult(download.name, str(destination), checked.algorithm, checked.expected, checked.actual, True)
         with os.fdopen(descriptor, "wb") as sink:
+            descriptor = None
             response = opener(download.url, timeout=timeout_seconds)
             try:
                 final_url = response.geturl() if hasattr(response, "geturl") else download.url
@@ -361,10 +380,10 @@ def fetch_pinned_https(
         _atomic_link_new(temporary, destination)
         return DownloadResult(download.name, str(destination), checked.algorithm, checked.expected, checked.actual, False)
     finally:
-        try:
-            temporary.unlink()
-        except FileNotFoundError:
-            pass
+        if descriptor is not None:
+            os.close(descriptor)
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def _write_planned_file(path: Path, contents: str, runtime_root: Path) -> None:

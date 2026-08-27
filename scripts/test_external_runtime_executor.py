@@ -343,6 +343,21 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
                 with self.assertRaisesRegex(EXECUTOR.ExternalRuntimeExecutionError, "non-symlink"):
                     EXECUTOR.fetch_pinned_https(plan.downloads[0], paths)
 
+    def test_worker_download_cache_rejects_untrusted_algorithm_and_digest_before_path_join(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths, plan, _ = self.plan(Path(directory), "26.1-fabric")
+            for changed in (
+                replace(plan.downloads[0], algorithm="md5"),
+                replace(plan.downloads[0], checksum="../outside"),
+                replace(plan.downloads[0], checksum="A" * 64),
+            ):
+                with self.subTest(changed=changed.algorithm + ":" + changed.checksum):
+                    with self.assertRaisesRegex(EXECUTOR.ExternalRuntimeExecutionError, "algorithm or digest"):
+                        EXECUTOR.fetch_pinned_https(
+                            changed, paths,
+                            opener=lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("network must not run")),
+                        )
+
     def test_extra_ringworld_jar_is_rejected_after_copy(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             paths, plan, bodies = self.plan(Path(directory), "26.1-fabric")

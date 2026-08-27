@@ -518,7 +518,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   `RINGWORLD_QUALIFICATION_DOWNLOAD_CACHE` is an optional worker-provisioned,
   read-only external seed only for exact pinned external-runtime downloads.
   It must be absolute, non-symlinked, and outside checkout/home/qualification;
-  use `<algorithm>/<digest>` entries. Each copied seed is independently
+  use read-only `<algorithm>/<digest>` entries with exact lowercase SHA-1 or
+  SHA-256 digests. Each copied seed is independently
   rehashed and a malformed or mismatched seed fails closed.
 - `scripts/external_runtime_smoke.py`: pure production-style dedicated-server
   plan for the pinned Mojang server, official installer, exact mods inventory,
