@@ -54,6 +54,12 @@ quick-evidence cell counts, and public metadata version labels from the selected
 manifest contract. The release descriptor's game-version list must match that
 contract exactly; publication still requires separate owner authorization.
 
+For the retained 26.1.x 55-PASS aggregate plus its explicitly selected repair
+terminals, use `scripts/review_composite_nightly_evidence.py`. It rehashes the
+selected aggregate/terminal/retained-artifact inputs and emits a read-only
+coverage review which remains explicitly non-monolithic. It is release-audit
+input, not replacement runtime evidence or publication authorization.
+
 ## What is derived rather than hard-coded
 
 `scripts/minecraft_support_contract.py` derives the oldest build ABI,
