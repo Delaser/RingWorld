@@ -125,10 +125,11 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             runtime.parent.mkdir(parents=True)
             runtime.write_bytes(b"world")
 
-            removed = _cleanup_disposable_child_state(
+            removed, retained_source = _cleanup_disposable_child_state(
                 root, cell, {"run_id": run_id})
 
             self.assertEqual(4, len(removed))
+            self.assertIsNone(retained_source)
             self.assertTrue(evidence.is_file())
             self.assertFalse(runtime.exists())
             for name in ("gradle-home", "cache", "build", "run"):
@@ -149,10 +150,11 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             terminal.parent.mkdir(parents=True)
             terminal.write_text("{}", encoding="utf-8")
 
-            removed = _cleanup_disposable_child_state(
+            removed, retained_source = _cleanup_disposable_child_state(
                 root, cell, {"terminal_evidence": str(terminal)})
 
             self.assertEqual((str((cell_root / "run").resolve(strict=False)),), removed)
+            self.assertIsNone(retained_source)
             self.assertTrue(terminal.is_file())
             self.assertFalse(runtime.exists())
 
@@ -182,6 +184,75 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             _cleanup_disposable_child_state(root, cell, {"run_id": run_id})
             self.assertTrue(retained_path.is_file())
             self.assertFalse(capture.exists())
+
+    def test_successful_worldgen_cleanup_keeps_only_source_world(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cell = {"id": "26.2-fabric", "loader": "fabric",
+                    "minecraft": {"version": "26.2"}}
+            run_id = "20260827T000000Z-0123456789ab"
+            cell_root = (root / "dist/qualification/ringworld/26.2/fabric" / run_id
+                         / "26.2-fabric")
+            source_world = (cell_root / "run/nightly/02-worldgen-seam-structures"
+                            / "production/runtime/world")
+            (source_world / "level.dat").parent.mkdir(parents=True)
+            (source_world / "level.dat").write_bytes(b"world")
+            for path in (
+                    cell_root / "gradle-home/temporary.bin",
+                    cell_root / "cache/temporary.bin",
+                    cell_root / "build/temporary.bin",
+                    cell_root / "run/nightly/02-worldgen-seam-structures/production/libs/temp.jar",
+                    cell_root / "run/nightly/02-worldgen-seam-structures/production/runtime/logs/latest.log",
+                    cell_root / "run/other/runtime.bin"):
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(b"temporary")
+
+            removed, retained_source = _cleanup_disposable_child_state(
+                root, cell, {"run_id": run_id}, retain_worldgen_source=True)
+
+            self.assertEqual(str(source_world.resolve(strict=True)), retained_source)
+            self.assertTrue((source_world / "level.dat").is_file())
+            self.assertEqual(3, len(removed))
+            self.assertFalse((cell_root / "run/other").exists())
+            self.assertFalse((source_world.parent / "logs").exists())
+            self.assertFalse((source_world.parent.parent / "libs").exists())
+            for name in ("gradle-home", "cache", "build"):
+                self.assertFalse((cell_root / name).exists())
+
+    def test_worldgen_cleanup_rejects_symlinked_source_world(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            outside = root / "outside-world"
+            outside.mkdir()
+            cell = {"id": "26.2-fabric", "loader": "fabric",
+                    "minecraft": {"version": "26.2"}}
+            run_id = "20260827T000000Z-0123456789ab"
+            source_world = (root / "dist/qualification/ringworld/26.2/fabric" / run_id
+                            / "26.2-fabric/run/nightly/02-worldgen-seam-structures"
+                            / "production/runtime/world")
+            source_world.parent.mkdir(parents=True)
+            source_world.symlink_to(outside, target_is_directory=True)
+
+            with self.assertRaisesRegex(NightlyMatrixError, "missing or is a symlink"):
+                _cleanup_disposable_child_state(
+                    root, cell, {"run_id": run_id}, retain_worldgen_source=True)
+
+    def test_worldgen_cleanup_rejects_source_runtime_link_outside_run_root(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            outside = root / "outside-runtime"
+            (outside / "world").mkdir(parents=True)
+            cell = {"id": "26.2-fabric", "loader": "fabric",
+                    "minecraft": {"version": "26.2"}}
+            run_id = "20260827T000000Z-0123456789ab"
+            production = (root / "dist/qualification/ringworld/26.2/fabric" / run_id
+                          / "26.2-fabric/run/nightly/02-worldgen-seam-structures/production")
+            production.mkdir(parents=True)
+            (production / "runtime").symlink_to(outside, target_is_directory=True)
+
+            with self.assertRaisesRegex(NightlyMatrixError, "missing or is a symlink"):
+                _cleanup_disposable_child_state(
+                    root, cell, {"run_id": run_id}, retain_worldgen_source=True)
 
     def test_cleanup_rejects_escaping_run_id(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

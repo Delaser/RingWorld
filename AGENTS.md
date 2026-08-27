@@ -452,10 +452,14 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   these waits ahead of child preparation: retained aggregate diagnostics
   proved that placement does not protect the strict readiness barrier or a
   freshly restarted two-client fixture from sustained host load. After each
-  independently verified child result it deletes that
-  child's disposable `gradle-home`, `cache`, `build`, and `run` directories;
-  logs, captures, and immutable evidence are retained. External worldgen and
-  Atlas runners intentionally emit `terminal_evidence` rather than `run_id`;
+  independently verified child result it deletes that child's disposable
+  `gradle-home`, `cache`, `build`, and `run` directories. The sole exception is
+  a successful worldgen child: retain only its verified original
+  `run/nightly/02-worldgen-seam-structures/production/runtime/world` subtree
+  for copied-world forward-upgrade qualification, while removing neighboring
+  runtime state. Logs, captures, and immutable evidence are retained only by
+  their existing hash-bound retention paths. External worldgen and Atlas
+  runners intentionally emit `terminal_evidence` rather than `run_id`;
   cleanup must derive their run ID only from the already-contained canonical
   `<version>/<loader>/<run>/<cell>/evidence/nightly/...` terminal path. Never
   skip those external runtimes or trust an arbitrary path for cleanup. Before

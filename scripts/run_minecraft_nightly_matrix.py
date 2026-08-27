@@ -83,6 +83,8 @@ EVIDENCE_DIRECTORY = {
     "production-lifecycle": "11-production-lifecycle",
     "production-render": "12-production-atlas-render",
 }
+WORLDGEN_SOURCE_WORLD_RELATIVE_PATH = Path(
+    "nightly/02-worldgen-seam-structures/production/runtime/world")
 
 
 class NightlyMatrixError(QualificationExecutionError):
@@ -231,18 +233,76 @@ def _delete_disposable_tree(path: Path) -> None:
     path.rmdir()
 
 
+def _worldgen_source_world(root: Path, cell: Mapping[str, Any],
+                           payload: Mapping[str, Any]) -> Path:
+    """Return the one verified worldgen world which survives successful cleanup."""
+    cell_root = _child_cell_root(root, cell, payload)
+    run_root = cell_root / "run"
+    if run_root.is_symlink() or not run_root.is_dir():
+        raise NightlyMatrixError("worldgen source runtime is missing or is a symlink")
+    source = run_root
+    for part in WORLDGEN_SOURCE_WORLD_RELATIVE_PATH.parts:
+        source /= part
+        if source.is_symlink() or not source.is_dir():
+            raise NightlyMatrixError("worldgen source world is missing or is a symlink")
+    resolved_run_root = run_root.resolve(strict=True)
+    resolved_source = source.resolve(strict=True)
+    if not resolved_source.is_relative_to(resolved_run_root):
+        raise NightlyMatrixError("worldgen source world escapes disposable runtime")
+    return source
+
+
+def _delete_disposable_tree_preserving(path: Path, retained: Path) -> bool:
+    """Delete a disposable tree except one already validated descendant.
+
+    Returns whether *path* itself was removed.  Only ancestors of *retained*
+    are left behind, so no logs, libraries, or other runtime state survives.
+    """
+    if path == retained:
+        return False
+    if path.is_symlink():
+        path.unlink()
+        return True
+    if not path.exists():
+        return True
+    if not path.is_dir():
+        raise NightlyMatrixError(f"nightly disposable path is not a directory: {path}")
+    for entry in os.scandir(path):
+        child = Path(entry.path)
+        if child == retained or retained.is_relative_to(child):
+            _delete_disposable_tree_preserving(child, retained)
+        elif entry.is_symlink():
+            child.unlink()
+        elif entry.is_dir(follow_symlinks=False):
+            _delete_disposable_tree(child)
+        else:
+            child.unlink()
+    if retained.is_relative_to(path):
+        return False
+    path.rmdir()
+    return True
+
+
 def _cleanup_disposable_child_state(root: Path, cell: Mapping[str, Any],
-                                    payload: Mapping[str, Any]) -> tuple[str, ...]:
+                                    payload: Mapping[str, Any], *,
+                                    retain_worldgen_source: bool = False
+                                    ) -> tuple[tuple[str, ...], str | None]:
     cell_root = _child_cell_root(root, cell, payload)
     if cell_root.is_symlink():
         raise NightlyMatrixError("nightly child cell root is a symlink")
+    retained_source = (_worldgen_source_world(root, cell, payload)
+                       if retain_worldgen_source else None)
     removed = []
     for name in ("gradle-home", "cache", "build", "run"):
         target = cell_root / name
         if target.exists() or target.is_symlink():
-            _delete_disposable_tree(target)
-            removed.append(str(target))
-    return tuple(removed)
+            if name == "run" and retained_source is not None:
+                if _delete_disposable_tree_preserving(target, retained_source):
+                    removed.append(str(target))
+            else:
+                _delete_disposable_tree(target)
+                removed.append(str(target))
+    return tuple(removed), str(retained_source) if retained_source is not None else None
 
 
 def _cooldown(seconds: int, *, sleeper: Any = time.sleep) -> None:
@@ -528,10 +588,12 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
                 except NightlyMatrixError as error:
                     verdict, child_reason = "FAIL", str(error)
             removed: tuple[str, ...] = ()
+            retained_source_world: str | None = None
             if payload.get("run_id") or payload.get("terminal_evidence"):
                 try:
-                    removed = _cleanup_disposable_child_state(
-                        root, by_id[cell_id], payload)
+                    removed, retained_source_world = _cleanup_disposable_child_state(
+                        root, by_id[cell_id], payload,
+                        retain_worldgen_source=(fixture == "worldgen" and verdict == "PASS"))
                 except (NightlyMatrixError, OSError) as error:
                     verdict, child_reason = "FAIL", f"disposable child cleanup failed: {error}"
             retryable = _retryable_infrastructure_failure(verdict, child_reason, payload)
@@ -548,6 +610,7 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
                 },
                 "terminal_evidence": list(terminals),
                 "retained_artifacts": list(retained_artifacts),
+                "retained_source_world": retained_source_world,
                 "discarded_disposable_paths": list(removed),
                 "command": {"argv": list(child.argv), "exit_code": child.return_code,
                             "started_at": child.started_at_utc,
@@ -564,6 +627,7 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
             "reason": child_reason, "child": payload,
             "expected_identity": expected[cell_id], "terminal_evidence": terminals,
             "retained_artifacts": list(retained_artifacts),
+            "retained_source_world": retained_source_world,
             "discarded_disposable_paths": list(removed),
             "attempt_count": len(attempts),
             "infrastructure_retry_count": len(attempts) - 1,
