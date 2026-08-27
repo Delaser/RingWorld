@@ -30,9 +30,11 @@ Start here:
   stable-version intake, automation tiers, evidence contract, and complete
   Modrinth/CurseForge delivery plan.
 - [`VERSION_QUALIFICATION.md`](VERSION_QUALIFICATION.md): repeatable manifest-driven
-  version intake, commands, and the qualified but unpublished 26.2 checkpoint.
+  version intake, commands, and the qualified 26.2 checkpoint.
 - [`RELEASE_1_1_OWNER_HANDOFF.md`](RELEASE_1_1_OWNER_HANDOFF.md): exact staged
-  candidates, remaining packaged-client checks, and the publication stop point.
+  candidates, packaged-client checks, and owner approval.
+- [`RELEASE_1_1_PUBLICATION_2026-08-27.md`](RELEASE_1_1_PUBLICATION_2026-08-27.md):
+  1.1 host IDs, exact sources, downloaded hashes and remaining host review limits.
 - [`VERSION_FORWARD_UPGRADE.md`](VERSION_FORWARD_UPGRADE.md): copied-world
   qualification across independently pinned stable version lines.
 - [`DUAL_LOADER_STANDALONE_PLAN.md`](DUAL_LOADER_STANDALONE_PLAN.md): approved

@@ -5,7 +5,9 @@ CurseForge project `1645598` is the official RingWorld Minecraft Mod listing:
 first files were submitted for moderation on 2026-08-09. CurseForge may keep
 the public page unavailable until moderation is complete.
 
-This document remains the exact 26.1.2 host record and manual upload runbook.
+The [1.1 publication record](RELEASE_1_1_PUBLICATION_2026-08-27.md) lists the
+four current file IDs and independently verified CDN hashes. The older
+sections below retain the exact 1.0/26.1.2 host record and manual upload runbook.
 The qualification, staging, and dual-host delivery plan for 26.1.x and later
 stable lines is
 [`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
@@ -33,6 +35,20 @@ archive, delete, update, or resubmit files automatically.
 
 Official reference:
 [CurseForge Upload API](https://support.curseforge.com/support/solutions/articles/9000197321-curseforge-upload-api).
+
+The 2026-08-27 live submission preflight confirmed that the author API rejects
+`relations.projects: []` with HTTP 400/error 1002. Dependency-free NeoForge
+submissions must omit `relations` entirely; Fabric retains its required Fabric
+API relation. The publisher and focused regression test enforce this shape.
+The same live schema requires `projectID` as a JSON integer and a `slug` on
+each relation, despite the older example's string ID. Fabric API uses the
+reviewed pair `306612` / `fabric-api`; unknown dependency IDs without an
+explicit slug fail before submission.
+
+Corrected live requests then returned HTTP 500 without a successful file ID.
+After checking the author listing for duplicates, the owner-authorized 1.1
+uploads used the author UI. Do not treat this as proof that the API uploader
+works end to end, and do not resubmit these files to diagnose the API.
 
 ## Current 1.0 uploads
 

@@ -43,22 +43,28 @@ on the finite Overworld ring, including after very long Nether journeys.
   to see the rest of the world.
 - **Custom dimensions.** Choose a preset or enter your own circumference,
   width, and wall height when creating the world.
-- **Fabric and NeoForge.** RingWorld 1.0 is available for both loaders.
+- **Fabric and NeoForge.** Separate builds for both loaders.
 - **Server support.** The mod works in single-player and on dedicated
   multiplayer servers. Every connecting player needs the matching mod.
 
 ## Download and requirements
 
-The current public release is **RingWorld 1.0 for Minecraft Java 26.1.2**.
+**RingWorld 1.1 supports Minecraft Java 26.1, 26.1.1, 26.1.2 and 26.2.**
+Choose the file for your Minecraft version and loader. The 26.1.x files cover
+all three patches; 26.2 has separate files. Both hosts have received the
+release, but some files or listings may still be pending review.
+See the [release record](docs/RELEASE_1_1_PUBLICATION_2026-08-27.md).
 
-Work on broader version support, including 26.2, is in progress. A version
-being in the test matrix does not mean the published mod supports it yet.
-Contributors can follow the [version qualification guide](docs/VERSION_QUALIFICATION.md).
+| Minecraft | Fabric (Loader 0.19.3) | NeoForge |
+| --- | --- | --- |
+| 26.1 | Fabric API 0.145.1+26.1 | 26.1.0.19-beta |
+| 26.1.1 | Fabric API 0.145.4+26.1.1 | 26.1.1.15-beta |
+| 26.1.2 | Fabric API 0.155.2+26.1.2 | 26.1.2.87 |
+| 26.2 | Fabric API 0.158.0+26.2 | 26.2.0.69 |
 
-| Loader | Required software |
-| --- | --- |
-| Fabric | Minecraft 26.1.2, Java 25, Fabric Loader 0.19.3, Fabric API 0.155.2+26.1.2 |
-| NeoForge | Minecraft 26.1.2, Java 25, NeoForge 26.1.2.87 or later compatible 26.1.2 build |
+All four versions require **Java 25**. The table lists the tested dependency
+versions; NeoForge does not need Fabric API. Back up worlds before upgrading
+Minecraft and do not reopen upgraded saves in older versions.
 
 Install the Fabric **or** NeoForge RingWorld jar in the normal `mods` folder.
 Do not install both. A Fabric client joins a Fabric RingWorld server; a

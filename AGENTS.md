@@ -17,10 +17,16 @@ not change the retained runtime jars. Windows package review has owner sign-off
 package-only repair: a native Prism component derived from the SHA-256-pinned
 official 26.2.0.69 installer, with no loader downgrade or mod-jar changes.
 See `docs/MACOS_PACKAGE_REVIEW_2026-08-27.md` for exact replacement archives.
-Static CI is green on Windows/Linux after test-only correction `a2ba721`;
-owner final release approval remains separate.
-Publication and live-world changes remain held. Older checkpoints below are
-provenance, not the current completion claim.
+Static CI is green on Windows/Linux after test-only correction `a2ba721`.
+The owner authorized merge/publication on 2026-08-27. PR #232 is merged;
+four exact 1.1 jars are submitted to both hosts and all eight CDN downloads
+match their approved hashes. Host moderation can still be pending. See
+[`docs/RELEASE_1_1_PUBLICATION_2026-08-27.md`](docs/RELEASE_1_1_PUBLICATION_2026-08-27.md)
+for current versions, immutable sources, file IDs and limits. The API uploader
+still needs a successful CurseForge integration run; these uploads used the
+author UIs after API errors, not an unattended pipeline PASS.
+Live-world/server changes remain held. Older checkpoints below are
+historical provenance, not the current support or publication claim.
 
 Last playable code audit: 2026-07-28, covering the final Minecraft 1.21.11
 implementation identified in the private development archive as
@@ -188,11 +194,10 @@ agent uses a separate account and must monitor its own allowance.
 ## What this project is
 
 RingWorld is a dual-loader mod ported from Minecraft Java 1.21.11. Minecraft
-26.1 is the development compatibility floor, while 26.1.2 remains the only
-currently proven and published release. Fabric and NeoForge are published as
-matched 1.0 builds for 26.1.2. Runtime, packaging, owner, and independent
-release gates are complete; broad compatibility and the rolling-version
-qualification automation remain.
+26.1 is the development compatibility floor. The current 1.1 release covers
+26.1, 26.1.1 and 26.1.2 with one jar per loader, plus separate 26.2 jars.
+Runtime, package review and owner approval are complete; host moderation may
+still be pending. Broad mod compatibility and API-publication follow-up remain.
 The validated design turns only the Overworld into a finite band:
 
 - canonical X runs around the circumference and is periodic;
@@ -240,19 +245,19 @@ under it.
 
 ## Minecraft version support policy
 
-Active 26.2 work uses `config/minecraft-version-matrix-26.2.json`. Derive
+Qualified 26.2 inputs use `config/minecraft-version-matrix-26.2.json`. Derive
 candidate identities, ranges, oldest ABI, and cell coverage through
 `scripts/minecraft_support_contract.py`; do not add another fixed version
 tuple or assume every loader group has three cells. The original 26.1.x
 manifest and its historical evidence remain separate. See
-`docs/VERSION_QUALIFICATION.md` for the repeatable operator procedure. 26.2
-remains pending until its full runtime gates pass; publishing is paused.
+`docs/VERSION_QUALIFICATION.md` for the repeatable operator procedure and the
+1.1 publication record for current host state. Input manifests are retained
+independently of the release record; do not rewrite their historical evidence.
 
-Minecraft 26.1 is the source/build compatibility floor. This is not permission
-to advertise the current jar for 26.1 or 26.1.1: 26.1.2 remains the exact
-verified and published runtime until the six-cell Fabric/NeoForge 26.1.x
-matrix passes. A 26.1.x-wide release must use the exact same jar hash for every
-tested patch release on a loader.
+Minecraft 26.1 is the source/build compatibility floor. The 1.1 release is
+qualified across all six Fabric/NeoForge 26.1.x cells and both 26.2 cells.
+A 26.1.x-wide release must use the exact same jar hash for every tested patch
+on a loader; the 26.2 port uses separate artifacts.
 
 Every later stable Minecraft release enters the automated qualification
 pipeline described in
@@ -267,7 +272,7 @@ experimental. Never rewrite historical 26.1.2 evidence as broader evidence.
 
 Fabric and NeoForge are current supported loaders. NeoForge has full
 graphical, dedicated-server, topology, worldgen, atlas, storage, multiplayer,
-and local packaging parity and is published at 1.0. Future
+and local packaging parity, retained in the current 1.1 release. Future
 development must not deepen Fabric coupling. Design new gameplay, topology, persistence,
 worldgen, rendering math, protocol models, and tests as loader-agnostic common
 code. When a loader API is unavoidable, isolate it behind a narrow platform
@@ -288,10 +293,9 @@ In particular:
 - document a deliberate single-loader exception before merging it, including
   why shared or dual support is not currently practical.
 
-Dual Fabric/NeoForge support is the intended architecture, not a claim about
-the artifacts currently released. Do not advertise NeoForge compatibility
-until its client, dedicated server, topology, rendering, and multiplayer gates
-pass.
+Dual Fabric/NeoForge support is established for the qualified release lines.
+For every future version, require both loaders' client, dedicated server,
+topology, rendering and multiplayer gates before advertising that support.
 
 ## The invariants
 

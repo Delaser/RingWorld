@@ -94,8 +94,14 @@ def publication_plan(stage: Path, host: str, loader: str) -> dict[str, Any]:
                      "requested_status": "unlisted"})
     else:
         relations = metadata.get("relations")
-        projects = [{"projectID": str(item["project_id"]), "type": item["relation_type"]}
-                    for item in relations] if isinstance(relations, list) else []
+        projects = []
+        for item in relations if isinstance(relations, list) else []:
+            project_id = int(item["project_id"])
+            slug = item.get("slug") or {306612: "fabric-api"}.get(project_id)
+            if not isinstance(slug, str) or not slug.strip():
+                raise PublishPlanError("CurseForge dependency requires a reviewed slug")
+            projects.append({"projectID": project_id, "slug": slug,
+                             "type": item["relation_type"]})
         data = {
             "changelog": metadata["changelog"], "changelogType": "markdown",
             "displayName": metadata["display_name"],
@@ -103,8 +109,10 @@ def publication_plan(stage: Path, host: str, loader: str) -> dict[str, Any]:
                                  "Fabric" if loader == "fabric" else "NeoForge"],
             "releaseType": metadata["release_type"],
             "isMarkedForManualRelease": True,
-            "relations": {"projects": projects},
         }
+        # The author API rejects an explicitly empty projects array.
+        if projects:
+            data["relations"] = {"projects": projects}
     return {
         "format": 1, "dry_run": True, "host": host, "loader": loader,
         "method": "POST", "endpoint": ENDPOINT[host], "token_environment": TOKEN_ENV[host],

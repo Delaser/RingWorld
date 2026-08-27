@@ -1,13 +1,14 @@
 # Compatibility contract
 
 RingWorld is an engine-level mod, not an ordinary content mod. Both the server
-and every client need the same build. Compatibility contract version 1 applies
-to Minecraft 26.1.2 and the `1.0.0+mc26.1.2` Fabric and NeoForge line.
+and every client need the matching game version, loader and RingWorld build.
+Compatibility contract version 1 remains the shared contract in the 1.1
+Fabric and NeoForge releases for 26.1, 26.1.1, 26.1.2 and 26.2.
 
-Minecraft 26.1 is the development compatibility floor, not yet a blanket
-runtime claim. The published contract remains 26.1.2 until the exact same
-loader-specific artifacts pass the 26.1, 26.1.1, and 26.1.2 qualification
-matrix. Later stable versions use the same fail-closed intake described in
+One unchanged jar per loader covers the three qualified 26.1.x patches;
+26.2 has separate jars. Exact dependencies are in the [README](../README.md)
+and host records are in the [1.1 release record](RELEASE_1_1_PUBLICATION_2026-08-27.md).
+Later stable versions use the same fail-closed intake described in
 [`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
 
 ## Supported baseline
@@ -16,11 +17,11 @@ The release gate covers this exact foundation:
 
 | Component | Supported contract |
 | --- | --- |
-| Minecraft | Java Edition 26.1.2 |
-| Java | 25 or newer within Minecraft 26.1.2's supported runtime |
-| Loader | Fabric Loader 0.19.3 or newer compatible 0.19.x |
-| API | The Fabric API version resolved by the published RingWorld build |
-| Renderer | Minecraft's vanilla terrain, entity, cloud, and shader pipeline |
+| Minecraft | Java Edition 26.1, 26.1.1, 26.1.2, or 26.2; matching jar required |
+| Java | 25 |
+| Loader | Fabric Loader 0.19.3 or the exact qualified NeoForge build for that game version |
+| API | Matching Fabric API on Fabric only |
+| Renderer | Vanilla OpenGL terrain, entity, cloud, and shader pipeline; experimental Vulkan is not qualified |
 | Server | Integrated and dedicated servers with RingWorld installed |
 | Client | Matching RingWorld settings/atlas channel generations and format |
 

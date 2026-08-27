@@ -52,6 +52,26 @@ class QualifiedPublisherTest(unittest.TestCase):
         self.assertTrue(curseforge["metadata"]["isMarkedForManualRelease"])
         self.assertEqual(["Client", "Server", "26.1", "26.1.1", "26.1.2", "NeoForge"],
                          curseforge["metadata"]["gameVersionNames"])
+        self.assertNotIn("relations", curseforge["metadata"])
+
+    def test_curseforge_preserves_required_fabric_api(self) -> None:
+        path = self.stage / "fabric" / "CURSEFORGE-UPLOAD.json"
+        metadata = json.loads(path.read_text())
+        metadata["relations"] = [{"project_id": 306612,
+                                   "relation_type": "requiredDependency"}]
+        path.write_text(json.dumps(metadata))
+        plan = publication_plan(self.stage, "curseforge", "fabric")
+        self.assertEqual({"projects": [{"projectID": 306612, "slug": "fabric-api",
+                                        "type": "requiredDependency"}]},
+                         plan["metadata"]["relations"])
+
+    def test_curseforge_rejects_unknown_dependency_without_slug(self) -> None:
+        path = self.stage / "fabric" / "CURSEFORGE-UPLOAD.json"
+        metadata = json.loads(path.read_text())
+        metadata["relations"] = [{"project_id": 123, "relation_type": "requiredDependency"}]
+        path.write_text(json.dumps(metadata))
+        with self.assertRaisesRegex(PublishPlanError, "reviewed slug"):
+            publication_plan(self.stage, "curseforge", "fabric")
 
     def test_rejects_changed_jar_and_wrong_authorization(self) -> None:
         plan = publication_plan(self.stage, "modrinth", "fabric")
