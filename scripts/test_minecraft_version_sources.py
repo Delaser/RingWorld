@@ -82,9 +82,14 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
             "src/main/java/dev/ringworld/server/RingWorldMultiplayerTest.java",
             "src/main/java/dev/ringworld/server/RingWorldServer.java",
             "src/main/java/dev/ringworld/server/RingWorldExtendedMultiplayerTest.java",
+            "src/client/java/dev/ringworld/client/CurvedObjectCaptureClient.java",
         ):
             self.assertIn("RingWorldVanillaFixtureRegistries.createEntity(",
                           (ROOT / relative).read_text(encoding="utf-8"))
+        for source_root in (ROOT / "src/main/java", ROOT / "src/client/java"):
+            for source in source_root.rglob("*.java"):
+                text = source.read_text(encoding="utf-8")
+                self.assertNotRegex(text, r"RingWorldVanillaFixtureRegistries\s*\.\s*entityType\(")
 
     def test_version_specific_mixins_are_owned_and_have_audited_targets(self):
         for version in ("26.1", "26.2"):

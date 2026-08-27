@@ -10,6 +10,9 @@ absent, and validate the entity factory's actual created instance. In 26.2,
 its factory creates a `Boat`, so descriptor-class checking would incorrectly
 reject the unchanged fixture. This works with both 26.1.2 and 26.2 without
 changing fixture materials or entity behavior.
+The same create-time check covers curved-object client fixtures (copper golem,
+boat, cow and zombie); the static contract rejects obsolete helper calls across
+both common and client Java sources.
 
 26.2 also removed the individual coal, redstone, lapis, diamond, and emerald
 ore block tags.  The stronghold fixture therefore names each corresponding

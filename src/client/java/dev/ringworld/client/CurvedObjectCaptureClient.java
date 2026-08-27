@@ -180,8 +180,8 @@ public final class CurvedObjectCaptureClient {
         world.setBlock(new BlockPos(62, 120, 2), RingWorldVanillaFixtureRegistries.block("shulker_box").defaultBlockState(), 3);
         world.setBlock(new BlockPos(66, 120, 0), RingWorldVanillaFixtureRegistries.block("white_banner").defaultBlockState(), 3);
 
-        var copperGolem = RingWorldVanillaFixtureRegistries
-                .entityType("copper_golem", CopperGolem.class).create(world, EntitySpawnReason.COMMAND);
+        var copperGolem = RingWorldVanillaFixtureRegistries.createEntity(
+                "copper_golem", CopperGolem.class, world, EntitySpawnReason.COMMAND);
         if (copperGolem != null) {
             copperGolem.setPos(64.5, 120.0, -2.0);
             copperGolem.setNoAi(true);
@@ -193,23 +193,23 @@ public final class CurvedObjectCaptureClient {
         item.setNoGravity(true);
         item.setNeverPickUp();
         world.addFreshEntity(item);
-        var boat = RingWorldVanillaFixtureRegistries.entityType("oak_boat",
-                net.minecraft.world.entity.vehicle.boat.Boat.class).create(world, EntitySpawnReason.COMMAND);
+        var boat = RingWorldVanillaFixtureRegistries.createEntity("oak_boat",
+                net.minecraft.world.entity.vehicle.boat.Boat.class, world, EntitySpawnReason.COMMAND);
         if (boat != null) {
             boat.setPos(72.5, 120.15, 2.0);
             boat.setNoGravity(true);
             world.addFreshEntity(boat);
         }
-        var cow = RingWorldVanillaFixtureRegistries.entityType("cow", Cow.class)
-                .create(world, EntitySpawnReason.COMMAND);
+        var cow = RingWorldVanillaFixtureRegistries.createEntity(
+                "cow", Cow.class, world, EntitySpawnReason.COMMAND);
         if (cow != null) {
             cow.setPos(76.5, 120.0, -2.0);
             cow.setNoAi(true);
             cow.setPersistenceRequired();
             world.addFreshEntity(cow);
         }
-        var zombie = RingWorldVanillaFixtureRegistries.entityType("zombie", Zombie.class)
-                .create(world, EntitySpawnReason.COMMAND);
+        var zombie = RingWorldVanillaFixtureRegistries.createEntity(
+                "zombie", Zombie.class, world, EntitySpawnReason.COMMAND);
         if (zombie != null) {
             zombie.setPos(80.5, 120.0, 2.0);
             zombie.setNoAi(true);
