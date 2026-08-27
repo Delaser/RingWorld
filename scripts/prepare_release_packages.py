@@ -357,9 +357,18 @@ def validate_inputs(
         raise PackageError("instance template is missing " + ", ".join(missing))
     try:
         pack = json.loads((instance_template / "mmc-pack.json").read_text(encoding="utf-8"))
-        components = {
-            component["uid"]: component["version"] for component in pack["components"]
-        }
+        raw_components = pack["components"]
+        if not isinstance(raw_components, list) or any(
+                not isinstance(component, dict) or not isinstance(component.get("uid"), str)
+                or not isinstance(component.get("version"), str) for component in raw_components):
+            raise ValueError
+        component_ids = [component["uid"] for component in raw_components]
+        if len(component_ids) != len(set(component_ids)):
+            raise PackageError("instance template has duplicate Prism component UID")
+        opposite = "net.neoforged" if loader == "fabric" else "net.fabricmc.fabric-loader"
+        if opposite in component_ids:
+            raise PackageError("instance template contains the opposite loader component")
+        components = {component["uid"]: component["version"] for component in raw_components}
     except (KeyError, TypeError, ValueError) as exc:
         raise PackageError("instance template has invalid mmc-pack.json") from exc
     expected_components = {
@@ -397,6 +406,8 @@ def apply_runtime_profile(instance: Path, *, loader: str, pins: PackagePins) -> 
     try:
         pack = json.loads(pack_path.read_text(encoding="utf-8"))
         components = pack["components"]
+        if not isinstance(components, list):
+            raise ValueError
     except (KeyError, TypeError, ValueError) as exc:
         raise PackageError("instance template has invalid mmc-pack.json") from exc
     expected = {
@@ -405,10 +416,17 @@ def apply_runtime_profile(instance: Path, *, loader: str, pins: PackagePins) -> 
             pins.fabric_loader if loader == "fabric" else pins.neoforge,
     }
     seen: set[str] = set()
+    all_uids: set[str] = set()
+    opposite = "net.neoforged" if loader == "fabric" else "net.fabricmc.fabric-loader"
     for component in components:
         if not isinstance(component, dict) or not isinstance(component.get("uid"), str):
             raise PackageError("instance template has invalid component entry")
         uid = component["uid"]
+        if uid in all_uids:
+            raise PackageError("instance template has duplicate Prism component UID")
+        if uid == opposite:
+            raise PackageError("instance template contains the opposite loader component")
+        all_uids.add(uid)
         if uid in expected:
             component["version"] = expected[uid]
             seen.add(uid)

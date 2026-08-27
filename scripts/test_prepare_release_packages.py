@@ -469,6 +469,23 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("missing META-INF/neoforge.mods.toml", result.stderr)
 
+    def test_rejects_duplicate_or_opposite_prism_loader_components(self) -> None:
+        for mutation, expected in (
+            (lambda components: components.append(dict(components[1])), "duplicate Prism component UID"),
+            (lambda components: components.append({"uid": "net.neoforged", "version": "26.1.2.87"}),
+             "opposite loader component"),
+        ):
+            with self.subTest(expected=expected), tempfile.TemporaryDirectory() as directory:
+                temporary = Path(directory)
+                jar, fabric, instance = self.inputs(temporary)
+                pack_path = instance / "mmc-pack.json"
+                pack = json.loads(pack_path.read_text(encoding="utf-8"))
+                mutation(pack["components"])
+                pack_path.write_text(json.dumps(pack), encoding="utf-8")
+                result = self.run_prepare(temporary, jar, fabric, instance)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(expected, result.stderr)
+
     def test_rejects_empty_and_malformed_or_decoy_staged_runtime_jars(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             temporary = Path(directory)
@@ -555,6 +572,14 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             prism.chmod(0o755)
             launcher = bundle / "Launch RingWorld.command"
             launcher.chmod(0o755)
+            # This fixture asserts the automatic-Java branch.  Do not let the
+            # host's /usr/libexec/java_home make that branch machine-dependent.
+            launcher.write_text(
+                launcher.read_text(encoding="utf-8").replace(
+                    'JAVA_HOME_25="$(/usr/libexec/java_home -v 25 2>/dev/null || true)"',
+                    'JAVA_HOME_25="" # fixture isolates host Java discovery',
+                ), encoding="utf-8",
+            )
             home = temporary / "home"
             home.mkdir()
             environment = os.environ | {"HOME": str(home)}
