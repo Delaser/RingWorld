@@ -2,7 +2,8 @@
 
 Latest 26.2 run IDs, candidate/package hashes and remaining owner checks are
 in [the current checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
-The final static qualification workflow passes **341 tests**.
+The static qualification workflow passes **342 tests locally** after the
+portable cache-fixture correction below; hosted CI is checked separately.
 Nightly `20260827T104447Z-6af7691cc891` remains 16 PASS / 2 FAIL /
 2 INCOMPLETE. The four selected repairs pass in
 `20260827T122329Z-768fe4857612`; that partial aggregate is intentionally
@@ -12,6 +13,15 @@ All eight forward-upgrade routes and all four server-overlay smokes pass;
 their exact records and test limits are in the checkpoint. Source-ABI fixture
 changes remain distinct from the unchanged frozen runtime candidates.
 Earlier attempts below remain historical.
+
+The 2026-08-27 release review found two hosted static-test failures caused by
+hard-coded `/private/tmp` fixtures, a macOS-only path. Cache tests now use the
+platform temporary directory, resolve its real path, and model a separate
+operator home so Windows' usual home-contained temp directory does not bypass
+the intended cache-path scenario. A dedicated regression still proves caches
+inside the operator home are rejected before network access. Runtime cache
+validation and candidate jars are unchanged. The focused executor suite passes
+18 tests; the full static workflow passes 342 locally in 5.45 seconds.
 
 2026-08-27: the complete static qualification workflow passes **333 tests**
 after copied-world prompt handling, verified cache coverage, and quick Loom
