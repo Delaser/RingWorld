@@ -115,8 +115,12 @@ substitute.
 For quick and nightly Gradle preparation, `--gradle-loom-cache` may likewise
 name an external read-only Mojang seed. It is revalidated from the version
 manifest, version JSON, and asset-index SHA-1/size records before each copy
-into an isolated Gradle home. It never enables Gradle offline mode: missing
-cache entries continue through ordinary pinned network resolution.
+into an isolated Gradle home. Fabric receives the validated manifest, version
+JSON, client/server jars, and indexed assets below `fabric-loom`; NeoForge
+receives those same four Mojang files under its `neoformruntime/artifacts`
+names as well as indexed assets under `neoformruntime/assets`. It never enables
+Gradle offline mode: missing cache entries continue through ordinary pinned
+network resolution.
 
 Local staging inputs for the planned 1.1 release are separate:
 `deploy/qualified/26.1.x-release.json` / `26.1.x-changelog.md` and

@@ -147,7 +147,7 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
             self.assertEqual(
                 b"abcdef", (home / "caches/fabric-loom/assets/objects/ab/abcdef").read_bytes())
 
-    def test_neoforge_loom_seed_stages_only_assets_in_neoformruntime_layout(self) -> None:
+    def test_neoforge_loom_seed_stages_validated_mojang_files_in_neoformruntime_layout(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             source_root = root / "seed"
@@ -170,6 +170,23 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
             self.assertEqual(
                 b"abcdef",
                 (home / "caches/neoformruntime/assets/objects/ab/abcdef").read_bytes(),
+            )
+            artifacts = home / "caches/neoformruntime/artifacts"
+            self.assertEqual(
+                b"mojang_versions_manifest.json",
+                (artifacts / "minecraft_launcher_manifest.json").read_bytes(),
+            )
+            self.assertEqual(
+                b"mojang_minecraft_info.json",
+                (artifacts / "minecraft_26.2_version_manifest.json").read_bytes(),
+            )
+            self.assertEqual(
+                b"minecraft-client.jar",
+                (artifacts / "minecraft_26.2_client.jar").read_bytes(),
+            )
+            self.assertEqual(
+                b"minecraft-server.jar",
+                (artifacts / "minecraft_26.2_server.jar").read_bytes(),
             )
             self.assertFalse((home / "caches/fabric-loom").exists())
             self.assertFalse((home / "caches/neoformruntime/26.2").exists())

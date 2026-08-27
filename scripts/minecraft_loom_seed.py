@@ -90,7 +90,16 @@ def stage_loom_seed(files: Sequence[Path], gradle_home: Path, version: str,
     if loader == "neoforge":
         if len(files) < 5:
             raise LoomSeedError("Loom seed has no validated asset index")
-        asset_index, asset_objects = files[4], files[5:]
+        manifest, metadata, client, server, asset_index, *asset_objects = files
+        version_name = f"minecraft_{version}"
+        expected_sources = (
+            (manifest, "mojang_versions_manifest.json"),
+            (metadata, "mojang_minecraft_info.json"),
+            (client, "minecraft-client.jar"),
+            (server, "minecraft-server.jar"),
+        )
+        if any(source.name != expected_name for source, expected_name in expected_sources):
+            raise LoomSeedError("Loom seed Mojang file layout is invalid")
         expected_prefix = f"{version}-"
         if (asset_index.parent.name != "indexes" or asset_index.parent.parent.name != "assets"
                 or not asset_index.name.startswith(expected_prefix)
@@ -100,7 +109,17 @@ def stage_loom_seed(files: Sequence[Path], gradle_home: Path, version: str,
         if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]*", asset_id):
             raise LoomSeedError("Loom seed asset index filename is unsafe")
         source_assets = asset_index.parent.parent
-        destination = gradle_home / "caches/neoformruntime/assets"
+        runtime_cache = gradle_home / "caches/neoformruntime"
+        artifacts = runtime_cache / "artifacts"
+        for source, target_name in (
+            (manifest, "minecraft_launcher_manifest.json"),
+            (metadata, f"{version_name}_version_manifest.json"),
+            (client, f"{version_name}_client.jar"),
+            (server, f"{version_name}_server.jar"),
+        ):
+            artifacts.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, artifacts / target_name)
+        destination = runtime_cache / "assets"
         target_index = destination / "indexes" / f"{asset_id}.json"
         target_index.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(asset_index, target_index)
