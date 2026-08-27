@@ -1,5 +1,15 @@
 # Current state
 
+Corrected-candidate quick run `20260827T073004Z-4c80e38c9d6b` on `97654ab`
+passes both loader builds/unit suites and Fabric's external dedicated smoke.
+NeoForge's external smoke failed before launching the game while fetching its
+pinned installer (`STRICT_RUNTIME_EXECUTION_FAILED:URLError`). This is not a
+NeoForge gameplay result or a passing two-cell matrix. Preserve the completed
+Fabric evidence and candidate hashes; graphical and upgrade qualification
+remain pending. The release-prep package bridge now derives explicit runtime
+pins from the reviewed matrix, with positive assembly checks for both 26.2
+loaders. Nothing has been published or deployed.
+
 2026-08-27 depth-port correction: the pre-publication audit found a retained
 26.1 depth comparison in the 26.2 distant-ring pipeline. The 26.2 adapter now
 uses reversed depth and a backend-aware far clamp; 26.1 keeps its original

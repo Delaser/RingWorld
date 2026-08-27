@@ -23,6 +23,10 @@ version-owned GPU adapter must use `GREATER_THAN_OR_EQUAL` and the reversed
 proxy far clamp, with the active device's NDC range passed in `ModelOffset.z`.
 Keep the 26.1 comparison/clamp unchanged. The earlier `8048871` quick jars
 predate this correction and are not final rendering candidates.
+Corrected quick run `20260827T073004Z-4c80e38c9d6b` on `97654ab` passes both
+loader builds and Fabric's strict dedicated smoke. NeoForge's installer fetch
+failed with `URLError` before runtime launch; never label that aggregate PASS.
+See `docs/TESTING.md` for exact retained corrected-candidate hashes.
 
 Active port checkpoint: Minecraft 26.1.2/Java 25 integrated safe-small runtime
 gate. The Fabric and NeoForge builds each pass all 338 unit/parameterized

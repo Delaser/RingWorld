@@ -1,5 +1,21 @@
 # Testing
 
+Corrected-depth quick run `20260827T073004Z-4c80e38c9d6b` from `97654ab`
+retains Fabric candidate SHA-256
+`9ee0b1a987ce64004b86f7cdcbe7e7a551b4d7479399afee92f518f61a095bac`
+and NeoForge candidate SHA-256
+`f1a7faec145b014951ee0da501c78fd7015e40fcce92db4bc31dd1e758925083`.
+Both frozen and per-cell builds/unit suites pass. Fabric's strict dedicated
+record passes; NeoForge fails installer retrieval before any server process
+starts (`URLError`). The aggregate therefore remains FAIL, not qualified.
+
+Qualified package/reviewer/staging/static-workflow checks pass 30 tests with
+two Windows-only launcher checks skipped on macOS. The package subset covers
+positive 26.2 Fabric/NeoForge assembly, selected runtime profiles, Fabric API
+hashes, stale input and credential rejection, duplicate/opposite loader
+components, and deterministic macOS Java-discovery fixture behavior. These
+are assembly tests, not real packaged Windows graphical evidence.
+
 The 26.2 depth-port regression is guarded by two additional source-ABI tests
 in `scripts/test_minecraft_version_sources.py`: adapter comparison/range
 selection and shader far-clamp direction/perspective preservation. These are
