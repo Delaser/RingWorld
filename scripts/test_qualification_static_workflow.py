@@ -53,6 +53,7 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
             "test_run_gradle_raid_qualification.py",
             "test_run_gradle_production_lifecycle_qualification.py",
             "test_run_gradle_production_render_qualification.py",
+            "test_copied_world_file_fix_upgrade.py",
             "test_run_minecraft_nightly_matrix.py",
             "test_review_composite_nightly_evidence.py",
         ):

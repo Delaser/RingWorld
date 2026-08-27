@@ -40,6 +40,8 @@ public final class RingVisualParityCaptureClient {
     private int settleTicks;
     private int completionTicks;
     private boolean worldOpenRequested;
+    private final CopiedWorldFileFixUpgrade copiedWorldFileFixUpgrade =
+            new CopiedWorldFileFixUpgrade();
     private boolean focusPolicyApplied;
     private boolean environmentRequested;
     private volatile boolean environmentReady;
@@ -224,9 +226,12 @@ public final class RingVisualParityCaptureClient {
     private boolean ensureWorldOpen(Minecraft client) {
         if (client.player != null && client.level != null) return true;
         if (++worldOpenTicks > WORLD_OPEN_TIMEOUT_TICKS) {
-            finish(client, false, "timed out opening save '" + worldName() + "'");
+            finish(client, false, "timed out opening save '" + worldName()
+                    + "' screen=" + CopiedWorldFileFixUpgrade.currentScreen(client));
             return false;
         }
+        if (worldOpenRequested && copiedWorldFileFixUpgrade.handleIfRequired(
+                client, "visual-parity-capture", worldName())) return false;
         if (!worldOpenRequested && client.isGameLoadFinished()
                 && client.getSingleplayerServer() == null) {
             worldOpenRequested = true;

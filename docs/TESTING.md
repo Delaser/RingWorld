@@ -189,6 +189,13 @@ both require an immutable production-world input. Its creation entry covers
 the existing settings UI only. Atlas prewarm recovery is the sole planned
 same-fixture restart.
 
+For a copied 26.1 production world first opened by 26.2, the three explicitly
+enabled production client fixtures accept only the bounded file-fix backup and
+completion sequence documented in
+[`COPIED_WORLD_FILE_FIXTURE_UPGRADE.md`](COPIED_WORLD_FILE_FIXTURE_UPGRADE.md).
+This is fixture automation for a contained copy, never a live-world warning
+bypass or downgrade path.
+
 Both the frozen-candidate build and each diagnostic cell use
 `--max-workers=1`. This keeps dependency resolution serial on constrained
 hosts while retaining isolated Gradle homes, outputs, and evidence.
