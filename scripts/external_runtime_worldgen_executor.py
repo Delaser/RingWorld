@@ -594,7 +594,7 @@ def execute_external_runtime_forward_upgrade(
         )
         try:
             qualified = validate_forward_world_upgrade(
-                canonical_cells[source.cell_id], canonical_cells[paths.cell_id], identity,
+                source_cells[source.cell_id], canonical_cells[paths.cell_id], identity,
                 ForwardUpgradeEvidence(
                     fixture_root, evidence_root, paths.logs_directory, source.world_root, target_stage.world_root,
                     source_settings, target_stage.settings, source_record, target_stage.log.record,
