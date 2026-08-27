@@ -391,6 +391,12 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   on pushed commit `f27a180`. Final reporting must present the retained
   aggregate, repaired raid, and earlier exact-candidate downstream passes as
   composite evidence rather than claiming one monolithic all-PASS invocation.
+- `scripts/review_composite_nightly_evidence.py`: read-only, explicit-input
+  audit helper for that historical composite. It requires the exact manifest
+  cell/fixture keyset, selected quick-run and frozen-candidate bindings, and
+  every terminal-hash-bound PNG/log either at its original path or a verified
+  retained-artifact mapping. Its reviewed output is release-audit context, not
+  replacement runtime evidence.
 - `scripts/run_gradle_map_compass_qualification.py`: bounded source-ABI
   gameplay wrapper for the existing map/compass fixture. It requires eight
   captures, both seam directions, persistent map/banner/item-frame state, all

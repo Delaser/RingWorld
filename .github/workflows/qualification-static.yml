@@ -15,6 +15,8 @@ on:
       - "scripts/external_runtime_*.py"
       - "scripts/external_graphical_*.py"
       - "scripts/run_*_qualification.py"
+      - "scripts/review_composite_nightly_evidence.py"
+      - "scripts/test_review_composite_nightly_evidence.py"
       - "scripts/stage_qualified_release.py"
       - "scripts/publish_qualified_release.py"
       - "scripts/test_*qualification*.py"
@@ -24,6 +26,7 @@ on:
       - "scripts/test_validate_minecraft_version_matrix.py"
       - "docs/MINECRAFT_VERSION_SUPPORT_PLAN.md"
       - "docs/TESTING.md"
+      - "AGENTS.md"
   push:
     branches:
       - main
@@ -40,6 +43,8 @@ on:
       - "scripts/external_runtime_*.py"
       - "scripts/external_graphical_*.py"
       - "scripts/run_*_qualification.py"
+      - "scripts/review_composite_nightly_evidence.py"
+      - "scripts/test_review_composite_nightly_evidence.py"
       - "scripts/stage_qualified_release.py"
       - "scripts/publish_qualified_release.py"
       - "scripts/test_*qualification*.py"
@@ -49,6 +54,7 @@ on:
       - "scripts/test_validate_minecraft_version_matrix.py"
       - "docs/MINECRAFT_VERSION_SUPPORT_PLAN.md"
       - "docs/TESTING.md"
+      - "AGENTS.md"
   workflow_dispatch:
 
 permissions:
@@ -118,6 +124,7 @@ jobs:
           scripts/test_run_gradle_production_lifecycle_qualification.py
           scripts/test_run_gradle_production_render_qualification.py
           scripts/test_run_minecraft_nightly_matrix.py
+          scripts/test_review_composite_nightly_evidence.py
           scripts/test_qualification_static_workflow.py
 
       # Static only: no Gradle, Minecraft runtime, installer, server, network,
