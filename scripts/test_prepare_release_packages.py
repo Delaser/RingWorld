@@ -70,11 +70,43 @@ class ReleasePackagePreparationTest(unittest.TestCase):
         pins = _qualified_pins(manifest, "26.2-fabric", "fabric", ["26.2"])
         self.assertEqual(("26.2", "0.19.3", "0.158.0+26.2"),
                          (pins.minecraft, pins.fabric_loader, pins.fabric_api))
-        self.assertEqual("26.2.0.69", pins.neoforge)
+        self.assertIsNone(pins.neoforge)
         with self.assertRaisesRegex(PackageError, "another loader"):
             _qualified_pins(manifest, "26.2-neoforge", "fabric", ["26.2"])
         with self.assertRaisesRegex(PackageError, "invalid"):
             _qualified_pins(ROOT / "config" / "absent.json", "26.2-fabric", "fabric", ["26.2"])
+
+    def test_qualified_26_1_x_uses_only_the_selected_loader_pins(self) -> None:
+        manifest = ROOT / "config" / "minecraft-version-matrix.json"
+        fabric = _qualified_pins(manifest, "26.1.2-fabric", "fabric", ["26.1", "26.1.1", "26.1.2"])
+        self.assertEqual(("26.1.2", "0.19.3", "0.155.2+26.1.2"),
+                         (fabric.minecraft, fabric.fabric_loader, fabric.fabric_api))
+        self.assertIsNone(fabric.neoforge)
+        self.assertTrue(fabric.managed_profile)
+        neoforge = _qualified_pins(manifest, "26.1.2-neoforge", "neoforge", ["26.1", "26.1.1", "26.1.2"])
+        self.assertEqual(("26.1.2", "26.1.2.87"), (neoforge.minecraft, neoforge.neoforge))
+        self.assertIsNone(neoforge.fabric_loader)
+        self.assertIsNone(neoforge.fabric_api)
+        self.assertTrue(neoforge.managed_profile)
+
+    def test_qualified_runtime_requires_its_selected_loader_pin(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            versions = ["26.1", "26.1.1", "26.1.2"]
+            for cell_id, loader, missing_name in (
+                ("26.1.2-fabric", "fabric", "Fabric API"),
+                ("26.1.2-neoforge", "neoforge", "NeoForge"),
+            ):
+                with self.subTest(cell=cell_id):
+                    matrix = json.loads((ROOT / "config" / "minecraft-version-matrix.json").read_text())
+                    cells = {cell["id"]: cell for cell in matrix["cells"]}
+                    cells[cell_id]["dependencies"] = [
+                        item for item in cells[cell_id]["dependencies"] if item["name"] != missing_name
+                    ]
+                    path = temporary / f"missing-{loader}.json"
+                    path.write_text(json.dumps(matrix), encoding="utf-8")
+                    with self.assertRaisesRegex(PackageError, missing_name):
+                        _qualified_pins(path, cell_id, loader, versions)
 
     def test_qualified_format_one_rejects_missing_runtime_profile_stale_hash_and_credentials(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -152,6 +184,40 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                     with zipfile.ZipFile(server) as archive:
                         self.assertIn("26.2", archive.read("DEPLOYMENT.md").decode("utf-8"))
                         self.assertIn("26.2", archive.read("server.properties.example").decode("utf-8"))
+
+    def test_qualified_26_1_x_packages_accept_loader_specific_manifest_cells(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory)
+            matrix = json.loads((ROOT / "config" / "minecraft-version-matrix.json").read_text())
+            fabric_api = temporary / "fabric-api-0.155.2+26.1.2.jar"
+            self.make_jar(fabric_api, mod_id="fabric-api", version="0.155.2+26.1.2")
+            for cell in matrix["cells"]:
+                if cell["id"] == "26.1.2-fabric":
+                    for dependency in cell["dependencies"]:
+                        if dependency["name"] == "Fabric API":
+                            dependency["checksum"]["value"] = hashlib.sha256(fabric_api.read_bytes()).hexdigest()
+            matrix_path = temporary / "matrix-26.1.json"
+            matrix_path.write_text(json.dumps(matrix), encoding="utf-8")
+            versions = ["26.1", "26.1.1", "26.1.2"]
+            for loader, runtime_cell in (("fabric", "26.1.2-fabric"), ("neoforge", "26.1.2-neoforge")):
+                with self.subTest(loader=loader):
+                    jar = temporary / loader / f"ringworld{'-neoforge' if loader == 'neoforge' else ''}-1.1.0+mc26.1.jar"
+                    jar.parent.mkdir(parents=True)
+                    self.make_jar(
+                        jar, mod_id="ringworld", loader=loader, version="1.1.0+mc26.1",
+                        minecraft=">=26.1 <=26.1.2" if loader == "fabric" else "26.1,26.1.2",
+                        neoforge_version="26.1.2.87", release_label="1.1",
+                        neoforge_range="[26.1.0.19-beta,26.1.2.87]" if loader == "neoforge" else None,
+                    )
+                    instance = self.make_instance(temporary / loader, loader=loader)
+                    stage = self.make_qualified_stage(
+                        temporary / loader, jar, loader=loader, artifact_version="1.1.0+mc26.1",
+                        game_versions=versions,
+                    )
+                    result = self.run_prepare(temporary / loader, jar, fabric_api, instance, loader=loader,
+                                              stage_manifest=stage, qualification_manifest=matrix_path,
+                                              runtime_cell=runtime_cell)
+                    self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_qualified_format_one_rejects_wrong_fabric_api_hash(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -315,7 +381,10 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             check=False,
         )
 
-    def make_qualified_stage(self, root: Path, jar: Path, *, loader: str) -> Path:
+    def make_qualified_stage(
+        self, root: Path, jar: Path, *, loader: str, artifact_version: str = "1.1.0+mc26.2",
+        game_versions: list[str] | None = None,
+    ) -> Path:
         stage = root / "qualified" / loader
         stage.mkdir(parents=True, exist_ok=True)
         staged = stage / jar.name
@@ -325,7 +394,8 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             "format": 1, "generated": True, "loader": loader, "upload_file_only": True,
             "upload_file": staged.name, "size": len(data),
             "hashes": {"sha256": hashlib.sha256(data).hexdigest(), "sha512": hashlib.sha512(data).hexdigest()},
-            "artifact_version": "1.1.0+mc26.2", "release_label": "1.1", "game_versions": ["26.2"],
+            "artifact_version": artifact_version, "release_label": "1.1",
+            "game_versions": game_versions or ["26.2"],
             "source": {"revision": REVISION, "url": f"https://github.com/Delaser/RingWorld/commit/{REVISION}"},
         }
         (stage.parent / ".ringworld-qualified-stage").write_text("generated\n", encoding="utf-8")

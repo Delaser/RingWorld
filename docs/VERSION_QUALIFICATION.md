@@ -59,8 +59,9 @@ contract exactly; publication still requires separate owner authorization.
 
 Optional client bundles and server overlays may be built for Phase 6 package
 smokes from a format-1 qualified stage. Select the reviewed manifest and one
-explicit loader runtime cell; this derives the exact Minecraft, loader, and
-Fabric API pins rather than reusing 26.1.2 defaults:
+explicit loader runtime cell; this derives the exact Minecraft and selected
+loader pins (and Fabric API only for Fabric) rather than reusing 26.1.2
+defaults or requiring an opposite-loader dependency:
 
 ```sh
 python3 scripts/prepare_release_packages.py --loader fabric \

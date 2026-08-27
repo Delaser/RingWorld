@@ -100,10 +100,11 @@ class PackageError(RuntimeError):
 @dataclass(frozen=True)
 class PackagePins:
     minecraft: str
-    fabric_loader: str
-    fabric_api: str
+    fabric_loader: str | None
+    fabric_api: str | None
     fabric_api_sha256: str | None
-    neoforge: str
+    neoforge: str | None
+    managed_profile: bool = False
 
 
 LEGACY_PINS = PackagePins(MINECRAFT_VERSION, FABRIC_LOADER_VERSION, FABRIC_API_VERSION, None, NEOFORGE_VERSION)
@@ -174,7 +175,7 @@ def _qualified_pins(manifest_path: Path, runtime_cell: str, loader: str, staged_
         manifest = load_manifest(manifest_path)
         contract = contract_from_manifest(manifest)
     except (OSError, ValueError) as exc:
-        raise PackageError("qualified package manifest is invalid") from exc
+        raise PackageError(f"qualified package manifest is invalid: {exc}") from exc
     if staged_versions != list(contract.versions):
         raise PackageError("qualified staging game versions do not match reviewed manifest")
     cells = manifest.get("cells")
@@ -196,13 +197,17 @@ def _qualified_pins(manifest_path: Path, runtime_cell: str, loader: str, staged_
         if not isinstance(value, Mapping) or not isinstance(value.get("version"), str):
             raise PackageError(f"qualified runtime cell is missing {name} pin")
         return value
-    fabric_loader, fabric_api, neoforge = dependency("Fabric Loader"), dependency("Fabric API"), dependency("NeoForge")
-    checksum = fabric_api.get("checksum")
-    if not isinstance(checksum, Mapping) or checksum.get("algorithm") != "sha256" \
-            or not isinstance(checksum.get("value"), str) or re.fullmatch(r"[0-9a-f]{64}", checksum["value"]) is None:
-        raise PackageError("qualified Fabric API pin has invalid SHA-256")
-    return PackagePins(minecraft["version"], fabric_loader["version"], fabric_api["version"],
-                       checksum["value"], neoforge["version"])
+    if loader == "fabric":
+        fabric_loader, fabric_api = dependency("Fabric Loader"), dependency("Fabric API")
+        checksum = fabric_api.get("checksum")
+        if not isinstance(checksum, Mapping) or checksum.get("algorithm") != "sha256" \
+                or not isinstance(checksum.get("value"), str) \
+                or re.fullmatch(r"[0-9a-f]{64}", checksum["value"]) is None:
+            raise PackageError("qualified Fabric API pin has invalid SHA-256")
+        return PackagePins(minecraft["version"], fabric_loader["version"], fabric_api["version"],
+                           checksum["value"], None, managed_profile=True)
+    neoforge = dependency("NeoForge")
+    return PackagePins(minecraft["version"], None, None, None, neoforge["version"], managed_profile=True)
 
 
 def load_staged_release(
@@ -330,6 +335,8 @@ def validate_inputs(
             f"{spec['ringworld_prefix']}"
         )
     if spec["requires_fabric_api"]:
+        if pins.fabric_api is None:
+            raise PackageError("qualified Fabric package is missing Fabric API pin")
         if fabric_api is None:
             raise PackageError("Fabric packages require --fabric-api")
         fabric_metadata = read_fabric_metadata(fabric_api, label="Fabric API jar")
@@ -376,7 +383,9 @@ def validate_inputs(
         spec["component"]: pins.fabric_loader if loader == "fabric" else pins.neoforge,
     }
     for component, expected in expected_components.items():
-        if component not in components or (pins.fabric_api_sha256 is None and components[component] != expected):
+        if not isinstance(expected, str):
+            raise PackageError(f"qualified {loader} package is missing its selected loader pin")
+        if component not in components or (not pins.managed_profile and components[component] != expected):
             raise PackageError(
                 f"instance template {component} version {components.get(component)!r} "
                 f"does not match {expected!r}"
@@ -415,6 +424,8 @@ def apply_runtime_profile(instance: Path, *, loader: str, pins: PackagePins) -> 
         "net.fabricmc.fabric-loader" if loader == "fabric" else "net.neoforged":
             pins.fabric_loader if loader == "fabric" else pins.neoforge,
     }
+    if not all(isinstance(value, str) for value in expected.values()):
+        raise PackageError(f"qualified {loader} package is missing its selected loader pin")
     seen: set[str] = set()
     all_uids: set[str] = set()
     opposite = "net.neoforged" if loader == "fabric" else "net.fabricmc.fabric-loader"
@@ -441,8 +452,10 @@ def render_runtime_text(path: Path, *, pins: PackagePins, loader: str, version: 
         return
     text = path.read_text(encoding="utf-8")
     text = text.replace("Minecraft 26.1.2", f"Minecraft {pins.minecraft}")
-    text = text.replace("Fabric API 0.155.2+26.1.2", f"Fabric API {pins.fabric_api}")
-    text = text.replace("NeoForge 26.1.2.87", f"NeoForge {pins.neoforge}")
+    if loader == "fabric" and pins.fabric_api is not None:
+        text = text.replace("Fabric API 0.155.2+26.1.2", f"Fabric API {pins.fabric_api}")
+    if loader == "neoforge" and pins.neoforge is not None:
+        text = text.replace("NeoForge 26.1.2.87", f"NeoForge {pins.neoforge}")
     text = text.replace("RingWorld 1.0.0+mc26.1.2", f"RingWorld {version}")
     path.write_text(text, encoding="utf-8")
 

@@ -1,12 +1,11 @@
 # Minecraft version support plan
 
 Status: approved policy and active implementation. Phases 0–3 are implemented;
-the six quick cells pass with one unchanged jar per loader. Phase 4 has real
-six-cell Atlas-recovery, worldgen/structure, frozen-candidate multiplayer, and
-creation/settings UI evidence; its remaining raid, lifecycle, and rendering
-fixtures are pending. Phase 5's copied-world matrix passes all six supported
-same-loader forward paths. Phase 6's release-equivalence guard is static-tested,
-but no proposed public jar or release-equivalence evidence has been recorded.
+the historical six quick cells pass with one unchanged jar per loader. Historical
+Phase 4 and Phase 5 evidence is retained separately from final-candidate work.
+The current candidate still requires its bound nightly and copied-world gates.
+Phase 6's release-equivalence guard is static-tested, while local staged
+candidates remain review material rather than a release claim.
 
 ## Support model
 
@@ -852,12 +851,14 @@ python3 scripts/run_world_upgrade_qualification.py \
   --target-quick-run-id <passed-26.1.1-quick-run-id>
 ```
 
-The CLI permits only the three forward paths above, requires source and target
-cells to use the same loader, rechecks the retained source world and target
-candidate/evidence before runtime work, copies into a new contained target
-fixture, and fails on an existing destination. It never downgrades or mutates
-the source world. All six real loader/version forward paths now have terminal
-`PASS` reports from clean pushed commit `7983b8a`. Fabric runs are
+The CLI permits any numerically later stable path across independently reviewed
+source and target manifests, requires source and target cells to use the same
+loader, rechecks the retained source world and target candidate/evidence before
+runtime work, copies into a new contained target fixture, and fails on an
+existing destination. It never downgrades or mutates the source world. The six
+historical 26.1.x loader/version paths have terminal `PASS` reports from clean
+pushed commit `7983b8a`; they are not final-candidate or 26.2 upgrade evidence.
+Fabric runs are
 `20260813T154817Z-49a8704da644`, `20260813T154908Z-3dd32c4a02d9`, and
 `20260813T154948Z-2c59e8f287e1`; NeoForge runs are
 `20260813T155036Z-16d04362acad`, `20260813T155119Z-87e77d39455b`, and

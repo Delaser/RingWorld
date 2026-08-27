@@ -59,10 +59,15 @@ newly changed jars, final-candidate world upgrades, packaged graphical clients,
 experimental Vulkan, or third-party compatibility. Public support remains
 the existing 26.1.2 release until the release and publication gates finish.
 
-The old ignored `dist/qualified-release/1.1.0+mc26.1` jars are stale: both fail
-byte-level equivalence against the current retained 26.1.x quick candidates
-at `CurvedObjectCaptureClient.class`. Rebuild/review matching public candidates
-before staging; do not upload or relabel those stale files.
+The stale August 13 `1.1.0+mc26.1` jars were replaced by the metadata-only
+local review candidates recorded in `CURRENT_STATE.md`. Those replacements are
+byte-equal to the retained quick candidates outside the approved public
+metadata fields. They remain local preparation only: final-candidate upgrades,
+packaged runtime review, and owner approval are still required before staging
+or publication. The held publisher's execute-time checkout equality currently
+requires the frozen build-source revision; a later authorized publication must
+either stage from that revision or add reviewed provenance handling rather than
+weakening that check.
 
 26.2 additionally needs fresh frozen candidates after the reversed-depth
 correction, complete nightly coverage and copied-world upgrades. Publication
