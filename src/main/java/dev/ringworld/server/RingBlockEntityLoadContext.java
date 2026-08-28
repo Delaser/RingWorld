@@ -37,6 +37,19 @@ public final class RingBlockEntityLoadContext {
         return ACTIVE_GEOMETRY.get() != null;
     }
 
+    /**
+     * Returns the geometry owned by the current thread's active load callback,
+     * or {@code null} outside {@link #withGeometry}.
+     *
+     * <p>This narrow accessor exists for ownership repair during block-entity
+     * deserialization before {@code BlockEntity.level} is attached. The value
+     * is valid only while the current thread remains inside that callback and
+     * must never be cached beyond it.</p>
+     */
+    public static RingGeometry activeGeometryOrNull() {
+        return ACTIVE_GEOMETRY.get();
+    }
+
     static BlockPos restoreSavedAlias(RingGeometry geometry, ChunkPos owner,
                                       CompoundTag tag, BlockPos vanillaPosition) {
         return restoreSavedAlias(geometry, owner.z(), tag, vanillaPosition);
