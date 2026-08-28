@@ -5,6 +5,7 @@ import dev.ringworld.server.HeadlessPrewarmCoordinator;
 import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.server.RingWorldStrongholdTest;
 import dev.ringworld.server.RingTerrainAtlasServer;
+import dev.ringworld.platform.neoforge.compat.create610.RingCreate610BootFixture;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.chunk.LevelChunk;
@@ -68,6 +69,7 @@ public final class NeoForgeRingWorldServer {
 
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
+        RingCreate610BootFixture.tick(event.getServer());
         HeadlessPrewarmCoordinator.tick(event.getServer());
         NeoForgeRingWorldNetworking.expireAcknowledgements(event.getServer());
         RingWorldProductionLifecycleTest.tick(event.getServer());

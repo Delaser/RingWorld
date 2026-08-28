@@ -18,7 +18,9 @@
     "loom_version": "1.8.13",
     "fabric_api_version": "0.116.15+1.21.1",
     "neoforge_version": "21.1.239",
-    "moddevgradle_version": "2.0.143"
+    "moddevgradle_version": "2.0.143",
+    "create_version": "6.0.10+mc1.21.1",
+    "flywheel_version": "1.0.6"
   },
   "mojangVersionManifest": {
     "url": "https://piston-meta.mojang.com/v1/packages/9d4b0811c18ea0e0968693b971233c49d89b9ced/1.21.1.json",
@@ -70,9 +72,9 @@
     "metadataPath": "gradle/verification-metadata.xml",
     "verifyMetadata": true,
     "verifySignatures": false,
-    "componentCount": 369,
-    "artifactCount": 748,
-    "sha256PinCount": 748,
+    "componentCount": 371,
+    "artifactCount": 752,
+    "sha256PinCount": 752,
     "requiredArtifacts": [
       {
         "group": "net.fabricmc",
@@ -122,6 +124,20 @@
         "version": "1.21.1-20240808.144430",
         "artifact": "neoform-1.21.1-20240808.144430.zip",
         "sha256": "3fcdf0f0d115774cfceaf206a05a6dc964e2189bfd00f5b5f863e37f4b7733c7"
+      },
+      {
+        "group": "maven.modrinth",
+        "name": "create",
+        "version": "6.0.10+mc1.21.1",
+        "artifact": "create-6.0.10+mc1.21.1.jar",
+        "sha256": "ef87fe5709f1ba1f5b8bb20a2925b5afb4669e178fd6d8bf10c167759eefe37a"
+      },
+      {
+        "group": "dev.engine-room.flywheel",
+        "name": "flywheel-neoforge-1.21.1",
+        "version": "1.0.6",
+        "artifact": "flywheel-neoforge-1.21.1-1.0.6.jar",
+        "sha256": "31dda15c205eb596d3b3449ef03f6af7363a6cd35b3da4bfe916b304f9e5337e"
       }
     ]
   }

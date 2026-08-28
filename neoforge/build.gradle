@@ -15,6 +15,34 @@ base {
     archivesName = rootProject.archives_base_name + '-neoforge'
 }
 
+repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'ModrinthCreateCompatibility'
+                url = uri('https://api.modrinth.com/maven')
+            }
+        }
+        filter { includeGroup('maven.modrinth') }
+    }
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'CreateModFlywheelCompatibility'
+                url = uri('https://maven.createmod.net')
+            }
+        }
+        filter { includeGroup('dev.engine-room.flywheel') }
+    }
+}
+
+def createCompatRuntime = configurations.create('createCompatRuntime') {
+    description = 'Exact outer Create jar copied only into the disposable compatibility fixture.'
+    canBeConsumed = false
+    canBeResolved = true
+    transitive = false
+}
+
 def qualificationEnabled = rootProject.ext.ringQualificationEnabled
 def qualificationRunDirectory = rootProject.ext.ringQualificationRunDirectory
 def qualificationRunFile = { String historicPath -> project.file(qualificationRunDirectory(historicPath)) }
@@ -62,7 +90,8 @@ sourceSets.main.resources.exclude('fabric.mod.json')
 // Run the same loader-neutral contract suite against the NeoForge-compiled
 // common sources. Platform-specific runtime gates remain separate.
 sourceSets.test.java.setSrcDirs([
-        rootProject.file('src/test/java')
+        rootProject.file('src/test/java'),
+        rootProject.file('src/platform/neoforgeTest/java')
 ])
 sourceSets.test.resources.setSrcDirs([
         rootProject.file('src/test/resources'),
@@ -215,6 +244,18 @@ neoForge {
                     providers.gradleProperty('ringNeoForgeHeadlessPrewarmResult').orElse('result.json').get()
             programArgument '--nogui'
         }
+        createCompatAbsentServer {
+            server()
+            gameDirectory = qualificationRunFile('run-create-compat-absent')
+            systemProperty 'ringworld.createCompatBoot', 'absent'
+            programArgument '--nogui'
+        }
+        createCompatServer {
+            server()
+            gameDirectory = qualificationRunFile('run-create-compat')
+            systemProperty 'ringworld.createCompatBoot', 'exact'
+            programArgument '--nogui'
+        }
         multiplayerServer {
             server()
             // This intentionally lives below the NeoForge subproject so it
@@ -303,6 +344,15 @@ neoForge {
 }
 
 dependencies {
+    compileOnly("maven.modrinth:create:${rootProject.create_version}") {
+        transitive = false
+    }
+    compileOnly("dev.engine-room.flywheel:flywheel-neoforge-1.21.1:${rootProject.flywheel_version}") {
+        transitive = false
+    }
+    add('createCompatRuntime', "maven.modrinth:create:${rootProject.create_version}") {
+        transitive = false
+    }
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
@@ -387,6 +437,8 @@ def neoForgeProductionLifecycleRun = qualificationRunFile('run-production-lifecy
 def neoForgeProductionLifecycleSaves = new File(neoForgeProductionLifecycleRun, 'saves')
 def neoForgeStrongholdTestRun = qualificationRunFile('run-stronghold-test')
 def neoForgeHeadlessPrewarmRun = qualificationRunFile('run-headless-prewarm')
+def neoForgeCreateCompatAbsentRun = qualificationRunFile('run-create-compat-absent')
+def neoForgeCreateCompatRun = qualificationRunFile('run-create-compat')
 def neoForgeMultiplayerRun = qualificationRunFile('run-multiplayer')
 def neoForgeMultiplayerServerRun = new File(neoForgeMultiplayerRun, 'server')
 def neoForgeMultiplayerClientARun = new File(neoForgeMultiplayerRun, 'client-a')
@@ -419,6 +471,214 @@ def neoForgeMultiplayerWallHeightBlocks = neoForgeMultiplayerHarnessDimension(
         'ringMultiplayerWallHeightBlocks', '160', 32, false)
 def neoForgeMultiplayerAtlasCellCount = (neoForgeMultiplayerCircumferenceBlocks.longValue() / 8L)
         * (neoForgeMultiplayerWidthBlocks.longValue() / 8L)
+
+tasks.register('verifyCreateCompatibilityDependencyIsolation') {
+    group = 'ringworld verification'
+    description = 'Fails unless exact Create compile inputs and the isolated outer runtime jar remain bounded.'
+    doLast {
+        def createCoordinates = 'maven.modrinth:create:' + rootProject.create_version
+        def flywheelCoordinates = 'dev.engine-room.flywheel:flywheel-neoforge-1.21.1:' +
+                rootProject.flywheel_version
+        def compileOnlyDependencies = configurations.compileOnly.dependencies.findAll {
+            it.group in ['maven.modrinth', 'dev.engine-room.flywheel']
+        }
+        def compileOnlyCoordinates = compileOnlyDependencies.collect {
+            "${it.group}:${it.name}:${it.version}"
+        } as Set
+        if (compileOnlyCoordinates != [createCoordinates, flywheelCoordinates] as Set
+                || compileOnlyDependencies.any { it.transitive }) {
+            throw new GradleException(
+                    "Create compatibility compile inputs must be exactly two non-transitive modules: "
+                            + compileOnlyCoordinates)
+        }
+
+        def customDependencies = createCompatRuntime.dependencies.collect {
+            "${it.group}:${it.name}:${it.version}"
+        }
+        if (customDependencies != [createCoordinates]
+                || createCompatRuntime.extendsFrom
+                || createCompatRuntime.dependencies.any { it.transitive }) {
+            throw new GradleException(
+                    "createCompatRuntime must contain only the non-transitive outer Create module: "
+                            + customDependencies)
+        }
+
+        def compatibilityGroups = ['maven.modrinth', 'dev.engine-room.flywheel',
+                                   'net.createmod.ponder', 'com.tterrag.registrate'] as Set
+        def moduleCoordinates = { Configuration configuration ->
+            configuration.incoming.resolutionResult.allComponents.collect { component ->
+                def module = component.moduleVersion
+                module == null ? null : "${module.group}:${module.name}:${module.version}"
+            }.findAll { it != null }
+        }
+        def ordinaryRuntimeCompatibility = moduleCoordinates(configurations.runtimeClasspath)
+                .findAll { coordinate -> compatibilityGroups.contains(coordinate.split(':', 2)[0]) }
+        if (!ordinaryRuntimeCompatibility.isEmpty()) {
+            throw new GradleException(
+                    "ordinary NeoForge runtimeClasspath leaked Create compatibility modules: "
+                            + ordinaryRuntimeCompatibility)
+        }
+
+        def compileCompatibility = moduleCoordinates(configurations.compileClasspath)
+                .findAll { coordinate -> compatibilityGroups.contains(coordinate.split(':', 2)[0]) }
+        if (compileCompatibility as Set != [createCoordinates, flywheelCoordinates] as Set) {
+            throw new GradleException(
+                    "Create compatibility compile graph is not the exact non-transitive pair: "
+                            + compileCompatibility)
+        }
+
+        def runtimeArtifacts = createCompatRuntime.resolvedConfiguration.resolvedArtifacts
+        if (runtimeArtifacts.size() != 1) {
+            throw new GradleException(
+                    "createCompatRuntime must resolve one outer jar, found ${runtimeArtifacts}")
+        }
+        def artifact = runtimeArtifacts.first()
+        def coordinates = "${artifact.moduleVersion.id.group}:${artifact.name}:" +
+                artifact.moduleVersion.id.version
+        if (coordinates != createCoordinates || !artifact.file.name.endsWith('.jar')) {
+            throw new GradleException(
+                    "createCompatRuntime resolved an unexpected artifact: ${coordinates} ${artifact.file}")
+        }
+        def digest = java.security.MessageDigest.getInstance('SHA-256')
+        artifact.file.withInputStream { input ->
+            byte[] buffer = new byte[64 * 1024]
+            int count
+            while ((count = input.read(buffer)) != -1) {
+                if (count > 0) digest.update(buffer, 0, count)
+            }
+        }
+        def sha256 = digest.digest().encodeHex().toString()
+        if (sha256 != 'ef87fe5709f1ba1f5b8bb20a2925b5afb4669e178fd6d8bf10c167759eefe37a') {
+            throw new GradleException(
+                    "Create compatibility outer jar SHA-256 mismatch: ${sha256}")
+        }
+        logger.lifecycle(
+                '[create-compat-dependencies] PASS compile={} runtime={} sha256={}',
+                compileCompatibility.sort(), coordinates, sha256)
+    }
+}
+
+def prepareCreateCompatibilityServer = { File runDirectory, boolean includeCreate ->
+    def eula = new File(runDirectory, 'eula.txt')
+    if (!eula.isFile()) {
+        eula.parentFile.mkdirs()
+        eula.text = '# Review https://aka.ms/MinecraftEULA before changing this value.\neula=false\n'
+    }
+    if (!eula.text.readLines().any { it.trim() == 'eula=true' }) {
+        throw new GradleException("Review ${eula}, then set eula=true to run this disposable server")
+    }
+
+    ['world', 'logs', 'ringworld-cache', 'crash-reports', 'mods'].each {
+        delete(new File(runDirectory, it))
+    }
+    runDirectory.mkdirs()
+    def configFile = new File(runDirectory, 'config/ringworld.properties')
+    configFile.parentFile.mkdirs()
+    def config = new Properties()
+    config.setProperty('widthBlocks', '416')
+    config.setProperty('circumferenceBlocks', '2048')
+    config.setProperty('wallHeightBlocks', '160')
+    config.setProperty('testMode', 'false')
+    config.setProperty('testViewDistanceChunks', '2')
+    config.setProperty('pregenerateTerrainAtlas', 'false')
+    configFile.withOutputStream { config.store(it, 'Disposable NeoForge Create compatibility boot') }
+
+    def serverProperties = new Properties()
+    serverProperties.setProperty('online-mode', 'false')
+    serverProperties.setProperty('level-name', 'world')
+    serverProperties.setProperty('level-seed', '-2162056627494116761')
+    serverProperties.setProperty('view-distance', '3')
+    serverProperties.setProperty('simulation-distance', '3')
+    serverProperties.setProperty('pause-when-empty-seconds', '-1')
+    serverProperties.setProperty('motd', 'RingWorld disposable Create compatibility boot')
+    new File(runDirectory, 'server.properties').withOutputStream {
+        serverProperties.store(it, 'Disposable NeoForge Create compatibility boot')
+    }
+
+    if (includeCreate) {
+        def createFiles = createCompatRuntime.resolve()
+        if (createFiles.size() != 1) {
+            throw new GradleException("Create compatibility runtime must resolve exactly one outer jar, found ${createFiles}")
+        }
+        def createJar = createFiles.first()
+        def digest = java.security.MessageDigest.getInstance('SHA-256')
+        createJar.withInputStream { input ->
+            byte[] buffer = new byte[64 * 1024]
+            int count
+            while ((count = input.read(buffer)) != -1) {
+                if (count > 0) digest.update(buffer, 0, count)
+            }
+        }
+        def sha256 = digest.digest().encodeHex().toString()
+        if (sha256 != 'ef87fe5709f1ba1f5b8bb20a2925b5afb4669e178fd6d8bf10c167759eefe37a') {
+            throw new GradleException("Create compatibility outer jar SHA-256 mismatch: ${sha256}")
+        }
+        copy {
+            from(createJar)
+            into(new File(runDirectory, 'mods'))
+        }
+    }
+}
+
+tasks.register('prepareNeoForgeCreateCompatAbsentServer') {
+    group = 'ringworld verification'
+    description = 'Prepares a disposable ordinary NeoForge server with no Create runtime.'
+    outputs.upToDateWhen { false }
+    doLast { prepareCreateCompatibilityServer(neoForgeCreateCompatAbsentRun, false) }
+}
+
+tasks.register('prepareNeoForgeCreateCompatServer') {
+    group = 'ringworld verification'
+    description = 'Copies only the verified outer Create jar into its disposable server mods directory.'
+    outputs.upToDateWhen { false }
+    doLast { prepareCreateCompatibilityServer(neoForgeCreateCompatRun, true) }
+}
+
+tasks.register('verifyNeoForgeCreateCompatAbsentServer') {
+    group = 'ringworld verification'
+    mustRunAfter('runCreateCompatAbsentServer')
+    doLast {
+        def logFile = new File(neoForgeCreateCompatAbsentRun, 'logs/latest.log')
+        def log = logFile.isFile() ? logFile.text : ''
+        if (!log.contains('[create-compat-boot] PASS mode=absent appliedServerMixins=0')
+                || log.contains('[create-compat-boot] FAIL')
+                || log.contains('Create compatibility adapter disabled for unqualified tuple')) {
+            throw new GradleException("Create-absent NeoForge boot did not pass; inspect ${logFile}")
+        }
+        if (new File(neoForgeCreateCompatAbsentRun, 'mods').listFiles()?.length) {
+            throw new GradleException('Create-absent boot mods directory is not empty')
+        }
+    }
+}
+
+tasks.register('verifyNeoForgeCreateCompatServer') {
+    group = 'ringworld verification'
+    mustRunAfter('runCreateCompatServer')
+    doLast {
+        def logFile = new File(neoForgeCreateCompatRun, 'logs/latest.log')
+        def log = logFile.isFile() ? logFile.text : ''
+        if (!log.contains('[create-compat-boot] PASS mode=exact appliedServerMixins=4')
+                || !log.contains('[create-compat-fixture] PASS belts=both-directions '
+                        + 'tanks=seam+baseline vault=unmodified controllerNbt=canonical')
+                || log.contains('[create-compat-boot] FAIL')) {
+            throw new GradleException("Exact-tuple Create compatibility boot did not pass; inspect ${logFile}")
+        }
+        def mods = new File(neoForgeCreateCompatRun, 'mods').listFiles()?.findAll { it.isFile() } ?: []
+        if (mods.size() != 1 || !mods.first().name.startsWith('create-')) {
+            throw new GradleException("Create compatibility runtime must contain only one outer Create jar: ${mods}")
+        }
+    }
+}
+
+tasks.named('runCreateCompatAbsentServer') {
+    dependsOn('prepareNeoForgeCreateCompatAbsentServer')
+    finalizedBy('verifyNeoForgeCreateCompatAbsentServer')
+}
+
+tasks.named('runCreateCompatServer') {
+    dependsOn('prepareNeoForgeCreateCompatServer')
+    finalizedBy('verifyNeoForgeCreateCompatServer')
+}
 
 def neoForgeMultiplayerPort = {
     neoForgeRunPort('ringQualificationNeoForgeMultiplayerPort', 'ringNeoForgeMultiplayerPort', '25566')

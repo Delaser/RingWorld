@@ -113,7 +113,7 @@ bounded loader/mapping differences.
 The Windows-x64 dependency graph is fail-closed through
 [`dependency-inventory.json`](dependency-inventory.json) and
 [`../../gradle/verification-metadata.xml`](../../gradle/verification-metadata.xml):
-369 components and all 748 resolved artifacts have SHA-256 pins. Linux or
+371 components and all 752 resolved artifacts have SHA-256 pins. Linux or
 macOS can select additional native artifacts; add their reviewed hashes
 rather than weakening verification.
 
@@ -236,6 +236,11 @@ These rules are implemented in the guarded publisher and recorded in
   diagnosis. It is not a supported single-loader release mode.
 
 ### Mod compatibility
+
+The experimental NeoForge Create 6.0.10 phase-3A server adapter, its exact
+activation/dependency boundary, and the work still required before making a
+compatibility claim are recorded in
+[`CREATE_COMPATIBILITY_PHASE_3A_2026-08-29.md`](CREATE_COMPATIBILITY_PHASE_3A_2026-08-29.md).
 
 - Shader packs and renderer mods can conflict because the backport replaces
   version-sensitive vanilla core shader assets.

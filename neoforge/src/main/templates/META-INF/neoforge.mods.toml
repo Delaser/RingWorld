@@ -23,6 +23,9 @@ config="ringworld.client.mixins.json"
 [[mixins]]
 config="ringworld.neoforge.mixins.json"
 
+[[mixins]]
+config="ringworld.create-6.0.10.neoforge.mixins.json"
+
 [[dependencies.ringworld]]
 modId="neoforge"
 type="required"

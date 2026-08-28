@@ -1,0 +1,16 @@
+{
+  "required": true,
+  "package": "dev.ringworld.platform.neoforge.compat.create610.mixin",
+  "plugin": "dev.ringworld.platform.neoforge.compat.create610.mixin.RingCreate610MixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BeltBlockEntityMixin",
+    "BeltConnectorItemMixin",
+    "ConnectivityHandlerMixin",
+    "FluidTankBlockEntityMixin"
+  ],
+  "client": [],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
