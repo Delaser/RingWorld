@@ -472,6 +472,19 @@ def neoForgeMultiplayerWallHeightBlocks = neoForgeMultiplayerHarnessDimension(
 def neoForgeMultiplayerAtlasCellCount = (neoForgeMultiplayerCircumferenceBlocks.longValue() / 8L)
         * (neoForgeMultiplayerWidthBlocks.longValue() / 8L)
 
+def createCompatOuterJarSha256 = 'ef87fe5709f1ba1f5b8bb20a2925b5afb4669e178fd6d8bf10c167759eefe37a'
+def sha256OfFile = { File inputFile ->
+    def digest = java.security.MessageDigest.getInstance('SHA-256')
+    inputFile.withInputStream { input ->
+        byte[] buffer = new byte[64 * 1024]
+        int count
+        while ((count = input.read(buffer)) != -1) {
+            if (count > 0) digest.update(buffer, 0, count)
+        }
+    }
+    digest.digest().encodeHex().toString()
+}
+
 tasks.register('verifyCreateCompatibilityDependencyIsolation') {
     group = 'ringworld verification'
     description = 'Fails unless exact Create compile inputs and the isolated outer runtime jar remain bounded.'
@@ -539,16 +552,8 @@ tasks.register('verifyCreateCompatibilityDependencyIsolation') {
             throw new GradleException(
                     "createCompatRuntime resolved an unexpected artifact: ${coordinates} ${artifact.file}")
         }
-        def digest = java.security.MessageDigest.getInstance('SHA-256')
-        artifact.file.withInputStream { input ->
-            byte[] buffer = new byte[64 * 1024]
-            int count
-            while ((count = input.read(buffer)) != -1) {
-                if (count > 0) digest.update(buffer, 0, count)
-            }
-        }
-        def sha256 = digest.digest().encodeHex().toString()
-        if (sha256 != 'ef87fe5709f1ba1f5b8bb20a2925b5afb4669e178fd6d8bf10c167759eefe37a') {
+        def sha256 = sha256OfFile(artifact.file)
+        if (sha256 != createCompatOuterJarSha256) {
             throw new GradleException(
                     "Create compatibility outer jar SHA-256 mismatch: ${sha256}")
         }
@@ -556,6 +561,14 @@ tasks.register('verifyCreateCompatibilityDependencyIsolation') {
                 '[create-compat-dependencies] PASS compile={} runtime={} sha256={}',
                 compileCompatibility.sort(), coordinates, sha256)
     }
+}
+
+tasks.named('check') {
+    dependsOn(tasks.named('verifyCreateCompatibilityDependencyIsolation'))
+}
+
+tasks.named('build') {
+    dependsOn(tasks.named('verifyCreateCompatibilityDependencyIsolation'))
 }
 
 def prepareCreateCompatibilityServer = { File runDirectory, boolean includeCreate ->
@@ -601,16 +614,8 @@ def prepareCreateCompatibilityServer = { File runDirectory, boolean includeCreat
             throw new GradleException("Create compatibility runtime must resolve exactly one outer jar, found ${createFiles}")
         }
         def createJar = createFiles.first()
-        def digest = java.security.MessageDigest.getInstance('SHA-256')
-        createJar.withInputStream { input ->
-            byte[] buffer = new byte[64 * 1024]
-            int count
-            while ((count = input.read(buffer)) != -1) {
-                if (count > 0) digest.update(buffer, 0, count)
-            }
-        }
-        def sha256 = digest.digest().encodeHex().toString()
-        if (sha256 != 'ef87fe5709f1ba1f5b8bb20a2925b5afb4669e178fd6d8bf10c167759eefe37a') {
+        def sha256 = sha256OfFile(createJar)
+        if (sha256 != createCompatOuterJarSha256) {
             throw new GradleException("Create compatibility outer jar SHA-256 mismatch: ${sha256}")
         }
         copy {
@@ -666,6 +671,11 @@ tasks.register('verifyNeoForgeCreateCompatServer') {
         def mods = new File(neoForgeCreateCompatRun, 'mods').listFiles()?.findAll { it.isFile() } ?: []
         if (mods.size() != 1 || !mods.first().name.startsWith('create-')) {
             throw new GradleException("Create compatibility runtime must contain only one outer Create jar: ${mods}")
+        }
+        def installedSha256 = sha256OfFile(mods.first())
+        if (installedSha256 != createCompatOuterJarSha256) {
+            throw new GradleException(
+                    "Installed Create compatibility jar SHA-256 mismatch: ${installedSha256}")
         }
     }
 }

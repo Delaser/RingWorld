@@ -38,10 +38,15 @@ The build declares two independently verified, non-transitive compile inputs:
 | `maven.modrinth:create:6.0.10+mc1.21.1` | `ef87fe5709f1ba1f5b8bb20a2925b5afb4669e178fd6d8bf10c167759eefe37a` | `b5fe1aa9b1d816119c507ee47e2c94aa0c8ba0cb8e55d3c955b21eb7ae325e82` |
 | `dev.engine-room.flywheel:flywheel-neoforge-1.21.1:1.0.6` | `31dda15c205eb596d3b3449ef03f6af7363a6cd35b3da4bfe916b304f9e5337e` | `8836fd0cef4cc308bdebe3004b703cf80f593bf13b6451e33673b872dec9db0a` |
 
-Create is LGPL-3.0, Flywheel is MIT, Ponder is MIT, and Registrate is LGPL-3.0.
-Create's outer NeoForge jar contains the runtime Flywheel `1.0.6`, Ponder
-`1.0.82`, and Registrate `MC1.21-1.3.0+67` jar-in-jars. Ponder and Registrate
-are not separately resolved.
+The exact reviewed outer Create licence reserves all rights to files below
+`src/main/resources/assets`; all other Create files and code are MIT. Flywheel
+and Ponder are MIT. The reviewed upstream Registrate licence is MPL-2.0,
+although its nested jar contains no licence file. Create's outer NeoForge jar
+contains the runtime Flywheel `1.0.6`, Ponder `1.0.82`, and Registrate
+`MC1.21-1.3.0+67` jar-in-jars. Ponder and Registrate are not separately
+resolved. RingWorld copies none of these projects' source or assets and does
+not bundle their jars. The disposable local fixture merely installs the
+independently verified outer Create artifact into its isolated runtime.
 
 `createCompatRuntime` is a resolvable, non-consumable, non-transitive custom
 configuration which extends no other configuration. It is not inherited by
@@ -110,16 +115,25 @@ Under the supported Java `21.0.12.1+1` compiler graph:
 - the exact-tuple server loads only the verified outer Create jar, discovers
   its nested Flywheel `1.0.6` and Ponder `1.0.82`, reaches `Done`, applies all
   four strict server mixins, and exits cleanly; and
-- its bounded server fixture forms belts in both seam directions/presentation
-  charts, forms a seam 2x2x2 tank and ordinary 2x2x2 baseline without changing
-  native dimensions/controller choice, preserves an ordinary item-vault
-  negative control, and verifies attached-level, load-context, and deferred
-  write repair all produce canonical controller NBT.
+- its bounded server fixture directly invokes Create's server
+  `canConnect`/`createBelts` path in both seam directions/presentation charts,
+  forms a seam 2x2x2 tank and ordinary 2x2x2 baseline without changing native
+  dimensions/controller choice, preserves an ordinary item-vault negative
+  control, and verifies in-memory attached-level, load-context, and deferred
+  write serialization/repair all produce canonical controller NBT.
 
 This closes the bounded phase-3A server checkpoint, not Create compatibility as
-a whole. Belt item transfer, whole-world reload, and client controller mapping
-remain in the full qualification fixture. Phase 3B also owns client belt
-preview, Flywheel `ContraptionVisual` embedding, conservative contraption
-culling, backend-OFF double-transform proof, moving seam captures, and
-graphical/reload qualification. The shared `RingPresentationBounds` null result
-must map immediately to visible in the future Flywheel culling adapter.
+a whole. The fixture does not simulate a real player/client connector click or
+client prediction and does not durably restart its world. The existing common
+`BeltConnectorItem` mixin is intentionally a vanilla/no-op mapping on a client
+`Level`, because `RingCreate610ServerCoordinates` accepts only `ServerLevel`;
+its presence must not be mistaken for completed client endpoint mapping.
+
+The remaining qualification must cover real client `useOn` and prediction in
+both seam directions, tank fluid-handler capacity equality, belt item transfer,
+durable whole-world restart/reload, and client controller presentation mapping.
+Phase 3B also owns client belt preview, Flywheel `ContraptionVisual` embedding,
+conservative contraption culling, backend-OFF double-transform proof, moving
+seam captures, and graphical qualification. The shared
+`RingPresentationBounds` null result must map immediately to visible in the
+future Flywheel culling adapter.
