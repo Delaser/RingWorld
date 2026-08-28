@@ -256,6 +256,30 @@ neoForge {
             systemProperty 'ringworld.createCompatBoot', 'exact'
             programArgument '--nogui'
         }
+        createCompatDefaultClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-client-default')
+            systemProperty 'ringworld.createCompatClient', 'true'
+            systemProperty 'ringworld.createCompatClientMode', 'default'
+            programArgument '--username'
+            programArgument 'CreateDefault'
+            programArgument '--width'
+            programArgument '1280'
+            programArgument '--height'
+            programArgument '720'
+        }
+        createCompatOffClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-client-off')
+            systemProperty 'ringworld.createCompatClient', 'true'
+            systemProperty 'ringworld.createCompatClientMode', 'off'
+            programArgument '--username'
+            programArgument 'CreateCompatOff'
+            programArgument '--width'
+            programArgument '1280'
+            programArgument '--height'
+            programArgument '720'
+        }
         multiplayerServer {
             server()
             // This intentionally lives below the NeoForge subproject so it
@@ -439,6 +463,8 @@ def neoForgeStrongholdTestRun = qualificationRunFile('run-stronghold-test')
 def neoForgeHeadlessPrewarmRun = qualificationRunFile('run-headless-prewarm')
 def neoForgeCreateCompatAbsentRun = qualificationRunFile('run-create-compat-absent')
 def neoForgeCreateCompatRun = qualificationRunFile('run-create-compat')
+def neoForgeCreateCompatDefaultClientRun = qualificationRunFile('run-create-compat-client-default')
+def neoForgeCreateCompatOffClientRun = qualificationRunFile('run-create-compat-client-off')
 def neoForgeMultiplayerRun = qualificationRunFile('run-multiplayer')
 def neoForgeMultiplayerServerRun = new File(neoForgeMultiplayerRun, 'server')
 def neoForgeMultiplayerClientARun = new File(neoForgeMultiplayerRun, 'client-a')
@@ -473,6 +499,22 @@ def neoForgeMultiplayerAtlasCellCount = (neoForgeMultiplayerCircumferenceBlocks.
         * (neoForgeMultiplayerWidthBlocks.longValue() / 8L)
 
 def createCompatOuterJarSha256 = 'ef87fe5709f1ba1f5b8bb20a2925b5afb4669e178fd6d8bf10c167759eefe37a'
+def createCompatFlywheelNestedPath = 'META-INF/jarjar/flywheel-neoforge-1.21.1-1.0.6.jar'
+def createCompatFlywheelShaderHashes = [
+        'assets/flywheel/flywheel/internal/indirect/cull.glsl':
+                'd4fe4fb66dd389f2e414cbc787fa58c1d723b1c6bf374a95f680336e7acc3d48',
+        'assets/flywheel/flywheel/internal/indirect/main.vert':
+                'ad1ceedaf430b078dea6e3555639979922717b0001e7a9e0481599bd3be4cd44',
+        'assets/flywheel/flywheel/internal/instancing/main.vert':
+                '7be34310b320b5f04943c2db4ca8efdf965afba87e141e33709cef4f579c3ae4',
+        'assets/flywheel/flywheel/internal/common.vert':
+                '4d9ab62a7da527c7f4727be9f128fd685e951317ac63f4308069d8036984d701'
+]
+def sha256OfBytes = { byte[] input ->
+    def digest = java.security.MessageDigest.getInstance('SHA-256')
+    digest.update(input)
+    digest.digest().encodeHex().toString()
+}
 def sha256OfFile = { File inputFile ->
     def digest = java.security.MessageDigest.getInstance('SHA-256')
     inputFile.withInputStream { input ->
@@ -557,9 +599,34 @@ tasks.register('verifyCreateCompatibilityDependencyIsolation') {
             throw new GradleException(
                     "Create compatibility outer jar SHA-256 mismatch: ${sha256}")
         }
+        byte[] nestedFlywheel
+        def outerZip = new java.util.zip.ZipFile(artifact.file)
+        try {
+            def nestedEntry = outerZip.getEntry(createCompatFlywheelNestedPath)
+            if (nestedEntry == null) {
+                throw new GradleException(
+                        "Create outer jar is missing ${createCompatFlywheelNestedPath}")
+            }
+            nestedFlywheel = outerZip.getInputStream(nestedEntry).withCloseable { it.readAllBytes() }
+        } finally {
+            outerZip.close()
+        }
+        def actualShaderHashes = [:]
+        new java.util.zip.ZipInputStream(new ByteArrayInputStream(nestedFlywheel)).withCloseable { nestedZip ->
+            java.util.zip.ZipEntry entry
+            while ((entry = nestedZip.nextEntry) != null) {
+                if (!entry.directory && createCompatFlywheelShaderHashes.containsKey(entry.name)) {
+                    actualShaderHashes[entry.name] = sha256OfBytes(nestedZip.readAllBytes())
+                }
+            }
+        }
+        if (actualShaderHashes != createCompatFlywheelShaderHashes) {
+            throw new GradleException(
+                    "Nested Flywheel shader inventory/hash mismatch: ${actualShaderHashes}")
+        }
         logger.lifecycle(
-                '[create-compat-dependencies] PASS compile={} runtime={} sha256={}',
-                compileCompatibility.sort(), coordinates, sha256)
+                '[create-compat-dependencies] PASS compile={} runtime={} sha256={} flywheelShaders={}',
+                compileCompatibility.sort(), coordinates, sha256, actualShaderHashes)
     }
 }
 
@@ -639,13 +706,205 @@ tasks.register('prepareNeoForgeCreateCompatServer') {
     doLast { prepareCreateCompatibilityServer(neoForgeCreateCompatRun, true) }
 }
 
+def prepareCreateCompatibilityClient = { File runDirectory, boolean backendOff ->
+    ['saves', 'screenshots', 'ringworld-cache', 'logs', 'crash-reports', 'mods',
+     'capture-manifest.json'].each {
+        delete(new File(runDirectory, it))
+    }
+    runDirectory.mkdirs()
+    def configDirectory = new File(runDirectory, 'config')
+    configDirectory.mkdirs()
+    new File(configDirectory, 'ringworld.properties').text = '''\
+widthBlocks=416
+circumferenceBlocks=2048
+wallHeightBlocks=160
+testMode=false
+testViewDistanceChunks=8
+pregenerateTerrainAtlas=false
+'''
+    new File(configDirectory, 'flywheel-client.toml').text =
+            "backend = \"${backendOff ? 'flywheel:off' : 'DEFAULT'}\"\n"
+    new File(configDirectory, 'fml.toml').text =
+            '# Automated graphical capture: disable only the separate early splash.\nearlyWindowControl = false\n'
+    new File(runDirectory, 'options.txt').text = '''\
+onboardAccessibility:false
+pauseOnLostFocus:false
+renderClouds:"false"
+graphicsMode:1
+'''
+    def createFiles = createCompatRuntime.resolve()
+    if (createFiles.size() != 1) {
+        throw new GradleException("Create compatibility runtime must resolve exactly one outer jar, found ${createFiles}")
+    }
+    def createJar = createFiles.first()
+    if (sha256OfFile(createJar) != createCompatOuterJarSha256) {
+        throw new GradleException('Create compatibility client source jar SHA-256 mismatch')
+    }
+    copy {
+        from(createJar)
+        into(new File(runDirectory, 'mods'))
+    }
+    if (backendOff) {
+        def sourceWorld = new File(neoForgeCreateCompatDefaultClientRun,
+                'saves/RingWorld Create Compatibility')
+        if (!sourceWorld.isDirectory()) {
+            throw new GradleException("Default Create compatibility durable world is missing: ${sourceWorld}")
+        }
+        def destinationWorld = new File(runDirectory,
+                'saves/RingWorld Create Compatibility')
+        copy { from(sourceWorld); into(destinationWorld) }
+        def sourceFiles = fileTree(sourceWorld).files.findAll { it.isFile() }.sort { it.path }
+        def destinationFiles = fileTree(destinationWorld).files.findAll { it.isFile() }.sort { it.path }
+        def sourceHashes = sourceFiles.collectEntries {
+            [(sourceWorld.toPath().relativize(it.toPath()).toString()): sha256OfFile(it)]
+        }
+        def destinationHashes = destinationFiles.collectEntries {
+            [(destinationWorld.toPath().relativize(it.toPath()).toString()): sha256OfFile(it)]
+        }
+        if (sourceHashes != destinationHashes || sourceHashes.isEmpty()) {
+            throw new GradleException('Create compatibility OFF world copy is not byte-identical')
+        }
+        new File(runDirectory, 'world-copy-provenance.txt').text =
+                "source=${sourceWorld.canonicalPath}\nfiles=${sourceHashes.size()}\n" +
+                sourceHashes.collect { path, hash -> "${hash}  ${path}" }.join('\n') + '\n'
+    }
+}
+
+tasks.register('prepareNeoForgeCreateCompatDefaultClient') {
+    group = 'ringworld verification'
+    outputs.upToDateWhen { false }
+    doLast { prepareCreateCompatibilityClient(neoForgeCreateCompatDefaultClientRun, false) }
+}
+
+tasks.register('prepareNeoForgeCreateCompatOffClient') {
+    group = 'ringworld verification'
+    outputs.upToDateWhen { false }
+    doLast { prepareCreateCompatibilityClient(neoForgeCreateCompatOffClientRun, true) }
+}
+
+def verifyCreateCompatibilityClient = { File runDirectory, boolean backendOff ->
+    def logFile = new File(runDirectory, 'logs/latest.log')
+    def log = logFile.isFile() ? logFile.text : ''
+    def expectedResult = backendOff
+            ? '[create-compat-client] result=true off vanillaFallback=true flywheelEmbedding=zero durable=true backend=flywheel:off'
+            : '[create-compat-client] result=true default realClicks=both-directions preview=both-charts transfer=true durable=true controllerCharts=both backend='
+    if (!log.contains(expectedResult)
+            || !log.contains('attachedReads=') || !log.contains('detachedReads=')
+            || !log.contains('curvedEmbeddingTransforms=')
+            || !log.contains('nonFiniteMatrices=0')
+            || log.contains('[create-compat-client] result=false')) {
+        throw new GradleException("Create compatibility client qualification failed; inspect ${logFile}")
+    }
+    if (backendOff && !log.contains('backend=flywheel:off')) {
+        throw new GradleException("Create compatibility OFF client did not select flywheel:off; inspect ${logFile}")
+    }
+    if (backendOff && !log.contains('curvedEmbeddingTransforms=0')) {
+        throw new GradleException("Create compatibility OFF client invoked the Flywheel embedding; inspect ${logFile}")
+    }
+    if (!backendOff && (!log.contains('high mounted route PASS uninterruptedTicks=40')
+            || !log.contains('low mounted route distinct baseline')
+            || !log.contains('low mounted route PASS uninterruptedTicks=40')
+            || !log.contains('chart relocation range-exit only')
+            || !log.contains('embedding finite=true')
+            || !log.contains('durable reload canonicalNbt=true')
+            || !log.contains('client controller chart=high')
+            || !log.contains('client controller chart=low'))) {
+        throw new GradleException("Create compatibility route/durable evidence is incomplete; inspect ${logFile}")
+    }
+    def captureDefinitions = backendOff
+            ? [[name: 'ringworld-create-off-high-translucent.png', route: 'off-vanilla',
+                direction: 'none', chart: 'high', state: 'opaque+translucent+static', targetOce: true],
+               [name: 'ringworld-create-off-low-opaque.png', route: 'off-vanilla',
+                direction: 'none', chart: 'low', state: 'opaque+translucent+static', targetOce: true]]
+            : [[name: 'ringworld-create-default-high-opaque-translucent.png', route: 'high-static',
+                direction: 'none', chart: 'high', state: 'opaque+translucent+static', targetOce: true],
+               [name: 'ringworld-create-default-moving-high.png', route: 'high-mounted',
+                direction: 'positive', chart: 'high', state: 'opaque+translucent+moving', targetOce: true],
+               [name: 'ringworld-create-default-moving-low.png', route: 'low-mounted',
+                direction: 'negative', chart: 'low', state: 'opaque+translucent+moving', targetOce: true],
+               [name: 'ringworld-create-default-reopened-high.png', route: 'durable-controller',
+                direction: 'none', chart: 'high', state: 'durable+gameplay', targetOce: false],
+               [name: 'ringworld-create-default-reopened-low.png', route: 'durable-controller',
+                direction: 'none', chart: 'low', state: 'durable+gameplay', targetOce: false]]
+    def logLines = log.readLines()
+    def resultLine = logLines.find { it.contains('[create-compat-client] result=true') }
+    def backendMatch = resultLine =~ / backend=([^ ]+)/
+    if (!backendMatch.find()) {
+        throw new GradleException("Create compatibility backend identity is missing; inspect ${logFile}")
+    }
+    def backendIdentity = backendMatch.group(1)
+    def manifestCaptures = captureDefinitions.collect { definition ->
+        def name = definition.name
+        def screenshot = new File(runDirectory, 'screenshots/' + name)
+        if (!screenshot.isFile() || screenshot.length() == 0) {
+            throw new GradleException("Create compatibility client screenshot is missing: ${screenshot}")
+        }
+        def proof = logLines.find {
+            it.contains('[create-compat-client] capture-proof name=' + name[0..-5] + ' ')
+        }
+        def expectedMembership = definition.targetOce
+                ? 'clientLevel=true renderMembership=true removed=false'
+                : 'targetOce=none clientLevel=n/a renderMembership=n/a'
+        if (proof == null || !proof.contains(expectedMembership)) {
+            throw new GradleException(
+                    "Create compatibility capture lacks target membership proof: ${name}")
+        }
+        [relativePath: runDirectory.toPath().relativize(screenshot.toPath()).toString(),
+         absolutePath: screenshot.canonicalPath,
+         sha256: sha256OfFile(screenshot),
+         backend: backendIdentity,
+         route: definition.route,
+         direction: definition.direction,
+         chart: definition.chart,
+         state: definition.state,
+         targetOceRequired: definition.targetOce,
+         targetOcePresentInClientLevelAndRenderMembership: definition.targetOce ? true : null,
+         proofLogLine: proof]
+    }
+    def rejectedCapture = new File(runDirectory,
+            'screenshots/ringworld-create-default-moving-low-reentry.png')
+    if (rejectedCapture.exists()) {
+        throw new GradleException("Rejected replacement-identity capture was retained: ${rejectedCapture}")
+    }
+    new File(runDirectory, 'capture-manifest.json').text =
+            groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+                    schema: 1,
+                    runDirectory: runDirectory.canonicalPath,
+                    backend: backendIdentity,
+                    sourceLogRelativePath: runDirectory.toPath().relativize(logFile.toPath()).toString(),
+                    sourceLogAbsolutePath: logFile.canonicalPath,
+                    sourceLogSha256: sha256OfFile(logFile),
+                    invalidCapturePolicy: 'fresh preparation deletes prior screenshots; replacement-identity low capture is forbidden',
+                    captures: manifestCaptures
+            ])) + '\n'
+    def mods = new File(runDirectory, 'mods').listFiles()?.findAll { it.isFile() } ?: []
+    if (mods.size() != 1 || sha256OfFile(mods.first()) != createCompatOuterJarSha256) {
+        throw new GradleException("Create compatibility client runtime jar is not exact: ${mods}")
+    }
+    if (backendOff && !new File(runDirectory, 'world-copy-provenance.txt').isFile()) {
+        throw new GradleException('Create compatibility OFF world-copy provenance is missing')
+    }
+}
+
+tasks.register('verifyNeoForgeCreateCompatDefaultClient') {
+    group = 'ringworld verification'
+    mustRunAfter('runCreateCompatDefaultClient')
+    doLast { verifyCreateCompatibilityClient(neoForgeCreateCompatDefaultClientRun, false) }
+}
+
+tasks.register('verifyNeoForgeCreateCompatOffClient') {
+    group = 'ringworld verification'
+    mustRunAfter('runCreateCompatOffClient')
+    doLast { verifyCreateCompatibilityClient(neoForgeCreateCompatOffClientRun, true) }
+}
+
 tasks.register('verifyNeoForgeCreateCompatAbsentServer') {
     group = 'ringworld verification'
     mustRunAfter('runCreateCompatAbsentServer')
     doLast {
         def logFile = new File(neoForgeCreateCompatAbsentRun, 'logs/latest.log')
         def log = logFile.isFile() ? logFile.text : ''
-        if (!log.contains('[create-compat-boot] PASS mode=absent appliedServerMixins=0')
+        if (!log.contains('[create-compat-boot] PASS mode=absent appliedServerMixins=0 appliedClientMixins=0')
                 || log.contains('[create-compat-boot] FAIL')
                 || log.contains('Create compatibility adapter disabled for unqualified tuple')) {
             throw new GradleException("Create-absent NeoForge boot did not pass; inspect ${logFile}")
@@ -662,7 +921,7 @@ tasks.register('verifyNeoForgeCreateCompatServer') {
     doLast {
         def logFile = new File(neoForgeCreateCompatRun, 'logs/latest.log')
         def log = logFile.isFile() ? logFile.text : ''
-        if (!log.contains('[create-compat-boot] PASS mode=exact appliedServerMixins=4')
+        if (!log.contains('[create-compat-boot] PASS mode=exact appliedServerMixins=4 appliedClientMixins=0')
                 || !log.contains('[create-compat-fixture] PASS belts=both-directions '
                         + 'tanks=seam+baseline vault=unmodified controllerNbt=canonical')
                 || log.contains('[create-compat-boot] FAIL')) {
@@ -688,6 +947,16 @@ tasks.named('runCreateCompatAbsentServer') {
 tasks.named('runCreateCompatServer') {
     dependsOn('prepareNeoForgeCreateCompatServer')
     finalizedBy('verifyNeoForgeCreateCompatServer')
+}
+
+tasks.named('runCreateCompatDefaultClient') {
+    dependsOn('prepareNeoForgeCreateCompatDefaultClient')
+    finalizedBy('verifyNeoForgeCreateCompatDefaultClient')
+}
+
+tasks.named('runCreateCompatOffClient') {
+    dependsOn('prepareNeoForgeCreateCompatOffClient')
+    finalizedBy('verifyNeoForgeCreateCompatOffClient')
 }
 
 def neoForgeMultiplayerPort = {

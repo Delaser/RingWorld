@@ -9,7 +9,12 @@
     "ConnectivityHandlerMixin",
     "FluidTankBlockEntityMixin"
   ],
-  "client": [],
+  "client": [
+    "BeltConnectorHandlerMixin",
+    "BeltBlockEntityClientMixin",
+    "FluidTankBlockEntityClientMixin",
+    "ContraptionVisualMixin"
+  ],
   "injectors": {
     "defaultRequire": 1
   }

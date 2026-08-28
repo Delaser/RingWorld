@@ -242,6 +242,17 @@ activation/dependency boundary, and the work still required before making a
 compatibility claim are recorded in
 [`CREATE_COMPATIBILITY_PHASE_3A_2026-08-29.md`](CREATE_COMPATIBILITY_PHASE_3A_2026-08-29.md).
 
+The matching phase-3B client/gameplay checkpoint qualifies only the exact
+Minecraft 1.21.1 / NeoForge 21.1.239 / Create 6.0.10 / Flywheel 1.0.6 tuple.
+It covers seam belts and tanks, canonical persistence, transient client
+controllers, mounted contraption continuity, the live Flywheel embedding, and
+the backend-OFF vanilla fallback. Fabric Create remains unqualified, and the
+rejected dead CPU-culling surface plus the precise runtime-evidence limits are
+recorded in
+[`CREATE_COMPATIBILITY_PHASE_3B_2026-08-29.md`](CREATE_COMPATIBILITY_PHASE_3B_2026-08-29.md).
+This is local qualification evidence, not published support metadata or a
+release claim.
+
 - Shader packs and renderer mods can conflict because the backport replaces
   version-sensitive vanilla core shader assets.
 - World-generation, structure, chunk-ticket, view-distance, distance-query,

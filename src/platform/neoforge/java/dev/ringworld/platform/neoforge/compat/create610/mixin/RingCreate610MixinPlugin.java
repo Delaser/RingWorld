@@ -22,7 +22,18 @@ public final class RingCreate610MixinPlugin implements IMixinConfigPlugin {
             "com.simibubi.create.content.kinetics.belt.item.BeltConnectorItem",
             "com.simibubi.create.api.connectivity.ConnectivityHandler",
             "com.simibubi.create.content.fluids.tank.FluidTankBlockEntity");
+    private static final List<String> CLIENT_TARGETS = List.of(
+            "com.simibubi.create.content.kinetics.belt.item.BeltConnectorHandler",
+            "com.simibubi.create.content.kinetics.belt.BeltBlockEntity",
+            "com.simibubi.create.content.fluids.tank.FluidTankBlockEntity",
+            "com.simibubi.create.content.contraptions.render.ContraptionVisual");
+    private static final Set<String> CLIENT_MIXINS = Set.of(
+            "BeltConnectorHandlerMixin",
+            "BeltBlockEntityClientMixin",
+            "FluidTankBlockEntityClientMixin",
+            "ContraptionVisualMixin");
     private static final Set<String> APPLIED_SERVER_MIXINS = ConcurrentHashMap.newKeySet();
+    private static final Set<String> APPLIED_CLIENT_MIXINS = ConcurrentHashMap.newKeySet();
     private static final AtomicBoolean UNQUALIFIED_WARNING_EMITTED = new AtomicBoolean();
     private static volatile boolean exactTupleEnabled;
 
@@ -47,9 +58,7 @@ public final class RingCreate610MixinPlugin implements IMixinConfigPlugin {
         }
 
         preflightTargets(SERVER_TARGETS);
-        // Phase 3A has no client-only mixins. Future client targets must be
-        // preflighted only on Dist.CLIENT before enabling that JSON list.
-        if (FMLLoader.getDist() == Dist.CLIENT) preflightTargets(List.of());
+        if (FMLLoader.getDist() == Dist.CLIENT) preflightTargets(CLIENT_TARGETS);
         enabled = true;
         exactTupleEnabled = true;
         RingWorldMod.LOGGER.info(
@@ -91,7 +100,12 @@ public final class RingCreate610MixinPlugin implements IMixinConfigPlugin {
     public void postApply(String targetClassName, ClassNode targetClass,
                           String mixinClassName, IMixinInfo mixinInfo) {
         if (!enabled) return;
-        APPLIED_SERVER_MIXINS.add(mixinClassName);
+        String simpleName = mixinClassName.substring(mixinClassName.lastIndexOf('.') + 1);
+        if (CLIENT_MIXINS.contains(simpleName)) {
+            APPLIED_CLIENT_MIXINS.add(mixinClassName);
+        } else {
+            APPLIED_SERVER_MIXINS.add(mixinClassName);
+        }
         RingWorldMod.LOGGER.info("[create-compat-mixin] applied target={} mixin={}",
                 targetClassName, mixinClassName);
     }
@@ -102,6 +116,10 @@ public final class RingCreate610MixinPlugin implements IMixinConfigPlugin {
 
     public static int appliedServerMixinCount() {
         return APPLIED_SERVER_MIXINS.size();
+    }
+
+    public static int appliedClientMixinCount() {
+        return APPLIED_CLIENT_MIXINS.size();
     }
 
     @Override

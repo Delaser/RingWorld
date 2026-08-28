@@ -1,8 +1,10 @@
 package dev.ringworld.platform.neoforge.compat.create610;
 
 import com.simibubi.create.api.connectivity.ConnectivityHandler;
+import com.simibubi.create.AllDataComponents;
 import com.simibubi.create.content.kinetics.belt.BeltBlock;
 import com.simibubi.create.content.kinetics.belt.item.BeltConnectorItem;
+import com.simibubi.create.content.kinetics.belt.transport.TransportedItemStack;
 import com.simibubi.create.foundation.blockEntity.IMultiBlockEntityContainer;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.server.RingBlockEntityLoadContext;
@@ -18,15 +20,28 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.nbt.NbtUtils;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.level.material.Fluids;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler.FluidAction;
 
 /** Bounded server-only seam formation and controller-persistence fixture. */
 final class RingCreate610ServerFixture {
     private static final int Y = 120;
+    static final int FORWARD_CLICK_Z = 76;
+    static final int REVERSE_CLICK_Z = 77;
+    static final int SEAM_BELT_Z = 80;
+    static final int SEAM_TANK_Z = 92;
+    static final int BASELINE_TANK_Z = 100;
+    private static final int DURABLE_FLUID_AMOUNT = 3_000;
 
     private RingCreate610ServerFixture() { }
 
@@ -46,6 +61,212 @@ final class RingCreate610ServerFixture {
                 "[create-compat-fixture] PASS belts=both-directions tanks=seam+baseline "
                         + "vault=unmodified controllerNbt=canonical");
     }
+
+    static QualificationSetup prepareClientQualification(
+            ServerLevel level, ServerPlayer player) {
+        verify(level);
+        RingGeometry geometry = RingWorldServer.geometryFor(level);
+        int circumference = geometry.circumferenceBlocks();
+        prepareShaftPair(level, geometry, circumference - 3, 1, FORWARD_CLICK_Z);
+        prepareShaftPair(level, geometry, 1, circumference - 3, REVERSE_CLICK_Z);
+        for (int z = FORWARD_CLICK_Z - 1; z <= REVERSE_CLICK_Z + 1; z++) {
+            level.setBlock(new BlockPos(circumference - 1, Y - 1, z),
+                    Blocks.STONE.defaultBlockState(), Block.UPDATE_ALL);
+        }
+
+        player.getInventory().selected = 0;
+        player.getInventory().setItem(0, new ItemStack(item("belt_connector"), 8));
+
+        BlockPos motorPosition = new BlockPos(circumference - 3, Y, SEAM_BELT_Z + 1);
+        level.setBlock(motorPosition, block("creative_motor").defaultBlockState()
+                .setValue(BlockStateProperties.FACING, Direction.NORTH), Block.UPDATE_ALL);
+        RingCreate610BeltAccess belt = beltController(level,
+                new BlockPos(circumference - 3, Y, SEAM_BELT_Z), "durable seam belt");
+        TransportedItemStack transported = new TransportedItemStack(
+                new ItemStack(Items.DIAMOND, 3));
+        transported.beltPosition = transported.prevBeltPosition = 0.5F;
+        belt.getInventory().addItem(transported);
+        markUpdated(level, (BlockEntity) belt);
+
+        RingCreate610TankAccess seamTank = tankController(level,
+                new BlockPos(circumference - 1, Y, SEAM_TANK_Z), "durable seam tank");
+        RingCreate610TankAccess baselineTank = tankController(level,
+                new BlockPos(24, Y, BASELINE_TANK_Z), "durable baseline tank");
+        int seamCapacity = seamTank.ringworld$tankInventory().getTankCapacity(0);
+        int baselineCapacity = baselineTank.ringworld$tankInventory().getTankCapacity(0);
+        if (seamCapacity != baselineCapacity || seamCapacity <= DURABLE_FLUID_AMOUNT) {
+            throw new IllegalStateException("seam tank capacity " + seamCapacity
+                    + " differs from baseline " + baselineCapacity);
+        }
+        fillExactly(seamTank, DURABLE_FLUID_AMOUNT, "durable seam tank");
+        fillExactly(baselineTank, DURABLE_FLUID_AMOUNT, "durable baseline tank");
+        RingWorldMod.LOGGER.info(
+                "[create-compat-client] setup connector=real-clicks tankCapacity={} "
+                        + "tankFluid={} beltItem=3xdiamond",
+                seamCapacity, DURABLE_FLUID_AMOUNT);
+        return new QualificationSetup(seamCapacity, DURABLE_FLUID_AMOUNT);
+    }
+
+    static boolean freezeTransferredItemAfterSeam(ServerLevel level) {
+        RingGeometry geometry = RingWorldServer.geometryFor(level);
+        RingCreate610BeltAccess belt = beltController(level,
+                new BlockPos(geometry.circumferenceBlocks() - 3, Y, SEAM_BELT_Z),
+                "durable seam belt");
+        TransportedItemStack item = belt.getInventory().getTransportedItems().stream()
+                .filter(candidate -> candidate.stack.is(Items.DIAMOND))
+                .findFirst().orElse(null);
+        if (item == null || item.beltPosition < 3.0F) return false;
+        level.setBlock(new BlockPos(geometry.circumferenceBlocks() - 3,
+                Y, SEAM_BELT_Z + 1), Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+        belt.setSpeed(0.0F);
+        markUpdated(level, (BlockEntity) belt);
+        RingWorldMod.LOGGER.info(
+                "[create-compat-client] belt item crossed canonical seam position={}",
+                item.beltPosition);
+        return true;
+    }
+
+    static DurableReload verifyDurableReload(ServerLevel level) {
+        RingGeometry geometry = RingWorldServer.geometryFor(level);
+        int circumference = geometry.circumferenceBlocks();
+        RingCreate610BeltAccess belt = beltController(level,
+                new BlockPos(circumference - 3, Y, SEAM_BELT_Z), "reloaded seam belt");
+        requireCanonicalControllerTag(((BlockEntity) belt).saveWithFullMetadata(level.registryAccess()),
+                circumference, "reloaded belt raw NBT");
+        TransportedItemStack item = belt.getInventory().getTransportedItems().stream()
+                .filter(candidate -> candidate.stack.is(Items.DIAMOND)
+                        && candidate.stack.getCount() == 3 && candidate.beltPosition >= 3.0F)
+                .findFirst().orElseThrow(() -> new IllegalStateException(
+                        "reloaded seam belt lost its transferred item"));
+
+        RingCreate610TankAccess seamTank = tankController(level,
+                new BlockPos(circumference - 1, Y, SEAM_TANK_Z), "reloaded seam tank");
+        RingCreate610TankAccess baselineTank = tankController(level,
+                new BlockPos(24, Y, BASELINE_TANK_Z), "reloaded baseline tank");
+        BlockEntity seamTankPart = level.getBlockEntity(new BlockPos(0, Y, SEAM_TANK_Z));
+        if (seamTankPart == null) throw new IllegalStateException("reloaded seam tank part missing");
+        requireCanonicalControllerTag(seamTankPart.saveWithFullMetadata(level.registryAccess()),
+                circumference, "reloaded tank raw NBT");
+        int seamCapacity = seamTank.ringworld$tankInventory().getTankCapacity(0);
+        int baselineCapacity = baselineTank.ringworld$tankInventory().getTankCapacity(0);
+        int seamFluid = seamTank.ringworld$tankInventory().getFluidInTank(0).getAmount();
+        int baselineFluid = baselineTank.ringworld$tankInventory().getFluidInTank(0).getAmount();
+        if (seamCapacity != baselineCapacity || seamFluid != DURABLE_FLUID_AMOUNT
+                || baselineFluid != DURABLE_FLUID_AMOUNT) {
+            throw new IllegalStateException("reloaded tank mismatch capacity=" + seamCapacity
+                    + "/" + baselineCapacity + " fluid=" + seamFluid + "/" + baselineFluid);
+        }
+        RingWorldMod.LOGGER.info(
+                "[create-compat-client] durable reload canonicalNbt=true beltItemPosition={} "
+                        + "tankCapacity={} tankFluid={}",
+                item.beltPosition, seamCapacity, seamFluid);
+        return new DurableReload(item.beltPosition, seamCapacity, seamFluid);
+    }
+
+    static void verifyClickedBelt(ServerLevel level, int z, String label) {
+        RingGeometry geometry = RingWorldServer.geometryFor(level);
+        int circumference = geometry.circumferenceBlocks();
+        for (int x : new int[] {circumference - 3, circumference - 2,
+                circumference - 1, 0, 1}) {
+            BlockEntity entity = level.getBlockEntity(new BlockPos(x, Y, z));
+            if (!(entity instanceof RingCreate610BeltAccess access)) {
+                throw new IllegalStateException(label + " missing belt at x=" + x);
+            }
+            requireCanonical(access.getController(), circumference, label + " controller");
+        }
+    }
+
+    static String describeClickedBeltState(ServerLevel level, ServerPlayer player, int z) {
+        RingGeometry geometry = RingWorldServer.geometryFor(level);
+        int circumference = geometry.circumferenceBlocks();
+        BlockPos first = new BlockPos(circumference - 3, Y, z);
+        BlockPos second = new BlockPos(1, Y, z);
+        List<String> blocks = new ArrayList<>();
+        for (int x : new int[] {circumference - 3, circumference - 2,
+                circumference - 1, 0, 1}) {
+            BlockPos position = new BlockPos(x, Y, z);
+            BlockEntity blockEntity = level.getBlockEntity(position);
+            blocks.add(x + "=" + level.getBlockState(position).getBlock()
+                    + "/" + (blockEntity == null ? "none" : blockEntity.getClass().getSimpleName()));
+        }
+        return "player=" + player.position()
+                + " canReachFirst=" + player.canInteractWithBlock(first, 1.0)
+                + " canReachSecond=" + player.canInteractWithBlock(second, 1.0)
+                + " mayFirst=" + level.mayInteract(player, first)
+                + " maySecond=" + level.mayInteract(player, second)
+                + " canConnect=" + BeltConnectorItem.canConnect(level, first, second)
+                + " cooldown=" + player.getCooldowns().isOnCooldown(
+                        player.getMainHandItem().getItem())
+                + " held=" + player.getMainHandItem().getComponents() + " blocks=" + blocks;
+    }
+
+    static boolean connectorSecondClickReady(ServerPlayer player) {
+        ItemStack stack = player.getMainHandItem();
+        return stack.has(AllDataComponents.BELT_FIRST_SHAFT)
+                && !player.getCooldowns().isOnCooldown(stack.getItem());
+    }
+
+    private static void prepareShaftPair(ServerLevel level, RingGeometry geometry,
+                                         int startX, int endX, int z) {
+        for (int x = -4; x <= 4; x++) {
+            clear(level, canonicalX(startX + x, geometry), z);
+            clear(level, canonicalX(endX + x, geometry), z);
+        }
+        BlockState shaft = block("shaft").defaultBlockState()
+                .setValue(BlockStateProperties.AXIS, Direction.Axis.Z);
+        BlockPos start = new BlockPos(startX, Y, z);
+        BlockPos end = new BlockPos(endX, Y, z);
+        level.getChunkAt(start);
+        level.getChunkAt(end);
+        level.setBlock(start, shaft, Block.UPDATE_ALL);
+        level.setBlock(end, shaft, Block.UPDATE_ALL);
+    }
+
+    private static RingCreate610BeltAccess beltController(
+            ServerLevel level, BlockPos position, String label) {
+        BlockEntity entity = level.getBlockEntity(position);
+        if (!(entity instanceof RingCreate610BeltAccess belt)) {
+            throw new IllegalStateException(label + " missing at " + position);
+        }
+        BlockEntity controller = level.getBlockEntity(belt.getController());
+        if (!(controller instanceof RingCreate610BeltAccess result)) {
+            throw new IllegalStateException(label + " controller missing at " + belt.getController());
+        }
+        return result;
+    }
+
+    private static RingCreate610TankAccess tankController(
+            ServerLevel level, BlockPos position, String label) {
+        BlockEntity entity = level.getBlockEntity(position);
+        if (!(entity instanceof RingCreate610TankAccess)
+                || !(entity instanceof IMultiBlockEntityContainer tank)) {
+            throw new IllegalStateException(label + " missing at " + position);
+        }
+        BlockEntity controller = level.getBlockEntity(tank.getController());
+        if (!(controller instanceof RingCreate610TankAccess result)) {
+            throw new IllegalStateException(label + " controller missing at " + tank.getController());
+        }
+        return result;
+    }
+
+    private static void fillExactly(RingCreate610TankAccess tank, int amount, String label) {
+        var inventory = tank.ringworld$tankInventory();
+        inventory.drain(Integer.MAX_VALUE, FluidAction.EXECUTE);
+        int filled = inventory.fill(
+                new FluidStack(Fluids.WATER, amount), FluidAction.EXECUTE);
+        if (filled != amount) throw new IllegalStateException(label + " filled only " + filled);
+        BlockEntity entity = (BlockEntity) tank;
+        markUpdated((ServerLevel) entity.getLevel(), entity);
+    }
+
+    private static void markUpdated(ServerLevel level, BlockEntity entity) {
+        entity.setChanged();
+        level.sendBlockUpdated(entity.getBlockPos(), entity.getBlockState(),
+                entity.getBlockState(), Block.UPDATE_ALL);
+    }
+
+    record QualificationSetup(int tankCapacity, int tankFluid) { }
+    record DurableReload(float beltItemPosition, int tankCapacity, int tankFluid) { }
 
     private static void verifyBeltDirection(ServerLevel level, RingGeometry geometry,
                                             int startX, int endX, int z, String label) {
@@ -264,6 +485,13 @@ final class RingCreate610ServerFixture {
         Block block = BuiltInRegistries.BLOCK.get(id);
         if (block == Blocks.AIR) throw new IllegalStateException("missing Create block " + id);
         return block;
+    }
+
+    private static Item item(String path) {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath("create", path);
+        Item item = BuiltInRegistries.ITEM.get(id);
+        if (item == Items.AIR) throw new IllegalStateException("missing Create item " + id);
+        return item;
     }
 
     private static void clear(ServerLevel level, int x, int z) {

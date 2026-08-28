@@ -26,8 +26,10 @@ public final class RingCreate610BootFixture {
                 default -> throw new IllegalStateException("unknown create compatibility boot mode " + mode);
             }
             complete = true;
-            RingWorldMod.LOGGER.info("[create-compat-boot] PASS mode={} appliedServerMixins={}",
-                    mode, RingCreate610MixinPlugin.appliedServerMixinCount());
+            RingWorldMod.LOGGER.info(
+                    "[create-compat-boot] PASS mode={} appliedServerMixins={} appliedClientMixins={}",
+                    mode, RingCreate610MixinPlugin.appliedServerMixinCount(),
+                    RingCreate610MixinPlugin.appliedClientMixinCount());
         } catch (Throwable failure) {
             complete = true;
             RingWorldMod.LOGGER.error("[create-compat-boot] FAIL mode={}", mode, failure);
@@ -41,7 +43,8 @@ public final class RingCreate610BootFixture {
             throw new IllegalStateException("ordinary compatibility boot unexpectedly loaded Create/Flywheel");
         }
         if (RingCreate610MixinPlugin.exactTupleEnabled()
-                || RingCreate610MixinPlugin.appliedServerMixinCount() != 0) {
+                || RingCreate610MixinPlugin.appliedServerMixinCount() != 0
+                || RingCreate610MixinPlugin.appliedClientMixinCount() != 0) {
             throw new IllegalStateException("optional Create mixins applied without Create");
         }
     }
@@ -56,6 +59,9 @@ public final class RingCreate610BootFixture {
         if (RingCreate610MixinPlugin.appliedServerMixinCount() != 4) {
             throw new IllegalStateException("expected four strict server mixins, observed "
                     + RingCreate610MixinPlugin.appliedServerMixinCount());
+        }
+        if (RingCreate610MixinPlugin.appliedClientMixinCount() != 0) {
+            throw new IllegalStateException("dedicated server applied client compatibility mixins");
         }
     }
 

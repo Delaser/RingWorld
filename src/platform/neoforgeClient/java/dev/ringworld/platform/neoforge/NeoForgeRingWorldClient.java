@@ -22,6 +22,8 @@ import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRequestPayload;
 import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
+import dev.ringworld.platform.neoforge.compat.create610.RingCreate610ClientDiagnostics;
+import dev.ringworld.platform.neoforge.compat.create610.RingCreate610ClientFixture;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingWorldSettings;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -41,6 +43,7 @@ import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
+import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
 import net.neoforged.neoforge.network.registration.NetworkRegistry;
@@ -68,6 +71,13 @@ public final class NeoForgeRingWorldClient {
             new RingMapCompassCaptureClient();
 
     private NeoForgeRingWorldClient() { }
+
+    @SubscribeEvent
+    public static void onEntityLeaveLevel(EntityLeaveLevelEvent event) {
+        if (event.getLevel().isClientSide()) {
+            RingCreate610ClientDiagnostics.recordEntityLeave(event.getEntity().getId());
+        }
+    }
 
     public static void register(IEventBus modEventBus) {
         ClientRingState.configureCacheDirectory(FMLPaths.GAMEDIR.get().resolve("ringworld-cache"));
@@ -188,6 +198,11 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft client = Minecraft.getInstance();
+        if (Boolean.getBoolean(RingCreate610ClientFixture.ENABLE_PROPERTY)) {
+            if (RingCreate610ClientFixture.instance().startWorldIfEnabled(client)) return;
+            RingCreate610ClientFixture.instance().tick(client);
+            return;
+        }
         if (CREATION_UI_TEST.startMenuIfEnabled(client)) {
             CREATION_UI_TEST.tick(client);
             return;
@@ -213,6 +228,9 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onAfterLevel(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
+        if (Boolean.getBoolean(RingCreate610ClientFixture.ENABLE_PROPERTY)) {
+            RingCreate610ClientFixture.instance().frameRendered();
+        }
         PROJECTION_CAPTURE.frameRendered();
         HANDOFF_FOLIAGE_CAPTURE.frameRendered();
         VISUAL_PARITY_CAPTURE.frameRendered();

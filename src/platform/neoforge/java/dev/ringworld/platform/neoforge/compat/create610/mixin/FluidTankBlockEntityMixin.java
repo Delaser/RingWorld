@@ -1,6 +1,7 @@
 package dev.ringworld.platform.neoforge.compat.create610.mixin;
 
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610ServerCoordinates;
+import dev.ringworld.platform.neoforge.compat.create610.RingCreate610TankAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.nbt.CompoundTag;
@@ -12,12 +13,20 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
+import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 
 /** Repairs fluid-tank controller ownership on every server storage boundary. */
 @Pseudo
 @Mixin(targets = "com.simibubi.create.content.fluids.tank.FluidTankBlockEntity", remap = false)
-abstract class FluidTankBlockEntityMixin {
+abstract class FluidTankBlockEntityMixin implements RingCreate610TankAccess {
     @Shadow private BlockPos controller;
+    @Shadow public abstract FluidTank getTankInventory();
+
+    @Override
+    public IFluidHandler ringworld$tankInventory() {
+        return getTankInventory();
+    }
 
     @ModifyVariable(method = "setController(Lnet/minecraft/core/BlockPos;)V",
             at = @At("HEAD"), argsOnly = true, require = 1)
