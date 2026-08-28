@@ -105,8 +105,13 @@ promotion. Save/removal lookup preserves an exact alias whether it is already
 live or still packed, so list or map iteration order cannot discard an
 inventory.
 
-`RingGeometry.wrapX`, `wrapBlockX`, and `RingChunkCoordinates.wrapChunkX`
-perform the conversion. `RingTopology` supplies higher-level operations.
+`RingGeometry.wrapX`, `RingBlockCoordinates`, and
+`RingChunkCoordinates.wrapChunkX` perform the conversion. Integer block
+positions use `RingBlockCoordinates.canonicalBlockPos` when crossing a server
+ownership boundary. Its nearest-image operation is presentation-only and must
+never supply a saved position, ownership key, or canonical lookup/cache key.
+`RingTopology` delegates its integer block operations to that single owner and
+supplies the remaining higher-level operations.
 
 ### 2. Client presentation coordinates
 

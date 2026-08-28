@@ -28,7 +28,7 @@ public final class RingTopology {
     }
 
     public int canonicalBlockX(int chartBlockX) {
-        return geometry.wrapBlockX(chartBlockX);
+        return RingBlockCoordinates.canonicalBlockX(chartBlockX, geometry);
     }
 
     public int canonicalChunkX(int chartChunkX) {
@@ -44,11 +44,8 @@ public final class RingTopology {
     }
 
     public int imageBlockNear(int canonicalBlockX, double observerChartX) {
-        double image = imageNear(canonicalBlockX, observerChartX);
-        if (image < Integer.MIN_VALUE || image > Integer.MAX_VALUE) {
-            throw new IllegalArgumentException("ring block image exceeds vanilla coordinate range");
-        }
-        return (int) Math.floor(image);
+        return RingBlockCoordinates.nearestImageBlockX(
+                canonicalBlockX, observerChartX, geometry);
     }
 
     public int imageChunkNear(int canonicalChunkX, int observerChartChunkX) {
