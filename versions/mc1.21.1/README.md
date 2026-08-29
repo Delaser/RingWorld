@@ -263,6 +263,18 @@ speculative production fix was added are recorded in
 [`CREATE_COMPATIBILITY_ROTATING_BEARING_C1_2026-08-29.md`](CREATE_COMPATIBILITY_ROTATING_BEARING_C1_2026-08-29.md).
 This remains qualification evidence, not published support metadata.
 
+The subsequent standalone kinetic-visual D2 spike reproduces and narrowly
+corrects a distinct flat-placement defect in Create kinetic block-entity
+Flywheel visuals. It records the exact per-visual child-embedding ABI,
+identity-to-curved late-geometry transition, lifecycle ownership, matched
+indirect/instancing/OFF pixel evidence, and the still-bounded qualification
+limits in
+[`CREATE_COMPATIBILITY_KINETIC_VISUAL_D2_2026-08-29.md`](CREATE_COMPATIBILITY_KINETIC_VISUAL_D2_2026-08-29.md).
+The implementation is frozen at source commit
+`66c8c81c8be3fe54ea16d4d2db0315bb7b931080`. This remains qualification
+evidence, not published support or release metadata; Fabric Create remains
+unqualified.
+
 - Shader packs and renderer mods can conflict because the backport replaces
   version-sensitive vanilla core shader assets.
 - World-generation, structure, chunk-ticket, view-distance, distance-query,
