@@ -10,8 +10,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.FieldInsnNode;
+import org.objectweb.asm.tree.JumpInsnNode;
+import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
@@ -30,10 +34,13 @@ public final class RingCreate610MixinPlugin implements IMixinConfigPlugin {
             "com.simibubi.create.content.kinetics.belt.BeltBlockEntity",
             "com.simibubi.create.content.fluids.tank.FluidTankBlockEntity",
             "com.simibubi.create.content.contraptions.render.ContraptionVisual",
+            "com.simibubi.create.content.contraptions.gantry.GantryContraptionEntity",
+            "com.simibubi.create.content.contraptions.render.ContraptionEntityRenderer",
             "dev.engine_room.flywheel.impl.visualization.storage.Storage",
             "dev.engine_room.flywheel.impl.visualization.VisualizationManagerImpl");
     private static final List<String> KINETIC_EMBEDDING_DEPENDENCIES = List.of(
             "com.simibubi.create.content.kinetics.base.KineticBlockEntity",
+            "com.simibubi.create.foundation.render.RenderTypes",
             "dev.engine_room.flywheel.impl.visualization.storage.BlockEntityStorage",
             "dev.engine_room.flywheel.api.visualization.VisualEmbedding");
     private static final Set<String> CLIENT_MIXINS = Set.of(
@@ -41,6 +48,8 @@ public final class RingCreate610MixinPlugin implements IMixinConfigPlugin {
             "BeltBlockEntityClientMixin",
             "FluidTankBlockEntityClientMixin",
             "ContraptionVisualMixin",
+            "GantryContraptionEntityMixin",
+            "ContraptionEntityRendererMixin",
             "StorageKineticEmbeddingMixin",
             "VisualizationManagerKineticEmbeddingMixin");
     private static final Set<String> APPLIED_SERVER_MIXINS = ConcurrentHashMap.newKeySet();
@@ -73,6 +82,8 @@ public final class RingCreate610MixinPlugin implements IMixinConfigPlugin {
             preflightTargets(CLIENT_TARGETS);
             preflightTargets(KINETIC_EMBEDDING_DEPENDENCIES);
             preflightKineticEmbeddingAbi();
+            preflightGantryAbi();
+            preflightContraptionOffRenderAbi();
         }
         enabled = true;
         exactTupleEnabled = true;
@@ -134,6 +145,85 @@ public final class RingCreate610MixinPlugin implements IMixinConfigPlugin {
                 "(Ldev/engine_room/flywheel/api/backend/RenderContext;)V");
     }
 
+    private static void preflightGantryAbi() {
+        String owner = "com/simibubi/create/content/contraptions/gantry/"
+                + "GantryContraptionEntity";
+        String packet = "Lcom/simibubi/create/content/contraptions/gantry/"
+                + "GantryContraptionUpdatePacket;";
+        ClassNode gantry = classNode(owner.replace('/', '.'));
+        requireField(gantry, "movementAxis", "Lnet/minecraft/core/Direction;");
+        requireField(gantry, "clientOffsetDiff", "D");
+        MethodNode handler = requireMethod(gantry, "handlePacket", "(" + packet + ")V");
+        AbstractInsnNode coord = requireSoleInvocation(handler, Opcodes.INVOKEVIRTUAL,
+                "com/simibubi/create/content/contraptions/gantry/GantryContraptionUpdatePacket",
+                "coord", "()D");
+        AbstractInsnNode axis = requireSoleInvocation(handler, Opcodes.INVOKEVIRTUAL,
+                owner, "getAxisCoord", "()D");
+        AbstractInsnNode subtract = requireSoleOpcode(handler, Opcodes.DSUB);
+        AbstractInsnNode write = requireSoleFieldAccess(handler, Opcodes.PUTFIELD,
+                owner, "clientOffsetDiff", "D");
+        requireOrderedShape(gantry.name, "handler coord-axis-subtract-write",
+                coord, axis, subtract, write);
+
+        MethodNode tick = requireMethod(gantry, "tickContraption", "()V");
+        AbstractInsnNode read = requireSoleFieldAccess(tick, Opcodes.GETFIELD,
+                owner, "clientOffsetDiff", "D");
+        AbstractInsnNode constant = nextExecutable(read);
+        AbstractInsnNode multiply = nextExecutable(constant);
+        AbstractInsnNode decayWrite = nextExecutable(multiply);
+        if (!(constant instanceof LdcInsnNode ldc)
+                || !(ldc.cst instanceof Double value)
+                || Double.compare(value, 0.75D) != 0
+                || multiply == null || multiply.getOpcode() != Opcodes.DMUL
+                || !(decayWrite instanceof FieldInsnNode field)
+                || decayWrite.getOpcode() != Opcodes.PUTFIELD
+                || !field.owner.equals(owner) || !field.name.equals("clientOffsetDiff")
+                || !field.desc.equals("D")) {
+            throw abiDrift(gantry.name, "instruction shape",
+                    "clientOffsetDiff GETFIELD; 0.75D; DMUL; clientOffsetDiff PUTFIELD", 0);
+        }
+        requireSoleFieldAccess(tick, Opcodes.PUTFIELD,
+                owner, "clientOffsetDiff", "D");
+    }
+
+    private static void preflightContraptionOffRenderAbi() {
+        String rendererOwner = "com/simibubi/create/content/contraptions/render/"
+                + "ContraptionEntityRenderer";
+        String renderDescriptor = "(Lcom/simibubi/create/content/contraptions/"
+                + "AbstractContraptionEntity;FFLcom/mojang/blaze3d/vertex/PoseStack;"
+                + "Lnet/minecraft/client/renderer/MultiBufferSource;I)V";
+        MethodNode render = requireMethod(
+                classNode(rendererOwner.replace('/', '.')), "render", renderDescriptor);
+        AbstractInsnNode supports = requireSoleInvocation(render, Opcodes.INVOKESTATIC,
+                "dev/engine_room/flywheel/api/visualization/VisualizationManager",
+                "supportsVisualization", "(Lnet/minecraft/world/level/LevelAccessor;)Z");
+        AbstractInsnNode branch = nextExecutable(supports);
+        AbstractInsnNode layers = requireSoleInvocation(render, Opcodes.INVOKESTATIC,
+                "net/minecraft/client/renderer/RenderType", "chunkBufferLayers",
+                "()Ljava/util/List;");
+        AbstractInsnNode sink = requireSoleInvocation(render, Opcodes.INVOKEINTERFACE,
+                "net/minecraft/client/renderer/MultiBufferSource", "getBuffer",
+                "(Lnet/minecraft/client/renderer/RenderType;)"
+                        + "Lcom/mojang/blaze3d/vertex/VertexConsumer;");
+        AbstractInsnNode renderInto = requireSoleInvocation(render, Opcodes.INVOKEINTERFACE,
+                "net/createmod/catnip/render/SuperByteBuffer", "renderInto",
+                "(Lcom/mojang/blaze3d/vertex/PoseStack;"
+                        + "Lcom/mojang/blaze3d/vertex/VertexConsumer;)V");
+        if (!(branch instanceof JumpInsnNode jump) || branch.getOpcode() != Opcodes.IFNE
+                || !appearsBefore(renderInto, jump.label)) {
+            throw abiDrift(rendererOwner, "instruction shape",
+                    "supportsVisualization IFNE over OFF layer sink", 0);
+        }
+        requireOrderedShape(rendererOwner, "OFF supports-layers-sink-renderInto",
+                supports, layers, sink, renderInto);
+
+        ClassNode renderTypes = classNode(
+                "com.simibubi.create.foundation.render.RenderTypes");
+        String factoryDescriptor = "()Lnet/minecraft/client/renderer/RenderType;";
+        requireMethod(renderTypes, "entitySolidBlockMipped", factoryDescriptor);
+        requireMethod(renderTypes, "entityCutoutBlockMipped", factoryDescriptor);
+    }
+
     private static ClassNode classNode(String target) {
         try {
             ClassNode node = MixinService.getService().getBytecodeProvider().getClassNode(target);
@@ -184,6 +274,88 @@ public final class RingCreate610MixinPlugin implements IMixinConfigPlugin {
             throw abiDrift(owner.name, "invocation",
                     targetOwner + "." + targetName + targetDescriptor, count);
         }
+    }
+
+    private static AbstractInsnNode requireSoleInvocation(
+            MethodNode method, int opcode, String owner, String name, String descriptor) {
+        AbstractInsnNode match = null;
+        long count = 0;
+        for (var instruction = method.instructions.getFirst(); instruction != null;
+             instruction = instruction.getNext()) {
+            if (instruction instanceof MethodInsnNode invocation
+                    && invocation.getOpcode() == opcode
+                    && invocation.owner.equals(owner)
+                    && invocation.name.equals(name)
+                    && invocation.desc.equals(descriptor)) {
+                match = instruction;
+                count++;
+            }
+        }
+        if (count != 1) {
+            throw abiDrift(owner, "invocation", name + descriptor, count);
+        }
+        return match;
+    }
+
+    private static AbstractInsnNode requireSoleFieldAccess(
+            MethodNode method, int opcode, String owner, String name, String descriptor) {
+        AbstractInsnNode match = null;
+        long count = 0;
+        for (var instruction = method.instructions.getFirst(); instruction != null;
+             instruction = instruction.getNext()) {
+            if (instruction instanceof FieldInsnNode field
+                    && field.getOpcode() == opcode
+                    && field.owner.equals(owner)
+                    && field.name.equals(name)
+                    && field.desc.equals(descriptor)) {
+                match = instruction;
+                count++;
+            }
+        }
+        if (count != 1) {
+            throw abiDrift(owner, "field access", name + descriptor, count);
+        }
+        return match;
+    }
+
+    private static AbstractInsnNode requireSoleOpcode(MethodNode method, int opcode) {
+        AbstractInsnNode match = null;
+        long count = 0;
+        for (var instruction = method.instructions.getFirst(); instruction != null;
+             instruction = instruction.getNext()) {
+            if (instruction.getOpcode() == opcode) {
+                match = instruction;
+                count++;
+            }
+        }
+        if (count != 1) {
+            throw abiDrift(method.name, "opcode", Integer.toString(opcode), count);
+        }
+        return match;
+    }
+
+    private static AbstractInsnNode nextExecutable(AbstractInsnNode instruction) {
+        if (instruction == null) return null;
+        AbstractInsnNode next = instruction.getNext();
+        while (next != null && next.getOpcode() < 0) next = next.getNext();
+        return next;
+    }
+
+    private static void requireOrderedShape(
+            String owner, String name, AbstractInsnNode... instructions) {
+        for (int index = 1; index < instructions.length; index++) {
+            if (instructions[index - 1] == null || instructions[index] == null
+                    || !appearsBefore(instructions[index - 1], instructions[index])) {
+                throw abiDrift(owner, "instruction shape", name, 0);
+            }
+        }
+    }
+
+    private static boolean appearsBefore(AbstractInsnNode first, AbstractInsnNode second) {
+        for (AbstractInsnNode cursor = first.getNext(); cursor != null; cursor = cursor.getNext()) {
+            if (cursor == second) return true;
+        }
+        return false;
     }
 
     private static IllegalStateException abiDrift(

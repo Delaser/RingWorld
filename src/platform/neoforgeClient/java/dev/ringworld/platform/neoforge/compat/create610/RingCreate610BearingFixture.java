@@ -15,6 +15,7 @@ import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import dev.ringworld.platform.neoforge.compat.create610.mixin.RingCreate610MixinPlugin;
 import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.world.RingGeometry;
+import dev.ringworld.world.RingObjectTransform;
 import dev.ringworld.world.RingTopology;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -469,6 +470,48 @@ public final class RingCreate610BearingFixture {
         }
         RingCreate610ClientDiagnostics.EntityTransformSample transform = offMode()
                 ? null : transforms.get(transforms.size() - 1);
+        Route route = route();
+        BlockPos chestLocal = BlockPos.ZERO.relative(route.xArm, 3);
+        BlockPos shulkerLocal = BlockPos.ZERO.relative(route.zArm, 3);
+        RingCreate610FixtureProjection.Projection chestProjection = payloadProjection(
+                client, controlled, chestLocal, aim.yaw(), aim.pitch());
+        RingCreate610FixtureProjection.Projection shulkerProjection = payloadProjection(
+                client, controlled, shulkerLocal, aim.yaw(), aim.pitch());
+        RingCreate610FixtureProjection.Projection chestBeforeProjection = payloadProjection(
+                client, controlled, BlockPos.ZERO.relative(route.xArm, 2),
+                aim.yaw(), aim.pitch());
+        RingCreate610FixtureProjection.Projection chestAfterProjection = payloadProjection(
+                client, controlled, BlockPos.ZERO.relative(route.xArm, 4),
+                aim.yaw(), aim.pitch());
+        RingCreate610FixtureProjection.Projection shulkerBeforeProjection = payloadProjection(
+                client, controlled, BlockPos.ZERO.relative(route.zArm, 2),
+                aim.yaw(), aim.pitch());
+        RingCreate610FixtureProjection.Projection shulkerAfterProjection = payloadProjection(
+                client, controlled, BlockPos.ZERO.relative(route.zArm, 4),
+                aim.yaw(), aim.pitch());
+        if (pose.expectedVisible) {
+            for (RingCreate610FixtureProjection.Projection payload : List.of(
+                    chestProjection, shulkerProjection, chestBeforeProjection,
+                    chestAfterProjection, shulkerBeforeProjection, shulkerAfterProjection)) {
+                if (!payload.intersectsViewport(viewportWidth, viewportHeight)) {
+                    finish(client, false, "bearing payload projection missed pose=" + pose.id
+                            + " projection=" + payload.logValue());
+                    return;
+                }
+            }
+        }
+        String offLayers = RingCreate610ClientDiagnostics
+                .offContraptionLayerSamples(controlled.getId()).stream()
+                .map(sample -> sample.sourceLayer() + "->" + sample.mappedLayer()
+                        + "#shader=" + sample.shaderName()
+                        + "/ringWorldLayout=" + sample.ringWorldLayoutUniform()
+                        + "/chunkTerrain=" + sample.chunkTerrainLayer()
+                        + "@" + sample.modelViewProjection())
+                .collect(java.util.stream.Collectors.joining(";"));
+        if (offMode() && offLayers.isEmpty()) {
+            finish(client, false, "missing bearing OFF layer diagnostics pose=" + pose.id);
+            return;
+        }
         String name = "ringworld-create-bearing-" + backend().replace(':', '-') + "-"
                 + route().id + "-" + pose.id;
         RingWorldMod.LOGGER.info(
@@ -476,7 +519,10 @@ public final class RingCreate610BearingFixture {
                         + "backend={} chart={} direction={} view={} distance={} state=glued+rotating "
                         + "entity={}/{} object={} visual={} clientAngle={} serverAngle={} rpm={} "
                         + "transformIndex={} transformAngle={} matrix={} rotatedMinX={} rotatedMaxX={} "
-                        + "camera={}/{}/{} yaw={} pitch={} expectedVisible={} projectedBounds={} poseSanityRoi={} "
+                        + "camera={}/{}/{} yaw={} pitch={} expectedVisible={} projectedBounds={} "
+                        + "chestLocal={} chestBounds={} chestNeighbors={}|{} "
+                        + "shulkerLocal={} shulkerBounds={} shulkerNeighbors={}|{} offLayers={} "
+                        + "poseSanityRoi={} "
                         + "renderMembership=true removed=false",
                 name, name, backend(), route().chart, route().direction, pose.id, pose.distance,
                 controlled.getId(), controlled.getUUID(), System.identityHashCode(controlled),
@@ -485,7 +531,11 @@ public final class RingCreate610BearingFixture {
                 transform == null ? Float.NaN : transform.angle(),
                 transform == null ? "none" : transform.matrix(), extent[0], extent[1], client.player.getX(),
                 client.player.getY(), client.player.getZ(), client.player.getYRot(),
-                client.player.getXRot(), pose.expectedVisible, projection.logValue(), poseSanityRoi.logValue());
+                client.player.getXRot(), pose.expectedVisible, projection.logValue(),
+                coordinates(chestLocal), bounds(chestProjection), bounds(chestBeforeProjection),
+                bounds(chestAfterProjection), coordinates(shulkerLocal), bounds(shulkerProjection),
+                bounds(shulkerBeforeProjection), bounds(shulkerAfterProjection),
+                offLayers.isEmpty() ? "none" : offLayers, poseSanityRoi.logValue());
         Screenshot.grab(client.gameDirectory, name + ".png", client.getMainRenderTarget(), 1,
                 message -> RingWorldMod.LOGGER.info(
                         "[create-bearing] screenshot {} {}", name, message.getString()));
@@ -968,7 +1018,7 @@ public final class RingCreate610BearingFixture {
             return;
         }
         if (RingCreate610MixinPlugin.appliedServerMixinCount() != 4
-                || RingCreate610MixinPlugin.appliedClientMixinCount() != 6) {
+                || RingCreate610MixinPlugin.appliedClientMixinCount() != 8) {
             finish(client, false, "mixin counts changed server="
                     + RingCreate610MixinPlugin.appliedServerMixinCount() + " client="
                     + RingCreate610MixinPlugin.appliedClientMixinCount());
@@ -1031,13 +1081,55 @@ public final class RingCreate610BearingFixture {
                     "lifecycle capture does not contain whole target phase=" + phase
                             + " projection=" + projection.logValue());
         }
+        Route route = route();
+        BlockPos chestLocal = BlockPos.ZERO.relative(route.xArm, 3);
+        BlockPos shulkerLocal = BlockPos.ZERO.relative(route.zArm, 3);
+        RingCreate610FixtureProjection.Projection chestProjection = payloadProjection(
+                client, controlled, chestLocal, aim.yaw(), aim.pitch());
+        RingCreate610FixtureProjection.Projection shulkerProjection = payloadProjection(
+                client, controlled, shulkerLocal, aim.yaw(), aim.pitch());
+        RingCreate610FixtureProjection.Projection chestBeforeProjection = payloadProjection(
+                client, controlled, BlockPos.ZERO.relative(route.xArm, 2),
+                aim.yaw(), aim.pitch());
+        RingCreate610FixtureProjection.Projection chestAfterProjection = payloadProjection(
+                client, controlled, BlockPos.ZERO.relative(route.xArm, 4),
+                aim.yaw(), aim.pitch());
+        RingCreate610FixtureProjection.Projection shulkerBeforeProjection = payloadProjection(
+                client, controlled, BlockPos.ZERO.relative(route.zArm, 2),
+                aim.yaw(), aim.pitch());
+        RingCreate610FixtureProjection.Projection shulkerAfterProjection = payloadProjection(
+                client, controlled, BlockPos.ZERO.relative(route.zArm, 4),
+                aim.yaw(), aim.pitch());
+        for (RingCreate610FixtureProjection.Projection payload : List.of(
+                chestProjection, shulkerProjection, chestBeforeProjection,
+                chestAfterProjection, shulkerBeforeProjection, shulkerAfterProjection)) {
+            if (!payload.intersectsViewport(
+                    client.getMainRenderTarget().width,
+                    client.getMainRenderTarget().height)) {
+                throw new IllegalStateException("lifecycle payload projection missed phase="
+                        + phase + " projection=" + payload.logValue());
+            }
+        }
+        String offLayers = RingCreate610ClientDiagnostics
+                .offContraptionLayerSamples(controlled.getId()).stream()
+                .map(sample -> sample.sourceLayer() + "->" + sample.mappedLayer()
+                        + "#shader=" + sample.shaderName()
+                        + "/ringWorldLayout=" + sample.ringWorldLayoutUniform()
+                        + "/chunkTerrain=" + sample.chunkTerrainLayer()
+                        + "@" + sample.modelViewProjection())
+                .collect(java.util.stream.Collectors.joining(";"));
+        if (offMode() && offLayers.isEmpty()) {
+            throw new IllegalStateException("missing lifecycle OFF layer diagnostics phase=" + phase);
+        }
         String name = "ringworld-create-bearing-" + backend().replace(':', '-') + "-"
                 + route().id + "-" + phase;
         RingWorldMod.LOGGER.info(
                 "[create-bearing] lifecycle-proof name={} relative=screenshots/{}.png backend={} "
                         + "route={} phase={} state={} entity={}/{} object={} visual={} angle={} speed={} "
                         + "transformIndex={} transformAngle={} matrix={} expectedVisible=true "
-                        + "projectedBounds={} poseSanityRoi={} camera={}/{}/{} yaw={} pitch={} "
+                        + "projectedBounds={} chestLocal={} chestBounds={} chestNeighbors={}|{} "
+                        + "shulkerLocal={} shulkerBounds={} shulkerNeighbors={}|{} offLayers={} "
+                        + "poseSanityRoi={} camera={}/{}/{} yaw={} pitch={} "
                         + "renderMembership=true removed=false",
                 name, name, backend(), route().id, phase, state, controlled.getId(),
                 controlled.getUUID(), System.identityHashCode(controlled), visualIdentity,
@@ -1045,7 +1137,10 @@ public final class RingCreate610BearingFixture {
                 transform == null ? -1 : transform.transformIndex(),
                 transform == null ? Float.NaN : transform.angle(),
                 transform == null ? "none" : transform.matrix(), projection.logValue(),
-                poseSanityRoi.logValue(),
+                coordinates(chestLocal), bounds(chestProjection), bounds(chestBeforeProjection),
+                bounds(chestAfterProjection), coordinates(shulkerLocal), bounds(shulkerProjection),
+                bounds(shulkerBeforeProjection), bounds(shulkerAfterProjection),
+                offLayers.isEmpty() ? "none" : offLayers, poseSanityRoi.logValue(),
                 client.player.getX(), client.player.getY(), client.player.getZ(),
                 client.player.getYRot(), client.player.getXRot());
         Screenshot.grab(client.gameDirectory, name + ".png", client.getMainRenderTarget(), 1,
@@ -1140,6 +1235,45 @@ public final class RingCreate610BearingFixture {
                 probe);
     }
 
+    private static RingCreate610FixtureProjection.Projection payloadProjection(
+            Minecraft client, ControlledContraptionEntity entity, BlockPos local,
+            float yaw, float pitch) {
+        RingGeometry geometry = ClientRingState.geometry();
+        Vec3 camera = client.gameRenderer.getMainCamera().getPosition();
+        RingObjectTransform anchor = RingObjectTransform.fromCameraRelative(
+                geometry, camera, entity.getX() - camera.x,
+                entity.getY() - camera.y, entity.getZ() - camera.z);
+        double angle = anchor.tangentAngleRadians();
+        double cosine = Math.cos(angle);
+        double sine = Math.sin(angle);
+        List<Vec3> points = new ArrayList<>();
+        for (int x = 0; x <= 1; x++) for (int y = 0; y <= 1; y++) {
+            for (int z = 0; z <= 1; z++) {
+                Vec3 world = entity.toGlobalVector(new Vec3(
+                        local.getX() + x, local.getY() + y, local.getZ() + z), 1.0F);
+                Vec3 delta = world.subtract(entity.position());
+                points.add(anchor.cameraLocalPosition().add(
+                        cosine * delta.x - sine * delta.y,
+                        sine * delta.x + cosine * delta.y,
+                        delta.z));
+            }
+        }
+        Vec3 center = points.stream().reduce(Vec3.ZERO, Vec3::add)
+                .scale(1.0 / points.size());
+        return RingCreate610FixtureProjection.projectCameraLocal(
+                points, center, yaw, pitch, client.getMainRenderTarget().width,
+                client.getMainRenderTarget().height, 70.0);
+    }
+
+    private static String bounds(RingCreate610FixtureProjection.Projection projection) {
+        return String.format(java.util.Locale.ROOT, "%.2f/%.2f/%.2f/%.2f",
+                projection.minX(), projection.minY(), projection.maxX(), projection.maxY());
+    }
+
+    private static String coordinates(BlockPos position) {
+        return position.getX() + "/" + position.getY() + "/" + position.getZ();
+    }
+
     private static Map<BlockPos, BlockState> expectedStates(BlockPos bearingPos) {
         Map<BlockPos, BlockState> expected = new LinkedHashMap<>();
         BlockPos root = bearingPos.above();
@@ -1159,7 +1293,7 @@ public final class RingCreate610BearingFixture {
     private static BlockState armState(int distance, boolean secondArm) {
         return switch (distance) {
             case 1 -> Blocks.CUT_COPPER.defaultBlockState();
-            case 2 -> Blocks.TINTED_GLASS.defaultBlockState();
+            case 2 -> Blocks.LIME_CONCRETE.defaultBlockState();
             case 3 -> secondArm ? Blocks.BLUE_SHULKER_BOX.defaultBlockState()
                     : Blocks.CHEST.defaultBlockState();
             case 4 -> Blocks.GOLD_BLOCK.defaultBlockState();

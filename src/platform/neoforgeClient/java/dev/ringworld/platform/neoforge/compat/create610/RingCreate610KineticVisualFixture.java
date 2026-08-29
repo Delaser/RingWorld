@@ -543,7 +543,7 @@ public final class RingCreate610KineticVisualFixture {
                 + "backend=" + backend() + " route=" + route().id
                 + " mechanism=encased-cog captures=" + captures
                 + " fixedCameraPhases=3 poses=4 phase=" + phase()
-                + " productionClientMixins=6");
+                + " productionClientMixins=8");
     }
 
     private void requestCameraPose(Minecraft client, RingGeometry geometry, CameraPose pose) {

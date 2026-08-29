@@ -213,7 +213,7 @@ public final class RingCreate610ClientFixture {
             if (stageTicks < 80 || !client.levelRenderer.hasRenderedAllSections()) return true;
             if (BackendManager.isBackendOn()) return finish(client, false, "OFF launch selected a live backend");
             if (RingCreate610MixinPlugin.appliedServerMixinCount() != 4
-                    || RingCreate610MixinPlugin.appliedClientMixinCount() != 6) {
+                    || RingCreate610MixinPlugin.appliedClientMixinCount() != 8) {
                 return finish(client, false, "OFF mixin-counts server="
                         + RingCreate610MixinPlugin.appliedServerMixinCount() + " client="
                         + RingCreate610MixinPlugin.appliedClientMixinCount());
@@ -596,7 +596,7 @@ public final class RingCreate610ClientFixture {
         captureWithoutEntityTarget(client, "ringworld-create-default-reopened-low",
                 "durable-controller", "none", "low", "durable+gameplay");
         if (RingCreate610MixinPlugin.appliedServerMixinCount() != 4
-                || RingCreate610MixinPlugin.appliedClientMixinCount() != 6) {
+                || RingCreate610MixinPlugin.appliedClientMixinCount() != 8) {
             finish(client, false, "mixin-counts server="
                     + RingCreate610MixinPlugin.appliedServerMixinCount() + " client="
                     + RingCreate610MixinPlugin.appliedClientMixinCount());

@@ -7,6 +7,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import net.minecraft.client.renderer.GameRenderer;
+import net.minecraft.client.renderer.ShaderInstance;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.joml.Matrix4f;
@@ -17,11 +19,15 @@ public final class RingCreate610ClientDiagnostics {
     private static final String BEARING_PROPERTY = "ringworld.createCompatBearing";
     private static final String WINDMILL_PROPERTY = "ringworld.createCompatWindmill";
     private static final String KINETIC_VISUAL_PROPERTY = "ringworld.createCompatKineticVisual";
+    private static final String LINEAR_PROPERTY = "ringworld.createCompatLinear";
+    private static final boolean OFF_CONTRAPTION_LAYER_DIAGNOSTICS =
+            Boolean.getBoolean(BEARING_PROPERTY) || Boolean.getBoolean(LINEAR_PROPERTY);
     private static final AtomicInteger ATTACHED_CONTROLLER_READS = new AtomicInteger();
     private static final AtomicInteger DETACHED_CONTROLLER_READS = new AtomicInteger();
     private static final AtomicInteger CURVED_EMBEDDING_TRANSFORMS = new AtomicInteger();
     private static final AtomicInteger DEFERRED_CONTROLLER_REPAIRS = new AtomicInteger();
     private static final AtomicInteger NON_FINITE_EMBEDDING_MATRICES = new AtomicInteger();
+    private static final AtomicInteger GANTRY_OFFSET_PROJECTIONS = new AtomicInteger();
     private static final ConcurrentMap<Integer, Integer> VISUAL_IDENTITIES = new ConcurrentHashMap<>();
     private static final ConcurrentMap<Integer, AtomicInteger> VISUAL_CREATES = new ConcurrentHashMap<>();
     private static final ConcurrentMap<Integer, AtomicInteger> VISUAL_DELETES = new ConcurrentHashMap<>();
@@ -29,6 +35,8 @@ public final class RingCreate610ClientDiagnostics {
     private static final ConcurrentMap<Integer, AtomicInteger> ENTITY_TRANSFORMS = new ConcurrentHashMap<>();
     private static final ConcurrentMap<Integer, List<EntityTransformSample>> ENTITY_TRANSFORM_SAMPLES =
             new ConcurrentHashMap<>();
+    private static final ConcurrentMap<Integer, ConcurrentMap<String, OffLayerSample>>
+            OFF_CONTRAPTION_LAYERS = new ConcurrentHashMap<>();
     private static volatile String firstEmbeddingMatrix;
     private static volatile String lastEmbeddingMatrix;
     private static volatile BlockPos previewFirst;
@@ -82,6 +90,42 @@ public final class RingCreate610ClientDiagnostics {
         synchronized (samples) { return List.copyOf(samples); }
     }
 
+    /** Records the exact backend-OFF SBB sink only while a graphical fixture is active. */
+    public static void recordOffContraptionLayer(
+            int entityId, String sourceLayer, String mappedLayer, String shaderKind,
+            boolean chunkTerrainLayer, Matrix4f modelViewProjection) {
+        if (!OFF_CONTRAPTION_LAYER_DIAGNOSTICS) return;
+        ShaderInstance shader = switch (shaderKind) {
+            case "entity-solid" -> GameRenderer.getRendertypeEntitySolidShader();
+            case "entity-cutout" -> GameRenderer.getRendertypeEntityCutoutShader();
+            case "entity-translucent-cull" ->
+                    GameRenderer.getRendertypeEntityTranslucentCullShader();
+            default -> null;
+        };
+        float[] values = new float[16];
+        modelViewProjection.get(values);
+        for (float value : values) if (!Float.isFinite(value)) return;
+        OFF_CONTRAPTION_LAYERS.computeIfAbsent(
+                        entityId, ignored -> new ConcurrentHashMap<>())
+                .put(sourceLayer, new OffLayerSample(
+                        sourceLayer, mappedLayer, shader == null ? "missing" : shader.getName(),
+                        shader != null && shader.getUniform("RingWorldLayout") != null,
+                        chunkTerrainLayer, matrixSample(values)));
+    }
+
+    /** Avoids constructing detailed OFF-render evidence outside its isolated fixtures. */
+    public static boolean offContraptionLayerDiagnosticsEnabled() {
+        return OFF_CONTRAPTION_LAYER_DIAGNOSTICS;
+    }
+
+    public static List<OffLayerSample> offContraptionLayerSamples(int entityId) {
+        var samples = OFF_CONTRAPTION_LAYERS.get(entityId);
+        if (samples == null) return List.of();
+        return samples.values().stream()
+                .sorted(java.util.Comparator.comparing(OffLayerSample::sourceLayer))
+                .toList();
+    }
+
     public static void recordVisualCreate(int entityId, Object visual) {
         if (!enabled()) return;
         VISUAL_IDENTITIES.put(entityId, System.identityHashCode(visual));
@@ -96,6 +140,21 @@ public final class RingCreate610ClientDiagnostics {
     public static void recordEntityLeave(int entityId) {
         if (!enabled()) return;
         ENTITY_LEAVES.computeIfAbsent(entityId, ignored -> new AtomicInteger()).incrementAndGet();
+    }
+
+    /** Records only fixture-enabled seam projections; ordinary clients remain silent. */
+    public static void recordGantryOffsetProjection(
+            int entityId, double axisCoord, double originalOffset, double projectedOffset) {
+        if (!Boolean.getBoolean(LINEAR_PROPERTY)
+                || Double.doubleToLongBits(originalOffset)
+                == Double.doubleToLongBits(projectedOffset)
+                || Math.abs(originalOffset - projectedOffset) < 1.0
+                || GANTRY_OFFSET_PROJECTIONS.incrementAndGet() > 8) {
+            return;
+        }
+        dev.ringworld.RingWorldMod.LOGGER.info(
+                "[create-linear] gantry-offset-projection entity={} axis={} rawDiff={} projectedDiff={}",
+                entityId, axisCoord, originalOffset, projectedOffset);
     }
 
     public static int visualIdentity(int entityId) {
@@ -148,12 +207,14 @@ public final class RingCreate610ClientDiagnostics {
         CURVED_EMBEDDING_TRANSFORMS.set(0);
         DEFERRED_CONTROLLER_REPAIRS.set(0);
         NON_FINITE_EMBEDDING_MATRICES.set(0);
+        GANTRY_OFFSET_PROJECTIONS.set(0);
         VISUAL_IDENTITIES.clear();
         VISUAL_CREATES.clear();
         VISUAL_DELETES.clear();
         ENTITY_LEAVES.clear();
         ENTITY_TRANSFORMS.clear();
         ENTITY_TRANSFORM_SAMPLES.clear();
+        OFF_CONTRAPTION_LAYERS.clear();
         firstEmbeddingMatrix = null;
         lastEmbeddingMatrix = null;
         previewFirst = null;
@@ -176,7 +237,8 @@ public final class RingCreate610ClientDiagnostics {
 
     private static boolean enabled() {
         return Boolean.getBoolean(PROPERTY) || Boolean.getBoolean(BEARING_PROPERTY)
-                || Boolean.getBoolean(WINDMILL_PROPERTY);
+                || Boolean.getBoolean(WINDMILL_PROPERTY)
+                || Boolean.getBoolean(LINEAR_PROPERTY);
     }
 
     private static String matrixSample(float[] values) {
@@ -197,4 +259,9 @@ public final class RingCreate610ClientDiagnostics {
                            boolean previewCanConnect) { }
 
     public record EntityTransformSample(int transformIndex, float angle, String matrix) { }
+
+    public record OffLayerSample(
+            String sourceLayer, String mappedLayer, String shaderName,
+            boolean ringWorldLayoutUniform, boolean chunkTerrainLayer,
+            String modelViewProjection) { }
 }

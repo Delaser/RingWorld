@@ -15,7 +15,9 @@
     "FluidTankBlockEntityClientMixin",
     "ContraptionVisualMixin",
     "StorageKineticEmbeddingMixin",
-    "VisualizationManagerKineticEmbeddingMixin"
+    "VisualizationManagerKineticEmbeddingMixin",
+    "GantryContraptionEntityMixin",
+    "ContraptionEntityRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

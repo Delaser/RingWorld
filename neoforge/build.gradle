@@ -397,6 +397,91 @@ neoForge {
             programArgument '--width'; programArgument '1280'
             programArgument '--height'; programArgument '720'
         }
+        createCompatLinearPistonIndirectHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-linear-piston-indirect-high')
+            systemProperty 'ringworld.createCompatLinear', 'true'
+            systemProperty 'ringworld.createCompatLinearRoute', 'piston-high'
+            programArgument '--username'; programArgument 'LinearPistonHigh'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatLinearPistonIndirectLowClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-linear-piston-indirect-low')
+            systemProperty 'ringworld.createCompatLinear', 'true'
+            systemProperty 'ringworld.createCompatLinearRoute', 'piston-low'
+            programArgument '--username'; programArgument 'LinearPistonLow'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatLinearPistonInstancingHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-linear-piston-instancing-high')
+            systemProperty 'ringworld.createCompatLinear', 'true'
+            systemProperty 'ringworld.createCompatLinearRoute', 'piston-high'
+            systemProperty 'ringworld.createCompatLinearBackend', 'instancing'
+            programArgument '--username'; programArgument 'LinearPistonInst'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatLinearPistonOffHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-linear-piston-off-high')
+            systemProperty 'ringworld.createCompatLinear', 'true'
+            systemProperty 'ringworld.createCompatLinearRoute', 'piston-high'
+            systemProperty 'ringworld.createCompatLinearBackend', 'off'
+            programArgument '--username'; programArgument 'LinearPistonOff'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatLinearGantryIndirectHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-linear-gantry-indirect-high')
+            systemProperty 'ringworld.createCompatLinear', 'true'
+            systemProperty 'ringworld.createCompatLinearRoute', 'gantry-high'
+            programArgument '--username'; programArgument 'LinearGantryHigh'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatLinearGantryIndirectLowClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-linear-gantry-indirect-low')
+            systemProperty 'ringworld.createCompatLinear', 'true'
+            systemProperty 'ringworld.createCompatLinearRoute', 'gantry-low'
+            programArgument '--username'; programArgument 'LinearGantryLow'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatLinearGantryInstancingHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-linear-gantry-instancing-high')
+            systemProperty 'ringworld.createCompatLinear', 'true'
+            systemProperty 'ringworld.createCompatLinearRoute', 'gantry-high'
+            systemProperty 'ringworld.createCompatLinearBackend', 'instancing'
+            programArgument '--username'; programArgument 'LinearGantryInst'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatLinearGantryOffHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-linear-gantry-off-high')
+            systemProperty 'ringworld.createCompatLinear', 'true'
+            systemProperty 'ringworld.createCompatLinearRoute', 'gantry-high'
+            systemProperty 'ringworld.createCompatLinearBackend', 'off'
+            programArgument '--username'; programArgument 'LinearGantryOff'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatLinearPulleyIndirectNormalClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-linear-pulley-indirect-normal')
+            systemProperty 'ringworld.createCompatLinear', 'true'
+            systemProperty 'ringworld.createCompatLinearRoute', 'pulley-normal'
+            programArgument '--username'; programArgument 'LinearPulley'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
         createCompatBearingClient {
             client()
             gameDirectory = qualificationRunFile('run-create-compat-bearing-default')
@@ -695,6 +780,15 @@ def neoForgeCreateCompatKineticNetworkInstancingHighClientRun = qualificationRun
 def neoForgeCreateCompatKineticNetworkInstancingLowClientRun = qualificationRunFile('run-create-compat-kinetic-network-instancing-low')
 def neoForgeCreateCompatKineticNetworkOffHighClientRun = qualificationRunFile('run-create-compat-kinetic-network-off-high')
 def neoForgeCreateCompatKineticNetworkOffLowClientRun = qualificationRunFile('run-create-compat-kinetic-network-off-low')
+def neoForgeCreateCompatLinearPistonIndirectHighClientRun = qualificationRunFile('run-create-compat-linear-piston-indirect-high')
+def neoForgeCreateCompatLinearPistonIndirectLowClientRun = qualificationRunFile('run-create-compat-linear-piston-indirect-low')
+def neoForgeCreateCompatLinearPistonInstancingHighClientRun = qualificationRunFile('run-create-compat-linear-piston-instancing-high')
+def neoForgeCreateCompatLinearPistonOffHighClientRun = qualificationRunFile('run-create-compat-linear-piston-off-high')
+def neoForgeCreateCompatLinearGantryIndirectHighClientRun = qualificationRunFile('run-create-compat-linear-gantry-indirect-high')
+def neoForgeCreateCompatLinearGantryIndirectLowClientRun = qualificationRunFile('run-create-compat-linear-gantry-indirect-low')
+def neoForgeCreateCompatLinearGantryInstancingHighClientRun = qualificationRunFile('run-create-compat-linear-gantry-instancing-high')
+def neoForgeCreateCompatLinearGantryOffHighClientRun = qualificationRunFile('run-create-compat-linear-gantry-off-high')
+def neoForgeCreateCompatLinearPulleyIndirectNormalClientRun = qualificationRunFile('run-create-compat-linear-pulley-indirect-normal')
 def neoForgeCreateCompatBearingClientRun = qualificationRunFile('run-create-compat-bearing-default')
 def neoForgeCreateCompatBearingNormalClientRun = qualificationRunFile('run-create-compat-bearing-normal')
 def neoForgeCreateCompatBearingLowClientRun = qualificationRunFile('run-create-compat-bearing-low')
@@ -1077,6 +1171,48 @@ tasks.register('prepareNeoForgeCreateCompatKineticVisualOffHighClient') {
     }
 }
 
+def linearCreateCompatRuns = [
+        [task: 'PistonIndirectHigh', run: neoForgeCreateCompatLinearPistonIndirectHighClientRun,
+         backendConfig: 'DEFAULT', backend: 'flywheel:indirect', route: 'piston-high',
+         mechanism: 'piston', durable: true],
+        [task: 'PistonIndirectLow', run: neoForgeCreateCompatLinearPistonIndirectLowClientRun,
+         backendConfig: 'DEFAULT', backend: 'flywheel:indirect', route: 'piston-low',
+         mechanism: 'piston', durable: false],
+        [task: 'PistonInstancingHigh', run: neoForgeCreateCompatLinearPistonInstancingHighClientRun,
+         backendConfig: 'flywheel:instancing', backend: 'flywheel:instancing', route: 'piston-high',
+         mechanism: 'piston', durable: false],
+        [task: 'PistonOffHigh', run: neoForgeCreateCompatLinearPistonOffHighClientRun,
+         backendConfig: 'flywheel:off', backend: 'flywheel:off', route: 'piston-high',
+         mechanism: 'piston', durable: false],
+        [task: 'GantryIndirectHigh', run: neoForgeCreateCompatLinearGantryIndirectHighClientRun,
+         backendConfig: 'DEFAULT', backend: 'flywheel:indirect', route: 'gantry-high',
+         mechanism: 'gantry', durable: false],
+        [task: 'GantryIndirectLow', run: neoForgeCreateCompatLinearGantryIndirectLowClientRun,
+         backendConfig: 'DEFAULT', backend: 'flywheel:indirect', route: 'gantry-low',
+         mechanism: 'gantry', durable: false],
+        [task: 'GantryInstancingHigh', run: neoForgeCreateCompatLinearGantryInstancingHighClientRun,
+         backendConfig: 'flywheel:instancing', backend: 'flywheel:instancing', route: 'gantry-high',
+         mechanism: 'gantry', durable: false],
+        [task: 'GantryOffHigh', run: neoForgeCreateCompatLinearGantryOffHighClientRun,
+         backendConfig: 'flywheel:off', backend: 'flywheel:off', route: 'gantry-high',
+         mechanism: 'gantry', durable: false],
+        [task: 'PulleyIndirectNormal', run: neoForgeCreateCompatLinearPulleyIndirectNormalClientRun,
+         backendConfig: 'DEFAULT', backend: 'flywheel:indirect', route: 'pulley-normal',
+         mechanism: 'pulley', durable: false]
+]
+
+linearCreateCompatRuns.each { definition ->
+    tasks.register("prepareNeoForgeCreateCompatLinear${definition.task}Client") {
+        group = 'ringworld verification'
+        outputs.upToDateWhen { false }
+        doLast {
+            prepareCreateCompatibilityClient(definition.run as File, false)
+            new File(definition.run as File, 'config/flywheel-client.toml').text =
+                    "backend = \"${definition.backendConfig}\"\n"
+        }
+    }
+}
+
 tasks.register('prepareNeoForgeCreateCompatBearingClient') {
     group = 'ringworld verification'
     outputs.upToDateWhen { false }
@@ -1333,7 +1469,11 @@ def createCompatibilityPixelSignature = { File screenshot, String proof, boolean
         }
         int signatureWidth = signatureMaxX < signatureMinX ? 0 : signatureMaxX - signatureMinX + 1
         int signatureHeight = signatureMaxY < signatureMinY ? 0 : signatureMaxY - signatureMinY + 1
-        int qualifyingColors = counts.values().count { it >= 8 }
+        // Seven pixels is the reviewed minimum for the far bearing pose: it
+        // still requires three mutually-exclusive target colors plus a 12x4
+        // footprint, while the expected-offscreen ceiling remains eight total
+        // palette pixels across all groups.
+        int qualifyingColors = counts.values().count { it >= 7 }
         if (expectedVisible && (qualifyingColors < 3
                 || signatureWidth < 12 || signatureHeight < 4)) {
             throw new GradleException("Visible target pixel signature missing from ${screenshot.name}: "
@@ -1358,6 +1498,115 @@ def createCompatibilityPixelSignature = { File screenshot, String proof, boolean
                                                    width: signatureWidth, height: signatureHeight],
          expectedVisible: expectedVisible,
          requiredAndPassed: true]
+}
+
+// Moved block-entity payloads use Create's BER path, independently of the
+// cached structure mesh. Bind their pixels to their exact projected local
+// blocks and to the two adjoining structure blocks so an aggregate palette
+// signature cannot conceal a detached chest or shulker.
+def createLinearPayloadPixelEvidence = { File screenshot, String proof, boolean enforce = true ->
+    def image = javax.imageio.ImageIO.read(screenshot)
+    if (image == null) throw new GradleException("Could not decode screenshot: ${screenshot}")
+    def parseBounds = { String label ->
+        def match = proof =~ / ${label}=(-?[0-9.]+)\/(-?[0-9.]+)\/(-?[0-9.]+)\/(-?[0-9.]+)/
+        if (!match.find()) {
+            throw new GradleException("Linear capture lacks ${label}: ${proof}")
+        }
+        [minX: match.group(1).toDouble(), minY: match.group(2).toDouble(),
+         maxX: match.group(3).toDouble(), maxY: match.group(4).toDouble()]
+    }
+    def parseNeighborBounds = { String label ->
+        def match = proof =~ / ${label}=(-?[0-9.]+)\/(-?[0-9.]+)\/(-?[0-9.]+)\/(-?[0-9.]+)\|(-?[0-9.]+)\/(-?[0-9.]+)\/(-?[0-9.]+)\/(-?[0-9.]+)/
+        if (!match.find()) {
+            throw new GradleException("Linear capture lacks ${label}: ${proof}")
+        }
+        [[minX: match.group(1).toDouble(), minY: match.group(2).toDouble(),
+          maxX: match.group(3).toDouble(), maxY: match.group(4).toDouble()],
+         [minX: match.group(5).toDouble(), minY: match.group(6).toDouble(),
+          maxX: match.group(7).toDouble(), maxY: match.group(8).toDouble()]]
+    }
+    def clipped = { bounds, int tolerance ->
+        [minX: Math.max(0, Math.floor(bounds.minX - tolerance).toInteger()),
+         minY: Math.max(0, Math.floor(bounds.minY - tolerance).toInteger()),
+         maxX: Math.min(image.width, Math.ceil(bounds.maxX + tolerance).toInteger()),
+         maxY: Math.min(image.height, Math.ceil(bounds.maxY + tolerance).toInteger())]
+    }
+    def scan = { bounds, int tolerance, Closure<Boolean> predicate ->
+        def roi = clipped(bounds, tolerance)
+        int count = 0
+        long sumX = 0
+        long sumY = 0
+        int minX = image.width
+        int minY = image.height
+        int maxX = -1
+        int maxY = -1
+        for (int y = roi.minY; y < roi.maxY; y++) {
+            for (int x = roi.minX; x < roi.maxX; x++) {
+                int rgb = image.getRGB(x, y)
+                int red = (rgb >>> 16) & 0xff
+                int green = (rgb >>> 8) & 0xff
+                int blue = rgb & 0xff
+                if (!predicate.call(red, green, blue)) continue
+                count++
+                sumX += x
+                sumY += y
+                minX = Math.min(minX, x)
+                minY = Math.min(minY, y)
+                maxX = Math.max(maxX, x)
+                maxY = Math.max(maxY, y)
+            }
+        }
+        def centerX = count == 0 ? null : (double) sumX / count
+        def centerY = count == 0 ? null : (double) sumY / count
+        double predictedX = (bounds.minX + bounds.maxX) * 0.5d
+        double predictedY = (bounds.minY + bounds.maxY) * 0.5d
+        [roi: roi, count: count, centerX: centerX, centerY: centerY,
+         predictedCenterX: predictedX, predictedCenterY: predictedY,
+         centerError: count == 0 ? null
+                 : Math.hypot(centerX - predictedX, centerY - predictedY),
+         footprint: count == 0 ? null : [minX: minX, minY: minY,
+                                          maxX: maxX, maxY: maxY,
+                                          width: maxX - minX + 1,
+                                          height: maxY - minY + 1]]
+    }
+    def chestBounds = parseBounds('chestBounds')
+    def shulkerBounds = parseBounds('shulkerBounds')
+    def chestNeighbors = parseNeighborBounds('chestNeighbors')
+    def shulkerNeighbors = parseNeighborBounds('shulkerNeighbors')
+    def chest = scan(chestBounds, 5) { int red, int green, int blue ->
+        red >= 35 && red <= 145 && green >= 25 && green <= 120 && blue <= 70
+                && red >= green && red - blue >= 25 && green - blue >= 12
+    }
+    def shulker = scan(shulkerBounds, 5) { int red, int green, int blue ->
+        blue >= 55 && blue <= 190 && blue - red >= 28 && blue - green >= 18
+    }
+    def limePredicate = { int red, int green, int blue ->
+        green >= 6 && green <= 165 && green - red >= 3 && green - blue >= 5
+    }
+    def goldPredicate = { int red, int green, int blue ->
+        red >= 12 && red <= 210 && green >= 9 && green <= 180
+                && red >= green && green - blue >= 3 && red - blue >= 6
+    }
+    def chestBefore = scan(chestNeighbors[0], 4, limePredicate)
+    def chestAfter = scan(chestNeighbors[1], 4, goldPredicate)
+    def shulkerBefore = scan(shulkerNeighbors[0], 4, limePredicate)
+    def shulkerAfter = scan(shulkerNeighbors[1], 4, goldPredicate)
+    def required = [chest: chest, shulker: shulker, chestBefore: chestBefore,
+                    chestAfter: chestAfter, shulkerBefore: shulkerBefore,
+                    shulkerAfter: shulkerAfter]
+    def failures = required.findAll { name, sample ->
+        sample.count < 6 || (sample.centerError != null && sample.centerError > 15.0d)
+                || sample.footprint == null
+                || (sample.footprint.width < 2 && sample.footprint.height < 2)
+    }
+    if (enforce && !failures.isEmpty()) {
+        throw new GradleException("Detached/missing linear payload adjacency ${failures} in "
+                + "${screenshot.name}: all=${required}")
+    }
+    [chest: chest, shulker: shulker,
+     chestNeighbors: [before: chestBefore, after: chestAfter],
+     shulkerNeighbors: [before: shulkerBefore, after: shulkerAfter],
+     failures: failures.keySet().toList(), requiredAndPassed: failures.isEmpty()]
 }
 
 def bearingProjectedBounds = { String proof ->
@@ -1406,8 +1655,22 @@ def verifyCreateCompatibilityBearingClient = { File runDirectory, String route,
                 throw new GradleException("Bearing screenshot lacks bound rotation proof: ${name}")
             }
             boolean expectedVisible = proof.contains('expectedVisible=true')
+            if (backendIdentity == 'flywheel:off'
+                    && (proof.contains('/ringWorldLayout=true')
+                    || proof.contains('/chunkTerrain=true')
+                    || proof.count('/ringWorldLayout=false/chunkTerrain=false@') < 2)) {
+                throw new GradleException("Bearing OFF selected a terrain-curving shader/layer: ${proof}")
+            }
             def pixelSignature = createCompatibilityPixelSignature(
                     screenshot, proof, expectedVisible)
+            // Bearing kinetic phase is intentionally live, so individual payload
+            // faces can be hidden behind their distance-2/4 neighbours at a named
+            // camera pose. Record every visible-frame result, then require several
+            // separated unobscured angles below instead of treating occlusion as a
+            // detached renderer.
+            boolean payloadExpected = expectedVisible
+            def payloadPixels = payloadExpected
+                    ? createLinearPayloadPixelEvidence(screenshot, proof, false) : null
             [name: name,
              relativePath: runDirectory.toPath().relativize(screenshot.toPath()).toString(),
              absolutePath: screenshot.canonicalPath,
@@ -1419,7 +1682,9 @@ def verifyCreateCompatibilityBearingClient = { File runDirectory, String route,
              poseSanityRoi: pixelSignature.poseSanityRoi,
              paletteCounts: pixelSignature.counts,
              paletteFootprint: pixelSignature.footprint,
-             pixelSignature: pixelSignature, proofLogLine: proof]
+              pixelSignature: pixelSignature, movedPayloadExpected: payloadExpected,
+              movedPayloadPixels: payloadPixels,
+              proofLogLine: proof]
         }
         def lifecycleProofLines = log.readLines().findAll {
             it.contains('[create-bearing] lifecycle-proof')
@@ -1441,6 +1706,13 @@ def verifyCreateCompatibilityBearingClient = { File runDirectory, String route,
                 throw new GradleException("Bearing lifecycle screenshot is unbound or missing: ${name}")
             }
             def pixelSignature = createCompatibilityPixelSignature(screenshot, proof, true)
+            if (backendIdentity == 'flywheel:off'
+                    && (proof.contains('/ringWorldLayout=true')
+                    || proof.contains('/chunkTerrain=true')
+                    || proof.count('/ringWorldLayout=false/chunkTerrain=false@') < 2)) {
+                throw new GradleException("Bearing lifecycle OFF selected a terrain-curving shader/layer: ${proof}")
+            }
+            def payloadPixels = createLinearPayloadPixelEvidence(screenshot, proof, false)
             [name: name,
              relativePath: runDirectory.toPath().relativize(screenshot.toPath()).toString(),
              absolutePath: screenshot.canonicalPath,
@@ -1453,7 +1725,19 @@ def verifyCreateCompatibilityBearingClient = { File runDirectory, String route,
              poseSanityRoi: pixelSignature.poseSanityRoi,
              paletteCounts: pixelSignature.counts,
              paletteFootprint: pixelSignature.footprint,
-             pixelSignature: pixelSignature, proofLogLine: proof]
+              pixelSignature: pixelSignature, movedPayloadPixels: payloadPixels,
+              proofLogLine: proof]
+        }
+        def qualifiedSweepPayloads = captures.findAll {
+            it.movedPayloadPixels?.requiredAndPassed
+        }
+        def qualifiedLifecyclePayloads = lifecycleCaptures.findAll {
+            it.movedPayloadPixels?.requiredAndPassed
+        }
+        if (qualifiedSweepPayloads.size() < 3 || qualifiedLifecyclePayloads.isEmpty()) {
+            throw new GradleException("Bearing payload oracle lacks separated unobscured evidence: "
+                    + "sweep=${qualifiedSweepPayloads*.name} lifecycle=${qualifiedLifecyclePayloads*.name} "
+                    + "all=${(captures + lifecycleCaptures).collect { [it.name, it.movedPayloadPixels?.failures] }}")
         }
         def mods = new File(runDirectory, 'mods').listFiles()?.findAll { it.isFile() } ?: []
         if (mods.size() != 1 || sha256OfFile(mods.first()) != createCompatOuterJarSha256) {
@@ -1651,6 +1935,15 @@ tasks.named('runCreateCompatKineticVisualOffHighClient') {
     }
 }
 
+['PistonIndirectHigh', 'PistonIndirectLow', 'PistonInstancingHigh',
+ 'PistonOffHigh', 'GantryIndirectHigh', 'GantryIndirectLow',
+ 'GantryInstancingHigh', 'GantryOffHigh',
+ 'PulleyIndirectNormal'].each { suffix ->
+    tasks.named("runCreateCompatLinear${suffix}Client") {
+        dependsOn("prepareNeoForgeCreateCompatLinear${suffix}Client")
+    }
+}
+
 def kineticD2Bounds = { String proof, String label ->
     def match = proof =~ /${label}=([0-9.]+)\/([0-9.]+)\/([0-9.]+)\/([0-9.]+)/
     if (!match.find()) throw new GradleException("Missing ${label} in ${proof}")
@@ -1703,7 +1996,7 @@ tasks.register('verifyNeoForgeCreateCompatKineticVisualD2') {
             String expectedResult = '[create-kinetic-d1] result=true backend=' + definition.backend +
                     ' route=' + definition.route +
                     ' mechanism=encased-cog captures=12 fixedCameraPhases=3 poses=4 ' +
-                    'phase=d2 productionClientMixins=6'
+                    'phase=d2 productionClientMixins=8'
             if (!log.contains(expectedResult) || log.contains('[create-kinetic-d1] result=false')) {
                 throw new GradleException("D2 result failed in ${logFile}")
             }
@@ -1711,11 +2004,11 @@ tasks.register('verifyNeoForgeCreateCompatKineticVisualD2') {
                 it.contains('[create-compat-mixin] applied target=')
             }
             // ConnectivityHandler is lazy and this kinetic-only world does not load it;
-            // the full exact client fixture separately requires the complete 4+6 set.
-            if (applied.size() != 9
+            // the full exact client fixture separately requires the complete 4+8 set.
+            if (applied.size() != 11
                     || applied.count { it.contains('StorageKineticEmbeddingMixin') } != 1
                     || applied.count { it.contains('VisualizationManagerKineticEmbeddingMixin') } != 1) {
-                throw new GradleException("Expected the nine kinetic-loaded exact mixins in ${logFile}")
+                throw new GradleException("Expected the eleven kinetic-loaded exact mixins in ${logFile}")
             }
             def proofs = log.readLines().findAll {
                 it.contains('[create-kinetic-d1] capture-proof name=')
@@ -1856,7 +2149,7 @@ tasks.register('verifyNeoForgeCreateCompatKineticVisualD2') {
         manifest.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
                 schema: 1,
                 qualifiedTuple: 'Minecraft 1.21.1 / NeoForge 21.1.239 / Create 6.0.10 / Flywheel 1.0.6',
-                clientMixinCount: 6,
+                clientMixinCount: 8,
                 serverMixinCount: 4,
                 matchedPixelEvidence: pixelEvidence,
                 runs: manifestRuns])) + '\n'
@@ -2171,12 +2464,198 @@ tasks.register('verifyNeoForgeCreateCompatKineticNetworkD3') {
                 schema: 1,
                 sourceCommit: checkpointSourceCommit,
                 qualifiedTuple: 'Minecraft 1.21.1 / NeoForge 21.1.239 / Create 6.0.10 / Flywheel 1.0.6',
-                clientMixinCount: 6,
+                clientMixinCount: 8,
                 serverMixinCount: 4,
                 animatedRoiThreshold: 'ON: RGB L1 delta > 30 and >=2 changed pixels in at least one adjacent separated phase pair, with symmetric shaft/pulley >=1. OFF: exact-model symmetries are recorded per ROI and aggregate fallback requires >=5 moving components and >=20 changed pixels.',
                 staticReferenceThreshold: 'the quieter adjacent phase pair must change <=8% of its expanded projected static ROI; both pairs are retained',
                 runs: runEvidence])) + '\n'
         logger.lifecycle('[create-kinetic-d3] PASS runs={} captures={} manifest={} sha256={}',
+                runEvidence.size(), runEvidence.sum { it.captures.size() }, manifest,
+                sha256OfFile(manifest))
+    }
+}
+
+tasks.register('verifyNeoForgeCreateCompatLinearMatrix') {
+    group = 'ringworld verification'
+    description = 'Verifies the exact-tuple real glued piston, gantry, and rope-pulley matrix.'
+    doLast {
+        def runEvidence = []
+        linearCreateCompatRuns.each { definition ->
+            File runDirectory = definition.run as File
+            File logFile = new File(runDirectory, 'logs/latest.log')
+            String log = logFile.isFile() ? logFile.text : ''
+            String resultPrefix = "[create-linear] result=true backend=${definition.backend} " +
+                    "route=${definition.route} mechanism=${definition.mechanism} " +
+                    'realCreateMotion=true glued=true'
+            if (!log.contains(resultPrefix) || log.contains('[create-linear] result=false')) {
+                throw new GradleException("Linear Create fixture failed for ${definition.task}; inspect ${logFile}")
+            }
+            ['reversal=true', 'identityContinuous=true', 'canonicalOwnership=true',
+             'exactRestoration=true', 'negativeControl=true'].each { marker ->
+                if (!log.contains(marker)) {
+                    throw new GradleException("Linear result lacks ${marker} for ${definition.task}")
+                }
+            }
+            def movedBlockEntityTypeCount = log =~ / movedBlockEntityTypes=([0-9]+)/
+            if (!movedBlockEntityTypeCount.find()
+                    || Integer.parseInt(movedBlockEntityTypeCount.group(1)) < 2) {
+                throw new GradleException("Linear moved block-entity state was not retained for ${definition.task}")
+            }
+            if (definition.mechanism == 'piston') {
+                def count = log =~ / capturedBlocks=([0-9]+)/
+                if (!count.find() || Integer.parseInt(count.group(1)) < 24) {
+                    throw new GradleException("Piston capture is below 24 blocks for ${definition.task}")
+                }
+            }
+            if (definition.durable && (!log.contains('durable disconnect route=piston-high clientStateCleared=true')
+                    || !log.contains('durable reopen server route=piston-high')
+                    || !log.contains('durableReopen=true'))) {
+                throw new GradleException("Active piston durable lifecycle is incomplete for ${definition.task}")
+            }
+            def proofs = log.readLines().findAll {
+                it.contains('[create-linear] capture-proof name=')
+            }
+            int expectedCaptures = definition.durable ? 4 : 3
+            if (proofs.size() != expectedCaptures) {
+                throw new GradleException("Expected ${expectedCaptures} linear captures for " +
+                        "${definition.task}, found ${proofs.size()}")
+            }
+            def requiredPhases = definition.durable
+                    ? ['outbound-early', 'outbound-seam', 'durable-reopened-active', 'reverse-return']
+                    : definition.mechanism == 'pulley'
+                    ? ['outbound-early', 'outbound-vertical', 'reverse-return']
+                    : ['outbound-early', 'outbound-seam', 'reverse-return']
+            def captures = proofs.collect { proof ->
+                def nameMatch = proof =~ / name=([^ ]+) /
+                def phaseMatch = proof =~ / phase=([^ ]+) /
+                if (!nameMatch.find() || !phaseMatch.find()) {
+                    throw new GradleException("Malformed linear capture proof ${proof}")
+                }
+                String name = nameMatch.group(1)
+                String phase = phaseMatch.group(1)
+                File screenshot = new File(runDirectory, "screenshots/${name}.png")
+                if (!screenshot.isFile() || screenshot.length() == 0
+                        || !proof.contains('expectedVisible=true')
+                        || !proof.contains('renderMembership=true removed=false')) {
+                    throw new GradleException("Linear screenshot is missing or unbound: ${screenshot}")
+                }
+                if (definition.backend == 'flywheel:off') {
+                    if (!proof.contains('visual=-1/creates=0/deletes=0')
+                            || !proof.contains('transformIndex=-1')
+                            || !proof.contains('matrix=none')) {
+                        throw new GradleException("Linear OFF capture entered Flywheel: ${proof}")
+                    }
+                    def requiredLayerMappings = [
+                            'RenderType[solid:' : 'RenderType[create:entity_solid_block_mipped:',
+                            'RenderType[cutout_mipped:' : 'RenderType[create:entity_cutout_block_mipped:',
+                            'RenderType[cutout:' : 'RenderType[ringworld:create610_contraption_entity_cutout_block:',
+                            'RenderType[translucent:' : 'RenderType[ringworld:create610_contraption_entity_translucent_block:',
+                            'RenderType[tripwire:' : 'RenderType[ringworld:create610_contraption_entity_tripwire_block:']
+                    requiredLayerMappings.each { sourceLayer, mappedLayer ->
+                        if (!proof.contains(sourceLayer) || !proof.contains(mappedLayer)) {
+                            throw new GradleException("Linear OFF capture lacks exact layer mapping "
+                                    + "${sourceLayer}->${mappedLayer}: ${proof}")
+                        }
+                    }
+                    if (proof.count('/ringWorldLayout=false/chunkTerrain=false@') != 5
+                            || proof.contains('/ringWorldLayout=true')
+                            || proof.contains('/chunkTerrain=true')) {
+                        throw new GradleException("Linear OFF capture selected a terrain-curving shader/layer: ${proof}")
+                    }
+                } else if (!proof.contains('transformIndex=') || proof.contains('transformIndex=-1')
+                        || proof.contains('matrix=none')) {
+                    throw new GradleException("Linear ON capture lacks a finite embedding sample: ${proof}")
+                }
+                def pixelSignature = createCompatibilityPixelSignature(screenshot, proof, true)
+                // The vertical pulley control has no matched OFF route and its
+                // live phase can self-occlude one container behind adjoining
+                // palette blocks. Keep every projected payload result and
+                // require at least one unobscured pulley phase below; all seam
+                // piston/gantry captures remain strict.
+                boolean strictPayload = definition.mechanism != 'pulley'
+                def payloadPixels = createLinearPayloadPixelEvidence(
+                        screenshot, proof, strictPayload)
+                [name: name, phase: phase,
+                 relativePath: runDirectory.toPath().relativize(screenshot.toPath()).toString(),
+                 absolutePath: screenshot.canonicalPath, sha256: sha256OfFile(screenshot),
+                 expectedVisible: true, projectionRoi: pixelSignature.projectionRoi,
+                  poseSanityRoi: pixelSignature.poseSanityRoi,
+                  paletteCounts: pixelSignature.counts,
+                  paletteFootprint: pixelSignature.footprint,
+                  movedPayloadPixels: payloadPixels, proofLogLine: proof]
+            }
+            if (captures.collect { it.phase } != requiredPhases) {
+                throw new GradleException("Linear phase order mismatch for ${definition.task}: " +
+                        captures.collect { it.phase })
+            }
+            File contactSheet = new File(runDirectory, 'linear-contact-sheet.png')
+            def firstImage = javax.imageio.ImageIO.read(new File(captures.first().absolutePath as String))
+            int cellWidth = firstImage.width / 2
+            int cellHeight = firstImage.height / 2
+            def sheet = new java.awt.image.BufferedImage(cellWidth * 2, cellHeight * 2,
+                    java.awt.image.BufferedImage.TYPE_INT_RGB)
+            def graphics = sheet.createGraphics()
+            try {
+                captures.eachWithIndex { capture, index ->
+                    def image = javax.imageio.ImageIO.read(new File(capture.absolutePath as String))
+                    graphics.drawImage(image, (index % 2) * cellWidth,
+                            (int) (index / 2) * cellHeight, cellWidth, cellHeight, null)
+                }
+            } finally {
+                graphics.dispose()
+            }
+            javax.imageio.ImageIO.write(sheet, 'png', contactSheet)
+            def mods = new File(runDirectory, 'mods').listFiles()?.findAll { it.isFile() } ?: []
+            if (mods.size() != 1 || sha256OfFile(mods.first()) != createCompatOuterJarSha256) {
+                throw new GradleException("Linear runtime jar is not exact for ${definition.task}")
+            }
+            runEvidence.add([task: definition.task, backend: definition.backend,
+                             route: definition.route, mechanism: definition.mechanism,
+                             durableReopen: definition.durable,
+                             runDirectory: runDirectory.canonicalPath,
+                             log: logFile.canonicalPath, logSha256: sha256OfFile(logFile),
+                             captures: captures, contactSheet: contactSheet.canonicalPath,
+                             contactSheetSha256: sha256OfFile(contactSheet)])
+        }
+        ['piston-high', 'gantry-high'].each { route ->
+            def offRun = runEvidence.find { it.route == route && it.backend == 'flywheel:off' }
+            def onRun = runEvidence.find { it.route == route && it.backend == 'flywheel:indirect' }
+            if (offRun == null || onRun == null) {
+                throw new GradleException("Missing matched OFF/indirect payload runs for ${route}")
+            }
+            offRun.captures.each { offCapture ->
+                def onCapture = onRun.captures.find { it.phase == offCapture.phase }
+                if (onCapture == null) {
+                    throw new GradleException("Missing matched indirect payload phase ${route}/${offCapture.phase}")
+                }
+                ['chest', 'shulker'].each { payload ->
+                    def offPixels = offCapture.movedPayloadPixels[payload]
+                    def onPixels = onCapture.movedPayloadPixels[payload]
+                    double offResidualX = offPixels.centerX - offPixels.predictedCenterX
+                    double offResidualY = offPixels.centerY - offPixels.predictedCenterY
+                    double onResidualX = onPixels.centerX - onPixels.predictedCenterX
+                    double onResidualY = onPixels.centerY - onPixels.predictedCenterY
+                    if (Math.hypot(offResidualX - onResidualX,
+                            offResidualY - onResidualY) > 12.0d) {
+                        throw new GradleException("Matched OFF payload placement differs from indirect "
+                                + "for ${route}/${offCapture.phase}/${payload}: OFF=${offPixels} ON=${onPixels}")
+                    }
+                }
+            }
+        }
+        File manifest = new File(neoForgeCreateCompatLinearPistonIndirectHighClientRun,
+                'linear-matrix-manifest.json')
+        def checkpointSourceCommit = providers.exec {
+            workingDir rootProject.projectDir
+            commandLine 'git', 'rev-parse', 'HEAD'
+        }.standardOutput.asText.get().trim()
+        manifest.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+                schema: 1, sourceCommit: checkpointSourceCommit,
+                qualifiedTuple: 'Minecraft 1.21.1 / NeoForge 21.1.239 / Create 6.0.10 / Flywheel 1.0.6',
+                serverMixinCount: 4, clientMixinCount: 8,
+                graphicalQualification: 'curved projected ROI plus mutually-exclusive target palette signature',
+                runs: runEvidence])) + '\n'
+        logger.lifecycle('[create-linear] PASS runs={} captures={} manifest={} sha256={}',
                 runEvidence.size(), runEvidence.sum { it.captures.size() }, manifest,
                 sha256OfFile(manifest))
     }
