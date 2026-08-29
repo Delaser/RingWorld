@@ -25,6 +25,7 @@ import dev.ringworld.net.RingTerrainAtlasTilePayload;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610ClientDiagnostics;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610ClientFixture;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610BearingFixture;
+import dev.ringworld.platform.neoforge.compat.create610.RingCreate610KineticNetworkFixture;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610KineticVisualFixture;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610WindmillFixture;
 import dev.ringworld.world.RingGeometry;
@@ -201,6 +202,11 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft client = Minecraft.getInstance();
+        if (Boolean.getBoolean(RingCreate610KineticNetworkFixture.ENABLE_PROPERTY)) {
+            if (RingCreate610KineticNetworkFixture.instance().startWorldIfEnabled(client)) return;
+            RingCreate610KineticNetworkFixture.instance().tick(client);
+            return;
+        }
         if (Boolean.getBoolean(RingCreate610KineticVisualFixture.ENABLE_PROPERTY)) {
             if (RingCreate610KineticVisualFixture.instance().startWorldIfEnabled(client)) return;
             RingCreate610KineticVisualFixture.instance().tick(client);
@@ -246,6 +252,9 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onAfterLevel(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
+        if (Boolean.getBoolean(RingCreate610KineticNetworkFixture.ENABLE_PROPERTY)) {
+            RingCreate610KineticNetworkFixture.instance().frameRendered();
+        }
         if (Boolean.getBoolean(RingCreate610BearingFixture.ENABLE_PROPERTY)) {
             RingCreate610BearingFixture.instance().frameRendered();
         }

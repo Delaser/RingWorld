@@ -330,6 +330,73 @@ neoForge {
             programArgument '--width'; programArgument '1280'
             programArgument '--height'; programArgument '720'
         }
+        createCompatKineticNetworkIndirectNormalClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-kinetic-network-indirect-normal')
+            systemProperty 'ringworld.createCompatKineticNetwork', 'true'
+            systemProperty 'ringworld.createCompatKineticNetworkRoute', 'normal'
+            programArgument '--username'; programArgument 'NetworkIndNormal'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatKineticNetworkIndirectHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-kinetic-network-indirect-high')
+            systemProperty 'ringworld.createCompatKineticNetwork', 'true'
+            systemProperty 'ringworld.createCompatKineticNetworkRoute', 'high'
+            programArgument '--username'; programArgument 'NetworkIndHigh'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatKineticNetworkIndirectLowClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-kinetic-network-indirect-low')
+            systemProperty 'ringworld.createCompatKineticNetwork', 'true'
+            systemProperty 'ringworld.createCompatKineticNetworkRoute', 'low'
+            programArgument '--username'; programArgument 'NetworkIndLow'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatKineticNetworkInstancingHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-kinetic-network-instancing-high')
+            systemProperty 'ringworld.createCompatKineticNetwork', 'true'
+            systemProperty 'ringworld.createCompatKineticNetworkRoute', 'high'
+            systemProperty 'ringworld.createCompatKineticNetworkBackend', 'instancing'
+            programArgument '--username'; programArgument 'NetworkInstHigh'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatKineticNetworkInstancingLowClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-kinetic-network-instancing-low')
+            systemProperty 'ringworld.createCompatKineticNetwork', 'true'
+            systemProperty 'ringworld.createCompatKineticNetworkRoute', 'low'
+            systemProperty 'ringworld.createCompatKineticNetworkBackend', 'instancing'
+            programArgument '--username'; programArgument 'NetworkInstLow'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatKineticNetworkOffHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-kinetic-network-off-high')
+            systemProperty 'ringworld.createCompatKineticNetwork', 'true'
+            systemProperty 'ringworld.createCompatKineticNetworkRoute', 'high'
+            systemProperty 'ringworld.createCompatKineticNetworkBackend', 'off'
+            programArgument '--username'; programArgument 'NetworkOffHigh'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatKineticNetworkOffLowClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-kinetic-network-off-low')
+            systemProperty 'ringworld.createCompatKineticNetwork', 'true'
+            systemProperty 'ringworld.createCompatKineticNetworkRoute', 'low'
+            systemProperty 'ringworld.createCompatKineticNetworkBackend', 'off'
+            programArgument '--username'; programArgument 'NetworkOffLow'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
         createCompatBearingClient {
             client()
             gameDirectory = qualificationRunFile('run-create-compat-bearing-default')
@@ -621,6 +688,13 @@ def neoForgeCreateCompatKineticVisualD2HighClientRun = qualificationRunFile('run
 def neoForgeCreateCompatKineticVisualD2InstancingHighClientRun = qualificationRunFile('run-create-compat-kinetic-visual-d2-instancing-high')
 def neoForgeCreateCompatKineticVisualD2LowClientRun = qualificationRunFile('run-create-compat-kinetic-visual-d2-low')
 def neoForgeCreateCompatKineticVisualD2OffHighClientRun = qualificationRunFile('run-create-compat-kinetic-visual-d2-off-high')
+def neoForgeCreateCompatKineticNetworkIndirectNormalClientRun = qualificationRunFile('run-create-compat-kinetic-network-indirect-normal')
+def neoForgeCreateCompatKineticNetworkIndirectHighClientRun = qualificationRunFile('run-create-compat-kinetic-network-indirect-high')
+def neoForgeCreateCompatKineticNetworkIndirectLowClientRun = qualificationRunFile('run-create-compat-kinetic-network-indirect-low')
+def neoForgeCreateCompatKineticNetworkInstancingHighClientRun = qualificationRunFile('run-create-compat-kinetic-network-instancing-high')
+def neoForgeCreateCompatKineticNetworkInstancingLowClientRun = qualificationRunFile('run-create-compat-kinetic-network-instancing-low')
+def neoForgeCreateCompatKineticNetworkOffHighClientRun = qualificationRunFile('run-create-compat-kinetic-network-off-high')
+def neoForgeCreateCompatKineticNetworkOffLowClientRun = qualificationRunFile('run-create-compat-kinetic-network-off-low')
 def neoForgeCreateCompatBearingClientRun = qualificationRunFile('run-create-compat-bearing-default')
 def neoForgeCreateCompatBearingNormalClientRun = qualificationRunFile('run-create-compat-bearing-normal')
 def neoForgeCreateCompatBearingLowClientRun = qualificationRunFile('run-create-compat-bearing-low')
@@ -966,6 +1040,33 @@ tasks.register('prepareNeoForgeCreateCompatKineticVisualOffHighClient') {
          backend: 'flywheel:off']
 ].each { definition ->
     tasks.register("prepareNeoForgeCreateCompatKineticVisualD2${definition.task}Client") {
+        group = 'ringworld verification'
+        outputs.upToDateWhen { false }
+        doLast {
+            prepareCreateCompatibilityClient(definition.run as File, false)
+            new File(definition.run as File, 'config/flywheel-client.toml').text =
+                    "backend = \"${definition.backend}\"\n"
+        }
+    }
+}
+
+[
+        [task: 'IndirectNormal', run: neoForgeCreateCompatKineticNetworkIndirectNormalClientRun,
+         backend: 'DEFAULT'],
+        [task: 'IndirectHigh', run: neoForgeCreateCompatKineticNetworkIndirectHighClientRun,
+         backend: 'DEFAULT'],
+        [task: 'IndirectLow', run: neoForgeCreateCompatKineticNetworkIndirectLowClientRun,
+         backend: 'DEFAULT'],
+        [task: 'InstancingHigh', run: neoForgeCreateCompatKineticNetworkInstancingHighClientRun,
+         backend: 'flywheel:instancing'],
+        [task: 'InstancingLow', run: neoForgeCreateCompatKineticNetworkInstancingLowClientRun,
+         backend: 'flywheel:instancing'],
+        [task: 'OffHigh', run: neoForgeCreateCompatKineticNetworkOffHighClientRun,
+         backend: 'flywheel:off'],
+        [task: 'OffLow', run: neoForgeCreateCompatKineticNetworkOffLowClientRun,
+         backend: 'flywheel:off']
+].each { definition ->
+    tasks.register("prepareNeoForgeCreateCompatKineticNetwork${definition.task}Client") {
         group = 'ringworld verification'
         outputs.upToDateWhen { false }
         doLast {
@@ -1543,6 +1644,13 @@ tasks.named('runCreateCompatKineticVisualOffHighClient') {
     }
 }
 
+['IndirectNormal', 'IndirectHigh', 'IndirectLow', 'InstancingHigh',
+ 'InstancingLow', 'OffHigh', 'OffLow'].each { suffix ->
+    tasks.named("runCreateCompatKineticNetwork${suffix}Client") {
+        dependsOn("prepareNeoForgeCreateCompatKineticNetwork${suffix}Client")
+    }
+}
+
 def kineticD2Bounds = { String proof, String label ->
     def match = proof =~ /${label}=([0-9.]+)\/([0-9.]+)\/([0-9.]+)\/([0-9.]+)/
     if (!match.find()) throw new GradleException("Missing ${label} in ${proof}")
@@ -1755,6 +1863,322 @@ tasks.register('verifyNeoForgeCreateCompatKineticVisualD2') {
         logger.lifecycle('[create-kinetic-d2] PASS runs={} captures={} pixelEvidence={} manifest={} sha256={}',
                 manifestRuns.size(), manifestRuns.sum { it.captures.size() }, pixelEvidence,
                 manifest, sha256OfFile(manifest))
+    }
+}
+
+def kineticD3Definitions = [
+        [id: 'indirect-normal', run: neoForgeCreateCompatKineticNetworkIndirectNormalClientRun,
+         backend: 'flywheel:indirect', route: 'normal', density: 128, durable: false],
+        [id: 'indirect-high', run: neoForgeCreateCompatKineticNetworkIndirectHighClientRun,
+         backend: 'flywheel:indirect', route: 'high', density: 128, durable: false],
+        [id: 'indirect-low', run: neoForgeCreateCompatKineticNetworkIndirectLowClientRun,
+         backend: 'flywheel:indirect', route: 'low', density: 0, durable: true],
+        [id: 'instancing-high', run: neoForgeCreateCompatKineticNetworkInstancingHighClientRun,
+         backend: 'flywheel:instancing', route: 'high', density: 0, durable: false],
+        [id: 'instancing-low', run: neoForgeCreateCompatKineticNetworkInstancingLowClientRun,
+         backend: 'flywheel:instancing', route: 'low', density: 0, durable: false],
+        [id: 'off-high', run: neoForgeCreateCompatKineticNetworkOffHighClientRun,
+         backend: 'flywheel:off', route: 'high', density: 0, durable: false],
+        [id: 'off-low', run: neoForgeCreateCompatKineticNetworkOffLowClientRun,
+         backend: 'flywheel:off', route: 'low', density: 0, durable: false]
+]
+
+def kineticD3ModuleClasses = [
+        shaft: 'com.simibubi.create.content.kinetics.simpleRelays.BracketedKineticBlockEntity',
+        'small-cog': 'com.simibubi.create.content.kinetics.simpleRelays.BracketedKineticBlockEntity',
+        'large-cog': 'com.simibubi.create.content.kinetics.simpleRelays.BracketedKineticBlockEntity',
+        fan: 'com.simibubi.create.content.kinetics.fan.EncasedFanBlockEntity',
+        press: 'com.simibubi.create.content.kinetics.press.MechanicalPressBlockEntity',
+        pump: 'com.simibubi.create.content.fluids.pump.PumpBlockEntity',
+        mixer: 'com.simibubi.create.content.kinetics.mixer.MechanicalMixerBlockEntity',
+        bearing: 'com.simibubi.create.content.contraptions.bearing.MechanicalBearingBlockEntity',
+        piston: 'com.simibubi.create.content.contraptions.piston.MechanicalPistonBlockEntity',
+        gantry: 'com.simibubi.create.content.contraptions.gantry.GantryCarriageBlockEntity',
+        pulley: 'com.simibubi.create.content.contraptions.pulley.PulleyBlockEntity',
+        motor: 'com.simibubi.create.content.kinetics.motor.CreativeMotorBlockEntity'
+]
+
+def kineticD3Bounds = { String proof, String label ->
+    def section = proof =~ /${label}=([^ ]+)/
+    if (!section.find()) throw new GradleException("Missing ${label} in ${proof}")
+    def result = [:]
+    section.group(1).split(',').each { entry ->
+        def match = entry =~ /^([^:]+):([0-9.]+)\/([0-9.]+)\/([0-9.]+)\/([0-9.]+)$/
+        if (!match.matches()) throw new GradleException("Malformed ${label} entry ${entry}")
+        result[match.group(1)] = [Double.parseDouble(match.group(2)),
+                Double.parseDouble(match.group(3)), Double.parseDouble(match.group(4)),
+                Double.parseDouble(match.group(5))]
+    }
+    result
+}
+
+def kineticD3Difference = { java.awt.image.BufferedImage first,
+                            java.awt.image.BufferedImage second, List<Double> rawBounds ->
+    int minX = Math.max(0, Math.floor(rawBounds[0] - 3).toInteger())
+    int minY = Math.max(0, Math.floor(rawBounds[1] - 3).toInteger())
+    int maxX = Math.min(first.width - 1, Math.ceil(rawBounds[2] + 3).toInteger())
+    int maxY = Math.min(first.height - 1, Math.ceil(rawBounds[3] + 3).toInteger())
+    int changed = 0
+    long xTotal = 0
+    long yTotal = 0
+    for (int y = minY; y <= maxY; y++) {
+        for (int x = minX; x <= maxX; x++) {
+            int a = first.getRGB(x, y)
+            int b = second.getRGB(x, y)
+            int delta = Math.abs(((a >> 16) & 0xff) - ((b >> 16) & 0xff))
+                    + Math.abs(((a >> 8) & 0xff) - ((b >> 8) & 0xff))
+                    + Math.abs((a & 0xff) - (b & 0xff))
+            if (delta > 30) {
+                changed++
+                xTotal += x
+                yTotal += y
+            }
+        }
+    }
+    [changed: changed,
+     centroidX: changed == 0 ? null : xTotal / (double) changed,
+     centroidY: changed == 0 ? null : yTotal / (double) changed,
+     roi: [minX, minY, maxX, maxY]]
+}
+
+tasks.register('verifyNeoForgeCreateCompatKineticNetworkD3') {
+    group = 'ringworld verification'
+    description = 'Verifies the exact-tuple standalone Create kinetic visual D3 matrix.'
+    doLast {
+        def runEvidence = []
+        def animated = ['shaft', 'small-cog', 'large-cog', 'fan', 'press',
+                        'pump', 'mixer', 'piston', 'pulley', 'motor']
+        kineticD3Definitions.each { definition ->
+            File runDirectory = definition.run as File
+            File logFile = new File(runDirectory, 'logs/latest.log')
+            String log = logFile.isFile() ? logFile.text : ''
+            String resultMarker = "[create-kinetic-d3] result=true backend=${definition.backend} " +
+                    "route=${definition.route} modules=12 densityVisuals=${definition.density} " +
+                    'captures=5 owned=0'
+            if (!log.contains(resultMarker) || log.contains('[create-kinetic-d3] result=false')) {
+                throw new GradleException("D3 run failed for ${definition.id}; inspect ${logFile}")
+            }
+            int expectedVisuals = definition.density == 128 ? 154 : 26
+            if (!log.contains("baseline PASS backend=${definition.backend} route=${definition.route} " +
+                    "modules=12 expectedVisuals=${expectedVisuals}")
+                    || !log.contains('remove PASS owned=0')
+                    || !log.contains('readd PASS modules=12')
+                    || !log.contains('client-chunk-unload PASS owned=0')
+                    || !log.contains('failedDeletes=0 balanced=true serverOwnership=unchanged')) {
+                throw new GradleException("D3 lifecycle proof is incomplete for ${definition.id}")
+            }
+            if (definition.backend == 'flywheel:off') {
+                if (!log.contains('origin-recreation skipped backend=flywheel:off owned=0')
+                        || log.contains('[create-kinetic-d2] owner-register')) {
+                    throw new GradleException("D3 OFF path created a Flywheel owner for ${definition.id}")
+                }
+            } else if (!log.contains('origin-recreation PASS owned=')) {
+                throw new GradleException("D3 origin recreation is missing for ${definition.id}")
+            }
+            if (definition.durable) {
+                ['durable disconnect complete clientStateCleared=true',
+                 'durable-reopen PASS modules=12 owned=26',
+                 'clientStateRestored=true'].each { marker ->
+                    if (!log.contains(marker)) {
+                        throw new GradleException("D3 durable proof '${marker}' is missing")
+                    }
+                }
+            }
+            def captureProofs = [:]
+            log.readLines().findAll { it.contains('[create-kinetic-d3] capture-proof name=') }
+                    .each { line ->
+                        def match = line =~ / capture=([^ ]+) gameTime=([0-9]+)/
+                        if (!match.find()) throw new GradleException("Malformed D3 capture proof ${line}")
+                        captureProofs[match.group(1)] = [line: line,
+                                gameTime: Long.parseLong(match.group(2))]
+                    }
+            def requiredCaptures = ['center-phase-0', 'center-phase-1', 'center-phase-2',
+                                    'edge-near', 'center-far']
+            if (captureProofs.keySet() != requiredCaptures as Set) {
+                throw new GradleException("D3 capture matrix is incomplete for ${definition.id}")
+            }
+            if (!(captureProofs['center-phase-0'].gameTime
+                    < captureProofs['center-phase-1'].gameTime
+                    && captureProofs['center-phase-1'].gameTime
+                    < captureProofs['center-phase-2'].gameTime)) {
+                throw new GradleException("D3 kinetic phases are not separated for ${definition.id}")
+            }
+            def centerBounds = kineticD3Bounds(
+                    captureProofs['center-phase-0'].line as String, 'curvedBounds')
+            def flatBounds = kineticD3Bounds(
+                    captureProofs['center-phase-0'].line as String, 'flatBounds')
+            if (centerBounds.keySet() != kineticD3ModuleClasses.keySet()
+                    || flatBounds.keySet() != kineticD3ModuleClasses.keySet()) {
+                throw new GradleException("D3 module projections are incomplete for ${definition.id}")
+            }
+            kineticD3ModuleClasses.each { id, expectedClass ->
+                String proof = captureProofs['center-phase-0'].line as String
+                def observation = proof =~ /${java.util.regex.Pattern.quote(id)}\{${java.util.regex.Pattern.quote(expectedClass)},speed=([^,]+),canonical=BlockPos\{x=(-?[0-9]+), y=(-?[0-9]+), z=(-?[0-9]+)\},presentation=BlockPos\{x=(-?[0-9]+), y=(-?[0-9]+), z=(-?[0-9]+)\},.*?environment=([^,]+),matrixIndex=(-?[0-9]+)/
+                if (!observation.find()) {
+                    throw new GradleException("D3 exact module observation missing for ${id}/${definition.id}")
+                }
+                double speed = Double.parseDouble(observation.group(1))
+                if (!(id in ['bearing', 'gantry']) && speed == 0.0d) {
+                    throw new GradleException("D3 moving module ${id} has zero speed in ${definition.id}")
+                }
+                int canonicalX = Integer.parseInt(observation.group(2))
+                int presentationX = Integer.parseInt(observation.group(5))
+                int expectedLap = definition.route == 'high' ? 2048
+                        : definition.route == 'low' ? -2048 : 0
+                if (presentationX - canonicalX != expectedLap) {
+                    throw new GradleException("D3 chart mapping failed for ${id}/${definition.id}")
+                }
+                int matrixIndex = Integer.parseInt(observation.group(9))
+                if (definition.backend == 'flywheel:off') {
+                    if (observation.group(8) != 'none' || matrixIndex != -1) {
+                        throw new GradleException("D3 OFF module entered Flywheel for ${id}")
+                    }
+                } else if (observation.group(8)
+                        != 'dev.engine_room.flywheel.backend.engine.embed.EmbeddedEnvironment'
+                        || matrixIndex <= 0 || !proof.contains(',curved=true,finite=true}')) {
+                    throw new GradleException("D3 curved child embedding failed for ${id}/${definition.id}")
+                }
+            }
+            def captures = []
+            requiredCaptures.each { capture ->
+                String imageName = "ringworld-create-kinetic-d3-${definition.backend.replace(':', '-')}-" +
+                        "${definition.route}-${capture}.png"
+                File imageFile = new File(runDirectory, 'screenshots/' + imageName)
+                if (!imageFile.isFile()) throw new GradleException("Missing D3 capture ${imageFile}")
+                def bounds = kineticD3Bounds(captureProofs[capture].line as String, 'curvedBounds')
+                bounds.each { id, box ->
+                    if (box[0] < 0 || box[1] < 0 || box[2] > 1280 || box[3] > 720
+                            || box[2] <= box[0] || box[3] <= box[1]) {
+                        throw new GradleException("D3 projected ROI is invalid for ${id}/${definition.id}/${capture}")
+                    }
+                }
+                captures.add([capture: capture, relativePath: 'screenshots/' + imageName,
+                              absolutePath: imageFile.canonicalPath,
+                              sha256: sha256OfFile(imageFile), projectedBounds: bounds])
+            }
+            def phaseImages = (0..2).collect { phase ->
+                def capture = captures.find { it.capture == "center-phase-${phase}" }
+                javax.imageio.ImageIO.read(new File(capture.absolutePath as String))
+            }
+            def motion = [:]
+            animated.each { id ->
+                def first = kineticD3Difference(phaseImages[0], phaseImages[1], centerBounds[id])
+                def second = kineticD3Difference(phaseImages[1], phaseImages[2], centerBounds[id])
+                boolean rotationallySymmetric = id in ['shaft', 'pulley']
+                        || definition.backend == 'flywheel:off'
+                int minimumChanged = definition.backend == 'flywheel:off'
+                        ? 0 : rotationallySymmetric ? 1 : 2
+                motion[id] = [phase01: first, phase12: second,
+                              minimumStablePairPixels: minimumChanged,
+                              rotationalSymmetryAllowance: rotationallySymmetric]
+            }
+            def referenceMatch = (captureProofs['center-phase-0'].line as String) =~
+                    /referenceBounds=([0-9.]+)\/([0-9.]+)\/([0-9.]+)\/([0-9.]+)/
+            if (!referenceMatch.find()) throw new GradleException('Missing D3 reference ROI')
+            def referenceBounds = (1..4).collect {
+                Double.parseDouble(referenceMatch.group(it))
+            }
+            def referenceFirst = kineticD3Difference(phaseImages[0], phaseImages[1], referenceBounds)
+            def referenceSecond = kineticD3Difference(phaseImages[1], phaseImages[2], referenceBounds)
+            int referencePixels = (referenceFirst.roi[2] - referenceFirst.roi[0] + 1) *
+                    (referenceFirst.roi[3] - referenceFirst.roi[1] + 1)
+            int referenceLimit = Math.max(20, Math.ceil(referencePixels * 0.08).toInteger())
+            String stablePair = referenceFirst.changed <= referenceSecond.changed
+                    ? 'phase01' : 'phase12'
+            int stableReferenceChanged = stablePair == 'phase01'
+                    ? referenceFirst.changed : referenceSecond.changed
+            if (stableReferenceChanged > referenceLimit) {
+                throw new GradleException("D3 static reference moved for ${definition.id}: " +
+                        "phase01=${referenceFirst.changed} phase12=${referenceSecond.changed} " +
+                        "limit=${referenceLimit}")
+            }
+            motion.each { id, evidence ->
+                int changed = Math.max(evidence.phase01.changed as int,
+                        evidence.phase12.changed as int)
+                if (changed < evidence.minimumStablePairPixels) {
+                    throw new GradleException("D3 animated ROI did not move for ${id}/${definition.id}: " +
+                            "phase01=${evidence.phase01.changed} " +
+                            "phase12=${evidence.phase12.changed}")
+                }
+            }
+            if (definition.backend == 'flywheel:off') {
+                int visiblyMoving = motion.values().count {
+                    Math.max(it.phase01.changed as int, it.phase12.changed as int) >= 2
+                }
+                int changedPixels = motion.values().sum {
+                    Math.max(it.phase01.changed as int, it.phase12.changed as int)
+                } as int
+                if (visiblyMoving < 5 || changedPixels < 20) {
+                    throw new GradleException("D3 OFF fallback lacks aggregate pixel motion for " +
+                            "${definition.id}: moving=${visiblyMoving} " +
+                            "pixels=${changedPixels}")
+                }
+            }
+            File contactSheet = new File(runDirectory, 'd3-contact-sheet.png')
+            int cellWidth = phaseImages[0].width / 2
+            int cellHeight = phaseImages[0].height / 2
+            def sheet = new java.awt.image.BufferedImage(cellWidth * 3, cellHeight * 2,
+                    java.awt.image.BufferedImage.TYPE_INT_RGB)
+            def graphics = sheet.createGraphics()
+            try {
+                captures.eachWithIndex { capture, index ->
+                    def image = javax.imageio.ImageIO.read(new File(capture.absolutePath as String))
+                    graphics.drawImage(image, (index % 3) * cellWidth,
+                            (int) (index / 3) * cellHeight, cellWidth, cellHeight, null)
+                }
+            } finally {
+                graphics.dispose()
+            }
+            javax.imageio.ImageIO.write(sheet, 'png', contactSheet)
+            def mods = new File(runDirectory, 'mods').listFiles()?.findAll { it.isFile() } ?: []
+            if (mods.size() != 1 || sha256OfFile(mods.first()) != createCompatOuterJarSha256) {
+                throw new GradleException("D3 runtime jar is not exact in ${runDirectory}")
+            }
+            def result = log.readLines().find { it.contains(resultMarker) }
+            def perf = result =~ /frameSamples=([0-9]+) medianMs=([0-9.]+) p95Ms=([0-9.]+) p99Ms=([0-9.]+) over50Ms=([0-9]+)/
+            if (!perf.find() || Integer.parseInt(perf.group(1)) < 200) {
+                throw new GradleException("D3 frame evidence is incomplete for ${definition.id}")
+            }
+            runEvidence.add([id: definition.id, backend: definition.backend,
+                    route: definition.route, densityVisuals: definition.density,
+                    durableReopen: definition.durable, log: logFile.canonicalPath,
+                    logSha256: sha256OfFile(logFile), captures: captures,
+                    contactSheet: contactSheet.canonicalPath,
+                    contactSheetSha256: sha256OfFile(contactSheet), motion: motion,
+                    staticReference: [phase01: referenceFirst, phase12: referenceSecond,
+                                      selectedStablePair: stablePair, limit: referenceLimit],
+                    performance: [samples: Integer.parseInt(perf.group(1)),
+                                  medianMs: Double.parseDouble(perf.group(2)),
+                                  p95Ms: Double.parseDouble(perf.group(3)),
+                                  p99Ms: Double.parseDouble(perf.group(4)),
+                                  over50Ms: Integer.parseInt(perf.group(5))]])
+        }
+        def normalPerf = runEvidence.find { it.id == 'indirect-normal' }.performance
+        def highPerf = runEvidence.find { it.id == 'indirect-high' }.performance
+        if (highPerf.p95Ms > normalPerf.p95Ms * 1.5 + 2.0
+                || highPerf.p99Ms > normalPerf.p99Ms * 1.5 + 2.0
+                || highPerf.over50Ms > 20) {
+            throw new GradleException("D3 curved density performance regressed: " +
+                    "normal=${normalPerf} high=${highPerf}")
+        }
+        File manifest = new File(neoForgeCreateCompatKineticNetworkIndirectHighClientRun,
+                'd3-matrix-manifest.json')
+        def checkpointSourceCommit = providers.exec {
+            workingDir rootProject.projectDir
+            commandLine 'git', 'rev-parse', 'HEAD'
+        }.standardOutput.asText.get().trim()
+        manifest.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+                schema: 1,
+                sourceCommit: checkpointSourceCommit,
+                qualifiedTuple: 'Minecraft 1.21.1 / NeoForge 21.1.239 / Create 6.0.10 / Flywheel 1.0.6',
+                clientMixinCount: 6,
+                serverMixinCount: 4,
+                animatedRoiThreshold: 'ON: RGB L1 delta > 30 and >=2 changed pixels in at least one adjacent separated phase pair, with symmetric shaft/pulley >=1. OFF: exact-model symmetries are recorded per ROI and aggregate fallback requires >=5 moving components and >=20 changed pixels.',
+                staticReferenceThreshold: 'the quieter adjacent phase pair must change <=8% of its expanded projected static ROI; both pairs are retained',
+                runs: runEvidence])) + '\n'
+        logger.lifecycle('[create-kinetic-d3] PASS runs={} captures={} manifest={} sha256={}',
+                runEvidence.size(), runEvidence.sum { it.captures.size() }, manifest,
+                sha256OfFile(manifest))
     }
 }
 
