@@ -275,6 +275,18 @@ The implementation is frozen at source commit
 evidence, not published support or release metadata; Fabric Create remains
 unqualified.
 
+The D3 standalone kinetic-network matrix then exercises twelve real Create
+block-entity visual types across indirect normal/high/low, explicit instancing
+high/low, and backend-OFF high/low. It binds curved projection and per-component
+pixel motion, a 128-visual density/performance control, render-origin and chunk
+lifecycles, and one durable same-process low-chart reopen. No additional
+production defect was reproduced after the D2 correction. Exact results,
+rejected calibration attempts, evidence hashes, and the still-queued linear
+contraption boundary are recorded in
+[`CREATE_COMPATIBILITY_KINETIC_NETWORK_D3_2026-08-29.md`](CREATE_COMPATIBILITY_KINETIC_NETWORK_D3_2026-08-29.md).
+This remains qualification evidence, not published support or release
+metadata; Fabric Create remains unqualified.
+
 - Shader packs and renderer mods can conflict because the backport replaces
   version-sensitive vanilla core shader assets.
 - World-generation, structure, chunk-ticket, view-distance, distance-query,
