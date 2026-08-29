@@ -25,6 +25,7 @@ import dev.ringworld.net.RingTerrainAtlasTilePayload;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610ClientDiagnostics;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610ClientFixture;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610BearingFixture;
+import dev.ringworld.platform.neoforge.compat.create610.RingCreate610KineticVisualFixture;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610WindmillFixture;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingWorldSettings;
@@ -200,6 +201,11 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft client = Minecraft.getInstance();
+        if (Boolean.getBoolean(RingCreate610KineticVisualFixture.ENABLE_PROPERTY)) {
+            if (RingCreate610KineticVisualFixture.instance().startWorldIfEnabled(client)) return;
+            RingCreate610KineticVisualFixture.instance().tick(client);
+            return;
+        }
         if (Boolean.getBoolean(RingCreate610WindmillFixture.ENABLE_PROPERTY)) {
             if (RingCreate610WindmillFixture.instance().startWorldIfEnabled(client)) return;
             RingCreate610WindmillFixture.instance().tick(client);

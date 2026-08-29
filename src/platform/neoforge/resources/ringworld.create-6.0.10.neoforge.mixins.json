@@ -13,7 +13,9 @@
     "BeltConnectorHandlerMixin",
     "BeltBlockEntityClientMixin",
     "FluidTankBlockEntityClientMixin",
-    "ContraptionVisualMixin"
+    "ContraptionVisualMixin",
+    "StorageKineticEmbeddingMixin",
+    "VisualizationManagerKineticEmbeddingMixin"
   ],
   "injectors": {
     "defaultRequire": 1

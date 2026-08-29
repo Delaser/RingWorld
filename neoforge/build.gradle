@@ -269,6 +269,67 @@ neoForge {
             programArgument '--height'
             programArgument '720'
         }
+        createCompatKineticVisualHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-kinetic-visual-high')
+            systemProperty 'ringworld.createCompatKineticVisual', 'true'
+            systemProperty 'ringworld.createCompatKineticVisualRoute', 'high'
+            programArgument '--username'; programArgument 'KineticHigh'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatKineticVisualOffHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-kinetic-visual-off-high')
+            systemProperty 'ringworld.createCompatKineticVisual', 'true'
+            systemProperty 'ringworld.createCompatKineticVisualRoute', 'high'
+            systemProperty 'ringworld.createCompatKineticVisualBackend', 'off'
+            programArgument '--username'; programArgument 'KineticOffHigh'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatKineticVisualD2HighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-kinetic-visual-d2-high')
+            systemProperty 'ringworld.createCompatKineticVisual', 'true'
+            systemProperty 'ringworld.createCompatKineticVisualRoute', 'high'
+            systemProperty 'ringworld.createCompatKineticVisualPhase', 'd2'
+            programArgument '--username'; programArgument 'KineticD2High'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatKineticVisualD2InstancingHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-kinetic-visual-d2-instancing-high')
+            systemProperty 'ringworld.createCompatKineticVisual', 'true'
+            systemProperty 'ringworld.createCompatKineticVisualRoute', 'high'
+            systemProperty 'ringworld.createCompatKineticVisualBackend', 'instancing'
+            systemProperty 'ringworld.createCompatKineticVisualPhase', 'd2'
+            programArgument '--username'; programArgument 'KineticD2Inst'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatKineticVisualD2LowClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-kinetic-visual-d2-low')
+            systemProperty 'ringworld.createCompatKineticVisual', 'true'
+            systemProperty 'ringworld.createCompatKineticVisualRoute', 'low'
+            systemProperty 'ringworld.createCompatKineticVisualPhase', 'd2'
+            programArgument '--username'; programArgument 'KineticD2Low'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatKineticVisualD2OffHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-kinetic-visual-d2-off-high')
+            systemProperty 'ringworld.createCompatKineticVisual', 'true'
+            systemProperty 'ringworld.createCompatKineticVisualRoute', 'high'
+            systemProperty 'ringworld.createCompatKineticVisualBackend', 'off'
+            systemProperty 'ringworld.createCompatKineticVisualPhase', 'd2'
+            programArgument '--username'; programArgument 'KineticD2OffHigh'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
         createCompatBearingClient {
             client()
             gameDirectory = qualificationRunFile('run-create-compat-bearing-default')
@@ -554,6 +615,12 @@ def neoForgeHeadlessPrewarmRun = qualificationRunFile('run-headless-prewarm')
 def neoForgeCreateCompatAbsentRun = qualificationRunFile('run-create-compat-absent')
 def neoForgeCreateCompatRun = qualificationRunFile('run-create-compat')
 def neoForgeCreateCompatDefaultClientRun = qualificationRunFile('run-create-compat-client-default')
+def neoForgeCreateCompatKineticVisualHighClientRun = qualificationRunFile('run-create-compat-kinetic-visual-high')
+def neoForgeCreateCompatKineticVisualOffHighClientRun = qualificationRunFile('run-create-compat-kinetic-visual-off-high')
+def neoForgeCreateCompatKineticVisualD2HighClientRun = qualificationRunFile('run-create-compat-kinetic-visual-d2-high')
+def neoForgeCreateCompatKineticVisualD2InstancingHighClientRun = qualificationRunFile('run-create-compat-kinetic-visual-d2-instancing-high')
+def neoForgeCreateCompatKineticVisualD2LowClientRun = qualificationRunFile('run-create-compat-kinetic-visual-d2-low')
+def neoForgeCreateCompatKineticVisualD2OffHighClientRun = qualificationRunFile('run-create-compat-kinetic-visual-d2-off-high')
 def neoForgeCreateCompatBearingClientRun = qualificationRunFile('run-create-compat-bearing-default')
 def neoForgeCreateCompatBearingNormalClientRun = qualificationRunFile('run-create-compat-bearing-normal')
 def neoForgeCreateCompatBearingLowClientRun = qualificationRunFile('run-create-compat-bearing-low')
@@ -872,6 +939,41 @@ tasks.register('prepareNeoForgeCreateCompatDefaultClient') {
     group = 'ringworld verification'
     outputs.upToDateWhen { false }
     doLast { prepareCreateCompatibilityClient(neoForgeCreateCompatDefaultClientRun, false) }
+}
+
+tasks.register('prepareNeoForgeCreateCompatKineticVisualHighClient') {
+    group = 'ringworld verification'
+    outputs.upToDateWhen { false }
+    doLast { prepareCreateCompatibilityClient(neoForgeCreateCompatKineticVisualHighClientRun, false) }
+}
+
+tasks.register('prepareNeoForgeCreateCompatKineticVisualOffHighClient') {
+    group = 'ringworld verification'
+    outputs.upToDateWhen { false }
+    doLast {
+        prepareCreateCompatibilityClient(neoForgeCreateCompatKineticVisualOffHighClientRun, false)
+        new File(neoForgeCreateCompatKineticVisualOffHighClientRun,
+                'config/flywheel-client.toml').text = 'backend = "flywheel:off"\n'
+    }
+}
+
+[
+        [task: 'High', run: neoForgeCreateCompatKineticVisualD2HighClientRun, backend: 'DEFAULT'],
+        [task: 'InstancingHigh', run: neoForgeCreateCompatKineticVisualD2InstancingHighClientRun,
+         backend: 'flywheel:instancing'],
+        [task: 'Low', run: neoForgeCreateCompatKineticVisualD2LowClientRun, backend: 'DEFAULT'],
+        [task: 'OffHigh', run: neoForgeCreateCompatKineticVisualD2OffHighClientRun,
+         backend: 'flywheel:off']
+].each { definition ->
+    tasks.register("prepareNeoForgeCreateCompatKineticVisualD2${definition.task}Client") {
+        group = 'ringworld verification'
+        outputs.upToDateWhen { false }
+        doLast {
+            prepareCreateCompatibilityClient(definition.run as File, false)
+            new File(definition.run as File, 'config/flywheel-client.toml').text =
+                    "backend = \"${definition.backend}\"\n"
+        }
+    }
 }
 
 tasks.register('prepareNeoForgeCreateCompatBearingClient') {
@@ -1425,6 +1527,235 @@ tasks.named('runCreateCompatServer') {
 tasks.named('runCreateCompatDefaultClient') {
     dependsOn('prepareNeoForgeCreateCompatDefaultClient')
     finalizedBy('verifyNeoForgeCreateCompatDefaultClient')
+}
+
+tasks.named('runCreateCompatKineticVisualHighClient') {
+    dependsOn('prepareNeoForgeCreateCompatKineticVisualHighClient')
+}
+
+tasks.named('runCreateCompatKineticVisualOffHighClient') {
+    dependsOn('prepareNeoForgeCreateCompatKineticVisualOffHighClient')
+}
+
+['High', 'InstancingHigh', 'Low', 'OffHigh'].each { suffix ->
+    tasks.named("runCreateCompatKineticVisualD2${suffix}Client") {
+        dependsOn("prepareNeoForgeCreateCompatKineticVisualD2${suffix}Client")
+    }
+}
+
+def kineticD2Bounds = { String proof, String label ->
+    def match = proof =~ /${label}=([0-9.]+)\/([0-9.]+)\/([0-9.]+)\/([0-9.]+)/
+    if (!match.find()) throw new GradleException("Missing ${label} in ${proof}")
+    [Math.floor(Double.parseDouble(match.group(1)) - 5).toInteger(),
+     Math.floor(Double.parseDouble(match.group(2)) - 5).toInteger(),
+     Math.ceil(Double.parseDouble(match.group(3)) + 5).toInteger(),
+     Math.ceil(Double.parseDouble(match.group(4)) + 5).toInteger()]
+}
+
+def kineticD2DarkPixels = { File screenshot, List<Integer> bounds ->
+    def image = javax.imageio.ImageIO.read(screenshot)
+    if (image == null) throw new GradleException("Unreadable kinetic screenshot ${screenshot}")
+    int dark = 0
+    int minX = Math.max(0, bounds[0])
+    int minY = Math.max(0, bounds[1])
+    int maxX = Math.min(image.width - 1, bounds[2])
+    int maxY = Math.min(image.height - 1, bounds[3])
+    for (int y = minY; y <= maxY; y++) {
+        for (int x = minX; x <= maxX; x++) {
+            int rgb = image.getRGB(x, y)
+            int red = (rgb >> 16) & 0xff
+            int green = (rgb >> 8) & 0xff
+            int blue = rgb & 0xff
+            if (red < 100 && green < 100 && blue < 100) dark++
+        }
+    }
+    dark
+}
+
+tasks.register('verifyNeoForgeCreateCompatKineticVisualD2') {
+    group = 'ringworld verification'
+    description = 'Verifies the bounded standalone kinetic child-embedding D2 spike.'
+    doLast {
+        def definitions = [
+                [run: neoForgeCreateCompatKineticVisualD2HighClientRun,
+                 backend: 'flywheel:indirect', route: 'high', off: false],
+                [run: neoForgeCreateCompatKineticVisualD2InstancingHighClientRun,
+                 backend: 'flywheel:instancing', route: 'high', off: false],
+                [run: neoForgeCreateCompatKineticVisualD2LowClientRun,
+                 backend: 'flywheel:indirect', route: 'low', off: false],
+                [run: neoForgeCreateCompatKineticVisualD2OffHighClientRun,
+                 backend: 'flywheel:off', route: 'high', off: true]
+        ]
+        def manifestRuns = []
+        definitions.each { definition ->
+            File runDirectory = definition.run as File
+            File logFile = new File(runDirectory, 'logs/latest.log')
+            if (!logFile.isFile()) throw new GradleException("Missing D2 log ${logFile}")
+            String log = logFile.text
+            String expectedResult = '[create-kinetic-d1] result=true backend=' + definition.backend +
+                    ' route=' + definition.route +
+                    ' mechanism=encased-cog captures=12 fixedCameraPhases=3 poses=4 ' +
+                    'phase=d2 productionClientMixins=6'
+            if (!log.contains(expectedResult) || log.contains('[create-kinetic-d1] result=false')) {
+                throw new GradleException("D2 result failed in ${logFile}")
+            }
+            def applied = log.readLines().findAll {
+                it.contains('[create-compat-mixin] applied target=')
+            }
+            // ConnectivityHandler is lazy and this kinetic-only world does not load it;
+            // the full exact client fixture separately requires the complete 4+6 set.
+            if (applied.size() != 9
+                    || applied.count { it.contains('StorageKineticEmbeddingMixin') } != 1
+                    || applied.count { it.contains('VisualizationManagerKineticEmbeddingMixin') } != 1) {
+                throw new GradleException("Expected the nine kinetic-loaded exact mixins in ${logFile}")
+            }
+            def proofs = log.readLines().findAll {
+                it.contains('[create-kinetic-d1] capture-proof name=')
+            }
+            if (proofs.size() != 12) {
+                throw new GradleException("Expected 12 D2 captures in ${logFile}, found ${proofs.size()}")
+            }
+            def views = [] as Set
+            def phases = [] as Set
+            def captures = proofs.collect { proof ->
+                def nameMatch = proof =~ / name=([^ ]+) /
+                def viewMatch = proof =~ / view=([^ ]+) /
+                def phaseMatch = proof =~ / phaseIndex=([0-2]) /
+                if (!nameMatch.find() || !viewMatch.find() || !phaseMatch.find()) {
+                    throw new GradleException("Malformed D2 capture proof ${proof}")
+                }
+                String name = nameMatch.group(1)
+                views.add(viewMatch.group(1))
+                phases.add(phaseMatch.group(1))
+                File screenshot = new File(runDirectory, 'screenshots/' + name + '.png')
+                if (!screenshot.isFile() || screenshot.length() == 0) {
+                    throw new GradleException("Missing D2 screenshot ${screenshot}")
+                }
+                if (!proof.contains('centerIn=true') || !proof.contains('expectedVisible=true')) {
+                    throw new GradleException("D2 capture is not projected in view: ${proof}")
+                }
+                if (definition.off) {
+                    if (!proof.contains('visualClass=none') || !proof.contains('ownedCount=0')
+                            || !proof.contains('ownerCreated=0') || !proof.contains('ownerDeleted=0')) {
+                        throw new GradleException("OFF touched Flywheel visual ownership: ${proof}")
+                    }
+                } else if (!proof.contains('environmentClass=dev.engine_room.flywheel.backend.engine.embed.EmbeddedEnvironment')
+                        || !proof.contains('matrixIndex=1')
+                        || !proof.contains('ownerCurved=true')
+                        || !proof.contains('ownerFinitePose=true')
+                        || !proof.contains('ownerFailedDeletes=0')
+                        || !proof.contains('ownerMalformedUpdates=0')) {
+                    throw new GradleException("ON capture lacks a finite live child embedding: ${proof}")
+                }
+                [relativePath: runDirectory.toPath().relativize(screenshot.toPath()).toString(),
+                 absolutePath: screenshot.canonicalPath,
+                 sha256: sha256OfFile(screenshot),
+                 proofLogLine: proof]
+            }
+            if (views != ['center-near', 'edge-near', 'center-far', 'edge-far'] as Set
+                    || phases != ['0', '1', '2'] as Set) {
+                throw new GradleException("D2 view/phase matrix is incomplete in ${logFile}")
+            }
+            if (definition.off) {
+                if (!log.contains('origin-recreation skipped backend=flywheel:off owners=0')
+                        || !log.contains('remove PASS backend=flywheel:off owned=0 created=0 deleted=0')
+                        || !log.contains('readd PASS backend=flywheel:off owners=0')
+                        || log.contains('[create-kinetic-d2] storage-invalidate')) {
+                    throw new GradleException("OFF lifecycle was not untouched in ${logFile}")
+                }
+            } else {
+                def identityProof = log.readLines().find {
+                    it.contains('[create-kinetic-d2] late-geometry identity visual=')
+                }
+                def curvedProof = log.readLines().find {
+                    it.contains('[create-kinetic-d2] late-geometry curved PASS visual=')
+                }
+                def identityIds = identityProof == null ? null
+                        : identityProof =~ /visual=([0-9]+) embedding=([0-9]+)/
+                def curvedIds = curvedProof == null ? null
+                        : curvedProof =~ /visual=([0-9]+) embedding=([0-9]+)/
+                if (identityProof == null || curvedProof == null
+                        || !identityIds.find() || !curvedIds.find()
+                        || identityIds.group(1) != curvedIds.group(1)
+                        || identityIds.group(2) != curvedIds.group(2)
+                        || !identityProof.contains('created=2 deleted=0 failedDeletes=0')
+                        || !curvedProof.contains('created=2 deleted=0 failedDeletes=0')
+                        || !curvedProof.contains('finite=true')) {
+                    throw new GradleException("Late-geometry identity/leak proof failed in ${logFile}")
+                }
+                if (!log.contains('origin-recreation PASS')
+                        || !log.contains('remove PASS owned=0')
+                        || !log.contains('readd PASS')
+                        || !log.contains('storage-invalidate owned=0')
+                        || !log.contains('deleted=8 failedDeletes=0 balanced=true')) {
+                    throw new GradleException("ON lifecycle ownership proof is incomplete in ${logFile}")
+                }
+            }
+            def mods = new File(runDirectory, 'mods').listFiles()?.findAll { it.isFile() } ?: []
+            if (mods.size() != 1 || sha256OfFile(mods.first()) != createCompatOuterJarSha256) {
+                throw new GradleException("D2 runtime jar is not exact in ${runDirectory}")
+            }
+            manifestRuns.add([
+                    runDirectory: runDirectory.canonicalPath,
+                    backend: definition.backend,
+                    route: definition.route,
+                    logSha256: sha256OfFile(logFile),
+                    captures: captures])
+        }
+
+        File preRun = neoForgeCreateCompatKineticVisualHighClientRun
+        File onRun = neoForgeCreateCompatKineticVisualD2HighClientRun
+        File offRun = neoForgeCreateCompatKineticVisualD2OffHighClientRun
+        String preName = 'ringworld-create-kinetic-d1-flywheel-indirect-high-center-near-phase-0'
+        String onName = 'ringworld-create-kinetic-d2-flywheel-indirect-high-center-near-phase-0'
+        String offName = 'ringworld-create-kinetic-d2-flywheel-off-high-center-near-phase-0'
+        String preProof = new File(preRun, 'logs/latest.log').readLines().find {
+            it.contains('capture-proof name=' + preName + ' ')
+        }
+        String onProof = new File(onRun, 'logs/latest.log').readLines().find {
+            it.contains('capture-proof name=' + onName + ' ')
+        }
+        String offProof = new File(offRun, 'logs/latest.log').readLines().find {
+            it.contains('capture-proof name=' + offName + ' ')
+        }
+        if (preProof == null || onProof == null || offProof == null) {
+            throw new GradleException('Frozen D1/D2 matched pixel proofs are incomplete')
+        }
+        File preImage = new File(preRun, 'screenshots/' + preName + '.png')
+        File onImage = new File(onRun, 'screenshots/' + onName + '.png')
+        File offImage = new File(offRun, 'screenshots/' + offName + '.png')
+        int preFlatDark = kineticD2DarkPixels(preImage, kineticD2Bounds(preProof, 'flatBounds'))
+        int onFlatDark = kineticD2DarkPixels(onImage, kineticD2Bounds(onProof, 'flatBounds'))
+        int offFlatDark = kineticD2DarkPixels(offImage, kineticD2Bounds(offProof, 'flatBounds'))
+        int onCurvedDark = kineticD2DarkPixels(onImage, kineticD2Bounds(onProof, 'curvedBounds'))
+        int offCurvedDark = kineticD2DarkPixels(offImage, kineticD2Bounds(offProof, 'curvedBounds'))
+        if (preFlatDark < 25 || onFlatDark > 5 || offFlatDark > 5
+                || onCurvedDark < 60 || offCurvedDark < 55) {
+            throw new GradleException("D2 matched pixel correction failed: preFlat=${preFlatDark} " +
+                    "onFlat=${onFlatDark} offFlat=${offFlatDark} " +
+                    "onCurved=${onCurvedDark} offCurved=${offCurvedDark}")
+        }
+        def pixelEvidence = [
+                preFixFlatDark: preFlatDark,
+                correctedOnFlatDark: onFlatDark,
+                offReferenceFlatDark: offFlatDark,
+                correctedOnCurvedDark: onCurvedDark,
+                offReferenceCurvedDark: offCurvedDark,
+                preFixScreenshotSha256: sha256OfFile(preImage),
+                correctedScreenshotSha256: sha256OfFile(onImage),
+                offScreenshotSha256: sha256OfFile(offImage)]
+        File manifest = new File(onRun, 'd2-matrix-manifest.json')
+        manifest.text = groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+                schema: 1,
+                qualifiedTuple: 'Minecraft 1.21.1 / NeoForge 21.1.239 / Create 6.0.10 / Flywheel 1.0.6',
+                clientMixinCount: 6,
+                serverMixinCount: 4,
+                matchedPixelEvidence: pixelEvidence,
+                runs: manifestRuns])) + '\n'
+        logger.lifecycle('[create-kinetic-d2] PASS runs={} captures={} pixelEvidence={} manifest={} sha256={}',
+                manifestRuns.size(), manifestRuns.sum { it.captures.size() }, pixelEvidence,
+                manifest, sha256OfFile(manifest))
+    }
 }
 
 tasks.named('runCreateCompatBearingClient') {

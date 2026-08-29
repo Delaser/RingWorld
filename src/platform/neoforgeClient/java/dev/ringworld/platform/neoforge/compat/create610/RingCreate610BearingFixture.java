@@ -968,7 +968,7 @@ public final class RingCreate610BearingFixture {
             return;
         }
         if (RingCreate610MixinPlugin.appliedServerMixinCount() != 4
-                || RingCreate610MixinPlugin.appliedClientMixinCount() != 4) {
+                || RingCreate610MixinPlugin.appliedClientMixinCount() != 6) {
             finish(client, false, "mixin counts changed server="
                     + RingCreate610MixinPlugin.appliedServerMixinCount() + " client="
                     + RingCreate610MixinPlugin.appliedClientMixinCount());

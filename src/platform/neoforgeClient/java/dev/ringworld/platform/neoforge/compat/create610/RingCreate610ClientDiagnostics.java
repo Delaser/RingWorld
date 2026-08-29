@@ -1,5 +1,6 @@
 package dev.ringworld.platform.neoforge.compat.create610;
 
+import dev.ringworld.world.RingGeometry;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -15,6 +16,7 @@ public final class RingCreate610ClientDiagnostics {
     private static final String PROPERTY = "ringworld.createCompatClient";
     private static final String BEARING_PROPERTY = "ringworld.createCompatBearing";
     private static final String WINDMILL_PROPERTY = "ringworld.createCompatWindmill";
+    private static final String KINETIC_VISUAL_PROPERTY = "ringworld.createCompatKineticVisual";
     private static final AtomicInteger ATTACHED_CONTROLLER_READS = new AtomicInteger();
     private static final AtomicInteger DETACHED_CONTROLLER_READS = new AtomicInteger();
     private static final AtomicInteger CURVED_EMBEDDING_TRANSFORMS = new AtomicInteger();
@@ -32,6 +34,7 @@ public final class RingCreate610ClientDiagnostics {
     private static volatile BlockPos previewFirst;
     private static volatile BlockPos previewSecond;
     private static volatile boolean previewCanConnect;
+    private static volatile boolean kineticGeometrySuppressed;
 
     private RingCreate610ClientDiagnostics() { }
 
@@ -156,6 +159,19 @@ public final class RingCreate610ClientDiagnostics {
         previewFirst = null;
         previewSecond = null;
         previewCanConnect = false;
+        kineticGeometrySuppressed = false;
+    }
+
+    /** Exact-fixture hook; production and Create-absent runs always return the input. */
+    public static RingGeometry kineticEmbeddingGeometry(RingGeometry geometry) {
+        return Boolean.getBoolean(KINETIC_VISUAL_PROPERTY) && kineticGeometrySuppressed
+                ? null : geometry;
+    }
+
+    public static void suppressKineticEmbeddingGeometryForFixture(boolean suppressed) {
+        if (Boolean.getBoolean(KINETIC_VISUAL_PROPERTY)) {
+            kineticGeometrySuppressed = suppressed;
+        }
     }
 
     private static boolean enabled() {

@@ -10,7 +10,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.fml.loading.FMLLoader;
 import net.neoforged.fml.loading.moddiscovery.ModInfo;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.ClassNode;
+import org.objectweb.asm.tree.MethodInsnNode;
+import org.objectweb.asm.tree.MethodNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 import org.spongepowered.asm.service.MixinService;
@@ -26,12 +29,20 @@ public final class RingCreate610MixinPlugin implements IMixinConfigPlugin {
             "com.simibubi.create.content.kinetics.belt.item.BeltConnectorHandler",
             "com.simibubi.create.content.kinetics.belt.BeltBlockEntity",
             "com.simibubi.create.content.fluids.tank.FluidTankBlockEntity",
-            "com.simibubi.create.content.contraptions.render.ContraptionVisual");
+            "com.simibubi.create.content.contraptions.render.ContraptionVisual",
+            "dev.engine_room.flywheel.impl.visualization.storage.Storage",
+            "dev.engine_room.flywheel.impl.visualization.VisualizationManagerImpl");
+    private static final List<String> KINETIC_EMBEDDING_DEPENDENCIES = List.of(
+            "com.simibubi.create.content.kinetics.base.KineticBlockEntity",
+            "dev.engine_room.flywheel.impl.visualization.storage.BlockEntityStorage",
+            "dev.engine_room.flywheel.api.visualization.VisualEmbedding");
     private static final Set<String> CLIENT_MIXINS = Set.of(
             "BeltConnectorHandlerMixin",
             "BeltBlockEntityClientMixin",
             "FluidTankBlockEntityClientMixin",
-            "ContraptionVisualMixin");
+            "ContraptionVisualMixin",
+            "StorageKineticEmbeddingMixin",
+            "VisualizationManagerKineticEmbeddingMixin");
     private static final Set<String> APPLIED_SERVER_MIXINS = ConcurrentHashMap.newKeySet();
     private static final Set<String> APPLIED_CLIENT_MIXINS = ConcurrentHashMap.newKeySet();
     private static final AtomicBoolean UNQUALIFIED_WARNING_EMITTED = new AtomicBoolean();
@@ -58,7 +69,11 @@ public final class RingCreate610MixinPlugin implements IMixinConfigPlugin {
         }
 
         preflightTargets(SERVER_TARGETS);
-        if (FMLLoader.getDist() == Dist.CLIENT) preflightTargets(CLIENT_TARGETS);
+        if (FMLLoader.getDist() == Dist.CLIENT) {
+            preflightTargets(CLIENT_TARGETS);
+            preflightTargets(KINETIC_EMBEDDING_DEPENDENCIES);
+            preflightKineticEmbeddingAbi();
+        }
         enabled = true;
         exactTupleEnabled = true;
         RingWorldMod.LOGGER.info(
@@ -89,6 +104,93 @@ public final class RingCreate610MixinPlugin implements IMixinConfigPlugin {
                         "Qualified Create compatibility target is missing: " + target, exception);
             }
         }
+    }
+
+    private static void preflightKineticEmbeddingAbi() {
+        ClassNode storage = classNode(
+                "dev.engine_room.flywheel.impl.visualization.storage.Storage");
+        requireField(storage, "visuals", "Ljava/util/Map;");
+        requireMethod(storage, "add",
+                "(Ldev/engine_room/flywheel/api/visualization/VisualizationContext;"
+                        + "Ljava/lang/Object;F)V");
+        requireMethod(storage, "remove", "(Ljava/lang/Object;)V");
+        requireMethod(storage, "invalidate", "()V");
+        requireMethod(storage, "lambda$recreateAll$4",
+                "(Ldev/engine_room/flywheel/api/visualization/VisualizationContext;F"
+                        + "Ljava/lang/Object;Ldev/engine_room/flywheel/api/visual/Visual;)"
+                        + "Ldev/engine_room/flywheel/api/visual/Visual;");
+
+        ClassNode manager = classNode(
+                "dev.engine_room.flywheel.impl.visualization.VisualizationManagerImpl");
+        requireField(manager, "level", "Lnet/minecraft/world/level/LevelAccessor;");
+        requireField(manager, "blockEntities",
+                "Ldev/engine_room/flywheel/impl/visualization/VisualManagerImpl;");
+        requireMethod(manager, "render",
+                "(Ldev/engine_room/flywheel/api/backend/RenderContext;)V");
+        requireInvocation(manager, "render",
+                "(Ldev/engine_room/flywheel/api/backend/RenderContext;)V",
+                Opcodes.INVOKEINTERFACE,
+                "dev/engine_room/flywheel/api/backend/Engine", "render",
+                "(Ldev/engine_room/flywheel/api/backend/RenderContext;)V");
+    }
+
+    private static ClassNode classNode(String target) {
+        try {
+            ClassNode node = MixinService.getService().getBytecodeProvider().getClassNode(target);
+            if (node == null) throw new ClassNotFoundException(target);
+            return node;
+        } catch (ClassNotFoundException | IOException exception) {
+            throw new IllegalStateException(
+                    "Qualified Create compatibility target is missing: " + target, exception);
+        }
+    }
+
+    private static void requireField(ClassNode owner, String name, String descriptor) {
+        long count = owner.fields.stream()
+                .filter(field -> field.name.equals(name) && field.desc.equals(descriptor))
+                .count();
+        if (count != 1) {
+            throw abiDrift(owner.name, "field", name + descriptor, count);
+        }
+    }
+
+    private static MethodNode requireMethod(
+            ClassNode owner, String name, String descriptor) {
+        List<MethodNode> matches = owner.methods.stream()
+                .filter(method -> method.name.equals(name) && method.desc.equals(descriptor))
+                .toList();
+        if (matches.size() != 1) {
+            throw abiDrift(owner.name, "method", name + descriptor, matches.size());
+        }
+        return matches.getFirst();
+    }
+
+    private static void requireInvocation(
+            ClassNode owner, String methodName, String methodDescriptor,
+            int opcode, String targetOwner, String targetName, String targetDescriptor) {
+        MethodNode method = requireMethod(owner, methodName, methodDescriptor);
+        long count = 0;
+        for (var instruction = method.instructions.getFirst(); instruction != null;
+             instruction = instruction.getNext()) {
+            if (instruction instanceof MethodInsnNode invocation
+                    && invocation.getOpcode() == opcode
+                    && invocation.owner.equals(targetOwner)
+                    && invocation.name.equals(targetName)
+                    && invocation.desc.equals(targetDescriptor)) {
+                count++;
+            }
+        }
+        if (count != 1) {
+            throw abiDrift(owner.name, "invocation",
+                    targetOwner + "." + targetName + targetDescriptor, count);
+        }
+    }
+
+    private static IllegalStateException abiDrift(
+            String owner, String kind, String member, long count) {
+        return new IllegalStateException(
+                "Qualified Create/Flywheel compatibility ABI drift: " + owner + " "
+                        + kind + " " + member + " expected exactly once, found " + count);
     }
 
     @Override
