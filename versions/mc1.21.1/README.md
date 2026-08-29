@@ -287,6 +287,20 @@ contraption boundary are recorded in
 This remains qualification evidence, not published support or release
 metadata; Fabric Create remains unqualified.
 
+The final D4 linear-contraption matrix qualifies real glued Mechanical Piston,
+Gantry Carriage, and Rope Pulley mechanisms. It records two narrow exact-tuple
+client corrections: gantry smoothing now interprets canonical sync coordinates
+in the entity's nearest presentation chart, and backend-OFF cached contraption
+blocks now use material-equivalent entity-space layers instead of receiving a
+second nonlinear pass through RingWorld's terrain shader. The strict ABI and
+five-layer state audit, eight-client-mixin boundary, nine-run
+indirect/instancing/OFF matrix, per-payload chest/shulker adjacency oracle,
+durable piston reopen, exact restoration, regression gates, and limitations
+are recorded in
+[`CREATE_COMPATIBILITY_LINEAR_CONTRAPTIONS_D4_2026-08-29.md`](CREATE_COMPATIBILITY_LINEAR_CONTRAPTIONS_D4_2026-08-29.md).
+This remains qualification evidence, not published support or release
+metadata; Fabric Create remains unqualified.
+
 - Shader packs and renderer mods can conflict because the backport replaces
   version-sensitive vanilla core shader assets.
 - World-generation, structure, chunk-ticket, view-distance, distance-query,
