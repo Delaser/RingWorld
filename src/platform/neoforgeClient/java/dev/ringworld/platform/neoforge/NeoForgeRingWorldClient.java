@@ -24,6 +24,8 @@ import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610ClientDiagnostics;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610ClientFixture;
+import dev.ringworld.platform.neoforge.compat.create610.RingCreate610BearingFixture;
+import dev.ringworld.platform.neoforge.compat.create610.RingCreate610WindmillFixture;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingWorldSettings;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
@@ -198,6 +200,16 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft client = Minecraft.getInstance();
+        if (Boolean.getBoolean(RingCreate610WindmillFixture.ENABLE_PROPERTY)) {
+            if (RingCreate610WindmillFixture.instance().startWorldIfEnabled(client)) return;
+            RingCreate610WindmillFixture.instance().tick(client);
+            return;
+        }
+        if (Boolean.getBoolean(RingCreate610BearingFixture.ENABLE_PROPERTY)) {
+            if (RingCreate610BearingFixture.instance().startWorldIfEnabled(client)) return;
+            RingCreate610BearingFixture.instance().tick(client);
+            return;
+        }
         if (Boolean.getBoolean(RingCreate610ClientFixture.ENABLE_PROPERTY)) {
             if (RingCreate610ClientFixture.instance().startWorldIfEnabled(client)) return;
             RingCreate610ClientFixture.instance().tick(client);
@@ -228,6 +240,9 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onAfterLevel(RenderLevelStageEvent event) {
         if (event.getStage() != RenderLevelStageEvent.Stage.AFTER_LEVEL) return;
+        if (Boolean.getBoolean(RingCreate610BearingFixture.ENABLE_PROPERTY)) {
+            RingCreate610BearingFixture.instance().frameRendered();
+        }
         if (Boolean.getBoolean(RingCreate610ClientFixture.ENABLE_PROPERTY)) {
             RingCreate610ClientFixture.instance().frameRendered();
         }

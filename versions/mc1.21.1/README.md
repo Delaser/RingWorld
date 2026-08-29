@@ -253,6 +253,16 @@ recorded in
 This is local qualification evidence, not published support metadata or a
 release claim.
 
+The subsequent real glued Mechanical/Windmill Bearing investigation separates
+functional lifecycle evidence from projected, palette-bound pixel evidence.
+Its original checkpoint C images were rejected as mis-aimed; the corrected C.1
+matrix visibly passes indirect, explicit instancing, and backend-OFF controls
+without reproducing the reported rotating-assembly disappearance on the exact
+tuple. Scope, limitations, retained manifests/contact sheets, and the reason no
+speculative production fix was added are recorded in
+[`CREATE_COMPATIBILITY_ROTATING_BEARING_C1_2026-08-29.md`](CREATE_COMPATIBILITY_ROTATING_BEARING_C1_2026-08-29.md).
+This remains qualification evidence, not published support metadata.
+
 - Shader packs and renderer mods can conflict because the backport replaces
   version-sensitive vanilla core shader assets.
 - World-generation, structure, chunk-ticket, view-distance, distance-query,

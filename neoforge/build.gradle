@@ -91,7 +91,8 @@ sourceSets.main.resources.exclude('fabric.mod.json')
 // common sources. Platform-specific runtime gates remain separate.
 sourceSets.test.java.setSrcDirs([
         rootProject.file('src/test/java'),
-        rootProject.file('src/platform/neoforgeTest/java')
+        rootProject.file('src/platform/neoforgeTest/java'),
+        rootProject.file('src/platform/neoforgeClientTest/java')
 ])
 sourceSets.test.resources.setSrcDirs([
         rootProject.file('src/test/resources'),
@@ -267,6 +268,95 @@ neoForge {
             programArgument '1280'
             programArgument '--height'
             programArgument '720'
+        }
+        createCompatBearingClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-bearing-default')
+            systemProperty 'ringworld.createCompatBearing', 'true'
+            systemProperty 'ringworld.createCompatBearingRoute', 'high'
+            programArgument '--username'
+            programArgument 'CreateBearing'
+            programArgument '--width'
+            programArgument '1280'
+            programArgument '--height'
+            programArgument '720'
+        }
+        createCompatBearingNormalClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-bearing-normal')
+            systemProperty 'ringworld.createCompatBearing', 'true'
+            systemProperty 'ringworld.createCompatBearingRoute', 'normal'
+            programArgument '--username'
+            programArgument 'BearingNormal'
+            programArgument '--width'
+            programArgument '1280'
+            programArgument '--height'
+            programArgument '720'
+        }
+        createCompatBearingLowClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-bearing-low')
+            systemProperty 'ringworld.createCompatBearing', 'true'
+            systemProperty 'ringworld.createCompatBearingRoute', 'low'
+            programArgument '--username'
+            programArgument 'BearingLow'
+            programArgument '--width'
+            programArgument '1280'
+            programArgument '--height'
+            programArgument '720'
+        }
+        createCompatBearingInstancingHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-bearing-instancing-high')
+            systemProperty 'ringworld.createCompatBearing', 'true'
+            systemProperty 'ringworld.createCompatBearingRoute', 'high'
+            systemProperty 'ringworld.createCompatBearingBackend', 'instancing'
+            programArgument '--username'
+            programArgument 'BearingInstHigh'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatBearingInstancingLowClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-bearing-instancing-low')
+            systemProperty 'ringworld.createCompatBearing', 'true'
+            systemProperty 'ringworld.createCompatBearingRoute', 'low'
+            systemProperty 'ringworld.createCompatBearingBackend', 'instancing'
+            programArgument '--username'
+            programArgument 'BearingInstLow'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatBearingOffHighClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-bearing-off-high')
+            systemProperty 'ringworld.createCompatBearing', 'true'
+            systemProperty 'ringworld.createCompatBearingRoute', 'high'
+            systemProperty 'ringworld.createCompatBearingBackend', 'off'
+            programArgument '--username'
+            programArgument 'BearingOffHigh'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatBearingOffLowClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-bearing-off-low')
+            systemProperty 'ringworld.createCompatBearing', 'true'
+            systemProperty 'ringworld.createCompatBearingRoute', 'low'
+            systemProperty 'ringworld.createCompatBearingBackend', 'off'
+            programArgument '--username'
+            programArgument 'BearingOffLow'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
+        }
+        createCompatWindmillClient {
+            client()
+            gameDirectory = qualificationRunFile('run-create-compat-windmill')
+            systemProperty 'ringworld.createCompatWindmill', 'true'
+            programArgument '--username'
+            programArgument 'WindmillControl'
+            programArgument '--width'; programArgument '1280'
+            programArgument '--height'; programArgument '720'
         }
         createCompatOffClient {
             client()
@@ -464,6 +554,14 @@ def neoForgeHeadlessPrewarmRun = qualificationRunFile('run-headless-prewarm')
 def neoForgeCreateCompatAbsentRun = qualificationRunFile('run-create-compat-absent')
 def neoForgeCreateCompatRun = qualificationRunFile('run-create-compat')
 def neoForgeCreateCompatDefaultClientRun = qualificationRunFile('run-create-compat-client-default')
+def neoForgeCreateCompatBearingClientRun = qualificationRunFile('run-create-compat-bearing-default')
+def neoForgeCreateCompatBearingNormalClientRun = qualificationRunFile('run-create-compat-bearing-normal')
+def neoForgeCreateCompatBearingLowClientRun = qualificationRunFile('run-create-compat-bearing-low')
+def neoForgeCreateCompatBearingInstancingHighClientRun = qualificationRunFile('run-create-compat-bearing-instancing-high')
+def neoForgeCreateCompatBearingInstancingLowClientRun = qualificationRunFile('run-create-compat-bearing-instancing-low')
+def neoForgeCreateCompatBearingOffHighClientRun = qualificationRunFile('run-create-compat-bearing-off-high')
+def neoForgeCreateCompatBearingOffLowClientRun = qualificationRunFile('run-create-compat-bearing-off-low')
+def neoForgeCreateCompatWindmillClientRun = qualificationRunFile('run-create-compat-windmill')
 def neoForgeCreateCompatOffClientRun = qualificationRunFile('run-create-compat-client-off')
 def neoForgeMultiplayerRun = qualificationRunFile('run-multiplayer')
 def neoForgeMultiplayerServerRun = new File(neoForgeMultiplayerRun, 'server')
@@ -776,6 +874,53 @@ tasks.register('prepareNeoForgeCreateCompatDefaultClient') {
     doLast { prepareCreateCompatibilityClient(neoForgeCreateCompatDefaultClientRun, false) }
 }
 
+tasks.register('prepareNeoForgeCreateCompatBearingClient') {
+    group = 'ringworld verification'
+    outputs.upToDateWhen { false }
+    doLast { prepareCreateCompatibilityClient(neoForgeCreateCompatBearingClientRun, false) }
+}
+
+tasks.register('prepareNeoForgeCreateCompatBearingNormalClient') {
+    group = 'ringworld verification'
+    outputs.upToDateWhen { false }
+    doLast { prepareCreateCompatibilityClient(neoForgeCreateCompatBearingNormalClientRun, false) }
+}
+
+tasks.register('prepareNeoForgeCreateCompatBearingLowClient') {
+    group = 'ringworld verification'
+    outputs.upToDateWhen { false }
+    doLast { prepareCreateCompatibilityClient(neoForgeCreateCompatBearingLowClientRun, false) }
+}
+
+tasks.register('prepareNeoForgeCreateCompatWindmillClient') {
+    group = 'ringworld verification'
+    outputs.upToDateWhen { false }
+    doLast { prepareCreateCompatibilityClient(neoForgeCreateCompatWindmillClientRun, false) }
+}
+
+def prepareCreateCompatibilityBearingBackend = { File runDirectory, String backendId ->
+    prepareCreateCompatibilityClient(runDirectory, false)
+    new File(runDirectory, 'config/flywheel-client.toml').text =
+            "backend = \"flywheel:${backendId}\"\n"
+}
+
+[
+        [task: 'InstancingHigh', run: neoForgeCreateCompatBearingInstancingHighClientRun,
+         backend: 'instancing'],
+        [task: 'InstancingLow', run: neoForgeCreateCompatBearingInstancingLowClientRun,
+         backend: 'instancing'],
+        [task: 'OffHigh', run: neoForgeCreateCompatBearingOffHighClientRun, backend: 'off'],
+        [task: 'OffLow', run: neoForgeCreateCompatBearingOffLowClientRun, backend: 'off']
+].each { definition ->
+    tasks.register("prepareNeoForgeCreateCompatBearing${definition.task}Client") {
+        group = 'ringworld verification'
+        outputs.upToDateWhen { false }
+        doLast {
+            prepareCreateCompatibilityBearingBackend(definition.run as File, definition.backend as String)
+        }
+    }
+}
+
 tasks.register('prepareNeoForgeCreateCompatOffClient') {
     group = 'ringworld verification'
     outputs.upToDateWhen { false }
@@ -892,6 +1037,334 @@ tasks.register('verifyNeoForgeCreateCompatDefaultClient') {
     doLast { verifyCreateCompatibilityClient(neoForgeCreateCompatDefaultClientRun, false) }
 }
 
+// The screenshot is written one rendered frame after the fixture samples the
+// projected corners. Expand the sampled target rectangle by this bounded
+// timing/anti-aliasing tolerance, then clip it to the actual viewport.
+def createCompatibilityProjectionTolerancePixels = 24
+def createCompatibilityPixelSignature = { File screenshot, String proof, boolean expectedVisible ->
+        def sanityMatch = proof =~ / poseSanityRoi=(\d+)\/(\d+)\/(\d+)\/(\d+) /
+        if (!sanityMatch.find()) {
+            throw new GradleException("Capture proof has no pose sanity ROI: ${proof}")
+        }
+        def projectionMatch = proof =~ / projectedBounds=([^\/ ]+)\/([^\/ ]+)\/([^\/ ]+)\/([^ ]+) /
+        if (!projectionMatch.find()) {
+            throw new GradleException("Capture proof has no projected target bounds: ${proof}")
+        }
+        def image = javax.imageio.ImageIO.read(screenshot)
+        if (image == null) throw new GradleException("Could not decode screenshot: ${screenshot}")
+        def poseSanityRoi = [
+                minX: sanityMatch.group(1).toInteger(), minY: sanityMatch.group(2).toInteger(),
+                maxX: sanityMatch.group(3).toInteger(), maxY: sanityMatch.group(4).toInteger()]
+        if (poseSanityRoi.minX < 0 || poseSanityRoi.minY < 0
+                || poseSanityRoi.maxX > image.width || poseSanityRoi.maxY > image.height
+                || poseSanityRoi.minX >= poseSanityRoi.maxX
+                || poseSanityRoi.minY >= poseSanityRoi.maxY) {
+            throw new GradleException("Invalid pose sanity ROI for ${screenshot.name}: "
+                    + "${poseSanityRoi} in ${image.width}x${image.height}")
+        }
+
+        double projectedMinX = projectionMatch.group(1).toDouble()
+        double projectedMinY = projectionMatch.group(2).toDouble()
+        double projectedMaxX = projectionMatch.group(3).toDouble()
+        double projectedMaxY = projectionMatch.group(4).toDouble()
+        def projectionRoi = null
+        if ([projectedMinX, projectedMinY, projectedMaxX, projectedMaxY].every { Double.isFinite(it) }) {
+            int minX = Math.max(0, Math.floor(projectedMinX
+                    - createCompatibilityProjectionTolerancePixels).toInteger())
+            int minY = Math.max(0, Math.floor(projectedMinY
+                    - createCompatibilityProjectionTolerancePixels).toInteger())
+            int maxX = Math.min(image.width, Math.ceil(projectedMaxX
+                    + createCompatibilityProjectionTolerancePixels).toInteger())
+            int maxY = Math.min(image.height, Math.ceil(projectedMaxY
+                    + createCompatibilityProjectionTolerancePixels).toInteger())
+            if (minX < maxX && minY < maxY) {
+                projectionRoi = [minX: minX, minY: minY, maxX: maxX, maxY: maxY]
+            }
+        }
+        if (expectedVisible && projectionRoi == null) {
+            throw new GradleException("Visible target has no clipped projection ROI: ${screenshot.name}")
+        }
+        if (expectedVisible && (projectionRoi.minX < poseSanityRoi.minX
+                || projectionRoi.minY < poseSanityRoi.minY
+                || projectionRoi.maxX > poseSanityRoi.maxX
+                || projectionRoi.maxY > poseSanityRoi.maxY)) {
+            throw new GradleException("Projected target escaped pose sanity ROI for ${screenshot.name}: "
+                    + "projection=${projectionRoi} sanity=${poseSanityRoi}")
+        }
+
+        // These prototypes are the four reviewed, target-only block families.
+        // Every pixel is assigned to at most one nearest prototype, so a
+        // purple/magenta pixel cannot satisfy two nominal color groups.
+        def prototypes = [
+                gold: [151, 124, 33], magenta: [160, 70, 145],
+                lime: [63, 114, 16], purple: [87, 64, 125]]
+        def scanRoi = expectedVisible ? projectionRoi : poseSanityRoi
+        def counts = [gold: 0, magenta: 0, lime: 0, purple: 0]
+        int signatureMinX = image.width
+        int signatureMinY = image.height
+        int signatureMaxX = -1
+        int signatureMaxY = -1
+        for (int y = scanRoi.minY; y < scanRoi.maxY; y++) {
+            for (int x = scanRoi.minX; x < scanRoi.maxX; x++) {
+                int rgb = image.getRGB(x, y)
+                int red = (rgb >>> 16) & 0xff
+                int green = (rgb >>> 8) & 0xff
+                int blue = rgb & 0xff
+                if (Math.max(red, Math.max(green, blue)) - Math.min(red, Math.min(green, blue)) < 30) {
+                    continue
+                }
+                def nearest = prototypes.collectEntries { name, prototype ->
+                    int dr = red - prototype[0]
+                    int dg = green - prototype[1]
+                    int db = blue - prototype[2]
+                    [(name): dr * dr + dg * dg + db * db]
+                }.min { first, second -> first.value <=> second.value }
+                if (nearest.value <= 6400) {
+                    counts[nearest.key]++
+                    signatureMinX = Math.min(signatureMinX, x)
+                    signatureMinY = Math.min(signatureMinY, y)
+                    signatureMaxX = Math.max(signatureMaxX, x)
+                    signatureMaxY = Math.max(signatureMaxY, y)
+                }
+            }
+        }
+        int signatureWidth = signatureMaxX < signatureMinX ? 0 : signatureMaxX - signatureMinX + 1
+        int signatureHeight = signatureMaxY < signatureMinY ? 0 : signatureMaxY - signatureMinY + 1
+        int qualifyingColors = counts.values().count { it >= 8 }
+        if (expectedVisible && (qualifyingColors < 3
+                || signatureWidth < 12 || signatureHeight < 4)) {
+            throw new GradleException("Visible target pixel signature missing from ${screenshot.name}: "
+                    + "counts=${counts} "
+                    + "bounds=${signatureMinX}/${signatureMinY}/${signatureMaxX}/${signatureMaxY} "
+                    + "projectionRoi=${projectionRoi} sanity=${poseSanityRoi}")
+        }
+        int totalPalettePixels = counts.values().sum() as int
+        if (!expectedVisible && totalPalettePixels > 8) {
+            throw new GradleException("Expected-offscreen target signature present in ${screenshot.name}: "
+                    + "counts=${counts} total=${totalPalettePixels} sanity=${poseSanityRoi}")
+        }
+        [projectionRoi: projectionRoi,
+         projectionTolerancePixels: createCompatibilityProjectionTolerancePixels,
+         poseSanityRoi: poseSanityRoi,
+         scanRoi: scanRoi,
+         counts: counts,
+         totalPalettePixels: totalPalettePixels,
+         qualifyingColors: qualifyingColors,
+         footprint: signatureWidth == 0 ? null : [minX: signatureMinX, minY: signatureMinY,
+                                                   maxX: signatureMaxX, maxY: signatureMaxY,
+                                                   width: signatureWidth, height: signatureHeight],
+         expectedVisible: expectedVisible,
+         requiredAndPassed: true]
+}
+
+def bearingProjectedBounds = { String proof ->
+        def match = proof =~ / projectedBounds=([^ ]+ depth=[^ ]+ center=[^ ]+ centerIn=[^ ]+ cornersIn=[^ ]+ projected=\d+)/
+        if (!match.find()) throw new GradleException("Capture proof has no projected bounds: ${proof}")
+        match.group(1)
+}
+
+def verifyCreateCompatibilityBearingClient = { File runDirectory, String route,
+                                                String chart, String direction, String backendIdentity ->
+        def logFile = new File(runDirectory, 'logs/latest.log')
+        def log = logFile.isFile() ? logFile.text : ''
+        if (backendIdentity == 'flywheel:instancing'
+                && log.contains('[create-bearing] result=false capability-rejected requested=flywheel:instancing')) {
+            new File(runDirectory, 'capability-rejection.txt').text =
+                    log.readLines().find { it.contains('capability-rejected requested=flywheel:instancing') } + '\n'
+            return
+        }
+        if (!log.contains("[create-bearing] result=true backend=${backendIdentity} realBearing=true glued=true")
+                || !log.contains('route=' + route)
+                || !log.contains('speedChange=true reversal=true')
+                || !log.contains('reassemblyGeneration=2 durableReopenGeneration=3')
+                || log.contains('[create-bearing] result=false')) {
+            throw new GradleException("Real bearing reproducer did not pass; retained evidence: ${runDirectory}")
+        }
+        def proofLines = log.readLines().findAll { it.contains('[create-bearing] capture-proof') }
+        if (proofLines.size() != 8) {
+            throw new GradleException("Expected eight bound bearing sweep captures, found ${proofLines.size()}")
+        }
+        if (proofLines.count { it.contains('expectedVisible=true') } != 6
+                || proofLines.count { it.contains('expectedVisible=false') } != 2) {
+            throw new GradleException('Bearing sweep must contain six visible and two expected-offscreen captures')
+        }
+        def captures = proofLines.collect { proof ->
+            def nameMatch = proof =~ / name=([^ ]+) /
+            if (!nameMatch.find()) {
+                throw new GradleException("Bearing proof line has no capture name: ${proof}")
+            }
+            def name = nameMatch.group(1)
+            def screenshot = new File(runDirectory, "screenshots/${name}.png")
+            if (!screenshot.isFile() || screenshot.length() == 0) {
+                throw new GradleException("Missing bearing screenshot: ${screenshot}")
+            }
+            if (proof == null || !proof.contains('state=glued+rotating')
+                    || !proof.contains('renderMembership=true removed=false')) {
+                throw new GradleException("Bearing screenshot lacks bound rotation proof: ${name}")
+            }
+            boolean expectedVisible = proof.contains('expectedVisible=true')
+            def pixelSignature = createCompatibilityPixelSignature(
+                    screenshot, proof, expectedVisible)
+            [name: name,
+             relativePath: runDirectory.toPath().relativize(screenshot.toPath()).toString(),
+             absolutePath: screenshot.canonicalPath,
+             sha256: sha256OfFile(screenshot),
+             backend: backendIdentity, chart: chart, direction: direction,
+             state: 'glued+rotating', expectedVisible: expectedVisible,
+             projectedBounds: bearingProjectedBounds(proof),
+             projectionRoi: pixelSignature.projectionRoi,
+             poseSanityRoi: pixelSignature.poseSanityRoi,
+             paletteCounts: pixelSignature.counts,
+             paletteFootprint: pixelSignature.footprint,
+             pixelSignature: pixelSignature, proofLogLine: proof]
+        }
+        def lifecycleProofLines = log.readLines().findAll {
+            it.contains('[create-bearing] lifecycle-proof')
+        }
+        if (lifecycleProofLines.size() != 2) {
+            throw new GradleException(
+                    "Expected reassembled and reopened lifecycle captures, found ${lifecycleProofLines.size()}")
+        }
+        def lifecycleCaptures = lifecycleProofLines.collect { proof ->
+            def nameMatch = proof =~ / name=([^ ]+) /
+            if (!nameMatch.find()) {
+                throw new GradleException("Bearing lifecycle proof has no capture name: ${proof}")
+            }
+            def name = nameMatch.group(1)
+            def screenshot = new File(runDirectory, "screenshots/${name}.png")
+            if (!screenshot.isFile() || screenshot.length() == 0
+                    || !proof.contains('expectedVisible=true')
+                    || !proof.contains('renderMembership=true removed=false')) {
+                throw new GradleException("Bearing lifecycle screenshot is unbound or missing: ${name}")
+            }
+            def pixelSignature = createCompatibilityPixelSignature(screenshot, proof, true)
+            [name: name,
+             relativePath: runDirectory.toPath().relativize(screenshot.toPath()).toString(),
+             absolutePath: screenshot.canonicalPath,
+             sha256: sha256OfFile(screenshot),
+             backend: backendIdentity, chart: chart, direction: direction,
+             state: name.contains('durable-reopened') ? 'durable-reopened+rotating'
+                     : 'reassembled+rotating', expectedVisible: true,
+             projectedBounds: bearingProjectedBounds(proof),
+             projectionRoi: pixelSignature.projectionRoi,
+             poseSanityRoi: pixelSignature.poseSanityRoi,
+             paletteCounts: pixelSignature.counts,
+             paletteFootprint: pixelSignature.footprint,
+             pixelSignature: pixelSignature, proofLogLine: proof]
+        }
+        def mods = new File(runDirectory, 'mods').listFiles()?.findAll { it.isFile() } ?: []
+        if (mods.size() != 1 || sha256OfFile(mods.first()) != createCompatOuterJarSha256) {
+            throw new GradleException("Bearing runtime jar is not the exact Create artifact: ${mods}")
+        }
+        def checkpointSourceCommit = providers.exec {
+            workingDir rootProject.projectDir
+            commandLine 'git', 'rev-parse', 'HEAD'
+        }.standardOutput.asText.get().trim()
+        new File(runDirectory, 'capture-manifest.json').text =
+                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+                        schema: 2,
+                        sourceCommit: checkpointSourceCommit,
+                        runDirectory: runDirectory.canonicalPath,
+                        backend: backendIdentity,
+                        route: route,
+                        chart: chart,
+                        direction: direction,
+                        sourceLogRelativePath: runDirectory.toPath().relativize(logFile.toPath()).toString(),
+                        sourceLogAbsolutePath: logFile.canonicalPath,
+                        sourceLogSha256: sha256OfFile(logFile),
+                        graphicalQualification: 'projected-target-roi-and-exclusive-palette-signature',
+                        captures: captures + lifecycleCaptures
+                ])) + '\n'
+}
+
+tasks.register('verifyNeoForgeCreateCompatBearingClient') {
+    group = 'ringworld verification'
+    mustRunAfter('runCreateCompatBearingClient')
+    doLast {
+        verifyCreateCompatibilityBearingClient(
+                neoForgeCreateCompatBearingClientRun, 'high', 'high', 'positive-seam', 'flywheel:indirect')
+    }
+}
+
+tasks.register('verifyNeoForgeCreateCompatBearingNormalClient') {
+    group = 'ringworld verification'
+    mustRunAfter('runCreateCompatBearingNormalClient')
+    doLast {
+        verifyCreateCompatibilityBearingClient(
+                neoForgeCreateCompatBearingNormalClientRun, 'normal', 'normal', 'none', 'flywheel:indirect')
+    }
+}
+
+tasks.register('verifyNeoForgeCreateCompatBearingLowClient') {
+    group = 'ringworld verification'
+    mustRunAfter('runCreateCompatBearingLowClient')
+    doLast {
+        verifyCreateCompatibilityBearingClient(
+                neoForgeCreateCompatBearingLowClientRun, 'low', 'low', 'negative-seam', 'flywheel:indirect')
+    }
+}
+
+tasks.register('verifyNeoForgeCreateCompatWindmillClient') {
+    group = 'ringworld verification'
+    mustRunAfter('runCreateCompatWindmillClient')
+    doLast {
+        def runDirectory = neoForgeCreateCompatWindmillClientRun
+        def logFile = new File(runDirectory, 'logs/latest.log')
+        def log = logFile.isFile() ? logFile.text : ''
+        if (!log.contains('[create-windmill] result=true backend=flywheel:indirect realWindmill=true')
+                || !log.contains('windDriven=true liveRotation=true capturedBlocks=13 restoration=true')
+                || log.contains('[create-windmill] result=false')) {
+            throw new GradleException("Windmill control failed; inspect ${logFile}")
+        }
+        def proof = log.readLines().find { it.contains('[create-windmill] capture-proof') }
+        def screenshot = new File(runDirectory, 'screenshots/ringworld-create-windmill-control.png')
+        if (proof == null || !proof.contains('renderMembership=true removed=false')
+                || !proof.contains('expectedVisible=true')
+                || !screenshot.isFile() || screenshot.length() == 0) {
+            throw new GradleException('Windmill capture is missing or unbound')
+        }
+        def pixelSignature = createCompatibilityPixelSignature(screenshot, proof, true)
+        def checkpointSourceCommit = providers.exec {
+            workingDir rootProject.projectDir
+            commandLine 'git', 'rev-parse', 'HEAD'
+        }.standardOutput.asText.get().trim()
+        new File(runDirectory, 'capture-manifest.json').text =
+                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+                        schema: 2, sourceCommit: checkpointSourceCommit,
+                        backend: 'flywheel:indirect', mechanism: 'windmill-bearing',
+                        sourceLogSha256: sha256OfFile(logFile), screenshot: screenshot.canonicalPath,
+                        screenshotSha256: sha256OfFile(screenshot), expectedVisible: true,
+                        projectedBounds: bearingProjectedBounds(proof),
+                        projectionRoi: pixelSignature.projectionRoi,
+                        poseSanityRoi: pixelSignature.poseSanityRoi,
+                        paletteCounts: pixelSignature.counts,
+                        paletteFootprint: pixelSignature.footprint,
+                        pixelSignature: pixelSignature, proofLogLine: proof
+                ])) + '\n'
+    }
+}
+
+[
+        [task: 'InstancingHigh', run: neoForgeCreateCompatBearingInstancingHighClientRun,
+         route: 'high', chart: 'high', direction: 'positive-seam', backend: 'flywheel:instancing'],
+        [task: 'InstancingLow', run: neoForgeCreateCompatBearingInstancingLowClientRun,
+         route: 'low', chart: 'low', direction: 'negative-seam', backend: 'flywheel:instancing'],
+        [task: 'OffHigh', run: neoForgeCreateCompatBearingOffHighClientRun,
+         route: 'high', chart: 'high', direction: 'positive-seam', backend: 'flywheel:off'],
+        [task: 'OffLow', run: neoForgeCreateCompatBearingOffLowClientRun,
+         route: 'low', chart: 'low', direction: 'negative-seam', backend: 'flywheel:off']
+].each { definition ->
+    tasks.register("verifyNeoForgeCreateCompatBearing${definition.task}Client") {
+        group = 'ringworld verification'
+        mustRunAfter("runCreateCompatBearing${definition.task}Client")
+        doLast {
+            verifyCreateCompatibilityBearingClient(
+                    definition.run as File, definition.route as String, definition.chart as String,
+                    definition.direction as String, definition.backend as String)
+        }
+    }
+}
+
 tasks.register('verifyNeoForgeCreateCompatOffClient') {
     group = 'ringworld verification'
     mustRunAfter('runCreateCompatOffClient')
@@ -952,6 +1425,33 @@ tasks.named('runCreateCompatServer') {
 tasks.named('runCreateCompatDefaultClient') {
     dependsOn('prepareNeoForgeCreateCompatDefaultClient')
     finalizedBy('verifyNeoForgeCreateCompatDefaultClient')
+}
+
+tasks.named('runCreateCompatBearingClient') {
+    dependsOn('prepareNeoForgeCreateCompatBearingClient')
+    finalizedBy('verifyNeoForgeCreateCompatBearingClient')
+}
+
+tasks.named('runCreateCompatBearingNormalClient') {
+    dependsOn('prepareNeoForgeCreateCompatBearingNormalClient')
+    finalizedBy('verifyNeoForgeCreateCompatBearingNormalClient')
+}
+
+tasks.named('runCreateCompatBearingLowClient') {
+    dependsOn('prepareNeoForgeCreateCompatBearingLowClient')
+    finalizedBy('verifyNeoForgeCreateCompatBearingLowClient')
+}
+
+tasks.named('runCreateCompatWindmillClient') {
+    dependsOn('prepareNeoForgeCreateCompatWindmillClient')
+    finalizedBy('verifyNeoForgeCreateCompatWindmillClient')
+}
+
+['InstancingHigh', 'InstancingLow', 'OffHigh', 'OffLow'].each { suffix ->
+    tasks.named("runCreateCompatBearing${suffix}Client") {
+        dependsOn("prepareNeoForgeCreateCompatBearing${suffix}Client")
+        finalizedBy("verifyNeoForgeCreateCompatBearing${suffix}Client")
+    }
 }
 
 tasks.named('runCreateCompatOffClient') {

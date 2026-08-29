@@ -3,6 +3,8 @@ package dev.ringworld.platform.neoforge.compat.create610;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -11,6 +13,8 @@ import org.joml.Matrix4f;
 /** Fixture-only counters; no gameplay or session state depends on them. */
 public final class RingCreate610ClientDiagnostics {
     private static final String PROPERTY = "ringworld.createCompatClient";
+    private static final String BEARING_PROPERTY = "ringworld.createCompatBearing";
+    private static final String WINDMILL_PROPERTY = "ringworld.createCompatWindmill";
     private static final AtomicInteger ATTACHED_CONTROLLER_READS = new AtomicInteger();
     private static final AtomicInteger DETACHED_CONTROLLER_READS = new AtomicInteger();
     private static final AtomicInteger CURVED_EMBEDDING_TRANSFORMS = new AtomicInteger();
@@ -20,6 +24,9 @@ public final class RingCreate610ClientDiagnostics {
     private static final ConcurrentMap<Integer, AtomicInteger> VISUAL_CREATES = new ConcurrentHashMap<>();
     private static final ConcurrentMap<Integer, AtomicInteger> VISUAL_DELETES = new ConcurrentHashMap<>();
     private static final ConcurrentMap<Integer, AtomicInteger> ENTITY_LEAVES = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<Integer, AtomicInteger> ENTITY_TRANSFORMS = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<Integer, List<EntityTransformSample>> ENTITY_TRANSFORM_SAMPLES =
+            new ConcurrentHashMap<>();
     private static volatile String firstEmbeddingMatrix;
     private static volatile String lastEmbeddingMatrix;
     private static volatile BlockPos previewFirst;
@@ -47,6 +54,29 @@ public final class RingCreate610ClientDiagnostics {
         }
         if (count == 1) firstEmbeddingMatrix = matrixSample(values);
         if (count == 1 || count % 64 == 0) lastEmbeddingMatrix = matrixSample(values);
+    }
+
+    public static void recordCurvedEmbeddingTransform(int entityId, float angle, Matrix4f matrix) {
+        recordCurvedEmbeddingTransform(matrix);
+        if (!enabled()) return;
+        int count = ENTITY_TRANSFORMS.computeIfAbsent(
+                entityId, ignored -> new AtomicInteger()).incrementAndGet();
+        if (count != 1 && count % 8 != 0) return;
+        float[] values = new float[16];
+        matrix.get(values);
+        for (float value : values) if (!Float.isFinite(value)) return;
+        List<EntityTransformSample> samples = ENTITY_TRANSFORM_SAMPLES.computeIfAbsent(
+                entityId, ignored -> java.util.Collections.synchronizedList(new ArrayList<>()));
+        synchronized (samples) {
+            if (samples.size() == 64) samples.removeFirst();
+            samples.add(new EntityTransformSample(count, angle, matrixSample(values)));
+        }
+    }
+
+    public static List<EntityTransformSample> entityTransformSamples(int entityId) {
+        List<EntityTransformSample> samples = ENTITY_TRANSFORM_SAMPLES.get(entityId);
+        if (samples == null) return List.of();
+        synchronized (samples) { return List.copyOf(samples); }
     }
 
     public static void recordVisualCreate(int entityId, Object visual) {
@@ -119,6 +149,8 @@ public final class RingCreate610ClientDiagnostics {
         VISUAL_CREATES.clear();
         VISUAL_DELETES.clear();
         ENTITY_LEAVES.clear();
+        ENTITY_TRANSFORMS.clear();
+        ENTITY_TRANSFORM_SAMPLES.clear();
         firstEmbeddingMatrix = null;
         lastEmbeddingMatrix = null;
         previewFirst = null;
@@ -127,7 +159,8 @@ public final class RingCreate610ClientDiagnostics {
     }
 
     private static boolean enabled() {
-        return Boolean.getBoolean(PROPERTY);
+        return Boolean.getBoolean(PROPERTY) || Boolean.getBoolean(BEARING_PROPERTY)
+                || Boolean.getBoolean(WINDMILL_PROPERTY);
     }
 
     private static String matrixSample(float[] values) {
@@ -146,4 +179,6 @@ public final class RingCreate610ClientDiagnostics {
                            String firstEmbeddingMatrix, String lastEmbeddingMatrix,
                            BlockPos previewFirst, BlockPos previewSecond,
                            boolean previewCanConnect) { }
+
+    public record EntityTransformSample(int transformIndex, float angle, String matrix) { }
 }
