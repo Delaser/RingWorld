@@ -137,14 +137,14 @@ Each manifest and its bound source log are independently hashed:
 
 | Route/backend | Manifest SHA-256 | Source-log SHA-256 |
 | --- | --- | --- |
-| indirect high | `a5fe5bad223502c7112fdcce97e7631c8102e760109161400adc21c263329e65` | `6b683a459d7cbd8cb18e74894d76cba03d96c0120b6152fbb82b6d59aebc54e9` |
-| indirect normal | `709118ae8d78d544ad7bd168a6c0c5559524b94723570855f5bcde614c2635f3` | `3608912cf795d9277af1fd845d07e4b245d2307abe20f19f2e325934db3324d3` |
-| indirect low | `ad608a1c00a71b054bebc586d1f545bdf9f703906e518758bcd1792ef01cb126` | `847d46ce717cae7f623290a595fe2fae76a9ba5764e6be3f5c69ddf16ca6952a` |
-| instancing high | `cd30272b76c65e3207ddee81b9b18012541749937c9d9b87dc218b47bb18a600` | `257b4c15b2c4e469bf7c9fd213fa2df69c6d0c1683cd5dd9783e2fd6b493fac7` |
-| instancing low | `a76bc97c29cb45239cdf736746ab149b59f34a34cd5d52b696f0c90c71945e90` | `14f88ee7483728a2fb6ff568d15262779376bb93acc69a96f4af8797f22328d4` |
-| OFF high | `8b670b46319c321910df1640faefdff032ddf11126e8f8e694d3b3cbcecc1514` | `2eeb63efd05b61169af6ca426275c3bdce0b292c7f8535f410959c2cfdae259f` |
-| OFF low | `68cbd2886678073a1ce1d2c0cd7f88875a91e245e4ce91774e5825c4df9cb1f1` | `6d9518ad4f22a5303cad754f709d8e75882f20a1cefbeeb21ce090c20449393d` |
-| Windmill indirect | `c417029b6da6b4080369269ba463a791d1f3ff3daddadeba83e47932305f5cdf` | `38cf065105591deae5659923095a19da8e91247f859f03c69900794d74039397` |
+| indirect high | `96660012e9dc705dba9822ada1baeb1a158e5e53b9fca0dd0ca7ae8fd49e0994` | `6b683a459d7cbd8cb18e74894d76cba03d96c0120b6152fbb82b6d59aebc54e9` |
+| indirect normal | `dee910c7618c5c2b909626c25b848ae20db9748643407a1950086ef57be8db99` | `3608912cf795d9277af1fd845d07e4b245d2307abe20f19f2e325934db3324d3` |
+| indirect low | `cbbf7180e59f2918111fccbc7a08a9e21d1df93e0eb9c422496c3cd7ce209d39` | `847d46ce717cae7f623290a595fe2fae76a9ba5764e6be3f5c69ddf16ca6952a` |
+| instancing high | `0bf08ad9256152a06fdab850c778d357acf75680681b4d7033f1503d18a5aa42` | `257b4c15b2c4e469bf7c9fd213fa2df69c6d0c1683cd5dd9783e2fd6b493fac7` |
+| instancing low | `263f9279e0d5118257dc84810e0c117728314e061bccf3697ab5a5e3c2dfff18` | `14f88ee7483728a2fb6ff568d15262779376bb93acc69a96f4af8797f22328d4` |
+| OFF high | `7a85cd0b07bc296cc6b232998548df764e977e9d69d9c249f6842032527647c0` | `2eeb63efd05b61169af6ca426275c3bdce0b292c7f8535f410959c2cfdae259f` |
+| OFF low | `21b3ea077310edfce35a69b5d06131ac35b65b0c356b19949e28333698949c3e` | `6d9518ad4f22a5303cad754f709d8e75882f20a1cefbeeb21ce090c20449393d` |
+| Windmill indirect | `0c59aa4f71aa25b0ea481f030de32f88ba6956046dc820d506c8de4aed262f46` | `38cf065105591deae5659923095a19da8e91247f859f03c69900794d74039397` |
 
 ## Proportional source and absence gates
 
@@ -163,6 +163,7 @@ applies the unchanged 4 server / 4 client target set. The existing no-Create
 linkage error; its final log SHA-256 is
 `a92dadf9cc2421cc02293e314eb82650736440455f86ed302d7a53db51cf03cf`.
 
-The final source commit is recorded in the control-task checkpoint after the
-clean local commit. The manifest `sourceCommit` fields are regenerated against
-that commit before handoff.
+All eight manifest `sourceCommit` fields identify the isolated fixture source
+commit `234fd137ecd9ab6bd89a4a09c2028b7bfce27d60`. This documentation-only hash
+binding follows that commit so the retained manifests can name an immutable,
+reachable source revision without a self-referential manifest hash.
