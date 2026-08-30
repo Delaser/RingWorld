@@ -5,6 +5,7 @@ import dev.ringworld.server.RingWorldVanillaFixtureRegistries;
 import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import dev.ringworld.client.render.RingSurfaceTextureRenderer;
 import dev.ringworld.net.RingSettingsPayload;
+import dev.ringworld.net.RingSkyProfilePayload;
 import dev.ringworld.net.RingSettingsAckPayload;
 import dev.ringworld.net.RingSettingsHandshake;
 import dev.ringworld.net.RingAtlasPregenerationControlPayload;
@@ -161,8 +162,21 @@ public final class RingWorldClient implements ClientModInitializer {
                     ClientRingState.set(
                             new RingGeometry(payload.width(), payload.circumference()),
                             payload.wallHeight(), payload.surfaceReferenceY(),
-                            payload.terrainNoiseMapping(), fingerprint);
+                            payload.terrainNoiseMapping(), payload.wallStyle(), payload.skyProfile(),
+                            fingerprint);
                     RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
+                }));
+        ClientPlayNetworking.registerGlobalReceiver(RingSkyProfilePayload.ID, (payload, context) ->
+                context.client().execute(() -> {
+                    try {
+                        ClientRingState.setSkyProfile(payload.profile());
+                    } catch (IllegalArgumentException exception) {
+                        var handler = context.client().getConnection();
+                        if (handler != null) {
+                            handler.getConnection().disconnect(Component.literal(
+                                    "Invalid RingWorld sky profile from server."));
+                        }
+                    }
                 }));
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasMetadataPayload.ID, (payload, context) ->
                 context.client().execute(() -> {

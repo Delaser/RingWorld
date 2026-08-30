@@ -381,7 +381,7 @@ public final class RingSurfaceTextureRenderer {
         int wallTopY = worldBottomY + ClientRingState.wallHeightBlocks();
         RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(
                 geometry, atlas, detailed, ClientRingState.surfaceReferenceY(), wallTopY,
-                RingGenerationBoundary.RIM_THICKNESS);
+                ClientRingState.wallStyle().thicknessBlocks());
         GpuBuffer replacement = RingSurfaceGpu.createVertexBuffer(mesh);
         if (vertexBuffer != null) vertexBuffer.close();
         vertexBuffer = replacement;

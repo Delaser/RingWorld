@@ -17,6 +17,7 @@ import dev.ringworld.client.RingWorldCreationUiTestClient;
 import dev.ringworld.net.RingAtlasPregenerationStatusPayload;
 import dev.ringworld.net.RingSettingsHandshake;
 import dev.ringworld.net.RingSettingsPayload;
+import dev.ringworld.net.RingSkyProfilePayload;
 import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRequestPayload;
 import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
@@ -76,6 +77,7 @@ public final class NeoForgeRingWorldClient {
 
     private static void registerPayloadHandlers(RegisterClientPayloadHandlersEvent event) {
         event.register(RingSettingsPayload.ID, NeoForgeRingWorldClient::handleSettings);
+        event.register(RingSkyProfilePayload.ID, NeoForgeRingWorldClient::handleSkyProfile);
         event.register(RingTerrainAtlasMetadataPayload.ID, NeoForgeRingWorldClient::handleAtlasMetadata);
         event.register(RingTerrainAtlasTilePayload.ID, NeoForgeRingWorldClient::handleAtlasTile);
         event.register(RingTerrainAtlasRevisionPayload.ID, NeoForgeRingWorldClient::handleAtlasRevision);
@@ -87,6 +89,16 @@ public final class NeoForgeRingWorldClient {
         // together on the client game thread. enqueueWork is immediate when the
         // client payload registry has already selected that thread.
         context.enqueueWork(() -> handleSettingsOnClientThread(payload, context));
+    }
+
+    private static void handleSkyProfile(RingSkyProfilePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            try {
+                ClientRingState.setSkyProfile(payload.profile());
+            } catch (IllegalArgumentException exception) {
+                context.disconnect(Component.literal("Invalid RingWorld sky profile from server."));
+            }
+        });
     }
 
     private static void handleSettingsOnClientThread(
@@ -110,7 +122,7 @@ public final class NeoForgeRingWorldClient {
         long fingerprint = RingSettingsHandshake.fingerprintFor(payload);
         ClientRingState.set(new RingGeometry(payload.width(), payload.circumference()),
                 payload.wallHeight(), payload.surfaceReferenceY(),
-                payload.terrainNoiseMapping(), fingerprint);
+                payload.terrainNoiseMapping(), payload.wallStyle(), payload.skyProfile(), fingerprint);
         RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
     }
 

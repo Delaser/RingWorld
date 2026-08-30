@@ -66,6 +66,7 @@ class RingWorldSettingsStorageTest {
 
         assertEquals(RingWorldSettings.FORMAT_VERSION, upgraded.formatVersion());
         assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL, upgraded.terrainNoiseMapping());
+        assertEquals(RingWallStyle.LEGACY, upgraded.wallStyle());
         assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2, fresh.terrainNoiseMapping());
         assertFalse(upgraded.layoutFingerprint() == fresh.layoutFingerprint());
     }
@@ -95,9 +96,28 @@ class RingWorldSettingsStorageTest {
         assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL, alpha.terrainNoiseMapping());
         assertEquals(RingWorldSettings.FORMAT_VERSION, reopened.formatVersion());
         assertEquals(RingTerrainNoiseMapping.LEGACY_AXIAL, reopened.terrainNoiseMapping());
+        assertEquals(RingWallStyle.LEGACY, reopened.wallStyle());
         assertEquals(RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2,
                 currentJson.get("terrainNoiseMapping").getAsInt());
         assertEquals(RingWorldSettings.FORMAT_VERSION, currentJson.get("format").getAsInt());
+    }
+
+    @Test
+    void formatFourPersistsCustomWallStyleWhileOlderFormatsRemainLegacy() {
+        RingWallStyle custom = RingWallStyle.custom(
+                9, RingWallStyle.Palette.INDUSTRIAL, RingWallStyle.Pattern.HYBRID, 35);
+        RingWorldSettings current = new RingWorldSettings(
+                256, 16_384, 42L, 160, 64,
+                RingTerrainNoiseMapping.CURRENT, custom, RingWorldSettings.FORMAT_VERSION);
+        var encoded = RingWorldSettings.codecForTests()
+                .encodeStart(JsonOps.INSTANCE, current).getOrThrow();
+        RingWorldSettings reopened = RingWorldSettings.codecForTests()
+                .parse(JsonOps.INSTANCE, encoded).getOrThrow();
+
+        assertEquals(custom, reopened.wallStyle());
+        assertThrows(IllegalArgumentException.class, () -> new RingWorldSettings(
+                256, 16_384, 42L, 160, 64,
+                RingTerrainNoiseMapping.LEGACY_AXIAL, custom, 3));
     }
 
     @Test

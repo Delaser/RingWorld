@@ -5,6 +5,8 @@ import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingPosition;
 import dev.ringworld.world.RingTerrainAtlas;
+import dev.ringworld.world.RingWallStyle;
+import dev.ringworld.world.RingSkyProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
@@ -19,6 +21,8 @@ public final class ClientRingState {
     private static volatile int wallHeightBlocks;
     private static volatile int surfaceReferenceY;
     private static volatile int terrainNoiseMapping;
+    private static volatile RingWallStyle wallStyle = RingWallStyle.LEGACY;
+    private static volatile RingSkyProfile skyProfile = RingSkyProfile.DEFAULT;
     private static volatile long layoutFingerprint;
     @Nullable private static volatile RingPosition cameraPosition;
     private static volatile long cameraSeamCrossings;
@@ -54,11 +58,29 @@ public final class ClientRingState {
     public static void set(RingGeometry newGeometry, int newWallHeightBlocks,
                            int newSurfaceReferenceY, int newTerrainNoiseMapping,
                            long newLayoutFingerprint) {
+        set(newGeometry, newWallHeightBlocks, newSurfaceReferenceY,
+                newTerrainNoiseMapping, RingWallStyle.LEGACY, RingSkyProfile.DEFAULT,
+                newLayoutFingerprint);
+    }
+
+    public static void set(RingGeometry newGeometry, int newWallHeightBlocks,
+                           int newSurfaceReferenceY, int newTerrainNoiseMapping,
+                           RingWallStyle newWallStyle, long newLayoutFingerprint) {
+        set(newGeometry, newWallHeightBlocks, newSurfaceReferenceY, newTerrainNoiseMapping,
+                newWallStyle, RingSkyProfile.DEFAULT, newLayoutFingerprint);
+    }
+
+    public static void set(RingGeometry newGeometry, int newWallHeightBlocks,
+                           int newSurfaceReferenceY, int newTerrainNoiseMapping,
+                           RingWallStyle newWallStyle, RingSkyProfile newSkyProfile,
+                           long newLayoutFingerprint) {
         geometry = newGeometry;
         wallHeightBlocks = newWallHeightBlocks;
         surfaceReferenceY = newSurfaceReferenceY;
         terrainNoiseMapping = dev.ringworld.world.RingTerrainNoiseMapping.requireSupported(
                 newTerrainNoiseMapping);
+        wallStyle = java.util.Objects.requireNonNull(newWallStyle, "wallStyle");
+        skyProfile = java.util.Objects.requireNonNull(newSkyProfile, "skyProfile");
         layoutFingerprint = newLayoutFingerprint;
         cameraPosition = null;
         cameraSeamCrossings = 0;
@@ -87,6 +109,11 @@ public final class ClientRingState {
     public static int wallHeightBlocks() { return wallHeightBlocks; }
     public static int surfaceReferenceY() { return surfaceReferenceY; }
     public static int terrainNoiseMapping() { return terrainNoiseMapping; }
+    public static RingWallStyle wallStyle() { return wallStyle; }
+    public static RingSkyProfile skyProfile() { return skyProfile; }
+    public static void setSkyProfile(RingSkyProfile profile) {
+        skyProfile = java.util.Objects.requireNonNull(profile, "profile");
+    }
     public static long layoutFingerprint() { return layoutFingerprint; }
 
     /**

@@ -6,6 +6,11 @@ rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
 Latest qualification checkpoint: see
 [`docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md`](docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
+Unreleased optional-feature work adds format-4 configurable rim styles,
+server-owned visual sky profiles, settings channel `settings_v5`, and Atlas
+format 7 mycelium colour correction. The shared static suite, both loader
+builds, and the expanded 15-capture creation UI fixture pass locally; in-world
+visual review remains required before release. See `docs/CURRENT_STATE.md`.
 Both 26.2 loaders pass quick qualification on frozen source `1cfac9b`.
 The 20-slot nightly coverage is complete as reviewed composite evidence:
 16 retained passes plus four targeted repairs, not one monolithic PASS.
@@ -1111,7 +1116,9 @@ version numbers.
   tangent and radial-up projection captures after changing projection,
   celestial render order, or the proxy pipeline.
 - Settings payload identifiers are wire-layout-versioned
-  (`settings_v3`/`settings_ack_v3`). Never append or reorder codec fields while
+  (`settings_v5`/`settings_ack_v3`). The S2C identifier advanced when rim and
+  sky fields were added; the unchanged acknowledgement codec retained its
+  identifier. Never append or reorder codec fields while
   reusing an old identifier; old clients crash on unread bytes before a useful
   rejection can be sent. Advance the channel generation and keep the
   `RingProtocolIdentityTest` expectation synchronized.

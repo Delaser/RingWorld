@@ -390,9 +390,9 @@ ordinary local deck into a visible barrel.
 Far-field cloud systems are only implied by atmospheric rendering; the atlas
 does not encode weather volumes.
 
-## Fixed sun and day/night
+## Selectable sky and light source
 
-The ring surrounds one central star:
+The default atmosphere retains the established central-star presentation:
 
 - vanilla moving sun rendering is suppressed;
 - moon rendering is suppressed;
@@ -403,6 +403,13 @@ The ring surrounds one central star:
 - both `30.0` half-width constants in vanilla `renderSun` are replaced with
   `3.0` only for the RingWorld redraw, shrinking the original Minecraft sun
   from roughly nine degrees across to about 0.9 degrees.
+
+The saved, server-owned sky profile can instead select a deep-space or minimal
+void backdrop and represent illumination as the compact sun, a larger distant
+star, or diffuse light with no visible source. Built-in presets are Atmosphere,
+Space habitat, Distant star, Night habitat, and Minimal void. Operators can
+switch profiles live; the server broadcasts the change without rebuilding the
+terrain Atlas because sky presentation is not terrain identity.
 
 The original Minecraft sun texture, celestial atlas, and pipeline remain in
 use. `RingSkyCycle.sunVisual` maps the authoritative 24,000-tick world clock
@@ -419,8 +426,9 @@ The fragment colour passed to vanilla's sun draw receives that RGB tint and
 alpha multiplier. A smoothstep curve connects each six-thousand-tick segment,
 so there is no edge crossing or pop. Minecraft's existing sky colour,
 lightmap, fog, weather brightness, stars, beds, spawning, crops, and daylight
-sensors remain driven by the same world time; RingWorld does not introduce a
-second gameplay clock.
+sensors remain driven by the same world time for every profile; RingWorld does
+not introduce a second gameplay clock. A dark visual backdrop therefore does
+not silently change spawning or other gameplay light rules.
 
 There is no active shadow-panel mesh or render pipeline. The removed
 twenty-panel implementation and its revert checklist remain frozen in
@@ -433,7 +441,7 @@ The intended conceptual order is:
 
 1. background sky and stars;
 2. complete ring texture, covering stars behind the structure;
-3. small fixed, time-toned central sun;
+3. selected fixed, time-toned light-source representation, if visible;
 4. real terrain/chunks and entities as the final authoritative surface.
 
 When diagnosing visual occlusion, inspect both call order and pipeline depth
@@ -443,7 +451,7 @@ terrain.
 ## Removed predecessor code
 
 The colour-only CPU Arch mesh and `RingVisibility` taper helpers have been
-deleted. `SkyRenderingMixin` now owns only the fixed-sun interception and the
+deleted. `SkyRenderingMixin` owns the selected fixed-light interception and the
 active `RingSurfaceTextureRenderer` invocation. This avoids two competing
 sources of transition constants.
 

@@ -5,6 +5,7 @@ import dev.ringworld.server.HeadlessPrewarmCoordinator;
 import dev.ringworld.server.RingWorldMultiplayerTest;
 import dev.ringworld.server.RingTerrainAtlasServer;
 import dev.ringworld.world.RingWorldSettings;
+import dev.ringworld.world.RingSkySettings;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -26,6 +27,7 @@ public final class RingWorldNetworking {
 
     public static void registerPayloads() {
         PayloadTypeRegistry.clientboundPlay().register(RingSettingsPayload.ID, RingSettingsPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(RingSkyProfilePayload.ID, RingSkyProfilePayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(RingSettingsAckPayload.ID, RingSettingsAckPayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(RingMultiplayerTestPayload.ID, RingMultiplayerTestPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC);
@@ -96,6 +98,7 @@ public final class RingWorldNetworking {
             return;
         }
         if (!ServerPlayNetworking.canSend(handler.player, RingTerrainAtlasMetadataPayload.ID)
+                || !ServerPlayNetworking.canSend(handler.player, RingSkyProfilePayload.ID)
                 || !ServerPlayNetworking.canSend(handler.player, RingTerrainAtlasTilePayload.ID)
                 || !ServerPlayNetworking.canSend(handler.player, RingTerrainAtlasRevisionPayload.ID)
                 || !ServerPlayNetworking.canSend(handler.player, RingAtlasPregenerationStatusPayload.ID)) {
@@ -105,7 +108,8 @@ public final class RingWorldNetworking {
         }
         RingWorldSettings settings = RingWorldSettings.get(overworld);
         HANDSHAKES.begin(handler.player.getUUID(), handler.player.level().getServer().getTickCount());
-        ServerPlayNetworking.send(handler.player, RingSettingsHandshake.payloadFor(settings));
+        ServerPlayNetworking.send(handler.player, RingSettingsHandshake.payloadFor(
+                settings, RingSkySettings.get(overworld).profile()));
     }
 
     private static void validateAcknowledgement(RingSettingsAckPayload payload,

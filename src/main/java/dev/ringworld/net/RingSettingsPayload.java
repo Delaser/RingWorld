@@ -6,10 +6,13 @@ import net.minecraft.network.codec.ByteBufCodecs;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
+import dev.ringworld.world.RingWallStyle;
+import dev.ringworld.world.RingSkyProfile;
 
 /** Complete immutable layout sent before the client renders a ring world. */
 public record RingSettingsPayload(int width, int circumference, long seed, int wallHeight,
                                   int surfaceReferenceY, int terrainNoiseMapping,
+                                  RingWallStyle wallStyle, RingSkyProfile skyProfile,
                                   int formatVersion, long fingerprint)
         implements CustomPacketPayload {
     /**
@@ -18,7 +21,27 @@ public record RingSettingsPayload(int width, int circumference, long seed, int w
      * crash on the unread fields before either side can explain the mismatch.
      */
     public static final Type<RingSettingsPayload> ID =
-            new Type<>(Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "settings_v3"));
+            new Type<>(Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "settings_v5"));
+    private static final StreamCodec<RegistryFriendlyByteBuf, RingWallStyle> WALL_STYLE_CODEC =
+            StreamCodec.ofMember((style, buffer) -> {
+                buffer.writeVarInt(style.thicknessBlocks());
+                buffer.writeVarInt(style.palette().id());
+                buffer.writeVarInt(style.pattern().id());
+                buffer.writeVarInt(style.decayPercent());
+                buffer.writeVarInt(style.formatVersion());
+            }, buffer -> new RingWallStyle(
+                    buffer.readVarInt(), RingWallStyle.Palette.fromId(buffer.readVarInt()),
+                    RingWallStyle.Pattern.fromId(buffer.readVarInt()), buffer.readVarInt(),
+                    buffer.readVarInt()));
+    private static final StreamCodec<RegistryFriendlyByteBuf, RingSkyProfile> SKY_PROFILE_CODEC =
+            StreamCodec.ofMember((profile, buffer) -> {
+                buffer.writeVarInt(profile.backdrop().id());
+                buffer.writeVarInt(profile.lightSource().id());
+                buffer.writeVarInt(profile.formatVersion());
+            }, buffer -> new RingSkyProfile(
+                    RingSkyProfile.Backdrop.fromId(buffer.readVarInt()),
+                    RingSkyProfile.LightSource.fromId(buffer.readVarInt()),
+                    buffer.readVarInt()));
     public static final StreamCodec<RegistryFriendlyByteBuf, RingSettingsPayload> CODEC = StreamCodec.composite(
             ByteBufCodecs.VAR_INT, RingSettingsPayload::width,
             ByteBufCodecs.VAR_INT, RingSettingsPayload::circumference,
@@ -26,6 +49,8 @@ public record RingSettingsPayload(int width, int circumference, long seed, int w
             ByteBufCodecs.VAR_INT, RingSettingsPayload::wallHeight,
             ByteBufCodecs.VAR_INT, RingSettingsPayload::surfaceReferenceY,
             ByteBufCodecs.VAR_INT, RingSettingsPayload::terrainNoiseMapping,
+            WALL_STYLE_CODEC, RingSettingsPayload::wallStyle,
+            SKY_PROFILE_CODEC, RingSettingsPayload::skyProfile,
             ByteBufCodecs.VAR_INT, RingSettingsPayload::formatVersion,
             ByteBufCodecs.LONG, RingSettingsPayload::fingerprint,
             RingSettingsPayload::new);

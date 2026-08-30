@@ -188,9 +188,9 @@ flowchart TD
 ```
 
 `RingWorldConfig` is process bootstrap state for the next new world.
-`RingWorldSettings` is authoritative world persistent state. Format 2
-serializes width, circumference, seed, wall height, surface reference, and
-format. `ServerWorldMixin` loads or creates it before attaching geometry to the
+`RingWorldSettings` is authoritative world persistent state. Current format 4
+serializes width, circumference, seed, wall height, surface reference, terrain
+mapping, and the immutable rim style. `ServerWorldMixin` loads or creates it before attaching geometry to the
 Overworld generator, so a changed bootstrap file cannot briefly shape an
 existing world. Format 1 migrates explicitly with surface reference Y=64.
 
@@ -203,7 +203,7 @@ vanilla's local safe-spawn spiral, which may cross the periodic seam. The
 helper does not read configuration itself and is not a runtime policy for
 saved worlds.
 
-`RingLayoutFingerprint` covers those fields plus rim thickness/style.
+`RingLayoutFingerprint` covers those fields plus every rim-style field.
 Clients independently verify it during login, and the terrain-atlas world hash
 adds atlas format/sample semantics. The derivation and remaining cross-size
 work are tracked in
@@ -531,13 +531,21 @@ coordinates or tick keys.
 
 Chunks wholly outside the Z band skip noise, surface, carvers, and features.
 Any feature spillover is removed during asynchronous generation. Boundary
-chunks receive a five-block-thick rim after features:
+chunks receive their saved rim style after features:
 
-- material is deterministic cobblestone/mossy cobblestone;
-- approximately 30% of blocks are mossy;
+- thickness is saved per world from 1–32 blocks;
+- material is deterministic and selected from one of seven palettes;
+- clustered, masonry, strata, panels, gradient, and hybrid patterns are
+  available;
+- decay removes only a top-connected depth from each column, creating notches
+  and a crumbling top without enclosed random holes;
 - height is measured upward from world minimum Y;
 - the wall is deliberately breakable;
 - space outside the band is void.
+
+Format-4 worlds save the style as part of immutable layout identity. Older
+worlds migrate to the exact former five-block cobblestone/mossy appearance, so
+an upgrade does not silently redecorate existing boundary chunks.
 
 Vanilla client section meshing normally waits for all eight horizontal
 neighbour chunks. A boundary section can never satisfy that rule because its
@@ -567,6 +575,8 @@ circumference
 seed
 wallHeight
 surfaceReferenceY
+terrainNoiseMapping
+wallStyle { thickness, palette, pattern, decay, format }
 format
 layoutFingerprint (derived, not serialized)
 ```
@@ -626,7 +636,7 @@ This division keeps platform registration out of the atlas lifecycle and
 prevents duplicate writers.
 
 The world hash includes the complete layout fingerprint plus atlas format and
-sample semantics. The atlas file has its own format version. Atlas format 6
+sample semantics. The atlas file has its own format version. Atlas format 7
 samples the highest surface block, stores its exposed top-face height, and
 records texture-luminance-corrected biome RGB for water, grass, and foliage.
 It also stores a monotonic surface revision advanced once per coalesced changed
@@ -634,7 +644,8 @@ recapture batch. Tiles do not advance a client revision independently; only
 the ordered batch-commit payload does so after every changed tile.
 Because a dedicated server never resource-loads Minecraft's client-owned
 grass/foliage colour maps, a zero lookup falls back to the sampled block map
-colour. Other blocks always use map colour. Older atlas formats are ignored
+colour. Mycelium uses the measured vanilla top-texture colour rather than its
+pink map colour. Other blocks always use map colour. Older atlas formats are ignored
 and rebuilt.
 
 The copied-1.21.11 legacy atlas remains at

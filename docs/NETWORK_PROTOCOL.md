@@ -15,8 +15,9 @@ All identifiers use the `ringworld` namespace.
 
 | Direction | Identifier | Fields | Purpose |
 | --- | --- | --- | --- |
-| S2C | `ringworld:settings_v3` | width, circumference, seed, wallHeight, surfaceReferenceY, terrainNoiseMapping, formatVersion, layoutFingerprint | Install the complete immutable world layout and worldgen identity |
+| S2C | `ringworld:settings_v5` | width, circumference, seed, wallHeight, surfaceReferenceY, terrainNoiseMapping, rim style, sky profile, formatVersion, layoutFingerprint | Install the complete immutable world layout, rim appearance, sky presentation, and worldgen identity |
 | C2S | `ringworld:settings_ack_v3` | formatVersion, independently recomputed layoutFingerprint | Prove the client installed and verified the same layout |
+| S2C | `ringworld:sky_profile_v1` | backdrop, light-source representation, profile format | Apply a live server-owned visual sky change without altering terrain identity |
 | S2C | `ringworld:terrain_atlas_metadata_v2` | worldHash, sampleStep, columns, rows, tileSize, presentCells, complete, revision | Describe server atlas/cache identity and durable surface generation |
 | C2S | `ringworld:terrain_atlas_request_v2` | worldHash, revision, cacheComplete | Request a full snapshot or subscribe an exact complete cache |
 | S2C | `ringworld:terrain_atlas_tile_v2` | worldHash, tileX, tileZ, byte array | Transfer one height/colour tile |
@@ -30,8 +31,10 @@ Payload registration occurs in `RingWorldNetworking.registerPayloads` during
 common initialization.
 
 The layout fingerprint covers the seed, width, circumference, saved wall
-height, surface reference, terrain-noise mapping, settings format, rim thickness, and rim style
-version. The client recomputes it from the decoded fields instead of merely
+height, surface reference, terrain-noise mapping, settings format, rim
+thickness, palette, pattern, decay, and rim-style version. The visual-only sky
+profile is synchronized but intentionally excluded from the layout fingerprint
+and terrain-atlas identity. The client recomputes it from the decoded fields instead of merely
 echoing the server-provided value. The same layout fields feed worldgen, shader
 globals, terrain-atlas identity, and cache invalidation. The common
 `RingSettingsHandshake` helper owns payload construction, independent
@@ -48,10 +51,10 @@ sequenceDiagram
     S->>S: Player joins
     alt Explicit headless atlas prewarm is active
         S-->>C: Disconnect before any RingWorld payload or handshake state
-    else Client cannot receive ringworld:settings_v3
+    else Client cannot receive ringworld:settings_v5
         S-->>C: Disconnect: RingWorld missing or out of date
     else Payload supported
-        S->>C: settings(W,C,seed,wall,surface,noiseMapping,format,fingerprint)
+        S->>C: settings(W,C,seed,wall,surface,noiseMapping,rim,sky,format,fingerprint)
         alt Client format unsupported
             C-->>S: Disconnect: incompatible format
         else Supported
@@ -76,10 +79,12 @@ sequenceDiagram
 ```
 
 Current geometry protocol compatibility is `RingWorldSettings.FORMAT_VERSION`
-(currently 3). Format 1 and 2 saved settings migrate explicitly to format 3
-with the vanilla Overworld surface reference Y=64 and the legacy terrain-noise
+(currently 4). Format 1 and 2 saved settings migrate explicitly through format
+3 with the vanilla Overworld surface reference Y=64 and the legacy terrain-noise
 mapping. Fresh worlds use complete annular mapping v2 (4); existing format-3
-worlds may retain mapping 2 or 3, and formats 1/2 retain legacy mapping 1. Older network
+worlds may retain mapping 2 or 3, and formats 1/2 retain legacy mapping 1.
+Format 4 adds a saved rim style; older worlds receive the exact legacy style.
+Older network
 peers are not accepted. There is no feature-bit negotiation: compatibility requires the
 exact settings format and the complete current settings, revisioned-atlas, and
 map-control channel generations. Those behaviors are a single engine contract,
@@ -88,14 +93,17 @@ or required packet behavior must increment the format, update both ends, and
 add mismatch tests.
 
 Payload channel identifiers also name their byte-layout generation. The
-complete-layout protocol uses `settings_v3`/`settings_ack_v3`. A breaking codec
+complete-layout protocol uses `settings_v5`/`settings_ack_v3`. The settings
+channel advanced because its S2C byte layout changed; the unchanged
+acknowledgement codec retains its existing identifier. A breaking codec
 change must use a new identifier instead of reusing the old channel: an old
 codec otherwise consumes its known prefix and Netty disconnects on unread
 trailing bytes before RingWorld can show a useful mismatch message. With a new
 identifier, `ServerPlayNetworking.canSend` fails cleanly and the server directs
 the player to the current package.
 
-The server rejects a client that cannot receive the settings payload, complete
+The server rejects a client that cannot receive the settings and sky-profile
+payloads, complete
 revisioned-atlas suite, or map status payload before starting the handshake.
 The client likewise requires acknowledgement, atlas request, map-status
 request, and map-control channels before installing session state. This

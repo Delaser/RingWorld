@@ -1838,22 +1838,31 @@ window and renderer still run.
 | `creation-ui-03-default-scale2` | Default editor at scale 2 |
 | `creation-ui-04-default-scale3` | Default editor at scale 3 |
 | `creation-ui-05-default-scale4` | Compact default editor at scale 4 |
-| `creation-ui-06-large-narrow-scale4` | Large editor retained across resize at 320×270, including monument choice and longest live maths |
-| `creation-ui-07-invalid-five-errors-narrow-scale4` | All five invalid-layout errors and disabled apply action at narrow width |
-| `creation-ui-08-small-scale4` | Small preset, exact maths, unavailable monument state, and visible experimental stronghold advisory |
-| `creation-ui-09-medium-scale4` | Medium preset and exact maths |
-| `creation-ui-10-large-scale4` | Large preset, exact maths, and generation warning |
-| `creation-ui-11-custom-monument-scale4` | Valid 4,096×640×192 custom monument layout |
-| `creation-ui-12-confirm-layout-scale4` | Immutable-layout confirmation |
-| `creation-ui-13-footer-applied-scale4` | Refreshed Create World footer after confirmation |
+| `creation-ui-06-rim-default-scale4` | Default configurable-rim editor at scale 4 |
+| `creation-ui-07-rim-overgrown-narrow-scale4` | Overgrown preset, advanced fields, and top-edge-decay copy retained at 320×270 |
+| `creation-ui-08-large-narrow-scale4` | Large editor retained across resize at 320×270, including monument choice and longest live maths |
+| `creation-ui-09-invalid-five-errors-narrow-scale4` | All five invalid-layout errors and disabled apply action at narrow width |
+| `creation-ui-10-small-scale4` | Small preset, exact maths, unavailable monument state, and visible experimental stronghold advisory |
+| `creation-ui-11-medium-scale4` | Medium preset and exact maths |
+| `creation-ui-12-large-scale4` | Large preset, exact maths, and generation warning |
+| `creation-ui-13-custom-monument-space-scale4` | Valid 4,096×640×192 custom monument layout with the Space habitat sky selected |
+| `creation-ui-14-confirm-layout-scale4` | Immutable-layout and visual-presentation confirmation |
+| `creation-ui-15-footer-applied-scale4` | Refreshed Create World footer after confirmation |
 
 The finalizer requires `[creation-ui-test] PASS` and no `FAIL`, every listed
 prefix to match at least one decodable, dimension-safe, visible non-uniform
 PNG, no `level.dat` below `saves/`, and final properties exactly
-`circumferenceBlocks=4096`, `widthBlocks=640`, `wallHeightBlocks=192`, and
+`circumferenceBlocks=4096`, `widthBlocks=640`, `wallHeightBlocks=192`,
+`skyPreset=SPACE_HABITAT`, and
 `requestOceanMonument=true` (while retaining `testMode=false` and disabled
 atlas pregeneration). A missing, stale, blank, corrupt, failed, or
 world-creating run therefore fails closed.
+
+The unreleased optional-feature expansion adds the two rim-editor captures and
+the saved Space-habitat choice shown above. A local Java 25 development run on
+2026-08-30 passed all 15 captures and the finalizer on both Fabric and NeoForge.
+This is bounded source-ABI UI evidence, not an exact-candidate or in-world
+visual qualification.
 
 Accepted evidence: both qualified tasks emitted their 13 screenshot markers,
 the final PASS marker, the exact persisted custom values, and no `level.dat`.

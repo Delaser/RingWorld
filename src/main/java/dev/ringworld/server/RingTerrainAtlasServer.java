@@ -5,6 +5,7 @@ import dev.ringworld.net.RingAtlasPregenerationStatusPayload;
 import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
+import dev.ringworld.net.RingSkyProfilePayload;
 import dev.ringworld.world.AtlasPregenerationAccess;
 import dev.ringworld.world.AtlasPregenerationAction;
 import dev.ringworld.world.AtlasPregenerationHandle;
@@ -14,7 +15,10 @@ import dev.ringworld.world.AtlasPregenerationState;
 import dev.ringworld.world.AtlasPregenerationStatus;
 import dev.ringworld.world.RingAtlasPregenerationCursor;
 import dev.ringworld.world.RingTerrainAtlas;
+import dev.ringworld.world.RingSkyProfile;
+import dev.ringworld.world.RingSkySettings;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
@@ -77,7 +81,43 @@ public final class RingTerrainAtlasServer {
                                         AtlasPregenerationAction.PAUSE, context.getSource())))
                                 .then(Commands.literal("resume").executes(context -> control(
                                         context.getSource().getServer().getLevel(Level.OVERWORLD),
-                                        AtlasPregenerationAction.RESUME, context.getSource())))));
+                                        AtlasPregenerationAction.RESUME, context.getSource()))))
+                        .then(Commands.literal("sky")
+                                .then(Commands.argument("preset", StringArgumentType.word())
+                                        .executes(context -> setSkyProfile(
+                                                context.getSource(),
+                                                StringArgumentType.getString(context, "preset"))))));
+    }
+
+    private static int setSkyProfile(CommandSourceStack source, String name) {
+        ServerLevel world = source.getServer().getLevel(Level.OVERWORLD);
+        if (world == null) {
+            source.sendFailure(Component.literal("RingWorld Overworld is unavailable"));
+            return 0;
+        }
+        RingSkyProfile.Preset preset;
+        try {
+            preset = switch (name.toLowerCase(java.util.Locale.ROOT)) {
+                case "atmosphere" -> RingSkyProfile.Preset.MINECRAFT_ATMOSPHERE;
+                case "space" -> RingSkyProfile.Preset.SPACE_HABITAT;
+                case "distant" -> RingSkyProfile.Preset.DISTANT_STAR;
+                case "night" -> RingSkyProfile.Preset.NIGHT_HABITAT;
+                case "void" -> RingSkyProfile.Preset.MINIMAL_VOID;
+                default -> RingSkyProfile.Preset.valueOf(name.toUpperCase(java.util.Locale.ROOT));
+            };
+        } catch (IllegalArgumentException exception) {
+            source.sendFailure(Component.literal(
+                    "Unknown sky preset. Use atmosphere, space, distant, night, or void."));
+            return 0;
+        }
+        RingSkySettings.setProfile(world, preset.profile());
+        RingSkyProfilePayload payload = RingSkyProfilePayload.from(preset.profile());
+        for (ServerPlayer player : source.getServer().getPlayerList().getPlayers()) {
+            if (transport.canSend(player, RingSkyProfilePayload.ID)) transport.send(player, payload);
+        }
+        source.sendSuccess(() -> Component.literal(
+                "RingWorld sky changed to " + preset.label() + "."), true);
+        return 1;
     }
 
     public static void load(ServerLevel world) { RingAtlasPregenerationService.load(world); }

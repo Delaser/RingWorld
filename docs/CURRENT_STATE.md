@@ -8,6 +8,29 @@ See the [publication record](RELEASE_1_1_PUBLICATION_2026-08-27.md).
 The dated qualification checkpoints below preserve the earlier approval
 boundaries; their “held” status is superseded only by this release record.
 
+Unreleased optional-feature work after 1.1 currently includes:
+
+- atlas format 7, which renders mycelium with the measured vanilla top-texture
+  colour instead of Minecraft's pink map colour;
+- immutable format-4 rim styles with 1–32-block thickness, seven material
+  palettes, six deterministic patterns, and top-connected edge decay. Existing
+  worlds migrate to the exact former five-block cobblestone/mossy style;
+- saved visual-only sky profiles for atmosphere, deep space, or minimal void,
+  paired with a compact sun, distant star, or diffuse-light presentation. Sky
+  changes can be applied live with `/ringworld sky` and do not alter vanilla
+  gameplay time or terrain identity;
+- a loader-neutral creation UI for selecting rim presets, detailed wall
+  controls, and sky presets, with the resulting values synchronized on both
+  loaders through `settings_v5` and `sky_profile_v1`.
+
+The shared Java 25 regression suite and both loader compilations pass for this
+development work. The expanded 15-capture creation/settings fixture also passes
+on Fabric and NeoForge, including the rim editor at 480×270 and 320×270,
+Overgrown preset retention across resize, compact option labels, a selected
+Space-habitat sky, confirmation, persistence, and normal menu-only teardown.
+In-world graphical review of representative wall and sky presets is still
+required before release or compatibility claims.
+
 Latest: [26.2 qualification checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
 The paired 26.2 quick passes on both loaders. All 20 nightly slots are covered
 by reviewed composite evidence (16 retained passes plus four targeted repairs).
@@ -1741,10 +1764,12 @@ and compatibility claims.
   diameter and hidden moon.
 - Smooth global noon/dawn/dusk/midnight sun intensity and colour tone driven
   by vanilla time; the former shadow-panel mesh is removed.
-- Persistent periodic format-6 atlas of exposed top-face height and
+- Persistent periodic format-7 atlas of exposed top-face height and
   texture-corrected biome colour sampled from the actual highest surface block.
   Dedicated servers fall back to the sampled block's map colour when their
-  unloaded client-only grass/foliage colormaps return zero.
+  unloaded client-only grass/foliage colormaps return zero. Mycelium uses the
+  measured vanilla top-texture colour instead of its pink map colour; the
+  format increment invalidates stale pink caches.
 - Relief-shaded, mipmapped progressive/complete-ring GPU texture and bounded
   mesh at normal real-chunk render distance. Partial atlases expose only known
   cells through alpha and use one reference-height mesh. Completion performs
@@ -2023,7 +2048,7 @@ and compatibility claims.
   are calculated exactly.
 - Saved format-3 settings win before generation; formats 1 and 2 migrate
   explicitly while retaining the legacy terrain-noise mapping.
-- The full immutable layout is sent to clients and used for walls, clouds,
+- The full immutable layout is sent to clients through `settings_v5` and used for walls, clouds,
   shaders, and atlas identity.
 - The 26.1 F3 position group reports presentation and canonical Ring
   coordinates, canonical block/chunk/region positions, loop index, and atlas

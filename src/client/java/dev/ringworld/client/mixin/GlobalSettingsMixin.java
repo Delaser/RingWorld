@@ -85,7 +85,7 @@ abstract class GlobalSettingsMixin {
                 : RingRenderProfile.create(geometry, viewDistanceBlocks);
         RingCloudBounds cloudBounds = geometry == null ? null
                 : RingCloudBounds.betweenInnerRimFaces(
-                        geometry, RingGenerationBoundary.RIM_THICKNESS);
+                        geometry, ClientRingState.wallStyle().thicknessBlocks());
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var data = Std140Builder.onStack(stack, RINGWORLD_GLOBALS_SIZE)

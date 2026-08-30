@@ -133,6 +133,12 @@ public final class RingWorldCreationUiModel {
      * all malformed fields at once instead of resolving one exception at a time.
      */
     public static Validation validate(String circumferenceText, String widthText, String wallHeightText) {
+        return validate(circumferenceText, widthText, wallHeightText, RingWallStyle.DEFAULT);
+    }
+
+    public static Validation validate(String circumferenceText, String widthText,
+                                      String wallHeightText, RingWallStyle wallStyle) {
+        if (wallStyle == null) throw new IllegalArgumentException("wall style is required");
         List<String> errors = new ArrayList<>();
         Integer circumference = parseWholeBlocks("Circumference", circumferenceText, errors);
         Integer width = parseWholeBlocks("Width", widthText, errors);
@@ -147,7 +153,8 @@ public final class RingWorldCreationUiModel {
         if (!errors.isEmpty()) return new Validation(null, errors);
 
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
-                new RingGeometry(width, circumference), wallHeight);
+                new RingGeometry(width, circumference), wallHeight,
+                wallStyle.thicknessBlocks());
         return new Validation(report, List.of());
     }
 
@@ -171,13 +178,25 @@ public final class RingWorldCreationUiModel {
     }
 
     public static String confirmationCopy(RingDimensionReport report, boolean requestOceanMonument) {
+        return confirmationCopy(report, requestOceanMonument, RingWallStyle.DEFAULT);
+    }
+
+    public static String confirmationCopy(RingDimensionReport report, boolean requestOceanMonument,
+                                          RingWallStyle wallStyle) {
+        return confirmationCopy(report, requestOceanMonument, wallStyle, RingSkyProfile.DEFAULT);
+    }
+
+    public static String confirmationCopy(RingDimensionReport report, boolean requestOceanMonument,
+                                          RingWallStyle wallStyle, RingSkyProfile skyProfile) {
         if (report == null || !report.isValid()) {
             throw new IllegalArgumentException("a valid RingWorld layout is required for confirmation");
         }
         return String.format(Locale.ROOT,
-                "New world: %,d × %,d with %,d-block rims; %s. Layout locks on first load.",
+                "New world: %,d × %,d; %s rims, %d thick; %s sky; %s. Layout locks on first load.",
                 report.geometry().circumferenceBlocks(), report.geometry().widthBlocks(),
-                report.wallHeightBlocks(), monumentChoice(requestOceanMonument, report.geometry()));
+                RingWallStyle.Preset.matching(wallStyle).label(), wallStyle.thicknessBlocks(),
+                RingSkyProfile.Preset.matching(skyProfile).label(),
+                monumentChoice(requestOceanMonument, report.geometry()));
     }
 
     private static Integer parseWholeBlocks(String field, String value, List<String> errors) {

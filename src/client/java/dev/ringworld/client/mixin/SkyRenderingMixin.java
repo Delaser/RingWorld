@@ -6,6 +6,7 @@ import dev.ringworld.client.ClientRingState;
 import dev.ringworld.client.render.RingSurfaceTextureRenderer;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingSkyCycle;
+import dev.ringworld.world.RingSkyProfile;
 import net.minecraft.client.Camera;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.renderer.SkyRenderer;
@@ -53,6 +54,18 @@ abstract class SkyRenderingMixin {
         state.moonAngle = RingSkyCycle.FIXED_SUN_ANGLE_RADIANS;
         state.starAngle = 0.0F;
         state.sunriseAndSunsetColor = 0;
+        RingSkyProfile skyProfile = ClientRingState.skyProfile();
+        switch (skyProfile.backdrop()) {
+            case ATMOSPHERE -> { }
+            case DEEP_SPACE -> {
+                state.skyColor = 0x050810;
+                state.starBrightness = Math.max(state.starBrightness, 0.88F);
+            }
+            case MINIMAL_VOID -> {
+                state.skyColor = 0x010103;
+                state.starBrightness = 0.0F;
+            }
+        }
         ringworld$sunVisual = RingSkyCycle.sunVisual(world.getOverworldClockTime() + tickProgress);
         ringworld$cameraY = (float)camera.position().y;
         ringworld$cameraZ = (float)camera.position().z;
@@ -81,7 +94,7 @@ abstract class SkyRenderingMixin {
     @ModifyConstant(method = "renderSun", constant = @Constant(floatValue = 30.0F), require = 2)
     private float ringworld$shrinkCenteredSun(float vanillaHalfWidth) {
         return ClientRingState.geometry() != null && ringworld$renderingCenteredSun
-                ? RingSkyCycle.SUN_HALF_WIDTH : vanillaHalfWidth;
+                ? ClientRingState.skyProfile().lightSource().halfWidth() : vanillaHalfWidth;
     }
 
     @Group(name = "ringworldSunTint", min = 1, max = 1)
@@ -100,7 +113,9 @@ abstract class SkyRenderingMixin {
                 ringworld$sunVisual.red(),
                 ringworld$sunVisual.green(),
                 ringworld$sunVisual.blue(),
-                vanillaColor.w() * ringworld$sunVisual.brightness());
+                vanillaColor.w() * ringworld$sunVisual.brightness()
+                        * (ClientRingState.skyProfile().lightSource()
+                                == RingSkyProfile.LightSource.DISTANT_SUN ? 0.72F : 1.0F));
     }
 
     @Group(name = "ringworldSunTint", min = 1, max = 1)
@@ -125,15 +140,17 @@ abstract class SkyRenderingMixin {
 
         // Vanilla drew stars after its first sun. The ring covers those stars
         // but stays behind the central star, so redraw the fixed sun once.
-        matrices.pushPose();
-        matrices.mulPose(Axis.XP.rotation(ringworld$starTiltRadians));
-        matrices.mulPose(Axis.YP.rotationDegrees(-90.0F));
-        ringworld$renderingCenteredSun = true;
-        try {
-            ringworld$invokeRenderSun(alpha, matrices);
-        } finally {
-            ringworld$renderingCenteredSun = false;
+        if (ClientRingState.skyProfile().lightSource() != RingSkyProfile.LightSource.NONE) {
+            matrices.pushPose();
+            matrices.mulPose(Axis.XP.rotation(ringworld$starTiltRadians));
+            matrices.mulPose(Axis.YP.rotationDegrees(-90.0F));
+            ringworld$renderingCenteredSun = true;
+            try {
+                ringworld$invokeRenderSun(alpha, matrices);
+            } finally {
+                ringworld$renderingCenteredSun = false;
+            }
+            matrices.popPose();
         }
-        matrices.popPose();
     }
 }

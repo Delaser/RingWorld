@@ -112,7 +112,7 @@ public final class RingWorldServer {
         RingGeometry geometry = settings.geometry();
         WORLD_GEOMETRY.put(world, geometry);
         attachGeneratorSettings(world, geometry, settings.wallHeightBlocks(),
-                settings.terrainNoiseMapping());
+                settings.wallStyle(), settings.terrainNoiseMapping());
         return geometry;
     }
 
@@ -133,6 +133,7 @@ public final class RingWorldServer {
 
     private static void attachGeneratorSettings(ServerLevel world, RingGeometry geometry,
                                                 int wallHeightBlocks,
+                                                dev.ringworld.world.RingWallStyle wallStyle,
                                                 int terrainNoiseMapping) {
         RingStructurePolicy policy = RingStructurePolicy.get(world);
         boolean guaranteeStronghold = policy.guaranteesStronghold();
@@ -144,6 +145,7 @@ public final class RingWorldServer {
             access.ringworld$setGeometry(geometry);
             access.ringworld$setTerrainNoiseMapping(terrainNoiseMapping);
             access.ringworld$setWallHeight(wallHeightBlocks);
+            access.ringworld$setWallStyle(wallStyle);
             access.ringworld$setGuaranteeStronghold(guaranteeStronghold);
             periodicClimateSampler = access.ringworld$getPeriodicClimateSampler(
                     generatorState.randomState());

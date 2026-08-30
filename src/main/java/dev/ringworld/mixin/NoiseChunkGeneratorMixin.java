@@ -7,6 +7,7 @@ import dev.ringworld.world.RingNoiseRouter;
 import dev.ringworld.world.RingNoiseSamplingContext;
 import dev.ringworld.world.RingTerrainNoiseMapping;
 import dev.ringworld.world.RingWorldGeneratorAccess;
+import dev.ringworld.world.RingWallStyle;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Final;
@@ -45,6 +46,7 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     @Unique private @Nullable RingGeometry ringworld$geometry;
     @Unique private int ringworld$terrainNoiseMapping = RingTerrainNoiseMapping.CURRENT;
     @Unique private int ringworld$wallHeight;
+    @Unique private RingWallStyle ringworld$wallStyle = RingWallStyle.LEGACY;
     @Unique private volatile boolean ringworld$guaranteeStronghold;
     @Unique private @Nullable RandomState ringworld$cachedNoiseConfig;
     @Unique private @Nullable NoiseRouter ringworld$cachedRouter;
@@ -89,6 +91,16 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     @Override
     public int ringworld$getWallHeight() {
         return ringworld$wallHeight;
+    }
+
+    @Override
+    public void ringworld$setWallStyle(RingWallStyle wallStyle) {
+        this.ringworld$wallStyle = java.util.Objects.requireNonNull(wallStyle, "wallStyle");
+    }
+
+    @Override
+    public RingWallStyle ringworld$getWallStyle() {
+        return ringworld$wallStyle;
     }
 
     @Override

@@ -21,8 +21,9 @@ sky, over your head, and back to the opposite horizon. The aim is to make the
 Overworld feel like one continuous ring rather than a flat map with a trick at
 the edge.
 
-The ring has a finite width, with tall cobblestone and mossy-cobblestone walls
-along both sides. The walls are breakable. If you really want to climb over
+The ring has a finite width, with tall, breakable walls along both sides. New
+worlds can choose weathered stone, ancient masonry, natural rock, alloy,
+industrial, overgrown, or monolithic styles. If you really want to climb over
 one and throw yourself into the void, the mod will not stop you.
 
 Gravity and ordinary Minecraft movement stay familiar. The Nether and End
@@ -41,8 +42,8 @@ on the finite Overworld ring, including after very long Nether journeys.
   generation.
 - **A complete ring in the sky.** You do not need a 100-chunk render distance
   to see the rest of the world.
-- **Custom dimensions.** Choose a preset or enter your own circumference,
-  width, and wall height when creating the world.
+- **Custom dimensions and presentation.** Choose dimensions, rim construction,
+  and a sky/light-source profile when creating the world.
 - **Fabric and NeoForge.** Separate builds for both loaders.
 - **Server support.** The mod works in single-player and on dedicated
   multiplayer servers. Every connecting player needs the matching mod.
@@ -81,7 +82,8 @@ RingWorld is selected while creating a new world:
 
 1. Open **Create New World**.
 2. Select the **RingWorld C×W** button in the bottom-left corner.
-3. Choose Small, Medium, Large, or enter custom dimensions.
+3. Choose Small, Medium, Large, or enter custom dimensions; select the rim and
+   sky presentation you want.
 4. Review the world-size estimate and create the world.
 
 The built-in presets are:
