@@ -302,6 +302,9 @@ public final class ClientRingState {
                 && surfaceReferenceY == 0
                 && terrainNoiseMapping == 0
                 && settingsFormatVersion == 0
+                && wallStyle.equals(RingWallStyle.LEGACY)
+                && skyProfile.equals(RingSkyProfile.DEFAULT)
+                && generatorSeed == 0L
                 && layoutFingerprint == 0L
                 && cameraPosition == null
                 && cameraSeamCrossings == 0L
@@ -377,6 +380,8 @@ public final class ClientRingState {
         surfaceReferenceY = 0;
         terrainNoiseMapping = 0;
         settingsFormatVersion = 0;
+        wallStyle = RingWallStyle.LEGACY;
+        skyProfile = RingSkyProfile.DEFAULT;
         layoutFingerprint = 0L;
         generatorSeed = 0L;
         cameraPosition = null;
