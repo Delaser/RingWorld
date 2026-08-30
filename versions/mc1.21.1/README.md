@@ -9,6 +9,22 @@ Fabric and NeoForge jars were built from public commit
 2026-08-24. This is a playable public Beta, not a stable or broad modpack-
 compatibility claim.
 
+## Current feature handoffs
+
+The post-1.1 configurable-visuals batch has two implementation handoffs for
+the backport lane:
+
+- [`OPTIONAL_VISUAL_FEATURES_CHANGELOG_2026-08-30.md`](OPTIONAL_VISUAL_FEATURES_CHANGELOG_2026-08-30.md):
+  player/operator behavior, migration notes, limits, and completion criteria;
+- [`OPTIONAL_VISUAL_FEATURES_TECHNICAL_DATASHEET_2026-08-30.md`](OPTIONAL_VISUAL_FEATURES_TECHNICAL_DATASHEET_2026-08-30.md):
+  stable IDs, formats, payload layouts, ownership, adapter boundaries, port
+  order, tests, and risks.
+
+These describe source range `7903311..2733581` / PR #244. Treat the behavior
+and data contracts as authoritative, but adapt Minecraft 26.x API calls through
+the 1.21.1 version and loader seams. This handoff intentionally excludes the
+separate Create compatibility investigation.
+
 ## Release identity
 
 | Item | Fabric | NeoForge |
