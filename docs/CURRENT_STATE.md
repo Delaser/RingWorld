@@ -40,7 +40,7 @@ faces disappear with the rest of the reference-height bridge when the detailed
 Atlas mesh becomes authoritative.
 
 The shared Java 25 regression suite and both loader compilations pass for this
-development work. The expanded 15-capture creation/settings fixture also passes
+development work. The expanded 17-capture creation/settings fixture also passes
 on Fabric and NeoForge, including the rim editor at 480×270 and 320×270,
 Overgrown preset retention across resize, compact option labels, selected Night
 sky and Large sun settings, confirmation, persistence, and normal menu-only teardown.
@@ -52,30 +52,50 @@ and Gamma Atlas-light presentation on 2026-08-30. A separate named Medium
 Industrial 16,384×256 review world has a complete format-8 Atlas and eight
 verified plains villages distributed around the loop for nighttime-light review.
 
-On 2026-08-30 the approved batch passed 373 unit/parameterized tests on both
-Fabric and NeoForge against the manifest-pinned Minecraft 26.2 dependencies.
-Both loaders also passed the 17-capture creation/seed-preview fixture and the
-11-capture Atlas UI fixture, including complete generation, a live block
-revision, normal disconnect, and cleared client state. These are source-state
-development checks, not frozen-candidate, packaged-launcher, multiplayer, or
-release evidence.
+On 2026-08-31 the audited source passed 377 unit/parameterized tests on both
+Fabric and NeoForge against the default Minecraft 26.1.2 dependency set,
+with zero failures, errors, or skips. The audit corrected three concrete
+development defects: client appearance state now clears between worlds,
+non-divisible circumferences retain periodic wall-pattern noise, and seed
+preview generation is isolated from the live Create World generator with
+stale-result rejection. The preceding approved batch also passed the
+17-capture creation/seed-preview fixture and the 11-capture Atlas UI fixture,
+including complete generation, a live block revision, normal disconnect, and
+cleared client state. Those graphical fixtures predate the three focused
+repairs and therefore remain prior visual evidence rather than a fresh frozen
+candidate claim. All of these checks are source-state development evidence,
+not packaged-launcher, multiplayer, or release evidence.
 
-Latest: [26.2 qualification checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
-The paired 26.2 quick passes on both loaders. All 20 nightly slots are covered
-by reviewed composite evidence (16 retained passes plus four targeted repairs).
+The current qualification-static Python set passes 344 tests locally, and full
+Python discovery passes 428 with two expected Windows-only fixture skips on
+macOS. A fail-closed experimental merge of the two default 26.1.2 development
+JARs produced one deterministic 356-entry Fabric/NeoForge prototype. The exact
+merged hash opened the copied disposable production world on isolated Fabric
+and NeoForge dedicated servers, reached `Done`, and stopped normally. This is
+static/archive and dedicated-startup evidence only: no client, mixed-loader,
+complete gameplay, package, or host claim follows from it. See
+[`UNIFIED_JAR_FEASIBILITY.md`](UNIFIED_JAR_FEASIBILITY.md).
+
+## Historical 26.2 qualification record leading to 1.1
+
+See the [26.2 qualification checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
+At that checkpoint, the paired 26.2 quick passed on both loaders. All 20
+nightly slots were covered by reviewed composite evidence (16 retained passes
+plus four targeted repairs).
 All eight copied-world upgrade routes and all four staged server-overlay
-startup/normal-stop smokes pass. Local packages are staged, not published.
+startup/normal-stop smokes passed. Local packages were staged, not yet published.
 Windows package review has owner sign-off (2026-08-27); this is owner-reported,
 not new per-case machine evidence. Authenticated macOS packaged-runtime smokes
 pass for all four combinations after the
 [#234](https://github.com/Delaser/RingWorld/issues/234) NeoForge 26.2 package-only
 repair. Its native Prism component comes from the pinned official installer;
 the exact 26.2.0.69 loader and RingWorld jar are unchanged. Corrected macOS and
-Windows packages are staged locally, not uploaded over the prior test kit. See the
+Windows packages were staged locally, not uploaded over the prior test kit. See the
 [package evidence](MACOS_PACKAGE_REVIEW_2026-08-27.md) and
-[owner handoff](RELEASE_1_1_OWNER_HANDOFF.md). Final release approval remains.
-The static suite passes 342 tests locally; Windows/Linux static CI and the
-Windows launcher check are green on test-only correction `a2ba721`.
+[owner handoff](RELEASE_1_1_OWNER_HANDOFF.md). Final release approval still
+remained at that checkpoint; the publication record at the top of this
+document supersedes that hold. Windows/Linux static CI and the Windows launcher
+check were green on the preceding test-only correction `a2ba721`.
 Dated attempts below are historical; no full-matrix rerun is required merely
 to replace the explicitly reviewed composite evidence.
 
@@ -234,11 +254,12 @@ The Minecraft 26.1.2 port is integrated on `main`; see
 [`MINECRAFT_26_1_PORT_PLAN.md`](MINECRAFT_26_1_PORT_PLAN.md) and the
 [`final baseline`](MINECRAFT_1_21_11_FINAL_BASELINE.md).
 
-Minecraft 26.1 is now the approved development compatibility floor. The
-current verified and published files still target 26.1.2 exactly; neither
-26.1 nor 26.1.1 is a public compatibility claim until the complete dual-loader
-qualification matrix passes. The rolling stable-release policy, automation
-tiers, evidence contract, and intake order are defined in
+Minecraft 26.1 became the approved development compatibility floor. At the
+historical 2026-08-13 checkpoint, verified and published files still targeted
+26.1.2 exactly; neither 26.1 nor 26.1.1 was yet a public compatibility claim.
+RingWorld 1.1 subsequently qualified and published the complete 26.1.x line as
+recorded at the top of this document. The rolling stable-release policy,
+automation tiers, evidence contract, and intake order are defined in
 [`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
 Existing 26.1.2 release evidence remains exact historical evidence and is not
 silently generalized to the rest of the patch line.
@@ -834,11 +855,11 @@ streamed revisions cross-fade as work is checkpointed, and verified completion
 removes the placeholder and upgrades the detailed mesh. The copy explicitly
 warns that generation time and disk cost vary by layout and machine.
 
-The live demo was migrated from Fabric to NeoForge 26.1.2.87 and RingWorld 1.0.
-Its previous world is preserved intact at
-`/opt/ringworld-server-archives/20260810T204137Z-fabric-world`; the replacement
-world uses seed `-7809050111168616191` with 16,384×256 geometry. The server,
-Meridian, and Meridian regeneration API are active after migration.
+The historical live demo migration from Fabric to NeoForge 26.1.2.87 and
+RingWorld 1.0 completed with a retained rollback. Host paths, world seeds,
+control-panel state, and backup locations are operational data and are
+intentionally maintained outside this source repository. No current audit or
+qualification command may mutate the live server or its world.
 
 The historical dual-loader alpha-3 candidate's validated code baseline is commit
 `967759be872080a72e48bd26f7a97df9ee0a0302`. Its Fabric SHA-256 is
@@ -873,8 +894,8 @@ staging rather than release promotion. See `CURSEFORGE_RELEASE.md`.
 The CurseForge media gallery also contains the six approved in-game images
 from the RingWorld showcase page rather than automated diagnostic captures.
 
-Earlier on 2026-08-10, the unlisted showcase alpha directory was refreshed from merged
-public source commit `622fb76`, including the mapping-4 terrain-seam
+Earlier on 2026-08-10, an unlisted alpha distribution was refreshed from
+merged public source commit `622fb76`, including the mapping-4 terrain-seam
 correction, biome-flavoured incomplete-Atlas placeholder, 750 ms revision
 morph, completion-driven haze, neutral cobble/moss rim returns, finite clouds,
 and the in-menu alpha/worldgen identity. It also displays the compact top-left
@@ -883,19 +904,18 @@ SHA-256 values are Fabric
 `b5e9eff725623f6e716d5d9f7d4c0366532350f683ed732ebcc9f1d6618c7729`
 and NeoForge
 `e2130a6d7db766ac857b69d6b4e92564e118b258b33f5e661a5d413848df4a4d`.
-`https://andwhatnotstudio.com/ringworld/alpha/` provides separate reusable
-manifest-following one-click installers and manual ZIPs for both loaders, the
-MPL licence, and exact source manifests. The historical installer and manifest
-names remain Fabric aliases for existing testers. Every installer validates
-loader/source identity and the selected artifact SHA-256 on each run, so one
-downloaded BAT follows later matching alpha builds without embedding their
-checksums.
+That distribution provided separate reusable manifest-following one-click
+installers and manual ZIPs for both loaders, the MPL licence, and exact source
+manifests. The historical installer and manifest names remain Fabric aliases
+for existing testers. Every installer validates loader/source identity and the
+selected artifact SHA-256 on each run, so one downloaded BAT follows later
+matching alpha builds without embedding their checksums.
 The packaged server entry is pre-added but is not joined automatically. This
 is a test convenience build, not a Modrinth/CurseForge promotion or 1.0 gate.
-The previous directory is retained outside the document root at
-`/root/ringworld-alpha-backups/alpha-20260810T192327Z`. At that checkpoint no
-live server or world was changed; the later 1.0 publication and migration
-recorded at the top of this document supersede that distribution state.
+Deployment locations and backups are intentionally outside the source
+repository. At that checkpoint no live server or world was changed; the later
+1.0 publication and migration recorded at the top of this document supersede
+that distribution state.
 
 Issue #33 now supplies a local fail-closed staging workflow for any later
 manual Fabric upload. It builds and validates exactly one runtime jar, records
@@ -1717,10 +1737,11 @@ in-process reopen, which restored the same layout and complete atlas. The final
 marker was `result=true`; this is transfer-path evidence, not proof of vanilla
 portal construction or linking.
 
-Broader gameplay and compatibility gates remain. Repeatable
-Fabric staging is complete, but optional convenience packages and independent
-release-candidate review are still pending, so the active 26.1.2 alpha is not
-yet a stable release. The frozen `mc-1.21.11-final` tag remains the rollback
+At that historical checkpoint, broader gameplay and compatibility gates still
+remained. Repeatable Fabric staging was complete, but optional convenience
+packages and independent release-candidate review were pending, so that
+26.1.2 alpha was not yet a stable release. The current release state is at the
+top of this document; the frozen `mc-1.21.11-final` tag remains the rollback
 baseline.
 
 New RingWorlds now persist a mandatory structure policy and replace vanilla's

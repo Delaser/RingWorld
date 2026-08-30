@@ -15,10 +15,12 @@ passes, as does [static qualification on Windows and Ubuntu](https://github.com/
 
 Latest 26.2 run IDs, candidate/package hashes and remaining owner checks are
 in [the current checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
-The static qualification workflow passes **342 tests locally** after the
-portable cache-fixture correction below. On `a2ba721`, hosted static CI passes
-on both Ubuntu and Windows, and the separate Windows package launcher check
-passes. [Authenticated macOS package review](MACOS_PACKAGE_REVIEW_2026-08-27.md)
+The current static qualification workflow passes **344 tests locally**. Full
+Python discovery passes 428 with two expected Windows-only fixture skips on
+macOS, and the packaging/prototype subset passes 41 with the same two skips. On
+`a2ba721`, the preceding hosted static CI passed on both Ubuntu and Windows,
+and the separate Windows package launcher check passed.
+[Authenticated macOS package review](MACOS_PACKAGE_REVIEW_2026-08-27.md)
 records all four runtime smokes passing after the targeted #234 metadata repair.
 Nightly `20260827T104447Z-6af7691cc891` remains 16 PASS / 2 FAIL /
 2 INCOMPLETE. The four selected repairs pass in
@@ -176,9 +178,10 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 
 ## Active port checkpoint
 
-The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 338
-unit/parameterized cases. Fabric common/client compilation also passes:
+The active public integration line requires Java 25. Both Fabric and NeoForge
+compile the same loader-neutral contract suite. The 2026-08-31 audited source
+passes 377 unit/parameterized tests per loader with zero failures, errors, or
+skips. Build both source artifacts with:
 
 ```sh
 JAVA_HOME=/path/to/jdk-25/Contents/Home \
@@ -202,12 +205,12 @@ not an unqualified `runServer` task.
 
 ## Rolling Minecraft version qualification
 
-Minecraft 26.1 is the development compatibility floor, but the current tasks
-and published artifacts remain proven for 26.1.2 only. Minecraft 26.1 and
-26.1.1 become supported only after the same exact loader-specific jar passes
-their build, server, world, Atlas, multiplayer, rendering, lifecycle, and
-packaging cells. Later stable Minecraft versions follow the same intake and
-must not inherit a support claim from compilation or launch alone.
+Minecraft 26.1 is the development compatibility floor. RingWorld 1.1 is
+qualified for 26.1, 26.1.1, 26.1.2, and 26.2 on both loaders; the 26.1.x line
+uses one unchanged jar per loader and 26.2 uses separate artifacts. Later
+stable Minecraft versions follow the same intake and must not inherit a
+support claim from compilation or launch alone. Unreleased source changes also
+need fresh candidate evidence before replacing the published support record.
 
 The approved manifest, quick/nightly/release tiers, isolated-fixture rules,
 same-hash requirement, forward-only world-copy policy, and planned

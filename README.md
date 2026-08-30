@@ -150,12 +150,14 @@ sides of it should still be nearby, visible, and able to interact normally.
   be incompatible.
 - Mods that assume infinite chunk X, ordinary global distance, or untouched
   world-generation internals may need explicit RingWorld support.
-- The distant Atlas is a surface summary. It cannot reproduce individual
-  distant blocks, buildings, mobs, transparent layers, local block lights, or
-  live weather volumes.
+- The distant Atlas is a surface summary. It can show a coarse nighttime
+  block-light layer, but cannot reproduce individual distant blocks,
+  buildings, mobs, transparent layers, exact light geometry, or live weather
+  volumes.
 - Existing worlds cannot be converted or resized in place.
-- Only Minecraft 26.1.2 is currently advertised as supported. Other versions
-  are not supported merely because they compile or begin loading.
+- The supported Minecraft versions are the qualified versions in the download
+  table above. A future version is not supported merely because it compiles or
+  begins loading.
 
 Compatibility reports are welcome. Please include the Minecraft version,
 loader, RingWorld version, other installed mods, logs, and reproduction steps.
