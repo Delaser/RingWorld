@@ -150,19 +150,31 @@ public final class RingWallPattern {
         return (value >>> 11) * 0x1.0p-53;
     }
 
-    private static double smoothNoise2d(long seed, int canonicalX, int depth,
-                                        int xScale, int depthScale, int circumference) {
-        int xCells = Math.max(1, circumference / xScale);
-        int x0 = Math.floorDiv(canonicalX, xScale);
-        int x1 = Math.floorMod(x0 + 1, xCells);
-        x0 = Math.floorMod(x0, xCells);
+    /**
+     * Interpolated scalar noise whose X axis closes exactly at the ring seam.
+     * For a circumference divisible by {@code xScale}, this retains the
+     * established fixed-width sampling. Otherwise, ceiling cell count spreads
+     * the final partial interval across the complete circumference instead of
+     * introducing a second, discontinuous wrap within it.
+     */
+    static double smoothNoise2d(long seed, int x, int depth,
+                                int xScale, int depthScale, int circumference) {
+        int canonicalX = Math.floorMod(x, circumference);
+        int xCells = ceilDiv(circumference, xScale);
+        double cellPosition = canonicalX * (double)xCells / circumference;
+        int x0 = (int)Math.floor(cellPosition);
+        int x1 = (x0 + 1) % xCells;
         int d0 = Math.floorDiv(depth, depthScale);
         int d1 = d0 + 1;
-        double tx = smoothStep(Math.floorMod(canonicalX, xScale) / (double)xScale);
+        double tx = smoothStep(cellPosition - x0);
         double td = smoothStep(Math.floorMod(depth, depthScale) / (double)depthScale);
         double low = lerp(unitNoise2d(seed, x0, d0), unitNoise2d(seed, x1, d0), tx);
         double high = lerp(unitNoise2d(seed, x0, d1), unitNoise2d(seed, x1, d1), tx);
         return lerp(low, high, td);
+    }
+
+    private static int ceilDiv(int value, int divisor) {
+        return value / divisor + (value % divisor == 0 ? 0 : 1);
     }
 
     private static double smoothStep(double value) {

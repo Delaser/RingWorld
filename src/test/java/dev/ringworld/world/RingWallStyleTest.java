@@ -155,6 +155,30 @@ class RingWallStyleTest {
     }
 
     @Test
+    void decayNoiseClosesSmoothlyAcrossANonDivisibleCellSeam() {
+        int circumference = 2_064;
+        long seed = 0x51A7_0F1EL;
+        for (int xScale : new int[] {32, 16, 8, 4}) {
+            double atSeam = RingWallPattern.smoothNoise2d(seed, 0, 3,
+                    xScale, 8, circumference);
+            assertEquals(atSeam, RingWallPattern.smoothNoise2d(seed, circumference, 3,
+                    xScale, 8, circumference));
+            assertEquals(atSeam, RingWallPattern.smoothNoise2d(seed, -circumference, 3,
+                    xScale, 8, circumference));
+
+            double beforeSeam = RingWallPattern.smoothNoise2d(seed, circumference - 1, 3,
+                    xScale, 8, circumference);
+            double afterSeam = RingWallPattern.smoothNoise2d(seed, -1, 3,
+                    xScale, 8, circumference);
+            assertEquals(beforeSeam, afterSeam);
+            if (xScale == 32) {
+                assertTrue(Math.abs(atSeam - beforeSeam) < 0.01,
+                        "the former partial 32-block interval must close smoothly at the seam");
+            }
+        }
+    }
+
+    @Test
     void decayVariesAcrossWallThicknessWithoutCreatingInternalHoles() {
         RingWallStyle style = RingWallStyle.Preset.OVERGROWN_RUIN.style();
         int top = 96;
