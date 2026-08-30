@@ -25,7 +25,8 @@ import java.util.zip.GZIPOutputStream;
  * lets the sky mesh bilinearly sample exactly the same tiled cache.</p>
  */
 public final class RingTerrainAtlas {
-    public static final int FORMAT_VERSION = 6;
+    /** Format 7 invalidates saturated pre-fix mycelium surface colours. */
+    public static final int FORMAT_VERSION = 7;
     public static final int SAMPLE_STEP_BLOCKS = 8;
     public static final int TILE_SIZE = 16;
     /** Short height, map colour, and presence bit-array accounting per sampled cell. */

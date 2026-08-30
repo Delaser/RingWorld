@@ -47,6 +47,14 @@ all overridden programs.
 
 ## Real terrain curvature
 
+Atlas surface colour sampling is server-authored. Water, grass, and foliage
+combine biome tint with representative vanilla texture luminance. Mycelium is
+special-cased to the measured mean of the vanilla 26.1.2 top texture
+(`#6F6365`) because its generic map colour is a much more saturated purple
+than the block players see. Atlas format 7 deliberately invalidates older
+pink mycelium caches; resource packs do not currently change this server-side
+representative colour.
+
 `assets/minecraft/shaders/core/terrain.vsh` reconstructs:
 
 - canonical vertex position from section-local position and `ChunkPosition`;

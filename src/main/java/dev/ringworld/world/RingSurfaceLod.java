@@ -8,6 +8,15 @@ package dev.ringworld.world;
  * testable.</p>
  */
 public final class RingSurfaceLod {
+    /**
+     * Mean RGB of Minecraft 26.1.2's vanilla
+     * {@code textures/block/mycelium_top.png}. Mycelium's generic map colour
+     * is deliberately much more saturated than the block players actually
+     * see, so the distant surface uses this texture-derived representative
+     * colour instead.
+     */
+    public static final int VANILLA_MYCELIUM_TOP_RGB = 0x6F6365;
+
     private RingSurfaceLod() { }
 
     /** Encodes atlas coverage as transparency without inventing missing terrain. */

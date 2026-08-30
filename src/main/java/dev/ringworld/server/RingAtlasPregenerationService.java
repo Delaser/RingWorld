@@ -395,6 +395,9 @@ public final class RingAtlasPregenerationService {
             return RingSurfaceLod.applyTextureLuminanceWithMapFallback(
                     biome.getFoliageColor(), state.getMapColor(world, surface).col, FOLIAGE_TEXTURE_LUMINANCE);
         }
+        if (state.is(Blocks.MYCELIUM)) {
+            return RingSurfaceLod.VANILLA_MYCELIUM_TOP_RGB;
+        }
         return state.getMapColor(world, surface).col;
     }
 

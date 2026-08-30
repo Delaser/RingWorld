@@ -3,10 +3,17 @@ package dev.ringworld.world;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingSurfaceLodTest {
+
+    @Test
+    void vanillaMyceliumUsesTextureRepresentativeRatherThanSaturatedMapPurple() {
+        assertEquals(0x6F6365, RingSurfaceLod.VANILLA_MYCELIUM_TOP_RGB);
+        assertNotEquals(0x7F3FB2, RingSurfaceLod.VANILLA_MYCELIUM_TOP_RGB);
+    }
     @Test
     void textureLuminanceDarkensBiomeTintWithoutChangingHue() {
         assertEquals(0x406020,
