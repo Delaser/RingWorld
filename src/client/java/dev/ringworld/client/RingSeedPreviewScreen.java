@@ -8,7 +8,10 @@ import dev.ringworld.world.RingTerrainNoiseMapping;
 import dev.ringworld.world.RingTerrainPreview;
 import dev.ringworld.world.RingTerrainPreviewSampler;
 import dev.ringworld.world.RingTerrainPreviewStage;
+import dev.ringworld.world.RingPreviewRequestGate;
 import dev.ringworld.world.RingWorldGeneratorAccess;
+import net.minecraft.core.Holder;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -17,6 +20,8 @@ import net.minecraft.client.gui.screens.worldselection.WorldCreationContext;
 import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.biome.BiomeSource;
 import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.dimension.LevelStem;
@@ -46,10 +51,10 @@ public final class RingSeedPreviewScreen extends Screen {
     private final RingWorldCreationScreen parent;
     private final RingWorldCreationScreen.LayoutButtonOwner owner;
     private final RingGeometry geometry;
+    private final RingPreviewRequestGate<Result> requests = new RingPreviewRequestGate<>();
     private EditBox seedField;
     private Future<?> running;
-    private volatile Result completed;
-    private int generation;
+    private long request;
     private int debounceTicks;
     private DynamicTexture texture;
     private String state = "Waiting";
@@ -87,9 +92,8 @@ public final class RingSeedPreviewScreen extends Screen {
     }
 
     private void schedule() {
-        generation++;
+        request = requests.begin();
         debounceTicks = 5;
-        completed = null;
         error = "";
         state = "Preparing…";
         if (running != null) running.cancel(true);
@@ -98,10 +102,8 @@ public final class RingSeedPreviewScreen extends Screen {
     @Override
     public void tick() {
         if (debounceTicks > 0 && --debounceTicks == 0) startPreview();
-        Result result = completed;
+        Result result = requests.poll();
         if (result != null) {
-            completed = null;
-            if (result.generation() != generation) return;
             if (result.error() != null) {
                 error = result.error();
                 state = "Preview unavailable";
@@ -113,55 +115,60 @@ public final class RingSeedPreviewScreen extends Screen {
     }
 
     private void startPreview() {
-        int request = generation;
+        long previewRequest = request;
         long seed = owner.ringworld$resolvedSeed();
-        WorldCreationContext context = owner.ringworld$creationContext();
+        PreviewInput input = snapshot(owner.ringworld$creationContext());
         state = "Generating from seed " + seed + "…";
         running = WORKER.submit(() -> {
             long started = System.nanoTime();
             try {
-                RingTerrainPreview preview = generate(context, seed);
+                RingTerrainPreview preview = generate(input, seed);
                 if (preview == null) throw new IllegalStateException(
                         "The selected world type does not expose a compatible noise generator.");
-                completed = new Result(request, preview,
-                        Math.round((System.nanoTime() - started) / 1_000_000.0), null);
+                requests.complete(previewRequest, new Result(preview,
+                        Math.round((System.nanoTime() - started) / 1_000_000.0), null));
             } catch (java.util.concurrent.CancellationException ignored) {
                 // A newer seed/layout owns the next result.
             } catch (RuntimeException exception) {
                 RingWorldMod.LOGGER.warn("Could not generate RingWorld creation preview", exception);
-                completed = new Result(request, null, 0L,
+                requests.complete(previewRequest, new Result(null, 0L,
                         exception.getMessage() == null ? exception.getClass().getSimpleName()
-                                : exception.getMessage());
+                                : exception.getMessage()));
             }
         });
     }
 
-    private RingTerrainPreview generate(WorldCreationContext context, long seed) {
+    /** Snapshots immutable worldgen inputs on the client thread before the worker starts. */
+    private PreviewInput snapshot(WorldCreationContext context) {
         ChunkGenerator generator = context.selectedDimensions().overworld();
-        if (!(generator instanceof NoiseBasedChunkGenerator noise)
-                || !(generator instanceof RingWorldGeneratorAccess access)) return null;
+        if (!(generator instanceof NoiseBasedChunkGenerator noise)) return null;
         var settingsKey = noise.generatorSettings().unwrapKey()
                 .orElse(NoiseGeneratorSettings.OVERWORLD);
-        RandomState randomState = RandomState.create(
-                context.worldgenLoadContext(), settingsKey, seed);
         LevelStem overworld = context.selectedDimensions().get(LevelStem.OVERWORLD)
                 .orElseThrow(() -> new IllegalStateException("Overworld dimension is unavailable"));
-        LevelHeightAccessor height = LevelHeightAccessor.create(
-                overworld.type().value().minY(), overworld.type().value().height());
-        RingGeometry previousGeometry = access.ringworld$getGeometry();
-        int previousMapping = access.ringworld$getTerrainNoiseMapping();
-        synchronized (generator) {
-            try {
-                access.ringworld$setGeometry(geometry);
-                access.ringworld$setTerrainNoiseMapping(RingTerrainNoiseMapping.CURRENT);
-                return RingTerrainPreviewSampler.generate(
-                        previewHash(seed), geometry, RingTerrainPreviewStage.CURRENT,
-                        generator, randomState, height);
-            } finally {
-                access.ringworld$setTerrainNoiseMapping(previousMapping);
-                access.ringworld$setGeometry(previousGeometry);
-            }
-        }
+        return new PreviewInput(noise.getBiomeSource(), noise.generatorSettings(), settingsKey,
+                context.worldgenLoadContext(), overworld.type().value().minY(),
+                overworld.type().value().height());
+    }
+
+    /**
+     * Builds and configures a new noise generator for this one preview. This
+     * must never mutate the generator retained by WorldCreationContext: a
+     * cancelled worker is intentionally not joined before world creation.
+     */
+    private RingTerrainPreview generate(PreviewInput input, long seed) {
+        if (input == null) return null;
+        NoiseBasedChunkGenerator generator = new NoiseBasedChunkGenerator(
+                input.biomeSource(), input.settings());
+        if (!((Object)generator instanceof RingWorldGeneratorAccess access)) return null;
+        RandomState randomState = RandomState.create(
+                input.worldgenLoadContext(), input.settingsKey(), seed);
+        LevelHeightAccessor height = LevelHeightAccessor.create(input.minY(), input.height());
+        access.ringworld$setGeometry(geometry);
+        access.ringworld$setTerrainNoiseMapping(RingTerrainNoiseMapping.CURRENT);
+        return RingTerrainPreviewSampler.generate(
+                previewHash(seed), geometry, RingTerrainPreviewStage.CURRENT,
+                generator, randomState, height);
     }
 
     private long previewHash(long seed) {
@@ -206,7 +213,7 @@ public final class RingSeedPreviewScreen extends Screen {
 
     @Override
     public void removed() {
-        generation++;
+        requests.begin();
         if (running != null) running.cancel(true);
         releaseTexture();
         super.removed();
@@ -278,7 +285,11 @@ public final class RingSeedPreviewScreen extends Screen {
         return Math.max(1, Math.abs(left));
     }
 
-    private record Result(int generation, RingTerrainPreview preview,
+    private record PreviewInput(BiomeSource biomeSource, Holder<NoiseGeneratorSettings> settings,
+                                ResourceKey<NoiseGeneratorSettings> settingsKey,
+                                RegistryAccess.Frozen worldgenLoadContext, int minY, int height) { }
+
+    private record Result(RingTerrainPreview preview,
                           long elapsedMillis, String error) { }
 
     void ringworld$automationSetSeed(String seed) {
