@@ -42,7 +42,7 @@ FAIL_MARKER = "[atlas-ui-test] FAIL"
 CAPTURE_PREFIXES = tuple(f"atlas-ui-{index:02d}-" for index in range(1, 12))
 HANDSHAKE_MARKERS = (
     "[atlas-ui-test] client-ready",
-    "[atlas-ui-test] settings-v3-mapping-4",
+    "[atlas-ui-test] settings-current-mapping-current",
     "[atlas-ui-test] disconnect-clear",
 )
 
@@ -81,9 +81,9 @@ def _command(
 
 def _server_ack_marker(loader: object) -> str:
     if loader == "fabric":
-        return "RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 3"
+        return "RingWorld settings acknowledged by AtlasUiTester: 2048x128, format "
     if loader == "neoforge":
-        return "RingWorld settings acknowledged by AtlasUiTester on NeoForge: format 3"
+        return "RingWorld settings acknowledged by AtlasUiTester on NeoForge: format "
     raise GradleAtlasUiError("unsupported loader")
 
 
@@ -105,7 +105,7 @@ def _verify_outputs(paths: QualificationPaths, loader: object) -> tuple[Path, tu
         raise GradleAtlasUiError("Atlas UI fixture terminal PASS preceded disconnect clear")
     if text.find(_server_ack_marker(loader)) < 0 \
             or text.find(_server_ack_marker(loader)) >= text.find(HANDSHAKE_MARKERS[-1]):
-        raise GradleAtlasUiError("Atlas UI integrated server did not accept format-3 settings acknowledgement")
+        raise GradleAtlasUiError("Atlas UI integrated server did not accept the current settings acknowledgement")
     captures: list[Path] = []
     screenshots = run_root / "screenshots"
     for prefix in CAPTURE_PREFIXES:

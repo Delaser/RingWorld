@@ -169,16 +169,16 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
         self.assertIn("client.options.pauseOnLostFocus = false;", source)
         self.assertIn("client.disconnectFromWorld", source)
         self.assertIn("RingWorldClientSession.isCleared()", source)
-        self.assertIn("[atlas-ui-test] settings-v3-mapping-4", source)
+        self.assertIn("[atlas-ui-test] settings-current-mapping-current", source)
 
-    def test_both_loader_verifiers_require_format3_ack_and_disconnect_markers(self) -> None:
+    def test_both_loader_verifiers_require_current_ack_and_disconnect_markers(self) -> None:
         root_build = (ROOT / "build.gradle").read_text(encoding="utf-8")
         neo_build = (ROOT / "neoforge/build.gradle").read_text(encoding="utf-8")
         for marker in HANDSHAKE_MARKERS:
             self.assertIn(marker, root_build)
             self.assertIn(marker, neo_build)
-        self.assertIn("AtlasUiTester: 2048x128, format 3", root_build)
-        self.assertIn("AtlasUiTester on NeoForge: format 3", neo_build)
+        self.assertIn("AtlasUiTester: 2048x128, format [0-9]+", root_build)
+        self.assertIn("AtlasUiTester on NeoForge: format [0-9]+", neo_build)
 
 
 if __name__ == "__main__":

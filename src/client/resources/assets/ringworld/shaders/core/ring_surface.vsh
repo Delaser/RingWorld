@@ -12,6 +12,7 @@ out vec2 texCoord0;
 out vec4 vertexColor;
 out float intrinsicDistance;
 out float intrinsicHeight;
+out float intrinsicWidth;
 
 const float TAU = 6.28318530717958647692;
 // The complete-ring surface is visual sky LOD, not ordinary world geometry.
@@ -48,6 +49,7 @@ void main() {
     float surfaceDistance = abs(deltaAngle) * float(RingWorldLayout.y) / TAU;
     intrinsicDistance = length(vec2(surfaceDistance, Position.z - ModelOffset.y));
     intrinsicHeight = length(Position.xy);
+    intrinsicWidth = Position.z;
     texCoord0 = UV0;
     vertexColor = Color;
 }

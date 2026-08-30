@@ -22,6 +22,7 @@ import net.minecraft.network.chat.Component;
 public final class AtlasPregenerationUiTestClient {
     public static final String ENABLE_PROPERTY = "ringworld.atlasUiTest";
     public static final String EXPECTED_BUILD_LABEL_PROPERTY = "ringworld.atlasUiExpectedBuildLabel";
+    public static final String PREVIEW_CAPTURE_PROPERTY = "ringworld.atlasUiPreviewCapture";
     private static final int SETTLE_FRAMES = 3;
     private static final double PROGRESSIVE_CAPTURE_COMPLETION = 0.25;
     private static final int TIMEOUT_TICKS = 14_400;
@@ -43,6 +44,8 @@ public final class AtlasPregenerationUiTestClient {
     private String lastMenuScreen = "";
     private boolean clientReadyLogged;
     private int disconnectTicks;
+    private boolean previewCaptureRequested;
+    private volatile boolean previewPositionReady;
 
     public boolean enabled() { return Boolean.getBoolean(ENABLE_PROPERTY); }
     public void frameRendered() { renderedFrames++; }
@@ -145,12 +148,28 @@ public final class AtlasPregenerationUiTestClient {
                 RingMinecraftClientAccess.setScreen(client, null); arm(); stage++;
             }
             case 5 -> {
+                double minimumCompletion = Boolean.getBoolean(PREVIEW_CAPTURE_PROPERTY)
+                        ? 0.001
+                        : PROGRESSIVE_CAPTURE_COMPLETION;
                 if (!settled() || status == null || status.progress().totalCells() == 0
                         || (double)status.progress().presentCells() / status.progress().totalCells()
-                        < PROGRESSIVE_CAPTURE_COMPLETION) return true;
-                client.player.setYRot(90.0F);
-                client.player.setXRot(-65.0F);
-                capture(client, "atlas-ui-05-progressive-world", false); arm(); stage++;
+                        < minimumCompletion) return true;
+                if (Boolean.getBoolean(PREVIEW_CAPTURE_PROPERTY)) {
+                    previewCaptureRequested = true;
+                    RingMinecraftClientAccess.setScreen(client, null);
+                    RingIntegratedCaptureControl.execute(client, "seed-preview vantage",
+                            context -> RingIntegratedCaptureControl.teleport(context, 8192.5, 180.0, 0.5),
+                            () -> previewPositionReady = true,
+                            reason -> fail(client, reason));
+                    arm();
+                    stage = 18;
+                } else {
+                    client.player.setYRot(90.0F);
+                    client.player.setXRot(-65.0F);
+                    capture(client, "atlas-ui-05-progressive-world", false);
+                    arm();
+                    stage++;
+                }
             }
             case 6 -> {
                 if (!settled()) return true;
@@ -240,6 +259,27 @@ public final class AtlasPregenerationUiTestClient {
                 client.disconnectFromWorld(Component.literal("RingWorld Atlas UI handshake teardown regression"));
                 stage++;
             }
+            case 18 -> {
+                if (!previewCaptureRequested || !previewPositionReady || !settled()) return true;
+                client.player.setYRot(90.0F);
+                client.player.setXRot(-25.0F);
+                arm();
+                stage++;
+            }
+            case 19 -> {
+                if (!settled()) return true;
+                capture(client, Boolean.getBoolean("ringworld.disableSeedPreview")
+                        ? "atlas-legacy-placeholder"
+                        : "atlas-seed-preview", true);
+                arm();
+                stage++;
+            }
+            case 20 -> {
+                if (!finalCaptureSaved || !settled()) return true;
+                RingWorldMod.LOGGER.info("[atlas-ui-test] PASS: seed-derived preview capture");
+                client.stop();
+                stage++;
+            }
             default -> { }
         }
         return true;
@@ -251,7 +291,7 @@ public final class AtlasPregenerationUiTestClient {
     /**
      * This runs only after the real integrated world has connected and at
      * least one level frame has rendered. The server log separately proves
-     * acceptance of the format-3 acknowledgement; this client proof binds the
+     * acceptance of the current-format acknowledgement; this client proof binds the
      * resulting state to the fresh mapping-4 world actually being rendered.
      */
     private boolean verifyClientReady(Minecraft client) {
@@ -261,15 +301,18 @@ public final class AtlasPregenerationUiTestClient {
         if (ClientRingState.geometry() == null || ClientRingState.layoutFingerprint() == 0L) {
             return false;
         }
-        if (RingWorldSettings.FORMAT_VERSION != 3
+        if (ClientRingState.settingsFormatVersion() != RingWorldSettings.FORMAT_VERSION
                 || ClientRingState.terrainNoiseMapping() != RingTerrainNoiseMapping.CURRENT) {
-            fail(client, "live settings identity was not format-3/mapping-4");
+            fail(client, "live settings identity was not format-"
+                    + RingWorldSettings.FORMAT_VERSION + "/mapping-"
+                    + RingTerrainNoiseMapping.CURRENT);
             return false;
         }
         if (!clientReadyLogged) {
             clientReadyLogged = true;
             RingWorldMod.LOGGER.info("[atlas-ui-test] client-ready renderedFrames={}", renderedFrames);
-            RingWorldMod.LOGGER.info("[atlas-ui-test] settings-v3-mapping-4 fingerprint={}",
+            RingWorldMod.LOGGER.info("[atlas-ui-test] settings-current-mapping-current format={} mapping={} fingerprint={}",
+                    ClientRingState.settingsFormatVersion(), ClientRingState.terrainNoiseMapping(),
                     Long.toUnsignedString(ClientRingState.layoutFingerprint(), 16));
         }
         return true;

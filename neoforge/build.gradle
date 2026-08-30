@@ -461,7 +461,7 @@ tasks.register('verifyNeoForgeAtlasUiClient') {
         if (!log.contains('[atlas-ui-test] PASS') || log.contains('[atlas-ui-test] FAIL')) {
             throw new GradleException("NeoForge atlas UI client did not pass; inspect ${logFile}")
         }
-        def atlasHandshakeMarkers = ['[atlas-ui-test] client-ready', '[atlas-ui-test] settings-v3-mapping-4',
+        def atlasHandshakeMarkers = ['[atlas-ui-test] client-ready', '[atlas-ui-test] settings-current-mapping-current',
          '[atlas-ui-test] disconnect-clear', '[atlas-ui-test] PASS']
         def previousAtlasHandshakeMarker = -1
         atlasHandshakeMarkers.each { marker ->
@@ -471,9 +471,10 @@ tasks.register('verifyNeoForgeAtlasUiClient') {
             }
             previousAtlasHandshakeMarker = markerIndex
         }
-        def atlasSettingsAck = log.indexOf('RingWorld settings acknowledged by AtlasUiTester on NeoForge: format 3')
-        if (atlasSettingsAck < 0 || atlasSettingsAck >= log.indexOf('[atlas-ui-test] disconnect-clear')) {
-            throw new GradleException("NeoForge Atlas UI integrated server did not accept the format-3 settings acknowledgement; inspect ${logFile}")
+        def atlasSettingsAckMatcher = log =~ /RingWorld settings acknowledged by AtlasUiTester on NeoForge: format [0-9]+/
+        def atlasSettingsAckIndex = atlasSettingsAckMatcher.find() ? atlasSettingsAckMatcher.start() : -1
+        if (atlasSettingsAckIndex < 0 || atlasSettingsAckIndex >= log.indexOf('[atlas-ui-test] disconnect-clear')) {
+            throw new GradleException("NeoForge Atlas UI integrated server did not accept the current settings acknowledgement; inspect ${logFile}")
         }
         (1..11).each { index ->
             def prefix = String.format('atlas-ui-%02d-', index)

@@ -5,6 +5,7 @@ import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.buffers.Std140SizeCalculator;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.ringworld.client.ClientRingState;
+import dev.ringworld.client.RingAtlasLightTuning;
 import dev.ringworld.world.RingDimensionReport;
 import dev.ringworld.world.RingCloudBounds;
 import dev.ringworld.world.RingGenerationBoundary;
@@ -33,7 +34,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 abstract class GlobalSettingsMixin {
     private static final int RINGWORLD_GLOBALS_SIZE = new Std140SizeCalculator()
             .putIVec3().putVec3().putVec2().putFloat().putFloat().putInt().putInt()
-            .putIVec4().putVec4().putVec4().putVec4().putVec4().putVec4().putVec4()
+            .putIVec4().putVec4().putVec4().putVec4().putVec4().putVec4().putVec4().putVec4()
             .get();
 
     @Shadow @Final private GpuBuffer buffer;
@@ -86,6 +87,7 @@ abstract class GlobalSettingsMixin {
         RingCloudBounds cloudBounds = geometry == null ? null
                 : RingCloudBounds.betweenInnerRimFaces(
                         geometry, ClientRingState.wallStyle().thicknessBlocks());
+        var atlasLight = RingAtlasLightTuning.profile();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var data = Std140Builder.onStack(stack, RINGWORLD_GLOBALS_SIZE)
@@ -126,6 +128,9 @@ abstract class GlobalSettingsMixin {
                             profile == null ? 0.0F : profile.visualProfileVersion(),
                             cloudBounds == null ? 0.0F : (float)cloudBounds.minimumZ(),
                             cloudBounds == null ? 0.0F : (float)cloudBounds.maximumZ())
+                    // process-local Atlas-light debug profile; never persisted
+                    .putVec4(atlasLight.shaderMode(), atlasLight.falloffExponent(),
+                            atlasLight.peakStrength(), 0.0F)
                     .get();
             dev.ringworld.client.render.RingSurfaceGpu.writeBuffer(buffer.slice(), data);
         }

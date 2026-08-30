@@ -51,7 +51,7 @@ Atlas surface colour sampling is server-authored. Water, grass, and foliage
 combine biome tint with representative vanilla texture luminance. Mycelium is
 special-cased to the measured mean of the vanilla 26.1.2 top texture
 (`#6F6365`) because its generic map colour is a much more saturated purple
-than the block players see. Atlas format 7 deliberately invalidates older
+than the block players see. Atlas format 7 deliberately invalidated older
 pink mycelium caches; resource packs do not currently change this server-side
 representative colour.
 
@@ -126,6 +126,35 @@ use vanilla's full-chunk and lighting test. The renderer region then receives
 Minecraft's empty client chunk for the exterior side and emits the exposed rim
 faces normally.
 
+## Configurable rim appearance
+
+Saved rim styles select thickness, palette, pattern, and top-edge decay. The
+decay sampler varies deterministically across both ring longitude and the
+wall's inward thickness. Broad, smoothly interpolated structural-failure zones
+contain smaller fracture clusters and lightly chipped edges; the exposed faces
+weather slightly faster than the protected core. This produces coherent rubble
+instead of either repeated full-width cuts or independent per-block noise. Each
+affected column remains top-connected, so decay never creates arbitrary internal
+holes. The
+material sampler is deterministic and periodic in canonical X, but it does not
+repeat on the former fixed 16-block horizontal or 128-block vertical tiles.
+Layered coordinate-hashed coarse, medium, and block-scale noise breaks up every
+selectable pattern. Masonry, panels, gradient, and hybrid keep distinct
+identities while their widths, offsets, wear, and material clusters vary by
+region. Clustered and strata IDs remain readable only for existing worlds; new
+worlds and the appearance editor do not offer them.
+
+The Industrial palette samples sea lanterns with a separate per-mille accent
+hash. Its one-in-one-thousand (0.1%) rate is deterministic and periodic at the
+seam, while the ordinary 100-value palette roll remains available for the
+dominant deepslate, basalt, tuff, and copper materials.
+
+Decay uses separate non-interpolated fracture and depth samples. It removes
+only columns connected to the top edge, producing irregular crenellation,
+crumbling shoulders, and occasional deep notches without opening arbitrary
+cavities through the wall face. The same loader-neutral sampler is used by
+world generation on Fabric and NeoForge.
+
 ## Rigid objects and interaction overlays
 
 Terrain vertices bend continuously in the chunk shader. Entity models, block
@@ -179,6 +208,21 @@ committed only after the ordered tile batch arrives. Incomplete atlas updates
 publish at most once per second. Changes to an already-complete atlas publish
 after three quiet seconds, or after a ten-second maximum delay under continuous
 churn, so a revision burst causes one GPU refresh rather than one per tile.
+Atlas format 7 replaces pink mycelium map colour with its measured top-texture
+colour. Atlas format 8 adds an independent 0–15 exposed block-light channel.
+The GPU texture keeps terrain RGB as albedo and carries light intensity in
+alpha; mip generation averages those channels independently so unlit cells do
+not darken or disappear.
+
+The terrain-height mesh terminates at the two playable inner rim faces. The
+closed style-derived rim mesh remains active after Atlas completion instead of
+being replaced by top-surface samples: a height-field Atlas cannot represent a
+vertical wall, and connecting its wall-top sample to adjacent ground creates a
+false grey ramp. A hidden half-block overlap beneath each inner face prevents a
+projection/depth crack without sampling wall colours into the terrain. Real
+chunks still replace this proxy near the player. A
+wall-specific live-edit overlay is the planned path for reflecting distant rim
+construction and damage without reintroducing height-field distortion.
 
 ### World lifecycle
 
@@ -207,13 +251,18 @@ resources.
 While generation is incomplete, the client keeps each published GPU texture at
 bounded source-atlas resolution. Missing
 samples remain opaque fallback pixels, known colours influence only a bounded
-distance, and the reference-height mesh carries temporary curved returns up to
-both inner rim faces. Each publication retains the previous GPU texture and
+distance, and the reference-height mesh carries temporary closed wall prisms at
+both finite edges. Each prism includes its inner face, outer face, and top; it
+therefore cannot expose the former open-backed curtain when viewed from above
+or outside the band. Each publication retains the previous GPU texture and
 cross-fades to the new revision over 750 ms; no CPU texture is uploaded per
 frame. The old texture is released when the fade completes or the session
-ends. Temporary return vertices use V coordinates outside the terrain range;
-the shader converts that marker to a block-scaled neutral cobble/moss pattern
-instead of stretching green edge terrain up the wall. At completion all
+ends. Temporary wall vertices use V coordinates outside the terrain range.
+The shader derives up to five map colours directly from the same block-state
+palette used by real wall generation, then applies the saved pattern and world
+seed. Every supported custom palette/pattern combination therefore updates the
+Atlas wall automatically instead of falling back to a hard-coded green or
+cobble surface. At completion all
 fallback influence, generation haze, and temporary returns disappear as
 the client bilinearly expands into the dimension-aware,
 quality-bounded size:
@@ -344,9 +393,26 @@ This keeps the proxy synchronized with the client's current day/night
 exposure, visual sky tint, weather response, gamma, lightning flashes,
 darkness, and night vision. It replaces the former grey scalar whose full-night
 floor was 65%, which left the far ring bright and saturated while real terrain
-became dark blue-green. Local torches and other block lights are intentionally
-not represented: the static atlas has neither a dynamic emission layer nor
-enough geometry to apply one faithfully.
+became dark blue-green. Format 8 adds a separate server-authored exposed
+block-light value. At night the surface shader reveals it as a restrained warm
+additive glow; during daylight that layer fades to zero and does not recolour
+terrain. Server surface invalidation expands to the vanilla 15-block light
+radius, so placing or removing lamps republishes nearby Atlas cells. This is a
+coarse surface illumination LOD, not per-block shadowing or transparent-light
+geometry.
+
+For development comparison, both loaders register the client-side command
+`/ringworld ringlights`. Development clients start on the owner-approved
+raised-peak Gamma
+profile. `show` reports the active process-local profile, `reset` restores the
+established midpoint curve, and
+`/ringworld ringlights <falloff> <peak>` immediately
+applies the tighter Gamma curve with those values. The startup defaults are
+falloff `2.0` and peak `1.25`; explicit values are bounded to `0.5–6.0` and
+`0.1–3.0`. These controls update the trailing
+RingWorld Globals UBO every frame, so they require neither an Atlas rebuild nor
+a server restart. They are deliberately not saved and do not change gameplay
+light, server state, or other players' rendering.
 
 ### What the texture is not
 
@@ -396,7 +462,8 @@ The default atmosphere retains the established central-star presentation:
 
 - vanilla moving sun rendering is suppressed;
 - moon rendering is suppressed;
-- star rotation is set to zero;
+- the star mesh is counter-rotated by canonical ring longitude, anchoring it
+  in physical space instead of to the player's local frame;
 - the sun direction is computed from the camera to the physical ring centre;
 - moving across the finite Z width tilts that direction correctly;
 - the sun is redrawn after the ring surface so it appears in front;
@@ -404,12 +471,34 @@ The default atmosphere retains the established central-star presentation:
   `3.0` only for the RingWorld redraw, shrinking the original Minecraft sun
   from roughly nine degrees across to about 0.9 degrees.
 
-The saved, server-owned sky profile can instead select a deep-space or minimal
-void backdrop and represent illumination as the compact sun, a larger distant
-star, or diffuse light with no visible source. Built-in presets are Atmosphere,
-Space habitat, Distant star, Night habitat, and Minimal void. Operators can
-switch profiles live; the server broadcasts the change without rebuilding the
-terrain Atlas because sky presentation is not terrain identity.
+Completing a lap restores the same star orientation. Moving half a
+circumference rotates every stellar direction by 180 degrees in the local
+tangent frame, so a cluster below the player on one side is overhead from the
+opposite side.
+
+The saved, server-owned sky profile has two independent selectors. **Sky** is
+Atmosphere, Night (dark with stars), or Void (near-black without stars).
+**Sun** is Small, Large, or None. Operators can change either field live; the
+server broadcasts the resulting profile without rebuilding the terrain Atlas
+because sky presentation is not terrain identity.
+
+The distant ring proxy normally blends toward Minecraft's live fog colour at
+its handoff and width edges. In Night and Void that atmosphere-coloured target
+appears as a pale outline. The ring shader therefore receives the saved
+backdrop ID and blends proxy edges to the exact dark backdrop colour in those
+two modes; Atmosphere retains ordinary fog matching.
+
+Vanilla's atmosphere is an upper disc whose fog gradient terminates at a flat
+horizon; below it, the framebuffer remains one constant fog colour (or a black
+bottom disc below vanilla's world horizon). That derivative break is visible
+from the top of a finite rim, especially at dusk. RingWorld renders the matching
+lower disc with the same live sky colour and centred geometry before celestial
+objects and the ring proxy, then suppresses vanilla's later black disc. The two
+fogged hemispheres meet without leaving an empty lower half or covering the
+authoritative ring surface. Across the final sixteen blocks below the saved
+wall top, the live atmospheric fog colour also smoothsteps into the current sky
+colour. Ground-level fog is unchanged, while the otherwise exposed rim-top
+view no longer contains a saturated flat horizon band.
 
 The original Minecraft sun texture, celestial atlas, and pipeline remain in
 use. `RingSkyCycle.sunVisual` maps the authoritative 24,000-tick world clock
@@ -426,7 +515,7 @@ The fragment colour passed to vanilla's sun draw receives that RGB tint and
 alpha multiplier. A smoothstep curve connects each six-thousand-tick segment,
 so there is no edge crossing or pop. Minecraft's existing sky colour,
 lightmap, fog, weather brightness, stars, beds, spawning, crops, and daylight
-sensors remain driven by the same world time for every profile; RingWorld does
+sensors remain driven by the same world time for every combination; RingWorld does
 not introduce a second gameplay clock. A dark visual backdrop therefore does
 not silently change spawning or other gameplay light rules.
 

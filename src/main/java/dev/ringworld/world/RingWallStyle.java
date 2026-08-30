@@ -16,7 +16,7 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
     public static final RingWallStyle LEGACY = new RingWallStyle(
             5, Palette.WEATHERED, Pattern.CLUSTERED, 0, FORMAT_VERSION);
     public static final RingWallStyle DEFAULT = new RingWallStyle(
-            5, Palette.WEATHERED, Pattern.CLUSTERED, 25, FORMAT_VERSION);
+            5, Palette.WEATHERED, Pattern.MASONRY, 25, FORMAT_VERSION);
 
     public static final Codec<RingWallStyle> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.fieldOf("thickness").forGetter(RingWallStyle::thicknessBlocks),
@@ -53,24 +53,30 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
     }
 
     public enum Palette {
-        WEATHERED(0, "Weathered stone"),
-        ANCIENT(1, "Ancient masonry"),
-        NATURAL(2, "Natural rock"),
-        ALLOY(3, "Ring alloy"),
-        INDUSTRIAL(4, "Industrial"),
-        OVERGROWN(5, "Overgrown ruin"),
-        MONOLITH(6, "Clean monolith");
+        WEATHERED(0, "Weathered stone", "Cobble, mossy cobble, stone, andesite"),
+        ANCIENT(1, "Ancient masonry", "Stone brick, cracked, mossy, cobble"),
+        NATURAL(2, "Natural rock", "Stone, tuff, andesite, cobble, moss"),
+        ALLOY(3, "Ring alloy", "Smooth stone, diorite, quartz, prismarine"),
+        INDUSTRIAL(4, "Industrial", "Deepslate, basalt, copper, 0.1% lanterns"),
+        OVERGROWN(5, "Overgrown ruin", "Stone brick, mossy, cracked, moss"),
+        MONOLITH(6, "Clean monolith", "Smooth stone, calcite, polished andesite"),
+        NETHER(7, "Nether fortress", "Nether brick, red brick, blackstone, magma"),
+        OBSIDIAN(8, "Obsidian bastion", "Obsidian, crying, blackstone, amethyst"),
+        WOOD(9, "Timber rampart", "Oak, spruce, dark oak, stripped timber");
 
         private final int id;
         private final String label;
+        private final String materials;
 
-        Palette(int id, String label) {
+        Palette(int id, String label, String materials) {
             this.id = id;
             this.label = label;
+            this.materials = materials;
         }
 
         public int id() { return id; }
         public String label() { return label; }
+        public String materials() { return materials; }
 
         public Palette next() {
             Palette[] values = values();
@@ -102,9 +108,19 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
         public int id() { return id; }
         public String label() { return label; }
 
+        /** Patterns offered for new worlds. Retired IDs remain decodable for old saves. */
+        public static Pattern[] selectableValues() {
+            return new Pattern[] { MASONRY, PANELS, GRADIENT, HYBRID };
+        }
+
         public Pattern next() {
-            Pattern[] values = values();
-            return values[(ordinal() + 1) % values.length];
+            Pattern[] selectable = selectableValues();
+            for (int index = 0; index < selectable.length; index++) {
+                if (selectable[index] == this) {
+                    return selectable[(index + 1) % selectable.length];
+                }
+            }
+            return MASONRY;
         }
 
         public static Pattern fromId(int id) {
@@ -114,13 +130,16 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
     }
 
     public enum Preset {
-        WEATHERED_FORTIFICATION("Weathered", 5, Palette.WEATHERED, Pattern.CLUSTERED, 25),
+        WEATHERED_FORTIFICATION("Weathered", 5, Palette.WEATHERED, Pattern.MASONRY, 25),
         ANCIENT_MASONRY("Ancient", 6, Palette.ANCIENT, Pattern.MASONRY, 40),
-        NATURAL_ESCARPMENT("Escarpment", 8, Palette.NATURAL, Pattern.STRATA, 15),
+        NATURAL_ESCARPMENT("Escarpment", 8, Palette.NATURAL, Pattern.GRADIENT, 15),
         RING_ALLOY("Ring alloy", 5, Palette.ALLOY, Pattern.PANELS, 5),
         INDUSTRIAL_SUPERSTRUCTURE("Industrial", 7, Palette.INDUSTRIAL, Pattern.PANELS, 10),
         OVERGROWN_RUIN("Overgrown", 6, Palette.OVERGROWN, Pattern.HYBRID, 70),
-        CLEAN_MONOLITH("Monolith", 4, Palette.MONOLITH, Pattern.PANELS, 0);
+        CLEAN_MONOLITH("Monolith", 4, Palette.MONOLITH, Pattern.PANELS, 0),
+        NETHER_FORTRESS("Nether", 7, Palette.NETHER, Pattern.MASONRY, 25),
+        OBSIDIAN_BASTION("Obsidian", 5, Palette.OBSIDIAN, Pattern.PANELS, 8),
+        TIMBER_RAMPART("Wood", 4, Palette.WOOD, Pattern.PANELS, 20);
 
         private final String label;
         private final RingWallStyle style;
@@ -132,6 +151,12 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
 
         public String label() { return label; }
         public RingWallStyle style() { return style; }
+        public String descriptor() {
+            return style.thicknessBlocks() + " thick · " + style.pattern().label()
+                    + " · " + style.decayPercent() + "% decay";
+        }
+
+        public String materials() { return style.palette().materials(); }
 
         public Preset next() {
             Preset[] values = values();

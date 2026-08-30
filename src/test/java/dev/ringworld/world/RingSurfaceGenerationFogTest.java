@@ -25,4 +25,13 @@ class RingSurfaceGenerationFogTest {
         assertEquals(RingSurfaceGenerationFog.MAX_FOG,
                 RingSurfaceGenerationFog.amount(Double.NaN));
     }
+
+    @Test
+    void seedPreviewKeepsSomeHazeWithoutHidingTheMap() {
+        assertEquals(RingSurfaceGenerationFog.MAX_SEED_PREVIEW_FOG,
+                RingSurfaceGenerationFog.amount(0.0, true));
+        assertEquals(RingSurfaceGenerationFog.MAX_SEED_PREVIEW_FOG * 0.5F,
+                RingSurfaceGenerationFog.amount(0.5, true), 0.000_001F);
+        assertEquals(0.0F, RingSurfaceGenerationFog.amount(1.0, true));
+    }
 }

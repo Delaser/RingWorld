@@ -44,7 +44,8 @@ If absent, the mod creates it at startup.
 | `wallPattern` | 0 | Stable numeric pattern ID; prefer the in-game editor rather than hand-editing |
 | `wallDecayPercent` | 25 | 0–100; removes only top-connected material to form a crumbling upper edge |
 | `wallStyleFormat` | 1 | Saved bootstrap style schema; do not change manually |
-| `skyPreset` | `MINECRAFT_ATMOSPHERE` | New-world sky preset: atmosphere, space habitat, distant star, night habitat, or minimal void |
+| `skyBackdrop` | `ATMOSPHERE` | New-world visual backdrop: `ATMOSPHERE`, `NIGHT`, or `VOID` |
+| `sunStyle` | `SMALL` | Independent visible source: `SMALL`, `LARGE`, or `NONE` |
 | `testMode` | false | Enables destructive local automated harness |
 | `testViewDistanceChunks` | 28 | Initial live/LOD capture distance for the local harness; 2–32 |
 | `pregenerateTerrainAtlas` | true | Generates missing canonical surface chunks in background |
@@ -57,9 +58,17 @@ immediately.
 The Create World screen has a bottom-left `RingWorld C×W` button. Its centered,
 responsive editor provides **Small** (2,048×128×160), **Medium**
 (16,384×256×160), and **Large** (32,768×512×160) presets, plus custom
-circumference, width, wall-height, a rim-style editor, a sky preset, a reset
+circumference, width, wall-height, a rim-style editor, independent sky and sun
+selectors, a reset
 to `config/ringworld.properties`, and the new-world ocean-monument control.
-The rim editor offers seven presets plus thickness, material palette, pattern,
+**Seed preview** opens a separate asynchronous full-ring map for the seed in
+Minecraft's actual world-creation state. Editing or rerolling the seed cancels
+stale work and regenerates after a short debounce. It samples the selected
+noise generator and periodic biome source without creating chunks, structures,
+caves, or a save, so it is a fast terrain approximation rather than a promise
+of the final block layout. The image is letterboxed at the selected world's
+true circumference-to-width ratio instead of being stretched to fill the panel.
+The rim editor offers ten presets plus thickness, material palette, pattern,
 and top-edge decay controls. Reset does not read or change an
 existing world's saved layout. The live maths panel shows:
 
@@ -112,7 +121,7 @@ terrain mapping, rim style, format version
 ```
 
 Every saved layout field takes precedence on subsequent loads. Changing
-bootstrap dimensions, wall height, wall style, or sky preset does not resize
+bootstrap dimensions, wall height, wall style, sky backdrop, or sun style does not resize
 or redecorate an existing RingWorld. Format-1 and format-2 saves migrate through
 format 3 with surface reference Y=64 and their legacy terrain-noise mapping
 preserved. Pre-format-4 worlds receive the exact legacy rim style; fresh worlds
@@ -122,11 +131,12 @@ world from changing terrain algorithms after an update. The mapping is part of
 the atlas world hash, so an incompatible cached atlas is discarded and rebuilt.
 
 Sky presentation is stored separately in `ringworld:sky_settings`, because it
-does not change terrain or layout ownership. Operators can change it live with
-`/ringworld sky atmosphere|space|distant|night|void`; the server saves and
-broadcasts the choice. The command changes only the backdrop and visible light
-source. Vanilla time, skylight, mob spawning, sleep, crops, weather, and
-daylight sensors remain authoritative.
+does not change terrain or layout ownership. Operators can change its two
+independent fields live with `/ringworld sky atmosphere|night|void` and
+`/ringworld sun small|large|none`; the server saves and broadcasts each change.
+Vanilla time, skylight, mob spawning, sleep, crops, weather, and daylight
+sensors remain authoritative. Bootstrap files with the former combined
+`skyPreset` field migrate to the equivalent backdrop/source pair.
 
 Minecraft 26.1 stores RingWorld settings at:
 

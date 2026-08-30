@@ -23,7 +23,7 @@ public final class RingWorldCreationUiTestClient {
     private static final int SETTLE_FRAMES = 3;
     private static final int STARTUP_SETTLE_FRAMES = 120;
     private static final int TIMEOUT_TICKS = 1_200;
-    private static final int CAPTURE_COUNT = 15;
+    private static final int CAPTURE_COUNT = 17;
 
     private static RingWorldCreationUiTestClient activeFixture;
 
@@ -37,6 +37,10 @@ public final class RingWorldCreationUiTestClient {
     private boolean capturePending;
     private boolean finished;
     private int capturesSaved;
+    private long firstSeedPreviewHash = Long.MIN_VALUE;
+    private boolean firstSeedRequested;
+    private boolean firstSeedReadyObserved;
+    private boolean secondSeedReadyObserved;
 
     public boolean enabled() {
         return Boolean.getBoolean(ENABLE_PROPERTY);
@@ -101,23 +105,25 @@ public final class RingWorldCreationUiTestClient {
             case 1 -> captureDefaultAndChangeScale(client, 1, "creation-ui-02-default-scale1", 2);
             case 2 -> captureDefaultAndChangeScale(client, 2, "creation-ui-03-default-scale2", 3);
             case 3 -> captureDefaultAndChangeScale(client, 3, "creation-ui-04-default-scale3", 4);
-            case 4 -> captureScaleFourAndOpenRim(client);
-            case 5 -> captureRimScaleFourAndNarrow(client);
-            case 6 -> captureRimNarrowAndReturn(client);
-            case 7 -> captureNarrowAndInvalidate(client);
-            case 8 -> captureInvalidAndSelectSmall(client);
-            case 9 -> captureSmallAndSelectMedium(client);
-            case 10 -> captureMediumAndSelectLarge(client);
-            case 11 -> captureLargeAndPrepareCustom(client);
-            case 12 -> captureCustomAndConfirm(client);
-            case 13 -> captureConfirmationAndAccept(client);
-            case 14 -> verifyAppliedFooterAndStop(client);
+            case 4 -> captureScaleFourAndOpenSeedPreview(client);
+            case 5 -> captureFirstSeedPreview(client);
+            case 6 -> captureSecondSeedPreviewAndOpenRim(client);
+            case 7 -> captureRimScaleFourAndNarrow(client);
+            case 8 -> captureRimNarrowAndReturn(client);
+            case 9 -> captureNarrowAndInvalidate(client);
+            case 10 -> captureInvalidAndSelectSmall(client);
+            case 11 -> captureSmallAndSelectMedium(client);
+            case 12 -> captureMediumAndSelectLarge(client);
+            case 13 -> captureLargeAndPrepareCustom(client);
+            case 14 -> captureCustomAndConfirm(client);
+            case 15 -> captureConfirmationAndAccept(client);
+            case 16 -> verifyAppliedFooterAndStop(client);
             default -> { }
         }
         return true;
     }
 
-    private void captureScaleFourAndOpenRim(Minecraft client) {
+    private void captureScaleFourAndOpenSeedPreview(Minecraft client) {
         RingWorldCreationScreen screen = creationScreen(client);
         if (screen == null || !hasLogicalSize(
                 client, SCALE_FOUR_LOGICAL_WIDTH, MINIMUM_SCALE_FOUR_LOGICAL_HEIGHT)) {
@@ -125,7 +131,59 @@ public final class RingWorldCreationUiTestClient {
             return;
         }
         capture(client, "creation-ui-05-default-scale4", () -> {
-            screen.ringworld$automationOpenRimEditor();
+            screen.ringworld$automationOpenSeedPreview();
+            armAndAdvance();
+        });
+    }
+
+    private void captureFirstSeedPreview(Minecraft client) {
+        if (!(RingMinecraftClientAccess.screen(client) instanceof RingSeedPreviewScreen screen)) {
+            fail(client, "the seed preview screen did not open");
+            return;
+        }
+        if (!firstSeedRequested) {
+            firstSeedRequested = true;
+            screen.ringworld$automationSetSeed("12345");
+            arm();
+            return;
+        }
+        if (!screen.ringworld$automationReady()) return;
+        if (!firstSeedReadyObserved) {
+            firstSeedReadyObserved = true;
+            // The render-state extractor trails the tick that uploads the
+            // texture. Give the completed preview several real frames before
+            // reading the framebuffer so the evidence cannot capture its
+            // previous "Generating" state.
+            arm();
+            return;
+        }
+        firstSeedPreviewHash = screen.ringworld$automationPreviewHash();
+        capture(client, "creation-ui-06-seed-preview-12345-scale4", () -> {
+            screen.ringworld$automationSetSeed("67890");
+            armAndAdvance();
+        });
+    }
+
+    private void captureSecondSeedPreviewAndOpenRim(Minecraft client) {
+        if (!(RingMinecraftClientAccess.screen(client) instanceof RingSeedPreviewScreen screen)
+                || !screen.ringworld$automationReady()) return;
+        if (!secondSeedReadyObserved) {
+            secondSeedReadyObserved = true;
+            arm();
+            return;
+        }
+        if (screen.ringworld$automationPreviewHash() == firstSeedPreviewHash) {
+            fail(client, "changing the world seed did not replace the preview identity");
+            return;
+        }
+        capture(client, "creation-ui-07-seed-preview-67890-scale4", () -> {
+            screen.ringworld$automationDone();
+            RingWorldCreationScreen parent = creationScreen(client);
+            if (parent == null) {
+                fail(client, "seed preview did not return to the layout editor");
+                return;
+            }
+            parent.ringworld$automationOpenRimEditor();
             armAndAdvance();
         });
     }
@@ -139,7 +197,7 @@ public final class RingWorldCreationUiTestClient {
             fail(client, "the default rim editor did not fit the scale-4 layout");
             return;
         }
-        capture(client, "creation-ui-06-rim-default-scale4", () -> {
+        capture(client, "creation-ui-08-rim-default-scale4", () -> {
             screen.ringworld$automationApplyPreset(
                     dev.ringworld.world.RingWallStyle.Preset.OVERGROWN_RUIN);
             resizeFramebuffer(client, NARROW_FRAMEBUFFER_WIDTH, MINIMUM_FRAMEBUFFER_HEIGHT);
@@ -162,7 +220,7 @@ public final class RingWorldCreationUiTestClient {
                     + client.getWindow().getGuiScaledHeight() + ", state=" + state);
             return;
         }
-        capture(client, "creation-ui-07-rim-overgrown-narrow-scale4", () -> {
+        capture(client, "creation-ui-09-rim-overgrown-narrow-scale4", () -> {
             screen.ringworld$automationUse();
             RingWorldCreationScreen parent = creationScreen(client);
             if (parent == null || !parent.ringworld$automationHasWallStyle(
@@ -188,7 +246,7 @@ public final class RingWorldCreationUiTestClient {
             fail(client, "the compact editor did not retain the Large draft at 320-wide scale 4");
             return;
         }
-        capture(client, "creation-ui-08-large-narrow-scale4", () -> {
+        capture(client, "creation-ui-10-large-narrow-scale4", () -> {
             screen.ringworld$automationSetLayout(1_001, 127, 31);
             armAndAdvance();
         });
@@ -201,7 +259,7 @@ public final class RingWorldCreationUiTestClient {
             fail(client, "the invalid layout did not expose all five expected validation errors");
             return;
         }
-        capture(client, "creation-ui-09-invalid-five-errors-narrow-scale4", () -> {
+        capture(client, "creation-ui-11-invalid-five-errors-narrow-scale4", () -> {
             resizeFramebuffer(client, REQUIRED_FRAMEBUFFER_WIDTH, MINIMUM_FRAMEBUFFER_HEIGHT);
             armAndAdvance();
         });
@@ -224,7 +282,7 @@ public final class RingWorldCreationUiTestClient {
             fail(client, "the Small preset or its live maths/monument state was incorrect");
             return;
         }
-        capture(client, "creation-ui-10-small-scale4", () -> {
+        capture(client, "creation-ui-12-small-scale4", () -> {
             screen.ringworld$automationPressMedium();
             armAndAdvance();
         });
@@ -242,7 +300,7 @@ public final class RingWorldCreationUiTestClient {
             fail(client, "the Medium preset or its live maths was incorrect");
             return;
         }
-        capture(client, "creation-ui-11-medium-scale4", () -> {
+        capture(client, "creation-ui-13-medium-scale4", () -> {
             screen.ringworld$automationPressLarge();
             armAndAdvance();
         });
@@ -256,7 +314,7 @@ public final class RingWorldCreationUiTestClient {
             fail(client, "the Large preset or its live maths was incorrect");
             return;
         }
-        capture(client, "creation-ui-12-large-scale4", () -> {
+        capture(client, "creation-ui-14-large-scale4", () -> {
             screen.ringworld$automationSetLayout(4_096, 640, 192);
             if (!screen.ringworld$automationMonumentRequested()) {
                 screen.ringworld$automationToggleMonument();
@@ -270,6 +328,7 @@ public final class RingWorldCreationUiTestClient {
             screen.ringworld$automationSetLayout(4_096, 640, 192);
             screen.ringworld$automationToggleMonument();
             screen.ringworld$automationCycleSky();
+            screen.ringworld$automationCycleSun();
             armAndAdvance();
         });
     }
@@ -282,7 +341,7 @@ public final class RingWorldCreationUiTestClient {
             fail(client, "the custom 4096x640x192 monument layout was not applied");
             return;
         }
-        capture(client, "creation-ui-13-custom-monument-space-scale4", () -> {
+        capture(client, "creation-ui-15-custom-monument-night-large-scale4", () -> {
             screen.ringworld$automationApply();
             armAndAdvance();
         });
@@ -295,7 +354,7 @@ public final class RingWorldCreationUiTestClient {
             fail(client, "the real layout confirmation screen was not opened");
             return;
         }
-        capture(client, "creation-ui-14-confirm-layout-scale4", () -> {
+        capture(client, "creation-ui-16-confirm-layout-scale4", () -> {
             ((ConfirmScreenAccessor) confirm).ringworld$yesButton()
                     .onPress(RingWorldCreationScreen.AutomationInput.INSTANCE);
             armAndAdvance();
@@ -341,7 +400,7 @@ public final class RingWorldCreationUiTestClient {
             fail(client, "the accepted confirmation did not refresh the real Create World footer");
             return;
         }
-        capture(client, "creation-ui-15-footer-applied-scale4");
+        capture(client, "creation-ui-17-footer-applied-scale4");
         // Screenshot's callback stops the client immediately after the last
         // write completes. There is deliberately no world-creation call here.
     }
@@ -360,8 +419,8 @@ public final class RingWorldCreationUiTestClient {
                 capturePending = false;
                 RingWorldMod.LOGGER.info("[creation-ui-test] screenshot {}", message.getString());
                 if (capturesSaved == CAPTURE_COUNT) {
-                    RingWorldMod.LOGGER.info("[creation-ui-test] PASS: 15 menu-only captures across GUI scales 1-4 "
-                            + "and a 320-wide compact view; rim controls, sky selection, Small/Medium/Large "
+                    RingWorldMod.LOGGER.info("[creation-ui-test] PASS: 17 menu-only captures across GUI scales 1-4 "
+                            + "and a 320-wide compact view; two real seed previews, rim controls, sky selection, Small/Medium/Large "
                             + "maths, and the confirmed 4096x640x192 monument layout refreshed the footer.");
                     activeFixture = null;
                     client.stop();

@@ -9,22 +9,25 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingSkyProfileTest {
     @Test
-    void everyCoherentPresetRoundTrips() {
-        for (RingSkyProfile.Preset preset : RingSkyProfile.Preset.values()) {
-            var encoded = RingSkyProfile.CODEC.encodeStart(JsonOps.INSTANCE, preset.profile())
-                    .getOrThrow();
-            RingSkyProfile decoded = RingSkyProfile.CODEC.parse(JsonOps.INSTANCE, encoded)
-                    .getOrThrow();
-            assertEquals(preset.profile(), decoded);
-            assertEquals(preset, RingSkyProfile.Preset.matching(decoded));
+    void everyBackdropAndSunCombinationRoundTrips() {
+        for (RingSkyProfile.Backdrop backdrop : RingSkyProfile.Backdrop.values()) {
+            for (RingSkyProfile.LightSource source : RingSkyProfile.LightSource.values()) {
+                RingSkyProfile profile = new RingSkyProfile(
+                        backdrop, source, RingSkyProfile.FORMAT_VERSION);
+                var encoded = RingSkyProfile.CODEC.encodeStart(JsonOps.INSTANCE, profile)
+                        .getOrThrow();
+                RingSkyProfile decoded = RingSkyProfile.CODEC.parse(JsonOps.INSTANCE, encoded)
+                        .getOrThrow();
+                assertEquals(profile, decoded);
+            }
         }
     }
 
     @Test
     void lightSourcesHaveDeliberateRelativeScale() {
         assertEquals(0.0F, RingSkyProfile.LightSource.NONE.halfWidth());
-        assertTrue(RingSkyProfile.LightSource.DISTANT_SUN.halfWidth()
-                > RingSkyProfile.LightSource.COMPACT_SUN.halfWidth());
+        assertTrue(RingSkyProfile.LightSource.LARGE.halfWidth()
+                > RingSkyProfile.LightSource.SMALL.halfWidth());
     }
 
     @Test
@@ -33,6 +36,6 @@ class RingSkyProfileTest {
         assertThrows(IllegalArgumentException.class, () -> RingSkyProfile.LightSource.fromId(99));
         assertThrows(IllegalArgumentException.class, () -> new RingSkyProfile(
                 RingSkyProfile.Backdrop.ATMOSPHERE,
-                RingSkyProfile.LightSource.COMPACT_SUN, 99));
+                RingSkyProfile.LightSource.SMALL, 99));
     }
 }

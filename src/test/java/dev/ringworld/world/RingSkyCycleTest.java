@@ -6,6 +6,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingSkyCycleTest {
+    private static final RingGeometry GEOMETRY = new RingGeometry(128, 2_048);
+
     @Test
     void sunNeverMoves() {
         assertEquals(0.0F, RingSkyCycle.FIXED_SUN_ANGLE_RADIANS);
@@ -16,6 +18,30 @@ class RingSkyCycleTest {
         assertEquals(3.0F, RingSkyCycle.SUN_HALF_WIDTH);
         assertEquals(0.2625F, RingSkyCycle.SUN_VISIBLE_TEXTURE_SCALE);
         assertTrue(RingSkyCycle.SUN_ANGULAR_HALF_WIDTH_DEGREES < 0.5F);
+    }
+
+    @Test
+    void starFieldIsFixedInPhysicalSpaceInsteadOfFollowingThePlayer() {
+        assertEquals(0.0F, RingSkyCycle.starFieldAngleRadians(GEOMETRY, 0.0), 0.00001F);
+        assertEquals(-(float)(Math.PI / 2.0),
+                RingSkyCycle.starFieldAngleRadians(GEOMETRY, 512.0), 0.00001F);
+        assertEquals(-(float)Math.PI,
+                RingSkyCycle.starFieldAngleRadians(GEOMETRY, 1_024.0), 0.00001F);
+
+        // A complete lap, including presentation-coordinate images, returns
+        // to the exact same celestial orientation at the seam.
+        assertEquals(RingSkyCycle.starFieldAngleRadians(GEOMETRY, 37.25),
+                RingSkyCycle.starFieldAngleRadians(GEOMETRY, 37.25 + 2_048.0),
+                0.00001F);
+    }
+
+    @Test
+    void exposedHorizonOnlyConvergesNearTheWallTop() {
+        assertEquals(0.0F, RingSkyCycle.exposedHorizonBlend(64.0, 96.0));
+        assertEquals(0.0F, RingSkyCycle.exposedHorizonBlend(80.0, 96.0));
+        assertEquals(0.5F, RingSkyCycle.exposedHorizonBlend(88.0, 96.0), 0.00001F);
+        assertEquals(1.0F, RingSkyCycle.exposedHorizonBlend(96.0, 96.0));
+        assertEquals(1.0F, RingSkyCycle.exposedHorizonBlend(140.0, 96.0));
     }
 
     @Test

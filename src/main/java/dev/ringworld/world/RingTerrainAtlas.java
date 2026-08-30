@@ -17,20 +17,20 @@ import java.util.zip.GZIPOutputStream;
 
 /**
  * A compact, canonical overview of the generated ring surface. X is periodic,
- * Z spans the finite band, and each cell stores the real surface height and
- * map colour sampled from a generated chunk.
+ * Z spans the finite band, and each cell stores the real surface height,
+ * map colour, and exposed block-light level sampled from a generated chunk.
  *
  * <p>The atlas deliberately contains data rather than a GPU texture. That
  * keeps the file/network format independent from Minecraft's renderer and
  * lets the sky mesh bilinearly sample exactly the same tiled cache.</p>
  */
 public final class RingTerrainAtlas {
-    /** Format 7 invalidates saturated pre-fix mycelium surface colours. */
-    public static final int FORMAT_VERSION = 7;
+    /** Format 8 adds the separate surface-illumination channel. */
+    public static final int FORMAT_VERSION = 8;
     public static final int SAMPLE_STEP_BLOCKS = 8;
     public static final int TILE_SIZE = 16;
-    /** Short height, map colour, and presence bit-array accounting per sampled cell. */
-    public static final int ESTIMATED_BYTES_PER_CELL = 7;
+    /** Short height, map colour, block-light byte, and presence accounting per cell. */
+    public static final int ESTIMATED_BYTES_PER_CELL = 8;
     private static final int MAGIC = 0x52574154; // RWAT
     private static final int MAX_TILE_BYTES = TILE_SIZE * TILE_SIZE * ESTIMATED_BYTES_PER_CELL;
 
@@ -41,6 +41,7 @@ public final class RingTerrainAtlas {
     private final int rows;
     private final short[] heights;
     private final int[] colors;
+    private final byte[] blockLights;
     private final boolean[] present;
     private int presentCount;
     private long revision;
@@ -66,6 +67,7 @@ public final class RingTerrainAtlas {
         int cellCount = Math.toIntExact(cells);
         this.heights = new short[cellCount];
         this.colors = new int[cellCount];
+        this.blockLights = new byte[cellCount];
         this.present = new boolean[cellCount];
     }
 
@@ -119,6 +121,7 @@ public final class RingTerrainAtlas {
         RingTerrainAtlas copy = new RingTerrainAtlas(geometry, worldHash, sampleStep);
         System.arraycopy(heights, 0, copy.heights, 0, heights.length);
         System.arraycopy(colors, 0, copy.colors, 0, colors.length);
+        System.arraycopy(blockLights, 0, copy.blockLights, 0, blockLights.length);
         System.arraycopy(present, 0, copy.present, 0, present.length);
         copy.presentCount = presentCount;
         copy.revision = revision;
@@ -142,24 +145,40 @@ public final class RingTerrainAtlas {
 
     /** Stores a sample selected by canonical block coordinates. */
     public boolean putBlockSample(int blockX, int blockZ, int surfaceY, int mapColor) {
+        return putBlockSample(blockX, blockZ, surfaceY, mapColor, 0);
+    }
+
+    public boolean putBlockSample(int blockX, int blockZ, int surfaceY,
+                                  int mapColor, int blockLight) {
         int column = geometry.wrapBlockX(blockX) / sampleStep;
         int row = Math.floorDiv(blockZ - geometry.minWidthZ(), sampleStep);
         if (row < 0 || row >= rows) return false;
-        return putCell(column, row, surfaceY, mapColor);
+        return putCell(column, row, surfaceY, mapColor, blockLight);
     }
 
     public boolean putCell(int column, int row, int surfaceY, int mapColor) {
+        return putCell(column, row, surfaceY, mapColor, 0);
+    }
+
+    public boolean putCell(int column, int row, int surfaceY,
+                           int mapColor, int blockLight) {
         if (column < 0 || column >= columns || row < 0 || row >= rows) return false;
+        if (blockLight < 0 || blockLight > 15) {
+            throw new IllegalArgumentException("atlas block light must be between 0 and 15");
+        }
         int index = index(column, row);
         short clampedHeight = (short)Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, surfaceY));
         int rgb = mapColor & 0xFFFFFF;
-        boolean changed = !present[index] || heights[index] != clampedHeight || colors[index] != rgb;
+        byte light = (byte)blockLight;
+        boolean changed = !present[index] || heights[index] != clampedHeight
+                || colors[index] != rgb || blockLights[index] != light;
         if (!present[index]) {
             present[index] = true;
             presentCount++;
         }
         heights[index] = clampedHeight;
         colors[index] = rgb;
+        blockLights[index] = light;
         return changed;
     }
 
@@ -182,6 +201,13 @@ public final class RingTerrainAtlas {
         return present[index] ? heights[index] : (int)RingGeometry.SURFACE_Y;
     }
 
+    /** Raw exposed block-light level, from zero through vanilla's maximum fifteen. */
+    public int cellBlockLight(int column, int row) {
+        if (row < 0 || row >= rows) return 0;
+        int index = index(Math.floorMod(column, columns), row);
+        return present[index] ? Byte.toUnsignedInt(blockLights[index]) : 0;
+    }
+
     /**
      * Bilinearly samples the overview. X wraps at the exact ring seam. Missing
      * neighbours are ignored so a partly generated atlas improves the Arch
@@ -199,6 +225,7 @@ public final class RingTerrainAtlas {
         double red = 0.0;
         double green = 0.0;
         double blue = 0.0;
+        double blockLight = 0.0;
         double weightTotal = 0.0;
         for (int dz = 0; dz <= 1; dz++) {
             int row = Math.max(0, Math.min(rows - 1, z0 + dz));
@@ -213,6 +240,7 @@ public final class RingTerrainAtlas {
                 red += (colors[index] >> 16 & 0xFF) * weight;
                 green += (colors[index] >> 8 & 0xFF) * weight;
                 blue += (colors[index] & 0xFF) * weight;
+                blockLight += Byte.toUnsignedInt(blockLights[index]) * weight;
                 weightTotal += weight;
             }
         }
@@ -220,7 +248,8 @@ public final class RingTerrainAtlas {
         int color = clampColor(red / weightTotal) << 16
                 | clampColor(green / weightTotal) << 8
                 | clampColor(blue / weightTotal);
-        return new SurfaceSample(height / weightTotal, color, weightTotal);
+        return new SurfaceSample(height / weightTotal, color,
+                blockLight / weightTotal, weightTotal);
     }
 
     public byte[] encodeTile(int tileX, int tileZ) {
@@ -240,6 +269,7 @@ public final class RingTerrainAtlas {
                         output.writeBoolean(present[index]);
                         output.writeShort(heights[index]);
                         output.writeInt(colors[index]);
+                        output.writeByte(blockLights[index]);
                     }
                 }
             }
@@ -273,6 +303,7 @@ public final class RingTerrainAtlas {
                     boolean incomingPresent = input.readBoolean();
                     int height = input.readShort();
                     int color = input.readInt();
+                    int blockLight = input.readUnsignedByte();
                     int index = index(firstX + x, firstZ + z);
                     // Atlas samples are immutable once generated. A client may
                     // have a more complete disk cache than a newly started or
@@ -281,13 +312,16 @@ public final class RingTerrainAtlas {
                     if (incomingPresent) {
                         short incomingHeight = (short)height;
                         int incomingColor = color & 0xFFFFFF;
+                        byte incomingBlockLight = (byte)blockLight;
                         changed |= !present[index]
                                 || heights[index] != incomingHeight
-                                || colors[index] != incomingColor;
+                                || colors[index] != incomingColor
+                                || blockLights[index] != incomingBlockLight;
                         if (!present[index]) presentCount++;
                         present[index] = true;
                         heights[index] = incomingHeight;
                         colors[index] = incomingColor;
+                        blockLights[index] = incomingBlockLight;
                     }
                 }
             }
@@ -314,6 +348,7 @@ public final class RingTerrainAtlas {
                 output.writeBoolean(present[index]);
                 output.writeShort(heights[index]);
                 output.writeInt(colors[index]);
+                output.writeByte(blockLights[index]);
             }
         }
         try {
@@ -345,6 +380,7 @@ public final class RingTerrainAtlas {
                 atlas.present[index] = input.readBoolean();
                 atlas.heights[index] = input.readShort();
                 atlas.colors[index] = input.readInt() & 0xFFFFFF;
+                atlas.blockLights[index] = input.readByte();
                 if (atlas.present[index]) atlas.presentCount++;
             }
             if (input.read() != -1) throw new IOException("trailing terrain atlas data");
@@ -426,6 +462,7 @@ public final class RingTerrainAtlas {
     public void clear() {
         Arrays.fill(heights, (short)0);
         Arrays.fill(colors, 0);
+        Arrays.fill(blockLights, (byte)0);
         Arrays.fill(present, false);
         presentCount = 0;
     }
@@ -446,8 +483,9 @@ public final class RingTerrainAtlas {
         return Math.max(0, Math.min(255, (int)Math.round(value)));
     }
 
-    public record SurfaceSample(double height, int color, double coverage) {
-        public static final SurfaceSample MISSING = new SurfaceSample(RingGeometry.SURFACE_Y, -1, 0.0);
+    public record SurfaceSample(double height, int color, double blockLight, double coverage) {
+        public static final SurfaceSample MISSING = new SurfaceSample(
+                RingGeometry.SURFACE_Y, -1, 0.0, 0.0);
         public boolean present() { return color >= 0 && coverage > 0.0; }
     }
 

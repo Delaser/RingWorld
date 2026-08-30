@@ -53,8 +53,8 @@ public final class RingWallStyleScreen extends Screen {
         decayField = null;
         Layout layout = layout();
         RingWallStyle.Preset[] presets = RingWallStyle.Preset.values();
-        addPresetRow(layout, presets, 0, 4, layout.presetY());
-        addPresetRow(layout, presets, 4, presets.length, layout.presetY() + 24);
+        addPresetRow(layout, presets, 0, 5, layout.presetY());
+        addPresetRow(layout, presets, 5, presets.length, layout.presetY() + 24);
 
         int gap = 5;
         int half = (layout.contentWidth() - gap) / 2;
@@ -91,10 +91,21 @@ public final class RingWallStyleScreen extends Screen {
         for (int index = start; index < end; index++) {
             RingWallStyle.Preset preset = presets[index];
             int x = layout.contentLeft() + (index - start) * (buttonWidth + gap);
-            addRenderableWidget(Button.builder(Component.literal(preset.label()),
+            addRenderableWidget(Button.builder(Component.literal(presetButtonLabel(preset)),
                     button -> applyPreset(preset))
                     .bounds(x, y, buttonWidth, 20).build());
         }
+    }
+
+    private String presetButtonLabel(RingWallStyle.Preset preset) {
+        String label = preset.label();
+        return switch (preset) {
+            case NATURAL_ESCARPMENT -> "Rock";
+            case INDUSTRIAL_SUPERSTRUCTURE -> "Industry";
+            case OVERGROWN_RUIN -> "Ruin";
+            case CLEAN_MONOLITH -> "Monolith";
+            default -> label;
+        };
     }
 
     private EditBox numericField(int x, int y, int width, String label, String value) {
@@ -171,9 +182,16 @@ public final class RingWallStyleScreen extends Screen {
             graphics.centeredText(font, Component.literal(validation), width / 2,
                     layout.actionY() - 14, ERROR_COLOR);
         } else {
-            graphics.centeredText(font, Component.literal(
-                    "Top-edge decay only · " + draft.conciseLabel()), width / 2,
-                    layout.actionY() - 14, LABEL_COLOR);
+            RingWallStyle.Preset selected = RingWallStyle.Preset.find(draft).orElse(null);
+            String name = selected == null ? "Custom" : selected.label();
+            String patternLabel = draft.pattern() == RingWallStyle.Pattern.PANELS
+                    ? "Panels" : draft.pattern().label();
+            graphics.centeredText(font, Component.literal(name + " · "
+                            + draft.thicknessBlocks() + " thick · " + patternLabel + " · "
+                            + draft.decayPercent() + "% decay"),
+                    width / 2, layout.detailsY(), 0xFFE3E7EC);
+            graphics.centeredText(font, Component.literal(draft.palette().materials()),
+                    width / 2, layout.detailsY() + 12, LABEL_COLOR);
         }
     }
 
@@ -193,6 +211,7 @@ public final class RingWallStyleScreen extends Screen {
         int presetY() { return top + 43; }
         int advancedY() { return top + 116; }
         int valuesY() { return top + 162; }
+        int detailsY() { return valuesY() + 27; }
         int actionY() { return bottom() - 28; }
     }
 

@@ -14,6 +14,7 @@ import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRequestPayload;
 import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
+import dev.ringworld.net.RingTerrainPreviewPayload;
 import dev.ringworld.server.RingWorldMultiplayerTest;
 import dev.ringworld.server.RingTerrainAtlasServer;
 import dev.ringworld.world.RingWorldSettings;
@@ -47,6 +48,7 @@ public final class NeoForgeRingWorldNetworking {
         registrar.playToClient(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC);
         registrar.playToClient(RingTerrainAtlasTilePayload.ID, RingTerrainAtlasTilePayload.CODEC);
         registrar.playToClient(RingTerrainAtlasRevisionPayload.ID, RingTerrainAtlasRevisionPayload.CODEC);
+        registrar.playToClient(RingTerrainPreviewPayload.ID, RingTerrainPreviewPayload.CODEC);
         registrar.playToClient(RingAtlasPregenerationStatusPayload.ID, RingAtlasPregenerationStatusPayload.CODEC);
         registrar.playToServer(RingTerrainAtlasRequestPayload.ID, RingTerrainAtlasRequestPayload.CODEC,
                 NeoForgeRingWorldNetworking::handleAtlasRequest);

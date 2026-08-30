@@ -2,11 +2,15 @@ package dev.ringworld.client;
 
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
+import dev.ringworld.net.RingTerrainPreviewPayload;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingPosition;
 import dev.ringworld.world.RingTerrainAtlas;
+import dev.ringworld.world.RingTerrainPreview;
+import dev.ringworld.world.RingTerrainPreviewStage;
 import dev.ringworld.world.RingWallStyle;
 import dev.ringworld.world.RingSkyProfile;
+import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
@@ -21,13 +25,17 @@ public final class ClientRingState {
     private static volatile int wallHeightBlocks;
     private static volatile int surfaceReferenceY;
     private static volatile int terrainNoiseMapping;
+    private static volatile int settingsFormatVersion;
     private static volatile RingWallStyle wallStyle = RingWallStyle.LEGACY;
     private static volatile RingSkyProfile skyProfile = RingSkyProfile.DEFAULT;
+    private static volatile long generatorSeed;
     private static volatile long layoutFingerprint;
     @Nullable private static volatile RingPosition cameraPosition;
     private static volatile long cameraSeamCrossings;
     private static volatile long seamCorrectionPackets;
     @Nullable private static volatile RingTerrainAtlas terrainAtlas;
+    @Nullable private static volatile RingTerrainPreview terrainPreview;
+    private static volatile int terrainPreviewStage = -1;
     private static volatile long serverAtlasWorldHash;
     private static volatile boolean hasServerAtlasWorldHash;
     @Nullable private static Path terrainAtlasCachePath;
@@ -74,18 +82,45 @@ public final class ClientRingState {
                            int newSurfaceReferenceY, int newTerrainNoiseMapping,
                            RingWallStyle newWallStyle, RingSkyProfile newSkyProfile,
                            long newLayoutFingerprint) {
+        set(newGeometry, newWallHeightBlocks, newSurfaceReferenceY, newTerrainNoiseMapping,
+                newWallStyle, newSkyProfile, 0L, newLayoutFingerprint);
+    }
+
+    public static void set(RingGeometry newGeometry, int newWallHeightBlocks,
+                           int newSurfaceReferenceY, int newTerrainNoiseMapping,
+                           RingWallStyle newWallStyle, RingSkyProfile newSkyProfile,
+                           long newGeneratorSeed, long newLayoutFingerprint) {
+        set(newGeometry, newWallHeightBlocks, newSurfaceReferenceY, newTerrainNoiseMapping,
+                newWallStyle, newSkyProfile, newGeneratorSeed,
+                RingWorldSettings.FORMAT_VERSION, newLayoutFingerprint);
+    }
+
+    public static void set(RingGeometry newGeometry, int newWallHeightBlocks,
+                           int newSurfaceReferenceY, int newTerrainNoiseMapping,
+                           RingWallStyle newWallStyle, RingSkyProfile newSkyProfile,
+                           long newGeneratorSeed, int newSettingsFormatVersion,
+                           long newLayoutFingerprint) {
         geometry = newGeometry;
         wallHeightBlocks = newWallHeightBlocks;
         surfaceReferenceY = newSurfaceReferenceY;
         terrainNoiseMapping = dev.ringworld.world.RingTerrainNoiseMapping.requireSupported(
                 newTerrainNoiseMapping);
+        if (newSettingsFormatVersion < 1
+                || newSettingsFormatVersion > RingWorldSettings.FORMAT_VERSION) {
+            throw new IllegalArgumentException("Unsupported RingWorld settings format "
+                    + newSettingsFormatVersion);
+        }
+        settingsFormatVersion = newSettingsFormatVersion;
         wallStyle = java.util.Objects.requireNonNull(newWallStyle, "wallStyle");
         skyProfile = java.util.Objects.requireNonNull(newSkyProfile, "skyProfile");
+        generatorSeed = newGeneratorSeed;
         layoutFingerprint = newLayoutFingerprint;
         cameraPosition = null;
         cameraSeamCrossings = 0;
         seamCorrectionPackets = 0;
         terrainAtlas = null;
+        terrainPreview = null;
+        terrainPreviewStage = -1;
         serverAtlasWorldHash = 0L;
         hasServerAtlasWorldHash = false;
         terrainAtlasCachePath = null;
@@ -109,8 +144,10 @@ public final class ClientRingState {
     public static int wallHeightBlocks() { return wallHeightBlocks; }
     public static int surfaceReferenceY() { return surfaceReferenceY; }
     public static int terrainNoiseMapping() { return terrainNoiseMapping; }
+    public static int settingsFormatVersion() { return settingsFormatVersion; }
     public static RingWallStyle wallStyle() { return wallStyle; }
     public static RingSkyProfile skyProfile() { return skyProfile; }
+    public static long generatorSeed() { return generatorSeed; }
     public static void setSkyProfile(RingSkyProfile profile) {
         skyProfile = java.util.Objects.requireNonNull(profile, "profile");
     }
@@ -227,6 +264,29 @@ public final class ClientRingState {
 
     @Nullable
     public static RingTerrainAtlas terrainAtlas() { return terrainAtlas; }
+    @Nullable
+    public static RingTerrainPreview terrainPreview() { return terrainPreview; }
+    public static int terrainPreviewStage() { return terrainPreviewStage; }
+
+    public static void installTerrainPreview(RingTerrainPreviewPayload payload) {
+        RingTerrainAtlas atlas = terrainAtlas;
+        if (atlas == null || atlas.worldHash() != payload.worldHash()) return;
+        try {
+            RingTerrainPreviewStage stage = RingTerrainPreviewStage.fromWireValue(payload.stage());
+            RingTerrainPreview decoded = RingTerrainPreview.decode(payload.data());
+            if (decoded.worldHash() != payload.worldHash()) {
+                RingWorldMod.LOGGER.warn("Rejected RingWorld terrain preview with mismatched world identity");
+                return;
+            }
+            terrainPreview = decoded;
+            terrainPreviewStage = stage.wireValue();
+            terrainAtlasRevision++;
+            RingWorldMod.LOGGER.info("RingWorld {} seed preview ready: {}x{} ({} compressed bytes)",
+                    stage.logLabel(), decoded.columns(), decoded.rows(), payload.data().length);
+        } catch (IOException | RuntimeException exception) {
+            RingWorldMod.LOGGER.warn("Rejected invalid RingWorld terrain preview", exception);
+        }
+    }
     public static int terrainAtlasRevision() { return terrainAtlasRevision; }
     public static long terrainAtlasDurableRevision() {
         RingTerrainAtlas atlas = terrainAtlas;
@@ -241,11 +301,14 @@ public final class ClientRingState {
                 && wallHeightBlocks == 0
                 && surfaceReferenceY == 0
                 && terrainNoiseMapping == 0
+                && settingsFormatVersion == 0
                 && layoutFingerprint == 0L
                 && cameraPosition == null
                 && cameraSeamCrossings == 0L
                 && seamCorrectionPackets == 0L
                 && terrainAtlas == null
+                && terrainPreview == null
+                && terrainPreviewStage == -1
                 && serverAtlasWorldHash == 0L
                 && !hasServerAtlasWorldHash
                 && terrainAtlasCachePath == null
@@ -313,11 +376,15 @@ public final class ClientRingState {
         wallHeightBlocks = 0;
         surfaceReferenceY = 0;
         terrainNoiseMapping = 0;
+        settingsFormatVersion = 0;
         layoutFingerprint = 0L;
+        generatorSeed = 0L;
         cameraPosition = null;
         cameraSeamCrossings = 0;
         seamCorrectionPackets = 0;
         terrainAtlas = null;
+        terrainPreview = null;
+        terrainPreviewStage = -1;
         serverAtlasWorldHash = 0L;
         hasServerAtlasWorldHash = false;
         terrainAtlasCachePath = null;

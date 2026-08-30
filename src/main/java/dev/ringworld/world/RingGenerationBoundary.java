@@ -11,7 +11,7 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 public final class RingGenerationBoundary {
     public static final int RIM_THICKNESS = 5;
     /** Increment when rim placement/material semantics change. */
-    public static final int RIM_STYLE_VERSION = 2;
+    public static final int RIM_STYLE_VERSION = 3;
 
     private RingGenerationBoundary() { }
 
@@ -94,7 +94,7 @@ public final class RingGenerationBoundary {
                     if (depth < 0) continue;
                     mutable.set(x, y, z);
                     chunk.removeBlockEntity(mutable);
-                    if (RingWallPattern.blockPresent(style, x, y, wallTopExclusive,
+                    if (RingWallPattern.blockPresent(style, x, y, depth, wallTopExclusive,
                             geometry.circumferenceBlocks(), worldSeed)) {
                         chunk.setBlockState(mutable,
                                 texturedRimBlock(style, x, y, depth,
@@ -173,11 +173,19 @@ public final class RingGenerationBoundary {
                 || state.is(Blocks.STONE_BRICKS) || state.is(Blocks.CRACKED_STONE_BRICKS)
                 || state.is(Blocks.MOSSY_STONE_BRICKS) || state.is(Blocks.TUFF)
                 || state.is(Blocks.SMOOTH_STONE) || state.is(Blocks.POLISHED_DIORITE)
-                || state.is(Blocks.LIGHT_GRAY_CONCRETE) || state.is(Blocks.WEATHERED_COPPER)
+                || state.is(Blocks.QUARTZ_BLOCK) || state.is(Blocks.PRISMARINE_BRICKS)
                 || state.is(Blocks.DEEPSLATE_BRICKS) || state.is(Blocks.DEEPSLATE_TILES)
                 || state.is(Blocks.POLISHED_BASALT) || state.is(Blocks.TUFF_BRICKS)
-                || state.is(Blocks.COPPER_GRATE) || state.is(Blocks.MOSS_BLOCK)
-                || state.is(Blocks.CALCITE) || state.is(Blocks.POLISHED_ANDESITE);
+                || state.is(Blocks.RAW_COPPER_BLOCK) || state.is(Blocks.MOSS_BLOCK)
+                || state.is(Blocks.SEA_LANTERN)
+                || state.is(Blocks.CALCITE) || state.is(Blocks.POLISHED_ANDESITE)
+                || state.is(Blocks.NETHER_BRICKS) || state.is(Blocks.RED_NETHER_BRICKS)
+                || state.is(Blocks.BLACKSTONE) || state.is(Blocks.POLISHED_BLACKSTONE_BRICKS)
+                || state.is(Blocks.MAGMA_BLOCK) || state.is(Blocks.OBSIDIAN)
+                || state.is(Blocks.CRYING_OBSIDIAN) || state.is(Blocks.GILDED_BLACKSTONE)
+                || state.is(Blocks.AMETHYST_BLOCK) || state.is(Blocks.OAK_LOG)
+                || state.is(Blocks.SPRUCE_LOG) || state.is(Blocks.DARK_OAK_LOG)
+                || state.is(Blocks.OAK_PLANKS) || state.is(Blocks.STRIPPED_SPRUCE_LOG);
     }
 
     private static net.minecraft.world.level.block.state.BlockState texturedRimBlock(int x, int y, int z) {
@@ -195,7 +203,27 @@ public final class RingGenerationBoundary {
 
     private static net.minecraft.world.level.block.state.BlockState texturedRimBlock(
             RingWallStyle style, int x, int y, int depth, int circumference, long worldSeed) {
+        // One independently sampled block in a thousand. Keeping this outside
+        // the 0-99 palette roll avoids the former minimum density of one percent.
+        if (style.palette() == RingWallStyle.Palette.INDUSTRIAL
+                && RingWallPattern.rareAccent(
+                        style, x, y, depth, circumference, worldSeed, 1)) {
+            return Blocks.SEA_LANTERN.defaultBlockState();
+        }
         int roll = RingWallPattern.materialRoll(style, x, y, depth, circumference, worldSeed);
+        return styledRimBlockForRoll(style, roll);
+    }
+
+    /**
+     * Single material-palette source shared by real wall generation and the
+     * client Atlas-rim colour derivation.
+     */
+    public static net.minecraft.world.level.block.state.BlockState styledRimBlockForRoll(
+            RingWallStyle style, int roll) {
+        if (style == null) throw new IllegalArgumentException("wall style is required");
+        if (roll < 0 || roll > 99) {
+            throw new IllegalArgumentException("wall material roll must be in [0, 99]");
+        }
         return switch (style.palette()) {
             case WEATHERED -> roll < 55 ? Blocks.COBBLESTONE.defaultBlockState()
                     : roll < 80 ? Blocks.MOSSY_COBBLESTONE.defaultBlockState()
@@ -212,13 +240,13 @@ public final class RingGenerationBoundary {
                     : Blocks.MOSS_BLOCK.defaultBlockState();
             case ALLOY -> roll < 40 ? Blocks.SMOOTH_STONE.defaultBlockState()
                     : roll < 70 ? Blocks.POLISHED_DIORITE.defaultBlockState()
-                    : roll < 95 ? Blocks.LIGHT_GRAY_CONCRETE.defaultBlockState()
-                    : Blocks.WEATHERED_COPPER.defaultBlockState();
+                    : roll < 95 ? Blocks.QUARTZ_BLOCK.defaultBlockState()
+                    : Blocks.PRISMARINE_BRICKS.defaultBlockState();
             case INDUSTRIAL -> roll < 40 ? Blocks.DEEPSLATE_BRICKS.defaultBlockState()
                     : roll < 68 ? Blocks.DEEPSLATE_TILES.defaultBlockState()
                     : roll < 86 ? Blocks.POLISHED_BASALT.defaultBlockState()
                     : roll < 97 ? Blocks.TUFF_BRICKS.defaultBlockState()
-                    : Blocks.COPPER_GRATE.defaultBlockState();
+                    : Blocks.RAW_COPPER_BLOCK.defaultBlockState();
             case OVERGROWN -> roll < 38 ? Blocks.STONE_BRICKS.defaultBlockState()
                     : roll < 60 ? Blocks.MOSSY_STONE_BRICKS.defaultBlockState()
                     : roll < 78 ? Blocks.CRACKED_STONE_BRICKS.defaultBlockState()
@@ -227,6 +255,21 @@ public final class RingGenerationBoundary {
             case MONOLITH -> roll < 55 ? Blocks.SMOOTH_STONE.defaultBlockState()
                     : roll < 82 ? Blocks.CALCITE.defaultBlockState()
                     : Blocks.POLISHED_ANDESITE.defaultBlockState();
+            case NETHER -> roll < 42 ? Blocks.NETHER_BRICKS.defaultBlockState()
+                    : roll < 60 ? Blocks.RED_NETHER_BRICKS.defaultBlockState()
+                    : roll < 78 ? Blocks.BLACKSTONE.defaultBlockState()
+                    : roll < 96 ? Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState()
+                    : Blocks.MAGMA_BLOCK.defaultBlockState();
+            case OBSIDIAN -> roll < 55 ? Blocks.OBSIDIAN.defaultBlockState()
+                    : roll < 72 ? Blocks.CRYING_OBSIDIAN.defaultBlockState()
+                    : roll < 90 ? Blocks.POLISHED_BLACKSTONE_BRICKS.defaultBlockState()
+                    : roll < 97 ? Blocks.GILDED_BLACKSTONE.defaultBlockState()
+                    : Blocks.AMETHYST_BLOCK.defaultBlockState();
+            case WOOD -> roll < 30 ? Blocks.OAK_LOG.defaultBlockState()
+                    : roll < 54 ? Blocks.SPRUCE_LOG.defaultBlockState()
+                    : roll < 72 ? Blocks.DARK_OAK_LOG.defaultBlockState()
+                    : roll < 90 ? Blocks.OAK_PLANKS.defaultBlockState()
+                    : Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState();
         };
     }
 }

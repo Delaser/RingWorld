@@ -10,26 +10,55 @@ boundaries; their “held” status is superseded only by this release record.
 
 Unreleased optional-feature work after 1.1 currently includes:
 
-- atlas format 7, which renders mycelium with the measured vanilla top-texture
-  colour instead of Minecraft's pink map colour;
-- immutable format-4 rim styles with 1–32-block thickness, seven material
+- atlas format 8, which renders mycelium with the measured vanilla top-texture
+  colour instead of Minecraft's pink map colour and carries a live exposed
+  block-light layer for coarse nighttime settlements/lamps on the distant ring;
+- immutable format-4 rim styles with 1–32-block thickness, ten material
   palettes, six deterministic patterns, and top-connected edge decay. Existing
-  worlds migrate to the exact former five-block cobblestone/mossy style;
-- saved visual-only sky profiles for atmosphere, deep space, or minimal void,
-  paired with a compact sun, distant star, or diffuse-light presentation. Sky
-  changes can be applied live with `/ringworld sky` and do not alter vanilla
+  worlds migrate to the exact former five-block cobblestone/mossy style. The
+  Industrial preset uses deterministic 0.1% sea-lantern accents;
+- independent visual-only sky (Atmosphere, Night, Void) and sun (Small, Large,
+  None) settings. Dark backdrops also use backdrop-matched proxy edge blending
+  rather than the bright atmosphere fog colour. The star field is fixed in
+  physical ring space: local sky orientation counter-rotates with longitude
+  and is inverted on the opposite side of the ring. A matching lower atmosphere
+  removes vanilla's flat sky-disc horizon above the finite rim. Changes can be applied live
+  with `/ringworld sky` and `/ringworld sun` and do not alter vanilla
   gameplay time or terrain identity;
 - a loader-neutral creation UI for selecting rim presets, detailed wall
-  controls, and sky presets, with the resulting values synchronized on both
+  controls, and separate sky/sun selectors, with the resulting values synchronized on both
   loaders through `settings_v5` and `sky_profile_v1`.
+- a chunk-free asynchronous seed preview in Create World. It uses the real
+  selected seed, periodic worldgen sampler, and current ring dimensions; two
+  different-seed captures pass on both loaders without creating a save.
+
+The incomplete-Atlas wall proxy now derives its colours from the exact generated
+wall block palette rather than a separately maintained shader palette. Saved
+pattern and seed metadata drive the block-scaled proxy pattern automatically.
+Both distant rims are closed models with inner, outer, and top faces; these
+faces disappear with the rest of the reference-height bridge when the detailed
+Atlas mesh becomes authoritative.
 
 The shared Java 25 regression suite and both loader compilations pass for this
 development work. The expanded 15-capture creation/settings fixture also passes
 on Fabric and NeoForge, including the rim editor at 480×270 and 320×270,
-Overgrown preset retention across resize, compact option labels, a selected
-Space-habitat sky, confirmation, persistence, and normal menu-only teardown.
-In-world graphical review of representative wall and sky presets is still
-required before release or compatibility claims.
+Overgrown preset retention across resize, compact option labels, selected Night
+sky and Large sun settings, confirmation, persistence, and normal menu-only teardown.
+A disposable same-seed Fabric gallery now captures all ten rim presets and
+five representative sky/sun combinations from matched camera poses. The rim sampler uses layered
+coordinate-hashed noise instead of fixed visible tiles, and decay remains
+top-connected. The owner approved the wall, sky/sun, staged-preview, seed-preview,
+and Gamma Atlas-light presentation on 2026-08-30. A separate named Medium
+Industrial 16,384×256 review world has a complete format-8 Atlas and eight
+verified plains villages distributed around the loop for nighttime-light review.
+
+On 2026-08-30 the approved batch passed 373 unit/parameterized tests on both
+Fabric and NeoForge against the manifest-pinned Minecraft 26.2 dependencies.
+Both loaders also passed the 17-capture creation/seed-preview fixture and the
+11-capture Atlas UI fixture, including complete generation, a live block
+revision, normal disconnect, and cleared client state. These are source-state
+development checks, not frozen-candidate, packaged-launcher, multiplayer, or
+release evidence.
 
 Latest: [26.2 qualification checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
 The paired 26.2 quick passes on both loaders. All 20 nightly slots are covered
@@ -2011,6 +2040,9 @@ and compatibility claims.
   320×270 logical scale-4 views.
 - The layout editor relies on Minecraft's framework-managed background pass;
   it does not request a second menu blur while rendered over Create World.
+- Its asynchronous **Seed preview** reads and updates Minecraft's real creation
+  seed, cancels stale work, and samples the periodic noise/biome source without
+  creating chunks or a save.
 - Field parsing and basic structural validation aggregate applicable field
   messages; once minimum/alignment checks pass, cross-field report errors are
   shown together. The apply action stays disabled until all errors are
@@ -2026,7 +2058,7 @@ and compatibility claims.
 - Dedicated servers use equivalent first-world bootstrap properties.
 - The pure UI model is shared by Fabric and NeoForge. The dual-loader,
   menu-only GUI-scale creation-UI gate passes on both loaders: it opens no
-  world, captures all thirteen scale-1-to-4 and narrow states in a 1,920-pixel-wide
+  world, captures all seventeen scale-1-to-4, two-seed, and narrow states in a 1,920-pixel-wide
   framebuffer at least 1,080 pixels tall, validates the final 4,096×640×192
   monument request in the bootstrap config, and rejects any created save.
 - There is no supported in-place resize or conversion tool.

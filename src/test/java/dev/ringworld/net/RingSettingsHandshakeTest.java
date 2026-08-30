@@ -81,7 +81,10 @@ class RingSettingsHandshakeTest {
         RingWorldSettings settings = new RingWorldSettings(width, circumference,
                 0x5EEDL, wallHeight, RingWorldSettings.FORMAT_VERSION);
         RingSettingsPayload payload = RingSettingsHandshake.payloadFor(settings,
-                dev.ringworld.world.RingSkyProfile.Preset.DISTANT_STAR.profile());
+                new dev.ringworld.world.RingSkyProfile(
+                        dev.ringworld.world.RingSkyProfile.Backdrop.NIGHT,
+                        dev.ringworld.world.RingSkyProfile.LightSource.LARGE,
+                        dev.ringworld.world.RingSkyProfile.FORMAT_VERSION));
 
         assertTrue(RingSettingsHandshake.hasMatchingPayloadFingerprint(payload));
         assertTrue(RingSettingsHandshake.accepts(settings,

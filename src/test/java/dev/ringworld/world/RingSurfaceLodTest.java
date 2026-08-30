@@ -100,4 +100,17 @@ class RingSurfaceLodTest {
         assertEquals(0x404080C0,
                 RingSurfaceLod.buildNextMipArgb(source, 2, 2)[0]);
     }
+
+    @Test
+    void lightMipDoesNotUseIlluminationAsTerrainOpacity() {
+        int[] source = {
+                0xFF804020, 0x00604020,
+                0x00402010, 0x00200000
+        };
+
+        // RGB averages all four terrain cells even though only one is lit;
+        // alpha independently averages the block-light intensity.
+        assertEquals(0x40502814,
+                RingSurfaceLod.buildNextMipRgbLight(source, 2, 2)[0]);
+    }
 }

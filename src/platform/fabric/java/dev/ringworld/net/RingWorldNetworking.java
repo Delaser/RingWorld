@@ -34,6 +34,8 @@ public final class RingWorldNetworking {
         PayloadTypeRegistry.clientboundPlay().register(RingTerrainAtlasTilePayload.ID, RingTerrainAtlasTilePayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(RingTerrainAtlasRevisionPayload.ID,
                 RingTerrainAtlasRevisionPayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(RingTerrainPreviewPayload.ID,
+                RingTerrainPreviewPayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(RingTerrainAtlasRequestPayload.ID, RingTerrainAtlasRequestPayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(RingAtlasPregenerationStatusRequestPayload.ID,
                 RingAtlasPregenerationStatusRequestPayload.CODEC);
@@ -101,6 +103,7 @@ public final class RingWorldNetworking {
                 || !ServerPlayNetworking.canSend(handler.player, RingSkyProfilePayload.ID)
                 || !ServerPlayNetworking.canSend(handler.player, RingTerrainAtlasTilePayload.ID)
                 || !ServerPlayNetworking.canSend(handler.player, RingTerrainAtlasRevisionPayload.ID)
+                || !ServerPlayNetworking.canSend(handler.player, RingTerrainPreviewPayload.ID)
                 || !ServerPlayNetworking.canSend(handler.player, RingAtlasPregenerationStatusPayload.ID)) {
             handler.disconnect(Component.literal(
                     "RingWorld client feature channels are missing or out of date. Install the matching version."));

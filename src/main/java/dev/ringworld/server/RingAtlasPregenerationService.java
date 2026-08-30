@@ -22,6 +22,7 @@ import net.minecraft.server.level.TicketType;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -226,7 +227,21 @@ public final class RingAtlasPregenerationService {
         if (cell == null || !atlas.hasCell(cell.column(), cell.row())) return;
         if (RingAtlasSurfaceInvalidation.mayAffectSurface(
                 position.getY(), atlas.cellHeight(cell.column(), cell.row()))) {
-            state.recaptures.enqueue(cell);
+            // Vanilla block light reaches fifteen blocks. Queue the changed
+            // cell and its bounded neighbours so a torch close to an Atlas
+            // sample boundary can illuminate both sides, and removing it
+            // clears the same footprint. The queue coalesces bulk edits.
+            int radius = Math.floorDiv(15 + atlas.sampleStep() - 1, atlas.sampleStep());
+            for (int dz = -radius; dz <= radius; dz++) {
+                int row = cell.row() + dz;
+                if (row < 0 || row >= atlas.rows()) continue;
+                for (int dx = -radius; dx <= radius; dx++) {
+                    int column = Math.floorMod(cell.column() + dx, atlas.columns());
+                    if (atlas.hasCell(column, row)) {
+                        state.recaptures.enqueue(new RingAtlasSurfaceInvalidation.Cell(column, row));
+                    }
+                }
+            }
         }
     }
 
@@ -327,7 +342,8 @@ public final class RingAtlasPregenerationService {
                 BlockPos surface = new BlockPos(blockX, surfaceY, blockZ);
                 BlockState surfaceState = chunk.getBlockState(surface);
                 int color = surfaceColor(world, surface, surfaceState);
-                if (atlas.putBlockSample(blockX, blockZ, surfaceY + 1, color)) {
+                int blockLight = surfaceBlockLight(world, surface, surfaceState);
+                if (atlas.putBlockSample(blockX, blockZ, surfaceY + 1, color, blockLight)) {
                     changed = true;
                     int atlasX = atlas.geometry().wrapBlockX(blockX) / step;
                     int atlasZ = Math.floorDiv(blockZ - atlas.geometry().minWidthZ(), step);
@@ -361,8 +377,10 @@ public final class RingAtlasPregenerationService {
             int localZ = Math.floorMod(blockZ, 16);
             int surfaceY = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, localX, localZ);
             BlockPos surface = new BlockPos(blockX, surfaceY, blockZ);
-            int color = surfaceColor(world, surface, chunk.getBlockState(surface));
-            if (atlas.putCell(cell.column(), cell.row(), surfaceY + 1, color)) {
+            BlockState surfaceState = chunk.getBlockState(surface);
+            int color = surfaceColor(world, surface, surfaceState);
+            int blockLight = surfaceBlockLight(world, surface, surfaceState);
+            if (atlas.putCell(cell.column(), cell.row(), surfaceY + 1, color, blockLight)) {
                 changed = true;
                 state.dirtyTiles.publish(new TileCoordinate(
                         cell.column() / RingTerrainAtlas.TILE_SIZE,
@@ -399,6 +417,12 @@ public final class RingAtlasPregenerationService {
             return RingSurfaceLod.VANILLA_MYCELIUM_TOP_RGB;
         }
         return state.getMapColor(world, surface).col;
+    }
+
+    private static int surfaceBlockLight(ServerLevel world, BlockPos surface, BlockState state) {
+        return Math.max(state.getLightEmission(), Math.max(
+                world.getBrightness(LightLayer.BLOCK, surface),
+                world.getBrightness(LightLayer.BLOCK, surface.above())));
     }
 
     private static boolean save(WorldState state, boolean log) {

@@ -51,7 +51,8 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
             properties.setProperty("circumferenceBlocks", Integer.toString(RingWorldSettings.DEFAULT_CIRCUMFERENCE));
             properties.setProperty("wallHeightBlocks", Integer.toString(RingWorldSettings.DEFAULT_WALL_HEIGHT));
             properties.setProperty("wallPreset", RingWallStyle.Preset.WEATHERED_FORTIFICATION.name());
-            properties.setProperty("skyPreset", RingSkyProfile.Preset.MINECRAFT_ATMOSPHERE.name());
+            properties.setProperty("skyBackdrop", RingSkyProfile.Backdrop.ATMOSPHERE.name());
+            properties.setProperty("sunStyle", RingSkyProfile.LightSource.SMALL.name());
             properties.setProperty("testMode", "false");
             properties.setProperty("testViewDistanceChunks", "28");
             properties.setProperty("pregenerateTerrainAtlas", "true");
@@ -69,8 +70,7 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
         int circumference = integer(properties, "circumferenceBlocks", RingWorldSettings.DEFAULT_CIRCUMFERENCE);
         int wallHeight = integer(properties, "wallHeightBlocks", RingWorldSettings.DEFAULT_WALL_HEIGHT);
         RingWallStyle wallStyle = wallStyle(properties);
-        RingSkyProfile skyProfile = skyProfile(properties.getProperty(
-                "skyPreset", RingSkyProfile.Preset.MINECRAFT_ATMOSPHERE.name()));
+        RingSkyProfile skyProfile = skyProfile(properties);
         boolean testMode = Boolean.parseBoolean(properties.getProperty("testMode", "false"));
         int testViewDistance = integer(properties, "testViewDistanceChunks", 28);
         boolean pregenerateTerrainAtlas = Boolean.parseBoolean(
@@ -138,7 +138,8 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
         properties.setProperty("wallPattern", Integer.toString(wallStyle.pattern().id()));
         properties.setProperty("wallDecayPercent", Integer.toString(wallStyle.decayPercent()));
         properties.setProperty("wallStyleFormat", Integer.toString(wallStyle.formatVersion()));
-        properties.setProperty("skyPreset", RingSkyProfile.Preset.matching(skyProfile).name());
+        properties.setProperty("skyBackdrop", skyProfile.backdrop().name());
+        properties.setProperty("sunStyle", skyProfile.lightSource().name());
         properties.setProperty("testMode", Boolean.toString(current.testMode()));
         properties.setProperty("testViewDistanceChunks",
                 Integer.toString(current.testViewDistanceChunks()));
@@ -221,9 +222,46 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
         }
     }
 
-    private static RingSkyProfile skyProfile(String presetName) {
+    private static RingSkyProfile skyProfile(Properties properties) {
+        if (properties.containsKey("skyBackdrop") || properties.containsKey("sunStyle")) {
+            try {
+                RingSkyProfile.Backdrop backdrop = RingSkyProfile.Backdrop.valueOf(
+                        properties.getProperty("skyBackdrop", "ATMOSPHERE").trim().toUpperCase(
+                                java.util.Locale.ROOT));
+                RingSkyProfile.LightSource source = RingSkyProfile.LightSource.valueOf(
+                        properties.getProperty("sunStyle", "SMALL").trim().toUpperCase(
+                                java.util.Locale.ROOT));
+                return new RingSkyProfile(backdrop, source, RingSkyProfile.FORMAT_VERSION);
+            } catch (IllegalArgumentException exception) {
+                throw new IllegalArgumentException(
+                        "skyBackdrop must be ATMOSPHERE, NIGHT, or VOID and sunStyle must be SMALL, LARGE, or NONE",
+                        exception);
+            }
+        }
+        return legacySkyProfile(properties.getProperty("skyPreset", "MINECRAFT_ATMOSPHERE"));
+    }
+
+    /** Reads the five combined development presets written before sky and sun became independent. */
+    private static RingSkyProfile legacySkyProfile(String presetName) {
         try {
-            return RingSkyProfile.Preset.valueOf(presetName.trim()).profile();
+            return switch (presetName.trim().toUpperCase(java.util.Locale.ROOT)) {
+                case "MINECRAFT_ATMOSPHERE" -> new RingSkyProfile(
+                        RingSkyProfile.Backdrop.ATMOSPHERE,
+                        RingSkyProfile.LightSource.SMALL, RingSkyProfile.FORMAT_VERSION);
+                case "SPACE_HABITAT" -> new RingSkyProfile(
+                        RingSkyProfile.Backdrop.NIGHT,
+                        RingSkyProfile.LightSource.SMALL, RingSkyProfile.FORMAT_VERSION);
+                case "DISTANT_STAR" -> new RingSkyProfile(
+                        RingSkyProfile.Backdrop.NIGHT,
+                        RingSkyProfile.LightSource.LARGE, RingSkyProfile.FORMAT_VERSION);
+                case "NIGHT_HABITAT" -> new RingSkyProfile(
+                        RingSkyProfile.Backdrop.NIGHT,
+                        RingSkyProfile.LightSource.NONE, RingSkyProfile.FORMAT_VERSION);
+                case "MINIMAL_VOID" -> new RingSkyProfile(
+                        RingSkyProfile.Backdrop.VOID,
+                        RingSkyProfile.LightSource.NONE, RingSkyProfile.FORMAT_VERSION);
+                default -> throw new IllegalArgumentException("unknown legacy sky preset");
+            };
         } catch (IllegalArgumentException exception) {
             throw new IllegalArgumentException("skyPreset must name a supported sky preset", exception);
         }

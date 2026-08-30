@@ -32,11 +32,16 @@ abstract class SkyRenderingMixin {
     @Invoker("renderSun")
     protected abstract void ringworld$invokeRenderSun(float alpha, PoseStack matrices);
 
+    @Invoker("renderDarkDisc")
+    protected abstract void ringworld$invokeRenderDarkDisc();
+
     @Unique private float ringworld$cameraY;
     @Unique private float ringworld$cameraZ;
     @Unique private double ringworld$cameraX;
     @Unique private float ringworld$starTiltRadians;
     @Unique private boolean ringworld$renderingCenteredSun;
+    @Unique private boolean ringworld$renderingLowerSky;
+    @Unique private int ringworld$skyColor;
     @Unique private RingSkyCycle.SunVisual ringworld$sunVisual =
             RingSkyCycle.sunVisual(6_000.0);
 
@@ -52,20 +57,29 @@ abstract class SkyRenderingMixin {
         if (geometry == null) return;
         state.sunAngle = RingSkyCycle.FIXED_SUN_ANGLE_RADIANS;
         state.moonAngle = RingSkyCycle.FIXED_SUN_ANGLE_RADIANS;
-        state.starAngle = 0.0F;
+        // Stars are infinitely distant but directionally fixed in physical
+        // ring space. Counter-rotate the player's local tangent frame so a
+        // cluster below one side appears overhead on the opposite side.
+        state.starAngle = RingSkyCycle.starFieldAngleRadians(
+                geometry, camera.position().x);
         state.sunriseAndSunsetColor = 0;
         RingSkyProfile skyProfile = ClientRingState.skyProfile();
         switch (skyProfile.backdrop()) {
             case ATMOSPHERE -> { }
-            case DEEP_SPACE -> {
+            case NIGHT -> {
                 state.skyColor = 0x050810;
                 state.starBrightness = Math.max(state.starBrightness, 0.88F);
             }
-            case MINIMAL_VOID -> {
+            case VOID -> {
                 state.skyColor = 0x010103;
                 state.starBrightness = 0.0F;
             }
         }
+        // A cylindrical world has no flat-world under-horizon void. The
+        // matching lower sky hemisphere is drawn immediately after the upper
+        // disc, so suppress vanilla's later black bottom-disc pass.
+        state.shouldRenderDarkDisc = false;
+        ringworld$skyColor = state.skyColor;
         ringworld$sunVisual = RingSkyCycle.sunVisual(world.getOverworldClockTime() + tickProgress);
         ringworld$cameraY = (float)camera.position().y;
         ringworld$cameraZ = (float)camera.position().z;
@@ -75,6 +89,48 @@ abstract class SkyRenderingMixin {
         // tangent frame. Crossing the finite width tilts it toward that point.
         Vec3 starDirection = geometry.directionToRingCenter(camera.position());
         ringworld$starTiltRadians = (float)Math.atan2(starDirection.z, starDirection.y);
+    }
+
+    @Inject(method = "renderSkyDisc", at = @At("TAIL"))
+    private void ringworld$renderLowerAtmosphere(int skyColor, CallbackInfo ci) {
+        if (ClientRingState.geometry() == null || ringworld$renderingLowerSky) return;
+        ringworld$renderingLowerSky = true;
+        try {
+            ringworld$invokeRenderDarkDisc();
+        } finally {
+            ringworld$renderingLowerSky = false;
+        }
+    }
+
+    @ModifyConstant(method = "renderDarkDisc", constant = @Constant(floatValue = 12.0F))
+    private float ringworld$centerLowerAtmosphere(float vanillaTranslation) {
+        return ringworld$renderingLowerSky ? 0.0F : vanillaTranslation;
+    }
+
+    @Group(name = "ringworldLowerSkyTint", min = 1, max = 1)
+    @ModifyArg(
+            method = "renderDarkDisc",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4fc;Lorg/joml/Vector4fc;Lorg/joml/Vector3fc;Lorg/joml/Matrix4fc;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"),
+            index = 1,
+            require = 0)
+    private Vector4fc ringworld$tintLowerAtmosphere(Vector4fc vanillaColor) {
+        return ringworld$renderingLowerSky
+                ? net.minecraft.util.ARGB.vector4fFromARGB32(ringworld$skyColor)
+                : vanillaColor;
+    }
+
+    @Group(name = "ringworldLowerSkyTint", min = 1, max = 1)
+    @ModifyArg(
+            method = "renderDarkDisc",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4f;Lorg/joml/Vector4f;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"),
+            index = 1,
+            require = 0)
+    private Vector4f ringworld$tintLowerAtmosphere26_2(Vector4f vanillaColor) {
+        return new Vector4f(ringworld$tintLowerAtmosphere(vanillaColor));
     }
 
     @Inject(method = "renderMoon", at = @At("HEAD"), cancellable = true)
@@ -115,7 +171,7 @@ abstract class SkyRenderingMixin {
                 ringworld$sunVisual.blue(),
                 vanillaColor.w() * ringworld$sunVisual.brightness()
                         * (ClientRingState.skyProfile().lightSource()
-                                == RingSkyProfile.LightSource.DISTANT_SUN ? 0.72F : 1.0F));
+                                == RingSkyProfile.LightSource.LARGE ? 0.72F : 1.0F));
     }
 
     @Group(name = "ringworldSunTint", min = 1, max = 1)

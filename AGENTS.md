@@ -353,6 +353,15 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
 
 ## Repository map
 
+### Test-world naming
+
+Every world created by development tooling, an automated fixture, or an agent
+must have a concise descriptive name identifying its purpose, such as
+`RingWorld Atlas Lighting Regression` or `RingWorld Seam Placement Test`.
+Never leave project-created saves named `New World` or `New World (n)`. Include
+a date or short run identifier only when multiple retained worlds serve the
+same purpose.
+
 - `src/main/java/dev/ringworld/world/`: pure geometry, topology, settings,
   validation/cost reports, render profiles, worldgen coordinate transforms,
   atlas format, and sky-cycle math.
@@ -666,7 +675,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   `docs/TESTING.md`. This closes fixture 04 only and is not packaged-client or
   frozen-candidate evidence.
   The runner now also emits a distinct fixture-05 terminal record after an
-  accepted format-3/mapping-4 handshake and normal disconnect/session clear.
+  accepted the current-format/current-mapping handshake and normal
+  disconnect/session clear.
   Do not count the earlier fixture-04 records as fixture-05 evidence; the
   expanded six-cell matrix still needs a clean-revision rerun.
   Fabric must keep the Atlas fixture exclusive after it invokes Create World;

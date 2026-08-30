@@ -388,6 +388,17 @@ loom {
 			// Minecraft login names are limited to 16 characters.
 			programArgs "--username", "AtlasUiTester"
 		}
+		atlasSeedPreviewClient {
+			client()
+			name "RingWorld Seed Preview Capture"
+			runDir qualificationRunDirectory("run-atlas-seed-preview")
+			vmArg "-Dringworld.atlasUiTest=true"
+			vmArg "-Dringworld.atlasUiPreviewCapture=true"
+			vmArg "-Dringworld.disableSeedPreview=" + providers.gradleProperty("ringDisableSeedPreview")
+					.orElse("false").get()
+			vmArg "-Dringworld.atlasUiExpectedBuildLabel=${project.release_label} · ${project.mod_version}"
+			programArgs "--username", "AtlasPreview", "--width", "1920", "--height", "1080"
+		}
 		creationUiClient {
 			client()
 			name "RingWorld Creation UI Regression"
@@ -395,6 +406,31 @@ loom {
 			vmArg "-Dringworld.creationUiTest=true"
 			// The menu-only fixture asserts this exact framebuffer at startup.
 			programArgs "--username", "CreationUiTester", "--width", "1920", "--height", "1080"
+		}
+		appearanceComparisonClient {
+			client()
+			name "RingWorld Appearance Comparison Capture"
+			runDir qualificationRunDirectory("run-appearance-comparison")
+			vmArg "-Dringworld.captureAppearanceComparison=true"
+			vmArg "-Dringworld.captureAppearanceSkyOnly=" + providers.gradleProperty(
+					"ringAppearanceSkyOnly").orElse("false").get()
+			vmArg "-Dringworld.captureIndustrialPatterns=" + providers.gradleProperty(
+					"ringAppearanceIndustrialPatterns").orElse("false").get()
+			programArgs "--username", "AppearanceTest", "--width", "1920", "--height", "1080"
+		}
+		atlasLightingClient {
+			client()
+			name "RingWorld Atlas Lighting Capture"
+			runDir qualificationRunDirectory("run-atlas-lighting")
+			vmArg "-Dringworld.captureAtlasLighting=true"
+			programArgs "--username", "AtlasLightTest", "--width", "1920", "--height", "1080"
+		}
+		mediumIndustrialLightingClient {
+			client()
+			name "RingWorld Medium Industrial Village Lighting Test"
+			runDir qualificationRunDirectory("run")
+			vmArg "-Dringworld.mediumIndustrialLightingTest=true"
+			programArgs "--username", "MediumLightTest", "--width", "1920", "--height", "1080"
 		}
 		mapCompassCaptureClient {
 			client()
@@ -1107,22 +1143,123 @@ tasks.named("runAtlasUiClient") {
 	finalizedBy("verifyAtlasUiClient")
 }
 
+tasks.register("prepareAppearanceComparisonRun") {
+	group = "ringworld verification"
+	description = "Creates a disposable run directory for matched rim and sky comparison captures."
+	doLast {
+		def root = qualificationRunFile("run-appearance-comparison")
+		def skyOnly = providers.gradleProperty("ringAppearanceSkyOnly")
+				.orElse("false").get().toBoolean()
+		if (skyOnly) {
+			def skyWorld = new File(root, "saves/Appearance 01 Weathered/level.dat")
+			if (!skyWorld.isFile()) {
+				throw new GradleException("Sky-only comparison requires the retained Appearance 01 Weathered save")
+			}
+			delete(fileTree(new File(root, "screenshots")).matching { include "sky-*" })
+			return
+		}
+		delete(new File(root, "saves"))
+		delete(new File(root, "screenshots"))
+		delete(new File(root, "ringworld-cache"))
+		delete(new File(root, "logs"))
+		def configFile = new File(root, "config/ringworld.properties")
+		configFile.parentFile.mkdirs()
+		def config = new Properties()
+		config.setProperty("widthBlocks", "128")
+		config.setProperty("circumferenceBlocks", "2048")
+		config.setProperty("wallHeightBlocks", "160")
+		config.setProperty("testMode", "false")
+		config.setProperty("testViewDistanceChunks", "10")
+		config.setProperty("pregenerateTerrainAtlas", "false")
+		config.setProperty("requestOceanMonument", "false")
+		configFile.withOutputStream {
+			config.store(it, "Disposable RingWorld appearance comparison")
+		}
+		new File(root, "options.txt").text =
+				"onboardAccessibility:false\nguiScale:2\npauseOnLostFocus:false\ntutorialStep:none\n"
+	}
+}
+
+tasks.named("runAppearanceComparisonClient") {
+	dependsOn("prepareAppearanceComparisonRun")
+}
+
+tasks.register("prepareAtlasLightingRun") {
+	group = "ringworld verification"
+	description = "Creates a disposable small world for matched day/night Atlas-light captures."
+	doLast {
+		def root = qualificationRunFile("run-atlas-lighting")
+		delete(new File(root, "saves"))
+		delete(new File(root, "screenshots"))
+		delete(new File(root, "ringworld-cache"))
+		delete(new File(root, "logs"))
+		def configFile = new File(root, "config/ringworld.properties")
+		configFile.parentFile.mkdirs()
+		def config = new Properties()
+		config.setProperty("widthBlocks", "128")
+		config.setProperty("circumferenceBlocks", "2048")
+		config.setProperty("wallHeightBlocks", "160")
+		config.setProperty("testMode", "false")
+		config.setProperty("testViewDistanceChunks", "12")
+		config.setProperty("pregenerateTerrainAtlas", "true")
+		config.setProperty("requestOceanMonument", "false")
+		configFile.withOutputStream {
+			config.store(it, "Disposable RingWorld Atlas-lighting capture")
+		}
+		new File(root, "options.txt").text =
+				"onboardAccessibility:false\nguiScale:2\npauseOnLostFocus:false\ntutorialStep:none\n"
+	}
+}
+
+tasks.named("runAtlasLightingClient") {
+	dependsOn("prepareAtlasLightingRun")
+}
+
+tasks.register("prepareAtlasSeedPreviewRun") {
+	group = "ringworld verification"
+	description = "Writes an isolated production-size configuration for the seed-derived Atlas preview capture."
+	doLast {
+		delete(new File(qualificationRunFile("run-atlas-seed-preview"), "saves"))
+		delete(new File(qualificationRunFile("run-atlas-seed-preview"), "screenshots"))
+		delete(new File(qualificationRunFile("run-atlas-seed-preview"), "ringworld-cache"))
+		delete(new File(qualificationRunFile("run-atlas-seed-preview"), "logs"))
+		def configFile = new File(qualificationRunFile("run-atlas-seed-preview"), "config/ringworld.properties")
+		configFile.parentFile.mkdirs()
+		def config = new Properties()
+		config.setProperty("widthBlocks", "256")
+		config.setProperty("circumferenceBlocks", "16384")
+		config.setProperty("wallHeightBlocks", "160")
+		config.setProperty("testMode", "false")
+		config.setProperty("testViewDistanceChunks", "12")
+		config.setProperty("pregenerateTerrainAtlas", "true")
+		configFile.withOutputStream { config.store(it, "Isolated RingWorld seed-preview capture") }
+		new File(qualificationRunFile("run-atlas-seed-preview"), "options.txt").text =
+				"onboardAccessibility:false\nguiScale:2\npauseOnLostFocus:false\ntutorialStep:none\n"
+	}
+}
+
+tasks.named("runAtlasSeedPreviewClient") {
+	dependsOn("prepareAtlasSeedPreviewRun")
+}
+
 def creationUiScreenshotPrefixes = [
 		"creation-ui-01-footer-scale1",
 		"creation-ui-02-default-scale1",
 		"creation-ui-03-default-scale2",
 		"creation-ui-04-default-scale3",
 		"creation-ui-05-default-scale4",
-		"creation-ui-06-rim-default-scale4",
-		"creation-ui-07-rim-overgrown-narrow-scale4",
-		"creation-ui-08-large-narrow-scale4",
-		"creation-ui-09-invalid-five-errors-narrow-scale4",
-		"creation-ui-10-small-scale4",
-		"creation-ui-11-medium-scale4",
-		"creation-ui-12-large-scale4",
-		"creation-ui-13-custom-monument-space-scale4",
-		"creation-ui-14-confirm-layout-scale4",
-		"creation-ui-15-footer-applied-scale4"
+		"creation-ui-06-seed-preview-12345-scale4",
+		"creation-ui-07-seed-preview-67890-scale4",
+		"creation-ui-08-rim-default-scale4",
+		"creation-ui-09-rim-overgrown-narrow-scale4",
+		"creation-ui-10-large-narrow-scale4",
+		"creation-ui-11-invalid-five-errors-narrow-scale4",
+		"creation-ui-12-small-scale4",
+		"creation-ui-13-medium-scale4",
+		"creation-ui-14-large-scale4",
+		"creation-ui-15-custom-monument-night-large-scale4",
+		"creation-ui-16-confirm-layout-scale4",
+		"creation-ui-17-footer-applied-scale4"
 ]
 
 def verifyCreationUiConfig = { File runDirectory, String label ->
@@ -1136,7 +1273,8 @@ def verifyCreationUiConfig = { File runDirectory, String label ->
 			"circumferenceBlocks": "4096",
 			"widthBlocks": "640",
 			"wallHeightBlocks": "192",
-			"skyPreset": "SPACE_HABITAT",
+			"skyBackdrop": "NIGHT",
+			"sunStyle": "LARGE",
 			"requestOceanMonument": "true",
 			"testMode": "false",
 			"pregenerateTerrainAtlas": "false"
@@ -1326,7 +1464,7 @@ tasks.register("verifyAtlasUiClient") {
 		if (!log.contains("[atlas-ui-test] PASS") || log.contains("[atlas-ui-test] FAIL")) {
 			throw new GradleException("Atlas UI client did not pass; inspect " + logFile)
 		}
-		def atlasHandshakeMarkers = ["[atlas-ui-test] client-ready", "[atlas-ui-test] settings-v3-mapping-4",
+		def atlasHandshakeMarkers = ["[atlas-ui-test] client-ready", "[atlas-ui-test] settings-current-mapping-current",
 		 "[atlas-ui-test] disconnect-clear", "[atlas-ui-test] PASS"]
 		def previousAtlasHandshakeMarker = -1
 		atlasHandshakeMarkers.each { marker ->
@@ -1336,9 +1474,10 @@ tasks.register("verifyAtlasUiClient") {
 			}
 			previousAtlasHandshakeMarker = markerIndex
 		}
-		def atlasSettingsAck = log.indexOf("RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 3")
-		if (atlasSettingsAck < 0 || atlasSettingsAck >= log.indexOf("[atlas-ui-test] disconnect-clear")) {
-			throw new GradleException("Atlas UI integrated server did not accept the format-3 settings acknowledgement; inspect " + logFile)
+		def atlasSettingsAckMatcher = log =~ /RingWorld settings acknowledged by AtlasUiTester: 2048x128, format [0-9]+/
+		def atlasSettingsAckIndex = atlasSettingsAckMatcher.find() ? atlasSettingsAckMatcher.start() : -1
+		if (atlasSettingsAckIndex < 0 || atlasSettingsAckIndex >= log.indexOf("[atlas-ui-test] disconnect-clear")) {
+			throw new GradleException("Atlas UI integrated server did not accept the current settings acknowledgement; inspect " + logFile)
 		}
 	    (1..11).each { index ->
 			def prefix = String.format("atlas-ui-%02d-", index)

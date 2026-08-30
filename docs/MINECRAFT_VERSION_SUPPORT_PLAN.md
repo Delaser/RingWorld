@@ -748,8 +748,8 @@ The next source-ABI client slice reuses the integrated Atlas map/control
 fixture through `scripts/run_gradle_atlas_ui_qualification.py`. It keeps the
 same clean-source, exact dependency, Gradle user/project cache, and optional
 reviewed acceleration boundaries, but requires one disposable safe-small
-world, accepted format-3 settings acknowledgement, a rendered mapping-4
-client identity, normal disconnect/session clear, all eleven Atlas UI captures,
+world, an accepted current-format settings acknowledgement, a rendered current
+terrain-mapping identity, normal disconnect/session clear, all eleven Atlas UI captures,
 complete generation, and the fixture's ordered placement/removal revision
 probe:
 

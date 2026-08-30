@@ -192,10 +192,10 @@ public final class RingWorldCreationUiModel {
             throw new IllegalArgumentException("a valid RingWorld layout is required for confirmation");
         }
         return String.format(Locale.ROOT,
-                "New world: %,d × %,d; %s rims, %d thick; %s sky; %s. Layout locks on first load.",
+                "New world: %,d × %,d; %s rims, %d thick; %s sky, %s sun; %s. Layout locks on first load.",
                 report.geometry().circumferenceBlocks(), report.geometry().widthBlocks(),
                 RingWallStyle.Preset.matching(wallStyle).label(), wallStyle.thicknessBlocks(),
-                RingSkyProfile.Preset.matching(skyProfile).label(),
+                skyProfile.backdrop().label(), skyProfile.lightSource().label(),
                 monumentChoice(requestOceanMonument, report.geometry()));
     }
 
