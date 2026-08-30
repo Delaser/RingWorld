@@ -67,7 +67,7 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         names = {name for _, name, _ in adapter_contract(adapters[0])}
         self.assertEqual(
             {"screen", "setScreen", "mainRenderTarget", "toastManager", "cameraEntity",
-             "camera", "hideGui", "invalidateChunks", "grabScreenshot"},
+             "camera", "hideGui", "setGuiHidden", "invalidateChunks", "grabScreenshot"},
             names,
         )
 
