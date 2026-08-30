@@ -1,21 +1,27 @@
 # RingWorld dedicated server template
 
-The checked-in files are generic deployment examples for Minecraft 26.1.2
-Fabric and NeoForge servers. They do not describe or manage any particular
-hosted service. Package assembly selects the loader-specific deployment and
-systemd templates; this source file is only the shared reference.
+The checked-in files are generic Fabric and NeoForge deployment examples. They
+do not describe or manage any particular hosted service. Package assembly
+selects the loader-specific deployment and systemd templates and renders the
+manifest-pinned game, loader, API, and RingWorld versions; this source file is
+only the shared reference.
 
-Current development versions:
+The default source-build values target Minecraft 26.1.2:
 
 - Minecraft Java 26.1.2
 - Fabric Loader 0.19.3
 - Fabric API 0.155.2+26.1.2
-- RingWorld 1.0.0+mc26.1.2
+- RingWorld development artifact for 26.1.2
 - Java 25
 
 Copy `server.properties.example` to `server.properties` only in the installed
 server directory. Keep the deployed file untracked because it may contain an
 RCON password or other local operational values.
+
+Published RingWorld 1.1 also qualifies 26.1 and 26.1.1 with the unchanged
+26.1.x loader artifact, and has separate 26.2 artifacts. For any packaged or
+later qualified line, use the package manifest's exact pins rather than
+copying these source defaults.
 
 Copy `config/ringworld.properties` before the first Overworld load. The saved
 geometry becomes authoritative after world creation and cannot be resized in
@@ -38,7 +44,8 @@ Before replacing the mod jar:
 
 1. stop the server cleanly;
 2. back up the world, configuration, and existing jar;
-3. install the client-identical RingWorld jar and matching Fabric API;
+3. install the client-identical RingWorld jar and, for Fabric only, matching
+   Fabric API;
 4. start the server and inspect mixin, protocol, and atlas messages;
 5. connect two matching clients;
 6. validate geometry acknowledgement and atlas recovery;

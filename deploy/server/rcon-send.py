@@ -3,21 +3,23 @@
 
 from __future__ import annotations
 
+import argparse
+import os
 import socket
 import struct
 import sys
 from pathlib import Path
 
 
-SERVER_PROPERTIES = Path("/opt/ringworld-server/server.properties")
+DEFAULT_SERVER_PROPERTIES = Path("server.properties")
 
 
-def property_value(name: str) -> str:
+def property_value(server_properties: Path, name: str) -> str:
     prefix = name + "="
-    for line in SERVER_PROPERTIES.read_text(encoding="utf-8").splitlines():
+    for line in server_properties.read_text(encoding="utf-8").splitlines():
         if line.startswith(prefix):
             return line[len(prefix) :]
-    raise RuntimeError(f"missing {name} in {SERVER_PROPERTIES}")
+    raise RuntimeError(f"missing {name} in {server_properties}")
 
 
 def packet(request_id: int, packet_type: int, payload: str) -> bytes:
@@ -44,16 +46,26 @@ def receive(connection: socket.socket) -> tuple[int, int, str]:
     return request_id, packet_type, body[8:-2].decode("utf-8", errors="replace")
 
 
-def main() -> int:
-    if len(sys.argv) < 2:
-        print(f"usage: {sys.argv[0]} '<minecraft command>' [...] | -", file=sys.stderr)
-        return 2
+def parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Send commands to the RCON endpoint configured by server.properties")
+    parser.add_argument(
+        "--server-properties",
+        type=Path,
+        default=Path(os.environ.get("RINGWORLD_SERVER_PROPERTIES", DEFAULT_SERVER_PROPERTIES)),
+        help="server.properties path (default: ./server.properties or RINGWORLD_SERVER_PROPERTIES)")
+    parser.add_argument("commands", nargs="+", help="Minecraft commands, or '-' to read stdin")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = parse_args(sys.argv[1:] if argv is None else argv)
 
     commands = ([line.rstrip("\n") for line in sys.stdin if line.strip()]
-                if sys.argv[1:] == ["-"] else sys.argv[1:])
+                if args.commands == ["-"] else args.commands)
 
-    port = int(property_value("rcon.port"))
-    password = property_value("rcon.password")
+    port = int(property_value(args.server_properties, "rcon.port"))
+    password = property_value(args.server_properties, "rcon.password")
     with socket.create_connection(("127.0.0.1", port), timeout=5.0) as connection:
         connection.sendall(packet(1, 3, password))
         auth_id, _, _ = receive(connection)

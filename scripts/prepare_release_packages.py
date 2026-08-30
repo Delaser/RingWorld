@@ -462,12 +462,28 @@ def render_runtime_text(path: Path, *, pins: PackagePins, loader: str, version: 
     if not path.is_file():
         return
     text = path.read_text(encoding="utf-8")
+    replacements = {
+        "{{MINECRAFT_VERSION}}": pins.minecraft,
+        "{{RINGWORLD_VERSION}}": version,
+        "{{FABRIC_LOADER_VERSION}}": pins.fabric_loader,
+        "{{FABRIC_API_VERSION}}": pins.fabric_api,
+        "{{NEOFORGE_VERSION}}": pins.neoforge,
+    }
+    for token, value in replacements.items():
+        if token in text:
+            if value is None:
+                raise PackageError(f"{path.name} requires unavailable runtime value {token}")
+            text = text.replace(token, value)
+    # Retain compatibility with historical checked-in templates and locally
+    # staged package inputs that predate explicit runtime tokens.
     text = text.replace("Minecraft 26.1.2", f"Minecraft {pins.minecraft}")
     if loader == "fabric" and pins.fabric_api is not None:
         text = text.replace("Fabric API 0.155.2+26.1.2", f"Fabric API {pins.fabric_api}")
     if loader == "neoforge" and pins.neoforge is not None:
         text = text.replace("NeoForge 26.1.2.87", f"NeoForge {pins.neoforge}")
     text = text.replace("RingWorld 1.0.0+mc26.1.2", f"RingWorld {version}")
+    if "{{" in text or "}}" in text:
+        raise PackageError(f"{path.name} contains an unresolved runtime template token")
     path.write_text(text, encoding="utf-8")
 
 

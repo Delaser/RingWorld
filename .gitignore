@@ -22,7 +22,17 @@ dist/
 ringworld-*.jar
 .DS_Store
 .idea/
+.vscode/
+.settings/
+.project
+.classpath
 *.iml
+__pycache__/
+.pytest_cache/
+.coverage
+htmlcov/
+*.tmp
+*.orig
 
 # Local scratch and staging output
 work/
