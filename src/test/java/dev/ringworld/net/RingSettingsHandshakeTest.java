@@ -42,22 +42,52 @@ class RingSettingsHandshakeTest {
         RingSettingsPayload changedWall = new RingSettingsPayload(payload.width(),
                 payload.circumference(), payload.seed(), payload.wallHeight() + 16,
                 payload.surfaceReferenceY(), payload.terrainNoiseMapping(),
+                payload.wallStyle(),
+                payload.skyProfile(),
                 payload.formatVersion(), payload.fingerprint());
         RingSettingsPayload changedMapping = new RingSettingsPayload(payload.width(),
                 payload.circumference(), payload.seed(), payload.wallHeight(),
                 payload.surfaceReferenceY(), RingTerrainNoiseMapping.LEGACY_AXIAL,
+                payload.wallStyle(),
+                payload.skyProfile(),
                 payload.formatVersion(), payload.fingerprint());
         RingSettingsPayload unknownMapping = new RingSettingsPayload(payload.width(),
                 payload.circumference(), payload.seed(), payload.wallHeight(),
                 payload.surfaceReferenceY(), 99,
+                payload.wallStyle(),
+                payload.skyProfile(),
+                payload.formatVersion(), payload.fingerprint());
+        RingSettingsPayload changedStyle = new RingSettingsPayload(payload.width(),
+                payload.circumference(), payload.seed(), payload.wallHeight(),
+                payload.surfaceReferenceY(), payload.terrainNoiseMapping(),
+                dev.ringworld.world.RingWallStyle.Preset.CLEAN_MONOLITH.style(),
+                payload.skyProfile(),
                 payload.formatVersion(), payload.fingerprint());
 
         assertFalse(RingSettingsHandshake.hasMatchingPayloadFingerprint(changedWall));
         assertFalse(RingSettingsHandshake.hasMatchingPayloadFingerprint(changedMapping));
         assertFalse(RingSettingsHandshake.hasMatchingPayloadFingerprint(unknownMapping));
+        assertFalse(RingSettingsHandshake.hasMatchingPayloadFingerprint(changedStyle));
         assertFalse(RingSettingsHandshake.accepts(settings,
                 new RingSettingsAckPayload(payload.formatVersion(), payload.fingerprint() ^ 1L)));
         assertFalse(RingSettingsHandshake.accepts(settings,
                 new RingSettingsAckPayload(payload.formatVersion() + 1, payload.fingerprint())));
+    }
+
+    @ParameterizedTest(name = "{0}: cosmetic sky choice does not rewrite terrain identity")
+    @MethodSource("layouts")
+    void skyProfileIsSynchronizedButNotPartOfTerrainFingerprint(
+            String name, int circumference, int width, int wallHeight) {
+        RingWorldSettings settings = new RingWorldSettings(width, circumference,
+                0x5EEDL, wallHeight, RingWorldSettings.FORMAT_VERSION);
+        RingSettingsPayload payload = RingSettingsHandshake.payloadFor(settings,
+                new dev.ringworld.world.RingSkyProfile(
+                        dev.ringworld.world.RingSkyProfile.Backdrop.NIGHT,
+                        dev.ringworld.world.RingSkyProfile.LightSource.LARGE,
+                        dev.ringworld.world.RingSkyProfile.FORMAT_VERSION));
+
+        assertTrue(RingSettingsHandshake.hasMatchingPayloadFingerprint(payload));
+        assertTrue(RingSettingsHandshake.accepts(settings,
+                RingSettingsHandshake.acknowledgementFor(payload)));
     }
 }

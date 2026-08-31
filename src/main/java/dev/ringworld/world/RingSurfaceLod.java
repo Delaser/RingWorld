@@ -8,6 +8,15 @@ package dev.ringworld.world;
  * testable.</p>
  */
 public final class RingSurfaceLod {
+    /**
+     * Mean RGB of Minecraft 26.1.2's vanilla
+     * {@code textures/block/mycelium_top.png}. Mycelium's generic map colour
+     * is deliberately much more saturated than the block players actually
+     * see, so the distant surface uses this texture-derived representative
+     * colour instead.
+     */
+    public static final int VANILLA_MYCELIUM_TOP_RGB = 0x6F6365;
+
     private RingSurfaceLod() { }
 
     /** Encodes atlas coverage as transparency without inventing missing terrain. */
@@ -98,6 +107,45 @@ public final class RingSurfaceLod {
             }
         }
         return target;
+    }
+
+    /**
+     * Box-filters a terrain texture whose RGB is opaque surface colour and
+     * whose alpha byte is independent block-light intensity. Unlike ordinary
+     * alpha filtering, unlit terrain must still contribute its RGB.
+     */
+    public static int[] buildNextMipRgbLight(int[] source, int sourceWidth, int sourceHeight) {
+        if (sourceWidth <= 0 || sourceHeight <= 0
+                || source.length != sourceWidth * sourceHeight) {
+            throw new IllegalArgumentException("invalid source mip dimensions");
+        }
+        int targetWidth = Math.max(1, sourceWidth >> 1);
+        int targetHeight = Math.max(1, sourceHeight >> 1);
+        int[] target = new int[targetWidth * targetHeight];
+        for (int y = 0; y < targetHeight; y++) {
+            int y0 = Math.min(sourceHeight - 1, y * 2);
+            int y1 = Math.min(sourceHeight - 1, y0 + 1);
+            for (int x = 0; x < targetWidth; x++) {
+                int x0 = Math.floorMod(x * 2, sourceWidth);
+                int x1 = Math.floorMod(x0 + 1, sourceWidth);
+                target[y * targetWidth + x] = averageChannels(
+                        source[y0 * sourceWidth + x0], source[y0 * sourceWidth + x1],
+                        source[y1 * sourceWidth + x0], source[y1 * sourceWidth + x1]);
+            }
+        }
+        return target;
+    }
+
+    private static int averageChannels(int first, int second, int third, int fourth) {
+        int alpha = ((first >>> 24) + (second >>> 24)
+                + (third >>> 24) + (fourth >>> 24) + 2) >> 2;
+        int red = ((first >> 16 & 0xFF) + (second >> 16 & 0xFF)
+                + (third >> 16 & 0xFF) + (fourth >> 16 & 0xFF) + 2) >> 2;
+        int green = ((first >> 8 & 0xFF) + (second >> 8 & 0xFF)
+                + (third >> 8 & 0xFF) + (fourth >> 8 & 0xFF) + 2) >> 2;
+        int blue = ((first & 0xFF) + (second & 0xFF)
+                + (third & 0xFF) + (fourth & 0xFF) + 2) >> 2;
+        return alpha << 24 | red << 16 | green << 8 | blue;
     }
 
     private static int averageArgb(int first, int second, int third, int fourth) {

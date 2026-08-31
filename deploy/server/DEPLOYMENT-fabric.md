@@ -1,8 +1,9 @@
 # RingWorld Fabric dedicated-server overlay
 
-This overlay contains the RingWorld Fabric jar and its required Fabric API jar.
-Obtain the matching Minecraft 26.1.2 Fabric server runtime separately, then
-place both packaged jars in that runtime's `mods/` folder. Do not install the
+This overlay contains RingWorld {{RINGWORLD_VERSION}} for Fabric and its
+required Fabric API {{FABRIC_API_VERSION}} jar. Obtain Minecraft
+{{MINECRAFT_VERSION}} with Fabric Loader {{FABRIC_LOADER_VERSION}}, then place
+both packaged jars in that runtime's `mods/` folder. Do not install the
 NeoForge package or a NeoForge loader into this server.
 
 The rest of this overlay is a generic template. Copy `server.properties.example`

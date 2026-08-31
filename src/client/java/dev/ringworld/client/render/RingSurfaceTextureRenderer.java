@@ -22,6 +22,7 @@ import dev.ringworld.world.RingSurfaceGenerationFog;
 import dev.ringworld.world.RingSurfaceMorph;
 import dev.ringworld.world.RingSurfacePlaceholder;
 import dev.ringworld.world.RingTerrainAtlas;
+import dev.ringworld.world.RingTerrainPreview;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector3f;
@@ -60,6 +61,8 @@ public final class RingSurfaceTextureRenderer {
     private static int textureRows;
     private static CompletableFuture<TextureBuild> pendingTextureBuild;
     private static long textureBuildGeneration;
+    private static Matrix4f wallPaletteMatrix = new Matrix4f();
+    private static int wallVertexArgb = 0xFFFFFFFF;
 
     private RingSurfaceTextureRenderer() { }
 
@@ -84,7 +87,9 @@ public final class RingSurfaceTextureRenderer {
                 ? surfaceCompletion
                 : previousSurfaceCompletion
                         + (surfaceCompletion - previousSurfaceCompletion) * textureMorph;
-        float generationFog = RingSurfaceGenerationFog.amount(visibleCompletion);
+        float generationFog = RingSurfaceGenerationFog.amount(
+                visibleCompletion,
+                ClientRingState.terrainPreview() != null);
         double cameraAngle = Math.PI * 2.0 * geometry.wrapX(camera.x)
                 / geometry.circumferenceBlocks();
         double cameraRadius = geometry.physicalRadiusAt(camera.y);
@@ -117,9 +122,10 @@ public final class RingSurfaceTextureRenderer {
         modelView.rotateZ((float)-cameraAngle);
         GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(
                 modelView,
-                new Vector4f(1.0F, alpha, textureMorph, generationFog),
+                new Vector4f(ClientRingState.skyProfile().backdrop().id(),
+                        alpha, textureMorph, generationFog),
                 new Vector3f((float)cameraAngle, (float)camera.z, RingSurfaceGpu.farBackgroundDepth()),
-                new Matrix4f());
+                wallPaletteMatrix);
 
         RingSurfaceGpu.draw(client, vertexBuffer, vertexCount, surfaceTextureView,
                 previousSurfaceTextureView == null ? surfaceTextureView : previousSurfaceTextureView,
@@ -218,18 +224,24 @@ public final class RingSurfaceTextureRenderer {
         // cells are the only trustworthy detail. Keeping the progressive
         // texture at source resolution bounds each coalesced rebuild; the
         // normal expanded texture is allocated once at completion.
+        RingTerrainPreview preview = ClientRingState.terrainPreview();
         int targetColumns = atlas.isComplete()
-                ? profile.textureColumns() : Math.min(atlas.columns(), profile.textureColumns());
+                ? profile.textureColumns()
+                : Math.min(Math.max(atlas.columns(), preview == null ? 0 : preview.columns()),
+                        profile.textureColumns());
         int targetRows = atlas.isComplete()
-                ? profile.textureRows() : Math.min(atlas.rows(), profile.textureRows());
+                ? profile.textureRows()
+                : Math.min(Math.max(atlas.rows(), preview == null ? 0 : preview.rows()),
+                        profile.textureRows());
         int[] pixels;
         float[] heights;
+        int[] blockLights = new int[targetColumns * targetRows];
         if (atlas.isComplete()) {
             pixels = new int[targetColumns * targetRows];
             heights = new float[pixels.length];
         } else {
             RingSurfacePlaceholder.Surface placeholder = RingSurfacePlaceholder.resolve(
-                    atlas, targetColumns, targetRows);
+                    atlas, targetColumns, targetRows, preview);
             pixels = placeholder.argb();
             heights = placeholder.heights();
         }
@@ -244,7 +256,18 @@ public final class RingSurfaceTextureRenderer {
                     RingTerrainAtlas.SurfaceSample sample = atlas.sample(x, z);
                     int index = row * targetColumns + column;
                     heights[index] = (float)sample.height();
-                    pixels[index] = RingSurfaceLod.surfaceArgb(sample.color(), sample.coverage());
+                    pixels[index] = sample.color() & 0xFFFFFF;
+                    blockLights[index] = lightAlpha(sample.blockLight());
+                }
+            }
+        } else {
+            for (int row = 0; row < targetRows; row++) {
+                double z = geometry.minWidthZ() + (row + 0.5) * spacingZ;
+                for (int column = 0; column < targetColumns; column++) {
+                    double x = (column + 0.5) * spacingX;
+                    RingTerrainAtlas.SurfaceSample sample = atlas.sample(x, z);
+                    blockLights[row * targetColumns + column] = sample.present()
+                            ? lightAlpha(sample.blockLight()) : 0;
                 }
             }
         }
@@ -255,8 +278,6 @@ public final class RingSurfaceTextureRenderer {
                 int leftColumn = Math.floorMod(column - 1, targetColumns);
                 int rightColumn = Math.floorMod(column + 1, targetColumns);
                 int index = row * targetColumns + column;
-                int alpha = pixels[index] >>> 24;
-                if (alpha == 0) continue;
                 float centerHeight = heights[index];
                 int shaded = RingSurfaceLod.shadeSurfaceColor(
                         pixels[index], centerHeight,
@@ -265,7 +286,10 @@ public final class RingSurfaceTextureRenderer {
                         presentHeightOr(heights, pixels, lowerRow * targetColumns + column, centerHeight),
                         presentHeightOr(heights, pixels, upperRow * targetColumns + column, centerHeight),
                         spacingX, spacingZ);
-                pixels[index] = alpha << 24 | shaded;
+                // The RGB channels remain ordinary daytime terrain. Alpha is
+                // a separate exposed block-light intensity consumed only by
+                // the nighttime shader; mesh opacity does not depend on it.
+                pixels[index] = blockLights[index] << 24 | shaded;
             }
         }
 
@@ -284,7 +308,7 @@ public final class RingSurfaceTextureRenderer {
                     }
                 }
                 if (level + 1 < mipLevels) {
-                    levelPixels = RingSurfaceLod.buildNextMipArgb(
+                    levelPixels = RingSurfaceLod.buildNextMipRgbLight(
                             levelPixels, levelWidth, levelHeight);
                     levelWidth = Math.max(1, levelWidth >> 1);
                     levelHeight = Math.max(1, levelHeight >> 1);
@@ -371,7 +395,11 @@ public final class RingSurfaceTextureRenderer {
     }
 
     private static float presentHeightOr(float[] heights, int[] pixels, int index, float fallback) {
-        return pixels[index] >>> 24 == 0 ? fallback : heights[index];
+        return Float.isFinite(heights[index]) ? heights[index] : fallback;
+    }
+
+    private static int lightAlpha(double blockLight) {
+        return Math.max(0, Math.min(255, (int)Math.round(blockLight * 255.0 / 15.0)));
     }
 
     private static void buildMesh(RingGeometry geometry, RingTerrainAtlas atlas, boolean detailed) {
@@ -381,8 +409,13 @@ public final class RingSurfaceTextureRenderer {
         int wallTopY = worldBottomY + ClientRingState.wallHeightBlocks();
         RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(
                 geometry, atlas, detailed, ClientRingState.surfaceReferenceY(), wallTopY,
-                RingGenerationBoundary.RIM_THICKNESS);
-        GpuBuffer replacement = RingSurfaceGpu.createVertexBuffer(mesh);
+                ClientRingState.wallStyle().thicknessBlocks());
+        RingWallShaderStyle.Encoded wallStyle = RingWallShaderStyle.encode(
+                ClientRingState.wallStyle(), ClientRingState.generatorSeed(),
+                Minecraft.getInstance().level);
+        wallPaletteMatrix = wallStyle.paletteMatrix();
+        wallVertexArgb = wallStyle.vertexArgb();
+        GpuBuffer replacement = RingSurfaceGpu.createVertexBuffer(mesh, wallVertexArgb);
         if (vertexBuffer != null) vertexBuffer.close();
         vertexBuffer = replacement;
         vertexCount = mesh.vertexCount();
@@ -403,6 +436,8 @@ public final class RingSurfaceTextureRenderer {
 
     public static void clear() {
         textureBuildGeneration++;
+        wallPaletteMatrix = new Matrix4f();
+        wallVertexArgb = 0xFFFFFFFF;
         CompletableFuture<TextureBuild> abandonedBuild = pendingTextureBuild;
         if (abandonedBuild != null) abandonedBuild.thenAccept(TextureBuild::close);
         pendingTextureBuild = null;

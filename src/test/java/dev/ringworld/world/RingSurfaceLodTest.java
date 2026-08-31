@@ -3,10 +3,17 @@ package dev.ringworld.world;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingSurfaceLodTest {
+
+    @Test
+    void vanillaMyceliumUsesTextureRepresentativeRatherThanSaturatedMapPurple() {
+        assertEquals(0x6F6365, RingSurfaceLod.VANILLA_MYCELIUM_TOP_RGB);
+        assertNotEquals(0x7F3FB2, RingSurfaceLod.VANILLA_MYCELIUM_TOP_RGB);
+    }
     @Test
     void textureLuminanceDarkensBiomeTintWithoutChangingHue() {
         assertEquals(0x406020,
@@ -92,5 +99,18 @@ class RingSurfaceLodTest {
 
         assertEquals(0x404080C0,
                 RingSurfaceLod.buildNextMipArgb(source, 2, 2)[0]);
+    }
+
+    @Test
+    void lightMipDoesNotUseIlluminationAsTerrainOpacity() {
+        int[] source = {
+                0xFF804020, 0x00604020,
+                0x00402010, 0x00200000
+        };
+
+        // RGB averages all four terrain cells even though only one is lit;
+        // alpha independently averages the block-light intensity.
+        assertEquals(0x40502814,
+                RingSurfaceLod.buildNextMipRgbLight(source, 2, 2)[0]);
     }
 }

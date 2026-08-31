@@ -1,6 +1,6 @@
 # Configuration and operations
 
-## Active port stack
+## Active development stack
 
 | Component | Version |
 | --- | --- |
@@ -12,16 +12,14 @@
 | Fabric Loom | 1.17 snapshot used by `gradle.properties` |
 | Gradle wrapper | 9.5.1 |
 
-This stack now produces a green development build and passes isolated fresh
-and copied-world dedicated-server launch gates plus the integrated safe-small
-client atlas/rendering/gameplay harness and dedicated two-client multiplayer
-matrix. Safe-small 6/12/28 and production tangent/radial visual review passes,
-as does the fail-closed Fabric/Modrinth staging workflow. The 26.1.2 Fabric
-alpha is playable but not yet a stable release: optional convenience packages,
-independent release-candidate review, broader regression coverage, and
-compatibility work remain. Deployment and live-world changes still require
-explicit owner approval. The mod must be installed on the server and every
-client. The historical 1.21.11 rollback is `mc-1.21.11-final`.
+This is the default source-build stack. Published RingWorld 1.1 supports
+Minecraft 26.1, 26.1.1, 26.1.2, and 26.2 on both Fabric and NeoForge; see the
+version matrices and publication record for each loader's exact pins. The
+unreleased optional-feature branch is development code, not a replacement
+release candidate until its candidate, multiplayer, packaging, and owner
+review gates pass. Deployment and live-world changes still require explicit
+owner approval. The mod must be installed on the server and every client. The
+historical 1.21.11 rollback is `mc-1.21.11-final`.
 
 ## Bootstrap configuration
 
@@ -38,6 +36,14 @@ If absent, the mod creates it at startup.
 | `widthBlocks` | 256 | At least 256, divisible by 16, sufficient rim interior, and within atlas/axis budgets |
 | `circumferenceBlocks` | 16384 | Power-of-two; exactly 1,024 chunks and 32 region widths; large enough for 64 blocks of radial clearance above the build top (2,016 aligned playable minimum for vanilla bounds; 1,024 is structural-only) |
 | `wallHeightBlocks` | 160 | At least 32; measured from world minimum Y; wall and cloud top must fit the build range |
+| `wallPreset` | `WEATHERED_FORTIFICATION` | New-world rim preset; the editor also writes the detailed style fields below |
+| `wallThicknessBlocks` | 5 | Breakable rim thickness, 1–32 blocks |
+| `wallPalette` | 0 | Stable numeric palette ID; prefer the in-game editor rather than hand-editing |
+| `wallPattern` | 0 | Stable numeric pattern ID; prefer the in-game editor rather than hand-editing |
+| `wallDecayPercent` | 25 | 0–100; removes only top-connected material to form a crumbling upper edge |
+| `wallStyleFormat` | 1 | Saved bootstrap style schema; do not change manually |
+| `skyBackdrop` | `ATMOSPHERE` | New-world visual backdrop: `ATMOSPHERE`, `NIGHT`, or `VOID` |
+| `sunStyle` | `SMALL` | Independent visible source: `SMALL`, `LARGE`, or `NONE` |
 | `testMode` | false | Enables destructive local automated harness |
 | `testViewDistanceChunks` | 28 | Initial live/LOD capture distance for the local harness; 2–32 |
 | `pregenerateTerrainAtlas` | true | Generates missing canonical surface chunks in background |
@@ -50,13 +56,23 @@ immediately.
 The Create World screen has a bottom-left `RingWorld C×W` button. Its centered,
 responsive editor provides **Small** (2,048×128×160), **Medium**
 (16,384×256×160), and **Large** (32,768×512×160) presets, plus custom
-circumference, width, wall-height, a reset to `config/ringworld.properties`,
-and the new-world ocean-monument control. Reset does not read or change an
+circumference, width, wall-height, a rim-style editor, independent sky and sun
+selectors, a reset
+to `config/ringworld.properties`, and the new-world ocean-monument control.
+**Seed preview** opens a separate asynchronous full-ring map for the seed in
+Minecraft's actual world-creation state. Editing or rerolling the seed cancels
+stale work and regenerates after a short debounce. It samples the selected
+noise generator and periodic biome source without creating chunks, structures,
+caves, or a save, so it is a fast terrain approximation rather than a promise
+of the final block layout. The image is letterboxed at the selected world's
+true circumference-to-width ratio instead of being stretched to fill the panel.
+The rim editor offers ten presets plus thickness, material palette, pattern,
+and top-edge decay controls. Reset does not read or change an
 existing world's saved layout. The live maths panel shows:
 
 - walking-lap time at 4.317 blocks/s;
 - radius, diameter, and opposite-band angular width;
-- canonical chunks, playable interior, and five-block rims;
+- canonical chunks, playable interior, and the selected rim thickness;
 - atlas grid/cells/raw size, rim/cloud Y, and measured-reference
   pregeneration/disk estimates.
 
@@ -98,16 +114,27 @@ config edit.
 On first Overworld load, the mod writes persistent state with:
 
 ```text
-width, circumference, generator seed, wall height, surface reference, format version
+width, circumference, generator seed, wall height, surface reference,
+terrain mapping, rim style, format version
 ```
 
 Every saved layout field takes precedence on subsequent loads. Changing
-bootstrap dimensions or wall height does not resize or redecorate an existing
-RingWorld. Format-1 and format-2 saves migrate to format 3 with surface
-reference Y=64 and their legacy terrain-noise mapping preserved. Fresh worlds
-use the corrected annular mapping. This prevents unexplored chunks in an alpha
+bootstrap dimensions, wall height, wall style, sky backdrop, or sun style does not resize
+or redecorate an existing RingWorld. Format-1 and format-2 saves migrate through
+format 3 with surface reference Y=64 and their legacy terrain-noise mapping
+preserved. Pre-format-4 worlds receive the exact legacy rim style; fresh worlds
+save format 4, the corrected annular mapping, and their chosen rim style. This
+prevents unexplored chunks in an alpha
 world from changing terrain algorithms after an update. The mapping is part of
 the atlas world hash, so an incompatible cached atlas is discarded and rebuilt.
+
+Sky presentation is stored separately in `ringworld:sky_settings`, because it
+does not change terrain or layout ownership. Operators can change its two
+independent fields live with `/ringworld sky atmosphere|night|void` and
+`/ringworld sun small|large|none`; the server saves and broadcasts each change.
+Vanilla time, skylight, mob spawning, sleep, crops, weather, and daylight
+sensors remain authoritative. Bootstrap files with the former combined
+`skyPreset` field migrate to the equivalent backdrop/source pair.
 
 Minecraft 26.1 stores RingWorld settings at:
 
@@ -379,7 +406,7 @@ already exists but is invalid, it is authoritative and rebuilt without legacy
 fallback. A leftover `.tmp` file from an interrupted write is safe: the next
 successful save or validated migration replaces it atomically.
 
-The current disk atlas format is 6. Upgrading from an older format
+The current disk atlas format is 8. Upgrading from an older format
 automatically invalidates and rebuilds both server and client caches so the
 renderer samples the actual highest block rather than the block below it,
 records its exposed top-face height, and receives texture-luminance-corrected
@@ -388,8 +415,11 @@ dedicated server's unloaded client-only colour maps with the sampled block map
 colour. Format 6 also persists a monotonic surface revision. Connected clients
 receive bounded changed tiles after exposed terrain edits; reconnect reuse is
 allowed only when the complete client cache revision exactly matches the
-server. This is independent of the persisted RingWorld settings/protocol
-format.
+server. Format 7 replaces the map-colour pink used for mushroom-field mycelium
+with the measured vanilla mycelium top-texture colour. Format 8 adds a durable
+0–15 exposed block-light channel for restrained nighttime settlement and lamp
+lights on the distant surface. These revisions are independent of the
+persisted RingWorld settings/protocol format.
 
 ## Build
 
@@ -401,18 +431,20 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ./gradlew clean test build --console=plain
 ```
 
-Expected development artifacts:
+Expected development artifacts use the configured `mod_version`:
 
 ```text
-build/libs/ringworld-1.0.0+mc26.1.2.jar
-build/libs/ringworld-1.0.0+mc26.1.2-sources.jar
+build/libs/ringworld-<mod_version>.jar
+build/libs/ringworld-<mod_version>-sources.jar
+neoforge/build/libs/ringworld-neoforge-<mod_version>.jar
+neoforge/build/libs/ringworld-neoforge-<mod_version>-sources.jar
 ```
 
-The current suite passes 337 unit/parameterized cases per loader. The
-historical Phase 2 95-error inventory and the subsequent source-port
-checkpoint are recorded in
-`MINECRAFT_26_1_COMPILER_BASELINE.md`. These artifacts are not deployable
-release candidates until the remaining runtime gates pass.
+The 2026-08-31 audited source passes 377 unit/parameterized cases per loader
+with zero failures, errors, or skips. The historical Phase 2 95-error inventory
+and the subsequent source-port checkpoint are recorded in
+`MINECRAFT_26_1_COMPILER_BASELINE.md`. Development artifacts are not deployable
+release candidates until the relevant runtime gates pass.
 
 The frozen 1.21.11 tag builds under Java 21 with:
 
@@ -455,6 +487,11 @@ eula.txt
 Copy `server.properties.example` to the installed `server.properties` and
 apply local values there. The deployed file is intentionally ignored and must
 never be committed because it may contain an RCON password.
+
+`rcon-send.py` reads `./server.properties` by default. For another install,
+pass `--server-properties /path/to/server.properties` or set
+`RINGWORLD_SERVER_PROPERTIES`; no host-specific path is embedded in the
+template.
 
 The example service template assumes:
 
@@ -511,8 +548,8 @@ constants in `prepare_release_packages.py`, contains no player data, and is
 only copied for a newly created managed instance. It must never auto-join the
 server or replace an existing user's server list.
 
-The optional unlisted Windows test package is served from
-`/ringworld/alpha/`. Build it only from a clean pushed revision through the
+The optional unlisted Windows test package is owner-maintained outside this
+source repository. Build it only from a clean pushed revision through the
 normal staging and `prepare_release_packages.py` gates. Publish the ZIP under
 the exact artifact name stored in `RELEASE-MANIFEST.json`, the stable
 loader-specific `deploy/alpha/Install-RingWorld-Alpha-{Fabric,NeoForge}-Windows.bat`
@@ -615,13 +652,14 @@ touch a live world.
 
 ## Local macOS launch
 
-The existing packaged test instance can be opened directly:
+An existing generated test instance can be opened directly. Select the
+descriptively named fixture world from Minecraft; do not bake a transient save
+name into the project command:
 
 ```sh
 dist/client-bundle/.launcher/macos/Prism\ Launcher.app/Contents/MacOS/prismlauncher \
   -d "$PWD/dist/client-bundle/.prism-data" \
-  -l RingWorld-Test \
-  -w "New World"
+  -l RingWorld-Test
 ```
 
 Copy a newly built jar into the active instance before launch:

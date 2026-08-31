@@ -6,6 +6,14 @@ rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
 Latest qualification checkpoint: see
 [`docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md`](docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
+Unreleased optional-feature work adds format-4 configurable rim styles,
+server-owned visual sky profiles, settings channel `settings_v5`, and Atlas
+format 8 mycelium colour correction plus exposed block-light data. The shared
+static suite and both loader builds pass 377 unit/parameterized cases each on
+the 2026-08-31 audited source. The preceding expanded creation/preview and
+Atlas UI fixtures pass locally; owner visual review of the feature presentation
+is recorded, while fresh frozen-candidate, multiplayer, and package evidence
+remain required before release. See `docs/CURRENT_STATE.md`.
 Both 26.2 loaders pass quick qualification on frozen source `1cfac9b`.
 The 20-slot nightly coverage is complete as reviewed composite evidence:
 16 retained passes plus four targeted repairs, not one monolithic PASS.
@@ -58,10 +66,11 @@ installer's Mojang version-JSON download, before a game launched. The optional
 `--gradle-loom-cache` and 13-entry external
 runtime byte cache are independently rehashed acceleration only; they never
 enable offline mode or establish runtime evidence. See `docs/TESTING.md` for
-exact retained candidate hashes and current status. The static workflow passes
-333 tests; package-pin correction `49c0d53` passes 20 executed package tests
-(22 total with two expected Windows skips). Current metadata-only package
-assembly is not an OS/client/server smoke, and publication remains held.
+exact retained candidate hashes and current status. At that checkpoint the
+static workflow passed 333 tests; package-pin correction `49c0d53` passed 20
+executed package tests (22 total with two expected Windows skips). That
+metadata-only package assembly was not an OS/client/server smoke, and
+publication was still held.
 
 Current corrected quick `20260827T094338Z-ceae3f67c0d7` on pushed `078b96d`
 passes both 26.2 loaders, including strict dedicated startup/clean stop.
@@ -347,6 +356,15 @@ Use these exact terms in code and documentation:
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
 
 ## Repository map
+
+### Test-world naming
+
+Every world created by development tooling, an automated fixture, or an agent
+must have a concise descriptive name identifying its purpose, such as
+`RingWorld Atlas Lighting Regression` or `RingWorld Seam Placement Test`.
+Never leave project-created saves named `New World` or `New World (n)`. Include
+a date or short run identifier only when multiple retained worlds serve the
+same purpose.
 
 - `src/main/java/dev/ringworld/world/`: pure geometry, topology, settings,
   validation/cost reports, render profiles, worldgen coordinate transforms,
@@ -661,7 +679,8 @@ See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for formulas and data flow.
   `docs/TESTING.md`. This closes fixture 04 only and is not packaged-client or
   frozen-candidate evidence.
   The runner now also emits a distinct fixture-05 terminal record after an
-  accepted format-3/mapping-4 handshake and normal disconnect/session clear.
+  accepted the current-format/current-mapping handshake and normal
+  disconnect/session clear.
   Do not count the earlier fixture-04 records as fixture-05 evidence; the
   expanded six-cell matrix still needs a clean-revision rerun.
   Fabric must keep the Atlas fixture exclusive after it invokes Create World;
@@ -780,14 +799,14 @@ PATH="$JAVA_HOME/bin:$PATH" \
 ./gradlew clean test build --console=plain
 ```
 
-The expected development artifact is
-`build/libs/ringworld-1.0.0+mc26.1.2.jar`; the current suite contains 338
-unit/parameterized cases. A green source build and dedicated-server launch are
-not a release gate: required client, rendering, gameplay, multiplayer,
+Development artifacts use the configured `mod_version` below `build/libs/`
+and `neoforge/build/libs/`. Record the current exact unit/parameterized count
+in `docs/CURRENT_STATE.md` after a complete dual-loader run rather than leaving
+a second stale count here. A green source build and dedicated-server launch
+are not a release gate: required client, rendering, gameplay, multiplayer,
 packaging, and staging checks must remain green together.
 
-The NeoForge module uses the same Java 25 toolchain and also passes all 338
-unit/parameterized cases:
+The NeoForge module uses the same Java 25 toolchain and contract suite:
 
 ```sh
 ./gradlew :neoforge:test :neoforge:build --console=plain
@@ -860,28 +879,12 @@ The frozen 1.21.11 tag uses Java 21 and passes 73 unit/parameterized cases plus
 the runtime suites recorded in
 [`docs/MINECRAFT_1_21_11_FINAL_BASELINE.md`](docs/MINECRAFT_1_21_11_FINAL_BASELINE.md).
 
-## Local packaged client
+## Local packaged clients
 
-The active macOS development instance is generated under:
-
-```text
-dist/client-bundle/.prism-data/instances/RingWorld-Test/
-```
-
-The current saved test world is:
-
-```text
-dist/client-bundle/.prism-data/instances/RingWorld-Test/.minecraft/saves/New World
-```
-
-The one-click launcher can open that world with:
-
-```sh
-dist/client-bundle/.launcher/macos/Prism\ Launcher.app/Contents/MacOS/prismlauncher \
-  -d "$PWD/dist/client-bundle/.prism-data" \
-  -l RingWorld-Test \
-  -w "New World"
-```
+Generated development instances live below ignored `dist/` directories. Do
+not record one machine's instance path or save name as a project contract.
+Every fixture-created save must use a concise descriptive name as required by
+the test-world naming rule above.
 
 Treat all of `dist/` as sensitive local state. A live Prism data directory can
 contain Microsoft/Minecraft tokens in `accounts.json`. Never remove `dist/`
@@ -1111,7 +1114,9 @@ version numbers.
   tangent and radial-up projection captures after changing projection,
   celestial render order, or the proxy pipeline.
 - Settings payload identifiers are wire-layout-versioned
-  (`settings_v3`/`settings_ack_v3`). Never append or reorder codec fields while
+  (`settings_v5`/`settings_ack_v3`). The S2C identifier advanced when rim and
+  sky fields were added; the unchanged acknowledgement codec retained its
+  identifier. Never append or reorder codec fields while
   reusing an old identifier; old clients crash on unread bytes before a useful
   rejection can be sent. Advance the channel generation and keep the
   `RingProtocolIdentityTest` expectation synchronized.
@@ -1166,10 +1171,12 @@ version numbers.
   manifest hashes and tests synchronized. Never silently downgrade a loader.
 - `/ringworld atlas status|start|pause|resume` controls background pregeneration.
   Pause is process-local and does not alter immutable saved layout.
-- Atlas format 6 represents exposed top-face height and
+- Atlas format 8 retains format 6's exposed top-face height,
   texture-luminance-corrected, biome-tinted colour from the actual highest
   surface block at eight-block source resolution, plus the durable surface
-  revision used for reconnect validation. `ChunkAccess.getHeight`
+  revision used for reconnect validation. Format 7 corrects mycelium colour;
+  format 8 adds the exposed 0–15 block-light value used by the restrained
+  nighttime Atlas-light presentation. `ChunkAccess.getHeight`
   already returns that block's Y; subtracting one samples dirt beneath grass.
   Dedicated servers do not load Minecraft's grass/foliage colormap textures,
   so their zero tint lookup must fall back to the sampled block's map colour;
@@ -1189,8 +1196,9 @@ version numbers.
 - The active surface shader binds Minecraft's live lightmap as `Sampler2` and
   uses its full-skylight/no-block-light texel for atlas albedo. Do not restore
   the old scalar nighttime floor: it left the proxy bright green while live
-  terrain received RGB night exposure. The static atlas deliberately does not
-  reproduce local block lights.
+  terrain received RGB night exposure. The Atlas light layer is deliberately
+  coarse: it shows exposed surface illumination, not exact lamps, transparent
+  propagation, or live block geometry.
 - The active sky has no shadow slabs. `SkyRenderingMixin` changes both vanilla
   `30.0F` sun half-width constants to `RingSkyCycle.SUN_HALF_WIDTH` only during
   the fixed RingWorld redraw, and replaces that draw's dynamic colour with the

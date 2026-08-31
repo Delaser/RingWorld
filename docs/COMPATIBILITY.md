@@ -108,7 +108,8 @@ occurs with only RingWorld and Fabric API. An unlisted combination is
 
 ## Validation
 
-- 337/337 Java unit and parameterized cases pass per loader. Coverage fixes the
+- The 2026-08-31 audited source passes 377 Java unit and parameterized cases
+  per loader with zero failures, errors, or skips. Coverage fixes the
   compatibility/API versions, exact mod-ID matching, immutable inventory,
   cardinal physical-pose basis, measured production reference, checked
   maximum scaling, and exact atlas transport bounds.

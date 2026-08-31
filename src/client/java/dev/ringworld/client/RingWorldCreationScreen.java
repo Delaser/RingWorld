@@ -3,6 +3,8 @@ package dev.ringworld.client;
 import dev.ringworld.world.RingDimensionReport;
 import dev.ringworld.world.RingWorldConfig;
 import dev.ringworld.world.RingWorldCreationUiModel;
+import dev.ringworld.world.RingWallStyle;
+import dev.ringworld.world.RingSkyProfile;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -34,12 +36,19 @@ public final class RingWorldCreationScreen extends Screen {
     private EditBox widthField;
     private EditBox wallHeightField;
     private boolean requestOceanMonument;
+    private RingWallStyle wallStyle;
+    private RingSkyProfile.Backdrop skyBackdrop;
+    private RingSkyProfile.LightSource sunStyle;
     private Button smallButton;
     private Button mediumButton;
     private Button largeButton;
     private Button savedConfigButton;
     private Button monumentButton;
+    private Button wallPresetButton;
+    private Button skyBackdropButton;
+    private Button sunStyleButton;
     private Button applyButton;
+    private Button seedPreviewButton;
     @Nullable private RingDimensionReport report;
     private java.util.List<String> validationMessages = java.util.List.of();
 
@@ -59,6 +68,12 @@ public final class RingWorldCreationScreen extends Screen {
                 ? Integer.toString(config.wallHeightBlocks()) : wallHeightField.getValue();
         boolean draftMonument = circumferenceField == null
                 ? config.requestOceanMonument() : requestOceanMonument;
+        RingWallStyle draftWallStyle = circumferenceField == null
+                ? config.wallStyle() : wallStyle;
+        RingSkyProfile.Backdrop draftSkyBackdrop = circumferenceField == null
+                ? config.skyProfile().backdrop() : skyBackdrop;
+        RingSkyProfile.LightSource draftSunStyle = circumferenceField == null
+                ? config.skyProfile().lightSource() : sunStyle;
         Layout layout = layout();
         int presetGap = 4;
         int presetWidth = (layout.contentWidth() - presetGap * 2) / 3;
@@ -86,28 +101,53 @@ public final class RingWorldCreationScreen extends Screen {
                 layout.fieldY(), fieldWidth, "Rim height",
                 draftWallHeight);
         requestOceanMonument = draftMonument;
+        wallStyle = draftWallStyle;
+        skyBackdrop = draftSkyBackdrop;
+        sunStyle = draftSunStyle;
 
-        int resetWidth = Math.max(76, layout.contentWidth() / 3);
+        int optionGap = 4;
+        int optionWidth = (layout.contentWidth() - optionGap * 4) / 5;
+        wallPresetButton = addRenderableWidget(Button.builder(wallPresetMessage(),
+                button -> RingMinecraftClientAccess.setScreen(minecraft,
+                        new RingWallStyleScreen(this, wallStyle, selected -> {
+                            wallStyle = selected;
+                            RingMinecraftClientAccess.setScreen(minecraft, this);
+                        })))
+                .bounds(layout.contentLeft(), layout.optionY(), optionWidth, 20).build());
+        skyBackdropButton = addRenderableWidget(Button.builder(skyBackdropMessage(), button -> {
+            skyBackdrop = skyBackdrop.next();
+            button.setMessage(skyBackdropMessage());
+        }).bounds(layout.contentLeft() + optionWidth + optionGap,
+                layout.optionY(), optionWidth, 20).build());
+        sunStyleButton = addRenderableWidget(Button.builder(sunStyleMessage(), button -> {
+            sunStyle = sunStyle.next();
+            button.setMessage(sunStyleMessage());
+        }).bounds(layout.contentLeft() + (optionWidth + optionGap) * 2,
+                layout.optionY(), optionWidth, 20).build());
         monumentButton = addRenderableWidget(Button.builder(monumentMessage(),
                 button -> {
                     requestOceanMonument = !requestOceanMonument;
                     button.setMessage(monumentMessage());
                 })
-                .bounds(layout.contentLeft(), layout.optionY(),
-                        layout.contentWidth() - resetWidth - 6, 20).build());
+                .bounds(layout.contentLeft() + (optionWidth + optionGap) * 3,
+                        layout.optionY(), optionWidth, 20).build());
         savedConfigButton = addRenderableWidget(Button.builder(Component.literal("Reset"),
                 button -> restoreSavedConfig())
-                .bounds(layout.contentLeft() + layout.contentWidth() - resetWidth,
-                        layout.optionY(), resetWidth, 20).build());
+                .bounds(layout.contentLeft() + (optionWidth + optionGap) * 4,
+                        layout.optionY(), optionWidth, 20).build());
 
         int actionGap = 6;
-        int actionWidth = (layout.contentWidth() - actionGap) / 2;
+        int actionWidth = (layout.contentWidth() - actionGap * 2) / 3;
         applyButton = addRenderableWidget(Button.builder(Component.literal("Use layout"),
                 button -> apply())
                 .bounds(layout.contentLeft(), layout.actionY(), actionWidth, 20).build());
+        seedPreviewButton = addRenderableWidget(Button.builder(Component.literal("Seed preview"),
+                button -> openSeedPreview())
+                .bounds(layout.contentLeft() + actionWidth + actionGap,
+                        layout.actionY(), actionWidth, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Back"),
                 button -> onClose())
-                .bounds(layout.contentLeft() + actionWidth + actionGap,
+                .bounds(layout.contentLeft() + (actionWidth + actionGap) * 2,
                         layout.actionY(), actionWidth, 20).build());
         updateReport();
     }
@@ -138,24 +178,76 @@ public final class RingWorldCreationScreen extends Screen {
         requestOceanMonument = saved.requestOceanMonument()
                 && report != null && report.isValid()
                 && RingWorldCreationUiModel.monumentAvailable(report.geometry());
+        wallStyle = saved.wallStyle();
+        skyBackdrop = saved.skyProfile().backdrop();
+        sunStyle = saved.skyProfile().lightSource();
+        wallPresetButton.setMessage(wallPresetMessage());
+        skyBackdropButton.setMessage(skyBackdropMessage());
+        sunStyleButton.setMessage(sunStyleMessage());
+        updateReport();
         monumentButton.setMessage(monumentMessage());
+    }
+
+    private Component wallPresetMessage() {
+        String label = RingWallStyle.Preset.find(wallStyle)
+                .map(RingWallStyle.Preset::label).orElse("Custom");
+        if (layout().compact()) {
+            label = switch (RingWallStyle.Preset.matching(wallStyle)) {
+                case WEATHERED_FORTIFICATION -> "Wthr";
+                case ANCIENT_MASONRY -> "Anc";
+                case NATURAL_ESCARPMENT -> "Rock";
+                case RING_ALLOY -> "Alloy";
+                case INDUSTRIAL_SUPERSTRUCTURE -> "Ind";
+                case OVERGROWN_RUIN -> "Ruin";
+                case CLEAN_MONOLITH -> "Mono";
+                case NETHER_FORTRESS -> "Neth";
+                case OBSIDIAN_BASTION -> "Obsi";
+                case TIMBER_RAMPART -> "Wood";
+            };
+            if (RingWallStyle.Preset.find(wallStyle).isEmpty()) label = "Custom";
+        }
+        return Component.literal("Rim: " + label);
+    }
+
+    private Component skyBackdropMessage() {
+        String label = layout().compact() && skyBackdrop == RingSkyProfile.Backdrop.ATMOSPHERE
+                ? "Atm" : skyBackdrop.label();
+        return Component.literal(layout().compact() ? "Sky:" + label : "Sky: " + label);
+    }
+
+    private Component sunStyleMessage() {
+        String label = layout().compact() ? switch (sunStyle) {
+            case SMALL -> "Sm";
+            case LARGE -> "Lg";
+            case NONE -> "No";
+        } : sunStyle.label();
+        return Component.literal(layout().compact() ? "Sun:" + label : "Sun: " + label);
+    }
+
+    private RingSkyProfile skyProfile() {
+        return new RingSkyProfile(skyBackdrop, sunStyle, RingSkyProfile.FORMAT_VERSION);
     }
 
     private Component monumentMessage() {
         if (report != null && report.isValid()
                 && !RingWorldCreationUiModel.monumentAvailable(report.geometry())) {
-            return Component.literal("Monument: needs 160 width");
+            return Component.literal(layout().compact()
+                    ? "Mon: N/A" : "Monument: needs 160 width");
         }
-        return Component.literal(RingWorldCreationUiModel.monumentChoice(requestOceanMonument));
+        return Component.literal(layout().compact()
+                ? "Mon: " + (requestOceanMonument ? "On" : "Off")
+                : RingWorldCreationUiModel.monumentChoice(requestOceanMonument));
     }
 
     private void updateReport() {
         if (applyButton == null || circumferenceField == null) return;
         RingWorldCreationUiModel.Validation validation = RingWorldCreationUiModel.validate(
-                circumferenceField.getValue(), widthField.getValue(), wallHeightField.getValue());
+                circumferenceField.getValue(), widthField.getValue(), wallHeightField.getValue(),
+                wallStyle);
         report = validation.report();
         validationMessages = validation.messages();
         applyButton.active = validation.canApply();
+        if (seedPreviewButton != null) seedPreviewButton.active = validation.canApply();
         if (monumentButton != null && report != null && report.isValid()) {
             boolean available = RingWorldCreationUiModel.monumentAvailable(report.geometry());
             if (!available) requestOceanMonument = false;
@@ -165,6 +257,14 @@ public final class RingWorldCreationScreen extends Screen {
             monumentButton.active = true;
             monumentButton.setMessage(monumentMessage());
         }
+    }
+
+    private void openSeedPreview() {
+        if (report == null || !report.isValid() || !(parent instanceof LayoutButtonOwner owner)) {
+            return;
+        }
+        RingMinecraftClientAccess.setScreen(minecraft,
+                new RingSeedPreviewScreen(this, owner, report.geometry()));
     }
 
     private void apply() {
@@ -178,7 +278,7 @@ public final class RingWorldCreationScreen extends Screen {
             }
         }, Component.literal("Use this RingWorld?"),
                 Component.literal(RingWorldCreationUiModel.confirmationCopy(
-                        confirmedReport, requestOceanMonument)),
+                        confirmedReport, requestOceanMonument, wallStyle, skyProfile())),
                 Component.literal("Use layout"), Component.literal("Back")));
     }
 
@@ -187,7 +287,8 @@ public final class RingWorldCreationScreen extends Screen {
             RingWorldConfig.saveBootstrapLayout(
                     confirmedReport.geometry().widthBlocks(),
                     confirmedReport.geometry().circumferenceBlocks(),
-                    confirmedReport.wallHeightBlocks(), requestOceanMonument);
+                    confirmedReport.wallHeightBlocks(), wallStyle, skyProfile(),
+                    requestOceanMonument);
             if (parent instanceof LayoutButtonOwner owner) {
                 owner.ringworld$refreshLayoutButton();
             }
@@ -362,6 +463,26 @@ public final class RingWorldCreationScreen extends Screen {
         savedConfigButton.onPress(AutomationInput.INSTANCE);
     }
 
+    void ringworld$automationOpenRimEditor() {
+        wallPresetButton.onPress(AutomationInput.INSTANCE);
+    }
+
+    void ringworld$automationOpenSeedPreview() {
+        seedPreviewButton.onPress(AutomationInput.INSTANCE);
+    }
+
+    void ringworld$automationCycleSky() {
+        skyBackdropButton.onPress(AutomationInput.INSTANCE);
+    }
+
+    void ringworld$automationCycleSun() {
+        sunStyleButton.onPress(AutomationInput.INSTANCE);
+    }
+
+    boolean ringworld$automationHasWallStyle(RingWallStyle expected) {
+        return wallStyle.equals(expected);
+    }
+
     void ringworld$automationSetLayout(int circumference, int width, int wallHeight) {
         circumferenceField.setValue(Integer.toString(circumference));
         widthField.setValue(Integer.toString(width));
@@ -414,6 +535,11 @@ public final class RingWorldCreationScreen extends Screen {
     /** Parent-screen hook kept UI-local so accepting a layout refreshes its summary. */
     public interface LayoutButtonOwner {
         void ringworld$refreshLayoutButton();
+        String ringworld$seedText();
+        long ringworld$resolvedSeed();
+        void ringworld$setSeedText(String seed);
+        net.minecraft.client.gui.screens.worldselection.WorldCreationContext
+                ringworld$creationContext();
 
         /** True after the real Create World footer widget has been initialized. */
         boolean ringworld$layoutButtonReadyForAutomation();

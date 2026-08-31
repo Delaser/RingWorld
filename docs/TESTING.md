@@ -15,10 +15,12 @@ passes, as does [static qualification on Windows and Ubuntu](https://github.com/
 
 Latest 26.2 run IDs, candidate/package hashes and remaining owner checks are
 in [the current checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
-The static qualification workflow passes **342 tests locally** after the
-portable cache-fixture correction below. On `a2ba721`, hosted static CI passes
-on both Ubuntu and Windows, and the separate Windows package launcher check
-passes. [Authenticated macOS package review](MACOS_PACKAGE_REVIEW_2026-08-27.md)
+The current static qualification workflow passes **344 tests locally**. Full
+Python discovery passes 428 with two expected Windows-only fixture skips on
+macOS, and the packaging/prototype subset passes 41 with the same two skips. On
+`a2ba721`, the preceding hosted static CI passed on both Ubuntu and Windows,
+and the separate Windows package launcher check passed.
+[Authenticated macOS package review](MACOS_PACKAGE_REVIEW_2026-08-27.md)
 records all four runtime smokes passing after the targeted #234 metadata repair.
 Nightly `20260827T104447Z-6af7691cc891` remains 16 PASS / 2 FAIL /
 2 INCOMPLETE. The four selected repairs pass in
@@ -176,9 +178,10 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 
 ## Active port checkpoint
 
-The active public `main` integration line requires Java 25. The Fabric build
-and the NeoForge 26.1.2.87 / ModDevGradle 2.0.143 build each pass all 338
-unit/parameterized cases. Fabric common/client compilation also passes:
+The active public integration line requires Java 25. Both Fabric and NeoForge
+compile the same loader-neutral contract suite. The 2026-08-31 audited source
+passes 377 unit/parameterized tests per loader with zero failures, errors, or
+skips. Build both source artifacts with:
 
 ```sh
 JAVA_HOME=/path/to/jdk-25/Contents/Home \
@@ -202,12 +205,12 @@ not an unqualified `runServer` task.
 
 ## Rolling Minecraft version qualification
 
-Minecraft 26.1 is the development compatibility floor, but the current tasks
-and published artifacts remain proven for 26.1.2 only. Minecraft 26.1 and
-26.1.1 become supported only after the same exact loader-specific jar passes
-their build, server, world, Atlas, multiplayer, rendering, lifecycle, and
-packaging cells. Later stable Minecraft versions follow the same intake and
-must not inherit a support claim from compilation or launch alone.
+Minecraft 26.1 is the development compatibility floor. RingWorld 1.1 is
+qualified for 26.1, 26.1.1, 26.1.2, and 26.2 on both loaders; the 26.1.x line
+uses one unchanged jar per loader and 26.2 uses separate artifacts. Later
+stable Minecraft versions follow the same intake and must not inherit a
+support claim from compilation or launch alone. Unreleased source changes also
+need fresh candidate evidence before replacing the published support record.
 
 The approved manifest, quick/nightly/release tiers, isolated-fixture rules,
 same-hash requirement, forward-only world-copy policy, and planned
@@ -1356,6 +1359,32 @@ seam/rim captures, and recorded 847 frames averaging 8.42 ms with one over
 50 ms. This proves shader linkage and teardown; subjective fog density and wall
 colour still require owner review in a deliberately incomplete world.
 
+## Atlas surface-light development capture
+
+Run the isolated Fabric graphical fixture with:
+
+```sh
+./gradlew runAtlasLightingClient --console=plain
+```
+
+It recreates only `run-atlas-lighting`, completes a 2,048×128 Atlas, loads the
+opposite site, places a deterministic sea-lantern field at real sampled surface
+heights, and refuses to capture until a later server revision returns at least
+half the expected lit cells. It then records matched noon and midnight radial
+views before stopping normally. This is focused shader/protocol development
+evidence, not packaged-release or NeoForge parity evidence.
+
+The 2026-08-30 local run completed all 4,096 cells, placed 63 lamps, received
+176 non-zero block-light cells at revision 7, and wrote:
+
+- `run-atlas-lighting/screenshots/atlas-lighting-01-day.png`;
+- `run-atlas-lighting/screenshots/atlas-lighting-02-night.png`.
+
+The night image exposes the warm illumination layer while the day image keeps
+the normal Atlas lighting treatment. The unit suite separately covers
+format-8 tile/disk round trips, light-only revisions, value validation, and
+RGB/light-independent mip filtering.
+
 ## 26.1 integrated safe-small client gate
 
 The 2026-07-28 isolated Java 25 client gate first confirmed that every startup
@@ -1750,7 +1779,7 @@ extraction method inside `extractRenderState`, because
 `Screen.extractRenderStateWithTooltipAndSubtitles` already owns that pass.
 At a 1920-by-1080 window this also exercises the compact 480-by-270 logical
 layout. Verify that the RingWorld entry shares the vanilla footer row without
-overlapping Create or Cancel, then exercise all four editor cases:
+overlapping Create or Cancel, then exercise all five editor cases:
 
 1. enter an invalid layout and confirm that the error is visible and
    **Use for new world** is disabled;
@@ -1758,7 +1787,10 @@ overlapping Create or Cancel, then exercise all four editor cases:
    and the disabled monument control;
 3. select **Medium** and **Large**, confirming `16384×256` and `32768×512`,
    their walking-lap/generation maths, and the Large warning highlight;
-4. enter a distinct valid custom layout, confirm its preview, choose
+4. open **Seed preview**, enter two different seeds, wait for each asynchronous
+   full-ring image, confirm the image changes without creating a save, and
+   verify its displayed aspect matches the selected circumference:width ratio;
+5. enter a distinct valid custom layout, confirm its preview, choose
    **Use layout**, reject the immutable-layout confirmation once, then
    accept it and verify that Create World shows the new C×W summary.
 
@@ -1838,22 +1870,48 @@ window and renderer still run.
 | `creation-ui-03-default-scale2` | Default editor at scale 2 |
 | `creation-ui-04-default-scale3` | Default editor at scale 3 |
 | `creation-ui-05-default-scale4` | Compact default editor at scale 4 |
-| `creation-ui-06-large-narrow-scale4` | Large editor retained across resize at 320×270, including monument choice and longest live maths |
-| `creation-ui-07-invalid-five-errors-narrow-scale4` | All five invalid-layout errors and disabled apply action at narrow width |
-| `creation-ui-08-small-scale4` | Small preset, exact maths, unavailable monument state, and visible experimental stronghold advisory |
-| `creation-ui-09-medium-scale4` | Medium preset and exact maths |
-| `creation-ui-10-large-scale4` | Large preset, exact maths, and generation warning |
-| `creation-ui-11-custom-monument-scale4` | Valid 4,096×640×192 custom monument layout |
-| `creation-ui-12-confirm-layout-scale4` | Immutable-layout confirmation |
-| `creation-ui-13-footer-applied-scale4` | Refreshed Create World footer after confirmation |
+| `creation-ui-06-seed-preview-12345-scale4` | Completed chunk-free preview for seed 12345 |
+| `creation-ui-07-seed-preview-67890-scale4` | Distinct completed preview after changing the real creation seed |
+| `creation-ui-08-rim-default-scale4` | Default configurable-rim editor at scale 4 |
+| `creation-ui-09-rim-overgrown-narrow-scale4` | Overgrown preset, advanced fields, and top-edge-decay copy retained at 320×270 |
+| `creation-ui-10-large-narrow-scale4` | Large editor retained across resize at 320×270, including monument choice and longest live maths |
+| `creation-ui-11-invalid-five-errors-narrow-scale4` | All five invalid-layout errors and disabled apply action at narrow width |
+| `creation-ui-12-small-scale4` | Small preset, exact maths, unavailable monument state, and visible experimental stronghold advisory |
+| `creation-ui-13-medium-scale4` | Medium preset and exact maths |
+| `creation-ui-14-large-scale4` | Large preset, exact maths, and generation warning |
+| `creation-ui-15-custom-monument-night-large-scale4` | Valid 4,096×640×192 custom monument layout with independent Night sky and Large sun selected |
+| `creation-ui-16-confirm-layout-scale4` | Immutable-layout and visual-presentation confirmation |
+| `creation-ui-17-footer-applied-scale4` | Refreshed Create World footer after confirmation |
 
 The finalizer requires `[creation-ui-test] PASS` and no `FAIL`, every listed
 prefix to match at least one decodable, dimension-safe, visible non-uniform
 PNG, no `level.dat` below `saves/`, and final properties exactly
-`circumferenceBlocks=4096`, `widthBlocks=640`, `wallHeightBlocks=192`, and
+`circumferenceBlocks=4096`, `widthBlocks=640`, `wallHeightBlocks=192`,
+`skyBackdrop=NIGHT`, `sunStyle=LARGE`, and
 `requestOceanMonument=true` (while retaining `testMode=false` and disabled
 atlas pregeneration). A missing, stale, blank, corrupt, failed, or
 world-creating run therefore fails closed.
+
+The unreleased optional-feature expansion adds the two rim-editor captures,
+two seed previews, and independent saved sky/sun choices shown above. Local
+Java 25 development runs on 2026-08-30 passed all 17 captures and the finalizer
+on both Fabric and NeoForge for Minecraft 26.1.2 and 26.2. This is bounded
+source-state UI evidence, not an exact-candidate or packaged-runtime
+qualification.
+
+For subjective in-world comparison, `runAppearanceComparisonClient` is a
+development-only Fabric gallery fixture. It creates seven disposable
+2,048×128 worlds from one seed, applies one built-in rim preset to each, and
+captures the same wall pose. It then captures all three backdrops with a Small
+sun plus the Large and None sun variants in the first world from a fixed
+sky-facing pose. A second Night capture half a circumference away provides a
+direct visual check that the physical-space star field inverts in the local
+tangent frame instead of following the player. A wall-top horizontal Atmosphere
+capture at dusk checks that the upper/lower sky and high-altitude fog converge
+without vanilla's flat horizon band. `-PringAppearanceSkyOnly=true` reuses that
+world to refresh only the sky captures. Outputs live below the ignored
+`run-appearance-comparison/screenshots/` directory. This fixture is review
+material, not a loader-parity, frozen-candidate, or support-qualification gate.
 
 Accepted evidence: both qualified tasks emitted their 13 screenshot markers,
 the final PASS marker, the exact persisted custom values, and no `level.dat`.
@@ -2904,6 +2962,25 @@ See [`VISUAL_POLISH_CHECKPOINT_2026-08-02.md`](VISUAL_POLISH_CHECKPOINT_2026-08-
 - Use `/tp` for a disjoint X move.
 - Enter and return from Nether and End.
 - Reload a chunk containing entities and scheduled ticks.
+
+### Medium Industrial Atlas-lighting review
+
+The reusable visual fixture uses the named save
+`RingWorld Medium Industrial Village Lighting Test`. It requires the exact
+Medium preset (16,384×256), a complete format-8 Atlas, and the Industrial wall
+preset. Launch it with:
+
+```sh
+./gradlew :runMediumIndustrialLightingClient
+```
+
+The fixture places eight plains villages at evenly spaced X positions around
+the loop, alternating their Z positions across the usable band. It waits for a
+post-placement Atlas revision, switches to spectator mode at midnight, and
+leaves the client open for live `/ringworld ringlights <falloff> <peak>`
+comparisons. Treat the server's eight `Generated structure` confirmations and
+the fixture's `READY` marker as setup evidence; sending a command alone is not
+evidence that a village was placed.
 
 ## Performance collection
 

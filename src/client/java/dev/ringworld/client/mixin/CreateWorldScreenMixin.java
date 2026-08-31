@@ -8,6 +8,8 @@ import net.minecraft.client.gui.layouts.LayoutElement;
 import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
+import net.minecraft.client.gui.screens.worldselection.WorldCreationContext;
+import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -56,6 +58,26 @@ abstract class CreateWorldScreenMixin extends Screen
         if (!ringworld$layoutButton.getMessage().equals(message)) {
             ringworld$layoutButton.setMessage(message);
         }
+    }
+
+    @Override
+    public String ringworld$seedText() {
+        return ((CreateWorldScreen)(Object)this).getUiState().getSeed();
+    }
+
+    @Override
+    public long ringworld$resolvedSeed() {
+        return ((CreateWorldScreen)(Object)this).getUiState().getSettings().options().seed();
+    }
+
+    @Override
+    public void ringworld$setSeedText(String seed) {
+        ((CreateWorldScreen)(Object)this).getUiState().setSeed(seed);
+    }
+
+    @Override
+    public WorldCreationContext ringworld$creationContext() {
+        return ((CreateWorldScreen)(Object)this).getUiState().getSettings();
     }
 
     @Override

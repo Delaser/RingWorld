@@ -2,16 +2,23 @@ package dev.ringworld.net;
 
 import dev.ringworld.world.RingLayoutFingerprint;
 import dev.ringworld.world.RingWorldSettings;
+import dev.ringworld.world.RingSkyProfile;
 
 /** Loader-neutral immutable-layout handshake derivation and comparison. */
 public final class RingSettingsHandshake {
     private RingSettingsHandshake() { }
 
     public static RingSettingsPayload payloadFor(RingWorldSettings settings) {
+        return payloadFor(settings, RingSkyProfile.DEFAULT);
+    }
+
+    public static RingSettingsPayload payloadFor(
+            RingWorldSettings settings, RingSkyProfile skyProfile) {
         return new RingSettingsPayload(
                 settings.widthBlocks(), settings.circumferenceBlocks(), settings.generatorSeed(),
                 settings.wallHeightBlocks(), settings.surfaceReferenceY(),
-                settings.terrainNoiseMapping(), settings.formatVersion(),
+                settings.terrainNoiseMapping(), settings.wallStyle(), skyProfile,
+                settings.formatVersion(),
                 settings.layoutFingerprint());
     }
 
@@ -22,7 +29,7 @@ public final class RingSettingsHandshake {
         return RingLayoutFingerprint.compute(
                 payload.width(), payload.circumference(), payload.seed(), payload.wallHeight(),
                 payload.surfaceReferenceY(), payload.terrainNoiseMapping(),
-                payload.formatVersion());
+                payload.wallStyle(), payload.formatVersion());
     }
 
     public static boolean hasMatchingPayloadFingerprint(RingSettingsPayload payload) {

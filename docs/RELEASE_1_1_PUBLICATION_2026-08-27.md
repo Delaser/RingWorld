@@ -25,7 +25,8 @@ Public version numbers are `1.1.0-fabric+mc26.1`,
 `1.1.0-neoforge+mc26.2`. The 26.1 files each cover the three exact tested
 patches; 26.2 uses separate jars. Java 25 is required.
 
-Corresponding source, also linked from every uploaded changelog:
+Corresponding source, linked from the GitHub releases and originally included
+in each upload's changelog:
 
 - 26.1.x: [`3e94b04f4b42aa22dbe3d57f2ac169745226ec05`](https://github.com/Delaser/RingWorld/commit/3e94b04f4b42aa22dbe3d57f2ac169745226ec05).
 - 26.2: [`1cfac9b10648054e46f4303f6e8b87df9b9bcdba`](https://github.com/Delaser/RingWorld/commit/1cfac9b10648054e46f4303f6e8b87df9b9bcdba).
@@ -41,6 +42,24 @@ with automatic publication after approval. Modrinth's four versions exist and
 their CDN files verify, but the project itself still says **Under review**.
 These observations do not claim public launcher discovery before moderation
 finishes. Host status can advance without another source change.
+
+### Changelog-only correction — 2026-08-28
+
+At owner request, all four existing CurseForge files were edited in place.
+The public What's new sections now contain changes only:
+
+- 26.1.x Fabric/NeoForge: added support for 26.1 and 26.1.1 on the named
+  loader, alongside 26.1.2.
+- 26.2 Fabric/NeoForge: added 26.2 support on the named loader; updated the
+  distant-ring renderer for the reversed-depth buffer; adapted world-generation
+  hooks and RingWorld menus to 26.2.
+
+The generic feature list and installation/source boilerplate were removed
+from those notes. Source provenance remains available in the project Source
+repository and exact GitHub releases above. The four file IDs, jar bytes,
+loader/version tags and dependency relationships were not changed; there was
+no deletion, download or re-upload. The public file pages were checked to
+verify the corrected text, separately from the author forms.
 
 ## Publication method and remaining automation work
 

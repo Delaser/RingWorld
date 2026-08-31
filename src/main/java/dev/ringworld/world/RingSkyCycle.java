@@ -23,6 +23,28 @@ public final class RingSkyCycle {
     private RingSkyCycle() { }
 
     /**
+     * Rotation that expresses one inertially fixed star field in the player's
+     * local tangent frame. Moving around the ring rotates local up, so the sky
+     * applies the equal and opposite rotation instead of following the player.
+     */
+    public static float starFieldAngleRadians(RingGeometry geometry, double cameraX) {
+        if (geometry == null) throw new IllegalArgumentException("ring geometry is required");
+        return (float)-geometry.angleAt(cameraX);
+    }
+
+    /**
+     * Smoothly removes the flat-world fog/sky colour split over the final
+     * sixteen blocks below a finite wall top. Terrain hides that split near
+     * the deck; the exposed rim-top view must converge to one atmosphere.
+     */
+    public static float exposedHorizonBlend(double cameraY, double wallTopY) {
+        if (!Double.isFinite(cameraY) || !Double.isFinite(wallTopY)) return 0.0F;
+        double progress = Math.max(0.0, Math.min(1.0,
+                (cameraY - (wallTopY - 16.0)) / 16.0));
+        return (float)(progress * progress * (3.0 - 2.0 * progress));
+    }
+
+    /**
      * Smoothly interpolates four familiar Minecraft lighting keyframes:
      * warm dawn, neutral noon, warm dusk, and cool near-dark midnight.
      */

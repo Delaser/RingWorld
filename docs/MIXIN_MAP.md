@@ -115,7 +115,7 @@ cannot begin a RingWorld handshake or queue settings/atlas payloads.
 | `MinecraftMixin` | `Minecraft.disconnect(Screen, boolean, boolean)` and `clearClientLevel` | Clears geometry, atlas, and GPU surface state on both integrated and remote world teardown paths | Missing either path can leak the previous world's static client state into an in-process reopen |
 | `PauseScreenMixin` | `PauseScreen.init` | Adds a separate top-right `RingWorld Map` entry only after RingWorld geometry and atlas identity are acknowledged | Adding another row to vanilla's centre stack overlaps Save and Quit at GUI scale 4; ordinary worlds and other dimensions must expose no button |
 | `PlayerPositionDebugHudEntryMixin` | `DebugEntryPosition` | Replaces F3 position section with canonical Ring coordinates and atlas state | Debug display only; never use it as storage logic |
-| `SkyRenderingMixin` | `SkyRenderer` | Small fixed ring-centred sun, time-based sun tint/intensity, no moon, stationary stars, and complete-ring texture invocation | `renderSun` constants and dynamic colour arguments are version-sensitive |
+| `SkyRenderingMixin` | `SkyRenderer` | Small fixed ring-centred sun, time-based sun tint/intensity, no moon, physical-space stars, matching lower atmosphere, and complete-ring texture invocation | Celestial and lower-sky dynamic colour arguments are version-sensitive |
 
 ## Non-mixin owners
 

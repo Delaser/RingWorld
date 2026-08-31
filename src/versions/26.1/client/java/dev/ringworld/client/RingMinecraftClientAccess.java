@@ -29,6 +29,10 @@ public final class RingMinecraftClientAccess {
 
     public static boolean hideGui(Minecraft client) { return client.options.hideGui; }
 
+    public static void setGuiHidden(Minecraft client, boolean hidden) {
+        client.options.hideGui = hidden;
+    }
+
     public static void invalidateChunks(Minecraft client) { client.levelRenderer.needsUpdate(); }
 
     public static void grabScreenshot(File gameDirectory, String name, RenderTarget target, int scale,

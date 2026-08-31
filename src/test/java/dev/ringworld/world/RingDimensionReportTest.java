@@ -24,7 +24,7 @@ class RingDimensionReportTest {
         assertEquals(256, report.atlasColumns());
         assertEquals(16, report.atlasRows());
         assertEquals(4_096L, report.atlasCellCount());
-        assertEquals(28_672L, report.estimatedAtlasBytes());
+        assertEquals(32_768L, report.estimatedAtlasBytes());
         assertEquals(52L, report.costEstimate().estimatedPregenerationSeconds());
         assertEquals(11_095_245L, report.costEstimate().estimatedGeneratedWorldBytes());
         assertEquals(11.2, report.oppositeAngularWidthDegrees(), 0.1);
@@ -75,7 +75,7 @@ class RingDimensionReportTest {
         assertEquals(4_030_464L, report.playableInteriorAreaBlocks());
         assertEquals(817L, report.costEstimate().estimatedPregenerationSeconds());
         assertEquals(177_523_917L, report.costEstimate().estimatedGeneratedWorldBytes());
-        assertEquals(459_264L, report.costEstimate().estimatedAtlasWireBytes());
+        assertEquals(524_800L, report.costEstimate().estimatedAtlasWireBytes());
         assertEquals(32L, report.costEstimate().minimumAtlasTransferTicks());
         assertTrue(report.oppositeAngularWidthDegrees() > 2.8
                 && report.oppositeAngularWidthDegrees() < 2.9);
@@ -93,7 +93,7 @@ class RingDimensionReportTest {
         assertEquals(4_096, report.atlasColumns());
         assertEquals(64, report.atlasRows());
         assertEquals(262_144L, report.atlasCellCount());
-        assertEquals(1_835_008L, report.estimatedAtlasBytes());
+        assertEquals(2_097_152L, report.estimatedAtlasBytes());
         assertEquals(3_268L, report.costEstimate().estimatedPregenerationSeconds());
         assertEquals(710_095_668L, report.costEstimate().estimatedGeneratedWorldBytes());
         assertTrue(report.warnings().stream().anyMatch(
@@ -102,10 +102,10 @@ class RingDimensionReportTest {
 
     private static Stream<Arguments> productionAtlasFidelityCandidates() {
         return Stream.of(
-                Arguments.of(8, 65_536L, 458_752L),
-                Arguments.of(4, 262_144L, 1_835_008L),
-                Arguments.of(2, 1_048_576L, 7_340_032L),
-                Arguments.of(1, 4_194_304L, 29_360_128L));
+                Arguments.of(8, 65_536L, 524_288L),
+                Arguments.of(4, 262_144L, 2_097_152L),
+                Arguments.of(2, 1_048_576L, 8_388_608L),
+                Arguments.of(1, 4_194_304L, 33_554_432L));
     }
 
     @ParameterizedTest(name = "production step {0} has checked atlas budgets")

@@ -1,10 +1,12 @@
 package dev.ringworld.client;
 
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.server.RingWorldVanillaFixtureRegistries;
 import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import dev.ringworld.client.render.RingSurfaceTextureRenderer;
 import dev.ringworld.net.RingSettingsPayload;
+import dev.ringworld.net.RingSkyProfilePayload;
 import dev.ringworld.net.RingSettingsAckPayload;
 import dev.ringworld.net.RingSettingsHandshake;
 import dev.ringworld.net.RingAtlasPregenerationControlPayload;
@@ -14,6 +16,7 @@ import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRequestPayload;
 import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
+import dev.ringworld.net.RingTerrainPreviewPayload;
 import dev.ringworld.world.RingWorldConfig;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingRenderProfile;
@@ -21,6 +24,8 @@ import java.util.Optional;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
@@ -60,6 +65,12 @@ public final class RingWorldClient implements ClientModInitializer {
             new RingWorldCreationUiTestClient();
     private final RingMapCompassCaptureClient mapCompassCapture =
             new RingMapCompassCaptureClient();
+    private final RingAppearanceComparisonCaptureClient appearanceComparison =
+            new RingAppearanceComparisonCaptureClient();
+    private final RingAtlasLightingCaptureClient atlasLightingCapture =
+            new RingAtlasLightingCaptureClient();
+    private final RingMediumIndustrialLightingTestClient mediumIndustrialLighting =
+            new RingMediumIndustrialLightingTestClient();
     private boolean testScreenOpened;
     private boolean testWorldStarted;
     private boolean testPerformanceProfileApplied;
@@ -119,6 +130,7 @@ public final class RingWorldClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         RenderPipelines.register(RingSurfaceTextureRenderer.pipeline());
+        registerAtlasLightCommand();
         RingClientPayloadTransport.configure(new FabricRingClientPayloadTransport());
         ClientRingState.configureCacheDirectory(
                 FabricLoader.getInstance().getGameDir().resolve("ringworld-cache"));
@@ -161,8 +173,21 @@ public final class RingWorldClient implements ClientModInitializer {
                     ClientRingState.set(
                             new RingGeometry(payload.width(), payload.circumference()),
                             payload.wallHeight(), payload.surfaceReferenceY(),
-                            payload.terrainNoiseMapping(), fingerprint);
+                            payload.terrainNoiseMapping(), payload.wallStyle(), payload.skyProfile(),
+                            payload.seed(), payload.formatVersion(), fingerprint);
                     RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
+                }));
+        ClientPlayNetworking.registerGlobalReceiver(RingSkyProfilePayload.ID, (payload, context) ->
+                context.client().execute(() -> {
+                    try {
+                        ClientRingState.setSkyProfile(payload.profile());
+                    } catch (IllegalArgumentException exception) {
+                        var handler = context.client().getConnection();
+                        if (handler != null) {
+                            handler.getConnection().disconnect(Component.literal(
+                                    "Invalid RingWorld sky profile from server."));
+                        }
+                    }
                 }));
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasMetadataPayload.ID, (payload, context) ->
                 context.client().execute(() -> {
@@ -188,6 +213,8 @@ public final class RingWorldClient implements ClientModInitializer {
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasRevisionPayload.ID, (payload, context) ->
                 context.client().execute(() -> ClientRingState.commitTerrainAtlasRevision(
                         payload.worldHash(), payload.revision())));
+        ClientPlayNetworking.registerGlobalReceiver(RingTerrainPreviewPayload.ID, (payload, context) ->
+                context.client().execute(() -> ClientRingState.installTerrainPreview(payload)));
         ClientPlayNetworking.registerGlobalReceiver(RingAtlasPregenerationStatusPayload.ID, (payload, context) ->
                 context.client().execute(() -> AtlasPregenerationClientState.install(context.client(), payload)));
         ClientPlayConnectionEvents.DISCONNECT.register((handler, client) ->
@@ -220,12 +247,59 @@ public final class RingWorldClient implements ClientModInitializer {
             if (projectionCapture.tick(client)) return;
             if (visualParityCapture.tick(client)) return;
             if (curvedObjectCapture.tick(client)) return;
+            if (appearanceComparison.tick(client)) return;
+            if (atlasLightingCapture.tick(client)) return;
+            if (mediumIndustrialLighting.tick(client)) return;
             if (mapCompassCapture.startWorldIfEnabled(client)) return;
             if (mapCompassCapture.tick(client)) return;
             if (atlasPregenerationUiTest.tick(client)) return;
             saveDiagnosticJoinScreenshot(client);
             startAutomatedTestWorld(client);
         });
+    }
+
+    private static void registerAtlasLightCommand() {
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            var falloff = ClientCommands.argument("falloff", FloatArgumentType.floatArg(
+                            dev.ringworld.world.RingAtlasLightProfile.MIN_FALLOFF,
+                            dev.ringworld.world.RingAtlasLightProfile.MAX_FALLOFF))
+                    .executes(context -> setGamma(context.getSource(),
+                            FloatArgumentType.getFloat(context, "falloff"),
+                            dev.ringworld.world.RingAtlasLightProfile.DEFAULT_GAMMA_PEAK));
+            falloff.then(ClientCommands.argument("peak", FloatArgumentType.floatArg(
+                            dev.ringworld.world.RingAtlasLightProfile.MIN_PEAK,
+                            dev.ringworld.world.RingAtlasLightProfile.MAX_PEAK))
+                    .executes(context -> setGamma(context.getSource(),
+                            FloatArgumentType.getFloat(context, "falloff"),
+                            FloatArgumentType.getFloat(context, "peak"))));
+            var ringLights = ClientCommands.literal("ringlights")
+                    .executes(context -> showAtlasLight(context.getSource()))
+                    .then(ClientCommands.literal("show")
+                            .executes(context -> showAtlasLight(context.getSource())))
+                    .then(ClientCommands.literal("reset").executes(context -> {
+                        var profile = RingAtlasLightTuning.reset();
+                        context.getSource().sendFeedback(Component.literal(
+                                "Ring Atlas light: " + profile.summary()));
+                        return 1;
+                    }))
+                    .then(falloff);
+            dispatcher.register(ClientCommands.literal("ringworld").then(ringLights));
+        });
+    }
+
+    private static int showAtlasLight(
+            net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource source) {
+        source.sendFeedback(Component.literal(
+                "Ring Atlas light: " + RingAtlasLightTuning.profile().summary()));
+        return 1;
+    }
+
+    private static int setGamma(
+            net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource source,
+            float falloff, float peak) {
+        var profile = RingAtlasLightTuning.useGamma(falloff, peak);
+        source.sendFeedback(Component.literal("Ring Atlas light: " + profile.summary()));
+        return 1;
     }
 
     /**

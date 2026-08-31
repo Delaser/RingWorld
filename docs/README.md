@@ -40,6 +40,9 @@ Start here:
 - [`DUAL_LOADER_STANDALONE_PLAN.md`](DUAL_LOADER_STANDALONE_PLAN.md): approved
   NeoForge-first implementation, standalone gameplay/visual polish, release,
   and deferred third-party compatibility sequence.
+- [`UNIFIED_JAR_FEASIBILITY.md`](UNIFIED_JAR_FEASIBILITY.md): current
+  entry-level artifact audit, risks, deterministic merge design, and acceptance
+  path for an optional single Fabric/NeoForge download.
 - [`PORTING_26_1_AUDIT.md`](PORTING_26_1_AUDIT.md): official-source audit of
   the 26.1.2 toolchain, Fabric API changes, and all 35 candidate mixin targets.
 - [`MINECRAFT_1_21_11_FINAL_BASELINE.md`](MINECRAFT_1_21_11_FINAL_BASELINE.md):
@@ -111,6 +114,9 @@ Start here:
   historical exact alpha-3 owner checklist.
 - [`CURRENT_STATE.md`](CURRENT_STATE.md): implemented features, deliberate
   boundaries, known defects, and recommended next work.
+- [`PROJECT_AUDIT_2026-08-31.md`](PROJECT_AUDIT_2026-08-31.md): repository
+  hygiene, correctness repairs, validation, disk cleanup, and retained-risk
+  record for the optional-feature branch.
 
 The top-level [`README.md`](../README.md) remains the user-facing overview.
 When it conflicts with these files, verify the source and correct both.

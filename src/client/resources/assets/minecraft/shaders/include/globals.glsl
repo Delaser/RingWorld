@@ -18,4 +18,6 @@ layout(std140) uniform Globals {
     vec4 RingWorldDetail;
     vec4 RingWorldAtmosphere;
     vec4 RingWorldAtmosphere2;
+    // mode (0 midpoint, 1 gamma), falloff exponent, peak strength, reserved
+    vec4 RingWorldAtlasLight;
 };

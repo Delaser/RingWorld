@@ -1,0 +1,59 @@
+name: Java dual-loader build
+
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/java-build.yml"
+      - "build.gradle"
+      - "settings.gradle"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - "neoforge/build.gradle"
+      - "neoforge/src/**"
+      - "src/**"
+  push:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/java-build.yml"
+      - "build.gradle"
+      - "settings.gradle"
+      - "gradle.properties"
+      - "gradle/**"
+      - "gradlew"
+      - "gradlew.bat"
+      - "neoforge/build.gradle"
+      - "neoforge/src/**"
+      - "src/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: ${{ matrix.loader }} source build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        loader:
+          - Fabric
+          - NeoForge
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: temurin
+          java-version: "25"
+      - name: Build and test ${{ matrix.loader }}
+        shell: bash
+        run: |
+          if [[ "${{ matrix.loader }}" == "Fabric" ]]; then
+            ./gradlew --no-daemon --console=plain test build
+          else
+            ./gradlew --no-daemon --console=plain :neoforge:test :neoforge:build
+          fi

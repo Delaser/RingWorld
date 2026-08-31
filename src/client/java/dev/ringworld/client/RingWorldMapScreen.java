@@ -5,6 +5,7 @@ import dev.ringworld.world.AtlasPregenerationAction;
 import dev.ringworld.world.AtlasPregenerationStatus;
 import dev.ringworld.world.AtlasPregenerationView;
 import dev.ringworld.world.RingTerrainNoiseMapping;
+import dev.ringworld.world.RingTerrainPreviewHud;
 import java.util.Optional;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -148,14 +149,37 @@ public final class RingWorldMapScreen extends Screen {
                 "Rate: " + view.rate(), "ETA: " + view.eta()
         };
         for (int i = 0; i < lines.length; i++) {
-            context.centeredText(font, Component.literal(lines[i]), center, 43 + i * 15, 0xFFD0D0D0);
+            context.centeredText(font, Component.literal(lines[i]), center, 43 + i * 12, 0xFFD0D0D0);
+        }
+
+        context.centeredText(font, Component.literal("Seed preview textures"),
+                center, 143, 0xFFFFFFFF);
+        var previewEntries = RingTerrainPreviewHud.entries(ClientRingState.terrainPreviewStage());
+        for (int index = 0; index < previewEntries.size(); index++) {
+            RingTerrainPreviewHud.Entry entry = previewEntries.get(index);
+            int column = index & 1;
+            int row = index >> 1;
+            int x = center - 150 + column * 155;
+            String label = entry.name() + " " + entry.columns() + "x" + entry.rows()
+                    + ": " + entry.state().label();
+            context.text(font, Component.literal(label), x, 155 + row * 12,
+                    previewColor(entry.state()));
         }
         if (!current.get().canControl()) {
             context.centeredText(font, Component.literal("Read-only: ask the owner or a gamemaster to control generation."),
-                    center, 162, 0xFFFFD060);
+                    center, 181, 0xFFFFD060);
         } else if (!view.error().isEmpty()) {
-            context.centeredText(font, Component.literal(view.error()), center, 162, 0xFFFF8080);
+            context.centeredText(font, Component.literal(view.error()), center, 181, 0xFFFF8080);
         }
+    }
+
+    private static int previewColor(RingTerrainPreviewHud.State state) {
+        return switch (state) {
+            case READY -> 0xFF80FF80;
+            case GENERATING -> 0xFFFFDF70;
+            case WAITING -> 0xFFA0A0A0;
+            case ACTIVE -> 0xFFFFFFFF;
+        };
     }
 
     private static String worldgenLabel() {

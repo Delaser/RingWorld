@@ -1,5 +1,6 @@
 package dev.ringworld.platform.neoforge;
 
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.AtlasPregenerationClientState;
 import dev.ringworld.client.AtlasPregenerationUiTestClient;
@@ -10,28 +11,35 @@ import dev.ringworld.client.MultiplayerTestClient;
 import dev.ringworld.client.ProductionLifecycleTestClient;
 import dev.ringworld.client.RingClientPayloadTransport;
 import dev.ringworld.client.RingMapCompassCaptureClient;
+import dev.ringworld.client.RingMediumIndustrialLightingTestClient;
 import dev.ringworld.client.RingProjectionCaptureClient;
 import dev.ringworld.client.RingVisualParityCaptureClient;
 import dev.ringworld.client.RingWorldClientSession;
 import dev.ringworld.client.RingWorldCreationUiTestClient;
+import dev.ringworld.client.RingAtlasLightTuning;
 import dev.ringworld.net.RingAtlasPregenerationStatusPayload;
 import dev.ringworld.net.RingSettingsHandshake;
 import dev.ringworld.net.RingSettingsPayload;
+import dev.ringworld.net.RingSkyProfilePayload;
 import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRequestPayload;
 import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
+import dev.ringworld.net.RingTerrainPreviewPayload;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.CommandSourceStack;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterRenderPipelinesEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
@@ -59,6 +67,8 @@ public final class NeoForgeRingWorldClient {
             new RingWorldCreationUiTestClient();
     private static final RingMapCompassCaptureClient MAP_COMPASS_CAPTURE =
             new RingMapCompassCaptureClient();
+    private static final RingMediumIndustrialLightingTestClient MEDIUM_INDUSTRIAL_LIGHTING =
+            new RingMediumIndustrialLightingTestClient();
 
     private NeoForgeRingWorldClient() { }
 
@@ -76,10 +86,54 @@ public final class NeoForgeRingWorldClient {
 
     private static void registerPayloadHandlers(RegisterClientPayloadHandlersEvent event) {
         event.register(RingSettingsPayload.ID, NeoForgeRingWorldClient::handleSettings);
+        event.register(RingSkyProfilePayload.ID, NeoForgeRingWorldClient::handleSkyProfile);
         event.register(RingTerrainAtlasMetadataPayload.ID, NeoForgeRingWorldClient::handleAtlasMetadata);
         event.register(RingTerrainAtlasTilePayload.ID, NeoForgeRingWorldClient::handleAtlasTile);
         event.register(RingTerrainAtlasRevisionPayload.ID, NeoForgeRingWorldClient::handleAtlasRevision);
+        event.register(RingTerrainPreviewPayload.ID, NeoForgeRingWorldClient::handleTerrainPreview);
         event.register(RingAtlasPregenerationStatusPayload.ID, NeoForgeRingWorldClient::handleAtlasStatus);
+    }
+
+    @SubscribeEvent
+    public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
+        var falloff = Commands.argument("falloff", FloatArgumentType.floatArg(
+                        dev.ringworld.world.RingAtlasLightProfile.MIN_FALLOFF,
+                        dev.ringworld.world.RingAtlasLightProfile.MAX_FALLOFF))
+                .executes(context -> setGamma(context.getSource(),
+                        FloatArgumentType.getFloat(context, "falloff"),
+                        dev.ringworld.world.RingAtlasLightProfile.DEFAULT_GAMMA_PEAK));
+        falloff.then(Commands.argument("peak", FloatArgumentType.floatArg(
+                        dev.ringworld.world.RingAtlasLightProfile.MIN_PEAK,
+                        dev.ringworld.world.RingAtlasLightProfile.MAX_PEAK))
+                .executes(context -> setGamma(context.getSource(),
+                        FloatArgumentType.getFloat(context, "falloff"),
+                        FloatArgumentType.getFloat(context, "peak"))));
+        var ringLights = Commands.literal("ringlights")
+                .executes(context -> showAtlasLight(context.getSource()))
+                .then(Commands.literal("show")
+                        .executes(context -> showAtlasLight(context.getSource())))
+                .then(Commands.literal("reset").executes(context -> {
+                    var profile = RingAtlasLightTuning.reset();
+                    sendAtlasLightFeedback(context.getSource(), profile.summary());
+                    return 1;
+                }))
+                .then(falloff);
+        event.getDispatcher().register(Commands.literal("ringworld").then(ringLights));
+    }
+
+    private static int showAtlasLight(CommandSourceStack source) {
+        sendAtlasLightFeedback(source, RingAtlasLightTuning.profile().summary());
+        return 1;
+    }
+
+    private static int setGamma(CommandSourceStack source, float falloff, float peak) {
+        var profile = RingAtlasLightTuning.useGamma(falloff, peak);
+        sendAtlasLightFeedback(source, profile.summary());
+        return 1;
+    }
+
+    private static void sendAtlasLightFeedback(CommandSourceStack source, String summary) {
+        source.sendSuccess(() -> Component.literal("Ring Atlas light: " + summary), false);
     }
 
     private static void handleSettings(RingSettingsPayload payload, IPayloadContext context) {
@@ -87,6 +141,16 @@ public final class NeoForgeRingWorldClient {
         // together on the client game thread. enqueueWork is immediate when the
         // client payload registry has already selected that thread.
         context.enqueueWork(() -> handleSettingsOnClientThread(payload, context));
+    }
+
+    private static void handleSkyProfile(RingSkyProfilePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            try {
+                ClientRingState.setSkyProfile(payload.profile());
+            } catch (IllegalArgumentException exception) {
+                context.disconnect(Component.literal("Invalid RingWorld sky profile from server."));
+            }
+        });
     }
 
     private static void handleSettingsOnClientThread(
@@ -110,7 +174,8 @@ public final class NeoForgeRingWorldClient {
         long fingerprint = RingSettingsHandshake.fingerprintFor(payload);
         ClientRingState.set(new RingGeometry(payload.width(), payload.circumference()),
                 payload.wallHeight(), payload.surfaceReferenceY(),
-                payload.terrainNoiseMapping(), fingerprint);
+                payload.terrainNoiseMapping(), payload.wallStyle(), payload.skyProfile(),
+                payload.seed(), payload.formatVersion(), fingerprint);
         RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
     }
 
@@ -159,6 +224,11 @@ public final class NeoForgeRingWorldClient {
         ClientRingState.commitTerrainAtlasRevision(payload.worldHash(), payload.revision());
     }
 
+    private static void handleTerrainPreview(
+            RingTerrainPreviewPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientRingState.installTerrainPreview(payload));
+    }
+
     private static void handleAtlasStatus(
             RingAtlasPregenerationStatusPayload payload, IPayloadContext context) {
         context.enqueueWork(() -> handleAtlasStatusOnClientThread(payload));
@@ -188,6 +258,7 @@ public final class NeoForgeRingWorldClient {
         if (PROJECTION_CAPTURE.tick(client)) return;
         if (VISUAL_PARITY_CAPTURE.tick(client)) return;
         if (CURVED_OBJECT_CAPTURE.tick(client)) return;
+        if (MEDIUM_INDUSTRIAL_LIGHTING.tick(client)) return;
         if (MAP_COMPASS_CAPTURE.tick(client)) return;
         ATLAS_PREGENERATION_UI_TEST.tick(client);
     }

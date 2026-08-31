@@ -12,6 +12,22 @@ The qualification, staging, and dual-host delivery plan for 26.1.x and later
 stable lines is
 [`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
 
+## File changelogs
+
+The public **What's new** section must contain actual changes and fixes only.
+Do not paste the project description, existing features, installation steps,
+test reports or promotional copy into it. Shared changes may legitimately be
+the same on both loaders; do not invent loader-specific fixes.
+
+On 2026-08-28 the owner requested in-place corrections to the four 1.1 files.
+Their changelogs now describe the 26.1.x support extension or the 26.2 port,
+reversed-depth rendering and world-generation/menu adaptations. File IDs,
+runtime jars, version/loader tags and dependencies are unchanged. Nothing was
+deleted, downloaded or re-uploaded for this correction. The initial staged
+changelog text is historical and must not overwrite these corrected notes.
+Corresponding source remains available through the project's Source link and
+the exact GitHub release tags recorded in the publication record.
+
 ## Author Upload API
 
 CurseForge provides an official author API for automated project-file uploads.

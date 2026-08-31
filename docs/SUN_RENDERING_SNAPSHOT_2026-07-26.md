@@ -32,7 +32,7 @@ positions do not yet receive different local eclipse phases.
 | [`RingSkyCycle.java`](../src/main/java/dev/ringworld/world/RingSkyCycle.java) | Fixed-sun constants, panel dimensions, orbital speed, and eclipse phase |
 | [`SkyRenderingMixin.java`](../src/client/java/dev/ringworld/client/mixin/SkyRenderingMixin.java) | Vanilla suppression, ring-centred frame, render order, and panel draw |
 | [`RingSkyCycleTest.java`](../src/test/java/dev/ringworld/world/RingSkyCycleTest.java) | Timing, scale, speed, wrapping, and fixed-angle regression tests |
-| [`RingWorldClient.java`](../src/client/java/dev/ringworld/client/RingWorldClient.java) | Automated noon, dusk, and midnight screenshot sequence |
+| [`RingWorldClient.java`](../src/platform/fabricClient/java/dev/ringworld/client/RingWorldClient.java) | Automated noon, dusk, and midnight screenshot sequence |
 
 ## Per-frame positioning
 

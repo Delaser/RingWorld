@@ -46,11 +46,12 @@ public final class RingSurfaceGpu {
     public static RenderPipeline pipeline() { return PIPELINE; }
     public static float farBackgroundDepth() { return 0.9999F; }
 
-    public static GpuBuffer createVertexBuffer(RingSurfaceMesh.Mesh mesh) {
+    public static GpuBuffer createVertexBuffer(RingSurfaceMesh.Mesh mesh, int vertexArgb) {
         VertexFormat format = DefaultVertexFormat.POSITION_TEX_COLOR;
         try (ByteBufferBuilder allocator = ByteBufferBuilder.exactlySized(mesh.vertexCount() * format.getVertexSize())) {
             BufferBuilder builder = new BufferBuilder(allocator, VertexFormat.Mode.TRIANGLES, format);
-            mesh.emitTriangles((x, y, z, u, v) -> builder.addVertex(x, y, z).setUv(u, v).setColor(0xFFFFFFFF));
+            mesh.emitTriangles((x, y, z, u, v) ->
+                    builder.addVertex(x, y, z).setUv(u, v).setColor(vertexArgb));
             try (MeshData built = builder.buildOrThrow()) {
                 return RenderSystem.getDevice().createBuffer(() -> "RingWorld textured surface mesh",
                         GpuBuffer.USAGE_VERTEX, built.vertexBuffer());

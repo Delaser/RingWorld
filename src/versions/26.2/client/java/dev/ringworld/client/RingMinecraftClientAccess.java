@@ -29,6 +29,10 @@ public final class RingMinecraftClientAccess {
 
     public static boolean hideGui(Minecraft client) { return client.gui.hud.isHidden(); }
 
+    public static void setGuiHidden(Minecraft client, boolean hidden) {
+        if (client.gui.hud.isHidden() != hidden) client.gui.hud.toggle();
+    }
+
     public static void invalidateChunks(Minecraft client) {
         client.levelRenderer.sectionOcclusionGraph().invalidate();
     }

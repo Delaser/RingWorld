@@ -39,15 +39,16 @@ class RingTerrainAtlasTest {
     void bilinearlyInterpolatesRealHeightAndColour() {
         RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH);
         int z0 = GEOMETRY.minWidthZ() + 4;
-        atlas.putBlockSample(4, z0, 64, 0x000000);
-        atlas.putBlockSample(12, z0, 96, 0x804020);
-        atlas.putBlockSample(4, z0 + 8, 96, 0x408020);
-        atlas.putBlockSample(12, z0 + 8, 128, 0xC0C040);
+        atlas.putBlockSample(4, z0, 64, 0x000000, 0);
+        atlas.putBlockSample(12, z0, 96, 0x804020, 4);
+        atlas.putBlockSample(4, z0 + 8, 96, 0x408020, 8);
+        atlas.putBlockSample(12, z0 + 8, 128, 0xC0C040, 12);
 
         RingTerrainAtlas.SurfaceSample center = atlas.sample(8, z0 + 4);
 
         assertEquals(96.0, center.height(), 1.0e-9);
         assertEquals(0x606020, center.color());
+        assertEquals(6.0, center.blockLight(), 1.0e-9);
         assertEquals(1.0, center.coverage(), 1.0e-9);
     }
 
@@ -55,13 +56,14 @@ class RingTerrainAtlasTest {
     void tileAndDiskRoundTripsPreserveMissingCells(@TempDir Path directory) throws Exception {
         RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH);
         int z = GEOMETRY.minWidthZ() + 4;
-        source.putBlockSample(4, z, 77, 0xABCDEF);
+        source.putBlockSample(4, z, 77, 0xABCDEF, 13);
 
         RingTerrainAtlas tiled = new RingTerrainAtlas(GEOMETRY, HASH);
         assertTrue(tiled.applyTile(0, 0, source.encodeTile(0, 0)));
         assertFalse(tiled.applyTile(0, 0, source.encodeTile(0, 0)));
         assertEquals(1, tiled.presentCount());
         assertEquals(0xABCDEF, tiled.sample(4, z).color());
+        assertEquals(13.0, tiled.sample(4, z).blockLight(), 1.0e-9);
         assertFalse(tiled.isComplete());
 
         Path cache = directory.resolve("atlas.rwat.gz");
@@ -69,6 +71,7 @@ class RingTerrainAtlasTest {
         RingTerrainAtlas loaded = RingTerrainAtlas.load(cache, GEOMETRY, HASH);
         assertEquals(tiled.presentCount(), loaded.presentCount());
         assertEquals(77.0, loaded.sample(4, z).height(), 1.0e-9);
+        assertEquals(13, loaded.cellBlockLight(0, 0));
         assertFalse(loaded.hasCell(1, 0));
     }
 
@@ -158,15 +161,23 @@ class RingTerrainAtlasTest {
         RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH);
         RingTerrainAtlas client = new RingTerrainAtlas(GEOMETRY, HASH);
         int z = GEOMETRY.minWidthZ() + 4;
-        source.putBlockSample(4, z, 80, 0x112233);
+        source.putBlockSample(4, z, 80, 0x112233, 2);
 
         assertTrue(client.applyTile(0, 0, source.encodeTile(0, 0)));
         assertFalse(client.applyTile(0, 0, source.encodeTile(0, 0)));
 
-        source.putBlockSample(4, z, 81, 0x445566);
+        source.putBlockSample(4, z, 81, 0x445566, 14);
         assertTrue(client.applyTile(0, 0, source.encodeTile(0, 0)));
         assertEquals(81.0, client.sample(4, z).height());
         assertEquals(0x445566, client.sample(4, z).color());
+        assertEquals(14, client.cellBlockLight(0, 0));
+    }
+
+    @Test
+    void rejectsOutOfRangeBlockLight() {
+        assertThrows(IllegalArgumentException.class,
+                () -> new RingTerrainAtlas(GEOMETRY, HASH)
+                        .putCell(0, 0, 70, 0x123456, 16));
     }
 
     @Test
