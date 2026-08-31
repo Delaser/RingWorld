@@ -83,7 +83,8 @@ abstract class GlobalSettingsMixin {
                 : 0.0F;
         RingRenderProfile profile = geometry == null
                 ? null
-                : RingRenderProfile.create(geometry, viewDistanceBlocks);
+                : RingRenderProfile.create(geometry, viewDistanceBlocks,
+                        ClientRingState.generationSettings().atlasFidelity());
         RingCloudBounds cloudBounds = geometry == null ? null
                 : RingCloudBounds.betweenInnerRimFaces(
                         geometry, ClientRingState.wallStyle().thicknessBlocks());

@@ -10,7 +10,7 @@ import java.util.Locale;
 /** Repeatable CPU/storage benchmark for issue #69's production sample-step candidates. */
 public final class RingAtlasFidelityBenchmark {
     private static final RingGeometry PRODUCTION = new RingGeometry(256, 16_384);
-    private static final int[] SAMPLE_STEPS = {8, 4, 2, 1};
+    private static final int[] SAMPLE_STEPS = {16, 8, 4, 2};
     private static final long HASH = 0x69A7_1A5L;
 
     private RingAtlasFidelityBenchmark() { }
@@ -31,13 +31,7 @@ public final class RingAtlasFidelityBenchmark {
                 lines.add(result.markdown());
             }
             lines.add("");
-            RingRenderProfile render = RingRenderProfile.create(PRODUCTION, 28 * 16.0);
-            lines.add(String.format(Locale.ROOT,
-                    "Expanded GPU output is profile-independent: %,dx%,d texture, %,d texture bytes with mips, "
-                            + "%,d mesh vertices, %,d mesh bytes, and %,d CPU build-scratch bytes.",
-                    render.textureColumns(), render.textureRows(), render.estimatedGpuTextureBytes(),
-                    render.vertexCount(), render.estimatedGpuMeshBytes(),
-                    render.estimatedTextureBuildScratchBytes()));
+            lines.add("GPU output follows the selected fidelity profile; each row includes its actual texture/mesh build.");
             Path report = Path.of("build", "reports", "ringworld", "atlas-fidelity.md");
             Files.createDirectories(report.getParent());
             Files.writeString(report, String.join(System.lineSeparator(), lines) + System.lineSeparator());
@@ -94,7 +88,8 @@ public final class RingAtlasFidelityBenchmark {
     }
 
     private static int buildClientTextureAndMips(RingTerrainAtlas atlas) {
-        RingRenderProfile profile = RingRenderProfile.create(PRODUCTION, 28 * 16.0);
+        RingRenderProfile profile = RingRenderProfile.create(PRODUCTION, 28 * 16.0,
+                RingAtlasFidelity.forSampleStep(atlas.sampleStep()));
         int width = profile.textureColumns();
         int height = profile.textureRows();
         int[] pixels = new int[width * height];

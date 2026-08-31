@@ -95,7 +95,9 @@ public final class RingAtlasPregenerationService {
         long hash = RingTerrainAtlas.worldHash(settings);
         Path path = cachePath(world);
         Path legacyPath = legacyCachePath(world);
-        RingTerrainAtlas.StorageLoad storage = RingTerrainAtlas.loadStorage(path, legacyPath, geometry, hash);
+        int sampleStep = settings.generationSettings().atlasFidelity().sampleStepBlocks();
+        RingTerrainAtlas.StorageLoad storage = RingTerrainAtlas.loadStorage(
+                path, legacyPath, geometry, hash, sampleStep);
         RingTerrainAtlas atlas = storage.atlas();
         logLoad(storage.status(), path, legacyPath, atlas);
         WorldState state = new WorldState(atlas, path,

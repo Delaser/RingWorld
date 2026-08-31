@@ -193,9 +193,10 @@ flowchart TD
 ```
 
 `RingWorldConfig` is process bootstrap state for the next new world.
-`RingWorldSettings` is authoritative world persistent state. Current format 4
+`RingWorldSettings` is authoritative world persistent state. Current format 5
 serializes width, circumference, seed, wall height, surface reference, terrain
-mapping, and the immutable rim style. `ServerWorldMixin` loads or creates it before attaching geometry to the
+mapping, immutable rim style, Atlas fidelity, terrain layout, continuous-river
+choice, and structure-density choice. `ServerWorldMixin` loads or creates it before attaching geometry to the
 Overworld generator, so a changed bootstrap file cannot briefly shape an
 existing world. Format 1 migrates explicitly with surface reference Y=64.
 
@@ -208,7 +209,7 @@ vanilla's local safe-spawn spiral, which may cross the periodic seam. The
 helper does not read configuration itself and is not a runtime policy for
 saved worlds.
 
-`RingLayoutFingerprint` covers those fields plus every rim-style field.
+`RingLayoutFingerprint` covers those fields plus every rim-style and generation-policy field.
 Clients independently verify it during login, and the terrain-atlas world hash
 adds atlas format/sample semantics. The derivation and remaining cross-size
 work are tracked in
@@ -219,7 +220,8 @@ service API are described in
 
 `RingStructurePolicy` is separate server-only saved state. A newly created
 world persists the mandatory stronghold bit and may opt into an ocean-monument
-request. Policy format 2 resolves that request once, before structure-start
+request or moderately increased built-in random-spread structure density.
+Policy format 3 resolves the monument request once, before structure-start
 generation, to either one canonical candidate or a typed unsatisfied result;
 the terminal result is synchronously saved and never moved on reload. If an
 existing RingWorld has no policy file, both guarantees remain disabled so an

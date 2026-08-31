@@ -60,9 +60,15 @@ public record RingRenderProfile(
     public static final double HAZE_EXPONENT = 1.35;
 
     public static RingRenderProfile create(RingGeometry geometry, double viewDistanceBlocks) {
+        return create(geometry, viewDistanceBlocks, RingAtlasFidelity.BALANCED);
+    }
+
+    public static RingRenderProfile create(RingGeometry geometry, double viewDistanceBlocks,
+                                           RingAtlasFidelity fidelity) {
         if (!Double.isFinite(viewDistanceBlocks) || viewDistanceBlocks <= 0.0) {
             throw new IllegalArgumentException("view distance must be finite and positive");
         }
+        if (fidelity == null) throw new IllegalArgumentException("Atlas fidelity is required");
 
         double half = geometry.circumferenceBlocks() * 0.5;
         double effective = Math.min(Math.max(16.0, viewDistanceBlocks), half);
@@ -79,13 +85,15 @@ public record RingRenderProfile(
                 geometry.circumferenceBlocks() * 0.12);
         double cloudStart = Math.min(cloudEnd, Math.max(8.0, cloudEnd * 0.55));
 
-        int textureColumns = Math.min(geometry.circumferenceBlocks(), MAX_TEXTURE_COLUMNS);
-        int textureRows = Math.min(geometry.widthBlocks(), MAX_TEXTURE_ROWS);
+        int textureColumns = Math.min(
+                geometry.circumferenceBlocks(), fidelity.maxTextureColumns());
+        int textureRows = Math.min(geometry.widthBlocks(), fidelity.maxTextureRows());
         int circumferenceSegments = Math.min(
-                divideCeil(geometry.circumferenceBlocks(), TARGET_MESH_STEP_BLOCKS),
-                MAX_CIRCUMFERENCE_SEGMENTS);
+                divideCeil(geometry.circumferenceBlocks(), fidelity.meshStepBlocks()),
+                Math.max(MAX_CIRCUMFERENCE_SEGMENTS,
+                        fidelity.maxTextureColumns() / 2));
         int widthBands = Math.min(
-                divideCeil(geometry.widthBlocks(), TARGET_MESH_STEP_BLOCKS),
+                divideCeil(geometry.widthBlocks(), fidelity.meshStepBlocks()),
                 MAX_WIDTH_BANDS);
         long vertices = Math.multiplyExact(
                 Math.multiplyExact((long)circumferenceSegments, widthBands), 6L);

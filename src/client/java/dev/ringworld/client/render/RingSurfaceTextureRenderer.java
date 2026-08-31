@@ -22,6 +22,7 @@ import dev.ringworld.world.RingSurfaceGenerationFog;
 import dev.ringworld.world.RingSurfaceMorph;
 import dev.ringworld.world.RingSurfacePlaceholder;
 import dev.ringworld.world.RingTerrainAtlas;
+import dev.ringworld.world.RingAtlasFidelity;
 import dev.ringworld.world.RingTerrainPreview;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
@@ -219,7 +220,8 @@ public final class RingSurfaceTextureRenderer {
 
     private static TextureImages buildTexturePixels(RingTerrainAtlas atlas, long generation) {
         RingGeometry geometry = atlas.geometry();
-        RingRenderProfile profile = RingRenderProfile.create(geometry, 16.0);
+        RingRenderProfile profile = RingRenderProfile.create(
+                geometry, 16.0, RingAtlasFidelity.forSampleStep(atlas.sampleStep()));
         // A partial atlas never needs the expanded final texture: its source
         // cells are the only trustworthy detail. Keeping the progressive
         // texture at source resolution bounds each coalesced rebuild; the

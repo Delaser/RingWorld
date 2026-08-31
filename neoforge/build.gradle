@@ -942,6 +942,14 @@ tasks.register('prepareNeoForgeStrongholdTestWorld') {
             providers.gradleProperty('ringStrongholdTestResume').orElse('false'))
     inputs.property('ringWorldgenMatrix',
             providers.gradleProperty('ringWorldgenMatrix').orElse('false'))
+    inputs.property('ringWorldLayout',
+            providers.gradleProperty('ringWorldLayout').orElse('VANILLA'))
+    inputs.property('ringContinuousRiver',
+            providers.gradleProperty('ringContinuousRiver').orElse('false'))
+    inputs.property('ringMoreStructures',
+            providers.gradleProperty('ringMoreStructures').orElse('false'))
+    inputs.property('ringAtlasFidelity',
+            providers.gradleProperty('ringAtlasFidelity').orElse('BALANCED'))
     outputs.upToDateWhen { false }
     doLast {
         def eula = new File(neoForgeStrongholdTestRun, 'eula.txt')
@@ -980,6 +988,14 @@ tasks.register('prepareNeoForgeStrongholdTestWorld') {
         config.setProperty('wallHeightBlocks',
                 providers.gradleProperty('ringStrongholdTestWallHeight').orElse('160').get())
         config.setProperty('pregenerateTerrainAtlas', 'false')
+        config.setProperty('worldLayout',
+                providers.gradleProperty('ringWorldLayout').orElse('VANILLA').get())
+        config.setProperty('continuousRingRiver',
+                providers.gradleProperty('ringContinuousRiver').orElse('false').get())
+        config.setProperty('moreStructures',
+                providers.gradleProperty('ringMoreStructures').orElse('false').get())
+        config.setProperty('atlasFidelity',
+                providers.gradleProperty('ringAtlasFidelity').orElse('BALANCED').get())
         config.setProperty('requestOceanMonument',
                 Integer.parseInt(config.getProperty('widthBlocks')) >= 160 ? 'true' : 'false')
         configFile.parentFile.mkdirs()

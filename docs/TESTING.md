@@ -180,7 +180,7 @@ Rendering and mixin behavior cannot be proven by unit tests alone.
 
 The active public integration line requires Java 25. Both Fabric and NeoForge
 compile the same loader-neutral contract suite. The 2026-08-31 audited source
-passes 377 unit/parameterized tests per loader with zero failures, errors, or
+passes 408 unit/parameterized tests per loader with zero failures, errors, or
 skips. Build both source artifacts with:
 
 ```sh
@@ -1870,34 +1870,38 @@ window and renderer still run.
 | `creation-ui-03-default-scale2` | Default editor at scale 2 |
 | `creation-ui-04-default-scale3` | Default editor at scale 3 |
 | `creation-ui-05-default-scale4` | Compact default editor at scale 4 |
-| `creation-ui-06-seed-preview-12345-scale4` | Completed chunk-free preview for seed 12345 |
-| `creation-ui-07-seed-preview-67890-scale4` | Distinct completed preview after changing the real creation seed |
-| `creation-ui-08-rim-default-scale4` | Default configurable-rim editor at scale 4 |
-| `creation-ui-09-rim-overgrown-narrow-scale4` | Overgrown preset, advanced fields, and top-edge-decay copy retained at 320×270 |
-| `creation-ui-10-large-narrow-scale4` | Large editor retained across resize at 320×270, including monument choice and longest live maths |
-| `creation-ui-11-invalid-five-errors-narrow-scale4` | All five invalid-layout errors and disabled apply action at narrow width |
-| `creation-ui-12-small-scale4` | Small preset, exact maths, unavailable monument state, and visible experimental stronghold advisory |
-| `creation-ui-13-medium-scale4` | Medium preset and exact maths |
-| `creation-ui-14-large-scale4` | Large preset, exact maths, and generation warning |
-| `creation-ui-15-custom-monument-night-large-scale4` | Valid 4,096×640×192 custom monument layout with independent Night sky and Large sun selected |
-| `creation-ui-16-confirm-layout-scale4` | Immutable-layout and visual-presentation confirmation |
-| `creation-ui-17-footer-applied-scale4` | Refreshed Create World footer after confirmation |
+| `creation-ui-06-generation-default-scale4` | Safe default generation and Balanced Atlas choices |
+| `creation-ui-07-generation-archipelago-high-scale4` | Archipelago, High Atlas, river and structure options selected with live resource maths |
+| `creation-ui-08-seed-preview-12345-scale4` | Completed chunk-free Archipelago preview for seed 12345 |
+| `creation-ui-09-seed-preview-67890-scale4` | Distinct completed preview after changing the real creation seed |
+| `creation-ui-10-rim-default-scale4` | Default configurable-rim editor at scale 4 |
+| `creation-ui-11-rim-overgrown-narrow-scale4` | Overgrown preset, advanced fields, and top-edge-decay copy retained at 320×270 |
+| `creation-ui-12-large-narrow-scale4` | Large editor retained across resize at 320×270, including monument choice and longest live maths |
+| `creation-ui-13-invalid-five-errors-narrow-scale4` | All five invalid-layout errors and disabled apply action at narrow width |
+| `creation-ui-14-small-scale4` | Small preset, exact maths, unavailable monument state, and visible experimental stronghold advisory |
+| `creation-ui-15-medium-scale4` | Medium preset and exact maths |
+| `creation-ui-16-large-scale4` | Large preset, exact maths, and generation warning |
+| `creation-ui-17-custom-monument-night-large-scale4` | Valid 4,096×640×192 custom monument layout with generation, Night sky and Large sun selected |
+| `creation-ui-18-confirm-layout-scale4` | Immutable-layout and visual-presentation confirmation |
+| `creation-ui-19-footer-applied-scale4` | Refreshed Create World footer after confirmation |
 
 The finalizer requires `[creation-ui-test] PASS` and no `FAIL`, every listed
 prefix to match at least one decodable, dimension-safe, visible non-uniform
 PNG, no `level.dat` below `saves/`, and final properties exactly
 `circumferenceBlocks=4096`, `widthBlocks=640`, `wallHeightBlocks=192`,
-`skyBackdrop=NIGHT`, `sunStyle=LARGE`, and
+`skyBackdrop=NIGHT`, `sunStyle=LARGE`, `atlasFidelity=HIGH`,
+`worldLayout=ARCHIPELAGO`, `continuousRingRiver=true`,
+`moreStructures=true`, and
 `requestOceanMonument=true` (while retaining `testMode=false` and disabled
 atlas pregeneration). A missing, stale, blank, corrupt, failed, or
 world-creating run therefore fails closed.
 
-The unreleased optional-feature expansion adds the two rim-editor captures,
-two seed previews, and independent saved sky/sun choices shown above. Local
-Java 25 development runs on 2026-08-30 passed all 17 captures and the finalizer
-on both Fabric and NeoForge for Minecraft 26.1.2 and 26.2. This is bounded
-source-state UI evidence, not an exact-candidate or packaged-runtime
-qualification.
+The unreleased optional-feature expansion adds the generation panel, two
+rim-editor captures, two real seed previews, and independent saved sky/sun
+choices shown above. Local Java 25 development runs on 2026-08-31 passed all
+19 captures and the finalizer on both Fabric and NeoForge for Minecraft
+26.1.2 and 26.2. This is bounded source-state UI evidence, not an
+exact-candidate or packaged-runtime qualification.
 
 For subjective in-world comparison, `runAppearanceComparisonClient` is a
 development-only Fabric gallery fixture. It creates seven disposable

@@ -115,15 +115,17 @@ On first Overworld load, the mod writes persistent state with:
 
 ```text
 width, circumference, generator seed, wall height, surface reference,
-terrain mapping, rim style, format version
+terrain mapping, rim style, Atlas fidelity, world layout, river/structure flags,
+format version
 ```
 
 Every saved layout field takes precedence on subsequent loads. Changing
 bootstrap dimensions, wall height, wall style, sky backdrop, or sun style does not resize
 or redecorate an existing RingWorld. Format-1 and format-2 saves migrate through
 format 3 with surface reference Y=64 and their legacy terrain-noise mapping
-preserved. Pre-format-4 worlds receive the exact legacy rim style; fresh worlds
-save format 4, the corrected annular mapping, and their chosen rim style. This
+preserved. Pre-format-4 worlds receive the exact legacy rim style. Pre-format-5
+worlds receive Balanced/Vanilla/Off/Off generation defaults; fresh worlds save
+format 5, the corrected annular mapping, and their chosen rim/generation settings. This
 prevents unexplored chunks in an alpha
 world from changing terrain algorithms after an update. The mapping is part of
 the atlas world hash, so an incompatible cached atlas is discarded and rebuilt.
@@ -215,17 +217,16 @@ development benchmark on production hardware.
 Atlas pregeneration visits one missing canonical chunk at a time when the
 normal server chunk queue has fewer than 64 pending tasks.
 
-| Geometry | Canonical chunks | Source cells at 8-block step |
+| Geometry | Canonical chunks | Performance / Balanced / High / Very high cells |
 | --- | ---: | ---: |
-| 2048×416 safe-small | 3,328 | 13,312 |
-| 16384×256 default | 16,384 | 65,536 |
+| 2048×128 Small | 1,024 | 1,024 / 4,096 / 16,384 / 65,536 |
+| 16384×256 Medium | 16,384 | 16,384 / 65,536 / 262,144 / 1,048,576 |
 
-The supported sample step remains fixed at eight blocks. The production atlas
-uses 458,752 raw primitive-array bytes and about 459,264 encoded full-stream
-bytes. The #69 benchmark rejected adaptive 4/2/1-block profiles for this
-release because they multiply source/cache/transfer cost by 4/16/64 without
-changing the capped GPU texture or mesh. See
-[`ATLAS_FIDELITY_BENCHMARK_2026-08-01.md`](ATLAS_FIDELITY_BENCHMARK_2026-08-01.md).
+New worlds can select coordinated 16/8/4/2-block fidelity profiles. Unlike the
+discarded #69 experiment, each higher profile raises the authoritative source,
+GPU texture cap and height-mesh resolution together. The profile is immutable,
+fingerprinted and validated against the Atlas cell limit before creation. See
+[`OPTIONAL_WORLD_GENERATION.md`](OPTIONAL_WORLD_GENERATION.md).
 
 The ignored two-client Atlas-concurrency harness can create either development
 or production-sized disposable worlds through
@@ -440,7 +441,7 @@ neoforge/build/libs/ringworld-neoforge-<mod_version>.jar
 neoforge/build/libs/ringworld-neoforge-<mod_version>-sources.jar
 ```
 
-The 2026-08-31 audited source passes 377 unit/parameterized cases per loader
+The 2026-08-31 audited source passes 408 unit/parameterized cases per loader
 with zero failures, errors, or skips. The historical Phase 2 95-error inventory
 and the subsequent source-port checkpoint are recorded in
 `MINECRAFT_26_1_COMPILER_BASELINE.md`. Development artifacts are not deployable

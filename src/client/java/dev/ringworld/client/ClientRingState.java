@@ -11,6 +11,7 @@ import dev.ringworld.world.RingTerrainPreviewStage;
 import dev.ringworld.world.RingWallStyle;
 import dev.ringworld.world.RingSkyProfile;
 import dev.ringworld.world.RingWorldSettings;
+import dev.ringworld.world.RingWorldGenerationSettings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
@@ -28,6 +29,8 @@ public final class ClientRingState {
     private static volatile int settingsFormatVersion;
     private static volatile RingWallStyle wallStyle = RingWallStyle.LEGACY;
     private static volatile RingSkyProfile skyProfile = RingSkyProfile.DEFAULT;
+    private static volatile RingWorldGenerationSettings generationSettings =
+            RingWorldGenerationSettings.DEFAULT;
     private static volatile long generatorSeed;
     private static volatile long layoutFingerprint;
     @Nullable private static volatile RingPosition cameraPosition;
@@ -100,6 +103,17 @@ public final class ClientRingState {
                            RingWallStyle newWallStyle, RingSkyProfile newSkyProfile,
                            long newGeneratorSeed, int newSettingsFormatVersion,
                            long newLayoutFingerprint) {
+        set(newGeometry, newWallHeightBlocks, newSurfaceReferenceY, newTerrainNoiseMapping,
+                newWallStyle, newSkyProfile, RingWorldGenerationSettings.DEFAULT,
+                newGeneratorSeed, newSettingsFormatVersion, newLayoutFingerprint);
+    }
+
+    public static void set(RingGeometry newGeometry, int newWallHeightBlocks,
+                           int newSurfaceReferenceY, int newTerrainNoiseMapping,
+                           RingWallStyle newWallStyle, RingSkyProfile newSkyProfile,
+                           RingWorldGenerationSettings newGenerationSettings,
+                           long newGeneratorSeed, int newSettingsFormatVersion,
+                           long newLayoutFingerprint) {
         geometry = newGeometry;
         wallHeightBlocks = newWallHeightBlocks;
         surfaceReferenceY = newSurfaceReferenceY;
@@ -113,6 +127,8 @@ public final class ClientRingState {
         settingsFormatVersion = newSettingsFormatVersion;
         wallStyle = java.util.Objects.requireNonNull(newWallStyle, "wallStyle");
         skyProfile = java.util.Objects.requireNonNull(newSkyProfile, "skyProfile");
+        generationSettings = java.util.Objects.requireNonNull(
+                newGenerationSettings, "generationSettings");
         generatorSeed = newGeneratorSeed;
         layoutFingerprint = newLayoutFingerprint;
         cameraPosition = null;
@@ -147,6 +163,7 @@ public final class ClientRingState {
     public static int settingsFormatVersion() { return settingsFormatVersion; }
     public static RingWallStyle wallStyle() { return wallStyle; }
     public static RingSkyProfile skyProfile() { return skyProfile; }
+    public static RingWorldGenerationSettings generationSettings() { return generationSettings; }
     public static long generatorSeed() { return generatorSeed; }
     public static void setSkyProfile(RingSkyProfile profile) {
         skyProfile = java.util.Objects.requireNonNull(profile, "profile");
@@ -304,6 +321,7 @@ public final class ClientRingState {
                 && settingsFormatVersion == 0
                 && wallStyle.equals(RingWallStyle.LEGACY)
                 && skyProfile.equals(RingSkyProfile.DEFAULT)
+                && generationSettings.equals(RingWorldGenerationSettings.DEFAULT)
                 && generatorSeed == 0L
                 && layoutFingerprint == 0L
                 && cameraPosition == null
@@ -382,6 +400,7 @@ public final class ClientRingState {
         settingsFormatVersion = 0;
         wallStyle = RingWallStyle.LEGACY;
         skyProfile = RingSkyProfile.DEFAULT;
+        generationSettings = RingWorldGenerationSettings.DEFAULT;
         layoutFingerprint = 0L;
         generatorSeed = 0L;
         cameraPosition = null;

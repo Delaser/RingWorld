@@ -174,7 +174,8 @@ public final class RingWorldClient implements ClientModInitializer {
                             new RingGeometry(payload.width(), payload.circumference()),
                             payload.wallHeight(), payload.surfaceReferenceY(),
                             payload.terrainNoiseMapping(), payload.wallStyle(), payload.skyProfile(),
-                            payload.seed(), payload.formatVersion(), fingerprint);
+                            payload.generationSettings(), payload.seed(),
+                            payload.formatVersion(), fingerprint);
                     RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
                 }));
         ClientPlayNetworking.registerGlobalReceiver(RingSkyProfilePayload.ID, (payload, context) ->

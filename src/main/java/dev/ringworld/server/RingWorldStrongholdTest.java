@@ -12,6 +12,7 @@ import dev.ringworld.world.RingSeamTerrainAudit;
 import dev.ringworld.world.RingTerrainNoiseMapping;
 import dev.ringworld.world.RingWorldGeneratorAccess;
 import dev.ringworld.world.RingWorldSettings;
+import dev.ringworld.world.RingMacroTerrain;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -79,6 +80,7 @@ public final class RingWorldStrongholdTest {
         RingGeometry geometry = RingWorldServer.geometryFor(world);
         boolean worldgenMatrix = Boolean.getBoolean("ringworld.worldgenMatrix");
         verifyPeriodicHeightQueries(world, geometry);
+        verifyOptionalGeneration(world, geometry);
         if (worldgenMatrix) verifySeamWorldgenSample(world, geometry);
         verifyFiniteRims(world, geometry);
         if (!RingStructurePolicy.get(world).guaranteesStronghold()) {
@@ -198,6 +200,38 @@ public final class RingWorldStrongholdTest {
                 "[stronghold-test] startChunk={}, pieces={}, strongholdBox={}, portalBox={}, frames={}, origin={}, located={}, eyeFoldVx={}",
                 expected, start.getPieces().size(), strongholdBox, portalBox, frames, origin, located,
                 eye.getDeltaMovement().x);
+    }
+
+    private static void verifyOptionalGeneration(ServerLevel world, RingGeometry geometry) {
+        RingWorldSettings settings = RingWorldSettings.get(world);
+        RingStructurePolicy policy = RingStructurePolicy.get(world);
+        if (settings.generationSettings().moreStructures() != policy.increasesStructureDensity()) {
+            throw new IllegalStateException("saved structure-density policy does not match world settings");
+        }
+        if (!settings.generationSettings().continuousRiver()) return;
+        RingMacroTerrain macro = new RingMacroTerrain(
+                geometry, settings.generatorSeed(), settings.generationSettings());
+        int riverBiomes = 0;
+        int seaLevel = world.getSeaLevel();
+        for (int sample = 0; sample < 8; sample++) {
+            int x = sample * geometry.circumferenceBlocks() / 8;
+            int z = (int)Math.round(macro.riverCenterZ(x));
+            world.getChunk(x >> 4, z >> 4);
+            if (world.getBiome(new BlockPos(x, seaLevel, z)).is(BiomeTags.IS_RIVER)) riverBiomes++;
+            int height = world.getHeight(Heightmap.Types.OCEAN_FLOOR, x, z);
+            if (height > seaLevel + 2) {
+                throw new IllegalStateException("continuous river rose above its channel at "
+                        + x + "," + z + ": " + height
+                        + "; top=" + world.getBlockState(new BlockPos(x, height - 1, z))
+                        + ", sea=" + world.getBlockState(new BlockPos(x, seaLevel, z))
+                        + ", bed=" + world.getBlockState(new BlockPos(x, seaLevel - 7, z)));
+            }
+        }
+        if (riverBiomes != 8) {
+            throw new IllegalStateException("continuous river biome coverage was " + riverBiomes + "/8");
+        }
+        RingWorldMod.LOGGER.info("[stronghold-test] continuous river=8/8 biome/channel samples; moreStructures={}",
+                policy.increasesStructureDensity());
     }
 
     /**

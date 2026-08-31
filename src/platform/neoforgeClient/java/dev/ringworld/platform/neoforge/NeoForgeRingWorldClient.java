@@ -175,7 +175,7 @@ public final class NeoForgeRingWorldClient {
         ClientRingState.set(new RingGeometry(payload.width(), payload.circumference()),
                 payload.wallHeight(), payload.surfaceReferenceY(),
                 payload.terrainNoiseMapping(), payload.wallStyle(), payload.skyProfile(),
-                payload.seed(), payload.formatVersion(), fingerprint);
+                payload.generationSettings(), payload.seed(), payload.formatVersion(), fingerprint);
         RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
     }
 
