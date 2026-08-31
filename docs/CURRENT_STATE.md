@@ -30,7 +30,9 @@ Unreleased optional-feature work after 1.1 currently includes:
   loaders through `settings_v5` and `sky_profile_v1`.
 - a chunk-free asynchronous seed preview in Create World. It uses the real
   selected seed, periodic worldgen sampler, and current ring dimensions; two
-  different-seed captures pass on both loaders without creating a save.
+  different-seed captures pass on both loaders without creating a save. Its
+  display rotates the strip by half a circumference so canonical X=C-1 and
+  X=0 meet at the centre of the screen rather than at opposite image edges.
 
 The incomplete-Atlas wall proxy now derives its colours from the exact generated
 wall block palette rather than a separately maintained shader palette. Saved

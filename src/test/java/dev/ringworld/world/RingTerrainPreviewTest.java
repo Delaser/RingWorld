@@ -61,4 +61,25 @@ class RingTerrainPreviewTest {
         assertEquals(0xFF315C78, withRealCell.argb()[1],
                 "a generated cell must not smear into the seed preview");
     }
+
+    @Test
+    void centeredDisplayPlacesTheCanonicalSeamInTheMiddle() {
+        RingTerrainPreview preview = new RingTerrainPreview(
+                17L, 8, 1,
+                new int[]{0, 1, 2, 3, 4, 5, 6, 7},
+                new short[]{0, 1, 2, 3, 4, 5, 6, 7});
+
+        int[] displayed = new int[preview.columns()];
+        for (int displayColumn = 0; displayColumn < displayed.length; displayColumn++) {
+            displayed[displayColumn] = preview.centeredSeamSourceColumn(displayColumn);
+        }
+
+        assertArrayEquals(new int[]{4, 5, 6, 7, 0, 1, 2, 3}, displayed);
+        assertEquals(7, displayed[displayed.length / 2 - 1]);
+        assertEquals(0, displayed[displayed.length / 2]);
+        assertThrows(IndexOutOfBoundsException.class,
+                () -> preview.centeredSeamSourceColumn(-1));
+        assertThrows(IndexOutOfBoundsException.class,
+                () -> preview.centeredSeamSourceColumn(preview.columns()));
+    }
 }

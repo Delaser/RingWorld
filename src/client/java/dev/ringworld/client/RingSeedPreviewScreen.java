@@ -188,7 +188,8 @@ public final class RingSeedPreviewScreen extends Screen {
         for (int row = 0; row < preview.rows(); row++) {
             int lower = Math.max(0, row - 1);
             int upper = Math.min(preview.rows() - 1, row + 1);
-            for (int column = 0; column < preview.columns(); column++) {
+            for (int displayColumn = 0; displayColumn < preview.columns(); displayColumn++) {
+                int column = preview.centeredSeamSourceColumn(displayColumn);
                 int left = Math.floorMod(column - 1, preview.columns());
                 int right = Math.floorMod(column + 1, preview.columns());
                 int shaded = RingSurfaceLod.shadeSurfaceColor(
@@ -196,7 +197,7 @@ public final class RingSeedPreviewScreen extends Screen {
                         preview.height(left, row), preview.height(right, row),
                         preview.height(column, lower), preview.height(column, upper),
                         spacingX, spacingZ);
-                image.setPixel(column, row, 0xFF000000 | shaded);
+                image.setPixel(displayColumn, row, 0xFF000000 | shaded);
             }
         }
         texture = new DynamicTexture(() -> "RingWorld creation seed preview", image);

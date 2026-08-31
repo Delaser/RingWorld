@@ -61,6 +61,17 @@ public final class RingTerrainPreview {
                 sampleIndex(targetRow, targetRows, rows));
     }
 
+    /**
+     * Maps a left-to-right display column to canonical preview data with the
+     * X=C-1 / X=0 join in the centre of the image instead of at its edges.
+     */
+    public int centeredSeamSourceColumn(int displayColumn) {
+        if (displayColumn < 0 || displayColumn >= columns) {
+            throw new IndexOutOfBoundsException("terrain-preview display column outside bounds");
+        }
+        return Math.floorMod(displayColumn + columns / 2, columns);
+    }
+
     public byte[] encode() throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (DataOutputStream output = new DataOutputStream(new DeflaterOutputStream(bytes))) {
