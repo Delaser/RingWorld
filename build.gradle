@@ -950,6 +950,14 @@ tasks.register("prepareStrongholdTestWorld") {
 			providers.gradleProperty("ringStrongholdTestResume").orElse("false"))
 	inputs.property("ringWorldgenMatrix",
 			providers.gradleProperty("ringWorldgenMatrix").orElse("false"))
+	inputs.property("ringWorldLayout",
+			providers.gradleProperty("ringWorldLayout").orElse("VANILLA"))
+	inputs.property("ringContinuousRiver",
+			providers.gradleProperty("ringContinuousRiver").orElse("false"))
+	inputs.property("ringMoreStructures",
+			providers.gradleProperty("ringMoreStructures").orElse("false"))
+	inputs.property("ringAtlasFidelity",
+			providers.gradleProperty("ringAtlasFidelity").orElse("BALANCED"))
 	outputs.upToDateWhen { false }
 	doLast {
 		def eula = new File(strongholdTestDirectory, "eula.txt")
@@ -984,6 +992,14 @@ tasks.register("prepareStrongholdTestWorld") {
 		config.setProperty("wallHeightBlocks",
 				providers.gradleProperty("ringStrongholdTestWallHeight").orElse("160").get())
 		config.setProperty("pregenerateTerrainAtlas", "false")
+		config.setProperty("worldLayout",
+				providers.gradleProperty("ringWorldLayout").orElse("VANILLA").get())
+		config.setProperty("continuousRingRiver",
+				providers.gradleProperty("ringContinuousRiver").orElse("false").get())
+		config.setProperty("moreStructures",
+				providers.gradleProperty("ringMoreStructures").orElse("false").get())
+		config.setProperty("atlasFidelity",
+				providers.gradleProperty("ringAtlasFidelity").orElse("BALANCED").get())
 		config.setProperty("requestOceanMonument",
 				Integer.parseInt(config.getProperty("widthBlocks")) >= 160 ? "true" : "false")
 		configFile.parentFile.mkdirs()
@@ -1248,18 +1264,20 @@ def creationUiScreenshotPrefixes = [
 		"creation-ui-03-default-scale2",
 		"creation-ui-04-default-scale3",
 		"creation-ui-05-default-scale4",
-		"creation-ui-06-seed-preview-12345-scale4",
-		"creation-ui-07-seed-preview-67890-scale4",
-		"creation-ui-08-rim-default-scale4",
-		"creation-ui-09-rim-overgrown-narrow-scale4",
-		"creation-ui-10-large-narrow-scale4",
-		"creation-ui-11-invalid-five-errors-narrow-scale4",
-		"creation-ui-12-small-scale4",
-		"creation-ui-13-medium-scale4",
-		"creation-ui-14-large-scale4",
-		"creation-ui-15-custom-monument-night-large-scale4",
-		"creation-ui-16-confirm-layout-scale4",
-		"creation-ui-17-footer-applied-scale4"
+		"creation-ui-06-generation-default-scale4",
+		"creation-ui-07-generation-archipelago-high-scale4",
+		"creation-ui-08-seed-preview-12345-scale4",
+		"creation-ui-09-seed-preview-67890-scale4",
+		"creation-ui-10-rim-default-scale4",
+		"creation-ui-11-rim-overgrown-narrow-scale4",
+		"creation-ui-12-large-narrow-scale4",
+		"creation-ui-13-invalid-five-errors-narrow-scale4",
+		"creation-ui-14-small-scale4",
+		"creation-ui-15-medium-scale4",
+		"creation-ui-16-large-scale4",
+		"creation-ui-17-custom-monument-night-large-scale4",
+		"creation-ui-18-confirm-layout-scale4",
+		"creation-ui-19-footer-applied-scale4"
 ]
 
 def verifyCreationUiConfig = { File runDirectory, String label ->
@@ -1275,6 +1293,10 @@ def verifyCreationUiConfig = { File runDirectory, String label ->
 			"wallHeightBlocks": "192",
 			"skyBackdrop": "NIGHT",
 			"sunStyle": "LARGE",
+			"atlasFidelity": "HIGH",
+			"worldLayout": "ARCHIPELAGO",
+			"continuousRingRiver": "true",
+			"moreStructures": "true",
 			"requestOceanMonument": "true",
 			"testMode": "false",
 			"pregenerateTerrainAtlas": "false"

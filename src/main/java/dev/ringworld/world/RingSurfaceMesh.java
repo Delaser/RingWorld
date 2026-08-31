@@ -46,7 +46,8 @@ public final class RingSurfaceMesh {
         RingCloudBounds innerFaces = RingCloudBounds.betweenInnerRimFaces(
                 geometry, rimThicknessBlocks);
 
-        RingRenderProfile profile = RingRenderProfile.create(geometry, 16.0);
+        RingRenderProfile profile = RingRenderProfile.create(
+                geometry, 16.0, RingAtlasFidelity.forSampleStep(atlas.sampleStep()));
         int segments = Math.min(atlas.columns(), profile.circumferenceSegments());
         int bands = Math.min(atlas.rows(), profile.widthBands());
         return new Mesh(geometry, atlas, detailed, referenceHeight, wallTopHeight,

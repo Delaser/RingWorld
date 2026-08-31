@@ -2,6 +2,7 @@ package dev.ringworld.net;
 
 import dev.ringworld.world.RingWorldSettings;
 import dev.ringworld.world.RingTerrainNoiseMapping;
+import dev.ringworld.world.RingAtlasFidelity;
 import java.util.stream.Stream;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -89,5 +90,20 @@ class RingSettingsHandshakeTest {
         assertTrue(RingSettingsHandshake.hasMatchingPayloadFingerprint(payload));
         assertTrue(RingSettingsHandshake.accepts(settings,
                 RingSettingsHandshake.acknowledgementFor(payload)));
+    }
+
+    @ParameterizedTest(name = "{0}: generation policy is synchronized and fingerprinted")
+    @MethodSource("layouts")
+    void generationPolicyChangesAreRejected(
+            String name, int circumference, int width, int wallHeight) {
+        RingWorldSettings settings = new RingWorldSettings(width, circumference,
+                0x5EEDL, wallHeight, RingWorldSettings.FORMAT_VERSION);
+        RingSettingsPayload payload = RingSettingsHandshake.payloadFor(settings);
+        RingSettingsPayload changed = new RingSettingsPayload(payload.width(),
+                payload.circumference(), payload.seed(), payload.wallHeight(),
+                payload.surfaceReferenceY(), payload.terrainNoiseMapping(), payload.wallStyle(),
+                payload.skyProfile(), payload.generationSettings().withAtlasFidelity(RingAtlasFidelity.HIGH),
+                payload.formatVersion(), payload.fingerprint());
+        assertFalse(RingSettingsHandshake.hasMatchingPayloadFingerprint(changed));
     }
 }

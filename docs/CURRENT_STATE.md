@@ -10,6 +10,20 @@ boundaries; their “held” status is superseded only by this release record.
 
 Unreleased optional-feature work after 1.1 currently includes:
 
+- immutable format-5 generation settings and the `settings_v6` handshake:
+  coordinated Performance/Balanced/High/Very-high Atlas fidelity, Vanilla or
+  Archipelago terrain, an opt-in continuous periodic river, and an opt-in
+  built-in structure-density increase. All new choices default to the former
+  behaviour for existing worlds. Climate Tour is intentionally skipped;
+- a shared seed-derived macro terrain field used by real chunks and the Create
+  World preview. The Fabric and NeoForge 2,048×128 fixture passes on both
+  Minecraft 26.1.2 and 26.2 with
+  Archipelago, river, more structures and Very-high Atlas selected, including
+  eight real river biome/channel samples, periodic terrain, finite rims,
+  stronghold/portal generation and normal shutdown. Visual/balance and
+  production release evidence remain outstanding; see
+  [`OPTIONAL_WORLD_GENERATION.md`](OPTIONAL_WORLD_GENERATION.md);
+
 - atlas format 8, which renders mycelium with the measured vanilla top-texture
   colour instead of Minecraft's pink map colour and carries a live exposed
   block-light layer for coarse nighttime settlements/lamps on the distant ring;
@@ -27,7 +41,7 @@ Unreleased optional-feature work after 1.1 currently includes:
   gameplay time or terrain identity;
 - a loader-neutral creation UI for selecting rim presets, detailed wall
   controls, and separate sky/sun selectors, with the resulting values synchronized on both
-  loaders through `settings_v5` and `sky_profile_v1`.
+  loaders through `settings_v6` and `sky_profile_v1`.
 - a chunk-free asynchronous seed preview in Create World. It uses the real
   selected seed, periodic worldgen sampler, and current ring dimensions; two
   different-seed captures pass on both loaders without creating a save. Its
@@ -42,8 +56,9 @@ faces disappear with the rest of the reference-height bridge when the detailed
 Atlas mesh becomes authoritative.
 
 The shared Java 25 regression suite and both loader compilations pass for this
-development work. The expanded 17-capture creation/settings fixture also passes
-on Fabric and NeoForge, including the rim editor at 480×270 and 320×270,
+development work. The expanded 19-capture creation/settings fixture also passes
+on Fabric and NeoForge, including the generation panel, two real High-fidelity
+seed previews, and the rim editor at 480×270 and 320×270,
 Overgrown preset retention across resize, compact option labels, selected Night
 sky and Large sun settings, confirmation, persistence, and normal menu-only teardown.
 A disposable same-seed Fabric gallery now captures all ten rim presets and
@@ -54,14 +69,14 @@ and Gamma Atlas-light presentation on 2026-08-30. A separate named Medium
 Industrial 16,384×256 review world has a complete format-8 Atlas and eight
 verified plains villages distributed around the loop for nighttime-light review.
 
-On 2026-08-31 the audited source passed 377 unit/parameterized tests on both
+On 2026-08-31 the audited source passed 408 unit/parameterized tests on both
 Fabric and NeoForge against the default Minecraft 26.1.2 dependency set,
 with zero failures, errors, or skips. The audit corrected three concrete
 development defects: client appearance state now clears between worlds,
 non-divisible circumferences retain periodic wall-pattern noise, and seed
 preview generation is isolated from the live Create World generator with
 stale-result rejection. The preceding approved batch also passed the
-17-capture creation/seed-preview fixture and the 11-capture Atlas UI fixture,
+19-capture creation/seed-preview fixture and the 11-capture Atlas UI fixture,
 including complete generation, a live block revision, normal disconnect, and
 cleared client state. Those graphical fixtures predate the three focused
 repairs and therefore remain prior visual evidence rather than a fresh frozen
@@ -2103,7 +2118,7 @@ and compatibility claims.
   are calculated exactly.
 - Saved format-3 settings win before generation; formats 1 and 2 migrate
   explicitly while retaining the legacy terrain-noise mapping.
-- The full immutable layout is sent to clients through `settings_v5` and used for walls, clouds,
+- The full immutable layout is sent to clients through `settings_v6` and used for walls, clouds,
   shaders, and atlas identity.
 - The 26.1 F3 position group reports presentation and canonical Ring
   coordinates, canonical block/chunk/region positions, loop index, and atlas

@@ -22,7 +22,7 @@ public final class RingWorldSettings extends SavedData {
     public static final Identifier STORAGE_ID =
             Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "settings");
     public static final String LEGACY_STORAGE_KEY = RingWorldMod.MOD_ID + "_settings";
-    public static final int FORMAT_VERSION = 4;
+    public static final int FORMAT_VERSION = 5;
     public static final int DEFAULT_WIDTH = 256;
     public static final int DEFAULT_CIRCUMFERENCE = 16_384;
     /** 160 blocks from minimum build height: a visible top near Y=96 in vanilla terrain. */
@@ -44,6 +44,9 @@ public final class RingWorldSettings extends SavedData {
                     .forGetter(RingWorldSettings::terrainNoiseMapping),
             RingWallStyle.CODEC.optionalFieldOf("wallStyle", RingWallStyle.LEGACY)
                     .forGetter(RingWorldSettings::wallStyle),
+            RingWorldGenerationSettings.CODEC.optionalFieldOf(
+                            "generation", RingWorldGenerationSettings.DEFAULT)
+                    .forGetter(RingWorldSettings::generationSettings),
             Codec.INT.fieldOf("format").forGetter(RingWorldSettings::formatVersion)
     ).apply(instance, RingWorldSettings::new));
     private static final SavedDataType<RingWorldSettings> TYPE = new SavedDataType<>(
@@ -56,16 +59,19 @@ public final class RingWorldSettings extends SavedData {
     private final int surfaceReferenceY;
     private final int terrainNoiseMapping;
     private final RingWallStyle wallStyle;
+    private final RingWorldGenerationSettings generationSettings;
     private final int formatVersion;
 
     public RingWorldSettings() {
         this(RingWorldConfig.load().widthBlocks(), RingWorldConfig.load().circumferenceBlocks(),
                 0L, RingWorldConfig.load().wallHeightBlocks(),
                 (int)RingGeometry.SURFACE_Y, RingTerrainNoiseMapping.CURRENT,
-                RingWorldConfig.load().wallStyle(), FORMAT_VERSION);
+                RingWorldConfig.load().wallStyle(), RingWorldConfig.load().generationSettings(),
+                FORMAT_VERSION);
         // This constructor is used only when no saved state exists yet.
         RingWorldConfig.validateNewWorldLayout(widthBlocks, circumferenceBlocks, wallHeightBlocks,
-                wallStyle.thicknessBlocks());
+                wallStyle.thicknessBlocks(),
+                generationSettings.atlasFidelity().sampleStepBlocks());
         setDirty();
     }
 
@@ -93,6 +99,16 @@ public final class RingWorldSettings extends SavedData {
     public RingWorldSettings(int widthBlocks, int circumferenceBlocks, long generatorSeed,
                              int wallHeightBlocks, int surfaceReferenceY,
                              int terrainNoiseMapping, RingWallStyle wallStyle, int formatVersion) {
+        this(widthBlocks, circumferenceBlocks, generatorSeed, wallHeightBlocks,
+                surfaceReferenceY, terrainNoiseMapping, wallStyle,
+                RingWorldGenerationSettings.DEFAULT, formatVersion);
+    }
+
+    public RingWorldSettings(int widthBlocks, int circumferenceBlocks, long generatorSeed,
+                             int wallHeightBlocks, int surfaceReferenceY,
+                             int terrainNoiseMapping, RingWallStyle wallStyle,
+                             RingWorldGenerationSettings generationSettings,
+                             int formatVersion) {
         new RingGeometry(widthBlocks, circumferenceBlocks);
         if (wallHeightBlocks < 32) throw new IllegalArgumentException("wall height must be at least 32 blocks");
         if (surfaceReferenceY != (int)RingGeometry.SURFACE_Y) {
@@ -112,6 +128,13 @@ public final class RingWorldSettings extends SavedData {
             throw new IllegalArgumentException(
                     "RingWorld settings before format 4 require the legacy wall style");
         }
+        if (generationSettings == null) {
+            throw new IllegalArgumentException("generation settings are required");
+        }
+        if (formatVersion < 5 && !generationSettings.equals(RingWorldGenerationSettings.DEFAULT)) {
+            throw new IllegalArgumentException(
+                    "RingWorld settings before format 5 require default generation settings");
+        }
         this.widthBlocks = widthBlocks;
         this.circumferenceBlocks = circumferenceBlocks;
         this.generatorSeed = generatorSeed;
@@ -119,6 +142,7 @@ public final class RingWorldSettings extends SavedData {
         this.surfaceReferenceY = surfaceReferenceY;
         this.terrainNoiseMapping = supportedMapping;
         this.wallStyle = wallStyle;
+        this.generationSettings = generationSettings;
         this.formatVersion = formatVersion;
     }
 
@@ -145,17 +169,19 @@ public final class RingWorldSettings extends SavedData {
         RingWorldConfig config = RingWorldConfig.load();
         RingWorldConfig.validateNewWorldLayout(
                 config.widthBlocks(), config.circumferenceBlocks(), config.wallHeightBlocks(),
-                config.wallStyle().thicknessBlocks());
+                config.wallStyle().thicknessBlocks(),
+                config.generationSettings().atlasFidelity().sampleStepBlocks());
         RingDimensionReport report = RingDimensionReport.evaluate(
                 new RingGeometry(config.widthBlocks(), config.circumferenceBlocks()),
                 config.wallHeightBlocks(), RingDimensionReport.VANILLA_OVERWORLD_BOTTOM_Y,
                 RingDimensionReport.VANILLA_OVERWORLD_TOP_Y_EXCLUSIVE,
                 config.wallStyle().thicknessBlocks(),
-                RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
+                config.generationSettings().atlasFidelity().sampleStepBlocks());
         RingWorldSettings created = new RingWorldSettings(
                 config.widthBlocks(), config.circumferenceBlocks(), world.getSeed(),
                 config.wallHeightBlocks(), (int)RingGeometry.SURFACE_Y,
-                RingTerrainNoiseMapping.CURRENT, config.wallStyle(), FORMAT_VERSION);
+                RingTerrainNoiseMapping.CURRENT, config.wallStyle(),
+                config.generationSettings(), FORMAT_VERSION);
         created.setDirty();
         manager.set(TYPE, created);
         RingSkySettings.createForNewWorld(manager, config.skyProfile());
@@ -166,7 +192,8 @@ public final class RingWorldSettings extends SavedData {
                     "Disabled ocean-monument request: width={} cannot fit its required margins",
                     config.widthBlocks());
         }
-        RingStructurePolicy.createForNewWorld(manager, monumentRequest);
+        RingStructurePolicy.createForNewWorld(manager, monumentRequest,
+                config.generationSettings().moreStructures());
         RingWorldMod.LOGGER.info(
                 "Created RingWorld layout: {}x{} blocks ({}x{} chunks), radius={}, centreY={}, "
                         + "wallTopY={}, cloudBaseY={}, atlasCells={}, terrainNoiseMapping={}",
@@ -186,7 +213,8 @@ public final class RingWorldSettings extends SavedData {
         return new RingWorldSettings(
                 saved.widthBlocks(), saved.circumferenceBlocks(), saved.generatorSeed(),
                 saved.wallHeightBlocks(), saved.surfaceReferenceY(),
-                saved.terrainNoiseMapping(), saved.wallStyle(), FORMAT_VERSION);
+                saved.terrainNoiseMapping(), saved.wallStyle(), saved.generationSettings(),
+                FORMAT_VERSION);
     }
 
     static Codec<RingWorldSettings> codecForTests() {
@@ -200,6 +228,7 @@ public final class RingWorldSettings extends SavedData {
     public int surfaceReferenceY() { return surfaceReferenceY; }
     public int terrainNoiseMapping() { return terrainNoiseMapping; }
     public RingWallStyle wallStyle() { return wallStyle; }
+    public RingWorldGenerationSettings generationSettings() { return generationSettings; }
     public int formatVersion() { return formatVersion; }
     public long layoutFingerprint() { return RingLayoutFingerprint.compute(this); }
     public RingGeometry geometry() { return new RingGeometry(widthBlocks, circumferenceBlocks); }

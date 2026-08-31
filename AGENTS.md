@@ -7,11 +7,14 @@ rendering. Detailed design documents live under [`docs/`](docs/README.md).
 Latest qualification checkpoint: see
 [`docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md`](docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
 Unreleased optional-feature work adds format-4 configurable rim styles,
-server-owned visual sky profiles, settings channel `settings_v5`, and Atlas
-format 8 mycelium colour correction plus exposed block-light data. The shared
-static suite and both loader builds pass 377 unit/parameterized cases each on
-the 2026-08-31 audited source. The preceding expanded creation/preview and
-Atlas UI fixtures pass locally; owner visual review of the feature presentation
+server-owned visual sky profiles, format-5 saved generation options through
+`settings_v6`, and Atlas format 8 mycelium colour correction plus exposed
+block-light data. The generation options coordinate Atlas fidelity, add an
+Archipelago layout, a continuous river, and opt-in structure density; Climate
+Tour is intentionally skipped. The shared
+static suite and both loader builds pass 408 unit/parameterized cases each on
+the 2026-08-31 audited source. The expanded 19-capture creation/preview
+fixture passes both loaders on 26.1.2 and 26.2; owner visual review of the feature presentation
 is recorded, while fresh frozen-candidate, multiplayer, and package evidence
 remain required before release. See `docs/CURRENT_STATE.md`.
 Both 26.2 loaders pass quick qualification on frozen source `1cfac9b`.
@@ -1114,7 +1117,7 @@ version numbers.
   tangent and radial-up projection captures after changing projection,
   celestial render order, or the proxy pipeline.
 - Settings payload identifiers are wire-layout-versioned
-  (`settings_v5`/`settings_ack_v3`). The S2C identifier advanced when rim and
+  (`settings_v6`/`settings_ack_v3`). The S2C identifier advanced when rim and
   sky fields were added; the unchanged acknowledgement codec retained its
   identifier. Never append or reorder codec fields while
   reusing an old identifier; old clients crash on unread bytes before a useful

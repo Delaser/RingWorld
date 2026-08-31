@@ -74,7 +74,8 @@ public final class RingTerrainAtlas {
     public static long worldHash(RingWorldSettings settings) {
         long value = RingLayoutFingerprint.compute(settings);
         value = RingLayoutFingerprint.mix(value ^ ((long)FORMAT_VERSION << 32));
-        return RingLayoutFingerprint.mix(value ^ SAMPLE_STEP_BLOCKS);
+        return RingLayoutFingerprint.mix(value
+                ^ settings.generationSettings().atlasFidelity().sampleStepBlocks());
     }
 
     public RingGeometry geometry() { return geometry; }
@@ -396,6 +397,13 @@ public final class RingTerrainAtlas {
      */
     public static StorageLoad loadStorage(Path currentPath, Path legacyPath,
                                           RingGeometry expectedGeometry, long expectedHash) {
+        return loadStorage(currentPath, legacyPath, expectedGeometry, expectedHash,
+                SAMPLE_STEP_BLOCKS);
+    }
+
+    public static StorageLoad loadStorage(Path currentPath, Path legacyPath,
+                                          RingGeometry expectedGeometry, long expectedHash,
+                                          int expectedSampleStep) {
         if (Files.exists(currentPath)) {
             try {
                 return new StorageLoad(
@@ -403,7 +411,7 @@ public final class RingTerrainAtlas {
                         StorageStatus.CURRENT);
             } catch (IOException | IllegalArgumentException | ArithmeticException exception) {
                 return new StorageLoad(
-                        new RingTerrainAtlas(expectedGeometry, expectedHash),
+                        new RingTerrainAtlas(expectedGeometry, expectedHash, expectedSampleStep),
                         StorageStatus.INVALID_CURRENT);
             }
         }
@@ -414,12 +422,12 @@ public final class RingTerrainAtlas {
                 return new StorageLoad(migrated, StorageStatus.MIGRATED_LEGACY);
             } catch (IOException | IllegalArgumentException | ArithmeticException exception) {
                 return new StorageLoad(
-                        new RingTerrainAtlas(expectedGeometry, expectedHash),
+                        new RingTerrainAtlas(expectedGeometry, expectedHash, expectedSampleStep),
                         StorageStatus.INVALID_LEGACY);
             }
         }
         return new StorageLoad(
-                new RingTerrainAtlas(expectedGeometry, expectedHash),
+                new RingTerrainAtlas(expectedGeometry, expectedHash, expectedSampleStep),
                 StorageStatus.FRESH);
     }
 

@@ -62,7 +62,7 @@ class GradleCreationUiQualificationTest(unittest.TestCase):
             provenance_provider=lambda *_: self.provenance, command_executor=self.executor,
         )
         self.assertEqual(result["verdict"], "PASS")
-        self.assertEqual(len(result["captures"]), 13)
+        self.assertEqual(len(result["captures"]), len(CAPTURE_PREFIXES))
         self.assertFalse(result["claims"]["production_launcher"])
         terminal = (
             self.root / "dist/qualification/ringworld/26.1/fabric" / RUN_ID /

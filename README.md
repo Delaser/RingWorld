@@ -82,8 +82,8 @@ RingWorld is selected while creating a new world:
 
 1. Open **Create New World**.
 2. Select the **RingWorld C×W** button in the bottom-left corner.
-3. Choose Small, Medium, Large, or enter custom dimensions; select the rim and
-   sky presentation you want.
+3. Choose Small, Medium, Large, or enter custom dimensions; select the rim,
+   sky, Atlas detail and optional generation features you want.
 4. Review the world-size estimate and create the world.
 
 The built-in presets are:
@@ -101,6 +101,12 @@ space.
 Ring dimensions are saved permanently when the Overworld is first created.
 Changing a configuration file later does not resize an existing ring, and an
 ordinary flat Overworld cannot currently be converted into one.
+
+The optional generation panel offers Performance/Balanced/High/Very high
+Atlas detail, a Vanilla or Archipelago layout, one continuous closed-loop
+river, and moderately increased built-in structures. Vanilla, Balanced and
+both toggles Off remain the defaults. These choices are saved permanently with
+the world; see the [technical guide](docs/OPTIONAL_WORLD_GENERATION.md).
 
 For dedicated-server configuration, commands, backups, and recovery, see the
 [operations guide](docs/OPERATIONS.md).
