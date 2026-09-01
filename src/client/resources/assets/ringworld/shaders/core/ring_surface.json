@@ -16,6 +16,8 @@
     { "name": "RingWorldHandoff", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
     { "name": "RingWorldDetail", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
     { "name": "RingWorldAtmosphere", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
-    { "name": "RingWorldLegacyStreaming", "type": "float", "count": 2, "values": [ 0.0, 0.0 ] }
+    { "name": "RingWorldLegacyStreaming", "type": "float", "count": 2, "values": [ 0.0, 0.0 ] },
+    { "name": "RingWorldWallPalette", "type": "matrix4x4", "count": 16, "values": [ 1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 ] },
+    { "name": "RingWorldWallStyle", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] }
   ]
 }

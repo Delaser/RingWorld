@@ -10,11 +10,14 @@ uniform vec4 RingWorldHandoff;
 uniform vec4 RingWorldDetail;
 uniform vec4 RingWorldAtmosphere;
 uniform vec2 RingWorldLegacyStreaming;
+uniform mat4 RingWorldWallPalette;
+uniform vec4 RingWorldWallStyle;
 
 in vec2 texCoord0;
 in vec4 vertexColor;
 in float intrinsicDistance;
 in float intrinsicHeight;
+in float intrinsicWidth;
 
 out vec4 fragColor;
 
@@ -23,25 +26,59 @@ float smootherstep(float edge0, float edge1, float value) {
     return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
-float wallHash(vec2 block) {
-    return fract(sin(dot(block, vec2(12.9898, 78.233))) * 43758.5453);
+float wallHash(vec3 block, float salt) {
+    float metadata = floor(vertexColor.a * 255.0 + 0.5);
+    float seed = mod(metadata, 32.0);
+    return fract(sin(dot(block, vec3(12.9898, 78.233, 37.719))
+                     + salt + seed * 11.173) * 43758.5453);
+}
+
+float wallRoll(float blockX, float blockY, float depth) {
+    float pattern = floor(vertexColor.a * 255.0 / 32.0 + 0.001);
+    float fine = wallHash(vec3(blockX, blockY, depth), 0.0);
+    float coarse = wallHash(vec3(floor(blockX / 7.0), floor(blockY / 5.0),
+                                 floor(depth / 2.0)), 19.0);
+    if (pattern < 0.5) return mix(fine, coarse, 0.72);
+    if (pattern < 1.5) return mix(fine, wallHash(vec3(floor(blockX / 5.0),
+                                                     floor(blockY / 2.0), depth), 53.0), 0.76);
+    if (pattern < 2.5) return mix(fine, wallHash(vec3(floor(blockX / 11.0),
+                                                     floor(blockY / 6.0), depth), 71.0), 0.68);
+    if (pattern < 3.5) {
+        bool rib = mod(blockX, 17.0) < 1.0 || mod(blockY, 13.0) < 1.0;
+        return rib ? 0.92 : mix(fine, coarse, 0.70);
+    }
+    if (pattern < 4.5) return clamp((blockY + 64.0) / 224.0, 0.0, 1.0) * 0.28
+            + mix(fine, coarse, 0.46) * 0.72;
+    return mix(fine, coarse, 0.66);
+}
+
+vec3 wallPalette(float roll) {
+    if (roll < RingWorldWallPalette[0].w) return RingWorldWallPalette[0].rgb;
+    if (roll < RingWorldWallPalette[1].w) return RingWorldWallPalette[1].rgb;
+    if (roll < RingWorldWallPalette[2].w) return RingWorldWallPalette[2].rgb;
+    if (roll < RingWorldWallPalette[3].w) return RingWorldWallPalette[3].rgb;
+    return vertexColor.rgb;
 }
 
 void main() {
     vec4 previous = texture(Sampler1, texCoord0);
     vec4 current = texture(Sampler0, texCoord0);
-    vec4 sampled = mix(previous, current, clamp(ColorModulator.z, 0.0, 1.0))
-                   * vertexColor;
+    vec4 sampled = mix(previous, current, clamp(ColorModulator.z, 0.0, 1.0));
     bool rimBridge = texCoord0.y < 0.0 || texCoord0.y > 1.0;
     if (rimBridge) {
         float blockX = floor(mod(texCoord0.x * float(RingWorldLayout.y),
                                  float(RingWorldLayout.y)));
         float blockY = floor(intrinsicHeight);
-        float moss = step(0.70, wallHash(vec2(blockX, blockY)));
-        float textureNoise = 0.82 + 0.18 * wallHash(vec2(blockX + 31.0, blockY - 17.0));
-        vec3 cobble = vec3(0.40, 0.42, 0.40);
-        vec3 mossy = vec3(0.30, 0.40, 0.30);
-        sampled = vec4(mix(cobble, mossy, moss) * textureNoise, 1.0);
+        float halfWidth = float(RingWorldLayout.z) * 0.5;
+        float depth = max(0.0, halfWidth - abs(intrinsicWidth));
+        float roll = wallRoll(blockX, blockY, floor(depth));
+        float weather = step(1.0 - RingWorldWallStyle.x,
+                wallHash(vec3(blockX, blockY, depth), 101.0));
+        float textureNoise = 0.88 + 0.12 * wallHash(
+                vec3(blockX + 31.0, blockY - 17.0, depth), 109.0);
+        vec3 styled = wallPalette(roll);
+        styled = mix(styled, styled * vec3(0.72, 0.86, 0.72), weather * 0.35);
+        sampled = vec4(styled * textureNoise, 1.0);
     }
     if (sampled.a == 0.0) discard;
 

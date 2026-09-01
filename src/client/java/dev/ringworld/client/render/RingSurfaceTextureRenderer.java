@@ -4,12 +4,7 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.platform.TextureUtil;
 import com.mojang.blaze3d.shaders.Uniform;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.vertex.BufferBuilder;
-import com.mojang.blaze3d.vertex.ByteBufferBuilder;
-import com.mojang.blaze3d.vertex.DefaultVertexFormat;
-import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.PoseStack;
-import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.ClientRingState;
@@ -25,6 +20,7 @@ import dev.ringworld.world.RingSurfaceMorph;
 import dev.ringworld.world.RingSurfacePlaceholder;
 import dev.ringworld.world.RingTerrainAtlas;
 import dev.ringworld.world.RingTerrainPreview;
+import dev.ringworld.world.RingWallShaderStyle;
 import dev.ringworld.world.RingStreamingProxyCoverage;
 import org.joml.Matrix4f;
 
@@ -91,6 +87,7 @@ public final class RingSurfaceTextureRenderer {
     private static int textureRows;
     private static CompletableFuture<TextureBuild> pendingTextureBuild;
     private static long textureBuildGeneration;
+    private static RingWallShaderStyle.Encoded wallShaderStyle;
 
     private RingSurfaceTextureRenderer() { }
 
@@ -154,6 +151,14 @@ public final class RingSurfaceTextureRenderer {
         Uniform modelOffset = shader.getUniform("ModelOffset");
         if (modelOffset != null) {
             modelOffset.set((float)cameraAngle, (float)camera.z, 0.0F);
+        }
+        RingWallShaderStyle.Encoded encodedWall = wallShaderStyle;
+        if (encodedWall != null) {
+            Uniform palette = shader.getUniform("RingWorldWallPalette");
+            if (palette != null) palette.set(new Matrix4f().set(encodedWall.paletteColumns()));
+            Uniform style = shader.getUniform("RingWorldWallStyle");
+            if (style != null) style.set(encodedWall.decay(), encodedWall.patternId(),
+                    encodedWall.seedBits(), 0.0F);
         }
         int effectiveChunks = client.options.getEffectiveRenderDistance();
         int cameraChunkX = Mth.floor(camera.x) >> 4;
@@ -693,23 +698,15 @@ public final class RingSurfaceTextureRenderer {
         RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(
                 geometry, atlas, detailed, ClientRingState.surfaceReferenceY(), wallTopY,
                 ClientRingState.wallStyle());
-        int count = mesh.vertexCount();
-        VertexFormat format = DefaultVertexFormat.POSITION_TEX_COLOR;
-        try (ByteBufferBuilder allocator = new ByteBufferBuilder(count * format.getVertexSize())) {
-            BufferBuilder builder = new BufferBuilder(
-                    allocator, VertexFormat.Mode.TRIANGLES, format);
-            mesh.emitTriangles((x, y, z, u, v) -> builder.addVertex(x, y, z)
-                    .setUv(u, v)
-                    .setColor(0xFFFFFFFF));
-            MeshData built = builder.buildOrThrow();
-            VertexBuffer replacement = new VertexBuffer(VertexBuffer.Usage.STATIC);
-            replacement.bind();
-            replacement.upload(built);
-            VertexBuffer.unbind();
-            if (vertexBuffer != null) vertexBuffer.close();
-            vertexBuffer = replacement;
-        }
-        vertexCount = count;
+        RingWallShaderStyle.Encoded encoded = RingWallShaderStyle.encode(
+                ClientRingState.wallStyle(), ClientRingState.generatorSeed(),
+                Minecraft.getInstance().level);
+        VertexBuffer replacement = RingSurfaceGpu.createVertexBuffer(
+                mesh, encoded.vertexArgb());
+        if (vertexBuffer != null) vertexBuffer.close();
+        vertexBuffer = replacement;
+        vertexCount = mesh.vertexCount();
+        wallShaderStyle = encoded;
     }
 
     private static int mipLevels(int width, int height) {
@@ -727,6 +724,7 @@ public final class RingSurfaceTextureRenderer {
 
     public static void clear() {
         textureBuildGeneration++;
+        wallShaderStyle = null;
         CompletableFuture<TextureBuild> abandonedBuild = pendingTextureBuild;
         if (abandonedBuild != null) abandonedBuild.thenAccept(TextureBuild::close);
         pendingTextureBuild = null;
