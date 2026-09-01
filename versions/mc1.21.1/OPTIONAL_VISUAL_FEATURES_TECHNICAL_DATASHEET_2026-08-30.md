@@ -396,6 +396,46 @@ metadata. Java compilation and source-contract tests do not prove runtime GLSL
 compilation or rendered visual parity; those remain later focused graphical
 qualification work.
 
+### 2.10 Atlas block-light GPU checkpoint (2026-09-02)
+
+Commit `d10ece2` implements only the client/GPU consumption of the existing
+format-8 exposed block-light field:
+
+- complete surface rebuilds bilinearly sample each cell's existing 0–15 block
+  light beside terrain colour and height. Partial rebuilds retain their opaque
+  real/preview/neutral RGB surface and independently sample light only where
+  the current Atlas has authored data. Both paths normalize light into the GPU
+  texture alpha byte without using that byte as terrain coverage;
+- `RingSurfaceLod.buildNextMipRgbLight` box-filters all RGB cells regardless of
+  illumination and averages the independent light alpha separately. Therefore
+  an unlit cell remains ordinary terrain colour and cannot erase or darken a
+  lit neighbour's RGB through alpha-weighted mip filtering;
+- loader-neutral `RingAtlasLightProfile` and process-local
+  `RingAtlasLightTuning` port the established Midpoint/Gamma shader modes.
+  Gamma is the process default with falloff `2.0` and peak `1.25`; validated
+  falloff bounds are 0.5–6.0 and peak bounds are 0.1–3.0. No command is
+  registered by this checkpoint; and
+- the 1.21.1 per-program globals adapter publishes `RingWorldAtlasLight` only
+  to shaders declaring it. The ring fragment shader treats texture alpha as
+  authored light, adds the established warm `1.00/0.63/0.28` contribution,
+  fades it to zero as live lightmap daylight rises, gives wall faces zero Atlas
+  light, and writes proxy geometry alpha independently of sampled light.
+
+Before edits, Fabric `compileClientJava` and NeoForge `compileJava` passed from
+clean parent `b4cc145`. The single post-change Java 21 invocation compiled both
+loader graphs and passed all 19 focused profile, tuning, alpha/mip, and
+renderer/global/shader-source cases on Fabric/common and NeoForge. Existing
+mixin-target warnings were unchanged. `git diff --check` passed. No Minecraft
+client, world, save, or graphical fixture was launched, and no dependency-
+verification metadata changed.
+
+This checkpoint does not add the client tuning command, sky/sun/stars/fog
+mixins, HUD/UI, protocol, server, world generation, persistence formats, wall
+geometry/style changes, Create integration, packaging, or release metadata.
+Java compilation and source-contract tests do not prove runtime GLSL
+compilation, live lightmap thresholds, or rendered night-light balance; those
+remain later focused graphical qualification work.
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
