@@ -6,6 +6,7 @@ import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
 import dev.ringworld.net.RingTerrainPreviewPayload;
+import dev.ringworld.net.RingSkyProfilePayload;
 import dev.ringworld.world.AtlasPregenerationAccess;
 import dev.ringworld.world.AtlasPregenerationAction;
 import dev.ringworld.world.AtlasPregenerationHandle;
@@ -17,9 +18,13 @@ import dev.ringworld.world.RingAtlasPregenerationCursor;
 import dev.ringworld.world.RingTerrainAtlas;
 import dev.ringworld.world.RingTerrainPreview;
 import dev.ringworld.world.RingTerrainPreviewStage;
+import dev.ringworld.world.RingSkyProfile;
+import dev.ringworld.world.RingSkySettings;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.CommandSourceStack;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.level.ServerLevel;
@@ -88,7 +93,115 @@ public final class RingTerrainAtlasServer {
                                         AtlasPregenerationAction.PAUSE, context.getSource())))
                                 .then(Commands.literal("resume").executes(context -> control(
                                         context.getSource().getServer().getLevel(Level.OVERWORLD),
-                                        AtlasPregenerationAction.RESUME, context.getSource())))));
+                                        AtlasPregenerationAction.RESUME, context.getSource()))))
+                        .then(Commands.literal("sky")
+                                .executes(context -> querySky(context.getSource()))
+                                .then(Commands.argument("backdrop", StringArgumentType.word())
+                                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(
+                                                new String[] {"atmosphere", "night", "void"}, builder))
+                                        .executes(context -> setSkyBackdrop(
+                                                context.getSource(),
+                                                StringArgumentType.getString(context, "backdrop")))))
+                        .then(Commands.literal("sun")
+                                .executes(context -> querySun(context.getSource()))
+                                .then(Commands.argument("style", StringArgumentType.word())
+                                        .suggests((context, builder) -> SharedSuggestionProvider.suggest(
+                                                new String[] {"small", "large", "none"}, builder))
+                                        .executes(context -> setSunStyle(
+                                                context.getSource(),
+                                                StringArgumentType.getString(context, "style"))))));
+    }
+
+    private static int querySky(CommandSourceStack source) {
+        RingSkyProfile profile = currentSkyProfile(source);
+        if (profile == null) return 0;
+        source.sendSuccess(() -> Component.literal(
+                "RingWorld sky is " + profile.backdrop().label() + "."), false);
+        return 1;
+    }
+
+    private static int querySun(CommandSourceStack source) {
+        RingSkyProfile profile = currentSkyProfile(source);
+        if (profile == null) return 0;
+        source.sendSuccess(() -> Component.literal(
+                "RingWorld sun is " + profile.lightSource().label() + "."), false);
+        return 1;
+    }
+
+    private static int setSkyBackdrop(CommandSourceStack source, String name) {
+        final RingSkyProfile.Backdrop backdrop;
+        try {
+            backdrop = RingSkyCommandModel.parseBackdrop(name);
+        } catch (IllegalArgumentException exception) {
+            source.sendFailure(Component.literal(exception.getMessage()));
+            return 0;
+        }
+        RingSkyProfile current = currentSkyProfile(source);
+        if (current == null) return 0;
+        RingSkyProfile updated = RingSkyCommandModel.withBackdrop(current, backdrop);
+        if (!publishSkyProfile(source, updated)) return 0;
+        source.sendSuccess(() -> Component.literal(
+                "RingWorld sky changed to " + backdrop.label() + "."), true);
+        return 1;
+    }
+
+    private static int setSunStyle(CommandSourceStack source, String name) {
+        final RingSkyProfile.LightSource lightSource;
+        try {
+            lightSource = RingSkyCommandModel.parseLightSource(name);
+        } catch (IllegalArgumentException exception) {
+            source.sendFailure(Component.literal(exception.getMessage()));
+            return 0;
+        }
+        RingSkyProfile current = currentSkyProfile(source);
+        if (current == null) return 0;
+        RingSkyProfile updated = RingSkyCommandModel.withLightSource(current, lightSource);
+        if (!publishSkyProfile(source, updated)) return 0;
+        source.sendSuccess(() -> Component.literal(
+                "RingWorld sun changed to " + lightSource.label() + "."), true);
+        return 1;
+    }
+
+    private static RingSkyProfile currentSkyProfile(CommandSourceStack source) {
+        ServerLevel world = source.getServer().getLevel(Level.OVERWORLD);
+        if (world == null) {
+            source.sendFailure(Component.literal("RingWorld Overworld is unavailable."));
+            return null;
+        }
+        try {
+            return RingSkySettings.get(world).profile();
+        } catch (RuntimeException exception) {
+            RingWorldMod.LOGGER.warn("Could not read RingWorld sky settings", exception);
+            source.sendFailure(Component.literal("RingWorld sky settings are unavailable."));
+            return null;
+        }
+    }
+
+    private static boolean publishSkyProfile(CommandSourceStack source, RingSkyProfile profile) {
+        ServerLevel world = source.getServer().getLevel(Level.OVERWORLD);
+        if (world == null) {
+            source.sendFailure(Component.literal("RingWorld Overworld is unavailable."));
+            return false;
+        }
+        try {
+            RingSkySettings.setProfile(world, profile);
+        } catch (RuntimeException exception) {
+            RingWorldMod.LOGGER.warn("Could not update RingWorld sky settings", exception);
+            source.sendFailure(Component.literal("RingWorld sky settings could not be updated."));
+            return false;
+        }
+        RingSkyProfilePayload payload = RingSkyProfilePayload.from(profile);
+        for (ServerPlayer player : source.getServer().getPlayerList().getPlayers()) {
+            try {
+                if (transport.canSend(player, RingSkyProfilePayload.ID)) {
+                    transport.send(player, payload);
+                }
+            } catch (RuntimeException exception) {
+                RingWorldMod.LOGGER.warn("Could not send the RingWorld sky profile to {}",
+                        player.getName().getString(), exception);
+            }
+        }
+        return true;
     }
 
     public static void load(ServerLevel world) { RingAtlasPregenerationService.load(world); }

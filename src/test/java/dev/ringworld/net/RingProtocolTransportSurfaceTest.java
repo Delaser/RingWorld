@@ -104,6 +104,36 @@ class RingProtocolTransportSurfaceTest {
                 "ringworld$setGeometry"));
     }
 
+    @Test
+    void sharedGamemasterCommandsPersistAndBroadcastSkyProfiles() throws Exception {
+        ClassSignals coordinator = read("dev/ringworld/server/RingTerrainAtlasServer");
+        MethodSignals registration = coordinator.method("registerCommands");
+        assertNotNull(registration);
+        assertTrue(registration.constants.containsAll(Set.of(
+                "ringworld", "sky", "sun", "backdrop", "style")));
+
+        MethodSignals current = coordinator.method("currentSkyProfile");
+        assertNotNull(current);
+        assertTrue(current.calls("dev/ringworld/world/RingSkySettings", "get"));
+
+        MethodSignals publish = coordinator.method("publishSkyProfile");
+        assertNotNull(publish);
+        assertTrue(publish.calls("dev/ringworld/world/RingSkySettings", "setProfile"));
+        assertTrue(publish.calls("dev/ringworld/net/RingSkyProfilePayload", "from"));
+        assertTrue(publish.idOwners.contains(SKY));
+        assertTrue(publish.calls(
+                "dev/ringworld/server/RingTerrainAtlasServer$PayloadTransport", "canSend"));
+        assertTrue(publish.calls(
+                "dev/ringworld/server/RingTerrainAtlasServer$PayloadTransport", "send"));
+
+        MethodSignals sky = coordinator.method("setSkyBackdrop");
+        assertNotNull(sky);
+        assertTrue(sky.calls("dev/ringworld/server/RingSkyCommandModel", "withBackdrop"));
+        MethodSignals sun = coordinator.method("setSunStyle");
+        assertNotNull(sun);
+        assertTrue(sun.calls("dev/ringworld/server/RingSkyCommandModel", "withLightSource"));
+    }
+
     private static void assertDirectFabricHandler(ClassSignals client, String markerCall) {
         MethodSignals handler = client.methods.values().stream()
                 .filter(method -> method.calls.stream().anyMatch(call -> call.name().equals(markerCall)))
@@ -145,6 +175,11 @@ class RingProtocolTransportSurfaceTest {
                         public void visitTypeInsn(int opcode, String type) {
                             if (opcode == Opcodes.INSTANCEOF) method.typeChecks.add(type);
                             if (opcode == Opcodes.NEW) method.newTypes.add(type);
+                        }
+
+                        @Override
+                        public void visitLdcInsn(Object value) {
+                            if (value instanceof String string) method.constants.add(string);
                         }
 
                         @Override
@@ -190,6 +225,7 @@ class RingProtocolTransportSurfaceTest {
         private final Set<String> idOwners = new HashSet<>();
         private final Set<String> typeChecks = new HashSet<>();
         private final Set<String> newTypes = new HashSet<>();
+        private final Set<String> constants = new HashSet<>();
         private final List<MethodCall> calls = new ArrayList<>();
         private boolean calls(String owner, String name) {
             return calls.contains(new MethodCall(owner, name));
