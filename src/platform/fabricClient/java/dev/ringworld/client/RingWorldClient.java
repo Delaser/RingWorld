@@ -279,7 +279,8 @@ public final class RingWorldClient implements ClientModInitializer {
                             .executes(context -> applyAtlasLightResult(
                                     context.getSource(), RingAtlasLightCommand.reset())))
                     .then(falloff);
-            dispatcher.register(ClientCommandManager.literal("ringworld").then(ringLights));
+            dispatcher.register(RingClientCommandRouting.withServerFallback(
+                    ClientCommandManager.literal("ringworld").then(ringLights)));
         });
     }
 

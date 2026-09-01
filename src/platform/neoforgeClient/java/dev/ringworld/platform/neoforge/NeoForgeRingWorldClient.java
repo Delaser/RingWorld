@@ -10,6 +10,7 @@ import dev.ringworld.client.LayoutSwitchTestClient;
 import dev.ringworld.client.MultiplayerTestClient;
 import dev.ringworld.client.ProductionLifecycleTestClient;
 import dev.ringworld.client.RingClientPayloadTransport;
+import dev.ringworld.client.RingClientCommandRouting;
 import dev.ringworld.client.RingHandoffFoliageCaptureClient;
 import dev.ringworld.client.RingMapCompassCaptureClient;
 import dev.ringworld.client.RingAtlasLightCommand;
@@ -134,7 +135,8 @@ public final class NeoForgeRingWorldClient {
                         .executes(context -> applyAtlasLightResult(
                                 context.getSource(), RingAtlasLightCommand.reset())))
                 .then(falloff);
-        event.getDispatcher().register(Commands.literal("ringworld").then(ringLights));
+        event.getDispatcher().register(RingClientCommandRouting.withServerFallback(
+                Commands.literal("ringworld").then(ringLights)));
     }
 
     private static int applyAtlasLightResult(
