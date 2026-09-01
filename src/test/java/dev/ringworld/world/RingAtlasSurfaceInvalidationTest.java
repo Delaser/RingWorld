@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingAtlasSurfaceInvalidationTest {
@@ -23,5 +24,28 @@ class RingAtlasSurfaceInvalidationTest {
         assertFalse(RingAtlasSurfaceInvalidation.mayAffectSurface(62, 64));
         assertTrue(RingAtlasSurfaceInvalidation.mayAffectSurface(63, 64));
         assertTrue(RingAtlasSurfaceInvalidation.mayAffectSurface(90, 64));
+    }
+
+    @Test
+    void lightRadiusWrapsCanonicalXAndClampsAtFiniteZEdge() {
+        var center = new RingAtlasSurfaceInvalidation.Cell(0, 0);
+        var cells = RingAtlasSurfaceInvalidation.cellsWithinRadius(
+                GEOMETRY, 8, center, 15);
+
+        assertEquals(15, cells.size());
+        assertTrue(cells.contains(new RingAtlasSurfaceInvalidation.Cell(255, 0)));
+        assertTrue(cells.contains(new RingAtlasSurfaceInvalidation.Cell(254, 2)));
+        assertTrue(cells.contains(new RingAtlasSurfaceInvalidation.Cell(2, 2)));
+        assertFalse(cells.stream().anyMatch(cell -> cell.row() > 2));
+    }
+
+    @Test
+    void invalidRadiusAndOutOfBoundsCenterFailClosed() {
+        assertThrows(IllegalArgumentException.class, () ->
+                RingAtlasSurfaceInvalidation.cellsWithinRadius(
+                        GEOMETRY, 8, new RingAtlasSurfaceInvalidation.Cell(0, 0), -1));
+        assertThrows(IllegalArgumentException.class, () ->
+                RingAtlasSurfaceInvalidation.cellsWithinRadius(
+                        GEOMETRY, 8, new RingAtlasSurfaceInvalidation.Cell(256, 0), 15));
     }
 }

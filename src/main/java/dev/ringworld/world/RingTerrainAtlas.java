@@ -304,6 +304,9 @@ public final class RingTerrainAtlas {
                     int height = input.readShort();
                     int color = input.readInt();
                     int blockLight = input.readUnsignedByte();
+                    if (blockLight > 15) {
+                        throw new IOException("terrain atlas tile block light is outside 0..15");
+                    }
                     int index = index(firstX + x, firstZ + z);
                     // Atlas samples are immutable once generated. A client may
                     // have a more complete disk cache than a newly started or
@@ -380,7 +383,11 @@ public final class RingTerrainAtlas {
                 atlas.present[index] = input.readBoolean();
                 atlas.heights[index] = input.readShort();
                 atlas.colors[index] = input.readInt() & 0xFFFFFF;
-                atlas.blockLights[index] = input.readByte();
+                int blockLight = input.readUnsignedByte();
+                if (blockLight > 15) {
+                    throw new IOException("terrain atlas block light is outside 0..15");
+                }
+                atlas.blockLights[index] = (byte)blockLight;
                 if (atlas.present[index]) atlas.presentCount++;
             }
             if (input.read() != -1) throw new IOException("trailing terrain atlas data");

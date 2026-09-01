@@ -73,4 +73,39 @@ class ClientRingStateTest {
         assertNull(ClientRingState.terrainPreview());
         assertEquals(-1, ClientRingState.terrainPreviewStage());
     }
+
+    @Test
+    void partialAtlasCachePreservesBlockLightAcrossReconnect(@TempDir Path cacheDirectory)
+            throws Exception {
+        RingGeometry geometry = new RingGeometry(128, 2_048);
+        long worldHash = 0x4C49_4748_54L;
+        ClientRingState.configureCacheDirectory(cacheDirectory);
+        setSession(geometry);
+
+        RingTerrainAtlas server = new RingTerrainAtlas(geometry, worldHash);
+        server.putCell(0, 0, 78, 0x445566, 13);
+        server.advanceRevision();
+        RingTerrainAtlasMetadataPayload metadata = new RingTerrainAtlasMetadataPayload(
+                worldHash, server.sampleStep(), server.columns(), server.rows(),
+                RingTerrainAtlas.TILE_SIZE, server.presentCount(), false, server.revision());
+
+        ClientRingState.installTerrainAtlas(metadata);
+        ClientRingState.applyTerrainAtlasTile(worldHash, 0, 0, server.encodeTile(0, 0));
+        ClientRingState.commitTerrainAtlasRevision(worldHash, server.revision());
+        assertEquals(13, ClientRingState.terrainAtlas().cellBlockLight(0, 0));
+
+        ClientRingState.clear();
+        setSession(geometry);
+        ClientRingState.installTerrainAtlas(metadata);
+
+        assertEquals(server.revision(), ClientRingState.terrainAtlasDurableRevision());
+        assertEquals(13, ClientRingState.terrainAtlas().cellBlockLight(0, 0));
+    }
+
+    private static void setSession(RingGeometry geometry) {
+        ClientRingState.set(geometry, 160, (int)RingGeometry.SURFACE_Y,
+                RingTerrainNoiseMapping.CURRENT, RingWallStyle.LEGACY,
+                RingSkyProfile.DEFAULT, 0x5EEDL, RingWorldSettings.FORMAT_VERSION,
+                0xABCDL);
+    }
 }

@@ -184,6 +184,18 @@ class RingTerrainAtlasTest {
     }
 
     @Test
+    void rejectsOutOfRangeBlockLightFromTile() {
+        RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH);
+        source.putCell(0, 0, 70, 0x123456, 15);
+        byte[] tile = source.encodeTile(0, 0);
+        // width, height, present, surfaceY, colour, then unsigned block light.
+        tile[9] = 16;
+
+        assertThrows(java.io.IOException.class,
+                () -> new RingTerrainAtlas(GEOMETRY, HASH).applyTile(0, 0, tile));
+    }
+
+    @Test
     void worldHashChangesWithImmutableGeometryOrSeed() {
         RingWorldSettings first = new RingWorldSettings(320, 1_024, 123L, 160, 1);
         RingWorldSettings differentSeed = new RingWorldSettings(320, 1_024, 124L, 160, 1);

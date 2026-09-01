@@ -8,6 +8,9 @@ package dev.ringworld.world;
  * testable.</p>
  */
 public final class RingSurfaceLod {
+    /** Vanilla's top texture colour; the map colour is the unrelated purple tint. */
+    public static final int VANILLA_MYCELIUM_TOP_RGB = 0x6F6365;
+
     private RingSurfaceLod() { }
 
     /** Encodes atlas coverage as transparency without inventing missing terrain. */
