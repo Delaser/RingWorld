@@ -477,6 +477,11 @@ public final class RingWorldCreationScreen extends Screen {
         return wallStyle.equals(expected);
     }
 
+    boolean ringworld$automationHasSkyProfile(
+            RingSkyProfile.Backdrop backdrop, RingSkyProfile.LightSource lightSource) {
+        return skyBackdrop == backdrop && sunStyle == lightSource;
+    }
+
     void ringworld$automationSetLayout(int circumference, int width, int wallHeight) {
         circumferenceField.setValue(Integer.toString(circumference));
         widthField.setValue(Integer.toString(width));

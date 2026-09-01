@@ -2775,7 +2775,7 @@ tasks.register('prepareNeoForgeCreationUiRun') {
     description = 'Writes the isolated menu-only NeoForge creation-UI regression configuration.'
     outputs.upToDateWhen { false }
     doLast {
-        ['saves', 'screenshots', 'ringworld-cache', 'logs'].each {
+        ['saves', 'screenshots', 'ringworld-cache', 'logs', 'evidence'].each {
             delete(new File(neoForgeCreationUiRun, it))
         }
         def configFile = new File(neoForgeCreationUiRun, 'config/ringworld.properties')

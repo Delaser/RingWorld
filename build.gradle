@@ -1959,14 +1959,18 @@ def creationUiScreenshotPrefixes = [
 		"creation-ui-03-default-scale2",
 		"creation-ui-04-default-scale3",
 		"creation-ui-05-default-scale4",
-		"creation-ui-06-large-narrow-scale4",
-		"creation-ui-07-invalid-five-errors-narrow-scale4",
-		"creation-ui-08-small-scale4",
-		"creation-ui-09-medium-scale4",
-		"creation-ui-10-large-scale4",
-		"creation-ui-11-custom-monument-scale4",
-		"creation-ui-12-confirm-layout-scale4",
-		"creation-ui-13-footer-applied-scale4"
+		"creation-ui-06-seed-preview-12345-scale4",
+		"creation-ui-07-seed-preview-67890-scale4",
+		"creation-ui-08-rim-default-scale4",
+		"creation-ui-09-rim-overgrown-narrow-scale4",
+		"creation-ui-10-large-narrow-scale4",
+		"creation-ui-11-invalid-five-errors-narrow-scale4",
+		"creation-ui-12-small-scale4",
+		"creation-ui-13-medium-scale4",
+		"creation-ui-14-large-scale4",
+		"creation-ui-15-custom-monument-night-large-scale4",
+		"creation-ui-16-confirm-layout-scale4",
+		"creation-ui-17-footer-applied-scale4"
 ]
 
 def verifyCreationUiConfig = { File runDirectory, String label ->
@@ -1980,6 +1984,8 @@ def verifyCreationUiConfig = { File runDirectory, String label ->
 			"circumferenceBlocks": "4096",
 			"widthBlocks": "640",
 			"wallHeightBlocks": "192",
+			"skyBackdrop": "NIGHT",
+			"sunStyle": "LARGE",
 			"requestOceanMonument": "true",
 			"testMode": "false",
 			"pregenerateTerrainAtlas": "false"
@@ -1994,14 +2000,30 @@ def verifyCreationUiConfig = { File runDirectory, String label ->
 def verifyCreationUiOutputs = { File runDirectory, String label ->
 	def logFile = new File(runDirectory, "logs/latest.log")
 	requireFabricRuntimeGateLog(logFile, "[creation-ui-test] PASS", "[creation-ui-test] FAIL", label)
+	def log = logFile.text
+	def firstSeed = (log =~ /\[creation-ui-test\] seed-preview seed=12345 identity=([0-9a-f]+) aspect=64:1 centeredSeam=true/)
+	def secondSeed = (log =~ /\[creation-ui-test\] seed-preview seed=67890 identity=([0-9a-f]+) aspect=64:1 centeredSeam=true/)
+	if (!firstSeed.find() || !secondSeed.find() || firstSeed.group(1) == secondSeed.group(1)) {
+		throw new GradleException("${label} did not prove two distinct centered-seam 64:1 seed previews")
+	}
+	if (!log.contains("[creation-ui-test] preview-teardown editCancellation=true "
+			+ "textureReleased=true normalClose=true")) {
+		throw new GradleException("${label} did not prove preview edit cancellation and normal texture teardown")
+	}
+	def captureFiles = []
 	creationUiScreenshotPrefixes.each { prefix ->
 		def screenshots = fileTree(new File(runDirectory, "screenshots")).matching {
 			include prefix + "*.png"
 		}.files
-		if (screenshots.isEmpty()) {
-			throw new GradleException("${label} is missing screenshot ${prefix}*.png")
+		if (screenshots.size() != 1) {
+			throw new GradleException("${label} needs exactly one screenshot ${prefix}*.png")
 		}
-		screenshots.each { screenshot -> requireNonUniformPng(screenshot, label) }
+		def screenshot = screenshots.first()
+		requireNonUniformPng(screenshot, label)
+		captureFiles.add(screenshot)
+	}
+	if (java.util.Arrays.equals(captureFiles[5].bytes, captureFiles[6].bytes)) {
+		throw new GradleException("${label} seed-preview captures are byte-identical")
 	}
 	def createdLevels = fileTree(new File(runDirectory, "saves")).matching {
 		include "**/level.dat"
@@ -2010,6 +2032,46 @@ def verifyCreationUiOutputs = { File runDirectory, String label ->
 		throw new GradleException("${label} created a world despite being menu-only: ${createdLevels}")
 	}
 	verifyCreationUiConfig(runDirectory, label)
+
+	def tileWidth = 320
+	def tileHeight = 180
+	def columns = 4
+	def rows = (captureFiles.size() + columns - 1).intdiv(columns)
+	def sheet = new java.awt.image.BufferedImage(
+			columns * tileWidth, rows * tileHeight, java.awt.image.BufferedImage.TYPE_INT_ARGB)
+	def graphics = sheet.createGraphics()
+	try {
+		graphics.setColor(new java.awt.Color(20, 22, 26))
+		graphics.fillRect(0, 0, sheet.width, sheet.height)
+		graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+				java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+		graphics.setColor(java.awt.Color.WHITE)
+		graphics.setFont(new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 11))
+		captureFiles.eachWithIndex { screenshot, index ->
+			def image = javax.imageio.ImageIO.read(screenshot)
+			if (image == null) throw new GradleException("${label} could not decode ${screenshot}")
+			int x = (index % columns) * tileWidth
+			int y = (index.intdiv(columns)) * tileHeight
+			double scale = Math.min((double) tileWidth / image.width,
+					(double) (tileHeight - 18) / image.height)
+			int drawnWidth = Math.max(1, (int) Math.round(image.width * scale))
+			int drawnHeight = Math.max(1, (int) Math.round(image.height * scale))
+			graphics.drawImage(image, x + (tileWidth - drawnWidth).intdiv(2), y,
+					drawnWidth, drawnHeight, null)
+			graphics.drawString(String.format("%02d %s", index + 1,
+					creationUiScreenshotPrefixes[index]), x + 4, y + tileHeight - 4)
+		}
+	} finally {
+		graphics.dispose()
+	}
+	def evidenceDirectory = new File(runDirectory, "evidence")
+	evidenceDirectory.mkdirs()
+	def contactSheet = new File(evidenceDirectory, "creation-ui-contact-sheet.png")
+	if (!javax.imageio.ImageIO.write(sheet, "png", contactSheet)) {
+		throw new GradleException("${label} could not encode its creation UI contact sheet")
+	}
+	requireNonUniformPng(contactSheet, label + " contact sheet")
+	logger.lifecycle("{} verified 17 captures and wrote {}", label, contactSheet)
 }
 ext.verifyCreationUiOutputs = verifyCreationUiOutputs
 
@@ -2018,7 +2080,7 @@ tasks.register("prepareCreationUiRun") {
 	description = "Writes the isolated menu-only RingWorld creation-UI regression configuration."
 	outputs.upToDateWhen { false }
 	doLast {
-		["saves", "screenshots", "ringworld-cache", "logs"].each {
+		["saves", "screenshots", "ringworld-cache", "logs", "evidence"].each {
 			delete(new File(qualificationRunFile("run-creation-ui"), it))
 		}
 		def configFile = new File(qualificationRunFile("run-creation-ui"), "config/ringworld.properties")

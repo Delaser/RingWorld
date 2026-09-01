@@ -47,6 +47,23 @@ class RingCreationPreviewSourceContractTest {
         assertFalse(source.contains("createLevel"));
     }
 
+    @Test
+    void menuFixtureProvesDistinctSeedsCancellationAndTextureTeardown() throws IOException {
+        String fixture = readSource(Path.of("RingWorldCreationUiTestClient.java"));
+
+        assertTrue(fixture.contains("CAPTURE_COUNT = 17"));
+        assertTrue(fixture.contains("creation-ui-06-seed-preview-12345-scale4"));
+        assertTrue(fixture.contains("creation-ui-07-seed-preview-67890-scale4"));
+        assertTrue(fixture.contains("creation-ui-08-rim-default-scale4"));
+        assertTrue(fixture.contains("creation-ui-09-rim-overgrown-narrow-scale4"));
+        assertTrue(fixture.contains("ringworld$automationCancellationCount()"));
+        assertTrue(fixture.contains("ringworld$automationReleased()"));
+        assertTrue(fixture.contains("centeredSeam=true"));
+        assertTrue(fixture.contains("ringworld$automationHasSkyProfile("));
+        assertFalse(fixture.contains("createNewWorld"));
+        assertFalse(fixture.contains("createLevel"));
+    }
+
     private static String readSource(Path relative) throws IOException {
         return Files.readString(CLIENT_ROOT.resolve(relative)).replace("\r\n", "\n");
     }

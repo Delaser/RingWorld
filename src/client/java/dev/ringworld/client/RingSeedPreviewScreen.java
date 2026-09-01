@@ -60,6 +60,7 @@ public final class RingSeedPreviewScreen extends Screen {
     private String state = "Waiting";
     private String error = "";
     private long lastPreviewHash = Long.MIN_VALUE;
+    private int automationCancellations;
 
     public RingSeedPreviewScreen(RingWorldCreationScreen parent,
                                  RingWorldCreationScreen.LayoutButtonOwner owner,
@@ -96,7 +97,10 @@ public final class RingSeedPreviewScreen extends Screen {
         debounceTicks = 5;
         error = "";
         state = "Preparing…";
-        if (running != null) running.cancel(true);
+        if (running != null && !running.isDone()) {
+            running.cancel(true);
+            automationCancellations++;
+        }
     }
 
     @Override
@@ -322,6 +326,23 @@ public final class RingSeedPreviewScreen extends Screen {
 
     long ringworld$automationPreviewHash() {
         return lastPreviewHash;
+    }
+
+    boolean ringworld$automationGenerating() {
+        return running != null && !running.isDone() && state.startsWith("Generating");
+    }
+
+    int ringworld$automationCancellationCount() {
+        return automationCancellations;
+    }
+
+    String ringworld$automationAspectLabel() {
+        return aspectLabel();
+    }
+
+    boolean ringworld$automationReleased() {
+        return texture == null
+                && (running == null || running.isCancelled() || running.isDone());
     }
 
     void ringworld$automationDone() {
