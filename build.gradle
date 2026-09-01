@@ -332,6 +332,13 @@ loom {
 			// Minecraft login names are limited to 16 characters.
 			programArgs "--username", "AtlasUiTester"
 		}
+		optionalVisualSmokeClient {
+			client()
+			name "RingWorld Optional Visual Smoke"
+			runDir qualificationRunDirectory("run-optional-visual-smoke")
+			vmArg "-Dringworld.optionalVisualSmoke=true"
+			programArgs "--username", "VisualSmoke", "--width", "1280", "--height", "720"
+		}
 		creationUiClient {
 			client()
 			name "RingWorld Creation UI Regression"
@@ -1951,6 +1958,192 @@ tasks.register("prepareAtlasUiRun") {
 tasks.named("runAtlasUiClient") {
 	dependsOn("prepareAtlasUiRun")
 	finalizedBy("verifyAtlasUiClient")
+}
+
+def optionalVisualScreenshotPrefixes = [
+		"optional-visual-01-partial-preview",
+		"optional-visual-02-complete-atmosphere-small",
+		"optional-visual-03-custom-wall-inner-top-seam",
+		"optional-visual-04-custom-wall-outer-top-seam",
+		"optional-visual-05-night-large-light-on",
+		"optional-visual-06-night-large-light-off",
+		"optional-visual-07-void-none",
+		"optional-visual-08-reopen-void-none"
+]
+
+def verifyOptionalVisualSmokeOutputs = { File runDirectory, String label ->
+	def logFile = new File(runDirectory, "logs/latest.log")
+	requireFabricRuntimeGateLog(logFile, "[optional-visual-smoke] PASS",
+			"[optional-visual-smoke] FAIL", label)
+	def log = logFile.getText("UTF-8")
+	[
+			"[optional-visual-smoke] client-ready",
+			"[optional-visual-smoke] complete-atlas",
+			"[optional-visual-smoke] renderer-runtime completeAtlas=true mixinRender=true shaderDraw=true",
+			"[optional-visual-smoke] custom-wall face=inner-top",
+			"[optional-visual-smoke] custom-wall face=outer-top",
+			"[optional-visual-smoke] live-profile commands=sky-night,sun-large applied=NIGHT+LARGE",
+			"[optional-visual-smoke] live-profile commands=sky-void,sun-none applied=VOID+NONE",
+			"[optional-visual-smoke] reopen-ready completeAtlas=true wallPersisted=true profile=VOID+NONE",
+			"[optional-visual-smoke] disconnect-clear ordinal=1 clientSession=true renderer=true textures=true",
+			"[optional-visual-smoke] disconnect-clear ordinal=2 clientSession=true renderer=true textures=true"
+	].each { marker ->
+		if (!log.contains(marker)) {
+			throw new GradleException("${label} is missing marker '${marker}': ${logFile}")
+		}
+	}
+	def lightMarkers = log.readLines().findAll {
+		it.contains("[optional-visual-smoke] authored-block-light lit=")
+	}
+	if (lightMarkers.size() != 2
+			|| !lightMarkers[0].contains("lit=true")
+			|| !lightMarkers[1].contains("lit=false")) {
+		throw new GradleException("${label} did not prove ordered authored block-light on/off: ${logFile}")
+	}
+	def on = (lightMarkers[0] =~ /blockLight=(\d+) baseline=(\d+)/)
+	def off = (lightMarkers[1] =~ /blockLight=(\d+) baseline=(\d+)/)
+	if (!on.find() || !off.find()
+			|| on.group(1).toInteger() <= on.group(2).toInteger()
+			|| off.group(1) != off.group(2)) {
+		throw new GradleException("${label} has invalid authored block-light values: ${logFile}")
+	}
+
+	if (!log.contains("[optional-visual-smoke] partial-preview stage=")
+			|| !log.contains("mixinRender=true shaderDraw=true")) {
+		throw new GradleException("${label} partial preview did not prove the runtime renderer path")
+	}
+
+	def captureFiles = []
+	optionalVisualScreenshotPrefixes.each { prefix ->
+		def screenshots = fileTree(new File(runDirectory, "screenshots")).matching {
+			include prefix + "*.png"
+		}.files
+		if (screenshots.size() != 1) {
+			throw new GradleException("${label} needs exactly one screenshot ${prefix}*.png")
+		}
+		def screenshot = screenshots.first()
+		requireNonUniformPng(screenshot, label)
+		captureFiles.add([prefix: prefix, file: screenshot])
+	}
+	def lightOn = captureFiles.find { it.prefix == optionalVisualScreenshotPrefixes[4] }.file
+	def lightOff = captureFiles.find { it.prefix == optionalVisualScreenshotPrefixes[5] }.file
+	if (java.util.Arrays.equals(lightOn.bytes, lightOff.bytes)) {
+		throw new GradleException("${label} block-light on/off captures are byte-identical")
+	}
+
+	def createdLevels = fileTree(new File(runDirectory, "saves")).matching {
+		include "**/level.dat"
+	}.files
+	if (createdLevels.size() != 1) {
+		throw new GradleException("${label} must create and reopen exactly one world: ${createdLevels}")
+	}
+	def config = new Properties()
+	def configFile = new File(runDirectory, "config/ringworld.properties")
+	configFile.withInputStream { config.load(it) }
+	def expected = [
+			"circumferenceBlocks": "2048", "widthBlocks": "128",
+			"wallHeightBlocks": "160", "wallThicknessBlocks": "9",
+			"wallPalette": "4", "wallPattern": "5", "wallDecayPercent": "37",
+			"skyBackdrop": "ATMOSPHERE", "sunStyle": "SMALL",
+			"testMode": "true", "pregenerateTerrainAtlas": "false"
+	]
+	expected.each { key, value ->
+		if (config.getProperty(key) != value) {
+			throw new GradleException("${label} did not retain ${key}=${value}: ${configFile}")
+		}
+	}
+
+	def tileWidth = 320
+	def tileHeight = 198
+	def columns = 4
+	def rows = (captureFiles.size() + columns - 1).intdiv(columns)
+	def sheet = new java.awt.image.BufferedImage(
+			columns * tileWidth, rows * tileHeight,
+			java.awt.image.BufferedImage.TYPE_INT_ARGB)
+	def graphics = sheet.createGraphics()
+	try {
+		graphics.setColor(new java.awt.Color(20, 22, 26))
+		graphics.fillRect(0, 0, sheet.width, sheet.height)
+		graphics.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+				java.awt.RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+		graphics.setColor(java.awt.Color.WHITE)
+		graphics.setFont(new java.awt.Font("SansSerif", java.awt.Font.PLAIN, 11))
+		captureFiles.eachWithIndex { capture, index ->
+			def image = javax.imageio.ImageIO.read(capture.file)
+			if (image == null) throw new GradleException("${label} could not decode ${capture.file}")
+			int x = (index % columns) * tileWidth
+			int y = index.intdiv(columns) * tileHeight
+			double scale = Math.min((double)tileWidth / image.width,
+					(double)(tileHeight - 18) / image.height)
+			int width = Math.max(1, (int)Math.round(image.width * scale))
+			int height = Math.max(1, (int)Math.round(image.height * scale))
+			graphics.drawImage(image, x + (tileWidth - width).intdiv(2), y,
+					width, height, null)
+			graphics.drawString(String.format("%02d %s", index + 1, capture.prefix),
+					x + 4, y + tileHeight - 4)
+		}
+	} finally {
+		graphics.dispose()
+	}
+	def evidenceDirectory = new File(runDirectory, "evidence")
+	evidenceDirectory.mkdirs()
+	def contactSheet = new File(evidenceDirectory, "optional-visual-contact-sheet.png")
+	if (!javax.imageio.ImageIO.write(sheet, "png", contactSheet)) {
+		throw new GradleException("${label} could not encode its contact sheet")
+	}
+	requireNonUniformPng(contactSheet, label + " contact sheet")
+	logger.lifecycle("{} verified {} captures and wrote {}",
+			label, captureFiles.size(), contactSheet)
+}
+ext.verifyOptionalVisualSmokeOutputs = verifyOptionalVisualSmokeOutputs
+
+tasks.register("prepareOptionalVisualSmokeRun") {
+	group = "ringworld verification"
+	description = "Writes one isolated safe-small optional-visual smoke world."
+	outputs.upToDateWhen { false }
+	doLast {
+		["saves", "screenshots", "ringworld-cache", "logs", "evidence"].each {
+			delete(new File(qualificationRunFile("run-optional-visual-smoke"), it))
+		}
+		def runDirectory = qualificationRunFile("run-optional-visual-smoke")
+		def configFile = new File(runDirectory, "config/ringworld.properties")
+		configFile.parentFile.mkdirs()
+		def config = new Properties()
+		config.setProperty("widthBlocks", "128")
+		config.setProperty("circumferenceBlocks", "2048")
+		config.setProperty("wallHeightBlocks", "160")
+		config.setProperty("wallThicknessBlocks", "9")
+		config.setProperty("wallPalette", "4")
+		config.setProperty("wallPattern", "5")
+		config.setProperty("wallDecayPercent", "37")
+		config.setProperty("skyBackdrop", "ATMOSPHERE")
+		config.setProperty("sunStyle", "SMALL")
+		config.setProperty("testMode", "true")
+		config.setProperty("testViewDistanceChunks", "6")
+		config.setProperty("pregenerateTerrainAtlas", "false")
+		configFile.withOutputStream {
+			config.store(it, "Isolated RingWorld optional visual smoke")
+		}
+		new File(runDirectory, "options.txt").text =
+				"onboardAccessibility:false\ntutorialStep:none\npauseOnLostFocus:false\n" +
+				'renderClouds:"false"\ngraphicsMode:1\nfov:0.0\n'
+	}
+}
+
+tasks.register("verifyOptionalVisualSmokeClient") {
+	group = "ringworld verification"
+	description = "Verifies the bounded Fabric optional-visual in-world smoke."
+	mustRunAfter("runOptionalVisualSmokeClient")
+	doLast {
+		verifyOptionalVisualSmokeOutputs(
+				qualificationRunFile("run-optional-visual-smoke"),
+				"Fabric optional visual smoke")
+	}
+}
+
+tasks.named("runOptionalVisualSmokeClient") {
+	dependsOn("prepareOptionalVisualSmokeRun")
+	finalizedBy("verifyOptionalVisualSmokeClient")
 }
 
 def creationUiScreenshotPrefixes = [

@@ -116,6 +116,17 @@ neoForge {
             programArgument '--username'
             programArgument 'AtlasUiTester'
         }
+        optionalVisualSmokeClient {
+            client()
+            gameDirectory = qualificationRunFile('run-optional-visual-smoke')
+            systemProperty 'ringworld.optionalVisualSmoke', 'true'
+            programArgument '--username'
+            programArgument 'VisualSmoke'
+            programArgument '--width'
+            programArgument '1280'
+            programArgument '--height'
+            programArgument '720'
+        }
         creationUiClient {
             client()
             gameDirectory = qualificationRunFile('run-creation-ui')
@@ -747,6 +758,7 @@ def checkedProjectionSaveId = { String value, String propertyName ->
 
 def neoForgeProjectionSourceSaves = qualificationRunFile('run-client/saves')
 def neoForgeAtlasUiRun = qualificationRunFile('run-atlas-ui')
+def neoForgeOptionalVisualRun = qualificationRunFile('run-optional-visual-smoke')
 def neoForgeCreationUiRun = qualificationRunFile('run-creation-ui')
 def neoForgeMapCompassRun = qualificationRunFile('run-map-compass-capture')
 def neoForgeProjectionRun = qualificationRunFile('run-production-projection')
@@ -2768,6 +2780,55 @@ tasks.register('verifyNeoForgeAtlasUiClient') {
 tasks.named('runAtlasUiClient') {
     dependsOn('prepareNeoForgeAtlasUiRun')
     finalizedBy('verifyNeoForgeAtlasUiClient')
+}
+
+tasks.register('prepareNeoForgeOptionalVisualSmokeRun') {
+    group = 'ringworld verification'
+    description = 'Writes one isolated safe-small NeoForge optional-visual smoke world.'
+    outputs.upToDateWhen { false }
+    doLast {
+        ['saves', 'screenshots', 'ringworld-cache', 'logs', 'evidence'].each {
+            delete(new File(neoForgeOptionalVisualRun, it))
+        }
+        def configFile = new File(neoForgeOptionalVisualRun, 'config/ringworld.properties')
+        configFile.parentFile.mkdirs()
+        def config = new Properties()
+        config.setProperty('widthBlocks', '128')
+        config.setProperty('circumferenceBlocks', '2048')
+        config.setProperty('wallHeightBlocks', '160')
+        config.setProperty('wallThicknessBlocks', '9')
+        config.setProperty('wallPalette', '4')
+        config.setProperty('wallPattern', '5')
+        config.setProperty('wallDecayPercent', '37')
+        config.setProperty('skyBackdrop', 'ATMOSPHERE')
+        config.setProperty('sunStyle', 'SMALL')
+        config.setProperty('testMode', 'true')
+        config.setProperty('testViewDistanceChunks', '6')
+        config.setProperty('pregenerateTerrainAtlas', 'false')
+        configFile.withOutputStream {
+            config.store(it, 'Isolated NeoForge RingWorld optional visual smoke')
+        }
+        def fmlFile = new File(neoForgeOptionalVisualRun, 'config/fml.toml')
+        fmlFile.text = '# Automated graphical fixture: disable only the separate early splash.\nearlyWindowControl = false\n'
+        new File(neoForgeOptionalVisualRun, 'options.txt').text =
+                'onboardAccessibility:false\ntutorialStep:none\npauseOnLostFocus:false\n' +
+                'renderClouds:"false"\ngraphicsMode:1\nfov:0.0\n'
+    }
+}
+
+tasks.register('verifyNeoForgeOptionalVisualSmokeClient') {
+    group = 'ringworld verification'
+    description = 'Verifies the bounded NeoForge optional-visual in-world smoke.'
+    mustRunAfter('runOptionalVisualSmokeClient')
+    doLast {
+        rootProject.ext.verifyOptionalVisualSmokeOutputs(
+                neoForgeOptionalVisualRun, 'NeoForge optional visual smoke')
+    }
+}
+
+tasks.named('runOptionalVisualSmokeClient') {
+    dependsOn('prepareNeoForgeOptionalVisualSmokeRun')
+    finalizedBy('verifyNeoForgeOptionalVisualSmokeClient')
 }
 
 tasks.register('prepareNeoForgeCreationUiRun') {

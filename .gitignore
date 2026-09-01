@@ -14,6 +14,7 @@ run-production-visual-parity/
 run-curved-object-capture/
 run-atlas-ui/
 run-creation-ui/
+run-optional-visual-smoke/
 run-atlas-release-gate/
 run-stronghold-test/
 run-headless-prewarm/
