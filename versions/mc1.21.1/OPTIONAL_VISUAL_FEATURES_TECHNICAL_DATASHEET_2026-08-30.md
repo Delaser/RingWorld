@@ -43,6 +43,39 @@ Backport policy:
 The skipped channel numbers are intentional historical identities. Never
 rename `settings_v5` to look sequential: channel names are protocol ABI.
 
+### 2.1 First bounded backport checkpoint (2026-09-01)
+
+Commit `57cc7fd` implements only the loader-neutral model and persistence
+foundation on the Minecraft 1.21.1 branch:
+
+- settings format 4, layout fingerprint v3, rim semantic version 3, and exact
+  format-1/2/3 migration to `RingWallStyle.LEGACY`;
+- `RingWallStyle` and `RingWallPattern`, including stable IDs, top-connected
+  decay, and the non-divisible-circumference seam correction from `b384211`;
+- `RingSkyProfile` plus the 1.21.1 `SavedData.Factory` adaptation of
+  `RingSkySettings`;
+- `RingTerrainPreview`, the isolated request gate from `87e41bf`, and the
+  centred display seam from `892fa43`; and
+- Atlas format 8 height/colour/block-light cells across snapshots, sampling,
+  disk storage, and tiles, with old-format cache rejection retained.
+
+The implementation sources compiled on both loader graphs under the reviewed
+Java 21 runtime. Focused suites passed 73 Fabric cases across eleven directly
+affected classes and 48 NeoForge cases across the eight new model/persistence
+classes. The fresh-worktree Loom cache first reproduced the documented
+nondeterministic-remap verification failure; the passing runs used the
+reviewed pinned project cache without changing verification metadata.
+
+This checkpoint is not runtime or support evidence. The existing settings
+channel, client session, Atlas service, creation UI, world generation,
+renderer, commands, and qualification fixtures remain intentionally outside
+this commit. Client appearance teardown fix `9852430` was audited but is
+deferred to the client transport/session batch where its new fields exist.
+The next bounded implementation batch should attach the saved wall style to
+server generation, add bootstrap/config selection, use the complete palette
+mapping, and propagate real wall thickness through dimension and portal-safe
+bounds before any protocol or graphical work claims the new identities.
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
