@@ -5,6 +5,7 @@ import dev.ringworld.world.AtlasPregenerationAction;
 import dev.ringworld.world.AtlasPregenerationStatus;
 import dev.ringworld.world.AtlasPregenerationView;
 import dev.ringworld.world.RingTerrainNoiseMapping;
+import dev.ringworld.world.RingTerrainPreviewHud;
 import java.util.Optional;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -148,14 +149,42 @@ public final class RingWorldMapScreen extends Screen {
                 "Rate: " + view.rate(), "ETA: " + view.eta()
         };
         for (int i = 0; i < lines.length; i++) {
-            context.drawCenteredString(font, Component.literal(lines[i]), center, 43 + i * 15, 0xFFD0D0D0);
+            context.drawCenteredString(font, Component.literal(lines[i]), center, 43 + i * 12, 0xFFD0D0D0);
+        }
+
+        context.drawCenteredString(font, Component.literal("Seed preview textures"),
+                center, 143, 0xFFFFFFFF);
+        var previewEntries = RingTerrainPreviewHud.entries(ClientRingState.terrainPreviewStage());
+        var previewGrid = RingTerrainPreviewHud.grid(width);
+        for (int index = 0; index < previewEntries.size(); index++) {
+            RingTerrainPreviewHud.Entry entry = previewEntries.get(index);
+            int row = index >> 1;
+            String label = fitPreviewLabel(entry.label(), previewGrid.columnWidth());
+            context.drawString(font, Component.literal(label), previewGrid.xFor(index),
+                    155 + row * 12, previewColor(entry.state()));
         }
         if (!current.get().canControl()) {
             context.drawCenteredString(font, Component.literal("Read-only: ask the owner or a gamemaster to control generation."),
-                    center, 162, 0xFFFFD060);
+                    center, 181, 0xFFFFD060);
         } else if (!view.error().isEmpty()) {
-            context.drawCenteredString(font, Component.literal(view.error()), center, 162, 0xFFFF8080);
+            context.drawCenteredString(font, Component.literal(view.error()), center, 181, 0xFFFF8080);
         }
+    }
+
+    private String fitPreviewLabel(String label, int maxWidth) {
+        if (font.width(label) <= maxWidth) return label;
+        String ellipsis = "…";
+        return font.plainSubstrByWidth(label,
+                Math.max(0, maxWidth - font.width(ellipsis))) + ellipsis;
+    }
+
+    private static int previewColor(RingTerrainPreviewHud.State state) {
+        return switch (state) {
+            case READY -> 0xFF80FF80;
+            case GENERATING -> 0xFFFFDF70;
+            case WAITING -> 0xFFA0A0A0;
+            case ACTIVE -> 0xFFFFFFFF;
+        };
     }
 
     private static String worldgenLabel() {
