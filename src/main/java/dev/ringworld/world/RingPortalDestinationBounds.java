@@ -14,22 +14,38 @@ public final class RingPortalDestinationBounds {
 
     /** Lowest Z at which a portal block and its complete frame remain clear of the low rim. */
     public static int safePortalMinZ(RingGeometry geometry) {
-        return geometry.minWidthZ() + RingGenerationBoundary.RIM_THICKNESS + FRAME_CLEARANCE;
+        return safePortalMinZ(geometry, RingGenerationBoundary.RIM_THICKNESS);
+    }
+
+    public static int safePortalMinZ(RingGeometry geometry, int rimThicknessBlocks) {
+        return geometry.minWidthZ() + rimThicknessBlocks + FRAME_CLEARANCE;
     }
 
     /** Highest Z at which a portal block and its complete frame remain clear of the high rim. */
     public static int safePortalMaxZ(RingGeometry geometry) {
-        return geometry.maxWidthZ() - RingGenerationBoundary.RIM_THICKNESS - FRAME_CLEARANCE;
+        return safePortalMaxZ(geometry, RingGenerationBoundary.RIM_THICKNESS);
+    }
+
+    public static int safePortalMaxZ(RingGeometry geometry, int rimThicknessBlocks) {
+        return geometry.maxWidthZ() - rimThicknessBlocks - FRAME_CLEARANCE;
     }
 
     /** Lowest creation/search anchor whose entire 16-block creation sweep stays safe. */
     public static int safeAnchorMinZ(RingGeometry geometry) {
-        return safePortalMinZ(geometry) + CREATION_SEARCH_RADIUS;
+        return safeAnchorMinZ(geometry, RingGenerationBoundary.RIM_THICKNESS);
+    }
+
+    public static int safeAnchorMinZ(RingGeometry geometry, int rimThicknessBlocks) {
+        return safePortalMinZ(geometry, rimThicknessBlocks) + CREATION_SEARCH_RADIUS;
     }
 
     /** Highest creation/search anchor whose entire 16-block creation sweep stays safe. */
     public static int safeAnchorMaxZ(RingGeometry geometry) {
-        return safePortalMaxZ(geometry) - CREATION_SEARCH_RADIUS;
+        return safeAnchorMaxZ(geometry, RingGenerationBoundary.RIM_THICKNESS);
+    }
+
+    public static int safeAnchorMaxZ(RingGeometry geometry, int rimThicknessBlocks) {
+        return safePortalMaxZ(geometry, rimThicknessBlocks) - CREATION_SEARCH_RADIUS;
     }
 
     /**
@@ -38,8 +54,13 @@ public final class RingPortalDestinationBounds {
      * complete portal-creation search envelope.
      */
     public static BlockPos normalizeSearchAnchor(RingGeometry geometry, BlockPos target) {
-        int minZ = safeAnchorMinZ(geometry);
-        int maxZ = safeAnchorMaxZ(geometry);
+        return normalizeSearchAnchor(geometry, target, RingGenerationBoundary.RIM_THICKNESS);
+    }
+
+    public static BlockPos normalizeSearchAnchor(
+            RingGeometry geometry, BlockPos target, int rimThicknessBlocks) {
+        int minZ = safeAnchorMinZ(geometry, rimThicknessBlocks);
+        int maxZ = safeAnchorMaxZ(geometry, rimThicknessBlocks);
         if (minZ > maxZ) {
             throw new IllegalArgumentException("ring width cannot contain a safe Nether portal search envelope");
         }
@@ -49,8 +70,13 @@ public final class RingPortalDestinationBounds {
 
     /** True when a discovered portal block and its frame remain inside the playable interior. */
     public static boolean isSafePortalBlock(RingGeometry geometry, BlockPos portalBlock) {
-        return portalBlock.getZ() >= safePortalMinZ(geometry)
-                && portalBlock.getZ() <= safePortalMaxZ(geometry);
+        return isSafePortalBlock(geometry, portalBlock, RingGenerationBoundary.RIM_THICKNESS);
+    }
+
+    public static boolean isSafePortalBlock(
+            RingGeometry geometry, BlockPos portalBlock, int rimThicknessBlocks) {
+        return portalBlock.getZ() >= safePortalMinZ(geometry, rimThicknessBlocks)
+                && portalBlock.getZ() <= safePortalMaxZ(geometry, rimThicknessBlocks);
     }
 
     /** Flat POI queries centred on all three local X images expose either side of the seam. */

@@ -36,7 +36,8 @@ abstract class ChunkGeneratorMixin {
         if (access == null) return;
         RingGeometry geometry = access.ringworld$getGeometry();
         if (geometry != null) {
-            RingGenerationBoundary.installRim(chunk, geometry, access.ringworld$getWallHeight());
+            RingGenerationBoundary.installRim(chunk, geometry, access.ringworld$getWallHeight(),
+                    access.ringworld$getWallStyle(), world.getSeed());
         }
     }
 

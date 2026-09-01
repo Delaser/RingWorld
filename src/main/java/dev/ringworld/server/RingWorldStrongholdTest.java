@@ -292,8 +292,9 @@ public final class RingWorldStrongholdTest {
         Set<String> referenceKeys = new HashSet<>();
         var structureRegistry = world.registryAccess().registryOrThrow(Registries.STRUCTURE);
 
-        int interiorMinimumZ = geometry.minWidthZ() + RingGenerationBoundary.RIM_THICKNESS;
-        int interiorMaximumZ = geometry.maxWidthZ() - RingGenerationBoundary.RIM_THICKNESS;
+        int rimThickness = RingWorldSettings.get(world).wallStyle().thicknessBlocks();
+        int interiorMinimumZ = geometry.minWidthZ() + rimThickness;
+        int interiorMaximumZ = geometry.maxWidthZ() - rimThickness;
         int[] highSideHeights = new int[interiorMaximumZ - interiorMinimumZ + 1];
         int[] lowSideHeights = new int[highSideHeights.length];
 

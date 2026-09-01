@@ -6,6 +6,7 @@ import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingWorldGeneratorAccess;
 import dev.ringworld.world.RingWorldSettings;
+import dev.ringworld.world.RingWallStyle;
 import dev.ringworld.world.RingEntityFoldAccess;
 import dev.ringworld.world.RingStructureStateAccess;
 import dev.ringworld.world.RingStructurePolicy;
@@ -112,7 +113,7 @@ public final class RingWorldServer {
         RingGeometry geometry = settings.geometry();
         WORLD_GEOMETRY.put(world, geometry);
         attachGeneratorSettings(world, geometry, settings.wallHeightBlocks(),
-                settings.terrainNoiseMapping());
+                settings.wallStyle(), settings.terrainNoiseMapping());
         return geometry;
     }
 
@@ -133,6 +134,7 @@ public final class RingWorldServer {
 
     private static void attachGeneratorSettings(ServerLevel world, RingGeometry geometry,
                                                 int wallHeightBlocks,
+                                                RingWallStyle wallStyle,
                                                 int terrainNoiseMapping) {
         RingStructurePolicy policy = RingStructurePolicy.get(world);
         boolean guaranteeStronghold = policy.guaranteesStronghold();
@@ -144,6 +146,7 @@ public final class RingWorldServer {
             access.ringworld$setGeometry(geometry);
             access.ringworld$setTerrainNoiseMapping(terrainNoiseMapping);
             access.ringworld$setWallHeight(wallHeightBlocks);
+            access.ringworld$setWallStyle(wallStyle);
             access.ringworld$setGuaranteeStronghold(guaranteeStronghold);
             periodicClimateSampler = access.ringworld$getPeriodicClimateSampler(
                     generatorState.randomState());
@@ -459,20 +462,23 @@ public final class RingWorldServer {
                 world.setBlock(new BlockPos(3, 119, 3), Blocks.AIR.defaultBlockState(), 3);
                 TEST_PROGRESS.put(player.getUUID(), new TestProgress(9, 0));
             } else if (progress.stage == 9 && progress.ticks >= 100) {
-                double boundaryZ = geometry.minWidthZ() + 7.5;
+                int rimThickness = RingWorldSettings.get(world).wallStyle().thicknessBlocks();
+                double boundaryZ = geometry.minWidthZ() + rimThickness + 2.5;
                 player.teleportTo(world, 100.5, 106.0, boundaryZ,
                         Set.<RelativeMovement>of(), 180.0f, 58.0f);
                 RingWorldMod.LOGGER.info("[test] rim stress view armed at z={}", boundaryZ);
                 TEST_PROGRESS.put(player.getUUID(), new TestProgress(7, 0));
             } else if (progress.stage == 7 && progress.ticks >= 400) {
+                RingWorldSettings settings = RingWorldSettings.get(world);
+                int rimThickness = settings.wallStyle().thicknessBlocks();
                 boolean exteriorVoid = world.getBlockState(
                         new BlockPos(100, 64, geometry.minWidthZ() - 32)).isAir();
                 boolean rimPresent = RingGenerationBoundary.isRimMaterial(world.getBlockState(
                         new BlockPos(100, 64, geometry.minWidthZ())))
                         && RingGenerationBoundary.isRimMaterial(world.getBlockState(
                         new BlockPos(100, 64,
-                                geometry.minWidthZ() + RingGenerationBoundary.RIM_THICKNESS - 1)));
-                int rimTop = world.getMinBuildHeight() + RingWorldSettings.get(world).wallHeightBlocks();
+                                geometry.minWidthZ() + rimThickness - 1)));
+                int rimTop = world.getMinBuildHeight() + settings.wallHeightBlocks();
                 boolean shortenedRimTopClear = !RingGenerationBoundary.isRimMaterial(
                         world.getBlockState(new BlockPos(100, rimTop, geometry.minWidthZ())));
                 RingWorldMod.LOGGER.info("[test] async boundary exteriorVoid={}, texturedRimPresent={}, shortenedTopClear={}",

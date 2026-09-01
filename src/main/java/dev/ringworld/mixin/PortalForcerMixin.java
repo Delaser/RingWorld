@@ -3,6 +3,7 @@ package dev.ringworld.mixin;
 import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingPortalDestinationBounds;
+import dev.ringworld.world.RingWorldSettings;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.Optional;
@@ -40,7 +41,9 @@ abstract class PortalForcerMixin {
             CallbackInfoReturnable<Optional<BlockPos>> cir) {
         if (level.dimension() != Level.OVERWORLD) return;
         RingGeometry geometry = RingWorldServer.geometryFor(level);
-        BlockPos anchor = RingPortalDestinationBounds.normalizeSearchAnchor(geometry, approximateExitPos);
+        int rimThickness = RingWorldSettings.get(level).wallStyle().thicknessBlocks();
+        BlockPos anchor = RingPortalDestinationBounds.normalizeSearchAnchor(
+                geometry, approximateExitPos, rimThickness);
         int radius = toNether ? 16 : 128;
         PoiManager pois = level.getPoiManager();
         Set<BlockPos> candidates = new LinkedHashSet<>();
@@ -52,7 +55,8 @@ abstract class PortalForcerMixin {
                     .map(PoiRecord::getPos)
                     .map(pos -> new BlockPos(geometry.wrapBlockX(pos.getX()), pos.getY(), pos.getZ()))
                     .filter(worldBorder::isWithinBounds)
-                    .filter(pos -> RingPortalDestinationBounds.isSafePortalBlock(geometry, pos))
+                    .filter(pos -> RingPortalDestinationBounds.isSafePortalBlock(
+                            geometry, pos, rimThickness))
                     .filter(pos -> level.getBlockState(pos).hasProperty(BlockStateProperties.HORIZONTAL_AXIS))
                     .forEach(candidates::add);
         }
@@ -68,6 +72,7 @@ abstract class PortalForcerMixin {
     private BlockPos ringworld$normalizePortalCreationAnchor(BlockPos origin) {
         if (level.dimension() != Level.OVERWORLD) return origin;
         return RingPortalDestinationBounds.normalizeSearchAnchor(
-                RingWorldServer.geometryFor(level), origin);
+                RingWorldServer.geometryFor(level), origin,
+                RingWorldSettings.get(level).wallStyle().thicknessBlocks());
     }
 }

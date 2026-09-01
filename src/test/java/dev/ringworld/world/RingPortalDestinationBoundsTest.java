@@ -49,6 +49,27 @@ class RingPortalDestinationBoundsTest {
     }
 
     @Test
+    void safePortalAndCreationBoundsUseTheSavedWallThickness() {
+        assertEquals(-60, RingPortalDestinationBounds.safePortalMinZ(SMALL, 1));
+        assertEquals(59, RingPortalDestinationBounds.safePortalMaxZ(SMALL, 1));
+        assertEquals(-44, RingPortalDestinationBounds.safeAnchorMinZ(SMALL, 1));
+        assertEquals(43, RingPortalDestinationBounds.safeAnchorMaxZ(SMALL, 1));
+
+        assertEquals(-29, RingPortalDestinationBounds.safePortalMinZ(SMALL, 32));
+        assertEquals(28, RingPortalDestinationBounds.safePortalMaxZ(SMALL, 32));
+        assertEquals(-13, RingPortalDestinationBounds.safeAnchorMinZ(SMALL, 32));
+        assertEquals(12, RingPortalDestinationBounds.safeAnchorMaxZ(SMALL, 32));
+        assertEquals(-13, RingPortalDestinationBounds.normalizeSearchAnchor(
+                SMALL, new BlockPos(0, 80, -50_000), 32).getZ());
+        assertEquals(12, RingPortalDestinationBounds.normalizeSearchAnchor(
+                SMALL, new BlockPos(0, 80, 50_000), 32).getZ());
+        assertTrue(RingPortalDestinationBounds.isSafePortalBlock(
+                SMALL, new BlockPos(0, 70, -29), 32));
+        assertFalse(RingPortalDestinationBounds.isSafePortalBlock(
+                SMALL, new BlockPos(0, 70, -30), 32));
+    }
+
+    @Test
     void periodicQueriesExposeBothCanonicalSidesOfTheSeam() {
         BlockPos anchor = new BlockPos(2, 70, 0);
         assertEquals(List.of(

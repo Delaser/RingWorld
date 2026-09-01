@@ -4,6 +4,7 @@ import com.mojang.datafixers.util.Either;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingPortalDestinationBounds;
+import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -506,6 +507,7 @@ final class RingWorldExtendedMultiplayerTest {
                     lowRawTarget, false, overworld.getWorldBorder());
             Optional<BlockPos> highFound = overworld.getPortalForcer().findClosestPortalPosition(
                     highRawTarget, false, overworld.getWorldBorder());
+            int rimThickness = RingWorldSettings.get(overworld).wallStyle().thicknessBlocks();
             boolean routing = seamFound.isPresent()
                     && Math.abs(geometry.shortestCircumferenceDelta(
                             overworldNetherPortal.getX(), seamFound.get().getX())) <= 16.0
@@ -517,8 +519,10 @@ final class RingWorldExtendedMultiplayerTest {
                     && highFound.get().getX() < geometry.circumferenceBlocks()
                     && Math.abs(geometry.shortestCircumferenceDelta(targetX, lowFound.get().getX())) <= 16.0
                     && Math.abs(geometry.shortestCircumferenceDelta(targetX, highFound.get().getX())) <= 16.0
-                    && RingPortalDestinationBounds.isSafePortalBlock(geometry, lowFound.get())
-                    && RingPortalDestinationBounds.isSafePortalBlock(geometry, highFound.get());
+                    && RingPortalDestinationBounds.isSafePortalBlock(
+                            geometry, lowFound.get(), rimThickness)
+                    && RingPortalDestinationBounds.isSafePortalBlock(
+                            geometry, highFound.get(), rimThickness);
             if (!routing) {
                 RingWorldMod.LOGGER.error(
                         "[multiplayer-extended] multi-lap Nether portal routing result=false seamFound={} lowCreated={} highCreated={} lowFound={} highFound={}",
@@ -570,7 +574,8 @@ final class RingWorldExtendedMultiplayerTest {
                         expectedOverworldPortalReturn.getX(), playerA.getX())) < 16.0
                 && Math.abs(expectedOverworldPortalReturn.getZ() - playerA.getZ()) < 16.0
                 && RingPortalDestinationBounds.isSafePortalBlock(
-                        geometry, playerA.blockPosition())
+                        geometry, playerA.blockPosition(),
+                        RingWorldSettings.get(overworld).wallStyle().thicknessBlocks())
                 && RingWorldMultiplayerTest.clientPassed("A", "nether_return");
         if (returned) {
             netherPortalPassed = outboundPortalWaitPassed && netherPortalRoutingPassed;

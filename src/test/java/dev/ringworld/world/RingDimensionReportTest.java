@@ -32,6 +32,23 @@ class RingDimensionReportTest {
     }
 
     @Test
+    void selectedWallThicknessChangesTheValidatedPlayableInterior() {
+        RingGeometry geometry = new RingGeometry(128, 2_048);
+        RingDimensionReport thin = RingDimensionReport.forVanillaOverworld(
+                geometry, 160, RingWallStyle.MIN_THICKNESS);
+        RingDimensionReport thick = RingDimensionReport.forVanillaOverworld(
+                geometry, 160, RingWallStyle.MAX_THICKNESS);
+
+        assertTrue(thin.isValid(), thin.errors().toString());
+        assertTrue(thick.isValid(), thick.errors().toString());
+        assertEquals(126, thin.playableInteriorBlocks());
+        assertEquals(64, thick.playableInteriorBlocks());
+        assertEquals(258_048L, thin.playableInteriorAreaBlocks());
+        assertEquals(131_072L, thick.playableInteriorAreaBlocks());
+        assertEquals(RingWallStyle.MAX_THICKNESS, thick.rimThicknessBlocks());
+    }
+
+    @Test
     void safeSmallReferencePreservesTheOldVisualWidthWithoutCrossingTheCenter() {
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
                 new RingGeometry(416, 2_048), 160);

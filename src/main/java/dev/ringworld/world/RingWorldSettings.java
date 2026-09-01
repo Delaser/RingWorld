@@ -65,9 +65,10 @@ public final class RingWorldSettings extends SavedData {
         this(RingWorldConfig.load().widthBlocks(), RingWorldConfig.load().circumferenceBlocks(),
                 0L, RingWorldConfig.load().wallHeightBlocks(),
                 (int)RingGeometry.SURFACE_Y, RingTerrainNoiseMapping.CURRENT,
-                RingWallStyle.DEFAULT, FORMAT_VERSION);
+                RingWorldConfig.load().wallStyle(), FORMAT_VERSION);
         // This constructor is used only when no saved state exists yet.
-        RingWorldConfig.validateNewWorldLayout(widthBlocks, circumferenceBlocks, wallHeightBlocks);
+        RingWorldConfig.validateNewWorldLayout(widthBlocks, circumferenceBlocks, wallHeightBlocks,
+                wallStyle.thicknessBlocks());
         setDirty();
     }
 
@@ -160,17 +161,18 @@ public final class RingWorldSettings extends SavedData {
 
         RingWorldConfig config = RingWorldConfig.load();
         RingWorldConfig.validateNewWorldLayout(
-                config.widthBlocks(), config.circumferenceBlocks(), config.wallHeightBlocks());
+                config.widthBlocks(), config.circumferenceBlocks(), config.wallHeightBlocks(),
+                config.wallStyle().thicknessBlocks());
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
                 new RingGeometry(config.widthBlocks(), config.circumferenceBlocks()),
-                config.wallHeightBlocks());
+                config.wallHeightBlocks(), config.wallStyle().thicknessBlocks());
         RingWorldSettings created = new RingWorldSettings(
                 config.widthBlocks(), config.circumferenceBlocks(), world.getSeed(),
                 config.wallHeightBlocks(), (int)RingGeometry.SURFACE_Y,
-                RingTerrainNoiseMapping.CURRENT, RingWallStyle.DEFAULT, FORMAT_VERSION);
+                RingTerrainNoiseMapping.CURRENT, config.wallStyle(), FORMAT_VERSION);
         created.setDirty();
         manager.set(STORAGE_KEY, created);
-        RingSkySettings.createForNewWorld(manager, RingSkyProfile.DEFAULT);
+        RingSkySettings.createForNewWorld(manager, config.skyProfile());
         boolean monumentRequest = RingWorldConfig.effectiveOceanMonumentRequest(
                 report.geometry(), config.requestOceanMonument());
         if (config.requestOceanMonument() && !monumentRequest) {
