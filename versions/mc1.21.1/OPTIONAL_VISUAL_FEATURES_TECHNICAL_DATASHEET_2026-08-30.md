@@ -222,6 +222,49 @@ This checkpoint adds no terrain-preview generation, renderer, shader,
 placeholder, UI, command, Create integration, packaging, release metadata, or
 graphical/runtime support claim.
 
+### 2.6 Staged server terrain-preview checkpoint (2026-09-01)
+
+Commit `7e95b6a` implements the in-world, pre-Atlas terrain-preview generation
+and send path without creating chunks or reusing the live generator on a
+background thread:
+
+- the authoritative CURRENT, HIGH, VERY_HIGH, and ULTRA colour/terrain sample
+  dimensions run in stable wire order and use the mainline biome-family colour
+  rules and periodic terrain sampling;
+- the server-thread capture retains only the immutable Atlas/settings world
+  hash, geometry, seed/mapping/wall values, frozen noise-registry lookup,
+  biome source, generator-settings holder, and build-height bounds;
+- the single preview worker constructs a new `NoiseBasedChunkGenerator`, a new
+  `RandomState`, and an immutable `LevelHeightAccessor` from those inputs, then
+  performs only chunk-free height and noise-biome queries; it never receives
+  or mutates the retained generator and never calls chunk loading or world-save
+  APIs;
+- a single daemon executor generates stages sequentially. A `Future` provides
+  real interrupt cancellation, while publication rechecks job identity,
+  immutable world hash, incomplete authoritative Atlas state, subscriber
+  presence, and strictly increasing stage before using the existing loader
+  payload transport;
+- world unload, last-subscriber disconnect, Atlas completion, and a replacement
+  world identity cancel and discard the job. Queued stale publications fail
+  closed; and
+- the client retains only increasing stages for its current Atlas world, so a
+  delayed older payload cannot replace a newer preview.
+
+The first validation invocation stopped before tests at javac because a
+reference narrowed to final 1.21.1 `NoiseBasedChunkGenerator` cannot express
+its runtime Mixin-added interface. Retaining the established static type
+`ChunkGenerator` resolved that compile-only adaptation without changing the
+isolation contract. The corrected Java 21 dual-loader gate compiled both
+graphs and passed the same 43 focused sampler, stage/order, world-hash,
+cancellation/stale-publication, codec, loader-send, lifecycle, client-session,
+and Atlas cases on Fabric/common and NeoForge with zero failures or errors. No
+verification metadata changed.
+
+This checkpoint adds no creation-screen seed preview, in-world placeholder,
+renderer, shader, Atlas-light consumption, sky rendering, UI/HUD, command,
+complete-ring mesh, Create integration, packaging, support metadata, or broad
+graphical/runtime fixture.
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
