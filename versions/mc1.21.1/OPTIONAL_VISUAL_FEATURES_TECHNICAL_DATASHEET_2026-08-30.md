@@ -185,6 +185,43 @@ This checkpoint does not generate or send server terrain previews and adds no
 creation UI, renderer/shader, Atlas capture/invalidation, command, worldgen,
 Create, packaging, graphical fixture, or support-metadata behavior.
 
+### 2.5 Atlas format-8 service checkpoint (2026-09-01)
+
+Commit `61ee9ee` connects the previously landed format-8 cell model to the
+existing dimension-owned server/cache/tile/client-state service path:
+
+- initial chunk capture and bounded recapture store the strongest of surface
+  block emission, block light at the heightmap block, and block light one
+  block above, alongside the existing top-face height and corrected colour;
+- mycelium uses its real `0x6F6365` top-texture colour instead of the unrelated
+  purple map colour;
+- a relevant surface mutation expands to the Atlas-cell footprint covering
+  vanilla's 15-block light radius, wraps canonical X, clamps finite Z, and
+  feeds the existing exact-cell/tile-coalescing queue and ordered revision
+  commit path;
+- disk and tile decoding reject block-light values outside 0–15; current or
+  legacy caches with an old Atlas format remain invalid and are recaptured as
+  fresh format-8 state rather than mutated in place; and
+- client tile application, partial-cache persistence, revision commit,
+  teardown, and reconnect reuse the existing `RingTerrainAtlas` state, so the
+  block-light byte survives without any renderer or shader consumer.
+
+No new Atlas channel ID is required. The established `metadata_v2`,
+`request_v2`, `tile_v2`, and `revision_v1` envelopes carry format-owned tile
+bytes; the Atlas format contributes to `worldHash`, while the already-required
+`settings_v5` capability gate rejects older peers before Atlas streaming.
+Both loader registrations and handlers already use these common codecs.
+
+One Java 21 Gradle invocation compiled Fabric/common and NeoForge and passed
+the same 40 focused format-8 storage/tile, old-cache, light-sampling,
+periodic/clamped invalidation, recapture-coalescing, revision/partial-cache,
+reconnect, storage-path, and protocol-identity cases on each loader. No
+verification metadata changed.
+
+This checkpoint adds no terrain-preview generation, renderer, shader,
+placeholder, UI, command, Create integration, packaging, release metadata, or
+graphical/runtime support claim.
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
