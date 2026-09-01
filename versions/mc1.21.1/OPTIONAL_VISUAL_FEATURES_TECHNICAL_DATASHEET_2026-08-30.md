@@ -522,6 +522,44 @@ application, live fog colour transitions, shader edge matching, or interaction
 with third-party fog/render modifications; those remain later focused
 graphical qualification.
 
+### 2.13 Live sky/sun command checkpoint (2026-09-02)
+
+Commit `6030719` implements only the live server-owned sky and sun commands on
+the existing shared `/ringworld` command tree:
+
+- the existing level-2 gamemaster permission gate remains on the shared root;
+  `/ringworld sky` and `/ringworld sun` query the owning Overworld's saved
+  backdrop and light source respectively;
+- `/ringworld sky atmosphere|night|void` changes only the backdrop, while
+  `/ringworld sun small|large|none` changes only the visible light source. A
+  small loader-neutral command model parses the documented values and preserves
+  the other `RingSkyProfile` dimension;
+- successful changes replace and dirty the Overworld `RingSkySettings`, then
+  publish the existing `sky_profile_v1` payload to connected capable players
+  through the already-landed shared payload transport. Fabric retains its
+  per-player channel query; NeoForge retains its mandatory negotiated channel
+  contract; and
+- missing Overworld or unreadable/unwritable saved settings return clear command
+  failures. Missing per-player capability and isolated delivery failure are
+  skipped safely after persistence without affecting other connected players.
+
+Before edits, Fabric `compileJava` and NeoForge `compileJava` passed from clean
+parent `dfd57c7`. After the change, one Java 21 focused invocation compiled both
+loader graphs and passed six command-model and command/transport source-contract
+cases on Fabric/common plus the same six cases on NeoForge, 12 executions total
+with zero failures, errors, or skips. Existing Mixin target warnings were
+unchanged. `git diff --check` passed. No Minecraft client, server, world, save,
+or graphical fixture was launched, and no dependency-verification metadata
+changed.
+
+This checkpoint does not add a client command, ring-light controls, renderer,
+shader, fog, or sky-draw behavior, HUD/UI, protocol codecs or channels, saved
+formats, world generation, Create integration, packaging, or release metadata.
+Compilation and source/bytecode contract tests establish dual-loader command
+registration and delivery wiring but do not prove live multiplayer display or
+third-party command/permission compatibility; those remain runtime
+qualification work.
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
