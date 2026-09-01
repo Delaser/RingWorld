@@ -27,6 +27,8 @@ class RingOptionalVisualSmokeSourceContractTest {
                 "if (!worldStarted && client.player == null) return false"));
         assertTrue(source.contains(
                 "Atlas completed before mandatory staged-preview capture"));
+        assertTrue(source.contains(
+                "incompleteAtlas && !client.levelRenderer.hasRenderedAllSections()"));
         assertFalse(source.contains("partial-preview skipped"));
     }
 

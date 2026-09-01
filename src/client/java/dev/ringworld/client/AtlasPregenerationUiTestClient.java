@@ -949,7 +949,9 @@ public final class AtlasPregenerationUiTestClient {
             if (!atPose) return false;
             client.player.setYRot(yaw);
             client.player.setXRot(pitch);
-            if (!client.levelRenderer.hasRenderedAllSections()
+            RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
+            boolean incompleteAtlas = atlas == null || !atlas.isComplete();
+            if ((incompleteAtlas && !client.levelRenderer.hasRenderedAllSections())
                     || RingSurfaceTextureRenderer.legacyProxyDrawnThisFrame() < 0.5F) {
                 captureSettling = false;
                 return false;
