@@ -602,6 +602,56 @@ generation, Create integration, packaging, or release metadata. Compile and
 source/bytecode contracts do not prove in-game command-dispatch coexistence or
 live visual tuning; those remain bounded client runtime qualification work.
 
+### 2.15 Compact Atlas/preview client UI checkpoint (2026-09-02)
+
+Commit `341bdcd` implements only the compact client UI for authoritative Atlas
+progress and staged terrain-preview status:
+
+- `RingAtlasHudRenderer` owns the existing incomplete-Atlas label and draws its
+  background/text under a `0.5` GUI pose scale at the top-left. The existing
+  `RingAtlasHudProgress` model returns no label once every authoritative cell is
+  present, so the play HUD renders nothing after completion;
+- the 1.21.1 `GuiMixin` now contains only the hidden-GUI, active-level, and
+  active-RingWorld guards plus delegation to that renderer. Its injection pins
+  the reviewed official `Gui.render(GuiGraphics, DeltaTracker)` descriptor;
+- loader-neutral `RingTerrainPreviewHud` derives the four ordered Current,
+  High, Very high, and Ultra states from the current session's received stage.
+  The existing `RingWorldMapScreen` renders them as two bounded columns beneath
+  its existing authoritative status rows; staged-preview diagnostics never
+  enter the play HUD; and
+- the grid stays within both 320-pixel and wider logical screens, caps each
+  column at 150 pixels, and the version-owned screen truncates overflowing
+  labels with an ellipsis. Existing status spacing is 12 pixels, leaving the
+  final ETA row above the preview heading; action controls and Done retain their
+  previous positions and behavior.
+
+Normal session ownership is unchanged: `ClientRingState` accepts only ordered
+preview stages for the current Atlas world hash and clears both the preview and
+stage on ordinary teardown. An absent preview begins at the generating Current
+row while an active map/status session is present; cleared or absent RingWorld
+state cannot open the map and cannot render the play-HUD indicator.
+
+Before edits, Fabric `compileClientJava` and NeoForge `compileJava` passed from
+clean parent `54f32f4`. The first focused dual-loader pass compiled and passed,
+then read-only review identified an overlap inherited from the older 15-pixel
+status-line spacing: ETA at y=148 intersected the new heading at y=143. The
+screen was corrected to the reviewed 12-pixel spacing and the source contract
+now pins that separation. The final Java 21 invocation compiled both client
+graphs and passed the retained Atlas-progress model (1), staged-preview
+state/layout model (3), exact GUI descriptor/source contract (2), and retained
+client session/teardown suite (3) on each loader: nine cases per loader, 18
+executions total with zero failures, errors, or skips. Existing Mixin and client
+deprecation warnings were unchanged. `git diff --check` passed. No Minecraft
+client, server, world, save, or graphical fixture was launched, and no
+dependency-verification metadata changed.
+
+This checkpoint does not change the terrain renderer or shaders, sky/fog,
+commands, protocol, server, persistence, world generation, creation UI, Create
+integration, packaging, or release metadata. Compile, model, descriptor, and
+source contracts do not prove real GUI-scale appearance, font clipping, Mixin
+application, or graphical teardown; those remain later focused client UI
+qualification work.
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
