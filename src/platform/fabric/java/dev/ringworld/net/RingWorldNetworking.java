@@ -3,6 +3,7 @@ package dev.ringworld.net;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.server.RingWorldMultiplayerTest;
 import dev.ringworld.server.RingTerrainAtlasServer;
+import dev.ringworld.world.RingSkySettings;
 import dev.ringworld.world.RingWorldSettings;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
@@ -25,6 +26,10 @@ public final class RingWorldNetworking {
 
     public static void registerPayloads() {
         PayloadTypeRegistry.playS2C().register(RingSettingsPayload.ID, RingSettingsPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(
+                RingSkyProfilePayload.ID, RingSkyProfilePayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(
+                RingTerrainPreviewPayload.ID, RingTerrainPreviewPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(RingSettingsAckPayload.ID, RingSettingsAckPayload.CODEC);
         PayloadTypeRegistry.playC2S().register(RingMultiplayerTestPayload.ID, RingMultiplayerTestPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC);
@@ -91,9 +96,11 @@ public final class RingWorldNetworking {
                     "RingWorld could not load the authoritative Overworld settings."));
             return;
         }
-        if (!ServerPlayNetworking.canSend(player, RingSettingsPayload.ID)) {
+        if (!RingProtocolCapabilities.supportsRequiredClientbound(
+                type -> ServerPlayNetworking.canSend(player, type))) {
             handler.disconnect(Component.literal(
-                    "RingWorld client is missing or out of date. Install a matching RingWorld client version."));
+                    "RingWorld client is missing required settings, sky, or preview channels. "
+                            + "Install a matching RingWorld client version."));
             return;
         }
         if (!ServerPlayNetworking.canSend(player, RingTerrainAtlasMetadataPayload.ID)
@@ -106,7 +113,8 @@ public final class RingWorldNetworking {
         }
         RingWorldSettings settings = RingWorldSettings.get(overworld);
         HANDSHAKES.begin(player.getUUID(), player.level().getServer().getTickCount());
-        ServerPlayNetworking.send(player, RingSettingsHandshake.payloadFor(settings));
+        ServerPlayNetworking.send(player, RingSettingsHandshake.payloadFor(
+                settings, RingSkySettings.get(overworld).profile()));
     }
 
     private static void validateAcknowledgement(RingSettingsAckPayload payload,

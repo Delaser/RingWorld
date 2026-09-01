@@ -6,16 +6,20 @@ import dev.ringworld.net.RingAtlasPregenerationStatusPayload;
 import dev.ringworld.net.RingAtlasPregenerationStatusRequestPayload;
 import dev.ringworld.net.RingHandshakeTracker;
 import dev.ringworld.net.RingMultiplayerTestPayload;
+import dev.ringworld.net.RingProtocolCapabilities;
 import dev.ringworld.net.RingSettingsAckPayload;
 import dev.ringworld.net.RingSettingsHandshake;
 import dev.ringworld.net.RingSettingsPayload;
+import dev.ringworld.net.RingSkyProfilePayload;
 import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRequestPayload;
 import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
+import dev.ringworld.net.RingTerrainPreviewPayload;
 import dev.ringworld.server.RingWorldMultiplayerTest;
 import dev.ringworld.server.RingTerrainAtlasServer;
 import dev.ringworld.world.RingWorldSettings;
+import dev.ringworld.world.RingSkySettings;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.server.MinecraftServer;
@@ -25,13 +29,14 @@ import net.minecraft.world.level.Level;
 import net.neoforged.neoforge.network.PacketDistributor;
 import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
 import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.neoforged.neoforge.network.registration.NetworkRegistry;
 
 import java.util.UUID;
 import java.util.function.BiConsumer;
 
 /** NeoForge transport for the shared RingWorld payload records and handshake state. */
 public final class NeoForgeRingWorldNetworking {
-    private static final String CHANNEL_VERSION = "ringworld-26.1-v2";
+    private static final String CHANNEL_VERSION = "ringworld-26.1-v3";
     private static final RingHandshakeTracker HANDSHAKES = new RingHandshakeTracker();
     private static volatile BiConsumer<CustomPacketPayload, IPayloadContext> clientPayloadHandler;
 
@@ -40,6 +45,10 @@ public final class NeoForgeRingWorldNetworking {
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar(CHANNEL_VERSION);
         registrar.playToClient(RingSettingsPayload.ID, RingSettingsPayload.CODEC,
+                NeoForgeRingWorldNetworking::handleClientPayload);
+        registrar.playToClient(RingSkyProfilePayload.ID, RingSkyProfilePayload.CODEC,
+                NeoForgeRingWorldNetworking::handleClientPayload);
+        registrar.playToClient(RingTerrainPreviewPayload.ID, RingTerrainPreviewPayload.CODEC,
                 NeoForgeRingWorldNetworking::handleClientPayload);
         registrar.playToServer(RingSettingsAckPayload.ID, RingSettingsAckPayload.CODEC,
                 NeoForgeRingWorldNetworking::handleAcknowledgement);
@@ -84,9 +93,17 @@ public final class NeoForgeRingWorldNetworking {
                     "RingWorld could not load the authoritative Overworld settings."));
             return;
         }
+        if (!RingProtocolCapabilities.supportsRequiredClientbound(
+                type -> NetworkRegistry.hasChannel(player.connection, type.id()))) {
+            player.connection.disconnect(Component.literal(
+                    "RingWorld client is missing required settings, sky, or preview channels. "
+                            + "Install a matching RingWorld client version."));
+            return;
+        }
         HANDSHAKES.begin(player.getUUID(), player.level().getServer().getTickCount());
         PacketDistributor.sendToPlayer(player,
-                RingSettingsHandshake.payloadFor(RingWorldSettings.get(overworld)));
+                RingSettingsHandshake.payloadFor(RingWorldSettings.get(overworld),
+                        RingSkySettings.get(overworld).profile()));
     }
 
     public static void clear(ServerPlayer player) {

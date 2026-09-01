@@ -18,10 +18,12 @@ import dev.ringworld.client.RingWorldCreationUiTestClient;
 import dev.ringworld.net.RingAtlasPregenerationStatusPayload;
 import dev.ringworld.net.RingSettingsHandshake;
 import dev.ringworld.net.RingSettingsPayload;
+import dev.ringworld.net.RingSkyProfilePayload;
 import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRequestPayload;
 import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
 import dev.ringworld.net.RingTerrainAtlasTilePayload;
+import dev.ringworld.net.RingTerrainPreviewPayload;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610ClientDiagnostics;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610ClientFixture;
 import dev.ringworld.platform.neoforge.compat.create610.RingCreate610BearingFixture;
@@ -107,9 +109,11 @@ public final class NeoForgeRingWorldClient {
 
     private static void handleClientPayload(CustomPacketPayload payload, IPayloadContext context) {
         if (payload instanceof RingSettingsPayload settings) handleSettings(settings, context);
+        else if (payload instanceof RingSkyProfilePayload sky) handleSkyProfile(sky, context);
         else if (payload instanceof RingTerrainAtlasMetadataPayload metadata) handleAtlasMetadata(metadata, context);
         else if (payload instanceof RingTerrainAtlasTilePayload tile) handleAtlasTile(tile, context);
         else if (payload instanceof RingTerrainAtlasRevisionPayload revision) handleAtlasRevision(revision, context);
+        else if (payload instanceof RingTerrainPreviewPayload preview) handleTerrainPreview(preview, context);
         else if (payload instanceof RingAtlasPregenerationStatusPayload status) handleAtlasStatus(status, context);
         else context.disconnect(Component.literal("Unknown RingWorld client payload."));
     }
@@ -142,8 +146,20 @@ public final class NeoForgeRingWorldClient {
         long fingerprint = RingSettingsHandshake.fingerprintFor(payload);
         ClientRingState.set(new RingGeometry(payload.width(), payload.circumference()),
                 payload.wallHeight(), payload.surfaceReferenceY(),
-                payload.terrainNoiseMapping(), fingerprint);
+                payload.terrainNoiseMapping(), payload.wallStyle(), payload.skyProfile(),
+                payload.seed(), payload.formatVersion(), fingerprint);
         RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
+    }
+
+    private static void handleSkyProfile(
+            RingSkyProfilePayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            try {
+                ClientRingState.setSkyProfile(payload.profile());
+            } catch (IllegalArgumentException exception) {
+                context.disconnect(Component.literal("Invalid RingWorld sky profile from server."));
+            }
+        });
     }
 
     private static boolean requiredServerChannelsAvailable() {
@@ -189,6 +205,11 @@ public final class NeoForgeRingWorldClient {
 
     private static void handleAtlasRevisionOnClientThread(RingTerrainAtlasRevisionPayload payload) {
         ClientRingState.commitTerrainAtlasRevision(payload.worldHash(), payload.revision());
+    }
+
+    private static void handleTerrainPreview(
+            RingTerrainPreviewPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> ClientRingState.installTerrainPreview(payload));
     }
 
     private static void handleAtlasStatus(
