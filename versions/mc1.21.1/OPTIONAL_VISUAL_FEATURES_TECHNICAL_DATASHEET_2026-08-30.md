@@ -153,7 +153,37 @@ acknowledgement-byte checks. No verification metadata changed.
 This checkpoint adds no Fabric/NeoForge payload registration, capability
 query, send/receive handler, client-session mutation, screen, renderer/shader,
 server preview/Atlas service, command, Create integration, packaging, or
-support-metadata behavior. Those remain later bounded batches.
+support-metadata behavior. The transport/session integration follows below;
+the other behaviors remain later bounded batches.
+
+### 2.4 Dual-loader protocol transport/session checkpoint (2026-09-01)
+
+Commit `a5d809a` registers `settings_v5`, `sky_profile_v1`, and
+`terrain_preview_v2` on both Fabric and NeoForge and connects them to the
+existing 1.21.1 login/session surfaces:
+
+- both servers require all three negotiated clientbound channels before
+  starting the settings acknowledgement timer, and missing capability
+  disconnects fail closed;
+- the existing loader-owned PlayerList injections remain the send boundary:
+  settings are queued immediately after the play-login packet and before the
+  first position/chunk packets;
+- settings include the saved initial sky and install wall style, sky profile,
+  generator seed, settings format, and terrain identity together before the
+  unchanged `settings_ack_v3` is sent;
+- later sky and staged-preview payloads use each loader's existing ordered
+  client-thread path; Fabric retains its direct render-thread handler with no
+  executor hop, while NeoForge retains `enqueueWork`; and
+- `ClientRingState.clear` and `sessionCleared` now cover every appearance field
+  and discard stale terrain previews, matching the mainline teardown fix.
+
+Fabric/common and NeoForge compile under Java 21. All 20 focused transport,
+capability, handshake, order, client-state, preview, and teardown cases pass
+on each loader. No verification metadata changed.
+
+This checkpoint does not generate or send server terrain previews and adds no
+creation UI, renderer/shader, Atlas capture/invalidation, command, worldgen,
+Create, packaging, graphical fixture, or support-metadata behavior.
 
 ## 3. Data ownership
 
