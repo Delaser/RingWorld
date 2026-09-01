@@ -71,27 +71,60 @@ class RingSurfaceMeshTest {
     }
 
     @Test
-    void incompleteMeshAddsClosedReturnsAtBothInnerRimFaces() {
+    void rimmedMeshAddsInnerOuterAndTopFacesAtEveryAtlasStage() {
         RingGeometry geometry = new RingGeometry(128, 2_048);
         RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, HASH);
         RingSurfaceMesh.Mesh withoutReturns = RingSurfaceMesh.build(
                 geometry, atlas, false, 64.0);
+        RingWallStyle style = RingWallStyle.Preset.OBSIDIAN_BASTION.style();
         RingSurfaceMesh.Mesh withReturns = RingSurfaceMesh.build(
-                geometry, atlas, false, 64.0, 96.0, 5);
+                geometry, atlas, false, 64.0, 96.0, style);
+        RingSurfaceMesh.Mesh detailedWithReturns = RingSurfaceMesh.build(
+                geometry, variedCompleteAtlas(geometry), true, 64.0, 96.0, style);
 
-        assertEquals(withoutReturns.vertexCount() + withReturns.segments() * 12,
+        assertEquals(style, withReturns.wallStyle());
+        assertEquals(style, detailedWithReturns.wallStyle());
+        assertEquals(withoutReturns.vertexCount() + withReturns.segments() * 36,
                 withReturns.vertexCount());
+        assertEquals(withoutReturns.vertexCount() + detailedWithReturns.segments() * 36,
+                detailedWithReturns.vertexCount());
         List<RingSurfaceMesh.Vertex> vertices = emitted(withReturns);
         int surfaceVertices = withoutReturns.vertexCount();
         for (int segment = 0; segment < withReturns.segments(); segment++) {
-            int bridgeOffset = surfaceVertices + segment * 12;
+            int bridgeOffset = surfaceVertices + segment * 36;
             for (int vertex = 0; vertex < 6; vertex++) {
                 assertEquals(RingSurfaceMesh.MINIMUM_BRIDGE_TEXTURE_V,
                         vertices.get(bridgeOffset + vertex).v());
                 assertEquals(RingSurfaceMesh.MAXIMUM_BRIDGE_TEXTURE_V,
                         vertices.get(bridgeOffset + 6 + vertex).v());
+                assertEquals(RingSurfaceMesh.OUTER_BRIDGE_TEXTURE_V,
+                        vertices.get(bridgeOffset + 12 + vertex).v());
+                assertEquals(RingSurfaceMesh.OUTER_BRIDGE_TEXTURE_V,
+                        vertices.get(bridgeOffset + 18 + vertex).v());
+                assertEquals(RingSurfaceMesh.TOP_BRIDGE_TEXTURE_V,
+                        vertices.get(bridgeOffset + 24 + vertex).v());
+                assertEquals(RingSurfaceMesh.TOP_BRIDGE_TEXTURE_V,
+                        vertices.get(bridgeOffset + 30 + vertex).v());
             }
         }
+    }
+
+    @Test
+    void savedStyleThicknessClipsDetailedTerrainWithHalfBlockHiddenOverlap() {
+        RingGeometry geometry = new RingGeometry(128, 2_048);
+        RingWallStyle style = RingWallStyle.custom(9, RingWallStyle.Palette.NATURAL,
+                RingWallStyle.Pattern.GRADIENT, 15);
+        RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(
+                geometry, variedCompleteAtlas(geometry), true, 64.0, 96.0, style);
+
+        RingSurfaceMesh.Vertex minimum = mesh.triangleVertex(0, 0, 0);
+        RingSurfaceMesh.Vertex maximum = mesh.triangleVertex(0, mesh.bands() - 1, 5);
+        assertEquals(-55.5F, minimum.z());
+        assertEquals(55.5F, maximum.z());
+        // The Atlas sample sits one complete cell inside the style-derived
+        // wall face, avoiding wall-top relief and colour bleed.
+        assertEquals((-47.0F + 64.0F) / 128.0F, minimum.v());
+        assertEquals((47.0F + 64.0F) / 128.0F, maximum.v());
     }
 
     private static RingTerrainAtlas variedCompleteAtlas(RingGeometry geometry) {

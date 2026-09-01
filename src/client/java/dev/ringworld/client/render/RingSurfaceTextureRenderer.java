@@ -14,7 +14,6 @@ import com.mojang.blaze3d.vertex.VertexBuffer;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.ClientRingState;
 import dev.ringworld.world.RingGeometry;
-import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingDimensionReport;
 import dev.ringworld.world.RingRenderProfile;
 import dev.ringworld.world.RingSurfaceLod;
@@ -25,6 +24,7 @@ import dev.ringworld.world.RingSurfaceGenerationFog;
 import dev.ringworld.world.RingSurfaceMorph;
 import dev.ringworld.world.RingSurfacePlaceholder;
 import dev.ringworld.world.RingTerrainAtlas;
+import dev.ringworld.world.RingTerrainPreview;
 import dev.ringworld.world.RingStreamingProxyCoverage;
 import org.joml.Matrix4f;
 
@@ -119,7 +119,8 @@ public final class RingSurfaceTextureRenderer {
                 ? surfaceCompletion
                 : previousSurfaceCompletion
                         + (surfaceCompletion - previousSurfaceCompletion) * textureMorph;
-        float generationFog = RingSurfaceGenerationFog.amount(visibleCompletion);
+        float generationFog = RingSurfaceGenerationFog.amount(
+                visibleCompletion, ClientRingState.terrainPreview() != null);
         legacyProxyVisibleCompletion = visibleCompletion;
         legacyProxyGenerationFog = generationFog;
         legacyProxyRevealScale = Mth.clamp(alpha, 0.0F, 1.0F)
@@ -302,10 +303,15 @@ public final class RingSurfaceTextureRenderer {
         // cells are the only trustworthy detail. Keeping the progressive
         // texture at source resolution bounds each coalesced rebuild; the
         // normal expanded texture is allocated once at completion.
+        RingTerrainPreview preview = ClientRingState.terrainPreview();
         int targetColumns = atlas.isComplete()
-                ? profile.textureColumns() : Math.min(atlas.columns(), profile.textureColumns());
+                ? profile.textureColumns()
+                : Math.min(Math.max(atlas.columns(), preview == null ? 0 : preview.columns()),
+                        profile.textureColumns());
         int targetRows = atlas.isComplete()
-                ? profile.textureRows() : Math.min(atlas.rows(), profile.textureRows());
+                ? profile.textureRows()
+                : Math.min(Math.max(atlas.rows(), preview == null ? 0 : preview.rows()),
+                        profile.textureRows());
         int[] pixels;
         float[] heights;
         if (atlas.isComplete()) {
@@ -313,7 +319,7 @@ public final class RingSurfaceTextureRenderer {
             heights = new float[pixels.length];
         } else {
             RingSurfacePlaceholder.Surface placeholder = RingSurfacePlaceholder.resolve(
-                    atlas, targetColumns, targetRows);
+                    atlas, targetColumns, targetRows, preview);
             pixels = placeholder.argb();
             heights = placeholder.heights();
         }
@@ -686,7 +692,7 @@ public final class RingSurfaceTextureRenderer {
         int wallTopY = worldBottomY + ClientRingState.wallHeightBlocks();
         RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(
                 geometry, atlas, detailed, ClientRingState.surfaceReferenceY(), wallTopY,
-                RingGenerationBoundary.RIM_THICKNESS);
+                ClientRingState.wallStyle());
         int count = mesh.vertexCount();
         VertexFormat format = DefaultVertexFormat.POSITION_TEX_COLOR;
         try (ByteBufferBuilder allocator = new ByteBufferBuilder(count * format.getVertexSize())) {

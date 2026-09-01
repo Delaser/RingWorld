@@ -15,6 +15,10 @@ import java.util.Objects;
 public final class RingSurfaceMesh {
     static final float MINIMUM_BRIDGE_TEXTURE_V = -1.0F;
     static final float MAXIMUM_BRIDGE_TEXTURE_V = 2.0F;
+    static final float OUTER_BRIDGE_TEXTURE_V = -2.0F;
+    static final float TOP_BRIDGE_TEXTURE_V = 3.0F;
+    /** Hidden overlap that prevents a projection/depth crack at each inner rim face. */
+    static final double RIM_SURFACE_OVERLAP_BLOCKS = 0.5;
 
     private RingSurfaceMesh() { }
 
@@ -24,12 +28,23 @@ public final class RingSurfaceMesh {
         return build(geometry, atlas, detailed, referenceHeight, referenceHeight, 1);
     }
 
-    /** Builds the surface plus temporary inner-rim returns for an incomplete Atlas. */
+    /** Compatibility overload for callers that have only the saved rim thickness. */
     public static Mesh build(RingGeometry geometry, RingTerrainAtlas atlas,
                              boolean detailed, double referenceHeight,
                              double wallTopHeight, int rimThicknessBlocks) {
+        RingWallStyle style = RingWallStyle.custom(
+                rimThicknessBlocks, RingWallStyle.DEFAULT.palette(),
+                RingWallStyle.DEFAULT.pattern(), RingWallStyle.DEFAULT.decayPercent());
+        return build(geometry, atlas, detailed, referenceHeight, wallTopHeight, style);
+    }
+
+    /** Builds terrain and the persistent closed prism for the saved wall style. */
+    public static Mesh build(RingGeometry geometry, RingTerrainAtlas atlas,
+                             boolean detailed, double referenceHeight,
+                             double wallTopHeight, RingWallStyle wallStyle) {
         Objects.requireNonNull(geometry, "geometry");
         Objects.requireNonNull(atlas, "atlas");
+        Objects.requireNonNull(wallStyle, "wallStyle");
         if (!geometry.equals(atlas.geometry())) {
             throw new IllegalArgumentException("atlas geometry does not match surface mesh geometry");
         }
@@ -40,13 +55,13 @@ public final class RingSurfaceMesh {
             throw new IllegalArgumentException("wall top height must be finite");
         }
         RingCloudBounds innerFaces = RingCloudBounds.betweenInnerRimFaces(
-                geometry, rimThicknessBlocks);
+                geometry, wallStyle.thicknessBlocks());
 
         RingRenderProfile profile = RingRenderProfile.create(geometry, 16.0);
         int segments = Math.min(atlas.columns(), profile.circumferenceSegments());
         int bands = Math.min(atlas.rows(), profile.widthBands());
         return new Mesh(geometry, atlas, detailed, referenceHeight, wallTopHeight,
-                innerFaces, segments, bands);
+                wallStyle, innerFaces, segments, bands);
     }
 
     /** A consumer of the exact float vertex values written to the GPU buffer. */
@@ -71,18 +86,28 @@ public final class RingSurfaceMesh {
         private final float bridgeTopY;
         private final float bridgeMinimumZ;
         private final float bridgeMaximumZ;
+        private final float outerMinimumZ;
+        private final float outerMaximumZ;
+        private final RingWallStyle wallStyle;
 
         private Mesh(RingGeometry geometry, RingTerrainAtlas atlas, boolean detailed,
                      double referenceHeight, double wallTopHeight,
-                     RingCloudBounds innerFaces, int segments, int bands) {
+                     RingWallStyle wallStyle, RingCloudBounds innerFaces,
+                     int segments, int bands) {
             this.geometry = geometry;
+            this.wallStyle = wallStyle;
             this.segments = segments;
             this.bands = bands;
-            bridgeRims = !detailed && wallTopHeight > referenceHeight;
+            // A height field cannot represent the saved vertical rims. Keep
+            // their closed prism at every Atlas stage and clip terrain to the
+            // style-derived inner faces instead of forming a completed ramp.
+            bridgeRims = wallTopHeight > referenceHeight;
             bridgeBottomY = (float)referenceHeight;
             bridgeTopY = (float)wallTopHeight;
             bridgeMinimumZ = (float)innerFaces.minimumZ();
             bridgeMaximumZ = (float)innerFaces.maximumZ();
+            outerMinimumZ = (float)geometry.minWidthZ();
+            outerMaximumZ = (float)geometry.maxWidthZ();
             this.columns = Math.addExact(segments, 1);
             int rows = Math.addExact(bands, 1);
             int vertices = Math.multiplyExact(columns, rows);
@@ -102,10 +127,27 @@ public final class RingSurfaceMesh {
                         : Math.PI * 2.0 * canonicalX / geometry.circumferenceBlocks();
                 float u = (float)(canonicalX / geometry.circumferenceBlocks());
                 for (int band = 0; band <= bands; band++) {
-                    double z = geometry.minWidthZ()
-                            + (double)band * geometry.widthBlocks() / bands;
+                    double surfaceMinimumZ = bridgeRims
+                            ? innerFaces.minimumZ() - RIM_SURFACE_OVERLAP_BLOCKS
+                            : geometry.minWidthZ();
+                    double surfaceMaximumZ = bridgeRims
+                            ? innerFaces.maximumZ() + RIM_SURFACE_OVERLAP_BLOCKS
+                            : geometry.maxWidthZ();
+                    double z = surfaceMinimumZ
+                            + (double)band * (surfaceMaximumZ - surfaceMinimumZ) / bands;
+                    // Sample one Atlas cell inside the playable band so wall
+                    // top height/colour cannot bleed into the terrain edge.
+                    double sampleMinimumZ = bridgeRims
+                            ? Math.min(innerFaces.maximumZ(),
+                                    innerFaces.minimumZ() + atlas.sampleStep())
+                            : surfaceMinimumZ;
+                    double sampleMaximumZ = bridgeRims
+                            ? Math.max(innerFaces.minimumZ(),
+                                    innerFaces.maximumZ() - atlas.sampleStep())
+                            : surfaceMaximumZ;
+                    double sampleZ = Math.max(sampleMinimumZ, Math.min(sampleMaximumZ, z));
                     double surfaceHeight = detailed
-                            ? atlas.sample(canonicalX, z).height()
+                            ? atlas.sample(canonicalX, sampleZ).height()
                             : referenceHeight;
                     double radius = geometry.physicalRadiusAt(surfaceHeight);
                     int index = index(segment, band);
@@ -113,7 +155,7 @@ public final class RingSurfaceMesh {
                     positionsY[index] = (float)(-radius * Math.cos(angle));
                     positionsZ[index] = (float)z;
                     textureU[index] = u;
-                    textureV[index] = (float)((z - geometry.minWidthZ())
+                    textureV[index] = (float)((sampleZ - geometry.minWidthZ())
                             / geometry.widthBlocks());
                 }
             }
@@ -121,9 +163,11 @@ public final class RingSurfaceMesh {
 
         public int segments() { return segments; }
         public int bands() { return bands; }
+        public RingWallStyle wallStyle() { return wallStyle; }
         public int vertexCount() {
             int surface = Math.multiplyExact(Math.multiplyExact(segments, bands), 6);
-            return bridgeRims ? Math.addExact(surface, Math.multiplyExact(segments, 12)) : surface;
+            // Two rims, each with inner, outer, and top faces.
+            return bridgeRims ? Math.addExact(surface, Math.multiplyExact(segments, 36)) : surface;
         }
 
         /** Emits the two consistently wound triangles for every finite quad. */
@@ -142,17 +186,24 @@ public final class RingSurfaceMesh {
             if (bridgeRims) {
                 for (int segment = 0; segment < segments; segment++) {
                     // V outside the surface's [0,1] range is a shader-stable
-                    // bridge marker. The fragment stage renders these returns
-                    // as cobble/moss rather than sampling green terrain.
-                    emitBridgeQuad(consumer, segment, bridgeMinimumZ,
+                    // wall marker retained for the later version-owned GPU
+                    // palette adapter; this CPU batch does not change it.
+                    emitVerticalBridgeQuad(consumer, segment, bridgeMinimumZ,
                             MINIMUM_BRIDGE_TEXTURE_V);
-                    emitBridgeQuad(consumer, segment, bridgeMaximumZ,
+                    emitVerticalBridgeQuad(consumer, segment, bridgeMaximumZ,
                             MAXIMUM_BRIDGE_TEXTURE_V);
+                    emitVerticalBridgeQuad(consumer, segment, outerMinimumZ,
+                            OUTER_BRIDGE_TEXTURE_V);
+                    emitVerticalBridgeQuad(consumer, segment, outerMaximumZ,
+                            OUTER_BRIDGE_TEXTURE_V);
+                    emitTopBridgeQuad(consumer, segment, outerMinimumZ, bridgeMinimumZ);
+                    emitTopBridgeQuad(consumer, segment, bridgeMaximumZ, outerMaximumZ);
                 }
             }
         }
 
-        private void emitBridgeQuad(VertexConsumer consumer, int segment, float z, float v) {
+        private void emitVerticalBridgeQuad(VertexConsumer consumer, int segment,
+                                            float z, float v) {
             float u0 = (float)segment / segments;
             float u1 = (float)(segment + 1) / segments;
             emitBridgeVertex(consumer, segment, bridgeBottomY, z, u0, v);
@@ -161,6 +212,18 @@ public final class RingSurfaceMesh {
             emitBridgeVertex(consumer, segment, bridgeBottomY, z, u0, v);
             emitBridgeVertex(consumer, segment + 1, bridgeTopY, z, u1, v);
             emitBridgeVertex(consumer, segment, bridgeTopY, z, u0, v);
+        }
+
+        private void emitTopBridgeQuad(VertexConsumer consumer, int segment,
+                                       float z0, float z1) {
+            float u0 = (float)segment / segments;
+            float u1 = (float)(segment + 1) / segments;
+            emitBridgeVertex(consumer, segment, bridgeTopY, z0, u0, TOP_BRIDGE_TEXTURE_V);
+            emitBridgeVertex(consumer, segment + 1, bridgeTopY, z0, u1, TOP_BRIDGE_TEXTURE_V);
+            emitBridgeVertex(consumer, segment + 1, bridgeTopY, z1, u1, TOP_BRIDGE_TEXTURE_V);
+            emitBridgeVertex(consumer, segment, bridgeTopY, z0, u0, TOP_BRIDGE_TEXTURE_V);
+            emitBridgeVertex(consumer, segment + 1, bridgeTopY, z1, u1, TOP_BRIDGE_TEXTURE_V);
+            emitBridgeVertex(consumer, segment, bridgeTopY, z1, u0, TOP_BRIDGE_TEXTURE_V);
         }
 
         private void emitBridgeVertex(VertexConsumer consumer, int segment, float y, float z,
