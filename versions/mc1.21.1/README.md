@@ -18,12 +18,24 @@ the backport lane:
   player/operator behavior, migration notes, limits, and completion criteria;
 - [`OPTIONAL_VISUAL_FEATURES_TECHNICAL_DATASHEET_2026-08-30.md`](OPTIONAL_VISUAL_FEATURES_TECHNICAL_DATASHEET_2026-08-30.md):
   stable IDs, formats, payload layouts, ownership, adapter boundaries, port
-  order, tests, and risks.
+  order, tests, and risks; and
+- [`OPTIONAL_VISUAL_INTEGRATION_MANIFEST_2026-09-02.md`](OPTIONAL_VISUAL_INTEGRATION_MANIFEST_2026-09-02.md):
+  exact mainline-to-1.21.1 source, fix, documentation, evidence, and independent
+  review mapping, plus the qualified and still-unqualified boundaries.
 
 These describe source range `7903311..2733581` / PR #244. Treat the behavior
 and data contracts as authoritative, but adapt Minecraft 26.x API calls through
 the 1.21.1 version and loader seams. This handoff intentionally excludes the
 separate Create compatibility investigation.
+
+The retained graphical evidence and its independent reviews are
+[`CREATION_UI_OPTIONAL_VISUAL_QUALIFICATION_2026-09-02.md`](CREATION_UI_OPTIONAL_VISUAL_QUALIFICATION_2026-09-02.md),
+[`CREATION_UI_OPTIONAL_VISUAL_QUALIFICATION_REVIEW_2026-09-02.md`](CREATION_UI_OPTIONAL_VISUAL_QUALIFICATION_REVIEW_2026-09-02.md),
+[`OPTIONAL_VISUAL_IN_WORLD_SMOKE_2026-09-02.md`](OPTIONAL_VISUAL_IN_WORLD_SMOKE_2026-09-02.md),
+and
+[`OPTIONAL_VISUAL_IN_WORLD_SMOKE_REVIEW_2026-09-02.md`](OPTIONAL_VISUAL_IN_WORLD_SMOKE_REVIEW_2026-09-02.md).
+These are bounded local source/development-client results, not support or
+release claims. The manifest indexes all other subsystem review records.
 
 ## Release identity
 
