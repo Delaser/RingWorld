@@ -314,6 +314,47 @@ sky rendering, Atlas-light consumption, command, Create integration,
 packaging, release metadata, or graphical/runtime support claim. The documented
 17-capture expanded creation fixture remains future qualification work.
 
+### 2.8 CPU surface placeholder and wall-mesh checkpoint (2026-09-02)
+
+Commit `98c0c9e` implements only the loader-neutral/client-model portion of
+renderer step 8:
+
+- the incomplete surface path removes the retired procedural/dilated fallback.
+  At target texture resolution, each real Atlas cell supplies authoritative
+  colour and height; a missing cell samples the latest same-world terrain
+  preview directly at that resolution; and a missing preview supplies opaque
+  neutral `#6B706F` at the reference surface height;
+- `RingSurfacePlaceholder` rejects a mismatched preview world hash and a
+  complete Atlas. The renderer retains its existing exact complete-Atlas path,
+  so completed data is never treated as a placeholder;
+- partial texture dimensions expand to the latest preview dimensions, bounded
+  by the existing render profile, instead of first collapsing a higher preview
+  through the lower-resolution Atlas grid;
+- preview-backed surfaces use a 20% maximum generation-fog cap while neutral
+  fallback retains 88%. Both use the established quintic Atlas-completion
+  clear, and the existing 750 ms quintic texture-revision morph is unchanged;
+- the terrain lattice now ends beneath the two saved-style inner rim faces,
+  with a hidden half-block overlap into each wall prism. Detailed height samples
+  are clamped one Atlas cell into the playable interior so rim-top relief and
+  colour cannot become a broad completed-Atlas ramp; and
+- `RingSurfaceMesh` retains the immutable `RingWallStyle`, derives the inner
+  faces from its saved thickness, and emits persistent closed prisms for both
+  rims: inner, outer, and top faces. These faces remain present for the
+  detailed/complete Atlas mesh rather than disappearing after handoff.
+
+Before edits, Fabric `compileClientJava` and NeoForge `compileJava` passed from
+clean parent `0c16fd6`. The single post-change Java 21 invocation compiled both
+client graphs and passed the same 14 focused placeholder, fog, morph, and mesh
+cases on Fabric/common and NeoForge. No Minecraft client, world, or graphical
+fixture was launched, and no verification metadata changed.
+
+This checkpoint deliberately does not add `RingWallShaderStyle`, palette
+matrix encoding, `vertexArgb`, a GPU buffer adapter, shader/global changes,
+Atlas-light rendering, sky/fog mixins, commands, HUD/UI, protocol/server
+generation, Create integration, packaging, or release metadata. The CPU mesh
+keeps its wall-face markers and saved style for those later version-owned GPU
+steps; it does not claim rendered palette/style parity yet.
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
