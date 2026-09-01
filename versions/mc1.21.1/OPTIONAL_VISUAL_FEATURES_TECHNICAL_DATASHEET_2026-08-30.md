@@ -436,6 +436,49 @@ Java compilation and source-contract tests do not prove runtime GLSL
 compilation, live lightmap thresholds, or rendered night-light balance; those
 remain later focused graphical qualification work.
 
+### 2.11 RingSkyProfile rendering checkpoint (2026-09-02)
+
+Commit `8568f49` implements only the Minecraft 1.21.1 rendering consumption of
+the already-installed client `RingSkyProfile`:
+
+- the reviewed official mapped target is the monolithic
+  `LevelRenderer.renderSky(Matrix4f, Matrix4f, float, Camera, boolean,
+  Runnable)` method. An exact-descriptor cancellable branch replaces only the
+  active RingWorld Overworld/normal-sky path; Nether, End, disconnected, and
+  cleared-session states continue through vanilla;
+- Atmosphere retains Minecraft's native upper-sky RGB. Night supplies
+  `#050810` and raises pre-weather star brightness to at least 0.88; Void
+  supplies `#010103` and zero stars. The same selected colour draws both the
+  upper and lower sky discs, so the branch omits vanilla's later black lower
+  disc as well as its sunrise fan, camera-relative sun, and moon;
+- `RingSkyCycle.starFieldAngleRadians` counter-rotates the fixed star field by
+  canonical longitude, including exact periodic presentation images. The
+  fixed central-star angle remains zero and the installed profile is read each
+  frame, so a cleared client session cannot retain renderer-owned sky state;
+  and
+- the existing post-`compileSections` hook still draws the ring proxy first,
+  then draws the selected centred sun toward the physical ring centre. Small,
+  Large, and None use half-widths 3, 15, and no draw. The established smooth
+  day-cycle tint/intensity is driven from day time, weather alpha remains, and
+  Large multiplies final alpha by 0.72.
+
+Before edits, Fabric `compileClientJava` and NeoForge `compileJava` passed from
+clean parent `8816cd0`. The single post-change Java 21 invocation compiled both
+loader graphs and passed all 19 focused sky-cycle, profile, client-teardown,
+and source/bytecode-descriptor cases on Fabric/common and NeoForge. The
+descriptor test reads the actual mapped `LevelRenderer.class` on each test
+graph rather than trusting a copied source signature. Existing mixin-target
+warnings were unchanged. `git diff --check` passed. No Minecraft client,
+world, save, or graphical fixture was launched, and no dependency-verification
+metadata changed.
+
+This checkpoint does not add `FogRendererMixin`, ring-edge fog matching,
+commands, HUD/UI, protocol, server, persistence, world generation, Atlas-light
+changes, wall/surface changes, Create integration, packaging, or release
+metadata. Compilation and descriptor/source tests do not prove runtime Mixin
+application, shader/render-state behavior, star orientation, horizon coverage,
+or final visual balance; those remain later focused graphical qualification.
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
