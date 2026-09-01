@@ -38,7 +38,7 @@ class RingAtlasLightGpuSourceContractTest {
         assertTrue(shader.contains("pow(lightCore, lightFalloff) * nightVisibility"));
         assertTrue(shader.contains("vec3 lampColor = vec3(1.00, 0.63, 0.28)"));
         assertTrue(shader.contains("sampled = vec4(styled * textureNoise, 0.0)"));
-        assertTrue(shader.contains("mix(FogColor.rgb, litTerrain, reveal), proxyAlpha)"));
+        assertTrue(shader.contains("mix(edgeColor, litTerrain, reveal), proxyAlpha)"));
         assertFalse(shader.contains("if (sampled.a == 0.0) discard"));
         assertFalse(shader.contains("proxyAlpha * sampled.a"));
         assertTrue(descriptor.contains("\"RingWorldAtlasLight\""));

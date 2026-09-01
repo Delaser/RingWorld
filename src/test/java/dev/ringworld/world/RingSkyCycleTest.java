@@ -68,6 +68,38 @@ class RingSkyCycleTest {
     }
 
     @Test
+    void exposedHorizonOnlyConvergesAcrossFinalSixteenBlocks() {
+        assertEquals(0.0F, RingSkyCycle.exposedHorizonBlend(64.0, 96.0));
+        assertEquals(0.0F, RingSkyCycle.exposedHorizonBlend(80.0, 96.0));
+        assertEquals(0.5F, RingSkyCycle.exposedHorizonBlend(88.0, 96.0), 0.00001F);
+        assertEquals(1.0F, RingSkyCycle.exposedHorizonBlend(96.0, 96.0));
+        assertEquals(1.0F, RingSkyCycle.exposedHorizonBlend(140.0, 96.0));
+    }
+
+    @Test
+    void fogPolicyBlendsAtmosphereAndFixesDarkBackdropColours() {
+        RingSkyCycle.FogColor vanilla = new RingSkyCycle.FogColor(0.2F, 0.3F, 0.4F);
+        RingSkyCycle.FogColor sky = new RingSkyCycle.FogColor(0.6F, 0.7F, 0.8F);
+        assertEquals(vanilla, RingSkyCycle.fogColor(
+                RingSkyProfile.DEFAULT, vanilla, sky, 0.0F));
+        RingSkyCycle.FogColor midpoint = RingSkyCycle.fogColor(
+                RingSkyProfile.DEFAULT, vanilla, sky, 0.5F);
+        assertEquals(0.4F, midpoint.red(), 0.000_001F);
+        assertEquals(0.5F, midpoint.green(), 0.000_001F);
+        assertEquals(0.6F, midpoint.blue(), 0.000_001F);
+        RingSkyProfile night = new RingSkyProfile(
+                RingSkyProfile.Backdrop.NIGHT, RingSkyProfile.LightSource.SMALL,
+                RingSkyProfile.FORMAT_VERSION);
+        RingSkyProfile empty = new RingSkyProfile(
+                RingSkyProfile.Backdrop.VOID, RingSkyProfile.LightSource.NONE,
+                RingSkyProfile.FORMAT_VERSION);
+        assertEquals(RingSkyCycle.FogColor.fromRgb(0x050810),
+                RingSkyCycle.fogColor(night, vanilla, sky, 0.0F));
+        assertEquals(RingSkyCycle.FogColor.fromRgb(0x010103),
+                RingSkyCycle.fogColor(empty, vanilla, sky, 1.0F));
+    }
+
+    @Test
     void noonIsBrightAndNeutral() {
         var noon = RingSkyCycle.sunVisual(6_000);
         assertEquals(1.0F, noon.brightness());

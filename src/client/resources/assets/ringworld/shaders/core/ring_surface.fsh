@@ -148,6 +148,14 @@ void main() {
         ? RingWorldAtlasLight.z
         : (0.42 + 0.24 * nightVisibility);
     litTerrain += lampColor * artificialLight * lightPeak;
-    fragColor = vec4(
-        mix(FogColor.rgb, litTerrain, reveal), proxyAlpha);
+    // Dark profiles use exact backdrop RGB at the proxy boundary instead of
+    // the atmosphere-coloured vanilla fog that would leave a pale outline.
+    // Atmosphere retains the live FogColor supplied every frame.
+    vec3 edgeColor = FogColor.rgb;
+    if (ColorModulator.x > 1.5) {
+        edgeColor = vec3(1.0 / 255.0, 1.0 / 255.0, 3.0 / 255.0);
+    } else if (ColorModulator.x > 0.5) {
+        edgeColor = vec3(5.0 / 255.0, 8.0 / 255.0, 16.0 / 255.0);
+    }
+    fragColor = vec4(mix(edgeColor, litTerrain, reveal), proxyAlpha);
 }

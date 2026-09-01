@@ -60,6 +60,31 @@ public final class RingSkyCycle {
         };
     }
 
+    /** Smoothly converges fog to the visible sky over the final 16 blocks below a rim. */
+    public static float exposedHorizonBlend(double cameraY, double wallTopY) {
+        if (!Double.isFinite(cameraY) || !Double.isFinite(wallTopY)) return 0.0F;
+        double progress = Math.max(0.0, Math.min(1.0,
+                (cameraY - (wallTopY - 16.0)) / 16.0));
+        return (float)(progress * progress * (3.0 - 2.0 * progress));
+    }
+
+    /** Applies the saved ordinary-air fog colour without changing fog distance or shape. */
+    public static FogColor fogColor(RingSkyProfile profile, FogColor vanillaFog,
+                                    FogColor liveSky, float atmosphereBlend) {
+        if (profile == null || vanillaFog == null || liveSky == null) {
+            throw new IllegalArgumentException("fog profile and colours are required");
+        }
+        float blend = Math.max(0.0F, Math.min(1.0F, atmosphereBlend));
+        return switch (profile.backdrop()) {
+            case ATMOSPHERE -> new FogColor(
+                    lerp(vanillaFog.red(), liveSky.red(), blend),
+                    lerp(vanillaFog.green(), liveSky.green(), blend),
+                    lerp(vanillaFog.blue(), liveSky.blue(), blend));
+            case NIGHT -> FogColor.fromRgb(NIGHT_SKY_RGB);
+            case VOID -> FogColor.fromRgb(VOID_SKY_RGB);
+        };
+    }
+
     /**
      * Smoothly interpolates four familiar Minecraft lighting keyframes:
      * warm dawn, neutral noon, warm dusk, and cool near-dark midnight.
@@ -102,5 +127,20 @@ public final class RingSkyCycle {
     private static final SunVisual MIDNIGHT = new SunVisual(0.04F, 0.38F, 0.52F, 1.00F);
 
     public record SunVisual(float brightness, float red, float green, float blue) {
+    }
+
+    public record FogColor(float red, float green, float blue) {
+        public FogColor {
+            if (!Float.isFinite(red) || !Float.isFinite(green) || !Float.isFinite(blue)) {
+                throw new IllegalArgumentException("fog colour must be finite");
+            }
+        }
+
+        public static FogColor fromRgb(int rgb) {
+            return new FogColor(
+                    (rgb >> 16 & 255) / 255.0F,
+                    (rgb >> 8 & 255) / 255.0F,
+                    (rgb & 255) / 255.0F);
+        }
     }
 }

@@ -191,15 +191,17 @@ public final class RingSurfaceTextureRenderer {
         client.gameRenderer.lightTexture().turnOnLightLayer();
         // In 1.21.1 VertexBuffer.drawWithShader calls setDefaultUniforms just
         // before applying the shader. ColorModulator is replaced there from
-        // RenderSystem state, so publish the same four values carried by
-        // mainline's DynamicTransforms UBO through that authoritative path.
+        // RenderSystem state, so publish backdrop id, reveal, texture morph,
+        // and generation fog through that authoritative path.
         float[] previousShaderColor = RenderSystem.getShaderColor();
         float previousRed = previousShaderColor[0];
         float previousGreen = previousShaderColor[1];
         float previousBlue = previousShaderColor[2];
         float previousAlpha = previousShaderColor[3];
         try {
-            RenderSystem.setShaderColor(1.0F, alpha, textureMorph, generationFog);
+            RenderSystem.setShaderColor(
+                    ClientRingState.skyProfile().backdrop().id(),
+                    alpha, textureMorph, generationFog);
             // Terrain renders later in this same frame. Publish ownership only
             // once every resource and shader needed by the underlay is valid;
             // until then its fragment shaders keep live chunks fully opaque.
