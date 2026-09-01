@@ -109,6 +109,25 @@ class RingGenerationBoundaryTest {
                 RingGenerationBoundary.styledRimBlockForRoll(RingWallStyle.DEFAULT, 100));
     }
 
+    @Test
+    void legacyHashMatchesTheFormerBlocksAtBothRimsAndTheCanonicalSeam() {
+        int circumference = 2_048;
+
+        assertEquals(55, RingGenerationBoundary.legacyMaterialRoll(0, 64, -64));
+        assertEquals(0, RingGenerationBoundary.legacyMaterialRoll(1, 64, -64));
+        assertEquals(55, RingGenerationBoundary.legacyMaterialRoll(
+                circumference - 2, 95, -64));
+        assertEquals(0, RingGenerationBoundary.legacyMaterialRoll(
+                circumference - 1, 95, -64));
+
+        assertEquals(0, RingGenerationBoundary.legacyMaterialRoll(0, 64, 63));
+        assertEquals(55, RingGenerationBoundary.legacyMaterialRoll(1, 64, 63));
+        assertEquals(0, RingGenerationBoundary.legacyMaterialRoll(
+                circumference - 2, 95, 63));
+        assertEquals(55, RingGenerationBoundary.legacyMaterialRoll(
+                circumference - 1, 95, 63));
+    }
+
     private static void assertPalette(RingWallStyle.Palette palette,
                                       net.minecraft.world.level.block.Block... expected) {
         RingWallStyle style = RingWallStyle.custom(

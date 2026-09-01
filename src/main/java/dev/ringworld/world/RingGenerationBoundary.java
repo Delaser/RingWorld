@@ -192,7 +192,7 @@ public final class RingGenerationBoundary {
         return styledRimBlockForRoll(RingWallStyle.LEGACY, legacyMaterialRoll(x, y, z));
     }
 
-    private static int legacyMaterialRoll(int x, int y, int z) {
+    static int legacyMaterialRoll(int x, int y, int z) {
         long hash = (long)x * 0x9E3779B97F4A7C15L
                 ^ (long)y * 0xC2B2AE3D27D4EB4FL
                 ^ (long)z * 0x165667B19E3779F9L;

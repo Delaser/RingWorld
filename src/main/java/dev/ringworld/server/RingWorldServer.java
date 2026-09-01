@@ -79,9 +79,11 @@ public final class RingWorldServer {
         return world.dimension() == Level.OVERWORLD;
     }
 
-    /** Queues safe deferred rim migration from a loader-owned chunk-load callback. */
+    /** Loader callback retained while automatic format-4 rim migration is fail-closed. */
     public static void onChunkLoaded(ServerLevel world, net.minecraft.world.level.chunk.LevelChunk chunk) {
         if (!isOverworld(world)) return;
+        RingWorldSettings settings = RingWorldSettings.get(world);
+        if (!automaticLegacyRimMigrationEnabled(settings)) return;
         if (RingGenerationBoundary.containsRim(chunk, geometryFor(world))) {
             PENDING_LEGACY_RIM_MIGRATIONS
                     .computeIfAbsent(world, unused -> new LinkedHashMap<>())
@@ -251,19 +253,35 @@ public final class RingWorldServer {
                 PENDING_LEGACY_RIM_MIGRATIONS.get(world);
         if (pending == null || pending.isEmpty()) return;
 
+        RingWorldSettings settings = RingWorldSettings.get(world);
+        if (!automaticLegacyRimMigrationEnabled(settings)) {
+            PENDING_LEGACY_RIM_MIGRATIONS.remove(world);
+            return;
+        }
+
         var iterator = pending.entrySet().iterator();
         var entry = iterator.next();
         iterator.remove();
 
         long started = System.nanoTime();
         boolean migrated = RingGenerationBoundary.migrateLegacyRim(entry.getValue(), geometry,
-                RingWorldSettings.get(world).wallHeightBlocks());
+                settings.wallHeightBlocks());
         if (migrated) {
             double elapsedMs = (System.nanoTime() - started) / 1_000_000.0;
             RingWorldMod.LOGGER.info("Migrated legacy rim chunk {} in {} ms ({} queued)",
                     entry.getValue().getPos(), elapsedMs, pending.size());
         }
         if (pending.isEmpty()) PENDING_LEGACY_RIM_MIGRATIONS.remove(world);
+    }
+
+    /**
+     * Format 4 does not retain trustworthy provenance for generated legacy
+     * rim blocks. Automatic content-detected migration therefore remains
+     * disabled for every loaded setting, including the exact legacy style.
+     */
+    static boolean automaticLegacyRimMigrationEnabled(RingWorldSettings settings) {
+        if (settings == null) throw new IllegalArgumentException("settings are required");
+        return false;
     }
 
     /**
