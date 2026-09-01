@@ -311,8 +311,9 @@ metadata changed.
 
 This checkpoint adds no in-world placeholder/mesh, renderer or shader changes,
 sky rendering, Atlas-light consumption, command, Create integration,
-packaging, release metadata, or graphical/runtime support claim. The documented
-17-capture expanded creation fixture remains future qualification work.
+packaging, or release metadata. Its later dual-loader graphical qualification
+is recorded in section 2.16 and
+[`CREATION_UI_OPTIONAL_VISUAL_QUALIFICATION_2026-09-02.md`](CREATION_UI_OPTIONAL_VISUAL_QUALIFICATION_2026-09-02.md).
 
 ### 2.8 CPU surface placeholder and wall-mesh checkpoint (2026-09-02)
 
@@ -651,6 +652,26 @@ integration, packaging, or release metadata. Compile, model, descriptor, and
 source contracts do not prove real GUI-scale appearance, font clipping, Mixin
 application, or graphical teardown; those remain later focused client UI
 qualification work.
+
+### 2.16 Menu-only optional-visual graphical qualification (2026-09-02)
+
+Fixture commit `16202ed` expands the existing 1.21.1 creation/settings client
+from thirteen to seventeen captures without adding a new framework. One
+disposable Java 21 invocation ran one Fabric client and one NeoForge client.
+Both loaders passed all seventeen captures, the two distinct seed-preview
+identities, centered 64:1 seam/aspect assertion, in-flight edit cancellation,
+normal close, worker/texture teardown, final independent Night/Large sky/sun
+selection, and the zero-`level.dat` guard.
+
+The reviewed contact sheets show materially loader-matched layouts at GUI
+scales 1-4, including the 320-pixel-wide wall editor, all five validation
+errors, wall presets, custom values, confirmation, and applied footer. No
+product defect was found and no replacement run was required. The first launch
+attempt failed before Minecraft startup while Loom retried an asset download;
+the successful retry is the only run classified as qualification evidence.
+Exact commands, paths, SHA-256 manifests, limitations, and visual-review notes
+are recorded in
+[`CREATION_UI_OPTIONAL_VISUAL_QUALIFICATION_2026-09-02.md`](CREATION_UI_OPTIONAL_VISUAL_QUALIFICATION_2026-09-02.md).
 
 ## 3. Data ownership
 
