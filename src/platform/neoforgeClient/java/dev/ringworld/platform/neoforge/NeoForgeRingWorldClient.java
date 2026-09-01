@@ -1,5 +1,6 @@
 package dev.ringworld.platform.neoforge;
 
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.AtlasPregenerationClientState;
 import dev.ringworld.client.AtlasPregenerationUiTestClient;
@@ -11,6 +12,7 @@ import dev.ringworld.client.ProductionLifecycleTestClient;
 import dev.ringworld.client.RingClientPayloadTransport;
 import dev.ringworld.client.RingHandoffFoliageCaptureClient;
 import dev.ringworld.client.RingMapCompassCaptureClient;
+import dev.ringworld.client.RingAtlasLightCommand;
 import dev.ringworld.client.RingProjectionCaptureClient;
 import dev.ringworld.client.RingVisualParityCaptureClient;
 import dev.ringworld.client.RingWorldClientSession;
@@ -38,6 +40,8 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.ShaderInstance;
+import net.minecraft.commands.Commands;
+import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
@@ -47,6 +51,7 @@ import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.loading.FMLPaths;
 import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
+import net.neoforged.neoforge.client.event.RegisterClientCommandsEvent;
 import net.neoforged.neoforge.client.event.ClientTickEvent;
 import net.neoforged.neoforge.client.event.RegisterShadersEvent;
 import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
@@ -105,6 +110,39 @@ public final class NeoForgeRingWorldClient {
         } catch (IOException failure) {
             throw new UncheckedIOException("Could not load the RingWorld surface shader", failure);
         }
+    }
+
+    @SubscribeEvent
+    public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
+        var falloff = Commands.argument("falloff", FloatArgumentType.floatArg(
+                dev.ringworld.world.RingAtlasLightProfile.MIN_FALLOFF,
+                dev.ringworld.world.RingAtlasLightProfile.MAX_FALLOFF));
+        falloff.then(Commands.argument("peak", FloatArgumentType.floatArg(
+                        dev.ringworld.world.RingAtlasLightProfile.MIN_PEAK,
+                        dev.ringworld.world.RingAtlasLightProfile.MAX_PEAK))
+                .executes(context -> applyAtlasLightResult(
+                        context.getSource(), RingAtlasLightCommand.tune(
+                                FloatArgumentType.getFloat(context, "falloff"),
+                                FloatArgumentType.getFloat(context, "peak")))));
+        var ringLights = Commands.literal("ringlights")
+                .executes(context -> applyAtlasLightResult(
+                        context.getSource(), RingAtlasLightCommand.show()))
+                .then(Commands.literal("show")
+                        .executes(context -> applyAtlasLightResult(
+                                context.getSource(), RingAtlasLightCommand.show())))
+                .then(Commands.literal("reset")
+                        .executes(context -> applyAtlasLightResult(
+                                context.getSource(), RingAtlasLightCommand.reset())))
+                .then(falloff);
+        event.getDispatcher().register(Commands.literal("ringworld").then(ringLights));
+    }
+
+    private static int applyAtlasLightResult(
+            CommandSourceStack source, RingAtlasLightCommand.Result result) {
+        Component feedback = Component.literal(result.message());
+        if (result.success()) source.sendSuccess(() -> feedback, false);
+        else source.sendFailure(feedback);
+        return result.success() ? 1 : 0;
     }
 
     private static void handleClientPayload(CustomPacketPayload payload, IPayloadContext context) {

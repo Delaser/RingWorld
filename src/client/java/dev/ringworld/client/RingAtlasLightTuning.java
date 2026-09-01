@@ -2,7 +2,7 @@ package dev.ringworld.client;
 
 import dev.ringworld.world.RingAtlasLightProfile;
 
-/** Process-local Atlas lighting controls; no command is registered in this slice. */
+/** Process-local Atlas lighting controls used by the loader-owned client command. */
 public final class RingAtlasLightTuning {
     private static volatile RingAtlasLightProfile profile = RingAtlasLightProfile.GAMMA;
 

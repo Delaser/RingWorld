@@ -1,5 +1,6 @@
 package dev.ringworld.client;
 
+import com.mojang.brigadier.arguments.FloatArgumentType;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.mixin.CreateWorldScreenInvoker;
 import dev.ringworld.client.render.RingSurfaceTextureRenderer;
@@ -22,6 +23,8 @@ import java.util.Optional;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.fabricmc.fabric.api.client.rendering.v1.CoreShaderRegistrationCallback;
@@ -123,6 +126,7 @@ public final class RingWorldClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        registerAtlasLightCommand();
         CoreShaderRegistrationCallback.EVENT.register(context -> context.register(
                 ResourceLocation.fromNamespaceAndPath("ringworld", "ring_surface"),
                 DefaultVertexFormat.POSITION_TEX_COLOR,
@@ -251,6 +255,41 @@ public final class RingWorldClient implements ClientModInitializer {
             saveDiagnosticJoinScreenshot(client);
             startAutomatedTestWorld(client);
         });
+    }
+
+    private static void registerAtlasLightCommand() {
+        ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            var falloff = ClientCommandManager.argument("falloff", FloatArgumentType.floatArg(
+                    dev.ringworld.world.RingAtlasLightProfile.MIN_FALLOFF,
+                    dev.ringworld.world.RingAtlasLightProfile.MAX_FALLOFF));
+            falloff.then(ClientCommandManager.argument("peak", FloatArgumentType.floatArg(
+                            dev.ringworld.world.RingAtlasLightProfile.MIN_PEAK,
+                            dev.ringworld.world.RingAtlasLightProfile.MAX_PEAK))
+                    .executes(context -> applyAtlasLightResult(
+                            context.getSource(), RingAtlasLightCommand.tune(
+                                    FloatArgumentType.getFloat(context, "falloff"),
+                                    FloatArgumentType.getFloat(context, "peak")))));
+            var ringLights = ClientCommandManager.literal("ringlights")
+                    .executes(context -> applyAtlasLightResult(
+                            context.getSource(), RingAtlasLightCommand.show()))
+                    .then(ClientCommandManager.literal("show")
+                            .executes(context -> applyAtlasLightResult(
+                                    context.getSource(), RingAtlasLightCommand.show())))
+                    .then(ClientCommandManager.literal("reset")
+                            .executes(context -> applyAtlasLightResult(
+                                    context.getSource(), RingAtlasLightCommand.reset())))
+                    .then(falloff);
+            dispatcher.register(ClientCommandManager.literal("ringworld").then(ringLights));
+        });
+    }
+
+    private static int applyAtlasLightResult(
+            net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource source,
+            RingAtlasLightCommand.Result result) {
+        Component feedback = Component.literal(result.message());
+        if (result.success()) source.sendFeedback(feedback);
+        else source.sendError(feedback);
+        return result.success() ? 1 : 0;
     }
 
     /**
