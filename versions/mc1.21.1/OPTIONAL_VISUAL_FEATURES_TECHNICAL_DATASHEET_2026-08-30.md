@@ -479,6 +479,49 @@ metadata. Compilation and descriptor/source tests do not prove runtime Mixin
 application, shader/render-state behavior, star orientation, horizon coverage,
 or final visual balance; those remain later focused graphical qualification.
 
+### 2.12 Sky-profile fog and ring-edge checkpoint (2026-09-02)
+
+Commit `99c0bdc` implements only ordinary-air fog colour and ring-proxy edge
+matching for the installed sky profile:
+
+- the reviewed official mapped target is static
+  `FogRenderer.setupColor(Camera, float, ClientLevel, int, float)`. The exact-
+  descriptor 1.21.1 Mixin runs at method tail, after vanilla has computed its
+  colour, and updates only the three existing fog-colour fields and clear
+  colour. It never changes fog start, end, shape, or mode;
+- the hook requires the current client session's RingWorld geometry and the
+  active Overworld. Every non-`NONE` camera fog type is preserved, including
+  water, lava, and powder snow. Blindness, darkness, dimension-special fog,
+  and boss-overlay world fog also retain vanilla colour and behavior;
+- Atmosphere uses the saved wall top and a cubic smoothstep to blend vanilla
+  fog toward the live sky RGB only across the final 16 blocks below that top.
+  Night sets exact `#050810`; Void sets exact `#010103`; and
+- the existing 1.21.1 `ColorModulator` transport now carries backdrop ID in
+  its previously unused X component. The ring fragment shader keeps live
+  `FogColor` for Atmosphere edges and selects the same exact Night/Void RGB at
+  dark-profile edges, removing the pale outline without adding another shader
+  uniform or changing terrain/light/wall inputs.
+
+Before edits, Fabric `compileClientJava` and NeoForge `compileJava` passed from
+clean parent `a85b0c8`. The post-change Java 21 invocation compiled both loader
+graphs. Its first Fabric test phase exposed only an over-exact test comparison
+between float `0.4` and the correct interpolated `0.40000004`; the assertion
+was changed to per-channel tolerance. The focused rerun then passed all 23
+sky-cycle, profile, teardown, fog/source/bytecode-descriptor, and retained
+Atlas-light shader-contract cases on Fabric/common and NeoForge. The
+descriptor test reads the actual mapped `FogRenderer.class` on each test
+graph. Existing mixin-target warnings were unchanged. `git diff --check`
+passed. No Minecraft client, world, save, or graphical fixture was launched,
+and no dependency-verification metadata changed.
+
+This checkpoint does not change sky drawing, commands, HUD/UI, protocol,
+server, persistence, world generation, Atlas-light behavior, wall geometry or
+style, surface construction, Create integration, packaging, or release
+metadata. Compilation and descriptor/source tests do not prove runtime Mixin
+application, live fog colour transitions, shader edge matching, or interaction
+with third-party fog/render modifications; those remain later focused
+graphical qualification.
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
