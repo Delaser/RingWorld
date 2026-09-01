@@ -673,6 +673,27 @@ Exact commands, paths, SHA-256 manifests, limitations, and visual-review notes
 are recorded in
 [`CREATION_UI_OPTIONAL_VISUAL_QUALIFICATION_2026-09-02.md`](CREATION_UI_OPTIONAL_VISUAL_QUALIFICATION_2026-09-02.md).
 
+### 2.17 Lean integrated optional-visual smoke (2026-09-02)
+
+Fixture checkpoints `dfc5565` and `94544ea` adapt the existing safe-small
+Atlas client as an opt-in eight-capture flow without changing its ordinary
+gate. One retained Fabric replacement and one NeoForge run each pass in one
+disposable same-seed 2,048x128 world. The reviewed flow covers a real staged
+incomplete preview, complete Atlas terrain, both custom-wall rim faces at the
+seam, initial Atmosphere/Small, live Night/Large and Void/None profiles,
+authored block-light 15-to-0 revisions, normal disconnect/session teardown,
+and same-world reopen with persisted wall and profile state.
+
+The fixture exposed a genuine shared product defect: the local
+`/ringworld ringlights` registration shadowed the server-owned root. Product
+commit `d893f01` retains that local literal while forwarding sky, sun, root,
+and unknown children to the server on both loaders. Earlier Fabric attempts
+that exposed that defect and two fixture-readiness defects are classified and
+excluded from the final evidence. Exact commands, paths, log/contact-sheet and
+all sixteen capture hashes, visual review, warnings, and bounded exclusions
+are recorded in
+[`OPTIONAL_VISUAL_IN_WORLD_SMOKE_2026-09-02.md`](OPTIONAL_VISUAL_IN_WORLD_SMOKE_2026-09-02.md).
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
