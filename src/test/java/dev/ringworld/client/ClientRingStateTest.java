@@ -102,6 +102,33 @@ class ClientRingStateTest {
         assertEquals(13, ClientRingState.terrainAtlas().cellBlockLight(0, 0));
     }
 
+    @Test
+    void lateOlderPreviewCannotReplaceNewerStage(@TempDir Path cacheDirectory)
+            throws Exception {
+        RingGeometry geometry = new RingGeometry(128, 2_048);
+        long worldHash = 0x5052_4556L;
+        ClientRingState.configureCacheDirectory(cacheDirectory);
+        setSession(geometry);
+        ClientRingState.installTerrainAtlas(new RingTerrainAtlasMetadataPayload(
+                worldHash, RingTerrainAtlas.SAMPLE_STEP_BLOCKS,
+                geometry.circumferenceBlocks() / RingTerrainAtlas.SAMPLE_STEP_BLOCKS,
+                geometry.widthBlocks() / RingTerrainAtlas.SAMPLE_STEP_BLOCKS,
+                RingTerrainAtlas.TILE_SIZE, 0, false, 0L));
+        RingTerrainPreview high = new RingTerrainPreview(
+                worldHash, 1, 1, new int[] {0xABCDEF}, new short[] {80});
+        RingTerrainPreview current = new RingTerrainPreview(
+                worldHash, 1, 1, new int[] {0x123456}, new short[] {60});
+
+        ClientRingState.installTerrainPreview(new RingTerrainPreviewPayload(
+                worldHash, RingTerrainPreviewStage.HIGH.wireValue(), high.encode()));
+        ClientRingState.installTerrainPreview(new RingTerrainPreviewPayload(
+                worldHash, RingTerrainPreviewStage.CURRENT.wireValue(), current.encode()));
+
+        assertEquals(RingTerrainPreviewStage.HIGH.wireValue(),
+                ClientRingState.terrainPreviewStage());
+        assertEquals(0xABCDEF, ClientRingState.terrainPreview().color(0, 0));
+    }
+
     private static void setSession(RingGeometry geometry) {
         ClientRingState.set(geometry, 160, (int)RingGeometry.SURFACE_Y,
                 RingTerrainNoiseMapping.CURRENT, RingWallStyle.LEGACY,

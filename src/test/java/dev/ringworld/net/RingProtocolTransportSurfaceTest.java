@@ -69,6 +69,41 @@ class RingProtocolTransportSurfaceTest {
         }
     }
 
+    @Test
+    void atlasCoordinatorRequiresAndSendsPreviewThroughLoaderTransport() throws Exception {
+        ClassSignals coordinator = read("dev/ringworld/server/RingTerrainAtlasServer");
+        MethodSignals metadata = coordinator.method("sendMetadata");
+        assertNotNull(metadata);
+        assertTrue(metadata.idOwners.contains(PREVIEW));
+        assertTrue(metadata.calls("dev/ringworld/server/RingTerrainAtlasServer", "sendPreview"));
+
+        MethodSignals send = coordinator.method("sendPreviewPayload");
+        assertNotNull(send);
+        assertTrue(send.calls(
+                "dev/ringworld/server/RingTerrainAtlasServer$PayloadTransport", "send"));
+
+        MethodSignals clear = coordinator.method("clearPlayer");
+        assertNotNull(clear);
+        assertTrue(clear.calls("dev/ringworld/server/RingTerrainAtlasServer$PreviewJob", "cancel"));
+
+        MethodSignals unload = coordinator.method("unload");
+        assertNotNull(unload);
+        assertTrue(unload.calls("dev/ringworld/server/RingTerrainAtlasServer$PreviewJob", "cancel"));
+
+        ClassSignals generator = read("dev/ringworld/server/RingTerrainPreviewGenerator");
+        MethodSignals capture = generator.method("capture");
+        assertNotNull(capture);
+        assertTrue(capture.calls("net/minecraft/server/level/ServerChunkCache", "getGenerator"));
+        assertFalse(capture.calls("net/minecraft/server/level/ServerChunkCache", "getChunk"));
+        assertFalse(capture.calls("net/minecraft/world/level/storage/DimensionDataStorage", "save"));
+        MethodSignals isolate = generator.method("isolate");
+        assertNotNull(isolate);
+        assertTrue(isolate.newTypes.contains(
+                "net/minecraft/world/level/levelgen/NoiseBasedChunkGenerator"));
+        assertTrue(isolate.calls("dev/ringworld/world/RingWorldGeneratorAccess",
+                "ringworld$setGeometry"));
+    }
+
     private static void assertDirectFabricHandler(ClassSignals client, String markerCall) {
         MethodSignals handler = client.methods.values().stream()
                 .filter(method -> method.calls.stream().anyMatch(call -> call.name().equals(markerCall)))
@@ -109,6 +144,7 @@ class RingProtocolTransportSurfaceTest {
                         @Override
                         public void visitTypeInsn(int opcode, String type) {
                             if (opcode == Opcodes.INSTANCEOF) method.typeChecks.add(type);
+                            if (opcode == Opcodes.NEW) method.newTypes.add(type);
                         }
 
                         @Override
@@ -153,6 +189,7 @@ class RingProtocolTransportSurfaceTest {
     private static final class MethodSignals {
         private final Set<String> idOwners = new HashSet<>();
         private final Set<String> typeChecks = new HashSet<>();
+        private final Set<String> newTypes = new HashSet<>();
         private final List<MethodCall> calls = new ArrayList<>();
         private boolean calls(String owner, String name) {
             return calls.contains(new MethodCall(owner, name));

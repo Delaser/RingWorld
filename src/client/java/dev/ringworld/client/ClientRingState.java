@@ -266,6 +266,7 @@ public final class ClientRingState {
         if (atlas == null || atlas.worldHash() != payload.worldHash()) return;
         try {
             RingTerrainPreviewStage stage = RingTerrainPreviewStage.fromWireValue(payload.stage());
+            if (stage.wireValue() <= terrainPreviewStage) return;
             RingTerrainPreview decoded = RingTerrainPreview.decode(payload.data());
             if (decoded.worldHash() != payload.worldHash()) {
                 RingWorldMod.LOGGER.warn(
