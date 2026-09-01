@@ -265,6 +265,55 @@ renderer, shader, Atlas-light consumption, sky rendering, UI/HUD, command,
 complete-ring mesh, Create integration, packaging, support metadata, or broad
 graphical/runtime fixture.
 
+### 2.7 Menu-only creation visuals and seed preview checkpoint (2026-09-01)
+
+Commit `dc4e025` implements the optional-visual creation flow without creating
+a world or reusing the pending generator on a background thread:
+
+- the existing layout model now validates generation cost and playable
+  interior against the chosen 1–32-block rim thickness. Confirmation copy names
+  preset/custom rim style, thickness, independent sky backdrop and sun style,
+  monument choice, and first-load immutability;
+- the 1.21.1 creation editor exposes the ten wall presets and a validated
+  custom palette/pattern/thickness/decay editor, independent three-way sky and
+  sun controls, reset-to-bootstrap state, and a seed-preview entry beside the
+  existing apply/back actions;
+- accepting the confirmation uses the existing wall-style/sky-profile
+  `saveBootstrapLayout` overload, so those choices feed the next-new-world
+  bootstrap and the already-implemented saved-settings ownership path;
+- `CreateWorldScreenMixin` is the narrow 1.21.1 adapter for pending seed text,
+  resolved seed, and `WorldCreationContext`. It uses the public
+  `getUiState`, `getSeed`, `setSeed`, `getSettings`, and `options` APIs and
+  does not shadow or copy a 26.x field/method descriptor;
+- the preview snapshots biome source, generator-settings holder/key, frozen
+  registry access, and build-height primitives on the client thread. Its daemon
+  worker constructs a detached `NoiseBasedChunkGenerator`, detached
+  `RandomState`, and immutable `LevelHeightAccessor`, then performs only the
+  existing chunk-free CURRENT-stage height/noise-biome sampling;
+- 1.21.1's frozen registry view is converted through its public
+  `HolderLookup.Provider.asGetterLookup()` adapter for `RandomState.create`;
+  the pending `WorldCreationContext` generator is never configured or handed
+  to the worker; and
+- edits advance `RingPreviewRequestGate` and interrupt the prior `Future`.
+  Close/removal advances the gate again, cancels the worker, and releases the
+  dynamic texture. Upload uses the established ARGB-to-ABGR conversion and the
+  centered canonical X=C-1/X=0 seam mapping.
+
+The first real client compile exposed the 1.21.1 frozen-registry/provider type
+difference described above. After using the public adapter, Fabric/common
+`compileClientJava` and NeoForge `compileJava` both passed. Fabric passed all
+27 focused creation-model, request-gate, preview-mapping, and source-adapter/
+isolation cases. NeoForge passed 25 of those immediately; its two source-path
+contract cases initially used the root task's working directory, then both
+passed after project-root discovery was made module-safe. No Minecraft client,
+world, chunks, save, or graphical fixture was launched, and no verification
+metadata changed.
+
+This checkpoint adds no in-world placeholder/mesh, renderer or shader changes,
+sky rendering, Atlas-light consumption, command, Create integration,
+packaging, release metadata, or graphical/runtime support claim. The documented
+17-capture expanded creation fixture remains future qualification work.
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
