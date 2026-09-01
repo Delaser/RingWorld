@@ -15,7 +15,7 @@ class RingLayoutFingerprintTest {
                 settings.widthBlocks(), settings.circumferenceBlocks(),
                 settings.generatorSeed(), settings.wallHeightBlocks(),
                 settings.surfaceReferenceY(), settings.terrainNoiseMapping(),
-                settings.formatVersion()));
+                settings.wallStyle(), settings.formatVersion()));
     }
 
     @Test
@@ -41,5 +41,27 @@ class RingLayoutFingerprintTest {
                 RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2, 3));
         assertNotEquals(baseline, RingLayoutFingerprint.compute(416, 2_048, 123L, 160, 64,
                 RingTerrainNoiseMapping.LEGACY_AXIAL, 2));
+    }
+
+    @Test
+    void everyWallStyleFieldChangesWorldIdentity() {
+        RingWallStyle baselineStyle = RingWallStyle.custom(
+                5, RingWallStyle.Palette.WEATHERED, RingWallStyle.Pattern.CLUSTERED, 20);
+        long baseline = RingLayoutFingerprint.compute(256, 16_384, 123L, 160, 64,
+                RingTerrainNoiseMapping.CURRENT, baselineStyle, RingWorldSettings.FORMAT_VERSION);
+
+        assertNotEquals(baseline, fingerprint(RingWallStyle.custom(
+                6, baselineStyle.palette(), baselineStyle.pattern(), baselineStyle.decayPercent())));
+        assertNotEquals(baseline, fingerprint(RingWallStyle.custom(
+                5, RingWallStyle.Palette.ANCIENT, baselineStyle.pattern(), baselineStyle.decayPercent())));
+        assertNotEquals(baseline, fingerprint(RingWallStyle.custom(
+                5, baselineStyle.palette(), RingWallStyle.Pattern.MASONRY, baselineStyle.decayPercent())));
+        assertNotEquals(baseline, fingerprint(RingWallStyle.custom(
+                5, baselineStyle.palette(), baselineStyle.pattern(), 21)));
+    }
+
+    private static long fingerprint(RingWallStyle style) {
+        return RingLayoutFingerprint.compute(256, 16_384, 123L, 160, 64,
+                RingTerrainNoiseMapping.CURRENT, style, RingWorldSettings.FORMAT_VERSION);
     }
 }

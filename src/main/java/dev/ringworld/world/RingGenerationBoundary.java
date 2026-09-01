@@ -11,7 +11,7 @@ import net.minecraft.world.level.chunk.LevelChunkSection;
 public final class RingGenerationBoundary {
     public static final int RIM_THICKNESS = 5;
     /** Increment when rim placement/material semantics change. */
-    public static final int RIM_STYLE_VERSION = 1;
+    public static final int RIM_STYLE_VERSION = 3;
 
     private RingGenerationBoundary() { }
 
