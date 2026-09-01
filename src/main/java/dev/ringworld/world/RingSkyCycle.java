@@ -11,6 +11,8 @@ package dev.ringworld.world;
 public final class RingSkyCycle {
     public static final long DAY_LENGTH_TICKS = 24_000L;
     public static final float FIXED_SUN_ANGLE_RADIANS = 0.0F;
+    public static final int NIGHT_SKY_RGB = 0x050810;
+    public static final int VOID_SKY_RGB = 0x010103;
     /** One tenth of vanilla's padded 30-unit sun quad. */
     public static final float SUN_HALF_WIDTH = 3.0F;
     /** Fraction of vanilla's padded sun quad occupied by the bright disc. */
@@ -21,6 +23,42 @@ public final class RingSkyCycle {
     public static final float SUN_RENDER_DISTANCE = 100.0F;
 
     private RingSkyCycle() { }
+
+    /** Keeps one inertially fixed star field while the local tangent frame rotates. */
+    public static float starFieldAngleRadians(RingGeometry geometry, double cameraX) {
+        if (geometry == null) throw new IllegalArgumentException("ring geometry is required");
+        return (float)-geometry.angleAt(cameraX);
+    }
+
+    /** Returns a fixed backdrop RGB, or {@code -1} for Minecraft's native atmosphere. */
+    public static int fixedBackdropRgb(RingSkyProfile profile) {
+        if (profile == null) throw new IllegalArgumentException("sky profile is required");
+        return switch (profile.backdrop()) {
+            case ATMOSPHERE -> -1;
+            case NIGHT -> NIGHT_SKY_RGB;
+            case VOID -> VOID_SKY_RGB;
+        };
+    }
+
+    /** Applies the saved backdrop's star-visibility policy before weather alpha. */
+    public static float starBrightness(RingSkyProfile profile, float vanillaBrightness) {
+        if (profile == null) throw new IllegalArgumentException("sky profile is required");
+        return switch (profile.backdrop()) {
+            case ATMOSPHERE -> vanillaBrightness;
+            case NIGHT -> Math.max(vanillaBrightness, 0.88F);
+            case VOID -> 0.0F;
+        };
+    }
+
+    /** Large suns are deliberately softer; None is never submitted for drawing. */
+    public static float sunAlphaScale(RingSkyProfile profile) {
+        if (profile == null) throw new IllegalArgumentException("sky profile is required");
+        return switch (profile.lightSource()) {
+            case SMALL -> 1.0F;
+            case LARGE -> 0.72F;
+            case NONE -> 0.0F;
+        };
+    }
 
     /**
      * Smoothly interpolates four familiar Minecraft lighting keyframes:
