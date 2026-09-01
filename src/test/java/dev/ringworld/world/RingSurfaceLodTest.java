@@ -93,4 +93,26 @@ class RingSurfaceLodTest {
         assertEquals(0x404080C0,
                 RingSurfaceLod.buildNextMipArgb(source, 2, 2)[0]);
     }
+
+    @Test
+    void blockLightMapsToIndependentTextureAlpha() {
+        assertEquals(0, RingSurfaceLod.blockLightAlpha(0.0));
+        assertEquals(128, RingSurfaceLod.blockLightAlpha(7.5));
+        assertEquals(255, RingSurfaceLod.blockLightAlpha(15.0));
+        assertEquals(0, RingSurfaceLod.blockLightAlpha(-1.0));
+        assertEquals(255, RingSurfaceLod.blockLightAlpha(16.0));
+        assertThrows(IllegalArgumentException.class,
+                () -> RingSurfaceLod.blockLightAlpha(Double.NaN));
+    }
+
+    @Test
+    void lightMipDoesNotUseIlluminationAsTerrainOpacity() {
+        int[] source = {
+                0xFF804020, 0x00604020,
+                0x00402010, 0x00200000
+        };
+
+        assertEquals(0x40502814,
+                RingSurfaceLod.buildNextMipRgbLight(source, 2, 2)[0]);
+    }
 }

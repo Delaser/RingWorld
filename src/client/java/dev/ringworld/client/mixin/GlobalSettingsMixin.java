@@ -2,6 +2,7 @@ package dev.ringworld.client.mixin;
 
 import com.mojang.blaze3d.shaders.Uniform;
 import dev.ringworld.client.ClientRingState;
+import dev.ringworld.client.RingAtlasLightTuning;
 import dev.ringworld.client.render.RingCloudShaderState;
 import dev.ringworld.client.render.RingSurfaceTextureRenderer;
 import dev.ringworld.world.RingCloudBounds;
@@ -98,6 +99,10 @@ abstract class GlobalSettingsMixin {
                 profile == null ? 0.0F : profile.visualProfileVersion(),
                 cloudBounds == null ? 0.0F : (float)cloudBounds.minimumZ(),
                 cloudBounds == null ? 0.0F : (float)cloudBounds.maximumZ());
+        var atlasLight = RingAtlasLightTuning.profile();
+        set(shader, "RingWorldAtlasLight",
+                atlasLight.shaderMode(), atlasLight.falloffExponent(),
+                atlasLight.peakStrength(), 0.0F);
     }
 
     private static void set(ShaderInstance shader, String name,

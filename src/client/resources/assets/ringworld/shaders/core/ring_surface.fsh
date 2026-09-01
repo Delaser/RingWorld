@@ -12,6 +12,7 @@ uniform vec4 RingWorldAtmosphere;
 uniform vec2 RingWorldLegacyStreaming;
 uniform mat4 RingWorldWallPalette;
 uniform vec4 RingWorldWallStyle;
+uniform vec4 RingWorldAtlasLight;
 
 in vec2 texCoord0;
 in vec4 vertexColor;
@@ -78,9 +79,8 @@ void main() {
                 vec3(blockX + 31.0, blockY - 17.0, depth), 109.0);
         vec3 styled = wallPalette(roll);
         styled = mix(styled, styled * vec3(0.72, 0.86, 0.72), weather * 0.35);
-        sampled = vec4(styled * textureNoise, 1.0);
+        sampled = vec4(styled * textureNoise, 0.0);
     }
-    if (sampled.a == 0.0) discard;
 
     float circumference = float(RingWorldLayout.y);
     // The legacy pre-terrain compositor must supply an opaque two-layer
@@ -132,6 +132,22 @@ void main() {
     const vec2 fullSkyNoBlockLight = vec2(0.5 / 16.0, 15.0 / 16.0);
     vec3 surfaceLight = texture(Sampler2, fullSkyNoBlockLight).rgb;
     vec3 litTerrain = sampled.rgb * surfaceLight;
+    // Texture alpha is independent server-authored exposed block light, not
+    // terrain opacity. Reveal its warm contribution only as daylight falls.
+    float skyBrightness = max(surfaceLight.r, max(surfaceLight.g, surfaceLight.b));
+    float nightVisibility = 1.0 - smootherstep(0.38, 0.78, skyBrightness);
+    float authoredLight = clamp(sampled.a, 0.0, 1.0);
+    bool gammaLightProfile = RingWorldAtlasLight.x > 0.5;
+    float lightCore = gammaLightProfile
+        ? authoredLight
+        : smootherstep(0.24, 0.84, authoredLight);
+    float lightFalloff = gammaLightProfile ? RingWorldAtlasLight.y : 1.35;
+    float artificialLight = pow(lightCore, lightFalloff) * nightVisibility;
+    vec3 lampColor = vec3(1.00, 0.63, 0.28);
+    float lightPeak = gammaLightProfile
+        ? RingWorldAtlasLight.z
+        : (0.42 + 0.24 * nightVisibility);
+    litTerrain += lampColor * artificialLight * lightPeak;
     fragColor = vec4(
-        mix(FogColor.rgb, litTerrain, reveal), proxyAlpha * sampled.a);
+        mix(FogColor.rgb, litTerrain, reveal), proxyAlpha);
 }

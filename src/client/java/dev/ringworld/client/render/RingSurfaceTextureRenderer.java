@@ -319,6 +319,7 @@ public final class RingSurfaceTextureRenderer {
                         profile.textureRows());
         int[] pixels;
         float[] heights;
+        int[] blockLights = new int[targetColumns * targetRows];
         if (atlas.isComplete()) {
             pixels = new int[targetColumns * targetRows];
             heights = new float[pixels.length];
@@ -339,7 +340,18 @@ public final class RingSurfaceTextureRenderer {
                     RingTerrainAtlas.SurfaceSample sample = atlas.sample(x, z);
                     int index = row * targetColumns + column;
                     heights[index] = (float)sample.height();
-                    pixels[index] = RingSurfaceLod.surfaceArgb(sample.color(), sample.coverage());
+                    pixels[index] = sample.color() & 0xFFFFFF;
+                    blockLights[index] = RingSurfaceLod.blockLightAlpha(sample.blockLight());
+                }
+            }
+        } else {
+            for (int row = 0; row < targetRows; row++) {
+                double z = geometry.minWidthZ() + (row + 0.5) * spacingZ;
+                for (int column = 0; column < targetColumns; column++) {
+                    double x = (column + 0.5) * spacingX;
+                    RingTerrainAtlas.SurfaceSample sample = atlas.sample(x, z);
+                    blockLights[row * targetColumns + column] = sample.present()
+                            ? RingSurfaceLod.blockLightAlpha(sample.blockLight()) : 0;
                 }
             }
         }
@@ -350,17 +362,17 @@ public final class RingSurfaceTextureRenderer {
                 int leftColumn = Math.floorMod(column - 1, targetColumns);
                 int rightColumn = Math.floorMod(column + 1, targetColumns);
                 int index = row * targetColumns + column;
-                int alpha = pixels[index] >>> 24;
-                if (alpha == 0) continue;
                 float centerHeight = heights[index];
                 int shaded = RingSurfaceLod.shadeSurfaceColor(
                         pixels[index], centerHeight,
-                        presentHeightOr(heights, pixels, row * targetColumns + leftColumn, centerHeight),
-                        presentHeightOr(heights, pixels, row * targetColumns + rightColumn, centerHeight),
-                        presentHeightOr(heights, pixels, lowerRow * targetColumns + column, centerHeight),
-                        presentHeightOr(heights, pixels, upperRow * targetColumns + column, centerHeight),
+                        presentHeightOr(heights, row * targetColumns + leftColumn, centerHeight),
+                        presentHeightOr(heights, row * targetColumns + rightColumn, centerHeight),
+                        presentHeightOr(heights, lowerRow * targetColumns + column, centerHeight),
+                        presentHeightOr(heights, upperRow * targetColumns + column, centerHeight),
                         spacingX, spacingZ);
-                pixels[index] = alpha << 24 | shaded;
+                // RGB remains opaque terrain data. Alpha independently stores
+                // exposed block light and never controls mesh coverage.
+                pixels[index] = blockLights[index] << 24 | shaded;
             }
         }
 
@@ -383,7 +395,7 @@ public final class RingSurfaceTextureRenderer {
                     }
                 }
                 if (level + 1 < mipLevels) {
-                    levelPixels = RingSurfaceLod.buildNextMipArgb(
+                    levelPixels = RingSurfaceLod.buildNextMipRgbLight(
                             levelPixels, levelWidth, levelHeight);
                     levelWidth = Math.max(1, levelWidth >> 1);
                     levelHeight = Math.max(1, levelHeight >> 1);
@@ -686,8 +698,8 @@ public final class RingSurfaceTextureRenderer {
         }
     }
 
-    private static float presentHeightOr(float[] heights, int[] pixels, int index, float fallback) {
-        return pixels[index] >>> 24 == 0 ? fallback : heights[index];
+    private static float presentHeightOr(float[] heights, int index, float fallback) {
+        return Float.isFinite(heights[index]) ? heights[index] : fallback;
     }
 
     private static void buildMesh(RingGeometry geometry, RingTerrainAtlas atlas, boolean detailed) {
