@@ -355,6 +355,47 @@ generation, Create integration, packaging, or release metadata. The CPU mesh
 keeps its wall-face markers and saved style for those later version-owned GPU
 steps; it does not claim rendered palette/style parity yet.
 
+### 2.9 Wall-appearance GPU checkpoint (2026-09-02)
+
+Commit `5b4956e` implements only the wall-appearance GPU slice for the closed
+wall mesh landed in checkpoint 2.8:
+
+- loader-neutral `RingWallShaderStyle` derives the real generated wall
+  palette's map colours, reduces adjacent weighted material runs to at most
+  five shader colours, and supplies deterministic pattern, decay, and
+  world-seed metadata. Four colours and their cumulative thresholds occupy a
+  palette matrix; the fifth colour and packed pattern/seed byte occupy the
+  mesh vertex ARGB, while decay remains an independent uniform value;
+- the 1.21.1-owned `RingSurfaceGpu` adapter uploads the shared CPU mesh with
+  `POSITION_TEX_COLOR` and the supplied ARGB. `RingSurfaceTextureRenderer`
+  rebuilds that encoding from the saved client-session wall style and
+  generator seed, uploads the explicit palette/style uniforms, and clears the
+  cached encoding with the rest of the client session;
+- the ring vertex shader carries intrinsic width for wall depth. The fragment
+  shader recognizes only the existing out-of-range-V wall-face markers,
+  selects the saved palette through deterministic pattern/seed rolls, and
+  applies saved decay as bounded weather tint. Ordinary terrain retains the
+  established Atlas/preview texture, handoff, lighting, and fog behavior and
+  deliberately ignores the packed wall metadata vertex colour; and
+- the shader descriptor declares explicit 1.21.1 `matrix4x4` and float-vector
+  uniforms instead of copying a later-version GPU API.
+
+Before edits, Fabric `compileClientJava` and NeoForge `compileJava` passed from
+clean parent `90f57ab`. After implementation, both loader graphs compiled.
+The first focused model run exposed that the synthetic colour lookup needed
+the same vanilla-registry bootstrap already used by adjacent world-generation
+tests; after adding that test-only bootstrap, all six focused deterministic
+model and adapter/shader-source cases passed on Fabric/common and NeoForge.
+`git diff --check` also passed. No Minecraft client, world, save, or graphical
+fixture was launched, and no dependency-verification metadata changed.
+
+This checkpoint does not add or tune Atlas block-light alpha/night
+contribution, sky/sun/stars/fog mixins, commands, HUD/UI, protocol, server,
+world generation, persistence, Create integration, packaging, or release
+metadata. Java compilation and source-contract tests do not prove runtime GLSL
+compilation or rendered visual parity; those remain later focused graphical
+qualification work.
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
