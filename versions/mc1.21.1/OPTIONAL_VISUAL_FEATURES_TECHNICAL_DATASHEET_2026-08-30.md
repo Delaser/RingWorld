@@ -126,9 +126,34 @@ each loader. No protocol or client work was included.
 
 This checkpoint adds no payload, client-session, UI, renderer/shader, Atlas
 service transport/capture, command, Create, packaging, release, or broad
-graphical behavior. The next bounded batch is the loader-neutral protocol
-models: `settings_v5`, `sky_profile_v1`, and `terrain_preview_v2`, including
-strict codec/identity tests but no Fabric/NeoForge transport registration.
+graphical behavior. The loader-neutral protocol-model checkpoint that follows
+is recorded separately below.
+
+### 2.3 Common protocol-model checkpoint (2026-09-01)
+
+Commit `97dd53c` implements the three required common channel models without
+registering or handling them on either loader:
+
+- `settings_v5` uses the documented sixteen-field order, carries the immutable
+  wall style and first-frame sky profile, recomputes the layout fingerprint
+  from terrain identity only, and leaves `settings_ack_v3` unchanged;
+- `sky_profile_v1` round-trips the stable backdrop/light-source IDs and rejects
+  unknown IDs or profile formats;
+- `terrain_preview_v2` retains stable stage values 0–3, enforces the 2 MiB
+  compressed limit, validates the compressed format/dimensions/trailing data,
+  and rejects a mismatched world hash; and
+- the loader-neutral capability contract requires all three clientbound
+  channel identities before the settings handshake may begin.
+
+Fabric/common and NeoForge compile under Java 21. All 39 focused protocol,
+handshake, identity, wall/sky, and preview cases pass on each loader, including
+exact field-order, round-trip, truncation, malformed-value, limit, stage, and
+acknowledgement-byte checks. No verification metadata changed.
+
+This checkpoint adds no Fabric/NeoForge payload registration, capability
+query, send/receive handler, client-session mutation, screen, renderer/shader,
+server preview/Atlas service, command, Create integration, packaging, or
+support-metadata behavior. Those remain later bounded batches.
 
 ## 3. Data ownership
 
