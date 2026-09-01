@@ -3,12 +3,30 @@ package dev.ringworld.net;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingProtocolIdentityTest {
     @Test
     void settingsChannelsNameTheirCurrentWireLayout() {
-        assertEquals("ringworld:settings_v3", RingSettingsPayload.ID.id().toString());
+        assertEquals("ringworld:settings_v5", RingSettingsPayload.ID.id().toString());
         assertEquals("ringworld:settings_ack_v3", RingSettingsAckPayload.ID.id().toString());
+        assertEquals("ringworld:sky_profile_v1", RingSkyProfilePayload.ID.id().toString());
+        assertEquals("ringworld:terrain_preview_v2",
+                RingTerrainPreviewPayload.ID.id().toString());
+    }
+
+    @Test
+    void allThreeClientboundChannelsAreRequiredBeforeHandshake() {
+        var required = RingProtocolCapabilities.requiredClientbound();
+        assertEquals(java.util.List.of(
+                RingSettingsPayload.ID, RingSkyProfilePayload.ID, RingTerrainPreviewPayload.ID),
+                required);
+        assertTrue(RingProtocolCapabilities.supportsRequiredClientbound(required::contains));
+        for (var missing : required) {
+            assertFalse(RingProtocolCapabilities.supportsRequiredClientbound(
+                    type -> type != missing));
+        }
     }
 
     @Test
