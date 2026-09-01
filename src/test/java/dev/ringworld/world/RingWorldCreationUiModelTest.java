@@ -152,6 +152,47 @@ class RingWorldCreationUiModelTest {
     }
 
     @Test
+    void selectedRimThicknessDrivesValidationCostAndPlayableInterior() {
+        RingWallStyle thin = RingWallStyle.custom(1, RingWallStyle.Palette.MONOLITH,
+                RingWallStyle.Pattern.PANELS, 0);
+        RingWallStyle thick = RingWallStyle.custom(32, RingWallStyle.Palette.NATURAL,
+                RingWallStyle.Pattern.GRADIENT, 15);
+
+        RingWorldCreationUiModel.Validation thinValidation =
+                RingWorldCreationUiModel.validate("2048", "128", "160", thin);
+        RingWorldCreationUiModel.Validation thickValidation =
+                RingWorldCreationUiModel.validate("2048", "128", "160", thick);
+
+        assertTrue(thinValidation.canApply(), thinValidation.messages().toString());
+        assertTrue(thickValidation.canApply(), thickValidation.messages().toString());
+        assertEquals(1, thinValidation.report().rimThicknessBlocks());
+        assertEquals(32, thickValidation.report().rimThicknessBlocks());
+        assertEquals(126, thinValidation.report().playableInteriorBlocks());
+        assertEquals(64, thickValidation.report().playableInteriorBlocks());
+        assertTrue(thinValidation.report().playableInteriorAreaBlocks()
+                > thickValidation.report().playableInteriorAreaBlocks());
+    }
+
+    @Test
+    void confirmationNamesCustomWallAndIndependentSkyChoices() {
+        RingWallStyle custom = RingWallStyle.custom(9, RingWallStyle.Palette.OBSIDIAN,
+                RingWallStyle.Pattern.HYBRID, 37);
+        RingSkyProfile sky = new RingSkyProfile(RingSkyProfile.Backdrop.VOID,
+                RingSkyProfile.LightSource.NONE, RingSkyProfile.FORMAT_VERSION);
+        RingWorldCreationUiModel.Validation validation =
+                RingWorldCreationUiModel.validate("16384", "256", "160", custom);
+
+        String confirmation = RingWorldCreationUiModel.confirmationCopy(
+                validation.report(), true, custom, sky);
+
+        assertTrue(confirmation.contains("Custom rims, 9 thick"));
+        assertTrue(confirmation.contains("Void sky, None sun"));
+        assertTrue(confirmation.contains("Monument: On"));
+        assertThrows(IllegalArgumentException.class,
+                () -> RingWorldCreationUiModel.validate("2048", "128", "160", null));
+    }
+
+    @Test
     void creationAdmissionRejectsLegacySizedCircumferenceButGeometryRetainsIt() {
         assertFalse(RingWorldCreationUiModel.validate("2016", "128", "160").canApply());
         assertThrows(IllegalArgumentException.class,
