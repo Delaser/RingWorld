@@ -90,7 +90,7 @@ batch:
   all ten real-block palettes, and the separate 0.1% Industrial lantern
   sample;
 - the original coordinate-hashed cobble/moss material choice remains exact
-  for legacy-style generation and migration;
+  for legacy-style generation and the dormant migration helper;
 - selected thickness now owns dimension validation/reporting, multi-chunk rim
   placement, portal lookup/creation bounds, and server-side worldgen/portal
   fixture bounds; and
@@ -105,6 +105,24 @@ and failed strict verification before compilation. The passing compile/test
 run seeded the checkout-local ignored Loom cache from the long-lived reviewed
 cache; a representative jar then matched its checked-in SHA-256 exactly. No
 verification metadata changed.
+
+Independent review found that content-only rim recognition was unsafe once a
+format-4 world could deliberately reproduce legacy-looking wall blocks. Commit
+`c4a46d1` therefore makes automatic block/rim migration fail closed for every
+format-4 setting, including `RingWallStyle.LEGACY`, reconstructed exact-legacy
+custom fields, and custom/thick styles. Both the chunk-load queue gate and the
+deferred execution gate use that policy, so a queued item cannot rewrite a
+chunk if the automatic path remains disabled. Ordinary settings formats 1–3
+still upgrade to format 4 with the exact legacy wall style; only the separate
+content-detected block rewrite is disabled. Existing generated legacy rim
+blocks consequently remain unchanged until a separately designed explicit
+migration tool has trustworthy provenance. The pure rewrite/hash helper stays
+dormant, with direct regression coverage for the original material hash at
+both rims and on both sides of the canonical X seam.
+
+The review-fix validation compiled Fabric/common and NeoForge and passed all
+17 focused settings-storage, boundary/hash, and automatic-migration cases on
+each loader. No protocol or client work was included.
 
 This checkpoint adds no payload, client-session, UI, renderer/shader, Atlas
 service transport/capture, command, Create, packaging, release, or broad
