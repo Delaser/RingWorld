@@ -560,6 +560,48 @@ registration and delivery wiring but do not prove live multiplayer display or
 third-party command/permission compatibility; those remain runtime
 qualification work.
 
+### 2.14 Process-local ring-light command checkpoint (2026-09-02)
+
+Commit `0dea7ba` implements only the client-local Atlas-light tuning command:
+
+- `/ringworld ringlights` and `/ringworld ringlights show` report the current
+  process profile, `/ringworld ringlights reset` selects Midpoint, and
+  `/ringworld ringlights <falloff> <peak>` selects Gamma with both documented
+  numeric arguments required;
+- the loader-neutral `RingAtlasLightCommand` result model is the only command
+  code that reads or changes `RingAtlasLightTuning`. It returns explicit local
+  success/error text, while the existing `RingAtlasLightProfile` validation
+  independently rejects non-finite and out-of-range values at falloff 0.5–6.0
+  and peak 0.1–3.0;
+- Fabric registers through the pinned 1.21.1 v2
+  `ClientCommandRegistrationCallback` and `ClientCommandManager` API. NeoForge
+  registers through `RegisterClientCommandsEvent`. Both adapters contain only
+  their Brigadier tree and local feedback bridge; and
+- `ringlights` is absent from the shared server command tree. The adapters do
+  not use payload or command-send paths, and the tuning remains process-local,
+  unsaved, and independent of server state.
+
+Before edits, Fabric `compileClientJava` and NeoForge `compileJava` passed from
+clean parent `ce32ac2`. The first focused compile identified the intentional
+1.21.1 Fabric API name difference from the newer reference line
+(`ClientCommandManager`, not `ClientCommands`); the adapter was corrected to
+the exact pinned API. The first source-contract run then showed that Java had
+moved command lambdas into synthetic methods, so the test was corrected to
+inspect the complete registration method family. The final Java 21 focused
+invocation compiled both client graphs and passed the command model, retained
+tuning, and loader registration/source-contract suites: five cases on
+Fabric/common and the same five on NeoForge, ten executions total with zero
+failures, errors, or skips. The existing client deprecation note was unchanged.
+`git diff --check` passed. No Minecraft client, server, world, save, or
+graphical fixture was launched, and no dependency-verification metadata
+changed.
+
+This checkpoint does not change server commands, payloads or channels,
+renderer/shader/global behavior, sky or fog, HUD/UI, persistence, world
+generation, Create integration, packaging, or release metadata. Compile and
+source/bytecode contracts do not prove in-game command-dispatch coexistence or
+live visual tuning; those remain bounded client runtime qualification work.
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
