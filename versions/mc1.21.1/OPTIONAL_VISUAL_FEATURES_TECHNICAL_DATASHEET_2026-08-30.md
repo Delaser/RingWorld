@@ -76,6 +76,42 @@ server generation, add bootstrap/config selection, use the complete palette
 mapping, and propagate real wall thickness through dimension and portal-safe
 bounds before any protocol or graphical work claims the new identities.
 
+### 2.2 Server/config/world-generation checkpoint (2026-09-01)
+
+Commit `d04f3e7` implements only the next bounded Minecraft 1.21.1 server
+batch:
+
+- bootstrap configuration reads the documented wall preset/custom fields,
+  independent sky/sun defaults, and the five legacy combined sky presets;
+- fresh `RingWorldSettings` and `RingSkySettings` capture those bootstrap
+  choices once, while format-1–3 worlds retain `RingWallStyle.LEGACY`;
+- the saved wall style attaches to the 1.21.1 noise generator before feature
+  decoration, and rim generation uses the deterministic pattern/decay model,
+  all ten real-block palettes, and the separate 0.1% Industrial lantern
+  sample;
+- the original coordinate-hashed cobble/moss material choice remains exact
+  for legacy-style generation and migration;
+- selected thickness now owns dimension validation/reporting, multi-chunk rim
+  placement, portal lookup/creation bounds, and server-side worldgen/portal
+  fixture bounds; and
+- compatibility overloads retain the former five-block thickness only for
+  legacy callers and tests.
+
+Fabric/common and NeoForge sources compile under the reviewed Java 21 runtime.
+All 45 focused Fabric config/dimension/boundary/palette/portal cases have
+passing results; the NeoForge boundary/palette suite also passes its seven
+cases. The fresh-worktree cache again produced nondeterministic remapped jars
+and failed strict verification before compilation. The passing compile/test
+run seeded the checkout-local ignored Loom cache from the long-lived reviewed
+cache; a representative jar then matched its checked-in SHA-256 exactly. No
+verification metadata changed.
+
+This checkpoint adds no payload, client-session, UI, renderer/shader, Atlas
+service transport/capture, command, Create, packaging, release, or broad
+graphical behavior. The next bounded batch is the loader-neutral protocol
+models: `settings_v5`, `sky_profile_v1`, and `terrain_preview_v2`, including
+strict codec/identity tests but no Fabric/NeoForge transport registration.
+
 ## 3. Data ownership
 
 | Data | Owner | Persistent | Identity-bearing | Live mutable |
