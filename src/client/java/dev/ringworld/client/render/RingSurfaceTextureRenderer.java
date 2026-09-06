@@ -194,7 +194,9 @@ public final class RingSurfaceTextureRenderer {
             pendingTextureBuild = null;
             try (build) {
                 if (build.images().generation() == textureBuildGeneration
-                        && build.snapshot().matches(geometry, atlas.worldHash(), revision)) {
+                        && build.snapshot().canPublish(geometry, atlas.worldHash(), revision,
+                                geometry.equals(bufferedGeometry) && atlas.worldHash() == bufferedWorldHash
+                                        ? bufferedAtlasRevision : -1)) {
                     GpuBuffer replacement = null;
                     try {
                         if (build.mesh() != null) {
@@ -270,7 +272,9 @@ public final class RingSurfaceTextureRenderer {
                                              dev.ringworld.world.RingLodQuality quality,
                                              MeshInputs inputs, RingTerrainPreview preview) {
         if (generation != textureBuildGeneration) throw new java.util.concurrent.CancellationException("obsolete surface job");
-        RingSurfaceBuildSnapshot displaySnapshot = quality == null ? sourceSnapshot
+        RingSurfaceBuildSnapshot displaySnapshot = quality == null
+                || !sourceSnapshot.atlas().isComplete()
+                || quality.sampleStep() <= sourceSnapshot.atlas().sampleStep() ? sourceSnapshot
                 : new RingSurfaceBuildSnapshot(quality.displaySnapshot(sourceSnapshot.atlas()),
                         sourceSnapshot.renderRevision());
         RingSurfaceBuildSnapshot preparedSnapshot = displaySnapshot.resolveDetailedHeightFingerprint();

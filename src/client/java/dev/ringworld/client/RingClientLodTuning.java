@@ -9,6 +9,7 @@ public final class RingClientLodTuning {
     private RingClientLodTuning() { }
     public static RingLodQuality quality() { return quality; }
     public static String select(RingLodQuality value) {
+        if (quality == value) return summary();
         quality = value;
         RingSurfaceTextureRenderer.clear();
         return summary();

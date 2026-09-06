@@ -1525,3 +1525,20 @@ Completion means:
 - Experimental Atlas format 9 carries representative side colours through snapshots, v3 metadata/tiles, disk, and local LOD downsampling. Account for twelve bytes per cell and invalidate older caches. Side sampling must stay bounded to the current chunk; preserve foliage/fluid colour and avoid neighbour loads. Distinct side-material changes must invalidate the mesh because steep faces carry this colour in existing GPU vertices.
 
 - Atlas surface jobs now prepare geometry and native vertex bytes on the serial surface worker using the same captured snapshot as texture pixels. Keep all GPU calls on the render thread and close packed/native data on stale, failed and abandoned results. Capture world/quality/wall inputs before scheduling. Do not reintroduce live client-state reads in worker texture/mesh preparation. GPU upload and owner-thread snapshot copies remain measured stutter sources; preserve >=16ms diagnostics and do not equate worker completion with hitch-free frame pacing.
+
+- Client LOD commands are now `low`, `medium`, `high` (old Low, High, Max budgets).
+  Generation fidelity remains server-owned. Keep the three-level command tree
+  identical on both loaders and avoid rebuilding an already selected level.
+- Lithium's `mixin.ai.poi.tasks` redirects collide with RingWorld's periodic
+  POI lookup. Preserve the matching `lithium:options` overrides in Fabric and
+  NeoForge metadata; do not resolve the collision by dropping seam semantics.
+- `SectionOcclusionGraph.initializeQueueForFullUpdate` takes Camera in 26.1 and
+  BlockPos in 26.2. The finite-band seed clamp targets the shared SectionPos
+  lookup; a BlockPos HEAD argument modifier crashes 26.1 clients even though
+  both source builds compile. Retain real-client checks on both ABI lines.
+- A surface build may publish a coherent revision older than the newest received
+  tiles, provided it advances the displayed revision and still matches the
+  world and session/quality generation. Requiring equality with every live tile
+  update starves slower initial meshes during large Atlas downloads. Never mix
+  that captured texture with live mesh data or allow displayed revisions to
+  move backwards; retain the dedicated publication-policy tests.

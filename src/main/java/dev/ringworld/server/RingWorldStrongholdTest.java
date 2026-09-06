@@ -400,6 +400,39 @@ public final class RingWorldStrongholdTest {
         if (RingWorldSettings.get(world).terrainNoiseMapping()
                 >= RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2
                 && !seam.passesSmoothJoin()) {
+            int[] previousHeights = new int[highSideHeights.length];
+            int[] nextHeights = new int[lowSideHeights.length];
+            for (int z = interiorMinimumZ; z <= interiorMaximumZ; z++) {
+                int index = z - interiorMinimumZ;
+                previousHeights[index] = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                        geometry.circumferenceBlocks() - 2, z);
+                nextHeights[index] = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 1, z);
+            }
+            int[] baseHigh = new int[highSideHeights.length];
+            int[] baseLow = new int[lowSideHeights.length];
+            for (int z = interiorMinimumZ; z <= interiorMaximumZ; z++) {
+                int index = z - interiorMinimumZ;
+                baseHigh[index] = generator.getBaseHeight(geometry.circumferenceBlocks() - 1, z,
+                        Heightmap.Types.WORLD_SURFACE_WG, world, world.getChunkSource().randomState());
+                baseLow[index] = generator.getBaseHeight(0, z,
+                        Heightmap.Types.WORLD_SURFACE_WG, world, world.getChunkSource().randomState());
+            }
+            RingWorldMod.LOGGER.error("[worldgen-matrix] seam undecorated base={}",
+                    RingSeamTerrainAudit.inspect(baseHigh, baseLow));
+            for (int cut : new int[]{-32, -16, -8, -4, 4, 8, 16, 32, 1024, 4096}) {
+                for (int z = interiorMinimumZ; z <= interiorMaximumZ; z++) {
+                    int index = z - interiorMinimumZ;
+                    baseHigh[index] = generator.getBaseHeight(geometry.wrapBlockX(cut - 1), z,
+                            Heightmap.Types.WORLD_SURFACE_WG, world, world.getChunkSource().randomState());
+                    baseLow[index] = generator.getBaseHeight(geometry.wrapBlockX(cut), z,
+                            Heightmap.Types.WORLD_SURFACE_WG, world, world.getChunkSource().randomState());
+                }
+                RingWorldMod.LOGGER.error("[worldgen-matrix] reference base cut={} report={}",
+                        cut, RingSeamTerrainAudit.inspect(baseHigh, baseLow));
+            }
+            RingWorldMod.LOGGER.error("[worldgen-matrix] seam neighbours before={} after={}",
+                    RingSeamTerrainAudit.inspect(previousHeights, highSideHeights),
+                    RingSeamTerrainAudit.inspect(lowSideHeights, nextHeights));
             throw new IllegalStateException("Terrain join is not smooth under the current mapping: "
                     + seam);
         }
@@ -546,15 +579,31 @@ public final class RingWorldStrongholdTest {
         world.getChunk(chunkX, geometry.minChunkZ() - 1);
         world.getChunk(chunkX, geometry.maxChunkZ() + 1);
         for (int y = world.getMinY(); y < wallTopExclusive; y++) {
-            if (!RingGenerationBoundary.isRimMaterial(world.getBlockState(new BlockPos(x, y, lowerRimZ)))
-                    || !RingGenerationBoundary.isRimMaterial(world.getBlockState(new BlockPos(x, y, upperRimZ)))) {
-                throw new IllegalStateException("Finite rim material is missing at Y=" + y);
+            var style = RingWorldSettings.get(world).wallStyle();
+            boolean present = dev.ringworld.world.RingWallPattern.blockPresent(style, x, y, 0,
+                    wallTopExclusive, geometry.circumferenceBlocks(), world.getSeed());
+            for (int z : new int[]{lowerRimZ, upperRimZ}) {
+                var state = world.getBlockState(new BlockPos(x, y, z));
+                if (present ? !RingGenerationBoundary.isRimMaterial(state) : !state.isAir())
+                    throw new IllegalStateException("Finite rim differs from saved decay at Y=" + y);
             }
         }
         if (!world.getBlockState(new BlockPos(x, world.getMinY(), lowerRimZ - 1)).isAir()
                 || !world.getBlockState(new BlockPos(x, world.getMinY(), upperRimZ + 1)).isAir()) {
             throw new IllegalStateException("Exterior finite-width terrain is not void");
         }
+        world.getChunk(0, 0);
+        int upperBedrock = 0;
+        for (int bx = 0; bx < 16; bx++) for (int bz = 0; bz < 16; bz++) {
+            var floor = world.getBlockState(new BlockPos(bx, world.getMinY(), bz));
+            if (floor.is(Blocks.BEDROCK) || floor.isAir())
+                throw new IllegalStateException("Patterned underside missing at " + bx + "," + bz);
+            for (int y = world.getMinY() + 1; y <= world.getMinY() + 4; y++)
+                if (world.getBlockState(new BlockPos(bx, y, bz)).is(Blocks.BEDROCK)) upperBedrock++;
+        }
+        if (upperBedrock == 0) throw new IllegalStateException("Upper bedrock layers missing");
+        RingWorldMod.LOGGER.info("[stronghold-test] underside=256 upperBedrock={} savedStyle={}",
+                upperBedrock, RingWorldSettings.get(world).wallStyle());
         RingWorldMod.LOGGER.info(
                 "[stronghold-test] rims lowerZ={} upperZ={} wallTopY={} exteriorVoid=true",
                 lowerRimZ, upperRimZ, wallTopExclusive);

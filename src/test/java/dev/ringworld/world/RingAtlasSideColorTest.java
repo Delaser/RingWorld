@@ -38,7 +38,7 @@ class RingAtlasSideColorTest {
         for (int row=0; row<atlas.rows(); row++) for (int col=0; col<atlas.columns(); col++)
             atlas.putCell(col,row,col<1024?64:96,0x228822,0,0x888888);
         var mesh = RingSurfaceMesh.build(GEOMETRY,atlas,true,64,64,1,
-                RingLodQuality.MAX.profile(GEOMETRY,96));
+                RingLodQuality.HIGH.profile(GEOMETRY,96));
         int[] counts = new int[2];
         mesh.emitTriangles(new RingSurfaceMesh.VertexConsumer() {
             int material = -1;

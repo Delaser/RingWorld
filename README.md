@@ -239,7 +239,7 @@ rights to imply that an unofficial fork is endorsed by the RingWorld project.
 
 ### Local Atlas display quality
 
-Use `/ringworld lod lowest|low|medium|high|very_high|max` to select your local
+Use `/ringworld lod low|medium|high` to select your local
 LOD display budget. `/ringworld lod show` reports the selected level and the
 server source resolution; `/ringworld lod reset` follows the server default.
 The choice resets on disconnect. It changes local display samples, texture

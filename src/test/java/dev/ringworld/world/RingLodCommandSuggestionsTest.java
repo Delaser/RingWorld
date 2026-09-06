@@ -19,6 +19,10 @@ class RingLodCommandSuggestionsTest {
             assertFalse(parsed.getReader().canRead());
             assertNotNull(parsed.getContext().getCommand());
         }
+        var choices = dispatcher.getCompletionSuggestions(
+                dispatcher.parse("ringworld lod ", new Object())).get();
+        assertEquals(java.util.Set.of("low", "medium", "high", "show", "reset"),
+                choices.getList().stream().map(s -> s.getText()).collect(java.util.stream.Collectors.toSet()));
         var suggestions = dispatcher.getCompletionSuggestions(
                 dispatcher.parse("ringworld ", new Object())).get();
         assertTrue(suggestions.getList().stream().anyMatch(s -> s.getText().equals("lod")));

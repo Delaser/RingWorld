@@ -2,12 +2,9 @@ package dev.ringworld.world;
 
 /** Local display choices. These IDs are not saved generation settings or network values. */
 public enum RingLodQuality {
-    LOWEST("lowest", 16, 2048, 512, 16),
     LOW("low", 8, 4096, 1024, 8),
-    MEDIUM("medium", 4, 8192, 1024, 4),
-    HIGH("high", 2, 16384, 1024, 4),
-    VERY_HIGH("very_high", 1, 32768, 2048, 2),
-    MAX("max", 1, 32768, 2048, 1);
+    MEDIUM("medium", 2, 16384, 1024, 4),
+    HIGH("high", 1, 32768, 2048, 1);
 
     private final String command;
     private final int sampleStep, columns, rows, meshStep;

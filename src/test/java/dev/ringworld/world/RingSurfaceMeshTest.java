@@ -130,7 +130,7 @@ class RingSurfaceMeshTest {
         for (int row = 0; row < atlas.rows(); row++) for (int col = 0; col < atlas.columns(); col++)
             atlas.putCell(col, row, col < 1024 ? 64 : 96, col < 1024 ? 0xFFFFAA : 0x227722);
         var mesh = RingSurfaceMesh.build(geometry, atlas, true, 64, 64, 1,
-                RingLodQuality.MAX.profile(geometry, 96));
+                RingLodQuality.HIGH.profile(geometry, 96));
         var a = mesh.triangleVertex(1023, 64, 0);
         var b = mesh.triangleVertex(1023, 64, 1);
         var c = mesh.triangleVertex(1023, 64, 2);

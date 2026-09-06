@@ -1,0 +1,2 @@
+[00:49:21] [Render thread/INFO] (ringworld) [multiplayer:A] independent client LOD=low
+[00:50:29] [Render thread/INFO] (ringworld) [multiplayer:A] local scenario result=true; stopping client

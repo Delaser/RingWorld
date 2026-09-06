@@ -1,0 +1,2 @@
+[00:44:53] [Render thread/INFO] (ringworld) [atlas-ui-test] disconnect-clear client-session=true
+[00:44:53] [Render thread/INFO] (ringworld) [atlas-ui-test] PASS: GUI scale 4 progressive-world/confirmation/running/background/reopen/pause/resume/cancel/retry/complete/revisioned-edit/normal-disconnect

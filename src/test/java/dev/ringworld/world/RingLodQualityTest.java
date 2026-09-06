@@ -4,12 +4,23 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RingLodQualityTest {
+    @Test void exposesOnlyTheThreeAgreedBudgets() {
+        assertArrayEquals(new String[]{"low", "medium", "high"},
+                java.util.Arrays.stream(RingLodQuality.values()).map(RingLodQuality::command).toArray(String[]::new));
+        assertEquals(8, RingLodQuality.LOW.sampleStep());
+        assertEquals(2, RingLodQuality.MEDIUM.sampleStep());
+        assertEquals(1, RingLodQuality.HIGH.sampleStep());
+        assertEquals(8, RingLodQuality.LOW.meshStep());
+        assertEquals(4, RingLodQuality.MEDIUM.meshStep());
+        assertEquals(1, RingLodQuality.HIGH.meshStep());
+    }
+
     @Test void displayDownsamplingPreservesAuthorityAndExactCaptureAnchors() {
         var geometry = new RingGeometry(128, 2048);
         var source = new RingTerrainAtlas(geometry, 123, 1);
         for (int y=0; y<source.rows(); y++) for (int x=0; x<source.columns(); x++)
             source.putCell(x,y,x % 200, x + y * 2048, (x+y)%16);
-        var display = RingLodQuality.HIGH.displaySnapshot(source);
+        var display = RingLodQuality.MEDIUM.displaySnapshot(source);
         assertEquals(2, display.sampleStep());
         assertEquals(65536, display.cellCount());
         assertTrue(display.isComplete());
@@ -21,15 +32,15 @@ class RingLodQualityTest {
         assertEquals(262144, source.cellCount());
         assertEquals(1, source.cellHeight(1,1));
     }
-    @Test void finerChoiceCannotInventServerSamplesAndFullQuadruplesSurfaceCells() {
+    @Test void finerChoiceCannotInventServerSamplesAndHighRetainsFormerMaxBudget() {
         var geometry = new RingGeometry(128, 2048);
         var coarse = new RingTerrainAtlas(geometry, 123, 8);
-        assertEquals(8, RingLodQuality.MAX.displaySnapshot(coarse).sampleStep());
-        var two=RingLodQuality.VERY_HIGH.profile(geometry,96);
-        var one=RingLodQuality.MAX.profile(geometry,96);
-        assertEquals(two.circumferenceSegments()*2,one.circumferenceSegments());
-        assertEquals(two.widthBands()*2,one.widthBands());
+        assertEquals(8, RingLodQuality.HIGH.displaySnapshot(coarse).sampleStep());
+        var two=RingLodQuality.MEDIUM.profile(geometry,96);
+        var one=RingLodQuality.HIGH.profile(geometry,96);
+        assertEquals(two.circumferenceSegments()*4,one.circumferenceSegments());
+        assertEquals(two.widthBands()*4,one.widthBands());
         assertEquals(two.textureColumns(),one.textureColumns());
-        assertTrue(RingLodQuality.MAX.profile(geometry,96,512).textureColumns()<=512);
+        assertTrue(RingLodQuality.HIGH.profile(geometry,96,512).textureColumns()<=512);
     }
 }

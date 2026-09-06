@@ -61,9 +61,9 @@ final class RingAtlasFidelityGalleryClient {
             if (client.player != null && ClientRingState.terrainAtlas() != null) {
                 var dispatcher = client.getConnection().getCommands();
                 var lod = dispatcher.getRoot().getChild("ringworld").getChild("lod");
-                if (lod == null || lod.getChild("max") == null) return fail(client, "LOD chat tree missing");
-                client.getConnection().sendCommand("ringworld lod max");
-                if (RingClientLodTuning.quality() != RingLodQuality.MAX) return fail(client, "LOD execution failed");
+                if (lod == null || lod.getChild("high") == null) return fail(client, "LOD chat tree missing");
+                client.getConnection().sendCommand("ringworld lod high");
+                if (RingClientLodTuning.quality() != RingLodQuality.HIGH) return fail(client, "LOD execution failed");
                 RingMinecraftClientAccess.setGuiHidden(client, false);
                 org.lwjgl.glfw.GLFW.glfwShowWindow(client.getWindow().handle());
                 RingWorldMod.LOGGER.info("[fidelity-gallery] PASS: resumed owner world; LOD chat tree and execution verified");
@@ -112,7 +112,7 @@ final class RingAtlasFidelityGalleryClient {
             if (client.player == null || atlas == null || !atlas.isComplete()) return true;
             if (atlas.sampleStep() != fidelity.sampleStepBlocks()) return fail(client, "wrong fidelity");
             if (compareMesh) {
-                var requested = comparisonIndex == 0 ? RingLodQuality.VERY_HIGH : RingLodQuality.MAX;
+                var requested = comparisonIndex == 0 ? RingLodQuality.MEDIUM : RingLodQuality.HIGH;
                 client.getConnection().sendCommand("ringworld lod " + requested.command());
                 if (RingClientLodTuning.quality() != requested) return fail(client, "client LOD command did not select " + requested);
             }
