@@ -96,6 +96,29 @@ public final class NeoForgeRingWorldClient {
 
     @SubscribeEvent
     public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
+        var lod = Commands.literal("lod").executes(context -> {
+            String message = dev.ringworld.client.RingClientLodTuning.summary();
+            context.getSource().sendSuccess(() -> Component.literal(message), false);
+            return 1;
+        });
+        lod.then(Commands.literal("show").executes(context -> {
+            String message = dev.ringworld.client.RingClientLodTuning.summary();
+            context.getSource().sendSuccess(() -> Component.literal(message), false);
+            return 1;
+        }));
+        lod.then(Commands.literal("reset").executes(context -> {
+            String message = dev.ringworld.client.RingClientLodTuning.select(null);
+            context.getSource().sendSuccess(() -> Component.literal(message), false);
+            return 1;
+        }));
+        for (var quality : dev.ringworld.world.RingLodQuality.values()) {
+            lod.then(Commands.literal(quality.command()).executes(context -> {
+                String message = dev.ringworld.client.RingClientLodTuning.select(quality);
+                context.getSource().sendSuccess(() -> Component.literal(message), false);
+                return 1;
+            }));
+        }
+        event.getDispatcher().register(Commands.literal("ringworld").then(lod));
         var falloff = Commands.argument("falloff", FloatArgumentType.floatArg(
                         dev.ringworld.world.RingAtlasLightProfile.MIN_FALLOFF,
                         dev.ringworld.world.RingAtlasLightProfile.MAX_FALLOFF))
@@ -175,7 +198,7 @@ public final class NeoForgeRingWorldClient {
         ClientRingState.set(new RingGeometry(payload.width(), payload.circumference()),
                 payload.wallHeight(), payload.surfaceReferenceY(),
                 payload.terrainNoiseMapping(), payload.wallStyle(), payload.skyProfile(),
-                payload.seed(), payload.formatVersion(), fingerprint);
+                payload.generationSettings(), payload.seed(), payload.formatVersion(), fingerprint);
         RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
     }
 

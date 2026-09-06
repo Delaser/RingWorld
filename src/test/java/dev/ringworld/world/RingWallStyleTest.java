@@ -28,7 +28,7 @@ class RingWallStyleTest {
                         RingWallStyle.Pattern.MASONRY,
                         RingWallStyle.Pattern.PANELS,
                         RingWallStyle.Pattern.GRADIENT,
-                        RingWallStyle.Pattern.HYBRID),
+                        RingWallStyle.Pattern.HYBRID, RingWallStyle.Pattern.ENGINEERED),
                 java.util.List.of(RingWallStyle.Pattern.selectableValues()));
         assertEquals(RingWallStyle.Pattern.CLUSTERED,
                 RingWallStyle.Pattern.fromId(RingWallStyle.Pattern.CLUSTERED.id()));

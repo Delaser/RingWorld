@@ -1,6 +1,8 @@
 package dev.ringworld.mixin;
 
 import dev.ringworld.world.RingGenerationBoundary;
+import dev.ringworld.world.RingIndustrialElementPlacement;
+import net.minecraft.world.level.levelgen.Heightmap;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingWorldGeneratorAccess;
 import net.minecraft.world.level.StructureManager;
@@ -38,6 +40,13 @@ abstract class ChunkGeneratorMixin {
         if (geometry != null) {
             RingGenerationBoundary.installRim(chunk, geometry, access.ringworld$getWallHeight(),
                     access.ringworld$getWallStyle(), world.getSeed());
+            RingGenerationBoundary.installUnderside(chunk, geometry,
+                    access.ringworld$getWallStyle(), world.getSeed());
+            RingIndustrialElementPlacement.install(chunk, geometry, access.ringworld$getWallHeight(),
+                    access.ringworld$getWallStyle(), world.getSeed(), (x, z) ->
+                            ((ChunkGenerator)(Object)this).getBaseHeight(x, z,
+                                    Heightmap.Types.WORLD_SURFACE_WG, world,
+                                    world.getLevel().getChunkSource().randomState()));
         }
     }
 

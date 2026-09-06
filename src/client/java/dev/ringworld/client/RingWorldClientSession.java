@@ -8,6 +8,7 @@ public final class RingWorldClientSession {
 
     public static void clear() {
         RingSurfaceTextureRenderer.clear();
+        RingClientLodTuning.clearSession();
         AtlasPregenerationClientState.clear();
         ClientRingState.clear();
     }

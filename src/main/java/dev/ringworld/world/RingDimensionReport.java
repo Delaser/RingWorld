@@ -68,10 +68,17 @@ public record RingDimensionReport(
     public static RingDimensionReport forVanillaOverworld(RingGeometry geometry,
                                                            int wallHeightBlocks,
                                                            int rimThicknessBlocks) {
+        return forVanillaOverworld(geometry, wallHeightBlocks, rimThicknessBlocks,
+                RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
+    }
+
+    public static RingDimensionReport forVanillaOverworld(RingGeometry geometry,
+                                                           int wallHeightBlocks,
+                                                           int rimThicknessBlocks,
+                                                           int atlasSampleStepBlocks) {
         return evaluate(geometry, wallHeightBlocks,
                 VANILLA_OVERWORLD_BOTTOM_Y, VANILLA_OVERWORLD_TOP_Y_EXCLUSIVE,
-                rimThicknessBlocks,
-                RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
+                rimThicknessBlocks, atlasSampleStepBlocks);
     }
 
     public static RingDimensionReport evaluate(RingGeometry geometry,

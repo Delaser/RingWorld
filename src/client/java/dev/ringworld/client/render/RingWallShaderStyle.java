@@ -37,6 +37,13 @@ final class RingWallShaderStyle {
         return new Encoded(palette, vertexArgb);
     }
 
+    static int[] paletteColors(RingWallStyle style, Level world) {
+        int[] colors = new int[100];
+        for (int roll = 0; roll < 100; roll++)
+            colors[roll] = mapRgb(RingGenerationBoundary.styledRimBlockForRoll(style, roll), world);
+        return colors;
+    }
+
     private static List<Run> runs(RingWallStyle style, Level world) {
         List<Run> result = new ArrayList<>();
         int start = 0;

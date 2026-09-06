@@ -1,5 +1,7 @@
 # Current state
 
+Owner release direction (2026-09-06): hold the next RingWorld release until Minecraft 26.3 is released. Prerelease compatibility work is experimental testing, not a publication or live-world update.
+
 Current release: **RingWorld 1.1**, covering 26.1, 26.1.1, 26.1.2 and separate
 26.2 builds on Fabric and NeoForge. Owner-authorized PR #232 is merged; all
 four jars are submitted to both hosts and all eight CDN downloads match.
@@ -9,6 +11,20 @@ The dated qualification checkpoints below preserve the earlier approval
 boundaries; their “held” status is superseded only by this release record.
 
 Unreleased optional-feature work after 1.1 currently includes:
+
+- immutable format-5 generation settings and the `settings_v6` handshake:
+  coordinated Performance/Balanced/High/Very-high Atlas fidelity, Vanilla or
+  Archipelago terrain, an opt-in continuous periodic river, and an opt-in
+  built-in structure-density increase. All new choices default to the former
+  behaviour for existing worlds. Climate Tour is intentionally skipped;
+- a shared seed-derived macro terrain field used by real chunks and the Create
+  World preview. The Fabric and NeoForge 2,048×128 fixture passes on both
+  Minecraft 26.1.2 and 26.2 with
+  Archipelago, river, more structures and Very-high Atlas selected, including
+  eight real river biome/channel samples, periodic terrain, finite rims,
+  stronghold/portal generation and normal shutdown. Visual/balance and
+  production release evidence remain outstanding; see
+  [`OPTIONAL_WORLD_GENERATION.md`](OPTIONAL_WORLD_GENERATION.md);
 
 - atlas format 8, which renders mycelium with the measured vanilla top-texture
   colour instead of Minecraft's pink map colour and carries a live exposed
@@ -27,7 +43,7 @@ Unreleased optional-feature work after 1.1 currently includes:
   gameplay time or terrain identity;
 - a loader-neutral creation UI for selecting rim presets, detailed wall
   controls, and separate sky/sun selectors, with the resulting values synchronized on both
-  loaders through `settings_v5` and `sky_profile_v1`.
+  loaders through `settings_v6` and `sky_profile_v1`.
 - a chunk-free asynchronous seed preview in Create World. It uses the real
   selected seed, periodic worldgen sampler, and current ring dimensions; two
   different-seed captures pass on both loaders without creating a save. Its
@@ -42,8 +58,9 @@ faces disappear with the rest of the reference-height bridge when the detailed
 Atlas mesh becomes authoritative.
 
 The shared Java 25 regression suite and both loader compilations pass for this
-development work. The expanded 17-capture creation/settings fixture also passes
-on Fabric and NeoForge, including the rim editor at 480×270 and 320×270,
+development work. The expanded 19-capture creation/settings fixture also passes
+on Fabric and NeoForge, including the generation panel, two real High-fidelity
+seed previews, and the rim editor at 480×270 and 320×270,
 Overgrown preset retention across resize, compact option labels, selected Night
 sky and Large sun settings, confirmation, persistence, and normal menu-only teardown.
 A disposable same-seed Fabric gallery now captures all ten rim presets and
@@ -54,14 +71,14 @@ and Gamma Atlas-light presentation on 2026-08-30. A separate named Medium
 Industrial 16,384×256 review world has a complete format-8 Atlas and eight
 verified plains villages distributed around the loop for nighttime-light review.
 
-On 2026-08-31 the audited source passed 377 unit/parameterized tests on both
+On 2026-08-31 the audited source passed 408 unit/parameterized tests on both
 Fabric and NeoForge against the default Minecraft 26.1.2 dependency set,
 with zero failures, errors, or skips. The audit corrected three concrete
 development defects: client appearance state now clears between worlds,
 non-divisible circumferences retain periodic wall-pattern noise, and seed
 preview generation is isolated from the live Create World generator with
 stale-result rejection. The preceding approved batch also passed the
-17-capture creation/seed-preview fixture and the 11-capture Atlas UI fixture,
+19-capture creation/seed-preview fixture and the 11-capture Atlas UI fixture,
 including complete generation, a live block revision, normal disconnect, and
 cleared client state. Those graphical fixtures predate the three focused
 repairs and therefore remain prior visual evidence rather than a fresh frozen
@@ -77,6 +94,49 @@ and NeoForge dedicated servers, reached `Done`, and stopped normally. This is
 static/archive and dedicated-startup evidence only: no client, mixed-loader,
 complete gameplay, package, or host claim follows from it. See
 [`UNIFIED_JAR_FEASIBILITY.md`](UNIFIED_JAR_FEASIBILITY.md).
+
+## Local LOD command experiment (2026-09-06)
+
+Uncommitted development work adds `/ringworld lod` with Lowest, Low, Medium,
+High, Very High and Max display levels. These are client/session-local and
+separate from saved server Atlas fidelity. Both loaders build and pass 412 tests
+on 26.1.2 and 26.2 with the experimental one-block master. Fabric 26.1.2 proves
+actual live command switching on one completed 2048×128 Atlas. Very High
+(2-block mesh, 430080 vertices) measured 186.2 FPS; Max (1-block mesh,
+1646592 vertices) measured 177.6 FPS in matched 30-second hidden-window samples.
+The source Atlas and 2048×128 GPU texture were unchanged; live revision rebuilds
+occurred during both samples. Captures and exact metrics are retained in
+`logs/atlas-mesh-one-block-results/`; runtime log:
+`logs/atlas-lod-live-comparison.log`. The owner requested the client remain open
+for interactive comparison. Normal server fidelity source constants were
+restored; the one-block master remains an isolated test configuration.
+
+## Staged preview cancellation regression (2026-09-06)
+
+Leaving a costly Medium/Very-high staged preview now interrupts that world's
+own submitted `Future`, allowing the single executor to start the next world's
+preview. The cancelled flag and server-thread world-identity publication guards
+remain intact. This supersedes the uncommitted manual worker-thread approach,
+whose late cancellation could interrupt a subsequent job. No sampler, topology,
+saved terrain, or authoritative Atlas scheduling change is included.
+
+Two focused Java tests cover running cancellation and worker reuse, repeated
+late cancellation, interrupt-state isolation, and queued cancellation. The muted
+Medium-to-Small handoff runtime passes on Fabric 26.1.2 (2026-09-05) and NeoForge
+26.1.2 (2026-09-06). Small receives its CURRENT 512×16 preview in 3,910 ms and
+5,801 ms respectively, before Atlas completion. Both runs prove normal session
+teardown and actual old-sampler cancellation. Both retained upward captures were
+visually inspected on 2026-09-06 and show the coloured placeholder at 14%/15%
+Atlas completion. See `docs/TESTING.md` for retained evidence paths and limits.
+
+Final-source Java 25 test/build runs on 2026-09-06 pass all 410
+unit/parameterized cases on each loader against both 26.1.2 and 26.2, with
+zero failures, errors, or skips in all four cells. The builds include the final
+handoff fixture and Gradle integration. Logs: `logs/preview-cancellation-final-26.1.2-build.log`
+and `logs/preview-cancellation-final-26.2-build.log`. The earlier four build
+passes predate the fixture and remain historical evidence only.
+Full Python discovery also passes 428 tests with two expected Windows-only
+skips on macOS; log: `logs/preview-cancellation-final-static.log`.
 
 ## Historical 26.2 qualification record leading to 1.1
 
@@ -2103,7 +2163,7 @@ and compatibility claims.
   are calculated exactly.
 - Saved format-3 settings win before generation; formats 1 and 2 migrate
   explicitly while retaining the legacy terrain-noise mapping.
-- The full immutable layout is sent to clients through `settings_v5` and used for walls, clouds,
+- The full immutable layout is sent to clients through `settings_v6` and used for walls, clouds,
   shaders, and atlas identity.
 - The 26.1 F3 position group reports presentation and canonical Ring
   coordinates, canonical block/chunk/region positions, loop index, and atlas
@@ -2203,3 +2263,79 @@ The owner-approved order is recorded in
 - Optional package fresh/upgrade launch checks and an independent final review.
 - Real compatibility testing beyond the published baseline and explicit
   unsupported list.
+
+
+## Local LOD experiments — 2026-09-06
+
+Client LOD command follow-up: Fabric 26.1.2 loses client descendants when its completion-tree copy merges an existing server `/ringworld` root before copying children. A client-tick repair now adds the complete LOD validation subtree, retaining existing server commands and repairing refreshed trees. The owner client was relaunched on 2026-09-06; runtime verified the LOD chat subtree and successful Max execution. The saved world and player settings were retained via the opt-in gallery resume path.
+
+Walking stall fix: the live profile showed synchronous compressed client-cache save bursts of 150–650ms. Client saves now run through a serialized background writer with ten-second batching and per-path coalescing; final disconnect saves retain their captured path. Pre-compression buffering also removes per-field compressor overhead. Max CPU mesh construction remains on the render thread (previous profile sampled 23–34ms bursts); this change targets the dominant cache-save freezes.
+
+Cache-save runtime verification passed: six full Atlas saves ran on the background writer (35–59ms), while five measured render-thread submissions took 0.714–0.942ms. Both loaders/versions passed 418 tests each. Controlled unchanged-data checkpoints verified the save path; this was not a matched walking FPS benchmark. Owner client is open on Max.
+
+Atlas upper-colour experiment: steep connectors now use the upper source texel while gentle terrain retains colour interpolation. The distant wall extends below each local sampled edge, covering the thin reference-plane gap visible in the owner screenshot. Runtime visual review complete; final captures are in logs/atlas-height-colour-results. The owner changed view between before/after captures. The global-minimum wall-bottom attempt was replaced by per-segment local bottoms. All 420 tests passed in all four source cells; owner client remains open on Max.
+
+Depth-aware Atlas handoff: enabled proxy depth writes while retaining its smooth alpha fade. An additional proxy coverage dither was removed after owner-reported flicker. This targets deep live valley faces appearing through nearer LOD terrain at the handoff. Runtime visual verification complete; the target cliff cut-through is covered while foreground trees remain visible. Captures: logs/atlas-depth-results. All 420 JVM tests pass in all four source cells. Owner client remains open on Max.
+
+Follow-up: the extra proxy dither caused owner-reported flicker and was removed. Smooth alpha now also blends written window-space depth from the backend far plane to actual surface depth, preventing low-opacity proxy fragments from cutting sky-coloured holes in live terrain. Hot-reloaded successfully into the open client; the ten shader/version source contracts pass.
+
+Side-material experiment: Atlas format 9/v3 metadata and tiles preserve a representative side colour. Steep connectors can render sampled grey rock while grass stays on top and foliage remains green. Adds four bytes per Atlas cell and one int per mesh lattice vertex, with no added GPU vertex bytes, texture, draw pass, or vertices. Baseline owner 30-second JFR: mean sampled FPS 116.03 (104–124), mean server tick 2.797ms. Both loaders pass 423 JVM tests each on both 26.1.2 and 26.2; the Python suite passes 429 tests with two platform skips. Visual capture shows sampled rock on steep connectors. Performance evidence and limitations are retained in logs/atlas-side-results/README.md; the client remains open on Max.
+
+Side-colour performance follow-up: original live mean 116 FPS; new settled sample 71 FPS; same-process side shading disabled 67 FPS, restored 112 FPS. Camera movement is confirmed by the final capture, so these windows do not establish a regression or neutrality. Local sampling microprobe adds about 0.3ms per 256 cells; raw Atlas data gains 1MiB at this size, plus about 1MiB CPU mesh storage. No GPU geometry/texture allocation increase. Full evidence and caveats: logs/atlas-side-results/README.md.
+
+Repeated stationary-view shader comparison: side shading off 115.27 FPS, on 113.40 FPS (30 seconds each, same sampled position/yaw/pitch). This isolates side RGB shading; sampling/storage/mesh remain present in both. Evidence: logs/atlas-side-repeat/README.md. New colouring remains enabled.
+
+Village lighting review (2026-09-06): twelve fixed-night screenshots on a copied Medium Industrial vanilla-village test world, Fabric 26.2. Complete one-block format-9 Atlas (4194304 cells), six LOD choices and six brightness/falloff treatments. Actual village geometry verified before distant captures. Same camera, no HUD; labels added afterwards with Minecraft bitmap glyphs. Very High/Max reach the same mesh cap on this hardware/geometry. Source defaults restored, original world untouched. Gallery and exact setup: logs/village-lighting-comparison/index.html and README.md. This is visual development evidence, not a 26.3 or release qualification.
+
+Torch-specific visual test (2026-09-06): controlled 1/4/16 vanilla torch groups on stone in the disposable copied Medium world, all 21 source columns verified at light 14. Six fixed-view Lowest-to-Max captures at unchanged Gamma 2.0/1.25. Coarse clusters merge; High+ separates footprints. Gallery: logs/torch-lighting-comparison/index.html. Default-on settings-toggle request is awaiting clarification of which feature to toggle; no implementation guessed.
+
+Opposite-side village comparison (2026-09-06): owner accepted a spawned vanilla village structure. Six LOD frames at 165-degree canonical arc separation on the Medium ring, default lighting, fixed midnight and FOV 30. Gallery includes unchanged full frames and explicitly labelled 4x pixel crops: logs/natural-village-165/index.html. This is a vanilla structure-spawned village, not hand-built and not claimed as natural seed placement.
+
+Medium-ring stationary FPS comparison (2026-09-06): same 165-degree village view, Fabric 26.2, complete 16384×256 one-block Atlas, normal simulation, 30 seconds per level. Mean FPS Lowest 245.3, Low 221.9, Medium 168.1, High 163.7, Very High 117.1, Max 116.2. Fixed pose verified throughout. Temporary 260 FPS ceiling and AFK limiter override restored afterwards; first idle-limited pass excluded. Very High/Max hit identical geometry/texture caps here. Evidence and sampling limits: logs/medium-ring-fps/README.md. Client remains open on Max.
+
+Website/changelog screenshot bank (2026-09-06): six fresh HUD-free day/night village captures at the agreed three-level labels Low (current Low), Medium (current High), High (current Max). Paired full-scene array, explicitly labelled 4x village-detail array, untouched originals, metadata and SHA-256 manifest are saved outside ignored logs under [docs/media/village-lod-day-night](media/village-lod-day-night/README.md). Visually checked both arrays. Labels use Minecraft bitmap glyphs. Command/UI renaming is not part of this asset capture. No publication; client remains open on current Max at night.
+
+Periodic stutter follow-up (2026-09-06): current Medium ring's Max synchronous buildMesh costs 319/278/275ms in three controlled same-content rebuilds. JFR identifies both CPU mesh construction and vertex emission/packing on the render thread; no GC during those probes. Live idle recording separately caught a 44ms GC pause, but no Atlas updates, so spontaneous hitch/rebuild correlation remains unproven. Earlier owner-play logs show frequent surface refreshes. Next fix should background both mesh construction and vertex packing with snapshot/revision/session consistency; then separately measure GPU upload. Evidence: logs/medium-ring-stutter/README.md. No production code changes or restart in this diagnostic turn.
+
+Background mesh fix (2026-09-06): moved both CPU mesh construction and native vertex packing to a serial surface worker alongside the matching texture snapshot. Both loaders pass 423 JVM tests on both 26.1.2/26.2; Python 429 with two skips. Fabric 26.2 runtime confirms worker-only mesh/packing samples, three completed Max refreshes, and safe pending-job cancellation across Low→Max switching. Remaining synchronous updates cost 53–104ms in this sample (35–42ms mesh upload, 9–22ms texture upload; one overlapping 52ms GC pause). Snapshot copies reach 26ms. Added >=16ms render-stage/cache-submission warnings. Full evidence and next targets: [ATLAS_STUTTER_2026-09-06.md](ATLAS_STUTTER_2026-09-06.md). Client remains open on Max, normal source fidelity defaults restored.
+
+Seam profile 6 experiment (2026-09-06): live fade now spans 90–102% of view distance (formerly 78–102%), with near reveal 0.82 and shared live/proxy atmospheric colour. Existing proxy depth and far haze retained. Both loaders pass 424 JVM tests on both source versions; Python 429 with two skips. Controlled pan: baseline64.63 vs experiment65.86FPS, zero >50ms frames in either; separate runs and short samples limit inference. Day/night comparisons show a smaller stippled region but visible water/shape boundaries remain. [Experiment notes](ATLAS_SEAM_EXPERIMENT_2026-09-06.md); gallery logs/seam-handoff-v6/index.html. Owner accepted the visual result, with occasional stutter still noted; pushed b546976 checkpoint remains the baseline.
+
+Industrial wall revision (2026-09-06): owner rejected the new structural grid and approved its decay. Revised Weathered panels retain the original Industrial panel material layout, adding localized cracks and copper ageing while preserving the approved top-connected collapse. Existing PANELS/id3 saves retain their previous behavior; new Industrial presets use ENGINEERED/id6, with settings_v7 protocol identity. Both loaders pass 429 JVM tests on both source versions; Python 429 with two skips. Six real-block specimens were regenerated and captured at 10/40/70% decay in an isolated copied world, now open for review. Gallery: logs/industrial-wall-study/index.html. [Study notes](INDUSTRIAL_WALL_STUDY_2026-09-06.md). Seam and wall experiments remain local changes after the pushed checkpoint.
+
+Industrial material continuity follow-up: replaced independent block grain in Weathered panels with connected noise on two-block steps, retaining the established panel boundaries and approved decay. Continuity regression passes (at least 50% fewer isolated material pixels and 25% fewer neighbor transitions). Both loaders/versions pass 429 JVM tests; Python 429 with two skips. Revision3 real-block gallery replaces the current wall-study comparisons; prior revision archived separately.
+
+Industrial material trial: owner disliked polished basalt stripes. Weathered panels now substitute polished andesite for that material band; connected grain and approved decay are unchanged. Legacy PANELS retains basalt. Both loaders pass 429 JVM tests on 26.1.2 and 26.2; revision4 wall-study captures show the replacement in the isolated copied world.
+
+Current Industrial trial supersedes connected grain: owner requested original noise with polished andesite replacing striped basalt. Weathered panels now reuse the original sampler while retaining approved decay/weathering and the andesite substitution. Revision5 gallery is current; revision4-gallery retains the previous connected-patch trial.
+
+Current Industrial tone trial: owner requested original colour tone after rejecting lighter andesite. Revision6 uses smooth basalt (cool grey, slightly darker than original polished basalt) with the original noise and approved decay. Added smooth basalt to rim-material recognition. Both loaders pass 429 JVM tests on both versions. Revision6 is the current wall-study gallery.
+
+Owner decision: retain original Industrial pattern and palette. Revision7 removes experimental material weathering/substitutions and restores exact original rolls; approved top-edge decay remains. Both loaders pass 429 JVM tests on both versions. [Future generation concepts](WALL_PATTERN_CONCEPTS_2026-09-06.md) are researched proposals only.
+
+All four researched wall concepts prototyped in the copied study world (Fabric 26.2): original control plus repairs, service routes, staggered courses and weathered joints, at matching 40% approved decay and original palette. Twenty day/night front/angled frames and 250 passing standalone checks. Production remains original; full-ring/Atlas shader qualification is not claimed. See WALL_CONCEPT_TEST_2026-09-06.md.
+
+Large wall study: owner requested a concrete large-scale example after rejecting the four small-pattern concepts. Built an authored 384-block armour wall with recessed sealed gate and maintenance hatch in the copied world. Day/night/detail gallery: logs/large-wall-concept/index.html. Original production selection remains unchanged; this is a scale sketch, not a new procedural option. Game open at overview.
+
+Correct-scale elements: measured existing shoreline wall at 33 exposed blocks (Y63–95) and built all eight structural examples directly on it in the copied world. Front/angled gallery and dimensions: logs/wall-elements-scale/index.html; notes WALL_ELEMENTS_SCALE_2026-09-06.md. Production pattern unchanged; examples remain authored studies.
+
+
+### Approved Industrial structures — 2026-09-06
+
+All eight correctly scaled wall samples now generate under the Industrial preset's “Industrial structures” pattern: buttress, expansion joint, drainage outlet, ventilation bank, maintenance gallery, service shaft, exposed machinery and braced breach. Seeded placement wraps around both wall faces and retains the original Industrial material noise and approved decay. Existing saved Panels & ribs styles and previously generated chunks are preserved. Distant Atlas relief remains a limitation.
+
+Both loaders pass 433 JVM tests on 26.1.2 and 26.2; Python passes 429 tests (two platform skips). The production installer also completed an 80-chunk copied-world check using actual terrain-noise queries; this is not fresh-world or multiplayer qualification. See [implementation, measurements and limitations](WALL_ELEMENTS_SCALE_2026-09-06.md#approved-production-generation).
+
+
+Industrial follow-up: removed the X-braced breach; the pool now has twelve motifs, including three exposed-machinery designs total and straight/stepped/paired embedded channels. Added shape-distinctness and no-projection tests for the six recessed motifs; both loaders pass 434 JVM tests on 26.1.2 and 26.2. 26.2 full builds pass. Rain-grey Atlas root cause fixed in the shader: terrain detail no longer multiplies by the celestial rain fade; weather lightmap and fog tint remain. See the wall-elements study document for rationale and retained evidence.
+
+
+Exterior camera fix: section-graph queue starts at the nearest finite wall column when the camera is outside Z; exterior client skylight reads as open sky instead of black missing data. Both loader builds pass on 26.1.2/26.2, and Fabric 26.2 before/after runtime screenshots confirm restored live terrain and hand lighting in the owner’s current new world. See [details and limitations](EXTERIOR_VISIBILITY_2026-09-06.md).
+
+
+Patterned underside and Atlas walls: new generation replaces only the bottommost bedrock layer using the saved wall materials/pattern; higher layers are preserved. Atlas walls now use a worker-built seeded four-face texture with Industrial motifs and decay. Both loaders build/test on both versions; Fabric runtime installer and shader checks pass. See [implementation, evidence and limitations](UNDERSIDE_ATLAS_WALLS_2026-09-06.md).
+
+
+Owner scope update (2026-09-07): no distant underside mesh is needed; viewing angles do not justify it. Remove it from outstanding work. Release/26.3 preparation is deferred for now. GitHub remains read-only in this review; no issues, PRs or comments changed.
+
+Backlog audit (2026-09-07): three local LOD levels are implemented (Low = old Low, Medium = old High, High = old Max). Fixed the 26.1 client exterior-visibility injection, Lithium POI redirect conflict through both metadata adapters, and starvation of surface builds during large Atlas downloads. Both source versions pass 436 tests per loader; final universal prototypes pass eight dedicated smokes. Real Atlas recovery and two-client runs cover both loaders/ABI lines with exact limits, plus representative Lithium/FerriteCore/JEI coexistence. Production movement still records occasional long frames; one Archipelago seed fails strict smooth-join acceptance and whole-ring density balance remains open. River, distant underside geometry and release/26.3 work remain excluded. See [active tasks](ACTIVE_TODO_2026-09-07.md) and [retained evidence and limits](BACKLOG_VALIDATION_2026-09-07.md).

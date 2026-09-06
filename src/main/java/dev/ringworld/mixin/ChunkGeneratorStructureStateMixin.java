@@ -6,6 +6,7 @@ import dev.ringworld.world.RingMonumentResolution;
 import dev.ringworld.world.RingStrongholdPlacement;
 import dev.ringworld.world.RingStructureStateAccess;
 import dev.ringworld.world.RingStructurePolicy;
+import dev.ringworld.world.RingStructureDensity;
 import java.util.List;
 import java.util.Map;
 import java.util.function.IntBinaryOperator;
@@ -44,6 +45,7 @@ abstract class ChunkGeneratorStructureStateMixin implements RingStructureStateAc
 
     @Unique private volatile @Nullable RingGeometry ringworld$geometry;
     @Unique private volatile boolean ringworld$guaranteeStronghold;
+    @Unique private volatile boolean ringworld$increaseStructureDensity;
     @Unique private volatile @Nullable List<ChunkPos> ringworld$strongholdPositions;
     @Unique private volatile RingMonumentResolution ringworld$monument = RingMonumentResolution.disabled();
     @Unique private volatile @Nullable StructurePlacement ringworld$monumentPlacement;
@@ -59,6 +61,7 @@ abstract class ChunkGeneratorStructureStateMixin implements RingStructureStateAc
                                              IntBinaryOperator oceanFloorHeight) {
         ringworld$geometry = geometry;
         ringworld$guaranteeStronghold = policy.guaranteesStronghold();
+        ringworld$increaseStructureDensity = policy.increasesStructureDensity();
         ringworld$strongholdPositions = null;
         ringworld$monument = policy.oceanMonument();
         ringworld$monumentSeaLevel = generatorSeaLevel;
@@ -137,6 +140,24 @@ abstract class ChunkGeneratorStructureStateMixin implements RingStructureStateAc
         return ringworld$monument.status() == RingMonumentResolution.Status.SATISFIED && ringworld$monumentCompatible
                 && placement == ringworld$monumentPlacement && candidate != null
                 && candidate.chunkX() == chunkX && candidate.chunkZ() == chunkZ;
+    }
+
+    @Override
+    public boolean ringworld$isAdditionalStructureCandidate(Object placement, int chunkX, int chunkZ) {
+        RingGeometry geometry = ringworld$geometry;
+        if (!ringworld$increaseStructureDensity || geometry == null
+                || !(placement instanceof RandomSpreadStructurePlacement randomSpread)) return false;
+        for (Holder<StructureSet> holder : possibleStructureSets) {
+            StructureSet set = holder.value();
+            if (set.placement() != placement) continue;
+            var key = holder.unwrapKey().orElse(null);
+            if (key == null || !"minecraft".equals(key.identifier().getNamespace())) return false;
+            if (holder.unwrapKey().filter(BuiltinStructureSets.OCEAN_MONUMENTS::equals).isPresent()) return false;
+            int stableSalt = key.identifier().toString().hashCode();
+            return RingStructureDensity.isAdditionalCandidate(levelSeed, geometry, stableSalt,
+                    randomSpread.spacing(), randomSpread.separation(), chunkX, chunkZ);
+        }
+        return false;
     }
 
     @Unique

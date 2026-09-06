@@ -162,6 +162,16 @@ class RingWorldCreationUiModelTest {
     }
 
     @Test
+    void creationAdmissionUsesSelectedAtlasFidelityForTheHardCellLimit() {
+        assertDoesNotThrow(() -> RingWorldConfig.validateNewWorldLayout(
+                1_024, 65_536, 160, 5, RingAtlasFidelity.BALANCED.sampleStepBlocks()));
+        assertThrows(IllegalArgumentException.class,
+                () -> RingWorldConfig.validateNewWorldLayout(
+                        1_024, 65_536, 160, 5,
+                        RingAtlasFidelity.VERY_HIGH.sampleStepBlocks()));
+    }
+
+    @Test
     void smallPresetExplainsTheDeterministicMonumentLimitation() {
         RingGeometry small = new RingGeometry(128, 2_048);
         assertFalse(RingWorldCreationUiModel.monumentAvailable(small));

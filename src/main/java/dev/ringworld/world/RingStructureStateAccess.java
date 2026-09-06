@@ -11,5 +11,6 @@ public interface RingStructureStateAccess {
     RingMonumentResolution ringworld$resolvePendingOceanMonument();
     boolean ringworld$hasCompatibleSavedOceanMonument();
     boolean ringworld$isGuaranteedOceanMonumentCandidate(Object placement, int chunkX, int chunkZ);
+    boolean ringworld$isAdditionalStructureCandidate(Object placement, int chunkX, int chunkZ);
 
 }

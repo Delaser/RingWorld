@@ -60,6 +60,29 @@ class RingLayoutFingerprintTest {
                 5, baselineStyle.palette(), baselineStyle.pattern(), 21)));
     }
 
+    @Test
+    void everyGenerationChoiceChangesWorldIdentity() {
+        RingWorldGenerationSettings baselineSettings = RingWorldGenerationSettings.DEFAULT;
+        RingWallStyle wall = RingWallStyle.DEFAULT;
+        long baseline = RingLayoutFingerprint.compute(256, 16_384, 123L, 160, 64,
+                RingTerrainNoiseMapping.CURRENT, wall, baselineSettings,
+                RingWorldSettings.FORMAT_VERSION);
+        assertNotEquals(baseline, generationFingerprint(
+                baselineSettings.withAtlasFidelity(RingAtlasFidelity.HIGH)));
+        assertNotEquals(baseline, generationFingerprint(
+                baselineSettings.withLayout(RingWorldLayout.ARCHIPELAGO)));
+        assertNotEquals(baseline, generationFingerprint(
+                baselineSettings.withContinuousRiver(true)));
+        assertNotEquals(baseline, generationFingerprint(
+                baselineSettings.withMoreStructures(true)));
+    }
+
+    private static long generationFingerprint(RingWorldGenerationSettings settings) {
+        return RingLayoutFingerprint.compute(256, 16_384, 123L, 160, 64,
+                RingTerrainNoiseMapping.CURRENT, RingWallStyle.DEFAULT, settings,
+                RingWorldSettings.FORMAT_VERSION);
+    }
+
     private static long fingerprint(RingWallStyle style) {
         return RingLayoutFingerprint.compute(256, 16_384, 123L, 160, 64,
                 RingTerrainNoiseMapping.CURRENT, style, RingWorldSettings.FORMAT_VERSION);

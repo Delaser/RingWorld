@@ -101,9 +101,9 @@ class ExternalGraphicalCreationUiTest(unittest.TestCase):
                 _extract_prism(archive, root / "output")
 
     def test_capture_contract_is_complete(self):
-        self.assertEqual(13, len(CAPTURES))
+        self.assertEqual(19, len(CAPTURES))
         self.assertEqual(len(CAPTURES), len(set(CAPTURES)))
-        self.assertEqual("creation-ui-13-footer-applied-scale4.png", CAPTURES[-1])
+        self.assertEqual("creation-ui-19-footer-applied-scale4.png", CAPTURES[-1])
 
     def test_executor_accepts_only_complete_self_reported_fixture(self):
         with tempfile.TemporaryDirectory() as temporary:
@@ -141,7 +141,7 @@ class ExternalGraphicalCreationUiTest(unittest.TestCase):
             with QualificationLock.acquire(paths.lock_path, paths.run_id) as held:
                 result = execute_creation_ui(plan, paths, held_lock=held, stage_runner=stage_runner)
             self.assertEqual("PASS", result.verdict.value)
-            self.assertEqual(13, len(result.captures))
+            self.assertEqual(19, len(result.captures))
             self.assertTrue(plan.terminal_json.is_file())
 
 

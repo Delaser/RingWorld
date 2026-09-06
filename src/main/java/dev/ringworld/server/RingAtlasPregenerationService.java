@@ -95,7 +95,9 @@ public final class RingAtlasPregenerationService {
         long hash = RingTerrainAtlas.worldHash(settings);
         Path path = cachePath(world);
         Path legacyPath = legacyCachePath(world);
-        RingTerrainAtlas.StorageLoad storage = RingTerrainAtlas.loadStorage(path, legacyPath, geometry, hash);
+        int sampleStep = settings.generationSettings().atlasFidelity().sampleStepBlocks();
+        RingTerrainAtlas.StorageLoad storage = RingTerrainAtlas.loadStorage(
+                path, legacyPath, geometry, hash, sampleStep);
         RingTerrainAtlas atlas = storage.atlas();
         logLoad(storage.status(), path, legacyPath, atlas);
         WorldState state = new WorldState(atlas, path,
@@ -343,7 +345,8 @@ public final class RingAtlasPregenerationService {
                 BlockState surfaceState = chunk.getBlockState(surface);
                 int color = surfaceColor(world, surface, surfaceState);
                 int blockLight = surfaceBlockLight(world, surface, surfaceState);
-                if (atlas.putBlockSample(blockX, blockZ, surfaceY + 1, color, blockLight)) {
+                if (atlas.putBlockSample(blockX, blockZ, surfaceY + 1, color, blockLight,
+                        sideColor(world, chunk, surface, surfaceState, color, atlas.sampleStep()))) {
                     changed = true;
                     int atlasX = atlas.geometry().wrapBlockX(blockX) / step;
                     int atlasZ = Math.floorDiv(blockZ - atlas.geometry().minWidthZ(), step);
@@ -357,6 +360,34 @@ public final class RingAtlasPregenerationService {
             if (state.job != null) state.job.refreshProgress();
         }
         return new CaptureResult(true, changed);
+    }
+
+    /** Bounded side sampling; never requests neighbouring chunks. */
+    private static int sideColor(ServerLevel world, LevelChunk chunk, BlockPos surface,
+                                 BlockState top, int topColor, int step) {
+        if (top.is(BlockTags.LEAVES) || top.is(BlockTags.LOGS) || !top.getFluidState().isEmpty())
+            return topColor;
+        int red = 0, green = 0, blue = 0, count = 0;
+        for (int direction = 0; direction < 4; direction++) {
+            int nx = surface.getX() + (direction == 0 ? step : direction == 1 ? -step : 0);
+            int nz = surface.getZ() + (direction == 2 ? step : direction == 3 ? -step : 0);
+            if ((nx >> 4) != chunk.getPos().x() || (nz >> 4) != chunk.getPos().z()) continue;
+            int neighbourY = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, nx & 15, nz & 15);
+            if (surface.getY() - neighbourY < 4) continue;
+            int y = surface.getY() - Math.min(24, Math.max(2, (surface.getY() - neighbourY) / 2));
+            BlockPos side = new BlockPos(surface.getX(), y, surface.getZ());
+            BlockState material = chunk.getBlockState(side);
+            if (material.isAir() || !material.getFluidState().isEmpty()) continue;
+            int color = surfaceColor(world, side, material);
+            red += color >> 16 & 255; green += color >> 8 & 255; blue += color & 255; count++;
+        }
+        if (count > 0) return (red / count) << 16 | (green / count) << 8 | blue / count;
+        // At a chunk boundary or inside a plateau, a bounded subsurface sample
+        // supplies the column material without loading neighbours just for LOD.
+        BlockPos below = surface.below(8);
+        BlockState material = chunk.getBlockState(below);
+        return material.isAir() || !material.getFluidState().isEmpty()
+                ? topColor : surfaceColor(world, below, material);
     }
 
     private static void processRecaptures(ServerLevel world, WorldState state) {
@@ -380,7 +411,8 @@ public final class RingAtlasPregenerationService {
             BlockState surfaceState = chunk.getBlockState(surface);
             int color = surfaceColor(world, surface, surfaceState);
             int blockLight = surfaceBlockLight(world, surface, surfaceState);
-            if (atlas.putCell(cell.column(), cell.row(), surfaceY + 1, color, blockLight)) {
+            if (atlas.putCell(cell.column(), cell.row(), surfaceY + 1, color, blockLight,
+                        sideColor(world, chunk, surface, surfaceState, color, atlas.sampleStep()))) {
                 changed = true;
                 state.dirtyTiles.publish(new TileCoordinate(
                         cell.column() / RingTerrainAtlas.TILE_SIZE,

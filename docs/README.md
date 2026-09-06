@@ -17,6 +17,9 @@ Start here:
   supported-version policy.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): coordinate model and end-to-end system
   design.
+- [`OPTIONAL_WORLD_GENERATION.md`](OPTIONAL_WORLD_GENERATION.md): saved Atlas
+  fidelity, Archipelago, continuous-river and increased-structure options,
+  including their shared implementation and repeatable test controls.
 - [`DIMENSION_SCALING_PLAN.md`](DIMENSION_SCALING_PLAN.md): source-audited
   registry of dimension-sensitive variables, safety limits, and the staged
   custom-size implementation plan.

@@ -165,3 +165,10 @@ synthetic `ServerLevel.lambda$tick$0(TickRateManager, ProfilerFiller, Entity)`
 entity consumer, which is the active redirect target. Re-audit that generated
 descriptor on every Minecraft update rather than assuming the call moved into
 the named outer `tick` method.
+
+## Disposable Atlas gallery window
+
+`FidelityGalleryWindowMixin` applies only when `ringworld.fidelityGallery=true`.
+It sets GLFW visibility/focus hints immediately before window creation so the
+fixture can capture full game frames without desktop activation. It does not
+change ordinary game windows, topology, or rendering.

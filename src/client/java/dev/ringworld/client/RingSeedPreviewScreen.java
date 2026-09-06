@@ -10,6 +10,7 @@ import dev.ringworld.world.RingTerrainPreviewSampler;
 import dev.ringworld.world.RingTerrainPreviewStage;
 import dev.ringworld.world.RingPreviewRequestGate;
 import dev.ringworld.world.RingWorldGeneratorAccess;
+import dev.ringworld.world.RingWorldGenerationSettings;
 import net.minecraft.core.Holder;
 import net.minecraft.core.RegistryAccess;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -51,6 +52,7 @@ public final class RingSeedPreviewScreen extends Screen {
     private final RingWorldCreationScreen parent;
     private final RingWorldCreationScreen.LayoutButtonOwner owner;
     private final RingGeometry geometry;
+    private final RingWorldGenerationSettings generationSettings;
     private final RingPreviewRequestGate<Result> requests = new RingPreviewRequestGate<>();
     private EditBox seedField;
     private Future<?> running;
@@ -63,11 +65,13 @@ public final class RingSeedPreviewScreen extends Screen {
 
     public RingSeedPreviewScreen(RingWorldCreationScreen parent,
                                  RingWorldCreationScreen.LayoutButtonOwner owner,
-                                 RingGeometry geometry) {
+                                 RingGeometry geometry,
+                                 RingWorldGenerationSettings generationSettings) {
         super(Component.literal("Ring seed preview"));
         this.parent = parent;
         this.owner = owner;
         this.geometry = geometry;
+        this.generationSettings = generationSettings;
     }
 
     @Override
@@ -166,6 +170,7 @@ public final class RingSeedPreviewScreen extends Screen {
         LevelHeightAccessor height = LevelHeightAccessor.create(input.minY(), input.height());
         access.ringworld$setGeometry(geometry);
         access.ringworld$setTerrainNoiseMapping(RingTerrainNoiseMapping.CURRENT);
+        access.ringworld$setGenerationSettings(generationSettings, seed);
         return RingTerrainPreviewSampler.generate(
                 previewHash(seed), geometry, RingTerrainPreviewStage.CURRENT,
                 generator, randomState, height);
@@ -174,6 +179,8 @@ public final class RingSeedPreviewScreen extends Screen {
     private long previewHash(long seed) {
         long value = seed ^ Integer.toUnsignedLong(geometry.circumferenceBlocks()) << 32;
         value ^= Integer.toUnsignedLong(geometry.widthBlocks());
+        value ^= (long)generationSettings.layout().id() << 12;
+        if (generationSettings.continuousRiver()) value ^= 0x52495645524C4F4FL;
         value ^= value >>> 33;
         value *= 0xff51afd7ed558ccdL;
         value ^= value >>> 33;

@@ -3,10 +3,12 @@
 #moj_import <minecraft:dynamictransforms.glsl>
 #moj_import <minecraft:fog.glsl>
 #moj_import <minecraft:globals.glsl>
+#moj_import <minecraft:ringworld_handoff.glsl>
 
 uniform sampler2D Sampler0;
 uniform sampler2D Sampler1;
 uniform sampler2D Sampler2;
+uniform sampler2D Sampler3;
 
 in vec2 texCoord0;
 in vec4 vertexColor;
@@ -34,6 +36,8 @@ float wallRoll(float blockX, float blockY, float depth) {
     float fine = wallHash(vec3(blockX, blockY, depth), 0.0);
     float coarse = wallHash(vec3(floor(blockX / 7.0), floor(blockY / 5.0),
                                      floor(depth / 2.0)), 19.0);
+    // The revised Industrial option keeps the established panel layout.
+    if (pattern > 5.5) pattern = 3.0;
     if (pattern < 0.5) {
         return mix(fine, coarse, 0.72);
     }
@@ -83,20 +87,23 @@ vec3 wallPalette(float roll) {
 }
 
 void main() {
-    vec4 previous = texture(Sampler1, texCoord0);
-    vec4 current = texture(Sampler0, texCoord0);
+    vec2 surfaceUv = texCoord0;
+    if (surfaceUv.x >= 2.0) surfaceUv.x -= 2.0;
+    vec4 previous = texture(Sampler1, surfaceUv);
+    vec4 current = texture(Sampler0, surfaceUv);
     vec4 sampled = mix(previous, current, clamp(ColorModulator.z, 0.0, 1.0));
+    if (texCoord0.x >= 2.0) sampled.rgb = vertexColor.rgb * 0.85;
     bool rimBridge = texCoord0.y < 0.0 || texCoord0.y > 1.0;
     if (rimBridge) {
-        float blockX = floor(mod(texCoord0.x * float(RingWorldLayout.y),
-                                 float(RingWorldLayout.y)));
-        float blockY = floor(intrinsicHeight);
-        float halfWidth = float(RingWorldLayout.z) * 0.5;
-        float wallDepth = max(0.0, halfWidth - abs(intrinsicWidth));
-        float roll = wallRoll(blockX, blockY, floor(wallDepth));
-        float textureNoise = 0.88 + 0.12 * wallHash(
-                vec3(blockX + 31.0, blockY - 17.0, wallDepth), 109.0);
-        sampled = vec4(wallPalette(roll) * textureNoise, 0.0);
+        float worldY = RingWorldVertical.w - intrinsicHeight;
+        float bottomY = RingWorldVertical.y - float(RingWorldLayout.w);
+        float vertical = clamp((worldY - bottomY) / max(1.0, float(RingWorldLayout.w)), 0.0, 0.999999);
+        // Inner V markers are -1 / 2; outer/top marker is shared.
+        float strip = intrinsicWidth < 0.0 ? 0.0 : 1.0;
+        if (texCoord0.y < -1.5 || texCoord0.y > 2.5) strip += 2.0;
+        vec4 wall = texture(Sampler3, vec2(fract(texCoord0.x), (strip + vertical) / 4.0));
+        if (wall.a < 0.5) discard;
+        sampled = vec4(wall.rgb, 0.0);
     }
 
     float circumference = float(RingWorldLayout.y);
@@ -115,29 +122,23 @@ void main() {
         discard;
     }
 
-    // Begin revealing the atlas underneath the final live chunks. Those chunks
-    // normally overwrite it, while a streaming gap exposes a fogged but
-    // recognizable continuation instead of a flat-colour belt. At the nominal
-    // edge over half of the terrain signal remains visible. The fog-colour
-    // component therefore sits low on the surface instead of forming a bright
-    // band above the last chunks.
-    float terrainDetail = smootherstep(
-        RingWorldDetail.x,
-        RingWorldDetail.y,
-        intrinsicDistance
-    );
-    float reveal = mix(RingWorldDetail.z, RingWorldDetail.w, terrainDetail)
-                   * clamp(ColorModulator.y, 0.0, 1.0);
+    // A nearly transparent proxy must not occlude fully visible live terrain.
+    // Fade its window-space depth from the far plane to the actual surface.
+    // Both backend NDC ranges map to [0,1] here; reversed depth has far=0.
+#ifdef RINGWORLD_REVERSED_DEPTH
+    gl_FragDepth = mix(0.0, gl_FragCoord.z, proxyAlpha);
+#else
+    gl_FragDepth = mix(1.0, gl_FragCoord.z, proxyAlpha);
+#endif
 
-    // A small amount of haze remains around the complete ring to suppress
-    // mip/colour aliasing without turning the far side into a flat sky ribbon.
-    float farFraction = clamp(intrinsicDistance / (circumference * 0.5), 0.0, 1.0);
-    float distanceHaze = mix(
-        RingWorldAtmosphere.x,
-        RingWorldAtmosphere.y,
-        pow(farFraction, RingWorldAtmosphere.z)
-    );
-    reveal *= 1.0 - distanceHaze;
+    // Match the final live chunks' atmosphere before their geometry fades.
+    // ColorModulator.y carries the celestial rain fade (1 - rain).
+    // Add bounded rain haze beyond the live-terrain transition. Full rain
+    // retains 65% of the normal reveal instead of erasing the terrain.
+    float rain = 1.0 - clamp(ColorModulator.y, 0.0, 1.0);
+    float rainDistance = smootherstep(RingWorldDetail.x, RingWorldDetail.y, intrinsicDistance);
+    float reveal = ring_handoff_reveal(intrinsicDistance)
+                   * (1.0 - 0.35 * rain * rainDistance);
 
     // ColorModulator.w is the incomplete-Atlas generation haze. It begins
     // dense, clears with authoritative coverage, and reaches exactly zero for
@@ -174,15 +175,5 @@ void main() {
     // The incomplete texture is deliberately opaque: real generated colours
     // flavour nearby unknown cells, then each published revision cross-fades
     // into the next instead of exposing a hard tile update.
-    // The normal fog UBO remains atmosphere-coloured even when the selected
-    // backdrop is Night or Void. Using it at the proxy boundary creates a
-    // conspicuous pale outline around the ring. ColorModulator.x carries the
-    // saved backdrop id, so dark modes blend to their actual sky colour.
-    vec3 edgeColor = FogColor.rgb;
-    if (ColorModulator.x > 1.5) {
-        edgeColor = vec3(1.0 / 255.0, 1.0 / 255.0, 3.0 / 255.0);
-    } else if (ColorModulator.x > 0.5) {
-        edgeColor = vec3(5.0 / 255.0, 8.0 / 255.0, 16.0 / 255.0);
-    }
-    fragColor = vec4(mix(edgeColor, litTerrain, reveal), proxyAlpha);
+    fragColor = vec4(mix(ring_handoff_edge_color(), litTerrain, reveal), proxyAlpha);
 }

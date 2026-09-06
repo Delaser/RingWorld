@@ -45,6 +45,9 @@ abstract class ChunkGeneratorLocateMixin {
         Pair<BlockPos, Holder<Structure>> guaranteedMonument = ringworld$locateGuaranteedMonument(
                 world, structures, origin, searchRadius, skipKnownStructures, geometry, result);
         if (guaranteedMonument != null) result = guaranteedMonument;
+        Pair<BlockPos, Holder<Structure>> additional = ringworld$locateAdditionalStructures(
+                world, structures, origin, searchRadius, skipKnownStructures, geometry, result);
+        if (additional != null) result = additional;
 
         if (result == null) return;
         BlockPos canonical = result.getFirst();
@@ -53,6 +56,66 @@ abstract class ChunkGeneratorLocateMixin {
             result = Pair.of(new BlockPos(imageX, canonical.getY(), canonical.getZ()), result.getSecond());
         }
         cir.setReturnValue(result);
+    }
+
+    @Nullable
+    private static Pair<BlockPos, Holder<Structure>> ringworld$locateAdditionalStructures(
+            ServerLevel world, HolderSet<Structure> structures, BlockPos origin,
+            int searchRadius, boolean skipKnownStructures, RingGeometry geometry,
+            @Nullable Pair<BlockPos, Holder<Structure>> vanillaResult) {
+        if (!RingStructurePolicy.get(world).increasesStructureDensity()) return null;
+        ChunkGeneratorStructureState state = world.getChunkSource().getGeneratorState();
+        if (!(state instanceof RingStructureStateAccess access)) return null;
+        StructureManager manager = world.structureManager();
+        int originChunkX = Math.floorMod(SectionPos.blockToSectionCoord(origin.getX()),
+                geometry.circumferenceChunks());
+        int originChunkZ = SectionPos.blockToSectionCoord(origin.getZ());
+        double bestDistance = vanillaResult == null ? Double.POSITIVE_INFINITY
+                : ringworld$periodicDistanceSquared(origin, vanillaResult.getFirst(), geometry);
+        Pair<BlockPos, Holder<Structure>> best = null;
+        StructureStart bestStart = null;
+
+        for (Holder<Structure> structure : structures) {
+            for (StructurePlacement candidatePlacement : state.getPlacementsForStructure(structure)) {
+                if (!(candidatePlacement instanceof RandomSpreadStructurePlacement placement)) continue;
+                int maximumDelta = (int)Math.min(geometry.circumferenceChunks() / 2L,
+                        Math.min(Integer.MAX_VALUE, (long)(searchRadius + 1) * placement.spacing()));
+                int minZ = Math.max(geometry.minChunkZ(), originChunkZ - maximumDelta);
+                int maxZ = Math.min(geometry.maxChunkZ(), originChunkZ + maximumDelta);
+                for (int dx = -maximumDelta; dx <= maximumDelta; dx++) {
+                    int chunkX = Math.floorMod(originChunkX + dx, geometry.circumferenceChunks());
+                    for (int chunkZ = minZ; chunkZ <= maxZ; chunkZ++) {
+                        if (!access.ringworld$isAdditionalStructureCandidate(
+                                placement, chunkX, chunkZ)
+                                || !placement.isStructureChunk(state, chunkX, chunkZ)) continue;
+                        ChunkPos candidateChunk = new ChunkPos(chunkX, chunkZ);
+                        StructureCheckResult presence = manager.checkStructurePresence(
+                                candidateChunk, structure.value(), placement, skipKnownStructures);
+                        if (presence == StructureCheckResult.START_NOT_PRESENT) continue;
+                        ChunkAccess chunk = world.getChunk(
+                                chunkX, chunkZ, ChunkStatus.STRUCTURE_STARTS);
+                        StructureStart start = manager.getStartForStructure(
+                                SectionPos.bottomOf(chunk), structure.value(), chunk);
+                        if (start == null || !start.isValid()) continue;
+                        if (skipKnownStructures) {
+                            if (!start.canBeReferenced()) continue;
+                        }
+                        BlockPos locate = placement.getLocatePos(candidateChunk);
+                        int imageX = (int)Math.round(geometry.nearestImageX(
+                                locate.getX(), origin.getX()));
+                        BlockPos image = new BlockPos(imageX, locate.getY(), locate.getZ());
+                        double distance = origin.distSqr(image);
+                        if (distance < bestDistance) {
+                            bestDistance = distance;
+                            best = Pair.of(image, structure);
+                            bestStart = start;
+                        }
+                    }
+                }
+            }
+        }
+        if (skipKnownStructures && bestStart != null) manager.addReference(bestStart);
+        return best;
     }
 
     @Nullable

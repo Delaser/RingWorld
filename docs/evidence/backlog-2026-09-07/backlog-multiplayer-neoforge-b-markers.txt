@@ -1,0 +1,2 @@
+[00:52:08] [Render thread/INFO] [ringworld/]: [multiplayer:B] independent client LOD=high
+[00:53:13] [Render thread/INFO] [ringworld/]: [multiplayer:B] local scenario result=true; stopping client

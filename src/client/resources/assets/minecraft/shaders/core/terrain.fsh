@@ -2,6 +2,7 @@
 
 #moj_import <minecraft:fog.glsl>
 #moj_import <minecraft:globals.glsl>
+#moj_import <minecraft:ringworld_handoff.glsl>
 #moj_import <minecraft:chunksection.glsl>
 
 uniform sampler2D Sampler0;
@@ -124,4 +125,15 @@ void main() {
     fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance,
         FogEnvironmentalStart, FogEnvironmentalEnd,
         FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
+    if (ring_active() && ringIntrinsicDistance >= 0.0) {
+        // Ease the live surface toward the Atlas atmosphere before discarding
+        // geometry. Preserve real texture, face lighting and environmental fog.
+        float matchWeight = ring_handoff_smootherstep(
+            RingWorldDetail.x, RingWorldHandoff.x, ringIntrinsicDistance);
+        vec4 matched = vec4(mix(ring_handoff_edge_color(), color.rgb,
+                               ring_handoff_reveal(ringIntrinsicDistance)), color.a);
+        matched = apply_fog(matched, sphericalVertexDistance, cylindricalVertexDistance,
+            FogEnvironmentalStart, FogEnvironmentalEnd, 1.0e20, 1.0e21, FogColor);
+        fragColor = mix(fragColor, matched, matchWeight);
+    }
 }

@@ -5,6 +5,7 @@ import dev.ringworld.world.RingWorldConfig;
 import dev.ringworld.world.RingWorldCreationUiModel;
 import dev.ringworld.world.RingWallStyle;
 import dev.ringworld.world.RingSkyProfile;
+import dev.ringworld.world.RingWorldGenerationSettings;
 import org.jetbrains.annotations.Nullable;
 
 import net.minecraft.client.gui.GuiGraphicsExtractor;
@@ -39,6 +40,7 @@ public final class RingWorldCreationScreen extends Screen {
     private RingWallStyle wallStyle;
     private RingSkyProfile.Backdrop skyBackdrop;
     private RingSkyProfile.LightSource sunStyle;
+    private RingWorldGenerationSettings generationSettings;
     private Button smallButton;
     private Button mediumButton;
     private Button largeButton;
@@ -47,6 +49,7 @@ public final class RingWorldCreationScreen extends Screen {
     private Button wallPresetButton;
     private Button skyBackdropButton;
     private Button sunStyleButton;
+    private Button generationButton;
     private Button applyButton;
     private Button seedPreviewButton;
     @Nullable private RingDimensionReport report;
@@ -74,6 +77,8 @@ public final class RingWorldCreationScreen extends Screen {
                 ? config.skyProfile().backdrop() : skyBackdrop;
         RingSkyProfile.LightSource draftSunStyle = circumferenceField == null
                 ? config.skyProfile().lightSource() : sunStyle;
+        RingWorldGenerationSettings draftGenerationSettings = circumferenceField == null
+                ? config.generationSettings() : generationSettings;
         Layout layout = layout();
         int presetGap = 4;
         int presetWidth = (layout.contentWidth() - presetGap * 2) / 3;
@@ -104,9 +109,10 @@ public final class RingWorldCreationScreen extends Screen {
         wallStyle = draftWallStyle;
         skyBackdrop = draftSkyBackdrop;
         sunStyle = draftSunStyle;
+        generationSettings = draftGenerationSettings;
 
         int optionGap = 4;
-        int optionWidth = (layout.contentWidth() - optionGap * 4) / 5;
+        int optionWidth = (layout.contentWidth() - optionGap * 5) / 6;
         wallPresetButton = addRenderableWidget(Button.builder(wallPresetMessage(),
                 button -> RingMinecraftClientAccess.setScreen(minecraft,
                         new RingWallStyleScreen(this, wallStyle, selected -> {
@@ -124,16 +130,25 @@ public final class RingWorldCreationScreen extends Screen {
             button.setMessage(sunStyleMessage());
         }).bounds(layout.contentLeft() + (optionWidth + optionGap) * 2,
                 layout.optionY(), optionWidth, 20).build());
+        generationButton = addRenderableWidget(Button.builder(generationMessage(), button ->
+                RingMinecraftClientAccess.setScreen(minecraft,
+                        new RingWorldGenerationScreen(this, report == null ? null : report.geometry(),
+                                generationSettings, selected -> {
+                            generationSettings = selected;
+                            RingMinecraftClientAccess.setScreen(minecraft, this);
+                        })))
+                .bounds(layout.contentLeft() + (optionWidth + optionGap) * 3,
+                        layout.optionY(), optionWidth, 20).build());
         monumentButton = addRenderableWidget(Button.builder(monumentMessage(),
                 button -> {
                     requestOceanMonument = !requestOceanMonument;
                     button.setMessage(monumentMessage());
                 })
-                .bounds(layout.contentLeft() + (optionWidth + optionGap) * 3,
+                .bounds(layout.contentLeft() + (optionWidth + optionGap) * 4,
                         layout.optionY(), optionWidth, 20).build());
         savedConfigButton = addRenderableWidget(Button.builder(Component.literal("Reset"),
                 button -> restoreSavedConfig())
-                .bounds(layout.contentLeft() + (optionWidth + optionGap) * 4,
+                .bounds(layout.contentLeft() + (optionWidth + optionGap) * 5,
                         layout.optionY(), optionWidth, 20).build());
 
         int actionGap = 6;
@@ -181,9 +196,11 @@ public final class RingWorldCreationScreen extends Screen {
         wallStyle = saved.wallStyle();
         skyBackdrop = saved.skyProfile().backdrop();
         sunStyle = saved.skyProfile().lightSource();
+        generationSettings = saved.generationSettings();
         wallPresetButton.setMessage(wallPresetMessage());
         skyBackdropButton.setMessage(skyBackdropMessage());
         sunStyleButton.setMessage(sunStyleMessage());
+        generationButton.setMessage(generationMessage());
         updateReport();
         monumentButton.setMessage(monumentMessage());
     }
@@ -228,6 +245,14 @@ public final class RingWorldCreationScreen extends Screen {
         return new RingSkyProfile(skyBackdrop, sunStyle, RingSkyProfile.FORMAT_VERSION);
     }
 
+    private Component generationMessage() {
+        if (layout().compact()) return Component.literal("Gen");
+        String label = generationSettings.layout().label();
+        if (generationSettings.continuousRiver()) label += "+R";
+        if (generationSettings.moreStructures()) label += "+S";
+        return Component.literal("Gen: " + label);
+    }
+
     private Component monumentMessage() {
         if (report != null && report.isValid()
                 && !RingWorldCreationUiModel.monumentAvailable(report.geometry())) {
@@ -243,7 +268,7 @@ public final class RingWorldCreationScreen extends Screen {
         if (applyButton == null || circumferenceField == null) return;
         RingWorldCreationUiModel.Validation validation = RingWorldCreationUiModel.validate(
                 circumferenceField.getValue(), widthField.getValue(), wallHeightField.getValue(),
-                wallStyle);
+                wallStyle, generationSettings);
         report = validation.report();
         validationMessages = validation.messages();
         applyButton.active = validation.canApply();
@@ -264,7 +289,7 @@ public final class RingWorldCreationScreen extends Screen {
             return;
         }
         RingMinecraftClientAccess.setScreen(minecraft,
-                new RingSeedPreviewScreen(this, owner, report.geometry()));
+                new RingSeedPreviewScreen(this, owner, report.geometry(), generationSettings));
     }
 
     private void apply() {
@@ -278,7 +303,8 @@ public final class RingWorldCreationScreen extends Screen {
             }
         }, Component.literal("Use this RingWorld?"),
                 Component.literal(RingWorldCreationUiModel.confirmationCopy(
-                        confirmedReport, requestOceanMonument, wallStyle, skyProfile())),
+                        confirmedReport, requestOceanMonument, wallStyle, skyProfile(),
+                        generationSettings)),
                 Component.literal("Use layout"), Component.literal("Back")));
     }
 
@@ -288,7 +314,7 @@ public final class RingWorldCreationScreen extends Screen {
                     confirmedReport.geometry().widthBlocks(),
                     confirmedReport.geometry().circumferenceBlocks(),
                     confirmedReport.wallHeightBlocks(), wallStyle, skyProfile(),
-                    requestOceanMonument);
+                    generationSettings, requestOceanMonument);
             if (parent instanceof LayoutButtonOwner owner) {
                 owner.ringworld$refreshLayoutButton();
             }
@@ -469,6 +495,20 @@ public final class RingWorldCreationScreen extends Screen {
 
     void ringworld$automationOpenSeedPreview() {
         seedPreviewButton.onPress(AutomationInput.INSTANCE);
+    }
+
+    void ringworld$automationOpenGeneration() {
+        generationButton.onPress(AutomationInput.INSTANCE);
+    }
+
+    RingWorldGenerationSettings ringworld$automationGenerationSettings() {
+        return generationSettings;
+    }
+
+    void ringworld$automationSetGenerationSettings(RingWorldGenerationSettings settings) {
+        generationSettings = settings;
+        generationButton.setMessage(generationMessage());
+        updateReport();
     }
 
     void ringworld$automationCycleSky() {

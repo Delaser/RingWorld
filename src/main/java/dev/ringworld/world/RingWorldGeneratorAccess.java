@@ -15,5 +15,7 @@ public interface RingWorldGeneratorAccess {
     RingWallStyle ringworld$getWallStyle();
     void ringworld$setGuaranteeStronghold(boolean guaranteeStronghold);
     boolean ringworld$guaranteesStronghold();
+    void ringworld$setGenerationSettings(RingWorldGenerationSettings settings, long generatorSeed);
+    RingWorldGenerationSettings ringworld$getGenerationSettings();
     Climate.Sampler ringworld$getPeriodicClimateSampler(RandomState randomState);
 }

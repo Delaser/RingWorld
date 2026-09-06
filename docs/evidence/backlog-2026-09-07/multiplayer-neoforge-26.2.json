@@ -1,0 +1,11 @@
+{
+  "server_full_pass": true,
+  "clients_exit": [
+    0,
+    0
+  ],
+  "client_pass": [
+    true,
+    true
+  ]
+}

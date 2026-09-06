@@ -67,7 +67,7 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         names = {name for _, name, _ in adapter_contract(adapters[0])}
         self.assertEqual(
             {"screen", "setScreen", "mainRenderTarget", "toastManager", "cameraEntity",
-             "camera", "hideGui", "setGuiHidden", "invalidateChunks", "grabScreenshot"},
+             "camera", "hideGui", "setGuiHidden", "invalidateChunks", "grabScreenshot", "maxTextureSize"},
             names,
         )
 
@@ -154,12 +154,20 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
                  for version in ("26.1", "26.2")]
         old, new = (path.read_text() for path in paths)
         self.assertEqual(adapter_contract(paths[0]), adapter_contract(paths[1]))
-        self.assertIn("CompareOp.LESS_THAN_OR_EQUAL", old)
+        self.assertIn("new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, true)", old)
         self.assertNotIn('withShaderDefine("RINGWORLD_REVERSED_DEPTH")', old)
-        self.assertIn("CompareOp.GREATER_THAN_OR_EQUAL", new)
+        self.assertIn("new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, true)", new)
         self.assertNotIn("CompareOp.LESS_THAN_OR_EQUAL", new)
         self.assertIn('withShaderDefine("RINGWORLD_REVERSED_DEPTH")', new)
         self.assertIn("isZZeroToOne() ? 0.0001F : -0.9999F", new)
+
+    def test_proxy_depth_coverage_retains_smooth_alpha(self):
+        proxy = (ROOT / "src/client/resources/assets/ringworld/shaders/core/ring_surface.fsh").read_text()
+        self.assertIn("gl_FragDepth = mix(0.0, gl_FragCoord.z, proxyAlpha)", proxy)
+        self.assertIn("gl_FragDepth = mix(1.0, gl_FragCoord.z, proxyAlpha)", proxy)
+        self.assertNotIn("ring_dither_threshold", proxy)
+        self.assertIn("if (proxyAlpha <= 0.001)", proxy)
+        self.assertIn("fragColor = vec4(mix(ring_handoff_edge_color(), litTerrain, reveal), proxyAlpha)", proxy)
 
     def test_proxy_far_clamp_preserves_perspective_and_uses_backend_depth(self):
         shader = (ROOT / "src/client/resources/assets/ringworld/shaders/core/ring_surface.vsh").read_text()

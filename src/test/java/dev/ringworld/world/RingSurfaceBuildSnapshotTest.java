@@ -77,6 +77,23 @@ class RingSurfaceBuildSnapshotTest {
         assertFalse(build.matches(new RingGeometry(256, 4_096), HASH, 4));
     }
 
+    @Test
+    void advancingLiveTilesCannotStarveAForwardCoherentBuild() {
+        RingGeometry geometry = new RingGeometry(256, 2_048);
+        RingTerrainAtlas live = completeAtlas(geometry, 71);
+        RingSurfaceBuildSnapshot build = new RingSurfaceBuildSnapshot(live.snapshot(), 4);
+        live.putCell(0, 0, 129, 0x112233);
+
+        assertTrue(build.canPublish(geometry, HASH, 5, -1));
+        assertTrue(build.canPublish(geometry, HASH, 100, 3));
+        assertEquals(71, build.atlas().cellHeight(0, 0));
+        assertFalse(build.canPublish(geometry, HASH, 5, 4));
+        assertFalse(build.canPublish(geometry, HASH, 5, 5));
+        assertFalse(build.canPublish(geometry, HASH, 3, -1));
+        assertFalse(build.canPublish(geometry, HASH + 1, 5, -1));
+        assertFalse(build.canPublish(new RingGeometry(256, 4_096), HASH, 5, -1));
+    }
+
     private static RingTerrainAtlas completeAtlas(RingGeometry geometry, int height) {
         RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, HASH);
         for (int row = 0; row < atlas.rows(); row++) {

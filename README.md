@@ -82,8 +82,8 @@ RingWorld is selected while creating a new world:
 
 1. Open **Create New World**.
 2. Select the **RingWorld C×W** button in the bottom-left corner.
-3. Choose Small, Medium, Large, or enter custom dimensions; select the rim and
-   sky presentation you want.
+3. Choose Small, Medium, Large, or enter custom dimensions; select the rim,
+   sky, Atlas detail and optional generation features you want.
 4. Review the world-size estimate and create the world.
 
 The built-in presets are:
@@ -102,6 +102,12 @@ Ring dimensions are saved permanently when the Overworld is first created.
 Changing a configuration file later does not resize an existing ring, and an
 ordinary flat Overworld cannot currently be converted into one.
 
+The optional generation panel offers Performance/Balanced/High/Very high
+Atlas detail, a Vanilla or Archipelago layout, one continuous closed-loop
+river, and moderately increased built-in structures. Vanilla, Balanced and
+both toggles Off remain the defaults. These choices are saved permanently with
+the world; see the [technical guide](docs/OPTIONAL_WORLD_GENERATION.md).
+
 For dedicated-server configuration, commands, backups, and recovery, see the
 [operations guide](docs/OPERATIONS.md).
 
@@ -114,8 +120,9 @@ so it builds a terrain Atlas in the background.
 It appears in stages:
 
 1. **Real nearby chunks load first.** You can begin playing normally.
-2. **A fogged placeholder fills the unknown ring.** It takes colour from the
-   terrain that has already been seen.
+2. **A fogged placeholder fills the unknown ring.** A seed-derived preview
+   starts at 512×16 and improves in stages while real terrain generates.
+   Leaving a world cancels its preview work so the next world can start its own.
 3. **The placeholder improves as more regions generate.** A small
    `Ring Atlas Generating: X%` display shows progress.
 4. **At verified completion, the distant ring switches to its detailed 3D
@@ -229,3 +236,12 @@ You may use it, include it in modpacks, modify it, redistribute it, and
 contribute improvements under the terms of that licence. Modified RingWorld
 source files remain MPL-2.0 when distributed. The licence does not grant
 rights to imply that an unofficial fork is endorsed by the RingWorld project.
+
+### Local Atlas display quality
+
+Use `/ringworld lod low|medium|high` to select your local
+LOD display budget. `/ringworld lod show` reports the selected level and the
+server source resolution; `/ringworld lod reset` follows the server default.
+The choice resets on disconnect. It changes local display samples, texture
+budget and mesh density, without changing terrain, server settings, or downloads.
+A client cannot recover finer terrain detail than the server Atlas contains.

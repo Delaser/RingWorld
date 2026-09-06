@@ -7,7 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class RingProtocolIdentityTest {
     @Test
     void settingsChannelsNameTheirCurrentWireLayout() {
-        assertEquals("ringworld:settings_v5", RingSettingsPayload.ID.id().toString());
+        assertEquals("ringworld:settings_v7", RingSettingsPayload.ID.id().toString());
         assertEquals("ringworld:settings_ack_v3", RingSettingsAckPayload.ID.id().toString());
     }
 
@@ -20,9 +20,9 @@ class RingProtocolIdentityTest {
 
     @Test
     void terrainAtlasChannelsNameTheirRevisionedWireLayout() {
-        assertEquals("ringworld:terrain_atlas_metadata_v2", RingTerrainAtlasMetadataPayload.ID.id().toString());
+        assertEquals("ringworld:terrain_atlas_metadata_v3", RingTerrainAtlasMetadataPayload.ID.id().toString());
         assertEquals("ringworld:terrain_atlas_request_v2", RingTerrainAtlasRequestPayload.ID.id().toString());
-        assertEquals("ringworld:terrain_atlas_tile_v2", RingTerrainAtlasTilePayload.ID.id().toString());
+        assertEquals("ringworld:terrain_atlas_tile_v3", RingTerrainAtlasTilePayload.ID.id().toString());
         assertEquals("ringworld:terrain_atlas_revision_v1", RingTerrainAtlasRevisionPayload.ID.id().toString());
     }
 }

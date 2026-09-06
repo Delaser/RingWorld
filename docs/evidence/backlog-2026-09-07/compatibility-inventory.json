@@ -1,0 +1,106 @@
+{
+  "lithium": [
+    {
+      "game": "26.1.2",
+      "loader": "fabric",
+      "version": "mc26.1.2-0.24.7-fabric",
+      "id": "Oqq8TOAV"
+    },
+    {
+      "game": "26.1.2",
+      "loader": "neoforge",
+      "version": "mc26.1.2-0.24.7-neoforge",
+      "id": "eZ0KJiEA"
+    },
+    {
+      "game": "26.2",
+      "loader": "fabric",
+      "version": "mc26.2-0.25.3-fabric",
+      "id": "f7vZ0VWU"
+    },
+    {
+      "game": "26.2",
+      "loader": "neoforge",
+      "version": "mc26.2-0.25.3-neoforge",
+      "id": "J9CowDXK"
+    }
+  ],
+  "ferrite-core": [
+    {
+      "game": "26.1.2",
+      "loader": "fabric",
+      "version": "9.0.0-fabric",
+      "id": "d5ddUdiB"
+    },
+    {
+      "game": "26.1.2",
+      "loader": "neoforge",
+      "version": "9.0.0-neoforge",
+      "id": "LtVvw4uS"
+    },
+    {
+      "game": "26.2",
+      "loader": "fabric",
+      "version": "9.0.0-fabric",
+      "id": "d5ddUdiB"
+    },
+    {
+      "game": "26.2",
+      "loader": "neoforge",
+      "version": "9.0.0-neoforge",
+      "id": "LtVvw4uS"
+    }
+  ],
+  "jei": [
+    {
+      "game": "26.1.2",
+      "loader": "fabric",
+      "version": "29.34.0.90",
+      "id": "jZ7OgHsw"
+    },
+    {
+      "game": "26.1.2",
+      "loader": "neoforge",
+      "version": "29.34.0.90",
+      "id": "AisPQmQz"
+    },
+    {
+      "game": "26.2",
+      "loader": "fabric",
+      "version": "30.29.0.201",
+      "id": "d3HeviSL"
+    },
+    {
+      "game": "26.2",
+      "loader": "neoforge",
+      "version": "30.29.0.201",
+      "id": "wTO6kl61"
+    }
+  ],
+  "create": [
+    {
+      "game": "26.1.2",
+      "loader": "fabric",
+      "version": null,
+      "id": null
+    },
+    {
+      "game": "26.1.2",
+      "loader": "neoforge",
+      "version": null,
+      "id": null
+    },
+    {
+      "game": "26.2",
+      "loader": "fabric",
+      "version": null,
+      "id": null
+    },
+    {
+      "game": "26.2",
+      "loader": "neoforge",
+      "version": null,
+      "id": null
+    }
+  ]
+}

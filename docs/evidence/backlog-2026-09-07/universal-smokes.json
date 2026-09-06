@@ -1,0 +1,126 @@
+[
+  {
+    "game": "26.1.2",
+    "category": "backlog-runtime",
+    "directory": "/Users/chris/.codex/worktrees/b3c6/RingWorld/dist/backlog-runtime/26.1.2-fabric",
+    "mods_sha256": {
+      "fabric-api-0.155.2+26.1.2.jar": "7196f2d8700cf906676db98cc13cd4b98267c4ca4ba3e8c516e62070b21a5a3a",
+      "ringworld-unified.jar": "33cd71dc152f6a68445da6545da42dfd65009708e9dcef7a396ef2352c5d6120"
+    },
+    "ready": true,
+    "stop_requested": true,
+    "timed_out": false,
+    "exit": 0,
+    "seconds": 22.41,
+    "pass": true
+  },
+  {
+    "game": "26.1.2",
+    "category": "backlog-runtime",
+    "directory": "/Users/chris/.codex/worktrees/b3c6/RingWorld/dist/backlog-runtime/26.1.2-neoforge",
+    "mods_sha256": {
+      "ringworld-unified.jar": "33cd71dc152f6a68445da6545da42dfd65009708e9dcef7a396ef2352c5d6120"
+    },
+    "ready": true,
+    "stop_requested": true,
+    "timed_out": false,
+    "exit": 0,
+    "seconds": 21.82,
+    "pass": true
+  },
+  {
+    "game": "26.1.2",
+    "category": "backlog-compatibility",
+    "directory": "/Users/chris/.codex/worktrees/b3c6/RingWorld/dist/backlog-compatibility/26.1.2-fabric",
+    "mods_sha256": {
+      "fabric-api-0.155.2+26.1.2.jar": "7196f2d8700cf906676db98cc13cd4b98267c4ca4ba3e8c516e62070b21a5a3a",
+      "ferritecore-9.0.0-fabric.jar": "213966c72ed967acc7392beb28a866fba301ff56b9976c2e7801c2db7de6bf22",
+      "lithium-fabric-0.24.7+mc26.1.2.jar": "a155b26df2593772e80a9f935837ba3319c68a3e774ba5e1b3a21eb64d477e86",
+      "ringworld-unified.jar": "33cd71dc152f6a68445da6545da42dfd65009708e9dcef7a396ef2352c5d6120"
+    },
+    "ready": true,
+    "stop_requested": true,
+    "timed_out": false,
+    "exit": 0,
+    "seconds": 21.47,
+    "pass": true
+  },
+  {
+    "game": "26.1.2",
+    "category": "backlog-compatibility",
+    "directory": "/Users/chris/.codex/worktrees/b3c6/RingWorld/dist/backlog-compatibility/26.1.2-neoforge",
+    "mods_sha256": {
+      "ferritecore-9.0.0-neoforge.jar": "a3292dadb1caf7ad220d3a4b68abff2ad58592ddd372160f9cf66c57d159b539",
+      "lithium-neoforge-0.24.7+mc26.1.2.jar": "814b1afb97522066b83d82d76ea8150e3de03a7e346593d3e4380368972f4337",
+      "ringworld-unified.jar": "33cd71dc152f6a68445da6545da42dfd65009708e9dcef7a396ef2352c5d6120"
+    },
+    "ready": true,
+    "stop_requested": true,
+    "timed_out": false,
+    "exit": 0,
+    "seconds": 22.35,
+    "pass": true
+  },
+  {
+    "game": "26.2",
+    "category": "backlog-runtime",
+    "directory": "/Users/chris/.codex/worktrees/b3c6/RingWorld/dist/backlog-runtime/26.2-fabric",
+    "mods_sha256": {
+      "fabric-api-0.158.0+26.2.jar": "a4510eb2e9d4057ff20f751e420d0618598813ab9695b6f793a53c2883808dac",
+      "ringworld-unified.jar": "9749025617408c18c43c80c62b261ba04c5e30e2311532b94b15ffeaf7566590"
+    },
+    "ready": true,
+    "stop_requested": true,
+    "timed_out": false,
+    "exit": 0,
+    "seconds": 21.64,
+    "pass": true
+  },
+  {
+    "game": "26.2",
+    "category": "backlog-runtime",
+    "directory": "/Users/chris/.codex/worktrees/b3c6/RingWorld/dist/backlog-runtime/26.2-neoforge",
+    "mods_sha256": {
+      "ringworld-unified.jar": "9749025617408c18c43c80c62b261ba04c5e30e2311532b94b15ffeaf7566590"
+    },
+    "ready": true,
+    "stop_requested": true,
+    "timed_out": false,
+    "exit": 0,
+    "seconds": 21.73,
+    "pass": true
+  },
+  {
+    "game": "26.2",
+    "category": "backlog-compatibility",
+    "directory": "/Users/chris/.codex/worktrees/b3c6/RingWorld/dist/backlog-compatibility/26.2-fabric",
+    "mods_sha256": {
+      "fabric-api-0.158.0+26.2.jar": "a4510eb2e9d4057ff20f751e420d0618598813ab9695b6f793a53c2883808dac",
+      "ferritecore-9.0.0-fabric.jar": "213966c72ed967acc7392beb28a866fba301ff56b9976c2e7801c2db7de6bf22",
+      "lithium-fabric-0.25.3+mc26.2.jar": "fdde92e238e8075f89ad7f701f2a3d5854af88ba9a67657184a4407b104ac563",
+      "ringworld-unified.jar": "9749025617408c18c43c80c62b261ba04c5e30e2311532b94b15ffeaf7566590"
+    },
+    "ready": true,
+    "stop_requested": true,
+    "timed_out": false,
+    "exit": 0,
+    "seconds": 21.65,
+    "pass": true
+  },
+  {
+    "game": "26.2",
+    "category": "backlog-compatibility",
+    "directory": "/Users/chris/.codex/worktrees/b3c6/RingWorld/dist/backlog-compatibility/26.2-neoforge",
+    "mods_sha256": {
+      "ferritecore-9.0.0-neoforge.jar": "a3292dadb1caf7ad220d3a4b68abff2ad58592ddd372160f9cf66c57d159b539",
+      "lithium-neoforge-0.25.3+mc26.2.jar": "7a080146f5c428e3a4a34cc3526c57c71cace5e962019081cb1d45c9d55dec7a",
+      "ringworld-unified.jar": "9749025617408c18c43c80c62b261ba04c5e30e2311532b94b15ffeaf7566590"
+    },
+    "ready": true,
+    "stop_requested": true,
+    "timed_out": false,
+    "exit": 0,
+    "seconds": 22.55,
+    "pass": true
+  }
+]

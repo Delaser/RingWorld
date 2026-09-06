@@ -107,6 +107,25 @@ public final class RingGenerationBoundary {
         }
     }
 
+    /** Replace only natural bedrock in the lowest layer; do not refill mined blocks. */
+    public static void installUnderside(ChunkAccess chunk, RingGeometry geometry,
+                                        RingWallStyle style, long seed) {
+        var cp = chunk.getPos();
+        int y = chunk.getMinY();
+        var pos = new BlockPos.MutableBlockPos();
+        for (int x = cp.getMinBlockX(); x <= cp.getMaxBlockX(); x++) {
+            for (int z = Math.max(cp.getMinBlockZ(), geometry.minWidthZ());
+                    z <= Math.min(cp.getMaxBlockZ(), geometry.maxWidthZ()); z++) {
+                pos.set(x, y, z);
+                if (!chunk.getBlockState(pos).is(Blocks.BEDROCK)) continue;
+                // Fold the wall's vertical pattern across the underside from each rim.
+                int patternY = y + Math.min(z - geometry.minWidthZ(), geometry.maxWidthZ() - z);
+                chunk.setBlockState(pos, texturedRimBlock(style, x, patternY, 0,
+                        geometry.circumferenceBlocks(), seed), 0);
+            }
+        }
+    }
+
     /** Returns inward rim depth for a band Z, or -1 when it is playable interior. */
     public static int rimDepthAtZ(RingGeometry geometry, RingWallStyle style, int z) {
         int lowDepth = z - geometry.minWidthZ();
@@ -272,4 +291,5 @@ public final class RingGenerationBoundary {
                     : Blocks.STRIPPED_SPRUCE_LOG.defaultBlockState();
         };
     }
+
 }

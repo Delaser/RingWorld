@@ -121,6 +121,24 @@ class RingWorldSettingsStorageTest {
     }
 
     @Test
+    void formatFivePersistsGenerationSettingsWhileOlderFormatsStayVanilla() {
+        RingWorldGenerationSettings generation = new RingWorldGenerationSettings(
+                RingAtlasFidelity.HIGH, RingWorldLayout.ARCHIPELAGO,
+                true, true, RingWorldGenerationSettings.FORMAT_VERSION);
+        RingWorldSettings current = new RingWorldSettings(
+                256, 16_384, 42L, 160, 64,
+                RingTerrainNoiseMapping.CURRENT, RingWallStyle.DEFAULT,
+                generation, RingWorldSettings.FORMAT_VERSION);
+        var encoded = RingWorldSettings.codecForTests()
+                .encodeStart(JsonOps.INSTANCE, current).getOrThrow();
+        assertEquals(generation, RingWorldSettings.codecForTests()
+                .parse(JsonOps.INSTANCE, encoded).getOrThrow().generationSettings());
+        assertThrows(IllegalArgumentException.class, () -> new RingWorldSettings(
+                256, 16_384, 42L, 160, 64,
+                RingTerrainNoiseMapping.CURRENT, RingWallStyle.DEFAULT, generation, 4));
+    }
+
+    @Test
     void preFormatThreeSettingsCannotClaimAnnularTerrain() {
         assertThrows(IllegalArgumentException.class, () -> new RingWorldSettings(
                 256, 16_384, 42L, 160, 64,
