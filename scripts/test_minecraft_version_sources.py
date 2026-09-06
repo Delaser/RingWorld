@@ -167,7 +167,7 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         self.assertIn("gl_FragDepth = mix(1.0, gl_FragCoord.z, proxyAlpha)", proxy)
         self.assertNotIn("ring_dither_threshold", proxy)
         self.assertIn("if (proxyAlpha <= 0.001)", proxy)
-        self.assertIn("fragColor = vec4(mix(edgeColor, litTerrain, reveal), proxyAlpha)", proxy)
+        self.assertIn("fragColor = vec4(mix(ring_handoff_edge_color(), litTerrain, reveal), proxyAlpha)", proxy)
 
     def test_proxy_far_clamp_preserves_perspective_and_uses_backend_depth(self):
         shader = (ROOT / "src/client/resources/assets/ringworld/shaders/core/ring_surface.vsh").read_text()

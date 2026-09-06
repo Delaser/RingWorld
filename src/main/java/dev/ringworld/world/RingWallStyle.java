@@ -95,7 +95,8 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
         STRATA(2, "Strata"),
         PANELS(3, "Panels & ribs"),
         GRADIENT(4, "Gradient"),
-        HYBRID(5, "Hybrid");
+        HYBRID(5, "Hybrid"),
+        ENGINEERED(6, "Industrial structures");
 
         private final int id;
         private final String label;
@@ -110,7 +111,7 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
 
         /** Patterns offered for new worlds. Retired IDs remain decodable for old saves. */
         public static Pattern[] selectableValues() {
-            return new Pattern[] { MASONRY, PANELS, GRADIENT, HYBRID };
+            return new Pattern[] { MASONRY, PANELS, GRADIENT, HYBRID, ENGINEERED };
         }
 
         public Pattern next() {
@@ -134,7 +135,7 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
         ANCIENT_MASONRY("Ancient", 6, Palette.ANCIENT, Pattern.MASONRY, 40),
         NATURAL_ESCARPMENT("Escarpment", 8, Palette.NATURAL, Pattern.GRADIENT, 15),
         RING_ALLOY("Ring alloy", 5, Palette.ALLOY, Pattern.PANELS, 5),
-        INDUSTRIAL_SUPERSTRUCTURE("Industrial", 7, Palette.INDUSTRIAL, Pattern.PANELS, 10),
+        INDUSTRIAL_SUPERSTRUCTURE("Industrial", 7, Palette.INDUSTRIAL, Pattern.ENGINEERED, 10),
         OVERGROWN_RUIN("Overgrown", 6, Palette.OVERGROWN, Pattern.HYBRID, 70),
         CLEAN_MONOLITH("Monolith", 4, Palette.MONOLITH, Pattern.PANELS, 0),
         NETHER_FORTRESS("Nether", 7, Palette.NETHER, Pattern.MASONRY, 25),

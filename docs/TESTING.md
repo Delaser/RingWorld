@@ -3182,3 +3182,35 @@ Village lighting screenshot fixture: logs/village-lighting-comparison retains th
 ### Background mesh runtime checkpoint — 2026-09-06
 
 Both 26.1.2/26.2 loader builds pass 423 JVM tests each; Python passes 429 with two platform skips. Fabric 26.2 at Medium/Max passes three forced asynchronous refreshes and pending-build cancellation on a Low→Max quality change. JFR confirms CPU mesh construction and packing on the surface worker. GPU upload, snapshot copies and GC remain measured stutter candidates; no claim of zero hitches or release qualification. See [ATLAS_STUTTER_2026-09-06.md](ATLAS_STUTTER_2026-09-06.md) for raw evidence paths and timing boundaries.
+
+### Seam profile 6 experiment — 2026-09-06
+
+Both loader/version cells pass 424 JVM tests each, and Python passes 429 with two skips. Fabric 26.2 loads the shared handoff shader include; before/after day/night captures and controlled frame-callback pan samples are recorded in [ATLAS_SEAM_EXPERIMENT_2026-09-06.md](ATLAS_SEAM_EXPERIMENT_2026-09-06.md). No release qualification or final seam invisibility claim; water/geometry differences and owner motion review remain.
+
+Industrial wall revision (2026-09-06): both loaders pass 429 JVM tests on both 26.1.2 and 26.2; Python 429 with two platform skips. Fabric 26.2 real-block visual study captures original/revised panels at 10/40/70% decay in an isolated copied world. See [study notes](INDUSTRIAL_WALL_STUDY_2026-09-06.md) for evidence and limits.
+
+Wall material continuity: revision3 builds repeat the passing 429-test JVM suite on both loaders/versions; Python 429 with two skips. Added continuity assertions comparing material-category adjacency with legacy panels. Approved collapse method hash remains unchanged. Evidence: logs/industrial-wall-study/revision3-*.log and revised gallery.
+
+Polished-andesite wall trial: revision4-build-26.1.log and revision4-build-26.2.log pass both loader builds and 429 JVM tests each. This one-material substitution uses the existing wall classifier and shared Atlas palette. Real-block samples are regenerated in the isolated study copy.
+
+Original-noise/andesite trial: revision5-build-26.1.log and revision5-build-26.2.log pass both loader builds and 429 JVM tests each. Material-band equivalence to the original sampler is restored; approved decay method hash verified unchanged. Current visual evidence is revision5 in the isolated wall study.
+
+Smooth-basalt tone trial: revision6-build-26.1.log and revision6-build-26.2.log pass both loaders and 429 JVM tests each. Isolated real-block specimens regenerated for revision6 captures; source texture averages recorded in the study notes.
+
+Original Industrial restoration: revision7-build-26.1.log and revision7-build-26.2.log pass both loaders and 429 JVM tests each. Added exact material-roll equivalence across decay settings; approved top collapse retained. Revision7 real-block samples restore original palette in the isolated study copy.
+
+
+### Approved Industrial structures — 2026-09-06
+
+All eight correctly scaled wall samples now generate under the Industrial preset's “Industrial structures” pattern: buttress, expansion joint, drainage outlet, ventilation bank, maintenance gallery, service shaft, exposed machinery and braced breach. Seeded placement wraps around both wall faces and retains the original Industrial material noise and approved decay. Existing saved Panels & ribs styles and previously generated chunks are preserved. Distant Atlas relief remains a limitation.
+
+Both loaders pass 433 JVM tests on 26.1.2 and 26.2; Python passes 429 tests (two platform skips). The production installer also completed an 80-chunk copied-world check using actual terrain-noise queries; this is not fresh-world or multiplayer qualification. See [implementation, measurements and limitations](WALL_ELEMENTS_SCALE_2026-09-06.md#approved-production-generation).
+
+
+Industrial follow-up: removed the X-braced breach; the pool now has twelve motifs, including three exposed-machinery designs total and straight/stepped/paired embedded channels. Added shape-distinctness and no-projection tests for the six recessed motifs; both loaders pass 434 JVM tests on 26.1.2 and 26.2. 26.2 full builds pass. Rain-grey Atlas root cause fixed in the shader: terrain detail no longer multiplies by the celestial rain fade; weather lightmap and fog tint remain. See the wall-elements study document for rationale and retained evidence.
+
+
+Exterior camera fix: section-graph queue starts at the nearest finite wall column when the camera is outside Z; exterior client skylight reads as open sky instead of black missing data. Both loader builds pass on 26.1.2/26.2, and Fabric 26.2 before/after runtime screenshots confirm restored live terrain and hand lighting in the owner’s current new world. See [details and limitations](EXTERIOR_VISIBILITY_2026-09-06.md).
+
+
+Patterned underside and Atlas walls: new generation replaces only the bottommost bedrock layer using the saved wall materials/pattern; higher layers are preserved. Atlas walls now use a worker-built seeded four-face texture with Industrial motifs and decay. Both loaders build/test on both versions; Fabric runtime installer and shader checks pass. See [implementation, evidence and limitations](UNDERSIDE_ATLAS_WALLS_2026-09-06.md).

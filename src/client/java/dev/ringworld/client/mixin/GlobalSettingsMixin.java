@@ -131,7 +131,7 @@ abstract class GlobalSettingsMixin {
                             cloudBounds == null ? 0.0F : (float)cloudBounds.maximumZ())
                     // process-local Atlas-light debug profile; never persisted
                     .putVec4(atlasLight.shaderMode(), atlasLight.falloffExponent(),
-                            atlasLight.peakStrength(), 0.0F)
+                            atlasLight.peakStrength(), ClientRingState.skyProfile().backdrop().id())
                     .get();
             dev.ringworld.client.render.RingSurfaceGpu.writeBuffer(buffer.slice(), data);
         }

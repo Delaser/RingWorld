@@ -36,7 +36,7 @@ public final class RingSurfaceGpu {
             .withLocation(Identifier.fromNamespaceAndPath("ringworld", "pipeline/textured_ring_surface"))
             .withVertexShader(Identifier.fromNamespaceAndPath("ringworld", "core/ring_surface"))
             .withFragmentShader(Identifier.fromNamespaceAndPath("ringworld", "core/ring_surface"))
-            .withSampler("Sampler1").withSampler("Sampler2")
+            .withSampler("Sampler1").withSampler("Sampler2").withSampler("Sampler3")
             .withUniform("Fog", UniformType.UNIFORM_BUFFER).withUniform("Globals", UniformType.UNIFORM_BUFFER)
             .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT)).withCull(false)
             .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, true))
@@ -95,7 +95,7 @@ public final class RingSurfaceGpu {
     }
 
     public static void draw(Minecraft client, GpuBuffer vertexBuffer, int vertexCount,
-                            GpuTextureView current, GpuTextureView previous, GpuBufferSlice transforms) {
+                            GpuTextureView current, GpuTextureView previous, GpuTextureView walls, GpuBufferSlice transforms) {
         GpuTextureView color = RingMinecraftClientAccess.mainRenderTarget(client).getColorTextureView();
         GpuTextureView depth = RingMinecraftClientAccess.mainRenderTarget(client).getDepthTextureView();
         try (RenderPass pass = RenderSystem.getDevice().createCommandEncoder().createRenderPass(
@@ -104,6 +104,7 @@ public final class RingSurfaceGpu {
             pass.bindTexture("Sampler0", current, RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.LINEAR, true));
             pass.bindTexture("Sampler1", previous, RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.LINEAR, true));
             pass.bindTexture("Sampler2", client.gameRenderer.levelLightmap(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
+            pass.bindTexture("Sampler3", walls, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
             pass.setVertexBuffer(0, vertexBuffer); pass.draw(0, vertexCount);
         }
     }

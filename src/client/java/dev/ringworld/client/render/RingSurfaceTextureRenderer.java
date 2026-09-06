@@ -139,9 +139,12 @@ public final class RingSurfaceTextureRenderer {
 
         RingSurfaceGpu.draw(client, vertexBuffer, vertexCount, surfaceTextureView,
                 previousSurfaceTextureView == null ? surfaceTextureView : previousSurfaceTextureView,
-                transforms);
+                wallTextureView, transforms);
         modelView.popMatrix();
     }
+
+    private static GpuTexture wallTexture;
+    private static GpuTextureView wallTextureView;
 
     private static void ensureResources(RingGeometry geometry, RingTerrainAtlas atlas) {
         if (atlas == null) return;
@@ -202,6 +205,23 @@ public final class RingSurfaceTextureRenderer {
                         if (!uploadTexture(build.images(), (float)build.snapshot().atlas().completion())) {
                             return null;
                         }
+                        if (build.wallImage() != null) {
+                            long wallUploadStarted = System.nanoTime();
+                            var image = build.wallImage();
+                            GpuTexture next = RingSurfaceGpu.createSurfaceTexture(image.getWidth(), image.getHeight(), 1);
+                            GpuTextureView view = null;
+                            try {
+                                RingSurfaceGpu.uploadSurfaceTexture(next, new NativeImage[]{image});
+                                view = RenderSystem.getDevice().createTextureView(next);
+                            } catch (RuntimeException | Error failure) {
+                                if (view != null) view.close();
+                                next.close(); throw failure;
+                            }
+                            if (wallTextureView != null) wallTextureView.close();
+                            if (wallTexture != null) wallTexture.close();
+                            wallTexture = next; wallTextureView = view;
+                            flagRenderStall("wall texture GPU upload", wallUploadStarted);
+                        }
                         if (replacement != null) {
                             if (vertexBuffer != null) vertexBuffer.close();
                             vertexBuffer = replacement;
@@ -235,7 +255,9 @@ public final class RingSurfaceTextureRenderer {
                 ClientRingState.wallStyle().thicknessBlocks(),
                 RingWallShaderStyle.encode(ClientRingState.wallStyle(), ClientRingState.generatorSeed(), client.level),
                 geometry.equals(bufferedGeometry) && atlas.worldHash() == bufferedWorldHash,
-                vertexBuffer != null, bufferedMeshDetailed, bufferedMeshHeightFingerprint);
+                vertexBuffer != null, bufferedMeshDetailed, bufferedMeshHeightFingerprint,
+                ClientRingState.wallStyle(), ClientRingState.generatorSeed(), worldBottomY,
+                RingWallShaderStyle.paletteColors(ClientRingState.wallStyle(), client.level));
         RingTerrainPreview preview = ClientRingState.terrainPreview();
         pendingTextureBuild = CompletableFuture.supplyAsync(
                 () -> buildTexture(buildSnapshot, generation, profile, quality, meshInputs, preview), BUILD_WORKER);
@@ -255,12 +277,16 @@ public final class RingSurfaceTextureRenderer {
         RingTerrainAtlas atlas = preparedSnapshot.atlas();
         long meshStarted = System.nanoTime();
         RingSurfaceGpu.PackedMesh packed = null;
+        NativeImage wallImage = null;
         try {
             if (RingSurfaceMeshRefreshPolicy.shouldRebuild(inputs.sameAtlas(), inputs.hasMesh(),
                     atlas.isComplete(), inputs.detailed(), preparedSnapshot.heightFingerprint(), inputs.fingerprint())) {
                 RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(atlas.geometry(), atlas, atlas.isComplete(),
                         inputs.referenceY(), inputs.wallTopY(), inputs.wallThickness(), profile);
                 packed = RingSurfaceGpu.packMesh(mesh, inputs.wallStyle().vertexArgb());
+                wallImage = RingWallTexture.build(atlas, inputs.savedStyle(), inputs.seed(),
+                        inputs.bottomY(), inputs.wallTopY(), Math.min(16384, profile.textureColumns()), inputs.palette(),
+                        () -> generation != textureBuildGeneration);
             }
             if (Boolean.getBoolean("ringworld.profileSurfaceBuilds") && packed != null) {
                 RingWorldMod.LOGGER.info("RingWorld surface worker: mesh construction/packing took {} ms ({} vertices)",
@@ -268,9 +294,10 @@ public final class RingSurfaceTextureRenderer {
             }
             if (generation != textureBuildGeneration) throw new java.util.concurrent.CancellationException("obsolete surface job");
             return new TextureBuild(preparedSnapshot,
-                    buildTexturePixels(atlas, generation, profile, preview), packed, inputs.wallStyle());
+                    buildTexturePixels(atlas, generation, profile, preview), packed, inputs.wallStyle(), wallImage);
         } catch (RuntimeException | Error exception) {
             if (packed != null) packed.close();
+            if (wallImage != null) wallImage.close();
             throw exception;
         }
     }
@@ -445,16 +472,19 @@ public final class RingSurfaceTextureRenderer {
     /** Native texture images plus their immutable source content. */
     private record TextureBuild(RingSurfaceBuildSnapshot snapshot,
                                 TextureImages images, RingSurfaceGpu.PackedMesh mesh,
-                                RingWallShaderStyle.Encoded wallStyle) implements AutoCloseable {
+                                RingWallShaderStyle.Encoded wallStyle, NativeImage wallImage) implements AutoCloseable {
         @Override
         public void close() {
-            try { images.close(); } finally { if (mesh != null) mesh.close(); }
+            try { images.close(); } finally {
+                try { if (mesh != null) mesh.close(); } finally { if (wallImage != null) wallImage.close(); }
+            }
         }
     }
 
     private record MeshInputs(int referenceY, int wallTopY, int wallThickness,
                               RingWallShaderStyle.Encoded wallStyle, boolean sameAtlas,
-                              boolean hasMesh, boolean detailed, long fingerprint) { }
+                              boolean hasMesh, boolean detailed, long fingerprint,
+                              dev.ringworld.world.RingWallStyle savedStyle, long seed, int bottomY, int[] palette) { }
 
     private static void flagRenderStall(String operation, long started) {
         long elapsed = System.nanoTime() - started;
@@ -522,6 +552,10 @@ public final class RingSurfaceTextureRenderer {
     }
 
     private static void destroySurfaceTexture() {
+        if (wallTextureView != null) wallTextureView.close();
+        wallTextureView = null;
+        if (wallTexture != null) wallTexture.close();
+        wallTexture = null;
         destroyPreviousSurfaceTexture();
         if (surfaceTextureView != null) surfaceTextureView.close();
         surfaceTextureView = null;

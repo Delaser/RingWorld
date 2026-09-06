@@ -1,0 +1,47 @@
+import java.lang.instrument.Instrumentation;
+import java.lang.reflect.*;
+import java.nio.file.*;
+import java.util.concurrent.*;
+public class WallConceptProbe2 {
+ public static void agentmain(String path,Instrumentation inst)throws Exception {
+  Class<?> mc=null;for(Class<?> c:inst.getAllLoadedClasses())if(c.getName().equals("net.minecraft.client.Minecraft"))mc=c;
+  final ClassLoader cl=mc.getClassLoader();Object client=mc.getMethod("getInstance").invoke(null);Object server=mc.getMethod("getSingleplayerServer").invoke(client);
+  Class<?> style=Class.forName("dev.ringworld.world.RingWallStyle",true,cl),palette=Class.forName("dev.ringworld.world.RingWallStyle$Palette",true,cl),pattern=Class.forName("dev.ringworld.world.RingWallStyle$Pattern",true,cl),boundary=Class.forName("dev.ringworld.world.RingGenerationBoundary",true,cl),sampler=Class.forName("dev.ringworld.world.RingWallPattern",true,cl),pos=Class.forName("net.minecraft.core.BlockPos",true,cl),state=Class.forName("net.minecraft.world.level.block.state.BlockState",true,cl),blocks=Class.forName("net.minecraft.world.level.block.Blocks",true,cl);
+  Method sample=boundary.getDeclaredMethod("texturedRimBlock",style,int.class,int.class,int.class,int.class,long.class);sample.setAccessible(true);
+  Method present=sampler.getMethod("blockPresent",style,int.class,int.class,int.class,int.class,int.class,long.class);
+  Constructor<?> position=pos.getConstructor(int.class,int.class,int.class);
+  Object airBlock=blocks.getField("AIR").get(null),air=airBlock.getClass().getMethod("defaultBlockState").invoke(airBlock);
+  new Thread(()->{try{
+   for(int index=0;index<5;index++){
+    int decay=40;String name="ENGINEERED";
+    Object selected=style.getMethod("custom",int.class,palette,pattern,int.class).invoke(null,7,Enum.valueOf((Class)palette,"INDUSTRIAL"),Enum.valueOf((Class)pattern,name),decay);
+    final int origin=4096+index*128;
+    int[][] rolls=new int[7][];
+    Method roll=sampler.getMethod("materialRoll",style,int.class,int.class,int.class,int.class,long.class);
+    Method paletteRoll=boundary.getMethod("styledRimBlockForRoll",style,int.class);
+    for(int d=0;d<7;d++){
+     int[] baseline=new int[96*48];
+     for(int y=0;y<48;y++)for(int x=0;x<96;x++)baseline[y*96+x]=(Integer)roll.invoke(null,selected,4096+x,128+y,d,16384,8128L);
+     long startNanos=System.nanoTime();rolls[d]=WallConceptPatterns.generate(index,baseline,96,48,8128L+d);
+     Files.writeString(Path.of(path),"SAMPLE "+index+" depth="+d+" ns="+(System.nanoTime()-startNanos)+"\n",StandardOpenOption.CREATE,StandardOpenOption.APPEND);
+    }
+    for(int begin=0;begin<96;begin+=4){final int start=begin;var done=new CompletableFuture<Void>();
+     server.getClass().getMethod("execute",Runnable.class).invoke(server,(Runnable)()->{try{
+      Object level=server.getClass().getMethod("overworld").invoke(server);Method set=level.getClass().getMethod("setBlock",pos,state,int.class);
+      for(int x=start;x<start+4;x++)for(int d=0;d<7;d++)for(int y=128;y<176;y++){
+       Object block=(Boolean)present.invoke(null,selected,4096+x,y,d,176,16384,8128L)?paletteRoll.invoke(null,selected,rolls[d][(y-128)*96+x]):air;
+       if((Boolean)present.invoke(null,selected,4096+x,y,d,176,16384,8128L)){
+        Object originalBlock=sample.invoke(null,selected,4096+x,y,d,16384,8128L);
+        Object lantern=blocks.getField("SEA_LANTERN").get(null);
+        if(originalBlock == lantern.getClass().getMethod("defaultBlockState").invoke(lantern))block=originalBlock;
+       }
+       set.invoke(level,position.newInstance(origin+x,y,6-d),block,2);
+      }done.complete(null);
+     }catch(Throwable e){done.completeExceptionally(e);}});done.get(30,TimeUnit.SECONDS);Thread.sleep(25);
+    }
+    Files.writeString(Path.of(path),"READY "+index+" "+WallConceptPatterns.NAMES[index]+" decay="+decay+" x="+origin+".."+(origin+95)+" y=128..175 z=0..6\n",StandardOpenOption.CREATE,StandardOpenOption.APPEND);
+   }
+  }catch(Exception e){e.printStackTrace();try{Files.writeString(Path.of(path),"FAIL "+e+"\n",StandardOpenOption.CREATE,StandardOpenOption.APPEND);}catch(Exception ignored){}}},"Industrial wall study setup").start();
+ }
+ public static void main(String[] a)throws Exception{var vm=com.sun.tools.attach.VirtualMachine.attach(a[0]);try{vm.loadAgent(a[1],a[2]);}finally{vm.detach();}}
+}

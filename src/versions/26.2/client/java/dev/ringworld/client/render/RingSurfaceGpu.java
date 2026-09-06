@@ -44,6 +44,7 @@ public final class RingSurfaceGpu {
             .withBindGroupLayout(BindGroupLayouts.FOG)
             .withBindGroupLayout(BindGroupLayouts.SAMPLER1)
             .withBindGroupLayout(BindGroupLayouts.SAMPLER2)
+            .withBindGroupLayout(com.mojang.blaze3d.pipeline.BindGroupLayout.builder().withSampler("Sampler3").build())
             .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT)).withCull(false)
             .withDepthStencilState(new DepthStencilState(CompareOp.GREATER_THAN_OR_EQUAL, true))
             .withVertexBinding(0, DefaultVertexFormat.POSITION_TEX_COLOR)
@@ -99,7 +100,7 @@ public final class RingSurfaceGpu {
         encoder.submit();
     }
     public static void draw(Minecraft client, GpuBuffer vertexBuffer, int vertexCount,
-                            GpuTextureView current, GpuTextureView previous, GpuBufferSlice transforms) {
+                            GpuTextureView current, GpuTextureView previous, GpuTextureView walls, GpuBufferSlice transforms) {
         GpuTextureView color = RingMinecraftClientAccess.mainRenderTarget(client).getColorTextureView();
         GpuTextureView depth = RingMinecraftClientAccess.mainRenderTarget(client).getDepthTextureView();
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
@@ -108,6 +109,7 @@ public final class RingSurfaceGpu {
             pass.bindTexture("Sampler0", current, RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.LINEAR, true));
             pass.bindTexture("Sampler1", previous, RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.LINEAR, true));
             pass.bindTexture("Sampler2", client.gameRenderer.levelLightmap(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
+            pass.bindTexture("Sampler3", walls, RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
             pass.setVertexBuffer(0, vertexBuffer.slice());
             // 26.2 orders counts first, then offsets: vertices, instances,
             // first vertex, first instance (the latter must be zero on macOS).

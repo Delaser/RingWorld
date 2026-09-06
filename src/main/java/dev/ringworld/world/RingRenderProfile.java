@@ -34,8 +34,8 @@ public record RingRenderProfile(
      * Increment when visual-policy semantics change enough that comparison
      * captures need to identify a different profile.
      */
-    public static final int VISUAL_PROFILE_VERSION = 5;
-    public static final double LIVE_FADE_START_FACTOR = 0.78;
+    public static final int VISUAL_PROFILE_VERSION = 6;
+    public static final double LIVE_FADE_START_FACTOR = 0.90;
     public static final double LIVE_FADE_END_FACTOR = 1.02;
     public static final double PROXY_FADE_START_FACTOR = 0.68;
     public static final double PROXY_FADE_END_FACTOR = 0.98;
@@ -53,7 +53,7 @@ public record RingRenderProfile(
     public static final int MAX_WIDTH_BANDS = 128;
     public static final int TARGET_MESH_STEP_BLOCKS = RingTerrainAtlas.SAMPLE_STEP_BLOCKS;
     public static final int POSITION_TEXTURE_COLOR_VERTEX_BYTES = 24;
-    public static final double REVEAL_NEAR = 0.52;
+    public static final double REVEAL_NEAR = 0.82;
     public static final double REVEAL_FAR = 0.98;
     public static final double HAZE_NEAR = 0.04;
     public static final double HAZE_FAR = 0.16;

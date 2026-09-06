@@ -35,7 +35,7 @@ public record RingSettingsPayload(int width, int circumference, long seed, int w
      * crash on the unread fields before either side can explain the mismatch.
      */
     public static final Type<RingSettingsPayload> ID =
-            new Type<>(Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "settings_v6"));
+            new Type<>(Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "settings_v7"));
     private static final StreamCodec<RegistryFriendlyByteBuf, RingWallStyle> WALL_STYLE_CODEC =
             StreamCodec.ofMember((style, buffer) -> {
                 buffer.writeVarInt(style.thicknessBlocks());

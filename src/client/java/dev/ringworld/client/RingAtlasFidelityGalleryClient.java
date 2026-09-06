@@ -52,7 +52,8 @@ final class RingAtlasFidelityGalleryClient {
         if (phase == 5) return true;
         if (Boolean.getBoolean("ringworld.fidelityGalleryResume")) {
             if (!opened && RingMinecraftClientAccess.screen(client) instanceof TitleScreen) {
-                String worldName = "RingWorld Atlas Fidelity " + profiles[0].label();
+                String worldName = System.getProperty("ringworld.fidelityGalleryWorld",
+                        "RingWorld Atlas Fidelity " + profiles[0].label());
                 client.createWorldOpenFlows().openWorld(worldName, () -> failure = "world open cancelled");
                 opened = true;
             }

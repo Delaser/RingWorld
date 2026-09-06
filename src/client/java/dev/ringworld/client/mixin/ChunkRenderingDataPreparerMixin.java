@@ -37,6 +37,16 @@ abstract class ChunkRenderingDataPreparerMixin {
         return ClientRingState.geometry() == null && useOcclusionCulling;
     }
 
+    // Exterior columns are intentionally never sent. Seed traversal at the
+    // nearest rim column rather than waiting forever for the camera's void chunk.
+    @ModifyVariable(method = "initializeQueueForFullUpdate", at = @At("HEAD"), argsOnly = true)
+    private net.minecraft.core.BlockPos ringworld$seedAtFiniteBand(net.minecraft.core.BlockPos camera) {
+        RingGeometry geometry = ClientRingState.geometry();
+        if (geometry == null) return camera;
+        int z = Math.max(geometry.minWidthZ(), Math.min(geometry.maxWidthZ(), camera.getZ()));
+        return z == camera.getZ() ? camera : new net.minecraft.core.BlockPos(camera.getX(), camera.getY(), z);
+    }
+
     @ModifyArg(
             method = "addSectionsInFrustum",
             at = @At(value = "INVOKE",
