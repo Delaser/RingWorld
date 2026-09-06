@@ -2062,3 +2062,6 @@ tasks.withType(Jar).configureEach {
 		rename { 'LICENSE-RINGWORLD.txt' }
 	}
 }
+
+ext.ringPreviewHandoffDirectory = qualificationRunFile('run-preview-handoff')
+apply from: rootProject.file('gradle/preview-handoff.gradle')

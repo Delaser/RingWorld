@@ -794,6 +794,10 @@ The complete mixin ownership table is in
 
 ## Build and fast validation
 
+Owner preference: launch automated game clients muted (`soundCategory_master:0.0`
+in their disposable `options.txt`). Do not change system audio or normal player
+profiles to silence development fixtures.
+
 The active port requires Java 25:
 
 ```sh
@@ -932,6 +936,14 @@ target and shader ABI, and run the required matrix rather than only changing
 version numbers.
 
 ## Current implementation cautions
+
+- Staged seed-preview jobs use `ExecutorService.submit` and cancel their own
+  interruptible `Future` on unload/completion. Preserve the cancelled/identity
+  publication guards. `CompletableFuture.cancel(true)` does not stop an active
+  supplier, and manually interrupting a retained pool thread can hit the next
+  world. `:runPreviewHandoffClient` and `:neoforge:runPreviewHandoffClient`
+  exercise a disposable Medium/Very-high to Small/Very-high transition; run
+  them serially and retain logs/captures before repeating a loader run.
 
 - The complete-ring renderer accepts a current-world zero-cell or partial Atlas
   as soon as its identity metadata arrives. Missing cells use an opaque,

@@ -93,6 +93,33 @@ static/archive and dedicated-startup evidence only: no client, mixed-loader,
 complete gameplay, package, or host claim follows from it. See
 [`UNIFIED_JAR_FEASIBILITY.md`](UNIFIED_JAR_FEASIBILITY.md).
 
+## Staged preview cancellation regression (2026-09-06)
+
+Leaving a costly Medium/Very-high staged preview now interrupts that world's
+own submitted `Future`, allowing the single executor to start the next world's
+preview. The cancelled flag and server-thread world-identity publication guards
+remain intact. This supersedes the uncommitted manual worker-thread approach,
+whose late cancellation could interrupt a subsequent job. No sampler, topology,
+saved terrain, or authoritative Atlas scheduling change is included.
+
+Two focused Java tests cover running cancellation and worker reuse, repeated
+late cancellation, interrupt-state isolation, and queued cancellation. The muted
+Medium-to-Small handoff runtime passes on Fabric 26.1.2 (2026-09-05) and NeoForge
+26.1.2 (2026-09-06). Small receives its CURRENT 512×16 preview in 3,910 ms and
+5,801 ms respectively, before Atlas completion. Both runs prove normal session
+teardown and actual old-sampler cancellation. Both retained upward captures were
+visually inspected on 2026-09-06 and show the coloured placeholder at 14%/15%
+Atlas completion. See `docs/TESTING.md` for retained evidence paths and limits.
+
+Final-source Java 25 test/build runs on 2026-09-06 pass all 410
+unit/parameterized cases on each loader against both 26.1.2 and 26.2, with
+zero failures, errors, or skips in all four cells. The builds include the final
+handoff fixture and Gradle integration. Logs: `logs/preview-cancellation-final-26.1.2-build.log`
+and `logs/preview-cancellation-final-26.2-build.log`. The earlier four build
+passes predate the fixture and remain historical evidence only.
+Full Python discovery also passes 428 tests with two expected Windows-only
+skips on macOS; log: `logs/preview-cancellation-final-static.log`.
+
 ## Historical 26.2 qualification record leading to 1.1
 
 See the [26.2 qualification checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).

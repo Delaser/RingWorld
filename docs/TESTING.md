@@ -1,5 +1,49 @@
 # Testing
 
+## Staged preview worker handoff
+
+With Java 25 selected, run `./gradlew :runPreviewHandoffClient` (Fabric) or
+`./gradlew :neoforge:runPreviewHandoffClient` (NeoForge), one at a time.
+Each task recreates only its ignored `run-preview-handoff` directory, launches
+muted with pause-on-focus-loss disabled, and creates descriptively named
+Medium 16,384×256 and Small 2,048×128 worlds at Very-high Atlas fidelity.
+It leaves Medium after receiving the VERY_HIGH preview while the Atlas is
+incomplete, verifies normal session teardown, then creates Small in the same
+JVM. Small must receive its own CURRENT 512×16 preview within 15 seconds of
+its initial Atlas metadata observation and before authoritative completion.
+The client saves an upward-view screenshot and requires a final normal
+disconnect with raw session state cleared. The Gradle finalizer requires the
+terminal PASS, actual sampler cancellation, Small preview receipt and a
+decodable PNG. Retain the run logs and screenshot before repeating that loader.
+This is development source/runtime evidence, not a frozen-candidate or package
+qualification. `RingTerrainPreviewJobTest` independently covers running and
+queued cancellation plus late cancellation after worker reuse.
+
+Retained development runtime evidence:
+
+| Loader / Minecraft | Run date | Small CURRENT receipt | Screenshot review |
+| --- | --- | --- | --- |
+| Fabric 26.1.2 | 2026-09-05 | 3,910 ms; 9,664/65,536 Atlas cells | Coloured placeholder visible at 14% |
+| NeoForge 26.1.2 | 2026-09-06 | 5,801 ms; 9,600/65,536 Atlas cells | Coloured placeholder visible at 15% |
+
+Both runs observed cancellation of Medium's sampler, distinct world identities,
+and normal disconnect with raw session state cleared twice. Both Gradle
+verifiers passed. The captures were visually inspected on 2026-09-06.
+Logs are retained locally as `logs/preview-handoff-fabric-26.1.2.log` and
+`logs/preview-handoff-neoforge-26.1.2.log`; captures are
+`run-preview-handoff/screenshots/preview-handoff-small.png` and the matching
+path under `neoforge/`. No 26.2 handoff runtime has been run. These results do
+not establish packaged-client, multiplayer, or release qualification.
+
+Final-source Java 25 test/build runs on 2026-09-06 pass all 410
+unit/parameterized cases on each loader against both 26.1.2 and 26.2, with
+zero failures, errors, or skips in all four cells. The builds include the final
+handoff fixture and Gradle integration. Logs: `logs/preview-cancellation-final-26.1.2-build.log`
+and `logs/preview-cancellation-final-26.2-build.log`. The earlier four build
+passes predate the fixture and remain historical evidence only.
+Full Python discovery also passes 428 tests with two expected Windows-only
+skips on macOS; log: `logs/preview-cancellation-final-static.log`.
+
 The #234 NeoForge package repair adds offline installer-to-Prism component
 contracts and extends the platform launcher tests to cover owned-patch updates
 and retirement while preserving unrelated custom components. See

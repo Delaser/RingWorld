@@ -120,8 +120,9 @@ so it builds a terrain Atlas in the background.
 It appears in stages:
 
 1. **Real nearby chunks load first.** You can begin playing normally.
-2. **A fogged placeholder fills the unknown ring.** It takes colour from the
-   terrain that has already been seen.
+2. **A fogged placeholder fills the unknown ring.** A seed-derived preview
+   starts at 512×16 and improves in stages while real terrain generates.
+   Leaving a world cancels its preview work so the next world can start its own.
 3. **The placeholder improves as more regions generate.** A small
    `Ring Atlas Generating: X%` display shows progress.
 4. **At verified completion, the distant ring switches to its detailed 3D

@@ -636,12 +636,21 @@ If a normal consume-side ticket release fails, the terminal job retains its
 request for the next tick's idempotent close retry. The world-owned job slot is
 not replaceable until that request is released; command and map-control starts
 fail explicitly during the retry window instead of orphaning a loading ticket.
-`RingTerrainAtlasServer` is only the Fabric command/lifecycle/network adapter:
+`RingTerrainAtlasServer` is the loader-neutral command/lifecycle/streaming coordinator:
 it drains service-published dirty tiles at the existing 20-tick cadence and
 streams them to persistent client subscriptions. It sends a revision commit
 only after all earlier tiles have entered that player's ordered connection.
 This division keeps platform registration out of the atlas lifecycle and
 prevents duplicate writers.
+
+Staged seed previews share one executor. Each world owns the interruptible
+`Future` returned by `ExecutorService.submit`; unload, identity replacement,
+and authoritative completion cancel that task. The sampler cooperatively checks
+interruption, and server-thread publication also checks the cancelled flag and
+current job identity. Do not replace this with `CompletableFuture.cancel(true)`:
+it does not interrupt an already-running supplier. Do not retain and interrupt a
+raw executor thread either: a late cancellation can target another world's task.
+Preview cancellation never changes authoritative Atlas progress or saved terrain.
 
 The world hash includes the complete layout fingerprint plus atlas format and
 sample semantics. The atlas file has its own format version. Atlas format 8

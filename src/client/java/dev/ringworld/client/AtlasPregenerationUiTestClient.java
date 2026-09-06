@@ -27,6 +27,7 @@ public final class AtlasPregenerationUiTestClient {
     private static final double PROGRESSIVE_CAPTURE_COMPLETION = 0.25;
     private static final int TIMEOUT_TICKS = 14_400;
     private static final int DISCONNECT_TIMEOUT_TICKS = 200;
+    private final RingPreviewHandoffTestClient previewHandoff = new RingPreviewHandoffTestClient();
     private long renderedFrames;
     private long readyAfterFrame;
     private int stage;
@@ -56,6 +57,7 @@ public final class AtlasPregenerationUiTestClient {
      */
     public boolean startWorldIfEnabled(Minecraft client) {
         if (!enabled()) return false;
+        if (Boolean.getBoolean(RingPreviewHandoffTestClient.ENABLE_PROPERTY)) return previewHandoff.tick(client);
         // This fixture is launched unattended. Keep the integrated server
         // ticking after the final map screen closes so its revisioned block
         // placement/removal probe cannot be stranded by lost window focus.
@@ -94,6 +96,7 @@ public final class AtlasPregenerationUiTestClient {
 
     public boolean tick(Minecraft client) {
         if (!enabled()) return false;
+        if (Boolean.getBoolean(RingPreviewHandoffTestClient.ENABLE_PROPERTY)) return previewHandoff.tick(client);
         client.options.guiScale().set(4);
         if (++ticks > TIMEOUT_TICKS) return fail(client, "timed out before completion");
         // A normal integrated-server disconnect clears player/level before
