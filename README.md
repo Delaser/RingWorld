@@ -236,3 +236,12 @@ You may use it, include it in modpacks, modify it, redistribute it, and
 contribute improvements under the terms of that licence. Modified RingWorld
 source files remain MPL-2.0 when distributed. The licence does not grant
 rights to imply that an unofficial fork is endorsed by the RingWorld project.
+
+### Local Atlas display quality
+
+Use `/ringworld lod lowest|low|medium|high|very_high|max` to select your local
+LOD display budget. `/ringworld lod show` reports the selected level and the
+server source resolution; `/ringworld lod reset` follows the server default.
+The choice resets on disconnect. It changes local display samples, texture
+budget and mesh density, without changing terrain, server settings, or downloads.
+A client cannot recover finer terrain detail than the server Atlas contains.

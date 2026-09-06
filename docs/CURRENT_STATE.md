@@ -1,5 +1,7 @@
 # Current state
 
+Owner release direction (2026-09-06): hold the next RingWorld release until Minecraft 26.3 is released. Prerelease compatibility work is experimental testing, not a publication or live-world update.
+
 Current release: **RingWorld 1.1**, covering 26.1, 26.1.1, 26.1.2 and separate
 26.2 builds on Fabric and NeoForge. Owner-authorized PR #232 is merged; all
 four jars are submitted to both hosts and all eight CDN downloads match.
@@ -92,6 +94,22 @@ and NeoForge dedicated servers, reached `Done`, and stopped normally. This is
 static/archive and dedicated-startup evidence only: no client, mixed-loader,
 complete gameplay, package, or host claim follows from it. See
 [`UNIFIED_JAR_FEASIBILITY.md`](UNIFIED_JAR_FEASIBILITY.md).
+
+## Local LOD command experiment (2026-09-06)
+
+Uncommitted development work adds `/ringworld lod` with Lowest, Low, Medium,
+High, Very High and Max display levels. These are client/session-local and
+separate from saved server Atlas fidelity. Both loaders build and pass 412 tests
+on 26.1.2 and 26.2 with the experimental one-block master. Fabric 26.1.2 proves
+actual live command switching on one completed 2048×128 Atlas. Very High
+(2-block mesh, 430080 vertices) measured 186.2 FPS; Max (1-block mesh,
+1646592 vertices) measured 177.6 FPS in matched 30-second hidden-window samples.
+The source Atlas and 2048×128 GPU texture were unchanged; live revision rebuilds
+occurred during both samples. Captures and exact metrics are retained in
+`logs/atlas-mesh-one-block-results/`; runtime log:
+`logs/atlas-lod-live-comparison.log`. The owner requested the client remain open
+for interactive comparison. Normal server fidelity source constants were
+restored; the one-block master remains an isolated test configuration.
 
 ## Staged preview cancellation regression (2026-09-06)
 
@@ -2245,3 +2263,38 @@ The owner-approved order is recorded in
 - Optional package fresh/upgrade launch checks and an independent final review.
 - Real compatibility testing beyond the published baseline and explicit
   unsupported list.
+
+
+## Local LOD experiments — 2026-09-06
+
+Client LOD command follow-up: Fabric 26.1.2 loses client descendants when its completion-tree copy merges an existing server `/ringworld` root before copying children. A client-tick repair now adds the complete LOD validation subtree, retaining existing server commands and repairing refreshed trees. The owner client was relaunched on 2026-09-06; runtime verified the LOD chat subtree and successful Max execution. The saved world and player settings were retained via the opt-in gallery resume path.
+
+Walking stall fix: the live profile showed synchronous compressed client-cache save bursts of 150–650ms. Client saves now run through a serialized background writer with ten-second batching and per-path coalescing; final disconnect saves retain their captured path. Pre-compression buffering also removes per-field compressor overhead. Max CPU mesh construction remains on the render thread (previous profile sampled 23–34ms bursts); this change targets the dominant cache-save freezes.
+
+Cache-save runtime verification passed: six full Atlas saves ran on the background writer (35–59ms), while five measured render-thread submissions took 0.714–0.942ms. Both loaders/versions passed 418 tests each. Controlled unchanged-data checkpoints verified the save path; this was not a matched walking FPS benchmark. Owner client is open on Max.
+
+Atlas upper-colour experiment: steep connectors now use the upper source texel while gentle terrain retains colour interpolation. The distant wall extends below each local sampled edge, covering the thin reference-plane gap visible in the owner screenshot. Runtime visual review complete; final captures are in logs/atlas-height-colour-results. The owner changed view between before/after captures. The global-minimum wall-bottom attempt was replaced by per-segment local bottoms. All 420 tests passed in all four source cells; owner client remains open on Max.
+
+Depth-aware Atlas handoff: enabled proxy depth writes while retaining its smooth alpha fade. An additional proxy coverage dither was removed after owner-reported flicker. This targets deep live valley faces appearing through nearer LOD terrain at the handoff. Runtime visual verification complete; the target cliff cut-through is covered while foreground trees remain visible. Captures: logs/atlas-depth-results. All 420 JVM tests pass in all four source cells. Owner client remains open on Max.
+
+Follow-up: the extra proxy dither caused owner-reported flicker and was removed. Smooth alpha now also blends written window-space depth from the backend far plane to actual surface depth, preventing low-opacity proxy fragments from cutting sky-coloured holes in live terrain. Hot-reloaded successfully into the open client; the ten shader/version source contracts pass.
+
+Side-material experiment: Atlas format 9/v3 metadata and tiles preserve a representative side colour. Steep connectors can render sampled grey rock while grass stays on top and foliage remains green. Adds four bytes per Atlas cell and one int per mesh lattice vertex, with no added GPU vertex bytes, texture, draw pass, or vertices. Baseline owner 30-second JFR: mean sampled FPS 116.03 (104–124), mean server tick 2.797ms. Both loaders pass 423 JVM tests each on both 26.1.2 and 26.2; the Python suite passes 429 tests with two platform skips. Visual capture shows sampled rock on steep connectors. Performance evidence and limitations are retained in logs/atlas-side-results/README.md; the client remains open on Max.
+
+Side-colour performance follow-up: original live mean 116 FPS; new settled sample 71 FPS; same-process side shading disabled 67 FPS, restored 112 FPS. Camera movement is confirmed by the final capture, so these windows do not establish a regression or neutrality. Local sampling microprobe adds about 0.3ms per 256 cells; raw Atlas data gains 1MiB at this size, plus about 1MiB CPU mesh storage. No GPU geometry/texture allocation increase. Full evidence and caveats: logs/atlas-side-results/README.md.
+
+Repeated stationary-view shader comparison: side shading off 115.27 FPS, on 113.40 FPS (30 seconds each, same sampled position/yaw/pitch). This isolates side RGB shading; sampling/storage/mesh remain present in both. Evidence: logs/atlas-side-repeat/README.md. New colouring remains enabled.
+
+Village lighting review (2026-09-06): twelve fixed-night screenshots on a copied Medium Industrial vanilla-village test world, Fabric 26.2. Complete one-block format-9 Atlas (4194304 cells), six LOD choices and six brightness/falloff treatments. Actual village geometry verified before distant captures. Same camera, no HUD; labels added afterwards with Minecraft bitmap glyphs. Very High/Max reach the same mesh cap on this hardware/geometry. Source defaults restored, original world untouched. Gallery and exact setup: logs/village-lighting-comparison/index.html and README.md. This is visual development evidence, not a 26.3 or release qualification.
+
+Torch-specific visual test (2026-09-06): controlled 1/4/16 vanilla torch groups on stone in the disposable copied Medium world, all 21 source columns verified at light 14. Six fixed-view Lowest-to-Max captures at unchanged Gamma 2.0/1.25. Coarse clusters merge; High+ separates footprints. Gallery: logs/torch-lighting-comparison/index.html. Default-on settings-toggle request is awaiting clarification of which feature to toggle; no implementation guessed.
+
+Opposite-side village comparison (2026-09-06): owner accepted a spawned vanilla village structure. Six LOD frames at 165-degree canonical arc separation on the Medium ring, default lighting, fixed midnight and FOV 30. Gallery includes unchanged full frames and explicitly labelled 4x pixel crops: logs/natural-village-165/index.html. This is a vanilla structure-spawned village, not hand-built and not claimed as natural seed placement.
+
+Medium-ring stationary FPS comparison (2026-09-06): same 165-degree village view, Fabric 26.2, complete 16384×256 one-block Atlas, normal simulation, 30 seconds per level. Mean FPS Lowest 245.3, Low 221.9, Medium 168.1, High 163.7, Very High 117.1, Max 116.2. Fixed pose verified throughout. Temporary 260 FPS ceiling and AFK limiter override restored afterwards; first idle-limited pass excluded. Very High/Max hit identical geometry/texture caps here. Evidence and sampling limits: logs/medium-ring-fps/README.md. Client remains open on Max.
+
+Website/changelog screenshot bank (2026-09-06): six fresh HUD-free day/night village captures at the agreed three-level labels Low (current Low), Medium (current High), High (current Max). Paired full-scene array, explicitly labelled 4x village-detail array, untouched originals, metadata and SHA-256 manifest are saved outside ignored logs under [docs/media/village-lod-day-night](media/village-lod-day-night/README.md). Visually checked both arrays. Labels use Minecraft bitmap glyphs. Command/UI renaming is not part of this asset capture. No publication; client remains open on current Max at night.
+
+Periodic stutter follow-up (2026-09-06): current Medium ring's Max synchronous buildMesh costs 319/278/275ms in three controlled same-content rebuilds. JFR identifies both CPU mesh construction and vertex emission/packing on the render thread; no GC during those probes. Live idle recording separately caught a 44ms GC pause, but no Atlas updates, so spontaneous hitch/rebuild correlation remains unproven. Earlier owner-play logs show frequent surface refreshes. Next fix should background both mesh construction and vertex packing with snapshot/revision/session consistency; then separately measure GPU upload. Evidence: logs/medium-ring-stutter/README.md. No production code changes or restart in this diagnostic turn.
+
+Background mesh fix (2026-09-06): moved both CPU mesh construction and native vertex packing to a serial surface worker alongside the matching texture snapshot. Both loaders pass 423 JVM tests on both 26.1.2/26.2; Python 429 with two skips. Fabric 26.2 runtime confirms worker-only mesh/packing samples, three completed Max refreshes, and safe pending-job cancellation across Low→Max switching. Remaining synchronous updates cost 53–104ms in this sample (35–42ms mesh upload, 9–22ms texture upload; one overlapping 52ms GC pause). Snapshot copies reach 26ms. Added >=16ms render-stage/cache-submission warnings. Full evidence and next targets: [ATLAS_STUTTER_2026-09-06.md](ATLAS_STUTTER_2026-09-06.md). Client remains open on Max, normal source fidelity defaults restored.

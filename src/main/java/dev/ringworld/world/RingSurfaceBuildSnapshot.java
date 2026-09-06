@@ -6,7 +6,7 @@ import java.util.function.LongSupplier;
 /**
  * Immutable atlas content selected for one asynchronous complete-ring build.
  *
- * <p>The background texture job and the render-thread terrain-height mesh
+ * <p>The background texture job and terrain-height mesh preparation
  * must consume this same point-in-time copy. A live client atlas can advance
  * while pixels are being prepared, so using it again for the mesh would pair
  * colour from one surface revision with relief from another. Capture uses an

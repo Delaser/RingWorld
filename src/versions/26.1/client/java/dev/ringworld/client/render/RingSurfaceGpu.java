@@ -39,23 +39,44 @@ public final class RingSurfaceGpu {
             .withSampler("Sampler1").withSampler("Sampler2")
             .withUniform("Fog", UniformType.UNIFORM_BUFFER).withUniform("Globals", UniformType.UNIFORM_BUFFER)
             .withColorTargetState(new ColorTargetState(BlendFunction.TRANSLUCENT)).withCull(false)
-            .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, false))
+            .withDepthStencilState(new DepthStencilState(CompareOp.LESS_THAN_OR_EQUAL, true))
             .withVertexFormat(DefaultVertexFormat.POSITION_TEX_COLOR, VertexFormat.Mode.TRIANGLES).build();
 
     private RingSurfaceGpu() { }
     public static RenderPipeline pipeline() { return PIPELINE; }
     public static float farBackgroundDepth() { return 0.9999F; }
 
-    public static GpuBuffer createVertexBuffer(RingSurfaceMesh.Mesh mesh, int vertexArgb) {
+    /** CPU-only packing. The returned native storage belongs to the build job. */
+    public static PackedMesh packMesh(RingSurfaceMesh.Mesh mesh, int vertexArgb) {
         VertexFormat format = DefaultVertexFormat.POSITION_TEX_COLOR;
-        try (ByteBufferBuilder allocator = ByteBufferBuilder.exactlySized(mesh.vertexCount() * format.getVertexSize())) {
+        ByteBufferBuilder allocator = ByteBufferBuilder.exactlySized(
+                Math.multiplyExact(mesh.vertexCount(), format.getVertexSize()));
+        try {
             BufferBuilder builder = new BufferBuilder(allocator, VertexFormat.Mode.TRIANGLES, format);
-            mesh.emitTriangles((x, y, z, u, v) ->
-                    builder.addVertex(x, y, z).setUv(u, v).setColor(vertexArgb));
-            try (MeshData built = builder.buildOrThrow()) {
-                return RenderSystem.getDevice().createBuffer(() -> "RingWorld textured surface mesh",
-                        GpuBuffer.USAGE_VERTEX, built.vertexBuffer());
-            }
+            mesh.emitTriangles(new RingSurfaceMesh.VertexConsumer() {
+                private int color = vertexArgb;
+                @Override public void sideColor(int rgb) { color = rgb < 0 ? vertexArgb : 0xFF000000 | rgb; }
+                @Override public void vertex(float x, float y, float z, float u, float v) {
+                    builder.addVertex(x, y, z).setUv(u, v).setColor(color);
+                }
+            });
+            return new PackedMesh(allocator, builder.buildOrThrow(), mesh.vertexCount());
+        } catch (RuntimeException | Error exception) {
+            allocator.close();
+            throw exception;
+        }
+    }
+
+    /** Only native GPU creation remains on the render thread. Does not own packed. */
+    public static GpuBuffer uploadMesh(PackedMesh packed) {
+        return RenderSystem.getDevice().createBuffer(() -> "RingWorld textured surface mesh",
+                GpuBuffer.USAGE_VERTEX, packed.data().vertexBuffer());
+    }
+
+    public record PackedMesh(ByteBufferBuilder allocator, MeshData data,
+                             int vertexCount) implements AutoCloseable {
+        @Override public void close() {
+            try { data.close(); } finally { allocator.close(); }
         }
     }
 

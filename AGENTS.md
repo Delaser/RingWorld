@@ -937,6 +937,14 @@ version numbers.
 
 ## Current implementation cautions
 
+- `/ringworld lod` is client-side on both loaders. Its Lowest-to-Max choices
+  are `RingLodQuality` display budgets, not saved `RingAtlasFidelity` IDs.
+  Preserve the server source Atlas; derive lower-resolution immutable snapshots
+  on the texture worker and cap textures to the device limit. Texture and mesh
+  must consume the same derived snapshot. Clear pending GPU builds when the
+  local choice changes and reset the choice on session teardown.
+
+
 - Staged seed-preview jobs use `ExecutorService.submit` and cancel their own
   interruptible `Future` on unload/completion. Preserve the cancelled/identity
   publication guards. `CompletableFuture.cancel(true)` does not stop an active
@@ -1507,3 +1515,13 @@ Completion means:
 - real terrain and the distant ring remain aligned while looking upward;
 - Nether and End remain unchanged;
 - unit build and relevant integration tests pass.
+
+- Client Atlas cache writes must remain off the render thread. Queue immutable snapshots with captured paths through the single RingAtlasCacheWriter; preserve per-path coalescing, final disconnect snapshot ordering, and shutdown draining. Worker completions must not mutate a later client session. Do not reintroduce forced synchronous saves on every revision commit.
+
+- Detailed Atlas steep-face UVs deliberately select an upper sample; geometry continuity tests must still compare exact physical positions. Gentle UVs and periodic wrapping remain unchanged. Keep rim bottom heights local to each segment and width edge: a global minimum can make distant wall faces cover the terrain in the sky pass.
+
+- Atlas proxy depth writes must remain enabled, with the version-owned forward/reversed comparison. Keep the proxy's smooth alpha fade and fade window-space depth from the backend far plane to actual surface depth with opacity; discard fully invisible fragments before depth writes. Adding a second screen-space dither mask to the proxy caused visible flicker; the existing live terrain dither remains unchanged.
+
+- Experimental Atlas format 9 carries representative side colours through snapshots, v3 metadata/tiles, disk, and local LOD downsampling. Account for twelve bytes per cell and invalidate older caches. Side sampling must stay bounded to the current chunk; preserve foliage/fluid colour and avoid neighbour loads. Distinct side-material changes must invalidate the mesh because steep faces carry this colour in existing GPU vertices.
+
+- Atlas surface jobs now prepare geometry and native vertex bytes on the serial surface worker using the same captured snapshot as texture pixels. Keep all GPU calls on the render thread and close packed/native data on stale, failed and abandoned results. Capture world/quality/wall inputs before scheduling. Do not reintroduce live client-state reads in worker texture/mesh preparation. GPU upload and owner-thread snapshot copies remain measured stutter sources; preserve >=16ms diagnostics and do not equate worker completion with hitch-free frame pacing.

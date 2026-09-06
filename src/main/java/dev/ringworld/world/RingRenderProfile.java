@@ -65,11 +65,20 @@ public record RingRenderProfile(
 
     public static RingRenderProfile create(RingGeometry geometry, double viewDistanceBlocks,
                                            RingAtlasFidelity fidelity) {
+        if (fidelity == null) throw new IllegalArgumentException("Atlas fidelity is required");
+        return create(geometry, viewDistanceBlocks, fidelity.maxTextureColumns(),
+                fidelity.maxTextureRows(), fidelity.meshStepBlocks());
+    }
+
+    /** Explicit client-side display budget; never changes saved Atlas fidelity. */
+    public static RingRenderProfile create(RingGeometry geometry, double viewDistanceBlocks,
+                                           int maxColumns, int maxRows, int meshStep) {
+        if (maxColumns <= 0 || maxRows <= 0 || meshStep <= 0) {
+            throw new IllegalArgumentException("positive display budget required");
+        }
         if (!Double.isFinite(viewDistanceBlocks) || viewDistanceBlocks <= 0.0) {
             throw new IllegalArgumentException("view distance must be finite and positive");
         }
-        if (fidelity == null) throw new IllegalArgumentException("Atlas fidelity is required");
-
         double half = geometry.circumferenceBlocks() * 0.5;
         double effective = Math.min(Math.max(16.0, viewDistanceBlocks), half);
         double liveStart = effective * LIVE_FADE_START_FACTOR;
@@ -86,14 +95,14 @@ public record RingRenderProfile(
         double cloudStart = Math.min(cloudEnd, Math.max(8.0, cloudEnd * 0.55));
 
         int textureColumns = Math.min(
-                geometry.circumferenceBlocks(), fidelity.maxTextureColumns());
-        int textureRows = Math.min(geometry.widthBlocks(), fidelity.maxTextureRows());
+                geometry.circumferenceBlocks(), maxColumns);
+        int textureRows = Math.min(geometry.widthBlocks(), maxRows);
         int circumferenceSegments = Math.min(
-                divideCeil(geometry.circumferenceBlocks(), fidelity.meshStepBlocks()),
+                divideCeil(geometry.circumferenceBlocks(), meshStep),
                 Math.max(MAX_CIRCUMFERENCE_SEGMENTS,
-                        fidelity.maxTextureColumns() / 2));
+                        maxColumns / 2));
         int widthBands = Math.min(
-                divideCeil(geometry.widthBlocks(), fidelity.meshStepBlocks()),
+                divideCeil(geometry.widthBlocks(), meshStep),
                 MAX_WIDTH_BANDS);
         long vertices = Math.multiplyExact(
                 Math.multiplyExact((long)circumferenceSegments, widthBands), 6L);

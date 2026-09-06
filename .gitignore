@@ -65,3 +65,7 @@ hs_err_pid*
 deploy/server/server.properties
 
 /run-preview-handoff/
+
+/run-atlas-fidelity-gallery/
+
+/run-atlas-fidelity-gallery-double/

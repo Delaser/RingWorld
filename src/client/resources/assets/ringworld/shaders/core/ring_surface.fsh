@@ -83,9 +83,12 @@ vec3 wallPalette(float roll) {
 }
 
 void main() {
-    vec4 previous = texture(Sampler1, texCoord0);
-    vec4 current = texture(Sampler0, texCoord0);
+    vec2 surfaceUv = texCoord0;
+    if (surfaceUv.x >= 2.0) surfaceUv.x -= 2.0;
+    vec4 previous = texture(Sampler1, surfaceUv);
+    vec4 current = texture(Sampler0, surfaceUv);
     vec4 sampled = mix(previous, current, clamp(ColorModulator.z, 0.0, 1.0));
+    if (texCoord0.x >= 2.0) sampled.rgb = vertexColor.rgb * 0.85;
     bool rimBridge = texCoord0.y < 0.0 || texCoord0.y > 1.0;
     if (rimBridge) {
         float blockX = floor(mod(texCoord0.x * float(RingWorldLayout.y),
@@ -114,6 +117,15 @@ void main() {
     if (proxyAlpha <= 0.001) {
         discard;
     }
+
+    // A nearly transparent proxy must not occlude fully visible live terrain.
+    // Fade its window-space depth from the far plane to the actual surface.
+    // Both backend NDC ranges map to [0,1] here; reversed depth has far=0.
+#ifdef RINGWORLD_REVERSED_DEPTH
+    gl_FragDepth = mix(0.0, gl_FragCoord.z, proxyAlpha);
+#else
+    gl_FragDepth = mix(1.0, gl_FragCoord.z, proxyAlpha);
+#endif
 
     // Begin revealing the atlas underneath the final live chunks. Those chunks
     // normally overwrite it, while a streaming gap exposes a fogged but

@@ -2065,3 +2065,6 @@ tasks.withType(Jar).configureEach {
 
 ext.ringPreviewHandoffDirectory = qualificationRunFile('run-preview-handoff')
 apply from: rootProject.file('gradle/preview-handoff.gradle')
+
+ext.ringFidelityGalleryDirectory = qualificationRunFile('run-atlas-fidelity-gallery')
+apply from: rootProject.file('gradle/fidelity-gallery.gradle')

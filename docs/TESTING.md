@@ -1,5 +1,79 @@
 # Testing
 
+## Live client LOD command
+
+`/ringworld lod lowest|low|medium|high|very_high|max` selects local display quality.
+`show` reports the choice and source sampling; `reset` returns to the server
+profile. Very High uses 1-block source targets with 2-block mesh spacing; Max
+keeps the same target data and uses 1-block mesh spacing. Both are bounded by
+available server data and hardware texture limits. These display names are
+separate from the four saved server Atlas fidelity values.
+
+The gallery accepts `-PringFidelityGalleryCompareMesh=true` to drive the actual
+Very High and Max slash commands in one loaded world, wait for rebuilt resources,
+and capture both views. `-PringFidelityGallerySeconds=30` selects 30-second FPS
+samples. `-PringFidelityGalleryLeaveOpen=true` ends automated camera control,
+restores the HUD and shows the window without requesting focus after capture;
+normal disconnect is then the owner's responsibility. Never terminate that
+interactive client as part of automatic fixture cleanup.
+
+The 2026-09-06 live Fabric 26.1.2 comparison successfully dispatched
+`/ringworld lod very_high` and `/ringworld lod max` in the same world.
+Thirty-second results: 186.2/177.6 FPS; worst frames 327.88/328.76 ms;
+frames over 50 ms 22/14. Both used the same 262144-cell source and 2048×128
+GPU texture; mesh vertex counts were 430080/1646592. Live Atlas revision
+rebuilds occurred in both samples. Both captures passed and the fixture left
+the world open for the owner. See `logs/atlas-mesh-one-block-results/` and
+`logs/atlas-lod-live-comparison.log`. All four source/loader cells passed
+412 Java cases; only Fabric 26.1.2 has live slash-command evidence.
+
+## Atlas fidelity gallery
+
+`:runAtlasFidelityGalleryClient` and `:neoforge:runAtlasFidelityGalleryClient`
+create four descriptively named disposable 2,048×128 worlds with seed 67890,
+one per Atlas fidelity. Run serially. Preparation recreates only the loader's
+ignored `run-atlas-fidelity-gallery` directory; retain captures/logs before reuse.
+The muted client renders full-frame screenshots in a hidden window with the
+HUD disabled, waits for each Atlas to complete,
+sets noon/clear weather and the same spectator pose (512.5, 340, 0.5;
+yaw 0, pitch -90, FOV 30), then settles before measuring ten seconds of rendered-frame
+intervals. VSync is disabled and `maxFps` is set to 260. Logs record sample
+count, measured duration, average FPS, worst frame time and frames over 50 ms.
+The gallery selects the minimized-only inactivity policy to avoid the AFK
+limiter. A property-guarded window mixin disables visibility and activation only
+for this fixture. These stationary Small-world
+measurements are descriptive capture evidence,
+not a production-world benchmark. The verifier requires all four PNGs, FPS
+records and normal session teardown. An existing gallery world can be resumed with preparation excluded; this
+may only reuse these fixture-owned worlds with the same geometry/seed/fidelity.
+Labels are added after capture; raw
+screenshots contain no UI.
+
+The 2026-09-06 Fabric 26.1.2 corrected gallery passes all four completed-Atlas
+captures and clean session teardown at 2560×1600. Ten-second hidden-window
+average FPS: Performance 260.0, Balanced 267.8, High 184.8, Very High 218.6.
+Worst frame times: 11.22/20.81/95.38/120.60 ms; frames over 50 ms: 0/0/1/3.
+These short samples are not a definitive performance ranking. Raw evidence:
+`logs/atlas-fidelity-gallery-fabric-26.1.2.log` and
+`run-atlas-fidelity-gallery/screenshots/`; labelled PNGs and exact metrics:
+`logs/atlas-fidelity-gallery-results/`. The earlier connection failure and
+rejected along-ring framing are retained separately and are not final evidence.
+
+A bounded doubled-Very-High experiment on 2026-09-06 temporarily used source
+step 1, texture caps 32768×2048 and mesh step 2 in a separate
+`run-atlas-fidelity-gallery-double` world. Both 26.1.2 loader test/builds pass
+410 cases; Fabric's completed-Atlas capture passes. Standard/doubled fresh
+samples measured 231.3/168.1 FPS, worst frames 92.80/474.60 ms, and 2/4 frames
+over 50 ms. The source count increased 65536→262144 and vertices
+116736→430080; the actual GPU texture stayed 2048×128. The larger caps were
+not exercised. The baseline reopened a completed world while the doubled view
+followed generation, so this short comparison is not a definitive benchmark.
+Normal Very High constants were restored after the experiment. Captures,
+metrics and both enum snapshots: `logs/atlas-fidelity-double-results/`.
+The gallery supports `-PringFidelityGalleryProfile=VERY_HIGH` for a single
+profile. `-PringFidelityGalleryDouble=true` isolates the directory only; it does
+not itself change quality and must not be mistaken for an exposed game profile.
+
 ## Staged preview worker handoff
 
 With Java 25 selected, run `./gradlew :runPreviewHandoffClient` (Fabric) or
@@ -3079,3 +3153,32 @@ candidate runtime evidence.
 | Proxy brighter/greener at night | `Sampler2` lightmap binding and full-sky texel coordinates in `ring_surface.fsh` |
 | Rim collides but is invisible | Boundary `BuiltChunk.shouldBuild`, exterior-neighbour exception, section rebuild |
 | Server hitching | Atlas generation future and pending chunk tasks |
+
+
+## Local LOD experiments — 2026-09-06
+
+`RingLodCommandSuggestionsTest` checks LOD parsing and completion beneath an existing server `/ringworld` root, preserves server command execution, and checks fresh-tree installation. Direct `sendCommand` fixture calls alone do not validate the chat input command tree; the earlier successful LOD performance comparison did not cover this failure.
+
+Owner relaunch: `-PringFidelityGalleryResume=true` with preparation excluded reopens the existing gallery world without camera, FOV, environment, or game-mode normalization. It checks the chat LOD subtree and executes Max before showing the window without focus. Runtime PASS retained in `logs/atlas-lod-owner-relaunch.log`.
+
+RingAtlasCacheWriterTest covers no caller-thread disk work, immutable snapshot ownership, queued revision coalescing, final saves across world paths and same-path reentry, and failure recovery. Existing Atlas disk round-trip tests cover the unchanged compressed format. Live before-fix profiles and findings are under logs/ringwalk-stalls*.
+
+## Cache-save fix verification
+
+2026-09-06: both loaders built and passed all 418 tests for 26.1.2 and 26.2. The owner Fabric client was closed for implementation, then reopened on Max with its existing one-block Atlas.
+
+The initial reopened-world recording was quiet. A one-shot local diagnostic agent then requested five checkpoints of unchanged real Atlas data through ClientRingState.saveTerrainAtlasIfDue(true), scheduled on the client thread. It changed no terrain, camera, player controls, or desktop focus; it only marked the cache dirty to exercise the real save entry point. The probe thread finished after the requests. The 20-second recording captured six successful 262144-cell saves, all on RingWorld atlas cache writer, taking 35.09–58.84ms. Five measured client-thread submissions took 0.714–0.942ms. No sampled render-thread RingTerrainAtlas.save stack appeared. This verifies the cache-save path, not a matched walking FPS benchmark.
+
+Evidence: logs/ringwalk-cache-probe.jfr, logs/ringwalk-cache-probe.json, logs/cache-save-probe/submissions.txt. Probe source and jar retained under logs/cache-save-probe. Client remains open for owner testing. The smaller CPU mesh rebuild stalls were not changed in this patch.
+
+RingSurfaceMeshTest now verifies physical shared-edge continuity independently of deliberate steep-face UV discontinuities. It covers upper-colour selection on a sand/canopy transition, unchanged flat-face UVs, and wall-bottom overlap below low terrain.
+
+The version-source contract test checks depth writes on both forward/reversed depth adapters and smooth proxy alpha, discard before depth writes for invisible fragments, and no extra proxy dither.
+
+RingAtlasSideColorTest covers side-material snapshot/wire/disk preservation, mesh material invalidation, and side-colour GPU emission with unchanged vertex count. Cost expectations now account for twelve-byte cells. Old Atlas formats invalidate and recapture instead of silently using incomplete material data.
+
+Village lighting screenshot fixture: logs/village-lighting-comparison retains the copied-world preparation, complete source/light histogram, twelve raw and labelled 2560x1600 captures, comparison sheets, setting manifest, capture driver and live log. Fixed midnight/clear weather, clouds/HUD off, simulation frozen only during comparisons then resumed. Source fidelity override affects only the experimental compiled run and copied settings; normal source constants restored. No FPS claim follows from these captures.
+
+### Background mesh runtime checkpoint — 2026-09-06
+
+Both 26.1.2/26.2 loader builds pass 423 JVM tests each; Python passes 429 with two platform skips. Fabric 26.2 at Medium/Max passes three forced asynchronous refreshes and pending-build cancellation on a Low→Max quality change. JFR confirms CPU mesh construction and packing on the surface worker. GPU upload, snapshot copies and GC remain measured stutter candidates; no claim of zero hitches or release qualification. See [ATLAS_STUTTER_2026-09-06.md](ATLAS_STUTTER_2026-09-06.md) for raw evidence paths and timing boundaries.

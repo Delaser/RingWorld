@@ -14,7 +14,7 @@ class RingDimensionCostEstimateTest {
 
         assertEquals(817L, estimate.estimatedPregenerationSeconds());
         assertEquals(177_523_917L, estimate.estimatedGeneratedWorldBytes());
-        assertEquals(524_800L, estimate.estimatedAtlasWireBytes());
+        assertEquals(786_944L, estimate.estimatedAtlasWireBytes());
         assertEquals(32L, estimate.minimumAtlasTransferTicks());
     }
 

@@ -27,6 +27,7 @@ public final class AtlasPregenerationUiTestClient {
     private static final double PROGRESSIVE_CAPTURE_COMPLETION = 0.25;
     private static final int TIMEOUT_TICKS = 14_400;
     private static final int DISCONNECT_TIMEOUT_TICKS = 200;
+    private final RingAtlasFidelityGalleryClient fidelityGallery = new RingAtlasFidelityGalleryClient();
     private final RingPreviewHandoffTestClient previewHandoff = new RingPreviewHandoffTestClient();
     private long renderedFrames;
     private long readyAfterFrame;
@@ -49,7 +50,10 @@ public final class AtlasPregenerationUiTestClient {
     private volatile boolean previewPositionReady;
 
     public boolean enabled() { return Boolean.getBoolean(ENABLE_PROPERTY); }
-    public void frameRendered() { renderedFrames++; }
+    public void frameRendered() {
+        renderedFrames++;
+        if (Boolean.getBoolean("ringworld.fidelityGallery")) fidelityGallery.frameRendered();
+    }
 
     /**
      * Opens one disposable creative world for either loader's isolated UI
@@ -57,6 +61,7 @@ public final class AtlasPregenerationUiTestClient {
      */
     public boolean startWorldIfEnabled(Minecraft client) {
         if (!enabled()) return false;
+        if (Boolean.getBoolean("ringworld.fidelityGallery")) return fidelityGallery.tick(client);
         if (Boolean.getBoolean(RingPreviewHandoffTestClient.ENABLE_PROPERTY)) return previewHandoff.tick(client);
         // This fixture is launched unattended. Keep the integrated server
         // ticking after the final map screen closes so its revisioned block
@@ -96,6 +101,7 @@ public final class AtlasPregenerationUiTestClient {
 
     public boolean tick(Minecraft client) {
         if (!enabled()) return false;
+        if (Boolean.getBoolean("ringworld.fidelityGallery")) return fidelityGallery.tick(client);
         if (Boolean.getBoolean(RingPreviewHandoffTestClient.ENABLE_PROPERTY)) return previewHandoff.tick(client);
         client.options.guiScale().set(4);
         if (++ticks > TIMEOUT_TICKS) return fail(client, "timed out before completion");

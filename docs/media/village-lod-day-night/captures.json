@@ -1,0 +1,38 @@
+[
+  {
+    "id": "village-low-day",
+    "label": "Low",
+    "phase": "day",
+    "runtimeSetting": "low"
+  },
+  {
+    "id": "village-low-night",
+    "label": "Low",
+    "phase": "night",
+    "runtimeSetting": "low"
+  },
+  {
+    "id": "village-medium-day",
+    "label": "Medium",
+    "phase": "day",
+    "runtimeSetting": "high"
+  },
+  {
+    "id": "village-medium-night",
+    "label": "Medium",
+    "phase": "night",
+    "runtimeSetting": "high"
+  },
+  {
+    "id": "village-high-day",
+    "label": "High",
+    "phase": "day",
+    "runtimeSetting": "max"
+  },
+  {
+    "id": "village-high-night",
+    "label": "High",
+    "phase": "night",
+    "runtimeSetting": "max"
+  }
+]

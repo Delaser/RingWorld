@@ -747,3 +747,34 @@ When diagnosing a bug, first classify it:
 | Ring backdrop follows player | Global ring mesh transform or canonical texture coordinates |
 | Hard live/backdrop line | Fog, depth order, atlas alignment, or render distance |
 | Nether/End changed | Missing dimension guard |
+
+## Per-client LOD display budget
+
+`RingClientLodTuning` owns one session-local `RingLodQuality`, selected by the
+Fabric/NeoForge client command `/ringworld lod`. The server still supplies the
+world-owned source resolution. Lowest/Low/Medium/High/Very High/Max target
+16/8/4/2/1/1-block display samples and 16/8/4/4/2/1-block mesh spacing.
+Only complete source Atlases are reduced: the texture worker point-samples the
+same integer anchors as source capture and preserves height, colour and light.
+Missing/finer source data is never invented. The texture and mesh consume one
+immutable derived snapshot, and the GPU device limits the texture budget.
+Changing the setting invalidates pending builds and local GPU resources; stale
+results are discarded by the existing generation checks. Disconnect resets the
+choice. No command packet changes server world settings or source Atlas data.
+
+
+## Local LOD experiments — 2026-09-06
+
+Fabric client ticks ensure the complete LOD literal subtree exists in the connection command dispatcher used for chat validation. This works around the shared-root completion merge order; actual execution remains in Fabric’s client command dispatcher. No server command or multiplayer quality state is changed.
+
+Client Atlas cache persistence uses RingAtlasCacheWriter: snapshots are copied on the owning client thread, then compressed and atomically written by one background worker. Pending writes coalesce per absolute path; ordered writes prevent an old session from replacing a newer queued snapshot. Ordinary revisions obey the ten-second save interval; disconnect queues the final dirty snapshot without waiting on the render thread. A JVM shutdown hook drains queued work. Save failures are logged and retried by the owning active session. Serialization buffers before GZIP as well as before disk; the file format is unchanged.
+
+Detailed Atlas steep faces (height change at least max(3 blocks, mesh spacing)) use constant texel-centre UVs from an upper contributing sample. Gentle faces retain interpolated UVs. This prevents lower sand/water colour and coarse mip filtering from extending up steep connectors without moving physical vertices. Rim proxy bottoms extend two blocks below each local sampled finite terrain edge, rather than stopping at the reference plane.
+
+Atlas proxy fragments write depth with the version-owned comparison direction. The proxy retains its smooth alpha fade; window-space depth interpolates from the backend far plane (1 forward, 0 reversed) to actual surface depth with opacity, so nearly invisible proxies do not punch holes in live terrain. Fully invisible fragments discard before writing depth. This allows nearer live geometry to win while preventing deeper valley faces from painting over the proxy. The existing live terrain dither is unchanged. A second proxy dither was tried and removed after owner-reported flicker. Large-ring far-plane compression remains intact.
+
+Atlas format 9 adds a 24-bit representative side colour in a four-byte field per cell. Snapshot, tile, disk and local LOD downsampling preserve it. Metadata/tile channels are v3 and the format-derived world hash invalidates older caches for recapture. CPU/wire cell budgets grow from 8 to 12 bytes. Terrain sampling keeps foliage, logs and water coloured as before; it samples midway down locally exposed drops, averaging multiple visible directions, with a bounded eight-block subsurface fallback and no neighbour chunk loads. It is a representative material, not vertically layered cliff geometry. Distinct side colours are carried by the existing GPU vertex colour field on steep faces (U+2 marks them); top sampling and exposed light remain in the existing texture. Mesh fingerprints include distinct side colours so material edits rebuild GPU vertex data.
+
+### Background Atlas mesh preparation (2026-09-06)
+
+The surface builder now owns CPU geometry and native vertex packing as well as texture preparation. It uses one immutable source/display snapshot and captures wall/quality/preview inputs on the client thread. Version-owned `RingSurfaceGpu.packMesh` is CPU-only and returns explicitly owned native storage; `uploadMesh` alone accesses the GPU device. Generation invalidation and the serial worker keep obsolete results from crossing reload/session/quality boundaries. Render-thread installation still uploads complete buffers and may stall; see [the measured follow-up](ATLAS_STUTTER_2026-09-06.md).
