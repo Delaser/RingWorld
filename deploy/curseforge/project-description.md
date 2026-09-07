@@ -32,6 +32,6 @@ Generating the Atlas takes processor time and disk space. Medium and Large world
 
 Back up your saves before updating. Mods that replace rendering, shaders, world generation or networking can conflict with RingWorld. Check the [compatibility notes](https://github.com/Delaser/RingWorld/blob/main/docs/COMPATIBILITY.md) before adding it to a modpack.
 
-[Source code for this release]({{RINGWORLD_CORRESPONDING_SOURCE_URL}}) · [Report a bug](https://github.com/Delaser/RingWorld/issues)
+[Source code](https://github.com/Delaser/RingWorld) · [Report a bug](https://github.com/Delaser/RingWorld/issues)
 
 Open source under MPL-2.0. Not affiliated with Mojang or Microsoft.
