@@ -164,10 +164,10 @@ class RingWorldCreationUiModelTest {
     @Test
     void creationAdmissionUsesSelectedAtlasFidelityForTheHardCellLimit() {
         assertDoesNotThrow(() -> RingWorldConfig.validateNewWorldLayout(
-                1_024, 65_536, 160, 5, RingAtlasFidelity.BALANCED.sampleStepBlocks()));
+                1_040, 65_536, 160, 5, RingAtlasFidelity.BALANCED.sampleStepBlocks()));
         assertThrows(IllegalArgumentException.class,
                 () -> RingWorldConfig.validateNewWorldLayout(
-                        1_024, 65_536, 160, 5,
+                        1_040, 65_536, 160, 5,
                         RingAtlasFidelity.VERY_HIGH.sampleStepBlocks()));
     }
 

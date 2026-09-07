@@ -50,9 +50,15 @@ public record RingDimensionReport(
     public static final int MAX_AXIS_BLOCKS = 1_048_576;
     public static final long WARN_CANONICAL_CHUNKS = 500_000L;
     public static final long WARN_ATLAS_CELLS = 4_000_000L;
-    public static final long MAX_ATLAS_CELLS = 16_000_000L;
+    // Fits the Large preset (32,768 × 512) at one sample per block.
+    public static final long MAX_ATLAS_CELLS = 16_777_216L;
     public static final long WARN_PREGENERATION_SECONDS = 30L * 60L;
     public static final long WARN_GENERATED_WORLD_BYTES = 512L * 1_024L * 1_024L;
+
+    public static String atlasLimitMessage(long cells) {
+        return "terrain atlas requires " + cells + " cells; current limit is " + MAX_ATLAS_CELLS
+                + ". Lower Atlas fidelity in Gen settings, or reduce Around/Across.";
+    }
 
     public RingDimensionReport {
         errors = List.copyOf(errors);
@@ -171,8 +177,7 @@ public record RingDimensionReport(
         RingDimensionCostEstimate costEstimate = RingDimensionCostEstimate.estimate(
                 geometry, atlasSampleStepBlocks);
         if (atlasCells > MAX_ATLAS_CELLS) {
-            errors.add("terrain atlas requires " + atlasCells + " cells; current limit is "
-                    + MAX_ATLAS_CELLS);
+            errors.add(atlasLimitMessage(atlasCells));
         } else if (atlasCells > WARN_ATLAS_CELLS) {
             warnings.add("terrain atlas requires " + atlasCells
                     + " cells (approximately " + atlasBytes + " raw bytes)");

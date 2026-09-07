@@ -62,8 +62,7 @@ public final class RingTerrainAtlas {
         this.rows = divideCeil(geometry.widthBlocks(), sampleStep);
         long cells = Math.multiplyExact((long)columns, rows);
         if (cells > RingDimensionReport.MAX_ATLAS_CELLS) {
-            throw new IllegalArgumentException("terrain atlas requires " + cells
-                    + " cells; current limit is " + RingDimensionReport.MAX_ATLAS_CELLS);
+            throw new IllegalArgumentException(RingDimensionReport.atlasLimitMessage(cells));
         }
         int cellCount = Math.toIntExact(cells);
         this.heights = new short[cellCount];

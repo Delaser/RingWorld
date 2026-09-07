@@ -14,6 +14,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingDimensionReportTest {
     @Test
+    void largeOneBlockAtlasFitsAndLargerRingsExplainTheWorkaround() {
+        var large = RingDimensionReport.forVanillaOverworld(new RingGeometry(512, 32768), 160, 5, 1);
+        assertTrue(large.isValid(), large.errors().toString());
+        assertEquals(RingDimensionReport.MAX_ATLAS_CELLS, large.atlasCellCount());
+        var bigger = RingDimensionReport.forVanillaOverworld(new RingGeometry(528, 32768), 160, 5, 1);
+        assertFalse(bigger.isValid());
+        assertTrue(bigger.errors().stream().anyMatch(message ->
+                message.contains("Lower Atlas fidelity in Gen settings") && message.contains("Around/Across")));
+        assertTrue(RingDimensionReport.forVanillaOverworld(new RingGeometry(528, 32768), 160, 5, 2).isValid());
+    }
+
+    @Test
     void smallPresetHasExactUsableBandAndMeasuredCosts() {
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
                 new RingGeometry(128, 2_048), 160);
