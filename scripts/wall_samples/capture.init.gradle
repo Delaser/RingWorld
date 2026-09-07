@@ -1,0 +1,11 @@
+// Use only with :runAppearanceComparisonClient, skipping its normal preparation.
+allprojects { afterEvaluate { p ->
+    if (p == rootProject && p.extensions.findByName('loom') != null) {
+        p.loom.runs.appearanceComparisonClient {
+            runDir new File(rootProject.projectDir, 'logs/wall-selector-samples/run').absolutePath
+            vmArg '-Dringworld.captureWallSelectorSamples=true'
+            vmArg '-Dringworld.backgroundTestWindow=true'
+            vmArg '-Xmx3G'
+        }
+    }
+} }
