@@ -10,4 +10,4 @@ Modrinth's public project API returned 404 and its project page returned an erro
 
 The rewrite removes renderer implementation notes, repeated compatibility cautions and promotional qualifiers. It retains world sizes, immutable dimensions, Atlas generation costs and controls, installation requirements, multiplayer requirements, compatibility guidance, source and licence links. Unreleased wall, lighting and LOD changes are excluded.
 
-No live listing, release file or changelog was changed.
+Published the approved full description to CurseForge project 1645598 on 2026-09-07 after explicit owner authorization. The author dashboard reported “Changes saved successfully”; a fresh public-page load verified the complete replacement, headings, lists, version requirements and links. The short tagline, gallery, release files and changelogs were unchanged. Modrinth remains unpublished.
