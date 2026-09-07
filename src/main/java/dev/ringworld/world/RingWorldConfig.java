@@ -51,7 +51,10 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
             properties.setProperty("widthBlocks", Integer.toString(RingWorldSettings.DEFAULT_WIDTH));
             properties.setProperty("circumferenceBlocks", Integer.toString(RingWorldSettings.DEFAULT_CIRCUMFERENCE));
             properties.setProperty("wallHeightBlocks", Integer.toString(RingWorldSettings.DEFAULT_WALL_HEIGHT));
-            properties.setProperty("wallPreset", RingWallStyle.Preset.WEATHERED_FORTIFICATION.name());
+            properties.setProperty("wallThicknessBlocks", Integer.toString(RingWallStyle.DEFAULT.thicknessBlocks()));
+            properties.setProperty("wallPalette", Integer.toString(RingWallStyle.DEFAULT.palette().id()));
+            properties.setProperty("wallPattern", Integer.toString(RingWallStyle.DEFAULT.pattern().id()));
+            properties.setProperty("wallDecayPercent", Integer.toString(RingWallStyle.DEFAULT.decayPercent()));
             properties.setProperty("skyBackdrop", RingSkyProfile.Backdrop.ATMOSPHERE.name());
             properties.setProperty("sunStyle", RingSkyProfile.LightSource.SMALL.name());
             properties.setProperty("atlasFidelity", RingAtlasFidelity.BALANCED.name());
@@ -248,8 +251,8 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
                     integer(properties, "wallDecayPercent", RingWallStyle.DEFAULT.decayPercent()),
                     format);
         }
-        String presetName = properties.getProperty(
-                "wallPreset", RingWallStyle.Preset.WEATHERED_FORTIFICATION.name());
+        if (!properties.containsKey("wallPreset")) return RingWallStyle.DEFAULT;
+        String presetName = properties.getProperty("wallPreset");
         try {
             return RingWallStyle.Preset.valueOf(presetName.trim()).style();
         } catch (IllegalArgumentException exception) {

@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "minecraftVersion": "26.2",
   "loader": "Fabric",
-  "sourceCommit": "bd3c6d757cfd37bab0227abd2bf4b81426b3a963",
+  "sourceCommit": "11f6453b0340de52129d6ceac3cad347fbff0197",
   "sourceFixture": "RingWallSelectorSamples.java",
   "seed": 8128,
   "sourceCircumference": 16384,
@@ -34,12 +34,31 @@
   "weather": "clear",
   "notes": [
     "Actual game blocks, sampled using production material generation. Specimens elevated for an unobstructed view.",
-    "Source center chosen to show the generated exposed-machinery motif with Industrial / Industrial structures.",
-    "Industrial structures adds geometric elements only with the Industrial palette.",
-    "Clustered and Strata remain readable in older saves but are not selectable and are excluded.",
+    "Source center chosen to show the generated exposed-machinery motif with RingWorld / RingWorld Structure.",
+    "RingWorld Structure adds geometric elements only with the RingWorld palette.",
+    "Clustered, Strata, Panels and Hybrid remain readable in older saves but are not selectable and are excluded.",
     "Minecraft bitmap-font labels added after capture; previews and raw images contain no labels or HUD."
   ],
   "entries": [
+    {
+      "id": "wall-weathered-engineered",
+      "palette": "WEATHERED",
+      "paletteId": 0,
+      "paletteLabel": "Weathered stone",
+      "pattern": "ENGINEERED",
+      "patternId": 6,
+      "patternLabel": "RingWorld Structure",
+      "raw": "fullsize/wall-weathered-engineered.webp",
+      "preview": "previews/wall-weathered-engineered.png",
+      "labelled": "labelled/wall-weathered-engineered.jpg",
+      "size": [
+        2940,
+        1632
+      ],
+      "sourcePngSha256": "bd5c3af61ec59307661afef64ad14db2169d8b4133b0b5b2808a749931601e80",
+      "sha256": "317c51b36c32e1f182348d1f91efb1357cd8a35fa340c0c5760c5371d492ccbd",
+      "machinery": false
+    },
     {
       "id": "wall-weathered-masonry",
       "palette": "WEATHERED",
@@ -57,25 +76,6 @@
       ],
       "sourcePngSha256": "d9aa9a46dc1a13b22f81a2fe963f54da6fcdc1051c6df6688d10f3e1b2dad2cd",
       "sha256": "861d134888703ac953d387a039d1259d01277d04dc0e8ec6d2cbfd4fa432b3b1",
-      "machinery": false
-    },
-    {
-      "id": "wall-weathered-panels",
-      "palette": "WEATHERED",
-      "paletteId": 0,
-      "paletteLabel": "Weathered stone",
-      "pattern": "PANELS",
-      "patternId": 3,
-      "patternLabel": "Panels & ribs",
-      "raw": "fullsize/wall-weathered-panels.webp",
-      "preview": "previews/wall-weathered-panels.png",
-      "labelled": "labelled/wall-weathered-panels.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "bd5c3af61ec59307661afef64ad14db2169d8b4133b0b5b2808a749931601e80",
-      "sha256": "317c51b36c32e1f182348d1f91efb1357cd8a35fa340c0c5760c5371d492ccbd",
       "machinery": false
     },
     {
@@ -98,41 +98,22 @@
       "machinery": false
     },
     {
-      "id": "wall-weathered-hybrid",
-      "palette": "WEATHERED",
-      "paletteId": 0,
-      "paletteLabel": "Weathered stone",
-      "pattern": "HYBRID",
-      "patternId": 5,
-      "patternLabel": "Hybrid",
-      "raw": "fullsize/wall-weathered-hybrid.webp",
-      "preview": "previews/wall-weathered-hybrid.png",
-      "labelled": "labelled/wall-weathered-hybrid.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "f62f01aee9c1c76989abd46a23a4fc485e88e5ee6f942241035e612376ca6dcc",
-      "sha256": "fed966d863e8be63a937782bd28dfbc0b186d0be2a36439d8044698a83cbff2a",
-      "machinery": false
-    },
-    {
-      "id": "wall-weathered-engineered",
-      "palette": "WEATHERED",
-      "paletteId": 0,
-      "paletteLabel": "Weathered stone",
+      "id": "wall-ancient-engineered",
+      "palette": "ANCIENT",
+      "paletteId": 1,
+      "paletteLabel": "Ancient masonry",
       "pattern": "ENGINEERED",
       "patternId": 6,
-      "patternLabel": "Industrial structures",
-      "raw": "fullsize/wall-weathered-engineered.webp",
-      "preview": "previews/wall-weathered-engineered.png",
-      "labelled": "labelled/wall-weathered-engineered.jpg",
+      "patternLabel": "RingWorld Structure",
+      "raw": "fullsize/wall-ancient-engineered.webp",
+      "preview": "previews/wall-ancient-engineered.png",
+      "labelled": "labelled/wall-ancient-engineered.jpg",
       "size": [
         2940,
         1632
       ],
-      "sourcePngSha256": "bd5c3af61ec59307661afef64ad14db2169d8b4133b0b5b2808a749931601e80",
-      "sha256": "317c51b36c32e1f182348d1f91efb1357cd8a35fa340c0c5760c5371d492ccbd",
+      "sourcePngSha256": "1de9b0fbb70682e80fd7737f35cb27b9a04c5b7f31d9ff156cf431f49b13e839",
+      "sha256": "5051473e67627f5e12e8ea0d2661be70046d48a5de543eed3927f07dbd1112ad",
       "machinery": false
     },
     {
@@ -155,25 +136,6 @@
       "machinery": false
     },
     {
-      "id": "wall-ancient-panels",
-      "palette": "ANCIENT",
-      "paletteId": 1,
-      "paletteLabel": "Ancient masonry",
-      "pattern": "PANELS",
-      "patternId": 3,
-      "patternLabel": "Panels & ribs",
-      "raw": "fullsize/wall-ancient-panels.webp",
-      "preview": "previews/wall-ancient-panels.png",
-      "labelled": "labelled/wall-ancient-panels.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "1de9b0fbb70682e80fd7737f35cb27b9a04c5b7f31d9ff156cf431f49b13e839",
-      "sha256": "5051473e67627f5e12e8ea0d2661be70046d48a5de543eed3927f07dbd1112ad",
-      "machinery": false
-    },
-    {
       "id": "wall-ancient-gradient",
       "palette": "ANCIENT",
       "paletteId": 1,
@@ -193,41 +155,22 @@
       "machinery": false
     },
     {
-      "id": "wall-ancient-hybrid",
-      "palette": "ANCIENT",
-      "paletteId": 1,
-      "paletteLabel": "Ancient masonry",
-      "pattern": "HYBRID",
-      "patternId": 5,
-      "patternLabel": "Hybrid",
-      "raw": "fullsize/wall-ancient-hybrid.webp",
-      "preview": "previews/wall-ancient-hybrid.png",
-      "labelled": "labelled/wall-ancient-hybrid.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "a112897134a0839567b3392401b91156e33368e28fba60f9aef4398daf01f8ea",
-      "sha256": "ed19897e2cdaa8fd3d0ff53f4300f1a5cf8dd531a105097684eee8470974af4b",
-      "machinery": false
-    },
-    {
-      "id": "wall-ancient-engineered",
-      "palette": "ANCIENT",
-      "paletteId": 1,
-      "paletteLabel": "Ancient masonry",
+      "id": "wall-natural-engineered",
+      "palette": "NATURAL",
+      "paletteId": 2,
+      "paletteLabel": "Natural rock",
       "pattern": "ENGINEERED",
       "patternId": 6,
-      "patternLabel": "Industrial structures",
-      "raw": "fullsize/wall-ancient-engineered.webp",
-      "preview": "previews/wall-ancient-engineered.png",
-      "labelled": "labelled/wall-ancient-engineered.jpg",
+      "patternLabel": "RingWorld Structure",
+      "raw": "fullsize/wall-natural-engineered.webp",
+      "preview": "previews/wall-natural-engineered.png",
+      "labelled": "labelled/wall-natural-engineered.jpg",
       "size": [
         2940,
         1632
       ],
-      "sourcePngSha256": "1de9b0fbb70682e80fd7737f35cb27b9a04c5b7f31d9ff156cf431f49b13e839",
-      "sha256": "5051473e67627f5e12e8ea0d2661be70046d48a5de543eed3927f07dbd1112ad",
+      "sourcePngSha256": "688aba1128d1b82112b23ce8ac139522a79e1c29cae824adf3180bf767700a58",
+      "sha256": "8f4359714ed39704e700cf96b52dbcf57658fb95c869d5359e7413ec7603c122",
       "machinery": false
     },
     {
@@ -250,25 +193,6 @@
       "machinery": false
     },
     {
-      "id": "wall-natural-panels",
-      "palette": "NATURAL",
-      "paletteId": 2,
-      "paletteLabel": "Natural rock",
-      "pattern": "PANELS",
-      "patternId": 3,
-      "patternLabel": "Panels & ribs",
-      "raw": "fullsize/wall-natural-panels.webp",
-      "preview": "previews/wall-natural-panels.png",
-      "labelled": "labelled/wall-natural-panels.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "688aba1128d1b82112b23ce8ac139522a79e1c29cae824adf3180bf767700a58",
-      "sha256": "8f4359714ed39704e700cf96b52dbcf57658fb95c869d5359e7413ec7603c122",
-      "machinery": false
-    },
-    {
       "id": "wall-natural-gradient",
       "palette": "NATURAL",
       "paletteId": 2,
@@ -288,41 +212,22 @@
       "machinery": false
     },
     {
-      "id": "wall-natural-hybrid",
-      "palette": "NATURAL",
-      "paletteId": 2,
-      "paletteLabel": "Natural rock",
-      "pattern": "HYBRID",
-      "patternId": 5,
-      "patternLabel": "Hybrid",
-      "raw": "fullsize/wall-natural-hybrid.webp",
-      "preview": "previews/wall-natural-hybrid.png",
-      "labelled": "labelled/wall-natural-hybrid.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "c4800346f4ada52336da4886154ac76dd44c337c09a98745778641e2593da7b6",
-      "sha256": "75f905831a9e5a79c9dc849887579cb761ee5b4e834e8e5f639dfbd12d73bef5",
-      "machinery": false
-    },
-    {
-      "id": "wall-natural-engineered",
-      "palette": "NATURAL",
-      "paletteId": 2,
-      "paletteLabel": "Natural rock",
+      "id": "wall-alloy-engineered",
+      "palette": "ALLOY",
+      "paletteId": 3,
+      "paletteLabel": "Ring alloy",
       "pattern": "ENGINEERED",
       "patternId": 6,
-      "patternLabel": "Industrial structures",
-      "raw": "fullsize/wall-natural-engineered.webp",
-      "preview": "previews/wall-natural-engineered.png",
-      "labelled": "labelled/wall-natural-engineered.jpg",
+      "patternLabel": "RingWorld Structure",
+      "raw": "fullsize/wall-alloy-engineered.webp",
+      "preview": "previews/wall-alloy-engineered.png",
+      "labelled": "labelled/wall-alloy-engineered.jpg",
       "size": [
         2940,
         1632
       ],
-      "sourcePngSha256": "688aba1128d1b82112b23ce8ac139522a79e1c29cae824adf3180bf767700a58",
-      "sha256": "8f4359714ed39704e700cf96b52dbcf57658fb95c869d5359e7413ec7603c122",
+      "sourcePngSha256": "18457c7b0b254d2b1bf6516084b98464770f430fa4c772fcbe40006510137342",
+      "sha256": "b0a6d0b3ed672f6edf137b8521141412fe60c3afa39a46efa1815fb4c3e4fc64",
       "machinery": false
     },
     {
@@ -345,25 +250,6 @@
       "machinery": false
     },
     {
-      "id": "wall-alloy-panels",
-      "palette": "ALLOY",
-      "paletteId": 3,
-      "paletteLabel": "Ring alloy",
-      "pattern": "PANELS",
-      "patternId": 3,
-      "patternLabel": "Panels & ribs",
-      "raw": "fullsize/wall-alloy-panels.webp",
-      "preview": "previews/wall-alloy-panels.png",
-      "labelled": "labelled/wall-alloy-panels.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "18457c7b0b254d2b1bf6516084b98464770f430fa4c772fcbe40006510137342",
-      "sha256": "b0a6d0b3ed672f6edf137b8521141412fe60c3afa39a46efa1815fb4c3e4fc64",
-      "machinery": false
-    },
-    {
       "id": "wall-alloy-gradient",
       "palette": "ALLOY",
       "paletteId": 3,
@@ -383,48 +269,29 @@
       "machinery": false
     },
     {
-      "id": "wall-alloy-hybrid",
-      "palette": "ALLOY",
-      "paletteId": 3,
-      "paletteLabel": "Ring alloy",
-      "pattern": "HYBRID",
-      "patternId": 5,
-      "patternLabel": "Hybrid",
-      "raw": "fullsize/wall-alloy-hybrid.webp",
-      "preview": "previews/wall-alloy-hybrid.png",
-      "labelled": "labelled/wall-alloy-hybrid.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "b90769e944323c29ee2343d6ed3adb47978998d37ed80d56db4d6f3a6dd20100",
-      "sha256": "a1aa7eff990b4d638d7a57c201af952b7fa8e23c11adf827a865efcb79fb0342",
-      "machinery": false
-    },
-    {
-      "id": "wall-alloy-engineered",
-      "palette": "ALLOY",
-      "paletteId": 3,
-      "paletteLabel": "Ring alloy",
+      "id": "wall-industrial-engineered",
+      "palette": "INDUSTRIAL",
+      "paletteId": 4,
+      "paletteLabel": "RingWorld",
       "pattern": "ENGINEERED",
       "patternId": 6,
-      "patternLabel": "Industrial structures",
-      "raw": "fullsize/wall-alloy-engineered.webp",
-      "preview": "previews/wall-alloy-engineered.png",
-      "labelled": "labelled/wall-alloy-engineered.jpg",
+      "patternLabel": "RingWorld Structure",
+      "raw": "fullsize/wall-industrial-engineered.webp",
+      "preview": "previews/wall-industrial-engineered.png",
+      "labelled": "labelled/wall-industrial-engineered.jpg",
       "size": [
         2940,
         1632
       ],
-      "sourcePngSha256": "18457c7b0b254d2b1bf6516084b98464770f430fa4c772fcbe40006510137342",
-      "sha256": "b0a6d0b3ed672f6edf137b8521141412fe60c3afa39a46efa1815fb4c3e4fc64",
-      "machinery": false
+      "sourcePngSha256": "e8c4747d47adba53657b58556e6ab2a8aab7d3fbc2e50f6f76ac949b42d97efd",
+      "sha256": "4d17b0d9a66b6f6da4a6a68420724dbc3cb9a156546f4f4e231b83e482e84ab8",
+      "machinery": true
     },
     {
       "id": "wall-industrial-masonry",
       "palette": "INDUSTRIAL",
       "paletteId": 4,
-      "paletteLabel": "Industrial",
+      "paletteLabel": "RingWorld",
       "pattern": "MASONRY",
       "patternId": 1,
       "patternLabel": "Masonry",
@@ -440,29 +307,10 @@
       "machinery": false
     },
     {
-      "id": "wall-industrial-panels",
-      "palette": "INDUSTRIAL",
-      "paletteId": 4,
-      "paletteLabel": "Industrial",
-      "pattern": "PANELS",
-      "patternId": 3,
-      "patternLabel": "Panels & ribs",
-      "raw": "fullsize/wall-industrial-panels.webp",
-      "preview": "previews/wall-industrial-panels.png",
-      "labelled": "labelled/wall-industrial-panels.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "2ddd8fd952f7ef808a442ec3b8c7e0e55d4a3c9bc0b749a8a2736afb99d9a3e4",
-      "sha256": "2f298f18f8424a9363d2cffc7b0bdfef4246b645ed874e6e7c395af59ae829e6",
-      "machinery": false
-    },
-    {
       "id": "wall-industrial-gradient",
       "palette": "INDUSTRIAL",
       "paletteId": 4,
-      "paletteLabel": "Industrial",
+      "paletteLabel": "RingWorld",
       "pattern": "GRADIENT",
       "patternId": 4,
       "patternLabel": "Gradient",
@@ -478,42 +326,23 @@
       "machinery": false
     },
     {
-      "id": "wall-industrial-hybrid",
-      "palette": "INDUSTRIAL",
-      "paletteId": 4,
-      "paletteLabel": "Industrial",
-      "pattern": "HYBRID",
-      "patternId": 5,
-      "patternLabel": "Hybrid",
-      "raw": "fullsize/wall-industrial-hybrid.webp",
-      "preview": "previews/wall-industrial-hybrid.png",
-      "labelled": "labelled/wall-industrial-hybrid.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "318fd684ca1ab7dd815828da28a4ba3f9be35f019a7b06a63783ac5664e515e9",
-      "sha256": "6489528a973e9b234dd9c35a9af9f85ce899b1dd6d408f17c22b853897764b96",
-      "machinery": false
-    },
-    {
-      "id": "wall-industrial-engineered",
-      "palette": "INDUSTRIAL",
-      "paletteId": 4,
-      "paletteLabel": "Industrial",
+      "id": "wall-overgrown-engineered",
+      "palette": "OVERGROWN",
+      "paletteId": 5,
+      "paletteLabel": "Overgrown ruin",
       "pattern": "ENGINEERED",
       "patternId": 6,
-      "patternLabel": "Industrial structures",
-      "raw": "fullsize/wall-industrial-engineered.webp",
-      "preview": "previews/wall-industrial-engineered.png",
-      "labelled": "labelled/wall-industrial-engineered.jpg",
+      "patternLabel": "RingWorld Structure",
+      "raw": "fullsize/wall-overgrown-engineered.webp",
+      "preview": "previews/wall-overgrown-engineered.png",
+      "labelled": "labelled/wall-overgrown-engineered.jpg",
       "size": [
         2940,
         1632
       ],
-      "sourcePngSha256": "e8c4747d47adba53657b58556e6ab2a8aab7d3fbc2e50f6f76ac949b42d97efd",
-      "sha256": "4d17b0d9a66b6f6da4a6a68420724dbc3cb9a156546f4f4e231b83e482e84ab8",
-      "machinery": true
+      "sourcePngSha256": "a787aadd9ea2421fd76a54f0f0721feb1316806e83d45f140a274967b705082c",
+      "sha256": "65c296a1703c9b07f772f5688e5974decff054e49a647f3b58569ab2772e7564",
+      "machinery": false
     },
     {
       "id": "wall-overgrown-masonry",
@@ -532,25 +361,6 @@
       ],
       "sourcePngSha256": "624bf1c92ce375c6a81777ba7c68a8e110f96ce007814a3196ff8a12651a27ae",
       "sha256": "5fbe267f9798d888b8f603c60887a1db710344d4f3b331c8f2ded34072a78ca5",
-      "machinery": false
-    },
-    {
-      "id": "wall-overgrown-panels",
-      "palette": "OVERGROWN",
-      "paletteId": 5,
-      "paletteLabel": "Overgrown ruin",
-      "pattern": "PANELS",
-      "patternId": 3,
-      "patternLabel": "Panels & ribs",
-      "raw": "fullsize/wall-overgrown-panels.webp",
-      "preview": "previews/wall-overgrown-panels.png",
-      "labelled": "labelled/wall-overgrown-panels.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "a787aadd9ea2421fd76a54f0f0721feb1316806e83d45f140a274967b705082c",
-      "sha256": "65c296a1703c9b07f772f5688e5974decff054e49a647f3b58569ab2772e7564",
       "machinery": false
     },
     {
@@ -573,41 +383,22 @@
       "machinery": false
     },
     {
-      "id": "wall-overgrown-hybrid",
-      "palette": "OVERGROWN",
-      "paletteId": 5,
-      "paletteLabel": "Overgrown ruin",
-      "pattern": "HYBRID",
-      "patternId": 5,
-      "patternLabel": "Hybrid",
-      "raw": "fullsize/wall-overgrown-hybrid.webp",
-      "preview": "previews/wall-overgrown-hybrid.png",
-      "labelled": "labelled/wall-overgrown-hybrid.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "6d72c6d55f99d119cba2b041413bb6b88648e97082d88f189945dcd49790eee4",
-      "sha256": "c34060e5f45befd459347303bd4fe9a7b61a7eceb595ea323131ee62cdcec8ec",
-      "machinery": false
-    },
-    {
-      "id": "wall-overgrown-engineered",
-      "palette": "OVERGROWN",
-      "paletteId": 5,
-      "paletteLabel": "Overgrown ruin",
+      "id": "wall-monolith-engineered",
+      "palette": "MONOLITH",
+      "paletteId": 6,
+      "paletteLabel": "Clean monolith",
       "pattern": "ENGINEERED",
       "patternId": 6,
-      "patternLabel": "Industrial structures",
-      "raw": "fullsize/wall-overgrown-engineered.webp",
-      "preview": "previews/wall-overgrown-engineered.png",
-      "labelled": "labelled/wall-overgrown-engineered.jpg",
+      "patternLabel": "RingWorld Structure",
+      "raw": "fullsize/wall-monolith-engineered.webp",
+      "preview": "previews/wall-monolith-engineered.png",
+      "labelled": "labelled/wall-monolith-engineered.jpg",
       "size": [
         2940,
         1632
       ],
-      "sourcePngSha256": "a787aadd9ea2421fd76a54f0f0721feb1316806e83d45f140a274967b705082c",
-      "sha256": "65c296a1703c9b07f772f5688e5974decff054e49a647f3b58569ab2772e7564",
+      "sourcePngSha256": "fc55e1d41577c93dd5f0ce20b4b09a4af555b860dfa1404890e2dda2b25a37ba",
+      "sha256": "2622f146d5af7b3f7133cced725ffb1d508255d98b3b37ff131b31765afc3bf9",
       "machinery": false
     },
     {
@@ -630,25 +421,6 @@
       "machinery": false
     },
     {
-      "id": "wall-monolith-panels",
-      "palette": "MONOLITH",
-      "paletteId": 6,
-      "paletteLabel": "Clean monolith",
-      "pattern": "PANELS",
-      "patternId": 3,
-      "patternLabel": "Panels & ribs",
-      "raw": "fullsize/wall-monolith-panels.webp",
-      "preview": "previews/wall-monolith-panels.png",
-      "labelled": "labelled/wall-monolith-panels.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "fc55e1d41577c93dd5f0ce20b4b09a4af555b860dfa1404890e2dda2b25a37ba",
-      "sha256": "2622f146d5af7b3f7133cced725ffb1d508255d98b3b37ff131b31765afc3bf9",
-      "machinery": false
-    },
-    {
       "id": "wall-monolith-gradient",
       "palette": "MONOLITH",
       "paletteId": 6,
@@ -668,41 +440,22 @@
       "machinery": false
     },
     {
-      "id": "wall-monolith-hybrid",
-      "palette": "MONOLITH",
-      "paletteId": 6,
-      "paletteLabel": "Clean monolith",
-      "pattern": "HYBRID",
-      "patternId": 5,
-      "patternLabel": "Hybrid",
-      "raw": "fullsize/wall-monolith-hybrid.webp",
-      "preview": "previews/wall-monolith-hybrid.png",
-      "labelled": "labelled/wall-monolith-hybrid.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "1aa4dbdb2218f3755b5d143adc6d8f9d97285b2ab027610030c7a0c9bd6b1a43",
-      "sha256": "26345133b23ce9982d2ede6628edbff980bd54b2ddcb511ef2cf982fe7405907",
-      "machinery": false
-    },
-    {
-      "id": "wall-monolith-engineered",
-      "palette": "MONOLITH",
-      "paletteId": 6,
-      "paletteLabel": "Clean monolith",
+      "id": "wall-nether-engineered",
+      "palette": "NETHER",
+      "paletteId": 7,
+      "paletteLabel": "Nether fortress",
       "pattern": "ENGINEERED",
       "patternId": 6,
-      "patternLabel": "Industrial structures",
-      "raw": "fullsize/wall-monolith-engineered.webp",
-      "preview": "previews/wall-monolith-engineered.png",
-      "labelled": "labelled/wall-monolith-engineered.jpg",
+      "patternLabel": "RingWorld Structure",
+      "raw": "fullsize/wall-nether-engineered.webp",
+      "preview": "previews/wall-nether-engineered.png",
+      "labelled": "labelled/wall-nether-engineered.jpg",
       "size": [
         2940,
         1632
       ],
-      "sourcePngSha256": "fc55e1d41577c93dd5f0ce20b4b09a4af555b860dfa1404890e2dda2b25a37ba",
-      "sha256": "2622f146d5af7b3f7133cced725ffb1d508255d98b3b37ff131b31765afc3bf9",
+      "sourcePngSha256": "fabd6aa09619cc58604c06ce433ce423ff6f2db70a31816a3657efcd5ff6c803",
+      "sha256": "9479daa52357214a636c4d0df32cb334cee07598241407da591c937dc3ee45d4",
       "machinery": false
     },
     {
@@ -725,25 +478,6 @@
       "machinery": false
     },
     {
-      "id": "wall-nether-panels",
-      "palette": "NETHER",
-      "paletteId": 7,
-      "paletteLabel": "Nether fortress",
-      "pattern": "PANELS",
-      "patternId": 3,
-      "patternLabel": "Panels & ribs",
-      "raw": "fullsize/wall-nether-panels.webp",
-      "preview": "previews/wall-nether-panels.png",
-      "labelled": "labelled/wall-nether-panels.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "fabd6aa09619cc58604c06ce433ce423ff6f2db70a31816a3657efcd5ff6c803",
-      "sha256": "9479daa52357214a636c4d0df32cb334cee07598241407da591c937dc3ee45d4",
-      "machinery": false
-    },
-    {
       "id": "wall-nether-gradient",
       "palette": "NETHER",
       "paletteId": 7,
@@ -763,41 +497,22 @@
       "machinery": false
     },
     {
-      "id": "wall-nether-hybrid",
-      "palette": "NETHER",
-      "paletteId": 7,
-      "paletteLabel": "Nether fortress",
-      "pattern": "HYBRID",
-      "patternId": 5,
-      "patternLabel": "Hybrid",
-      "raw": "fullsize/wall-nether-hybrid.webp",
-      "preview": "previews/wall-nether-hybrid.png",
-      "labelled": "labelled/wall-nether-hybrid.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "c24cf02d1ded8495fa12a45b6769bdfb9793e6f105d6bebbc211a91315261e96",
-      "sha256": "568c1dcb18073f656be3c9236b8b7caaab9c9201eefe1cbb43edc42eba49e85f",
-      "machinery": false
-    },
-    {
-      "id": "wall-nether-engineered",
-      "palette": "NETHER",
-      "paletteId": 7,
-      "paletteLabel": "Nether fortress",
+      "id": "wall-obsidian-engineered",
+      "palette": "OBSIDIAN",
+      "paletteId": 8,
+      "paletteLabel": "Obsidian bastion",
       "pattern": "ENGINEERED",
       "patternId": 6,
-      "patternLabel": "Industrial structures",
-      "raw": "fullsize/wall-nether-engineered.webp",
-      "preview": "previews/wall-nether-engineered.png",
-      "labelled": "labelled/wall-nether-engineered.jpg",
+      "patternLabel": "RingWorld Structure",
+      "raw": "fullsize/wall-obsidian-engineered.webp",
+      "preview": "previews/wall-obsidian-engineered.png",
+      "labelled": "labelled/wall-obsidian-engineered.jpg",
       "size": [
         2940,
         1632
       ],
-      "sourcePngSha256": "fabd6aa09619cc58604c06ce433ce423ff6f2db70a31816a3657efcd5ff6c803",
-      "sha256": "9479daa52357214a636c4d0df32cb334cee07598241407da591c937dc3ee45d4",
+      "sourcePngSha256": "cc1a26d520c1189536845ca71e15755d39af3fc8843a71d1991629da9ff27f57",
+      "sha256": "3c46d3c26e996afd01f2b14c6e55ae9d5490c28b0af9bc91009bb6194f12a6b4",
       "machinery": false
     },
     {
@@ -820,25 +535,6 @@
       "machinery": false
     },
     {
-      "id": "wall-obsidian-panels",
-      "palette": "OBSIDIAN",
-      "paletteId": 8,
-      "paletteLabel": "Obsidian bastion",
-      "pattern": "PANELS",
-      "patternId": 3,
-      "patternLabel": "Panels & ribs",
-      "raw": "fullsize/wall-obsidian-panels.webp",
-      "preview": "previews/wall-obsidian-panels.png",
-      "labelled": "labelled/wall-obsidian-panels.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "cc1a26d520c1189536845ca71e15755d39af3fc8843a71d1991629da9ff27f57",
-      "sha256": "3c46d3c26e996afd01f2b14c6e55ae9d5490c28b0af9bc91009bb6194f12a6b4",
-      "machinery": false
-    },
-    {
       "id": "wall-obsidian-gradient",
       "palette": "OBSIDIAN",
       "paletteId": 8,
@@ -858,41 +554,22 @@
       "machinery": false
     },
     {
-      "id": "wall-obsidian-hybrid",
-      "palette": "OBSIDIAN",
-      "paletteId": 8,
-      "paletteLabel": "Obsidian bastion",
-      "pattern": "HYBRID",
-      "patternId": 5,
-      "patternLabel": "Hybrid",
-      "raw": "fullsize/wall-obsidian-hybrid.webp",
-      "preview": "previews/wall-obsidian-hybrid.png",
-      "labelled": "labelled/wall-obsidian-hybrid.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "4e919dd50e138ed7bd3a6f962c8ba615024a13aa2a25fad16d880a44dde2a956",
-      "sha256": "e43a683cbd0548e65a39d081ef98ef6521335c43ff49b8d80d0d49abe4d031af",
-      "machinery": false
-    },
-    {
-      "id": "wall-obsidian-engineered",
-      "palette": "OBSIDIAN",
-      "paletteId": 8,
-      "paletteLabel": "Obsidian bastion",
+      "id": "wall-wood-engineered",
+      "palette": "WOOD",
+      "paletteId": 9,
+      "paletteLabel": "Timber rampart",
       "pattern": "ENGINEERED",
       "patternId": 6,
-      "patternLabel": "Industrial structures",
-      "raw": "fullsize/wall-obsidian-engineered.webp",
-      "preview": "previews/wall-obsidian-engineered.png",
-      "labelled": "labelled/wall-obsidian-engineered.jpg",
+      "patternLabel": "RingWorld Structure",
+      "raw": "fullsize/wall-wood-engineered.webp",
+      "preview": "previews/wall-wood-engineered.png",
+      "labelled": "labelled/wall-wood-engineered.jpg",
       "size": [
         2940,
         1632
       ],
-      "sourcePngSha256": "cc1a26d520c1189536845ca71e15755d39af3fc8843a71d1991629da9ff27f57",
-      "sha256": "3c46d3c26e996afd01f2b14c6e55ae9d5490c28b0af9bc91009bb6194f12a6b4",
+      "sourcePngSha256": "542d4f43d3e0775c826805008922cac2ed7869e8c86fe572ba78c5ea54368177",
+      "sha256": "67da721201c459c8e1e7e9d6e475b993d50677c448505f185ed559269677863f",
       "machinery": false
     },
     {
@@ -915,25 +592,6 @@
       "machinery": false
     },
     {
-      "id": "wall-wood-panels",
-      "palette": "WOOD",
-      "paletteId": 9,
-      "paletteLabel": "Timber rampart",
-      "pattern": "PANELS",
-      "patternId": 3,
-      "patternLabel": "Panels & ribs",
-      "raw": "fullsize/wall-wood-panels.webp",
-      "preview": "previews/wall-wood-panels.png",
-      "labelled": "labelled/wall-wood-panels.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "542d4f43d3e0775c826805008922cac2ed7869e8c86fe572ba78c5ea54368177",
-      "sha256": "67da721201c459c8e1e7e9d6e475b993d50677c448505f185ed559269677863f",
-      "machinery": false
-    },
-    {
       "id": "wall-wood-gradient",
       "palette": "WOOD",
       "paletteId": 9,
@@ -950,44 +608,6 @@
       ],
       "sourcePngSha256": "036cf8dc50d7a41172f052042e9c7060f45c60fbc1fd0f093bb67b8a3a2502b2",
       "sha256": "f5a866c60d9edbe8dde18c305baf3974acc063349a8acc95a7f1998137b04223",
-      "machinery": false
-    },
-    {
-      "id": "wall-wood-hybrid",
-      "palette": "WOOD",
-      "paletteId": 9,
-      "paletteLabel": "Timber rampart",
-      "pattern": "HYBRID",
-      "patternId": 5,
-      "patternLabel": "Hybrid",
-      "raw": "fullsize/wall-wood-hybrid.webp",
-      "preview": "previews/wall-wood-hybrid.png",
-      "labelled": "labelled/wall-wood-hybrid.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "33dd0f6ba0b6e2620c3a27f950d6ed5bb647beeae9d7d2bb1862bac725a53893",
-      "sha256": "28a3ceefbcea40de6d8347334234542ba939dfabfba78b6dbb221c9aeabd2444",
-      "machinery": false
-    },
-    {
-      "id": "wall-wood-engineered",
-      "palette": "WOOD",
-      "paletteId": 9,
-      "paletteLabel": "Timber rampart",
-      "pattern": "ENGINEERED",
-      "patternId": 6,
-      "patternLabel": "Industrial structures",
-      "raw": "fullsize/wall-wood-engineered.webp",
-      "preview": "previews/wall-wood-engineered.png",
-      "labelled": "labelled/wall-wood-engineered.jpg",
-      "size": [
-        2940,
-        1632
-      ],
-      "sourcePngSha256": "542d4f43d3e0775c826805008922cac2ed7869e8c86fe572ba78c5ea54368177",
-      "sha256": "67da721201c459c8e1e7e9d6e475b993d50677c448505f185ed559269677863f",
       "machinery": false
     }
   ]

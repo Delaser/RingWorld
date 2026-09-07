@@ -24,18 +24,20 @@ class RingWallStyleTest {
 
     @Test
     void retiredPatternsRemainDecodableButAreNotSelectable() {
-        assertEquals(java.util.List.of(
-                        RingWallStyle.Pattern.MASONRY,
-                        RingWallStyle.Pattern.PANELS,
-                        RingWallStyle.Pattern.GRADIENT,
-                        RingWallStyle.Pattern.HYBRID, RingWallStyle.Pattern.ENGINEERED),
+        assertEquals(java.util.List.of(RingWallStyle.Pattern.ENGINEERED,
+                        RingWallStyle.Pattern.MASONRY, RingWallStyle.Pattern.GRADIENT),
                 java.util.List.of(RingWallStyle.Pattern.selectableValues()));
-        assertEquals(RingWallStyle.Pattern.CLUSTERED,
-                RingWallStyle.Pattern.fromId(RingWallStyle.Pattern.CLUSTERED.id()));
-        assertEquals(RingWallStyle.Pattern.STRATA,
-                RingWallStyle.Pattern.fromId(RingWallStyle.Pattern.STRATA.id()));
-        assertEquals(RingWallStyle.Pattern.MASONRY, RingWallStyle.Pattern.CLUSTERED.next());
-        assertEquals(RingWallStyle.Pattern.MASONRY, RingWallStyle.Pattern.STRATA.next());
+        for (var retired : java.util.List.of(RingWallStyle.Pattern.CLUSTERED,
+                RingWallStyle.Pattern.STRATA, RingWallStyle.Pattern.PANELS, RingWallStyle.Pattern.HYBRID)) {
+            assertEquals(retired, RingWallStyle.Pattern.fromId(retired.id()));
+            assertEquals(RingWallStyle.Pattern.ENGINEERED, retired.next());
+        }
+        for (var preset : RingWallStyle.Preset.values()) {
+            assertTrue(java.util.List.of(RingWallStyle.Pattern.selectableValues())
+                    .contains(preset.style().pattern()));
+        }
+        assertEquals(RingWallStyle.Palette.INDUSTRIAL, RingWallStyle.DEFAULT.palette());
+        assertEquals(RingWallStyle.Pattern.ENGINEERED, RingWallStyle.DEFAULT.pattern());
     }
 
     @Test

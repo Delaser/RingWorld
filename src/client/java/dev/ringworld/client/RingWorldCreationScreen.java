@@ -214,7 +214,7 @@ public final class RingWorldCreationScreen extends Screen {
                 case ANCIENT_MASONRY -> "Anc";
                 case NATURAL_ESCARPMENT -> "Rock";
                 case RING_ALLOY -> "Alloy";
-                case INDUSTRIAL_SUPERSTRUCTURE -> "Ind";
+                case INDUSTRIAL_SUPERSTRUCTURE -> "Ring";
                 case OVERGROWN_RUIN -> "Ruin";
                 case CLEAN_MONOLITH -> "Mono";
                 case NETHER_FORTRESS -> "Neth";

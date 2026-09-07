@@ -16,7 +16,7 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
     public static final RingWallStyle LEGACY = new RingWallStyle(
             5, Palette.WEATHERED, Pattern.CLUSTERED, 0, FORMAT_VERSION);
     public static final RingWallStyle DEFAULT = new RingWallStyle(
-            5, Palette.WEATHERED, Pattern.MASONRY, 25, FORMAT_VERSION);
+            5, Palette.INDUSTRIAL, Pattern.ENGINEERED, 25, FORMAT_VERSION);
 
     public static final Codec<RingWallStyle> CODEC = RecordCodecBuilder.create(instance -> instance.group(
             Codec.INT.fieldOf("thickness").forGetter(RingWallStyle::thicknessBlocks),
@@ -57,7 +57,7 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
         ANCIENT(1, "Ancient masonry", "Stone brick, cracked, mossy, cobble"),
         NATURAL(2, "Natural rock", "Stone, tuff, andesite, cobble, moss"),
         ALLOY(3, "Ring alloy", "Smooth stone, diorite, quartz, prismarine"),
-        INDUSTRIAL(4, "Industrial", "Deepslate, basalt, copper, 0.1% lanterns"),
+        INDUSTRIAL(4, "RingWorld", "Deepslate, basalt, copper, 0.1% lanterns"),
         OVERGROWN(5, "Overgrown ruin", "Stone brick, mossy, cracked, moss"),
         MONOLITH(6, "Clean monolith", "Smooth stone, calcite, polished andesite"),
         NETHER(7, "Nether fortress", "Nether brick, red brick, blackstone, magma"),
@@ -96,7 +96,7 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
         PANELS(3, "Panels & ribs"),
         GRADIENT(4, "Gradient"),
         HYBRID(5, "Hybrid"),
-        ENGINEERED(6, "Industrial structures");
+        ENGINEERED(6, "RingWorld Structure");
 
         private final int id;
         private final String label;
@@ -111,7 +111,7 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
 
         /** Patterns offered for new worlds. Retired IDs remain decodable for old saves. */
         public static Pattern[] selectableValues() {
-            return new Pattern[] { MASONRY, PANELS, GRADIENT, HYBRID, ENGINEERED };
+            return new Pattern[] { ENGINEERED, MASONRY, GRADIENT };
         }
 
         public Pattern next() {
@@ -121,7 +121,7 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
                     return selectable[(index + 1) % selectable.length];
                 }
             }
-            return MASONRY;
+            return ENGINEERED;
         }
 
         public static Pattern fromId(int id) {
@@ -134,13 +134,13 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
         WEATHERED_FORTIFICATION("Weathered", 5, Palette.WEATHERED, Pattern.MASONRY, 25),
         ANCIENT_MASONRY("Ancient", 6, Palette.ANCIENT, Pattern.MASONRY, 40),
         NATURAL_ESCARPMENT("Escarpment", 8, Palette.NATURAL, Pattern.GRADIENT, 15),
-        RING_ALLOY("Ring alloy", 5, Palette.ALLOY, Pattern.PANELS, 5),
-        INDUSTRIAL_SUPERSTRUCTURE("Industrial", 7, Palette.INDUSTRIAL, Pattern.ENGINEERED, 10),
-        OVERGROWN_RUIN("Overgrown", 6, Palette.OVERGROWN, Pattern.HYBRID, 70),
-        CLEAN_MONOLITH("Monolith", 4, Palette.MONOLITH, Pattern.PANELS, 0),
+        RING_ALLOY("Ring alloy", 5, Palette.ALLOY, Pattern.ENGINEERED, 5),
+        INDUSTRIAL_SUPERSTRUCTURE("RingWorld", 7, Palette.INDUSTRIAL, Pattern.ENGINEERED, 10),
+        OVERGROWN_RUIN("Overgrown", 6, Palette.OVERGROWN, Pattern.MASONRY, 70),
+        CLEAN_MONOLITH("Monolith", 4, Palette.MONOLITH, Pattern.ENGINEERED, 0),
         NETHER_FORTRESS("Nether", 7, Palette.NETHER, Pattern.MASONRY, 25),
-        OBSIDIAN_BASTION("Obsidian", 5, Palette.OBSIDIAN, Pattern.PANELS, 8),
-        TIMBER_RAMPART("Wood", 4, Palette.WOOD, Pattern.PANELS, 20);
+        OBSIDIAN_BASTION("Obsidian", 5, Palette.OBSIDIAN, Pattern.ENGINEERED, 8),
+        TIMBER_RAMPART("Wood", 4, Palette.WOOD, Pattern.ENGINEERED, 20);
 
         private final String label;
         private final RingWallStyle style;
@@ -165,7 +165,7 @@ public record RingWallStyle(int thicknessBlocks, Palette palette, Pattern patter
         }
 
         public static Preset matching(RingWallStyle style) {
-            return find(style).orElse(WEATHERED_FORTIFICATION);
+            return find(style).orElse(INDUSTRIAL_SUPERSTRUCTURE);
         }
 
         public static Optional<Preset> find(RingWallStyle style) {
