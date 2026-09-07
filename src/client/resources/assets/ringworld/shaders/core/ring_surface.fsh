@@ -35,22 +35,49 @@ float wallHash(vec3 block, float salt) {
 }
 
 float wallRoll(float blockX, float blockY, float depth) {
-    float pattern = floor(vertexColor.a * 255.0 / 32.0 + 0.001);
+    float metadata = floor(vertexColor.a * 255.0 + 0.5);
+    float pattern = floor(metadata / 32.0);
     float fine = wallHash(vec3(blockX, blockY, depth), 0.0);
     float coarse = wallHash(vec3(floor(blockX / 7.0), floor(blockY / 5.0),
-                                 floor(depth / 2.0)), 19.0);
-    if (pattern < 0.5) return mix(fine, coarse, 0.72);
-    if (pattern < 1.5) return mix(fine, wallHash(vec3(floor(blockX / 5.0),
-                                                     floor(blockY / 2.0), depth), 53.0), 0.76);
-    if (pattern < 2.5) return mix(fine, wallHash(vec3(floor(blockX / 11.0),
-                                                     floor(blockY / 6.0), depth), 71.0), 0.68);
+                                     floor(depth / 2.0)), 19.0);
+    if (pattern < 0.5) {
+        return mix(fine, coarse, 0.72);
+    }
+    if (pattern < 1.5) {
+        float course = floor(blockY / 2.0);
+        float width = 3.0 + floor(wallHash(vec3(course, depth, 0.0), 31.0) * 4.0);
+        float offset = floor(wallHash(vec3(course, depth, 1.0), 47.0) * width);
+        float brick = floor((blockX + offset) / width);
+        return mix(fine, wallHash(vec3(brick, course, depth), 53.0), 0.76);
+    }
+    if (pattern < 2.5) {
+        float section = floor(blockX / 19.0);
+        float wave = floor(wallHash(vec3(section, depth, 2.0), 61.0) * 9.0) - 4.0;
+        float height = 3.0 + floor(wallHash(vec3(section, floor(blockY / 13.0),
+                                                   depth), 67.0) * 7.0);
+        float band = floor((blockY + wave) / height);
+        return mix(fine, wallHash(vec3(floor(blockX / 11.0), band, depth), 71.0), 0.68);
+    }
     if (pattern < 3.5) {
-        bool rib = mod(blockX, 17.0) < 1.0 || mod(blockY, 13.0) < 1.0;
+        float panelWidth = 11.0 + floor(wallHash(
+                vec3(floor(blockX / 67.0), depth, 3.0), 79.0) * 13.0);
+        float panelX = mod(blockX, panelWidth);
+        float course = 8.0 + floor(wallHash(vec3(floor(blockX / panelWidth), depth, 5.0),
+                                                83.0) * 11.0);
+        bool rib = panelX < 1.0 || panelX >= panelWidth - 1.0
+                   || mod(blockY, course) < 1.0;
         return rib ? 0.92 : mix(fine, coarse, 0.70);
     }
-    if (pattern < 4.5) return clamp((blockY + 64.0) / 224.0, 0.0, 1.0) * 0.28
-            + mix(fine, coarse, 0.46) * 0.72;
-    return mix(fine, coarse, 0.66);
+    if (pattern < 4.5) {
+        float vertical = clamp((blockY + 64.0) / 224.0, 0.0, 1.0);
+        return vertical * 0.28 + mix(fine, coarse, 0.46) * 0.72;
+    }
+    // Hybrid: broad weathered clusters broken by occasional structural ribs.
+    float selector = wallHash(vec3(floor(blockX / 23.0), floor(blockY / 17.0), depth),
+                              97.0);
+    float clustered = mix(fine, coarse, 0.66);
+    float rib = mod(blockX, 17.0) < 1.0 || mod(blockY, 13.0) < 1.0 ? 0.90 : clustered;
+    return selector < 0.28 ? rib : mix(rib, clustered, 0.82);
 }
 
 vec3 wallPalette(float roll) {
@@ -73,12 +100,9 @@ void main() {
         float halfWidth = float(RingWorldLayout.z) * 0.5;
         float depth = max(0.0, halfWidth - abs(intrinsicWidth));
         float roll = wallRoll(blockX, blockY, floor(depth));
-        float weather = step(1.0 - RingWorldWallStyle.x,
-                wallHash(vec3(blockX, blockY, depth), 101.0));
         float textureNoise = 0.88 + 0.12 * wallHash(
                 vec3(blockX + 31.0, blockY - 17.0, depth), 109.0);
         vec3 styled = wallPalette(roll);
-        styled = mix(styled, styled * vec3(0.72, 0.86, 0.72), weather * 0.35);
         sampled = vec4(styled * textureNoise, 0.0);
     }
 

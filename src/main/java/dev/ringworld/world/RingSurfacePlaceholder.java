@@ -1,5 +1,7 @@
 package dev.ringworld.world;
 
+import java.util.Arrays;
+
 /** Builds the neutral or seed-derived visual fallback used by an incomplete Atlas. */
 public final class RingSurfacePlaceholder {
     public static final int NEUTRAL_GREY = 0x6B706F;
@@ -29,6 +31,13 @@ public final class RingSurfacePlaceholder {
         int cells = Math.multiplyExact(targetColumns, targetRows);
         int[] argb = new int[cells];
         float[] heights = new float[cells];
+        if (preview == null) {
+            // Keep the initial ring coherent until the first seed preview arrives;
+            // scattered captured cells must not grow into coloured strips.
+            Arrays.fill(argb, 0xFF000000 | NEUTRAL_GREY);
+            Arrays.fill(heights, (float)RingGeometry.SURFACE_Y);
+            return new Surface(targetColumns, targetRows, argb, heights);
+        }
         for (int row = 0; row < targetRows; row++) {
             int atlasRow = sampleIndex(row, targetRows, atlas.rows());
             for (int column = 0; column < targetColumns; column++) {
@@ -38,16 +47,13 @@ public final class RingSurfacePlaceholder {
                 if (realColor >= 0) {
                     argb[targetIndex] = 0xFF000000 | realColor;
                     heights[targetIndex] = atlas.cellHeight(atlasColumn, atlasRow);
-                } else if (preview != null) {
+                } else {
                     // Sample directly at GPU resolution so a higher-resolution
                     // preview is not first collapsed through the Atlas grid.
                     argb[targetIndex] = 0xFF000000
                             | preview.sampleColor(column, row, targetColumns, targetRows);
                     heights[targetIndex] = preview.sampleHeight(
                             column, row, targetColumns, targetRows);
-                } else {
-                    argb[targetIndex] = 0xFF000000 | NEUTRAL_GREY;
-                    heights[targetIndex] = (float)RingGeometry.SURFACE_Y;
                 }
             }
         }

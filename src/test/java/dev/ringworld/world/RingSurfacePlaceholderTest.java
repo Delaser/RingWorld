@@ -47,16 +47,14 @@ class RingSurfacePlaceholderTest {
     }
 
     @Test
-    void absentPreviewUsesNeutralOnlyForMissingCells() {
+    void absentPreviewKeepsPartialAtlasUniformUntilSeedPreviewArrives() {
         RingGeometry geometry = new RingGeometry(128, 2_048);
         RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, 91L);
         atlas.putCell(32, 4, 83, 0x123456);
 
         RingSurfacePlaceholder.Surface surface = RingSurfacePlaceholder.resolve(atlas, 4, 2);
 
-        assertEquals(0xFF123456, surface.argb()[0]);
-        assertEquals(83.0F, surface.heights()[0]);
-        for (int index = 1; index < surface.argb().length; index++) {
+        for (int index = 0; index < surface.argb().length; index++) {
             assertEquals(0xFF000000 | RingSurfacePlaceholder.NEUTRAL_GREY,
                     surface.argb()[index]);
             assertEquals((float)RingGeometry.SURFACE_Y, surface.heights()[index]);

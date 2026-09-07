@@ -38,7 +38,8 @@ class RingWallAppearanceSourceContractTest {
         assertTrue(fragment.contains("uniform vec4 RingWorldWallStyle"));
         assertTrue(fragment.contains("bool rimBridge = texCoord0.y < 0.0 || texCoord0.y > 1.0"));
         assertTrue(fragment.contains("float roll = wallRoll("));
-        assertTrue(fragment.contains("RingWorldWallStyle.x"));
+        assertFalse(fragment.contains("weather * 0.35"),
+                "rim palette colours must not receive an extra green decay tint");
         assertTrue(fragment.contains("return vertexColor.rgb"));
         assertFalse(fragment.contains("* vertexColor;"),
                 "ordinary terrain must not be tinted by packed wall metadata");

@@ -231,9 +231,12 @@ public final class RingWorldCreationScreen extends Screen {
     private Component monumentMessage() {
         if (report != null && report.isValid()
                 && !RingWorldCreationUiModel.monumentAvailable(report.geometry())) {
-            return Component.literal("Monument: needs 160 width");
+            return Component.literal(layout().compact()
+                    ? "Mon: N/A" : "Monument: needs 160 width");
         }
-        return Component.literal(RingWorldCreationUiModel.monumentChoice(requestOceanMonument));
+        return Component.literal(layout().compact()
+                ? "Mon: " + (requestOceanMonument ? "On" : "Off")
+                : RingWorldCreationUiModel.monumentChoice(requestOceanMonument));
     }
 
     private void updateReport() {
