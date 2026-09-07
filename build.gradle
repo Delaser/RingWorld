@@ -2045,7 +2045,7 @@ def verifyOptionalVisualSmokeOutputs = { File runDirectory, String label ->
 			"wallHeightBlocks": "160", "wallThicknessBlocks": "9",
 			"wallPalette": "4", "wallPattern": "5", "wallDecayPercent": "37",
 			"skyBackdrop": "ATMOSPHERE", "sunStyle": "SMALL",
-			"testMode": "true", "pregenerateTerrainAtlas": "false"
+			"testMode": "false", "pregenerateTerrainAtlas": "false"
 	]
 	expected.each { key, value ->
 		if (config.getProperty(key) != value) {
@@ -2118,7 +2118,7 @@ tasks.register("prepareOptionalVisualSmokeRun") {
 		config.setProperty("wallDecayPercent", "37")
 		config.setProperty("skyBackdrop", "ATMOSPHERE")
 		config.setProperty("sunStyle", "SMALL")
-		config.setProperty("testMode", "true")
+		config.setProperty("testMode", "false")
 		config.setProperty("testViewDistanceChunks", "6")
 		config.setProperty("pregenerateTerrainAtlas", "false")
 		configFile.withOutputStream {

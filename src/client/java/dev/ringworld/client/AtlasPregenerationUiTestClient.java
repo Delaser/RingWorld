@@ -527,6 +527,7 @@ public final class AtlasPregenerationUiTestClient {
         private int baselineBlockLight;
         private BlockPos lightPosition;
         private long revisionBeforeLightChange;
+        private long lightCaptureAfterNanos;
 
         private boolean tick(Minecraft client) {
             // Fabric invokes startWorldIfEnabled only after an unhandled
@@ -782,6 +783,10 @@ public final class AtlasPregenerationUiTestClient {
                             + "cell={},{} blockLight={} baseline={} revision={}",
                     lit, lightPosition, lightColumn, lightRow, observed,
                     baselineBlockLight, atlas.revision());
+            // Complete Atlas updates coalesce for up to ten seconds before
+            // the asynchronous upload and 750 ms texture morph. Frame counts
+            // alone can finish before even the three-second quiet window.
+            lightCaptureAfterNanos = System.nanoTime() + 12_000_000_000L;
             visualAdvance(lit ? VisualStage.LIGHT_ON_POSE
                     : VisualStage.LIGHT_OFF_POSE);
         }
@@ -811,6 +816,7 @@ public final class AtlasPregenerationUiTestClient {
         private void visualLightPose(Minecraft client, boolean lit) {
             RingGeometry geometry = ClientRingState.geometry();
             if (geometry == null || client.player == null) return;
+            if (System.nanoTime() < lightCaptureAfterNanos) return;
             if (!visualEnsurePose(client, "night block light " + lit,
                     0.5, 120.0, 0.5, 18_000, 90.0F, -90.0F)) return;
             if (!visualRequireProfile(client, RingSkyProfile.Backdrop.NIGHT,

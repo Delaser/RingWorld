@@ -2802,7 +2802,7 @@ tasks.register('prepareNeoForgeOptionalVisualSmokeRun') {
         config.setProperty('wallDecayPercent', '37')
         config.setProperty('skyBackdrop', 'ATMOSPHERE')
         config.setProperty('sunStyle', 'SMALL')
-        config.setProperty('testMode', 'true')
+        config.setProperty('testMode', 'false')
         config.setProperty('testViewDistanceChunks', '6')
         config.setProperty('pregenerateTerrainAtlas', 'false')
         configFile.withOutputStream {
