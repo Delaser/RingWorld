@@ -610,5 +610,11 @@
       "sha256": "f5a866c60d9edbe8dde18c305baf3974acc063349a8acc95a7f1998137b04223",
       "machinery": false
     }
+  ],
+  "previewCropNormalized": [
+    0.2,
+    0.2,
+    0.8,
+    0.8
   ]
 }

@@ -38,7 +38,9 @@ public final class RingWallStyleScreen extends Screen {
         this.parent = Objects.requireNonNull(parent, "parent");
         this.draft = Objects.requireNonNull(initial, "initial");
         this.palette = initial.palette();
-        this.pattern = initial.pattern();
+        this.pattern = Arrays.asList(RingWallStyle.Pattern.selectableValues()).contains(initial.pattern())
+                ? initial.pattern() : RingWallStyle.Pattern.ENGINEERED;
+        this.draft = RingWallStyle.custom(initial.thicknessBlocks(), palette, pattern, initial.decayPercent());
         this.accepted = Objects.requireNonNull(accepted, "accepted");
     }
 
@@ -187,7 +189,7 @@ public final class RingWallStyleScreen extends Screen {
         Identifier preview = previewTexture();
         graphics.fill(previewLeft - 1, layout.previewY() - 1,
                 previewLeft + previewWidth + 1, layout.previewY() + previewHeight + 1, BORDER_COLOR);
-        if (preview != null) {
+        if (preview != null && minecraft.getResourceManager().getResource(preview).isPresent()) {
             graphics.blit(preview, previewLeft, layout.previewY(),
                     previewLeft + previewWidth, layout.previewY() + previewHeight,
                     0.0F, 1.0F, 0.0F, 1.0F);

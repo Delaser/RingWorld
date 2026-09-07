@@ -29,7 +29,10 @@ for row,(material,material_label) in enumerate(palettes):
         if not source.exists(): source=a.raw/name
         im=Image.open(source).convert('RGB'); assert im.width>=1920 and im.height>=1080
         im.save(out/'fullsize'/(name+'.webp'),quality=90,method=4)
-        preview=im.resize((640,round(im.height*640/im.width)),Image.Resampling.LANCZOS)
+        # Central 60% fills the selector with wall texture, excluding the sky surround.
+        crop=im.crop((round(im.width*0.2),round(im.height*0.2),
+                      round(im.width*0.8),round(im.height*0.8)))
+        preview=crop.resize((640,355),Image.Resampling.LANCZOS)
         preview.save(out/'previews'/(name+'.png'),optimize=True)
         display=im.resize((1280,round(im.height*1280/im.width)),Image.Resampling.LANCZOS)
         card=Image.new('RGB',(1280,display.height+64),'#141c24'); card.paste(display,(0,64))
@@ -44,7 +47,7 @@ for row,(material,material_label) in enumerate(palettes):
             size=list(im.size),sourcePngSha256=hashlib.sha256(source.read_bytes()).hexdigest(),sha256=hashlib.sha256((out/'fullsize'/(name+'.webp')).read_bytes()).hexdigest(),
             machinery=material=='industrial' and pattern=='engineered'))
 sheet.save(out/'comparison.jpg',quality=94,subsampling=0)
-manifest=dict(schemaVersion=1,minecraftVersion='26.2',loader='Fabric',sourceCommit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
+manifest=dict(previewCropNormalized=[0.2,0.2,0.8,0.8],schemaVersion=1,minecraftVersion='26.2',loader='Fabric',sourceCommit=subprocess.check_output(['git','rev-parse','HEAD'],text=True).strip(),
     sourceFixture='RingWallSelectorSamples.java',seed=8128,sourceCircumference=16384,sourceCenterX=1850,sourceY=[64,96],
     specimenSize=[96,33,7],specimenOrigin=[464,192,0],camera=[512.5,206,-32.5,0,0],fov=60,decayPercent=0,time='noon',weather='clear',
     notes=['Actual game blocks, sampled using production material generation. Specimens elevated for an unobstructed view.',
