@@ -2,6 +2,9 @@ package dev.ringworld.client;
 
 import dev.ringworld.world.RingWallStyle;
 import java.util.Objects;
+import java.util.Locale;
+import java.util.Arrays;
+import net.minecraft.resources.Identifier;
 import java.util.function.Consumer;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -101,7 +104,7 @@ public final class RingWallStyleScreen extends Screen {
         String label = preset.label();
         return switch (preset) {
             case NATURAL_ESCARPMENT -> "Rock";
-            case INDUSTRIAL_SUPERSTRUCTURE -> "Industry";
+            case INDUSTRIAL_SUPERSTRUCTURE -> layout().contentWidth() < 400 ? "Ring" : "RingWorld";
             case OVERGROWN_RUIN -> "Ruin";
             case CLEAN_MONOLITH -> "Monolith";
             default -> label;
@@ -178,10 +181,26 @@ public final class RingWallStyleScreen extends Screen {
         graphics.text(font, Component.literal("Decay 0–100%"),
                 layout.contentLeft() + (layout.contentWidth() + 5) / 2,
                 layout.valuesY() - 11, LABEL_COLOR);
+        int previewHeight = layout.previewHeight();
+        int previewWidth = Math.min(layout.contentWidth(), previewHeight * 640 / 355);
+        int previewLeft = (width - previewWidth) / 2;
+        Identifier preview = previewTexture();
+        graphics.fill(previewLeft - 1, layout.previewY() - 1,
+                previewLeft + previewWidth + 1, layout.previewY() + previewHeight + 1, BORDER_COLOR);
+        if (preview != null) {
+            graphics.blit(preview, previewLeft, layout.previewY(),
+                    previewLeft + previewWidth, layout.previewY() + previewHeight,
+                    0.0F, 1.0F, 0.0F, 1.0F);
+        } else {
+            graphics.centeredText(font, Component.literal("No sample for this saved pattern"),
+                    width / 2, layout.previewY() + previewHeight / 2, LABEL_COLOR);
+        }
+        graphics.centeredText(font, Component.literal("Material/pattern sample · 7 thick · 0% decay"),
+                width / 2, layout.previewY() + previewHeight + 4, LABEL_COLOR);
         if (!validation.isEmpty()) {
             graphics.centeredText(font, Component.literal(validation), width / 2,
-                    layout.actionY() - 14, ERROR_COLOR);
-        } else {
+                    layout.actionY() - 11, ERROR_COLOR);
+        } else if (layout.showDetails()) {
             RingWallStyle.Preset selected = RingWallStyle.Preset.find(draft).orElse(null);
             String name = selected == null ? "Custom" : selected.label();
             String patternLabel = draft.pattern() == RingWallStyle.Pattern.PANELS
@@ -195,9 +214,16 @@ public final class RingWallStyleScreen extends Screen {
         }
     }
 
+    private Identifier previewTexture() {
+        if (!Arrays.asList(RingWallStyle.Pattern.selectableValues()).contains(pattern)) return null;
+        return Identifier.fromNamespaceAndPath("ringworld", "textures/gui/wall_samples/wall-"
+                + palette.name().toLowerCase(Locale.ROOT) + "-"
+                + pattern.name().toLowerCase(Locale.ROOT) + ".png");
+    }
+
     private Layout layout() {
         int panelWidth = Math.min(540, Math.max(304, width - 16));
-        int panelHeight = Math.min(278, Math.max(248, height - 8));
+        int panelHeight = Math.min(440, Math.max(254, height - 8));
         int left = (width - panelWidth) / 2;
         int top = Math.max(4, (height - panelHeight) / 2);
         return new Layout(left, top, panelWidth, panelHeight);
@@ -208,11 +234,22 @@ public final class RingWallStyleScreen extends Screen {
         int bottom() { return top + height; }
         int contentLeft() { return left + 8; }
         int contentWidth() { return width - 16; }
-        int presetY() { return top + 43; }
-        int advancedY() { return top + 116; }
-        int valuesY() { return top + 162; }
+        int presetY() { return top + (showDetails() ? 43 : 32); }
+        int advancedY() { return top + (showDetails() ? 116 : 98); }
+        boolean showDetails() { return height >= 350; }
+        int previewY() { return advancedY() + 26; }
+        int previewHeight() { return Math.max(34, height - (showDetails() ? 274 : 210)); }
+        int valuesY() { return previewY() + previewHeight() + 26; }
         int detailsY() { return valuesY() + 27; }
         int actionY() { return bottom() - 28; }
+    }
+
+    boolean ringworld$automationHasPreview() {
+        Identifier texture = previewTexture();
+        Layout layout = layout();
+        return texture != null && minecraft.getResourceManager().getResource(texture).isPresent()
+                && layout.previewY() > layout.advancedY() + 20
+                && layout.valuesY() + 20 < layout.actionY();
     }
 
     void ringworld$automationApplyPreset(RingWallStyle.Preset preset) {

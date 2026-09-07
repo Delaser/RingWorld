@@ -238,7 +238,8 @@ public final class RingWorldCreationUiTestClient {
                 || !hasLogicalSize(client, SCALE_FOUR_LOGICAL_WIDTH,
                         MINIMUM_SCALE_FOUR_LOGICAL_HEIGHT)
                 || !screen.ringworld$automationHasStyle(
-                        dev.ringworld.world.RingWallStyle.DEFAULT)) {
+                        dev.ringworld.world.RingWallStyle.DEFAULT)
+                || !screen.ringworld$automationHasPreview()) {
             fail(client, "the default rim editor did not fit the scale-4 layout");
             return;
         }
@@ -255,7 +256,8 @@ public final class RingWorldCreationUiTestClient {
                 || !hasLogicalSize(client, NARROW_FRAMEBUFFER_WIDTH / 4,
                         MINIMUM_SCALE_FOUR_LOGICAL_HEIGHT)
                 || !screen.ringworld$automationHasStyle(
-                        dev.ringworld.world.RingWallStyle.Preset.OVERGROWN_RUIN.style())) {
+                        dev.ringworld.world.RingWallStyle.Preset.OVERGROWN_RUIN.style())
+                || !screen.ringworld$automationHasPreview()) {
             String state = RingMinecraftClientAccess.screen(client) instanceof RingWallStyleScreen wall
                     ? wall.ringworld$automationStyle().toString() : "screen="
                     + (RingMinecraftClientAccess.screen(client) == null ? "none"
@@ -269,7 +271,8 @@ public final class RingWorldCreationUiTestClient {
             screen.ringworld$automationUse();
             RingWorldCreationScreen parent = creationScreen(client);
             if (parent == null || !parent.ringworld$automationHasWallStyle(
-                    dev.ringworld.world.RingWallStyle.Preset.OVERGROWN_RUIN.style())) {
+                    dev.ringworld.world.RingWallStyle.Preset.OVERGROWN_RUIN.style())
+                || !screen.ringworld$automationHasPreview()) {
                 fail(client, "the rim editor did not return its selected style");
                 return;
             }
