@@ -11,7 +11,7 @@ class RingWorldConfigTest {
     void missingOptionalVisualKeysUseTheDocumentedNewWorldDefaults() {
         Properties properties = new Properties();
 
-        assertEquals(RingWallStyle.Preset.WEATHERED_FORTIFICATION.style(),
+        assertEquals(RingWallStyle.DEFAULT,
                 RingWorldConfig.wallStyle(properties));
         assertEquals(RingSkyProfile.DEFAULT, RingWorldConfig.skyProfile(properties));
     }

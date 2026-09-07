@@ -39,7 +39,7 @@ final class RingTerrainPreviewGenerator {
                 generator.generatorSettings(),
                 world.registryAccess().lookupOrThrow(Registries.NOISE),
                 settings.generatorSeed(), settings.terrainNoiseMapping(),
-                settings.wallHeightBlocks(), settings.wallStyle(),
+                settings.wallHeightBlocks(), settings.wallStyle(), settings.generationSettings(),
                 world.getMinBuildHeight(), world.getHeight());
     }
 
@@ -52,6 +52,7 @@ final class RingTerrainPreviewGenerator {
         access.ringworld$setTerrainNoiseMapping(input.terrainNoiseMapping());
         access.ringworld$setWallHeight(input.wallHeight());
         access.ringworld$setWallStyle(input.wallStyle());
+        access.ringworld$setGenerationSettings(input.generationSettings(), input.seed());
         RandomState randomState = RandomState.create(input.generatorSettings().value(),
                 input.noiseParameters(), input.seed());
         LevelHeightAccessor heightAccessor = LevelHeightAccessor.create(
@@ -78,7 +79,8 @@ final class RingTerrainPreviewGenerator {
                  Holder<NoiseGeneratorSettings> generatorSettings,
                  HolderLookup.RegistryLookup<NormalNoise.NoiseParameters> noiseParameters,
                  long seed, int terrainNoiseMapping, int wallHeight,
-                 RingWallStyle wallStyle, int minBuildHeight, int buildHeight) { }
+                 RingWallStyle wallStyle, dev.ringworld.world.RingWorldGenerationSettings generationSettings,
+                 int minBuildHeight, int buildHeight) { }
 
     record IsolatedInput(Input input, RingTerrainPreviewSampler.Source source) { }
 }

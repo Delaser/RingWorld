@@ -6,13 +6,13 @@ uniform sampler2D Sampler2;
 uniform vec4 ColorModulator;
 uniform vec4 FogColor;
 uniform ivec4 RingWorldLayout;
+uniform vec4 RingWorldVertical;
 uniform vec4 RingWorldHandoff;
 uniform vec4 RingWorldDetail;
 uniform vec4 RingWorldAtmosphere;
 uniform vec2 RingWorldLegacyStreaming;
-uniform mat4 RingWorldWallPalette;
-uniform vec4 RingWorldWallStyle;
 uniform vec4 RingWorldAtlasLight;
+uniform sampler2D Sampler3;
 
 in vec2 texCoord0;
 in vec4 vertexColor;
@@ -27,83 +27,24 @@ float smootherstep(float edge0, float edge1, float value) {
     return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
-float wallHash(vec3 block, float salt) {
-    float metadata = floor(vertexColor.a * 255.0 + 0.5);
-    float seed = mod(metadata, 32.0);
-    return fract(sin(dot(block, vec3(12.9898, 78.233, 37.719))
-                     + salt + seed * 11.173) * 43758.5453);
-}
-
-float wallRoll(float blockX, float blockY, float depth) {
-    float metadata = floor(vertexColor.a * 255.0 + 0.5);
-    float pattern = floor(metadata / 32.0);
-    float fine = wallHash(vec3(blockX, blockY, depth), 0.0);
-    float coarse = wallHash(vec3(floor(blockX / 7.0), floor(blockY / 5.0),
-                                     floor(depth / 2.0)), 19.0);
-    if (pattern < 0.5) {
-        return mix(fine, coarse, 0.72);
-    }
-    if (pattern < 1.5) {
-        float course = floor(blockY / 2.0);
-        float width = 3.0 + floor(wallHash(vec3(course, depth, 0.0), 31.0) * 4.0);
-        float offset = floor(wallHash(vec3(course, depth, 1.0), 47.0) * width);
-        float brick = floor((blockX + offset) / width);
-        return mix(fine, wallHash(vec3(brick, course, depth), 53.0), 0.76);
-    }
-    if (pattern < 2.5) {
-        float section = floor(blockX / 19.0);
-        float wave = floor(wallHash(vec3(section, depth, 2.0), 61.0) * 9.0) - 4.0;
-        float height = 3.0 + floor(wallHash(vec3(section, floor(blockY / 13.0),
-                                                   depth), 67.0) * 7.0);
-        float band = floor((blockY + wave) / height);
-        return mix(fine, wallHash(vec3(floor(blockX / 11.0), band, depth), 71.0), 0.68);
-    }
-    if (pattern < 3.5) {
-        float panelWidth = 11.0 + floor(wallHash(
-                vec3(floor(blockX / 67.0), depth, 3.0), 79.0) * 13.0);
-        float panelX = mod(blockX, panelWidth);
-        float course = 8.0 + floor(wallHash(vec3(floor(blockX / panelWidth), depth, 5.0),
-                                                83.0) * 11.0);
-        bool rib = panelX < 1.0 || panelX >= panelWidth - 1.0
-                   || mod(blockY, course) < 1.0;
-        return rib ? 0.92 : mix(fine, coarse, 0.70);
-    }
-    if (pattern < 4.5) {
-        float vertical = clamp((blockY + 64.0) / 224.0, 0.0, 1.0);
-        return vertical * 0.28 + mix(fine, coarse, 0.46) * 0.72;
-    }
-    // Hybrid: broad weathered clusters broken by occasional structural ribs.
-    float selector = wallHash(vec3(floor(blockX / 23.0), floor(blockY / 17.0), depth),
-                              97.0);
-    float clustered = mix(fine, coarse, 0.66);
-    float rib = mod(blockX, 17.0) < 1.0 || mod(blockY, 13.0) < 1.0 ? 0.90 : clustered;
-    return selector < 0.28 ? rib : mix(rib, clustered, 0.82);
-}
-
-vec3 wallPalette(float roll) {
-    if (roll < RingWorldWallPalette[0].w) return RingWorldWallPalette[0].rgb;
-    if (roll < RingWorldWallPalette[1].w) return RingWorldWallPalette[1].rgb;
-    if (roll < RingWorldWallPalette[2].w) return RingWorldWallPalette[2].rgb;
-    if (roll < RingWorldWallPalette[3].w) return RingWorldWallPalette[3].rgb;
-    return vertexColor.rgb;
-}
-
 void main() {
-    vec4 previous = texture(Sampler1, texCoord0);
-    vec4 current = texture(Sampler0, texCoord0);
+    vec2 surfaceUv = texCoord0;
+    if (surfaceUv.x >= 2.0) surfaceUv.x -= 2.0;
+    vec4 previous = texture(Sampler1, surfaceUv);
+    vec4 current = texture(Sampler0, surfaceUv);
     vec4 sampled = mix(previous, current, clamp(ColorModulator.z, 0.0, 1.0));
+    if (texCoord0.x >= 2.0) sampled.rgb = vertexColor.rgb * 0.85;
     bool rimBridge = texCoord0.y < 0.0 || texCoord0.y > 1.0;
     if (rimBridge) {
-        float blockX = floor(mod(texCoord0.x * float(RingWorldLayout.y),
-                                 float(RingWorldLayout.y)));
-        float blockY = floor(intrinsicHeight);
-        float halfWidth = float(RingWorldLayout.z) * 0.5;
-        float depth = max(0.0, halfWidth - abs(intrinsicWidth));
-        float roll = wallRoll(blockX, blockY, floor(depth));
-        float textureNoise = 0.88 + 0.12 * wallHash(
-                vec3(blockX + 31.0, blockY - 17.0, depth), 109.0);
-        vec3 styled = wallPalette(roll);
-        sampled = vec4(styled * textureNoise, 0.0);
+        float worldY = RingWorldVertical.w - intrinsicHeight;
+        float bottomY = RingWorldVertical.y - float(RingWorldLayout.w);
+        float vertical = clamp((worldY - bottomY) / max(1.0, float(RingWorldLayout.w)), 0.0, 0.999999);
+        // Inner V markers are -1 / 2; outer/top marker is shared.
+        float strip = intrinsicWidth < 0.0 ? 0.0 : 1.0;
+        if (texCoord0.y < -1.5 || texCoord0.y > 2.5) strip += 2.0;
+        vec4 wall = texture(Sampler3, vec2(fract(texCoord0.x), (strip + vertical) / 4.0));
+        if (wall.a < 0.5) discard;
+        sampled = vec4(wall.rgb, 0.0);
     }
 
     float circumference = float(RingWorldLayout.y);
@@ -130,6 +71,7 @@ void main() {
     proxyAlpha = max(proxyAlpha, streamingProxyAlpha);
     if (proxyAlpha <= 0.001) discard;
 
+    gl_FragDepth = mix(1.0, gl_FragCoord.z, proxyAlpha);
     float terrainDetail = smootherstep(
         RingWorldDetail.x, RingWorldDetail.y, intrinsicDistance);
     float reveal = mix(RingWorldDetail.z, RingWorldDetail.w, terrainDetail)

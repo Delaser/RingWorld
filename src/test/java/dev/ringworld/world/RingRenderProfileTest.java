@@ -14,12 +14,12 @@ class RingRenderProfileTest {
 
         assertFalse(profile.wholeRingViewRequested());
         assertEquals(448.0, profile.effectiveViewDistanceBlocks());
-        assertEquals(349.44, profile.liveFadeStartBlocks(), 1.0e-9);
+        assertEquals(403.20, profile.liveFadeStartBlocks(), 1.0e-9);
         assertEquals(456.96, profile.liveFadeEndBlocks(), 1.0e-9);
         assertEquals(304.64, profile.proxyFadeStartBlocks(), 1.0e-9);
         assertEquals(439.04, profile.proxyFadeEndBlocks(), 1.0e-9);
         assertEquals(RingRenderProfile.VISUAL_PROFILE_VERSION, profile.visualProfileVersion());
-        assertEquals(0.52, profile.revealNear(), 1.0e-9);
+        assertEquals(0.82, profile.revealNear(), 1.0e-9);
         assertEquals(0.98, profile.revealFar(), 1.0e-9);
         assertEquals(0.04, profile.hazeNear(), 1.0e-9);
         assertEquals(0.16, profile.hazeFar(), 1.0e-9);
@@ -89,4 +89,17 @@ class RingRenderProfileTest {
         assertEquals(1_024.0, profile.detailEndBlocks());
         assertEquals(2_048.0 * 0.12, profile.cloudFadeEndBlocks(), 1.0e-9);
     }
+    @Test
+    void narrowerLiveHandoffRetainsAnUnderlyingProxyAndUnchangedFarAtmosphere() {
+        for (double distance : new double[] {96, 192, 448}) {
+            RingRenderProfile profile = RingRenderProfile.create(new RingGeometry(256, 16_384), distance);
+            assertEquals(distance * 0.12, profile.liveFadeEndBlocks() - profile.liveFadeStartBlocks(), 1e-8);
+            assertTrue(profile.proxyFadeStartBlocks() < profile.liveFadeStartBlocks());
+            assertTrue(profile.proxyFadeEndBlocks() < profile.liveFadeEndBlocks());
+            assertTrue(profile.detailStartBlocks() < profile.liveFadeStartBlocks());
+            assertEquals(0.98, profile.revealFar());
+            assertEquals(0.16, profile.hazeFar());
+        }
+    }
+
 }

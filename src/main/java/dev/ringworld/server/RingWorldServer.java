@@ -115,7 +115,8 @@ public final class RingWorldServer {
         RingGeometry geometry = settings.geometry();
         WORLD_GEOMETRY.put(world, geometry);
         attachGeneratorSettings(world, geometry, settings.wallHeightBlocks(),
-                settings.wallStyle(), settings.terrainNoiseMapping());
+                settings.wallStyle(), settings.terrainNoiseMapping(), settings.generationSettings(),
+                settings.generatorSeed());
         return geometry;
     }
 
@@ -137,7 +138,9 @@ public final class RingWorldServer {
     private static void attachGeneratorSettings(ServerLevel world, RingGeometry geometry,
                                                 int wallHeightBlocks,
                                                 RingWallStyle wallStyle,
-                                                int terrainNoiseMapping) {
+                                                int terrainNoiseMapping,
+                                                dev.ringworld.world.RingWorldGenerationSettings generationSettings,
+                                                long generatorSeed) {
         RingStructurePolicy policy = RingStructurePolicy.get(world);
         boolean guaranteeStronghold = policy.guaranteesStronghold();
         ChunkGenerator generator = world.getChunkSource().getGenerator();
@@ -150,6 +153,7 @@ public final class RingWorldServer {
             access.ringworld$setWallHeight(wallHeightBlocks);
             access.ringworld$setWallStyle(wallStyle);
             access.ringworld$setGuaranteeStronghold(guaranteeStronghold);
+            access.ringworld$setGenerationSettings(generationSettings, generatorSeed);
             periodicClimateSampler = access.ringworld$getPeriodicClimateSampler(
                     generatorState.randomState());
             oceanFloorHeight = (x, z) -> generator.getFirstOccupiedHeight(

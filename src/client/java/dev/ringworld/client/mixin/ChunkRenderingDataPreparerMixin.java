@@ -11,6 +11,7 @@ import net.minecraft.world.phys.Vec3;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
 /** Makes terrain visibility use the same cylindrical space as its shader. */
@@ -31,6 +32,17 @@ abstract class ChunkRenderingDataPreparerMixin {
             ordinal = 0)
     private boolean ringworld$disableFlatSectionOcclusion(boolean useOcclusionCulling) {
         return ClientRingState.geometry() == null && useOcclusionCulling;
+    }
+
+    // Exterior columns are intentionally never sent. Seed traversal at the
+    // nearest rim column rather than waiting forever for the camera's void chunk.
+    @ModifyArg(method = "initializeQueueForFullUpdate", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/client/renderer/ViewArea;getRenderSectionAt(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/client/renderer/chunk/SectionRenderDispatcher$RenderSection;", ordinal = 0), index = 0)
+    private net.minecraft.core.BlockPos ringworld$seedAtFiniteBand(net.minecraft.core.BlockPos camera) {
+        RingGeometry geometry = ClientRingState.geometry();
+        if (geometry == null) return camera;
+        int z = Math.max(geometry.minWidthZ(), Math.min(geometry.maxWidthZ(), camera.getZ()));
+        return z == camera.getZ() ? camera : new net.minecraft.core.BlockPos(camera.getX(), camera.getY(), z);
     }
 
     @ModifyVariable(

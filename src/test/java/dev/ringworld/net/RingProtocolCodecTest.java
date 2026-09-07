@@ -20,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class RingProtocolCodecTest {
     @Test
-    void settingsV5RoundTripsInTheDocumentedFieldOrder() {
+    void settingsV7RoundTripsInTheDocumentedFieldOrder() {
         RingWallStyle wall = RingWallStyle.custom(
                 9, RingWallStyle.Palette.INDUSTRIAL, RingWallStyle.Pattern.HYBRID, 35);
         RingSkyProfile sky = new RingSkyProfile(
@@ -28,7 +28,12 @@ class RingProtocolCodecTest {
                 RingSkyProfile.FORMAT_VERSION);
         RingWorldSettings settings = new RingWorldSettings(
                 640, 4_096, 0x1020304050607080L, 192, (int) RingGeometry.SURFACE_Y,
-                RingTerrainNoiseMapping.CURRENT, wall, RingWorldSettings.FORMAT_VERSION);
+                RingTerrainNoiseMapping.CURRENT, wall,
+                dev.ringworld.world.RingWorldGenerationSettings.DEFAULT
+                        .withAtlasFidelity(dev.ringworld.world.RingAtlasFidelity.HIGH)
+                        .withLayout(dev.ringworld.world.RingWorldLayout.ARCHIPELAGO)
+                        .withContinuousRiver(true).withMoreStructures(true),
+                RingWorldSettings.FORMAT_VERSION);
         RingSettingsPayload payload = RingSettingsHandshake.payloadFor(settings, sky);
 
         byte[] encoded = encode(RingSettingsPayload.CODEC, payload);
@@ -48,6 +53,11 @@ class RingProtocolCodecTest {
             assertEquals(sky.backdrop().id(), fields.readVarInt());
             assertEquals(sky.lightSource().id(), fields.readVarInt());
             assertEquals(sky.formatVersion(), fields.readVarInt());
+            assertEquals(payload.generationSettings().atlasFidelity().id(), fields.readVarInt());
+            assertEquals(payload.generationSettings().layout().id(), fields.readVarInt());
+            assertEquals(payload.generationSettings().continuousRiver(), fields.readBoolean());
+            assertEquals(payload.generationSettings().moreStructures(), fields.readBoolean());
+            assertEquals(payload.generationSettings().formatVersion(), fields.readVarInt());
             assertEquals(payload.formatVersion(), fields.readVarInt());
             assertEquals(payload.fingerprint(), fields.readLong());
             assertEquals(0, fields.readableBytes());
@@ -61,7 +71,7 @@ class RingProtocolCodecTest {
     }
 
     @Test
-    void settingsV5RejectsInvalidNestedAndGeometryValues() {
+    void settingsV7RejectsInvalidNestedAndGeometryValues() {
         RingSkyProfile sky = RingSkyProfile.DEFAULT;
         assertThrows(IllegalArgumentException.class, () -> new RingSettingsPayload(
                 64, 2_048, 1L, 160, (int) RingGeometry.SURFACE_Y,

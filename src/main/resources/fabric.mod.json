@@ -4,23 +4,35 @@
   "version": "${version}",
   "name": "RingWorld",
   "description": "Turns the Overworld into a finite, seamless cylindrical ringworld with periodic gameplay and curved rendering.",
-  "authors": ["Delaser"],
+  "authors": [
+    "Delaser"
+  ],
   "contact": {
     "homepage": "https://andwhatnotstudio.com/ringworld/"
   },
   "custom": {
-    "ringworld:compatibility_api": 1
+    "ringworld:compatibility_api": 1,
+    "lithium:options": {
+      "mixin.ai.poi.tasks": false
+    }
   },
   "license": "MPL-2.0",
   "environment": "*",
   "entrypoints": {
-    "main": ["dev.ringworld.platform.fabric.FabricRingWorldMod"],
-    "client": ["dev.ringworld.client.RingWorldClient"]
+    "main": [
+      "dev.ringworld.platform.fabric.FabricRingWorldMod"
+    ],
+    "client": [
+      "dev.ringworld.client.RingWorldClient"
+    ]
   },
   "mixins": [
     "ringworld.mixins.json",
     "ringworld.fabric.mixins.json",
-    {"config": "ringworld.client.mixins.json", "environment": "client"}
+    {
+      "config": "ringworld.client.mixins.json",
+      "environment": "client"
+    }
   ],
   "depends": {
     "fabricloader": ">=0.16.14",

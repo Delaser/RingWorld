@@ -94,6 +94,11 @@ class ClientRingStateTest {
         ClientRingState.commitTerrainAtlasRevision(worldHash, server.revision());
         assertEquals(13, ClientRingState.terrainAtlas().cellBlockLight(0, 0));
 
+        ClientRingState.saveTerrainAtlasIfDue(true);
+        var save = ClientRingState.class.getDeclaredField("terrainAtlasSave");
+        save.setAccessible(true);
+        ((java.util.concurrent.CompletableFuture<?>) save.get(null))
+                .get(10, java.util.concurrent.TimeUnit.SECONDS);
         ClientRingState.clear();
         setSession(geometry);
         ClientRingState.installTerrainAtlas(metadata);

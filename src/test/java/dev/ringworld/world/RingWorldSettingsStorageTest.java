@@ -123,16 +123,38 @@ class RingWorldSettingsStorageTest {
                 9, RingWallStyle.Palette.INDUSTRIAL, RingWallStyle.Pattern.HYBRID, 35);
         RingWorldSettings current = new RingWorldSettings(
                 256, 16_384, 42L, 160, 64,
-                RingTerrainNoiseMapping.CURRENT, custom, RingWorldSettings.FORMAT_VERSION);
+                RingTerrainNoiseMapping.CURRENT, custom, 4);
         var encoded = RingWorldSettings.codecForTests()
                 .encodeStart(JsonOps.INSTANCE, current).getOrThrow();
         RingWorldSettings reopened = RingWorldSettings.codecForTests()
                 .parse(JsonOps.INSTANCE, encoded).getOrThrow();
 
         assertEquals(custom, reopened.wallStyle());
+        assertEquals(RingWorldGenerationSettings.DEFAULT, reopened.generationSettings());
+        RingWorldSettings upgraded = RingWorldSettings.upgradeToCurrentFormat(reopened);
+        assertEquals(custom, upgraded.wallStyle());
+        assertEquals(RingWorldGenerationSettings.DEFAULT, upgraded.generationSettings());
         assertThrows(IllegalArgumentException.class, () -> new RingWorldSettings(
                 256, 16_384, 42L, 160, 64,
                 RingTerrainNoiseMapping.LEGACY_AXIAL, custom, 3));
+    }
+
+    @Test
+    void formatFivePersistsGenerationSettingsWhileOlderFormatsStayVanilla() {
+        RingWorldGenerationSettings generation = new RingWorldGenerationSettings(
+                RingAtlasFidelity.HIGH, RingWorldLayout.ARCHIPELAGO,
+                true, true, RingWorldGenerationSettings.FORMAT_VERSION);
+        RingWorldSettings current = new RingWorldSettings(
+                256, 16_384, 42L, 160, 64,
+                RingTerrainNoiseMapping.CURRENT, RingWallStyle.DEFAULT,
+                generation, RingWorldSettings.FORMAT_VERSION);
+        var encoded = RingWorldSettings.codecForTests()
+                .encodeStart(JsonOps.INSTANCE, current).getOrThrow();
+        assertEquals(generation, RingWorldSettings.codecForTests()
+                .parse(JsonOps.INSTANCE, encoded).getOrThrow().generationSettings());
+        assertThrows(IllegalArgumentException.class, () -> new RingWorldSettings(
+                256, 16_384, 42L, 160, 64,
+                RingTerrainNoiseMapping.CURRENT, RingWallStyle.DEFAULT, generation, 4));
     }
 
     @Test

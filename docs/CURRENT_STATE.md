@@ -1,10 +1,13 @@
 # Current state
 
-Local 1.21.1 development update (2026-09-07): the consolidated optional-visual
-backport has been compared with public main `e058c69`. See the
-[parity audit and validation](../versions/mc1.21.1/MAINLINE_PARITY_2026-09-07.md)
-for the neutral pre-preview ring, distant-wall pattern and compact-label
-corrections. This adds no support, publication or release qualification claim.
+Local 1.21.1 development update (2026-09-07): the newer generation, Atlas and
+wall-editor features from `27bb33d` are ported on
+`codex/mc1211-new-feature-parity`. Both loaders pass the expanded in-world
+smoke and 19-capture creation fixture. See the
+[new feature parity checkpoint](../versions/mc1.21.1/NEW_FEATURE_PARITY_2026-09-07.md).
+The preceding [public-main audit](../versions/mc1.21.1/MAINLINE_PARITY_2026-09-07.md)
+retains its narrower `e058c69` scope. This adds no support, publication or
+release qualification claim.
 The older cross-line records below retain their historical scope.
 
 Last audited: 2026-08-24 against public `main`, the 1.0 release branch, and

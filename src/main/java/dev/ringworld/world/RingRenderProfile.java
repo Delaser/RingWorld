@@ -34,8 +34,8 @@ public record RingRenderProfile(
      * Increment when visual-policy semantics change enough that comparison
      * captures need to identify a different profile.
      */
-    public static final int VISUAL_PROFILE_VERSION = 5;
-    public static final double LIVE_FADE_START_FACTOR = 0.78;
+    public static final int VISUAL_PROFILE_VERSION = 6;
+    public static final double LIVE_FADE_START_FACTOR = 0.90;
     public static final double LIVE_FADE_END_FACTOR = 1.02;
     public static final double PROXY_FADE_START_FACTOR = 0.68;
     public static final double PROXY_FADE_END_FACTOR = 0.98;
@@ -53,17 +53,32 @@ public record RingRenderProfile(
     public static final int MAX_WIDTH_BANDS = 128;
     public static final int TARGET_MESH_STEP_BLOCKS = RingTerrainAtlas.SAMPLE_STEP_BLOCKS;
     public static final int POSITION_TEXTURE_COLOR_VERTEX_BYTES = 24;
-    public static final double REVEAL_NEAR = 0.52;
+    public static final double REVEAL_NEAR = 0.82;
     public static final double REVEAL_FAR = 0.98;
     public static final double HAZE_NEAR = 0.04;
     public static final double HAZE_FAR = 0.16;
     public static final double HAZE_EXPONENT = 1.35;
 
     public static RingRenderProfile create(RingGeometry geometry, double viewDistanceBlocks) {
+        return create(geometry, viewDistanceBlocks, RingAtlasFidelity.BALANCED);
+    }
+
+    public static RingRenderProfile create(RingGeometry geometry, double viewDistanceBlocks,
+                                           RingAtlasFidelity fidelity) {
+        if (fidelity == null) throw new IllegalArgumentException("Atlas fidelity is required");
+        return create(geometry, viewDistanceBlocks, fidelity.maxTextureColumns(),
+                fidelity.maxTextureRows(), fidelity.meshStepBlocks());
+    }
+
+    /** Explicit client-side display budget; never changes saved Atlas fidelity. */
+    public static RingRenderProfile create(RingGeometry geometry, double viewDistanceBlocks,
+                                           int maxColumns, int maxRows, int meshStep) {
+        if (maxColumns <= 0 || maxRows <= 0 || meshStep <= 0) {
+            throw new IllegalArgumentException("positive display budget required");
+        }
         if (!Double.isFinite(viewDistanceBlocks) || viewDistanceBlocks <= 0.0) {
             throw new IllegalArgumentException("view distance must be finite and positive");
         }
-
         double half = geometry.circumferenceBlocks() * 0.5;
         double effective = Math.min(Math.max(16.0, viewDistanceBlocks), half);
         double liveStart = effective * LIVE_FADE_START_FACTOR;
@@ -79,13 +94,15 @@ public record RingRenderProfile(
                 geometry.circumferenceBlocks() * 0.12);
         double cloudStart = Math.min(cloudEnd, Math.max(8.0, cloudEnd * 0.55));
 
-        int textureColumns = Math.min(geometry.circumferenceBlocks(), MAX_TEXTURE_COLUMNS);
-        int textureRows = Math.min(geometry.widthBlocks(), MAX_TEXTURE_ROWS);
+        int textureColumns = Math.min(
+                geometry.circumferenceBlocks(), maxColumns);
+        int textureRows = Math.min(geometry.widthBlocks(), maxRows);
         int circumferenceSegments = Math.min(
-                divideCeil(geometry.circumferenceBlocks(), TARGET_MESH_STEP_BLOCKS),
-                MAX_CIRCUMFERENCE_SEGMENTS);
+                divideCeil(geometry.circumferenceBlocks(), meshStep),
+                Math.max(MAX_CIRCUMFERENCE_SEGMENTS,
+                        maxColumns / 2));
         int widthBands = Math.min(
-                divideCeil(geometry.widthBlocks(), TARGET_MESH_STEP_BLOCKS),
+                divideCeil(geometry.widthBlocks(), meshStep),
                 MAX_WIDTH_BANDS);
         long vertices = Math.multiplyExact(
                 Math.multiplyExact((long)circumferenceSegments, widthBands), 6L);

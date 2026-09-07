@@ -51,7 +51,7 @@ class RingCreationPreviewSourceContractTest {
     void menuFixtureProvesDistinctSeedsCancellationAndTextureTeardown() throws IOException {
         String fixture = readSource(Path.of("RingWorldCreationUiTestClient.java"));
 
-        assertTrue(fixture.contains("CAPTURE_COUNT = 17"));
+        assertTrue(fixture.contains("CAPTURE_COUNT = 19"));
         assertTrue(fixture.contains("creation-ui-06-seed-preview-12345-scale4"));
         assertTrue(fixture.contains("creation-ui-07-seed-preview-67890-scale4"));
         assertTrue(fixture.contains("creation-ui-08-rim-default-scale4"));

@@ -8,20 +8,34 @@ import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
+import dev.ringworld.world.RingAtlasFidelity;
+import dev.ringworld.world.RingWorldGenerationSettings;
+import dev.ringworld.world.RingWorldLayout;
 
 /** Complete immutable layout sent before the client renders a ring world. */
 public record RingSettingsPayload(int width, int circumference, long seed, int wallHeight,
                                   int surfaceReferenceY, int terrainNoiseMapping,
                                   RingWallStyle wallStyle, RingSkyProfile skyProfile,
+                                  RingWorldGenerationSettings generationSettings,
                                   int formatVersion, long fingerprint)
         implements CustomPacketPayload {
+    /** Source-compatible constructor for tests and pre-format-5 default layouts. */
+    public RingSettingsPayload(int width, int circumference, long seed, int wallHeight,
+                               int surfaceReferenceY, int terrainNoiseMapping,
+                               RingWallStyle wallStyle, RingSkyProfile skyProfile,
+                               int formatVersion, long fingerprint) {
+        this(width, circumference, seed, wallHeight, surfaceReferenceY, terrainNoiseMapping,
+                wallStyle, skyProfile, RingWorldGenerationSettings.DEFAULT,
+                formatVersion, fingerprint);
+    }
+
     /**
      * The channel name is versioned whenever its byte layout changes. Reusing
      * the old identifier makes an old codec consume its known prefix and then
      * crash on the unread fields before either side can explain the mismatch.
      */
     public static final Type<RingSettingsPayload> ID =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(RingWorldMod.MOD_ID, "settings_v5"));
+            new Type<>(ResourceLocation.fromNamespaceAndPath(RingWorldMod.MOD_ID, "settings_v7"));
     public static final StreamCodec<RegistryFriendlyByteBuf, RingSettingsPayload> CODEC =
             StreamCodec.of(RingSettingsPayload::encode, RingSettingsPayload::decode);
 
@@ -42,6 +56,12 @@ public record RingSettingsPayload(int width, int circumference, long seed, int w
         buffer.writeVarInt(skyProfile.backdrop().id());
         buffer.writeVarInt(skyProfile.lightSource().id());
         buffer.writeVarInt(skyProfile.formatVersion());
+        RingWorldGenerationSettings generation = payload.generationSettings();
+        buffer.writeVarInt(generation.atlasFidelity().id());
+        buffer.writeVarInt(generation.layout().id());
+        buffer.writeBoolean(generation.continuousRiver());
+        buffer.writeBoolean(generation.moreStructures());
+        buffer.writeVarInt(generation.formatVersion());
         buffer.writeVarInt(payload.formatVersion());
         buffer.writeLong(payload.fingerprint());
     }
@@ -63,6 +83,9 @@ public record RingSettingsPayload(int width, int circumference, long seed, int w
                 buffer.readVarInt());
         return new RingSettingsPayload(width, circumference, seed, wallHeight,
                 surfaceReferenceY, terrainNoiseMapping, wallStyle, skyProfile,
+                new RingWorldGenerationSettings(RingAtlasFidelity.fromId(buffer.readVarInt()),
+                        RingWorldLayout.fromId(buffer.readVarInt()), buffer.readBoolean(),
+                        buffer.readBoolean(), buffer.readVarInt()),
                 buffer.readVarInt(), buffer.readLong());
     }
 
@@ -72,7 +95,7 @@ public record RingSettingsPayload(int width, int circumference, long seed, int w
         // Reuse the persisted settings contract so malformed wire geometry,
         // mapping, style, or format values fail before client state can see them.
         new RingWorldSettings(width, circumference, seed, wallHeight, surfaceReferenceY,
-                terrainNoiseMapping, wallStyle, formatVersion);
+                terrainNoiseMapping, wallStyle, generationSettings, formatVersion);
     }
 
     @Override

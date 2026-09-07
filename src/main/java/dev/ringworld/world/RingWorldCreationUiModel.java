@@ -140,7 +140,17 @@ public final class RingWorldCreationUiModel {
 
     public static Validation validate(String circumferenceText, String widthText,
                                       String wallHeightText, RingWallStyle wallStyle) {
+        return validate(circumferenceText, widthText, wallHeightText, wallStyle,
+                RingWorldGenerationSettings.DEFAULT);
+    }
+
+    public static Validation validate(String circumferenceText, String widthText,
+                                      String wallHeightText, RingWallStyle wallStyle,
+                                      RingWorldGenerationSettings generationSettings) {
         if (wallStyle == null) throw new IllegalArgumentException("wall style is required");
+        if (generationSettings == null) {
+            throw new IllegalArgumentException("generation settings are required");
+        }
         List<String> errors = new ArrayList<>();
         Integer circumference = parseWholeBlocks("Circumference", circumferenceText, errors);
         Integer width = parseWholeBlocks("Width", widthText, errors);
@@ -156,7 +166,8 @@ public final class RingWorldCreationUiModel {
 
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
                 new RingGeometry(width, circumference), wallHeight,
-                wallStyle.thicknessBlocks());
+                wallStyle.thicknessBlocks(),
+                generationSettings.atlasFidelity().sampleStepBlocks());
         return new Validation(report, List.of());
     }
 
@@ -189,23 +200,30 @@ public final class RingWorldCreationUiModel {
         return confirmationCopy(report, requestOceanMonument, wallStyle, RingSkyProfile.DEFAULT);
     }
 
-    public static String confirmationCopy(RingDimensionReport report,
-                                          boolean requestOceanMonument,
-                                          RingWallStyle wallStyle,
-                                          RingSkyProfile skyProfile) {
+    public static String confirmationCopy(RingDimensionReport report, boolean requestOceanMonument,
+                                          RingWallStyle wallStyle, RingSkyProfile skyProfile) {
+        return confirmationCopy(report, requestOceanMonument, wallStyle, skyProfile,
+                RingWorldGenerationSettings.DEFAULT);
+    }
+
+    public static String confirmationCopy(RingDimensionReport report, boolean requestOceanMonument,
+                                          RingWallStyle wallStyle, RingSkyProfile skyProfile,
+                                          RingWorldGenerationSettings generationSettings) {
         if (report == null || !report.isValid()) {
             throw new IllegalArgumentException("a valid RingWorld layout is required for confirmation");
         }
         if (wallStyle == null) throw new IllegalArgumentException("wall style is required");
         if (skyProfile == null) throw new IllegalArgumentException("sky profile is required");
         return String.format(Locale.ROOT,
-                "New world: %,d × %,d; %s rims, %d thick; %s sky, %s sun; %s. "
-                        + "Layout locks on first load.",
+                "New world: %,d × %,d; %s rims, %d thick; %s sky, %s sun; "
+                        + "%s, %s Atlas, river %s, more structures %s; %s. Layout locks on first load.",
                 report.geometry().circumferenceBlocks(), report.geometry().widthBlocks(),
-                RingWallStyle.Preset.find(wallStyle).map(RingWallStyle.Preset::label)
-                        .orElse("Custom"),
-                wallStyle.thicknessBlocks(), skyProfile.backdrop().label(),
-                skyProfile.lightSource().label(),
+                RingWallStyle.Preset.find(wallStyle).map(RingWallStyle.Preset::label).orElse("Custom"), wallStyle.thicknessBlocks(),
+                skyProfile.backdrop().label(), skyProfile.lightSource().label(),
+                generationSettings.layout().label(),
+                generationSettings.atlasFidelity().label(),
+                generationSettings.continuousRiver() ? "on" : "off",
+                generationSettings.moreStructures() ? "on" : "off",
                 monumentChoice(requestOceanMonument, report.geometry()));
     }
 

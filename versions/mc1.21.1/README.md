@@ -11,10 +11,15 @@ compatibility claim.
 
 ## Current feature handoffs
 
+The [new feature parity checkpoint](NEW_FEATURE_PARITY_2026-09-07.md) ports
+generation controls, Atlas side colours and LOD, engineered walls and the
+sample editor from feature source `27bb33d`, with fresh dual-loader local
+runtime and compact-UI evidence. Create remains benched.
+
 The local [2026-09-07 mainline parity audit](MAINLINE_PARITY_2026-09-07.md)
 compares the consolidated optional-visual backport with public main `e058c69`.
 It records three presentation corrections and their development validation;
-unmerged GitHub feature branches remain outside that target.
+unmerged GitHub feature branches were outside that earlier target.
 
 The post-1.1 configurable-visuals batch has two implementation handoffs for
 the backport lane:

@@ -61,7 +61,8 @@ abstract class GlobalSettingsMixin {
         float viewDistanceBlocks = geometry == null ? 0.0F
                 : client.options.getEffectiveRenderDistance() * 16.0F;
         RingRenderProfile profile = geometry == null ? null
-                : RingRenderProfile.create(geometry, viewDistanceBlocks);
+                : dev.ringworld.client.RingClientLodTuning.profile(geometry, viewDistanceBlocks,
+                        ClientRingState.generationSettings().atlasFidelity());
         set(shader, "RingWorldRender",
                 geometry == null ? 0.0F : (float)geometry.minWidthZ(),
                 geometry == null ? 0.0F : (float)geometry.maxWidthZ() + 1.0F,

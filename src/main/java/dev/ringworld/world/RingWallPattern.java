@@ -15,6 +15,9 @@ public final class RingWallPattern {
     public static int materialRoll(RingWallStyle style, int x, int y, int depth,
                                    int circumference, long worldSeed) {
         requireCircumference(circumference);
+        if (style.pattern() == RingWallStyle.Pattern.ENGINEERED) {
+            return RingEngineeredWallPattern.materialRoll(style, x, y, depth, circumference, worldSeed);
+        }
         int canonicalX = Math.floorMod(x, circumference);
         int fine = materialNoise(worldSeed, MATERIAL_FINE_SALT, canonicalX, y, depth,
                 style.palette().id());
@@ -46,6 +49,7 @@ public final class RingWallPattern {
                         Math.floorDiv(canonicalX, 11), band, depth, style.palette().id());
                 yield blend(body, fine, 68);
             }
+            case ENGINEERED -> throw new AssertionError("handled before legacy sampling");
             case PANELS -> panelRoll(style, canonicalX, y, depth, worldSeed, fine);
             case GRADIENT -> {
                 int vertical = clamp((y + 64) * 100 / 224);
@@ -91,6 +95,9 @@ public final class RingWallPattern {
                                        int circumference, long worldSeed) {
         requireCircumference(circumference);
         if (depth < 0) throw new IllegalArgumentException("wall depth must be non-negative");
+        if (style.pattern() == RingWallStyle.Pattern.ENGINEERED) {
+            return RingEngineeredWallPattern.collapseDepth(style, x, depth, circumference, worldSeed);
+        }
         if (style.decayPercent() == 0) return 0;
         int canonicalX = Math.floorMod(x, circumference);
         double coarse = smoothNoise2d(worldSeed ^ 0x434F415253455F44L,
@@ -162,6 +169,15 @@ public final class RingWallPattern {
 
     private static double lerp(double from, double to, double amount) {
         return from + (to - from) * amount;
+    }
+
+    /** The established panel sampler, also used by the weathered Industrial variant. */
+    static int originalPanelRoll(RingWallStyle style, int x, int y, int depth,
+                                 int circumference, long seed) {
+        requireCircumference(circumference);
+        int canonicalX = Math.floorMod(x, circumference);
+        int fine = materialNoise(seed, MATERIAL_FINE_SALT, canonicalX, y, depth, style.palette().id());
+        return panelRoll(style, canonicalX, y, depth, seed, fine);
     }
 
     private static int panelRoll(RingWallStyle style, int canonicalX, int y, int depth,

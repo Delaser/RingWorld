@@ -14,9 +14,10 @@ import net.minecraft.world.level.storage.DimensionDataStorage;
 
 /** Immutable server-side structure guarantees, separate from the geometry wire format. */
 public final class RingStructurePolicy extends SavedData {
-    public static final int FORMAT_VERSION = 2;
+    public static final int FORMAT_VERSION = 3;
     public static final int GUARANTEE_STRONGHOLD = 1;
     public static final int REQUEST_OCEAN_MONUMENT = 1 << 1;
+    public static final int INCREASE_STRUCTURE_DENSITY = 1 << 2;
     public static final ResourceLocation STORAGE_ID =
             ResourceLocation.fromNamespaceAndPath(RingWorldMod.MOD_ID, "structure_policy");
     private static final String STORAGE_KEY = STORAGE_ID.getNamespace() + "/" + STORAGE_ID.getPath();
@@ -46,7 +47,7 @@ public final class RingStructurePolicy extends SavedData {
         if (formatVersion == 1 && (guarantees & REQUEST_OCEAN_MONUMENT) != 0) {
             throw new IllegalArgumentException("structure policy v1 cannot request an ocean monument");
         }
-        if (formatVersion == FORMAT_VERSION) {
+        if (formatVersion >= 2) {
             boolean requested = (guarantees & REQUEST_OCEAN_MONUMENT) != 0;
             boolean disabled = oceanMonument.status() == RingMonumentResolution.Status.DISABLED;
             if (requested == disabled) {
@@ -73,11 +74,18 @@ public final class RingStructurePolicy extends SavedData {
     }
 
     /** Called only in the same ownership path that creates first-world settings. */
-    static RingStructurePolicy createForNewWorld(
-            DimensionDataStorage storage, boolean requestOceanMonument) {
+    static RingStructurePolicy createForNewWorld(DimensionDataStorage storage, boolean requestOceanMonument) {
+        return createForNewWorld(storage, requestOceanMonument, false);
+    }
+
+    /** Called only in the same ownership path that creates first-world settings. */
+    static RingStructurePolicy createForNewWorld(DimensionDataStorage storage, boolean requestOceanMonument,
+                                                  boolean increaseStructureDensity) {
         RingStructurePolicy existing = storage.get(FACTORY, STORAGE_KEY);
         if (existing != null) return existing;
-        int guarantees = GUARANTEE_STRONGHOLD | (requestOceanMonument ? REQUEST_OCEAN_MONUMENT : 0);
+        int guarantees = GUARANTEE_STRONGHOLD
+                | (requestOceanMonument ? REQUEST_OCEAN_MONUMENT : 0)
+                | (increaseStructureDensity ? INCREASE_STRUCTURE_DENSITY : 0);
         RingStructurePolicy created = new RingStructurePolicy(guarantees, FORMAT_VERSION,
                 requestOceanMonument ? RingMonumentResolution.pending() : RingMonumentResolution.disabled());
         created.setDirty();
@@ -122,5 +130,9 @@ public final class RingStructurePolicy extends SavedData {
 
     public boolean requestsOceanMonument() {
         return (guarantees & REQUEST_OCEAN_MONUMENT) != 0;
+    }
+
+    public boolean increasesStructureDensity() {
+        return (guarantees & INCREASE_STRUCTURE_DENSITY) != 0;
     }
 }

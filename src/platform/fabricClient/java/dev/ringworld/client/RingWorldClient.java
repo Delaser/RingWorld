@@ -175,9 +175,9 @@ public final class RingWorldClient implements ClientModInitializer {
                     ClientRingState.set(
                             new RingGeometry(payload.width(), payload.circumference()),
                             payload.wallHeight(), payload.surfaceReferenceY(),
-                            payload.terrainNoiseMapping(), payload.wallStyle(),
-                            payload.skyProfile(), payload.seed(), payload.formatVersion(),
-                            fingerprint);
+                            payload.terrainNoiseMapping(), payload.wallStyle(), payload.skyProfile(),
+                            payload.generationSettings(), payload.seed(),
+                            payload.formatVersion(), fingerprint);
                     RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
                 });
         ClientPlayNetworking.registerGlobalReceiver(RingSkyProfilePayload.ID, (payload, context) -> {
@@ -231,6 +231,10 @@ public final class RingWorldClient implements ClientModInitializer {
             atlasPregenerationUiTest.frameRendered();
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.getConnection() != null) {
+                dev.ringworld.world.RingLodCommandSuggestions.ensurePresent(
+                        client.getConnection().getCommands());
+            }
             if (creationUiTest.startMenuIfEnabled(client)) {
                 creationUiTest.tick(client);
                 return;
@@ -259,6 +263,29 @@ public final class RingWorldClient implements ClientModInitializer {
 
     private static void registerAtlasLightCommand() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            var lod = ClientCommandManager.literal("lod").executes(context -> {
+                String message = dev.ringworld.client.RingClientLodTuning.summary();
+                context.getSource().sendFeedback(Component.literal(message));
+                return 1;
+            });
+            lod.then(ClientCommandManager.literal("show").executes(context -> {
+                String message = dev.ringworld.client.RingClientLodTuning.summary();
+                context.getSource().sendFeedback(Component.literal(message));
+                return 1;
+            }));
+            lod.then(ClientCommandManager.literal("reset").executes(context -> {
+                String message = dev.ringworld.client.RingClientLodTuning.select(null);
+                context.getSource().sendFeedback(Component.literal(message));
+                return 1;
+            }));
+            for (var quality : dev.ringworld.world.RingLodQuality.values()) {
+                lod.then(ClientCommandManager.literal(quality.command()).executes(context -> {
+                    String message = dev.ringworld.client.RingClientLodTuning.select(quality);
+                    context.getSource().sendFeedback(Component.literal(message));
+                    return 1;
+                }));
+            }
+            dispatcher.register(ClientCommandManager.literal("ringworld").then(lod));
             var falloff = ClientCommandManager.argument("falloff", FloatArgumentType.floatArg(
                     dev.ringworld.world.RingAtlasLightProfile.MIN_FALLOFF,
                     dev.ringworld.world.RingAtlasLightProfile.MAX_FALLOFF));

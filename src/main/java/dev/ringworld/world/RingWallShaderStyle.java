@@ -44,6 +44,15 @@ public final class RingWallShaderStyle {
                 style.pattern().id(), seedBits);
     }
 
+    public static int[] paletteColors(RingWallStyle style, Level world) {
+        int[] colors = new int[100];
+        for (int roll = 0; roll < colors.length; roll++) {
+            colors[roll] = RingGenerationBoundary.styledRimBlockForRoll(style, roll)
+                    .getMapColor(world, BlockPos.ZERO).col & 0xFFFFFF;
+        }
+        return colors;
+    }
+
     private static List<Run> runs(RingWallStyle style,
                                   ToIntFunction<BlockState> colorLookup) {
         List<Run> result = new ArrayList<>();

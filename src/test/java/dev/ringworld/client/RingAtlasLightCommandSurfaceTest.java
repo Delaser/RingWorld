@@ -47,7 +47,7 @@ class RingAtlasLightCommandSurfaceTest {
             assertTrue(registration.descriptor.contains(
                     "net/neoforged/neoforge/client/event/RegisterClientCommandsEvent"));
         }
-        assertFalse(registration.callsOwnerContaining("network"),
+        assertFalse(registration.callsTransport(),
                 "the client command must not use a payload or command-send path");
 
         MethodSignals feedback = client.method("applyAtlasLightResult");
@@ -142,8 +142,11 @@ class RingAtlasLightCommandSurfaceTest {
         private boolean calls(String owner, String name) {
             return calls.contains(new MethodCall(owner, name));
         }
-        private boolean callsOwnerContaining(String text) {
-            return calls.stream().anyMatch(call -> call.owner().toLowerCase().contains(text));
+        private boolean callsTransport() {
+            return calls.stream().anyMatch(call ->
+                    (call.owner().toLowerCase().contains("network")
+                            && !call.owner().startsWith("net/minecraft/network/chat/"))
+                    || call.name().equals("sendCommand") || call.name().equals("sendChat"));
         }
     }
 }

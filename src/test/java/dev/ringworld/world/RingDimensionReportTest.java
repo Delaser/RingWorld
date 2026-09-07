@@ -14,6 +14,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingDimensionReportTest {
     @Test
+    void largeOneBlockAtlasFitsAndLargerRingsExplainTheWorkaround() {
+        var large = RingDimensionReport.forVanillaOverworld(new RingGeometry(512, 32768), 160, 5, 1);
+        assertTrue(large.isValid(), large.errors().toString());
+        assertEquals(RingDimensionReport.MAX_ATLAS_CELLS, large.atlasCellCount());
+        var bigger = RingDimensionReport.forVanillaOverworld(new RingGeometry(528, 32768), 160, 5, 1);
+        assertFalse(bigger.isValid());
+        assertTrue(bigger.errors().stream().anyMatch(message ->
+                message.contains("Lower Atlas fidelity in Gen settings") && message.contains("Around/Across")));
+        assertTrue(RingDimensionReport.forVanillaOverworld(new RingGeometry(528, 32768), 160, 5, 2).isValid());
+    }
+
+    @Test
     void smallPresetHasExactUsableBandAndMeasuredCosts() {
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
                 new RingGeometry(128, 2_048), 160);
@@ -24,7 +36,7 @@ class RingDimensionReportTest {
         assertEquals(256, report.atlasColumns());
         assertEquals(16, report.atlasRows());
         assertEquals(4_096L, report.atlasCellCount());
-        assertEquals(32_768L, report.estimatedAtlasBytes());
+        assertEquals(49_152L, report.estimatedAtlasBytes());
         assertEquals(52L, report.costEstimate().estimatedPregenerationSeconds());
         assertEquals(11_095_245L, report.costEstimate().estimatedGeneratedWorldBytes());
         assertEquals(11.2, report.oppositeAngularWidthDegrees(), 0.1);
@@ -92,7 +104,7 @@ class RingDimensionReportTest {
         assertEquals(4_030_464L, report.playableInteriorAreaBlocks());
         assertEquals(817L, report.costEstimate().estimatedPregenerationSeconds());
         assertEquals(177_523_917L, report.costEstimate().estimatedGeneratedWorldBytes());
-        assertEquals(524_800L, report.costEstimate().estimatedAtlasWireBytes());
+        assertEquals(786_944L, report.costEstimate().estimatedAtlasWireBytes());
         assertEquals(32L, report.costEstimate().minimumAtlasTransferTicks());
         assertTrue(report.oppositeAngularWidthDegrees() > 2.8
                 && report.oppositeAngularWidthDegrees() < 2.9);
@@ -110,7 +122,7 @@ class RingDimensionReportTest {
         assertEquals(4_096, report.atlasColumns());
         assertEquals(64, report.atlasRows());
         assertEquals(262_144L, report.atlasCellCount());
-        assertEquals(2_097_152L, report.estimatedAtlasBytes());
+        assertEquals(3_145_728L, report.estimatedAtlasBytes());
         assertEquals(3_268L, report.costEstimate().estimatedPregenerationSeconds());
         assertEquals(710_095_668L, report.costEstimate().estimatedGeneratedWorldBytes());
         assertTrue(report.warnings().stream().anyMatch(
@@ -119,10 +131,10 @@ class RingDimensionReportTest {
 
     private static Stream<Arguments> productionAtlasFidelityCandidates() {
         return Stream.of(
-                Arguments.of(8, 65_536L, 524_288L),
-                Arguments.of(4, 262_144L, 2_097_152L),
-                Arguments.of(2, 1_048_576L, 8_388_608L),
-                Arguments.of(1, 4_194_304L, 33_554_432L));
+                Arguments.of(8, 65_536L, 786_432L),
+                Arguments.of(4, 262_144L, 3_145_728L),
+                Arguments.of(2, 1_048_576L, 12_582_912L),
+                Arguments.of(1, 4_194_304L, 50_331_648L));
     }
 
     @ParameterizedTest(name = "production step {0} has checked atlas budgets")

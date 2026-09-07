@@ -24,7 +24,7 @@ public final class RingWorldCreationUiTestClient {
     private static final int SETTLE_FRAMES = 3;
     private static final int STARTUP_SETTLE_FRAMES = 120;
     private static final int TIMEOUT_TICKS = 1_200;
-    private static final int CAPTURE_COUNT = 17;
+    private static final int CAPTURE_COUNT = 19;
 
     private static RingWorldCreationUiTestClient activeFixture;
 
@@ -112,14 +112,16 @@ public final class RingWorldCreationUiTestClient {
             case 6 -> captureSecondSeedPreviewAndOpenRim(client);
             case 7 -> captureRimScaleFourAndNarrow(client);
             case 8 -> captureRimNarrowAndReturn(client);
-            case 9 -> captureNarrowAndInvalidate(client);
-            case 10 -> captureInvalidAndSelectSmall(client);
-            case 11 -> captureSmallAndSelectMedium(client);
-            case 12 -> captureMediumAndSelectLarge(client);
-            case 13 -> captureLargeAndPrepareCustom(client);
-            case 14 -> captureCustomAndConfirm(client);
-            case 15 -> captureConfirmationAndAccept(client);
-            case 16 -> verifyAppliedFooterAndStop(client);
+            case 9 -> captureGenerationDefaults(client);
+            case 10 -> captureGenerationSelection(client);
+            case 11 -> captureNarrowAndInvalidate(client);
+            case 12 -> captureInvalidAndSelectSmall(client);
+            case 13 -> captureSmallAndSelectMedium(client);
+            case 14 -> captureMediumAndSelectLarge(client);
+            case 15 -> captureLargeAndPrepareCustom(client);
+            case 16 -> captureCustomAndConfirm(client);
+            case 17 -> captureConfirmationAndAccept(client);
+            case 18 -> verifyAppliedFooterAndStop(client);
             default -> { }
         }
         return true;
@@ -217,6 +219,7 @@ public final class RingWorldCreationUiTestClient {
         if (!(client.screen instanceof RingWallStyleScreen screen)
                 || !hasLogicalSize(client, SCALE_FOUR_LOGICAL_WIDTH,
                         MINIMUM_SCALE_FOUR_LOGICAL_HEIGHT)
+                || !screen.ringworld$automationHasPreview()
                 || !screen.ringworld$automationHasStyle(
                         dev.ringworld.world.RingWallStyle.DEFAULT)) {
             fail(client, "the default rim editor did not fit the scale-4 layout");
@@ -234,6 +237,7 @@ public final class RingWorldCreationUiTestClient {
         if (!(client.screen instanceof RingWallStyleScreen screen)
                 || !hasLogicalSize(client, NARROW_FRAMEBUFFER_WIDTH / 4,
                         MINIMUM_SCALE_FOUR_LOGICAL_HEIGHT)
+                || !screen.ringworld$automationHasPreview()
                 || !screen.ringworld$automationHasStyle(
                         dev.ringworld.world.RingWallStyle.Preset.OVERGROWN_RUIN.style())) {
             fail(client, "the Overgrown rim preset did not survive the 320-wide resize");
@@ -247,10 +251,37 @@ public final class RingWorldCreationUiTestClient {
                 fail(client, "the rim editor did not return its selected style");
                 return;
             }
-            parent.ringworld$automationPressLarge();
-            if (!parent.ringworld$automationMonumentRequested()) {
-                parent.ringworld$automationToggleMonument();
+            parent.ringworld$automationOpenGeneration();
+            armAndAdvance();
+        });
+    }
+
+    private void captureGenerationDefaults(Minecraft client) {
+        if (!(client.screen instanceof RingWorldGenerationScreen screen)) {
+            fail(client, "generation editor did not open"); return;
+        }
+        capture(client, "creation-ui-18-generation-default-narrow-scale4", () -> {
+            screen.ringworld$automationSelect(dev.ringworld.world.RingWorldGenerationSettings.DEFAULT
+                    .withAtlasFidelity(dev.ringworld.world.RingAtlasFidelity.HIGH)
+                    .withLayout(dev.ringworld.world.RingWorldLayout.ARCHIPELAGO)
+                    .withContinuousRiver(true).withMoreStructures(true));
+            armAndAdvance();
+        });
+    }
+
+    private void captureGenerationSelection(Minecraft client) {
+        if (!(client.screen instanceof RingWorldGenerationScreen screen)) {
+            fail(client, "generation editor disappeared"); return;
+        }
+        var selected = screen.ringworld$automationSettings();
+        capture(client, "creation-ui-19-generation-selected-narrow-scale4", () -> {
+            screen.ringworld$automationApply();
+            RingWorldCreationScreen parent = creationScreen(client);
+            if (parent == null || !parent.ringworld$automationGenerationSettings().equals(selected)) {
+                fail(client, "generation editor did not retain its selection"); return;
             }
+            parent.ringworld$automationPressLarge();
+            if (!parent.ringworld$automationMonumentRequested()) parent.ringworld$automationToggleMonument();
             armAndAdvance();
         });
     }
@@ -441,7 +472,7 @@ public final class RingWorldCreationUiTestClient {
                 capturePending = false;
                 RingWorldMod.LOGGER.info("[creation-ui-test] screenshot {}", message.getString());
                 if (capturesSaved == CAPTURE_COUNT) {
-                    RingWorldMod.LOGGER.info("[creation-ui-test] PASS: 17 menu-only captures across GUI scales 1-4 "
+                    RingWorldMod.LOGGER.info("[creation-ui-test] PASS: 19 menu-only captures across GUI scales 1-4 "
                             + "and a 320-wide compact view; two distinct centered-seam seed previews, "
                             + "edit cancellation/texture teardown, rim controls, independent sky/sun selection, "
                             + "Small/Medium/Large maths, and the confirmed 4096x640x192 monument layout "

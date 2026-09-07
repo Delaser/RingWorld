@@ -19,12 +19,12 @@ class RingWallAppearanceSourceContractTest {
                 "src/client/java/dev/ringworld/client/render/RingSurfaceTextureRenderer.java");
 
         assertTrue(gpu.contains("DefaultVertexFormat.POSITION_TEX_COLOR"));
-        assertTrue(gpu.contains(".setColor(vertexArgb)"));
+        assertTrue(gpu.contains(".setColor(sideColor < 0 ? vertexArgb : 0xFF000000 | sideColor)"));
         assertTrue(renderer.contains("RingWallShaderStyle.encode("));
-        assertTrue(renderer.contains("RingSurfaceGpu.createVertexBuffer("));
-        assertTrue(renderer.contains("encoded.vertexArgb()"));
-        assertTrue(renderer.contains("shader.getUniform(\"RingWorldWallPalette\")"));
-        assertTrue(renderer.contains("shader.getUniform(\"RingWorldWallStyle\")"));
+        assertTrue(renderer.contains("RingSurfaceGpu.packMesh("));
+        assertTrue(renderer.contains("inputs.wallStyle().vertexArgb()"));
+        assertTrue(renderer.contains("RenderSystem.setShaderTexture(3,"));
+        assertTrue(renderer.contains("RingWallTexture.build("));
     }
 
     @Test
@@ -34,17 +34,17 @@ class RingWallAppearanceSourceContractTest {
         String descriptor = read("src/client/resources/assets/ringworld/shaders/core/ring_surface.json");
 
         assertTrue(vertex.contains("intrinsicWidth = Position.z"));
-        assertTrue(fragment.contains("uniform mat4 RingWorldWallPalette"));
-        assertTrue(fragment.contains("uniform vec4 RingWorldWallStyle"));
+        assertTrue(fragment.contains("uniform sampler2D Sampler3"));
+        assertTrue(fragment.contains("uniform vec4 RingWorldVertical"));
         assertTrue(fragment.contains("bool rimBridge = texCoord0.y < 0.0 || texCoord0.y > 1.0"));
-        assertTrue(fragment.contains("float roll = wallRoll("));
+        assertTrue(fragment.contains("vec4 wall = texture(Sampler3,"));
         assertFalse(fragment.contains("weather * 0.35"),
                 "rim palette colours must not receive an extra green decay tint");
-        assertTrue(fragment.contains("return vertexColor.rgb"));
+        assertTrue(fragment.contains("sampled.rgb = vertexColor.rgb * 0.85"));
         assertFalse(fragment.contains("* vertexColor;"),
                 "ordinary terrain must not be tinted by packed wall metadata");
-        assertTrue(descriptor.contains("\"RingWorldWallPalette\""));
-        assertTrue(descriptor.contains("\"RingWorldWallStyle\""));
+        assertTrue(descriptor.contains("\"Sampler3\""));
+        assertFalse(descriptor.contains("\"RingWorldWallStyle\""));
     }
 
     private static String read(String relative) throws IOException {

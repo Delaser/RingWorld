@@ -504,7 +504,11 @@ public final class AtlasPregenerationUiTestClient {
         private static final int DISCONNECT_TIMEOUT_TICKS = 400;
         private static final RingWallStyle EXPECTED_WALL = RingWallStyle.custom(
                 9, RingWallStyle.Palette.INDUSTRIAL,
-                RingWallStyle.Pattern.HYBRID, 37);
+                RingWallStyle.Pattern.ENGINEERED, 37);
+        private static final dev.ringworld.world.RingWorldGenerationSettings EXPECTED_GENERATION =
+                new dev.ringworld.world.RingWorldGenerationSettings(
+                        dev.ringworld.world.RingAtlasFidelity.HIGH,
+                        dev.ringworld.world.RingWorldLayout.ARCHIPELAGO, true, true, 1);
 
         private VisualStage visualStage = VisualStage.WAIT_READY;
         private VisualStage afterScreenshot;
@@ -579,6 +583,10 @@ public final class AtlasPregenerationUiTestClient {
             RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
             AtlasPregenerationStatus status = AtlasPregenerationClientState.status().orElse(null);
             if (geometry == null || atlas == null || status == null) return;
+            if (!EXPECTED_GENERATION.equals(ClientRingState.generationSettings())) {
+                visualFail(client, "generation settings mismatch: " + ClientRingState.generationSettings());
+                return;
+            }
             if (!EXPECTED_WALL.equals(ClientRingState.wallStyle())) {
                 visualFail(client, "saved custom wall style mismatch: "
                         + ClientRingState.wallStyle());
@@ -688,6 +696,32 @@ public final class AtlasPregenerationUiTestClient {
                             + "latestPreviewStage={} partialCapture={}",
                     atlas.presentCount(), atlas.cellCount(), atlas.revision(),
                     previewLabel(latestPreviewStage), partialCaptureSaved);
+            if (atlas.sampleStep() != 4) {
+                visualFail(client, "High Atlas source did not use 4-block samples"); return;
+            }
+            if (!operationRequested) {
+                visualRequestServerOperation(client, "new feature generation verification", context -> {
+                    var settings = RingWorldSettings.get(context.world());
+                    if (!EXPECTED_GENERATION.equals(settings.generationSettings()))
+                        throw new IllegalStateException("server generation settings mismatch");
+                    var policy = dev.ringworld.world.RingStructurePolicy.get(context.world());
+                    if (!policy.increasesStructureDensity())
+                        throw new IllegalStateException("more-structures policy missing");
+                    var macro = new dev.ringworld.world.RingMacroTerrain(
+                            settings.geometry(), settings.generatorSeed(), settings.generationSettings());
+                    int waterColumns = 0;
+                    for (int x = 0; x < settings.circumferenceBlocks(); x += 64) {
+                        int z = (int)Math.round(macro.riverCenterZ(x));
+                        var pos = new BlockPos(x, 62, z);
+                        if (context.world().getFluidState(pos).is(net.minecraft.tags.FluidTags.WATER)) waterColumns++;
+                    }
+                    if (waterColumns < 24) throw new IllegalStateException(
+                            "river centerline water missing: " + waterColumns + "/32 columns");
+                    RingWorldMod.LOGGER.info("[optional-visual-smoke] new-features generation=ARCHIPELAGO riverWater={}/32 moreStructures=true atlasStep=4", waterColumns);
+                });
+                return;
+            }
+            if (!operationComplete) return;
             visualAdvance(VisualStage.COMPLETE_TERRAIN_POSE);
         }
 
@@ -766,10 +800,16 @@ public final class AtlasPregenerationUiTestClient {
                 revisionBeforeLightChange = atlas.revision();
                 visualRequestServerOperation(client,
                         "set authored block light " + lit,
-                        context -> context.world().setBlockAndUpdate(
-                                lightPosition,
-                                Blocks.REDSTONE_LAMP.defaultBlockState()
-                                        .setValue(RedstoneLampBlock.LIT, lit)));
+                        context -> {
+                            context.world().setChunkForced(lightPosition.getX() >> 4,
+                                    lightPosition.getZ() >> 4, true);
+                            context.world().setBlockAndUpdate(lightPosition.below(), lit
+                                    ? Blocks.REDSTONE_BLOCK.defaultBlockState()
+                                    : Blocks.STONE.defaultBlockState());
+                            context.world().setBlockAndUpdate(lightPosition,
+                                    Blocks.REDSTONE_LAMP.defaultBlockState()
+                                            .setValue(RedstoneLampBlock.LIT, lit));
+                        });
                 return;
             }
             if (!operationComplete) return;
@@ -777,7 +817,12 @@ public final class AtlasPregenerationUiTestClient {
             boolean lightReady = lit
                     ? observed > baselineBlockLight
                     : observed == baselineBlockLight;
-            if (atlas.revision() <= revisionBeforeLightChange || !lightReady) return;
+            if (atlas.revision() <= revisionBeforeLightChange || !lightReady) {
+                if (visualStageTicks > 1200) visualFail(client,
+                        "lamp revision did not converge: lit=" + lit + " cell=" + lightColumn + "," + lightRow
+                                + " observed=" + observed + " revision=" + atlas.revision());
+                return;
+            }
             RingWorldMod.LOGGER.info(
                     "[optional-visual-smoke] authored-block-light lit={} position={} "
                             + "cell={},{} blockLight={} baseline={} revision={}",
@@ -829,6 +874,13 @@ public final class AtlasPregenerationUiTestClient {
 
         private void visualApplyVoidNone(Minecraft client) {
             if (client.getConnection() == null) return;
+            if (lightPosition != null && client.getSingleplayerServer() != null) {
+                var position = lightPosition;
+                var server = client.getSingleplayerServer();
+                server.execute(() -> server.overworld().setChunkForced(
+                        position.getX() >> 4, position.getZ() >> 4, false));
+                lightPosition = null;
+            }
             RingSkyProfile profile = ClientRingState.skyProfile();
             if (profile.backdrop() == RingSkyProfile.Backdrop.VOID
                     && profile.lightSource() == RingSkyProfile.LightSource.NONE) {
@@ -919,6 +971,10 @@ public final class AtlasPregenerationUiTestClient {
             RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
             if (client.player == null || client.level == null || atlas == null
                     || !atlas.isComplete() || renderedFrames <= reopenRequestedFrame) return;
+            if (!EXPECTED_GENERATION.equals(ClientRingState.generationSettings())) {
+                visualFail(client, "generation settings mismatch: " + ClientRingState.generationSettings());
+                return;
+            }
             if (!EXPECTED_WALL.equals(ClientRingState.wallStyle())) {
                 visualFail(client, "reopen lost the saved custom wall style");
                 return;

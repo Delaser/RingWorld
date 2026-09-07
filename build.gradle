@@ -2043,8 +2043,10 @@ def verifyOptionalVisualSmokeOutputs = { File runDirectory, String label ->
 	def expected = [
 			"circumferenceBlocks": "2048", "widthBlocks": "128",
 			"wallHeightBlocks": "160", "wallThicknessBlocks": "9",
-			"wallPalette": "4", "wallPattern": "5", "wallDecayPercent": "37",
+			"wallPalette": "4", "wallPattern": "6", "wallDecayPercent": "37",
 			"skyBackdrop": "ATMOSPHERE", "sunStyle": "SMALL",
+            "atlasFidelity": "HIGH", "worldLayout": "ARCHIPELAGO",
+            "continuousRingRiver": "true", "moreStructures": "true",
 			"testMode": "false", "pregenerateTerrainAtlas": "false"
 	]
 	expected.each { key, value ->
@@ -2114,8 +2116,12 @@ tasks.register("prepareOptionalVisualSmokeRun") {
 		config.setProperty("wallHeightBlocks", "160")
 		config.setProperty("wallThicknessBlocks", "9")
 		config.setProperty("wallPalette", "4")
-		config.setProperty("wallPattern", "5")
+		config.setProperty("wallPattern", "6")
 		config.setProperty("wallDecayPercent", "37")
+        config.setProperty("atlasFidelity", "HIGH")
+        config.setProperty("worldLayout", "ARCHIPELAGO")
+        config.setProperty("continuousRingRiver", "true")
+        config.setProperty("moreStructures", "true")
 		config.setProperty("skyBackdrop", "ATMOSPHERE")
 		config.setProperty("sunStyle", "SMALL")
 		config.setProperty("testMode", "false")
@@ -2163,7 +2169,9 @@ def creationUiScreenshotPrefixes = [
 		"creation-ui-14-large-scale4",
 		"creation-ui-15-custom-monument-night-large-scale4",
 		"creation-ui-16-confirm-layout-scale4",
-		"creation-ui-17-footer-applied-scale4"
+		"creation-ui-17-footer-applied-scale4",
+        "creation-ui-18-generation-default-narrow-scale4",
+        "creation-ui-19-generation-selected-narrow-scale4"
 ]
 
 def verifyCreationUiConfig = { File runDirectory, String label ->
@@ -2264,7 +2272,7 @@ def verifyCreationUiOutputs = { File runDirectory, String label ->
 		throw new GradleException("${label} could not encode its creation UI contact sheet")
 	}
 	requireNonUniformPng(contactSheet, label + " contact sheet")
-	logger.lifecycle("{} verified 17 captures and wrote {}", label, contactSheet)
+	logger.lifecycle("{} verified 19 captures and wrote {}", label, contactSheet)
 }
 ext.verifyCreationUiOutputs = verifyCreationUiOutputs
 
