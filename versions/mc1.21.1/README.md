@@ -11,6 +11,11 @@ compatibility claim.
 
 ## Current feature handoffs
 
+The local [2026-09-07 mainline parity audit](MAINLINE_PARITY_2026-09-07.md)
+compares the consolidated optional-visual backport with public main `e058c69`.
+It records three presentation corrections and their development validation;
+unmerged GitHub feature branches remain outside that target.
+
 The post-1.1 configurable-visuals batch has two implementation handoffs for
 the backport lane:
 

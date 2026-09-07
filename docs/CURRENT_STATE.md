@@ -1,5 +1,12 @@
 # Current state
 
+Local 1.21.1 development update (2026-09-07): the consolidated optional-visual
+backport has been compared with public main `e058c69`. See the
+[parity audit and validation](../versions/mc1.21.1/MAINLINE_PARITY_2026-09-07.md)
+for the neutral pre-preview ring, distant-wall pattern and compact-label
+corrections. This adds no support, publication or release qualification claim.
+The older cross-line records below retain their historical scope.
+
 Last audited: 2026-08-24 against public `main`, the 1.0 release branch, and
 the public `port/mc-1.21.1` backport branch.
 The final
