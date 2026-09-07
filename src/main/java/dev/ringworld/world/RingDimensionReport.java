@@ -56,7 +56,7 @@ public record RingDimensionReport(
     public static final long WARN_GENERATED_WORLD_BYTES = 512L * 1_024L * 1_024L;
 
     public static String atlasLimitMessage(long cells) {
-        return "terrain atlas requires " + cells + " cells; current limit is " + MAX_ATLAS_CELLS
+        return "Ring Larger than Max Atlas Size: terrain atlas requires " + cells + " cells; current limit is " + MAX_ATLAS_CELLS
                 + ". Lower Atlas fidelity in Gen settings, or reduce Around/Across.";
     }
 
