@@ -1,6 +1,9 @@
 # Current state
 
-Owner release direction (2026-09-06): hold the next RingWorld release until Minecraft 26.3 is released. Prerelease compatibility work is experimental testing, not a publication or live-world update.
+Owner release direction (2026-09-15): add stable Minecraft 26.3 and publish the updated supported versions to CurseForge, keeping the work minimal. The release hold is lifted, but the 26.3 port is blocked by incompatible Minecraft APIs and an unavailable NeoForge runtime. See [26.3 intake](26_3_PORT_STATUS.md). No new files have been uploaded.
+
+2026-09-15 source regression: Fabric and NeoForge each pass all 437 tests and
+build against 26.1 and 26.2. These diagnostic builds are not release candidates.
 
 Current release: **RingWorld 1.1**, covering 26.1, 26.1.1, 26.1.2 and separate
 26.2 builds on Fabric and NeoForge. Owner-authorized PR #232 is merged; all

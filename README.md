@@ -13,6 +13,9 @@ work across the join.
 [Project showcase](https://andwhatnotstudio.com/ringworld/) ·
 [Report a problem](https://github.com/Delaser/RingWorld/issues)
 
+Minecraft 26.3 support is [being ported](docs/26_3_PORT_STATUS.md) and is not
+available in the current downloads.
+
 ## What does it look like?
 
 Nearby Minecraft terrain visibly curves away from you. Beyond normal render

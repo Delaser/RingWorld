@@ -257,6 +257,12 @@ under it.
 
 ## Minecraft version support policy
 
+26.3 intake is recorded in `config/minecraft-version-matrix-26.3.json` and
+`docs/26_3_PORT_STATUS.md`. Fabric compilation fails against changed Minecraft
+APIs; NeoForge has not published a 26.3 runtime. The manifest contains a pending
+Fabric cell and an explicit pending-loader note, not a qualified dual-loader
+contract. Keep public support ranges unchanged until the port passes.
+
 Qualified 26.2 inputs use `config/minecraft-version-matrix-26.2.json`. Derive
 candidate identities, ranges, oldest ABI, and cell coverage through
 `scripts/minecraft_support_contract.py`; do not add another fixed version

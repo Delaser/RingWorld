@@ -19,6 +19,12 @@ Manifests remain immutable qualification inputs; current host release status
 is recorded separately in the publication record.
 Neither adding a manifest nor compiling changes public support claims.
 
+26.3 intake: `config/minecraft-version-matrix-26.3.json` pins the pending Fabric
+source-build inputs. Its `pending_loaders` note records the missing NeoForge
+26.3 runtime; there is deliberately no invented NeoForge cell. The complete
+dual-loader qualification runner remains unavailable until that cell can be
+pinned. See [26.3 port status](26_3_PORT_STATUS.md).
+
 ## Repeatable procedure
 
 1. Copy a manifest for the new stable line. Set its `line`, exact Minecraft

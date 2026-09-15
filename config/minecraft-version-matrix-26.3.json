@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "line": "26.3",
+  "cells": [
+    {
+      "id": "26.3-fabric",
+      "minecraft": {
+        "version": "26.3",
+        "java_major": 25,
+        "downloads": [
+          {
+            "name": "client",
+            "url": "https://piston-data.mojang.com/v1/objects/e877b6a07acd633fb3bb475002175cec036e7b87/client.jar",
+            "checksum": {
+              "algorithm": "sha1",
+              "value": "e877b6a07acd633fb3bb475002175cec036e7b87"
+            }
+          },
+          {
+            "name": "server",
+            "url": "https://piston-data.mojang.com/v1/objects/33680f5f2ac32864d6d7cf5e56a705fdb3e05f4c/server.jar",
+            "checksum": {
+              "algorithm": "sha1",
+              "value": "33680f5f2ac32864d6d7cf5e56a705fdb3e05f4c"
+            }
+          }
+        ]
+      },
+      "loader": "fabric",
+      "status": "pending",
+      "runtime_install": {
+        "name": "Fabric Installer",
+        "version": "1.1.1",
+        "url": "https://maven.fabricmc.net/net/fabricmc/fabric-installer/1.1.1/fabric-installer-1.1.1.jar",
+        "checksum": {
+          "algorithm": "sha256",
+          "value": "2487a69dd6f9d9c2605265a7142d77c26ab62edc620e6bcf810d581d2ee31b79"
+        }
+      },
+      "dependencies": [
+        {
+          "name": "Fabric Loader",
+          "coordinate": "net.fabricmc:fabric-loader",
+          "version": "0.19.5",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-loader/0.19.5/fabric-loader-0.19.5.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "93044e4dd46de5d8136701292f05e868da096d2c9fddb4793e4fdbcc63efc695"
+          }
+        },
+        {
+          "name": "Fabric Loom",
+          "coordinate": "net.fabricmc:fabric-loom",
+          "version": "1.17.21",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-loom/1.17.21/fabric-loom-1.17.21.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "89c08938d865621172e3fb31036081399b2731a4971f599b42724b2509ff5b64"
+          }
+        },
+        {
+          "name": "Fabric API",
+          "coordinate": "net.fabricmc.fabric-api:fabric-api",
+          "version": "0.160.5+26.3",
+          "url": "https://maven.fabricmc.net/net/fabricmc/fabric-api/fabric-api/0.160.5+26.3/fabric-api-0.160.5+26.3.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "5096e9774d629850338fc1c73b5571b527171374b11ac231691fb93731ee0ae6"
+          }
+        },
+        {
+          "name": "NeoForge",
+          "coordinate": "net.neoforged:neoforge",
+          "version": "26.2.0.69",
+          "url": "https://maven.neoforged.net/releases/net/neoforged/neoforge/26.2.0.69/neoforge-26.2.0.69-universal.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "d280a2d9599387c63a69c09745429f5f53b433c757181df6c0430d2fce567036"
+          }
+        },
+        {
+          "name": "ModDevGradle",
+          "coordinate": "net.neoforged:moddev-gradle",
+          "version": "2.0.144",
+          "url": "https://maven.neoforged.net/releases/net/neoforged/moddev-gradle/2.0.144/moddev-gradle-2.0.144.jar",
+          "checksum": {
+            "algorithm": "sha256",
+            "value": "c0b902829645cc8911ada362e5ebbb62c500b3b912872ba438c8ec818b303393"
+          }
+        }
+      ],
+      "pending_inputs": [
+        {
+          "name": "Qualification evidence",
+          "reason": "Fabric source and runtime qualification are incomplete. The 26.2 NeoForge dependency configures the unused companion Gradle project only; it is not a 26.3 runtime."
+        }
+      ],
+      "profile": {
+        "run_directory": "run/qualification/26.3/fabric",
+        "cache_directory": "run/qualification-cache/26.3/fabric",
+        "evidence_directory": "dist/qualification/ringworld/26.3/fabric",
+        "server_port": 26301,
+        "fixture": "safe-small",
+        "timeout_seconds": 1800,
+        "allowed_parallelism": 1
+      },
+      "expected_game_version_tags": {
+        "modrinth": [
+          "26.3"
+        ],
+        "curseforge": [
+          "26.3"
+        ]
+      }
+    }
+  ],
+  "pending_loaders": [
+    {
+      "loader": "neoforge",
+      "minecraft": "26.3",
+      "reason": "Official NeoForge Maven metadata has no 26.3 runtime or installer as of 2026-09-15. Add its pinned cell when published; do not substitute a 26.2 runtime."
+    }
+  ]
+}
