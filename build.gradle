@@ -474,8 +474,13 @@ sourceSets.client.java.srcDir 'src/platform/fabricClient/java'
 apply from: 'gradle/version-sources.gradle'
 sourceSets.main.java.srcDir new File(ringSourceAbiDirectory, 'main/java')
 sourceSets.client.java.srcDir new File(ringSourceAbiDirectory, 'client/java')
+sourceSets.test.java.srcDir new File(ringSourceAbiDirectory, 'test/java')
+ringExcludeVersionOverrides(sourceSets.main.java, 'main')
+ringExcludeVersionOverrides(sourceSets.client.java, 'client')
 sourceSets.main.resources.srcDir new File(ringSourceAbiDirectory, 'main/resources')
 sourceSets.client.resources.srcDir new File(ringSourceAbiDirectory, 'client/resources')
+ringExcludeVersionOverrides(sourceSets.main.resources, 'main', 'resources')
+ringExcludeVersionOverrides(sourceSets.client.resources, 'client', 'resources')
 
 def checkedSaveId = { String value, String propertyName ->
 	def saveId = value == null ? "" : value.trim()
@@ -1699,10 +1704,12 @@ tasks.register("verifyProductionProjectionClient") {
 tasks.register("verifyOutboundPositionPacketInventory") {
 	group = "ringworld verification"
 	description = "Fails unless every audited outbound positional block packet is canonicalized."
-	inputs.file("src/client/java/dev/ringworld/client/mixin/ClientConnectionMixin.java")
+	def relativeMixin = "client/java/dev/ringworld/client/mixin/ClientConnectionMixin.java"
+	def selectedMixin = new File(ringSourceAbiDirectory, relativeMixin)
+	if (!selectedMixin.isFile()) selectedMixin = file("src/${relativeMixin}")
+	inputs.file(selectedMixin)
 	doLast {
-		def outboundPositionMixin = file(
-				"src/client/java/dev/ringworld/client/mixin/ClientConnectionMixin.java").text
+		def outboundPositionMixin = selectedMixin.text
 		[
 				"ServerboundPlayerActionPacket",
 				"ServerboundUseItemOnPacket",

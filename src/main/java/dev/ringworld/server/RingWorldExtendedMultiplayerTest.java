@@ -248,7 +248,7 @@ final class RingWorldExtendedMultiplayerTest {
         // World clocks are monotonic in 26.1. A reused fixture may already be
         // beyond day zero, so move to the next night's 13,000-tick phase
         // instead of attempting to rewind the clock to absolute tick 13,000.
-        long currentTicks = world.clockManager().getTotalTicks(clock);
+        long currentTicks = dev.ringworld.world.RingMinecraftFixtureAccess.clockTicks(world, clock);
         long nextNight = (Math.floorDiv(currentTicks, 24_000L) + 1L) * 24_000L + 13_000L;
         world.clockManager().setTotalTicks(clock, nextNight);
         prepareSurvivalPlayer(playerA);
@@ -281,7 +281,7 @@ final class RingWorldExtendedMultiplayerTest {
         seamNavigator = new Zombie(world);
         seamNavigator.addTag(NAVIGATOR_TAG);
         seamNavigator.setPersistenceRequired();
-        seamNavigator.setInvulnerable(true);
+        dev.ringworld.world.RingMinecraftFixtureAccess.invulnerable(seamNavigator, true);
         seamNavigator.setPos(circumference - 5.5, 120.0, 15.5);
         world.addFreshEntity(seamNavigator);
         seamNavigator.setOnGround(true);
@@ -315,7 +315,7 @@ final class RingWorldExtendedMultiplayerTest {
     private static void attemptSleep(ServerPlayer playerA) {
         sleepAttempted = true;
         BlockPos head = bedHead();
-        Either<Player.BedSleepingProblem, net.minecraft.util.Unit> result = playerA.startSleepInBed(head);
+        Either<Player.BedSleepingProblem, net.minecraft.util.Unit> result = dev.ringworld.world.RingMinecraftFixtureAccess.sleep(playerA, head);
         sleepStarted = result.right().isPresent();
         if (sleepStarted) sleepingReconnectBaseline = playerA;
         RingWorldMod.LOGGER.info("[multiplayer-extended] seam bed sleep start={} problem={} canonicalBed={}",
@@ -367,7 +367,7 @@ final class RingWorldExtendedMultiplayerTest {
             // testing ordinary post-reconnect sleep damage.
             prepareSurvivalPlayer(playerA);
             Either<Player.BedSleepingProblem, net.minecraft.util.Unit> result =
-                    playerA.startSleepInBed(bedHead());
+                    dev.ringworld.world.RingMinecraftFixtureAccess.sleep(playerA, bedHead());
             sleepRestarted = result.right().isPresent();
             sleepRestartTick = ticks;
             RingWorldMod.LOGGER.info(

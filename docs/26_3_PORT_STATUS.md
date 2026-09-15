@@ -23,28 +23,54 @@ Loom 1.18.1 requires Gradle 9.7.0 and cannot run with the existing 9.5.1 wrapper
 Loom 1.17.21 resolves the game and reaches compilation, so no wrapper upgrade
 was needed for this intake.
 
-## Compilation blocker
+## Implementation checkpoint — 2026-09-15
 
-The Fabric source compile reaches javac and stops at its 100-error limit.
-These are source incompatibilities, not a missing Minecraft download:
+The owner authorized execution of the port plan. A version-owned `src/versions/26.3`
+adapter now compiles both main and client code. Build source selection supports
+Java and resource overrides without changing the 26.1/26.2 implementations.
+Version-specific test sources and the outbound packet inventory follow that
+same selected ABI. Shared server fixtures use a small per-version API adapter.
 
-- Density functions moved into `levelgen.densityfunction` and changed their
-  interfaces. `RingNoiseRouter`, `RingClimateSampler`, and periodic density
-  mixins need a 26.3 adapter.
-- Surface-generation types changed; existing surface mixins no longer compile.
-- `RandomState.sampler()` / `router()` and the previous biome-fill signature
-  are gone. Spawn-target types changed too.
-- Entity iteration, movement handling and structure lookup APIs also changed.
+The 26.3 implementation rewrites density functions before RandomState compiles
+and caches their samplers. This covers terrain, climate, aquifers, ores and
+material functions while keeping other dimensions unconfigured. Surface noise,
+biome resolvers, spawn, structure lookup and sleep APIs are adapted. Mapped
+world-generation caches retain periodicity and use nearby coordinates when
+selecting dependency status; 26.3's new cache-copy step otherwise loses the seam
+alias metadata. Existing optional river-biome behavior is retained.
 
-No production Java or shader source was changed. Client compilation and runtime
-tests have not run because main compilation failed. Full dual-loader qualification
-correctly remains unavailable with a missing loader cell; source compilation is
-not release qualification.
+Client adapters cover RenderPearl GPU types, SDL hidden test windows, moved
+packet accessors and complete stepped movement paths. The global shader buffer
+uses 26.3's field order. Version-owned shaders use the new include syntax,
+explicit interface locations, multidraw terrain and transparency phases;
+cloud shaders use their new resource names. These changes need further real-world
+visual and multiplayer qualification before support can be advertised.
 
-Reproduce the Fabric failure with Java 25:
+### Retained development evidence
+
+- `logs/26.3-port/build-4.log`: Fabric `:test :build` passes **440 tests**,
+  including three new compiled-noise/path tests. This precedes the final
+  shader-buffer/resource adjustments; those compile in the later client run.
+- `server-4.log`: fresh 2048×128 dedicated stronghold fixture passes, including
+  periodic cardinal terrain, rims, underside and clean server shutdown.
+- `worldgen-1.log`: fresh 2048×416 fixture passes with the worldgen matrix enabled.
+  It inspects 208 chunks, cave air, ores, logs, 22 loot containers and three
+  crossing structure starts. Seam terrain passes (largest height delta 11,
+  no cliff columns). Monument search exhausts its bounded budget; this is not
+  evidence of a successfully generated monument.
+- `client-4.log`: hidden, muted SDL client passes 19 creation-screen captures,
+  including two seed previews, with no shader pipeline compilation errors.
+  This is a menu/preview test, **not an in-world rendering pass**.
+- Earlier failed attempts remain under the same log directory. Startup first
+  failed on a noise-interface mixin target, then the mapped cache seam lookup.
+  The aborted failed server was terminated before the passing run. One attempt
+  failed to bind its port while that process remained alive. Earlier client
+  attempts exposed the global-buffer signature and shader compiler changes.
+
+Reproduce the build with Java 25:
 
 ```sh
-./gradlew :compileJava :compileClientJava \
+./gradlew :test :build \
   -Pminecraft_version=26.3 -Ploader_version=0.19.5 \
   -Ploom_version=1.17.21 -Pfabric_api_version=0.160.5+26.3 \
   -Pneoforge_version=26.2.0.69 -Pmoddevgradle_version=2.0.144 \
@@ -53,25 +79,42 @@ Reproduce the Fabric failure with Java 25:
   -PringQualificationCell=26.3-fabric --console=plain
 ```
 
-Local evidence: `logs/26.3-port/compile.log`.
+Local helper `logs/26.3-port/build-fabric.sh` holds these pins. The ignored
+`background.gradle` init script hides and mutes the creation fixture. Its
+screenshots are below the isolated cell's `run/run-creation-ui/screenshots`.
+Decompiled vanilla reference files under `logs/26.3-port/vanilla` are local
+inspection inputs only and must never be committed or distributed.
 
 ## Existing-version regression
 
-Both Fabric and NeoForge build successfully against 26.1 (the 26.1.x source
+Before the implementation checkpoint, both Fabric and NeoForge built successfully against 26.1 (the 26.1.x source
 floor) and 26.2, with 437 tests passing per build: 1,748 cases total. These are
 diagnostic `0.0.0-qualification` jars, not publishable release files. This run
 does not requalify 26.1.1/26.1.2 runtimes or establish fresh release evidence.
 Logs: `logs/26.3-port/regression-26.1.log` and `regression-26.2.log`.
-The new manifest passes structural validation; 24 existing matrix/support
+These older-version builds must be repeated after the new source/resource selection and fixture adapters. The new manifest passes structural validation; 24 existing matrix/support
 contract tests pass. No new framework, wrapper change or compatibility bypass
 was introduced.
 
 ## Remaining release work
 
-Port the affected APIs while preserving older source adapters; pin the real
-26.3 NeoForge runtime when published; pass relevant worldgen, rendering and
-multiplayer checks on release candidates; stage updated supported versions
-with immutable source and changelogs; upload to CurseForge and verify hashes.
-The current session has no `CURSEFORGE_API_TOKEN` configured and no browser
-control tool, so publication will also need an authenticated upload route.
-Owner publication authorization is already provided.
+1. Rerun the complete build after the last shader changes and regress 26.1/26.2
+   on both loaders. Verify only the selected overrides are packaged.
+2. Run a hidden, muted real-world client fixture (`:runAtlasUiClient` is the
+   next small gate). Audit custom Atlas pipeline compilation, input attribute
+   locations, transparency/fog, curved clouds, upward views and the live/LOD seam.
+   Check every runtime mixin target; menu success cannot prove packet handlers.
+3. Run two-client seam/gameplay checks, copied-world upgrades and required
+   release qualification. Preserve complete waypoint/timing data in new packets.
+4. Pin the real NeoForge 26.3 runtime when upstream publishes it. The partial
+   Fabric manifest intentionally does not satisfy the dual-loader contract.
+5. Stage updated supported versions with immutable source, versions and
+   changelogs; upload to CurseForge and verify hosted file hashes. Diagnostic
+   `0.0.0-qualification` jars are never upload candidates.
+
+At this checkpoint the usage monitor reports **5% weekly remaining**, so the
+AGENTS.md usage rule pauses further development pending explicit owner override.
+No test game remains intentionally running. No new release has been uploaded.
+The session has no `CURSEFORGE_API_TOKEN` configured and no browser control tool;
+publication needs an authenticated upload route. Owner publication authorization
+is already provided; this is an access limitation, not a request to reapprove it.

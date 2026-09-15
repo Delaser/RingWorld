@@ -63,6 +63,8 @@ sourceSets.main.resources.setSrcDirs([
         new File(rootProject.ext.ringSourceAbiDirectory, 'client/resources')
 ])
 sourceSets.main.resources.exclude('fabric.mod.json')
+rootProject.ext.ringExcludeVersionOverrides(sourceSets.main.java, 'main')
+rootProject.ext.ringExcludeVersionOverrides(sourceSets.main.java, 'client')
 
 // A frozen-candidate run must not expose the checkout's compiled RingWorld
 // classes through ModDevGradle's selected source set. Keep only the resolved
@@ -76,12 +78,15 @@ if (qualificationFrozenCandidateJar != null) {
 // Run the same loader-neutral contract suite against the NeoForge-compiled
 // common sources. Platform-specific runtime gates remain separate.
 sourceSets.test.java.setSrcDirs([
-        rootProject.file('src/test/java')
+        rootProject.file('src/test/java'),
+        new File(rootProject.ext.ringSourceAbiDirectory, 'test/java')
 ])
 sourceSets.test.resources.setSrcDirs([
         rootProject.file('src/test/resources'),
         rootProject.file('src/main/resources')
 ])
+rootProject.ext.ringExcludeVersionOverrides(sourceSets.main.resources, 'main', 'resources')
+rootProject.ext.ringExcludeVersionOverrides(sourceSets.main.resources, 'client', 'resources')
 
 neoForge {
     version = rootProject.neoforge_version

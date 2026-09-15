@@ -96,8 +96,8 @@ public final class RingWorldStrongholdTest {
         ChunkAccess startChunk = world.getChunkSource().getChunk(
                 expected.chunkX(), expected.chunkZ(), ChunkStatus.STRUCTURE_STARTS, true);
         if (startChunk == null) throw new IllegalStateException("Stronghold start chunk did not load");
-        StructureStart start = world.structureManager().getStartForStructure(
-                SectionPos.bottomOf(startChunk), stronghold, startChunk);
+        StructureStart start = dev.ringworld.world.RingMinecraftFixtureAccess.structureStart(
+                world, stronghold, startChunk);
         if (start == null || !start.isValid()) {
             throw new IllegalStateException("Guaranteed stronghold start was not generated at " + expected);
         }
@@ -262,9 +262,9 @@ public final class RingWorldStrongholdTest {
         for (int x = 0; x < geometry.circumferenceBlocks(); x += sampleStep) {
             for (int z = geometry.minWidthZ() + 8; z <= geometry.maxWidthZ(); z += sampleStep) {
                 for (int y : new int[]{0, 64, 128}) {
-                    Holder<Biome> canonical = biomeSource.getNoiseBiome(
+                    Holder<Biome> canonical = dev.ringworld.world.RingMinecraftFixtureAccess.biome(biomeSource,
                             Math.floorDiv(x, 4), Math.floorDiv(y, 4), Math.floorDiv(z, 4), sampler);
-                    Holder<Biome> alias = biomeSource.getNoiseBiome(
+                    Holder<Biome> alias = dev.ringworld.world.RingMinecraftFixtureAccess.biome(biomeSource,
                             Math.floorDiv(x + geometry.circumferenceBlocks(), 4),
                             Math.floorDiv(y, 4), Math.floorDiv(z, 4), sampler);
                     if (!canonical.equals(alias)) {
@@ -532,8 +532,8 @@ public final class RingWorldStrongholdTest {
         ChunkAccess startChunk = world.getChunkSource().getChunk(
                 candidate.chunkX(), candidate.chunkZ(), ChunkStatus.STRUCTURE_STARTS, true);
         if (startChunk == null) throw new IllegalStateException("Monument start chunk did not load");
-        StructureStart start = world.structureManager().getStartForStructure(
-                SectionPos.bottomOf(startChunk), monument, startChunk);
+        StructureStart start = dev.ringworld.world.RingMinecraftFixtureAccess.structureStart(
+                world, monument, startChunk);
         if (start == null || !start.isValid() || start.getPieces().isEmpty()) {
             throw new IllegalStateException("Guaranteed monument did not generate at " + candidate);
         }
@@ -668,7 +668,7 @@ public final class RingWorldStrongholdTest {
 
                 if (compareFreshNoise) {
                     ChunkAccess terrain = world.getChunkSource().getChunk(
-                            chunkX, chunkZ, ChunkStatus.NOISE, true);
+                            chunkX, chunkZ, dev.ringworld.world.RingMinecraftFixtureAccess.terrainStatus(), true);
                     if (terrain == null) {
                         throw new IllegalStateException(
                                 "Canonical terrain did not load for base-height check at X="
