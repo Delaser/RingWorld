@@ -1,6 +1,6 @@
 # Current state
 
-Owner release direction (2026-09-15): add stable Minecraft 26.3 and publish the updated supported versions to CurseForge, keeping the work minimal. The release hold is lifted, but the 26.3 Fabric adapter now builds (440 tests), passes dedicated worldgen and a hidden 19-capture menu/preview test. In-world rendering, multiplayer and fresh regression/release gates remain, and NeoForge 26.3 is unavailable. Development paused at the repo’s 5% usage threshold pending owner override. See [26.3 intake](26_3_PORT_STATUS.md). No new files have been uploaded.
+Owner release direction (2026-09-15): add stable Minecraft 26.3 and publish the updated supported versions to CurseForge, keeping the work minimal. The release hold is lifted, but the 26.3 Fabric adapter now builds (440 tests), passes dedicated worldgen and a hidden 19-capture menu/preview test. In-world rendering, multiplayer and fresh regression/release gates remain, and NeoForge 26.3 is unavailable. The owner authorized test batches below 5%: final builds and legacy source regressions pass (2,188 tests); the in-world Atlas client fails on the changed ProjectileUtil piercing-collision method. Batches stopped at that first failure; multiplayer and upgrade runs remain pending. See [26.3 intake](26_3_PORT_STATUS.md). No new files have been uploaded.
 
 2026-09-15 source regression: Fabric and NeoForge each pass all 437 tests and
 build against 26.1 and 26.2. These diagnostic builds are not release candidates.

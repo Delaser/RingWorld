@@ -261,7 +261,9 @@ under it.
 `docs/26_3_PORT_STATUS.md`. The version-owned Fabric adapter builds with 440 tests and passes dedicated
 worldgen plus menu/preview checks. In-world rendering, multiplayer, updated
 legacy regression and release qualification remain; NeoForge has not published
-a 26.3 runtime. The manifest contains a pending
+a 26.3 runtime. The first in-world client batch fails on the changed
+ProjectileUtil piercing-collision descriptor; retain a required periodic
+collision hook when porting it. The manifest contains a pending
 Fabric cell and an explicit pending-loader note, not a qualified dual-loader
 contract. Keep public support ranges unchanged until the port passes.
 

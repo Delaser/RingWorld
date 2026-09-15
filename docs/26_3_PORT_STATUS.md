@@ -92,16 +92,16 @@ floor) and 26.2, with 437 tests passing per build: 1,748 cases total. These are
 diagnostic `0.0.0-qualification` jars, not publishable release files. This run
 does not requalify 26.1.1/26.1.2 runtimes or establish fresh release evidence.
 Logs: `logs/26.3-port/regression-26.1.log` and `regression-26.2.log`.
-These older-version builds must be repeated after the new source/resource selection and fixture adapters. The new manifest passes structural validation; 24 existing matrix/support
+The batch run below repeats these builds after the new source/resource selection and fixture adapters. The new manifest passes structural validation; 24 existing matrix/support
 contract tests pass. No new framework, wrapper change or compatibility bypass
 was introduced.
 
 ## Remaining release work
 
-1. Rerun the complete build after the last shader changes and regress 26.1/26.2
-   on both loaders. Verify only the selected overrides are packaged.
-2. Run a hidden, muted real-world client fixture (`:runAtlasUiClient` is the
-   next small gate). Audit custom Atlas pipeline compilation, input attribute
+1. Build/regression batch passes on `e880952`; preserve those exact-source
+   results and repeat affected checks after further fixes.
+2. Fix the 26.3 projectile-collision mixin failure below, then rerun the hidden,
+   muted `:runAtlasUiClient` fixture. Audit custom Atlas pipeline compilation, input attribute
    locations, transparency/fog, curved clouds, upward views and the live/LOD seam.
    Check every runtime mixin target; menu success cannot prove packet handlers.
 3. Run two-client seam/gameplay checks, copied-world upgrades and required
@@ -112,9 +112,37 @@ was introduced.
    changelogs; upload to CurseForge and verify hosted file hashes. Diagnostic
    `0.0.0-qualification` jars are never upload candidates.
 
-At this checkpoint the usage monitor reports **5% weekly remaining**, so the
-AGENTS.md usage rule pauses further development pending explicit owner override.
-No test game remains intentionally running. No new release has been uploaded.
+## Owner-authorized test batches — 2026-09-15
+
+The owner explicitly authorized continuing below the 5% weekly allowance with
+“run in batches,” following the proposal to stop at the first failure. These
+runs use source commit `e880952`; no implementation changes were made during
+the batches.
+
+| Batch | Check | Result |
+| --- | --- | --- |
+| 1 | 26.3 Fabric final build | PASS, 440 tests |
+| 1 | 26.1 Fabric / NeoForge source regression | PASS, 437 tests each |
+| 1 | 26.2 Fabric / NeoForge source regression | PASS, 437 tests each |
+| 1 | Jar/source-jar entry and shader selection checks | PASS, no duplicate paths; correct version's Globals shader |
+| 2 | 26.3 hidden, muted in-world Atlas UI client | FAIL during world entry |
+
+Batch 1 totals **2,188 passing tests**. All builds use diagnostic qualification
+identities; this does not establish same-jar patch-version runtime coverage or
+release qualification. Logs: `logs/26.3-port/batch-1-fabric-26.3.log`,
+`batch-1-regression-26.1.log`, and `batch-1-regression-26.2.log`.
+
+Batch 2 creates its isolated 2048×128 world but exits with a required mixin
+failure. `ProjectileUtilMixin.ringworld$periodicPiercingCollisions` cannot find
+the previous `ProjectileUtil.getManyEntityHitResult` descriptor (the overload
+ending in `Predicate, float, ClipContext.Block, boolean` and returning
+`Collection`). Adapt this against the actual 26.3 collision API while retaining
+periodic piercing/projectile behavior. Do not make the injection optional.
+Evidence: `logs/26.3-port/batch-2-atlas-26.3.log`; Gradle exits 1. The in-world
+rendering gate did not pass. Multiplayer and copied-world batches were not
+started; testing stopped at the first failure as agreed. No test game is left
+running and no new release has been uploaded.
+
 The session has no `CURSEFORGE_API_TOKEN` configured and no browser control tool;
 publication needs an authenticated upload route. Owner publication authorization
 is already provided; this is an access limitation, not a request to reapprove it.
