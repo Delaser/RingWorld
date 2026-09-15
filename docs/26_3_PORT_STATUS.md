@@ -146,3 +146,15 @@ running and no new release has been uploaded.
 The session has no `CURSEFORGE_API_TOKEN` configured and no browser control tool;
 publication needs an authenticated upload route. Owner publication authorization
 is already provided; this is an access limitation, not a request to reapprove it.
+
+## Subsequent all-test sweep
+
+The owner then requested running all tests and listing errors, overriding the
+stop-at-first-failure policy. See [the complete sweep report](26_3_TEST_ERRORS_2026-09-15.md).
+The 429-test Python suite has one stale ABI expectation and two platform skips.
+Fresh Atlas generation, corrected resume, and one copied 26.1.2 → 26.3 server
+worldgen/structure smoke pass. All attempted in-world client groups, multiplayer
+and raid clients reproduce the required ProjectileUtil mixin failure. Multiplayer
+fixtures also need an explicit whitelist policy. Full dual-loader/frozen-candidate
+qualification and dependent gameplay assertions remain blocked. No code was
+changed or release uploaded during this diagnostic sweep.

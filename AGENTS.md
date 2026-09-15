@@ -263,7 +263,9 @@ worldgen plus menu/preview checks. In-world rendering, multiplayer, updated
 legacy regression and release qualification remain; NeoForge has not published
 a 26.3 runtime. The first in-world client batch fails on the changed
 ProjectileUtil piercing-collision descriptor; retain a required periodic
-collision hook when porting it. The manifest contains a pending
+collision hook when porting it. The full diagnostic sweep also records a stale
+source-ABI test and missing multiplayer fixture whitelist policy; see
+`docs/26_3_TEST_ERRORS_2026-09-15.md`. The manifest contains a pending
 Fabric cell and an explicit pending-loader note, not a qualified dual-loader
 contract. Keep public support ranges unchanged until the port passes.
 
