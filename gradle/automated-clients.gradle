@@ -30,7 +30,8 @@ if (rootProject.ext.ringQualificationEnabled) {
                 def options = new File(run, 'options.txt')
                 options.parentFile.mkdirs()
                 def text = options.isFile() ? options.getText('UTF-8') : ''
-                ['soundCategory_master:0.0', 'pauseOnLostFocus:false',
+                // Hidden SDL windows can block indefinitely waiting for a display swap.
+                ['soundCategory_master:0.0', 'pauseOnLostFocus:false', 'enableVsync:false',
                  'onboardAccessibility:false', 'tutorialStep:none'].each { value ->
                     def key = value.substring(0, value.indexOf(':'))
                     text = text.replaceAll('(?m)^' + key + ':.*(?:\\r?\\n|$)', '')

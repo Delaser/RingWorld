@@ -12,7 +12,7 @@ from pathlib import Path
 import re
 from typing import Any, Mapping
 
-from minecraft_atlas_recovery_qualification import PersistedRingSettingsObservation
+from minecraft_atlas_recovery_qualification import PersistedRingSettingsObservation, SETTINGS_FORMAT_VERSION
 from minecraft_qualification_model import InvocationError
 from minecraft_qualification_ranges import CompatibilityRangeError, parse_minecraft_version
 from run_worldgen_structure_matrix import validate_reload
@@ -63,6 +63,10 @@ class ForwardUpgradeQualification:
             "targetMinecraft": self.identity.target_minecraft_version,
             "sourceSettingsSha256": self.evidence.source_settings.settings_sha256,
             "targetSettingsSha256": self.evidence.target_settings.settings_sha256,
+            "settingsFormatMigration": {
+                "before": self.evidence.source_settings.format_version,
+                "after": self.evidence.target_settings.format_version,
+            },
         }
         if self.generator_sample_comparison is not None:
             result["generatorSampleComparison"] = dict(self.generator_sample_comparison)
@@ -105,7 +109,7 @@ def _settings(value: object, world: Path, label: str) -> tuple[object, ...]:
     return (
         value.width_blocks, value.circumference_blocks, value.generator_seed,
         value.wall_height_blocks, value.surface_reference_y,
-        value.terrain_noise_mapping, value.format_version,
+        value.terrain_noise_mapping,
         value.wall_thickness, value.wall_palette, value.wall_pattern,
         value.wall_decay, value.wall_format, value.atlas_fidelity,
         value.world_layout, value.continuous_river, value.more_structures,
@@ -189,6 +193,14 @@ def validate_forward_world_upgrade(
         raise InvocationError("target upgrade world must retain the normal runtime/world ownership")
     source_facts = _settings(evidence.source_settings, source_world, "source")
     target_facts = _settings(evidence.target_settings, target_world, "target")
+    before = evidence.source_settings.format_version
+    after = evidence.target_settings.format_version
+    # RingWorldSettings.upgradeToCurrentFormat preserves all semantic fields
+    # while migrating older saves to the current storage format.
+    if (type(before) is not int or type(after) is not int
+            or not 1 <= before <= SETTINGS_FORMAT_VERSION
+            or after not in (before, SETTINGS_FORMAT_VERSION)):
+        raise InvocationError("forward upgrade has an unsupported settings format transition")
     if source_facts != target_facts:
         raise InvocationError("forward upgrade changed persisted RingWorld settings")
     cross_stable_line = (source_game.major, source_game.minor) != (target_game.major, target_game.minor)

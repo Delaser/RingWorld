@@ -78,6 +78,30 @@ Retain it as an upstream-runtime follow-up; do not call these logs error-free.
 Settled rendering still includes occasional frames above 50 ms and measured
 wall-texture GPU uploads above 16 ms; these checks do not prove hitch-free play.
 
+## Full-launch qualification follow-up — September 20
+
+The first nightly attempt on `993e4d1` was stopped before any fixture PASS.
+Its fresh hidden Fabric window hung in `SDL_GL_SwapWindow` during startup;
+two thread snapshots showed unchanged render-thread CPU time. Disabling VSync
+in disposable automated-client options resolves this: both loaders then pass
+all 19 creation captures and exit normally. Ordinary client settings and the
+frozen mod jars are unchanged. Evidence: `fixes-2026-09-20/nightly-1-operator-stop.txt`,
+`nightly-creation-threads*.txt`, and `background-no-vsync-fabric.log` (the latter
+contains both loader runs). This interrupted attempt is not a download retry
+or a passing nightly aggregate.
+
+The copied-world checker now explicitly records the runtime's supported
+old-format-to-format-5 migration while requiring every semantic settings field
+to remain equal. Unknown, backward and intermediate format transitions fail.
+Full Python discovery passes 435 cases (433 passed, two expected skips), logged
+in `fixes-2026-09-20/python-migration-final.log`.
+
+RingWorld 1.2 descriptors and change-only changelogs for all three version lines
+are prepared under `deploy/qualified/1.2/`. They pass metadata validation but
+are not staged or published. GitHub briefly timed out; the connection recovered
+and `993e4d1` was pushed. The existing Archipelago smooth-join failure and
+whole-ring structure-density acceptance gap remain explicit launch-review items.
+
 ## Inputs
 
 Mojang's [official manifest](https://piston-meta.mojang.com/mc/game/version_manifest_v2.json)

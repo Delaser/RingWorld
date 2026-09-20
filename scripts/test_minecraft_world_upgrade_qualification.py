@@ -92,6 +92,34 @@ class ForwardUpgradeQualificationTest(unittest.TestCase):
                     replace(evidence, target_record={**evidence.target_record, "biomes": ["minecraft:sulfur_caves"]}),
                 )
 
+    def test_accepts_current_format_migration_without_semantic_changes(self):
+        with tempfile.TemporaryDirectory() as directory:
+            identity, evidence = self.valid(Path(directory))
+            for before in (1, 2, 3, 4):
+                mapping = 1 if before < 3 else 4
+                migrated = replace(evidence,
+                        source_settings=replace(evidence.source_settings,
+                                                format_version=before, terrain_noise_mapping=mapping),
+                        target_settings=replace(evidence.target_settings,
+                                                format_version=5, terrain_noise_mapping=mapping))
+                result = validate_forward_world_upgrade(self.source, self.target, identity, migrated)
+                self.assertEqual({"before": before, "after": 5},
+                                 result.as_dict()["settingsFormatMigration"])
+                with self.assertRaises(InvocationError):
+                    validate_forward_world_upgrade(self.source, self.target, identity,
+                            replace(migrated, target_settings=replace(
+                                    migrated.target_settings, wall_palette=4)))
+
+    def test_rejects_unknown_or_backward_format_transitions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            identity, evidence = self.valid(Path(directory))
+            for before, after in ((5, 3), (3, 4), (0, 5), (6, 6), (3, 6), (True, 5)):
+                with self.subTest(before=before, after=after), self.assertRaises(InvocationError):
+                    validate_forward_world_upgrade(self.source, self.target, identity,
+                            replace(evidence,
+                                    source_settings=replace(evidence.source_settings, format_version=before),
+                                    target_settings=replace(evidence.target_settings, format_version=after)))
+
     def test_accepts_a_later_candidate_group_without_a_path_allowlist(self):
         with tempfile.TemporaryDirectory() as directory:
             identity, evidence = self.valid(Path(directory))

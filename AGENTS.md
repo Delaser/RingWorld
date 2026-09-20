@@ -270,7 +270,7 @@ large-ring lifecycle, natural seam/both rims and noon/dusk/night/rain rendering.
 The copied review world has an old wall panel over the default projection pose;
 test-only `ringworld.projectionCameraX=3072` provides an unobstructed upward view.
 NeoForge fresh worldgen and all 19 creation-screen captures pass. Final source
-regression passes 437 cases per loader on 26.1 and 26.2; Python passes 431 with
+regression passes 437 cases per loader on 26.1 and 26.2; Python passes 433 with
 two expected skips. Qualification readers now retain format-5 wall/generation
 fields, fingerprint v4 and Atlas-9 twelve-byte cells, with real Java hash parity.
 Development runtime passes must not be relabelled as frozen qualification.
