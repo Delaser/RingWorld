@@ -95,6 +95,7 @@ def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     result.add_argument("--quick-run-id", required=True)
     result.add_argument("--production-world", required=True)
+    result.add_argument("--projection-camera-x", type=float)
     result.add_argument("--manifest", default="config/minecraft-version-matrix.json")
     result.add_argument("--cell", action="append", dest="cells")
     result.add_argument("--fixture", action="append", choices=FIXTURES, dest="fixtures")
@@ -149,6 +150,8 @@ def _child_argv(root: Path, cell_id: str, fixture: str,
         command.extend(("--quick-run-id", arguments.quick_run_id))
     if fixture in PRODUCTION_FIXTURES:
         command.extend(("--source-world", str(source)))
+    if fixture == "production-render" and getattr(arguments, "projection_camera_x", None) is not None:
+        command.extend(("--projection-camera-x", str(arguments.projection_camera_x)))
     if fixture in GRADLE_FIXTURES:
         command.extend(_optional_argument(arguments, "gradle_dependency_cache",
                                           "--gradle-dependency-cache"))

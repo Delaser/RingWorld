@@ -7,7 +7,8 @@ been uploaded. Existing 1.1 downloads remain the supported release.
 ## September 20 development and tooling checkpoint
 
 The owner requested Fabric fixes followed by NeoForge and a usage pause at
-**80% remaining** for this session, superseding the normal 5% threshold.
+**70% remaining** for this session (revised from 80% by the owner), superseding the normal 5% threshold.
+The owner requests continuing until the release is polished enough for full launch.
 NeoForge has now published **26.3.0.7-beta**; its universal and installer jars
 and ModDevGradle **2.0.147** were retrieved from official Maven and SHA-256
 hashed. This is an upstream beta, not RingWorld release qualification.
@@ -32,8 +33,8 @@ layout switching also pass. Full multiplayer now passes the verifier with both c
 Raid arm/save and reload/victory markers pass, with normal server shutdown and
 intentional test-client cleanup. These are development checks, not frozen release qualification.
 
-The final Python sweep passes 432 cases: 430 passes and two expected platform
-skips (`fixes-2026-09-20/python-current-formats-final.log`). The earlier
+The final Python sweep passes 433 cases: 431 passes and two expected platform
+skips (`fixes-2026-09-20/python-background-final.log`). The earlier
 429-case sweep also passed before the current-format qualification checks. Earlier failures caused by PATH
 selecting an incompatible macOS system Python remain in the retained logs.
 
@@ -183,8 +184,18 @@ reports and published support ranges have not been rewritten.
 The final source sweep passes **440 cases per 26.3 loader** and **437 cases per
 loader on both 26.1 and 26.2**, totalling 2,628 Java cases. Logs are under
 `fixes-2026-09-20/final-batch/`. Both loaders' clear-pose projection screenshots
-are retained with their per-environment logs. The complete source/diagnostic
-checkpoint is ready for clean frozen-candidate qualification.
+are retained with their per-environment logs. Quick qualification **20260920T093330Z-c3dd96e9330d** passes both loaders on
+clean pushed source `39216e8`, including frozen builds, per-cell source builds,
+artifact/range checks, and separately installed dedicated servers with normal
+stops. Each server uses its exact frozen jar. This is quick qualification,
+not the remaining nightly/upgrade/package gates.
+
+The subsequent Gradle-only fixture change makes qualification clients hidden
+and muted by default, without changing mod code or the retained frozen jars.
+`gradle/automated-clients.gradle` also disables onboarding and NeoForge's early
+splash; visible operator checks can explicitly opt out of the hidden window.
+The nightly run must record its current execution source separately from the
+retained `39216e8` candidate source.
 
 1. Run clean, pushed frozen-candidate qualification, copied-world upgrades,
    required package checks and release equivalence. Keep development Gradle
@@ -259,3 +270,16 @@ NeoForge `neoforge-build-1.log` passes all 440 Java cases. The hidden, muted
 revision proofs, settings handshake and normal disconnect/session clear.
 The progressive-world screenshot was visually inspected. No NeoForge-specific
 source fork was needed beyond the shared 26.3 adapters. Its dedicated multiplayer and raid checks now pass; final release gates remain.
+
+
+Both loaders pass the 19-capture creation fixture with the new default hidden/
+muted qualification policy (`background-default-fabric.log` and
+`background-default-neoforge.log`). The production-render operator and nightly
+coordinator now accept `--projection-camera-x 3072` so the retained frozen jar
+uses the same unobstructed pose. The selected coordinate is recorded in its
+command/evidence; invalid or noncanonical coordinates are rejected.
+
+Frozen quick candidates from `39216e8`:
+
+- Fabric: `e16c2942c4b5108f377c995d868ded953acd9b11e63cbc50a206e19749403c54`
+- NeoForge: `ab76c07dbf31d28a526fdf07e03b73f5a4a18990fe6c1a7e1bea615e361d1259`

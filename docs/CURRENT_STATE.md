@@ -1,14 +1,14 @@
 # Current state
 
 Owner release direction (2026-09-20): finish the 26.3 Fabric fixes, then port
-NeoForge, pausing this session at 80% usage remaining. Both loaders now build
+NeoForge, pausing this session at 70% usage remaining. Both loaders now build
 with **440 passing Java cases each** and pass the full Atlas UI fixture
 (generation, revision, handshake and clean disconnect). Fabric also passes
 map/compass persistence, curved objects, layout switching, the complete
 multiplayer verifier with all three processes exiting 0, and raid save/reload/
 victory assertions. Required 26.3 projectile, sky and player-movement hooks are
 adapted; the fixture no longer sends duplicate position packets. Python checks
-pass (430 passed, two expected platform skips). NeoForge 26.3.0.7-beta and
+pass (431 passed, two expected platform skips). NeoForge 26.3.0.7-beta and
 ModDevGradle 2.0.147 are pinned in a structurally valid two-cell manifest.
 The copied 26.2 production world now has a complete current-sampling Atlas.
 Both loaders pass its lifecycle, natural seam/both-rim fixture and all four
@@ -18,7 +18,11 @@ temporary-file watcher exception; all affected runtime fixtures still passed. Ne
 menu/worldgen/layout checks and the final 26.1/26.2 source regression now pass
 (437 cases per loader/version). Qualification readers now preserve current
 settings, Atlas data and identity, with parity against real Java output.
-Clean frozen-candidate qualification and publication are next.
+Clean two-loader quick qualification passes on `39216e8` (run
+`20260920T093330Z-c3dd96e9330d`), including separately installed dedicated
+servers using the exact frozen jars. The subsequent Gradle-only fixture policy
+makes qualification clients hidden and muted. Nightly/upgrade/package gates
+and publication remain.
 See [26.3 port status](26_3_PORT_STATUS.md); the
 [September 15 errors](26_3_TEST_ERRORS_2026-09-15.md) remain historical evidence.
 No new release files have been uploaded.

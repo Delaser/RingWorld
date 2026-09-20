@@ -249,3 +249,13 @@ stays ignored under `dist/`; it is not contributed or distributed source.
   deliberately cancelled NeoForge preparation. Existing local 26.2 packages
   predate the fix and must be restaged; no historical evidence is relabelled.
   Quick success alone does not authorize support metadata or publication.
+
+
+Qualification clients now run hidden and muted in disposable profiles by default.
+For a production copy whose default C/4 camera is obstructed, the nightly
+coordinator and production-render operator accept `--projection-camera-x X`.
+It changes only the canonical X pose, records that choice, and preserves all
+settling, image, geometry and frame checks. The September 20 copied wall-study
+world uses X=3072. An explicitly requested visible Gradle qualification run can
+set `-PringQualificationBackgroundClient=false`. These fixture changes do not
+modify the retained frozen mod jar or its recorded candidate-source identity.

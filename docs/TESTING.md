@@ -3219,3 +3219,15 @@ Exterior camera fix: section-graph queue starts at the nearest finite wall colum
 
 
 Patterned underside and Atlas walls: new generation replaces only the bottommost bedrock layer using the saved wall materials/pattern; higher layers are preserved. Atlas walls now use a worker-built seeded four-face texture with Industrial motifs and decay. Both loaders build/test on both versions; Fabric runtime installer and shader checks pass. See [implementation, evidence and limitations](UNDERSIDE_ATLAS_WALLS_2026-09-06.md).
+
+
+2026-09-20 qualification client policy: `gradle/automated-clients.gradle` sets
+the existing hidden-window flag and mutes only disposable qualification
+profiles, with tutorials/onboarding disabled and the NeoForge early splash
+disabled. Ordinary `runClient` and mod jars are unchanged. Use
+`-PringQualificationBackgroundClient=false` only for an explicitly requested
+visible test. This replaces per-run local init scripts for these fixtures.
+
+The frozen production-render operator and nightly coordinator expose this
+camera override as `--projection-camera-x`; it is forwarded through
+`-PringProjectionCameraX` and recorded with the runtime command.

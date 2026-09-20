@@ -270,7 +270,7 @@ large-ring lifecycle, natural seam/both rims and noon/dusk/night/rain rendering.
 The copied review world has an old wall panel over the default projection pose;
 test-only `ringworld.projectionCameraX=3072` provides an unobstructed upward view.
 NeoForge fresh worldgen and all 19 creation-screen captures pass. Final source
-regression passes 437 cases per loader on 26.1 and 26.2; Python passes 430 with
+regression passes 437 cases per loader on 26.1 and 26.2; Python passes 431 with
 two expected skips. Qualification readers now retain format-5 wall/generation
 fields, fingerprint v4 and Atlas-9 twelve-byte cells, with real Java hash parity.
 Development runtime passes must not be relabelled as frozen qualification.
@@ -278,7 +278,7 @@ Fresh NeoForge configs can emit a nonfatal NightConfig temporary-file watcher
 exception; retain this and the measured GPU-upload/frame stalls as follow-ups.
 NeoForge 26.3.0.7-beta and ModDevGradle 2.0.147 are now pinned in a pending two-cell
 manifest. Keep public support ranges unchanged until qualification passes.
-For the owner's September 20 session, pause at **80% usage remaining**; this
+For the owner's September 20 session, pause at **70% usage remaining**; this
 explicit instruction supersedes the normal 5% monitor threshold for that work.
 
 Qualified 26.2 inputs use `config/minecraft-version-matrix-26.2.json`. Derive
@@ -819,8 +819,11 @@ The complete mixin ownership table is in
 ## Build and fast validation
 
 Owner preference: launch automated game clients muted (`soundCategory_master:0.0`
-in their disposable `options.txt`). Do not change system audio or normal player
-profiles to silence development fixtures.
+in their disposable `options.txt`). Qualification client tasks now apply this
+and hidden windows through `gradle/automated-clients.gradle`; the separate
+NeoForge early splash is disabled too. `-PringQualificationBackgroundClient=false`
+allows an explicitly requested visible qualification run. Do not change system
+audio or normal player profiles to silence development fixtures.
 
 The active port requires Java 25:
 

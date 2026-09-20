@@ -40,13 +40,15 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             _selected_fixtures(("raid", "raid"))
 
     def test_production_command_binds_every_input(self) -> None:
+        arguments = self.arguments()
+        arguments.projection_camera_x = 3072.0
         command = _child_argv(ROOT, "26.1-fabric", "production-render",
-                              self.arguments(), Path("/world"))
+                              arguments, Path("/world"))
         joined = " ".join(command)
         for value in ("--quick-run-id quick-run",
                       "--gradle-dependency-cache /cache",
                       "--gradle-distribution-zip /gradle.zip",
-                      "--gradle-loom-cache /loom"):
+                      "--gradle-loom-cache /loom", "--projection-camera-x 3072.0"):
             self.assertIn(value, joined)
         source_index = command.index("--source-world")
         self.assertEqual(str(Path("/world")), command[source_index + 1])

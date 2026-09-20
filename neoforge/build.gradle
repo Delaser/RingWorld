@@ -1519,3 +1519,5 @@ apply from: rootProject.file('gradle/preview-handoff.gradle')
 
 ext.ringFidelityGalleryDirectory = qualificationRunFile('run-atlas-fidelity-gallery')
 apply from: rootProject.file('gradle/fidelity-gallery.gradle')
+
+apply from: rootProject.file('gradle/automated-clients.gradle')

@@ -1,0 +1,50 @@
+// Qualification clients render offscreen and use only their disposable options.
+// Normal runClient profiles and release jars are unaffected.
+if (rootProject.ext.ringQualificationEnabled) {
+    def runDirectories = [
+        runCreationUiClient: 'run-creation-ui',
+        runAtlasUiClient: 'run-atlas-ui',
+        runMapCompassCaptureClient: 'run-map-compass-capture',
+        runCurvedObjectCaptureClient: 'run-curved-object-capture',
+        runLayoutSwitchClient: 'run-layout-switch',
+        runProductionLifecycleClient: 'run-production-lifecycle',
+        runProductionVisualParityClient: 'run-production-visual-parity',
+        runProductionProjectionClient: 'run-production-projection',
+        runMultiplayerClientA: 'run-multiplayer/client-a',
+        runMultiplayerClientB: 'run-multiplayer/client-b',
+        runRaidSeamClientA: 'run-raid-seam/client-a',
+        runRaidSeamClientB: 'run-raid-seam/client-b'
+    ]
+    tasks.withType(JavaExec).configureEach {
+        def directory = runDirectories[name]
+        if (directory != null) {
+            systemProperty 'ringworld.backgroundTestWindow',
+                    providers.gradleProperty('ringQualificationBackgroundClient').orElse('true').get()
+            if (name == 'runProductionProjectionClient'
+                    && providers.gradleProperty('ringProjectionCameraX').isPresent()) {
+                systemProperty 'ringworld.projectionCameraX',
+                        providers.gradleProperty('ringProjectionCameraX').get()
+            }
+            doFirst {
+                def run = project.file(rootProject.ext.ringQualificationRunDirectory(directory))
+                def options = new File(run, 'options.txt')
+                options.parentFile.mkdirs()
+                def text = options.isFile() ? options.getText('UTF-8') : ''
+                ['soundCategory_master:0.0', 'pauseOnLostFocus:false',
+                 'onboardAccessibility:false', 'tutorialStep:none'].each { value ->
+                    def key = value.substring(0, value.indexOf(':'))
+                    text = text.replaceAll('(?m)^' + key + ':.*(?:\\r?\\n|$)', '')
+                    text += '\n' + value + '\n'
+                }
+                options.setText(text, 'UTF-8')
+                if (project.name == 'neoforge') {
+                    def fml = new File(run, 'config/fml.toml')
+                    fml.parentFile.mkdirs()
+                    def config = fml.isFile() ? fml.getText('UTF-8') : ''
+                    config = config.replaceAll('(?m)^\\s*earlyWindowControl\\s*=.*(?:\\r?\\n|$)', '')
+                    fml.setText(config + '\nearlyWindowControl = false\n', 'UTF-8')
+                }
+            }
+        }
+    }
+}

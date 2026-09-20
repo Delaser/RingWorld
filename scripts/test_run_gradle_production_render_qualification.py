@@ -14,7 +14,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from run_gradle_production_render_qualification import (  # noqa: E402
-    ENVIRONMENTS, GradleProductionRenderError, _png, _tasks,
+    ENVIRONMENTS, GradleProductionRenderError, _camera_arguments, _png, _tasks,
 )
 
 
@@ -29,6 +29,13 @@ class GradleProductionRenderQualificationTest(unittest.TestCase):
 
     def test_all_environment_modes_are_owned(self) -> None:
         self.assertEqual(("noon", "dusk", "night", "rain"), ENVIRONMENTS)
+
+    def test_camera_override_is_canonical_and_optional(self) -> None:
+        self.assertEqual((), _camera_arguments(None))
+        self.assertEqual(("-PringProjectionCameraX=3072.0",), _camera_arguments(3072.0))
+        for value in (-1, 16384, float("nan"), float("inf")):
+            with self.subTest(value=value), self.assertRaises(GradleProductionRenderError):
+                _camera_arguments(value)
 
     def test_png_verifier_rejects_non_png(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

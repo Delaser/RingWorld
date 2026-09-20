@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 from pathlib import Path
 import shutil
 import sys
@@ -45,6 +46,8 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--cell", required=True)
     result.add_argument("--quick-run-id", required=True)
     result.add_argument("--source-world", required=True)
+    result.add_argument("--projection-camera-x", type=float,
+                        help="optional canonical X for an unobstructed production view")
     result.add_argument("--manifest", default="config/minecraft-version-matrix.json")
     result.add_argument("--gradle-dependency-cache")
     result.add_argument("--gradle-distribution-zip")
@@ -182,8 +185,18 @@ def _copy_log(prepared: Any, runtime_name: str, target_name: str) -> dict[str, s
     return {"path": str(target), "sha256": _sha256(target)}
 
 
+def _camera_arguments(value: float | None) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if not math.isfinite(value) or not 0 <= value < 16384:
+        raise GradleProductionRenderError("projection camera X must be inside the production circumference")
+    return (f"-PringProjectionCameraX={value}",)
+
+
 def _execute(prepared: Any, source_world: Path, dependency_cache: Path | None,
-             distribution_zip: Path | None, loom_seed: Sequence[Path]) -> dict[str, Any]:
+             distribution_zip: Path | None, loom_seed: Sequence[Path],
+             projection_camera_x: float | None = None) -> dict[str, Any]:
+    camera_arguments = _camera_arguments(projection_camera_x)
     paths, cell = prepared.paths, prepared.cell
     create_contained_directories(paths)
     stage_gradle_distribution_zip(distribution_zip, paths.repository_root, paths)
@@ -212,6 +225,7 @@ def _execute(prepared: Any, source_world: Path, dependency_cache: Path | None,
     for environment in ENVIRONMENTS:
         _fresh_copy(source_world, projection_world, source_inventory)
         arguments = (
+            *camera_arguments,
             f"-PringProjectionDestination={PROJECTION_DESTINATION}",
             f"-PringProjectionEnvironment={environment}",
             f"-PringNeoForgeProjectionDestination={PROJECTION_DESTINATION}",
@@ -244,6 +258,7 @@ def _execute(prepared: Any, source_world: Path, dependency_cache: Path | None,
         raise GradleProductionRenderError("production source changed during rendering qualification")
     return {
         "commands": commands,
+        "projection_camera_x": projection_camera_x,
         "source_world": {"path": str(source_world), "inventory": source_inventory,
                          **source_observation},
         "installed_candidates": {"projection": projection_jar, "visual_parity": parity_jar},
@@ -269,7 +284,8 @@ def run(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict[
     with QualificationLock.acquire(prepared.paths.lock_path, run_id):
         try:
             details = _execute(prepared, source_world, dependency_cache,
-                               distribution.source if distribution else None, loom_seed)
+                               distribution.source if distribution else None, loom_seed,
+                               getattr(arguments, "projection_camera_x", None))
             verdict, reason = Verdict.PASS, None
         except (QualificationExecutionError, OSError, ValueError) as error:
             details, verdict, reason = {}, Verdict.FAIL, str(error)
