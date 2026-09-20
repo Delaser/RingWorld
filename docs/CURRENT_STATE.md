@@ -1,7 +1,22 @@
 # Current state
 
+Latest owner correction (September 20): publication is paused for the one-block
+master Atlas and three independent client detail levels. The obsolete Atlas
+quality selector and Archipelago layout selector are removed from creation.
+Low / Medium / High are available on the RingWorld Map and through `/ringworld lod`;
+Medium is the client default and reset target. Master sampling, cache identity
+and size admission use one block regardless of legacy saved fidelity IDs.
+Both 26.3 loaders pass 441 Java cases, their builds, all 19 creation-screen
+captures and the Atlas UI generation/live-edit/disconnect fixture. Python
+passes 433 checks with two expected platform skips. The live-edit fixture waits
+for its specific edited cell because unrelated revisions can arrive first.
+The older staged jars are superseded. Saved-world upgrade checks and optional
+launcher bundles are waived; Modrinth is deferred. Eventual publication is six
+CurseForge mod jars only. The 60% remaining usage boundary still applies.
+
+
 Owner release direction (2026-09-20): finish the 26.3 Fabric fixes, then port
-NeoForge, pausing this session at 65% usage remaining. The owner accepts the
+NeoForge, pausing this session at 60% usage remaining. The owner accepts the
 older-version builds and automated tests without another full in-game suite.
 The current release path is in
 [`deploy/qualified/1.2/README.md`](../deploy/qualified/1.2/README.md).

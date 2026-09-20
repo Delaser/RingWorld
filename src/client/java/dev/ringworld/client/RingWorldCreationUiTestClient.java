@@ -153,7 +153,7 @@ public final class RingWorldCreationUiTestClient {
         }
         capture(client, "creation-ui-06-generation-default-scale4", () -> {
             screen.ringworld$automationSelect(new RingWorldGenerationSettings(
-                    RingAtlasFidelity.HIGH, RingWorldLayout.ARCHIPELAGO,
+                    RingAtlasFidelity.HIGH, RingWorldLayout.VANILLA,
                     true, true, RingWorldGenerationSettings.FORMAT_VERSION));
             armAndAdvance();
         });
@@ -162,17 +162,17 @@ public final class RingWorldCreationUiTestClient {
     private void captureConfiguredGenerationAndOpenSeedPreview(Minecraft client) {
         if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldGenerationScreen screen)
                 || screen.ringworld$automationSettings().atlasFidelity() != RingAtlasFidelity.HIGH
-                || screen.ringworld$automationSettings().layout() != RingWorldLayout.ARCHIPELAGO
+                || screen.ringworld$automationSettings().layout() != RingWorldLayout.VANILLA
                 || !screen.ringworld$automationSettings().continuousRiver()
                 || !screen.ringworld$automationSettings().moreStructures()) {
             fail(client, "the configured generation choices were not retained");
             return;
         }
-        capture(client, "creation-ui-07-generation-archipelago-high-scale4", () -> {
+        capture(client, "creation-ui-07-generation-high-scale4", () -> {
             screen.ringworld$automationApply();
             RingWorldCreationScreen parent = creationScreen(client);
             if (parent == null || parent.ringworld$automationGenerationSettings().layout()
-                    != RingWorldLayout.ARCHIPELAGO) {
+                    != RingWorldLayout.VANILLA) {
                 fail(client, "the generation panel did not return its selected policy");
                 return;
             }
@@ -377,7 +377,7 @@ public final class RingWorldCreationUiTestClient {
             }
             screen.ringworld$automationSetLayout(4_096, 640, 192);
             screen.ringworld$automationSetGenerationSettings(new RingWorldGenerationSettings(
-                    RingAtlasFidelity.HIGH, RingWorldLayout.ARCHIPELAGO,
+                    RingAtlasFidelity.HIGH, RingWorldLayout.VANILLA,
                     true, true, RingWorldGenerationSettings.FORMAT_VERSION));
             screen.ringworld$automationToggleMonument();
             screen.ringworld$automationCycleSky();
@@ -392,7 +392,7 @@ public final class RingWorldCreationUiTestClient {
                 || !screen.ringworld$automationHasLayout(4_096, 640, 192)
                 || !screen.ringworld$automationMonumentRequested()
                 || screen.ringworld$automationGenerationSettings().layout()
-                        != RingWorldLayout.ARCHIPELAGO
+                        != RingWorldLayout.VANILLA
                 || screen.ringworld$automationGenerationSettings().atlasFidelity()
                         != RingAtlasFidelity.HIGH
                 || !screen.ringworld$automationGenerationSettings().continuousRiver()

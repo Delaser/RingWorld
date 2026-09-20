@@ -9,6 +9,7 @@ import dev.ringworld.world.RingTerrainPreviewHud;
 import java.util.Optional;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -16,6 +17,7 @@ import net.minecraft.network.chat.Component;
 /** Responsive, non-pausing map/progress screen for the single atlas service. */
 public final class RingWorldMapScreen extends Screen {
     private final Screen parent;
+    private Button detailButton;
     private long requestedWorldHash = Long.MIN_VALUE;
 
     public RingWorldMapScreen(Screen parent) {
@@ -84,8 +86,21 @@ public final class RingWorldMapScreen extends Screen {
         } else {
             lastActions = "loading";
         }
+        detailButton = addRenderableWidget(Button.builder(detailMessage(), button -> {
+                    RingClientLodTuning.select(RingClientLodTuning.quality().next());
+                    button.setMessage(detailMessage());
+                }).tooltip(Tooltip.create(Component.literal("Distant ring detail for this player only.")))
+                .bounds(width / 2 - 150, height - 28, 146, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Done"), button -> onClose())
-                .bounds(width / 2 - 100, height - 28, 200, 20).build());
+                .bounds(width / 2 + 4, height - 28, 146, 20).build());
+    }
+
+    void cycleDetailForAutomation() {
+        detailButton.onPress(RingWorldCreationScreen.AutomationInput.INSTANCE);
+    }
+
+    private Component detailMessage() {
+        return Component.literal("Detail: " + RingClientLodTuning.quality().label());
     }
 
     private Button controlButton(String label, AtlasPregenerationAction action,

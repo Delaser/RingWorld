@@ -5,28 +5,27 @@ import dev.ringworld.world.*;
 
 /** Client-thread-owned, session-local LOD choice. No server or saved settings are mutated. */
 public final class RingClientLodTuning {
-    private static RingLodQuality quality;
+    private static RingLodQuality quality = RingLodQuality.MEDIUM;
     private RingClientLodTuning() { }
     public static RingLodQuality quality() { return quality; }
     public static String select(RingLodQuality value) {
+        if (value == null) value = RingLodQuality.MEDIUM; // /ringworld lod reset
         if (quality == value) return summary();
         quality = value;
         RingSurfaceTextureRenderer.clear();
         return summary();
     }
-    public static void clearSession() { quality = null; }
-    public static RingRenderProfile profile(RingGeometry geometry, double distance, RingAtlasFidelity fallback) {
+    public static void clearSession() { quality = RingLodQuality.MEDIUM; }
+    public static RingRenderProfile profile(RingGeometry geometry, double distance) {
         int limit = RingMinecraftClientAccess.maxTextureSize();
-        return quality == null ? RingRenderProfile.create(geometry, distance,
-                Math.min(fallback.maxTextureColumns(), limit), Math.min(fallback.maxTextureRows(), limit), fallback.meshStepBlocks())
-                : quality.profile(geometry, distance, limit);
+        return quality.profile(geometry, distance, limit);
     }
     public static String summary() {
         var atlas = ClientRingState.terrainAtlas();
-        return "Ring LOD: " + (quality == null ? "server default" : quality.command()
-                + " (source target " + quality.sampleStep() + ", mesh " + quality.meshStep() + " blocks)")
+        return "Ring LOD: " + quality.command()
+                + " (source target " + quality.sampleStep() + ", mesh " + quality.meshStep() + " blocks)"
                 + (atlas == null ? "" : "; server source " + atlas.sampleStep() + " blocks")
-                + (quality != null && atlas != null && atlas.sampleStep() > quality.sampleStep()
+                + (atlas != null && atlas.sampleStep() > quality.sampleStep()
                     ? "; finer source detail unavailable" : "");
     }
 }

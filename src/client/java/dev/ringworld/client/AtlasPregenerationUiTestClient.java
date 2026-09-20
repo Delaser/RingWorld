@@ -136,6 +136,25 @@ public final class AtlasPregenerationUiTestClient {
                             + screen.worldgenLabelForAutomation());
                 }
                 if (!capturedInitial) {
+                    var source = ClientRingState.terrainAtlas();
+                    if (source == null) return true;
+                    if (source.sampleStep() != 1) return fail(client, "server Atlas is not sampled every block");
+                    RingClientLodTuning.select(null);
+                    if (RingClientLodTuning.quality() != dev.ringworld.world.RingLodQuality.MEDIUM) {
+                        return fail(client, "reset did not restore Medium client detail");
+                    }
+                    var settings = ClientRingState.generationSettings();
+                    for (var expected : new dev.ringworld.world.RingLodQuality[]{
+                            dev.ringworld.world.RingLodQuality.HIGH,
+                            dev.ringworld.world.RingLodQuality.LOW,
+                            dev.ringworld.world.RingLodQuality.MEDIUM}) {
+                        screen.cycleDetailForAutomation();
+                        if (RingClientLodTuning.quality() != expected
+                                || ClientRingState.terrainAtlas() != source
+                                || !ClientRingState.generationSettings().equals(settings)) {
+                            return fail(client, "local detail cycle changed the shared Atlas or settings");
+                        }
+                    }
                     capture(client, "atlas-ui-02-map-initial", false);
                     capturedInitial = true;
                 }
@@ -226,7 +245,7 @@ public final class AtlasPregenerationUiTestClient {
             }
             case 13 -> {
                 if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldMapScreen) || !settled()) return true;
-                if (!hasOnlyButton(client, "Done")) {
+                if (!hasCompletedControls(client)) {
                     return fail(client, "completed screen retained an invalid action button");
                 }
                 capture(client, "atlas-ui-11-complete", true); arm(); stage++;
@@ -250,9 +269,8 @@ public final class AtlasPregenerationUiTestClient {
             case 15 -> {
                 var atlas = ClientRingState.terrainAtlas();
                 if (atlas == null || atlas.revision() <= revisionBeforeEdit) return true;
-                if (atlas.cellHeight(editedCellColumn, editedCellRow) != 201) {
-                    return fail(client, "placed surface block did not reach the client atlas");
-                }
+                // Other dirty tiles can arrive first; wait for this cell within the fixture timeout.
+                if (atlas.cellHeight(editedCellColumn, editedCellRow) != 201) return true;
                 revisionBeforeEdit = atlas.revision();
                 client.getConnection().sendCommand("setblock " + editedBlockX + " 200 " + editedBlockZ
                         + " minecraft:air");
@@ -261,9 +279,7 @@ public final class AtlasPregenerationUiTestClient {
             case 16 -> {
                 var atlas = ClientRingState.terrainAtlas();
                 if (atlas == null || atlas.revision() <= revisionBeforeEdit) return true;
-                if (atlas.cellHeight(editedCellColumn, editedCellRow) == 201) {
-                    return fail(client, "removed surface block remained in the client atlas");
-                }
+                if (atlas.cellHeight(editedCellColumn, editedCellRow) == 201) return true;
                 RingWorldMod.LOGGER.info("[atlas-ui-test] requesting normal integrated-server disconnect after revision proof");
                 client.disconnectFromWorld(Component.literal("RingWorld Atlas UI handshake teardown regression"));
                 stage++;
@@ -347,13 +363,15 @@ public final class AtlasPregenerationUiTestClient {
         client.stop();
         return true;
     }
-    private static boolean hasOnlyButton(Minecraft client, String label) {
+    private static boolean hasCompletedControls(Minecraft client) {
         if (RingMinecraftClientAccess.screen(client) == null) return false;
         var buttons = RingMinecraftClientAccess.screen(client).children().stream()
                 .filter(Button.class::isInstance)
                 .map(Button.class::cast)
                 .toList();
-        return buttons.size() == 1 && buttons.getFirst().getMessage().getString().equals(label);
+        return buttons.size() == 2 && buttons.stream().map(button -> button.getMessage().getString())
+                .collect(java.util.stream.Collectors.toSet()).equals(java.util.Set.of(
+                        "Done", "Detail: " + RingClientLodTuning.quality().label()));
     }
     private void capture(Minecraft client, String name, boolean finalCapture) {
         RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, name + ".png", RingMinecraftClientAccess.mainRenderTarget(client), 1,

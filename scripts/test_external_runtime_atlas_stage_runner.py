@@ -64,7 +64,8 @@ def _atlas(complete: bool) -> bytes:
                                 ATLAS_SAMPLE_STEP_BLOCKS, EXPECTED_ATLAS_COLUMNS,
                                 EXPECTED_ATLAS_ROWS, 1 if not complete else 2))
     for index in range(cells):
-        present = complete or index in {0, 1, EXPECTED_ATLAS_COLUMNS, EXPECTED_ATLAS_COLUMNS + 1}
+        present = complete or (index // EXPECTED_ATLAS_COLUMNS < 16 // ATLAS_SAMPLE_STEP_BLOCKS
+                               and index % EXPECTED_ATLAS_COLUMNS < 16 // ATLAS_SAMPLE_STEP_BLOCKS)
         raw.extend(bytes((int(present),)) + struct.pack(">hIBI", 64, 0x00AA00, 0, 0x334455))
     return gzip.compress(bytes(raw), mtime=0)
 
@@ -102,6 +103,8 @@ else:
     atlas.write_bytes(base64.b64decode({base64.b64encode(complete)!r}))
     report.parent.mkdir(parents=True, exist_ok=True)
     report.write_text(json.dumps({{"schemaVersion": 2, "identityAvailable": True, "status": "COMPLETE"}}), encoding="utf-8")
+# Match the real server shutdown dwell so the observer can parse the larger checkpoint.
+    time.sleep(1.0)
 listener.close()
 '''
         script.write_text(textwrap.dedent(source), encoding="utf-8")

@@ -41,8 +41,8 @@ def settings_bytes(seed: int = 155_088_888, *, width=416, circumference=2048,
 
 
 def atlas_bytes(world_hash: int, present_cells: int, *, trailing: bytes = b"") -> bytes:
-    columns, rows = 256, 52
-    header = struct.pack(">IIQIIIIIQ", 0x52574154, 9, world_hash, 416, 2_048, 8, columns, rows, 7)
+    columns, rows = 2048, 416
+    header = struct.pack(">IIQIIIIIQ", 0x52574154, 9, world_hash, 416, 2_048, 1, columns, rows, 7)
     cells = b"".join((b"\x01" if index < present_cells else b"\x00") + struct.pack(">hIBI", 64, 0, 0, 0x334455)
                      for index in range(columns * rows))
     return gzip.compress(header + cells + trailing, mtime=0)
@@ -53,10 +53,10 @@ class AtlasRecoveryPersistenceTest(unittest.TestCase):
         settings = parse_persisted_ring_settings(settings_bytes(), Path("/world/settings.dat"))
         self.assertEqual(64, settings.surface_reference_y)  # optional persisted default
         self.assertEqual("16011387810716297352", layout_fingerprint(settings))
-        self.assertEqual("6270924567552907628", atlas_world_hash(settings))
+        self.assertEqual("5082858087917131076", atlas_world_hash(settings))
 
     def test_current_options_match_real_java_prewarm_identity(self) -> None:
-        # Independently observed from the September 20 Java 26.3 prewarm report.
+        # Cross-checked by RingTerrainAtlasTest.fixedMasterIdentityMatchesQualificationReader.
         raw = settings_bytes(-7617918596273893784, width=256, circumference=16384,
                 format_version=5,
                 wall=dict(thickness=7, palette=4, pattern=3, decay=10, format=1),
@@ -67,7 +67,7 @@ class AtlasRecoveryPersistenceTest(unittest.TestCase):
                 settings.wall_palette, settings.wall_pattern, settings.wall_decay,
                 settings.atlas_fidelity))
         self.assertEqual("6214264662786933286", layout_fingerprint(settings))
-        self.assertEqual("1334374108194333499", atlas_world_hash(settings))
+        self.assertEqual("3372587833368448249", atlas_world_hash(settings))
 
     def test_rejects_unknown_or_incomplete_saved_options(self) -> None:
         for wall in (dict(thickness=7),
@@ -76,7 +76,7 @@ class AtlasRecoveryPersistenceTest(unittest.TestCase):
                 parse_persisted_ring_settings(settings_bytes(wall=wall), Path("/settings"))
         with self.assertRaises(InvocationError):
             parse_persisted_ring_settings(settings_bytes(generation=dict(
-                    atlas_fidelity=4, layout=0, continuous_river=False,
+                    atlas_fidelity=5, layout=0, continuous_river=False,
                     more_structures=False, format=1)), Path("/settings"))
 
     def test_atlas_header_presence_and_complete_chunk_counts(self) -> None:
@@ -85,9 +85,9 @@ class AtlasRecoveryPersistenceTest(unittest.TestCase):
         self.assertEqual(8, atlas.present_cells)
         self.assertEqual(0, atlas.present_chunks)
         complete = parse_ring_terrain_atlas(
-            atlas_bytes(8_665_210_144_080_158_345, 13_312), Path("/world/terrain-atlas.rwat.gz"),
+            atlas_bytes(8_665_210_144_080_158_345, 851_968), Path("/world/terrain-atlas.rwat.gz"),
         )
-        self.assertEqual(13_312, complete.present_cells)
+        self.assertEqual(851_968, complete.present_cells)
         self.assertEqual(3_328, complete.present_chunks)
 
     def test_rejects_truncated_trailing_bad_presence_and_bad_nbt(self) -> None:

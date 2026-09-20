@@ -294,7 +294,14 @@ Fresh NeoForge configs can emit a nonfatal NightConfig temporary-file watcher
 exception; retain this and the measured GPU-upload/frame stalls as follow-ups.
 NeoForge 26.3.0.7-beta and ModDevGradle 2.0.147 are now pinned in a pending two-cell
 manifest. Keep public support ranges unchanged until qualification passes.
-For the owner's September 20 session, pause at **65% usage remaining**; this
+Latest owner direction: skip saved-world upgrade checks and optional launcher
+bundles; defer Modrinth and publish six mod jars to CurseForge only. Publication
+is paused for the requested Atlas correction: fixed one-block server source,
+exactly Low/Medium/High client detail (default/reset Medium), selected on the
+RingWorld Map or by slash command. Remove the generation-quality selector and
+hide Archipelago; preserve legacy saved IDs without using them for sampling.
+Earlier staged/frozen jars predate this correction and must be refreshed.
+For the owner's September 20 session, pause at **60% usage remaining**; this
 explicit instruction supersedes the normal 5% monitor threshold for that work.
 
 Qualified 26.2 inputs use `config/minecraft-version-matrix-26.2.json`. Derive
@@ -1570,7 +1577,7 @@ Completion means:
 - Atlas surface jobs now prepare geometry and native vertex bytes on the serial surface worker using the same captured snapshot as texture pixels. Keep all GPU calls on the render thread and close packed/native data on stale, failed and abandoned results. Capture world/quality/wall inputs before scheduling. Do not reintroduce live client-state reads in worker texture/mesh preparation. GPU upload and owner-thread snapshot copies remain measured stutter sources; preserve >=16ms diagnostics and do not equate worker completion with hitch-free frame pacing.
 
 - Client LOD commands are now `low`, `medium`, `high` (old Low, High, Max budgets).
-  Generation fidelity remains server-owned. Keep the three-level command tree
+  Server sampling is fixed at one block. Keep the three-level command tree
   identical on both loaders and avoid rebuilding an already selected level.
 - Lithium's `mixin.ai.poi.tasks` redirects collide with RingWorld's periodic
   POI lookup. Preserve the matching `lithium:options` overrides in Fabric and

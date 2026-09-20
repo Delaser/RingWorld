@@ -155,7 +155,7 @@ def parse_persisted_ring_settings(raw: bytes, path: Path) -> PersistedRingSettin
         integer("format"), path, hashlib.sha256(raw).hexdigest(),
         bounded(wall, "thickness", 1, 32), bounded(wall, "palette", 0, 9),
         bounded(wall, "pattern", 0, 6), bounded(wall, "decay", 0, 100),
-        bounded(wall, "format", 1, 1), bounded(generation, "atlas_fidelity", 0, 3),
+        bounded(wall, "format", 1, 1), bounded(generation, "atlas_fidelity", 0, 4),
         bounded(generation, "layout", 0, 1),
         bool(bounded(generation, "continuous_river", 0, 1)),
         bool(bounded(generation, "more_structures", 0, 1)),

@@ -27,7 +27,7 @@ import java.util.zip.GZIPOutputStream;
 public final class RingTerrainAtlas {
     /** Format 9 adds a representative side material colour. */
     public static final int FORMAT_VERSION = 9;
-    public static final int SAMPLE_STEP_BLOCKS = 8;
+    public static final int SAMPLE_STEP_BLOCKS = 1;
     public static final int TILE_SIZE = 16;
     /** Short height, top and side colours, block-light byte, and presence accounting per cell. */
     public static final int ESTIMATED_BYTES_PER_CELL = 12;
@@ -76,7 +76,7 @@ public final class RingTerrainAtlas {
         long value = RingLayoutFingerprint.compute(settings);
         value = RingLayoutFingerprint.mix(value ^ ((long)FORMAT_VERSION << 32));
         return RingLayoutFingerprint.mix(value
-                ^ settings.generationSettings().atlasFidelity().sampleStepBlocks());
+                ^ SAMPLE_STEP_BLOCKS);
     }
 
     public RingGeometry geometry() { return geometry; }

@@ -53,7 +53,7 @@ CAPTURE_PREFIXES = (
     "creation-ui-04-default-scale3",
     "creation-ui-05-default-scale4",
     "creation-ui-06-generation-default-scale4",
-    "creation-ui-07-generation-archipelago-high-scale4",
+    "creation-ui-07-generation-high-scale4",
     "creation-ui-08-seed-preview-12345-scale4",
     "creation-ui-09-seed-preview-67890-scale4",
     "creation-ui-10-rim-default-scale4",

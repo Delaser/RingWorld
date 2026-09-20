@@ -13,6 +13,8 @@ public enum RingLodQuality {
         this.columns = columns; this.rows = rows; this.meshStep = meshStep;
     }
     public String command() { return command; }
+    public String label() { return command.substring(0, 1).toUpperCase(java.util.Locale.ROOT) + command.substring(1); }
+    public RingLodQuality next() { return values()[(ordinal() + 1) % values().length]; }
     public int sampleStep() { return sampleStep; }
     public int meshStep() { return meshStep; }
     public RingRenderProfile profile(RingGeometry geometry, double distance) {

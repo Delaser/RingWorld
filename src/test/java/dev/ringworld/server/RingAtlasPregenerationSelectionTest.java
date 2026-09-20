@@ -65,8 +65,8 @@ class RingAtlasPregenerationSelectionTest {
     private static void completeChunk(RingTerrainAtlas atlas, int chunkX, int chunkRow) {
         int firstX = chunkX * 16;
         int firstZ = atlas.geometry().minWidthZ() + chunkRow * 16;
-        for (int z = 4; z < 16; z += RingTerrainAtlas.SAMPLE_STEP_BLOCKS) {
-            for (int x = 4; x < 16; x += RingTerrainAtlas.SAMPLE_STEP_BLOCKS) {
+        for (int z = RingTerrainAtlas.SAMPLE_STEP_BLOCKS / 2; z < 16; z += RingTerrainAtlas.SAMPLE_STEP_BLOCKS) {
+            for (int x = RingTerrainAtlas.SAMPLE_STEP_BLOCKS / 2; x < 16; x += RingTerrainAtlas.SAMPLE_STEP_BLOCKS) {
                 atlas.putBlockSample(firstX + x, firstZ + z, 70, 0x445566);
             }
         }

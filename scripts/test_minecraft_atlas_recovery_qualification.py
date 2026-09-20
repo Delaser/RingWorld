@@ -45,7 +45,7 @@ class AtlasRecoveryQualificationTest(unittest.TestCase):
         def report(status, chunks, cells, capture, failure):
             return AtlasReportFact(ATLAS_REPORT_SCHEMA, status, True, world_hash, layout, 4, 2048, 416, chunks, EXPECTED_TOTAL_CHUNKS, cells, EXPECTED_TOTAL_CELLS, 1_000, atlas_path, world / "ringworld-prewarm" / "result.json", evidence / capture, failure)
         def atlas(hash_value, cells, chunks, revision):
-            return AtlasCacheObservation(ATLAS_FORMAT_VERSION, world_hash, 416, 2048, 8, EXPECTED_ATLAS_COLUMNS, EXPECTED_ATLAS_ROWS, revision, cells, chunks, atlas_path, hash_value)
+            return AtlasCacheObservation(ATLAS_FORMAT_VERSION, world_hash, 416, 2048, 1, EXPECTED_ATLAS_COLUMNS, EXPECTED_ATLAS_ROWS, revision, cells, chunks, atlas_path, hash_value)
         def ledger(stage, names, start):
             return MarkerLedger(stage, evidence / f"{stage}-markers.json", tuple(TimedMarker(name, start + number * 10) for number, name in enumerate(names)))
         partial = atlas("b" * 64, 100, 100, 1)

@@ -51,7 +51,7 @@ public record RingRenderProfile(
      */
     public static final int MAX_CIRCUMFERENCE_SEGMENTS = 2_048;
     public static final int MAX_WIDTH_BANDS = 128;
-    public static final int TARGET_MESH_STEP_BLOCKS = RingTerrainAtlas.SAMPLE_STEP_BLOCKS;
+    public static final int TARGET_MESH_STEP_BLOCKS = 8;
     public static final int POSITION_TEXTURE_COLOR_VERTEX_BYTES = 24;
     public static final double REVEAL_NEAR = 0.82;
     public static final double REVEAL_FAR = 0.98;

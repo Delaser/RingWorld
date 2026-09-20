@@ -245,8 +245,7 @@ public final class RingSurfaceTextureRenderer {
         long snapshotStarted = System.nanoTime();
         RingTerrainAtlas snapshot = atlas.snapshot();
         flagRenderStall("Atlas snapshot copy", snapshotStarted);
-        RingRenderProfile profile = RingClientLodTuning.profile(geometry, 16.0,
-                ClientRingState.generationSettings().atlasFidelity());
+        RingRenderProfile profile = RingClientLodTuning.profile(geometry, 16.0);
         RingSurfaceBuildSnapshot buildSnapshot = new RingSurfaceBuildSnapshot(snapshot, revision);
         long generation = textureBuildGeneration;
         Minecraft client = Minecraft.getInstance();

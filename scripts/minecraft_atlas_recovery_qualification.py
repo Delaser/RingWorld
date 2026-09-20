@@ -30,7 +30,7 @@ WALL_HEIGHT_BLOCKS = 160
 SURFACE_REFERENCE_Y = 64
 SETTINGS_FORMAT_VERSION = 5
 RIM_STYLE_VERSION = 3
-ATLAS_SAMPLE_STEP_BLOCKS = 8
+ATLAS_SAMPLE_STEP_BLOCKS = 1
 EXPECTED_ATLAS_COLUMNS = CIRCUMFERENCE_BLOCKS // ATLAS_SAMPLE_STEP_BLOCKS
 EXPECTED_ATLAS_ROWS = WIDTH_BLOCKS // ATLAS_SAMPLE_STEP_BLOCKS
 EXPECTED_TOTAL_CHUNKS = (CIRCUMFERENCE_BLOCKS // 16) * (WIDTH_BLOCKS // 16)
@@ -252,7 +252,7 @@ def atlas_world_hash(settings: PersistedRingSettingsObservation) -> str:
     """Reproduce ``RingTerrainAtlas.worldHash`` for the persisted layout."""
     value = int(layout_fingerprint(settings))
     value = _mix64(value ^ (ATLAS_FORMAT_VERSION << 32))
-    step = {0: 16, 1: 8, 2: 4, 3: 2}.get(settings.atlas_fidelity)
+    step = ATLAS_SAMPLE_STEP_BLOCKS if settings.atlas_fidelity in range(5) else None
     if step is None:
         raise InvocationError("saved settings have an unknown Atlas fidelity")
     return str(_mix64(value ^ step))

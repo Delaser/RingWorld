@@ -2,12 +2,13 @@
 
 ## Live client LOD command
 
-`/ringworld lod lowest|low|medium|high|very_high|max` selects local display quality.
-`show` reports the choice and source sampling; `reset` returns to the server
-profile. Very High uses 1-block source targets with 2-block mesh spacing; Max
-keeps the same target data and uses 1-block mesh spacing. Both are bounded by
-available server data and hardware texture limits. These display names are
-separate from the four saved server Atlas fidelity values.
+`/ringworld lod low|medium|high` selects local display quality.
+`show` reports the choice and source sampling; `reset` returns to Medium.
+The RingWorld Map's Detail button cycles the same three choices. The server
+source is always one sample per block; High preserves that detail with one-block
+mesh spacing, subject to hardware texture limits.
+
+The older six-level gallery instructions and measurements below are historical.
 
 The gallery accepts `-PringFidelityGalleryCompareMesh=true` to drive the actual
 Very High and Max slash commands in one loaded world, wait for rebuilt resources,

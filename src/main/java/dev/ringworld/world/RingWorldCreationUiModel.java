@@ -165,7 +165,7 @@ public final class RingWorldCreationUiModel {
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
                 new RingGeometry(width, circumference), wallHeight,
                 wallStyle.thicknessBlocks(),
-                generationSettings.atlasFidelity().sampleStepBlocks());
+                RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
         return new Validation(report, List.of());
     }
 
@@ -211,12 +211,11 @@ public final class RingWorldCreationUiModel {
         }
         return String.format(Locale.ROOT,
                 "New world: %,d × %,d; %s rims, %d thick; %s sky, %s sun; "
-                        + "%s, %s Atlas, river %s, more structures %s; %s. Layout locks on first load.",
+                        + "%s, river %s, more structures %s; %s. Layout locks on first load.",
                 report.geometry().circumferenceBlocks(), report.geometry().widthBlocks(),
                 RingWallStyle.Preset.matching(wallStyle).label(), wallStyle.thicknessBlocks(),
                 skyProfile.backdrop().label(), skyProfile.lightSource().label(),
                 generationSettings.layout().label(),
-                generationSettings.atlasFidelity().label(),
                 generationSettings.continuousRiver() ? "on" : "off",
                 generationSettings.moreStructures() ? "on" : "off",
                 monumentChoice(requestOceanMonument, report.geometry()));

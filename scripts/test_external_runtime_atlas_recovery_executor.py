@@ -101,7 +101,8 @@ def atlas_bytes(world_hash: int, *, complete: bool, revision: int) -> bytes:
     payload = bytearray(struct.pack(">IIQIIIIIQ", ATLAS_MAGIC, ATLAS_FORMAT_VERSION, world_hash, 416, 2048,
                                    ATLAS_SAMPLE_STEP_BLOCKS, EXPECTED_ATLAS_COLUMNS, EXPECTED_ATLAS_ROWS, revision))
     for index in range(cells):
-        present = complete or index in {0, 1, EXPECTED_ATLAS_COLUMNS, EXPECTED_ATLAS_COLUMNS + 1}
+        present = complete or (index // EXPECTED_ATLAS_COLUMNS < 16 // ATLAS_SAMPLE_STEP_BLOCKS
+                               and index % EXPECTED_ATLAS_COLUMNS < 16 // ATLAS_SAMPLE_STEP_BLOCKS)
         payload.extend(bytes((1 if present else 0,)) + struct.pack(">hIBI", 64, 0x00AA00, 0, 0x334455))
     return gzip.compress(bytes(payload), mtime=0)
 
@@ -211,7 +212,7 @@ class ExternalRuntimeAtlasRecoveryExecutorTest(unittest.TestCase):
             plan.settings_path.parent.mkdir(parents=True, exist_ok=True)
             plan.settings_path.write_bytes(settings)
             if stage.name == "interrupted":
-                raw_atlas, chunks, cells, revision = atlas_bytes(world_hash, complete=False, revision=1), 1, 4, 1
+                raw_atlas, chunks, cells, revision = atlas_bytes(world_hash, complete=False, revision=1), 1, (16 // ATLAS_SAMPLE_STEP_BLOCKS) ** 2, 1
                 markers = ("atlas-started", "atlas-interrupted")
             else:
                 raw_atlas, chunks, cells, revision = atlas_bytes(world_hash, complete=True, revision=2), EXPECTED_TOTAL_CHUNKS, EXPECTED_TOTAL_CELLS, 2

@@ -1,13 +1,13 @@
 # RingWorld 1.2 release preparation
 
-These are release-review inputs. The 26.3 files are staged locally; nothing new
+These are release-review inputs. The prior 26.3 files are staged locally but superseded; nothing new
 is published. The older-line files are not staged. Historical 1.1 inputs
 remain unchanged. Each of the three version lines has one descriptor and one
 change-only changelog for its separate Fabric and NeoForge files. Descriptors
 pass the existing support-contract validation and changelog rendering.
 
 The owner authorized publishing updated supported versions to CurseForge and,
-on September 20, continuing until ready for full launch, pausing at 65% weekly
+on September 20, continuing until ready for full launch, pausing at 60% weekly
 usage remaining. No additional publication approval is needed for that scope.
 The owner accepts the successful older-version source builds and automated
 tests; do not repeat their full in-game/nightly qualification suites. This is
@@ -18,40 +18,33 @@ The corrected 26.3 quick run is `20260920T104806Z-dd4541a72f59`, built from
 `4860724`. Both loaders pass with the structure-sampler correction and installed
 dedicated servers. The prior `39216e8` candidates are superseded.
 
-## Minimum path to the CurseForge release
+## Current release scope
 
-1. Freeze and stage six runtime jars: Fabric and NeoForge for 26.1.x, 26.2 and
-   26.3. The two 26.3 release jars are ready. For the other four, use the existing
-   quick build/artifact/dedicated-startup gate required by
-   `stage_qualified_release.py`, then its metadata-equivalent staging. One jar
-   per loader covers all three 26.1 patches. Do not repeat full nightly suites,
-   rewrite terminal evidence or upload diagnostic qualification jars.
-2. Complete a focused copied-world upgrade batch on both loaders, checking old
-   settings, terrain/structure persistence, Atlas migration and save/reopen with
-   the final candidate. Preserve originals. The existing formal upgrade runner
-   requires a passed source-worldgen record; where that prerequisite is missing,
-   prepare only the required source fixture, not the whole nightly matrix.
-3. Close the optional-generation release decision. Archipelago has a retained
-   strict smooth-join failure; whole-ring increased-structure balance is unproven.
-   Recommendation: explicitly disclose these optional-feature limitations and
-   defer further tuning. This recommendation is not yet owner acceptance and
-   must not be represented as passing qualification. Default-terrain 26.3
-   worldgen passes on both loaders.
-4. Review the three change-only changelogs and six upload plans for exact versions,
-   loader tags, Fabric API dependencies, source links, licences and hashes.
-   Use the existing authenticated CurseForge route; authorization already exists.
-5. Upload the six jars, record file IDs and moderation state, download and compare
-   hosted hashes, then commit the publication record. A submitted file is not
-   necessarily public until CurseForge finishes moderation.
+The owner explicitly waived saved-world upgrade checks and optional launcher
+bundles, then deferred Modrinth because login is unavailable. Publish six mod
+jars to CurseForge only. Older full nightly sweeps remain waived. Do not restart
+those checks or ask for publication authorization again.
 
-Recommend shipping mod jars first and deferring optional launcher ZIPs. Native
-Windows/macOS package review remains required for those bundles, and is not
-evidence already obtained. The 26.3 metadata equivalence, both packaged server
-smokes and [final Windows launcher regression](https://github.com/Delaser/RingWorld/actions/runs/35510620067)
-pass. The latter is an automated launcher test, not an in-game Windows review.
+Archipelago is hidden from the creation UI at the owner's request; its saved
+settings and generator remain readable. Its failed optional terrain gate stays
+in the backlog. Whole-ring structure-density balance remains unmeasured.
+
+The owner paused publication to correct the Atlas design, then authorized
+completion and CurseForge upload within 60% remaining after both 26.3 checks passed. The shared
+master now uses one sample per block. Client detail is independently Low,
+Medium (default), or High, with a button on the RingWorld Map and the existing
+slash commands. The generation-quality selector is removed. Historical fidelity
+IDs remain readable for saved identities; they no longer choose server sampling.
+Previously staged jars predate this correction and must not be uploaded.
+
+After the targeted checks pass, refresh the six candidates through the existing
+quick artifact/startup gate, stage exact release metadata, review these clear
+change-only changelogs and upload plans, and upload to CurseForge. Record IDs,
+moderation state and downloaded hashes. Preserve historical evidence and never
+upload diagnostic jars. No upgrade or launcher work is in this release scope.
 
 Run heavy work serially, reuse verified caches and completed evidence, keep
-clients hidden/muted, and stop safely at 65% weekly remaining. No new framework,
+clients hidden/muted, and stop safely at 60% weekly remaining. No new framework,
 broad compatibility sweep or unrelated feature work is part of this path.
 
 The 26.3 NeoForge pin is upstream `26.3.0.7-beta`; do not describe it as a

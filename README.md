@@ -105,11 +105,14 @@ Ring dimensions are saved permanently when the Overworld is first created.
 Changing a configuration file later does not resize an existing ring, and an
 ordinary flat Overworld cannot currently be converted into one.
 
-The optional generation panel offers Performance/Balanced/High/Very high
-Atlas detail, a Vanilla or Archipelago layout, one continuous closed-loop
-river, and moderately increased built-in structures. Vanilla, Balanced and
-both toggles Off remain the defaults. These choices are saved permanently with
-the world; see the [technical guide](docs/OPTIONAL_WORLD_GENERATION.md).
+The optional generation panel offers a continuous ring river and increased
+built-in structures, both Off by default. These choices are saved with the
+world. Archipelago is hidden for this release.
+
+Distant ring detail is a client performance setting: choose Low, Medium or High
+on the RingWorld Map or with `/ringworld lod`. Medium is the default; High uses
+one-block detail. Every level uses the same one-block server Atlas. See the
+[technical guide](docs/OPTIONAL_WORLD_GENERATION.md).
 
 For dedicated-server configuration, commands, backups, and recovery, see the
 [operations guide](docs/OPERATIONS.md).

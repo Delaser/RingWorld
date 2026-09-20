@@ -71,7 +71,7 @@ public final class RingWorldSettings extends SavedData {
         // This constructor is used only when no saved state exists yet.
         RingWorldConfig.validateNewWorldLayout(widthBlocks, circumferenceBlocks, wallHeightBlocks,
                 wallStyle.thicknessBlocks(),
-                generationSettings.atlasFidelity().sampleStepBlocks());
+                RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
         setDirty();
     }
 
@@ -170,13 +170,13 @@ public final class RingWorldSettings extends SavedData {
         RingWorldConfig.validateNewWorldLayout(
                 config.widthBlocks(), config.circumferenceBlocks(), config.wallHeightBlocks(),
                 config.wallStyle().thicknessBlocks(),
-                config.generationSettings().atlasFidelity().sampleStepBlocks());
+                RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
         RingDimensionReport report = RingDimensionReport.evaluate(
                 new RingGeometry(config.widthBlocks(), config.circumferenceBlocks()),
                 config.wallHeightBlocks(), RingDimensionReport.VANILLA_OVERWORLD_BOTTOM_Y,
                 RingDimensionReport.VANILLA_OVERWORLD_TOP_Y_EXCLUSIVE,
                 config.wallStyle().thicknessBlocks(),
-                config.generationSettings().atlasFidelity().sampleStepBlocks());
+                RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
         RingWorldSettings created = new RingWorldSettings(
                 config.widthBlocks(), config.circumferenceBlocks(), world.getSeed(),
                 config.wallHeightBlocks(), (int)RingGeometry.SURFACE_Y,

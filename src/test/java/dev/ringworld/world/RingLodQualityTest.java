@@ -7,6 +7,8 @@ class RingLodQualityTest {
     @Test void exposesOnlyTheThreeAgreedBudgets() {
         assertArrayEquals(new String[]{"low", "medium", "high"},
                 java.util.Arrays.stream(RingLodQuality.values()).map(RingLodQuality::command).toArray(String[]::new));
+        assertEquals(RingLodQuality.LOW, RingLodQuality.HIGH.next());
+        assertEquals(1, RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
         assertEquals(8, RingLodQuality.LOW.sampleStep());
         assertEquals(2, RingLodQuality.MEDIUM.sampleStep());
         assertEquals(1, RingLodQuality.HIGH.sampleStep());
@@ -17,7 +19,7 @@ class RingLodQualityTest {
 
     @Test void displayDownsamplingPreservesAuthorityAndExactCaptureAnchors() {
         var geometry = new RingGeometry(128, 2048);
-        var source = new RingTerrainAtlas(geometry, 123, 1);
+        var source = new RingTerrainAtlas(geometry, 123);
         for (int y=0; y<source.rows(); y++) for (int x=0; x<source.columns(); x++)
             source.putCell(x,y,x % 200, x + y * 2048, (x+y)%16);
         var display = RingLodQuality.MEDIUM.displaySnapshot(source);

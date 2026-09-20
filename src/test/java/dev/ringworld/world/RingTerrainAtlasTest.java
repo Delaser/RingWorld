@@ -21,8 +21,19 @@ class RingTerrainAtlasTest {
     private static final long HASH = 0x1234_5678_9ABC_DEF0L;
 
     @Test
+    void fixedMasterIdentityMatchesQualificationReader() {
+        var legacy = new RingWorldSettings(416, 2048, 155_088_888L, 160, 64, 4, 3);
+        assertEquals("5082858087917131076", Long.toUnsignedString(RingTerrainAtlas.worldHash(legacy)));
+        var current = new RingWorldSettings(256, 16384, -7617918596273893784L, 160, 64, 4,
+                new RingWallStyle(7, RingWallStyle.Palette.fromId(4), RingWallStyle.Pattern.fromId(3), 10, 1),
+                RingWorldGenerationSettings.DEFAULT.withAtlasFidelity(RingAtlasFidelity.VERY_HIGH), 5);
+        assertEquals("3372587833368448249", Long.toUnsignedString(RingTerrainAtlas.worldHash(current)));
+        assertEquals(1, new RingTerrainAtlas(legacy.geometry(), RingTerrainAtlas.worldHash(legacy)).sampleStep());
+    }
+
+    @Test
     void samplesContinuouslyAcrossCircumferenceSeam() {
-        RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         int z = GEOMETRY.minWidthZ() + 4;
         atlas.putBlockSample(4, z, 80, 0x204060);
         atlas.putBlockSample(1_020, z, 80, 0x204060);
@@ -37,7 +48,7 @@ class RingTerrainAtlasTest {
 
     @Test
     void bilinearlyInterpolatesRealHeightAndColour() {
-        RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         int z0 = GEOMETRY.minWidthZ() + 4;
         atlas.putBlockSample(4, z0, 64, 0x000000, 0);
         atlas.putBlockSample(12, z0, 96, 0x804020, 4);
@@ -54,11 +65,11 @@ class RingTerrainAtlasTest {
 
     @Test
     void tileAndDiskRoundTripsPreserveMissingCells(@TempDir Path directory) throws Exception {
-        RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         int z = GEOMETRY.minWidthZ() + 4;
         source.putBlockSample(4, z, 77, 0xABCDEF, 13);
 
-        RingTerrainAtlas tiled = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas tiled = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         assertTrue(tiled.applyTile(0, 0, source.encodeTile(0, 0)));
         assertFalse(tiled.applyTile(0, 0, source.encodeTile(0, 0)));
         assertEquals(1, tiled.presentCount());
@@ -77,7 +88,7 @@ class RingTerrainAtlasTest {
 
     @Test
     void committedRevisionSurvivesDiskAndRejectsRollback(@TempDir Path directory) throws Exception {
-        RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         assertTrue(atlas.commitRevision(4L));
         assertFalse(atlas.commitRevision(4L));
         assertFalse(atlas.commitRevision(3L));
@@ -92,9 +103,9 @@ class RingTerrainAtlasTest {
 
     @Test
     void revisionedTileBatchConvergesIdenticallyOnMultipleClients() throws Exception {
-        RingTerrainAtlas server = new RingTerrainAtlas(GEOMETRY, HASH);
-        RingTerrainAtlas first = new RingTerrainAtlas(GEOMETRY, HASH);
-        RingTerrainAtlas second = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas server = new RingTerrainAtlas(GEOMETRY, HASH, 8);
+        RingTerrainAtlas first = new RingTerrainAtlas(GEOMETRY, HASH, 8);
+        RingTerrainAtlas second = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         int z = GEOMETRY.minWidthZ() + 4;
         server.putBlockSample(4, z, 201, 0xF6D03D);
         server.advanceRevision();
@@ -112,7 +123,7 @@ class RingTerrainAtlasTest {
 
     @Test
     void snapshotIsIndependentFromLaterLiveUpdates() {
-        RingTerrainAtlas live = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas live = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         int z = GEOMETRY.minWidthZ() + 4;
         live.putBlockSample(4, z, 80, 0x123456);
         live.advanceRevision();
@@ -130,7 +141,7 @@ class RingTerrainAtlasTest {
 
     @Test
     void chunkCoverageAdvancesOnlyAfterEveryCellArrives() {
-        RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         int firstZ = GEOMETRY.minWidthZ();
         assertFalse(atlas.isChunkPresent(0, 0));
         for (int z = 4; z < 16; z += 8) {
@@ -144,10 +155,10 @@ class RingTerrainAtlasTest {
 
     @Test
     void incompleteServerTileCannotEraseMoreCompleteClientCache() throws Exception {
-        RingTerrainAtlas cached = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas cached = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         int z = GEOMETRY.minWidthZ() + 4;
         cached.putBlockSample(4, z, 91, 0x123456);
-        RingTerrainAtlas emptyServer = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas emptyServer = new RingTerrainAtlas(GEOMETRY, HASH, 8);
 
         assertFalse(cached.applyTile(0, 0, emptyServer.encodeTile(0, 0)));
 
@@ -158,8 +169,8 @@ class RingTerrainAtlasTest {
 
     @Test
     void tileApplyReportsChangedPresentCells() throws Exception {
-        RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH);
-        RingTerrainAtlas client = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH, 8);
+        RingTerrainAtlas client = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         int z = GEOMETRY.minWidthZ() + 4;
         source.putBlockSample(4, z, 80, 0x112233, 2);
 
@@ -176,7 +187,7 @@ class RingTerrainAtlasTest {
     @Test
     void rejectsOutOfRangeBlockLight() {
         assertThrows(IllegalArgumentException.class,
-                () -> new RingTerrainAtlas(GEOMETRY, HASH)
+                () -> new RingTerrainAtlas(GEOMETRY, HASH, 8)
                         .putCell(0, 0, 70, 0x123456, 16));
     }
 
@@ -287,7 +298,7 @@ class RingTerrainAtlasTest {
             throws Exception {
         Path current = directory.resolve("dimension/data/ringworld/atlas.rwat.gz");
         Path legacy = directory.resolve("data/atlas.rwat.gz");
-        RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         int z = GEOMETRY.minWidthZ() + 4;
         source.putBlockSample(4, z, 88, 0x778899);
         source.save(legacy);
@@ -325,7 +336,7 @@ class RingTerrainAtlasTest {
         Path current = directory.resolve("dimension/data/ringworld/atlas.rwat.gz");
         Path temporary = current.resolveSibling(current.getFileName() + ".tmp");
         Path legacy = directory.resolve("data/atlas.rwat.gz");
-        RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         source.putCell(0, 0, 70, 0x123456);
         source.save(legacy);
         Files.createDirectories(temporary.getParent());
@@ -344,7 +355,7 @@ class RingTerrainAtlasTest {
             throws Exception {
         Path current = directory.resolve("dimension/data/ringworld/atlas.rwat.gz");
         Path legacy = directory.resolve("data/atlas.rwat.gz");
-        RingTerrainAtlas legacyAtlas = new RingTerrainAtlas(GEOMETRY, HASH);
+        RingTerrainAtlas legacyAtlas = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         legacyAtlas.putCell(0, 0, 70, 0x123456);
         legacyAtlas.save(legacy);
         Files.createDirectories(current.getParent());

@@ -25,7 +25,8 @@ class RingWorldCreationUiModelTest {
         RingRenderProfile profile = RingRenderProfile.create(
                 report.geometry(), 28 * 16.0);
 
-        assertTrue(report.isValid(), name + ": " + report.errors());
+        assertEquals((long)circumference * width <= RingDimensionReport.MAX_ATLAS_CELLS,
+                report.isValid(), name + ": " + report.errors());
         assertTrue(report.canonicalChunkCount() > 0);
         assertTrue(report.atlasCellCount() > 0);
         assertTrue(report.estimatedAtlasBytes() > 0);
@@ -134,7 +135,7 @@ class RingWorldCreationUiModelTest {
         assertTrue(validation.metricLines().stream().anyMatch(
                 line -> line.equals("Opposite width: 2atan(256÷10,430) = 2.81°")));
         assertTrue(validation.metricLines().stream().anyMatch(line -> line.contains("1,024×16")));
-        assertTrue(validation.metricLines().stream().anyMatch(line -> line.contains("2,048×32")));
+        assertTrue(validation.metricLines().stream().anyMatch(line -> line.contains("16,384×256")));
         assertTrue(validation.metricLines().stream().anyMatch(
                 line -> line.equals("Heights: rim top Y95; clouds Y104")));
         String confirmation = RingWorldCreationUiModel.confirmationCopy(validation.report(), true);
@@ -146,9 +147,9 @@ class RingWorldCreationUiModelTest {
                 RingWorldCreationUiModel.validate("32768", "128", "160");
         assertTrue(visualWarningOnly.canApply());
         assertFalse(visualWarningOnly.report().warnings().isEmpty());
-        assertFalse(visualWarningOnly.report().hasHighGenerationCost());
+        assertTrue(visualWarningOnly.report().hasHighGenerationCost());
         assertTrue(visualWarningOnly.metricLines().stream()
-                .anyMatch(line -> line.startsWith("Pregen:")));
+                .anyMatch(line -> line.startsWith("High cost:")));
     }
 
     @Test
@@ -162,13 +163,12 @@ class RingWorldCreationUiModelTest {
     }
 
     @Test
-    void creationAdmissionUsesSelectedAtlasFidelityForTheHardCellLimit() {
-        assertDoesNotThrow(() -> RingWorldConfig.validateNewWorldLayout(
-                1_040, 65_536, 160, 5, RingAtlasFidelity.BALANCED.sampleStepBlocks()));
-        assertThrows(IllegalArgumentException.class,
-                () -> RingWorldConfig.validateNewWorldLayout(
-                        1_040, 65_536, 160, 5,
-                        RingAtlasFidelity.VERY_HIGH.sampleStepBlocks()));
+    void creationAdmissionAlwaysBudgetsTheOneBlockMaster() {
+        assertTrue(RingWorldCreationUiModel.validate("32768", "512", "160").canApply());
+        for (RingAtlasFidelity legacy : RingAtlasFidelity.values()) {
+            assertFalse(RingWorldCreationUiModel.validate("32768", "528", "160",
+                    RingWallStyle.DEFAULT, RingWorldGenerationSettings.DEFAULT.withAtlasFidelity(legacy)).canApply());
+        }
     }
 
     @Test

@@ -143,7 +143,7 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
         }
         validateNewWorldLayout(widthBlocks, circumferenceBlocks, wallHeightBlocks,
                 wallStyle.thicknessBlocks(),
-                generationSettings.atlasFidelity().sampleStepBlocks());
+                RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
         boolean effectiveMonumentRequest = effectiveOceanMonumentRequest(
                 new RingGeometry(widthBlocks, circumferenceBlocks), requestOceanMonument);
         RingWorldConfig current = load();

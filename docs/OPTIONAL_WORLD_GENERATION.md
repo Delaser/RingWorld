@@ -1,38 +1,32 @@
 # Optional world generation
 
-RingWorld's new-world screen owns four immutable generation choices. They are
-saved with the Overworld, included in its fingerprint and Atlas identity, sent
-to every client, and applied identically by Fabric and NeoForge. Existing
-worlds migrate to the former defaults.
+The new-world generation panel exposes Continuous ring river and More structures,
+both Off by default. These choices are saved with the world and shared by both
+loaders. Archipelago remains implemented but is hidden for this release.
 
-| Setting | Choices | Default | Effect |
-| --- | --- | --- | --- |
-| Ring detail | Performance / Balanced / High / Very high | Balanced | Coordinates authoritative Atlas sampling, GPU texture resolution, and terrain-height mesh resolution. |
-| World layout | Vanilla / Archipelago | Vanilla | Retains ordinary periodic Minecraft terrain or applies a seed-derived ocean/island macro field. |
-| Continuous ring river | Off / On | Off | Carves and biomes one closed, navigable water channel around the circumference. |
-| More structures | Off / On | Off | Adds a deterministic second candidate grid for built-in random-spread Overworld structure sets. |
+## Atlas detail
 
-Climate Tour is deliberately not implemented. It was removed from the first
-scope at owner direction; no hidden enum value or partial climate-sector code
-is retained.
+The server captures one sample per block for every world. World creation shows
+the source size but offers no quality selector. The 16,777,216-cell limit applies
+to this fixed source; reduce Around or Across if the ring exceeds it.
 
-## Atlas fidelity
+Each player independently selects Low, Medium or High on the RingWorld Map or
+with `/ringworld lod`. Medium is the default and reset target. Changing detail
+does not alter generation settings or regenerate the server Atlas.
 
-One server-owned profile defines the source data. A client never fabricates
-detail beyond that source.
-
-| Profile | Source step | Maximum texture | Height-mesh step |
+| Client detail | Display sample step | Maximum texture | Height-mesh step |
 | --- | ---: | ---: | ---: |
-| Performance | 16 blocks | 2,048×512 | 16 blocks |
-| Balanced | 8 blocks | 4,096×1,024 | 8 blocks |
-| High | 4 blocks | 8,192×1,024 | 4 blocks |
-| Very high | 2 blocks | 16,384×1,024 | 4 blocks |
+| Low | 8 blocks | 4,096×1,024 | 8 blocks |
+| Medium | 2 blocks | 16,384×1,024 | 4 blocks |
+| High | 1 block | 32,768×2,048 | 1 block |
 
-The creation screen derives cell count, raw Atlas storage, GPU dimensions and
-mesh vertices from the selected dimensions before a world is created. The
-existing 16-million-cell hard limit still rejects unsafe combinations before
-allocation. Changing profile changes the saved fingerprint and cache hash, so
-stale lower-resolution data cannot be silently reused.
+Hardware texture limits still apply. Legacy serialized fidelity IDs are retained
+as metadata; they no longer select production sampling or client quality.
+
+## Historical fidelity benchmark
+
+The following measurements describe the former selectable server profiles,
+not the current fixed one-block source.
 
 A repeatable local benchmark for the default 16,384×256 ring measured these
 deterministic source sizes on 2026-08-31. Timings are a single development-Mac

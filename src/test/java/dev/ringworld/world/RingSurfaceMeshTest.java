@@ -74,7 +74,7 @@ class RingSurfaceMeshTest {
     @Test
     void rimmedMeshAddsInnerOuterAndTopFacesAtEveryAtlasStage() {
         RingGeometry geometry = new RingGeometry(128, 2_048);
-        RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, HASH);
+        RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, HASH, 8);
         RingSurfaceMesh.Mesh withoutReturns = RingSurfaceMesh.build(
                 geometry, atlas, false, 64.0);
         RingSurfaceMesh.Mesh withReturns = RingSurfaceMesh.build(
@@ -159,14 +159,14 @@ class RingSurfaceMeshTest {
     }
 
     private static RingTerrainAtlas flatCompleteAtlas(RingGeometry geometry, int height) {
-        var atlas = new RingTerrainAtlas(geometry, HASH);
+        var atlas = new RingTerrainAtlas(geometry, HASH, 8);
         for (int row = 0; row < atlas.rows(); row++) for (int col = 0; col < atlas.columns(); col++)
             atlas.putCell(col, row, height, 0x336699);
         return atlas;
     }
 
     private static RingTerrainAtlas variedCompleteAtlas(RingGeometry geometry) {
-        RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, HASH);
+        RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, HASH, 8);
         for (int row = 0; row < atlas.rows(); row++) {
             for (int column = 0; column < atlas.columns(); column++) {
                 int height = 48 + Math.floorMod(column * 11 + row * 17, 97);

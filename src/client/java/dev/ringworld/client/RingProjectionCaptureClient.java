@@ -244,9 +244,7 @@ public final class RingProjectionCaptureClient {
             capturePitch = 0.0F;
             RingWorldMod.LOGGER.info("[projection-capture] tangent capture armed");
         } else if (stage == 1) {
-            RingRenderProfile profile = RingRenderProfile.create(
-                    geometry, projectionViewDistanceChunks() * 16.0,
-                    ClientRingState.generationSettings().atlasFidelity());
+            RingRenderProfile profile = RingClientLodTuning.profile(geometry, projectionViewDistanceChunks() * 16.0);
             double targetDistance = profile.effectiveViewDistanceBlocks();
             double targetHeight = atlas.sample(
                     client.player.getX() + targetDistance,
