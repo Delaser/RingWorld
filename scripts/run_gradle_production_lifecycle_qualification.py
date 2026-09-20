@@ -16,6 +16,7 @@ import sys
 from typing import Any, Mapping, Sequence
 
 from minecraft_atlas_recovery_persistence import _NbtReader, parse_persisted_ring_settings
+from minecraft_atlas_recovery_qualification import atlas_world_hash
 from minecraft_qualification_executor import (
     QualificationExecutionError, QualificationLock, create_contained_directories,
     execute_command, new_run_id, write_terminal_report,
@@ -41,7 +42,7 @@ MAX_ATLAS_COMPRESSED_BYTES = 32 * 1024 * 1024
 MAX_ATLAS_UNCOMPRESSED_BYTES = 64 * 1024 * 1024
 MAX_LEVEL_UNCOMPRESSED_BYTES = 16 * 1024 * 1024
 ATLAS_MAGIC = 0x52574154
-ATLAS_VERSION = 6
+ATLAS_VERSION = 9
 
 
 class GradleProductionLifecycleError(QualificationExecutionError):
@@ -152,11 +153,13 @@ def _atlas_observation(path: Path, width: int, circumference: int) -> dict[str, 
     if step <= 0 or 16 % step != 0 or columns != circumference // step or rows != width // step:
         raise GradleProductionLifecycleError("production Atlas sampling geometry is invalid")
     cells = columns * rows
-    if len(data) != header_size + cells * 7:
+    if len(data) != header_size + cells * 12:
         raise GradleProductionLifecycleError("production Atlas payload size is invalid")
-    flags = data[header_size::7]
+    flags = data[header_size::12]
     if len(flags) != cells or any(flag not in (0, 1) for flag in flags):
         raise GradleProductionLifecycleError("production Atlas presence map is invalid")
+    if any(value > 15 for value in data[header_size + 7::12]):
+        raise GradleProductionLifecycleError("production Atlas block-light map is invalid")
     present = sum(flag == 1 for flag in flags)
     if present != cells:
         raise GradleProductionLifecycleError(
@@ -196,9 +199,11 @@ def _world_observation(root: Path) -> dict[str, Any]:
     settings = parse_persisted_ring_settings(settings_path.read_bytes(), settings_path)
     if (settings.circumference_blocks, settings.width_blocks) != (16_384, 256):
         raise GradleProductionLifecycleError("production source must use the 16384x256 layout")
-    if settings.format_version != 3 or settings.terrain_noise_mapping != 4:
-        raise GradleProductionLifecycleError("production source must use format 3 and mapping 4")
+    if settings.format_version != 5 or settings.terrain_noise_mapping != 4:
+        raise GradleProductionLifecycleError("production source must use format 5 and mapping 4")
     atlas = _atlas_observation(atlas_path, settings.width_blocks, settings.circumference_blocks)
+    if atlas["world_hash"] != atlas_world_hash(settings):
+        raise GradleProductionLifecycleError("production Atlas identity does not match saved settings")
     return {
         "level_dat_sha256": _sha256(level),
         "minecraft_version": version_name,

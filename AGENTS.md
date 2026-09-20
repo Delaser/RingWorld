@@ -263,10 +263,19 @@ collector's surface-hit flag, SkyRenderer's shared RenderPass/DynamicGpuData ABI
 and the shared player-position path used by movement and teleport acknowledgements.
 The 26.3 client fixtures must not send a second position packet within one tick.
 Both loaders' disposable multiplayer/raid fixtures set `white-list=false`.
-Both loaders build with 440 cases and pass the full Atlas UI fixture. Fabric
-also passes map/compass, curved objects, layout switching, the full two-client
-multiplayer verifier and raid persistence/victory. Large-ring rendering/lifecycle
-and remaining NeoForge runtime/release gates are still pending.
+Both loaders build with 440 cases and pass the full Atlas UI fixture and
+layout switching. Both loaders pass map/compass persistence, curved
+objects, the full two-client multiplayer verifier, raid persistence/victory,
+large-ring lifecycle, natural seam/both rims and noon/dusk/night/rain rendering.
+The copied review world has an old wall panel over the default projection pose;
+test-only `ringworld.projectionCameraX=3072` provides an unobstructed upward view.
+NeoForge fresh worldgen and all 19 creation-screen captures pass. Final source
+regression passes 437 cases per loader on 26.1 and 26.2; Python passes 430 with
+two expected skips. Qualification readers now retain format-5 wall/generation
+fields, fingerprint v4 and Atlas-9 twelve-byte cells, with real Java hash parity.
+Development runtime passes must not be relabelled as frozen qualification.
+Fresh NeoForge configs can emit a nonfatal NightConfig temporary-file watcher
+exception; retain this and the measured GPU-upload/frame stalls as follow-ups.
 NeoForge 26.3.0.7-beta and ModDevGradle 2.0.147 are now pinned in a pending two-cell
 manifest. Keep public support ranges unchanged until qualification passes.
 For the owner's September 20 session, pause at **80% usage remaining**; this

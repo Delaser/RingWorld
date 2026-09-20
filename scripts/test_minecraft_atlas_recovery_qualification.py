@@ -38,7 +38,7 @@ class AtlasRecoveryQualificationTest(unittest.TestCase):
         runtime = root / "run" / "nightly" / "03-atlas-prewarm-recovery" / "runtime"
         world, evidence = runtime / "world", root / "evidence" / "nightly" / "03-atlas-prewarm-recovery"
         settings_path = world / "dimensions" / "minecraft" / "overworld" / "data" / "ringworld" / "settings.dat"
-        settings = PersistedRingSettingsObservation(416, 2048, 12345, 160, 64, 4, 3, settings_path, HASH)
+        settings = PersistedRingSettingsObservation(416, 2048, 12345, 160, 64, 4, 5, settings_path, HASH)
         atlas_path = settings_path.with_name("terrain-atlas.rwat.gz")
         world_hash = atlas_world_hash(settings)
         layout = layout_fingerprint(settings)

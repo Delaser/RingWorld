@@ -49,9 +49,9 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
         world.write_bytes(b"world")
         loader = "neoforge" if command.argv[-1].startswith(":neoforge:") else "fabric"
         acknowledgement = (
-            "RingWorld settings acknowledged by AtlasUiTester on NeoForge: format 3"
+            "RingWorld settings acknowledged by AtlasUiTester on NeoForge: format 5"
             if loader == "neoforge" else
-            "RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 3"
+            "RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 5"
         )
         (run_root / "logs/latest.log").write_text(
             "\n".join((*HANDSHAKE_MARKERS[:2], acknowledgement,
@@ -75,7 +75,7 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
         self.assertEqual(result["verdict"], "PASS")
         self.assertEqual(len(result["captures"]), 11)
         self.assertTrue(result["claims"]["revisioned_edit_verified"])
-        self.assertTrue(result["claims"]["format3_mapping4_handshake"])
+        self.assertTrue(result["claims"]["format5_mapping4_handshake"])
         self.assertTrue(result["claims"]["normal_disconnect_cleared_client_state"])
         terminal = (
             self.root / "dist/qualification/ringworld/26.1/fabric" / RUN_ID /
@@ -118,7 +118,7 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
             log = paths.run_directory / "run-atlas-ui/logs/latest.log"
             log.write_text(
                 "\n".join((
-                    "RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 3",
+                    "RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 5",
                     HANDSHAKE_MARKERS[1], HANDSHAKE_MARKERS[0],
                     HANDSHAKE_MARKERS[2], PASS_MARKER,
                 )) + "\n", encoding="utf-8"

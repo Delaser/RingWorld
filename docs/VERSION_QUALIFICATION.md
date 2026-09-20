@@ -19,12 +19,17 @@ Manifests remain immutable qualification inputs; current host release status
 is recorded separately in the publication record.
 Neither adding a manifest nor compiling changes public support claims.
 
-26.3 development checkpoint: Fabric builds and passes dedicated worldgen plus
-menu/preview checks; full qualification remains pending. The `config/minecraft-version-matrix-26.3.json` pins the pending Fabric
-source-build inputs. Its `pending_loaders` note records the missing NeoForge
-26.3 runtime; there is deliberately no invented NeoForge cell. The complete
-dual-loader qualification runner remains unavailable until that cell can be
-pinned. See [26.3 port status](26_3_PORT_STATUS.md).
+26.3 development checkpoint: both loaders build with 440 passing Java cases
+and pass the full Atlas UI fixture. The two pending cells in
+`config/minecraft-version-matrix-26.3.json` now pin Fabric and the published
+NeoForge 26.3.0.7-beta runtime with ModDevGradle 2.0.147. The complete manifest
+can plan dual-loader qualification; development runtime passes do not qualify
+its frozen candidates. Current qualification readers target settings format 5,
+Atlas format 9 (twelve bytes per cell), and fingerprint version 4. They decode
+persisted wall/generation options and preserve those fields across reloads and
+forward upgrades; the production reader also binds the Atlas hash to those
+settings. Older saved option omissions use the runtime codec defaults.
+See [26.3 port status](26_3_PORT_STATUS.md).
 
 ## Repeatable procedure
 

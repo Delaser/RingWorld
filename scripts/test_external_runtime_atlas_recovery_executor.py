@@ -85,7 +85,7 @@ def nbt_string(value: str) -> bytes:
 def settings_bytes(seed: int = 12345) -> bytes:
     entries = (("width", 3, 416), ("circumference", 3, 2048), ("seed", 4, seed),
                ("wallHeight", 3, 160), ("surfaceReferenceY", 3, 64),
-               ("terrainNoiseMapping", 3, 4), ("format", 3, 3))
+               ("terrainNoiseMapping", 3, 4), ("format", 3, 5))
     data = bytearray(b"\x0a" + nbt_string(""))
     data.extend(b"\x0a" + nbt_string("data"))
     for name, kind, value in entries:
@@ -102,7 +102,7 @@ def atlas_bytes(world_hash: int, *, complete: bool, revision: int) -> bytes:
                                    ATLAS_SAMPLE_STEP_BLOCKS, EXPECTED_ATLAS_COLUMNS, EXPECTED_ATLAS_ROWS, revision))
     for index in range(cells):
         present = complete or index in {0, 1, EXPECTED_ATLAS_COLUMNS, EXPECTED_ATLAS_COLUMNS + 1}
-        payload.extend(bytes((1 if present else 0,)) + struct.pack(">hI", 64, 0x00AA00))
+        payload.extend(bytes((1 if present else 0,)) + struct.pack(">hIBI", 64, 0x00AA00, 0, 0x334455))
     return gzip.compress(bytes(payload), mtime=0)
 
 

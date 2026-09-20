@@ -13,14 +13,15 @@ from pathlib import Path
 import re
 from typing import Any, Mapping
 
-from minecraft_atlas_recovery_qualification import PersistedRingSettingsObservation
+from minecraft_atlas_recovery_qualification import (
+    PersistedRingSettingsObservation, SETTINGS_FORMAT_VERSION,
+)
 from minecraft_qualification_model import InvocationError
 from run_worldgen_structure_matrix import REQUIRED_MAJOR_FAMILIES, validate_aggregate, validate_reload
 
 
 SHA256 = re.compile(r"^[0-9a-f]{64}$")
 FIXTURE_NAME = "02-worldgen-seam-structures"
-SETTINGS_FORMAT_VERSION = 3
 TERRAIN_NOISE_MAPPING = 4
 WALL_HEIGHT_BLOCKS = 160
 # ``crossingStarts`` in the parsed matrix record, not a separate log line,
@@ -223,6 +224,10 @@ def validate_worldgen_qualification(canonical_cell: Mapping[str, Any], identity:
         value.width_blocks, value.circumference_blocks, value.generator_seed,
         value.wall_height_blocks, value.surface_reference_y,
         value.terrain_noise_mapping, value.format_version, value.settings_path,
+        value.wall_thickness, value.wall_palette, value.wall_pattern,
+        value.wall_decay, value.wall_format, value.atlas_fidelity,
+        value.world_layout, value.continuous_river, value.more_structures,
+        value.generation_format,
     )
     if stable_settings(first.settings) != stable_settings(resumed.settings):
         raise InvocationError("production reload must retain stable persisted settings in the same world")

@@ -22,15 +22,14 @@ DECIMAL_ID = re.compile(r"^(0|[1-9][0-9]*)$")
 SAFE_MARKER = re.compile(r"^[a-z][a-z0-9-]{0,95}$")
 
 ATLAS_REPORT_SCHEMA = 2
-ATLAS_FORMAT_VERSION = 6
+ATLAS_FORMAT_VERSION = 9
 TERRAIN_NOISE_MAPPING = 4
 CIRCUMFERENCE_BLOCKS = 2_048
 WIDTH_BLOCKS = 416
 WALL_HEIGHT_BLOCKS = 160
 SURFACE_REFERENCE_Y = 64
-SETTINGS_FORMAT_VERSION = 3
-RIM_THICKNESS = 5
-RIM_STYLE_VERSION = 1
+SETTINGS_FORMAT_VERSION = 5
+RIM_STYLE_VERSION = 3
 ATLAS_SAMPLE_STEP_BLOCKS = 8
 EXPECTED_ATLAS_COLUMNS = CIRCUMFERENCE_BLOCKS // ATLAS_SAMPLE_STEP_BLOCKS
 EXPECTED_ATLAS_ROWS = WIDTH_BLOCKS // ATLAS_SAMPLE_STEP_BLOCKS
@@ -62,11 +61,21 @@ class PersistedRingSettingsObservation:
     format_version: int
     settings_path: Path
     settings_sha256: str
+    wall_thickness: int = 5
+    wall_palette: int = 0
+    wall_pattern: int = 0
+    wall_decay: int = 0
+    wall_format: int = 1
+    atlas_fidelity: int = 1
+    world_layout: int = 0
+    continuous_river: bool = False
+    more_structures: bool = False
+    generation_format: int = 1
 
 
 @dataclass(frozen=True)
 class AtlasCacheObservation:
-    """Fields independently decoded from one Atlas v6 header and payload."""
+    """Fields independently decoded from one Atlas v9 header and payload."""
 
     format_version: int
     world_hash: str
@@ -217,14 +226,23 @@ def layout_fingerprint(settings: PersistedRingSettingsObservation) -> str:
     """Reproduce ``RingLayoutFingerprint`` from independently decoded fields."""
     value = (0x9E3779B97F4A7C15 ^ (settings.generator_seed & MASK_64)) & MASK_64
     for component in (
-        2,
+        4,
         settings.width_blocks & 0xFFFFFFFF,
         (settings.circumference_blocks & 0xFFFFFFFF) << 1,
         (settings.wall_height_blocks & 0xFFFFFFFF) << 17,
         (settings.surface_reference_y & 0xFFFFFFFF) << 33,
         (settings.terrain_noise_mapping & 0xFFFFFFFF) << 49,
         (settings.format_version & 0xFFFFFFFF) << 41,
-        RIM_THICKNESS << 9,
+        settings.wall_thickness << 9,
+        settings.wall_palette << 13,
+        settings.wall_pattern << 21,
+        settings.wall_decay << 29,
+        settings.wall_format << 37,
+        settings.atlas_fidelity << 11,
+        settings.world_layout << 19,
+        0x52A17E2D if settings.continuous_river else 0,
+        0x6D31904B if settings.more_structures else 0,
+        settings.generation_format << 45,
     ):
         value = _mix64(value ^ component)
     return str(_mix64(value ^ (RIM_STYLE_VERSION << 25)))
@@ -234,7 +252,10 @@ def atlas_world_hash(settings: PersistedRingSettingsObservation) -> str:
     """Reproduce ``RingTerrainAtlas.worldHash`` for the persisted layout."""
     value = int(layout_fingerprint(settings))
     value = _mix64(value ^ (ATLAS_FORMAT_VERSION << 32))
-    return str(_mix64(value ^ ATLAS_SAMPLE_STEP_BLOCKS))
+    step = {0: 16, 1: 8, 2: 4, 3: 2}.get(settings.atlas_fidelity)
+    if step is None:
+        raise InvocationError("saved settings have an unknown Atlas fidelity")
+    return str(_mix64(value ^ step))
 
 
 def _fixed_identity(world_hash: object, layout: object, mapping: object, circumference: object, width: object, label: str) -> tuple[str, str, int, int, int]:
@@ -266,6 +287,8 @@ def _settings(value: object, world_root: Path) -> PersistedRingSettingsObservati
     if not isinstance(value.generator_seed, int) or isinstance(value.generator_seed, bool) \
             or not -(1 << 63) <= value.generator_seed < (1 << 63):
         raise InvocationError("saved settings generator seed must be a signed 64-bit integer")
+    if value.atlas_fidelity != 1:
+        raise InvocationError("Atlas recovery fixture requires Balanced eight-block sampling")
     path = _path(value.settings_path, "saved settings path")
     expected = world_root / "dimensions" / "minecraft" / "overworld" / "data" / "ringworld" / "settings.dat"
     if path != expected:

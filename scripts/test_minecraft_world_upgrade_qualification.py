@@ -62,6 +62,13 @@ class ForwardUpgradeQualificationTest(unittest.TestCase):
     def test_rejects_downgrade_settings_or_resume_drift(self):
         with tempfile.TemporaryDirectory() as directory:
             identity, evidence = self.valid(Path(directory))
+            for field, value in (("wall_pattern", 6), ("wall_decay", 25),
+                                 ("atlas_fidelity", 3), ("world_layout", 1),
+                                 ("continuous_river", True), ("more_structures", True)):
+                with self.subTest(field=field), self.assertRaises(InvocationError):
+                    validate_forward_world_upgrade(self.source, self.target, identity,
+                            replace(evidence, target_settings=replace(
+                                    evidence.target_settings, **{field: value})))
             with self.assertRaises(InvocationError):
                 validate_forward_world_upgrade(self.target, self.source, identity, evidence)
             with self.assertRaises(InvocationError):

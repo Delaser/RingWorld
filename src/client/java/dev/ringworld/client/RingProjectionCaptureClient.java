@@ -199,7 +199,15 @@ public final class RingProjectionCaptureClient {
         }
         int viewDistance = projectionViewDistanceChunks();
         CaptureEnvironment environment = selectedEnvironment();
-        double targetX = geometry.circumferenceBlocks() / 4.0;
+        // Copied review worlds can contain old sample structures at the default pose.
+        double targetX = Double.parseDouble(System.getProperty(
+                "ringworld.projectionCameraX",
+                Double.toString(geometry.circumferenceBlocks() / 4.0)));
+        if (!Double.isFinite(targetX) || targetX < 0.0
+                || targetX >= geometry.circumferenceBlocks()) {
+            finish(client, false, "projectionCameraX must be inside the canonical circumference");
+            return false;
+        }
         double targetZ = 0.5;
         if (!captureSetupRequested) {
             client.options.renderDistance().set(viewDistance);

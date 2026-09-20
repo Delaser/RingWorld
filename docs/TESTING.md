@@ -1753,6 +1753,11 @@ After the atlas is complete, the runner requests the deterministic,
 server-authoritative centered spectator pose `(C/4, 120, 0.5)` and waits for
 the surrounding sections to render. It does not inherit a stale saved player
 position, and it moves only the disposable copy.
+For a copied world with a structure obstructing that pose, the test-only JVM
+property `ringworld.projectionCameraX` selects another canonical X coordinate
+(`0 <= X < C`); Y, Z, environment, settling and verification remain unchanged.
+The September 20 26.3 follow-up uses X=3072 because the retained wall-study
+panels occupy the default X=4096 camera's upward view.
 
 `ringProjectionViewDistanceChunks` defaults to 16 and is clamped to Minecraft's
 supported 2–32 test range. `ringProjectionEnvironment` accepts `noon` (the

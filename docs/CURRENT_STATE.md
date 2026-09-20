@@ -8,11 +8,17 @@ map/compass persistence, curved objects, layout switching, the complete
 multiplayer verifier with all three processes exiting 0, and raid save/reload/
 victory assertions. Required 26.3 projectile, sky and player-movement hooks are
 adapted; the fixture no longer sends duplicate position packets. Python checks
-pass (427 passed, two expected platform skips). NeoForge 26.3.0.7-beta and
+pass (430 passed, two expected platform skips). NeoForge 26.3.0.7-beta and
 ModDevGradle 2.0.147 are pinned in a structurally valid two-cell manifest.
-Large-ring client checks require a compatible complete Atlas; a copied 26.2
-world is being prewarmed after its obsolete sampling cache was rejected.
-NeoForge dedicated/network and final release qualification remain.
+The copied 26.2 production world now has a complete current-sampling Atlas.
+Both loaders pass its lifecycle, natural seam/both-rim fixture and all four
+projection environments; NeoForge also passes full multiplayer and raid
+save/reload/victory. Four fresh NeoForge launches reported a nonfatal NightConfig
+temporary-file watcher exception; all affected runtime fixtures still passed. NeoForge
+menu/worldgen/layout checks and the final 26.1/26.2 source regression now pass
+(437 cases per loader/version). Qualification readers now preserve current
+settings, Atlas data and identity, with parity against real Java output.
+Clean frozen-candidate qualification and publication are next.
 See [26.3 port status](26_3_PORT_STATUS.md); the
 [September 15 errors](26_3_TEST_ERRORS_2026-09-15.md) remain historical evidence.
 No new release files have been uploaded.

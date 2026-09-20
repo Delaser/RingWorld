@@ -81,9 +81,9 @@ def _command(
 
 def _server_ack_marker(loader: object) -> str:
     if loader == "fabric":
-        return "RingWorld settings acknowledged by AtlasUiTester: 2048x128, format "
+        return "RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 5"
     if loader == "neoforge":
-        return "RingWorld settings acknowledged by AtlasUiTester on NeoForge: format "
+        return "RingWorld settings acknowledged by AtlasUiTester on NeoForge: format 5"
     raise GradleAtlasUiError("unsupported loader")
 
 
@@ -164,7 +164,7 @@ def _payload(
             "integrated_server": verdict is Verdict.PASS,
             "atlas_completed": verdict is Verdict.PASS,
             "revisioned_edit_verified": verdict is Verdict.PASS,
-            "format3_mapping4_handshake": verdict is Verdict.PASS,
+            "format5_mapping4_handshake": verdict is Verdict.PASS,
             "normal_disconnect_cleared_client_state": verdict is Verdict.PASS,
             "production_launcher": False,
             "frozen_candidate_jar": False,
@@ -183,7 +183,7 @@ def _handshake_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
         "actual_minecraft_client": payload["claims"]["actual_minecraft_client"],
         "exact_patch_dependencies": payload["claims"]["exact_patch_dependencies"],
         "integrated_server": payload["claims"]["integrated_server"],
-        "format3_mapping4_handshake": payload["claims"]["format3_mapping4_handshake"],
+        "format5_mapping4_handshake": payload["claims"]["format5_mapping4_handshake"],
         "resources_and_render_pipeline_exercised": payload["claims"]["actual_minecraft_client"],
         "normal_disconnect_cleared_client_state": payload["claims"]["normal_disconnect_cleared_client_state"],
         "production_launcher": False,

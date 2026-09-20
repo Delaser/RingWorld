@@ -58,7 +58,7 @@ def nbt_string(value: str) -> bytes:
 def settings_bytes(width: int, circumference: int, seed: int) -> bytes:
     entries = (("width", 3, width), ("circumference", 3, circumference), ("seed", 4, seed),
                ("wallHeight", 3, 160), ("surfaceReferenceY", 3, 64),
-               ("terrainNoiseMapping", 3, 4), ("format", 3, 3))
+               ("terrainNoiseMapping", 3, 4), ("format", 3, 5))
     data = bytearray(b"\x0a" + nbt_string("") + b"\x0a" + nbt_string("data"))
     for name, kind, value in entries:
         data.append(kind)

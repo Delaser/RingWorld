@@ -130,21 +130,41 @@ def parse_persisted_ring_settings(raw: bytes, path: Path) -> PersistedRingSettin
     if not isinstance(values, dict):
         raise InvocationError("saved settings NBT has no data compound")
 
-    def integer(name: str, *, default: int | None = None) -> int:
-        value = values.get(name, default)
+    def integer(name: str, *, default: int | None = None, fields=values) -> int:
+        value = fields.get(name, default)
         if not isinstance(value, int) or isinstance(value, bool):
             raise InvocationError(f"saved settings field {name} is missing or not an integer")
+        return value
+
+    wall = values.get("wallStyle", {
+        "thickness": 5, "palette": 0, "pattern": 0, "decay": 0, "format": 1})
+    generation = values.get("generation", {
+        "atlas_fidelity": 1, "layout": 0, "continuous_river": 0,
+        "more_structures": 0, "format": 1})
+    if not isinstance(wall, dict) or not isinstance(generation, dict):
+        raise InvocationError("saved wallStyle/generation must be compounds")
+    def bounded(fields, name, minimum, maximum):
+        value = integer(name, fields=fields)
+        if not minimum <= value <= maximum:
+            raise InvocationError(f"saved settings field {name} is out of range")
         return value
 
     return PersistedRingSettingsObservation(
         integer("width"), integer("circumference"), integer("seed"), integer("wallHeight"),
         integer("surfaceReferenceY", default=64), integer("terrainNoiseMapping", default=1),
         integer("format"), path, hashlib.sha256(raw).hexdigest(),
+        bounded(wall, "thickness", 1, 32), bounded(wall, "palette", 0, 9),
+        bounded(wall, "pattern", 0, 6), bounded(wall, "decay", 0, 100),
+        bounded(wall, "format", 1, 1), bounded(generation, "atlas_fidelity", 0, 3),
+        bounded(generation, "layout", 0, 1),
+        bool(bounded(generation, "continuous_river", 0, 1)),
+        bool(bounded(generation, "more_structures", 0, 1)),
+        bounded(generation, "format", 1, 1),
     )
 
 
 def parse_ring_terrain_atlas(raw: bytes, path: Path) -> AtlasCacheObservation:
-    """Decode an entire Atlas-v6 file and independently count cells/chunks."""
+    """Decode an entire Atlas-v9 file and independently count cells/chunks."""
     data = _decompress(
         raw, compressed_limit=MAX_ATLAS_COMPRESSED_BYTES,
         uncompressed_limit=MAX_ATLAS_UNCOMPRESSED_BYTES, label="terrain Atlas",
@@ -161,7 +181,7 @@ def parse_ring_terrain_atlas(raw: bytes, path: Path) -> AtlasCacheObservation:
     if (width, circumference, sample_step, columns, rows) != (
             416, 2_048, ATLAS_SAMPLE_STEP_BLOCKS, EXPECTED_ATLAS_COLUMNS, EXPECTED_ATLAS_ROWS):
         raise InvocationError("terrain Atlas has the wrong safe-small geometry")
-    expected_size = header_size + columns * rows * 7
+    expected_size = header_size + columns * rows * 12
     if len(data) != expected_size:
         raise InvocationError("terrain Atlas payload is truncated or has trailing bytes")
     present: list[bool] = []
@@ -171,7 +191,9 @@ def parse_ring_terrain_atlas(raw: bytes, path: Path) -> AtlasCacheObservation:
         if flag not in (0, 1):
             raise InvocationError("terrain Atlas has an invalid presence flag")
         present.append(flag == 1)
-        offset += 7  # boolean + signed height short + RGB int
+        if data[offset + 7] > 15:
+            raise InvocationError("terrain Atlas has an invalid block-light value")
+        offset += 12  # presence + height + top RGB + block light + side RGB
     present_cells = sum(present)
     present_chunks = 0
     samples_per_chunk = 16 // sample_step

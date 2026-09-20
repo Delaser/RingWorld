@@ -37,7 +37,7 @@ class GradleProductionLifecycleQualificationTest(unittest.TestCase):
             columns, rows = circumference // step, width // step
             header = struct.pack(">IIQIIIIIQ", ATLAS_MAGIC, ATLAS_VERSION, 7,
                                  width, circumference, step, columns, rows, 3)
-            cell = b"\x01" + struct.pack(">hI", 64, 0x336699)
+            cell = b"\x01" + struct.pack(">hIBI", 64, 0x336699, 0, 0x334455)
             path.write_bytes(gzip.compress(header + cell * (columns * rows)))
             observation = _atlas_observation(path, width, circumference)
             self.assertEqual(columns * rows, observation["present_cells"])

@@ -47,7 +47,7 @@ def _settings() -> bytes:
         return struct.pack(">H", len(raw)) + raw
     entries = (("width", 3, 416), ("circumference", 3, 2048), ("seed", 4, 17),
                ("wallHeight", 3, 160), ("surfaceReferenceY", 3, 64),
-               ("terrainNoiseMapping", 3, 4), ("format", 3, 3))
+               ("terrainNoiseMapping", 3, 4), ("format", 3, 5))
     raw = bytearray(b"\x0a" + name(""))
     raw.extend(b"\x0a" + name("data"))
     for key, kind, value in entries:
@@ -65,7 +65,7 @@ def _atlas(complete: bool) -> bytes:
                                 EXPECTED_ATLAS_ROWS, 1 if not complete else 2))
     for index in range(cells):
         present = complete or index in {0, 1, EXPECTED_ATLAS_COLUMNS, EXPECTED_ATLAS_COLUMNS + 1}
-        raw.extend(bytes((int(present),)) + struct.pack(">hI", 64, 0x00AA00))
+        raw.extend(bytes((int(present),)) + struct.pack(">hIBI", 64, 0x00AA00, 0, 0x334455))
     return gzip.compress(bytes(raw), mtime=0)
 
 

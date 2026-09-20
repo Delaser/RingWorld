@@ -4,7 +4,7 @@ The owner authorized adding 26.3 and publishing updated supported versions to
 CurseForge, with minimal changes and conservative token use. No new release has
 been uploaded. Existing 1.1 downloads remain the supported release.
 
-## September 20 follow-up (in progress)
+## September 20 development and tooling checkpoint
 
 The owner requested Fabric fixes followed by NeoForge and a usage pause at
 **80% remaining** for this session, superseding the normal 5% threshold.
@@ -30,10 +30,11 @@ and normal disconnect (`logs/26.3-port/fabric-fixes-atlas-ui-4.log`). Its progre
 world screenshot was visually inspected. Map/compass (including save/reopen), curved objects and same-process
 layout switching also pass. Full multiplayer now passes the verifier with both clients and server exiting 0.
 Raid arm/save and reload/victory markers pass, with normal server shutdown and
-intentional test-client cleanup. Further rendering/lifecycle checks remain; this is not a release qualification claim.
+intentional test-client cleanup. These are development checks, not frozen release qualification.
 
-The final 429-case Python sweep passes: 427 passes and two expected platform
-skips (`fixes-2026-09-20/python-final.log`). Earlier failures caused by PATH
+The final Python sweep passes 432 cases: 430 passes and two expected platform
+skips (`fixes-2026-09-20/python-current-formats-final.log`). The earlier
+429-case sweep also passed before the current-format qualification checks. Earlier failures caused by PATH
 selecting an incompatible macOS system Python remain in the retained logs.
 
 Teleport acknowledgements now carry coordinates and call vanilla's shared
@@ -42,15 +43,39 @@ hook that helper so acknowledgements and normal movement use the same canonical
 chart. The 26.3 movement fixtures let vanilla send the changed pose on its next
 tick instead of sending a forbidden second position packet.
 
-The first production lifecycle run used an incomplete source Atlas and timed
-out before stage 0; no lifecycle assertions passed. A completed 26.2 world was
-then found under the retained industrial-wall study and copied to the isolated
-source saves as `Port Production Complete` (16384×256, format-9 Atlas, all
-4,194,304 cells present). The original save is not modified. However, its old one-block Atlas does not
-match the saved generation preset's current two-block sampling policy. The
-client correctly rejects that cache; the second lifecycle run therefore also
-times out before baseline. A separate headless prewarm is required before
-these production fixtures can pass. Do not count either timeout as a pass.
+The first two production lifecycle attempts timed out before their baseline:
+one source Atlas was incomplete and the second used an obsolete one-block
+sampling cache. Neither counts as a lifecycle pass. The retained 26.2 industrial
+world was copied and prewarmed under current 26.3 settings, completing all
+1,048,576 two-block samples and 16,384 chunks on the 16384×256 ring. Only the
+owned preparation copy used accelerated ticks; this is generation evidence,
+not a generation-time benchmark. The original save is unchanged.
+
+Fabric now passes the complete production lifecycle, natural seam/both-rim
+visual fixture, and noon/dusk/night/rain projection verifiers. NeoForge also
+passes map/compass persistence, curved objects, production lifecycle, natural
+seam/both-rim checks, full multiplayer with all three processes exiting 0, and
+raid persistence/victory. All four NeoForge projection environments, layout switching, the 19-capture
+creation fixture and fresh 2048×416 worldgen pass. That worldgen sample checks
+208 chunks, 21 loot containers and three seam-crossing structure starts. Its
+monument search ends with the expected typed SEARCH_BUDGET_EXHAUSTED outcome,
+not a claim of a generated monument. Evidence is below `logs/26.3-port/fixes-2026-09-20/`.
+
+The original projection pose was directly below a retained wall-study panel
+at X=4096, Y=128–175. A test-only `ringworld.projectionCameraX` override permits
+unobstructed captures at X=3072 without editing the source world or weakening
+any completion, settling, seam, or image verification. Initial Fabric captures
+retain the obstructed pose; the follow-up captures use the clear pose.
+
+Four fresh NeoForge clients logged a nonfatal `NoSuchFileException` for
+`config/neoforge-common.new.tmp.toml` in NightConfig's file watcher. All
+completed their assertions and exited successfully. A repeat of the curved-object
+fixture with the existing config passed without the exception. The stack points to the
+macOS Java polling watcher inspecting a temporary config file during startup;
+that race is an inference from the stack, not a confirmed upstream diagnosis.
+Retain it as an upstream-runtime follow-up; do not call these logs error-free.
+Settled rendering still includes occasional frames above 50 ms and measured
+wall-texture GPU uploads above 16 ms; these checks do not prove hitch-free play.
 
 ## Inputs
 
@@ -144,19 +169,27 @@ The batch run below repeats these builds after the new source/resource selection
 contract tests pass. No new framework, wrapper change or compatibility bypass
 was introduced.
 
-## Remaining release work
+## Qualification tooling and remaining release work
 
-1. Build/regression batch passes on `e880952`; preserve those exact-source
-   results and repeat affected checks after further fixes.
-2. Fix the 26.3 projectile-collision mixin failure below, then rerun the hidden,
-   muted `:runAtlasUiClient` fixture. Audit custom Atlas pipeline compilation, input attribute
-   locations, transparency/fog, curved clouds, upward views and the live/LOD seam.
-   Check every runtime mixin target; menu success cannot prove packet handlers.
-3. Run two-client seam/gameplay checks, copied-world upgrades and required
-   release qualification. Preserve complete waypoint/timing data in new packets.
-4. Port and qualify the pinned NeoForge 26.3.0.7-beta runtime. The two-cell
-   manifest is structurally valid; neither cell is qualified yet.
-5. Stage updated supported versions with immutable source, versions and
+The existing readers now understand format-5 settings, Atlas-9 twelve-byte
+cells (including bounded block light), and layout fingerprint version 4 with
+persisted wall and generation settings. Their computed production identity
+matches the independently emitted Java prewarm report. Reload/forward-upgrade
+comparisons retain all wall/generation fields; missing old-world option fields
+use the same legacy defaults as Minecraft's codec. Atlas/map client checks now
+require and report the current format-5 acknowledgement. Historical retained
+reports and published support ranges have not been rewritten.
+
+The final source sweep passes **440 cases per 26.3 loader** and **437 cases per
+loader on both 26.1 and 26.2**, totalling 2,628 Java cases. Logs are under
+`fixes-2026-09-20/final-batch/`. Both loaders' clear-pose projection screenshots
+are retained with their per-environment logs. The complete source/diagnostic
+checkpoint is ready for clean frozen-candidate qualification.
+
+1. Run clean, pushed frozen-candidate qualification, copied-world upgrades,
+   required package checks and release equivalence. Keep development Gradle
+   runtime evidence distinct from installed-loader/frozen-jar results.
+2. Stage updated supported versions with immutable source, versions and
    changelogs; upload to CurseForge and verify hosted file hashes. Diagnostic
    `0.0.0-qualification` jars are never upload candidates.
 
@@ -225,5 +258,4 @@ NeoForge `neoforge-build-1.log` passes all 440 Java cases. The hidden, muted
 `neoforge-atlas-ui-1.log` passes all eleven Atlas UI captures, generation and
 revision proofs, settings handshake and normal disconnect/session clear.
 The progressive-world screenshot was visually inspected. No NeoForge-specific
-source fork was needed beyond the shared 26.3 adapters. Its dedicated/network
-and remaining release gates still require execution.
+source fork was needed beyond the shared 26.3 adapters. Its dedicated multiplayer and raid checks now pass; final release gates remain.

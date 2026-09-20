@@ -106,6 +106,10 @@ def _settings(value: object, world: Path, label: str) -> tuple[object, ...]:
         value.width_blocks, value.circumference_blocks, value.generator_seed,
         value.wall_height_blocks, value.surface_reference_y,
         value.terrain_noise_mapping, value.format_version,
+        value.wall_thickness, value.wall_palette, value.wall_pattern,
+        value.wall_decay, value.wall_format, value.atlas_fidelity,
+        value.world_layout, value.continuous_river, value.more_structures,
+        value.generation_format,
     )
 
 
