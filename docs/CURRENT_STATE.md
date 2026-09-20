@@ -40,7 +40,14 @@ The GitHub source-build matrix now covers both loaders on 26.1, 26.2 and 26.3;
 these CI source builds do not replace runtime qualification.
 See [26.3 port status](26_3_PORT_STATUS.md); the
 [September 15 errors](26_3_TEST_ERRORS_2026-09-15.md) remain historical evidence.
-No new release files have been uploaded.
+Full corrected 26.3 nightly `20260920T110002Z-5afddbba5989` now passes all
+20 gates on both loaders. Hosted six-cell Java CI, Linux/Windows qualification
+checks and Windows launcher tests pass. The 26.3 release jars are staged with
+metadata-only equivalence; both packaged server overlays pass startup/tick/save/
+normal-stop smokes. Packaging now excludes generated Python caches, and its
+reproducibility regression passes. Older-line frozen qualification, forward
+upgrades, native packaged clients and the existing generation acceptance gaps
+remain. No new release files have been uploaded.
 
 2026-09-15 source regression: Fabric and NeoForge each pass all 437 tests and
 build against 26.1 and 26.2. These diagnostic builds are not release candidates.

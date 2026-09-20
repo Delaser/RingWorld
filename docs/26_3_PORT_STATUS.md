@@ -148,6 +148,66 @@ workflow now derives pinned dependencies from each manifest and tests both
 loaders on 26.1 (the 26.1.x build ABI), 26.2 and 26.3. Its six generated commands
 and YAML were checked locally; hosted CI has not yet run for this change.
 
+## Full 26.3 runtime and staged-package checkpoint — September 20
+
+Nightly `20260920T110002Z-5afddbba5989` on operator source `747c309` is a
+**monolithic 20/20 PASS**, using corrected quick `20260920T104806Z-dd4541a72f59`
+and its exact `4860724` candidates. Both loaders pass creation UI, production
+worldgen/reload, Atlas interruption/recovery, Atlas UI/revision/disconnect,
+two-client multiplayer, raid persistence/victory, map/compass persistence,
+production lifecycle, curved objects and production rendering. The fixture
+contract distinguishes source-ABI graphical checks from frozen-jar checks;
+this does not turn every fixture into a packaged-launcher test. Multiplayer's
+three processes exit normally. Raid client termination remains intentional
+fixture cleanup, not a normal client-exit claim. All 158 bound terminal/capture
+files were independently rehashed after completion. Prior failed runs remain.
+
+Evidence: `logs/26.3-port/fixes-2026-09-20/nightly-3.log`, and immutable child
+records under `dist/qualification/ringworld/26.3/`. Production worldgen sources
+are retained in Fabric run `20260920T110146Z-7e7111716d2d` and NeoForge run
+`20260920T113845Z-84f74141692c` for copied-world upgrade checks.
+
+Hosted [six-cell Java CI](https://github.com/Delaser/RingWorld/actions/runs/35506617664),
+[Linux/Windows qualification guard](https://github.com/Delaser/RingWorld/actions/runs/35506763248)
+and [Windows package launcher tests](https://github.com/Delaser/RingWorld/actions/runs/35506764524)
+pass on `747c309`. This includes both loaders on the 26.1, 26.2 and 26.3 source ABIs.
+
+Local 1.2.0+mc26.3 jars are staged from the frozen candidates with metadata-only
+equivalence verified. These are review artifacts, **not published files**:
+
+| Loader | Release SHA-256 |
+| --- | --- |
+| Fabric | `8d6a439d1a4e248e6897d56bd727be4a2749a032cc1458836ea0142c6f9d1330` |
+| NeoForge | `ecffb37bbfb2b059951d76228d64cab6d646e046cfab971f0a7968dc71215e2f` |
+
+Both clean packaged server overlays pass installed-runtime startup, a 15-second
+tick dwell, save and normal exit 0 in disposable 2048×128 worlds. Package
+inspection found generated Python caches in the original server ZIPs. Assembly
+now excludes those caches, with a regression proving that changing their contents
+does not change the output ZIPs. The relevant local suite passes 30 tests with
+two expected Windows-only skips. Default patched assembly reproduces the exact
+clean package bytes used by the smokes. Reviewed packages are in
+`dist/26.3-release-package-review-verified/`; evidence and hashes are in
+`package-overlay-results.json`, `clean-package-hashes.json`, and
+`package-inputs/*-verified-assembly.log` under the September 20 log directory.
+Both CurseForge upload dry-run plans validate; no upload was attempted.
+
+The render windows cover three camera poses per environment, not sustained
+walking or a loader speed comparison. Fabric averages 85.2–91.1 FPS across
+noon/dusk/night/rain, with six frames over 50 ms out of 5,615 (maximum 70.7 ms).
+NeoForge averages 85.3–89.3 FPS, with four frames over 50 ms (maximum 71.1 ms).
+Raw frame metrics are retained for both loaders. Fabric Atlas UI, seam, night
+and rain views, plus NeoForge's rain handoff, were visually inspected. The
+water/proxy transition remains visible; this is not an invisible-seam claim.
+
+Remaining before full launch: requalify/stage the changed shared runtime on all
+six 26.1.x and both 26.2 cells, complete copied-world upgrade routes, finish
+native packaged-client review, and resolve the existing Archipelago smooth-join
+failure and whole-ring structure-density acceptance gap. The earlier authenticated
+macOS test root is absent. Windows in-game test availability has been requested;
+hosted launcher tests do not substitute for it. Occasional frame stalls and the
+previous nonfatal NeoForge config-watcher exception remain documented limitations.
+
 ## Inputs
 
 Mojang's [official manifest](https://piston-meta.mojang.com/mc/game/version_manifest_v2.json)

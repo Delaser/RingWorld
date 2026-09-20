@@ -654,7 +654,8 @@ def add_server_package(
     archive_name = f"RingWorld-{version}-{LOADER_SPECS[loader]['display']}-Server-Overlay.zip"
     with tempfile.TemporaryDirectory(prefix="ringworld-server-") as directory:
         root = Path(directory) / "server-overlay"
-        shutil.copytree(server_template, root)
+        shutil.copytree(server_template, root,
+                        ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"))
         loader_deployment = root / f"DEPLOYMENT-{loader}.md"
         if not loader_deployment.is_file():
             raise PackageError(f"server template is missing {loader_deployment.name}")

@@ -1,6 +1,7 @@
 # RingWorld 1.2 release preparation
 
-These are draft inputs, not staged or published releases. Historical 1.1 inputs
+These are release-review inputs. The 26.3 files are staged locally; nothing new
+is published. The older-line files are not staged. Historical 1.1 inputs
 remain unchanged. Each of the three version lines has one descriptor and one
 change-only changelog for its separate Fabric and NeoForge files. Descriptors
 pass the existing support-contract validation and changelog rendering.
@@ -16,12 +17,13 @@ dedicated servers. The prior `39216e8` candidates are superseded.
 
 Before upload:
 
-- Complete the 26.3 nightly matrix and copied-world upgrades.
+- The corrected 26.3 nightly matrix passes 20/20; complete copied-world upgrades.
 - Requalify the new shared runtime on all six 26.1.x and both 26.2 cells.
 - Resolve or explicitly retain the Archipelago smooth-join failure and
   whole-ring structure-density acceptance gap; neither is a passing check.
 - Complete release equivalence and required package/runtime checks, including
-  native Windows and macOS evidence for the actual release files.
+  native Windows and macOS evidence for the actual release files. The 26.3
+  metadata equivalence and both packaged server-overlay smokes pass.
 - Stage using these descriptors, the matching manifest and passed quick run;
   never upload a diagnostic qualification jar.
 - Verify CurseForge file IDs and downloaded hashes after submission.
