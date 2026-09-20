@@ -273,6 +273,13 @@ NeoForge fresh worldgen and all 19 creation-screen captures pass. Final source
 regression passes 437 cases per loader on 26.1 and 26.2; Python passes 433 with
 two expected skips. Qualification readers now retain format-5 wall/generation
 fields, fingerprint v4 and Atlas-9 twelve-byte cells, with real Java hash parity.
+The first complete nightly selection stops at production worldgen on both
+loaders. The 26.3 fixture now captures noise heights before the combined TERRAIN
+stage applies surfaces/carving. A required StructureCheck climate-sampler
+redirect fixes guaranteed-monument locating after periodic noise configuration.
+Both loaders pass fresh/reload production worldgen with this fix and all six
+source build/test cells pass again. Refresh frozen candidates: the passing
+`39216e8` quick jars predate the structure-sampler correction.
 Development runtime passes must not be relabelled as frozen qualification.
 Fresh NeoForge configs can emit a nonfatal NightConfig temporary-file watcher
 exception; retain this and the measured GPU-upload/frame stalls as follow-ups.

@@ -102,6 +102,34 @@ are not staged or published. GitHub briefly timed out; the connection recovered
 and `993e4d1` was pushed. The existing Archipelago smooth-join failure and
 whole-ring structure-density acceptance gap remain explicit launch-review items.
 
+## Production worldgen correction — September 20
+
+Nightly `20260920T103229Z-71e639092904` on `47ac44e` finished with two
+creation-UI PASS results, two worldgen FAIL results and sixteen dependent
+INCOMPLETE results. Both frozen loaders reported query height 94 versus terrain
+82 at X=4096, Z=-120 on `ringworld-regression-1`, 16384×256. In 26.3, TERRAIN
+includes noise filling, surface materials and carving. The fixture now captures
+the actual noise heightmap immediately after filling, only when the stronghold
+test is enabled, and compares against that pre-surface output. The existing
+strict height/column alias assertions remain. Older ABIs still inspect NOISE.
+
+The corrected probe passed every height assertion and exposed a real second
+issue: the saved guaranteed monument could not be located. `StructureCheck`
+constructs its climate sampler before RingWorld configures periodic density
+functions. Its required version-owned field redirect now supplies the configured
+periodic sampler during structure viability checks; other dimensions retain
+vanilla behavior. The fresh production seed now generates the monument at
+chunk 484,-2, locates its adjacent periodic image and verifies reference rules.
+Both loaders pass fresh/reload production checks with this correction.
+
+Evidence: `fixes-2026-09-20/production-noise-stage-probe.log` (retained monument
+failure), `production-structure-sampler-probe.log` (Fabric fresh PASS), and
+`worldgen-fix/` (both-loader reload/fresh checks and builds). Final source builds
+pass 440 cases per 26.3 loader and 437 per loader on 26.1 and 26.2. Python again
+passes 433 cases with two expected skips. These source runs do not replace
+frozen qualification: the `39216e8` quick candidates predate this runtime fix
+and must be superseded by a new quick run before continuing nightly/release work.
+
 ## Inputs
 
 Mojang's [official manifest](https://piston-meta.mojang.com/mc/game/version_manifest_v2.json)

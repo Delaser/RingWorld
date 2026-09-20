@@ -26,4 +26,7 @@ public final class RingMinecraftFixtureAccess {
         return source.getNoiseBiome(x, y, z, sampler);
     }
     public static ChunkStatus terrainStatus() { return ChunkStatus.NOISE; }
+    public static int noiseHeight(ChunkAccess chunk, int x, int z) {
+        return chunk.getHeight(net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE_WG, x, z) + 1;
+    }
 }

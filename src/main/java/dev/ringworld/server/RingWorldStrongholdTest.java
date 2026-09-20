@@ -674,8 +674,8 @@ public final class RingWorldStrongholdTest {
                                 "Canonical terrain did not load for base-height check at X="
                                         + canonicalX + ", Z=" + z);
                     }
-                    int terrainHeight = terrain.getHeight(Heightmap.Types.WORLD_SURFACE_WG,
-                            Math.floorMod(canonicalX, 16), Math.floorMod(z, 16)) + 1;
+                    int terrainHeight = dev.ringworld.world.RingMinecraftFixtureAccess.noiseHeight(
+                            terrain, Math.floorMod(canonicalX, 16), Math.floorMod(z, 16));
                     if (canonicalHeight != terrainHeight) {
                         throw new IllegalStateException(
                                 "Base-height differs from canonical generated terrain at X="

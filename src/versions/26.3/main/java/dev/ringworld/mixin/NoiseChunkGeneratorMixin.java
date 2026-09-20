@@ -133,4 +133,11 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     private int ringworld$canonicalizeHeightQueryX(int x) {
         return ringworld$geometry == null ? x : ringworld$geometry.wrapBlockX(x);
     }
+    @Inject(method = "doFill", at = @At("TAIL"))
+    private void ringworld$captureFixtureNoiseHeights(net.minecraft.world.level.levelgen.NoiseChunk noise,
+            ChunkAccess chunk, org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
+        if (ringworld$geometry != null && Boolean.getBoolean("ringworld.strongholdTest")) {
+            dev.ringworld.world.RingMinecraftFixtureAccess.captureNoiseHeights(chunk);
+        }
+    }
 }

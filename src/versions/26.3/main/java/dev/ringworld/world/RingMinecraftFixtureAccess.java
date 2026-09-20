@@ -15,6 +15,7 @@ import net.minecraft.world.level.chunk.status.ChunkStatus;
 import net.minecraft.world.level.levelgen.structure.*;
 /** Version-owned calls used by the existing runtime fixtures. */
 public final class RingMinecraftFixtureAccess {
+    private static final java.util.Map<ChunkAccess, int[]> NOISE_HEIGHTS = new java.util.WeakHashMap<>();
     private RingMinecraftFixtureAccess() { }
     public static long clockTicks(ServerLevel world, Holder<WorldClock> clock) { return world.clockManager().getInstance(clock).totalTicks(); }
     public static void invulnerable(Entity entity, boolean value) { entity.setPermanentlyInvulnerable(value); }
@@ -26,4 +27,18 @@ public final class RingMinecraftFixtureAccess {
         return source.createResolver(sampler).getNoiseBiome(x, y, z);
     }
     public static ChunkStatus terrainStatus() { return ChunkStatus.TERRAIN; }
+    /** TERRAIN now includes surfaces and carving; retain actual noise output before either. */
+    public static synchronized void captureNoiseHeights(ChunkAccess chunk) {
+        int[] heights = new int[256];
+        for (int z = 0; z < 16; z++) for (int x = 0; x < 16; x++) {
+            heights[z * 16 + x] = chunk.getHeight(
+                    net.minecraft.world.level.levelgen.Heightmap.Types.WORLD_SURFACE_WG, x, z) + 1;
+        }
+        NOISE_HEIGHTS.put(chunk, heights);
+    }
+    public static synchronized int noiseHeight(ChunkAccess chunk, int x, int z) {
+        int[] heights = NOISE_HEIGHTS.get(chunk);
+        if (heights == null) throw new IllegalStateException("Missing pre-surface noise capture for " + chunk.getPos());
+        return heights[z * 16 + x];
+    }
 }

@@ -11,7 +11,9 @@ usage remaining. No additional publication approval is needed for that scope.
 
 Current candidate and evidence: [26.3 status](../../../docs/26_3_PORT_STATUS.md).
 The 26.3 quick run is `20260920T093330Z-c3dd96e9330d`, built from `39216e8`.
-Later fixture-only changes do not replace those frozen jars.
+Later fixture-only changes do not replace those frozen jars. The subsequent
+StructureCheck climate-sampler correction changes runtime code, so those jars
+must now be superseded by a new quick freeze before staging.
 
 Before upload:
 

@@ -27,6 +27,14 @@ after that correction. The upgrade checker records supported settings-format
 migration without allowing semantic drift. RingWorld 1.2 release inputs for all
 three lines are prepared. Nightly/upgrade/package gates
 and publication remain.
+The full nightly then found a production-size worldgen issue on both loaders
+(two UI passes, two failures, sixteen incomplete checks). Its noise-height
+fixture now compares the pre-surface stage appropriate to 26.3. This exposed
+and fixed a stale climate sampler in structure viability checks, which had
+prevented locating the saved guaranteed monument. Both loaders now pass fresh
+and reloaded production worldgen, and all six source build/test cells pass
+again. The earlier `39216e8` frozen candidates predate this runtime correction;
+a new quick freeze is required before continuing release qualification.
 See [26.3 port status](26_3_PORT_STATUS.md); the
 [September 15 errors](26_3_TEST_ERRORS_2026-09-15.md) remain historical evidence.
 No new release files have been uploaded.
