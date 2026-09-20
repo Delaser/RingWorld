@@ -1,7 +1,11 @@
 # Current state
 
 Owner release direction (2026-09-20): finish the 26.3 Fabric fixes, then port
-NeoForge, pausing this session at 70% usage remaining. Both loaders now build
+NeoForge, pausing this session at 65% usage remaining. The owner accepts the
+older-version builds and automated tests without another full in-game suite.
+The current release path is in
+[`deploy/qualified/1.2/README.md`](../deploy/qualified/1.2/README.md).
+Both loaders now build
 with **440 passing Java cases each** and pass the full Atlas UI fixture
 (generation, revision, handshake and clean disconnect). Fabric also passes
 map/compass persistence, curved objects, layout switching, the complete
@@ -45,9 +49,12 @@ Full corrected 26.3 nightly `20260920T110002Z-5afddbba5989` now passes all
 checks and Windows launcher tests pass. The 26.3 release jars are staged with
 metadata-only equivalence; both packaged server overlays pass startup/tick/save/
 normal-stop smokes. Packaging now excludes generated Python caches, and its
-reproducibility regression passes. Older-line frozen qualification, forward
-upgrades, native packaged clients and the existing generation acceptance gaps
-remain. No new release files have been uploaded.
+reproducibility regression passes. The final Windows launcher rerun on `d4ae076`
+also passes. Older-line release staging, focused forward-upgrade checks and
+the existing optional-generation acceptance decision remain. Another full
+older-line runtime sweep is waived by the owner. Native packaged-client review
+remains necessary before publishing optional launcher bundles; the recommended
+first release scope is the six CurseForge mod jars. No new files are uploaded.
 
 2026-09-15 source regression: Fabric and NeoForge each pass all 437 tests and
 build against 26.1 and 26.2. These diagnostic builds are not release candidates.

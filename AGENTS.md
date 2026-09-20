@@ -283,15 +283,18 @@ source build/test cells pass again. Corrected quick qualification
 installed dedicated servers, superseding the `39216e8` candidates. Full nightly
 `20260920T110002Z-5afddbba5989` on operator `747c309` passes all 20 gates.
 Metadata-equivalent 26.3 release jars and clean packages are staged locally;
-both release server overlays pass startup/tick/save/normal-stop smokes. Keep
-older-line frozen qualification, upgrades and native packaged-client review open;
-no new release is published. See the 26.3 status for exact hashes and evidence.
+both release server overlays pass startup/tick/save/normal-stop smokes. The owner
+accepts the older-line source builds and automated tests for 1.2: do not repeat
+their full nightly/runtime suites. Final staging and copied-world upgrades remain;
+native packaged-client review applies to publishing optional launcher bundles.
+See `deploy/qualified/1.2/README.md` for the current release path and unresolved
+optional-generation acceptance. No new release is published.
 Development runtime passes must not be relabelled as frozen qualification.
 Fresh NeoForge configs can emit a nonfatal NightConfig temporary-file watcher
 exception; retain this and the measured GPU-upload/frame stalls as follow-ups.
 NeoForge 26.3.0.7-beta and ModDevGradle 2.0.147 are now pinned in a pending two-cell
 manifest. Keep public support ranges unchanged until qualification passes.
-For the owner's September 20 session, pause at **70% usage remaining**; this
+For the owner's September 20 session, pause at **65% usage remaining**; this
 explicit instruction supersedes the normal 5% monitor threshold for that work.
 
 Qualified 26.2 inputs use `config/minecraft-version-matrix-26.2.json`. Derive

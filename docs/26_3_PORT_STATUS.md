@@ -7,7 +7,7 @@ been uploaded. Existing 1.1 downloads remain the supported release.
 ## September 20 development and tooling checkpoint
 
 The owner requested Fabric fixes followed by NeoForge and a usage pause at
-**70% remaining** for this session (revised from 80% by the owner), superseding the normal 5% threshold.
+**65% remaining** for this session (revised from 80%, then 70%, by the owner), superseding the normal 5% threshold.
 The owner requests continuing until the release is polished enough for full launch.
 NeoForge has now published **26.3.0.7-beta**; its universal and installer jars
 and ModDevGradle **2.0.147** were retrieved from official Maven and SHA-256
@@ -207,6 +207,20 @@ failure and whole-ring structure-density acceptance gap. The earlier authenticat
 macOS test root is absent. Windows in-game test availability has been requested;
 hosted launcher tests do not substitute for it. Occasional frame stalls and the
 previous nonfatal NeoForge config-watcher exception remain documented limitations.
+
+## Revised minimum release path — September 20
+
+Latest release-scope direction (September 20): the owner accepts successful
+older-version source builds and automated tests instead of repeating their
+full in-game qualification suites. The earlier blanket requalification list
+above is superseded for those versions; missing evidence is not relabelled PASS.
+Existing staging still requires quick artifact/startup evidence for the four
+older release jars. Reuse its existing workflow, without introducing a bypass
+or another qualification framework. The final Windows launcher regression on
+`d4ae076` [passes](https://github.com/Delaser/RingWorld/actions/runs/35510620067).
+The proposed minimum release path, including the separate optional-generation
+decision and optional launcher deferral, is recorded in
+[`deploy/qualified/1.2/README.md`](../deploy/qualified/1.2/README.md).
 
 ## Inputs
 
