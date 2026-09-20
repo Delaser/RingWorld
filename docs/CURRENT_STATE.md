@@ -34,7 +34,10 @@ and fixed a stale climate sampler in structure viability checks, which had
 prevented locating the saved guaranteed monument. Both loaders now pass fresh
 and reloaded production worldgen, and all six source build/test cells pass
 again. The earlier `39216e8` frozen candidates predate this runtime correction;
-a new quick freeze is required before continuing release qualification.
+corrected quick run `20260920T104806Z-dd4541a72f59` on `4860724` now passes
+both loaders, including the installed dedicated servers and normal shutdown.
+The GitHub source-build matrix now covers both loaders on 26.1, 26.2 and 26.3;
+these CI source builds do not replace runtime qualification.
 See [26.3 port status](26_3_PORT_STATUS.md); the
 [September 15 errors](26_3_TEST_ERRORS_2026-09-15.md) remain historical evidence.
 No new release files have been uploaded.

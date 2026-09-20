@@ -10,10 +10,9 @@ on September 20, continuing until ready for full launch, pausing at 70% weekly
 usage remaining. No additional publication approval is needed for that scope.
 
 Current candidate and evidence: [26.3 status](../../../docs/26_3_PORT_STATUS.md).
-The 26.3 quick run is `20260920T093330Z-c3dd96e9330d`, built from `39216e8`.
-Later fixture-only changes do not replace those frozen jars. The subsequent
-StructureCheck climate-sampler correction changes runtime code, so those jars
-must now be superseded by a new quick freeze before staging.
+The corrected 26.3 quick run is `20260920T104806Z-dd4541a72f59`, built from
+`4860724`. Both loaders pass with the structure-sampler correction and installed
+dedicated servers. The prior `39216e8` candidates are superseded.
 
 Before upload:
 

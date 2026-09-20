@@ -278,8 +278,10 @@ loaders. The 26.3 fixture now captures noise heights before the combined TERRAIN
 stage applies surfaces/carving. A required StructureCheck climate-sampler
 redirect fixes guaranteed-monument locating after periodic noise configuration.
 Both loaders pass fresh/reload production worldgen with this fix and all six
-source build/test cells pass again. Refresh frozen candidates: the passing
-`39216e8` quick jars predate the structure-sampler correction.
+source build/test cells pass again. Corrected quick qualification
+`20260920T104806Z-dd4541a72f59` on `4860724` passes both loaders and their
+installed dedicated servers, superseding the `39216e8` candidates. Complete
+nightly, upgrade and package gates against these corrected frozen jars.
 Development runtime passes must not be relabelled as frozen qualification.
 Fresh NeoForge configs can emit a nonfatal NightConfig temporary-file watcher
 exception; retain this and the measured GPU-upload/frame stalls as follow-ups.

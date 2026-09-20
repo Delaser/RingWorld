@@ -128,7 +128,25 @@ failure), `production-structure-sampler-probe.log` (Fabric fresh PASS), and
 pass 440 cases per 26.3 loader and 437 per loader on 26.1 and 26.2. Python again
 passes 433 cases with two expected skips. These source runs do not replace
 frozen qualification: the `39216e8` quick candidates predate this runtime fix
-and must be superseded by a new quick run before continuing nightly/release work.
+and are superseded by the corrected quick run below.
+
+## Corrected frozen candidates — September 20
+
+Quick run `20260920T104806Z-dd4541a72f59` on pushed source `4860724` passes
+both loaders: 440 Java tests each, artifact/metadata/licence validation and
+separately installed dedicated-server startup and normal shutdown with the exact
+frozen jars. Evidence: `fixes-2026-09-20/quick-2.log` and that run's strict terminal
+records under `dist/qualification/ringworld/26.3/`.
+
+| Loader | Frozen SHA-256 |
+| --- | --- |
+| Fabric | `6d624c6e8d3d4caedd61aebde00f8962cfdf0c22d4a4f66dd69f5b2536eae281` |
+| NeoForge | `ca9586dd801a9dc0b70243e30712fa076fc195adfb602d64112c0df451d2403e` |
+
+Nightly, upgrade and package gates remain required. The GitHub source-build
+workflow now derives pinned dependencies from each manifest and tests both
+loaders on 26.1 (the 26.1.x build ABI), 26.2 and 26.3. Its six generated commands
+and YAML were checked locally; hosted CI has not yet run for this change.
 
 ## Inputs
 
