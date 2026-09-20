@@ -1,5 +1,9 @@
 # RingWorld 1.2 release preparation
 
+September 20 final: all six 1.2 jars are submitted to CurseForge; all CDN hashes match.
+See [publication record](../../../docs/RELEASE_1_2_PUBLICATION_2026-09-20.md). Modrinth remains deferred.
+The preparation notes below are historical and superseded by that record.
+
 These are release-review inputs. The prior 26.3 files are staged locally but superseded; nothing new
 is published. The older-line files are not staged. Historical 1.1 inputs
 remain unchanged. Each of the three version lines has one descriptor and one

@@ -1,5 +1,9 @@
 # Current state
 
+September 20 final: all six 1.2 jars are submitted to CurseForge; all CDN hashes match.
+See [publication record](RELEASE_1_2_PUBLICATION_2026-09-20.md). Modrinth remains deferred.
+The preparation notes below are historical and superseded by that record.
+
 Latest owner correction (September 20): publication is paused for the one-block
 master Atlas and three independent client detail levels. The obsolete Atlas
 quality selector and Archipelago layout selector are removed from creation.
