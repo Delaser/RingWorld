@@ -18,7 +18,6 @@ import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.Entity;
@@ -271,10 +270,8 @@ public final class MultiplayerTestClient {
             double nextX = Math.min(localSeamBoundary,
                     client.player.getX() + 0.25);
             client.player.setPos(nextX, client.player.getY(), client.player.getZ());
-            client.getConnection().send(new ServerboundMovePlayerPacket.PosRot(
-                    nextX, client.player.getY(), client.player.getZ(),
-                    client.player.getYRot(), client.player.getXRot(),
-                    client.player.onGround(), client.player.horizontalCollision));
+            // Vanilla sends this pose on the next client tick. A second
+            // position packet in the same tick is invalid in 26.3.
             return;
         }
 

@@ -1,6 +1,21 @@
 # Current state
 
-Owner release direction (2026-09-15): add stable Minecraft 26.3 and publish the updated supported versions to CurseForge, keeping the work minimal. The release hold is lifted, but the 26.3 Fabric adapter now builds (440 tests), passes dedicated worldgen and a hidden 19-capture menu/preview test. In-world rendering, multiplayer and fresh regression/release gates remain, and NeoForge 26.3 is unavailable. The owner authorized test batches below 5%: final builds and legacy source regressions pass (2,188 tests); the in-world Atlas client fails on the changed ProjectileUtil piercing-collision method. The subsequent all-test sweep passes fresh Atlas generation/reload and one copied-world server upgrade smoke. In-world clients, multiplayer and raid checks reproduce the ProjectileUtil blocker; Python tests also expose a stale ABI assertion, and multiplayer setup needs an explicit whitelist policy. See [test errors](26_3_TEST_ERRORS_2026-09-15.md). Deeper gameplay and complete release qualification remain blocked. See [26.3 intake](26_3_PORT_STATUS.md). No new files have been uploaded.
+Owner release direction (2026-09-20): finish the 26.3 Fabric fixes, then port
+NeoForge, pausing this session at 80% usage remaining. Both loaders now build
+with **440 passing Java cases each** and pass the full Atlas UI fixture
+(generation, revision, handshake and clean disconnect). Fabric also passes
+map/compass persistence, curved objects, layout switching, the complete
+multiplayer verifier with all three processes exiting 0, and raid save/reload/
+victory assertions. Required 26.3 projectile, sky and player-movement hooks are
+adapted; the fixture no longer sends duplicate position packets. Python checks
+pass (427 passed, two expected platform skips). NeoForge 26.3.0.7-beta and
+ModDevGradle 2.0.147 are pinned in a structurally valid two-cell manifest.
+Large-ring client checks require a compatible complete Atlas; a copied 26.2
+world is being prewarmed after its obsolete sampling cache was rejected.
+NeoForge dedicated/network and final release qualification remain.
+See [26.3 port status](26_3_PORT_STATUS.md); the
+[September 15 errors](26_3_TEST_ERRORS_2026-09-15.md) remain historical evidence.
+No new release files have been uploaded.
 
 2026-09-15 source regression: Fabric and NeoForge each pass all 437 tests and
 build against 26.1 and 26.2. These diagnostic builds are not release candidates.

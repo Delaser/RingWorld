@@ -4,6 +4,54 @@ The owner authorized adding 26.3 and publishing updated supported versions to
 CurseForge, with minimal changes and conservative token use. No new release has
 been uploaded. Existing 1.1 downloads remain the supported release.
 
+## September 20 follow-up (in progress)
+
+The owner requested Fabric fixes followed by NeoForge and a usage pause at
+**80% remaining** for this session, superseding the normal 5% threshold.
+NeoForge has now published **26.3.0.7-beta**; its universal and installer jars
+and ModDevGradle **2.0.147** were retrieved from official Maven and SHA-256
+hashed. This is an upstream beta, not RingWorld release qualification.
+
+The required 26.3 projectile hook now accepts the new surface-hit flag and
+preserves its hit-position semantics while projecting seam-adjacent hitboxes.
+The shared 26.1/26.2 collision hook is unchanged. Both loaders' disposable
+multiplayer and raid servers explicitly set `white-list=false`. The source-ABI
+test now selects the reviewed 26.3 source directory.
+
+Real client testing exposed a second port issue: SkyRenderer now passes one
+RenderPass through its drawing methods, and DynamicUniforms is now
+DynamicGpuData. The version-owned sky adapter uses those required targets,
+keeps the lower atmosphere in the sky pass, then draws the Atlas and centered
+sun after vanilla closes that pass. The sun scale now has one constant site.
+
+Fabric builds with **440 passing Java cases**. The hidden, muted Atlas UI
+fixture passes all eleven captures, completed generation, ordered live revision
+and normal disconnect (`logs/26.3-port/fabric-fixes-atlas-ui-4.log`). Its progressive
+world screenshot was visually inspected. Map/compass (including save/reopen), curved objects and same-process
+layout switching also pass. Full multiplayer now passes the verifier with both clients and server exiting 0.
+Raid arm/save and reload/victory markers pass, with normal server shutdown and
+intentional test-client cleanup. Further rendering/lifecycle checks remain; this is not a release qualification claim.
+
+The final 429-case Python sweep passes: 427 passes and two expected platform
+skips (`fixes-2026-09-20/python-final.log`). Earlier failures caused by PATH
+selecting an incompatible macOS system Python remain in the retained logs.
+
+Teleport acknowledgements now carry coordinates and call vanilla's shared
+`handlePlayerPositionChange` helper. Periodic player projection and folding now
+hook that helper so acknowledgements and normal movement use the same canonical
+chart. The 26.3 movement fixtures let vanilla send the changed pose on its next
+tick instead of sending a forbidden second position packet.
+
+The first production lifecycle run used an incomplete source Atlas and timed
+out before stage 0; no lifecycle assertions passed. A completed 26.2 world was
+then found under the retained industrial-wall study and copied to the isolated
+source saves as `Port Production Complete` (16384×256, format-9 Atlas, all
+4,194,304 cells present). The original save is not modified. However, its old one-block Atlas does not
+match the saved generation preset's current two-block sampling policy. The
+client correctly rejects that cache; the second lifecycle run therefore also
+times out before baseline. A separate headless prewarm is required before
+these production fixtures can pass. Do not count either timeout as a pass.
+
 ## Inputs
 
 Mojang's [official manifest](https://piston-meta.mojang.com/mc/game/version_manifest_v2.json)
@@ -14,10 +62,10 @@ The dependency jars were downloaded from official Maven repositories and
 SHA-256 hashed for the manifest.
 
 The [NeoForge Maven metadata](https://maven.neoforged.net/releases/net/neoforged/neoforge/maven-metadata.xml)
-has no 26.3 runtime or installer. The manifest records this under
-`pending_loaders`; add a real pinned NeoForge cell when available. The 26.2.0.69
-NeoForge pin in the Fabric cell only configures the unused companion Gradle
-project. It must never be launched or advertised as a 26.3 runtime.
+had no 26.3 runtime at intake. The September 20 follow-up pins the published
+26.3.0.7-beta universal/installer and ModDevGradle 2.0.147 in both manifest cells.
+Both cells remain pending qualification. NeoForge builds with 440 passing cases and its full Atlas UI runtime fixture passes. Historical Fabric logs used a 26.2
+companion dependency solely to configure the unused NeoForge Gradle project.
 
 Loom 1.18.1 requires Gradle 9.7.0 and cannot run with the existing 9.5.1 wrapper.
 Loom 1.17.21 resolves the game and reaches compilation, so no wrapper upgrade
@@ -73,7 +121,7 @@ Reproduce the build with Java 25:
 ./gradlew :test :build \
   -Pminecraft_version=26.3 -Ploader_version=0.19.5 \
   -Ploom_version=1.17.21 -Pfabric_api_version=0.160.5+26.3 \
-  -Pneoforge_version=26.2.0.69 -Pmoddevgradle_version=2.0.144 \
+  -Pneoforge_version=26.3.0.7-beta -Pmoddevgradle_version=2.0.147 \
   -Pmod_version=0.0.0-qualification+mc26.3 -Prelease_label=qualification \
   -PringQualificationRoot=dist/qualification/26.3-intake \
   -PringQualificationCell=26.3-fabric --console=plain
@@ -106,8 +154,8 @@ was introduced.
    Check every runtime mixin target; menu success cannot prove packet handlers.
 3. Run two-client seam/gameplay checks, copied-world upgrades and required
    release qualification. Preserve complete waypoint/timing data in new packets.
-4. Pin the real NeoForge 26.3 runtime when upstream publishes it. The partial
-   Fabric manifest intentionally does not satisfy the dual-loader contract.
+4. Port and qualify the pinned NeoForge 26.3.0.7-beta runtime. The two-cell
+   manifest is structurally valid; neither cell is qualified yet.
 5. Stage updated supported versions with immutable source, versions and
    changelogs; upload to CurseForge and verify hosted file hashes. Diagnostic
    `0.0.0-qualification` jars are never upload candidates.
@@ -158,3 +206,24 @@ and raid clients reproduce the required ProjectileUtil mixin failure. Multiplaye
 fixtures also need an explicit whitelist policy. Full dual-loader/frozen-candidate
 qualification and dependent gameplay assertions remain blocked. No code was
 changed or release uploaded during this diagnostic sweep.
+
+
+September 20 multiplayer evidence is under `logs/26.3-port/fixes-2026-09-20/`.
+`multiplayer-server.log`, `multiplayer-client-a.log`, and `multiplayer-client-b.log`
+contain the full passing seam/combat/placement/vehicle/reconnect/bed/death/
+portal/weather matrix. `network-prep/verify-multiplayer.log` passes.
+Attempt 1 exposed teleport-acknowledgement mapping and duplicate fixture movement;
+attempt 2 passed gameplay but the diagnostic wrapper stopped the server before
+client completion. The final attempt waits for both normal client exits first.
+Raid logs `raid-arm-*` and `raid-reload-*` prove saved seam raiders, restored
+bossbars, canonical navigation and victory/Hero of the Village. Their clients
+were intentionally stopped after server markers (exit 143), not clean-client
+exit evidence.
+
+
+NeoForge `neoforge-build-1.log` passes all 440 Java cases. The hidden, muted
+`neoforge-atlas-ui-1.log` passes all eleven Atlas UI captures, generation and
+revision proofs, settings handshake and normal disconnect/session clear.
+The progressive-world screenshot was visually inspected. No NeoForge-specific
+source fork was needed beyond the shared 26.3 adapters. Its dedicated/network
+and remaining release gates still require execution.

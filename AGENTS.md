@@ -258,16 +258,19 @@ under it.
 ## Minecraft version support policy
 
 26.3 intake is recorded in `config/minecraft-version-matrix-26.3.json` and
-`docs/26_3_PORT_STATUS.md`. The version-owned Fabric adapter builds with 440 tests and passes dedicated
-worldgen plus menu/preview checks. In-world rendering, multiplayer, updated
-legacy regression and release qualification remain; NeoForge has not published
-a 26.3 runtime. The first in-world client batch fails on the changed
-ProjectileUtil piercing-collision descriptor; retain a required periodic
-collision hook when porting it. The full diagnostic sweep also records a stale
-source-ABI test and missing multiplayer fixture whitelist policy; see
-`docs/26_3_TEST_ERRORS_2026-09-15.md`. The manifest contains a pending
-Fabric cell and an explicit pending-loader note, not a qualified dual-loader
-contract. Keep public support ranges unchanged until the port passes.
+`docs/26_3_PORT_STATUS.md`. September 20 fixes adapt the required projectile
+collector's surface-hit flag, SkyRenderer's shared RenderPass/DynamicGpuData ABI,
+and the shared player-position path used by movement and teleport acknowledgements.
+The 26.3 client fixtures must not send a second position packet within one tick.
+Both loaders' disposable multiplayer/raid fixtures set `white-list=false`.
+Both loaders build with 440 cases and pass the full Atlas UI fixture. Fabric
+also passes map/compass, curved objects, layout switching, the full two-client
+multiplayer verifier and raid persistence/victory. Large-ring rendering/lifecycle
+and remaining NeoForge runtime/release gates are still pending.
+NeoForge 26.3.0.7-beta and ModDevGradle 2.0.147 are now pinned in a pending two-cell
+manifest. Keep public support ranges unchanged until qualification passes.
+For the owner's September 20 session, pause at **80% usage remaining**; this
+explicit instruction supersedes the normal 5% monitor threshold for that work.
 
 Qualified 26.2 inputs use `config/minecraft-version-matrix-26.2.json`. Derive
 candidate identities, ranges, oldest ABI, and cell coverage through

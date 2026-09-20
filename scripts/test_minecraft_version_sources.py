@@ -44,7 +44,8 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         self.assertEqual("26.1", selected_source_abi("26.1"))
         self.assertEqual("26.1", selected_source_abi("26.1.2"))
         self.assertEqual("26.2", selected_source_abi("26.2"))
-        self.assertEqual("26.2", selected_source_abi("26.3"))
+        self.assertEqual("26.3", selected_source_abi("26.3"))
+        self.assertEqual("26.3", selected_source_abi("26.3.1"))
         with self.assertRaises(ValueError):
             selected_source_abi("26")
 
