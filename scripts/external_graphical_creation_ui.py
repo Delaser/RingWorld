@@ -63,6 +63,13 @@ CAPTURES = (
     "creation-ui-17-custom-monument-night-large-scale4.png",
     "creation-ui-18-confirm-layout-scale4.png",
     "creation-ui-19-footer-applied-scale4.png",
+    "creation-ui-20-new-ring.png",
+    "creation-ui-21-new-terrain.png",
+    "creation-ui-22-new-walls.png",
+    "creation-ui-23-new-sky.png",
+    "creation-ui-24-new-preview.png",
+    "creation-ui-25-new-compact-walls.png",
+    "creation-ui-26-new-footer-applied.png",
 )
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 

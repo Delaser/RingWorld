@@ -1284,7 +1284,14 @@ def creationUiScreenshotPrefixes = [
 		"creation-ui-16-large-scale4",
 		"creation-ui-17-custom-monument-night-large-scale4",
 		"creation-ui-18-confirm-layout-scale4",
-		"creation-ui-19-footer-applied-scale4"
+		"creation-ui-19-footer-applied-scale4",
+        "creation-ui-20-new-ring",
+        "creation-ui-21-new-terrain",
+        "creation-ui-22-new-walls",
+        "creation-ui-23-new-sky",
+        "creation-ui-24-new-preview",
+        "creation-ui-25-new-compact-walls",
+        "creation-ui-26-new-footer-applied"
 ]
 
 def verifyCreationUiConfig = { File runDirectory, String label ->
@@ -1507,6 +1514,12 @@ tasks.register("verifyAtlasUiClient") {
 		def atlasSettingsAckIndex = atlasSettingsAckMatcher.find() ? atlasSettingsAckMatcher.start() : -1
 		if (atlasSettingsAckIndex < 0 || atlasSettingsAckIndex >= log.indexOf("[atlas-ui-test] disconnect-clear")) {
 			throw new GradleException("Atlas UI integrated server did not accept the current settings acknowledgement; inspect " + logFile)
+		}
+		if (fileTree(new File(qualificationRunFile("run-atlas-ui"), "screenshots")).matching {
+			include "atlas-ui-02-display*.png"
+			include "atlas-ui-02-technical*.png"
+		}.isEmpty()) {
+			throw new GradleException("Atlas UI client is missing the Display-tab screenshot")
 		}
 	    (1..11).each { index ->
 			def prefix = String.format("atlas-ui-%02d-", index)

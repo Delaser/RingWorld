@@ -66,6 +66,13 @@ CAPTURE_PREFIXES = (
     "creation-ui-17-custom-monument-night-large-scale4",
     "creation-ui-18-confirm-layout-scale4",
     "creation-ui-19-footer-applied-scale4",
+    "creation-ui-20-new-ring",
+    "creation-ui-21-new-terrain",
+    "creation-ui-22-new-walls",
+    "creation-ui-23-new-sky",
+    "creation-ui-24-new-preview",
+    "creation-ui-25-new-compact-walls",
+    "creation-ui-26-new-footer-applied",
 )
 _RUN_ID = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}$")
 

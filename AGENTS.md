@@ -15,7 +15,8 @@ frozen-candidate runtime qualification remains before claiming 1.4 launch readin
 The owner accepted the wall/water look in clear weather, rain and a temporary
 pink resource-pack comparison; that pack was removed. Wall GPU textures now
 reuse unchanged inputs, and complete client cache snapshots wait for quiet tile
-updates. The requested UI redesign is reserved for an Astra design pass.
+updates. The approved creation/in-world UI redesign is implemented in the
+development branch; see `docs/RELEASE_1_4_NOTES.md` for development evidence.
 The 26.3 frozen quick qualification passes both loaders on source `3016a4b`
 (`20260926T203515Z-6d299758f87d`); nightly and remaining-version runtime
 qualification are still outstanding. A targeted frozen production-render

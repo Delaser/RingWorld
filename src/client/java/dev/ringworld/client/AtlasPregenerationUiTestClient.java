@@ -33,6 +33,10 @@ public final class AtlasPregenerationUiTestClient {
     private long readyAfterFrame;
     private int stage;
     private int ticks;
+    private boolean displayTabRequested;
+    private boolean displayTabCaptured;
+    private boolean technicalRequested;
+    private boolean technicalCaptured;
     private boolean capturedInitial;
     private boolean finalCaptureSaved;
     private long revisionBeforeEdit;
@@ -157,6 +161,32 @@ public final class AtlasPregenerationUiTestClient {
                     }
                     capture(client, "atlas-ui-02-map-initial", false);
                     capturedInitial = true;
+                }
+                if (!displayTabRequested) {
+                    screen.openDisplayForAutomation();
+                    displayTabRequested = true;
+                    arm();
+                    return true;
+                }
+                if (!displayTabCaptured) {
+                    capture(client, "atlas-ui-02-display", false);
+                    displayTabCaptured = true;
+                    screen.openGenerationForAutomation();
+                    arm();
+                    return true;
+                }
+                if (!technicalRequested) {
+                    screen.toggleTechnicalForAutomation();
+                    technicalRequested = true;
+                    arm();
+                    return true;
+                }
+                if (!technicalCaptured) {
+                    capture(client, "atlas-ui-02-technical", false);
+                    technicalCaptured = true;
+                    screen.toggleTechnicalForAutomation();
+                    arm();
+                    return true;
                 }
                 if (status.progress().state() == AtlasPregenerationState.IDLE) {
                     screen.openStartConfirmationForAutomation(); arm(); stage++;
@@ -369,9 +399,13 @@ public final class AtlasPregenerationUiTestClient {
                 .filter(Button.class::isInstance)
                 .map(Button.class::cast)
                 .toList();
-        return buttons.size() == 2 && buttons.stream().map(button -> button.getMessage().getString())
-                .collect(java.util.stream.Collectors.toSet()).equals(java.util.Set.of(
-                        "Done", "Detail: " + RingClientLodTuning.quality().label()));
+        var labels = buttons.stream().map(button -> button.getMessage().getString())
+                .collect(java.util.stream.Collectors.toSet());
+        return labels.contains("Return to game") && labels.contains("Technical details")
+                && labels.contains("Generation *") && labels.contains("Display")
+                && labels.stream().noneMatch(label -> label.contains("Generate Entire Ring")
+                        || label.equals("Pause") || label.equals("Resume")
+                        || label.startsWith("Stop generation"));
     }
     private void capture(Minecraft client, String name, boolean finalCapture) {
         RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, name + ".png", RingMinecraftClientAccess.mainRenderTarget(client), 1,

@@ -586,6 +586,7 @@ public final class RingWorldCreationScreen extends Screen {
 
         /** Opens the actual footer button for the menu-only graphical fixture. */
         void ringworld$openLayoutEditorForAutomation();
+        void ringworld$openNewEditorForAutomation();
 
         /** Reads the actual footer label after an accepted confirmation. */
         Component ringworld$layoutButtonMessageForAutomation();

@@ -6,6 +6,10 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [Implemented RingWorld UI captures](media/ring-generation-ui-implemented/index.html):
+  actual 26.3 Fabric creation and in-world screens for the approved 1.4 redesign.
+- [Ring generation UI proposal](design/ring-generation-ui-proposal/index.html):
+  the reviewed design report and interactive mockup that preceded implementation.
 - [`TRANSITION_IMPROVEMENT_PLAN_1_4.md`](TRANSITION_IMPROVEMENT_PLAN_1_4.md): staged
   material, water, geometry and blending improvements from the accepted 1.4 checkpoint.
 

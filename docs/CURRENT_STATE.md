@@ -1,5 +1,14 @@
 # Current state
 
+September 27 UI work: the owner-approved RingWorld creation redesign is
+implemented on the 1.4 development branch. The world editor uses Ring,
+Terrain, Walls, Sky and Preview tabs with one draft and one Apply. The in-world
+panel separates server-owned generation from player-local display detail.
+Actual 26.3 Fabric menu and generation fixture captures pass; see the
+[1.4 notes](RELEASE_1_4_NOTES.md) and
+[design proposal](design/ring-generation-ui-proposal/index.html). This is not
+a published 1.4 release or a frozen-candidate qualification.
+
 September 26 1.4 qualification: clean 26.3 quick run
 `20260926T203515Z-6d299758f87d` passes Fabric and NeoForge frozen-jar,
 build and installed dedicated-server checks on pushed source `3016a4b`.

@@ -58,13 +58,28 @@ reload, and wall-filter changes have not been claimed as tested on older
 versions or on NeoForge. See [rendering design](RENDERING.md) for the current
 implementation. No Distant Horizons code was copied.
 
-## UI redesign to plan
+## World-creation and in-world UI redesign (27 September)
 
-- [ ] Review the world-generation editor and client performance controls as a
-  whole, then redesign their layout and wording so the settings are easier to
-  find and understand. Keep Atlas detail in client performance settings.
-- [ ] Switch back to GPT-6 Astra for the design pass; implement and validate the
-  agreed design afterward.
+The owner approved the [rendered proposal](design/ring-generation-ui-proposal/index.html).
+The normal Create World entry now opens one RingWorld draft with Ring, Terrain,
+Walls, Sky and Preview tabs. Apply saves the whole draft once, including the
+seed; Cancel and Restore saved settings have separate confirmation flows.
+The Walls tab shows the selected material/pattern sample and keeps the three
+patterns visible. The seed preview adds a correctly proportioned local section
+and a full-ring navigation strip. The in-world panel separates authoritative
+generation controls from local Low/Medium/High display detail. Atlas detail
+remains a player-side setting, not a world-generation option.
+
+Development verification: the creation fixture passed 26 captures at GUI
+scales 1–4, including a 320×270 logical view and a real preview/draft seed
+round-trip, on 26.1.2 Fabric, 26.2 Fabric, and both 26.3 loaders. The in-world
+26.3 generation fixture passed on both loaders: start/pause/resume/stop/retry/
+completion/reconnect sequence and captured the Display and compact Technical
+details pages. [Actual screenshots](media/ring-generation-ui-implemented/index.html)
+are retained in the repository. All three supported version lines pass source
+builds and Java tests on Fabric and NeoForge. These are development checks;
+they do not qualify the final 1.4 release candidate or replace the frozen
+runtime matrix.
 
 
 ## Wall material follow-up

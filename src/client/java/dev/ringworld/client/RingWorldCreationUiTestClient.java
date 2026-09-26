@@ -30,7 +30,7 @@ public final class RingWorldCreationUiTestClient {
     // smallest supported development machines, so retain a bounded three-minute
     // overall watchdog rather than misclassifying expected preview work as a hang.
     private static final int TIMEOUT_TICKS = 3_600;
-    private static final int CAPTURE_COUNT = 19;
+    private static final int CAPTURE_COUNT = 26;
 
     private static RingWorldCreationUiTestClient activeFixture;
 
@@ -126,7 +126,14 @@ public final class RingWorldCreationUiTestClient {
             case 15 -> captureLargeAndPrepareCustom(client);
             case 16 -> captureCustomAndConfirm(client);
             case 17 -> captureConfirmationAndAccept(client);
-            case 18 -> verifyAppliedFooterAndStop(client);
+            case 18 -> verifyAppliedFooterAndOpenNewEditor(client);
+            case 19 -> captureNewRing(client);
+            case 20 -> captureNewTerrain(client);
+            case 21 -> captureNewWalls(client);
+            case 22 -> captureNewSky(client);
+            case 23 -> captureNewPreview(client);
+            case 24 -> captureNewCompactWalls(client);
+            case 25 -> verifyNewApplyAndStop(client);
             default -> { }
         }
         return true;
@@ -452,16 +459,100 @@ public final class RingWorldCreationUiTestClient {
         });
     }
 
-    private void verifyAppliedFooterAndStop(Minecraft client) {
+    private void verifyAppliedFooterAndOpenNewEditor(Minecraft client) {
         if (!(RingMinecraftClientAccess.screen(client) instanceof CreateWorldScreen screen)
                 || !(screen instanceof RingWorldCreationScreen.LayoutButtonOwner owner)
-                || !"RingWorld 4096×640".equals(owner.ringworld$layoutButtonMessageForAutomation().getString())) {
+                || !"RingWorld: Custom".equals(owner.ringworld$layoutButtonMessageForAutomation().getString())) {
             fail(client, "the accepted confirmation did not refresh the real Create World footer");
             return;
         }
-        capture(client, "creation-ui-19-footer-applied-scale4");
-        // Screenshot's callback stops the client immediately after the last
-        // write completes. There is deliberately no world-creation call here.
+        capture(client, "creation-ui-19-footer-applied-scale4", () -> {
+            owner.ringworld$openNewEditorForAutomation();
+            armAndAdvance();
+        });
+    }
+
+    private void captureNewRing(Minecraft client) {
+        if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldEditorScreen editor)) {
+            fail(client, "the real footer did not open the new editor"); return;
+        }
+        capture(client, "creation-ui-20-new-ring", () -> {
+            editor.ringworld$automationTab("TERRAIN"); armAndAdvance();
+        });
+    }
+
+    private void captureNewTerrain(Minecraft client) {
+        if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldEditorScreen editor)) {
+            fail(client, "the new terrain page was not retained"); return;
+        }
+        capture(client, "creation-ui-21-new-terrain", () -> {
+            editor.ringworld$automationTab("WALLS"); armAndAdvance();
+        });
+    }
+
+    private void captureNewWalls(Minecraft client) {
+        if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldEditorScreen editor)) {
+            fail(client, "the new walls page was not retained"); return;
+        }
+        capture(client, "creation-ui-22-new-walls", () -> {
+            editor.ringworld$automationTab("SKY"); armAndAdvance();
+        });
+    }
+
+    private void captureNewSky(Minecraft client) {
+        if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldEditorScreen editor)) {
+            fail(client, "the new sky page was not retained"); return;
+        }
+        capture(client, "creation-ui-23-new-sky", () -> {
+            editor.ringworld$automationTab("PREVIEW"); armAndAdvance();
+        });
+    }
+
+    private boolean newPreviewSeedRequested;
+    private boolean newPreviewReadyObserved;
+    private void captureNewPreview(Minecraft client) {
+        if (!(RingMinecraftClientAccess.screen(client) instanceof RingSeedPreviewScreen preview)) {
+            fail(client, "the new preview tab did not open"); return;
+        }
+        if (!newPreviewSeedRequested) {
+            preview.ringworld$automationSetSeed("24680");
+            newPreviewSeedRequested = true; arm(); return;
+        }
+        if (!preview.ringworld$automationReady()) return;
+        if (!newPreviewReadyObserved) { newPreviewReadyObserved = true; arm(); return; }
+        capture(client, "creation-ui-24-new-preview", () -> {
+            preview.ringworld$automationDone();
+            if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldEditorScreen editor)
+                    || !editor.ringworld$automationDraftSeedIs("24680")
+                    || !editor.ringworld$automationParentSeedIs("67890")
+                    || !(RingMinecraftClientAccess.screen(client) instanceof RingWorldEditorScreen)) {
+                fail(client, "new preview seed did not return as a draft"); return;
+            }
+            resizeFramebuffer(client, NARROW_FRAMEBUFFER_WIDTH, MINIMUM_FRAMEBUFFER_HEIGHT);
+            editor.ringworld$automationTab("WALLS");
+            armAndAdvance();
+        });
+    }
+
+    private void captureNewCompactWalls(Minecraft client) {
+        if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldEditorScreen editor)
+                || !hasLogicalSize(client, NARROW_FRAMEBUFFER_WIDTH / 4,
+                        MINIMUM_SCALE_FOUR_LOGICAL_HEIGHT)) {
+            fail(client, "new Walls page did not fit the 320-wide view"); return;
+        }
+        capture(client, "creation-ui-25-new-compact-walls", () -> {
+            editor.ringworld$automationApply(); armAndAdvance();
+        });
+    }
+
+    private void verifyNewApplyAndStop(Minecraft client) {
+        if (!(RingMinecraftClientAccess.screen(client) instanceof CreateWorldScreen screen)
+                || !(screen instanceof RingWorldCreationScreen.LayoutButtonOwner owner)
+                || !"24680".equals(owner.ringworld$seedText())) {
+            fail(client, "new Apply did not commit the preview seed and return to Create World");
+            return;
+        }
+        capture(client, "creation-ui-26-new-footer-applied");
     }
 
     private void capture(Minecraft client, String name) {
@@ -478,7 +569,7 @@ public final class RingWorldCreationUiTestClient {
                 capturePending = false;
                 RingWorldMod.LOGGER.info("[creation-ui-test] screenshot {}", message.getString());
                 if (capturesSaved == CAPTURE_COUNT) {
-                    RingWorldMod.LOGGER.info("[creation-ui-test] PASS: 19 menu-only captures across GUI scales 1-4 "
+                    RingWorldMod.LOGGER.info("[creation-ui-test] PASS: 26 menu-only captures across GUI scales 1-4 "
                             + "and a 320-wide compact view; generation policy, two real seed previews, rim controls, sky selection, Small/Medium/Large "
                             + "maths, and the confirmed 4096x640x192 monument layout refreshed the footer.");
                     activeFixture = null;
