@@ -9,8 +9,9 @@ wall-filtering fixes on 2026-09-26. See `docs/RELEASE_1_4_NOTES.md` for scope,
 validation, and remaining real-terrain/Atlas transition work.
 Follow-up material work adds 26.3 texture-derived wall colours and Atlas format
 10 water coverage (v4 metadata/tiles, still twelve bytes/cell). All six source
-build/test cells pass. Resolve the documented cold 32-chunk worker-starvation
-stall before claiming 1.4 launch readiness.
+build/test cells pass. A 26.3 dedicated pipeline-compile worker passed
+32-chunk Fabric and NeoForge cold launches, reloads and normal stops. Frozen
+candidate runtime qualification remains before claiming 1.4 launch readiness.
 
 Latest release checkpoint: all six 1.2 jars are submitted to CurseForge and
 CDN hashes match; see `docs/RELEASE_1_2_PUBLICATION_2026-09-20.md`. Modrinth is deferred.

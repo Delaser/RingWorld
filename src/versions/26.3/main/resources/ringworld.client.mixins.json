@@ -9,6 +9,7 @@
     "CreateWorldScreenInvoker",
     "CreateWorldScreenMixin",
     "PauseScreenMixin",
+    "PipelineCacheMixin",
     "ConfirmScreenAccessor",
     "EntityRenderManagerMixin",
     "ExteriorSkyLightMixin",

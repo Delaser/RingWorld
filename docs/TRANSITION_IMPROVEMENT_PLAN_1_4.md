@@ -152,3 +152,8 @@ buffer work. A diagnostic two-worker increase immediately released the second
 stall; normal parallelism was restored after 30 seconds. No production pool
 change is included. Fix and qualify that startup/reload path before release;
 keep it separate from the material and geometry decisions above.
+
+Follow-up: 26.3 pipeline compilation now uses a dedicated daemon worker, leaving
+Minecraft's shared pool size unchanged. Actual 32-chunk Fabric and NeoForge
+development clients reached complete Atlases, reloaded resources and stopped
+normally. Frozen-candidate release qualification remains open.

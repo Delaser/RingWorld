@@ -115,9 +115,17 @@ Minecraft pipeline compilation/chunk-buffer work. The first required termination
 On the second, the shared background pool had seven occupied workers and 4,852
 queued submissions; temporarily increasing its parallelism by two cleared the
 stall immediately. The diagnostic restored parallelism after 30 seconds and
-left the client running at 32 chunks. This strongly supports worker starvation;
-no production thread-pool change was made. Retain both dumps and resolve this
-startup/reload risk before 1.4, rather than claiming launch/stutter issues solved.
+left the client running at 32 chunks. This strongly supports worker starvation.
+
+A 26.3 client mixin now gives pipeline compilation one dedicated daemon worker,
+so it can finish while chunk buffers occupy Minecraft's shared pool. It does
+not change that pool's size or move GPU finalization off the render thread.
+Both 26.3 loader builds/tests pass. A 32-chunk Fabric cold launch opened a
+complete cached Atlas, reloaded resources and stopped normally. A 32-chunk
+NeoForge cold launch downloaded the complete Atlas, reloaded resources and
+stopped normally. The pipeline worker appeared in the live Fabric thread dump.
+These are development runs; frozen-candidate qualification is still required.
+Ordinary cache-copy and GPU-upload hitches are separate.
 
 High costs about 28–29% more p95 frame time on the two tested routes while
 leaving the principal cliff/canopy and thin-structure mismatch visible. Adaptive
