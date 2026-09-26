@@ -18,7 +18,10 @@ reuse unchanged inputs, and complete client cache snapshots wait for quiet tile
 updates. The requested UI redesign is reserved for an Astra design pass.
 The 26.3 frozen quick qualification passes both loaders on source `3016a4b`
 (`20260926T203515Z-6d299758f87d`); nightly and remaining-version runtime
-qualification are still outstanding.
+qualification are still outstanding. A targeted frozen production-render
+slice passes both 26.3 loaders (`20260926T210453Z-752830dc4ca0`), but its
+aggregate is intentionally INCOMPLETE because the other nightly fixtures were
+not selected.
 
 Latest release checkpoint: all six 1.2 jars are submitted to CurseForge and
 CDN hashes match; see `docs/RELEASE_1_2_PUBLICATION_2026-09-20.md`. Modrinth is deferred.

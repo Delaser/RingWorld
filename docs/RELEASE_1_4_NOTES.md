@@ -167,6 +167,17 @@ encountered a transient Maven `No route to host` during an isolated Fabric
 build. The passing run used the documented read-only dependency cache; neither
 failed attempt is counted as a pass.
 
+The frozen 26.3 production-render slice
+`20260926T210453Z-752830dc4ca0` passes on both loaders using the exact
+quick-run jars. It opened a complete format-10 16,384 × 256 Atlas, captured
+noon/dusk/night/rain projection views and ran the separate visual-parity
+client. The source is the `SeamTest` development world, which contains old
+wall-study panels; these images verify runtime behaviour and do not establish
+natural-terrain visual quality. The coordinator reports `INCOMPLETE` by design
+because this was one selected fixture, not the full nightly matrix. The
+production-world reader was updated to accept format 10's packed light/water
+byte before this slice ran.
+
 High costs about 28–29% more p95 frame time on the two tested routes while
 leaving the principal cliff/canopy and thin-structure mismatch visible. Adaptive
 geometry and continuous compositing are deferred by the plan's comparison gate.
