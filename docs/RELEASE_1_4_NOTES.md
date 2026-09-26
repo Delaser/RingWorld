@@ -156,10 +156,22 @@ and ordinary cache-copy cost have not been eliminated or benchmarked away.
 After these shared-source changes, all six source build/test cells pass: 447
 cases per loader on 26.1, 447 on 26.2 and 450 on 26.3, with no failures.
 
+The clean 26.3 quick qualification run `20260926T203515Z-6d299758f87d`
+passes both Fabric and NeoForge on pushed source `3016a4b`. Each cell built
+and inspected its frozen jar, passed unit/build checks, and started and stopped
+an installed dedicated server using that exact candidate. This is the quick
+gate, not the ten-fixture-per-cell nightly matrix. An initial attempt exposed
+the Python 3.9 release reader rejecting the valid NeoForge Lithium options
+table; that reader is fixed and covered by a focused test. A second attempt
+encountered a transient Maven `No route to host` during an isolated Fabric
+build. The passing run used the documented read-only dependency cache; neither
+failed attempt is counted as a pass.
+
 High costs about 28–29% more p95 frame time on the two tested routes while
 leaving the principal cliff/canopy and thin-structure mismatch visible. Adaptive
 geometry and continuous compositing are deferred by the plan's comparison gate.
 The remaining boundary is not claimed invisible. Details, measurements and
 limits are in `TRANSITION_IMPROVEMENT_PLAN_1_4.md`; local evidence is retained in
-`logs/transition-plan-execution/`. Owner visual review passed; frozen-candidate
-release qualification remains required before publication.
+`logs/transition-plan-execution/`. Owner visual review and 26.3 frozen quick
+qualification passed. The full nightly matrix, remaining supported-version
+qualification, and the planned Astra UI design pass remain before publication.

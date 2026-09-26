@@ -10,12 +10,15 @@ validation, and remaining real-terrain/Atlas transition work.
 Follow-up material work adds 26.3 texture-derived wall colours and Atlas format
 10 water coverage (v4 metadata/tiles, still twelve bytes/cell). All six source
 build/test cells pass. A 26.3 dedicated pipeline-compile worker passed
-32-chunk Fabric and NeoForge cold launches, reloads and normal stops. Frozen
-candidate runtime qualification remains before claiming 1.4 launch readiness.
+32-chunk Fabric and NeoForge cold launches, reloads and normal stops. Full
+frozen-candidate runtime qualification remains before claiming 1.4 launch readiness.
 The owner accepted the wall/water look in clear weather, rain and a temporary
 pink resource-pack comparison; that pack was removed. Wall GPU textures now
 reuse unchanged inputs, and complete client cache snapshots wait for quiet tile
 updates. The requested UI redesign is reserved for an Astra design pass.
+The 26.3 frozen quick qualification passes both loaders on source `3016a4b`
+(`20260926T203515Z-6d299758f87d`); nightly and remaining-version runtime
+qualification are still outstanding.
 
 Latest release checkpoint: all six 1.2 jars are submitted to CurseForge and
 CDN hashes match; see `docs/RELEASE_1_2_PUBLICATION_2026-09-20.md`. Modrinth is deferred.

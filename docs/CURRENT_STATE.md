@@ -1,5 +1,12 @@
 # Current state
 
+September 26 1.4 qualification: clean 26.3 quick run
+`20260926T203515Z-6d299758f87d` passes Fabric and NeoForge frozen-jar,
+build and installed dedicated-server checks on pushed source `3016a4b`.
+The Python 3.9 release verifier now accepts the current NeoForge Lithium
+options table. Full nightly/remaining-version qualification and the Astra UI
+design pass are still pending; no 1.4 jars have been published.
+
 September 26 later: owner accepted the updated 1.4 wall/water appearance after
 clear, rain and temporary pink resource-pack comparisons. The pack was removed
 and the original colours returned. The six source build/test cells pass (447
