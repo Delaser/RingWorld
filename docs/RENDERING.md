@@ -75,13 +75,24 @@ fog, then adds the visible half of the live/LOD cross-fade.
 `RingRenderProfile` publishes the exact transition endpoints consumed by both
 sides. The complete-ring
 surface is rendered earlier, behind terrain, so proxy alpha alone cannot show
-through opaque chunks. In the current profile, from 78% to 102% of effective
-view distance, a stable
-screen-space threshold progressively discards live terrain fragments and
-reveals the aligned proxy underneath. This preserves the opaque terrain
-pipeline and depth behavior while avoiding temporal random noise. The effect is
+through opaque chunks. In the current profile, from 90% to 102% of effective
+view distance, a fixed 8x8 ordered screen-space threshold progressively
+discards live terrain fragments and reveals the aligned proxy underneath.
+The ordered coverage removes the irregular hash speckle, but moving silhouettes
+can still show screen-door shimmer. This preserves the opaque terrain
+pipeline and depth behavior. The effect is
 strictly guarded by the RingWorld activation marker; Nether, End, menus, and
 ordinary worlds retain the vanilla fragment result.
+
+Distant Horizons uses a different technique for its vanilla-to-LOD handoff:
+its fade shader composites the rendered Minecraft colour and depth with a
+separate LOD colour/depth image. That permits a continuous colour blend instead
+of discarding individual terrain pixels. Reaching the same result here would
+require an additional depth-aware composition pass after live terrain, with
+careful treatment of transparent terrain; it is separate from the ordered
+coverage change above. See the upstream
+[vanilla fade shader](https://gitlab.com/distant-horizons-team/distant-horizons-core/-/raw/main/core/src/main/resources/assets/distanthorizons/shaders/fade/gl/vanilla_fade.frag)
+and [renderer](https://gitlab.com/distant-horizons-team/distant-horizons/-/raw/main/common/src/main/java/com/seibel/distanthorizons/common/render/openGl/postProcessing/fade/GlVanillaFadeRenderer.java).
 
 ## Curved frustum
 
@@ -278,6 +289,19 @@ shading before upload. The renderer also constructs an explicit box-filtered
 mip chain with periodic X sampling and clamped Z sampling. The GPU sampler uses
 repeat U, clamp V, linear magnification/minification, and mip filtering.
 
+The 26.3 wall colour atlas now also uses distance-filtered mipmaps; its old
+single-level nearest sampler made contrasting block colours shimmer under
+camera movement. The worker builds alpha-weighted mips (decay holes do not
+add black to the colour average), stopping at one row per wall face. Each of
+the four strips has a power-of-two height. The shader clamps each sampled mip
+to that strip before blending adjacent levels, preventing inner/outer faces
+from bleeding into one another. Circumference coordinates stay unwrapped
+until the repeat sampler, avoiding a derivative spike at the ring seam.
+The existing decay alpha cutoff and confirmed continuous proxy depth mapping
+are retained. This change is currently scoped to the 26.3 renderer; older
+version adapters retain their previous wall filtering.
+
+
 ### Mesh
 
 The mesh targets one segment or band per eight intrinsic blocks and applies
@@ -323,9 +347,9 @@ Walking does not rebuild the mesh. Per frame, the renderer:
 - supplies actual view distance, circumference, camera X phase, and camera Z
   to the custom surface shader;
 - binds Minecraft's current lightmap beside the canonical terrain texture;
-- draws with culling disabled, translucent colour blending, LEQUAL depth
-  testing, and depth writes disabled. In 26.1 these are explicit
-  `ColorTargetState` and `DepthStencilState` values.
+- draws with culling disabled, translucent colour blending, and depth writes
+  enabled. Depth testing uses LEQUAL in 26.1 and GEQUAL with reversed depth
+  in 26.2/26.3.
 
 It runs during celestial rendering. `RingRenderProfile` clamps every handoff
 endpoint to the same physical half-circumference, including when a requested
@@ -342,9 +366,17 @@ The complete-ring vertex shader therefore leaves clip-space X, Y, and W
 untouched and clamps only positive-W Z values that would cross the far plane.
 The apparent angular size and physical curvature remain exact, vertices behind
 the eye retain normal frustum clipping, and the correction cannot cause more
-real chunks to load. Because the proxy renders in the sky stage without depth
-writes, later authoritative chunks, rim walls, entities, and local clouds
-still cover it.
+real chunks to load. The proxy renders in the sky stage and fades its depth
+from the backend far plane with opacity, so an almost-transparent proxy does
+not occlude nearby authoritative chunks.
+
+The 26.3 pipeline writes proxy depth during the live-terrain handoff. Its
+fragment shader reconstructs depth from the projection and reciprocal clip W,
+then joins the native depth curve continuously to an ordered infinite tail
+at the actual vertex-clamp boundary. A fixed 1024-block correction left a
+flat-depth band before that distance (roughly 672–1024 blocks with the current
+OpenGL projection). Reconstructing each fragment also avoids interpolation
+errors in triangles that straddle the clamp boundary.
 
 The atlas begins revealing beneath the last 24% of loaded distance. More than
 half of its terrain signal remains at the nominal chunk edge, then rises

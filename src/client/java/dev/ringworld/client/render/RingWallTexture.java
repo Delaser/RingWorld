@@ -7,8 +7,50 @@ import dev.ringworld.world.*;
 final class RingWallTexture {
     static NativeImage build(RingTerrainAtlas atlas, RingWallStyle style, long seed,
                               int bottom, int top, int columns, int[] palette, java.util.function.BooleanSupplier cancelled) {
+        return build(atlas, style, seed, bottom, top, columns, palette, cancelled,
+                Math.min(512, Math.max(1, top - bottom)));
+    }
+
+    /** Four independent strips; stop before a mip would merge different wall faces. */
+    static NativeImage[] buildMipmapped(RingTerrainAtlas atlas, RingWallStyle style, long seed,
+                                        int bottom, int top, int columns, int[] palette,
+                                        java.util.function.BooleanSupplier cancelled) {
+        int rows = 1;
+        while (rows < Math.min(512, Math.max(1, top - bottom))) rows <<= 1;
+        NativeImage[] levels = new NativeImage[Integer.numberOfTrailingZeros(rows) + 1];
+        try {
+            levels[0] = build(atlas, style, seed, bottom, top, columns, palette, cancelled, rows);
+            int width = columns;
+            int height = rows * 4;
+            int[] pixels = new int[width * height];
+            for (int y = 0; y < height; y++) {
+                for (int x = 0; x < width; x++) pixels[y * width + x] = levels[0].getPixel(x, y);
+            }
+            for (int level = 1; level < levels.length; level++) {
+                if (cancelled.getAsBoolean())
+                    throw new java.util.concurrent.CancellationException("obsolete wall texture");
+                // Power-of-two strip heights keep every 2x2 filter inside one face.
+                // Alpha-weighted RGB prevents decay holes from darkening the wall.
+                pixels = RingSurfaceLod.buildNextMipArgb(pixels, width, height);
+                width = Math.max(1, width >> 1);
+                height >>= 1;
+                NativeImage image = new NativeImage(width, height, false);
+                levels[level] = image;
+                for (int y = 0; y < height; y++) {
+                    for (int x = 0; x < width; x++) image.setPixel(x, y, pixels[y * width + x]);
+                }
+            }
+            return levels;
+        } catch (RuntimeException | Error failure) {
+            for (NativeImage image : levels) if (image != null) image.close();
+            throw failure;
+        }
+    }
+
+    private static NativeImage build(RingTerrainAtlas atlas, RingWallStyle style, long seed,
+                                      int bottom, int top, int columns, int[] palette,
+                                      java.util.function.BooleanSupplier cancelled, int rows) {
         int height = Math.max(1, top - bottom);
-        int rows = Math.min(512, height);
         NativeImage image = new NativeImage(columns, rows * 4, false);
         try {
             var geometry = atlas.geometry();

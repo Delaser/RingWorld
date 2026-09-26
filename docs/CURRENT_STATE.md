@@ -1,5 +1,10 @@
 # Current state
 
+September 26: owner accepted the terrain-depth, wall-filtering, and resource-reload
+fixes for the future **1.4** release. See [1.4 checkpoint](RELEASE_1_4_NOTES.md).
+26.3 Fabric build and 442 tests pass; two in-world reloads pass. The visible
+real-terrain/Atlas transition is the next task. No 1.4 artifacts are published.
+
 September 20 final: all six 1.2 jars are submitted to CurseForge; all CDN hashes match.
 See [publication record](RELEASE_1_2_PUBLICATION_2026-09-20.md). Modrinth remains deferred.
 The preparation notes below are historical and superseded by that record.

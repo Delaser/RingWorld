@@ -14,6 +14,7 @@ layout(location = 1) out vec4 vertexColor;
 layout(location = 2) out float intrinsicDistance;
 layout(location = 3) out float intrinsicHeight;
 layout(location = 4) out float intrinsicWidth;
+layout(location = 5) flat out vec3 depthMapping;
 
 const float TAU = 6.28318530717958647692;
 // The complete-ring surface is visual sky LOD, not ordinary world geometry.
@@ -28,6 +29,27 @@ const float FAR_BACKGROUND_DEPTH = 0.9999;
 
 void main() {
     gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
+    // Unclipped perspective depth is offset + scale / clipW. Derive the
+    // compression join from the actual clip boundary to avoid any band of
+    // equal depths before the correction starts.
+    // Projection uniforms are vertex-only in 26.3.
+    float ndcOffset = ProjMat[2][2] / ProjMat[2][3];
+    float ndcScale = ProjMat[3][2] - ndcOffset * ProjMat[3][3];
+#ifdef RINGWORLD_REVERSED_DEPTH
+    float windowScale = ModelOffset.z < 0.0 ? 0.5 : 1.0;
+    float windowOffset = ModelOffset.z < 0.0 ? 0.5 : 0.0;
+    float boundaryDepth = ModelOffset.z * windowScale + windowOffset;
+    const float farDepth = 0.0;
+#else
+    const float windowScale = 0.5;
+    const float windowOffset = 0.5;
+    const float boundaryDepth = FAR_BACKGROUND_DEPTH * 0.5 + 0.5;
+    const float farDepth = 1.0;
+#endif
+    vec2 nativeDepth = vec2(ndcOffset * windowScale + windowOffset,
+                           ndcScale * windowScale);
+    float boundaryW = nativeDepth.y / (boundaryDepth - nativeDepth.x);
+    depthMapping = vec3(nativeDepth, (boundaryDepth - farDepth) * boundaryW);
     if (gl_Position.w > 0.0) {
 #ifdef RINGWORLD_REVERSED_DEPTH
         gl_Position.z = max(gl_Position.z, gl_Position.w * ModelOffset.z);

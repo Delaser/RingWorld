@@ -4,6 +4,10 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
+Unreleased 1.4 rendering checkpoint: owner accepted the 26.3 terrain-depth and
+wall-filtering fixes on 2026-09-26. See `docs/RELEASE_1_4_NOTES.md` for scope,
+validation, and remaining real-terrain/Atlas transition work.
+
 Latest release checkpoint: all six 1.2 jars are submitted to CurseForge and
 CDN hashes match; see `docs/RELEASE_1_2_PUBLICATION_2026-09-20.md`. Modrinth is deferred.
 

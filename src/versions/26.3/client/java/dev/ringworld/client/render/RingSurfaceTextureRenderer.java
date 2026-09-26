@@ -207,13 +207,14 @@ public final class RingSurfaceTextureRenderer {
                         if (!uploadTexture(build.images(), (float)build.snapshot().atlas().completion())) {
                             return null;
                         }
-                        if (build.wallImage() != null) {
+                        if (build.wallImages() != null) {
                             long wallUploadStarted = System.nanoTime();
-                            var image = build.wallImage();
-                            GpuTexture next = RingSurfaceGpu.createSurfaceTexture(image.getWidth(), image.getHeight(), 1);
+                            var images = build.wallImages();
+                            var image = images[0];
+                            GpuTexture next = RingSurfaceGpu.createSurfaceTexture(image.getWidth(), image.getHeight(), images.length);
                             GpuTextureView view = null;
                             try {
-                                RingSurfaceGpu.uploadSurfaceTexture(next, new NativeImage[]{image});
+                                RingSurfaceGpu.uploadSurfaceTexture(next, images);
                                 view = RenderSystem.getDevice().createTextureView(next);
                             } catch (RuntimeException | Error failure) {
                                 if (view != null) view.close();
@@ -280,14 +281,14 @@ public final class RingSurfaceTextureRenderer {
         RingTerrainAtlas atlas = preparedSnapshot.atlas();
         long meshStarted = System.nanoTime();
         RingSurfaceGpu.PackedMesh packed = null;
-        NativeImage wallImage = null;
+        NativeImage[] wallImages = null;
         try {
             if (RingSurfaceMeshRefreshPolicy.shouldRebuild(inputs.sameAtlas(), inputs.hasMesh(),
                     atlas.isComplete(), inputs.detailed(), preparedSnapshot.heightFingerprint(), inputs.fingerprint())) {
                 RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(atlas.geometry(), atlas, atlas.isComplete(),
                         inputs.referenceY(), inputs.wallTopY(), inputs.wallThickness(), profile);
                 packed = RingSurfaceGpu.packMesh(mesh, inputs.wallStyle().vertexArgb());
-                wallImage = RingWallTexture.build(atlas, inputs.savedStyle(), inputs.seed(),
+                wallImages = RingWallTexture.buildMipmapped(atlas, inputs.savedStyle(), inputs.seed(),
                         inputs.bottomY(), inputs.wallTopY(), Math.min(16384, profile.textureColumns()), inputs.palette(),
                         () -> generation != textureBuildGeneration);
             }
@@ -297,10 +298,10 @@ public final class RingSurfaceTextureRenderer {
             }
             if (generation != textureBuildGeneration) throw new java.util.concurrent.CancellationException("obsolete surface job");
             return new TextureBuild(preparedSnapshot,
-                    buildTexturePixels(atlas, generation, profile, preview), packed, inputs.wallStyle(), wallImage);
+                    buildTexturePixels(atlas, generation, profile, preview), packed, inputs.wallStyle(), wallImages);
         } catch (RuntimeException | Error exception) {
             if (packed != null) packed.close();
-            if (wallImage != null) wallImage.close();
+            if (wallImages != null) for (NativeImage image : wallImages) image.close();
             throw exception;
         }
     }
@@ -475,11 +476,11 @@ public final class RingSurfaceTextureRenderer {
     /** Native texture images plus their immutable source content. */
     private record TextureBuild(RingSurfaceBuildSnapshot snapshot,
                                 TextureImages images, RingSurfaceGpu.PackedMesh mesh,
-                                RingWallShaderStyle.Encoded wallStyle, NativeImage wallImage) implements AutoCloseable {
+                                RingWallShaderStyle.Encoded wallStyle, NativeImage[] wallImages) implements AutoCloseable {
         @Override
         public void close() {
             try { images.close(); } finally {
-                try { if (mesh != null) mesh.close(); } finally { if (wallImage != null) wallImage.close(); }
+                try { if (mesh != null) mesh.close(); } finally { if (wallImages != null) for (NativeImage image : wallImages) image.close(); }
             }
         }
     }

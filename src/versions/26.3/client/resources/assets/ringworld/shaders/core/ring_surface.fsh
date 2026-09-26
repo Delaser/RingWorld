@@ -16,6 +16,7 @@ layout(location = 1) in vec4 vertexColor;
 layout(location = 2) in float intrinsicDistance;
 layout(location = 3) in float intrinsicHeight;
 layout(location = 4) in float intrinsicWidth;
+layout(location = 5) flat in vec3 depthMapping;
 
 layout(location = 0) out vec4 fragColor;
 
@@ -87,6 +88,25 @@ vec3 wallPalette(float roll) {
     return vertexColor.rgb;
 }
 
+// Clamp each mip to its own wall strip, including the one-row final mip.
+// Repeat U in the sampler: fract(U) before derivatives creates a seam LOD spike.
+vec4 wallMip(vec2 uv, float strip, float level) {
+    float halfTexel = 0.5 / float(textureSize(Sampler3, int(level)).y);
+    uv.y = clamp(uv.y, strip * 0.25 + halfTexel, (strip + 1.0) * 0.25 - halfTexel);
+    return textureLod(Sampler3, uv, level);
+}
+
+vec4 filteredWall(vec2 uv, float strip) {
+    vec2 size = vec2(textureSize(Sampler3, 0));
+    vec2 dx = dFdx(uv) * size;
+    vec2 dy = dFdy(uv) * size;
+    float level = clamp(0.5 * log2(max(1.0, max(dot(dx, dx), dot(dy, dy)))),
+                        0.0, log2(size.y * 0.25));
+    float low = floor(level);
+    float high = ceil(level);
+    return mix(wallMip(uv, strip, low), wallMip(uv, strip, high), fract(level));
+}
+
 void main() {
     vec2 surfaceUv = texCoord0;
     if (surfaceUv.x >= 2.0) surfaceUv.x -= 2.0;
@@ -102,7 +122,7 @@ void main() {
         // Inner V markers are -1 / 2; outer/top marker is shared.
         float strip = intrinsicWidth < 0.0 ? 0.0 : 1.0;
         if (texCoord0.y < -1.5 || texCoord0.y > 2.5) strip += 2.0;
-        vec4 wall = texture(Sampler3, vec2(fract(texCoord0.x), (strip + vertical) / 4.0));
+        vec4 wall = filteredWall(vec2(texCoord0.x, (strip + vertical) / 4.0), strip);
         if (wall.a < 0.5) discard;
         sampled = vec4(wall.rgb, 0.0);
     }
@@ -124,12 +144,18 @@ void main() {
     }
 
     // A nearly transparent proxy must not occlude fully visible live terrain.
-    // Fade its window-space depth from the far plane to the actual surface.
+    // Reconstruct depth before the vertex clamp, including triangles that
+    // straddle its boundary. Join the native curve to an ordered infinite
+    // tail exactly where clamping starts: no plateau and no distance jump.
+    float nativeDepth = depthMapping.x + depthMapping.y * gl_FragCoord.w;
+    float tailOffset = depthMapping.z * gl_FragCoord.w;
     // Both backend NDC ranges map to [0,1] here; reversed depth has far=0.
 #ifdef RINGWORLD_REVERSED_DEPTH
-    gl_FragDepth = mix(0.0, gl_FragCoord.z, proxyAlpha);
+    float surfaceDepth = max(nativeDepth, tailOffset);
+    gl_FragDepth = mix(0.0, surfaceDepth, proxyAlpha);
 #else
-    gl_FragDepth = mix(1.0, gl_FragCoord.z, proxyAlpha);
+    float surfaceDepth = min(nativeDepth, 1.0 + tailOffset);
+    gl_FragDepth = mix(1.0, surfaceDepth, proxyAlpha);
 #endif
 
     // Match the final live chunks' atmosphere before their geometry fades.

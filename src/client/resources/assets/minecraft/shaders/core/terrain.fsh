@@ -93,11 +93,19 @@ float smootherstep(float edge0, float edge1, float value) {
     return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
-// A deterministic screen-space threshold avoids blend-pipeline changes and
-// temporal random noise. Discarded live fragments reveal the complete-ring
-// surface that the sky pass has already drawn behind them.
+// Ordered coverage gives every 8x8 pixel area an even fade, without the
+// irregular speckle of a screen-space hash. Keep the pattern fixed in screen
+// space so motion does not introduce a new random threshold each frame.
 float ring_dither_threshold(vec2 pixel) {
-    return fract(52.9829189 * fract(dot(pixel, vec2(0.06711056, 0.00583715))));
+    ivec2 cell = ivec2(pixel) & ivec2(7);
+    int rank = 0;
+    for (int bit = 0; bit < 3; ++bit) {
+        int x = (cell.x >> bit) & 1;
+        int y = (cell.y >> bit) & 1;
+        int pair = ((x ^ y) << 1) | y;
+        rank |= pair << (4 - 2 * bit);
+    }
+    return (float(rank) + 0.5) / 64.0;
 }
 
 void main() {

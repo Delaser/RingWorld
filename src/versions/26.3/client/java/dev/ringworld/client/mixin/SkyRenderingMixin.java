@@ -101,7 +101,8 @@ abstract class SkyRenderingMixin {
 
     @Inject(method = "renderSkyDisc", at = @At("TAIL"))
     private void ringworld$renderLowerAtmosphere(RenderPass pass, org.joml.Vector3fc skyColor, CallbackInfo ci) {
-        if (ClientRingState.geometry() == null || ringworld$renderingLowerSky) return;
+        if (ClientRingState.geometry() == null || ringworld$renderingLowerSky || skyColor == null) return;
+        ringworld$skyColor = skyColor;
         ringworld$renderingLowerSky = true;
         try {
             ringworld$invokeRenderDarkDisc(pass);
@@ -119,7 +120,7 @@ abstract class SkyRenderingMixin {
             target = "Lnet/minecraft/client/renderer/DynamicGpuData;writeTransform(Lorg/joml/Matrix4f;Lorg/joml/Vector4f;)Lcom/mojang/renderpearl/api/buffers/GpuBufferSlice;"),
             index = 1)
     private Vector4f ringworld$tintLowerAtmosphere(Vector4f vanillaColor) {
-        return ringworld$renderingLowerSky
+        return ringworld$renderingLowerSky && ringworld$skyColor != null
                 ? new Vector4f(ringworld$skyColor, 1.0F) : vanillaColor;
     }
 
