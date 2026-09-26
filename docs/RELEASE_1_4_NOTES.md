@@ -58,6 +58,14 @@ reload, and wall-filter changes have not been claimed as tested on older
 versions or on NeoForge. See [rendering design](RENDERING.md) for the current
 implementation. No Distant Horizons code was copied.
 
+## UI redesign to plan
+
+- [ ] Review the world-generation editor and client performance controls as a
+  whole, then redesign their layout and wording so the settings are easier to
+  find and understand. Keep Atlas detail in client performance settings.
+- [ ] Switch back to GPT-6 Astra for the design pass; implement and validate the
+  agreed design afterward.
+
 
 ## Wall material follow-up
 
