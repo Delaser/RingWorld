@@ -94,6 +94,50 @@ coverage change above. See the upstream
 [vanilla fade shader](https://gitlab.com/distant-horizons-team/distant-horizons-core/-/raw/main/core/src/main/resources/assets/distanthorizons/shaders/fade/gl/vanilla_fade.frag)
 and [renderer](https://gitlab.com/distant-horizons-team/distant-horizons/-/raw/main/common/src/main/java/com/seibel/distanthorizons/common/render/openGl/postProcessing/fade/GlVanillaFadeRenderer.java).
 
+### 26.3 transition checkpoint (2026-09-26)
+
+The active 26.3 shader uses one distance-atmosphere curve for both live terrain
+and the Atlas. It removes the previous mix between vanilla render-distance
+fog and Atlas colour: that mix could first wash land pale and then clear again
+across the handoff. The 26.3 Globals adapter publishes a clear near reveal
+(1.0) and visual profile 7; near haze ramps in with the detail transition
+rather than appearing at full strength at the beginning of the Atlas. Far
+reveal/haze targets, environmental fog, and the accepted proxy depth mapping
+remain intact. Older adapters retain profile 6.
+
+Real water becomes gradually opaque from the proxy-fade start (68% of view
+distance) to the live-fade start (90%), before the existing coverage fade.
+This removes underwater detail progressively instead of losing kelp and seabed
+at the opaque Atlas-water boundary. The same blend eases water RGB toward
+biome/light-tinted colour at 0.58 luminance, matching the server Atlas water
+sampling and avoiding a bright textured stripe before the flat distant water. Both still and flowing water are identified
+by their current block-atlas sprite bounds, published in two appended Globals
+vectors and resolved again after resource reloads. Glass, ice, and nearby water
+are not selected by colour heuristics. All OIT passes receive the same modified
+water alpha. Atmospheric colour is applied before OIT accumulation so fog is
+premultiplied with the surface instead of brightening transparent edges.
+
+The owner accepted this 26.3 visual checkpoint on 2026-09-26. It is not a full
+composition pass: the live coverage dither, material-colour differences, and simplified
+Atlas silhouettes can still be visible. No extra render pass or terrain-texture
+sample was added. Comparison evidence is in `logs/live-seam-capture`.
+
+### Accepted Atlas ocean colour trial (2026-09-26)
+
+The owner accepted the appearance of this reversible 26.3 shader trial. It lifts Atlas ocean RGB by 15% after a
+12% blend toward its brightest channel. This gives the distant water a lighter,
+less saturated colour while retaining the biome hue. Real-water shading,
+opacity, geometry, and lightmap behaviour are unchanged by this trial.
+
+The current Atlas has no water material flag. To avoid changing arbitrary blue
+surfaces, this prototype restricts the correction to colours close to the five
+vanilla ocean colours at the existing 0.58 sampling luminance, near Y=63, and
+excludes walls and explicit steep faces. It is still a colour/height heuristic:
+similarly coloured blocks at sea level may match, and custom water colours or
+sea levels are not covered. Do not treat this as release-ready material
+classification; a retained colour change needs an authored water mask. The
+shader-only trial immediately affects cached Atlases without modifying them.
+
 ## Curved frustum
 
 Vanilla CPU culling happens before the vertex shader and initially sees flat

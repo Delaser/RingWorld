@@ -21,6 +21,9 @@ layout(std140) uniform Globals {
     vec4 RingWorldAtmosphere2;
     // mode (0 midpoint, 1 gamma), falloff exponent, peak strength, reserved
     vec4 RingWorldAtlasLight;
+    // Current block-atlas bounds for water only; no colour-based material guesses.
+    vec4 RingWorldWaterStill;
+    vec4 RingWorldWaterFlow;
 };
 
 #endif

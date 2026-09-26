@@ -113,6 +113,11 @@ float ring_dither_threshold(vec2 pixel) {
     return (float(rank) + 0.5) / 64.0;
 }
 
+bool ring_water_sprite(vec2 uv, vec4 bounds) {
+    return bounds.x < bounds.z && bounds.y < bounds.w
+        && all(greaterThanEqual(uv, bounds.xy)) && all(lessThanEqual(uv, bounds.zw));
+}
+
 void main() {
     vec4 color = (UseRgss == 1
             ? sampleRGSS(Sampler0, texCoord0, 1.0f / TextureSize)
@@ -127,6 +132,18 @@ void main() {
 #endif
 
     if (ring_active() && ringIntrinsicDistance >= 0.0) {
+        if (ring_water_sprite(texCoord0, RingWorldWaterStill)
+                || ring_water_sprite(texCoord0, RingWorldWaterFlow)) {
+            // Hide underwater detail gradually before geometry starts yielding
+            // to opaque Atlas water. All OIT passes must use the same alpha.
+            float waterMatch = smootherstep(RingWorldHandoff.z, RingWorldHandoff.x,
+                                             ringIntrinsicDistance);
+            color.a = mix(color.a, 1.0, waterMatch);
+            // Same representative water luminance as Atlas sampling. Fade
+            // texture contrast as well as transparency, avoiding a bright
+            // live-water stripe next to the flat distant surface.
+            color.rgb = mix(color.rgb, vertexColor.rgb * 0.58, waterMatch);
+        }
         float proxyReveal = smootherstep(
             RingWorldHandoff.x,
             RingWorldHandoff.y,
@@ -140,25 +157,30 @@ void main() {
 #ifdef OIT_ALPHA_ONLY
     executeAlphaOnlyPhase(gl_FragCoord.z, color.a);
 #else
-#ifdef OIT_ACCUMULATE
-    color = sampleColorForAccumulation(color);
-    vec4 ringFogColor = vec4(FogColor.rgb * color.a, FogColor.a);
-#else
-    vec4 ringFogColor = FogColor;
-#endif
-    fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance,
-        FogEnvironmentalStart, FogEnvironmentalEnd,
-        FogRenderDistanceStart, FogRenderDistanceEnd, ringFogColor);
     if (ring_active() && ringIntrinsicDistance >= 0.0) {
-        // Ease the live surface toward the Atlas atmosphere before discarding
-        // geometry. Preserve real texture, face lighting and environmental fog.
-        float matchWeight = ring_handoff_smootherstep(
-            RingWorldDetail.x, RingWorldHandoff.x, ringIntrinsicDistance);
-        vec4 matched = vec4(mix(ring_handoff_edge_color(), color.rgb,
-                               ring_handoff_reveal(ringIntrinsicDistance)), color.a);
-        matched = apply_fog(matched, sphericalVertexDistance, cylindricalVertexDistance,
+        // One shared distance-haze curve from nearby blocks through the Atlas.
+        // Keep environmental fog (underwater, lava, effects), but do not first
+        // wash terrain toward vanilla distance fog and then undo that wash.
+        color.rgb = mix(ring_handoff_edge_color(), color.rgb,
+                        ring_handoff_reveal(ringIntrinsicDistance));
+        color = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance,
             FogEnvironmentalStart, FogEnvironmentalEnd, 1.0e20, 1.0e21, FogColor);
-        fragColor = mix(fragColor, matched, matchWeight);
+#ifdef OIT_ACCUMULATE
+        // Atmospheric colour must be applied before OIT premultiplication;
+        // adding unweighted fog afterwards brightens transparent water edges.
+        color = sampleColorForAccumulation(color);
+#endif
+        fragColor = color;
+    } else {
+#ifdef OIT_ACCUMULATE
+        color = sampleColorForAccumulation(color);
+        vec4 ringFogColor = vec4(FogColor.rgb * color.a, FogColor.a);
+#else
+        vec4 ringFogColor = FogColor;
+#endif
+        fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance,
+            FogEnvironmentalStart, FogEnvironmentalEnd,
+            FogRenderDistanceStart, FogRenderDistanceEnd, ringFogColor);
     }
 #endif
 }

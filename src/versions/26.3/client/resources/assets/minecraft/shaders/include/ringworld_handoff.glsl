@@ -18,5 +18,6 @@ float ring_handoff_reveal(float distance) {
     float fraction = clamp(distance / (float(RingWorldLayout.y) * 0.5), 0.0, 1.0);
     float haze = mix(RingWorldAtmosphere.x, RingWorldAtmosphere.y,
                      pow(fraction, RingWorldAtmosphere.z));
-    return reveal * (1.0 - haze);
+    // Introduce far haze continuously instead of a pale near-Atlas belt.
+    return reveal * (1.0 - haze * detail);
 }

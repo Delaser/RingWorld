@@ -14,6 +14,8 @@ import dev.ringworld.world.RingRenderProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlobalSettingsUniform;
 import net.minecraft.util.Mth;
+import net.minecraft.resources.Identifier;
+import org.spongepowered.asm.mixin.Unique;
 import net.minecraft.world.phys.Vec3;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Final;
@@ -34,9 +36,26 @@ abstract class GlobalSettingsMixin {
     private static final int RINGWORLD_GLOBALS_SIZE = new Std140SizeCalculator()
             .putIVec3().putFloat().putVec3().putFloat().putVec2().putInt().putInt()
             .putIVec4().putVec4().putVec4().putVec4().putVec4().putVec4().putVec4().putVec4()
+            .putVec4().putVec4()
             .get();
 
+    @Unique private static final Identifier RINGWORLD_BLOCK_ATLAS = net.minecraft.data.AtlasIds.BLOCKS;
+    @Unique private static final Identifier RINGWORLD_WATER_STILL = Identifier.withDefaultNamespace("block/water_still");
+    @Unique private static final Identifier RINGWORLD_WATER_FLOW = Identifier.withDefaultNamespace("block/water_flow");
+
     @Shadow @Final private GpuBuffer buffer;
+
+    @Unique
+    private static void ringworld$waterBounds(Std140Builder builder, Minecraft client, Identifier texture, boolean active) {
+        // Resolve from the current atlas each update so resource reloads cannot
+        // leave stale UVs. Missing sprites disable matching instead of tagging others.
+        var sprite = active ? client.getAtlasManager().getAtlasOrThrow(RINGWORLD_BLOCK_ATLAS).getSprite(texture) : null;
+        if (sprite == null || !sprite.contents().name().equals(texture)) {
+            builder.putVec4(-1.0F, -1.0F, -1.0F, -1.0F);
+        } else {
+            builder.putVec4(sprite.getU0(), sprite.getV0(), sprite.getU1(), sprite.getV1());
+        }
+    }
 
     @ModifyArg(
             method = "<init>",
@@ -89,7 +108,7 @@ abstract class GlobalSettingsMixin {
         var atlasLight = RingAtlasLightTuning.profile();
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            var data = Std140Builder.onStack(stack, RINGWORLD_GLOBALS_SIZE)
+            var builder = Std140Builder.onStack(stack, RINGWORLD_GLOBALS_SIZE)
                     .putIVec3(cameraX, cameraY, cameraZ)
                     .putFloat((float)glintStrength)
                     .putVec3((float)(cameraX - cameraPosition.x),
@@ -115,7 +134,8 @@ abstract class GlobalSettingsMixin {
                     // proxy detail transition and terrain reveal strength
                     .putVec4(profile == null ? 0.0F : (float)profile.detailStartBlocks(),
                             profile == null ? 0.0F : (float)profile.detailEndBlocks(),
-                            profile == null ? 0.0F : (float)profile.revealNear(),
+                            // Start clear; haze grows continuously beyond the handoff.
+                            profile == null ? 0.0F : 1.0F,
                             profile == null ? 0.0F : (float)profile.revealFar())
                     // proxy haze policy and local curved-cloud fade start
                     .putVec4(profile == null ? 0.0F : (float)profile.hazeNear(),
@@ -124,13 +144,15 @@ abstract class GlobalSettingsMixin {
                             profile == null ? 0.0F : (float)profile.cloudFadeStartBlocks())
                     // cloud fade end, visual policy version, inner Z face planes
                     .putVec4(profile == null ? 0.0F : (float)profile.cloudFadeEndBlocks(),
-                            profile == null ? 0.0F : profile.visualProfileVersion(),
+                            profile == null ? 0.0F : profile.visualProfileVersion() + 1,
                             cloudBounds == null ? 0.0F : (float)cloudBounds.minimumZ(),
                             cloudBounds == null ? 0.0F : (float)cloudBounds.maximumZ())
                     // process-local Atlas-light debug profile; never persisted
                     .putVec4(atlasLight.shaderMode(), atlasLight.falloffExponent(),
-                            atlasLight.peakStrength(), ClientRingState.skyProfile().backdrop().id())
-                    .get();
+                            atlasLight.peakStrength(), ClientRingState.skyProfile().backdrop().id());
+            ringworld$waterBounds(builder, client, RINGWORLD_WATER_STILL, active == 1 && client.level != null);
+            ringworld$waterBounds(builder, client, RINGWORLD_WATER_FLOW, active == 1 && client.level != null);
+            var data = builder.get();
             dev.ringworld.client.render.RingSurfaceGpu.writeBuffer(buffer.slice(), data);
         }
         RenderSystem.setGlobalSettingsUniform(buffer);

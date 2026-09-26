@@ -107,6 +107,25 @@ vec4 filteredWall(vec2 uv, float strip) {
     return mix(wallMip(uv, strip, low), wallMip(uv, strip, high), fract(level));
 }
 
+// Reversible sea-level colour trial for the existing RGB-only Atlas. Match
+// authored ocean colours, not arbitrary blue terrain; a real water mask is
+// needed before generalising this to custom biomes/sea levels for release.
+vec3 oceanColourTrial(vec3 rgb, float worldY) {
+    const vec3 oceanColours[5] = vec3[](
+        vec3(63.0, 118.0, 228.0), vec3(61.0, 87.0, 214.0),
+        vec3(57.0, 56.0, 201.0), vec3(67.0, 213.0, 238.0),
+        vec3(69.0, 173.0, 242.0));
+    float difference = 1.0;
+    for (int i = 0; i < 5; ++i) {
+        difference = min(difference, distance(rgb, oceanColours[i] * (0.58 / 255.0)));
+    }
+    float match = (1.0 - smoothstep(0.008, 0.045, difference))
+                * (1.0 - smoothstep(0.75, 2.0, abs(worldY - 63.0)));
+    float peak = max(rgb.r, max(rgb.g, rgb.b));
+    vec3 softerWater = mix(rgb, vec3(peak), 0.12) * 1.15;
+    return mix(rgb, softerWater, match);
+}
+
 void main() {
     vec2 surfaceUv = texCoord0;
     if (surfaceUv.x >= 2.0) surfaceUv.x -= 2.0;
@@ -125,6 +144,10 @@ void main() {
         vec4 wall = filteredWall(vec2(texCoord0.x, (strip + vertical) / 4.0), strip);
         if (wall.a < 0.5) discard;
         sampled = vec4(wall.rgb, 0.0);
+    }
+
+    if (!rimBridge && texCoord0.x < 2.0) {
+        sampled.rgb = oceanColourTrial(sampled.rgb, RingWorldVertical.w - intrinsicHeight);
     }
 
     float circumference = float(RingWorldLayout.y);
