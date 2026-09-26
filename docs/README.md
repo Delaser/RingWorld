@@ -6,6 +6,9 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [`TRANSITION_IMPROVEMENT_PLAN_1_4.md`](TRANSITION_IMPROVEMENT_PLAN_1_4.md): staged
+  material, water, geometry and blending improvements from the accepted 1.4 checkpoint.
+
 - [`../AGENTS.md`](../AGENTS.md): concise operating rules for future coding
   agents.
 - [`../LICENSE`](../LICENSE): authoritative Mozilla Public License 2.0 terms.
