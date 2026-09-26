@@ -127,6 +127,18 @@ stopped normally. The pipeline worker appeared in the live Fabric thread dump.
 These are development runs; frozen-candidate qualification is still required.
 Ordinary cache-copy and GPU-upload hitches are separate.
 
+The 26.3 renderer now reuses its GPU wall texture when the wall inputs are
+unchanged. The worker checks the sampled terrain heights used by the inner
+industrial motifs, so rim terrain edits still invalidate the texture; a
+resource reload also rebuilds it. In a 32-chunk Fabric development run, four
+successive ready-surface updates needed one initial wall upload instead of a
+wall upload on every update. A reload correctly caused a fresh upload. This
+removes one recurring 30–60 ms render-stage cost in that run; Atlas snapshot,
+mesh and texture uploads remain measured hitch sources.
+
+After this shared-source change, all six source build/test cells pass: 447
+cases per loader on 26.1, 447 on 26.2 and 450 on 26.3, with no failures.
+
 High costs about 28–29% more p95 frame time on the two tested routes while
 leaving the principal cliff/canopy and thin-structure mismatch visible. Adaptive
 geometry and continuous compositing are deferred by the plan's comparison gate.

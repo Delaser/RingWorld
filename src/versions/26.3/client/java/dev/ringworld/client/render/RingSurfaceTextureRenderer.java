@@ -146,6 +146,7 @@ public final class RingSurfaceTextureRenderer {
 
     private static GpuTexture wallTexture;
     private static GpuTextureView wallTextureView;
+    private static RingWallTexture.ContentKey wallTextureKey;
 
     private static void ensureResources(RingGeometry geometry, RingTerrainAtlas atlas) {
         if (atlas == null) return;
@@ -224,6 +225,7 @@ public final class RingSurfaceTextureRenderer {
                             if (wallTextureView != null) wallTextureView.close();
                             if (wallTexture != null) wallTexture.close();
                             wallTexture = next; wallTextureView = view;
+                            wallTextureKey = build.wallTextureKey();
                             flagRenderStall("wall texture GPU upload", wallUploadStarted);
                         }
                         if (replacement != null) {
@@ -260,7 +262,8 @@ public final class RingSurfaceTextureRenderer {
                 geometry.equals(bufferedGeometry) && atlas.worldHash() == bufferedWorldHash,
                 vertexBuffer != null, bufferedMeshDetailed, bufferedMeshHeightFingerprint,
                 ClientRingState.wallStyle(), ClientRingState.generatorSeed(), worldBottomY,
-                RingWallShaderStyle.paletteColors(ClientRingState.wallStyle(), client.level));
+                RingWallShaderStyle.paletteColors(ClientRingState.wallStyle(), client.level),
+                wallTextureView == null ? null : wallTextureKey);
         RingTerrainPreview preview = ClientRingState.terrainPreview();
         pendingTextureBuild = CompletableFuture.supplyAsync(
                 () -> buildTexture(buildSnapshot, generation, profile, quality, meshInputs, preview), BUILD_WORKER);
@@ -283,15 +286,21 @@ public final class RingSurfaceTextureRenderer {
         long meshStarted = System.nanoTime();
         RingSurfaceGpu.PackedMesh packed = null;
         NativeImage[] wallImages = null;
+        RingWallTexture.ContentKey nextWallTextureKey = null;
         try {
             if (RingSurfaceMeshRefreshPolicy.shouldRebuild(inputs.sameAtlas(), inputs.hasMesh(),
                     atlas.isComplete(), inputs.detailed(), preparedSnapshot.heightFingerprint(), inputs.fingerprint())) {
                 RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(atlas.geometry(), atlas, atlas.isComplete(),
                         inputs.referenceY(), inputs.wallTopY(), inputs.wallThickness(), profile);
                 packed = RingSurfaceGpu.packMesh(mesh, inputs.wallStyle().vertexArgb());
-                wallImages = RingWallTexture.buildMipmapped(atlas, inputs.savedStyle(), inputs.seed(),
-                        inputs.bottomY(), inputs.wallTopY(), Math.min(16384, profile.textureColumns()), inputs.palette(),
-                        () -> generation != textureBuildGeneration);
+                int wallColumns = Math.min(16384, profile.textureColumns());
+                nextWallTextureKey = RingWallTexture.contentKey(atlas, inputs.savedStyle(), inputs.seed(),
+                        inputs.bottomY(), inputs.wallTopY(), wallColumns, inputs.palette());
+                if (!nextWallTextureKey.equals(inputs.wallTextureKey())) {
+                    wallImages = RingWallTexture.buildMipmapped(atlas, inputs.savedStyle(), inputs.seed(),
+                            inputs.bottomY(), inputs.wallTopY(), wallColumns, inputs.palette(),
+                            () -> generation != textureBuildGeneration);
+                }
             }
             if (Boolean.getBoolean("ringworld.profileSurfaceBuilds") && packed != null) {
                 RingWorldMod.LOGGER.info("RingWorld surface worker: mesh construction/packing took {} ms ({} vertices)",
@@ -299,7 +308,8 @@ public final class RingSurfaceTextureRenderer {
             }
             if (generation != textureBuildGeneration) throw new java.util.concurrent.CancellationException("obsolete surface job");
             return new TextureBuild(preparedSnapshot,
-                    buildTexturePixels(atlas, generation, profile, preview), packed, inputs.wallStyle(), wallImages);
+                    buildTexturePixels(atlas, generation, profile, preview), packed, inputs.wallStyle(),
+                    wallImages, nextWallTextureKey);
         } catch (RuntimeException | Error exception) {
             if (packed != null) packed.close();
             if (wallImages != null) for (NativeImage image : wallImages) image.close();
@@ -479,7 +489,8 @@ public final class RingSurfaceTextureRenderer {
     /** Native texture images plus their immutable source content. */
     private record TextureBuild(RingSurfaceBuildSnapshot snapshot,
                                 TextureImages images, RingSurfaceGpu.PackedMesh mesh,
-                                RingWallShaderStyle.Encoded wallStyle, NativeImage[] wallImages) implements AutoCloseable {
+                                RingWallShaderStyle.Encoded wallStyle, NativeImage[] wallImages,
+                                RingWallTexture.ContentKey wallTextureKey) implements AutoCloseable {
         @Override
         public void close() {
             try { images.close(); } finally {
@@ -491,7 +502,8 @@ public final class RingSurfaceTextureRenderer {
     private record MeshInputs(int referenceY, int wallTopY, int wallThickness,
                               RingWallShaderStyle.Encoded wallStyle, boolean sameAtlas,
                               boolean hasMesh, boolean detailed, long fingerprint,
-                              dev.ringworld.world.RingWallStyle savedStyle, long seed, int bottomY, int[] palette) { }
+                              dev.ringworld.world.RingWallStyle savedStyle, long seed, int bottomY,
+                              int[] palette, RingWallTexture.ContentKey wallTextureKey) { }
 
     private static void flagRenderStall(String operation, long started) {
         long elapsed = System.nanoTime() - started;
@@ -563,6 +575,7 @@ public final class RingSurfaceTextureRenderer {
         wallTextureView = null;
         if (wallTexture != null) wallTexture.close();
         wallTexture = null;
+        wallTextureKey = null;
         destroyPreviousSurfaceTexture();
         if (surfaceTextureView != null) surfaceTextureView.close();
         surfaceTextureView = null;

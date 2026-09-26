@@ -2438,3 +2438,15 @@ extra-worker probe cleared the second stall, supporting background-pool starvati
 the probe restored normal parallelism and is not a shipped fix.
 See `RELEASE_1_4_NOTES.md` and `TRANSITION_IMPROVEMENT_PLAN_1_4.md`; this checkpoint
 is not a release publication or owner acceptance of the new visual changes.
+
+## 2026-09-26 1.4 startup and wall-upload follow-up
+
+The 26.3 pipeline cache now compiles on one dedicated daemon worker, avoiding
+the shared-worker starvation seen on two earlier 32-chunk starts. Development
+Fabric and NeoForge clients each completed a 32-chunk cold launch, resource
+reload, complete Atlas and normal stop. The 26.3 renderer also reuses the wall
+GPU texture when its material inputs and sampled rim heights match; a live
+Fabric run showed one initial upload across four ready-surface updates and a
+fresh upload after reload. All six source build/test cells pass (447/447/450
+cases per loader). Frozen-candidate release qualification and owner review are
+still outstanding; cache snapshot and other GPU upload hitches remain.

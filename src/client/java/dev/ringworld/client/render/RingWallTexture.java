@@ -2,9 +2,37 @@ package dev.ringworld.client.render;
 
 import com.mojang.blaze3d.platform.NativeImage;
 import dev.ringworld.world.*;
+import java.util.Arrays;
 
 /** Worker-only wall colour atlas. Four strips: two inner faces, then two outer faces. */
 final class RingWallTexture {
+    record ContentKey(RingGeometry geometry, RingWallStyle style, long seed,
+                      int bottom, int top, int columns, int paletteHash,
+                      long terrainHash) { }
+
+    /** Only inner industrial motifs depend on Atlas heights at the rims. */
+    static ContentKey contentKey(RingTerrainAtlas atlas, RingWallStyle style, long seed,
+                                 int bottom, int top, int columns, int[] palette) {
+        long terrainHash = 0L;
+        if (RingIndustrialElements.enabled(style)) {
+            var geometry = atlas.geometry();
+            terrainHash = 0xcbf29ce484222325L;
+            for (int side = 0; side < 2; side++) {
+                int edge = side == 0 ? geometry.minWidthZ() : geometry.maxWidthZ();
+                int inward = side == 0 ? 1 : -1;
+                int anchorZ = edge + inward * (style.thicknessBlocks() + 3);
+                for (int col = 0; col < columns; col++) {
+                    int x = (int)((col + 0.5) * geometry.circumferenceBlocks() / columns);
+                    var feature = RingIndustrialElements.feature(x, geometry.circumferenceBlocks(), seed, side);
+                    terrainHash ^= featureBase(atlas, feature, anchorZ, bottom);
+                    terrainHash *= 0x100000001b3L;
+                }
+            }
+        }
+        return new ContentKey(atlas.geometry(), style, seed, bottom, top, columns,
+                Arrays.hashCode(palette), terrainHash);
+    }
+
     static NativeImage build(RingTerrainAtlas atlas, RingWallStyle style, long seed,
                               int bottom, int top, int columns, int[] palette, java.util.function.BooleanSupplier cancelled) {
         return build(atlas, style, seed, bottom, top, columns, palette, cancelled,
@@ -66,11 +94,8 @@ final class RingWallTexture {
                         throw new java.util.concurrent.CancellationException("obsolete wall texture");
                     int x = (int)((col + 0.5) * geometry.circumferenceBlocks() / columns);
                     var feature = RingIndustrialElements.feature(x, geometry.circumferenceBlocks(), seed, side);
-                    int base = bottom;
-                    for (int dx : new int[]{-18, 0, 18}) {
-                        var sample = atlas.sample(feature.centerX() + dx, anchorZ);
-                        base = Math.max(base, sample.coverage() > 0 ? (int)Math.ceil(sample.height()) + 1 : 64);
-                    }
+                    int base = inner && RingIndustrialElements.enabled(style)
+                            ? featureBase(atlas, feature, anchorZ, bottom) : bottom;
                     for (int row = 0; row < rows; row++) {
                         int y = bottom + (int)((row + 0.5) * height / rows);
                         int color = 0;
@@ -94,5 +119,15 @@ final class RingWallTexture {
             }
             return image;
         } catch (RuntimeException | Error failure) { image.close(); throw failure; }
+    }
+
+    private static int featureBase(RingTerrainAtlas atlas, RingIndustrialElements.Feature feature,
+                                   int anchorZ, int bottom) {
+        int base = bottom;
+        for (int dx : new int[]{-18, 0, 18}) {
+            var sample = atlas.sample(feature.centerX() + dx, anchorZ);
+            base = Math.max(base, sample.coverage() > 0 ? (int)Math.ceil(sample.height()) + 1 : 64);
+        }
+        return base;
     }
 }
