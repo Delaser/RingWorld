@@ -2423,3 +2423,18 @@ Patterned underside and Atlas walls: new generation replaces only the bottommost
 Owner scope update (2026-09-07): no distant underside mesh is needed; viewing angles do not justify it. Remove it from outstanding work. Release/26.3 preparation is deferred for now. GitHub remains read-only in this review; no issues, PRs or comments changed.
 
 Backlog audit (2026-09-07): three local LOD levels are implemented (Low = old Low, Medium = old High, High = old Max). Fixed the 26.1 client exterior-visibility injection, Lithium POI redirect conflict through both metadata adapters, and starvation of surface builds during large Atlas downloads. Both source versions pass 436 tests per loader; final universal prototypes pass eight dedicated smokes. Real Atlas recovery and two-client runs cover both loaders/ABI lines with exact limits, plus representative Lithium/FerriteCore/JEI coexistence. Production movement still records occasional long frames; one Archipelago seed fails strict smooth-join acceptance and whole-ring density balance remains open. River, distant underside geometry and release/26.3 work remain excluded. See [active tasks](ACTIVE_TODO_2026-09-07.md) and [retained evidence and limits](BACKLOG_VALIDATION_2026-09-07.md).
+
+
+## 2026-09-26 transition material checkpoint for 1.4
+
+Implemented texture-derived 26.3 wall palettes and explicit Atlas water
+coverage (format 10/v4 payloads, unchanged twelve-byte cells). All six
+loader/version source builds and tests pass; 26.3 Fabric has regenerated-cache,
+reload, movement and screenshot evidence. The accepted depth/mip fixes remain.
+Higher global detail did not remove the dominant shape mismatch, so adaptive
+geometry and compositing are held at the plan's comparison gate. Existing
+cache-copy hitches and two cold-start pipeline stalls remain documented. A temporary
+extra-worker probe cleared the second stall, supporting background-pool starvation;
+the probe restored normal parallelism and is not a shipped fix.
+See `RELEASE_1_4_NOTES.md` and `TRANSITION_IMPROVEMENT_PLAN_1_4.md`; this checkpoint
+is not a release publication or owner acceptance of the new visual changes.

@@ -25,11 +25,11 @@ import java.util.zip.GZIPOutputStream;
  * lets the sky mesh bilinearly sample exactly the same tiled cache.</p>
  */
 public final class RingTerrainAtlas {
-    /** Format 9 adds a representative side material colour. */
-    public static final int FORMAT_VERSION = 9;
+    /** Format 10 adds water coverage in the upper nibble of the existing light byte. */
+    public static final int FORMAT_VERSION = 10;
     public static final int SAMPLE_STEP_BLOCKS = 1;
     public static final int TILE_SIZE = 16;
-    /** Short height, top and side colours, block-light byte, and presence accounting per cell. */
+    /** Short height, top and side colours, packed light/water byte, and presence accounting per cell. */
     public static final int ESTIMATED_BYTES_PER_CELL = 12;
     private static final int MAGIC = 0x52574154; // RWAT
     private static final int MAX_TILE_BYTES = TILE_SIZE * TILE_SIZE * ESTIMATED_BYTES_PER_CELL;
@@ -42,6 +42,7 @@ public final class RingTerrainAtlas {
     private final short[] heights;
     private final int[] colors;
     private final int[] sideColors;
+    // Low nibble: block light; high nibble: authored water coverage (0..15).
     private final byte[] blockLights;
     private final boolean[] present;
     private int presentCount;
@@ -159,10 +160,15 @@ public final class RingTerrainAtlas {
 
     public boolean putBlockSample(int blockX, int blockZ, int surfaceY,
                                   int mapColor, int blockLight, int sideColor) {
+        return putBlockSample(blockX, blockZ, surfaceY, mapColor, blockLight, sideColor, 0);
+    }
+
+    public boolean putBlockSample(int blockX, int blockZ, int surfaceY,
+                                  int mapColor, int blockLight, int sideColor, int waterCoverage) {
         int column = geometry.wrapBlockX(blockX) / sampleStep;
         int row = Math.floorDiv(blockZ - geometry.minWidthZ(), sampleStep);
         if (row < 0 || row >= rows) return false;
-        return putCell(column, row, surfaceY, mapColor, blockLight, sideColor);
+        return putCell(column, row, surfaceY, mapColor, blockLight, sideColor, waterCoverage);
     }
 
     public boolean putCell(int column, int row, int surfaceY, int mapColor) {
@@ -176,6 +182,14 @@ public final class RingTerrainAtlas {
 
     public boolean putCell(int column, int row, int surfaceY,
                            int mapColor, int blockLight, int sideColor) {
+        return putCell(column, row, surfaceY, mapColor, blockLight, sideColor, 0);
+    }
+
+    public boolean putCell(int column, int row, int surfaceY,
+                           int mapColor, int blockLight, int sideColor, int waterCoverage) {
+        if (waterCoverage < 0 || waterCoverage > 15) {
+            throw new IllegalArgumentException("atlas water coverage must be between 0 and 15");
+        }
         if (column < 0 || column >= columns || row < 0 || row >= rows) return false;
         if (blockLight < 0 || blockLight > 15) {
             throw new IllegalArgumentException("atlas block light must be between 0 and 15");
@@ -183,7 +197,7 @@ public final class RingTerrainAtlas {
         int index = index(column, row);
         short clampedHeight = (short)Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, surfaceY));
         int rgb = mapColor & 0xFFFFFF;
-        byte light = (byte)blockLight;
+        byte light = (byte)(blockLight | waterCoverage << 4);
         boolean changed = !present[index] || heights[index] != clampedHeight
                 || colors[index] != rgb || blockLights[index] != light
                 || sideColors[index] != (sideColor & 0xFFFFFF);
@@ -227,7 +241,13 @@ public final class RingTerrainAtlas {
     public int cellBlockLight(int column, int row) {
         if (row < 0 || row >= rows) return 0;
         int index = index(Math.floorMod(column, columns), row);
-        return present[index] ? Byte.toUnsignedInt(blockLights[index]) : 0;
+        return present[index] ? blockLights[index] & 15 : 0;
+    }
+
+    public int cellWaterCoverage(int column, int row) {
+        if (row < 0 || row >= rows) return 0;
+        int index = index(Math.floorMod(column, columns), row);
+        return present[index] ? (blockLights[index] & 255) >>> 4 : 0;
     }
 
     /**
@@ -248,6 +268,7 @@ public final class RingTerrainAtlas {
         double green = 0.0;
         double blue = 0.0;
         double blockLight = 0.0;
+        double waterCoverage = 0.0;
         double weightTotal = 0.0;
         for (int dz = 0; dz <= 1; dz++) {
             int row = Math.max(0, Math.min(rows - 1, z0 + dz));
@@ -262,7 +283,8 @@ public final class RingTerrainAtlas {
                 red += (colors[index] >> 16 & 0xFF) * weight;
                 green += (colors[index] >> 8 & 0xFF) * weight;
                 blue += (colors[index] & 0xFF) * weight;
-                blockLight += Byte.toUnsignedInt(blockLights[index]) * weight;
+                blockLight += (blockLights[index] & 15) * weight;
+                waterCoverage += ((blockLights[index] & 255) >>> 4) / 15.0 * weight;
                 weightTotal += weight;
             }
         }
@@ -271,7 +293,7 @@ public final class RingTerrainAtlas {
                 | clampColor(green / weightTotal) << 8
                 | clampColor(blue / weightTotal);
         return new SurfaceSample(height / weightTotal, color,
-                blockLight / weightTotal, weightTotal);
+                blockLight / weightTotal, weightTotal, waterCoverage / weightTotal);
     }
 
     public byte[] encodeTile(int tileX, int tileZ) {
@@ -518,7 +540,11 @@ public final class RingTerrainAtlas {
         return Math.max(0, Math.min(255, (int)Math.round(value)));
     }
 
-    public record SurfaceSample(double height, int color, double blockLight, double coverage) {
+    public record SurfaceSample(double height, int color, double blockLight, double coverage,
+                                double waterCoverage) {
+        public SurfaceSample(double height, int color, double blockLight, double coverage) {
+            this(height, color, blockLight, coverage, 0.0);
+        }
         public static final SurfaceSample MISSING = new SurfaceSample(
                 RingGeometry.SURFACE_Y, -1, 0.0, 0.0);
         public boolean present() { return color >= 0 && coverage > 0.0; }

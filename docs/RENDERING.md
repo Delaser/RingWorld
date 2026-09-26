@@ -636,3 +636,29 @@ Capture and compare:
 - movement at the handoff with no mip shimmer or canonical-UV seam;
 - nearby and distant entities standing on curved terrain;
 - reconnect and explicit teleport after the client chart changes.
+
+
+### 1.4 material transition follow-up (26.3)
+
+Atlas rim palettes now read representative north/south face colours from the
+active block models and their CPU texture mip pixels. Alpha-weighted averaging
+ignores transparent texels; tinted/missing faces fall back to map colours.
+The small render-thread cache expires when the model set changes on resource
+reload. Workers still receive immutable RGB palettes; GPU uploads and the
+accepted wall mip/depth policy are unchanged. Older Minecraft adapters retain
+map-colour palettes until their texture-model API is qualified.
+
+Atlas format 10 stores exposed block light in the low nibble and water coverage
+in the high nibble of the existing byte. Source capture and live recapture use
+the surface fluid state. Display downsampling averages water coverage over its
+footprint while retaining the existing height/colour anchors. Bilinear sampling
+carries normalized coverage independently of light. The 26.3 texture worker
+applies the accepted water tint before mip generation, and real-water fading
+uses the same target. There is no blue-colour or sea-level classifier, extra GPU
+texture, or per-frame material scan. Blue dry cells remain unchanged; shoreline
+filtering naturally combines neighbouring water and dry samples.
+
+Format/cache identity and metadata/tile IDs advance together (format 10, v4).
+Old caches rebuild normally; world blocks and saved geometry are unchanged.
+Storage remains twelve bytes per cell. Both loaders share capture, storage and
+protocol. The appearance change is currently in the 26.3 adapter.

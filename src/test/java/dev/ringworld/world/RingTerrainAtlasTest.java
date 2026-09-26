@@ -23,11 +23,11 @@ class RingTerrainAtlasTest {
     @Test
     void fixedMasterIdentityMatchesQualificationReader() {
         var legacy = new RingWorldSettings(416, 2048, 155_088_888L, 160, 64, 4, 3);
-        assertEquals("5082858087917131076", Long.toUnsignedString(RingTerrainAtlas.worldHash(legacy)));
+        assertEquals("8360113050493173708", Long.toUnsignedString(RingTerrainAtlas.worldHash(legacy)));
         var current = new RingWorldSettings(256, 16384, -7617918596273893784L, 160, 64, 4,
                 new RingWallStyle(7, RingWallStyle.Palette.fromId(4), RingWallStyle.Pattern.fromId(3), 10, 1),
                 RingWorldGenerationSettings.DEFAULT.withAtlasFidelity(RingAtlasFidelity.VERY_HIGH), 5);
-        assertEquals("3372587833368448249", Long.toUnsignedString(RingTerrainAtlas.worldHash(current)));
+        assertEquals("10564136735434774545", Long.toUnsignedString(RingTerrainAtlas.worldHash(current)));
         assertEquals(1, new RingTerrainAtlas(legacy.geometry(), RingTerrainAtlas.worldHash(legacy)).sampleStep());
     }
 

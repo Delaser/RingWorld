@@ -11,7 +11,7 @@ import net.minecraft.resources.Identifier;
 public record RingTerrainAtlasTilePayload(long worldHash, int tileX, int tileZ, byte[] data)
         implements CustomPacketPayload {
     public static final Type<RingTerrainAtlasTilePayload> ID = new Type<>(
-            Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "terrain_atlas_tile_v3"));
+            Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "terrain_atlas_tile_v4"));
     public static final StreamCodec<RegistryFriendlyByteBuf, RingTerrainAtlasTilePayload> CODEC = StreamCodec.composite(
             ByteBufCodecs.LONG, RingTerrainAtlasTilePayload::worldHash,
             ByteBufCodecs.VAR_INT, RingTerrainAtlasTilePayload::tileX,

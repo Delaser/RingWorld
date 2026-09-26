@@ -346,7 +346,8 @@ public final class RingAtlasPregenerationService {
                 int color = surfaceColor(world, surface, surfaceState);
                 int blockLight = surfaceBlockLight(world, surface, surfaceState);
                 if (atlas.putBlockSample(blockX, blockZ, surfaceY + 1, color, blockLight,
-                        sideColor(world, chunk, surface, surfaceState, color, atlas.sampleStep()))) {
+                        sideColor(world, chunk, surface, surfaceState, color, atlas.sampleStep()),
+                        surfaceState.getFluidState().is(FluidTags.WATER) ? 15 : 0)) {
                     changed = true;
                     int atlasX = atlas.geometry().wrapBlockX(blockX) / step;
                     int atlasZ = Math.floorDiv(blockZ - atlas.geometry().minWidthZ(), step);
@@ -412,7 +413,8 @@ public final class RingAtlasPregenerationService {
             int color = surfaceColor(world, surface, surfaceState);
             int blockLight = surfaceBlockLight(world, surface, surfaceState);
             if (atlas.putCell(cell.column(), cell.row(), surfaceY + 1, color, blockLight,
-                        sideColor(world, chunk, surface, surfaceState, color, atlas.sampleStep()))) {
+                        sideColor(world, chunk, surface, surfaceState, color, atlas.sampleStep()),
+                        surfaceState.getFluidState().is(FluidTags.WATER) ? 15 : 0)) {
                 changed = true;
                 state.dirtyTiles.publish(new TileCoordinate(
                         cell.column() / RingTerrainAtlas.TILE_SIZE,

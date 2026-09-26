@@ -23,6 +23,7 @@ import dev.ringworld.world.RingSurfaceGenerationFog;
 import dev.ringworld.world.RingSurfaceMorph;
 import dev.ringworld.world.RingSurfacePlaceholder;
 import dev.ringworld.world.RingTerrainAtlas;
+import dev.ringworld.world.RingWaterColor;
 import dev.ringworld.world.RingAtlasFidelity;
 import dev.ringworld.world.RingTerrainPreview;
 import org.joml.Matrix4f;
@@ -344,7 +345,7 @@ public final class RingSurfaceTextureRenderer {
                     RingTerrainAtlas.SurfaceSample sample = atlas.sample(x, z);
                     int index = row * targetColumns + column;
                     heights[index] = (float)sample.height();
-                    pixels[index] = sample.color() & 0xFFFFFF;
+                    pixels[index] = RingWaterColor.tint(sample.color(), sample.waterCoverage());
                     blockLights[index] = lightAlpha(sample.blockLight());
                 }
             }
@@ -354,8 +355,10 @@ public final class RingSurfaceTextureRenderer {
                 for (int column = 0; column < targetColumns; column++) {
                     double x = (column + 0.5) * spacingX;
                     RingTerrainAtlas.SurfaceSample sample = atlas.sample(x, z);
-                    blockLights[row * targetColumns + column] = sample.present()
-                            ? lightAlpha(sample.blockLight()) : 0;
+                    int index = row * targetColumns + column;
+                    blockLights[index] = sample.present() ? lightAlpha(sample.blockLight()) : 0;
+                    if (sample.present()) pixels[index] = RingWaterColor.tint(
+                            pixels[index], sample.waterCoverage());
                 }
             }
         }

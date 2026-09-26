@@ -22,7 +22,7 @@ DECIMAL_ID = re.compile(r"^(0|[1-9][0-9]*)$")
 SAFE_MARKER = re.compile(r"^[a-z][a-z0-9-]{0,95}$")
 
 ATLAS_REPORT_SCHEMA = 2
-ATLAS_FORMAT_VERSION = 9
+ATLAS_FORMAT_VERSION = 10
 TERRAIN_NOISE_MAPPING = 4
 CIRCUMFERENCE_BLOCKS = 2_048
 WIDTH_BLOCKS = 416
@@ -75,7 +75,7 @@ class PersistedRingSettingsObservation:
 
 @dataclass(frozen=True)
 class AtlasCacheObservation:
-    """Fields independently decoded from one Atlas v9 header and payload."""
+    """Fields independently decoded from one Atlas v10 header and payload."""
 
     format_version: int
     world_hash: str

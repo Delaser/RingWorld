@@ -1,6 +1,6 @@
 # Real-terrain / Atlas transition plan for 1.4
 
-Status: implementation plan, 2026-09-26. Accepted visual baseline:
+Status: material stages implemented and comparison gates exercised, 2026-09-26. Accepted visual baseline:
 `37f3257`, following the depth/wall-flicker checkpoint `aea59e5`.
 Start with material matching; keep each visual change independently reviewable.
 The goal is a less noticeable boundary during movement, without recurring
@@ -114,3 +114,41 @@ Implementation order: baseline → wall materials → authored water → geometr
 comparison. Only proceed to adaptive geometry or compositing when the comparison
 shows a worthwhile remaining problem. The accepted game stays available for
 owner review between stages.
+
+
+## Execution checkpoint
+
+Implemented texture-derived wall palettes and authored water coverage. Kept the
+accepted depth, wall mip filtering, lighting and live-terrain dither policies.
+No new quality setting, adaptive mesh, render target or compositing pass.
+
+The 26.3 Fabric comparison used the complete 16,384 × 256 ring at 2940 × 1846,
+noon, clear weather, clouds off, 16-chunk view distance and 20 ticks/second.
+Two matched ocean movement pairs put map-colour p95 at 30.61/31.13 ms and
+texture-colour p95 at 30.86/31.50 ms (less than 2% difference). One texture run
+coincided with a logged 52 ms cache snapshot; this is not evidence that all
+stuttering is fixed. Startup, regeneration, reload and quality-change uploads
+are excluded from these runs.
+
+High increased ocean p95 from 30.86 to 39.76 ms and forest p95 from 28.47 to
+36.65 ms. It adds detail but leaves the obvious cliff/canopy boundary and the
+vertical surfaces below thin structures. The review world also contains old
+wall-study panels; their heightfield curtains are particularly visible and
+must not be presented as a natural-terrain quality measurement. These captures
+do not establish a worthwhile transition gain from adaptive geometry.
+Defer that prototype. Continuous compositing is also held: the visible residual
+is substantial geometry/material mismatch, which a smoother alpha blend alone
+would risk turning into overlapping surfaces.
+
+Local before/after images, frame summaries, capture settings and failure
+thread dumps are in `logs/transition-plan-execution/`. The comparison page uses
+actual Minecraft screenshots. Full release qualification and owner visual
+acceptance of these new material changes remain separate from this checkpoint.
+
+
+A separate 32-chunk cold-start blocker emerged twice: the render thread waits
+for a compiled pipeline while all seven shared workers are occupied by chunk
+buffer work. A diagnostic two-worker increase immediately released the second
+stall; normal parallelism was restored after 30 seconds. No production pool
+change is included. Fix and qualify that startup/reload path before release;
+keep it separate from the material and geometry decisions above.

@@ -164,7 +164,7 @@ def parse_persisted_ring_settings(raw: bytes, path: Path) -> PersistedRingSettin
 
 
 def parse_ring_terrain_atlas(raw: bytes, path: Path) -> AtlasCacheObservation:
-    """Decode an entire Atlas-v9 file and independently count cells/chunks."""
+    """Decode an entire Atlas-v10 file and independently count cells/chunks."""
     data = _decompress(
         raw, compressed_limit=MAX_ATLAS_COMPRESSED_BYTES,
         uncompressed_limit=MAX_ATLAS_UNCOMPRESSED_BYTES, label="terrain Atlas",
@@ -191,9 +191,8 @@ def parse_ring_terrain_atlas(raw: bytes, path: Path) -> AtlasCacheObservation:
         if flag not in (0, 1):
             raise InvocationError("terrain Atlas has an invalid presence flag")
         present.append(flag == 1)
-        if data[offset + 7] > 15:
-            raise InvocationError("terrain Atlas has an invalid block-light value")
-        offset += 12  # presence + height + top RGB + block light + side RGB
+        # Packed byte: each nibble is independently bounded to 0..15.
+        offset += 12  # presence + height + top RGB + light/water + side RGB
     present_cells = sum(present)
     present_chunks = 0
     samples_per_chunk = 16 // sample_step

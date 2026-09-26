@@ -142,7 +142,10 @@ void main() {
             // Same representative water luminance as Atlas sampling. Fade
             // texture contrast as well as transparency, avoiding a bright
             // live-water stripe next to the flat distant surface.
-            color.rgb = mix(color.rgb, vertexColor.rgb * 0.58, waterMatch);
+            vec3 atlasWater = vertexColor.rgb * 0.58;
+            float waterPeak = max(atlasWater.r, max(atlasWater.g, atlasWater.b));
+            atlasWater = mix(atlasWater, vec3(waterPeak), 0.12) * 1.15;
+            color.rgb = mix(color.rgb, atlasWater, waterMatch);
         }
         float proxyReveal = smootherstep(
             RingWorldHandoff.x,

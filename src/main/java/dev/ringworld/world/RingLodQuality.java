@@ -24,7 +24,7 @@ public enum RingLodQuality {
         return RingRenderProfile.create(geometry, distance,
                 Math.min(columns, textureLimit), Math.min(rows, textureLimit), meshStep);
     }
-    /** Point-samples the server data at the same integer cell anchors used during capture. */
+    /** Retains captured colour/height anchors and averages water coverage over each footprint. */
     public RingTerrainAtlas displaySnapshot(RingTerrainAtlas source) {
         if (!source.isComplete() || sampleStep <= source.sampleStep()) return source.snapshot();
         var result = new RingTerrainAtlas(source.geometry(), source.worldHash(), sampleStep);
@@ -34,9 +34,21 @@ public enum RingLodQuality {
                 int sourceCol = Math.min(source.columns() - 1, (col * sampleStep + sampleStep / 2) / source.sampleStep());
                 result.putCell(col, row, source.cellHeight(sourceCol, sourceRow),
                         source.cellColor(sourceCol, sourceRow), source.cellBlockLight(sourceCol, sourceRow),
-                        source.cellSideColor(sourceCol, sourceRow));
+                        source.cellSideColor(sourceCol, sourceRow), waterCoverage(source, col, row));
             }
         }
         return result;
+    }
+
+    private int waterCoverage(RingTerrainAtlas source, int column, int row) {
+        int scale = sampleStep / source.sampleStep();
+        int sum = 0, count = 0;
+        for (int z = row * scale; z < Math.min(source.rows(), (row + 1) * scale); z++) {
+            for (int x = column * scale; x < Math.min(source.columns(), (column + 1) * scale); x++) {
+                sum += source.cellWaterCoverage(x, z);
+                count++;
+            }
+        }
+        return count == 0 ? 0 : (int)Math.round((double)sum / count);
     }
 }

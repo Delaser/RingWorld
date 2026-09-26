@@ -7,6 +7,10 @@ rendering. Detailed design documents live under [`docs/`](docs/README.md).
 Unreleased 1.4 rendering checkpoint: owner accepted the 26.3 terrain-depth and
 wall-filtering fixes on 2026-09-26. See `docs/RELEASE_1_4_NOTES.md` for scope,
 validation, and remaining real-terrain/Atlas transition work.
+Follow-up material work adds 26.3 texture-derived wall colours and Atlas format
+10 water coverage (v4 metadata/tiles, still twelve bytes/cell). All six source
+build/test cells pass. Resolve the documented cold 32-chunk worker-starvation
+stall before claiming 1.4 launch readiness.
 
 Latest release checkpoint: all six 1.2 jars are submitted to CurseForge and
 CDN hashes match; see `docs/RELEASE_1_2_PUBLICATION_2026-09-20.md`. Modrinth is deferred.
@@ -1579,7 +1583,7 @@ Completion means:
 
 - Atlas proxy depth writes must remain enabled, with the version-owned forward/reversed comparison. Keep the proxy's smooth alpha fade and fade window-space depth from the backend far plane to actual surface depth with opacity; discard fully invisible fragments before depth writes. Adding a second screen-space dither mask to the proxy caused visible flicker; the existing live terrain dither remains unchanged.
 
-- Experimental Atlas format 9 carries representative side colours through snapshots, v3 metadata/tiles, disk, and local LOD downsampling. Account for twelve bytes per cell and invalidate older caches. Side sampling must stay bounded to the current chunk; preserve foliage/fluid colour and avoid neighbour loads. Distinct side-material changes must invalidate the mesh because steep faces carry this colour in existing GPU vertices.
+- Atlas format 10 carries representative side colours and authored water coverage through snapshots, v4 metadata/tiles, disk, and local LOD downsampling. The existing byte packs block light in its low nibble and water coverage in its high nibble; never read the full byte as light. Account for twelve bytes per cell and invalidate older caches. Side sampling must stay bounded to the current chunk; preserve foliage/fluid colour and avoid neighbour loads. Distinct side-material changes must invalidate the mesh because steep faces carry this colour in existing GPU vertices.
 
 - Atlas surface jobs now prepare geometry and native vertex bytes on the serial surface worker using the same captured snapshot as texture pixels. Keep all GPU calls on the render thread and close packed/native data on stale, failed and abandoned results. Capture world/quality/wall inputs before scheduling. Do not reintroduce live client-state reads in worker texture/mesh preparation. GPU upload and owner-thread snapshot copies remain measured stutter sources; preserve >=16ms diagnostics and do not equate worker completion with hitch-free frame pacing.
 

@@ -51,9 +51,9 @@ changes for 1.4; this checkpoint does not publish jars or change version numbers
 
 ## Remaining before release
 
-Replace the ocean-colour heuristic with authored water identification, review
-remaining geometry/material transition differences, then qualify the
-final 1.4 candidate on the supported loaders and versions. The 26.3 depth,
+Review remaining geometry/material transition differences and qualify the
+final 1.4 candidate on the supported loaders and versions. Authored water
+identification is now implemented; see the follow-up below. The 26.3 depth,
 reload, and wall-filter changes have not been claimed as tested on older
 versions or on NeoForge. See [rendering design](RENDERING.md) for the current
 implementation. No Distant Horizons code was copied.
@@ -71,3 +71,50 @@ The initial wall-only 26.3 Fabric build passed 445 cases. All ten block palettes
 were also resolved in the live 26.3 client before and after two reloads. Matched
 map/texture palette captures show closer tones without adding a rendering pass.
 Owner acceptance of this new material change remains pending.
+
+
+## Authored water and transition comparison follow-up
+
+- Replaced the ocean colour/sea-level guess with water coverage captured from
+  the actual surface fluid. Blue dry blocks are no longer selected by colour,
+  and the tint can apply to rivers, custom water colours and other elevations.
+- Kept light independent from water coverage in the existing byte; Atlas cells
+  remain twelve bytes. Cache format is now 10 and metadata/tile payloads use v4.
+  Existing blocks are preserved; old Atlas caches rebuild normally.
+- Carries fractional coverage through client downsampling and bilinear samples,
+  then applies the tint before texture mip filtering. Real-water fading uses
+  the same colour target in 26.3. No extra render pass or GPU texture is added.
+
+Final source builds/tests pass on both loaders: 446 cases per loader on 26.1,
+446 on 26.2 and 449 on 26.3, with no failures/errors/skips. The 37 Atlas Python
+checks and 10 version-source contracts pass. Both 26.3 jars contain the wall
+texture accessor and matching mixin declaration. These are source/build checks,
+not a new full release qualification of all six runtime combinations.
+
+Live 26.3 Fabric evidence includes a normal complete cache rebuild (4,194,304
+cells, 1,976,318 marked water cells, 180,023 lit cells), live server-to-client
+water/land samples, two successful resource reloads, all three detail levels,
+day/night, both viewing directions/rims, periodic seam, underwater and 6/16/32
+chunk-distance captures. Cache rebuild/transfer and quality changes have
+separate upload stalls; they are excluded from settled movement comparisons.
+Rain and custom-resource-pack visual matrices remain release checks.
+
+Two wall palette A/B pairs stayed within 2% p95 frame time. Existing cache
+snapshot hitches remain: one repeat included a logged 52 ms snapshot and four
+frames over 50 ms. A 32-chunk movement run averaged 44.4 FPS, p95 31.26 ms, with
+one frame over 50 ms. Two cold 32-chunk development launches stalled in
+Minecraft pipeline compilation/chunk-buffer work. The first required termination.
+On the second, the shared background pool had seven occupied workers and 4,852
+queued submissions; temporarily increasing its parallelism by two cleared the
+stall immediately. The diagnostic restored parallelism after 30 seconds and
+left the client running at 32 chunks. This strongly supports worker starvation;
+no production thread-pool change was made. Retain both dumps and resolve this
+startup/reload risk before 1.4, rather than claiming launch/stutter issues solved.
+
+High costs about 28–29% more p95 frame time on the two tested routes while
+leaving the principal cliff/canopy and thin-structure mismatch visible. Adaptive
+geometry and continuous compositing are deferred by the plan's comparison gate.
+The remaining boundary is not claimed invisible. Details, measurements and
+limits are in `TRANSITION_IMPROVEMENT_PLAN_1_4.md`; local evidence is retained in
+`logs/transition-plan-execution/`. Owner review and frozen-candidate release
+qualification are still required before publication.
