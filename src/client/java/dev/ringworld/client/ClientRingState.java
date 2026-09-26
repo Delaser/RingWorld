@@ -357,6 +357,10 @@ public final class ClientRingState {
         if (!terrainAtlasDirty || atlas == null || cache == null) return;
         long now = System.currentTimeMillis();
         if (!force && now - lastTerrainAtlasSaveMillis < 10_000L) return;
+        // A complete Atlas is already available from the server. Wait until
+        // active tile changes settle before copying the whole client cache;
+        // the forced disconnect save still captures the latest state.
+        if (!force && atlas.isComplete() && now - lastTerrainAtlasChangeMillis < 10_000L) return;
         long snapshotStarted = System.nanoTime();
         terrainAtlasSave = CACHE_WRITER.submit(cache, atlas);
         long snapshotNanos = System.nanoTime() - snapshotStarted;

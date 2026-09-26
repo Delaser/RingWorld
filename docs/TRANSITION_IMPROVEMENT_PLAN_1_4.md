@@ -142,8 +142,9 @@ would risk turning into overlapping surfaces.
 
 Local before/after images, frame summaries, capture settings and failure
 thread dumps are in `logs/transition-plan-execution/`. The comparison page uses
-actual Minecraft screenshots. Full release qualification and owner visual
-acceptance of these new material changes remain separate from this checkpoint.
+actual Minecraft screenshots. The owner accepted the updated wall and water
+appearance, including rain and a deliberately pink temporary resource pack,
+on 2026-09-26. Full frozen-candidate qualification remains separate.
 
 
 A separate 32-chunk cold-start blocker emerged twice: the render thread waits
@@ -156,4 +157,6 @@ keep it separate from the material and geometry decisions above.
 Follow-up: 26.3 pipeline compilation now uses a dedicated daemon worker, leaving
 Minecraft's shared pool size unchanged. Actual 32-chunk Fabric and NeoForge
 development clients reached complete Atlases, reloaded resources and stopped
-normally. Frozen-candidate release qualification remains open.
+normally. Wall GPU textures are reused when sampled rim inputs and the palette
+are unchanged. Complete client Atlas cache snapshots wait for a quiet period
+during live tile updates. Frozen-candidate release qualification remains open.

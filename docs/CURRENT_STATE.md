@@ -1,5 +1,14 @@
 # Current state
 
+September 26 later: owner accepted the updated 1.4 wall/water appearance after
+clear, rain and temporary pink resource-pack comparisons. The pack was removed
+and the original colours returned. The six source build/test cells pass (447
+cases per loader on 26.1 and 26.2; 450 on 26.3). Fabric and NeoForge 26.3
+development clients opened the complete ring at 32 chunks, reloaded resources
+and stopped normally. The wall texture is reused across unchanged Atlas updates;
+complete client Atlas cache snapshots wait for a quiet period. Frozen-candidate
+qualification and the Astra UI design pass remain before a 1.4 release.
+
 September 26: owner accepted the terrain-depth, wall-filtering, and resource-reload
 fixes for the future **1.4** release. See [1.4 checkpoint](RELEASE_1_4_NOTES.md).
 26.3 Fabric build and 442 tests pass; two in-world reloads pass. The visible

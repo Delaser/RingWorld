@@ -78,7 +78,10 @@ reload; older version adapters keep their established map-colour path.
 The initial wall-only 26.3 Fabric build passed 445 cases. All ten block palettes
 were also resolved in the live 26.3 client before and after two reloads. Matched
 map/texture palette captures show closer tones without adding a rendering pass.
-Owner acceptance of this new material change remains pending.
+Owner accepted the updated wall and water appearance on 2026-09-26 after
+reviewing clear-weather, rain and resource-pack captures. The resource-pack
+test intentionally made deepslate bricks pink; it was removed afterward and
+the original colours returned. The pink colour is not a RingWorld default.
 
 
 ## Authored water and transition comparison follow-up
@@ -105,7 +108,11 @@ water/land samples, two successful resource reloads, all three detail levels,
 day/night, both viewing directions/rims, periodic seam, underwater and 6/16/32
 chunk-distance captures. Cache rebuild/transfer and quality changes have
 separate upload stalls; they are excluded from settled movement comparisons.
-Rain and custom-resource-pack visual matrices remain release checks.
+The 26.3 Fabric 32-chunk development client was also checked in rain and with
+the temporary pink deepslate-brick resource pack. The nearby and Atlas walls
+both followed the pack, and a second reload restored the original colours.
+These checks and the owner's visual approval cover the development candidate;
+they do not replace frozen-candidate release qualification.
 
 Two wall palette A/B pairs stayed within 2% p95 frame time. Existing cache
 snapshot hitches remain: one repeat included a logged 52 ms snapshot and four
@@ -136,7 +143,17 @@ wall upload on every update. A reload correctly caused a fresh upload. This
 removes one recurring 30–60 ms render-stage cost in that run; Atlas snapshot,
 mesh and texture uploads remain measured hitch sources.
 
-After this shared-source change, all six source build/test cells pass: 447
+The 26.3 NeoForge client also reloaded and stopped normally at 32 chunks. It
+uploaded the wall texture on startup and after reload, then reused it through
+later ready-surface updates.
+
+Complete client Atlas cache saves now wait for ten quiet seconds after the last
+tile change before copying the Atlas; forced disconnect saves and incomplete
+Atlas saves retain their previous behaviour. This avoids scheduling repeated
+full snapshots during active updates, but the remaining startup/reload uploads
+and ordinary cache-copy cost have not been eliminated or benchmarked away.
+
+After these shared-source changes, all six source build/test cells pass: 447
 cases per loader on 26.1, 447 on 26.2 and 450 on 26.3, with no failures.
 
 High costs about 28–29% more p95 frame time on the two tested routes while
@@ -144,5 +161,5 @@ leaving the principal cliff/canopy and thin-structure mismatch visible. Adaptive
 geometry and continuous compositing are deferred by the plan's comparison gate.
 The remaining boundary is not claimed invisible. Details, measurements and
 limits are in `TRANSITION_IMPROVEMENT_PLAN_1_4.md`; local evidence is retained in
-`logs/transition-plan-execution/`. Owner review and frozen-candidate release
-qualification are still required before publication.
+`logs/transition-plan-execution/`. Owner visual review passed; frozen-candidate
+release qualification remains required before publication.
