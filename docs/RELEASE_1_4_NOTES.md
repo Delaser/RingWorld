@@ -57,3 +57,17 @@ final 1.4 candidate on the supported loaders and versions. The 26.3 depth,
 reload, and wall-filter changes have not been claimed as tested on older
 versions or on NeoForge. See [rendering design](RENDERING.md) for the current
 implementation. No Distant Horizons code was copied.
+
+
+## Wall material follow-up
+
+The 26.3 Atlas wall palette now uses representative block-face texture colours
+instead of map colours. This reduces the contrast jump between real wall blocks
+and the distant wall. Palette weights, industrial motifs, decay, lighting and
+mip filtering are unchanged. Colours are cached and rebuilt after resource
+reload; older version adapters keep their established map-colour path.
+
+The initial wall-only 26.3 Fabric build passed 445 cases. All ten block palettes
+were also resolved in the live 26.3 client before and after two reloads. Matched
+map/texture palette captures show closer tones without adding a rendering pass.
+Owner acceptance of this new material change remains pending.
