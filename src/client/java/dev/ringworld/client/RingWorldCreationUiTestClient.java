@@ -524,7 +524,7 @@ public final class RingWorldCreationUiTestClient {
             preview.ringworld$automationDone();
             if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldEditorScreen editor)
                     || !editor.ringworld$automationDraftSeedIs("24680")
-                    || !editor.ringworld$automationParentSeedIs("67890")
+                    || !editor.ringworld$automationParentSeedIs("24680")
                     || !(RingMinecraftClientAccess.screen(client) instanceof RingWorldEditorScreen)) {
                 fail(client, "new preview seed did not return as a draft"); return;
             }
@@ -550,6 +550,28 @@ public final class RingWorldCreationUiTestClient {
                 || !(screen instanceof RingWorldCreationScreen.LayoutButtonOwner owner)
                 || !"24680".equals(owner.ringworld$seedText())) {
             fail(client, "new Apply did not commit the preview seed and return to Create World");
+            return;
+        }
+        owner.ringworld$openNewEditorForAutomation();
+        if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldEditorScreen editor)) {
+            fail(client, "could not reopen the editor to check seed cancellation");
+            return;
+        }
+        editor.setDraftSeed("13579");
+        if (!"13579".equals(owner.ringworld$seedText())) {
+            fail(client, "editing the preview seed did not update Create World immediately");
+            return;
+        }
+        editor.onClose();
+        if (!(RingMinecraftClientAccess.screen(client) instanceof ConfirmScreen confirm)) {
+            fail(client, "cancel did not ask to discard the changed seed");
+            return;
+        }
+        ((ConfirmScreenAccessor)confirm).ringworld$yesButton()
+                .onPress(RingWorldCreationScreen.AutomationInput.INSTANCE);
+        if (RingMinecraftClientAccess.screen(client) != screen
+                || !"24680".equals(owner.ringworld$seedText())) {
+            fail(client, "discarding the editor did not restore the original Create World seed");
             return;
         }
         capture(client, "creation-ui-26-new-footer-applied");

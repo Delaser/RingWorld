@@ -313,6 +313,9 @@ public final class RingSeedPreviewScreen extends Screen {
                 0xFFFFFFFF);
         graphics.text(font, Component.literal("Seed"), left + 8,
                 editor == null ? 41 : 50, LABEL_COLOR);
+        if (editor != null) graphics.text(font,
+                Component.literal("Seed updates Create World; Cancel reverts."),
+                left + 8, 83, LABEL_COLOR);
 
         int mapLeft = left + 8;
         int mapRight = left + panelWidth - 8;

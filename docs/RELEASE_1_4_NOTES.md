@@ -62,8 +62,10 @@ implementation. No Distant Horizons code was copied.
 
 The owner approved the [rendered proposal](design/ring-generation-ui-proposal/index.html).
 The normal Create World entry now opens one RingWorld draft with Ring, Terrain,
-Walls, Sky and Preview tabs. Apply saves the whole draft once, including the
-seed; Cancel and Restore saved settings have separate confirmation flows.
+Walls, Sky and Preview tabs. Ring layout and options save on Apply. A seed
+entered in Preview immediately updates vanilla Create World; cancelling the
+editor restores the seed that was there when it opened. Restore saved settings
+has its own confirmation flow.
 The Walls tab shows the selected material/pattern sample and keeps the three
 patterns visible. The seed preview adds a correctly proportioned local section
 and a full-ring navigation strip. The in-world panel separates authoritative

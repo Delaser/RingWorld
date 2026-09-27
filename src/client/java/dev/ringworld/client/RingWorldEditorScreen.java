@@ -19,7 +19,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.levelgen.WorldOptions;
 
-/** One draft for the five new-world pages. Only Apply writes to the parent screen. */
+/** One draft for the five new-world pages; the seed mirrors Create World and Cancel restores it. */
 public final class RingWorldEditorScreen extends Screen {
     private static final int PANEL = 0xE0172226;
     private static final int BORDER = 0xFF64776D;
@@ -82,7 +82,7 @@ public final class RingWorldEditorScreen extends Screen {
     @Override
     protected void init() {
         // Draft strings are updated by responders. Rebuilding after resize never
-        // reads stale widgets or silently commits the seed to vanilla.
+        // reads stale widgets or changes the seed while rebuilding controls.
         circumferenceField = widthField = wallHeightField = null;
         thicknessField = decayField = null;
         monumentButton = null;
@@ -296,7 +296,10 @@ public final class RingWorldEditorScreen extends Screen {
     }
 
     String draftSeed() { return seed; }
-    void setDraftSeed(String value) { seed = value; }
+    void setDraftSeed(String value) {
+        seed = value;
+        owner.ringworld$setSeedText(value);
+    }
     long resolvedDraftSeed() {
         return WorldOptions.parseSeed(seed).orElseGet(owner::ringworld$resolvedSeed);
     }
@@ -386,7 +389,11 @@ public final class RingWorldEditorScreen extends Screen {
 
     private void confirmRestore() {
         RingMinecraftClientAccess.setScreen(minecraft, new ConfirmScreen(confirmed -> {
-            if (confirmed) { load(RingWorldConfig.load()); seed = originalSeed; notice = ""; }
+            if (confirmed) {
+                load(RingWorldConfig.load());
+                setDraftSeed(originalSeed);
+                notice = "";
+            }
             RingMinecraftClientAccess.setScreen(minecraft, this);
         }, Component.literal("Restore saved settings?"),
                 Component.literal("Replace this draft with the saved RingWorld settings?"),
@@ -397,6 +404,7 @@ public final class RingWorldEditorScreen extends Screen {
     public void onClose() {
         if (!dirty()) { RingMinecraftClientAccess.setScreen(minecraft, parent); return; }
         RingMinecraftClientAccess.setScreen(minecraft, new ConfirmScreen(confirmed -> {
+            if (confirmed) owner.ringworld$setSeedText(originalSeed);
             RingMinecraftClientAccess.setScreen(minecraft, confirmed ? parent : this);
         }, Component.literal("Discard changes?"),
                 Component.literal("Discard changes to RingWorld settings and the seed?"),
