@@ -103,7 +103,7 @@ class ExternalGraphicalCreationUiTest(unittest.TestCase):
     def test_capture_contract_is_complete(self):
         self.assertEqual(26, len(CAPTURES))
         self.assertEqual(len(CAPTURES), len(set(CAPTURES)))
-        self.assertEqual("creation-ui-26-new-footer-applied.png", CAPTURES[-1])
+        self.assertEqual("creation-ui-26-vanilla-seed-applied.png", CAPTURES[-1])
 
     def test_executor_accepts_only_complete_self_reported_fixture(self):
         with tempfile.TemporaryDirectory() as temporary:

@@ -7,6 +7,7 @@ import dev.ringworld.world.RingWorldGenerationSettings;
 import dev.ringworld.world.RingAtlasFidelity;
 import dev.ringworld.world.RingWorldLayout;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.components.tabs.TabNavigationBar;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.TitleScreen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
@@ -133,7 +134,8 @@ public final class RingWorldCreationUiTestClient {
             case 22 -> captureNewSky(client);
             case 23 -> captureNewPreview(client);
             case 24 -> captureNewCompactWalls(client);
-            case 25 -> verifyNewApplyAndStop(client);
+            case 25 -> verifyNewApplyAndOpenWorldTab(client);
+            case 26 -> captureVanillaSeedApplied(client);
             default -> { }
         }
         return true;
@@ -561,7 +563,7 @@ public final class RingWorldCreationUiTestClient {
         });
     }
 
-    private void verifyNewApplyAndStop(Minecraft client) {
+    private void verifyNewApplyAndOpenWorldTab(Minecraft client) {
         if (!(RingMinecraftClientAccess.screen(client) instanceof CreateWorldScreen screen)
                 || !(screen instanceof RingWorldCreationScreen.LayoutButtonOwner owner)
                 || !"24680".equals(owner.ringworld$seedText())) {
@@ -592,7 +594,34 @@ public final class RingWorldCreationUiTestClient {
             fail(client, "discarding the editor did not restore the original Create World seed");
             return;
         }
-        capture(client, "creation-ui-26-new-footer-applied");
+        if (!owner.ringworld$hasAppliedPreviewSeed()) {
+            fail(client, "the applied preview seed lost its vanilla World tab source marker");
+            return;
+        }
+        boolean selected = false;
+        for (var child : screen.children()) {
+            if (child instanceof TabNavigationBar tabs) {
+                tabs.selectTab(1, false);
+                selected = true;
+                break;
+            }
+        }
+        if (!selected) {
+            fail(client, "vanilla Create World had no World tab navigation");
+            return;
+        }
+        armAndAdvance();
+    }
+
+    private void captureVanillaSeedApplied(Minecraft client) {
+        if (!(RingMinecraftClientAccess.screen(client) instanceof CreateWorldScreen screen)
+                || !(screen instanceof RingWorldCreationScreen.LayoutButtonOwner owner)
+                || !owner.ringworld$hasAppliedPreviewSeed()
+                || !"24680".equals(owner.ringworld$seedText())) {
+            fail(client, "vanilla World tab lost the applied RingWorld preview seed");
+            return;
+        }
+        capture(client, "creation-ui-26-vanilla-seed-applied");
     }
 
     private void capture(Minecraft client, String name) {

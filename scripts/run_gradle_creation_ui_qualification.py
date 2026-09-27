@@ -72,7 +72,7 @@ CAPTURE_PREFIXES = (
     "creation-ui-23-new-sky",
     "creation-ui-24-new-preview",
     "creation-ui-25-new-compact-walls",
-    "creation-ui-26-new-footer-applied",
+    "creation-ui-26-vanilla-seed-applied",
 )
 _RUN_ID = re.compile(r"^[0-9]{8}T[0-9]{6}Z-[0-9a-f]{12}$")
 

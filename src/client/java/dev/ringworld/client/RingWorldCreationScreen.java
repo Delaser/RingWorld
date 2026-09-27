@@ -578,6 +578,8 @@ public final class RingWorldCreationScreen extends Screen {
         String ringworld$seedText();
         long ringworld$resolvedSeed();
         void ringworld$setSeedText(String seed);
+        void ringworld$setPreviewSeedText(String seed);
+        boolean ringworld$hasAppliedPreviewSeed();
         net.minecraft.client.gui.screens.worldselection.WorldCreationContext
                 ringworld$creationContext();
 

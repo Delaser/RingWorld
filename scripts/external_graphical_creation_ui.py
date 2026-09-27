@@ -69,7 +69,7 @@ CAPTURES = (
     "creation-ui-23-new-sky.png",
     "creation-ui-24-new-preview.png",
     "creation-ui-25-new-compact-walls.png",
-    "creation-ui-26-new-footer-applied.png",
+    "creation-ui-26-vanilla-seed-applied.png",
 )
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
 

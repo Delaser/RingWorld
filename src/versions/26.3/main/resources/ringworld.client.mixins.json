@@ -8,6 +8,7 @@
     "CompassAngleStateMixin",
     "CreateWorldScreenInvoker",
     "CreateWorldScreenMixin",
+    "CreateWorldSeedTabMixin",
     "PauseScreenMixin",
     "PipelineCacheMixin",
     "ConfirmScreenAccessor",

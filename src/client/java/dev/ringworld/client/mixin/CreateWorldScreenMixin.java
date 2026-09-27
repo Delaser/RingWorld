@@ -24,6 +24,8 @@ abstract class CreateWorldScreenMixin extends Screen
         implements RingWorldCreationScreen.LayoutButtonOwner {
     @Unique
     private Button ringworld$layoutButton;
+    @Unique
+    private String ringworld$appliedPreviewSeed;
 
     protected CreateWorldScreenMixin(Component title) {
         super(title);
@@ -99,6 +101,21 @@ abstract class CreateWorldScreenMixin extends Screen
     @Override
     public void ringworld$setSeedText(String seed) {
         ((CreateWorldScreen)(Object)this).getUiState().setSeed(seed);
+    }
+
+    @Override
+    public void ringworld$setPreviewSeedText(String seed) {
+        ringworld$appliedPreviewSeed = seed;
+        ringworld$setSeedText(seed);
+    }
+
+    @Override
+    public boolean ringworld$hasAppliedPreviewSeed() {
+        if (ringworld$appliedPreviewSeed != null
+                && !ringworld$appliedPreviewSeed.equals(ringworld$seedText())) {
+            ringworld$appliedPreviewSeed = null;
+        }
+        return ringworld$appliedPreviewSeed != null;
     }
 
     @Override

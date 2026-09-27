@@ -1291,7 +1291,7 @@ def creationUiScreenshotPrefixes = [
         "creation-ui-23-new-sky",
         "creation-ui-24-new-preview",
         "creation-ui-25-new-compact-walls",
-        "creation-ui-26-new-footer-applied"
+        "creation-ui-26-vanilla-seed-applied"
 ]
 
 def verifyCreationUiConfig = { File runDirectory, String label ->

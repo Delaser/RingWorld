@@ -65,7 +65,9 @@ The normal Create World entry now opens one RingWorld draft with Ring, Terrain,
 Walls, Sky and Preview tabs. Typing a seed changes the preview only. Use locks
 that candidate as the applied seed shown below the field; Apply settings then
 copies the locked seed into vanilla Create World along with the RingWorld
-options. Cancel discards the editor draft. Restore saved settings has its own
+options. The vanilla World tab shows that seed and labels it as applied from
+the RingWorld preview; editing it there clears the label. Cancel discards the
+editor draft. Restore saved settings has its own
 confirmation flow.
 The Walls tab shows the selected material/pattern sample and keeps the three
 patterns visible. The seed preview adds a correctly proportioned local section
