@@ -19,7 +19,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.level.levelgen.WorldOptions;
 
-/** One draft for the five new-world pages; the seed mirrors Create World and Cancel restores it. */
+/** One draft for the five new-world pages; Use locks the preview seed until Apply. */
 public final class RingWorldEditorScreen extends Screen {
     private static final int PANEL = 0xE0172226;
     private static final int BORDER = 0xFF64776D;
@@ -39,6 +39,7 @@ public final class RingWorldEditorScreen extends Screen {
     private String thickness;
     private String decay;
     private String seed;
+    private String selectedSeed;
     private RingWallStyle.Palette palette;
     private RingWallStyle.Pattern pattern;
     private RingSkyProfile.Backdrop backdrop;
@@ -62,6 +63,7 @@ public final class RingWorldEditorScreen extends Screen {
         this.originalSeed = owner.ringworld$seedText();
         load(original);
         seed = originalSeed;
+        selectedSeed = originalSeed;
     }
 
     private void load(RingWorldConfig config) {
@@ -298,8 +300,9 @@ public final class RingWorldEditorScreen extends Screen {
     String draftSeed() { return seed; }
     void setDraftSeed(String value) {
         seed = value;
-        owner.ringworld$setSeedText(value);
     }
+    void useDraftSeed() { selectedSeed = seed; }
+    String selectedSeed() { return selectedSeed; }
     long resolvedDraftSeed() {
         return WorldOptions.parseSeed(seed).orElseGet(owner::ringworld$resolvedSeed);
     }
@@ -345,7 +348,8 @@ public final class RingWorldEditorScreen extends Screen {
                 || sun != original.skyProfile().lightSource()
                 || !generation.equals(original.generationSettings())
                 || monument != original.requestOceanMonument()
-                || !seed.equals(originalSeed);
+                || !seed.equals(originalSeed)
+                || !selectedSeed.equals(originalSeed);
     }
 
     private void apply() {
@@ -364,7 +368,7 @@ public final class RingWorldEditorScreen extends Screen {
                     report.geometry().circumferenceBlocks(), report.wallHeightBlocks(),
                     validWallStyle(), new RingSkyProfile(backdrop, sun, RingSkyProfile.FORMAT_VERSION),
                     generation, monument);
-            owner.ringworld$setSeedText(seed);
+            owner.ringworld$setSeedText(selectedSeed);
             owner.ringworld$refreshLayoutButton();
             RingMinecraftClientAccess.setScreen(minecraft, parent);
         } catch (RuntimeException exception) {
@@ -383,6 +387,7 @@ public final class RingWorldEditorScreen extends Screen {
     void ringworld$automationTab(String name) { select(Page.valueOf(name)); }
     void ringworld$automationApply() { apply(); }
     boolean ringworld$automationDraftSeedIs(String value) { return seed.equals(value); }
+    boolean ringworld$automationSelectedSeedIs(String value) { return selectedSeed.equals(value); }
     boolean ringworld$automationParentSeedIs(String value) {
         return owner.ringworld$seedText().equals(value);
     }
@@ -391,7 +396,8 @@ public final class RingWorldEditorScreen extends Screen {
         RingMinecraftClientAccess.setScreen(minecraft, new ConfirmScreen(confirmed -> {
             if (confirmed) {
                 load(RingWorldConfig.load());
-                setDraftSeed(originalSeed);
+                seed = originalSeed;
+                selectedSeed = originalSeed;
                 notice = "";
             }
             RingMinecraftClientAccess.setScreen(minecraft, this);
@@ -404,7 +410,6 @@ public final class RingWorldEditorScreen extends Screen {
     public void onClose() {
         if (!dirty()) { RingMinecraftClientAccess.setScreen(minecraft, parent); return; }
         RingMinecraftClientAccess.setScreen(minecraft, new ConfirmScreen(confirmed -> {
-            if (confirmed) owner.ringworld$setSeedText(originalSeed);
             RingMinecraftClientAccess.setScreen(minecraft, confirmed ? parent : this);
         }, Component.literal("Discard changes?"),
                 Component.literal("Discard changes to RingWorld settings and the seed?"),

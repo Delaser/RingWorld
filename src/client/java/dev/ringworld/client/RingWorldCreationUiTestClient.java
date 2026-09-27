@@ -509,6 +509,7 @@ public final class RingWorldCreationUiTestClient {
     }
 
     private boolean newPreviewSeedRequested;
+    private boolean newPreviewUseRequested;
     private boolean newPreviewReadyObserved;
     private void captureNewPreview(Minecraft client) {
         if (!(RingMinecraftClientAccess.screen(client) instanceof RingSeedPreviewScreen preview)) {
@@ -519,12 +520,27 @@ public final class RingWorldCreationUiTestClient {
             newPreviewSeedRequested = true; arm(); return;
         }
         if (!preview.ringworld$automationReady()) return;
+        if (!newPreviewUseRequested) {
+            if (!preview.ringworld$automationAppliedSeedIs("67890")
+                    || !preview.ringworld$automationVanillaSeedIs("67890")) {
+                fail(client, "typing a preview seed changed the applied or vanilla seed before Use");
+                return;
+            }
+            preview.ringworld$automationUseSeed();
+            newPreviewUseRequested = true;
+            arm(); return;
+        }
+        if (!preview.ringworld$automationAppliedSeedIs("24680")
+                || !preview.ringworld$automationVanillaSeedIs("67890")) {
+            fail(client, "Use did not lock the preview seed for Apply"); return;
+        }
         if (!newPreviewReadyObserved) { newPreviewReadyObserved = true; arm(); return; }
         capture(client, "creation-ui-24-new-preview", () -> {
             preview.ringworld$automationDone();
             if (!(RingMinecraftClientAccess.screen(client) instanceof RingWorldEditorScreen editor)
                     || !editor.ringworld$automationDraftSeedIs("24680")
-                    || !editor.ringworld$automationParentSeedIs("24680")
+                    || !editor.ringworld$automationSelectedSeedIs("24680")
+                    || !editor.ringworld$automationParentSeedIs("67890")
                     || !(RingMinecraftClientAccess.screen(client) instanceof RingWorldEditorScreen)) {
                 fail(client, "new preview seed did not return as a draft"); return;
             }
@@ -558,8 +574,10 @@ public final class RingWorldCreationUiTestClient {
             return;
         }
         editor.setDraftSeed("13579");
-        if (!"13579".equals(owner.ringworld$seedText())) {
-            fail(client, "editing the preview seed did not update Create World immediately");
+        editor.useDraftSeed();
+        if (!editor.ringworld$automationSelectedSeedIs("13579")
+                || !"24680".equals(owner.ringworld$seedText())) {
+            fail(client, "Use changed Create World before Apply");
             return;
         }
         editor.onClose();

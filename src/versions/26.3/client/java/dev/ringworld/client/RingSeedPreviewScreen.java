@@ -58,6 +58,7 @@ public final class RingSeedPreviewScreen extends Screen {
     private final RingWorldGenerationSettings generationSettings;
     private final RingPreviewRequestGate<Result> requests = new RingPreviewRequestGate<>();
     private EditBox seedField;
+    private Button useSeedButton;
     private Future<?> running;
     private long request;
     private int debounceTicks;
@@ -96,7 +97,7 @@ public final class RingSeedPreviewScreen extends Screen {
         int panelWidth = Math.min(620, Math.max(304, width - 16));
         int left = (width - panelWidth) / 2;
         seedField = new EditBox(font, left + 8, editor == null ? 53 : 60,
-                panelWidth - 112, 20,
+                panelWidth - (editor == null ? 112 : 148), 20,
                 Component.literal("Seed"));
         seedField.setMaxLength(64);
         seedField.setValue(editor == null ? owner.ringworld$seedText() : editor.draftSeed());
@@ -108,7 +109,12 @@ public final class RingSeedPreviewScreen extends Screen {
         addRenderableWidget(seedField);
         addRenderableWidget(Button.builder(Component.literal("Reroll"), button -> {
             seedField.setValue(Long.toString(WorldOptions.randomSeed()));
-        }).bounds(left + panelWidth - 98, editor == null ? 53 : 60, 90, 20).build());
+        }).bounds(left + panelWidth - (editor == null ? 98 : 136),
+                editor == null ? 53 : 60, editor == null ? 90 : 62, 20).build());
+        if (editor != null) {
+            useSeedButton = addRenderableWidget(Button.builder(Component.literal("Use"), button ->
+                    editor.useDraftSeed()).bounds(left + panelWidth - 70, 60, 62, 20).build());
+        }
         if (editor == null) {
             addRenderableWidget(Button.builder(Component.literal("Done"), button -> onClose())
                     .bounds(width / 2 - 100, height - 30, 200, 20).build());
@@ -313,9 +319,13 @@ public final class RingSeedPreviewScreen extends Screen {
                 0xFFFFFFFF);
         graphics.text(font, Component.literal("Seed"), left + 8,
                 editor == null ? 41 : 50, LABEL_COLOR);
-        if (editor != null) graphics.text(font,
-                Component.literal("Seed updates Create World; Cancel reverts."),
-                left + 8, 83, LABEL_COLOR);
+        if (editor != null) {
+            String applied = editor.selectedSeed().isBlank() ? "(random)" : editor.selectedSeed();
+            String label = "Applied seed: " + applied;
+            if (font.width(label) > panelWidth - 16)
+                label = font.plainSubstrByWidth(label, panelWidth - 32) + "…";
+            graphics.text(font, Component.literal(label), left + 8, 83, LABEL_COLOR);
+        }
 
         int mapLeft = left + 8;
         int mapRight = left + panelWidth - 8;
@@ -396,6 +406,18 @@ public final class RingSeedPreviewScreen extends Screen {
 
     void ringworld$automationSetSeed(String seed) {
         seedField.setValue(seed);
+    }
+
+    void ringworld$automationUseSeed() {
+        useSeedButton.onPress(RingWorldCreationScreen.AutomationInput.INSTANCE);
+    }
+
+    boolean ringworld$automationAppliedSeedIs(String value) {
+        return editor != null && editor.selectedSeed().equals(value);
+    }
+
+    boolean ringworld$automationVanillaSeedIs(String value) {
+        return owner.ringworld$seedText().equals(value);
     }
 
     boolean ringworld$automationReady() {
