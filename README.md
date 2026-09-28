@@ -13,6 +13,9 @@ work across the join.
 [Project showcase](https://andwhatnotstudio.com/ringworld/) ·
 [Report a problem](https://github.com/Delaser/RingWorld/issues)
 
+[Join us on Discord](https://discord.com/invite/wBMY5Ab7su)
+
+
 ## What does it look like?
 
 Nearby Minecraft terrain visibly curves away from you. Beyond normal render
