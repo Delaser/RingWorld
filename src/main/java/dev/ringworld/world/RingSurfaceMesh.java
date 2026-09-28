@@ -32,6 +32,13 @@ public final class RingSurfaceMesh {
     public static Mesh build(RingGeometry geometry, RingTerrainAtlas atlas,
                              boolean detailed, double referenceHeight,
                              double wallTopHeight, int rimThicknessBlocks) {
+        return build(geometry, atlas, detailed, referenceHeight, wallTopHeight, rimThicknessBlocks,
+                RingRenderProfile.create(geometry, 16.0, RingAtlasFidelity.forSampleStep(atlas.sampleStep())));
+    }
+
+    public static Mesh build(RingGeometry geometry, RingTerrainAtlas atlas,
+                             boolean detailed, double referenceHeight,
+                             double wallTopHeight, int rimThicknessBlocks, RingRenderProfile profile) {
         Objects.requireNonNull(geometry, "geometry");
         Objects.requireNonNull(atlas, "atlas");
         if (!geometry.equals(atlas.geometry())) {
@@ -46,7 +53,6 @@ public final class RingSurfaceMesh {
         RingCloudBounds innerFaces = RingCloudBounds.betweenInnerRimFaces(
                 geometry, rimThicknessBlocks);
 
-        RingRenderProfile profile = RingRenderProfile.create(geometry, 16.0);
         int segments = Math.min(atlas.columns(), profile.circumferenceSegments());
         int bands = Math.min(atlas.rows(), profile.widthBands());
         return new Mesh(geometry, atlas, detailed, referenceHeight, wallTopHeight,
@@ -57,6 +63,7 @@ public final class RingSurfaceMesh {
     @FunctionalInterface
     public interface VertexConsumer {
         void vertex(float x, float y, float z, float u, float v);
+        default void sideColor(int rgb) { }
     }
 
     /** Immutable, shared-vertex mesh data; triangles are emitted without indices. */
@@ -69,9 +76,15 @@ public final class RingSurfaceMesh {
         private final float[] positionsZ;
         private final float[] textureU;
         private final float[] textureV;
+        private final float[] heights;
+        private final float[] upperU;
+        private final float[] upperV;
+        private final int[] upperSideColor;
+        private final double steepHeightThreshold;
         private final RingGeometry geometry;
         private final boolean bridgeRims;
-        private final float bridgeBottomY;
+        private final float[] minimumRimBottom;
+        private final float[] maximumRimBottom;
         private final float bridgeTopY;
         private final float bridgeMinimumZ;
         private final float bridgeMaximumZ;
@@ -90,7 +103,8 @@ public final class RingSurfaceMesh {
             // Atlas completes. Keep the style-derived closed rim at every Atlas
             // stage and terminate terrain at its inner faces instead.
             bridgeRims = wallTopHeight > referenceHeight;
-            bridgeBottomY = (float)referenceHeight;
+            minimumRimBottom = new float[segments + 1];
+            maximumRimBottom = new float[segments + 1];
             bridgeTopY = (float)wallTopHeight;
             bridgeMinimumZ = (float)innerFaces.minimumZ();
             bridgeMaximumZ = (float)innerFaces.maximumZ();
@@ -104,6 +118,14 @@ public final class RingSurfaceMesh {
             this.positionsZ = new float[vertices];
             this.textureU = new float[vertices];
             this.textureV = new float[vertices];
+            this.heights = new float[vertices];
+            this.upperU = new float[vertices];
+            this.upperV = new float[vertices];
+            this.upperSideColor = new int[vertices];
+            java.util.Arrays.fill(upperSideColor, -1);
+            this.steepHeightThreshold = Math.max(3.0, Math.max(
+                    (double)geometry.circumferenceBlocks() / segments,
+                    (innerFaces.maximumZ() - innerFaces.minimumZ()) / bands));
 
             for (int segment = 0; segment <= segments; segment++) {
                 double canonicalX = (double)segment * geometry.circumferenceBlocks() / segments;
@@ -138,6 +160,8 @@ public final class RingSurfaceMesh {
                     double surfaceHeight = detailed
                             ? atlas.sample(canonicalX, sampleZ).height()
                             : referenceHeight;
+                    if (band == 0) minimumRimBottom[segment] = (float)(Math.min(referenceHeight, surfaceHeight) - 2.0);
+                    if (band == bands) maximumRimBottom[segment] = (float)(Math.min(referenceHeight, surfaceHeight) - 2.0);
                     double radius = geometry.physicalRadiusAt(surfaceHeight);
                     int index = index(segment, band);
                     positionsX[index] = (float)(radius * Math.sin(angle));
@@ -146,6 +170,30 @@ public final class RingSurfaceMesh {
                     textureU[index] = u;
                     textureV[index] = (float)((sampleZ - geometry.minWidthZ())
                             / geometry.widthBlocks());
+                    heights[index] = (float)surfaceHeight;
+                    upperU[index] = u;
+                    upperV[index] = textureV[index];
+                    if (detailed) {
+                        double ax = geometry.wrapX(canonicalX) / atlas.sampleStep() - 0.5;
+                        double az = (sampleZ - geometry.minWidthZ()) / atlas.sampleStep() - 0.5;
+                        int x0 = (int)Math.floor(ax), z0 = (int)Math.floor(az);
+                        int highest = Integer.MIN_VALUE;
+                        for (int dz = 0; dz < 2; dz++) for (int dx = 0; dx < 2; dx++) {
+                            double weight = (dx == 0 ? 1.0 - (ax - x0) : ax - x0)
+                                    * (dz == 0 ? 1.0 - (az - z0) : az - z0);
+                            int col = Math.floorMod(x0 + dx, atlas.columns());
+                            int row = Math.max(0, Math.min(atlas.rows() - 1, z0 + dz));
+                            if (weight <= 0.0001 || !atlas.hasCell(col, row)) continue;
+                            int height = atlas.cellHeight(col, row);
+                            if (height > highest) {
+                                highest = height;
+                                upperU[index] = (col + 0.5F) / atlas.columns();
+                                upperV[index] = (row + 0.5F) / atlas.rows();
+                                int side = atlas.cellSideColor(col, row);
+                                upperSideColor[index] = side == atlas.cellColor(col, row) ? -1 : side;
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -164,14 +212,13 @@ public final class RingSurfaceMesh {
             Objects.requireNonNull(consumer, "consumer");
             for (int segment = 0; segment < segments; segment++) {
                 for (int band = 0; band < bands; band++) {
-                    emitTriangleVertex(consumer, segment, band, 0);
-                    emitTriangleVertex(consumer, segment, band, 1);
-                    emitTriangleVertex(consumer, segment, band, 2);
-                    emitTriangleVertex(consumer, segment, band, 0);
-                    emitTriangleVertex(consumer, segment, band, 2);
-                    emitTriangleVertex(consumer, segment, band, 3);
+                    int a = index(segment, band), b = index(segment + 1, band);
+                    int c = index(segment + 1, band + 1), d = index(segment, band + 1);
+                    emitTriangle(consumer, a, b, c);
+                    emitTriangle(consumer, a, c, d);
                 }
             }
+            consumer.sideColor(-1);
             if (bridgeRims) {
                 for (int segment = 0; segment < segments; segment++) {
                     // V outside the surface's [0,1] range is a shader-stable
@@ -194,10 +241,11 @@ public final class RingSurfaceMesh {
         private void emitVerticalBridgeQuad(VertexConsumer consumer, int segment, float z, float v) {
             float u0 = (float)segment / segments;
             float u1 = (float)(segment + 1) / segments;
-            emitBridgeVertex(consumer, segment, bridgeBottomY, z, u0, v);
-            emitBridgeVertex(consumer, segment + 1, bridgeBottomY, z, u1, v);
+            float[] bottom = z < 0 ? minimumRimBottom : maximumRimBottom;
+            emitBridgeVertex(consumer, segment, bottom[segment], z, u0, v);
+            emitBridgeVertex(consumer, segment + 1, bottom[segment + 1], z, u1, v);
             emitBridgeVertex(consumer, segment + 1, bridgeTopY, z, u1, v);
-            emitBridgeVertex(consumer, segment, bridgeBottomY, z, u0, v);
+            emitBridgeVertex(consumer, segment, bottom[segment], z, u0, v);
             emitBridgeVertex(consumer, segment + 1, bridgeTopY, z, u1, v);
             emitBridgeVertex(consumer, segment, bridgeTopY, z, u0, v);
         }
@@ -236,32 +284,37 @@ public final class RingSurfaceMesh {
             if (vertex < 0 || vertex >= 6) {
                 throw new IndexOutOfBoundsException("triangle vertex must be in [0, 6)");
             }
-            return switch (vertex) {
-                case 0, 3 -> vertex(segment, band);
-                case 1 -> vertex(segment + 1, band);
-                case 2, 4 -> vertex(segment + 1, band + 1);
-                case 5 -> vertex(segment, band + 1);
-                default -> throw new AssertionError("validated triangle vertex");
-            };
+            int a = index(segment, band), b = index(segment + 1, band);
+            int c = index(segment + 1, band + 1), d = index(segment, band + 1);
+            int point = switch (vertex) { case 0, 3 -> a; case 1 -> b; case 2, 4 -> c; default -> d; };
+            int color = vertex < 3 ? triangleColorIndex(a, b, c) : triangleColorIndex(a, c, d);
+            return new Vertex(positionsX[point], positionsY[point], positionsZ[point],
+                    color < 0 ? textureU[point] : upperU[color] + (upperSideColor[color] < 0 ? 0 : 2),
+                    color < 0 ? textureV[point] : upperV[color]);
         }
 
-        private void emitTriangleVertex(VertexConsumer consumer, int segment, int band,
-                                        int corner) {
-            int index = switch (corner) {
-                case 0 -> index(segment, band);
-                case 1 -> index(segment + 1, band);
-                case 2 -> index(segment + 1, band + 1);
-                case 3 -> index(segment, band + 1);
-                default -> throw new AssertionError("mesh corner");
-            };
-            consumer.vertex(positionsX[index], positionsY[index], positionsZ[index],
-                    textureU[index], textureV[index]);
+        private int triangleColorIndex(int a, int b, int c) {
+            int highest = heights[a] >= heights[b] ? a : b;
+            if (heights[c] > heights[highest]) highest = c;
+            float lowest = Math.min(heights[a], Math.min(heights[b], heights[c]));
+            return heights[highest] - lowest >= steepHeightThreshold ? highest : -1;
         }
 
-        private Vertex vertex(int segment, int band) {
-            int index = index(segment, band);
-            return new Vertex(positionsX[index], positionsY[index], positionsZ[index],
-                    textureU[index], textureV[index]);
+        private void emitTriangle(VertexConsumer consumer, int a, int b, int c) {
+            int color = triangleColorIndex(a, b, c);
+            consumer.sideColor(color < 0 ? -1 : upperSideColor[color]);
+            emitVertex(consumer, a, color);
+            emitVertex(consumer, b, color);
+            emitVertex(consumer, c, color);
+        }
+
+        private void emitVertex(VertexConsumer consumer, int point, int color) {
+            // Constant texel-centre UVs on a steep face take the upper sample's
+            // colour down the face. Zero UV derivatives also avoid mip filtering
+            // the lower sand/water back into that face. Gentle slopes retain UVs.
+            consumer.vertex(positionsX[point], positionsY[point], positionsZ[point],
+                    color < 0 ? textureU[point] : upperU[color] + (upperSideColor[color] < 0 ? 0 : 2),
+                    color < 0 ? textureV[point] : upperV[color]);
         }
 
         private int index(int segment, int band) {
@@ -269,6 +322,6 @@ public final class RingSurfaceMesh {
         }
     }
 
-    /** Exact float values shared by all triangles incident on one lattice point. */
+    /** Physical coordinates are shared; steep faces may select independent upper-sample UVs. */
     public record Vertex(float x, float y, float z, float u, float v) { }
 }

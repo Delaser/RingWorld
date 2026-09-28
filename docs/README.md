@@ -6,6 +6,13 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [Implemented RingWorld UI captures](media/ring-generation-ui-implemented/index.html):
+  actual 26.3 Fabric creation and in-world screens for the approved 1.4 redesign.
+- [Ring generation UI proposal](design/ring-generation-ui-proposal/index.html):
+  the reviewed design report and interactive mockup that preceded implementation.
+- [`TRANSITION_IMPROVEMENT_PLAN_1_4.md`](TRANSITION_IMPROVEMENT_PLAN_1_4.md): staged
+  material, water, geometry and blending improvements from the accepted 1.4 checkpoint.
+
 - [`../AGENTS.md`](../AGENTS.md): concise operating rules for future coding
   agents.
 - [`../LICENSE`](../LICENSE): authoritative Mozilla Public License 2.0 terms.
@@ -17,6 +24,9 @@ Start here:
   supported-version policy.
 - [`ARCHITECTURE.md`](ARCHITECTURE.md): coordinate model and end-to-end system
   design.
+- [`OPTIONAL_WORLD_GENERATION.md`](OPTIONAL_WORLD_GENERATION.md): saved Atlas
+  fidelity, Archipelago, continuous-river and increased-structure options,
+  including their shared implementation and repeatable test controls.
 - [`DIMENSION_SCALING_PLAN.md`](DIMENSION_SCALING_PLAN.md): source-audited
   registry of dimension-sensitive variables, safety limits, and the staged
   custom-size implementation plan.

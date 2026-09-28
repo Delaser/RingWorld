@@ -1,0 +1,53 @@
+// Loader-symmetric, disposable real-client preview cancellation regression.
+def handoffRun = project.ringPreviewHandoffDirectory
+if (project == rootProject) {
+    loom.runs {
+        previewHandoffClient {
+            client()
+            runDir handoffRun.absolutePath
+            vmArg '-Dringworld.atlasUiTest=true'
+            vmArg '-Dringworld.previewHandoffTest=true'
+            programArgs '--username', 'PreviewHandoff', '--width', '1280', '--height', '720'
+        }
+    }
+} else {
+    neoForge.runs {
+        previewHandoffClient {
+            client()
+            gameDirectory = handoffRun
+            systemProperty 'ringworld.atlasUiTest', 'true'
+            systemProperty 'ringworld.previewHandoffTest', 'true'
+            programArguments.addAll('--username', 'PreviewHandoff', '--width', '1280', '--height', '720')
+        }
+    }
+}
+tasks.register('preparePreviewHandoffRun') {
+    doLast {
+        // This task owns only this explicitly disposable fixture directory.
+        delete(handoffRun)
+        def configFile = new File(handoffRun, 'config/ringworld.properties')
+        configFile.parentFile.mkdirs()
+        configFile.text = 'testMode=false\npregenerateTerrainAtlas=true\ncircumferenceBlocks=16384\nwidthBlocks=256\nwallHeightBlocks=160\natlasFidelity=VERY_HIGH\n'
+        new File(handoffRun, 'options.txt').text = 'soundCategory_master:0.0\nonboardAccessibility:false\nguiScale:2\nrenderDistance:6\nsimulationDistance:6\nmaxFps:60\npauseOnLostFocus:false\n'
+        if (project != rootProject) new File(handoffRun, 'config/fml.toml').text = 'earlyWindowControl=false\n'
+    }
+}
+tasks.register('verifyPreviewHandoffClient') {
+    doLast {
+        def log = new File(handoffRun, 'logs/latest.log')
+        if (!log.isFile() || !log.text.contains('[preview-handoff] PASS:')
+                || log.text.contains('[preview-handoff] FAIL:')
+                || !log.text.contains('Cancelled staged RingWorld seed preview')
+                || !log.text.contains('Small CURRENT 512x16 received')) {
+            throw new GradleException('Preview handoff runtime evidence is missing or failed')
+        }
+        def capture = new File(handoffRun, 'screenshots/preview-handoff-small.png')
+        if (!capture.isFile() || javax.imageio.ImageIO.read(capture) == null) {
+            throw new GradleException('Preview handoff screenshot is missing or corrupt')
+        }
+    }
+}
+tasks.named('runPreviewHandoffClient') {
+    dependsOn('preparePreviewHandoffRun')
+    finalizedBy('verifyPreviewHandoffClient')
+}

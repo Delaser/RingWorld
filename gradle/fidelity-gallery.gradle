@@ -1,0 +1,79 @@
+// Loader-symmetric, disposable real-client Atlas fidelity gallery.
+def galleryRun = project.ringFidelityGalleryDirectory
+def sampleSeconds = providers.gradleProperty('ringFidelityGallerySeconds').orElse('10').get().toInteger()
+if (sampleSeconds < 10 || sampleSeconds > 120) throw new GradleException('Gallery sample must be 10-120 seconds')
+def compareMesh = providers.gradleProperty('ringFidelityGalleryCompareMesh').orElse('false').get()
+def leaveOpen = providers.gradleProperty('ringFidelityGalleryLeaveOpen').orElse('false').get()
+def resumeOwner = providers.gradleProperty('ringFidelityGalleryResume').orElse('false').get()
+def selectedProfile = providers.gradleProperty('ringFidelityGalleryProfile').orElse('all').get()
+if (!(selectedProfile in ['all', 'PERFORMANCE', 'BALANCED', 'HIGH', 'VERY_HIGH'])) {
+    throw new GradleException('Unknown gallery profile')
+}
+if (providers.gradleProperty('ringFidelityGalleryDouble').orElse('false').get().toBoolean()) {
+    galleryRun = new File(galleryRun.parentFile, galleryRun.name + '-double')
+}
+if (project == rootProject) {
+    loom.runs {
+        atlasFidelityGalleryClient {
+            client()
+            runDir galleryRun.absolutePath
+            vmArg '-Dringworld.atlasUiTest=true'
+            vmArg '-Dringworld.fidelityGallery=true'
+            vmArg '-Dringworld.fidelityGalleryProfile=' + selectedProfile
+            vmArg '-Dringworld.fidelityGallerySeconds=' + sampleSeconds
+            vmArg '-Dringworld.fidelityGalleryCompareMesh=' + compareMesh
+            vmArg '-Dringworld.fidelityGalleryLeaveOpen=' + leaveOpen
+            vmArg '-Dringworld.fidelityGalleryResume=' + resumeOwner
+            programArgs '--username', 'AtlasGallery', '--width', '1280', '--height', '800'
+        }
+    }
+} else {
+    neoForge.runs {
+        atlasFidelityGalleryClient {
+            client()
+            gameDirectory = galleryRun
+            systemProperty 'ringworld.atlasUiTest', 'true'
+            systemProperty 'ringworld.fidelityGallery', 'true'
+            systemProperty 'ringworld.fidelityGalleryProfile', selectedProfile
+            systemProperty 'ringworld.fidelityGallerySeconds', sampleSeconds.toString()
+            systemProperty 'ringworld.fidelityGalleryCompareMesh', compareMesh
+            systemProperty 'ringworld.fidelityGalleryLeaveOpen', leaveOpen
+            systemProperty 'ringworld.fidelityGalleryResume', resumeOwner
+            programArguments.addAll('--username', 'AtlasGallery', '--width', '1280', '--height', '800')
+        }
+    }
+}
+tasks.register('prepareAtlasFidelityGalleryRun') {
+    doLast {
+        // This task owns only this explicitly disposable fixture directory.
+        delete(galleryRun)
+        def configFile = new File(galleryRun, 'config/ringworld.properties')
+        configFile.parentFile.mkdirs()
+        configFile.text = 'testMode=false\npregenerateTerrainAtlas=true\ncircumferenceBlocks=2048\nwidthBlocks=128\nwallHeightBlocks=160\natlasFidelity=VERY_HIGH\n'
+        new File(galleryRun, 'options.txt').text = 'fullscreen:false\nsoundCategory_master:0.0\nonboardAccessibility:false\nguiScale:2\nrenderDistance:6\nsimulationDistance:6\nenableVsync:false\nmaxFps:260\npauseOnLostFocus:false\n'
+        if (project != rootProject) new File(galleryRun, 'config/fml.toml').text = 'earlyWindowControl=false\n'
+    }
+}
+tasks.register('verifyAtlasFidelityGalleryClient') {
+    doLast {
+        def log = new File(galleryRun, 'logs/latest.log')
+        if (!log.isFile() || !log.text.contains('[fidelity-gallery] PASS')
+                || log.text.contains('[fidelity-gallery] FAIL')) {
+            throw new GradleException('Fidelity gallery evidence missing or failed')
+        }
+        if (resumeOwner.toBoolean()) return
+        (compareMesh.toBoolean() ? ['very_high', 'max'] : selectedProfile == 'all' ? ['performance', 'balanced', 'high', 'very_high'] : [selectedProfile.toLowerCase(java.util.Locale.ROOT)]).each { level ->
+            if (!log.text.contains('[fidelity-gallery] FPS ' + level.toUpperCase(java.util.Locale.ROOT))) {
+                throw new GradleException('Missing FPS evidence: ' + level)
+            }
+            def capture = new File(galleryRun, "screenshots/atlas-${level}.png")
+            if (!capture.isFile() || javax.imageio.ImageIO.read(capture) == null) {
+                throw new GradleException("Missing or corrupt fidelity capture: ${level}")
+            }
+        }
+    }
+}
+tasks.named('runAtlasFidelityGalleryClient') {
+    dependsOn('prepareAtlasFidelityGalleryRun')
+    finalizedBy('verifyAtlasFidelityGalleryClient')
+}

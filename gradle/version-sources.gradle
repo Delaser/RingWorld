@@ -23,3 +23,14 @@ def candidates = rootProject.file('src/versions').listFiles()
 if (candidates.isEmpty()) throw new GradleException('No reviewed source ABI exists for the target version')
 rootProject.ext.ringSourceAbiDirectory = candidates.last()
 logger.lifecycle("RingWorld source ABI: ${candidates.last().name}")
+
+// A version-owned file may replace a shared implementation without duplicating
+// the unchanged implementation into every older ABI directory.
+rootProject.ext.ringExcludeVersionOverrides = { sources, String kind, String type = 'java' ->
+    def shared = rootProject.file("src/${kind}/${type}").toPath()
+    def versioned = new File(rootProject.ext.ringSourceAbiDirectory, "${kind}/${type}")
+    sources.exclude { element ->
+        def path = element.file.toPath()
+        path.startsWith(shared) && new File(versioned, shared.relativize(path).toString()).isFile()
+    }
+}

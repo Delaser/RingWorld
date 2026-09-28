@@ -13,6 +13,8 @@ on:
       - "neoforge/build.gradle"
       - "neoforge/src/**"
       - "src/**"
+      - "config/minecraft-version-matrix*.json"
+      - "scripts/minecraft_qualification_model.py"
   push:
     branches:
       - main
@@ -27,6 +29,8 @@ on:
       - "neoforge/build.gradle"
       - "neoforge/src/**"
       - "src/**"
+      - "config/minecraft-version-matrix*.json"
+      - "scripts/minecraft_qualification_model.py"
   workflow_dispatch:
 
 permissions:
@@ -34,12 +38,19 @@ permissions:
 
 jobs:
   build:
-    name: ${{ matrix.loader }} source build
+    name: ${{ matrix.minecraft.version }} ${{ matrix.loader }} source build
     runs-on: ubuntu-latest
     timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
+        minecraft:
+          - version: "26.1"
+            manifest: config/minecraft-version-matrix.json
+          - version: "26.2"
+            manifest: config/minecraft-version-matrix-26.2.json
+          - version: "26.3"
+            manifest: config/minecraft-version-matrix-26.3.json
         loader:
           - Fabric
           - NeoForge
@@ -51,9 +62,29 @@ jobs:
           java-version: "25"
       - name: Build and test ${{ matrix.loader }}
         shell: bash
+        env:
+          RINGWORLD_CI_MINECRAFT: ${{ matrix.minecraft.version }}
+          RINGWORLD_CI_MANIFEST: ${{ matrix.minecraft.manifest }}
+          RINGWORLD_CI_LOADER: ${{ matrix.loader }}
         run: |
-          if [[ "${{ matrix.loader }}" == "Fabric" ]]; then
-            ./gradlew --no-daemon --console=plain test build
-          else
-            ./gradlew --no-daemon --console=plain :neoforge:test :neoforge:build
-          fi
+          python3 - <<'PY'
+          import json, os, subprocess, sys
+          from pathlib import Path
+          sys.path.insert(0, 'scripts')
+          from minecraft_qualification_model import required_dependency_properties
+          version = os.environ['RINGWORLD_CI_MINECRAFT']
+          cells = json.loads(Path(os.environ['RINGWORLD_CI_MANIFEST']).read_text())['cells']
+          pins = {}
+          for cell in cells:
+              if cell['minecraft']['version'] == version:
+                  pins.update(required_dependency_properties(cell))
+          if not pins:
+              raise SystemExit('No pinned dependencies for the selected Minecraft version')
+          prefix = ':' if os.environ['RINGWORLD_CI_LOADER'] == 'Fabric' else ':neoforge:'
+          subprocess.run(['./gradlew', '--no-daemon', '--console=plain',
+                          '-Pminecraft_version=' + version,
+                          '-Pmod_version=0.0.0-qualification+mc' + version,
+                          '-Prelease_label=qualification',
+                          *['-P' + key + '=' + value for key, value in pins.items()],
+                          prefix + 'test', prefix + 'build'], check=True)
+          PY

@@ -42,6 +42,9 @@ public final class RingAppearanceComparisonCaptureClient {
                     RingSkyProfile.LightSource.SMALL, 0.25, true)
     };
 
+    private final RingWallSelectorSamples selectorSamples = Boolean.getBoolean(
+            "ringworld.captureWallSelectorSamples") ? new RingWallSelectorSamples() : null;
+
     private int presetIndex;
     private int skyIndex = -1;
     private int ticks;
@@ -88,6 +91,10 @@ public final class RingAppearanceComparisonCaptureClient {
             RingMinecraftClientAccess.setScreen(client, null);
         }
         if (RingMinecraftClientAccess.screen(client) != null) return true;
+        if (selectorSamples != null) {
+            selectorSamples.tick(client);
+            return true;
+        }
         captureWorld(client);
         return true;
     }

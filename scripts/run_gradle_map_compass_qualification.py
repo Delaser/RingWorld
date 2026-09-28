@@ -71,9 +71,9 @@ def _command(cell: Mapping[str, Any], paths: QualificationPaths,
 
 def _acknowledgement(loader: object) -> str:
     if loader == "fabric":
-        return "RingWorld settings acknowledged by MapCompassTester: 2048x416, format 3"
+        return "RingWorld settings acknowledged by MapCompassTester: 2048x416, format 5"
     if loader == "neoforge":
-        return "RingWorld settings acknowledged by MapCompassTester on NeoForge: format 3"
+        return "RingWorld settings acknowledged by MapCompassTester on NeoForge: format 5"
     raise GradleMapCompassError("unsupported loader")
 
 
@@ -95,7 +95,7 @@ def _verify_outputs(paths: QualificationPaths, loader: object) -> tuple[Path, tu
     first_ack = text.find(acknowledgement)
     second_ack = text.find(acknowledgement, first_ack + 1)
     if first_ack < 0 or second_ack < text.find(ORDERED_MARKERS[1]):
-        raise GradleMapCompassError("initial/reopened format-3 acknowledgement was not observed")
+        raise GradleMapCompassError("initial/reopened format-5 acknowledgement was not observed")
     screenshots = run_root / "screenshots"
     captures: list[Path] = []
     for prefix in CAPTURE_PREFIXES:
@@ -165,7 +165,7 @@ def run(cell_id: str, *, repository_root: Path = ROOT,
             "compass_targets_and_nearest_images": verdict is Verdict.PASS,
             "item_frame_and_banner_persistence": verdict is Verdict.PASS,
             "normal_disconnect_reopen_and_state_clear": verdict is Verdict.PASS,
-            "format3_acknowledged_before_and_after_reopen": verdict is Verdict.PASS,
+            "format5_acknowledged_before_and_after_reopen": verdict is Verdict.PASS,
             "production_launcher": False, "frozen_candidate_jar": False,
         },
     }

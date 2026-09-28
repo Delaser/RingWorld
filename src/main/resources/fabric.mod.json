@@ -9,7 +9,10 @@
     "homepage": "https://andwhatnotstudio.com/ringworld/"
   },
   "custom": {
-    "ringworld:compatibility_api": 1
+    "ringworld:compatibility_api": 1,
+    "lithium:options": {
+      "mixin.ai.poi.tasks": false
+    }
   },
   "license": "MPL-2.0",
   "environment": "*",

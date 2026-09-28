@@ -19,6 +19,18 @@ Manifests remain immutable qualification inputs; current host release status
 is recorded separately in the publication record.
 Neither adding a manifest nor compiling changes public support claims.
 
+26.3 development checkpoint: both loaders build with 440 passing Java cases
+and pass the full Atlas UI fixture. The two pending cells in
+`config/minecraft-version-matrix-26.3.json` now pin Fabric and the published
+NeoForge 26.3.0.7-beta runtime with ModDevGradle 2.0.147. The complete manifest
+can plan dual-loader qualification; development runtime passes do not qualify
+its frozen candidates. Current qualification readers target settings format 5,
+Atlas format 9 (twelve bytes per cell), and fingerprint version 4. They decode
+persisted wall/generation options and preserve those fields across reloads and
+forward upgrades; the production reader also binds the Atlas hash to those
+settings. Older saved option omissions use the runtime codec defaults.
+See [26.3 port status](26_3_PORT_STATUS.md).
+
 ## Repeatable procedure
 
 1. Copy a manifest for the new stable line. Set its `line`, exact Minecraft
@@ -237,3 +249,13 @@ stays ignored under `dist/`; it is not contributed or distributed source.
   deliberately cancelled NeoForge preparation. Existing local 26.2 packages
   predate the fix and must be restaged; no historical evidence is relabelled.
   Quick success alone does not authorize support metadata or publication.
+
+
+Qualification clients now run hidden and muted in disposable profiles by default.
+For a production copy whose default C/4 camera is obstructed, the nightly
+coordinator and production-render operator accept `--projection-camera-x X`.
+It changes only the canonical X pose, records that choice, and preserves all
+settling, image, geometry and frame checks. The September 20 copied wall-study
+world uses X=3072. An explicitly requested visible Gradle qualification run can
+set `-PringQualificationBackgroundClient=false`. These fixture changes do not
+modify the retained frozen mod jar or its recorded candidate-source identity.

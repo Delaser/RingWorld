@@ -18,6 +18,7 @@ public final class RingSettingsHandshake {
                 settings.widthBlocks(), settings.circumferenceBlocks(), settings.generatorSeed(),
                 settings.wallHeightBlocks(), settings.surfaceReferenceY(),
                 settings.terrainNoiseMapping(), settings.wallStyle(), skyProfile,
+                settings.generationSettings(),
                 settings.formatVersion(),
                 settings.layoutFingerprint());
     }
@@ -29,7 +30,7 @@ public final class RingSettingsHandshake {
         return RingLayoutFingerprint.compute(
                 payload.width(), payload.circumference(), payload.seed(), payload.wallHeight(),
                 payload.surfaceReferenceY(), payload.terrainNoiseMapping(),
-                payload.wallStyle(), payload.formatVersion());
+                payload.wallStyle(), payload.generationSettings(), payload.formatVersion());
     }
 
     public static boolean hasMatchingPayloadFingerprint(RingSettingsPayload payload) {

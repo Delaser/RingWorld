@@ -121,6 +121,12 @@ public final class MultiplayerTestClient {
         }
         if (RingMinecraftClientAccess.screen(client) instanceof PauseScreen) RingMinecraftClientAccess.setScreen(client, null);
         if (!readySent && client.isGameLoadFinished()) {
+            if (Boolean.getBoolean("ringworld.multiplayerDifferentLod")) {
+                var selected = role.equals("A") ? dev.ringworld.world.RingLodQuality.LOW
+                        : dev.ringworld.world.RingLodQuality.HIGH;
+                RingClientLodTuning.select(selected);
+                RingWorldMod.LOGGER.info("[multiplayer:{}] independent client LOD={}", role, selected.command());
+            }
             if (sendResult("client_ready", true, client.player.getX())) {
                 readySent = true;
                 RingWorldMod.LOGGER.info("[multiplayer:{}] client world fully loaded x={}",

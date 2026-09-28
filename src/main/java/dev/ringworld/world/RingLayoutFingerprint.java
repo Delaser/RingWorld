@@ -6,7 +6,7 @@ package dev.ringworld.world;
  * value independently.
  */
 public final class RingLayoutFingerprint {
-    private static final int FINGERPRINT_VERSION = 3;
+    private static final int FINGERPRINT_VERSION = 4;
 
     private RingLayoutFingerprint() { }
 
@@ -14,7 +14,7 @@ public final class RingLayoutFingerprint {
         return compute(settings.widthBlocks(), settings.circumferenceBlocks(),
                 settings.generatorSeed(), settings.wallHeightBlocks(),
                 settings.surfaceReferenceY(), settings.terrainNoiseMapping(),
-                settings.wallStyle(), settings.formatVersion());
+                settings.wallStyle(), settings.generationSettings(), settings.formatVersion());
     }
 
     public static long compute(int widthBlocks, int circumferenceBlocks, long generatorSeed,
@@ -35,7 +35,20 @@ public final class RingLayoutFingerprint {
                                int wallHeightBlocks, int surfaceReferenceY,
                                int terrainNoiseMapping, RingWallStyle wallStyle,
                                int formatVersion) {
+        return compute(widthBlocks, circumferenceBlocks, generatorSeed, wallHeightBlocks,
+                surfaceReferenceY, terrainNoiseMapping, wallStyle,
+                RingWorldGenerationSettings.DEFAULT, formatVersion);
+    }
+
+    public static long compute(int widthBlocks, int circumferenceBlocks, long generatorSeed,
+                               int wallHeightBlocks, int surfaceReferenceY,
+                               int terrainNoiseMapping, RingWallStyle wallStyle,
+                               RingWorldGenerationSettings generationSettings,
+                               int formatVersion) {
         if (wallStyle == null) throw new IllegalArgumentException("wall style is required");
+        if (generationSettings == null) {
+            throw new IllegalArgumentException("generation settings are required");
+        }
         long value = 0x9E3779B97F4A7C15L ^ generatorSeed;
         value = mix(value ^ FINGERPRINT_VERSION);
         value = mix(value ^ Integer.toUnsignedLong(widthBlocks));
@@ -49,6 +62,13 @@ public final class RingLayoutFingerprint {
         value = mix(value ^ (Integer.toUnsignedLong(wallStyle.pattern().id()) << 21));
         value = mix(value ^ (Integer.toUnsignedLong(wallStyle.decayPercent()) << 29));
         value = mix(value ^ (Integer.toUnsignedLong(wallStyle.formatVersion()) << 37));
+        value = mix(value ^ (Integer.toUnsignedLong(
+                generationSettings.atlasFidelity().id()) << 11));
+        value = mix(value ^ (Integer.toUnsignedLong(generationSettings.layout().id()) << 19));
+        value = mix(value ^ (generationSettings.continuousRiver() ? 0x52A1_7E2DL : 0L));
+        value = mix(value ^ (generationSettings.moreStructures() ? 0x6D31_904BL : 0L));
+        value = mix(value ^ (Integer.toUnsignedLong(
+                generationSettings.formatVersion()) << 45));
         return mix(value ^ (Integer.toUnsignedLong(RingGenerationBoundary.RIM_STYLE_VERSION) << 25));
     }
 

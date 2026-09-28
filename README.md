@@ -11,10 +11,8 @@ work across the join.
 [Download on Modrinth](https://modrinth.com/mod/ringworld/versions) ·
 [Download on CurseForge](https://www.curseforge.com/minecraft/mc-mods/ringworld) ·
 [Project showcase](https://andwhatnotstudio.com/ringworld/) ·
-[Report a problem](https://github.com/Delaser/RingWorld/issues)
-
+[Report a problem](https://github.com/Delaser/RingWorld/issues) ·
 [Join us on Discord](https://discord.com/invite/wBMY5Ab7su)
-
 
 ## What does it look like?
 
@@ -53,20 +51,21 @@ on the finite Overworld ring, including after very long Nether journeys.
 
 ## Download and requirements
 
-**RingWorld 1.1 supports Minecraft Java 26.1, 26.1.1, 26.1.2 and 26.2.**
+**RingWorld 1.2 supports Minecraft Java 26.1, 26.1.1, 26.1.2, 26.2 and 26.3.**
 Choose the file for your Minecraft version and loader. The 26.1.x files cover
-all three patches; 26.2 has separate files. Both hosts have received the
-release, but some files or listings may still be pending review.
-See the [release record](docs/RELEASE_1_1_PUBLICATION_2026-08-27.md).
+all three patches; 26.2 and 26.3 have separate files. All six 1.2 files are
+on CurseForge; Modrinth currently has the older 1.1 release.
+See the [1.2 publication record](docs/RELEASE_1_2_PUBLICATION_2026-09-20.md).
 
-| Minecraft | Fabric (Loader 0.19.3) | NeoForge |
+| Minecraft | Fabric Loader / API | NeoForge |
 | --- | --- | --- |
-| 26.1 | Fabric API 0.145.1+26.1 | 26.1.0.19-beta |
-| 26.1.1 | Fabric API 0.145.4+26.1.1 | 26.1.1.15-beta |
-| 26.1.2 | Fabric API 0.155.2+26.1.2 | 26.1.2.87 |
-| 26.2 | Fabric API 0.158.0+26.2 | 26.2.0.69 |
+| 26.1 | 0.19.3 / Fabric API 0.145.1+26.1 | 26.1.0.19-beta |
+| 26.1.1 | 0.19.3 / Fabric API 0.145.4+26.1.1 | 26.1.1.15-beta |
+| 26.1.2 | 0.19.3 / Fabric API 0.155.2+26.1.2 | 26.1.2.87 |
+| 26.2 | 0.19.3 / Fabric API 0.158.0+26.2 | 26.2.0.69 |
+| 26.3 | 0.19.5 / Fabric API 0.160.5+26.3 | 26.3.0.7-beta |
 
-All four versions require **Java 25**. The table lists the tested dependency
+All five versions require **Java 25**. The table lists the tested dependency
 versions; NeoForge does not need Fabric API. Back up worlds before upgrading
 Minecraft and do not reopen upgraded saves in older versions.
 
@@ -75,7 +74,7 @@ Do not install both. A Fabric client joins a Fabric RingWorld server; a
 NeoForge client joins a NeoForge RingWorld server. The server and every client
 must use compatible RingWorld builds.
 
-CurseForge and Modrinth provide the ordinary standalone mod files. The
+CurseForge provides the 1.2 mod files; Modrinth provides 1.1 files. The
 [showcase site](https://andwhatnotstudio.com/ringworld/) has additional project
 information and demo material.
 
@@ -84,10 +83,12 @@ information and demo material.
 RingWorld is selected while creating a new world:
 
 1. Open **Create New World**.
-2. Select the **RingWorld C×W** button in the bottom-left corner.
-3. Choose Small, Medium, Large, or enter custom dimensions; select the rim and
-   sky presentation you want.
-4. Review the world-size estimate and create the world.
+2. Select the **RingWorld** button at the bottom of the screen.
+3. Use the Ring, Terrain, Walls, Sky and Preview pages to choose dimensions,
+   materials, generation features and presentation.
+4. If you want the previewed seed, press **Use** there. **Apply settings** then
+   copies it to Minecraft's World tab, where the chosen value is shown.
+5. Review the settings and create the world.
 
 The built-in presets are:
 
@@ -105,6 +106,15 @@ Ring dimensions are saved permanently when the Overworld is first created.
 Changing a configuration file later does not resize an existing ring, and an
 ordinary flat Overworld cannot currently be converted into one.
 
+The optional generation panel offers a continuous ring river and increased
+built-in structures, both Off by default. These choices are saved with the
+world. Archipelago is hidden for this release.
+
+Distant ring detail is a client performance setting: choose Low, Medium or High
+on the RingWorld Map or with `/ringworld lod`. Medium is the default; every
+level draws from the same one-block server Atlas. See the
+[technical guide](docs/OPTIONAL_WORLD_GENERATION.md).
+
 For dedicated-server configuration, commands, backups, and recovery, see the
 [operations guide](docs/OPERATIONS.md).
 
@@ -117,8 +127,9 @@ so it builds a terrain Atlas in the background.
 It appears in stages:
 
 1. **Real nearby chunks load first.** You can begin playing normally.
-2. **A fogged placeholder fills the unknown ring.** It takes colour from the
-   terrain that has already been seen.
+2. **A fogged placeholder fills the unknown ring.** A seed-derived preview
+   starts at 512×16 and improves in stages while real terrain generates.
+   Leaving a world cancels its preview work so the next world can start its own.
 3. **The placeholder improves as more regions generate.** A small
    `Ring Atlas Generating: X%` display shows progress.
 4. **At verified completion, the distant ring switches to its detailed 3D
@@ -173,15 +184,14 @@ servers and clients, runs gameplay/worldgen/Atlas/rendering fixtures, and
 records exactly which version or loader fails. A version is advertised only
 after the required automated and human checks pass.
 
-There is also an open community contribution lane for the planned Minecraft
-1.21.1 backport:
+There is an experimental Minecraft 1.21.1 beta and an open contribution lane:
 
 - [1.21.1 backport epic](https://github.com/Delaser/RingWorld/issues/181)
 - [1.21.1 milestone](https://github.com/Delaser/RingWorld/milestone/1)
 - [1.21.1 contributor guide](versions/mc1.21.1/README.md)
 
-The backport is not yet playable or supported. Contributors should take one
-of the linked issues and target the `port/mc-1.21.1` integration branch.
+The beta is separate from the qualified 26.x releases. Contributors should
+take one of the linked issues and target the `port/mc-1.21.1` integration branch.
 
 General bug reports, compatibility observations, documentation improvements,
 and code contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md)
@@ -232,3 +242,12 @@ You may use it, include it in modpacks, modify it, redistribute it, and
 contribute improvements under the terms of that licence. Modified RingWorld
 source files remain MPL-2.0 when distributed. The licence does not grant
 rights to imply that an unofficial fork is endorsed by the RingWorld project.
+
+### Local Atlas display quality
+
+Use `/ringworld lod low|medium|high` to select your local
+LOD display budget. `/ringworld lod show` reports the selected level and the
+server source resolution; `/ringworld lod reset` follows the server default.
+The choice resets on disconnect. It changes local display samples, texture
+budget and mesh density, without changing terrain, server settings, or downloads.
+A client cannot recover finer terrain detail than the server Atlas contains.

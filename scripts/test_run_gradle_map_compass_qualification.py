@@ -44,8 +44,8 @@ class GradleMapCompassQualificationTest(unittest.TestCase):
         world.parent.mkdir(parents=True)
         world.write_bytes(b"world")
         neo = command.argv[-1].startswith(":neoforge:")
-        ack = ("RingWorld settings acknowledged by MapCompassTester on NeoForge: format 3"
-               if neo else "RingWorld settings acknowledged by MapCompassTester: 2048x416, format 3")
+        ack = ("RingWorld settings acknowledged by MapCompassTester on NeoForge: format 5"
+               if neo else "RingWorld settings acknowledged by MapCompassTester: 2048x416, format 5")
         (run_root / "logs/latest.log").write_text(
             "\n".join((ack, ORDERED_MARKERS[0], ORDERED_MARKERS[1], ack,
                        ORDERED_MARKERS[2], PASS_MARKER + " passed")) + "\n", encoding="utf-8")
@@ -75,7 +75,7 @@ class GradleMapCompassQualificationTest(unittest.TestCase):
             result = self.executor(command, paths, ordinal=ordinal)
             log = paths.run_directory / "run-map-compass-capture/logs/latest.log"
             text = log.read_text()
-            ack = "RingWorld settings acknowledged by MapCompassTester: 2048x416, format 3\n"
+            ack = "RingWorld settings acknowledged by MapCompassTester: 2048x416, format 5\n"
             log.write_text(text.replace(ack, "", 1))
             return result
         result = run("26.1-fabric", repository_root=self.root,

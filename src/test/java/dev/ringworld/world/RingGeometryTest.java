@@ -130,7 +130,7 @@ class RingGeometryTest {
         assertEquals(0, circumference % 512);
         assertEquals(1_024, circumference / 16);
         assertEquals(32, circumference / 512);
-        assertEquals(2_048, circumference / RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
+        assertEquals(16_384, circumference / RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
     }
 
     @Test

@@ -33,3 +33,7 @@ type="required"
 versionRange="${minecraft_metadata_version}"
 ordering="NONE"
 side="BOTH"
+
+# RingWorld owns periodic village POI task lookup; Lithium redirects the same calls.
+["lithium:options"]
+"mixin.ai.poi.tasks" = false

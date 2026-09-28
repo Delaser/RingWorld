@@ -64,6 +64,7 @@ def parse_neoforge_metadata(text: str) -> dict:
     result: dict[str, object] = {"mods": [], "mixins": [], "dependencies": {"ringworld": []}}
     current: dict | None = result
     multiline_quote: str | None = None
+    lithium_options = False
     for raw in text.splitlines():
         line = raw.strip()
         if multiline_quote is not None:
@@ -71,6 +72,15 @@ def parse_neoforge_metadata(text: str) -> dict:
                 multiline_quote = None
             continue
         if not line or line.startswith("#"):
+            continue
+        if line == '["lithium:options"]':
+            current = None
+            lithium_options = True
+            continue
+        if lithium_options:
+            if line != '"mixin.ai.poi.tasks" = false':
+                raise ValueError(f"unsupported Lithium option {line!r}")
+            lithium_options = False
             continue
         table = _TABLE.fullmatch(line)
         if table:
@@ -100,6 +110,8 @@ def parse_neoforge_metadata(text: str) -> dict:
         current[key] = _toml_string(value)
     if multiline_quote is not None:
         raise ValueError("unterminated TOML multiline string")
+    if lithium_options:
+        raise ValueError("Lithium options table is missing its expected setting")
     return result
 
 

@@ -1,0 +1,49 @@
+{
+  "before": {
+    "frameSamples": 2197.0,
+    "totalFrameNanos": 39354190416.0,
+    "maxFrameNanos": 97769917.0,
+    "slowFrames": 2.0,
+    "startX": 400.5,
+    "startZ": 0.5,
+    "endX": 432.69999998807907,
+    "endZ": 0.5,
+    "mean_fps": 55.82632946520426,
+    "max_frame_ms": 97.769917,
+    "distance_x": 32.19999998807907,
+    "jfr": {
+      "jdk.GCPhasePause": {
+        "count": 185,
+        "max_ms": 17.392457999999998
+      },
+      "ringworld.AtlasCacheSave": {
+        "count": 12,
+        "max_ms": 754.281917
+      }
+    }
+  },
+  "after": {
+    "frameSamples": 1899.0,
+    "totalFrameNanos": 40711234667.0,
+    "maxFrameNanos": 123622083.0,
+    "slowFrames": 2.0,
+    "startX": 400.5,
+    "startZ": 0.5,
+    "endX": 432.69999998807907,
+    "endZ": 0.5,
+    "mean_fps": 46.645600791353665,
+    "max_frame_ms": 123.622083,
+    "distance_x": 32.19999998807907,
+    "jfr": {
+      "jdk.GCPhasePause": {
+        "count": 114,
+        "max_ms": 21.715208999999998
+      },
+      "ringworld.AtlasCacheSave": {
+        "count": 8,
+        "max_ms": 974.8399169999999
+      }
+    }
+  },
+  "limits": "Separate copies of the same source save, ongoing one-block Atlas transfer. Auto-jump forward input; movement stopped at a terrain obstacle after 32.2 blocks. Before build starvation left the ring absent for much of the sample; FPS is not an equivalent-workload speedup comparison. JFR windows extend beyond movement windows."
+}

@@ -1,75 +1,37 @@
 # RingWorld
 
-RingWorld turns the Minecraft Overworld into a finite cylindrical band that
-genuinely loops around itself. Walk around the circumference and return to the
-same blocks without a duplicate lap or corrective teleport. Nearby terrain
-curves away from the player while a terrain atlas continues the visible ring
-beyond normal chunk distance.
+RingWorld bends the Overworld into a ring. Keep travelling around it and you’ll come back to where you started. Look up and you can see the other side.
 
-## What it does
+You can build across the join, sail through it, or chase a mob around the whole ring. Blocks, redstone, water and projectiles work across it too. Walls run along the two edges. The Nether and End stay unchanged.
 
-- The two ends of the circumference are real neighbours. Players, mobs,
-  vehicles, redstone, fluids, projectiles, and block interactions can cross the
-  join.
-- The Overworld has a configurable circumference, finite width, and breakable
-  cobble-and-moss rim walls. Nether and End remain ordinary Minecraft.
-- Nearby terrain is made from real Minecraft chunks. A lightweight curved
-  surface continues the view through the sky without forcing a huge render
-  distance.
-- New-world presets cover Small 2,048×128, Medium 16,384×256, and Large
-  32,768×512 rings. Dimensions are fixed after the first Overworld load.
+## Choose your world size
 
-## The ring fills in over time
+Create a new world and open the RingWorld settings. Pick a preset or enter your own dimensions:
 
-You can start playing straight away. The distant ring is prepared in layers:
+- **Small:** 2,048 blocks around, 128 across.
+- **Medium:** 16,384 around, 256 across.
+- **Large:** 32,768 around, 512 across.
 
-1. Minecraft generates normal playable chunks around you.
-2. RingWorld draws a fogged, biome-flavoured stand-in to bridge the horizons
-   and rim walls.
-3. The server samples missing surface chunks into the Ring Atlas and streams
-   the results. New sections softly replace the stand-in instead of popping.
-4. At 100%, the fog and placeholder disappear and the full curved terrain
-   texture and height mesh take over.
+The dimensions are fixed once the world is created.
 
-`Ring Atlas Generating: X%` appears at the top left while this is happening and
-disappears when it is complete. Open **RingWorld Map** from the pause menu to
-see the live rate and ETA, or to start, pause, and resume generation when you
-have permission. Progress is saved across restarts; you do not need to walk a
-lap.
+## Why the distant ring starts out foggy
 
-Atlas generation creates real chunks and uses CPU, disk, and time. Small rings
-finish quickly. Medium and Large rings can take tens of minutes or longer,
-depending on the machine, seed, server load, and other mods. The world remains
-playable while it runs, but the distant ring is deliberately foggier and less
-detailed until completion. The Atlas is visual only: real chunks still own
-collision, entities, lighting, and block interaction.
+The Ring Atlas builds a view of the terrain beyond your render distance. As it fills in, more of the ring becomes visible. You can play while it runs, and progress is saved when you quit.
 
-## Requirements and installation
+Open **RingWorld Map** in the pause menu to check progress and the estimated time remaining. Players with permission can start, pause or resume generation there. You don’t have to explore the whole ring yourself.
 
-Install the matching Fabric or NeoForge artifact in Minecraft Java 26.1.2 with
-Java 25. Fabric requires Fabric Loader 0.19.3 or newer and Fabric API
-0.155.2+26.1.2; NeoForge requires NeoForge 26.1.2.87 or newer. RingWorld is
-required on the dedicated server and on every connecting client; all must use
-the same loader and RingWorld version. Add the jar to an existing matching
-loader instance like any other mod. Create a new RingWorld world from the
-Create World screen, or configure a dedicated server before its first
-Overworld load. Saved RingWorld dimensions are immutable.
+Generating the Atlas takes processor time and disk space. Medium and Large worlds can take tens of minutes or longer, depending on your computer and settings.
 
-## Compatibility
+## Installation
 
-RingWorld is an engine-level mod. Back up worlds before changing versions.
-Mods that replace renderers or shaders, gravity, chunk or world-generation
-internals, entity tracking, distance rules, or networking may conflict. Do not
-assume Sodium, Iris, large world-generation suites, or another loader are
-compatible unless that exact combination is explicitly tested.
+- RingWorld 1.1 supports **Minecraft Java 26.1, 26.1.1, 26.1.2 and 26.2**, with **Java 25**.
+- Download the file for your Minecraft version and loader: **Fabric or NeoForge**. The 26.2 files are separate from the 26.1.x files.
+- Fabric also needs the matching **Fabric API**. Don’t install both loader versions of RingWorld together.
+- For multiplayer, install RingWorld on the server and every player’s client. Use the same loader and RingWorld version throughout.
+- Start a new world. On a dedicated server, configure RingWorld before generating the Overworld for the first time.
 
-Fabric and NeoForge files are separate loader-specific releases. Do not put
-both files in one instance, and do not assume cross-loader multiplayer works.
+Back up your saves before updating. Mods that replace rendering, shaders, world generation or networking can conflict with RingWorld. Check the [compatibility notes](https://github.com/Delaser/RingWorld/blob/main/docs/COMPATIBILITY.md) before adding it to a modpack.
 
-## Licence and source
+[Source code for this release]({{RINGWORLD_CORRESPONDING_SOURCE_URL}}) · [Report a bug](https://github.com/Delaser/RingWorld/issues)
 
-RingWorld is open-source software under the Mozilla Public License 2.0. The
-exact corresponding source revision for this release is
-[this immutable commit]({{RINGWORLD_CORRESPONDING_SOURCE_URL}}).
-Minecraft is a trademark of Microsoft; RingWorld is not affiliated with Mojang
-or Microsoft.
+Open source under MPL-2.0. Not affiliated with Mojang or Microsoft.

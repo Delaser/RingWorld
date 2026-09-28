@@ -12,6 +12,7 @@ import dev.ringworld.world.RingSeamTerrainAudit;
 import dev.ringworld.world.RingTerrainNoiseMapping;
 import dev.ringworld.world.RingWorldGeneratorAccess;
 import dev.ringworld.world.RingWorldSettings;
+import dev.ringworld.world.RingMacroTerrain;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.HolderSet;
@@ -79,6 +80,7 @@ public final class RingWorldStrongholdTest {
         RingGeometry geometry = RingWorldServer.geometryFor(world);
         boolean worldgenMatrix = Boolean.getBoolean("ringworld.worldgenMatrix");
         verifyPeriodicHeightQueries(world, geometry);
+        verifyOptionalGeneration(world, geometry);
         if (worldgenMatrix) verifySeamWorldgenSample(world, geometry);
         verifyFiniteRims(world, geometry);
         if (!RingStructurePolicy.get(world).guaranteesStronghold()) {
@@ -94,8 +96,8 @@ public final class RingWorldStrongholdTest {
         ChunkAccess startChunk = world.getChunkSource().getChunk(
                 expected.chunkX(), expected.chunkZ(), ChunkStatus.STRUCTURE_STARTS, true);
         if (startChunk == null) throw new IllegalStateException("Stronghold start chunk did not load");
-        StructureStart start = world.structureManager().getStartForStructure(
-                SectionPos.bottomOf(startChunk), stronghold, startChunk);
+        StructureStart start = dev.ringworld.world.RingMinecraftFixtureAccess.structureStart(
+                world, stronghold, startChunk);
         if (start == null || !start.isValid()) {
             throw new IllegalStateException("Guaranteed stronghold start was not generated at " + expected);
         }
@@ -200,6 +202,38 @@ public final class RingWorldStrongholdTest {
                 eye.getDeltaMovement().x);
     }
 
+    private static void verifyOptionalGeneration(ServerLevel world, RingGeometry geometry) {
+        RingWorldSettings settings = RingWorldSettings.get(world);
+        RingStructurePolicy policy = RingStructurePolicy.get(world);
+        if (settings.generationSettings().moreStructures() != policy.increasesStructureDensity()) {
+            throw new IllegalStateException("saved structure-density policy does not match world settings");
+        }
+        if (!settings.generationSettings().continuousRiver()) return;
+        RingMacroTerrain macro = new RingMacroTerrain(
+                geometry, settings.generatorSeed(), settings.generationSettings());
+        int riverBiomes = 0;
+        int seaLevel = world.getSeaLevel();
+        for (int sample = 0; sample < 8; sample++) {
+            int x = sample * geometry.circumferenceBlocks() / 8;
+            int z = (int)Math.round(macro.riverCenterZ(x));
+            world.getChunk(x >> 4, z >> 4);
+            if (world.getBiome(new BlockPos(x, seaLevel, z)).is(BiomeTags.IS_RIVER)) riverBiomes++;
+            int height = world.getHeight(Heightmap.Types.OCEAN_FLOOR, x, z);
+            if (height > seaLevel + 2) {
+                throw new IllegalStateException("continuous river rose above its channel at "
+                        + x + "," + z + ": " + height
+                        + "; top=" + world.getBlockState(new BlockPos(x, height - 1, z))
+                        + ", sea=" + world.getBlockState(new BlockPos(x, seaLevel, z))
+                        + ", bed=" + world.getBlockState(new BlockPos(x, seaLevel - 7, z)));
+            }
+        }
+        if (riverBiomes != 8) {
+            throw new IllegalStateException("continuous river biome coverage was " + riverBiomes + "/8");
+        }
+        RingWorldMod.LOGGER.info("[stronghold-test] continuous river=8/8 biome/channel samples; moreStructures={}",
+                policy.increasesStructureDensity());
+    }
+
     /**
      * Generates a bounded strip on both canonical sides of the seam and
      * audits ordinary biome, carver, feature, structure, reference, loot, and
@@ -228,9 +262,9 @@ public final class RingWorldStrongholdTest {
         for (int x = 0; x < geometry.circumferenceBlocks(); x += sampleStep) {
             for (int z = geometry.minWidthZ() + 8; z <= geometry.maxWidthZ(); z += sampleStep) {
                 for (int y : new int[]{0, 64, 128}) {
-                    Holder<Biome> canonical = biomeSource.getNoiseBiome(
+                    Holder<Biome> canonical = dev.ringworld.world.RingMinecraftFixtureAccess.biome(biomeSource,
                             Math.floorDiv(x, 4), Math.floorDiv(y, 4), Math.floorDiv(z, 4), sampler);
-                    Holder<Biome> alias = biomeSource.getNoiseBiome(
+                    Holder<Biome> alias = dev.ringworld.world.RingMinecraftFixtureAccess.biome(biomeSource,
                             Math.floorDiv(x + geometry.circumferenceBlocks(), 4),
                             Math.floorDiv(y, 4), Math.floorDiv(z, 4), sampler);
                     if (!canonical.equals(alias)) {
@@ -366,6 +400,39 @@ public final class RingWorldStrongholdTest {
         if (RingWorldSettings.get(world).terrainNoiseMapping()
                 >= RingTerrainNoiseMapping.ANNULAR_COMPLETE_V2
                 && !seam.passesSmoothJoin()) {
+            int[] previousHeights = new int[highSideHeights.length];
+            int[] nextHeights = new int[lowSideHeights.length];
+            for (int z = interiorMinimumZ; z <= interiorMaximumZ; z++) {
+                int index = z - interiorMinimumZ;
+                previousHeights[index] = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                        geometry.circumferenceBlocks() - 2, z);
+                nextHeights[index] = world.getHeight(Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, 1, z);
+            }
+            int[] baseHigh = new int[highSideHeights.length];
+            int[] baseLow = new int[lowSideHeights.length];
+            for (int z = interiorMinimumZ; z <= interiorMaximumZ; z++) {
+                int index = z - interiorMinimumZ;
+                baseHigh[index] = generator.getBaseHeight(geometry.circumferenceBlocks() - 1, z,
+                        Heightmap.Types.WORLD_SURFACE_WG, world, world.getChunkSource().randomState());
+                baseLow[index] = generator.getBaseHeight(0, z,
+                        Heightmap.Types.WORLD_SURFACE_WG, world, world.getChunkSource().randomState());
+            }
+            RingWorldMod.LOGGER.error("[worldgen-matrix] seam undecorated base={}",
+                    RingSeamTerrainAudit.inspect(baseHigh, baseLow));
+            for (int cut : new int[]{-32, -16, -8, -4, 4, 8, 16, 32, 1024, 4096}) {
+                for (int z = interiorMinimumZ; z <= interiorMaximumZ; z++) {
+                    int index = z - interiorMinimumZ;
+                    baseHigh[index] = generator.getBaseHeight(geometry.wrapBlockX(cut - 1), z,
+                            Heightmap.Types.WORLD_SURFACE_WG, world, world.getChunkSource().randomState());
+                    baseLow[index] = generator.getBaseHeight(geometry.wrapBlockX(cut), z,
+                            Heightmap.Types.WORLD_SURFACE_WG, world, world.getChunkSource().randomState());
+                }
+                RingWorldMod.LOGGER.error("[worldgen-matrix] reference base cut={} report={}",
+                        cut, RingSeamTerrainAudit.inspect(baseHigh, baseLow));
+            }
+            RingWorldMod.LOGGER.error("[worldgen-matrix] seam neighbours before={} after={}",
+                    RingSeamTerrainAudit.inspect(previousHeights, highSideHeights),
+                    RingSeamTerrainAudit.inspect(lowSideHeights, nextHeights));
             throw new IllegalStateException("Terrain join is not smooth under the current mapping: "
                     + seam);
         }
@@ -465,8 +532,8 @@ public final class RingWorldStrongholdTest {
         ChunkAccess startChunk = world.getChunkSource().getChunk(
                 candidate.chunkX(), candidate.chunkZ(), ChunkStatus.STRUCTURE_STARTS, true);
         if (startChunk == null) throw new IllegalStateException("Monument start chunk did not load");
-        StructureStart start = world.structureManager().getStartForStructure(
-                SectionPos.bottomOf(startChunk), monument, startChunk);
+        StructureStart start = dev.ringworld.world.RingMinecraftFixtureAccess.structureStart(
+                world, monument, startChunk);
         if (start == null || !start.isValid() || start.getPieces().isEmpty()) {
             throw new IllegalStateException("Guaranteed monument did not generate at " + candidate);
         }
@@ -512,15 +579,31 @@ public final class RingWorldStrongholdTest {
         world.getChunk(chunkX, geometry.minChunkZ() - 1);
         world.getChunk(chunkX, geometry.maxChunkZ() + 1);
         for (int y = world.getMinY(); y < wallTopExclusive; y++) {
-            if (!RingGenerationBoundary.isRimMaterial(world.getBlockState(new BlockPos(x, y, lowerRimZ)))
-                    || !RingGenerationBoundary.isRimMaterial(world.getBlockState(new BlockPos(x, y, upperRimZ)))) {
-                throw new IllegalStateException("Finite rim material is missing at Y=" + y);
+            var style = RingWorldSettings.get(world).wallStyle();
+            boolean present = dev.ringworld.world.RingWallPattern.blockPresent(style, x, y, 0,
+                    wallTopExclusive, geometry.circumferenceBlocks(), world.getSeed());
+            for (int z : new int[]{lowerRimZ, upperRimZ}) {
+                var state = world.getBlockState(new BlockPos(x, y, z));
+                if (present ? !RingGenerationBoundary.isRimMaterial(state) : !state.isAir())
+                    throw new IllegalStateException("Finite rim differs from saved decay at Y=" + y);
             }
         }
         if (!world.getBlockState(new BlockPos(x, world.getMinY(), lowerRimZ - 1)).isAir()
                 || !world.getBlockState(new BlockPos(x, world.getMinY(), upperRimZ + 1)).isAir()) {
             throw new IllegalStateException("Exterior finite-width terrain is not void");
         }
+        world.getChunk(0, 0);
+        int upperBedrock = 0;
+        for (int bx = 0; bx < 16; bx++) for (int bz = 0; bz < 16; bz++) {
+            var floor = world.getBlockState(new BlockPos(bx, world.getMinY(), bz));
+            if (floor.is(Blocks.BEDROCK) || floor.isAir())
+                throw new IllegalStateException("Patterned underside missing at " + bx + "," + bz);
+            for (int y = world.getMinY() + 1; y <= world.getMinY() + 4; y++)
+                if (world.getBlockState(new BlockPos(bx, y, bz)).is(Blocks.BEDROCK)) upperBedrock++;
+        }
+        if (upperBedrock == 0) throw new IllegalStateException("Upper bedrock layers missing");
+        RingWorldMod.LOGGER.info("[stronghold-test] underside=256 upperBedrock={} savedStyle={}",
+                upperBedrock, RingWorldSettings.get(world).wallStyle());
         RingWorldMod.LOGGER.info(
                 "[stronghold-test] rims lowerZ={} upperZ={} wallTopY={} exteriorVoid=true",
                 lowerRimZ, upperRimZ, wallTopExclusive);
@@ -585,14 +668,14 @@ public final class RingWorldStrongholdTest {
 
                 if (compareFreshNoise) {
                     ChunkAccess terrain = world.getChunkSource().getChunk(
-                            chunkX, chunkZ, ChunkStatus.NOISE, true);
+                            chunkX, chunkZ, dev.ringworld.world.RingMinecraftFixtureAccess.terrainStatus(), true);
                     if (terrain == null) {
                         throw new IllegalStateException(
                                 "Canonical terrain did not load for base-height check at X="
                                         + canonicalX + ", Z=" + z);
                     }
-                    int terrainHeight = terrain.getHeight(Heightmap.Types.WORLD_SURFACE_WG,
-                            Math.floorMod(canonicalX, 16), Math.floorMod(z, 16)) + 1;
+                    int terrainHeight = dev.ringworld.world.RingMinecraftFixtureAccess.noiseHeight(
+                            terrain, Math.floorMod(canonicalX, 16), Math.floorMod(z, 16));
                     if (canonicalHeight != terrainHeight) {
                         throw new IllegalStateException(
                                 "Base-height differs from canonical generated terrain at X="

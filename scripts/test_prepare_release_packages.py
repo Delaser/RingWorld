@@ -364,7 +364,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
         *, loader: str = "fabric", include_fabric_api: bool | None = None,
         output_name: str = "out", revision: str = REVISION, stage_manifest: Path | None = None,
         qualification_manifest: Path | None = None, runtime_cell: str | None = None,
-        neoforge_installer: Path | None = None,
+        neoforge_installer: Path | None = None, server_template: Path | None = None,
     ) -> subprocess.CompletedProcess[str]:
         stage_manifest = stage_manifest or self.make_stage_manifest(
             temporary, jar, loader=loader, revision=revision,
@@ -381,6 +381,8 @@ class ReleasePackagePreparationTest(unittest.TestCase):
             command += ["--runtime-cell", runtime_cell]
         if neoforge_installer is not None:
             command += ["--neoforge-installer", str(neoforge_installer)]
+        if server_template is not None:
+            command += ["--server-template", str(server_template)]
         if include_fabric_api is None:
             include_fabric_api = loader == "fabric"
         if include_fabric_api:
@@ -423,8 +425,16 @@ class ReleasePackagePreparationTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             temporary = Path(directory)
             jar, fabric, instance = self.inputs(temporary)
-            first = self.run_prepare(temporary, jar, fabric, instance)
-            second = self.run_prepare(temporary, jar, fabric, instance, output_name="out-again")
+            server = temporary / "server-template"
+            shutil.copytree(ROOT / "deploy" / "server", server)
+            cache = server / "__pycache__"
+            cache.mkdir(exist_ok=True)
+            (cache / "rcon-send.cpython-312.pyc").write_bytes(b"first local cache")
+            first = self.run_prepare(temporary, jar, fabric, instance, server_template=server)
+            (cache / "rcon-send.cpython-312.pyc").write_bytes(b"changed local cache")
+            (server / "rcon-send.pyo").write_bytes(b"another interpreter cache")
+            second = self.run_prepare(temporary, jar, fabric, instance, output_name="out-again",
+                                      server_template=server)
             self.assertEqual(first.returncode, 0, first.stderr)
             self.assertEqual(second.returncode, 0, second.stderr)
 
@@ -486,6 +496,9 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                 self.assertIn(f"mods/ringworld-{VERSION}.jar", contents)
                 self.assertIn("config/ringworld.properties", contents)
                 self.assertNotIn("RingWorld-Prism-Instance.zip", contents)
+                self.assertIn("rcon-send.py", contents)
+                self.assertFalse(any("__pycache__" in name or name.endswith((".pyc", ".pyo"))
+                                     for name in contents))
 
     def test_builds_neoforge_packages_without_fabric_api(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

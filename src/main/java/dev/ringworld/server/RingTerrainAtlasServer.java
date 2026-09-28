@@ -46,7 +46,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.concurrent.CancellationException;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -233,10 +233,12 @@ public final class RingTerrainAtlasServer {
     }
 
     private static void startPreviewJob(ServerLevel world, RingTerrainAtlas atlas, PreviewJob job) {
-        job.future = CompletableFuture.runAsync(() -> {
+        job.start(PREVIEW_EXECUTOR, () -> {
             try {
                 for (RingTerrainPreviewStage stage : RingTerrainPreviewStage.values()) {
                     if (job.cancelled) return;
+                    RingWorldMod.LOGGER.debug("Starting RingWorld {} seed preview for {}",
+                            stage.logLabel(), atlas.worldHash());
                     RingTerrainPreview preview = RingTerrainPreviewGenerator.generate(
                             world, atlas.worldHash(), atlas.geometry(), stage);
                     if (preview == null || job.cancelled) return;
@@ -245,13 +247,13 @@ public final class RingTerrainAtlasServer {
                     world.getServer().execute(() -> publishPreview(world, atlas, job, stage, encoded));
                 }
             } catch (CancellationException ignored) {
-                // World unload and completed authoritative Atlases cancel the disposable preview.
+                RingWorldMod.LOGGER.info("Cancelled staged RingWorld seed preview for {}", atlas.worldHash());
             } catch (IOException | RuntimeException exception) {
                 RingWorldMod.LOGGER.warn(
                         "Could not build staged RingWorld terrain preview; retaining the last available stage",
                         exception);
             }
-        }, PREVIEW_EXECUTOR);
+        });
     }
 
     private static void publishPreview(ServerLevel world, RingTerrainAtlas sourceAtlas,
@@ -559,16 +561,22 @@ public final class RingTerrainAtlasServer {
         private ProgressObserver(ServerLevel world) { this.world = world; }
     }
 
-    private static final class PreviewJob {
+    static final class PreviewJob {
         private final long worldHash;
         private volatile boolean cancelled;
-        private CompletableFuture<Void> future;
+        private Future<?> future;
         private byte[] latestData;
         private RingTerrainPreviewStage latestStage;
 
-        private PreviewJob(long worldHash) { this.worldHash = worldHash; }
+        PreviewJob(long worldHash) { this.worldHash = worldHash; }
 
-        private void cancel() {
+        // start/cancel are server-thread-owned. ExecutorService.submit supplies
+        // a FutureTask whose cancellation interrupts only its own running task.
+        void start(ExecutorService executor, Runnable action) {
+            future = executor.submit(action);
+        }
+
+        void cancel() {
             cancelled = true;
             if (future != null) future.cancel(true);
         }

@@ -4,7 +4,6 @@ import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingWallStyle;
 import java.util.ArrayList;
 import java.util.List;
-import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Matrix4f;
@@ -37,11 +36,18 @@ final class RingWallShaderStyle {
         return new Encoded(palette, vertexArgb);
     }
 
+    static int[] paletteColors(RingWallStyle style, Level world) {
+        int[] colors = new int[100];
+        for (int roll = 0; roll < 100; roll++)
+            colors[roll] = materialRgb(RingGenerationBoundary.styledRimBlockForRoll(style, roll), world);
+        return colors;
+    }
+
     private static List<Run> runs(RingWallStyle style, Level world) {
         List<Run> result = new ArrayList<>();
         int start = 0;
         BlockState previous = RingGenerationBoundary.styledRimBlockForRoll(style, 0);
-        int previousRgb = mapRgb(previous, world);
+        int previousRgb = materialRgb(previous, world);
         for (int roll = 1; roll <= 100; roll++) {
             BlockState current = roll == 100 ? null
                     : RingGenerationBoundary.styledRimBlockForRoll(style, roll);
@@ -49,7 +55,7 @@ final class RingWallShaderStyle {
             result.add(new Run(start, roll, previousRgb));
             start = roll;
             previous = current;
-            if (current != null) previousRgb = mapRgb(current, world);
+            if (current != null) previousRgb = materialRgb(current, world);
         }
         return result;
     }
@@ -78,8 +84,8 @@ final class RingWallShaderStyle {
         runs.remove(second);
     }
 
-    private static int mapRgb(BlockState state, Level world) {
-        return state.getMapColor(world, BlockPos.ZERO).col & 0xFFFFFF;
+    private static int materialRgb(BlockState state, Level world) {
+        return RingWallMaterialColors.color(state, world);
     }
 
     private static float red(int rgb) { return red255(rgb) / 255.0F; }

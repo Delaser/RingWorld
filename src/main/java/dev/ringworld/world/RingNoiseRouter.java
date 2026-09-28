@@ -18,6 +18,24 @@ public final class RingNoiseRouter {
                 RingNoiseCoordinates.forGeometry(geometry, mappingVersion), mappingVersion));
     }
 
+    public static NoiseRouter wrap(NoiseRouter router, RingGeometry geometry, int mappingVersion,
+                                   RingWorldGenerationSettings settings, long seed, int seaLevel) {
+        NoiseRouter periodic = wrap(router, geometry, mappingVersion);
+        RingMacroTerrain macro = new RingMacroTerrain(geometry, seed, settings);
+        if (!macro.active()) return periodic;
+        return new NoiseRouter(
+                periodic.barrierNoise(), periodic.fluidLevelFloodednessNoise(),
+                periodic.fluidLevelSpreadNoise(), periodic.lavaNoise(),
+                periodic.temperature(), periodic.vegetation(),
+                settings.layout() == RingWorldLayout.ARCHIPELAGO
+                        ? new MacroDensity(periodic.continents(), macro, Mode.CONTINENTS, seaLevel)
+                        : periodic.continents(),
+                periodic.erosion(), periodic.depth(), periodic.ridges(),
+                new MacroDensity(periodic.preliminarySurfaceLevel(), macro, Mode.SURFACE, seaLevel),
+                new MacroDensity(periodic.finalDensity(), macro, Mode.FINAL_DENSITY, seaLevel),
+                periodic.veinToggle(), periodic.veinRidged(), periodic.veinGap());
+    }
+
     /**
      * Cache and interpolation wrappers must continue receiving the real
      * NoiseChunk object: several vanilla optimizations and the aquifer
@@ -93,6 +111,60 @@ public final class RingNoiseRouter {
         public void fillAllDirectly(double[] densities, DensityFunction function) {
             delegate.fillAllDirectly(densities, new CylindricalDensityFunction(function, coordinates));
         }
+    }
+
+    private enum Mode { CONTINENTS, SURFACE, FINAL_DENSITY }
+
+    /** Runtime-only outer policy; the saved generator codec remains vanilla. */
+    private record MacroDensity(DensityFunction delegate, RingMacroTerrain macro, Mode mode, int seaLevel)
+            implements DensityFunction {
+        @Override
+        public double compute(FunctionContext pos) {
+            return computeWithBase(pos, delegate.compute(pos));
+        }
+
+        @Override
+        public void fillArray(double[] values, ContextProvider provider) {
+            delegate.fillArray(values, provider);
+            for (int index = 0; index < values.length; index++) values[index] = computeWithBase(
+                    provider.forIndex(index), values[index]);
+        }
+
+        private double computeWithBase(FunctionContext pos, double base) {
+            double land = macro.landBias(pos.blockX(), pos.blockZ());
+            double river = macro.riverInfluence(pos.blockX(), pos.blockZ());
+            return switch (mode) {
+                case CONTINENTS -> Math.max(-1.0, Math.min(1.0, base + land * 0.62));
+                case SURFACE -> Math.min(base + land * 13.0,
+                        river > 0.0 ? seaLevel - 1.0 + (1.0 - river) * 4.0 : Double.POSITIVE_INFINITY);
+                case FINAL_DENSITY -> {
+                    double surfaceBand = Math.max(0.0,
+                            1.0 - Math.abs(pos.blockY() - seaLevel) / 64.0);
+                    double density = base + land * 0.36 * surfaceBand;
+                    // An absolute channel floor survives vanilla density-scale
+                    // changes between Minecraft versions. The core cuts seven
+                    // blocks below sea level; the smooth influence raises that
+                    // floor into natural banks before returning to untouched
+                    // terrain. Aquifers and surface rules still own the water,
+                    // bed material, decoration, and local cave interaction.
+                    double channelFloor = seaLevel - 7.0 + (1.0 - river) * 9.0;
+                    if (river > 0.0 && pos.blockY() >= channelFloor) {
+                        density = Math.min(density, -0.35 - river * 0.65);
+                    }
+                    yield density;
+                }
+            };
+        }
+
+        @Override public DensityFunction mapAll(Visitor visitor) {
+            return visitor.apply(new MacroDensity(delegate.mapAll(visitor), macro, mode, seaLevel));
+        }
+        public DensityFunction mapChildren(Visitor visitor) {
+            return new MacroDensity(visitor.apply(delegate), macro, mode, seaLevel);
+        }
+        @Override public double minValue() { return Double.NEGATIVE_INFINITY; }
+        @Override public double maxValue() { return Double.POSITIVE_INFINITY; }
+        @Override public KeyDispatchDataCodec<? extends DensityFunction> codec() { return delegate.codec(); }
     }
 
 }

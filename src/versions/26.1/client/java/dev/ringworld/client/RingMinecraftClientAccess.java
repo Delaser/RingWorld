@@ -15,6 +15,8 @@ import net.minecraft.world.entity.Entity;
 public final class RingMinecraftClientAccess {
     private RingMinecraftClientAccess() { }
 
+    public static int maxTextureSize() { return com.mojang.blaze3d.systems.RenderSystem.getDevice().getMaxTextureSize(); }
+
     public static Screen screen(Minecraft client) { return client.screen; }
 
     public static void setScreen(Minecraft client, Screen screen) { client.setScreen(screen); }

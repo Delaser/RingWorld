@@ -4,14 +4,40 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
+Unreleased 1.4 rendering checkpoint: owner accepted the 26.3 terrain-depth and
+wall-filtering fixes on 2026-09-26. See `docs/RELEASE_1_4_NOTES.md` for scope,
+validation, and remaining real-terrain/Atlas transition work.
+Follow-up material work adds 26.3 texture-derived wall colours and Atlas format
+10 water coverage (v4 metadata/tiles, still twelve bytes/cell). All six source
+build/test cells pass. A 26.3 dedicated pipeline-compile worker passed
+32-chunk Fabric and NeoForge cold launches, reloads and normal stops. Full
+frozen-candidate runtime qualification remains before claiming 1.4 launch readiness.
+The owner accepted the wall/water look in clear weather, rain and a temporary
+pink resource-pack comparison; that pack was removed. Wall GPU textures now
+reuse unchanged inputs, and complete client cache snapshots wait for quiet tile
+updates. The approved creation/in-world UI redesign is implemented in the
+development branch; see `docs/RELEASE_1_4_NOTES.md` for development evidence.
+The 26.3 frozen quick qualification passes both loaders on source `3016a4b`
+(`20260926T203515Z-6d299758f87d`); nightly and remaining-version runtime
+qualification are still outstanding. A targeted frozen production-render
+slice passes both 26.3 loaders (`20260926T210453Z-752830dc4ca0`), but its
+aggregate is intentionally INCOMPLETE because the other nightly fixtures were
+not selected.
+
+Latest release checkpoint: all six 1.2 jars are submitted to CurseForge and
+CDN hashes match; see `docs/RELEASE_1_2_PUBLICATION_2026-09-20.md`. Modrinth is deferred.
+
 Latest qualification checkpoint: see
 [`docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md`](docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
 Unreleased optional-feature work adds format-4 configurable rim styles,
-server-owned visual sky profiles, settings channel `settings_v5`, and Atlas
-format 8 mycelium colour correction plus exposed block-light data. The shared
-static suite and both loader builds pass 377 unit/parameterized cases each on
-the 2026-08-31 audited source. The preceding expanded creation/preview and
-Atlas UI fixtures pass locally; owner visual review of the feature presentation
+server-owned visual sky profiles, format-5 saved generation options through
+`settings_v6`, and Atlas format 8 mycelium colour correction plus exposed
+block-light data. The generation options coordinate Atlas fidelity, add an
+Archipelago layout, a continuous river, and opt-in structure density; Climate
+Tour is intentionally skipped. The shared
+static suite and both loader builds pass 408 unit/parameterized cases each on
+the 2026-08-31 audited source. The expanded 19-capture creation/preview
+fixture passes both loaders on 26.1.2 and 26.2; owner visual review of the feature presentation
 is recorded, while fresh frozen-candidate, multiplayer, and package evidence
 remain required before release. See `docs/CURRENT_STATE.md`.
 Both 26.2 loaders pass quick qualification on frozen source `1cfac9b`.
@@ -253,6 +279,53 @@ terms attached to those copies; MPL-2.0 applies to repository versions released
 under it.
 
 ## Minecraft version support policy
+
+26.3 intake is recorded in `config/minecraft-version-matrix-26.3.json` and
+`docs/26_3_PORT_STATUS.md`. September 20 fixes adapt the required projectile
+collector's surface-hit flag, SkyRenderer's shared RenderPass/DynamicGpuData ABI,
+and the shared player-position path used by movement and teleport acknowledgements.
+The 26.3 client fixtures must not send a second position packet within one tick.
+Both loaders' disposable multiplayer/raid fixtures set `white-list=false`.
+Both loaders build with 440 cases and pass the full Atlas UI fixture and
+layout switching. Both loaders pass map/compass persistence, curved
+objects, the full two-client multiplayer verifier, raid persistence/victory,
+large-ring lifecycle, natural seam/both rims and noon/dusk/night/rain rendering.
+The copied review world has an old wall panel over the default projection pose;
+test-only `ringworld.projectionCameraX=3072` provides an unobstructed upward view.
+NeoForge fresh worldgen and all 19 creation-screen captures pass. Final source
+regression passes 437 cases per loader on 26.1 and 26.2; Python passes 433 with
+two expected skips. Qualification readers now retain format-5 wall/generation
+fields, fingerprint v4 and Atlas-9 twelve-byte cells, with real Java hash parity.
+The first complete nightly selection stops at production worldgen on both
+loaders. The 26.3 fixture now captures noise heights before the combined TERRAIN
+stage applies surfaces/carving. A required StructureCheck climate-sampler
+redirect fixes guaranteed-monument locating after periodic noise configuration.
+Both loaders pass fresh/reload production worldgen with this fix and all six
+source build/test cells pass again. Corrected quick qualification
+`20260920T104806Z-dd4541a72f59` on `4860724` passes both loaders and their
+installed dedicated servers, superseding the `39216e8` candidates. Full nightly
+`20260920T110002Z-5afddbba5989` on operator `747c309` passes all 20 gates.
+Metadata-equivalent 26.3 release jars and clean packages are staged locally;
+both release server overlays pass startup/tick/save/normal-stop smokes. The owner
+accepts the older-line source builds and automated tests for 1.2: do not repeat
+their full nightly/runtime suites. Final staging and copied-world upgrades remain;
+native packaged-client review applies to publishing optional launcher bundles.
+See `deploy/qualified/1.2/README.md` for the current release path and unresolved
+optional-generation acceptance. No new release is published.
+Development runtime passes must not be relabelled as frozen qualification.
+Fresh NeoForge configs can emit a nonfatal NightConfig temporary-file watcher
+exception; retain this and the measured GPU-upload/frame stalls as follow-ups.
+NeoForge 26.3.0.7-beta and ModDevGradle 2.0.147 are now pinned in a pending two-cell
+manifest. Keep public support ranges unchanged until qualification passes.
+Latest owner direction: skip saved-world upgrade checks and optional launcher
+bundles; defer Modrinth and publish six mod jars to CurseForge only. Publication
+is paused for the requested Atlas correction: fixed one-block server source,
+exactly Low/Medium/High client detail (default/reset Medium), selected on the
+RingWorld Map or by slash command. Remove the generation-quality selector and
+hide Archipelago; preserve legacy saved IDs without using them for sampling.
+Earlier staged/frozen jars predate this correction and must be refreshed.
+For the owner's September 20 session, pause at **60% usage remaining**; this
+explicit instruction supersedes the normal 5% monitor threshold for that work.
 
 Qualified 26.2 inputs use `config/minecraft-version-matrix-26.2.json`. Derive
 candidate identities, ranges, oldest ABI, and cell coverage through
@@ -791,6 +864,13 @@ The complete mixin ownership table is in
 
 ## Build and fast validation
 
+Owner preference: launch automated game clients muted (`soundCategory_master:0.0`
+in their disposable `options.txt`). Qualification client tasks now apply this
+and hidden windows through `gradle/automated-clients.gradle`; the separate
+NeoForge early splash is disabled too. `-PringQualificationBackgroundClient=false`
+allows an explicitly requested visible qualification run. Do not change system
+audio or normal player profiles to silence development fixtures.
+
 The active port requires Java 25:
 
 ```sh
@@ -929,6 +1009,22 @@ target and shader ABI, and run the required matrix rather than only changing
 version numbers.
 
 ## Current implementation cautions
+
+- `/ringworld lod` is client-side on both loaders. Its Lowest-to-Max choices
+  are `RingLodQuality` display budgets, not saved `RingAtlasFidelity` IDs.
+  Preserve the server source Atlas; derive lower-resolution immutable snapshots
+  on the texture worker and cap textures to the device limit. Texture and mesh
+  must consume the same derived snapshot. Clear pending GPU builds when the
+  local choice changes and reset the choice on session teardown.
+
+
+- Staged seed-preview jobs use `ExecutorService.submit` and cancel their own
+  interruptible `Future` on unload/completion. Preserve the cancelled/identity
+  publication guards. `CompletableFuture.cancel(true)` does not stop an active
+  supplier, and manually interrupting a retained pool thread can hit the next
+  world. `:runPreviewHandoffClient` and `:neoforge:runPreviewHandoffClient`
+  exercise a disposable Medium/Very-high to Small/Very-high transition; run
+  them serially and retain logs/captures before repeating a loader run.
 
 - The complete-ring renderer accepts a current-world zero-cell or partial Atlas
   as soon as its identity metadata arrives. Missing cells use an opaque,
@@ -1114,7 +1210,7 @@ version numbers.
   tangent and radial-up projection captures after changing projection,
   celestial render order, or the proxy pipeline.
 - Settings payload identifiers are wire-layout-versioned
-  (`settings_v5`/`settings_ack_v3`). The S2C identifier advanced when rim and
+  (`settings_v6`/`settings_ack_v3`). The S2C identifier advanced when rim and
   sky fields were added; the unchanged acknowledgement codec retained its
   identifier. Never append or reorder codec fields while
   reusing an old identifier; old clients crash on unread bytes before a useful
@@ -1492,3 +1588,30 @@ Completion means:
 - real terrain and the distant ring remain aligned while looking upward;
 - Nether and End remain unchanged;
 - unit build and relevant integration tests pass.
+
+- Client Atlas cache writes must remain off the render thread. Queue immutable snapshots with captured paths through the single RingAtlasCacheWriter; preserve per-path coalescing, final disconnect snapshot ordering, and shutdown draining. Worker completions must not mutate a later client session. Do not reintroduce forced synchronous saves on every revision commit.
+
+- Detailed Atlas steep-face UVs deliberately select an upper sample; geometry continuity tests must still compare exact physical positions. Gentle UVs and periodic wrapping remain unchanged. Keep rim bottom heights local to each segment and width edge: a global minimum can make distant wall faces cover the terrain in the sky pass.
+
+- Atlas proxy depth writes must remain enabled, with the version-owned forward/reversed comparison. Keep the proxy's smooth alpha fade and fade window-space depth from the backend far plane to actual surface depth with opacity; discard fully invisible fragments before depth writes. Adding a second screen-space dither mask to the proxy caused visible flicker; the existing live terrain dither remains unchanged.
+
+- Atlas format 10 carries representative side colours and authored water coverage through snapshots, v4 metadata/tiles, disk, and local LOD downsampling. The existing byte packs block light in its low nibble and water coverage in its high nibble; never read the full byte as light. Account for twelve bytes per cell and invalidate older caches. Side sampling must stay bounded to the current chunk; preserve foliage/fluid colour and avoid neighbour loads. Distinct side-material changes must invalidate the mesh because steep faces carry this colour in existing GPU vertices.
+
+- Atlas surface jobs now prepare geometry and native vertex bytes on the serial surface worker using the same captured snapshot as texture pixels. Keep all GPU calls on the render thread and close packed/native data on stale, failed and abandoned results. Capture world/quality/wall inputs before scheduling. Do not reintroduce live client-state reads in worker texture/mesh preparation. GPU upload and owner-thread snapshot copies remain measured stutter sources; preserve >=16ms diagnostics and do not equate worker completion with hitch-free frame pacing.
+
+- Client LOD commands are now `low`, `medium`, `high` (old Low, High, Max budgets).
+  Server sampling is fixed at one block. Keep the three-level command tree
+  identical on both loaders and avoid rebuilding an already selected level.
+- Lithium's `mixin.ai.poi.tasks` redirects collide with RingWorld's periodic
+  POI lookup. Preserve the matching `lithium:options` overrides in Fabric and
+  NeoForge metadata; do not resolve the collision by dropping seam semantics.
+- `SectionOcclusionGraph.initializeQueueForFullUpdate` takes Camera in 26.1 and
+  BlockPos in 26.2. The finite-band seed clamp targets the shared SectionPos
+  lookup; a BlockPos HEAD argument modifier crashes 26.1 clients even though
+  both source builds compile. Retain real-client checks on both ABI lines.
+- A surface build may publish a coherent revision older than the newest received
+  tiles, provided it advances the displayed revision and still matches the
+  world and session/quality generation. Requiring equality with every live tile
+  update starves slower initial meshes during large Atlas downloads. Never mix
+  that captured texture with live mesh data or allow displayed revisions to
+  move backwards; retain the dedicated publication-policy tests.

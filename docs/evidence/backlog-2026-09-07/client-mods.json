@@ -1,0 +1,63 @@
+[
+  {
+    "project": "lithium",
+    "game": "26.2",
+    "loader": "fabric",
+    "version": "mc26.2-0.25.3-fabric",
+    "id": "f7vZ0VWU",
+    "sha512": "148b638f3c6229fbaf487120a2344a0af5e411a5aa6533d5db9d75da0a8c0d8304f63eb4cca13f4d03b2c9b4c23d559dd74c1d832422ef8a3087bd005e62a8bd",
+    "file": "lithium-fabric-0.25.3+mc26.2.jar",
+    "url": "https://cdn.modrinth.com/data/gvQqBUqZ/versions/f7vZ0VWU/lithium-fabric-0.25.3%2Bmc26.2.jar"
+  },
+  {
+    "project": "ferrite-core",
+    "game": "26.2",
+    "loader": "fabric",
+    "version": "9.0.0-fabric",
+    "id": "d5ddUdiB",
+    "sha512": "d81fa97e11784c19d42f89c2f433831d007603dd7193cee45fa177e4a6a9c52b384b198586e04a0f7f63cd996fed713322578bde9a8db57e1188854ae5cbe584",
+    "file": "ferritecore-9.0.0-fabric.jar",
+    "url": "https://cdn.modrinth.com/data/uXXizFIs/versions/d5ddUdiB/ferritecore-9.0.0-fabric.jar"
+  },
+  {
+    "project": "jei",
+    "game": "26.2",
+    "loader": "fabric",
+    "version": "30.29.0.201",
+    "id": "d3HeviSL",
+    "sha512": "2279cb0ec4e41d9eebad80c2ecac76d19c8bc8e5aac69ba13f35b77494625c70d66edc74d59959116012bfb2f464b55806dd69fbf6387f25679b1553953e329a",
+    "file": "jei-26.2-fabric-30.29.0.201.jar",
+    "url": "https://cdn.modrinth.com/data/u6dRKJwZ/versions/d3HeviSL/jei-26.2-fabric-30.29.0.201.jar"
+  },
+  {
+    "project": "lithium",
+    "game": "26.1.2",
+    "loader": "neoforge",
+    "version": "mc26.1.2-0.24.7-neoforge",
+    "id": "eZ0KJiEA",
+    "sha512": "26020f4d9555eaf8733526dc24ba97c7d1f55c0a4a8b16b9d12fe6b1bf168d5e171e9dba10deb73cbefc71a6adb94a772c785e1b19f90666e52f0f72da6a2ff6",
+    "file": "lithium-neoforge-0.24.7+mc26.1.2.jar",
+    "url": "https://cdn.modrinth.com/data/gvQqBUqZ/versions/eZ0KJiEA/lithium-neoforge-0.24.7%2Bmc26.1.2.jar"
+  },
+  {
+    "project": "ferrite-core",
+    "game": "26.1.2",
+    "loader": "neoforge",
+    "version": "9.0.0-neoforge",
+    "id": "LtVvw4uS",
+    "sha512": "e96a99ac5539f56a1f4cd109d62b668ebd5283f0068491ede956f52e67023beba7abe2e40021499352ffc41ead950bebcabce7792352249a1b45c5dccb3cf99c",
+    "file": "ferritecore-9.0.0-neoforge.jar",
+    "url": "https://cdn.modrinth.com/data/uXXizFIs/versions/LtVvw4uS/ferritecore-9.0.0-neoforge.jar"
+  },
+  {
+    "project": "jei",
+    "game": "26.1.2",
+    "loader": "neoforge",
+    "version": "29.29.0.77",
+    "id": "cNc3uV8m",
+    "sha512": "7f5f29f97fb0e873b5bc9d45f302fa74bf6575e08f98d84738d26d275dc7aa6a2660f2b714c371ec8e75d948fc29280b7dd953a450d41566910535d12a788bbe",
+    "file": "jei-26.1.2-neoforge-29.29.0.77.jar",
+    "url": "https://cdn.modrinth.com/data/u6dRKJwZ/versions/cNc3uV8m/jei-26.1.2-neoforge-29.29.0.77.jar",
+    "selection_reason": "Latest initially selected build requires NeoForge 26.1.2.99; this retained build requires 26.1.2.81 and fits pinned 26.1.2.87."
+  }
+]

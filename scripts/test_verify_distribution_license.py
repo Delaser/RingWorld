@@ -10,6 +10,7 @@ import unittest
 import zipfile
 
 try:
+    from scripts import verify_distribution_license as verifier
     from scripts.verify_distribution_license import (
         EMBEDDED_LICENSE,
         EXPECTED_IDENTIFIER,
@@ -19,6 +20,7 @@ try:
         verify_bundle,
     )
 except ModuleNotFoundError:
+    import verify_distribution_license as verifier
     from verify_distribution_license import (
         EMBEDDED_LICENSE,
         EXPECTED_IDENTIFIER,
@@ -96,6 +98,20 @@ def write_bundle(
 
 
 class DistributionLicenceVerificationTest(unittest.TestCase):
+    def test_python39_parser_accepts_current_neoforge_lithium_option(self) -> None:
+        from unittest.mock import patch
+
+        metadata = '''license="MPL-2.0"
+[[mods]]
+modId="ringworld"
+["lithium:options"]
+"mixin.ai.poi.tasks" = false
+'''
+        with patch.object(verifier, "tomllib", None):
+            parsed = verifier.parse_neoforge_metadata(metadata)
+        self.assertEqual(parsed["license"], "MPL-2.0")
+        self.assertEqual(parsed["mods"][0]["modId"], "ringworld")
+
     def test_accepts_consistent_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory, "client.zip")

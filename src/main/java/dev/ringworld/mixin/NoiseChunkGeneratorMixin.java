@@ -7,6 +7,8 @@ import dev.ringworld.world.RingNoiseRouter;
 import dev.ringworld.world.RingNoiseSamplingContext;
 import dev.ringworld.world.RingTerrainNoiseMapping;
 import dev.ringworld.world.RingWorldGeneratorAccess;
+import dev.ringworld.world.RingWorldGenerationSettings;
+import dev.ringworld.world.RingMacroTerrain;
 import dev.ringworld.world.RingWallStyle;
 import org.jetbrains.annotations.Nullable;
 import org.spongepowered.asm.mixin.Mixin;
@@ -26,6 +28,8 @@ import net.minecraft.core.Holder;
 import net.minecraft.world.level.StructureManager;
 import net.minecraft.world.level.biome.Climate;
 import net.minecraft.world.level.biome.BiomeManager;
+import net.minecraft.world.level.biome.BiomeResolver;
+import net.minecraft.world.level.biome.Biomes;
 import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.levelgen.Aquifer;
 import net.minecraft.world.level.levelgen.DensityFunctions;
@@ -48,6 +52,8 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     @Unique private int ringworld$wallHeight;
     @Unique private RingWallStyle ringworld$wallStyle = RingWallStyle.LEGACY;
     @Unique private volatile boolean ringworld$guaranteeStronghold;
+    @Unique private RingWorldGenerationSettings ringworld$generationSettings = RingWorldGenerationSettings.DEFAULT;
+    @Unique private long ringworld$generatorSeed;
     @Unique private @Nullable RandomState ringworld$cachedNoiseConfig;
     @Unique private @Nullable NoiseRouter ringworld$cachedRouter;
     @Unique private @Nullable RandomState ringworld$cachedClimateNoiseConfig;
@@ -114,6 +120,22 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
     }
 
     @Override
+    public void ringworld$setGenerationSettings(RingWorldGenerationSettings settings, long generatorSeed) {
+        if (this.ringworld$generationSettings.equals(settings) && this.ringworld$generatorSeed == generatorSeed) return;
+        this.ringworld$generationSettings = java.util.Objects.requireNonNull(settings, "settings");
+        this.ringworld$generatorSeed = generatorSeed;
+        this.ringworld$cachedNoiseConfig = null;
+        this.ringworld$cachedRouter = null;
+        this.ringworld$cachedClimateNoiseConfig = null;
+        this.ringworld$cachedClimateSampler = null;
+    }
+
+    @Override
+    public RingWorldGenerationSettings ringworld$getGenerationSettings() {
+        return ringworld$generationSettings;
+    }
+
+    @Override
     public synchronized Climate.Sampler ringworld$getPeriodicClimateSampler(RandomState noiseConfig) {
         if (ringworld$geometry == null) return noiseConfig.sampler();
         NoiseRouter router = ringworld$getOrCreatePeriodicRouter(noiseConfig, noiseConfig.router());
@@ -167,12 +189,37 @@ abstract class NoiseChunkGeneratorMixin implements RingWorldGeneratorAccess {
         return ringworld$getOrCreatePeriodicRouter(noiseConfig, vanilla);
     }
 
+    @Redirect(
+            method = "doCreateBiomes",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/ChunkAccess;fillBiomesFromNoise(Lnet/minecraft/world/level/biome/BiomeResolver;Lnet/minecraft/world/level/biome/Climate$Sampler;)V"))
+    private void ringworld$riverBiome(ChunkAccess chunk, BiomeResolver resolver, Climate.Sampler sampler) {
+        RingGeometry geometry = ringworld$geometry;
+        if (geometry == null || !ringworld$generationSettings.continuousRiver()) {
+            chunk.fillBiomesFromNoise(resolver, sampler);
+            return;
+        }
+        NoiseBasedChunkGenerator self = (NoiseBasedChunkGenerator)(Object)this;
+        Holder<net.minecraft.world.level.biome.Biome> river = self.getBiomeSource().possibleBiomes().stream()
+                .filter(holder -> holder.unwrapKey().filter(Biomes.RIVER::equals).isPresent())
+                .findFirst().orElse(null);
+        if (river == null) {
+            chunk.fillBiomesFromNoise(resolver, sampler);
+            return;
+        }
+        RingMacroTerrain macro = new RingMacroTerrain(
+                geometry, ringworld$generatorSeed, ringworld$generationSettings);
+        chunk.fillBiomesFromNoise((quartX, quartY, quartZ, climate) ->
+                macro.riverInfluence(quartX << 2, quartZ << 2) >= 0.72
+                        ? river : resolver.getNoiseBiome(quartX, quartY, quartZ, climate), sampler);
+    }
+
     @Unique
     private synchronized NoiseRouter ringworld$getOrCreatePeriodicRouter(RandomState noiseConfig, NoiseRouter vanilla) {
         if (ringworld$cachedNoiseConfig != noiseConfig || ringworld$cachedRouter == null) {
             ringworld$cachedNoiseConfig = noiseConfig;
             ringworld$cachedRouter = RingNoiseRouter.wrap(
-                    vanilla, ringworld$geometry, ringworld$terrainNoiseMapping);
+                    vanilla, ringworld$geometry, ringworld$terrainNoiseMapping,
+                    ringworld$generationSettings, ringworld$generatorSeed, settings.value().seaLevel());
             ringworld$cachedClimateNoiseConfig = null;
             ringworld$cachedClimateSampler = null;
         }

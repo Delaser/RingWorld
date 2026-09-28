@@ -14,6 +14,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingDimensionReportTest {
     @Test
+    void largeOneBlockAtlasFitsAndLargerRingsExplainTheWorkaround() {
+        var large = RingDimensionReport.forVanillaOverworld(new RingGeometry(512, 32768), 160, 5, 1);
+        assertTrue(large.isValid(), large.errors().toString());
+        assertEquals(RingDimensionReport.MAX_ATLAS_CELLS, large.atlasCellCount());
+        var bigger = RingDimensionReport.forVanillaOverworld(new RingGeometry(528, 32768), 160, 5, 1);
+        assertFalse(bigger.isValid());
+        assertTrue(bigger.errors().stream().anyMatch(message ->
+                message.contains("Reduce Around or Across")));
+        assertTrue(RingDimensionReport.forVanillaOverworld(new RingGeometry(528, 32768), 160, 5, 2).isValid());
+    }
+
+    @Test
     void smallPresetHasExactUsableBandAndMeasuredCosts() {
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
                 new RingGeometry(128, 2_048), 160);
@@ -21,10 +33,10 @@ class RingDimensionReportTest {
         assertTrue(report.isValid(), report.errors().toString());
         assertEquals(118, report.playableInteriorBlocks());
         assertEquals(241_664L, report.playableInteriorAreaBlocks());
-        assertEquals(256, report.atlasColumns());
-        assertEquals(16, report.atlasRows());
-        assertEquals(4_096L, report.atlasCellCount());
-        assertEquals(32_768L, report.estimatedAtlasBytes());
+        assertEquals(2048, report.atlasColumns());
+        assertEquals(128, report.atlasRows());
+        assertEquals(262_144L, report.atlasCellCount());
+        assertEquals(3_145_728L, report.estimatedAtlasBytes());
         assertEquals(52L, report.costEstimate().estimatedPregenerationSeconds());
         assertEquals(11_095_245L, report.costEstimate().estimatedGeneratedWorldBytes());
         assertEquals(11.2, report.oppositeAngularWidthDegrees(), 0.1);
@@ -38,8 +50,8 @@ class RingDimensionReportTest {
 
         assertTrue(report.isValid(), report.errors().toString());
         assertEquals(3_328L, report.canonicalChunkCount());
-        assertEquals(13_312L, report.atlasCellCount());
-        assertEquals(8L, report.costEstimate().minimumAtlasTransferTicks());
+        assertEquals(851_968L, report.atlasCellCount());
+        assertEquals(416L, report.costEstimate().minimumAtlasTransferTicks());
         assertTrue(report.radialClearanceAtHighestPlane() > 69.0);
         assertTrue(report.oppositeAngularWidthDegrees() > 35.0
                 && report.oppositeAngularWidthDegrees() < 36.0);
@@ -68,18 +80,18 @@ class RingDimensionReportTest {
         assertTrue(report.isValid(), report.errors().toString());
         assertEquals(256, report.geometry().widthBlocks());
         assertEquals(16_384L, report.canonicalChunkCount());
-        assertEquals(65_536L, report.atlasCellCount());
-        assertEquals(2_048, report.atlasColumns());
-        assertEquals(32, report.atlasRows());
+        assertEquals(4_194_304L, report.atlasCellCount());
+        assertEquals(16_384, report.atlasColumns());
+        assertEquals(256, report.atlasRows());
         assertEquals(246, report.playableInteriorBlocks());
         assertEquals(4_030_464L, report.playableInteriorAreaBlocks());
         assertEquals(817L, report.costEstimate().estimatedPregenerationSeconds());
         assertEquals(177_523_917L, report.costEstimate().estimatedGeneratedWorldBytes());
-        assertEquals(524_800L, report.costEstimate().estimatedAtlasWireBytes());
-        assertEquals(32L, report.costEstimate().minimumAtlasTransferTicks());
+        assertEquals(50_364_416L, report.costEstimate().estimatedAtlasWireBytes());
+        assertEquals(2_048L, report.costEstimate().minimumAtlasTransferTicks());
         assertTrue(report.oppositeAngularWidthDegrees() > 2.8
                 && report.oppositeAngularWidthDegrees() < 2.9);
-        assertTrue(report.warnings().isEmpty(), report.warnings().toString());
+        assertTrue(report.warnings().stream().anyMatch(warning -> warning.contains("terrain atlas")));
         assertTrue(report.radialClearanceAtHighestPlane() > 2_350.0);
     }
 
@@ -90,10 +102,10 @@ class RingDimensionReportTest {
 
         assertTrue(report.isValid(), report.errors().toString());
         assertEquals(65_536L, report.canonicalChunkCount());
-        assertEquals(4_096, report.atlasColumns());
-        assertEquals(64, report.atlasRows());
-        assertEquals(262_144L, report.atlasCellCount());
-        assertEquals(2_097_152L, report.estimatedAtlasBytes());
+        assertEquals(32_768, report.atlasColumns());
+        assertEquals(512, report.atlasRows());
+        assertEquals(16_777_216L, report.atlasCellCount());
+        assertEquals(201_326_592L, report.estimatedAtlasBytes());
         assertEquals(3_268L, report.costEstimate().estimatedPregenerationSeconds());
         assertEquals(710_095_668L, report.costEstimate().estimatedGeneratedWorldBytes());
         assertTrue(report.warnings().stream().anyMatch(
@@ -102,10 +114,10 @@ class RingDimensionReportTest {
 
     private static Stream<Arguments> productionAtlasFidelityCandidates() {
         return Stream.of(
-                Arguments.of(8, 65_536L, 524_288L),
-                Arguments.of(4, 262_144L, 2_097_152L),
-                Arguments.of(2, 1_048_576L, 8_388_608L),
-                Arguments.of(1, 4_194_304L, 33_554_432L));
+                Arguments.of(8, 65_536L, 786_432L),
+                Arguments.of(4, 262_144L, 3_145_728L),
+                Arguments.of(2, 1_048_576L, 12_582_912L),
+                Arguments.of(1, 4_194_304L, 50_331_648L));
     }
 
     @ParameterizedTest(name = "production step {0} has checked atlas budgets")
@@ -172,15 +184,15 @@ class RingDimensionReportTest {
     }
 
     @Test
-    void maximumTechnicalCircumferenceWithA256BlockBandRemainsAValidatedWarningCase() {
+    void maximumTechnicalCircumferenceExceedsTheOneBlockAtlasLimit() {
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
                 new RingGeometry(256, RingDimensionReport.MAX_AXIS_BLOCKS),
                 160);
 
-        assertTrue(report.isValid(), report.errors().toString());
-        assertEquals(4_194_304L, report.atlasCellCount());
+        assertFalse(report.isValid());
+        assertEquals(268_435_456L, report.atlasCellCount());
         assertTrue(report.warnings().stream().anyMatch(error -> error.contains("pregeneration")));
-        assertTrue(report.warnings().stream().anyMatch(error -> error.contains("terrain atlas")));
+        assertTrue(report.errors().stream().anyMatch(error -> error.contains("terrain atlas")));
     }
 
     @Test
@@ -188,7 +200,7 @@ class RingDimensionReportTest {
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
                 new RingGeometry(4_096, 16_384), 160);
 
-        assertTrue(report.isValid(), report.errors().toString());
+        assertFalse(report.isValid());
         assertEquals(262_144L, report.canonicalChunkCount());
         assertTrue(report.costEstimate().estimatedPregenerationSeconds() > 3L * 3_600L);
         assertTrue(report.costEstimate().estimatedGeneratedWorldBytes() > 2L * 1_024L * 1_024L * 1_024L);

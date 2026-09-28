@@ -45,7 +45,7 @@ class WorldgenQualificationTest(unittest.TestCase):
         for index, (name, key, seed, circumference, width, resume, numeric) in enumerate(expected):
             runtime = fixture / key / "runtime"
             world = runtime / "world"
-            settings = PersistedRingSettingsObservation(width, circumference, numeric, 160, 64, 4, 3, world / "dimensions/minecraft/overworld/data/ringworld/settings.dat", HASH)
+            settings = PersistedRingSettingsObservation(width, circumference, numeric, 160, 64, 4, 5, world / "dimensions/minecraft/overworld/data/ringworld/settings.dat", HASH)
             record = {
                 "numeric_seed": numeric, "circumference": circumference, "width": width,
                 "families": families[index], "biomes": families[index], "chunks": 10,
@@ -58,7 +58,7 @@ class WorldgenQualificationTest(unittest.TestCase):
                 "spawn_override_structures": 1 if index == 2 else 0,
                 "spawn_override_ids": ["minecraft:ocean_monument"] if index == 2 else [],
             }
-            log = WorldgenLogFact(name, resume, seed, numeric, circumference, width, 4, 3, record,
+            log = WorldgenLogFact(name, resume, seed, numeric, circumference, width, 4, 5, record,
                                   root / "logs" / f"{name}.log", evidence / f"{name}.log", HASH, "b" * 64,
                                   tuple(TimedMarker(marker, index * 100 + offset) for offset, marker in enumerate(("worldgen-matrix-record", "stronghold-test-pass"), 1)), 0)
             stages.append(WorldgenStageEvidence(runtime, world, settings, log))
@@ -84,6 +84,12 @@ class WorldgenQualificationTest(unittest.TestCase):
         self.reject(lambda i, e: (i, replace(e, stages=(replace(e.stages[0], settings=replace(e.stages[0].settings, surface_reference_y=63)),) + e.stages[1:])))
         self.reject(lambda i, e: (i, replace(e, stages=e.stages[:1] + (replace(e.stages[1], world_root=e.stages[1].runtime_root / "other"),) + e.stages[2:])))
         self.reject(lambda i, e: (i, replace(e, stages=e.stages[:2] + (replace(e.stages[2], world_root=e.stages[0].world_root),) + e.stages[3:])))
+        for field, value in (("wall_palette", 4), ("atlas_fidelity", 3),
+                             ("continuous_river", True)):
+            with self.subTest(field=field):
+                self.reject(lambda i, e: (i, replace(e, stages=(e.stages[0],
+                        replace(e.stages[1], settings=replace(
+                                e.stages[1].settings, **{field: value}))) + e.stages[2:])))
 
     def test_accepts_distinct_capture_hashes_for_same_persisted_production_world(self):
         with tempfile.TemporaryDirectory() as directory:

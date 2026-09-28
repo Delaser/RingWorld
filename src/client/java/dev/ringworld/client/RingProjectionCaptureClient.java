@@ -199,7 +199,15 @@ public final class RingProjectionCaptureClient {
         }
         int viewDistance = projectionViewDistanceChunks();
         CaptureEnvironment environment = selectedEnvironment();
-        double targetX = geometry.circumferenceBlocks() / 4.0;
+        // Copied review worlds can contain old sample structures at the default pose.
+        double targetX = Double.parseDouble(System.getProperty(
+                "ringworld.projectionCameraX",
+                Double.toString(geometry.circumferenceBlocks() / 4.0)));
+        if (!Double.isFinite(targetX) || targetX < 0.0
+                || targetX >= geometry.circumferenceBlocks()) {
+            finish(client, false, "projectionCameraX must be inside the canonical circumference");
+            return false;
+        }
         double targetZ = 0.5;
         if (!captureSetupRequested) {
             client.options.renderDistance().set(viewDistance);
@@ -236,8 +244,7 @@ public final class RingProjectionCaptureClient {
             capturePitch = 0.0F;
             RingWorldMod.LOGGER.info("[projection-capture] tangent capture armed");
         } else if (stage == 1) {
-            RingRenderProfile profile = RingRenderProfile.create(
-                    geometry, projectionViewDistanceChunks() * 16.0);
+            RingRenderProfile profile = RingClientLodTuning.profile(geometry, projectionViewDistanceChunks() * 16.0);
             double targetDistance = profile.effectiveViewDistanceBlocks();
             double targetHeight = atlas.sample(
                     client.player.getX() + targetDistance,

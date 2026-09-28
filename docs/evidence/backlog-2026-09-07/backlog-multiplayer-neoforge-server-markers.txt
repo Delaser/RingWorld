@@ -1,0 +1,1 @@
+[00:53:11] [Server thread/INFO] [ringworld/]: [multiplayer] full scenario result=true (baseline=true, fixture=true, sleepingReconnect=true, damageWake=true, bedDestroyed=true, deathRespawn=true, netherPortal=true, netherPortalRouting=true, endPortal=true, weather=true, clientFixture=true, clientLifecycle=true, canonicalPlayers=true)

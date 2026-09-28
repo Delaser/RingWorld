@@ -1,0 +1,2 @@
+PASS: cleared pending Max build; Low ready with 466944 vertices; old future done=true, exceptional=true
+PASS: Max restored with 6586368 vertices

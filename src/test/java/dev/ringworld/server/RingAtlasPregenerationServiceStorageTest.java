@@ -35,7 +35,7 @@ class RingAtlasPregenerationServiceStorageTest {
     }
 
     @Test
-    void completeReloadIsIdempotentAndPreservesVerifiedFormatEightBytes(@TempDir Path directory)
+    void completeReloadIsIdempotentAndPreservesVerifiedFormatTenBytes(@TempDir Path directory)
             throws Exception {
         Path path = directory.resolve("terrain-atlas.rwat.gz");
         RingTerrainAtlas atlas = completeAtlas();
@@ -45,7 +45,7 @@ class RingAtlasPregenerationServiceStorageTest {
         RingTerrainAtlas reloaded = RingTerrainAtlas.load(path, GEOMETRY, HASH);
 
         assertTrue(reloaded.isComplete());
-        assertEquals(8, RingTerrainAtlas.FORMAT_VERSION);
+        assertEquals(10, RingTerrainAtlas.FORMAT_VERSION);
         assertArrayEquals(expected, Files.readAllBytes(path));
     }
 
@@ -72,8 +72,8 @@ class RingAtlasPregenerationServiceStorageTest {
     private static void completeChunk(RingTerrainAtlas atlas, int chunkX, int chunkRow) {
         int firstX = chunkX * 16;
         int firstZ = atlas.geometry().minWidthZ() + chunkRow * 16;
-        for (int z = 4; z < 16; z += RingTerrainAtlas.SAMPLE_STEP_BLOCKS) {
-            for (int x = 4; x < 16; x += RingTerrainAtlas.SAMPLE_STEP_BLOCKS) {
+        for (int z = RingTerrainAtlas.SAMPLE_STEP_BLOCKS / 2; z < 16; z += RingTerrainAtlas.SAMPLE_STEP_BLOCKS) {
+            for (int x = RingTerrainAtlas.SAMPLE_STEP_BLOCKS / 2; x < 16; x += RingTerrainAtlas.SAMPLE_STEP_BLOCKS) {
                 atlas.putBlockSample(firstX + x, firstZ + z, 70, 0x445566);
             }
         }

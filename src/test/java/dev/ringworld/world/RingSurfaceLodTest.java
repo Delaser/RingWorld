@@ -72,6 +72,29 @@ class RingSurfaceLodTest {
     }
 
     @Test
+    void wallMipChainKeepsFourFacesSeparateDownToOneRowEach() {
+        int width = 16;
+        int rowsPerFace = 8;
+        int[] colors = {0xFFAA1100, 0xFF22BB00, 0xFF0033CC, 0xFFDDEEFF};
+        int[] pixels = new int[width * rowsPerFace * 4];
+        for (int face = 0; face < 4; face++) {
+            java.util.Arrays.fill(pixels, face * width * rowsPerFace,
+                    (face + 1) * width * rowsPerFace, colors[face]);
+        }
+        while (rowsPerFace > 1) {
+            pixels = RingSurfaceLod.buildNextMipArgb(pixels, width, rowsPerFace * 4);
+            width = Math.max(1, width >> 1);
+            rowsPerFace >>= 1;
+            for (int face = 0; face < 4; face++) {
+                for (int pixel = face * width * rowsPerFace;
+                     pixel < (face + 1) * width * rowsPerFace; pixel++) {
+                    assertEquals(colors[face], pixels[pixel]);
+                }
+            }
+        }
+    }
+
+    @Test
     void onePixelMipRemainsStable() {
         assertEquals(0xFFA0B0C0,
                 RingSurfaceLod.buildNextMipArgb(new int[]{0xFFA0B0C0}, 1, 1)[0]);

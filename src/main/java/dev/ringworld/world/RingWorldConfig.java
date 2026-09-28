@@ -15,6 +15,7 @@ import java.util.Properties;
 public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wallHeightBlocks,
                               RingWallStyle wallStyle,
                               RingSkyProfile skyProfile,
+                              RingWorldGenerationSettings generationSettings,
                               boolean testMode, int testViewDistanceChunks,
                               boolean pregenerateTerrainAtlas,
                               boolean requestOceanMonument) {
@@ -50,9 +51,16 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
             properties.setProperty("widthBlocks", Integer.toString(RingWorldSettings.DEFAULT_WIDTH));
             properties.setProperty("circumferenceBlocks", Integer.toString(RingWorldSettings.DEFAULT_CIRCUMFERENCE));
             properties.setProperty("wallHeightBlocks", Integer.toString(RingWorldSettings.DEFAULT_WALL_HEIGHT));
-            properties.setProperty("wallPreset", RingWallStyle.Preset.WEATHERED_FORTIFICATION.name());
+            properties.setProperty("wallThicknessBlocks", Integer.toString(RingWallStyle.DEFAULT.thicknessBlocks()));
+            properties.setProperty("wallPalette", Integer.toString(RingWallStyle.DEFAULT.palette().id()));
+            properties.setProperty("wallPattern", Integer.toString(RingWallStyle.DEFAULT.pattern().id()));
+            properties.setProperty("wallDecayPercent", Integer.toString(RingWallStyle.DEFAULT.decayPercent()));
             properties.setProperty("skyBackdrop", RingSkyProfile.Backdrop.ATMOSPHERE.name());
             properties.setProperty("sunStyle", RingSkyProfile.LightSource.SMALL.name());
+            properties.setProperty("atlasFidelity", RingAtlasFidelity.BALANCED.name());
+            properties.setProperty("worldLayout", RingWorldLayout.VANILLA.name());
+            properties.setProperty("continuousRingRiver", "false");
+            properties.setProperty("moreStructures", "false");
             properties.setProperty("testMode", "false");
             properties.setProperty("testViewDistanceChunks", "28");
             properties.setProperty("pregenerateTerrainAtlas", "true");
@@ -71,6 +79,7 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
         int wallHeight = integer(properties, "wallHeightBlocks", RingWorldSettings.DEFAULT_WALL_HEIGHT);
         RingWallStyle wallStyle = wallStyle(properties);
         RingSkyProfile skyProfile = skyProfile(properties);
+        RingWorldGenerationSettings generationSettings = generationSettings(properties);
         boolean testMode = Boolean.parseBoolean(properties.getProperty("testMode", "false"));
         int testViewDistance = integer(properties, "testViewDistanceChunks", 28);
         boolean pregenerateTerrainAtlas = Boolean.parseBoolean(
@@ -87,6 +96,7 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
                     "testViewDistanceChunks must be between 2 and 32");
         }
         loaded = new RingWorldConfig(width, circumference, wallHeight, wallStyle, skyProfile,
+                generationSettings,
                 testMode, testViewDistance,
                 pregenerateTerrainAtlas, requestOceanMonument);
         RingWorldMod.LOGGER.info("RingWorld bootstrap settings: width={}, circumference={}, wallHeight={}, testMode={}, testViewDistance={}, pregenerateTerrainAtlas={}, requestOceanMonument={}",
@@ -110,22 +120,36 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
             int widthBlocks, int circumferenceBlocks, int wallHeightBlocks,
             RingWallStyle wallStyle, boolean requestOceanMonument) {
         return saveBootstrapLayout(widthBlocks, circumferenceBlocks, wallHeightBlocks,
-                wallStyle, load().skyProfile(), requestOceanMonument);
+                wallStyle, load().skyProfile(), load().generationSettings(), requestOceanMonument);
     }
 
     public static synchronized RingWorldConfig saveBootstrapLayout(
             int widthBlocks, int circumferenceBlocks, int wallHeightBlocks,
             RingWallStyle wallStyle, RingSkyProfile skyProfile,
             boolean requestOceanMonument) {
+        return saveBootstrapLayout(widthBlocks, circumferenceBlocks, wallHeightBlocks,
+                wallStyle, skyProfile, load().generationSettings(), requestOceanMonument);
+    }
+
+    public static synchronized RingWorldConfig saveBootstrapLayout(
+            int widthBlocks, int circumferenceBlocks, int wallHeightBlocks,
+            RingWallStyle wallStyle, RingSkyProfile skyProfile,
+            RingWorldGenerationSettings generationSettings,
+            boolean requestOceanMonument) {
         if (wallStyle == null) throw new IllegalArgumentException("wall style is required");
         if (skyProfile == null) throw new IllegalArgumentException("sky profile is required");
+        if (generationSettings == null) {
+            throw new IllegalArgumentException("generation settings are required");
+        }
         validateNewWorldLayout(widthBlocks, circumferenceBlocks, wallHeightBlocks,
-                wallStyle.thicknessBlocks());
+                wallStyle.thicknessBlocks(),
+                RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
         boolean effectiveMonumentRequest = effectiveOceanMonumentRequest(
                 new RingGeometry(widthBlocks, circumferenceBlocks), requestOceanMonument);
         RingWorldConfig current = load();
         RingWorldConfig replacement = new RingWorldConfig(
                 widthBlocks, circumferenceBlocks, wallHeightBlocks, wallStyle, skyProfile,
+                generationSettings,
                 current.testMode(), current.testViewDistanceChunks(),
                 current.pregenerateTerrainAtlas(), effectiveMonumentRequest);
         Properties properties = new Properties();
@@ -140,6 +164,12 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
         properties.setProperty("wallStyleFormat", Integer.toString(wallStyle.formatVersion()));
         properties.setProperty("skyBackdrop", skyProfile.backdrop().name());
         properties.setProperty("sunStyle", skyProfile.lightSource().name());
+        properties.setProperty("atlasFidelity", generationSettings.atlasFidelity().name());
+        properties.setProperty("worldLayout", generationSettings.layout().name());
+        properties.setProperty("continuousRingRiver",
+                Boolean.toString(generationSettings.continuousRiver()));
+        properties.setProperty("moreStructures",
+                Boolean.toString(generationSettings.moreStructures()));
         properties.setProperty("testMode", Boolean.toString(current.testMode()));
         properties.setProperty("testViewDistanceChunks",
                 Integer.toString(current.testViewDistanceChunks()));
@@ -171,11 +201,19 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
     static void validateNewWorldLayout(int widthBlocks, int circumferenceBlocks,
                                        int wallHeightBlocks) {
         validateNewWorldLayout(widthBlocks, circumferenceBlocks, wallHeightBlocks,
-                RingWallStyle.DEFAULT.thicknessBlocks());
+                RingWallStyle.DEFAULT.thicknessBlocks(),
+                RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
     }
 
     static void validateNewWorldLayout(int widthBlocks, int circumferenceBlocks,
                                        int wallHeightBlocks, int rimThicknessBlocks) {
+        validateNewWorldLayout(widthBlocks, circumferenceBlocks, wallHeightBlocks,
+                rimThicknessBlocks, RingTerrainAtlas.SAMPLE_STEP_BLOCKS);
+    }
+
+    static void validateNewWorldLayout(int widthBlocks, int circumferenceBlocks,
+                                       int wallHeightBlocks, int rimThicknessBlocks,
+                                       int atlasSampleStepBlocks) {
         RingGeometry geometry = new RingGeometry(widthBlocks, circumferenceBlocks);
         if (circumferenceBlocks < RingWorldSettings.MIN_NEW_WORLD_CIRCUMFERENCE) {
             throw new IllegalArgumentException("circumferenceBlocks must be at least "
@@ -184,7 +222,7 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
         RingDimensionReport.evaluate(geometry, wallHeightBlocks,
                 RingDimensionReport.VANILLA_OVERWORLD_BOTTOM_Y,
                 RingDimensionReport.VANILLA_OVERWORLD_TOP_Y_EXCLUSIVE,
-                rimThicknessBlocks, RingTerrainAtlas.SAMPLE_STEP_BLOCKS).requireValid();
+                rimThicknessBlocks, atlasSampleStepBlocks).requireValid();
     }
 
     /** Authoritative new-world request gate shared by UI and server ownership paths. */
@@ -213,8 +251,8 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
                     integer(properties, "wallDecayPercent", RingWallStyle.DEFAULT.decayPercent()),
                     format);
         }
-        String presetName = properties.getProperty(
-                "wallPreset", RingWallStyle.Preset.WEATHERED_FORTIFICATION.name());
+        if (!properties.containsKey("wallPreset")) return RingWallStyle.DEFAULT;
+        String presetName = properties.getProperty("wallPreset");
         try {
             return RingWallStyle.Preset.valueOf(presetName.trim()).style();
         } catch (IllegalArgumentException exception) {
@@ -239,6 +277,28 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
             }
         }
         return legacySkyProfile(properties.getProperty("skyPreset", "MINECRAFT_ATMOSPHERE"));
+    }
+
+    private static RingWorldGenerationSettings generationSettings(Properties properties) {
+        try {
+            RingAtlasFidelity fidelity = RingAtlasFidelity.valueOf(
+                    properties.getProperty("atlasFidelity", "BALANCED").trim().toUpperCase(
+                            java.util.Locale.ROOT));
+            RingWorldLayout layout = RingWorldLayout.valueOf(
+                    properties.getProperty("worldLayout", "VANILLA").trim().toUpperCase(
+                            java.util.Locale.ROOT));
+            boolean river = Boolean.parseBoolean(
+                    properties.getProperty("continuousRingRiver", "false"));
+            boolean structures = Boolean.parseBoolean(
+                    properties.getProperty("moreStructures", "false"));
+            return new RingWorldGenerationSettings(
+                    fidelity, layout, river, structures,
+                    RingWorldGenerationSettings.FORMAT_VERSION);
+        } catch (IllegalArgumentException exception) {
+            throw new IllegalArgumentException(
+                    "atlasFidelity or worldLayout names an unsupported generation preset",
+                    exception);
+        }
     }
 
     /** Reads the five combined development presets written before sky and sun became independent. */

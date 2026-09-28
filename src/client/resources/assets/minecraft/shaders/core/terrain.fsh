@@ -2,6 +2,7 @@
 
 #moj_import <minecraft:fog.glsl>
 #moj_import <minecraft:globals.glsl>
+#moj_import <minecraft:ringworld_handoff.glsl>
 #moj_import <minecraft:chunksection.glsl>
 
 uniform sampler2D Sampler0;
@@ -92,11 +93,19 @@ float smootherstep(float edge0, float edge1, float value) {
     return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
-// A deterministic screen-space threshold avoids blend-pipeline changes and
-// temporal random noise. Discarded live fragments reveal the complete-ring
-// surface that the sky pass has already drawn behind them.
+// Ordered coverage gives every 8x8 pixel area an even fade, without the
+// irregular speckle of a screen-space hash. Keep the pattern fixed in screen
+// space so motion does not introduce a new random threshold each frame.
 float ring_dither_threshold(vec2 pixel) {
-    return fract(52.9829189 * fract(dot(pixel, vec2(0.06711056, 0.00583715))));
+    ivec2 cell = ivec2(pixel) & ivec2(7);
+    int rank = 0;
+    for (int bit = 0; bit < 3; ++bit) {
+        int x = (cell.x >> bit) & 1;
+        int y = (cell.y >> bit) & 1;
+        int pair = ((x ^ y) << 1) | y;
+        rank |= pair << (4 - 2 * bit);
+    }
+    return (float(rank) + 0.5) / 64.0;
 }
 
 void main() {
@@ -124,4 +133,15 @@ void main() {
     fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance,
         FogEnvironmentalStart, FogEnvironmentalEnd,
         FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
+    if (ring_active() && ringIntrinsicDistance >= 0.0) {
+        // Ease the live surface toward the Atlas atmosphere before discarding
+        // geometry. Preserve real texture, face lighting and environmental fog.
+        float matchWeight = ring_handoff_smootherstep(
+            RingWorldDetail.x, RingWorldHandoff.x, ringIntrinsicDistance);
+        vec4 matched = vec4(mix(ring_handoff_edge_color(), color.rgb,
+                               ring_handoff_reveal(ringIntrinsicDistance)), color.a);
+        matched = apply_fog(matched, sphericalVertexDistance, cylindricalVertexDistance,
+            FogEnvironmentalStart, FogEnvironmentalEnd, 1.0e20, 1.0e21, FogColor);
+        fragColor = mix(fragColor, matched, matchWeight);
+    }
 }
