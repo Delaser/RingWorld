@@ -1,5 +1,17 @@
 # RingWorld 1.3 — unreleased rendering checkpoint
 
+**Current gate, 30 September:** the initial release tests were stopped before
+upload when the owner required every 1.3 fix, performance improvement and
+feature on all supported Minecraft 26.x versions and both loaders. The older
+rendering paths are now ported. A fresh full release suite and six local jars
+are authorized; upload waits for the owner's visual review. The 26.3-only
+verification below is historical evidence, not a qualification of the repaired
+six-jar release. The 26.3 resource-reload
+null sky-colour and asynchronous pipeline-worker failures are specific to its
+new renderer APIs; older versions use a primitive sky colour and do not have
+the affected `PipelineCache` class. The common visual result still requires
+verification on 26.1/26.2. No 1.3 file has been uploaded.
+
 Owner accepted the terrain/wall flicker fixes and subsequent land/water
 transition appearance on 2026-09-26. Bank these
 changes for 1.3; this checkpoint does not publish jars or change version numbers.
@@ -18,13 +30,15 @@ changes for 1.3; this checkpoint does not publish jars or change version numbers
   with notice that the fix ships in 1.3. This is owner review, not a new
   automated deep/high screenshot assertion.
 - Fixed distant terrain polygons flashing over one another as the camera moves,
-  including the red castle and white mountaintops. The 26.3 Atlas shader now
+  including the red castle and white mountaintops. First accepted on 26.3, the
+  Atlas shader now
   reconstructs fragment depth and continuously orders distant geometry starting
   at the actual projection clamp. This removes the formerly flat depth band
   between roughly 672 and 1024 blocks in the tested view.
 - Reduced distant wall-pattern shimmer with filtered mipmaps. Wall faces stay
   separate at every mip level, circumference sampling wraps cleanly, and decay
-  holes do not darken the averaged wall colours. Active in the 26.3 renderer.
+  holes do not darken the averaged wall colours. First tested in the 26.3
+  renderer; the same policy is now ported to the older source adapters.
 - Fixed a 26.3 resource-reload crash where sky rendering could use a missing
   cached sky colour immediately after renderer recreation.
 - Replaced irregular live-terrain fade speckle with fixed ordered coverage.
@@ -96,11 +110,14 @@ publishable 1.3 candidates.
 ### Rendering and final qualification
 
 Review remaining geometry/material transition differences and qualify the
-final 1.3 candidate on the supported loaders and versions. Authored water
-identification is now implemented; see the follow-up below. The 26.3 depth,
-reload, and wall-filter changes have not been claimed as tested on older
-versions or on NeoForge. See [rendering design](RENDERING.md) for the current
-implementation. No Distant Horizons code was copied.
+final 1.3 candidate on every supported version and loader. Authored water
+identification is implemented. The depth, wall-filter, wall-palette, haze,
+water-transition and wall-upload fixes have been ported to the older source
+adapters, but older in-game rendering and resource-pack/reload parity are still
+unverified. The 26.3 null sky-colour and asynchronous pipeline starvation
+mechanisms do not exist in the 26.1/26.2 APIs. See
+[rendering design](RENDERING.md) for the implementation. No Distant Horizons
+code was copied.
 
 ## World-creation and in-world UI redesign (27 September)
 

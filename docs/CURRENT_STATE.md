@@ -1,5 +1,17 @@
 # Current state
 
+September 29 release gate: the owner cancelled the initial 1.3 release tests
+after finding that 26.3 rendering fixes had not been ported to 26.1/26.2.
+All fixes, performance improvements, and features now require player-facing
+parity on every supported 26.x line and both loaders. The older shader,
+wall-texture, material-colour and water-transition paths have been ported;
+runtime parity checks are underway. The owner has authorized a fresh full
+release suite and six locally staged jars, with visual confirmation before
+upload. Earlier qualification does not apply to the changed jars. No 1.3 jars
+have been uploaded. See
+[the parity matrix](RELEASE_1_3_PARITY.md), [agent policy](../AGENTS.md) and
+[release preparation](../deploy/qualified/1.3/README.md).
+
 September 29 issue #248: block outlines and mining overlays now include the
 same height-dependent tangent scale as curved terrain. The three version-owned
 client paths share one geometry calculation. The six source builds and tests

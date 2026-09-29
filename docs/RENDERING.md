@@ -1,5 +1,12 @@
 # Rendering
 
+For 1.3, the terrain depth order, wall mip filtering, texture-derived wall
+palette, water coverage/tint, live-water transition, continuous land haze and
+wall texture reuse target all supported 26.x versions on both loaders. The
+26.1/26.2 ports are implemented but await runtime parity checks. Historical
+26.3-only checkpoints below describe where each technique was first tested,
+not a release-scope exception.
+
 ## Design goal
 
 The renderer must show one closed ring while Minecraft loads only an ordinary
@@ -22,7 +29,7 @@ flowchart TD
 
 ## Sharing geometry with shaders
 
-`GlobalSettingsMixin` extends Minecraft's shared Globals UBO with seven named
+`GlobalSettingsMixin` extends Minecraft's shared Globals UBO with named
 RingWorld vectors after the untouched vanilla fields:
 
 ```text
@@ -341,9 +348,9 @@ the four strips has a power-of-two height. The shader clamps each sampled mip
 to that strip before blending adjacent levels, preventing inner/outer faces
 from bleeding into one another. Circumference coordinates stay unwrapped
 until the repeat sampler, avoiding a derivative spike at the ring seam.
-The existing decay alpha cutoff and confirmed continuous proxy depth mapping
-are retained. This change is currently scoped to the 26.3 renderer; older
-version adapters retain their previous wall filtering.
+The existing decay alpha cutoff and continuous proxy depth mapping are retained.
+The 26.1/26.2 source adapters now use the same four-strip mip policy; runtime
+parity verification is pending before the 1.3 release.
 
 
 ### Mesh
@@ -645,15 +652,16 @@ active block models and their CPU texture mip pixels. Alpha-weighted averaging
 ignores transparent texels; tinted/missing faces fall back to map colours.
 The small render-thread cache expires when the model set changes on resource
 reload. Workers still receive immutable RGB palettes; GPU uploads and the
-accepted wall mip/depth policy are unchanged. Older Minecraft adapters retain
-map-colour palettes until their texture-model API is qualified.
+accepted wall mip/depth policy are unchanged. The older source adapters now
+read the same model texture pixels; runtime resource-pack verification remains
+before the 1.3 release.
 
 Atlas format 10 stores exposed block light in the low nibble and water coverage
 in the high nibble of the existing byte. Source capture and live recapture use
 the surface fluid state. Display downsampling averages water coverage over its
 footprint while retaining the existing height/colour anchors. Bilinear sampling
-carries normalized coverage independently of light. The 26.3 texture worker
-applies the accepted water tint before mip generation, and real-water fading
+carries normalized coverage independently of light. All three texture workers
+apply the accepted water tint before mip generation, and real-water fading
 uses the same target. There is no blue-colour or sea-level classifier, extra GPU
 texture, or per-frame material scan. Blue dry cells remain unchanged; shoreline
 filtering naturally combines neighbouring water and dry samples.
@@ -661,4 +669,5 @@ filtering naturally combines neighbouring water and dry samples.
 Format/cache identity and metadata/tile IDs advance together (format 10, v4).
 Old caches rebuild normally; world blocks and saved geometry are unchanged.
 Storage remains twelve bytes per cell. Both loaders share capture, storage and
-protocol. The appearance change is currently in the 26.3 adapter.
+protocol. The appearance change is implemented in each source adapter, pending
+older-version runtime verification.

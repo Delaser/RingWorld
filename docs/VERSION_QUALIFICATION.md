@@ -1,5 +1,14 @@
 # Adding a Minecraft version
 
+For releases from 1.3 onward, all supported Minecraft 26.x lines and both
+loaders must provide equivalent player-facing fixes, performance improvements
+and features. A new version-owned adapter is acceptable only for an API
+difference; it is not permission to omit behaviour. Qualify every supported
+line after a parity-affecting change. The initial 29 September 1.3 release run
+was cancelled for this repair, and its old evidence cannot qualify the changed
+jars. A fresh full suite is authorized; upload awaits visual approval. See
+[the 1.3 gate](../deploy/qualified/1.3/README.md).
+
 Current execution status and exact candidate identities:
 [26.2 checkpoint](QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).
 Both loaders now have complete 26.2 composite nightly coverage, eight passing

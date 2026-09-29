@@ -164,8 +164,9 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
 
     def test_proxy_depth_coverage_retains_smooth_alpha(self):
         proxy = (ROOT / "src/client/resources/assets/ringworld/shaders/core/ring_surface.fsh").read_text()
-        self.assertIn("gl_FragDepth = mix(0.0, gl_FragCoord.z, proxyAlpha)", proxy)
-        self.assertIn("gl_FragDepth = mix(1.0, gl_FragCoord.z, proxyAlpha)", proxy)
+        self.assertIn("gl_FragDepth = mix(0.0, surfaceDepth, proxyAlpha)", proxy)
+        self.assertIn("gl_FragDepth = mix(1.0, surfaceDepth, proxyAlpha)", proxy)
+        self.assertIn("float nativeDepth = depthMapping.x + depthMapping.y * gl_FragCoord.w", proxy)
         self.assertNotIn("ring_dither_threshold", proxy)
         self.assertIn("if (proxyAlpha <= 0.001)", proxy)
         self.assertIn("fragColor = vec4(mix(ring_handoff_edge_color(), litTerrain, reveal), proxyAlpha)", proxy)
@@ -175,7 +176,7 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         renderer = (ROOT / "src/client/java/dev/ringworld/client/render/RingSurfaceTextureRenderer.java").read_text()
         self.assertIn("new Vector3f((float)cameraAngle, (float)camera.z, RingSurfaceGpu.farBackgroundDepth())", renderer)
         self.assertIn("if (gl_Position.w > 0.0)", shader)
-        reversed_branch = shader.split("#ifdef RINGWORLD_REVERSED_DEPTH", 1)[1].split("#else", 1)[0]
+        reversed_branch = shader.rsplit("#ifdef RINGWORLD_REVERSED_DEPTH", 1)[1].split("#else", 1)[0]
         self.assertIn("gl_Position.z = max(gl_Position.z, gl_Position.w * ModelOffset.z)", reversed_branch)
         self.assertNotRegex(reversed_branch, r"gl_Position\.[xyw]\s*=")
         self.assertIn("gl_Position.z = min(", shader)

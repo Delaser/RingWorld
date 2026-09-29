@@ -4,6 +4,26 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
+## Supported-version parity and release hold
+
+Every fix, performance improvement, and feature in a release must work on **all
+supported Minecraft 26.x versions**, currently 26.1–26.1.2, 26.2, and 26.3,
+on both Fabric and NeoForge. Carry this rule forward as new 26.x versions are
+added. Version-specific source adapters may differ internally to accommodate
+Minecraft API changes; they must deliver equivalent player-facing behaviour.
+Do not describe a feature as shared or publish any 1.3 jar until its older-line
+implementations and both loaders are verified. A fix may be omitted from an
+older adapter only with evidence that the underlying failure cannot occur
+there, and that exception must be recorded in the release documentation.
+
+The initial 29 September 1.3 release test run was cancelled after finding
+that several 26.3 rendering changes had not reached 26.1/26.2. Those changes
+are now ported. The owner authorized a fresh **full release suite** and six
+locally staged jars from the repaired source. Upload waits for owner visual
+confirmation. Earlier results cannot qualify the new jars.
+Track the cross-version implementation and remaining checks in
+[`docs/RELEASE_1_3_PARITY.md`](docs/RELEASE_1_3_PARITY.md).
+
 Unreleased 1.3 rendering checkpoint: owner accepted the 26.3 terrain-depth and
 wall-filtering fixes on 2026-09-26. See `docs/RELEASE_1_3_NOTES.md` for scope,
 validation, and remaining real-terrain/Atlas transition work.

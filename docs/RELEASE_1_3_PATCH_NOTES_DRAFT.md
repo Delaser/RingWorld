@@ -1,9 +1,9 @@
 # RingWorld 1.3 patch notes — draft
 
-These notes describe changes since 1.2. Use the shared section for each Fabric
-and NeoForge file on Minecraft 26.1–26.1.2, 26.2, and 26.3. Add the 26.3 section
-only to the 26.3 files. Final candidate qualification and packaged-file review
-remain before publication.
+These notes describe changes since 1.2 for Minecraft 26.1–26.1.2, 26.2 and
+26.3 on Fabric and NeoForge. Every player-facing change below is included in
+each version's build. This remains a draft until the fresh six-file release
+suite passes and the owner confirms the visuals.
 
 ## All supported Minecraft versions
 
@@ -19,7 +19,7 @@ remain before publication.
 - Reorganized the in-world panel so generation controls are separate from the
   player's Low, Medium, and High distant-ring detail setting.
 
-### Fixes
+### Gameplay and compatibility fixes
 
 - Fixed the black block-selection outline and mining cracks sliding sideways
   from the targeted block above or below the ring surface.
@@ -27,34 +27,31 @@ remain before publication.
   of rejecting them because they exceed the loader version used during testing.
   Minecraft version requirements are unchanged.
 
-- Replaced irregular fade speckle with a fixed ordered pattern at the transition
-  between real blocks and the distant ring.
-- Delayed complete Atlas cache snapshots until incoming tile updates settle,
-  reducing repeated cache-copy work during updates.
-
-## Additional changes for Minecraft 26.3
-
 ### Distant ring and transitions
 
 - Fixed distant terrain polygons flashing as the camera moves, most visible on
-  sharp ridges and high-contrast structures. Reduced distant wall-pattern
-  shimmer during movement.
+  sharp ridges and high-contrast structures. The distant wall pattern now uses
+  filtered textures to reduce shimmer during movement.
+- Replaced irregular fade speckle with a fixed ordered pattern where real
+  blocks give way to the distant ring.
 - Made distant wall colours follow the active block textures more closely,
   including resource packs.
 - Reduced the pale fog line where loaded land meets the distant ring. Water now
-  fades toward the distant colour more gradually, and the Atlas identifies
-  actual water rather than guessing from blue colour and sea level. This also
-  covers water outside the ocean.
+  fades toward the distant colour more gradually. The Atlas records actual
+  water coverage rather than guessing from blue colour and sea level, so rivers
+  and water above sea level receive the same treatment.
 
 ### Stability and performance
 
-- Fixed a crash during resource reload caused by sky rendering immediately
-  after renderer recreation.
-- Gave 26.3 render-pipeline compilation its own worker so it can finish when
-  heavy chunk loading occupies Minecraft's shared workers. This addresses the
-  startup/reload stall observed at a 32-chunk view distance.
 - Reused unchanged distant-wall textures during Atlas updates, reducing
   repeated GPU uploads.
+- Delayed complete Atlas cache snapshots until incoming tile updates settle,
+  reducing repeated cache-copy work during updates.
+
+On 26.3, resource reload no longer crashes when the new sky renderer has not
+recreated its colour state. Shader compilation also has its own worker so a
+busy chunk generator cannot hold up startup or reload. Those two failure
+mechanisms do not exist in the 26.1/26.2 renderer APIs.
 
 The transition between real chunks and the distant ring can still reveal
 heightfield differences around cliffs, trees, and thin structures. Some Atlas
