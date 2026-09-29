@@ -16,7 +16,8 @@ from release_candidate_equivalence import (
     materialize_release_candidate,
     verify_release_candidate_equivalence,
 )
-from minecraft_support_contract import LEGACY_CONTRACT, SupportContract
+from minecraft_support_contract import LEGACY_CONTRACT, SupportContract, contract_from_manifest
+from verify_distribution_license import parse_neoforge_metadata
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,7 +35,7 @@ def _fabric_metadata(version: str, contract: SupportContract = LEGACY_CONTRACT) 
     }, sort_keys=True).encode("utf-8")
 
 
-def _neoforge_metadata(version: str, contract: SupportContract = LEGACY_CONTRACT) -> bytes:
+def _neoforge_metadata(version: str, contract: SupportContract = LEGACY_CONTRACT, *, release: bool = False) -> bytes:
     return "\n".join((
         'license="MPL-2.0"',
         "[[mods]]",
@@ -42,7 +43,7 @@ def _neoforge_metadata(version: str, contract: SupportContract = LEGACY_CONTRACT
         f'version="{version}"',
         "[[dependencies.ringworld]]",
         'modId="neoforge"',
-        f'versionRange="{contract.neoforge_range}"',
+        f'versionRange="{contract.neoforge_release_range if release else contract.neoforge_range}"',
         "[[dependencies.ringworld]]",
         'modId="minecraft"',
         f'versionRange="{contract.minecraft_range("neoforge")}"',
@@ -56,7 +57,7 @@ def _entries(loader: str, *, release: bool, changed_class: bool = False,
     label = RELEASE_LABEL if release else contract.release_label(loader)
     metadata_name = "fabric.mod.json" if loader == "fabric" else "META-INF/neoforge.mods.toml"
     metadata = (_fabric_metadata(version, contract) if loader == "fabric"
-                else _neoforge_metadata(version, contract))
+                else _neoforge_metadata(version, contract, release=release))
     result = {
         "LICENSE-RINGWORLD.txt": LICENSE,
         "ringworld-build.properties": (
@@ -101,6 +102,42 @@ def _verify(qualification: Path, release: Path, loader: str,
 
 
 class ReleaseCandidateEquivalenceTest(unittest.TestCase):
+    def test_release_allows_newer_neoforge_without_widening_minecraft_support(self) -> None:
+        for suffix in ("", "-26.2", "-26.3"):
+            manifest = json.loads((ROOT / f"config/minecraft-version-matrix{suffix}.json").read_text())
+            contract = contract_from_manifest(manifest)
+            with self.subTest(line=contract.group), tempfile.TemporaryDirectory() as temporary:
+                qualification, release = Path(temporary) / "q.jar", Path(temporary) / "r.jar"
+                _write_jar(qualification, _entries("neoforge", release=False, contract=contract))
+                result = materialize_release_candidate(
+                    qualification, release, loader="neoforge", expected_license=LICENSE,
+                    release_version=RELEASE_VERSION, release_label=RELEASE_LABEL, contract=contract,
+                )
+                self.assertEqual(contract.neoforge_range, result.qualification.loader_range)
+                with zipfile.ZipFile(release) as archive:
+                    metadata = parse_neoforge_metadata(archive.read("META-INF/neoforge.mods.toml").decode())
+                    dependencies = {item["modId"]: item["versionRange"]
+                                    for item in metadata["dependencies"]["ringworld"]}
+                self.assertEqual(f"[{contract.neoforge_versions[0]},)", dependencies["neoforge"])
+                self.assertEqual(contract.minecraft_range("neoforge"), dependencies["minecraft"])
+
+    def test_release_rejects_loader_cap_lowered_minimum_and_wider_minecraft_range(self) -> None:
+        contract = contract_from_manifest(json.loads((ROOT / "config/minecraft-version-matrix-26.3.json").read_text()))
+        for old, new in (
+            (contract.neoforge_release_range, contract.neoforge_range),
+            (contract.neoforge_release_range, "[26.3.0.1-beta,)"),
+            (contract.minecraft_range("neoforge"), "[26.3,26.4]"),
+        ):
+            with self.subTest(replacement=new), tempfile.TemporaryDirectory() as temporary:
+                qualification, release = Path(temporary) / "q.jar", Path(temporary) / "r.jar"
+                _write_jar(qualification, _entries("neoforge", release=False, contract=contract))
+                entries = _entries("neoforge", release=True, contract=contract)
+                descriptor = "META-INF/neoforge.mods.toml"
+                entries[descriptor] = entries[descriptor].replace(old.encode(), new.encode())
+                _write_jar(release, entries)
+                with self.assertRaisesRegex(ReleaseEquivalenceError, "range"):
+                    _verify(qualification, release, "neoforge", contract)
+
     def test_materializes_only_allowed_public_metadata_for_both_loaders(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)

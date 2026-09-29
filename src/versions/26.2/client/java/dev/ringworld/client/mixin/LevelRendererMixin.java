@@ -26,7 +26,7 @@ abstract class LevelRendererMixin {
             PoseStack poseStack, double x, double y, double z,
             PoseStack originalPoseStack, LevelRenderState state,
             SubmitNodeCollector submitNodes) {
-        applyCurvedPose(poseStack, state.cameraRenderState.pos, x, y, z);
+        applyCurvedPose(poseStack, state.cameraRenderState.pos, x, y, z, false);
     }
 
     @Redirect(
@@ -36,18 +36,19 @@ abstract class LevelRendererMixin {
             PoseStack poseStack, double x, double y, double z,
             PoseStack originalPoseStack, SubmitNodeCollector submitNodes,
             LevelRenderState state) {
-        applyCurvedPose(poseStack, state.cameraRenderState.pos, x, y, z);
+        applyCurvedPose(poseStack, state.cameraRenderState.pos, x, y, z, true);
     }
 
     @Redirect(method = "submitBlockOutline",
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V"))
     private void ringworld$curveBlockOutline(PoseStack poseStack, double x, double y, double z,
             PoseStack originalPoseStack, SubmitNodeCollector submitNodes, LevelRenderState state) {
-        applyCurvedPose(poseStack, state.cameraRenderState.pos, x, y, z);
+        applyCurvedPose(poseStack, state.cameraRenderState.pos, x, y, z, true);
     }
 
     private static void applyCurvedPose(
-            PoseStack poseStack, Vec3 camera, double x, double y, double z) {
+            PoseStack poseStack, Vec3 camera, double x, double y, double z,
+            boolean matchTerrainTangentScale) {
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null) {
             poseStack.translate(x, y, z);
@@ -58,5 +59,8 @@ abstract class LevelRendererMixin {
         Vec3 local = transform.cameraLocalPosition();
         poseStack.translate(local.x, local.y, local.z);
         poseStack.mulPose(Axis.ZP.rotation((float)transform.tangentAngleRadians()));
+        if (matchTerrainTangentScale) {
+            poseStack.scale((float)transform.tangentScale(), 1.0f, 1.0f);
+        }
     }
 }

@@ -41,7 +41,13 @@ class SupportContract:
 
     @property
     def neoforge_range(self) -> str:
+        """Exact tested bounds retained in frozen candidates and their evidence."""
         return f"[{self.neoforge_versions[0]},{self.neoforge_versions[-1]}]"
+
+    @property
+    def neoforge_release_range(self) -> str:
+        """Public loader minimum; the separate Minecraft range limits game support."""
+        return f"[{self.neoforge_versions[0]},)"
 
     def range_identities(self) -> dict[str, dict[str, str]]:
         return {loader: {

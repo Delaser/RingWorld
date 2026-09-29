@@ -163,7 +163,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                     minecraft_range = ">=26.2 <=26.2" if loader == "fabric" else "26.2,26.2"
                     self.make_jar(jar, mod_id="ringworld", loader=loader, version="1.1.0+mc26.2",
                                   minecraft=minecraft_range, neoforge_version="26.2.0.69", release_label="1.1",
-                                  neoforge_range="[26.2.0.69,26.2.0.69]" if loader == "neoforge" else None)
+                                  neoforge_range="[26.2.0.69,)" if loader == "neoforge" else None)
                     instance = self.make_instance(temporary / loader, loader=loader)
                     stage = self.make_qualified_stage(temporary / loader, jar, loader=loader)
                     result = self.run_prepare(temporary / loader, jar, fabric_api, instance, loader=loader,
@@ -220,7 +220,7 @@ class ReleasePackagePreparationTest(unittest.TestCase):
                         jar, mod_id="ringworld", loader=loader, version="1.1.0+mc26.1",
                         minecraft=">=26.1 <=26.1.2" if loader == "fabric" else "26.1,26.1.2",
                         neoforge_version="26.1.2.87", release_label="1.1",
-                        neoforge_range="[26.1.0.19-beta,26.1.2.87]" if loader == "neoforge" else None,
+                        neoforge_range="[26.1.0.19-beta,)" if loader == "neoforge" else None,
                     )
                     instance = self.make_instance(temporary / loader, loader=loader)
                     stage = self.make_qualified_stage(

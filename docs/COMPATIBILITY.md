@@ -13,6 +13,12 @@ Later stable versions use the same fail-closed intake described in
 
 ## Supported baseline
 
+The upcoming 1.3 release accepts newer NeoForge builds above each jar's minimum,
+while keeping its Minecraft version limits. Exact tested loader pins remain in
+qualification records; accepting a loader version is not evidence it was tested.
+Published 1.2 jars still have their old upper caps, including an exact
+`26.3.0.7-beta` requirement for Minecraft 26.3.
+
 The release gate covers this exact foundation:
 
 | Component | Supported contract |

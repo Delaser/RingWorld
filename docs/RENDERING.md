@@ -638,7 +638,7 @@ Capture and compare:
 - reconnect and explicit teleport after the client chart changes.
 
 
-### 1.4 material transition follow-up (26.3)
+### 1.3 material transition follow-up (26.3)
 
 Atlas rim palettes now read representative north/south face colours from the
 active block models and their CPU texture mip pixels. Alpha-weighted averaging

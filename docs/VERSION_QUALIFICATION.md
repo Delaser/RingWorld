@@ -196,6 +196,16 @@ frozen-build commit from strict quick evidence (which must be in pushed public
 history), while the current clean staging checkout is recorded separately as
 operator provenance. It neither reruns nor claims runtime qualification.
 
+For 1.3 onward, public NeoForge metadata uses
+`SupportContract.neoforge_release_range`: `[minimum,)`, derived from the
+oldest pinned NeoForge version. Minecraft bounds remain unchanged. Frozen
+candidates retain their exact tested loader bounds and manifest dependency pins;
+the public metadata transform removes only the loader upper cap. Staging and
+package validation reject an accidental reintroduced cap or a lowered minimum.
+This permits subsequent loader updates without claiming they passed the retained
+tests. Test current loaders before publishing, and retain their exact evidence.
+Historical published jars and qualification records are not rewritten.
+
 Version-owned source APIs live under `src/versions/<oldest-ABI>/main/java` and
 `client/java`. Both loader builds use the same selected directories:
 `gradle/version-sources.gradle` selects the newest checked-in ABI not newer

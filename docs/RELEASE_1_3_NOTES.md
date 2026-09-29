@@ -1,11 +1,20 @@
-# RingWorld 1.4 — unreleased rendering checkpoint
+# RingWorld 1.3 — unreleased rendering checkpoint
 
 Owner accepted the terrain/wall flicker fixes and subsequent land/water
 transition appearance on 2026-09-26. Bank these
-changes for 1.4; this checkpoint does not publish jars or change version numbers.
+changes for 1.3; this checkpoint does not publish jars or change version numbers.
 
-## Changes accepted for 1.4
+## Changes accepted for 1.3
 
+- Corrected block selection outlines and mining overlays that drift sideways
+  from terrain below or above Y=64 (issue #248). The interaction passes now
+  scale their local tangent width by the terrain radius at the targeted block.
+  Block entities and entity models keep their established rigid transforms.
+  The fix is implemented on all three supported Minecraft source versions;
+  all six loader/version builds and tests pass. The geometry test compares
+  the transform with the terrain embedding at Y=-60, 64 and 100 on 2,048- and
+  16,384-block rings. In-game screenshot review at deep and high elevations
+  is still pending.
 - Fixed distant terrain polygons flashing over one another as the camera moves,
   including the red castle and white mountaintops. The 26.3 Atlas shader now
   reconstructs fragment depth and continuously orders distant geometry starting
@@ -51,8 +60,41 @@ changes for 1.4; this checkpoint does not publish jars or change version numbers
 
 ## Remaining before release
 
+### NeoForge loader compatibility (29 September; implemented, unreleased)
+
+Include this fix in 1.3; the owner explicitly declined a standalone 1.2.1
+patch. Published 1.2 jars turn tested NeoForge versions into runtime upper
+limits: 26.3 accepts only `26.3.0.7-beta`, 26.2 only `26.2.0.69`, and
+26.1.x caps at `26.1.2.87`. This blocks users installing newer loader builds.
+
+- Release staging now writes a minimum-only NeoForge dependency (`[minimum,)`)
+  instead of copying the tested upper bound. Frozen candidate ranges and exact
+  build/test dependency pins remain unchanged.
+- Minecraft version limits and minimum NeoForge requirements are preserved;
+  this does not broaden game-version support.
+- Staging equivalence and package validation require the public loader range.
+  Regression tests cover all three version lines and reject reintroduced caps,
+  lowered minimums and widened Minecraft limits.
+- Test the current NeoForge builds before releasing 1.3 and inspect the final
+  packaged jars. Record tested versions separately from accepted version ranges.
+  At intake, the latest 26.3 loader is `26.3.0.33-beta`; it is not yet tested here.
+
+The existing 1.2 files remain unchanged. Fabric already has no loader upper cap.
+
+Verification: complete Python suite, 436 passed and two expected platform skips;
+default 26.1.2 Fabric/NeoForge build and test, 447 cases each. Metadata-only
+review copies of retained frozen jars for 26.1.x, 26.2 and 26.3 pass equivalence
+and preserve every non-metadata byte. Maven's own range parser accepts the
+26.3 minimum, current `26.3.0.33-beta`, a synthetic next beta and a stable version;
+it rejects a loader below the minimum and Minecraft 26.2, 26.3.1 and 26.4 for
+the 26.3 jar. Evidence is in ignored `logs/neoforge-loader-compatibility`.
+These review artifacts are packaging probes, not new runtime qualification or
+publishable 1.3 candidates.
+
+### Rendering and final qualification
+
 Review remaining geometry/material transition differences and qualify the
-final 1.4 candidate on the supported loaders and versions. Authored water
+final 1.3 candidate on the supported loaders and versions. Authored water
 identification is now implemented; see the follow-up below. The 26.3 depth,
 reload, and wall-filter changes have not been claimed as tested on older
 versions or on NeoForge. See [rendering design](RENDERING.md) for the current
@@ -83,7 +125,7 @@ completion/reconnect sequence and captured the Display and compact Technical
 details pages. [Actual screenshots](media/ring-generation-ui-implemented/index.html)
 are retained in the repository. All three supported version lines pass source
 builds and Java tests on Fabric and NeoForge. These are development checks;
-they do not qualify the final 1.4 release candidate or replace the frozen
+they do not qualify the final 1.3 release candidate or replace the frozen
 runtime matrix.
 
 
@@ -202,7 +244,7 @@ High costs about 28–29% more p95 frame time on the two tested routes while
 leaving the principal cliff/canopy and thin-structure mismatch visible. Adaptive
 geometry and continuous compositing are deferred by the plan's comparison gate.
 The remaining boundary is not claimed invisible. Details, measurements and
-limits are in `TRANSITION_IMPROVEMENT_PLAN_1_4.md`; local evidence is retained in
+limits are in `TRANSITION_IMPROVEMENT_PLAN_1_3.md`; local evidence is retained in
 `logs/transition-plan-execution/`. Owner visual review and 26.3 frozen quick
 qualification passed. The full nightly matrix, remaining supported-version
 qualification, and the planned Astra UI design pass remain before publication.
