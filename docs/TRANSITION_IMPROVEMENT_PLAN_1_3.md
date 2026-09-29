@@ -1,4 +1,4 @@
-# Real-terrain / Atlas transition plan for 1.4
+# Real-terrain / Atlas transition plan for 1.3
 
 Status: material stages implemented and comparison gates exercised, 2026-09-26. Accepted visual baseline:
 `37f3257`, following the depth/wall-flicker checkpoint `aea59e5`.
@@ -107,7 +107,7 @@ heightfield mismatch, document that limit instead of hiding it with more fog.
   independent client detail setting. Do not increase global view distance or
   return to flattened proxy depth to conceal the boundary.
 - Run tests appropriate to the changed layer and real client reload/movement
-  checks. Before 1.4, qualify final source on the supported loader/version matrix;
+  checks. Before 1.3, qualify final source on the supported loader/version matrix;
   current visual evidence is 26.3 Fabric, not universal release qualification.
 
 Implementation order: baseline → wall materials → authored water → geometry

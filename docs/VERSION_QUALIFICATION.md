@@ -196,7 +196,7 @@ frozen-build commit from strict quick evidence (which must be in pushed public
 history), while the current clean staging checkout is recorded separately as
 operator provenance. It neither reruns nor claims runtime qualification.
 
-For 1.4 onward, public NeoForge metadata uses
+For 1.3 onward, public NeoForge metadata uses
 `SupportContract.neoforge_release_range`: `[minimum,)`, derived from the
 oldest pinned NeoForge version. Minecraft bounds remain unchanged. Frozen
 candidates retain their exact tested loader bounds and manifest dependency pins;

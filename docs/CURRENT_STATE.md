@@ -1,6 +1,12 @@
 # Current state
 
-September 29 NeoForge compatibility: 1.4 release staging now removes the loader
+September 29 issue #248: block outlines and mining overlays now include the
+same height-dependent tangent scale as curved terrain. The three version-owned
+client paths share one geometry calculation. The six source builds and tests
+pass; in-game visual review remains before release. See the
+[1.3 notes](RELEASE_1_3_NOTES.md).
+
+September 29 NeoForge compatibility: 1.3 release staging now removes the loader
 upper cap while retaining the minimum loader and bounded Minecraft dependency.
 Frozen evidence and exact build/runtime pins are unchanged; published 1.2 jars
 are untouched. Both default 26.1.2 loader builds pass all 447 Java cases each.
@@ -9,18 +15,18 @@ The complete Python suite passes 436 tests with two expected platform skips
 materialization/equivalence checks. Maven range checks accept 26.3.0.33-beta
 and subsequent loader versions while rejecting below-minimum loaders and
 unsupported Minecraft versions. This is packaging verification, not a new
-runtime qualification of upstream loader updates; see [1.4 notes](RELEASE_1_4_NOTES.md).
+runtime qualification of upstream loader updates; see [1.3 notes](RELEASE_1_3_NOTES.md).
 
 September 27 UI work: the owner-approved RingWorld creation redesign is
-implemented on the 1.4 development branch. The world editor uses Ring,
+implemented on the 1.3 development branch. The world editor uses Ring,
 Terrain, Walls, Sky and Preview tabs with one draft and one Apply. The in-world
 panel separates server-owned generation from player-local display detail.
 Actual 26.3 Fabric menu and generation fixture captures pass; see the
-[1.4 notes](RELEASE_1_4_NOTES.md) and
+[1.3 notes](RELEASE_1_3_NOTES.md) and
 [design proposal](design/ring-generation-ui-proposal/index.html). This is not
-a published 1.4 release or a frozen-candidate qualification.
+a published 1.3 release or a frozen-candidate qualification.
 
-September 26 1.4 qualification: clean 26.3 quick run
+September 26 1.3 qualification: clean 26.3 quick run
 `20260926T203515Z-6d299758f87d` passes Fabric and NeoForge frozen-jar,
 build and installed dedicated-server checks on pushed source `3016a4b`.
 The Python 3.9 release verifier now accepts the current NeoForge Lithium
@@ -28,25 +34,25 @@ options table. A targeted frozen production-render slice
 `20260926T210453Z-752830dc4ca0` passes both loaders on a complete format-10
 test world; its overall coordinator verdict is INCOMPLETE because the other
 nightly fixtures were not selected. Full nightly/remaining-version
-qualification and the Astra UI design pass are still pending; no 1.4 jars
+qualification and the Astra UI design pass are still pending; no 1.3 jars
 have been published.
 
-September 26 later: owner accepted the updated 1.4 wall/water appearance after
+September 26 later: owner accepted the updated 1.3 wall/water appearance after
 clear, rain and temporary pink resource-pack comparisons. The pack was removed
 and the original colours returned. The six source build/test cells pass (447
 cases per loader on 26.1 and 26.2; 450 on 26.3). Fabric and NeoForge 26.3
 development clients opened the complete ring at 32 chunks, reloaded resources
 and stopped normally. The wall texture is reused across unchanged Atlas updates;
 complete client Atlas cache snapshots wait for a quiet period. Frozen-candidate
-qualification and the Astra UI design pass remain before a 1.4 release.
+qualification and the Astra UI design pass remain before a 1.3 release.
 
 September 26: owner accepted the terrain-depth, wall-filtering, and resource-reload
-fixes for the future **1.4** release. See [1.4 checkpoint](RELEASE_1_4_NOTES.md).
+fixes for the future **1.3** release. See [1.3 checkpoint](RELEASE_1_3_NOTES.md).
 26.3 Fabric build and 442 tests pass; two in-world reloads pass. The visible
 land/water transition and lighter Atlas ocean colour are now also accepted as
 an appearance checkpoint. Water identification is still a limited prototype;
 production water tagging and remaining silhouette/material transitions are
-follow-ups. No 1.4 artifacts are published.
+follow-ups. No 1.3 artifacts are published.
 
 September 20 final: all six 1.2 jars are submitted to CurseForge; all CDN hashes match.
 See [publication record](RELEASE_1_2_PUBLICATION_2026-09-20.md). Modrinth remains deferred.
@@ -2465,7 +2471,7 @@ Owner scope update (2026-09-07): no distant underside mesh is needed; viewing an
 Backlog audit (2026-09-07): three local LOD levels are implemented (Low = old Low, Medium = old High, High = old Max). Fixed the 26.1 client exterior-visibility injection, Lithium POI redirect conflict through both metadata adapters, and starvation of surface builds during large Atlas downloads. Both source versions pass 436 tests per loader; final universal prototypes pass eight dedicated smokes. Real Atlas recovery and two-client runs cover both loaders/ABI lines with exact limits, plus representative Lithium/FerriteCore/JEI coexistence. Production movement still records occasional long frames; one Archipelago seed fails strict smooth-join acceptance and whole-ring density balance remains open. River, distant underside geometry and release/26.3 work remain excluded. See [active tasks](ACTIVE_TODO_2026-09-07.md) and [retained evidence and limits](BACKLOG_VALIDATION_2026-09-07.md).
 
 
-## 2026-09-26 transition material checkpoint for 1.4
+## 2026-09-26 transition material checkpoint for 1.3
 
 Implemented texture-derived 26.3 wall palettes and explicit Atlas water
 coverage (format 10/v4 payloads, unchanged twelve-byte cells). All six
@@ -2476,10 +2482,10 @@ geometry and compositing are held at the plan's comparison gate. Existing
 cache-copy hitches and two cold-start pipeline stalls remain documented. A temporary
 extra-worker probe cleared the second stall, supporting background-pool starvation;
 the probe restored normal parallelism and is not a shipped fix.
-See `RELEASE_1_4_NOTES.md` and `TRANSITION_IMPROVEMENT_PLAN_1_4.md`; this checkpoint
+See `RELEASE_1_3_NOTES.md` and `TRANSITION_IMPROVEMENT_PLAN_1_3.md`; this checkpoint
 is not a release publication or owner acceptance of the new visual changes.
 
-## 2026-09-26 1.4 startup and wall-upload follow-up
+## 2026-09-26 1.3 startup and wall-upload follow-up
 
 The 26.3 pipeline cache now compiles on one dedicated daemon worker, avoiding
 the shared-worker starvation seen on two earlier 32-chunk starts. Development

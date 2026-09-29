@@ -13,7 +13,7 @@ Later stable versions use the same fail-closed intake described in
 
 ## Supported baseline
 
-The upcoming 1.4 release accepts newer NeoForge builds above each jar's minimum,
+The upcoming 1.3 release accepts newer NeoForge builds above each jar's minimum,
 while keeping its Minecraft version limits. Exact tested loader pins remain in
 qualification records; accepting a loader version is not evidence it was tested.
 Published 1.2 jars still have their old upper caps, including an exact

@@ -4,19 +4,19 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
-Unreleased 1.4 rendering checkpoint: owner accepted the 26.3 terrain-depth and
-wall-filtering fixes on 2026-09-26. See `docs/RELEASE_1_4_NOTES.md` for scope,
+Unreleased 1.3 rendering checkpoint: owner accepted the 26.3 terrain-depth and
+wall-filtering fixes on 2026-09-26. See `docs/RELEASE_1_3_NOTES.md` for scope,
 validation, and remaining real-terrain/Atlas transition work.
 Follow-up material work adds 26.3 texture-derived wall colours and Atlas format
 10 water coverage (v4 metadata/tiles, still twelve bytes/cell). All six source
 build/test cells pass. A 26.3 dedicated pipeline-compile worker passed
 32-chunk Fabric and NeoForge cold launches, reloads and normal stops. Full
-frozen-candidate runtime qualification remains before claiming 1.4 launch readiness.
+frozen-candidate runtime qualification remains before claiming 1.3 launch readiness.
 The owner accepted the wall/water look in clear weather, rain and a temporary
 pink resource-pack comparison; that pack was removed. Wall GPU textures now
 reuse unchanged inputs, and complete client cache snapshots wait for quiet tile
 updates. The approved creation/in-world UI redesign is implemented in the
-development branch; see `docs/RELEASE_1_4_NOTES.md` for development evidence.
+development branch; see `docs/RELEASE_1_3_NOTES.md` for development evidence.
 The 26.3 frozen quick qualification passes both loaders on source `3016a4b`
 (`20260926T203515Z-6d299758f87d`); nightly and remaining-version runtime
 qualification are still outstanding. A targeted frozen production-render
@@ -352,7 +352,7 @@ experimental. Never rewrite historical 26.1.2 evidence as broader evidence.
 
 ## Loader support policy
 
-For 1.4 onward, public NeoForge jars declare the manifest-derived minimum
+For 1.3 onward, public NeoForge jars declare the manifest-derived minimum
 loader version with no upper cap (`[minimum,)`); the separate bounded Minecraft
 dependency still limits game support. Keep exact build/runtime pins and frozen
 qualification ranges in their evidence. Release staging and equivalence checks
@@ -1570,6 +1570,9 @@ version numbers.
   `LevelRendererMixin` deliberately share it. A flat camera-relative
   translation makes chests, lectern books, breaking overlays, and outlines
   rise out of curved ground as the player approaches.
+  Outlines and mining overlays also apply `tangentScale` after rotating, so
+  their width follows terrain at the target height; block entities and entities
+  retain their rigid model scale.
 - The frozen 1.21.11 Mojang baseline targeted the unnamed
   `ServerLevel.method_31420` entity-tick lambda. Minecraft 26.1 exposes the
   same call inside named `ServerLevel.tick`; the active mixin targets `tick`

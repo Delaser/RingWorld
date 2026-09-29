@@ -70,7 +70,7 @@ versions; NeoForge does not need Fabric API. Back up worlds before upgrading
 Minecraft and do not reopen upgraded saves in older versions.
 
 The published 1.2 NeoForge jars reject loader builds above their tested range
-(26.3 requires `26.3.0.7-beta`). The upcoming 1.4 release removes this upper
+(26.3 requires `26.3.0.7-beta`). The upcoming 1.3 release removes this upper
 cap while retaining the minimum loader and supported Minecraft versions.
 
 Install the Fabric **or** NeoForge RingWorld jar in the normal `mods` folder.
