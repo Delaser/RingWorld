@@ -12,7 +12,7 @@ import unittest
 from minecraft_qualification_executor import ExecutedCommand
 from minecraft_qualification_model import QualificationPaths, Verdict
 from run_gradle_atlas_ui_qualification import (  # noqa: E402
-    CAPTURE_PREFIXES, HANDSHAKE_MARKERS, PASS_MARKER, ROOT, _command, run,
+    HANDSHAKE_MARKERS, PASS_MARKER, ROOT, _command, run,
 )
 from run_minecraft_qualification import SourceProvenance, load_manifest
 
@@ -57,8 +57,23 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
             "\n".join((*HANDSHAKE_MARKERS[:2], acknowledgement,
                         HANDSHAKE_MARKERS[2], PASS_MARKER)) + "\n", encoding="utf-8"
         )
-        for prefix in CAPTURE_PREFIXES:
-            (run_root / "screenshots" / f"{prefix}test.png").write_bytes(b"\x89PNG\r\n\x1a\n" + b"x" * 256)
+        # Actual names emitted by the redesigned in-game fixture.
+        for name in (
+            "atlas-ui-01-pause-menu.png",
+            "atlas-ui-02-map-initial.png",
+            "atlas-ui-02-display.png",
+            "atlas-ui-02-technical.png",
+            "atlas-ui-03-confirm-cost.png",
+            "atlas-ui-04-running.png",
+            "atlas-ui-05-progressive-world.png",
+            "atlas-ui-06-reopened.png",
+            "atlas-ui-07-paused.png",
+            "atlas-ui-08-resumed.png",
+            "atlas-ui-09-cancelled.png",
+            "atlas-ui-10-retry-confirm.png",
+            "atlas-ui-11-complete.png",
+        ):
+            (run_root / "screenshots" / name).write_bytes(b"\x89PNG\r\n\x1a\n" + b"x" * 256)
         stdout, stderr = paths.logs_directory / "01.stdout.log", paths.logs_directory / "01.stderr.log"
         stdout.write_text("ok", encoding="utf-8")
         stderr.write_text("", encoding="utf-8")
@@ -73,7 +88,7 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
             provenance_provider=lambda *_: self.provenance, command_executor=self.executor,
         )
         self.assertEqual(result["verdict"], "PASS")
-        self.assertEqual(len(result["captures"]), 11)
+        self.assertEqual(len(result["captures"]), 13)
         self.assertTrue(result["claims"]["revisioned_edit_verified"])
         self.assertTrue(result["claims"]["format5_mapping4_handshake"])
         self.assertTrue(result["claims"]["normal_disconnect_cleared_client_state"])
@@ -88,6 +103,25 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
         self.assertEqual(handshake["derived_from_fixture"], "atlas-ui-revision")
         self.assertTrue(handshake["claims"]["normal_disconnect_cleared_client_state"])
         self.assertEqual(handshake["captures"], [])
+
+    def test_missing_or_duplicate_redesigned_page_fails(self) -> None:
+        for case in ("missing", "duplicate"):
+            with self.subTest(case=case):
+                def invalid_capture(command, paths, *, ordinal):
+                    result = self.executor(command, paths, ordinal=ordinal)
+                    capture = paths.run_directory / "run-atlas-ui/screenshots/atlas-ui-02-display.png"
+                    if case == "missing":
+                        capture.unlink()
+                    else:
+                        shutil.copy2(capture, capture.with_name("atlas-ui-02-display-copy.png"))
+                    return result
+                run_id = RUN_ID[:-1] + ("1" if case == "missing" else "2")
+                result = run(
+                    "26.1-fabric", repository_root=self.root, run_id_factory=lambda: run_id,
+                    provenance_provider=lambda *_: self.provenance, command_executor=invalid_capture,
+                )
+                self.assertEqual(result["verdict"], "FAIL")
+                self.assertIn("missing or ambiguous: atlas-ui-02-display", result["reason"])
 
     def test_missing_disposable_world_fails(self) -> None:
         def missing_world(command, paths, *, ordinal):

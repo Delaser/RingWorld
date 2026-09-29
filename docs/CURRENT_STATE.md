@@ -3,7 +3,8 @@
 September 29 issue #248: block outlines and mining overlays now include the
 same height-dependent tangent scale as curved terrain. The three version-owned
 client paths share one geometry calculation. The six source builds and tests
-pass; in-game visual review remains before release. See the
+pass; the owner accepted in-game review on 29 September and issue #248 is
+closed for the planned 1.3 release. Final candidate qualification is separate. See the
 [1.3 notes](RELEASE_1_3_NOTES.md).
 
 September 29 NeoForge compatibility: 1.3 release staging now removes the loader

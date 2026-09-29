@@ -13,8 +13,10 @@ changes for 1.3; this checkpoint does not publish jars or change version numbers
   The fix is implemented on all three supported Minecraft source versions;
   all six loader/version builds and tests pass. The geometry test compares
   the transform with the terrain embedding at Y=-60, 64 and 100 on 2,048- and
-  16,384-block rings. In-game screenshot review at deep and high elevations
-  is still pending.
+  16,384-block rings. On 29 September the owner accepted the in-game outline
+  review, including the elevated platform check, and issue #248 was closed
+  with notice that the fix ships in 1.3. This is owner review, not a new
+  automated deep/high screenshot assertion.
 - Fixed distant terrain polygons flashing over one another as the camera moves,
   including the red castle and white mountaintops. The 26.3 Atlas shader now
   reconstructs fragment depth and continuously orders distant geometry starting
@@ -246,5 +248,5 @@ geometry and continuous compositing are deferred by the plan's comparison gate.
 The remaining boundary is not claimed invisible. Details, measurements and
 limits are in `TRANSITION_IMPROVEMENT_PLAN_1_3.md`; local evidence is retained in
 `logs/transition-plan-execution/`. Owner visual review and 26.3 frozen quick
-qualification passed. The full nightly matrix, remaining supported-version
-qualification, and the planned Astra UI design pass remain before publication.
+qualification passed. The UI redesign is implemented and reviewed. Final candidate qualification
+and release staging remain separate from these earlier development results.
