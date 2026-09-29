@@ -1,5 +1,16 @@
 # Current state
 
+September 29 NeoForge compatibility: 1.4 release staging now removes the loader
+upper cap while retaining the minimum loader and bounded Minecraft dependency.
+Frozen evidence and exact build/runtime pins are unchanged; published 1.2 jars
+are untouched. Both default 26.1.2 loader builds pass all 447 Java cases each.
+The complete Python suite passes 436 tests with two expected platform skips
+(438 total). All three version lines pass actual retained-jar metadata
+materialization/equivalence checks. Maven range checks accept 26.3.0.33-beta
+and subsequent loader versions while rejecting below-minimum loaders and
+unsupported Minecraft versions. This is packaging verification, not a new
+runtime qualification of upstream loader updates; see [1.4 notes](RELEASE_1_4_NOTES.md).
+
 September 27 UI work: the owner-approved RingWorld creation redesign is
 implemented on the 1.4 development branch. The world editor uses Ring,
 Terrain, Walls, Sky and Preview tabs with one draft and one Apply. The in-world

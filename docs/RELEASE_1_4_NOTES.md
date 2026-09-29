@@ -51,6 +51,39 @@ changes for 1.4; this checkpoint does not publish jars or change version numbers
 
 ## Remaining before release
 
+### NeoForge loader compatibility (29 September; implemented, unreleased)
+
+Include this fix in 1.4; the owner explicitly declined a standalone 1.2.1
+patch. Published 1.2 jars turn tested NeoForge versions into runtime upper
+limits: 26.3 accepts only `26.3.0.7-beta`, 26.2 only `26.2.0.69`, and
+26.1.x caps at `26.1.2.87`. This blocks users installing newer loader builds.
+
+- Release staging now writes a minimum-only NeoForge dependency (`[minimum,)`)
+  instead of copying the tested upper bound. Frozen candidate ranges and exact
+  build/test dependency pins remain unchanged.
+- Minecraft version limits and minimum NeoForge requirements are preserved;
+  this does not broaden game-version support.
+- Staging equivalence and package validation require the public loader range.
+  Regression tests cover all three version lines and reject reintroduced caps,
+  lowered minimums and widened Minecraft limits.
+- Test the current NeoForge builds before releasing 1.4 and inspect the final
+  packaged jars. Record tested versions separately from accepted version ranges.
+  At intake, the latest 26.3 loader is `26.3.0.33-beta`; it is not yet tested here.
+
+The existing 1.2 files remain unchanged. Fabric already has no loader upper cap.
+
+Verification: complete Python suite, 436 passed and two expected platform skips;
+default 26.1.2 Fabric/NeoForge build and test, 447 cases each. Metadata-only
+review copies of retained frozen jars for 26.1.x, 26.2 and 26.3 pass equivalence
+and preserve every non-metadata byte. Maven's own range parser accepts the
+26.3 minimum, current `26.3.0.33-beta`, a synthetic next beta and a stable version;
+it rejects a loader below the minimum and Minecraft 26.2, 26.3.1 and 26.4 for
+the 26.3 jar. Evidence is in ignored `logs/neoforge-loader-compatibility`.
+These review artifacts are packaging probes, not new runtime qualification or
+publishable 1.4 candidates.
+
+### Rendering and final qualification
+
 Review remaining geometry/material transition differences and qualify the
 final 1.4 candidate on the supported loaders and versions. Authored water
 identification is now implemented; see the follow-up below. The 26.3 depth,

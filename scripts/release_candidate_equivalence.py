@@ -3,7 +3,8 @@
 
 This is deliberately a byte-level *release staging* guard, not runtime
 qualification.  It proves that a proposed public jar is the already-qualified
-wide-range candidate with only its public version descriptors changed.  ZIP
+wide-range candidate with only its public version descriptors and approved
+NeoForge loader range changed. Minecraft version limits stay unchanged. ZIP
 member order and timestamps are intentionally ignored; every member name and
 every non-metadata byte must match.
 """
@@ -179,7 +180,7 @@ def _verify_release_metadata(
     neoforge = _neoforge_dependency(metadata, "neoforge")
     if minecraft.get("versionRange") != contract.minecraft_range(loader):
         raise ReleaseEquivalenceError("release NeoForge jar does not declare the manifest-approved Minecraft range")
-    if neoforge.get("versionRange") != contract.neoforge_range:
+    if neoforge.get("versionRange") != contract.neoforge_release_range:
         raise ReleaseEquivalenceError("release NeoForge jar does not declare the approved loader range")
 
 
@@ -202,7 +203,7 @@ def _expected_release_metadata(
     # These are the only TOML fields a public release is allowed to alter.
     mod["version"] = release_version
     minecraft["versionRange"] = contract.minecraft_range(loader)
-    neoforge["versionRange"] = contract.neoforge_range
+    neoforge["versionRange"] = contract.neoforge_release_range
     return expected
 
 
@@ -307,7 +308,7 @@ def _materialized_metadata(data: bytes, loader: str, release_version: str, contr
     text = _replace_toml_table_field(text, "dependencies.ringworld", "minecraft", "versionRange",
                                      contract.minecraft_range(loader))
     return _replace_toml_table_field(text, "dependencies.ringworld", "neoforge", "versionRange",
-                                     contract.neoforge_range).encode("utf-8")
+                                     contract.neoforge_release_range).encode("utf-8")
 
 
 def _materialized_build_properties(data: bytes, release_version: str, release_label: str) -> bytes:

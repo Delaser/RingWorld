@@ -69,6 +69,10 @@ All five versions require **Java 25**. The table lists the tested dependency
 versions; NeoForge does not need Fabric API. Back up worlds before upgrading
 Minecraft and do not reopen upgraded saves in older versions.
 
+The published 1.2 NeoForge jars reject loader builds above their tested range
+(26.3 requires `26.3.0.7-beta`). The upcoming 1.4 release removes this upper
+cap while retaining the minimum loader and supported Minecraft versions.
+
 Install the Fabric **or** NeoForge RingWorld jar in the normal `mods` folder.
 Do not install both. A Fabric client joins a Fabric RingWorld server; a
 NeoForge client joins a NeoForge RingWorld server. The server and every client

@@ -352,6 +352,12 @@ experimental. Never rewrite historical 26.1.2 evidence as broader evidence.
 
 ## Loader support policy
 
+For 1.4 onward, public NeoForge jars declare the manifest-derived minimum
+loader version with no upper cap (`[minimum,)`); the separate bounded Minecraft
+dependency still limits game support. Keep exact build/runtime pins and frozen
+qualification ranges in their evidence. Release staging and equivalence checks
+use `SupportContract.neoforge_release_range`, not the tested upper bound.
+
 Fabric and NeoForge are current supported loaders. NeoForge has full
 graphical, dedicated-server, topology, worldgen, atlas, storage, multiplayer,
 and local packaging parity, retained in the current 1.1 release. Future
