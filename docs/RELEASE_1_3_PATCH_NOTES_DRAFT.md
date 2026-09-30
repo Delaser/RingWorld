@@ -2,8 +2,8 @@
 
 These notes describe changes since 1.2 for Minecraft 26.1–26.1.2, 26.2 and
 26.3 on Fabric and NeoForge. Every player-facing change below is included in
-each version's build. This remains a draft until the fresh six-file release
-suite passes and the owner confirms the visuals.
+each version's build. The six-file automated release checks now have complete
+fixture coverage; this remains a draft until the owner confirms the visuals.
 
 ## All supported Minecraft versions
 

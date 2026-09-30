@@ -18,9 +18,14 @@ there, and that exception must be recorded in the release documentation.
 
 The initial 29 September 1.3 release test run was cancelled after finding
 that several 26.3 rendering changes had not reached 26.1/26.2. Those changes
-are now ported. The owner authorized a fresh **full release suite** and six
-locally staged jars from the repaired source. Upload waits for owner visual
-confirmation. Earlier results cannot qualify the new jars.
+are now ported. Six local JARs from repaired source `f1b243af` are staged.
+Fresh quick qualification passes on all lines; 26.2 and 26.3 each have a
+monolithic 20/20 nightly PASS. The 26.1.x line has reviewed 60/60 composite
+fixture coverage, **not** a monolithic nightly PASS: an unsafe survival-mode
+test spawn and one Gradle report-directory failure were repaired by targeted
+runs on the same frozen JARs. Newer NeoForge loader startup/save/stop smokes
+pass on the staged JARs. Upload waits for owner visual confirmation. Earlier
+pre-parity results cannot qualify these jars.
 Track the cross-version implementation and remaining checks in
 [`docs/RELEASE_1_3_PARITY.md`](docs/RELEASE_1_3_PARITY.md).
 
@@ -30,19 +35,19 @@ validation, and remaining real-terrain/Atlas transition work.
 Follow-up material work adds 26.3 texture-derived wall colours and Atlas format
 10 water coverage (v4 metadata/tiles, still twelve bytes/cell). All six source
 build/test cells pass. A 26.3 dedicated pipeline-compile worker passed
-32-chunk Fabric and NeoForge cold launches, reloads and normal stops. Full
-frozen-candidate runtime qualification remains before claiming 1.3 launch readiness.
+32-chunk Fabric and NeoForge cold launches, reloads and normal stops. Final
+automated qualification is recorded above; owner visual review remains.
 The owner accepted the wall/water look in clear weather, rain and a temporary
 pink resource-pack comparison; that pack was removed. Wall GPU textures now
 reuse unchanged inputs, and complete client cache snapshots wait for quiet tile
 updates. The approved creation/in-world UI redesign is implemented in the
 development branch; see `docs/RELEASE_1_3_NOTES.md` for development evidence.
-The 26.3 frozen quick qualification passes both loaders on source `3016a4b`
-(`20260926T203515Z-6d299758f87d`); nightly and remaining-version runtime
-qualification are still outstanding. A targeted frozen production-render
+The earlier 26.3 frozen quick qualification passed both loaders on source `3016a4b`
+(`20260926T203515Z-6d299758f87d`). A targeted frozen production-render
 slice passes both 26.3 loaders (`20260926T210453Z-752830dc4ca0`), but its
 aggregate is intentionally INCOMPLETE because the other nightly fixtures were
-not selected.
+not selected. The later final-candidate evidence is in
+`deploy/qualified/1.3/README.md`.
 
 Latest release checkpoint: all six 1.2 jars are submitted to CurseForge and
 CDN hashes match; see `docs/RELEASE_1_2_PUBLICATION_2026-09-20.md`. Modrinth is deferred.

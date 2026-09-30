@@ -1,16 +1,18 @@
 # RingWorld 1.3 — unreleased rendering checkpoint
 
-**Current gate, 30 September:** the initial release tests were stopped before
-upload when the owner required every 1.3 fix, performance improvement and
-feature on all supported Minecraft 26.x versions and both loaders. The older
-rendering paths are now ported. A fresh full release suite and six local jars
-are authorized; upload waits for the owner's visual review. The 26.3-only
-verification below is historical evidence, not a qualification of the repaired
-six-jar release. The 26.3 resource-reload
-null sky-colour and asynchronous pipeline-worker failures are specific to its
-new renderer APIs; older versions use a primitive sky colour and do not have
-the affected `PipelineCache` class. The common visual result still requires
-verification on 26.1/26.2. No 1.3 file has been uploaded.
+**Current gate, 30 September:** the older rendering paths have been ported to
+all supported Minecraft 26.x versions and both loaders. Six JARs from the
+repaired source are staged. Fresh quick checks pass across all six release
+cells; 26.2 and 26.3 nightlies each pass 20/20, while 26.1–26.1.2 has reviewed
+60/60 composite fixture coverage after test-harness repairs, not a monolithic
+nightly PASS. The exact staged NeoForge JARs pass newer-loader server smokes.
+Upload waits for the owner's visual review. The detailed 26.3-only verification
+below is historical development evidence; final-candidate run IDs and hashes
+are in [the release record](../deploy/qualified/1.3/README.md). The 26.3
+resource-reload null sky-colour and asynchronous pipeline-worker failures are
+specific to its new renderer APIs; older versions use a primitive sky colour
+and do not have the affected `PipelineCache` class. The owner still needs to
+review the common visual result on 26.1/26.2. No 1.3 file has been uploaded.
 
 Owner accepted the terrain/wall flicker fixes and subsequent land/water
 transition appearance on 2026-09-26. Bank these
@@ -91,9 +93,9 @@ limits: 26.3 accepts only `26.3.0.7-beta`, 26.2 only `26.2.0.69`, and
 - Staging equivalence and package validation require the public loader range.
   Regression tests cover all three version lines and reject reintroduced caps,
   lowered minimums and widened Minecraft limits.
-- Test the current NeoForge builds before releasing 1.3 and inspect the final
-  packaged jars. Record tested versions separately from accepted version ranges.
-  At intake, the latest 26.3 loader is `26.3.0.33-beta`; it is not yet tested here.
+- Final packaged JARs were inspected and passed startup/save/normal-stop on
+  newer NeoForge loaders 26.1.2.112, 26.2.0.88 and 26.3.0.37-beta. These are
+  tested versions, not upper bounds on the accepted loader ranges.
 
 The existing 1.2 files remain unchanged. Fabric already has no loader upper cap.
 
@@ -109,13 +111,14 @@ publishable 1.3 candidates.
 
 ### Rendering and final qualification
 
-Review remaining geometry/material transition differences and qualify the
-final 1.3 candidate on every supported version and loader. Authored water
-identification is implemented. The depth, wall-filter, wall-palette, haze,
-water-transition and wall-upload fixes have been ported to the older source
-adapters, but older in-game rendering and resource-pack/reload parity are still
-unverified. The 26.3 null sky-colour and asynchronous pipeline starvation
-mechanisms do not exist in the 26.1/26.2 APIs. See
+The final 1.3 candidate has automated fixture coverage on every supported
+version and loader. Authored water identification is implemented. The depth,
+wall-filter, wall-palette, haze, water-transition and wall-upload fixes have
+been ported to the older source adapters; older production rendering and
+resource-pack/reload fixtures pass. Owner visual review of the geometry and
+material transition remains before upload. The 26.3 null sky-colour and
+asynchronous pipeline starvation mechanisms do not exist in the 26.1/26.2
+APIs. See
 [rendering design](RENDERING.md) for the implementation. No Distant Horizons
 code was copied.
 

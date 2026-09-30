@@ -1,14 +1,16 @@
 # Current state
 
-September 29 release gate: the owner cancelled the initial 1.3 release tests
-after finding that 26.3 rendering fixes had not been ported to 26.1/26.2.
-All fixes, performance improvements, and features now require player-facing
-parity on every supported 26.x line and both loaders. The older shader,
-wall-texture, material-colour and water-transition paths have been ported;
-runtime parity checks are underway. The owner has authorized a fresh full
-release suite and six locally staged jars, with visual confirmation before
-upload. Earlier qualification does not apply to the changed jars. No 1.3 jars
-have been uploaded. See
+September 30 release status: six 1.3 JARs are staged from the same repaired
+source commit. Fresh quick qualification passes across the three supported
+Minecraft lines and both loaders. The 26.2 and 26.3 full nightly matrices each
+pass 20/20; 26.1–26.1.2 has reviewed 60/60 composite fixture coverage, not a
+single uninterrupted nightly PASS. The exact staged NeoForge files start,
+save and stop on newer loaders for all three lines. The owner will visually
+review the release before upload; no 1.3 file has been published. This follows
+the September 29 gate, when the owner stopped release testing because 26.3
+rendering fixes were missing from 26.1/26.2. All fixes, performance
+improvements and features require player-facing parity on every supported
+26.x line and both loaders. See
 [the parity matrix](RELEASE_1_3_PARITY.md), [agent policy](../AGENTS.md) and
 [release preparation](../deploy/qualified/1.3/README.md).
 
