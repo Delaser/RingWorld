@@ -4,14 +4,14 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
-## Supported-version parity and release hold
+## Supported-version parity and release state
 
 Every fix, performance improvement, and feature in a release must work on **all
 supported Minecraft 26.x versions**, currently 26.1–26.1.2, 26.2, and 26.3,
 on both Fabric and NeoForge. Carry this rule forward as new 26.x versions are
 added. Version-specific source adapters may differ internally to accommodate
 Minecraft API changes; they must deliver equivalent player-facing behaviour.
-Do not describe a feature as shared or publish any 1.3 jar until its older-line
+Do not describe a feature as shared in a future release until its older-line
 implementations and both loaders are verified. A fix may be omitted from an
 older adapter only with evidence that the underlying failure cannot occur
 there, and that exception must be recorded in the release documentation.
@@ -24,19 +24,22 @@ monolithic 20/20 nightly PASS. The 26.1.x line has reviewed 60/60 composite
 fixture coverage, **not** a monolithic nightly PASS: an unsafe survival-mode
 test spawn and one Gradle report-directory failure were repaired by targeted
 runs on the same frozen JARs. Newer NeoForge loader startup/save/stop smokes
-pass on the staged JARs. Upload waits for owner visual confirmation. Earlier
-pre-parity results cannot qualify these jars.
+pass on the staged JARs. After the owner's 26.1.1 NeoForge visual check, all
+six were submitted to CurseForge and their CDN hashes matched; see
+[`docs/RELEASE_1_3_PUBLICATION_2026-09-30.md`](docs/RELEASE_1_3_PUBLICATION_2026-09-30.md).
+Earlier pre-parity results cannot qualify these jars.
 Track the cross-version implementation and remaining checks in
 [`docs/RELEASE_1_3_PARITY.md`](docs/RELEASE_1_3_PARITY.md).
 
-Unreleased 1.3 rendering checkpoint: owner accepted the 26.3 terrain-depth and
+The 1.3 rendering checkpoint: owner accepted the 26.3 terrain-depth and
 wall-filtering fixes on 2026-09-26. See `docs/RELEASE_1_3_NOTES.md` for scope,
 validation, and remaining real-terrain/Atlas transition work.
 Follow-up material work adds 26.3 texture-derived wall colours and Atlas format
 10 water coverage (v4 metadata/tiles, still twelve bytes/cell). All six source
 build/test cells pass. A 26.3 dedicated pipeline-compile worker passed
 32-chunk Fabric and NeoForge cold launches, reloads and normal stops. Final
-automated qualification is recorded above; owner visual review remains.
+automated qualification is recorded above. The 26.1.1 NeoForge owner visual
+review is complete; separate 26.2 visuals are not recorded.
 The owner accepted the wall/water look in clear weather, rain and a temporary
 pink resource-pack comparison; that pack was removed. Wall GPU textures now
 reuse unchanged inputs, and complete client cache snapshots wait for quiet tile
@@ -49,8 +52,8 @@ aggregate is intentionally INCOMPLETE because the other nightly fixtures were
 not selected. The later final-candidate evidence is in
 `deploy/qualified/1.3/README.md`.
 
-Latest release checkpoint: all six 1.2 jars are submitted to CurseForge and
-CDN hashes match; see `docs/RELEASE_1_2_PUBLICATION_2026-09-20.md`. Modrinth is deferred.
+Earlier release checkpoint: all six 1.2 jars were submitted to CurseForge and
+CDN hashes matched; see `docs/RELEASE_1_2_PUBLICATION_2026-09-20.md`. Modrinth is deferred.
 
 Latest qualification checkpoint: see
 [`docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md`](docs/QUALIFICATION_26_2_CHECKPOINT_2026-08-27.md).

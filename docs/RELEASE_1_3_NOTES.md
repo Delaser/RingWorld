@@ -1,22 +1,25 @@
-# RingWorld 1.3 — unreleased rendering checkpoint
+# RingWorld 1.3 — release checkpoint
 
-**Current gate, 30 September:** the older rendering paths have been ported to
+**Release state, 30 September:** the older rendering paths have been ported to
 all supported Minecraft 26.x versions and both loaders. Six JARs from the
-repaired source are staged. Fresh quick checks pass across all six release
+repaired source were staged and submitted to CurseForge after the owner's
+26.1.1 NeoForge visual check. All six CDN downloads match the staged hashes;
+see the [publication record](RELEASE_1_3_PUBLICATION_2026-09-30.md).
+Fresh quick checks pass across all six release
 cells; 26.2 and 26.3 nightlies each pass 20/20, while 26.1–26.1.2 has reviewed
 60/60 composite fixture coverage after test-harness repairs, not a monolithic
 nightly PASS. The exact staged NeoForge JARs pass newer-loader server smokes.
-Upload waits for the owner's visual review. The detailed 26.3-only verification
-below is historical development evidence; final-candidate run IDs and hashes
+The detailed 26.3-only verification below is historical development evidence;
+final-candidate run IDs and hashes
 are in [the release record](../deploy/qualified/1.3/README.md). The 26.3
 resource-reload null sky-colour and asynchronous pipeline-worker failures are
 specific to its new renderer APIs; older versions use a primitive sky colour
-and do not have the affected `PipelineCache` class. The owner still needs to
-review the common visual result on 26.1/26.2. No 1.3 file has been uploaded.
+and do not have the affected `PipelineCache` class. No separate owner visual
+review of 26.2 is recorded. No Modrinth file has been uploaded.
 
 Owner accepted the terrain/wall flicker fixes and subsequent land/water
-transition appearance on 2026-09-26. Bank these
-changes for 1.3; this checkpoint does not publish jars or change version numbers.
+transition appearance on 2026-09-26. That development checkpoint preceded
+the CurseForge publication recorded above.
 
 ## Changes accepted for 1.3
 

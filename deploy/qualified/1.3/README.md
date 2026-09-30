@@ -2,10 +2,12 @@
 
 Six local JARs are staged under `dist/qualified-release/final-1.3/` from
 source commit `f1b243af48f44452179f7a109877799584c8f47d`. They cover
-Minecraft 26.1–26.1.2, 26.2 and 26.3 on Fabric and NeoForge. CurseForge
-upload waits for the owner's visual confirmation. No 1.3 file has been
-uploaded. Modrinth, optional launcher bundles and saved-world upgrades are
-outside this release scope.
+Minecraft 26.1–26.1.2, 26.2 and 26.3 on Fabric and NeoForge. After the owner
+visually checked 26.1.1 NeoForge and authorized publication, all six 1.3 files
+were submitted to CurseForge on 30 September. Their CDN downloads match the
+staged hashes; see the [publication record](../../../docs/RELEASE_1_3_PUBLICATION_2026-09-30.md)
+for file IDs and review states. Modrinth, optional launcher bundles and
+saved-world upgrades are outside this release scope.
 
 All six staged JARs passed hash, staging-manifest, source-link and metadata
 checks. The Python release suite passed 439 tests with two expected platform
@@ -43,5 +45,5 @@ save and normal-stop smokes on newer official loaders: 26.1.2.112,
 The [parity record](../../../docs/RELEASE_1_3_PARITY.md) explains which
 changes were ported across version adapters. The
 [patch notes](../../../docs/RELEASE_1_3_PATCH_NOTES_DRAFT.md) and per-version
-changelogs describe changes since 1.2. After visual sign-off, check these
-same six hashes during CurseForge upload and verify the hosted downloads.
+changelogs describe changes since 1.2. The six hosted downloads were checked
+against these hashes after CurseForge submission.
