@@ -350,6 +350,11 @@ tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
 }
 
+if (rootProject.ext.ringUnifiedJarPrototype && rootProject.minecraft_version == '26.3') {
+    configurations.matching { it.name in ['compileClasspath', 'testCompileClasspath'] }
+            .configureEach { resolutionStrategy.force(rootProject.ext.ringUnifiedMixinCompileApi) }
+}
+
 tasks.named('test') {
     useJUnitPlatform()
 }

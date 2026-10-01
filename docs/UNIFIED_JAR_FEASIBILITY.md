@@ -3,10 +3,10 @@
 ## Decision
 
 A single physical RingWorld JAR for Fabric and NeoForge is **technically
-feasible and worth a bounded prototype**. It is not yet safer or simpler than
-the current two-artifact release, so separate loader JARs remain authoritative
-until the merged candidate passes both complete runtime pipelines and host
-installation tests.
+feasible**. Three current 1.3 prototypes pass both loaders' dedicated-server
+and automatic client-render checks. Production staging, complete qualification,
+settled visual comparisons and host installation checks remain open, so
+separate loader JARs remain the authoritative published release.
 
 “Unified” means one file containing both loader descriptors and both narrow
 adapter sets. It does not mean running Fabric and NeoForge in one process, and
@@ -14,7 +14,135 @@ it does not remove the loader-specific code. It would still be one JAR per
 Minecraft ABI line: the 26.1.x and 26.2 builds cannot be fused into one
 cross-version binary merely because each loader pair can be fused.
 
-## Current artifact evidence
+## 1.3 exploration — 2026-10-01
+
+The current target is **three exported files instead of six**: one each for
+26.1.x, 26.2, and 26.3, with Fabric and NeoForge sharing the exact same bytes
+within each line. Both intermediate loader builds remain useful; no new
+framework, bootstrap loader, or source restructuring is needed.
+
+Work is isolated on `codex/unified-jar-exploration`. All outputs are explicitly
+named `PROTOTYPE`; the published 1.3 artifacts and ordinary release validators
+remain unchanged.
+
+### Archive results
+
+The exact published 1.3 loader pairs for 26.1.x and 26.2 fuse directly. The
+published 26.3 pair fails the strict comparison on 42 shared Mixin classes.
+Their executable instructions and signatures match, but Fabric's compile API
+encodes several injection annotation members as arrays, while NeoForge's
+older API encodes them as scalar values. Silently selecting either set of
+classes would bypass the merger's safety contract.
+
+The opt-in `-PringUnifiedJarPrototype=true` flag instead pins **only compile
+classpaths** to `net.fabricmc:sponge-mixin:0.17.3+mixin.0.8.7` in both 26.3 build
+modules. The older lines and each loader's runtime Mixin remain unchanged.
+With this flag, both 26.3 builds pass their 451 tests each and all shared non-manifest entries are
+byte-identical. The existing strict merger then succeeds without modification.
+Its five archive-policy tests also pass.
+
+An additional comparison against published 26.3 finds no changed NeoForge
+class files and no added or removed files in either loader. Fabric differs only
+on the 42 annotation-bearing classes and its descriptor; NeoForge differs only
+on its descriptor. The fresh descriptors use the local build's default exact
+Minecraft predicates rather than the staged release's bounded predicates.
+
+| Minecraft line | Inputs | Unified SHA-256 | Archive |
+| --- | --- | --- | --- |
+| 26.1.x | Published 1.3 pair | `ac2907e4bdbf8d7159a50b717e3f19218fa18bce10f2a428a84f0d4b001a277f` | PASS |
+| 26.2 | Published 1.3 pair | `fc78770c9670cfdd7f9df6b4a18a2a82f0b24882f81abe284d99dce924a4f824` | PASS |
+| 26.3 | Fresh 1.3 source builds with common compile API | `9044e86dd8964af2da3f704b9ec89b1ce3287cb0bd526743be918e6fb6f5043b` | PASS |
+
+The first two prototypes contain 432 entries; the fresh 26.3 prototype has
+435. Each preserves Fabric's manifest, both loader descriptors/adapters, and
+the MPL licence. Fusion reports remain `release_acceptance: false`.
+
+### Runtime evidence
+
+All six dedicated-server checks pass. Runtime libraries were cloned from
+retained qualification installations into disposable directories; worlds were
+created fresh at 2,048×416 blocks, with Atlas pre-generation disabled. Each
+server loaded RingWorld, reached `Done`, ticked for 15 seconds, accepted
+`save-all flush` and `stop`, saved, and exited with code zero. Fabric has Fabric
+API installed; NeoForge's `mods/` contains only the unified RingWorld JAR.
+
+| Minecraft | Fabric server | NeoForge server | Fabric render client | NeoForge render client |
+| --- | --- | --- | --- | --- |
+| 26.1.2 | PASS | PASS | PASS (41 s) | PASS (58 s) |
+| 26.2 | PASS | PASS | PASS (144 s) | PASS (93 s) |
+| 26.3 | PASS | PASS | PASS (93 s) | PASS (117 s) |
+
+All six clients loaded the exact per-line prototype from `mods/`, rendered
+the complete Atlas, captured tangent, live/Atlas handoff and radial views,
+then saved and exited normally. Each installed JAR's SHA-256 matches its
+fusion report. Client NeoForge versions are the release build baselines:
+26.1.2.87, 26.2.0.69 and 26.3.0.7-beta. Fabric client versions match the
+server versions above. The copied source world was generated on 26.1.2;
+newer Minecraft clients performed their normal file-fix upgrade on their
+disposable copies. NeoForge also logged the expected missing Fabric data-pack
+warnings for the copied Fabric world. Neither prevented the captures or save.
+
+**Visual qualification remains open.** The first 26.3 NeoForge handoff capture
+was unusually grey and lacked nearby rendered chunks despite an automatic
+capture PASS. A control using the exact published NeoForge-only JAR rendered
+normal colours. A second run of the unchanged unified SHA above also rendered
+normal water/Atlas colours, but nearby chunk coverage still differed between
+captures. This does not establish a deterministic merge regression or visual
+parity. Cold-start/capture readiness is a candidate explanation, not a proven
+cause; compare matched, settled captures during full qualification. Control
+and repeat evidence are retained in `baseline-projection-client-smokes.json`
+and `recheck-projection-client-smokes.json` under the exploration root. The
+published control SHA is
+`9779daf3080132eafc45781ac7eadf1bff2136996b435e7e38324725476df83a`.
+
+These are bounded prototype checks, not full release qualification. The
+26.1.x artifact was exercised here on 26.1.2 only; 26.1 and 26.1.1 remain
+additional release cells. Dedicated NeoForge runtimes use 26.1.2.112,
+26.2.0.88, and 26.3.0.37-beta. Fabric uses 0.19.3 on the older lines and
+0.19.5 on 26.3. The 26.3 Fabric server passes with runtime Mixin 0.17.4,
+demonstrating that the common compile annotation API does not require a runtime
+downgrade.
+
+Evidence locations, relative to the repository root:
+
+- `dist/qualification/unified-1.3-exploration/artifacts/`: the three prototypes
+  and per-line fusion reports;
+- `dist/qualification/unified-1.3-exploration/26.3-build/`: both fresh builds,
+  test XML and reports;
+- `dist/backlog-runtime/unified-1.3-exploration/<line>/<loader>/`: exact installed
+  mod hashes, server logs and `development-smoke.json`;
+- `dist/qualification/unified-1.3-exploration/projection-client-smokes.json`:
+  all six successful commands, exact prototype hashes and elapsed times;
+- `dist/qualification/unified-1.3-exploration/`: local exact-JAR client launch
+  scripts, init scripts and client reports. The Atlas fixture ordinarily runs
+  source classes; its local init script selects the empty frozen runtime
+  source set and installs the retained prototype in `mods/` instead. The
+  projection profiles already select the empty runtime source set; their local
+  init script installs the exact JAR and caps this disposable client at 30 FPS.
+
+The initial 26.1.2 Fabric Atlas GUI run reached complete Atlas rendering and
+proved block-edit revisions, but hit the local 420-second process timeout
+during integrated-server disconnect. Its `client-smokes.json` records failure;
+it is **not** counted as a full Atlas GUI PASS. Rendering smokes instead open
+independent copies of that generated world, capture tangent, live/Atlas
+handoff and radial views, save and stop. The timeout and disposable launcher
+preparation corrections are separate from mod failures and do not replace
+release-suite gates.
+
+### Smallest production path
+
+The bounded archive/server/automatic render-client spike is complete. Production work
+remaining:
+
+1. Add an explicit universal artifact mode to staging/inspection, preserving
+   strict single-loader validation as the default. Export one fused file per
+   line and retain the intermediate loader files internally.
+2. Run the complete release suite against the merged hashes on both loaders,
+   including 26.1 and 26.1.1, resource reloads and multiplayer.
+3. Verify host installation and loader-specific Fabric API handling before
+   publishing. A smaller artifact count does not reduce runtime test coverage.
+
+## Historical artifact evidence — 2026-08-31
 
 The 2026-08-31 local 26.1.2 development outputs were compared entry by entry:
 
@@ -97,7 +225,8 @@ a reviewed or published artifact.
   mixins name only NeoForge adapters.
 - Loader-neutral code already lives in common source trees.
 - Platform classes use separate packages or distinct class names.
-- Current shared compiled output is byte-identical.
+- Shared compiled output is byte-identical in the retained prototypes; the
+  26.3 build needs the common annotation compile API described above.
 - Minecraft 26.1+ uses official runtime names, avoiding the historical need to
   merge differently remapped common classes.
 
@@ -127,9 +256,14 @@ The main risks are:
    stager, qualified-release stager, and package builder need an explicit
    universal mode—not relaxed ambiguity checks.
 5. Modrinth accepts multiple loader names on one version, but dependencies are
-   attached to the version. CurseForge's public file index models one loader
-   value. Both host applications therefore need an unlisted clean-install
-   experiment before one public record can be claimed.
+   attached to the version. CurseForge's upload API accepts arrays of version
+   tags and file-level project relations. Neither documented dependency object
+   provides a loader condition. Host application behavior therefore needs a
+   clean-install experiment before automatic Fabric API installation on only
+   Fabric can be claimed. The presence of a singular loader filter in a public
+   query API is not evidence that a file can have only one loader tag. See the
+   [CurseForge upload contract](https://support.curseforge.com/support/solutions/articles/9000197321-curseforge-upload-api)
+   and [Modrinth version contract](https://docs.modrinth.com/api/operations/createversion/).
 6. A merge plugin or ZIP overlay that silently resolves conflicts could ship
    loader-divergent common code. RingWorld needs a fail-closed merger.
 
