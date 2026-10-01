@@ -39,7 +39,22 @@ FIXTURE = "atlas-ui-revision"
 HANDSHAKE_FIXTURE = "client-handshake"
 PASS_MARKER = "[atlas-ui-test] PASS"
 FAIL_MARKER = "[atlas-ui-test] FAIL"
-CAPTURE_PREFIXES = tuple(f"atlas-ui-{index:02d}-" for index in range(1, 12))
+# Named pages distinguish the three captures sharing the historical 02 index.
+CAPTURE_PREFIXES = (
+    "atlas-ui-01-pause-menu",
+    "atlas-ui-02-map-initial",
+    "atlas-ui-02-display",
+    "atlas-ui-02-technical",
+    "atlas-ui-03-confirm-cost",
+    "atlas-ui-04-running",
+    "atlas-ui-05-progressive-world",
+    "atlas-ui-06-reopened",
+    "atlas-ui-07-paused",
+    "atlas-ui-08-resumed",
+    "atlas-ui-09-cancelled",
+    "atlas-ui-10-retry-confirm",
+    "atlas-ui-11-complete",
+)
 HANDSHAKE_MARKERS = (
     "[atlas-ui-test] client-ready",
     "[atlas-ui-test] settings-current-mapping-current",

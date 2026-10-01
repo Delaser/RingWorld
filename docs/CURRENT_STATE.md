@@ -1,9 +1,24 @@
 # Current state
 
+September 30 release status: six 1.3 JARs are staged from the same repaired
+source commit. Fresh quick qualification passes across the three supported
+Minecraft lines and both loaders. The 26.2 and 26.3 full nightly matrices each
+pass 20/20; 26.1–26.1.2 has reviewed 60/60 composite fixture coverage, not a
+single uninterrupted nightly PASS. The exact staged NeoForge files start,
+save and stop on newer loaders for all three lines. The owner will visually
+review the release before upload; no 1.3 file has been published. This follows
+the September 29 gate, when the owner stopped release testing because 26.3
+rendering fixes were missing from 26.1/26.2. All fixes, performance
+improvements and features require player-facing parity on every supported
+26.x line and both loaders. See
+[the parity matrix](RELEASE_1_3_PARITY.md), [agent policy](../AGENTS.md) and
+[release preparation](../deploy/qualified/1.3/README.md).
+
 September 29 issue #248: block outlines and mining overlays now include the
 same height-dependent tangent scale as curved terrain. The three version-owned
 client paths share one geometry calculation. The six source builds and tests
-pass; in-game visual review remains before release. See the
+pass; the owner accepted in-game review on 29 September and issue #248 is
+closed for the planned 1.3 release. Final candidate qualification is separate. See the
 [1.3 notes](RELEASE_1_3_NOTES.md).
 
 September 29 NeoForge compatibility: 1.3 release staging now removes the loader

@@ -1,8 +1,25 @@
-# RingWorld 1.3 — unreleased rendering checkpoint
+# RingWorld 1.3 — release checkpoint
+
+**Release state, 30 September:** the older rendering paths have been ported to
+all supported Minecraft 26.x versions and both loaders. Six JARs from the
+repaired source were staged and submitted to CurseForge after the owner's
+26.1.1 NeoForge visual check. All six CDN downloads match the staged hashes;
+see the [publication record](RELEASE_1_3_PUBLICATION_2026-09-30.md).
+Fresh quick checks pass across all six release
+cells; 26.2 and 26.3 nightlies each pass 20/20, while 26.1–26.1.2 has reviewed
+60/60 composite fixture coverage after test-harness repairs, not a monolithic
+nightly PASS. The exact staged NeoForge JARs pass newer-loader server smokes.
+The detailed 26.3-only verification below is historical development evidence;
+final-candidate run IDs and hashes
+are in [the release record](../deploy/qualified/1.3/README.md). The 26.3
+resource-reload null sky-colour and asynchronous pipeline-worker failures are
+specific to its new renderer APIs; older versions use a primitive sky colour
+and do not have the affected `PipelineCache` class. No separate owner visual
+review of 26.2 is recorded. No Modrinth file has been uploaded.
 
 Owner accepted the terrain/wall flicker fixes and subsequent land/water
-transition appearance on 2026-09-26. Bank these
-changes for 1.3; this checkpoint does not publish jars or change version numbers.
+transition appearance on 2026-09-26. That development checkpoint preceded
+the CurseForge publication recorded above.
 
 ## Changes accepted for 1.3
 
@@ -13,16 +30,20 @@ changes for 1.3; this checkpoint does not publish jars or change version numbers
   The fix is implemented on all three supported Minecraft source versions;
   all six loader/version builds and tests pass. The geometry test compares
   the transform with the terrain embedding at Y=-60, 64 and 100 on 2,048- and
-  16,384-block rings. In-game screenshot review at deep and high elevations
-  is still pending.
+  16,384-block rings. On 29 September the owner accepted the in-game outline
+  review, including the elevated platform check, and issue #248 was closed
+  with notice that the fix ships in 1.3. This is owner review, not a new
+  automated deep/high screenshot assertion.
 - Fixed distant terrain polygons flashing over one another as the camera moves,
-  including the red castle and white mountaintops. The 26.3 Atlas shader now
+  including the red castle and white mountaintops. First accepted on 26.3, the
+  Atlas shader now
   reconstructs fragment depth and continuously orders distant geometry starting
   at the actual projection clamp. This removes the formerly flat depth band
   between roughly 672 and 1024 blocks in the tested view.
 - Reduced distant wall-pattern shimmer with filtered mipmaps. Wall faces stay
   separate at every mip level, circumference sampling wraps cleanly, and decay
-  holes do not darken the averaged wall colours. Active in the 26.3 renderer.
+  holes do not darken the averaged wall colours. First tested in the 26.3
+  renderer; the same policy is now ported to the older source adapters.
 - Fixed a 26.3 resource-reload crash where sky rendering could use a missing
   cached sky colour immediately after renderer recreation.
 - Replaced irregular live-terrain fade speckle with fixed ordered coverage.
@@ -75,9 +96,9 @@ limits: 26.3 accepts only `26.3.0.7-beta`, 26.2 only `26.2.0.69`, and
 - Staging equivalence and package validation require the public loader range.
   Regression tests cover all three version lines and reject reintroduced caps,
   lowered minimums and widened Minecraft limits.
-- Test the current NeoForge builds before releasing 1.3 and inspect the final
-  packaged jars. Record tested versions separately from accepted version ranges.
-  At intake, the latest 26.3 loader is `26.3.0.33-beta`; it is not yet tested here.
+- Final packaged JARs were inspected and passed startup/save/normal-stop on
+  newer NeoForge loaders 26.1.2.112, 26.2.0.88 and 26.3.0.37-beta. These are
+  tested versions, not upper bounds on the accepted loader ranges.
 
 The existing 1.2 files remain unchanged. Fabric already has no loader upper cap.
 
@@ -93,12 +114,16 @@ publishable 1.3 candidates.
 
 ### Rendering and final qualification
 
-Review remaining geometry/material transition differences and qualify the
-final 1.3 candidate on the supported loaders and versions. Authored water
-identification is now implemented; see the follow-up below. The 26.3 depth,
-reload, and wall-filter changes have not been claimed as tested on older
-versions or on NeoForge. See [rendering design](RENDERING.md) for the current
-implementation. No Distant Horizons code was copied.
+The final 1.3 candidate has automated fixture coverage on every supported
+version and loader. Authored water identification is implemented. The depth,
+wall-filter, wall-palette, haze, water-transition and wall-upload fixes have
+been ported to the older source adapters; older production rendering and
+resource-pack/reload fixtures pass. Owner visual review of the geometry and
+material transition remains before upload. The 26.3 null sky-colour and
+asynchronous pipeline starvation mechanisms do not exist in the 26.1/26.2
+APIs. See
+[rendering design](RENDERING.md) for the implementation. No Distant Horizons
+code was copied.
 
 ## World-creation and in-world UI redesign (27 September)
 
@@ -246,5 +271,5 @@ geometry and continuous compositing are deferred by the plan's comparison gate.
 The remaining boundary is not claimed invisible. Details, measurements and
 limits are in `TRANSITION_IMPROVEMENT_PLAN_1_3.md`; local evidence is retained in
 `logs/transition-plan-execution/`. Owner visual review and 26.3 frozen quick
-qualification passed. The full nightly matrix, remaining supported-version
-qualification, and the planned Astra UI design pass remain before publication.
+qualification passed. The UI redesign is implemented and reviewed. Final candidate qualification
+and release staging remain separate from these earlier development results.

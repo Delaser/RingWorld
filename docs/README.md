@@ -6,6 +6,9 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [1.3 supported-version parity and release hold](RELEASE_1_3_PARITY.md):
+  required 26.x/Fabric/NeoForge behaviour, port status and remaining checks.
+
 - [Implemented RingWorld UI captures](media/ring-generation-ui-implemented/index.html):
   actual 26.3 Fabric creation and in-world screens for the approved 1.3 redesign.
 - [Ring generation UI proposal](design/ring-generation-ui-proposal/index.html):

@@ -108,6 +108,11 @@ float ring_dither_threshold(vec2 pixel) {
     return (float(rank) + 0.5) / 64.0;
 }
 
+bool ring_water_sprite(vec2 uv, vec4 bounds) {
+    return bounds.x < bounds.z && bounds.y < bounds.w
+        && all(greaterThanEqual(uv, bounds.xy)) && all(lessThanEqual(uv, bounds.zw));
+}
+
 void main() {
     vec4 color = (UseRgss == 1
             ? sampleRGSS(Sampler0, texCoord0, 1.0f / TextureSize)
@@ -120,6 +125,16 @@ void main() {
 #endif
 
     if (ring_active() && ringIntrinsicDistance >= 0.0) {
+        if (ring_water_sprite(texCoord0, RingWorldWaterStill)
+                || ring_water_sprite(texCoord0, RingWorldWaterFlow)) {
+            float waterMatch = smootherstep(RingWorldHandoff.z, RingWorldHandoff.x,
+                                            ringIntrinsicDistance);
+            color.a = mix(color.a, 1.0, waterMatch);
+            vec3 atlasWater = vertexColor.rgb * 0.58;
+            float waterPeak = max(atlasWater.r, max(atlasWater.g, atlasWater.b));
+            atlasWater = mix(atlasWater, vec3(waterPeak), 0.12) * 1.15;
+            color.rgb = mix(color.rgb, atlasWater, waterMatch);
+        }
         float proxyReveal = smootherstep(
             RingWorldHandoff.x,
             RingWorldHandoff.y,
@@ -130,18 +145,14 @@ void main() {
         }
     }
 
-    fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance,
-        FogEnvironmentalStart, FogEnvironmentalEnd,
-        FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
     if (ring_active() && ringIntrinsicDistance >= 0.0) {
-        // Ease the live surface toward the Atlas atmosphere before discarding
-        // geometry. Preserve real texture, face lighting and environmental fog.
-        float matchWeight = ring_handoff_smootherstep(
-            RingWorldDetail.x, RingWorldHandoff.x, ringIntrinsicDistance);
-        vec4 matched = vec4(mix(ring_handoff_edge_color(), color.rgb,
-                               ring_handoff_reveal(ringIntrinsicDistance)), color.a);
-        matched = apply_fog(matched, sphericalVertexDistance, cylindricalVertexDistance,
+        color.rgb = mix(ring_handoff_edge_color(), color.rgb,
+                        ring_handoff_reveal(ringIntrinsicDistance));
+        fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance,
             FogEnvironmentalStart, FogEnvironmentalEnd, 1.0e20, 1.0e21, FogColor);
-        fragColor = mix(fragColor, matched, matchWeight);
+    } else {
+        fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance,
+            FogEnvironmentalStart, FogEnvironmentalEnd,
+            FogRenderDistanceStart, FogRenderDistanceEnd, FogColor);
     }
 }

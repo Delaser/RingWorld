@@ -1,5 +1,17 @@
 # Testing
 
+## 1.3 release hold and version parity
+
+The initial 29 September release test run was cancelled after a 26.3-only
+rendering gap was found. Do not resume that run or reuse its results for changed
+jars. The owner authorized a fresh full release suite and six staged jars from
+the repaired source, with visual confirmation before upload.
+Every 1.3 fix, performance improvement and feature must be checked on every
+supported 26.x line (26.1–26.1.2, 26.2, 26.3) and both loaders before release.
+Development compile/unit/shader checks established the port; fresh complete
+release qualification now follows from one fixed source revision. See
+[release preparation](../deploy/qualified/1.3/README.md).
+
 ## Live client LOD command
 
 `/ringworld lod low|medium|high` selects local display quality.
