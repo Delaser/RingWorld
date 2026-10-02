@@ -72,9 +72,9 @@
     "metadataPath": "gradle/verification-metadata.xml",
     "verifyMetadata": true,
     "verifySignatures": false,
-    "componentCount": 371,
-    "artifactCount": 752,
-    "sha256PinCount": 752,
+    "componentCount": 373,
+    "artifactCount": 760,
+    "sha256PinCount": 760,
     "requiredArtifacts": [
       {
         "group": "net.fabricmc",

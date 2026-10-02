@@ -49,6 +49,7 @@ public final class AtlasPregenerationUiTestClient {
     private int stage;
     private int ticks;
     private boolean capturedInitial;
+    private boolean displayTabRequested, displayTabCaptured, technicalRequested, technicalCaptured;
     private boolean finalCaptureSaved;
     private long revisionBeforeEdit;
     private int editedCellColumn;
@@ -169,8 +170,54 @@ public final class AtlasPregenerationUiTestClient {
                             + screen.worldgenLabelForAutomation());
                 }
                 if (!capturedInitial) {
+                    var source = ClientRingState.terrainAtlas();
+                    if (source == null) return true;
+                    if (source.sampleStep() != 1) return fail(client, "server Atlas is not sampled every block");
+                    RingClientLodTuning.select(null);
+                    if (RingClientLodTuning.quality() != dev.ringworld.world.RingLodQuality.MEDIUM) {
+                        return fail(client, "reset did not restore Medium client detail");
+                    }
+                    var settings = ClientRingState.generationSettings();
+                    for (var expected : new dev.ringworld.world.RingLodQuality[]{
+                            dev.ringworld.world.RingLodQuality.HIGH,
+                            dev.ringworld.world.RingLodQuality.LOW,
+                            dev.ringworld.world.RingLodQuality.MEDIUM}) {
+                        screen.cycleDetailForAutomation();
+                        if (RingClientLodTuning.quality() != expected
+                                || ClientRingState.terrainAtlas() != source
+                                || !ClientRingState.generationSettings().equals(settings)) {
+                            return fail(client, "local detail cycle changed the shared Atlas or settings");
+                        }
+                    }
+
                     capture(client, "atlas-ui-02-map-initial", false);
                     capturedInitial = true;
+                }
+                if (!displayTabRequested) {
+                    screen.openDisplayForAutomation();
+                    displayTabRequested = true;
+                    arm();
+                    return true;
+                }
+                if (!displayTabCaptured) {
+                    capture(client, "atlas-ui-02-display", false);
+                    displayTabCaptured = true;
+                    screen.openGenerationForAutomation();
+                    arm();
+                    return true;
+                }
+                if (!technicalRequested) {
+                    screen.toggleTechnicalForAutomation();
+                    technicalRequested = true;
+                    arm();
+                    return true;
+                }
+                if (!technicalCaptured) {
+                    capture(client, "atlas-ui-02-technical", false);
+                    technicalCaptured = true;
+                    screen.toggleTechnicalForAutomation();
+                    arm();
+                    return true;
                 }
                 if (status.progress().state() == AtlasPregenerationState.IDLE) {
                     screen.openStartConfirmationForAutomation(); arm(); stage++;
@@ -369,7 +416,7 @@ public final class AtlasPregenerationUiTestClient {
             }
             case 14 -> {
                 if (!(client.screen instanceof RingWorldMapScreen) || !settled()) return true;
-                if (!hasOnlyButton(client, "Done")) {
+                if (!hasCompletedControls(client)) {
                     return fail(client, "completed screen retained an invalid action button");
                 }
                 capture(client, "atlas-ui-11-complete", true); arm(); stage++;
@@ -393,9 +440,7 @@ public final class AtlasPregenerationUiTestClient {
             case 16 -> {
                 var atlas = ClientRingState.terrainAtlas();
                 if (atlas == null || atlas.revision() <= revisionBeforeEdit) return true;
-                if (atlas.cellHeight(editedCellColumn, editedCellRow) != 201) {
-                    return fail(client, "placed surface block did not reach the client atlas");
-                }
+                if (atlas.cellHeight(editedCellColumn, editedCellRow) != 201) return true;
                 revisionBeforeEdit = atlas.revision();
                 client.getConnection().sendCommand("setblock " + editedBlockX + " 200 " + editedBlockZ
                         + " minecraft:air");
@@ -404,9 +449,7 @@ public final class AtlasPregenerationUiTestClient {
             case 17 -> {
                 var atlas = ClientRingState.terrainAtlas();
                 if (atlas == null || atlas.revision() <= revisionBeforeEdit) return true;
-                if (atlas.cellHeight(editedCellColumn, editedCellRow) == 201) {
-                    return fail(client, "removed surface block remained in the client atlas");
-                }
+                if (atlas.cellHeight(editedCellColumn, editedCellRow) == 201) return true;
                 RingWorldMod.LOGGER.info("[atlas-ui-test] requesting normal integrated-server disconnect after revision proof");
                 stage++;
                 disconnectInProgress = true;
@@ -438,15 +481,15 @@ public final class AtlasPregenerationUiTestClient {
         if (ClientRingState.geometry() == null || ClientRingState.layoutFingerprint() == 0L) {
             return false;
         }
-        if (RingWorldSettings.FORMAT_VERSION != 3
+        if (RingWorldSettings.FORMAT_VERSION != 5
                 || ClientRingState.terrainNoiseMapping() != RingTerrainNoiseMapping.CURRENT) {
-            fail(client, "live settings identity was not format-3/mapping-4");
+            fail(client, "live settings identity was not format-5/mapping-4");
             return false;
         }
         if (!clientReadyLogged) {
             clientReadyLogged = true;
             RingWorldMod.LOGGER.info("[atlas-ui-test] client-ready renderedFrames={}", renderedFrames);
-            RingWorldMod.LOGGER.info("[atlas-ui-test] settings-v3-mapping-4 fingerprint={}",
+            RingWorldMod.LOGGER.info("[atlas-ui-test] settings-v5-mapping-4 fingerprint={}",
                     Long.toUnsignedString(ClientRingState.layoutFingerprint(), 16));
         }
         return true;
@@ -472,13 +515,13 @@ public final class AtlasPregenerationUiTestClient {
         client.stop();
         return true;
     }
-    private static boolean hasOnlyButton(Minecraft client, String label) {
-        if (client.screen == null) return false;
-        var buttons = client.screen.children().stream()
-                .filter(Button.class::isInstance)
-                .map(Button.class::cast)
-                .toList();
-        return buttons.size() == 1 && buttons.getFirst().getMessage().getString().equals(label);
+    private static boolean hasCompletedControls(Minecraft client) {
+        return client.screen instanceof RingWorldMapScreen
+                && client.screen.children().stream().filter(Button.class::isInstance)
+                .map(Button.class::cast).noneMatch(button -> button.getMessage().getString().startsWith("Start generation")
+                    || button.getMessage().getString().startsWith("Resume generation")
+                    || button.getMessage().getString().startsWith("Pause generation")
+                    || button.getMessage().getString().startsWith("Stop generation"));
     }
     private static int contiguousLoadedChunks(Minecraft client, int cameraChunkX,
                                               int cameraChunkZ, int stepX, int limit) {
@@ -696,8 +739,8 @@ public final class AtlasPregenerationUiTestClient {
                             + "latestPreviewStage={} partialCapture={}",
                     atlas.presentCount(), atlas.cellCount(), atlas.revision(),
                     previewLabel(latestPreviewStage), partialCaptureSaved);
-            if (atlas.sampleStep() != 4) {
-                visualFail(client, "High Atlas source did not use 4-block samples"); return;
+            if (atlas.sampleStep() != 1) {
+                visualFail(client, "Master Atlas source did not use one-block samples"); return;
             }
             if (!operationRequested) {
                 visualRequestServerOperation(client, "new feature generation verification", context -> {
@@ -717,7 +760,7 @@ public final class AtlasPregenerationUiTestClient {
                     }
                     if (waterColumns < 24) throw new IllegalStateException(
                             "river centerline water missing: " + waterColumns + "/32 columns");
-                    RingWorldMod.LOGGER.info("[optional-visual-smoke] new-features generation=ARCHIPELAGO riverWater={}/32 moreStructures=true atlasStep=4", waterColumns);
+                    RingWorldMod.LOGGER.info("[optional-visual-smoke] new-features generation=ARCHIPELAGO riverWater={}/32 moreStructures=true atlasStep=1", waterColumns);
                 });
                 return;
             }

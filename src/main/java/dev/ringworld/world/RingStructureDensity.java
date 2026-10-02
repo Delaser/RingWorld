@@ -34,6 +34,27 @@ public final class RingStructureDensity {
                 && chunkZ >= minZ && chunkZ <= maxZ;
     }
 
+    /** Periodic X and finite Z have independent locate extents. */
+    public static SearchBounds searchBounds(RingGeometry geometry, int originChunkX, int originChunkZ,
+                                            int searchRadius, int spacing) {
+        if (searchRadius < 0 || spacing <= 0) throw new IllegalArgumentException("invalid locate range");
+        long radius = ((long) searchRadius + 1L) * spacing;
+        int circumference = geometry.circumferenceChunks();
+        long periodicRadius = Math.min(circumference / 2L, radius);
+        int count = (int) Math.min(circumference, 2L * periodicRadius + 1L);
+        int start = (int) Math.floorMod((long) originChunkX - periodicRadius, circumference);
+        int minZ = (int) Math.max(geometry.minChunkZ(), Math.min(Integer.MAX_VALUE, (long) originChunkZ - radius));
+        int maxZ = (int) Math.min(geometry.maxChunkZ(), Math.max(Integer.MIN_VALUE, (long) originChunkZ + radius));
+        return new SearchBounds(start, count, circumference, minZ, maxZ);
+    }
+
+    public record SearchBounds(int startX, int countX, int circumferenceChunks, int minZ, int maxZ) {
+        public int canonicalX(int offset) {
+            if (offset < 0 || offset >= countX) throw new IndexOutOfBoundsException(offset);
+            return (int) (((long) startX + offset) % circumferenceChunks);
+        }
+    }
+
     private static long mix(long value) {
         value ^= value >>> 30;
         value *= 0xBF58476D1CE4E5B9L;

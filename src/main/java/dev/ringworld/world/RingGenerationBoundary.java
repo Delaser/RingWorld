@@ -212,15 +212,7 @@ public final class RingGenerationBoundary {
     }
 
     static int legacyMaterialRoll(int x, int y, int z) {
-        long hash = (long)x * 0x9E3779B97F4A7C15L
-                ^ (long)y * 0xC2B2AE3D27D4EB4FL
-                ^ (long)z * 0x165667B19E3779F9L;
-        hash ^= hash >>> 30;
-        hash *= 0xBF58476D1CE4E5B9L;
-        hash ^= hash >>> 27;
-        // The Weathered palette maps 55 to mossy cobble and 0 to cobble.
-        // Retaining this exact coordinate hash preserves format-1--3 rims.
-        return Long.remainderUnsigned(hash, 10L) < 3L ? 55 : 0;
+        return RingWallPattern.legacyMaterialRoll(x, y, z);
     }
 
     private static net.minecraft.world.level.block.state.BlockState texturedRimBlock(

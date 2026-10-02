@@ -3,31 +3,27 @@ package dev.ringworld.client;
 import com.mojang.blaze3d.platform.NativeImage;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingGeometry;
-import dev.ringworld.world.RingPreviewRequestGate;
 import dev.ringworld.world.RingSurfaceLod;
 import dev.ringworld.world.RingTerrainNoiseMapping;
 import dev.ringworld.world.RingTerrainPreview;
 import dev.ringworld.world.RingTerrainPreviewSampler;
 import dev.ringworld.world.RingTerrainPreviewStage;
+import dev.ringworld.world.RingPreviewRequestGate;
 import dev.ringworld.world.RingWorldGeneratorAccess;
 import dev.ringworld.world.RingWorldGenerationSettings;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
+import net.minecraft.core.Holder;
+import net.minecraft.core.RegistryAccess;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationContext;
 import net.minecraft.client.renderer.texture.DynamicTexture;
-import net.minecraft.core.Holder;
-import net.minecraft.core.RegistryAccess;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.util.FastColor;
-import net.minecraft.world.level.LevelHeightAccessor;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.level.biome.BiomeSource;
+import net.minecraft.world.level.LevelHeightAccessor;
 import net.minecraft.world.level.chunk.ChunkGenerator;
 import net.minecraft.world.level.dimension.LevelStem;
 import net.minecraft.world.level.levelgen.NoiseBasedChunkGenerator;
@@ -35,7 +31,13 @@ import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
 import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.world.level.levelgen.WorldOptions;
 
-/** Fast, chunk-free preview of the pending seed wrapped across the whole ring. */
+import org.jetbrains.annotations.Nullable;
+import net.minecraft.util.FastColor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+
+/** Fast, chunk-free preview of the selected seed wrapped across the whole ring. */
 public final class RingSeedPreviewScreen extends Screen {
     private static final int PANEL_COLOR = 0xE0101116;
     private static final int BORDER_COLOR = 0xFF606872;
@@ -49,12 +51,15 @@ public final class RingSeedPreviewScreen extends Screen {
         return thread;
     });
 
-    private final RingWorldCreationScreen parent;
+    private final Screen parent;
+    private final @Nullable RingWorldEditorScreen editor;
+    private int windowStartBlock;
     private final RingWorldCreationScreen.LayoutButtonOwner owner;
     private final RingGeometry geometry;
     private final RingWorldGenerationSettings generationSettings;
     private final RingPreviewRequestGate<Result> requests = new RingPreviewRequestGate<>();
     private EditBox seedField;
+    private Button useSeedButton;
     private Future<?> running;
     private long request;
     private int debounceTicks;
@@ -70,40 +75,108 @@ public final class RingSeedPreviewScreen extends Screen {
                                  RingWorldGenerationSettings generationSettings) {
         super(Component.literal("Ring seed preview"));
         this.parent = parent;
+        this.editor = null;
         this.owner = owner;
         this.geometry = geometry;
         this.generationSettings = generationSettings;
+    }
+
+    public RingSeedPreviewScreen(RingWorldEditorScreen parent,
+                                 RingWorldCreationScreen.LayoutButtonOwner owner,
+                                 RingGeometry geometry,
+                                 RingWorldGenerationSettings generationSettings) {
+        super(Component.literal("Ring seed preview"));
+        this.parent = parent;
+        this.editor = parent;
+        this.owner = owner;
+        this.geometry = geometry;
+        this.generationSettings = generationSettings;
+        this.windowStartBlock = geometry.circumferenceBlocks() / 3;
     }
 
     @Override
     protected void init() {
         int panelWidth = Math.min(620, Math.max(304, width - 16));
         int left = (width - panelWidth) / 2;
-        seedField = new EditBox(font, left + 8, 53, panelWidth - 112, 20,
+        seedField = new EditBox(font, left + 8, editor == null ? 53 : 60,
+                panelWidth - (editor == null ? 112 : 148), 20,
                 Component.literal("Seed"));
         seedField.setMaxLength(64);
-        seedField.setValue(owner.ringworld$seedText());
+        seedField.setValue(editor == null ? owner.ringworld$seedText() : editor.draftSeed());
         seedField.setResponder(value -> {
-            owner.ringworld$setSeedText(value);
+            if (editor == null) owner.ringworld$setSeedText(value);
+            else editor.setDraftSeed(value);
             schedule();
         });
         addRenderableWidget(seedField);
-        addRenderableWidget(Button.builder(Component.literal("Reroll"), button ->
-                seedField.setValue(Long.toString(WorldOptions.randomSeed())))
-                .bounds(left + panelWidth - 98, 53, 90, 20).build());
-        addRenderableWidget(Button.builder(Component.literal("Done"), button -> onClose())
-                .bounds(width / 2 - 100, height - 30, 200, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("Reroll"), button -> {
+            seedField.setValue(Long.toString(WorldOptions.randomSeed()));
+        }).bounds(left + panelWidth - (editor == null ? 98 : 136),
+                editor == null ? 53 : 60, editor == null ? 90 : 62, 20).build());
+        if (editor != null) {
+            useSeedButton = addRenderableWidget(Button.builder(Component.literal("Use"), button ->
+                    editor.useDraftSeed()).bounds(left + panelWidth - 70, 60, 62, 20).build());
+        }
+        if (editor == null) {
+            addRenderableWidget(Button.builder(Component.literal("Done"), button -> onClose())
+                    .bounds(width / 2 - 100, height - 30, 200, 20).build());
+        } else {
+            String[] tabs = {"Ring", "Terrain", "Walls", "Sky", "Preview"};
+            int tabWidth = Math.max(50, (panelWidth - 16) / 5);
+            for (int index = 0; index < tabs.length; index++) {
+                String tab = tabs[index];
+                addRenderableWidget(Button.builder(Component.literal(tab + (index == 4 ? " *" : "")),
+                        button -> { if (indexOfTab(tab) < 4) editor.openTab(tab); })
+                        .bounds(left + 8 + index * tabWidth, 28, tabWidth - 2, 20).build());
+            }
+            int buttons = (panelWidth - 16 - 8) / 3;
+            addRenderableWidget(Button.builder(Component.literal("Back"), button -> onClose())
+                    .bounds(left + 8, height - 30, buttons, 20).build());
+            addRenderableWidget(Button.builder(Component.literal("Cancel"), button -> editor.cancelFromPreview())
+                    .bounds(left + 12 + buttons, height - 30, buttons, 20).build());
+            addRenderableWidget(Button.builder(Component.literal("Apply settings"), button -> editor.applyFromPreview())
+                    .bounds(left + 16 + buttons * 2, height - 30, buttons, 20).build());
+            int panY = Math.min(height - 72, 95 + Math.max(48, Math.min(160, height - 38 - 95 - 48)) + 6);
+            addRenderableWidget(Button.builder(Component.literal("<"), button -> pan(-1))
+                    .bounds(left + panelWidth - 54, panY, 20, 20).build());
+            addRenderableWidget(Button.builder(Component.literal(">"), button -> pan(1))
+                    .bounds(left + panelWidth - 32, panY, 20, 20).build());
+        }
+        if (editor != null) {
+            int mapWidth = panelWidth - 16;
+            int mapHeight = Math.max(48, Math.min(160, height - 38 - 95 - 48));
+            windowStartBlock = Math.min(windowStartBlock,
+                    Math.max(0, geometry.circumferenceBlocks() - zoomBlocks(mapWidth, mapHeight)));
+        }
         schedule();
+    }
+
+    private static int indexOfTab(String name) {
+        return java.util.List.of("Ring", "Terrain", "Walls", "Sky", "Preview").indexOf(name);
+    }
+
+    private int zoomBlocks(int mapWidth, int mapHeight) {
+        if (editor == null) return geometry.circumferenceBlocks();
+        int aspectFit = (int)Math.ceil((double)geometry.widthBlocks() * mapWidth
+                / Math.max(1, mapHeight));
+        return Math.min(geometry.circumferenceBlocks(), Math.max(512, aspectFit));
+    }
+
+    private void pan(int direction) {
+        int mapWidth = Math.min(620, Math.max(304, width - 16)) - 16;
+        int mapHeight = Math.max(48, Math.min(160, height - 38 - 95 - 48));
+        int span = zoomBlocks(mapWidth, mapHeight);
+        int limit = Math.max(0, geometry.circumferenceBlocks() - span);
+        windowStartBlock = Math.max(0, Math.min(limit, windowStartBlock + direction * Math.max(1, span / 2)));
     }
 
     private void schedule() {
         request = requests.begin();
         debounceTicks = 5;
         error = "";
-        state = "Preparing…";
+        state = texture == null ? "Preparing…" : "Updating…";
         if (running != null && !running.isDone()) {
-            running.cancel(true);
-            automationCancellations++;
+            if (running.cancel(true)) automationCancellations++;
         }
     }
 
@@ -124,9 +197,7 @@ public final class RingSeedPreviewScreen extends Screen {
 
     private void startPreview() {
         long previewRequest = request;
-        long seed = owner.ringworld$resolvedSeed();
-        // WorldCreationContext is consulted only on the client thread. The
-        // worker receives immutable registry holders and primitive dimensions.
+        long seed = editor == null ? owner.ringworld$resolvedSeed() : editor.resolvedDraftSeed();
         PreviewInput input = snapshot(owner.ringworld$creationContext());
         state = "Generating from seed " + seed + "…";
         running = WORKER.submit(() -> {
@@ -235,7 +306,9 @@ public final class RingSeedPreviewScreen extends Screen {
     @Override
     public void removed() {
         requests.begin();
-        if (running != null) running.cancel(true);
+        if (running != null && !running.isDone()) {
+            if (running.cancel(true)) automationCancellations++;
+        }
         releaseTexture();
         super.removed();
     }
@@ -246,8 +319,8 @@ public final class RingSeedPreviewScreen extends Screen {
     }
 
     @Override
-    public void render(GuiGraphics graphics, int mouseX, int mouseY, float deltaTicks) {
-        renderBackground(graphics, mouseX, mouseY, deltaTicks);
+    public void render(GuiGraphics graphics, int mouseX, int mouseY,
+                                   float deltaTicks) {
         int panelWidth = Math.min(620, Math.max(304, width - 16));
         int left = (width - panelWidth) / 2;
         int top = 12;
@@ -255,40 +328,70 @@ public final class RingSeedPreviewScreen extends Screen {
         graphics.fill(left, top, left + panelWidth, bottom, PANEL_COLOR);
         graphics.renderOutline(left, top, panelWidth, bottom - top, BORDER_COLOR);
         super.render(graphics, mouseX, mouseY, deltaTicks);
-        graphics.drawCenteredString(font, title, width / 2, top + 10, 0xFFFFFFFF);
-        graphics.drawString(font, Component.literal("Seed"), left + 8, 41, LABEL_COLOR);
+        graphics.drawCenteredString(font, title, width / 2, editor == null ? top + 10 : 13,
+                0xFFFFFFFF);
+        graphics.drawString(font, Component.literal("Seed"), left + 8,
+                editor == null ? 41 : 50, LABEL_COLOR);
+        if (editor != null) {
+            String applied = editor.selectedSeed().isBlank() ? "(random)" : editor.selectedSeed();
+            String label = "Applied seed: " + applied;
+            if (font.width(label) > panelWidth - 16)
+                label = font.plainSubstrByWidth(label, panelWidth - 32) + "…";
+            graphics.drawString(font, Component.literal(label), left + 8, 83, LABEL_COLOR);
+        }
 
         int mapLeft = left + 8;
         int mapRight = left + panelWidth - 8;
-        int mapTop = 88;
+        int mapTop = editor == null ? 88 : 95;
         int mapHeight = Math.max(48, Math.min(160, bottom - mapTop - 48));
         graphics.fill(mapLeft - 1, mapTop - 1, mapRight + 1, mapTop + mapHeight + 1,
                 0xFF343A42);
         graphics.fill(mapLeft, mapTop, mapRight, mapTop + mapHeight, 0xFF20242A);
         if (texture != null) {
-            int textureWidth = mapRight - mapLeft;
-            int textureHeight = Math.max(1, Math.min(mapHeight, (int)Math.round(
-                    textureWidth * (double)geometry.widthBlocks()
-                            / geometry.circumferenceBlocks())));
-            int textureTop = mapTop + (mapHeight - textureHeight) / 2;
-            graphics.blit(TEXTURE, mapLeft, textureTop, 0, 0.0F, 0.0F,
-                    textureWidth, textureHeight, previewColumns(), previewRows());
+            int zoomBlocks = zoomBlocks(mapRight - mapLeft, mapHeight);
+            double fraction = editor == null ? 1.0 : (double)zoomBlocks / geometry.circumferenceBlocks();
+            int shownHeight = editor == null
+                    ? Math.max(1, Math.min(mapHeight, (int)Math.round(
+                            (mapRight - mapLeft) * (double)geometry.widthBlocks()
+                                    / geometry.circumferenceBlocks())))
+                    : Math.max(1, Math.min(mapHeight, (int)Math.round(
+                            (mapRight - mapLeft) * (double)geometry.widthBlocks() / zoomBlocks)));
+            int shownTop = mapTop + (mapHeight - shownHeight) / 2;
+            float u0 = editor == null ? 0.0F
+                    : (float)windowStartBlock / geometry.circumferenceBlocks();
+            RingGuiBlit.blit(graphics, TEXTURE, mapLeft, shownTop, mapRight, shownTop + shownHeight,
+                    u0, (float)(u0 + fraction), 0.0F, 1.0F);
+            if (editor != null) {
+                int overviewY = mapTop + mapHeight + 29;
+                graphics.fill(mapLeft, overviewY, mapRight, overviewY + 6, 0xFF405457);
+                RingGuiBlit.blit(graphics, TEXTURE, mapLeft, overviewY, mapRight, overviewY + 6,
+                        0.0F, 1.0F, 0.0F, 1.0F);
+                int selectionX = mapLeft + (int)((mapRight - mapLeft) * (double)windowStartBlock
+                        / geometry.circumferenceBlocks());
+                int selectionWidth = Math.max(2, (int)Math.round((mapRight - mapLeft) * fraction));
+                graphics.renderOutline(selectionX, overviewY - 1, selectionWidth, 8, 0xFFFFE29B);
+            }
         }
-        graphics.drawCenteredString(font, Component.literal(state), width / 2,
-                mapTop + mapHeight + 10, error.isEmpty() ? LABEL_COLOR : ERROR_COLOR);
+        String status = editor == null ? state : state + " · "
+                + zoomBlocks(mapRight - mapLeft, mapHeight) + " × "
+                + geometry.widthBlocks() + " blocks";
+        graphics.drawString(font, Component.literal(status), mapLeft,
+                mapTop + mapHeight + 8, error.isEmpty() ? LABEL_COLOR : ERROR_COLOR);
         if (!error.isEmpty()) {
             graphics.drawCenteredString(font, Component.literal(error), width / 2,
-                    mapTop + mapHeight + 22, ERROR_COLOR);
+                    mapTop + mapHeight + (editor == null ? 22 : 20), ERROR_COLOR);
         } else {
             graphics.drawCenteredString(font, Component.literal(
                             "Approximate terrain · no chunks, structures, caves, or save created"),
-                    width / 2, mapTop + mapHeight + 22, LABEL_COLOR);
+                    width / 2, mapTop + mapHeight + (editor == null ? 22 : 20), LABEL_COLOR);
         }
-        graphics.drawCenteredString(font, Component.literal(
-                        "Full ring: %,d × %,d blocks · %s".formatted(
-                                geometry.circumferenceBlocks(), geometry.widthBlocks(),
-                                aspectLabel())),
-                width / 2, mapTop + mapHeight + 34, LABEL_COLOR);
+        if (editor == null || height >= 350) {
+            graphics.drawCenteredString(font, Component.literal(
+                            "Full ring: %,d × %,d blocks · %s".formatted(
+                                    geometry.circumferenceBlocks(), geometry.widthBlocks(),
+                                    aspectLabel())),
+                    width / 2, mapTop + mapHeight + (editor == null ? 34 : 47), LABEL_COLOR);
+        }
     }
 
     private int previewColumns() {
@@ -318,13 +421,25 @@ public final class RingSeedPreviewScreen extends Screen {
 
     private record PreviewInput(BiomeSource biomeSource, Holder<NoiseGeneratorSettings> settings,
                                 ResourceKey<NoiseGeneratorSettings> settingsKey,
-                                RegistryAccess.Frozen worldgenLoadContext,
-                                int minY, int height) { }
+                                RegistryAccess.Frozen worldgenLoadContext, int minY, int height) { }
 
-    private record Result(RingTerrainPreview preview, long elapsedMillis, String error) { }
+    private record Result(RingTerrainPreview preview,
+                          long elapsedMillis, String error) { }
 
     void ringworld$automationSetSeed(String seed) {
         seedField.setValue(seed);
+    }
+
+    void ringworld$automationUseSeed() {
+        useSeedButton.onPress();
+    }
+
+    boolean ringworld$automationAppliedSeedIs(String value) {
+        return editor != null && editor.selectedSeed().equals(value);
+    }
+
+    boolean ringworld$automationVanillaSeedIs(String value) {
+        return owner.ringworld$seedText().equals(value);
     }
 
     boolean ringworld$automationReady() {
@@ -335,7 +450,9 @@ public final class RingSeedPreviewScreen extends Screen {
         return lastPreviewHash;
     }
 
-    boolean ringworld$automationGenerating() {
+    void ringworld$automationDone() {
+        onClose();
+    }    boolean ringworld$automationGenerating() {
         return running != null && !running.isDone() && state.startsWith("Generating");
     }
 
@@ -352,7 +469,5 @@ public final class RingSeedPreviewScreen extends Screen {
                 && (running == null || running.isCancelled() || running.isDone());
     }
 
-    void ringworld$automationDone() {
-        onClose();
-    }
+
 }

@@ -21,6 +21,22 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ClientRingStateTest {
+    @Test
+    void coarseFormatTenCacheCannotReplaceTheOneBlockMaster(@TempDir Path cacheDirectory)
+            throws Exception {
+        RingGeometry geometry = new RingGeometry(128, 2_048);
+        long worldHash = 0x434F_4152_5345L;
+        ClientRingState.configureCacheDirectory(cacheDirectory);
+        setSession(geometry);
+        RingTerrainAtlas coarse = new RingTerrainAtlas(geometry, worldHash, 8);
+        coarse.putCell(0, 0, 90, 0x123456, 7, 0x123456, 15);
+        coarse.save(cacheDirectory.resolve("terrain-" + Long.toUnsignedString(worldHash, 16) + ".rwat.gz"));
+        ClientRingState.installTerrainAtlas(new RingTerrainAtlasMetadataPayload(worldHash, 1,
+                2048, 128, RingTerrainAtlas.TILE_SIZE, 0, false, 0));
+        assertEquals(1, ClientRingState.terrainAtlas().sampleStep());
+        assertEquals(0, ClientRingState.terrainAtlas().presentCount());
+    }
+
     @AfterEach
     void clearSessionState() {
         ClientRingState.clear();
@@ -83,7 +99,7 @@ class ClientRingStateTest {
         setSession(geometry);
 
         RingTerrainAtlas server = new RingTerrainAtlas(geometry, worldHash);
-        server.putCell(0, 0, 78, 0x445566, 13);
+        server.putCell(0, 0, 78, 0x445566, 13, 0x445566, 15);
         server.advanceRevision();
         RingTerrainAtlasMetadataPayload metadata = new RingTerrainAtlasMetadataPayload(
                 worldHash, server.sampleStep(), server.columns(), server.rows(),
@@ -93,6 +109,7 @@ class ClientRingStateTest {
         ClientRingState.applyTerrainAtlasTile(worldHash, 0, 0, server.encodeTile(0, 0));
         ClientRingState.commitTerrainAtlasRevision(worldHash, server.revision());
         assertEquals(13, ClientRingState.terrainAtlas().cellBlockLight(0, 0));
+        assertEquals(15, ClientRingState.terrainAtlas().cellWaterCoverage(0, 0));
 
         ClientRingState.saveTerrainAtlasIfDue(true);
         var save = ClientRingState.class.getDeclaredField("terrainAtlasSave");
@@ -105,6 +122,7 @@ class ClientRingStateTest {
 
         assertEquals(server.revision(), ClientRingState.terrainAtlasDurableRevision());
         assertEquals(13, ClientRingState.terrainAtlas().cellBlockLight(0, 0));
+        assertEquals(15, ClientRingState.terrainAtlas().cellWaterCoverage(0, 0));
     }
 
     @Test

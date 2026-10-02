@@ -2,12 +2,13 @@ package dev.ringworld.world;
 
 import com.mojang.serialization.Codec;
 
-/** Server-owned source fidelity and coordinated client render budget. */
+/** Legacy serialized fidelity IDs; production Atlas sampling is fixed at one block. */
 public enum RingAtlasFidelity {
     PERFORMANCE(0, "Performance", 16, 2_048, 512, 16),
     BALANCED(1, "Balanced", 8, 4_096, 1_024, 8),
     HIGH(2, "High", 4, 8_192, 1_024, 4),
-    VERY_HIGH(3, "Very high", 2, 16_384, 1_024, 4);
+    VERY_HIGH(3, "Very high", 2, 16_384, 1_024, 4),
+    FULL(4, "Full", 1, 32_768, 2_048, 1);
 
     public static final Codec<RingAtlasFidelity> CODEC = Codec.INT.xmap(
             RingAtlasFidelity::fromId, RingAtlasFidelity::id);

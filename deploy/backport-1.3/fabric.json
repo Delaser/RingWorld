@@ -1,0 +1,17 @@
+{
+  "project": {
+    "project_type": "mod", "client_side": "required", "server_side": "required", "license_id": "MPL-2.0"
+  },
+  "version": {
+    "name": "RingWorld 1.3 for Minecraft 1.21.1 (Fabric)",
+    "version_number": "1.3.0-fabric+mc1.21.1", "artifact_version": "1.3.0+mc1.21.1",
+    "version_type": "release", "game_versions": ["1.21.1"], "loaders": ["fabric"],
+    "environment": "client_and_server", "featured": true,
+    "dependencies": [{"project_id": "P7dR8mSH", "dependency_type": "required"}]
+  },
+  "fabric": {
+    "mod_id": "ringworld", "author": "Delaser", "homepage": "https://andwhatnotstudio.com/ringworld/",
+    "environment": "*", "fabric_loader": ">=0.16.14", "minecraft": "1.21.1", "java": ">=21", "fabric_api": "*"
+  },
+  "source": {"repository": "https://github.com/Delaser/RingWorld"}
+}

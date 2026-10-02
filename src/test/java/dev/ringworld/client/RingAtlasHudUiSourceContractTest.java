@@ -60,11 +60,9 @@ class RingAtlasHudUiSourceContractTest {
         assertFalse(renderer.contains("RingTerrainPreviewHud"));
 
         assertTrue(map.contains("RingTerrainPreviewHud.entries("));
-        assertTrue(map.contains("RingTerrainPreviewHud.grid(width)"));
-        assertTrue(map.contains("fitPreviewLabel(entry.label(), previewGrid.columnWidth())"));
-        assertTrue(map.contains("43 + i * 12"),
-                "eight status rows must end above the preview heading at y=143");
-        assertFalse(map.contains("43 + i * 15"));
+        assertTrue(map.contains("private Page page = Page.GENERATION"));
+        assertTrue(map.contains("showDetails"));
+        assertTrue(map.contains("Source Atlas: one sample per block."));
     }
 
     private static String read(String relative) throws IOException {

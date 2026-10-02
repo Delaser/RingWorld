@@ -578,6 +578,8 @@ public final class RingWorldCreationScreen extends Screen {
 
         /** Updates only the pending creation seed; it does not create a world. */
         void ringworld$setSeedText(String seed);
+        void ringworld$setPreviewSeedText(String seed);
+        boolean ringworld$hasAppliedPreviewSeed();
 
         /** Immutable-input source for a detached preview generator snapshot. */
         WorldCreationContext ringworld$creationContext();
@@ -587,6 +589,7 @@ public final class RingWorldCreationScreen extends Screen {
 
         /** Opens the actual footer button for the menu-only graphical fixture. */
         void ringworld$openLayoutEditorForAutomation();
+        void ringworld$openNewEditorForAutomation();
 
         /** Reads the actual footer label after an accepted confirmation. */
         Component ringworld$layoutButtonMessageForAutomation();

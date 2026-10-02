@@ -21,6 +21,15 @@ void main() {
     float coverageFade = 0.0;
     if (RingWorldLayout.x != 0 && ringIntrinsicDistance >= 0.0) {
         coverageFade = ringLiveCoverageFade(ringIntrinsicDistance);
+        if (ringWaterSprite(texCoord0, RingWorldWaterStill)
+                || ringWaterSprite(texCoord0, RingWorldWaterFlow)) {
+            float matchWater = ringSmootherstep(RingWorldHandoff.z, RingWorldHandoff.x, ringIntrinsicDistance);
+            color.a = mix(color.a, 1.0, matchWater);
+            vec3 atlasWater = vertexColor.rgb * 0.58;
+            float peak = max(atlasWater.r, max(atlasWater.g, atlasWater.b));
+            atlasWater = mix(atlasWater, vec3(peak), 0.12) * 1.15;
+            color.rgb = mix(color.rgb, atlasWater, matchWater);
+        }
     }
     vec4 fogged = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
     if (coverageFade > 0.0) {

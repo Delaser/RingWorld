@@ -45,10 +45,13 @@ public final class RingWallShaderStyle {
     }
 
     public static int[] paletteColors(RingWallStyle style, Level world) {
+        return paletteColors(style, state -> state.getMapColor(world, BlockPos.ZERO).col & 0xFFFFFF);
+    }
+
+    public static int[] paletteColors(RingWallStyle style, ToIntFunction<BlockState> colorLookup) {
         int[] colors = new int[100];
         for (int roll = 0; roll < colors.length; roll++) {
-            colors[roll] = RingGenerationBoundary.styledRimBlockForRoll(style, roll)
-                    .getMapColor(world, BlockPos.ZERO).col & 0xFFFFFF;
+            colors[roll] = colorLookup.applyAsInt(RingGenerationBoundary.styledRimBlockForRoll(style, roll)) & 0xFFFFFF;
         }
         return colors;
     }

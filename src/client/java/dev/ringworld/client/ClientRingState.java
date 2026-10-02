@@ -197,7 +197,8 @@ public final class ClientRingState {
     /** Installs metadata and reuses a complete world-hash cache when available. */
     public static boolean installTerrainAtlas(RingTerrainAtlasMetadataPayload metadata) {
         RingGeometry current = geometry;
-        if (current == null || metadata.tileSize() != RingTerrainAtlas.TILE_SIZE) return false;
+        if (current == null || metadata.tileSize() != RingTerrainAtlas.TILE_SIZE
+                || metadata.sampleStep() != RingTerrainAtlas.SAMPLE_STEP_BLOCKS) return false;
         RingTerrainAtlas replacement = null;
         Path cache = cacheDirectory.resolve(
                 "terrain-" + Long.toUnsignedString(metadata.worldHash(), 16) + ".rwat.gz");
@@ -205,7 +206,8 @@ public final class ClientRingState {
         if (Files.exists(cache)) {
             try {
                 replacement = RingTerrainAtlas.load(cache, current, metadata.worldHash());
-                if (replacement.revision() != metadata.revision()) replacement = null;
+                if (replacement.revision() != metadata.revision()
+                        || replacement.sampleStep() != metadata.sampleStep()) replacement = null;
             } catch (IOException exception) {
                 RingWorldMod.LOGGER.warn("Ignoring invalid client RingWorld terrain cache {}", cache, exception);
             }
@@ -337,7 +339,7 @@ public final class ClientRingState {
                 && !terrainAtlasPendingRender;
     }
 
-    /** Coalesces partial-cache writes while saving a newly completed atlas immediately. */
+    /** Coalesces partial writes and waits for quiet tiles before copying a complete Atlas. */
     public static void saveTerrainAtlasIfDue(boolean force) {
         publishTerrainAtlasIfDue(force);
         saveTerrainAtlasCacheIfDue(force);
@@ -353,6 +355,10 @@ public final class ClientRingState {
         if (!terrainAtlasDirty || atlas == null || cache == null) return;
         long now = System.currentTimeMillis();
         if (!force && now - lastTerrainAtlasSaveMillis < 10_000L) return;
+        // A complete Atlas is already available from the server. Wait until
+        // active tile changes settle before copying the whole client cache;
+        // the forced disconnect save still captures the latest state.
+        if (!force && atlas.isComplete() && now - lastTerrainAtlasChangeMillis < 10_000L) return;
         long snapshotStarted = System.nanoTime();
         terrainAtlasSave = CACHE_WRITER.submit(cache, atlas);
         long snapshotNanos = System.nanoTime() - snapshotStarted;

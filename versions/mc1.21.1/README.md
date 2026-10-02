@@ -3,13 +3,26 @@
 This is the maintenance and release record for RingWorld's Minecraft Java
 1.21.1 backport. The public integration branch is `port/mc-1.21.1`.
 
-The current build is **RingWorld 1.0 Beta 2 for Minecraft 1.21.1**. Matched
+The published backport checkpoint is **RingWorld 1.0 Beta 2 for Minecraft 1.21.1**. Matched
 Fabric and NeoForge jars were built from public commit
 `848b9cc5982ab473f84f91a4301ffb4176222ad6` and submitted to CurseForge on
 2026-08-24. This is a playable public Beta, not a stable or broad modpack-
 compatibility claim.
 
 ## Current feature handoffs
+
+The [mainline 1.3 development candidate](MAINLINE_1_3_IMPLEMENTATION_2026-10-02.md)
+ports the one-block Atlas, water/light contract, wall rendering, interaction
+corrections and unified UI to both loaders. It records the new builds and
+server evidence separately from the fresh Fabric graphical checkpoint and
+the remaining dual-loader qualification gates. OpenGL access now works on
+the worker. Create remains benched.
+
+The [mainline 1.3 audit and backport plan](MAINLINE_1_3_BACKPORT_PLAN_2026-10-02.md)
+inventories the merged release's functionality and implemented UI, compares
+it with local checkpoint `220179e`, and defines the data, renderer, UI,
+performance and dual-loader qualification work. It is a plan, with no new
+runtime or release claim.
 
 The [new feature parity checkpoint](NEW_FEATURE_PARITY_2026-09-07.md) ports
 generation controls, Atlas side colours and LOD, engineered walls and the

@@ -24,7 +24,7 @@ class RingSurfacePlaceholderTest {
     @Test
     void realAtlasCellsOverridePreviewWhileMissingCellsUseItAtTargetResolution() {
         RingGeometry geometry = new RingGeometry(128, 2_048);
-        RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, 42L);
+        RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, 42L, 8);
         int[] colors = {
                 0x010101, 0x020202, 0x030303, 0x040404,
                 0x111111, 0x121212, 0x131313, 0x141414

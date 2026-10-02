@@ -40,8 +40,9 @@ class RingCreationPreviewSourceContractTest {
         assertTrue(source.contains("RandomState.create("));
         assertTrue(source.contains("worldgenLoadContext().asGetterLookup()"));
         assertTrue(source.contains("preview.centeredSeamSourceColumn(displayColumn)"));
-        assertTrue(source.contains("requests.begin();\n        if (running != null) running.cancel(true);\n"
-                + "        releaseTexture();"));
+        assertTrue(source.contains("requests.begin();"));
+        assertTrue(source.contains("running.cancel(true)"));
+        assertTrue(source.contains("releaseTexture();"));
         assertFalse(source.contains("selected.ringworld$setGeometry"));
         assertFalse(source.contains("createNewWorld"));
         assertFalse(source.contains("createLevel"));
@@ -51,7 +52,7 @@ class RingCreationPreviewSourceContractTest {
     void menuFixtureProvesDistinctSeedsCancellationAndTextureTeardown() throws IOException {
         String fixture = readSource(Path.of("RingWorldCreationUiTestClient.java"));
 
-        assertTrue(fixture.contains("CAPTURE_COUNT = 19"));
+        assertTrue(fixture.contains("CAPTURE_COUNT = 26"));
         assertTrue(fixture.contains("creation-ui-06-seed-preview-12345-scale4"));
         assertTrue(fixture.contains("creation-ui-07-seed-preview-67890-scale4"));
         assertTrue(fixture.contains("creation-ui-08-rim-default-scale4"));

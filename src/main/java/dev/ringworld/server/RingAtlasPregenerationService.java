@@ -96,7 +96,7 @@ public final class RingAtlasPregenerationService {
         long hash = RingTerrainAtlas.worldHash(settings);
         Path path = cachePath(world);
         Path legacyPath = legacyCachePath(world);
-        int sampleStep = settings.generationSettings().atlasFidelity().sampleStepBlocks();
+        int sampleStep = RingTerrainAtlas.SAMPLE_STEP_BLOCKS;
         RingTerrainAtlas.StorageLoad storage = RingTerrainAtlas.loadStorage(
                 path, legacyPath, geometry, hash, sampleStep);
         RingTerrainAtlas atlas = storage.atlas();
@@ -341,7 +341,8 @@ public final class RingAtlasPregenerationService {
                 int color = surfaceColor(world, surface, surfaceState);
                 int blockLight = surfaceBlockLight(world, surface, surfaceState);
                 if (atlas.putBlockSample(blockX, blockZ, surfaceY + 1, color, blockLight,
-                        sideColor(world, chunk, surface, surfaceState, color, atlas.sampleStep()))) {
+                        sideColor(world, chunk, surface, surfaceState, color, atlas.sampleStep()),
+                        surfaceState.getFluidState().is(FluidTags.WATER) ? 15 : 0)) {
                     changed = true;
                     int atlasX = atlas.geometry().wrapBlockX(blockX) / step;
                     int atlasZ = Math.floorDiv(blockZ - atlas.geometry().minWidthZ(), step);
@@ -395,7 +396,10 @@ public final class RingAtlasPregenerationService {
                     + cell.row() * atlas.sampleStep() + atlas.sampleStep() / 2;
             BlockPos sample = new BlockPos(blockX, 0, blockZ);
             if (!world.hasChunkAt(sample)) {
-                state.recaptures.enqueue(cell);
+                // Chunk-load capture refreshes every surface cell before the
+                // chunk is streamed again. Retaining unloaded neighbours here
+                // can fill the exact queue forever and starve overflow tiles
+                // after a dense one-block Atlas generation or lighting edit.
                 continue;
             }
             LevelChunk chunk = world.getChunkAt(sample);
@@ -407,7 +411,8 @@ public final class RingAtlasPregenerationService {
             int color = surfaceColor(world, surface, surfaceState);
             int blockLight = surfaceBlockLight(world, surface, surfaceState);
             if (atlas.putCell(cell.column(), cell.row(), surfaceY + 1, color, blockLight,
-                        sideColor(world, chunk, surface, surfaceState, color, atlas.sampleStep()))) {
+                        sideColor(world, chunk, surface, surfaceState, color, atlas.sampleStep()),
+                        surfaceState.getFluidState().is(FluidTags.WATER) ? 15 : 0)) {
                 changed = true;
                 state.dirtyTiles.publish(new TileCoordinate(
                         cell.column() / RingTerrainAtlas.TILE_SIZE,

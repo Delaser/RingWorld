@@ -6,6 +6,8 @@ uniform vec4 RingWorldDetail;
 uniform vec4 RingWorldAtmosphere;
 uniform float RingWorldLegacyProxyRevealScale;
 uniform float RingWorldLegacyProxyDrawn;
+uniform vec4 RingWorldWaterStill;
+uniform vec4 RingWorldWaterFlow;
 
 float ringSmootherstep(float edge0, float edge1, float value) {
     float t = clamp((value - edge0) / max(0.0001, edge1 - edge0), 0.0, 1.0);
@@ -45,7 +47,7 @@ float ringTerrainReveal(float intrinsicDistance, float circumference) {
         RingWorldAtmosphere.y,
         pow(farFraction, RingWorldAtmosphere.z)
     );
-    return reveal * (1.0 - haze)
+    return reveal * (1.0 - haze * detail)
         * clamp(RingWorldLegacyProxyRevealScale, 0.0, 1.0);
 }
 
@@ -53,4 +55,9 @@ vec3 ringProxyTone(vec3 liveTerrain, float intrinsicDistance,
                    float circumference, vec3 fogColor) {
     return mix(fogColor, liveTerrain,
         ringTerrainReveal(intrinsicDistance, circumference));
+}
+
+bool ringWaterSprite(vec2 uv, vec4 bounds) {
+    return bounds.x < bounds.z && bounds.y < bounds.w
+        && all(greaterThanEqual(uv, bounds.xy)) && all(lessThanEqual(uv, bounds.zw));
 }

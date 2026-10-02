@@ -20,7 +20,8 @@ class RingDimensionMatrixTest {
         RingDimensionReport report = RingDimensionReport.forVanillaOverworld(
                 geometry, wallHeight);
 
-        assertTrue(report.isValid(), name + ": " + report.errors());
+        assertEquals((long)circumference * width <= RingDimensionReport.MAX_ATLAS_CELLS,
+                report.isValid(), name + ": " + report.errors());
         assertEquals(circumference / 16, geometry.circumferenceChunks());
         assertEquals(width / 16, geometry.widthChunks());
         assertEquals(0.0, geometry.shortestCircumferenceDelta(
@@ -112,6 +113,11 @@ class RingDimensionMatrixTest {
     @MethodSource("dev.ringworld.world.RingDimensionFixtures#playableLayouts")
     void atlasDimensionsFollowTheSelectedLayout(
             String name, int circumference, int width, int wallHeight) {
+        if ((long)circumference * width > RingDimensionReport.MAX_ATLAS_CELLS) {
+            org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+                    () -> new RingTerrainAtlas(new RingGeometry(width, circumference), 0x5EEDL));
+            return;
+        }
         RingTerrainAtlas atlas = new RingTerrainAtlas(new RingGeometry(width, circumference),
                 0x5EEDL);
 

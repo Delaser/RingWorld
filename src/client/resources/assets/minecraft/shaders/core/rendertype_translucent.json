@@ -21,6 +21,8 @@
     { "name": "RingWorldDetail", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
     { "name": "RingWorldAtmosphere", "type": "float", "count": 4, "values": [ 0.0, 0.0, 0.0, 0.0 ] },
     { "name": "RingWorldLegacyProxyRevealScale", "type": "float", "count": 1, "values": [ 1.0 ] },
-    { "name": "RingWorldLegacyProxyDrawn", "type": "float", "count": 1, "values": [ 1.0 ] }
+    { "name": "RingWorldLegacyProxyDrawn", "type": "float", "count": 1, "values": [ 1.0 ] },
+    { "name": "RingWorldWaterStill", "type": "float", "count": 4, "values": [ -1.0, -1.0, -1.0, -1.0 ] },
+    { "name": "RingWorldWaterFlow", "type": "float", "count": 4, "values": [ -1.0, -1.0, -1.0, -1.0 ] }
   ]
 }

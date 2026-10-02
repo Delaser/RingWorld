@@ -1073,6 +1073,16 @@ def requireHandoffShaderBindingContract = {
 					"${programFile} does not declare the exact proxy-drawn uniform")
 		}
 		fragments.add(program.fragment.toString())
+		if (id == "rendertype_translucent") {
+			["RingWorldWaterStill", "RingWorldWaterFlow"].each { name ->
+				def waterUniforms = program.uniforms.findAll { it.name == name }
+				if (waterUniforms.size() != 1 || waterUniforms.first().type != "float"
+						|| waterUniforms.first().count != 4
+						|| waterUniforms.first().values != [-1.0, -1.0, -1.0, -1.0]) {
+					throw new GradleException("${programFile} lacks the fail-closed ${name} binding")
+				}
+			}
+		}
 	}
 	fragments.each { fragment ->
 		def fragmentFile = new File(shaderRoot, "${fragment}.fsh")
@@ -1158,6 +1168,12 @@ def requireHandoffShaderBindingContract = {
 		throw new GradleException(
 				"${drawSiteFile} does not draw the proxy after section setup and before the star/terrain")
 	}
+}
+
+tasks.register("verifyBackportHandoffShaderBindings") {
+	group = "ringworld verification"
+	description = "Checks legacy terrain uniform bindings and the accepted proxy draw/readiness contract."
+	doLast { requireHandoffShaderBindingContract() }
 }
 
 def verifyHandoffFoliageOutputs = { File runDirectory, String label ->
@@ -1529,8 +1545,8 @@ def multiplayerWidthBlocks = multiplayerHarnessDimension(
 		"ringMultiplayerWidthBlocks", "416", 128, true)
 def multiplayerWallHeightBlocks = multiplayerHarnessDimension(
 		"ringMultiplayerWallHeightBlocks", "160", 32, false)
-def multiplayerAtlasCellCount = (multiplayerCircumferenceBlocks.longValue() / 8L)
-		* (multiplayerWidthBlocks.longValue() / 8L)
+def multiplayerAtlasCellCount = multiplayerCircumferenceBlocks.longValue()
+		* multiplayerWidthBlocks.longValue()
 
 tasks.register("prepareMultiplayerHarness") {
 	group = "ringworld verification"
@@ -1881,6 +1897,9 @@ tasks.register("prepareHeadlessPrewarmWorld") {
 		config.setProperty("circumferenceBlocks",
 				providers.gradleProperty("ringHeadlessPrewarmCircumference").orElse("2048").get())
 		config.setProperty("wallHeightBlocks", "160")
+        config.setProperty("atlasFidelity", providers.gradleProperty("ringHeadlessPrewarmAtlasFidelity").orElse("BALANCED").get())
+        config.setProperty("continuousRingRiver", providers.gradleProperty("ringHeadlessPrewarmContinuousRiver").orElse("false").get())
+        config.setProperty("moreStructures", providers.gradleProperty("ringHeadlessPrewarmMoreStructures").orElse("false").get())
 		config.setProperty("testMode", "false")
 		config.setProperty("testViewDistanceChunks", "6")
 		// The launch adapter supplies HEADLESS_PREWARM itself and suppresses
@@ -2171,7 +2190,10 @@ def creationUiScreenshotPrefixes = [
 		"creation-ui-16-confirm-layout-scale4",
 		"creation-ui-17-footer-applied-scale4",
         "creation-ui-18-generation-default-narrow-scale4",
-        "creation-ui-19-generation-selected-narrow-scale4"
+        "creation-ui-19-generation-selected-narrow-scale4",
+        "creation-ui-20-new-ring", "creation-ui-21-new-terrain", "creation-ui-22-new-walls",
+        "creation-ui-23-new-sky", "creation-ui-24-new-preview", "creation-ui-25-new-compact-walls",
+        "creation-ui-26-vanilla-seed-applied"
 ]
 
 def verifyCreationUiConfig = { File runDirectory, String label ->
@@ -2272,7 +2294,7 @@ def verifyCreationUiOutputs = { File runDirectory, String label ->
 		throw new GradleException("${label} could not encode its creation UI contact sheet")
 	}
 	requireNonUniformPng(contactSheet, label + " contact sheet")
-	logger.lifecycle("{} verified 19 captures and wrote {}", label, contactSheet)
+	logger.lifecycle("{} verified 26 captures and wrote {}", label, contactSheet)
 }
 ext.verifyCreationUiOutputs = verifyCreationUiOutputs
 
@@ -2432,7 +2454,7 @@ tasks.register("verifyAtlasUiClient") {
 		if (!log.contains("[atlas-ui-test] PASS") || log.contains("[atlas-ui-test] FAIL")) {
 			throw new GradleException("Atlas UI client did not pass; inspect " + logFile)
 		}
-		def atlasHandshakeMarkers = ["[atlas-ui-test] client-ready", "[atlas-ui-test] settings-v3-mapping-4",
+		def atlasHandshakeMarkers = ["[atlas-ui-test] client-ready", "[atlas-ui-test] settings-v5-mapping-4",
 		 "[atlas-ui-test] disconnect-clear", "[atlas-ui-test] PASS"]
 		def previousAtlasHandshakeMarker = -1
 		atlasHandshakeMarkers.each { marker ->
@@ -2442,9 +2464,9 @@ tasks.register("verifyAtlasUiClient") {
 			}
 			previousAtlasHandshakeMarker = markerIndex
 		}
-		def atlasSettingsAck = log.indexOf("RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 3")
+		def atlasSettingsAck = log.indexOf("RingWorld settings acknowledged by AtlasUiTester: 2048x128, format 5")
 		if (atlasSettingsAck < 0 || atlasSettingsAck >= log.indexOf("[atlas-ui-test] disconnect-clear")) {
-			throw new GradleException("Atlas UI integrated server did not accept the format-3 settings acknowledgement; inspect " + logFile)
+			throw new GradleException("Atlas UI integrated server did not accept the format-5 settings acknowledgement; inspect " + logFile)
 		}
 		requirePartialAtlasHandoff(logFile, "Fabric Atlas UI client")
 	    (1..11).each { index ->
@@ -3216,6 +3238,7 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 tasks.named("check") {
 	dependsOn(tasks.named("verifyFabricRuntimeGateContracts"))
 	dependsOn(tasks.named("verifyOutboundPositionPacketInventory"))
+	dependsOn(tasks.named("verifyBackportHandoffShaderBindings"))
 }
 
 tasks.register("prepareCopiedProductionVisualParityWorld") {

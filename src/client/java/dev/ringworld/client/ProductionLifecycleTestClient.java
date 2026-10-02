@@ -13,6 +13,7 @@ import net.minecraft.world.level.Level;
 public final class ProductionLifecycleTestClient {
     private static final int DIMENSION_SETTLE_TICKS = 20;
     private static final int STAGE_TIMEOUT_TICKS = 1_800;
+    private static final int ATLAS_LOAD_TIMEOUT_TICKS = 6_000;
 
     private final String worldName = System.getProperty("ringworld.productionLifecycleWorld", "").trim();
     private int stage;
@@ -34,7 +35,7 @@ public final class ProductionLifecycleTestClient {
             stageTicks = 0;
             return true;
         }
-        if (++stageTicks > STAGE_TIMEOUT_TICKS) {
+        if (++stageTicks > (stage == 0 || stage == 6 ? ATLAS_LOAD_TIMEOUT_TICKS : STAGE_TIMEOUT_TICKS)) {
             finish(client, false, "timeout stage=" + stage + " dimension=" + dimensionName(client));
             return true;
         }

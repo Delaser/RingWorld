@@ -57,7 +57,7 @@ public record RingDimensionReport(
 
     public static String atlasLimitMessage(long cells) {
         return "Ring Larger than Max Atlas Size: terrain atlas requires " + cells + " cells; current limit is " + MAX_ATLAS_CELLS
-                + ". Lower Atlas fidelity in Gen settings, or reduce Around/Across.";
+                + ". Reduce Around or Across until the ring fits within this limit.";
     }
 
     public RingDimensionReport {

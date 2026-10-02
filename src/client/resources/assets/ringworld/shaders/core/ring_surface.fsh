@@ -19,12 +19,32 @@ in vec4 vertexColor;
 in float intrinsicDistance;
 in float intrinsicHeight;
 in float intrinsicWidth;
+flat in vec3 depthMapping;
 
 out vec4 fragColor;
 
 float smootherstep(float edge0, float edge1, float value) {
     float t = clamp((value - edge0) / max(0.0001, edge1 - edge0), 0.0, 1.0);
     return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+
+// Clamp each mip to its own wall strip, including the one-row final mip.
+// Repeat U in the sampler: fract(U) before derivatives creates a seam spike.
+vec4 wallMip(vec2 uv, float strip, float level) {
+    float halfTexel = 0.5 / float(textureSize(Sampler3, int(level)).y);
+    uv.y = clamp(uv.y, strip * 0.25 + halfTexel, (strip + 1.0) * 0.25 - halfTexel);
+    return textureLod(Sampler3, uv, level);
+}
+
+vec4 filteredWall(vec2 uv, float strip) {
+    vec2 size = vec2(textureSize(Sampler3, 0));
+    vec2 dx = dFdx(uv) * size;
+    vec2 dy = dFdy(uv) * size;
+    float level = clamp(0.5 * log2(max(1.0, max(dot(dx, dx), dot(dy, dy)))),
+                        0.0, log2(size.y * 0.25));
+    float low = floor(level);
+    float high = ceil(level);
+    return mix(wallMip(uv, strip, low), wallMip(uv, strip, high), fract(level));
 }
 
 void main() {
@@ -42,7 +62,7 @@ void main() {
         // Inner V markers are -1 / 2; outer/top marker is shared.
         float strip = intrinsicWidth < 0.0 ? 0.0 : 1.0;
         if (texCoord0.y < -1.5 || texCoord0.y > 2.5) strip += 2.0;
-        vec4 wall = texture(Sampler3, vec2(fract(texCoord0.x), (strip + vertical) / 4.0));
+        vec4 wall = filteredWall(vec2(texCoord0.x, (strip + vertical) / 4.0), strip);
         if (wall.a < 0.5) discard;
         sampled = vec4(wall.rgb, 0.0);
     }
@@ -71,7 +91,9 @@ void main() {
     proxyAlpha = max(proxyAlpha, streamingProxyAlpha);
     if (proxyAlpha <= 0.001) discard;
 
-    gl_FragDepth = mix(1.0, gl_FragCoord.z, proxyAlpha);
+    float nativeDepth = depthMapping.x + depthMapping.y * gl_FragCoord.w;
+    float surfaceDepth = min(nativeDepth, 1.0 + depthMapping.z * gl_FragCoord.w);
+    gl_FragDepth = mix(1.0, surfaceDepth, proxyAlpha);
     float terrainDetail = smootherstep(
         RingWorldDetail.x, RingWorldDetail.y, intrinsicDistance);
     float reveal = mix(RingWorldDetail.z, RingWorldDetail.w, terrainDetail)
@@ -89,7 +111,7 @@ void main() {
         RingWorldAtmosphere.y,
         pow(farFraction, RingWorldAtmosphere.z)
     );
-    reveal *= 1.0 - distanceHaze;
+    reveal *= 1.0 - distanceHaze * terrainDetail;
     reveal *= 1.0 - clamp(ColorModulator.w, 0.0, 1.0);
 
     // Match 1.21.1 light.glsl and the lightmap's linear sampler exactly.

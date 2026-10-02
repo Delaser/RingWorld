@@ -3,6 +3,7 @@ package dev.ringworld.mixin;
 import com.mojang.datafixers.util.Pair;
 import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.world.RingGeometry;
+import dev.ringworld.world.RingStructureDensity;
 import dev.ringworld.world.RingMonumentResolution;
 import dev.ringworld.world.RingStructurePolicy;
 import dev.ringworld.world.RingStructureStateAccess;
@@ -78,13 +79,11 @@ abstract class ChunkGeneratorLocateMixin {
         for (Holder<Structure> structure : structures) {
             for (StructurePlacement candidatePlacement : state.getPlacementsForStructure(structure)) {
                 if (!(candidatePlacement instanceof RandomSpreadStructurePlacement placement)) continue;
-                int maximumDelta = (int)Math.min(geometry.circumferenceChunks() / 2L,
-                        Math.min(Integer.MAX_VALUE, (long)(searchRadius + 1) * placement.spacing()));
-                int minZ = Math.max(geometry.minChunkZ(), originChunkZ - maximumDelta);
-                int maxZ = Math.min(geometry.maxChunkZ(), originChunkZ + maximumDelta);
-                for (int dx = -maximumDelta; dx <= maximumDelta; dx++) {
-                    int chunkX = Math.floorMod(originChunkX + dx, geometry.circumferenceChunks());
-                    for (int chunkZ = minZ; chunkZ <= maxZ; chunkZ++) {
+                RingStructureDensity.SearchBounds bounds = RingStructureDensity.searchBounds(
+                        geometry, originChunkX, originChunkZ, searchRadius, placement.spacing());
+                for (int offset = 0; offset < bounds.countX(); offset++) {
+                    int chunkX = bounds.canonicalX(offset);
+                    for (int chunkZ = bounds.minZ(); chunkZ <= bounds.maxZ(); chunkZ++) {
                         if (!access.ringworld$isAdditionalStructureCandidate(
                                 placement, chunkX, chunkZ)
                                 || !placement.isStructureChunk(state, chunkX, chunkZ)) continue;
@@ -187,7 +186,7 @@ abstract class ChunkGeneratorLocateMixin {
         double candidateImageX = geometry.nearestImageX(candidate.chunkX() * 16.0, originChunkX * 16.0);
         long deltaXChunks = Math.round(Math.abs(candidateImageX / 16.0 - originChunkX));
         long deltaZChunks = Math.abs((long) candidate.chunkZ() - originChunkZ);
-        long maximumChunks = (long) (searchRadius + 1) * spacing;
+        long maximumChunks = ((long) searchRadius + 1L) * spacing;
         return Math.max(deltaXChunks, deltaZChunks) <= maximumChunks;
     }
 

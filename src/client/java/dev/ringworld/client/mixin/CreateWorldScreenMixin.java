@@ -2,6 +2,8 @@ package dev.ringworld.client.mixin;
 
 import dev.ringworld.client.RingWorldCreationScreen;
 import dev.ringworld.world.RingWorldConfig;
+import dev.ringworld.world.RingWorldCreationUiModel;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.layouts.HeaderAndFooterLayout;
 import net.minecraft.client.gui.layouts.LayoutElement;
@@ -9,6 +11,7 @@ import net.minecraft.client.gui.layouts.LinearLayout;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.worldselection.CreateWorldScreen;
 import net.minecraft.client.gui.screens.worldselection.WorldCreationContext;
+import net.minecraft.client.gui.screens.worldselection.WorldCreationUiState;
 import net.minecraft.network.chat.Component;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -21,6 +24,8 @@ abstract class CreateWorldScreenMixin extends Screen
         implements RingWorldCreationScreen.LayoutButtonOwner {
     @Unique
     private Button ringworld$layoutButton;
+    @Unique
+    private String ringworld$appliedPreviewSeed;
 
     protected CreateWorldScreenMixin(Component title) {
         super(title);
@@ -40,11 +45,11 @@ abstract class CreateWorldScreenMixin extends Screen
         RingWorldConfig config = RingWorldConfig.load();
         LinearLayout footer = (LinearLayout) footerElement;
         ringworld$layoutButton = footer.addChild(Button.builder(
-                Component.literal("RingWorld %d×%d".formatted(
-                        config.circumferenceBlocks(), config.widthBlocks())),
-                button -> minecraft.setScreen(new RingWorldCreationScreen(this)))
+                ringworld$buttonLabel(config),
+                button -> minecraft.setScreen(new dev.ringworld.client.RingWorldEditorScreen(this)))
                 .width(120)
                 .build());
+        ringworld$layoutButton.setTooltip(ringworld$buttonTooltip(config));
         return layout.addToFooter(footerElement);
     }
 
@@ -52,11 +57,34 @@ abstract class CreateWorldScreenMixin extends Screen
     public void ringworld$refreshLayoutButton() {
         if (ringworld$layoutButton == null) return;
         RingWorldConfig config = RingWorldConfig.load();
-        Component message = Component.literal("RingWorld %d×%d".formatted(
-                config.circumferenceBlocks(), config.widthBlocks()));
+        Component message = ringworld$buttonLabel(config);
+        ringworld$layoutButton.setTooltip(ringworld$buttonTooltip(config));
         if (!ringworld$layoutButton.getMessage().equals(message)) {
             ringworld$layoutButton.setMessage(message);
         }
+    }
+
+    @Unique
+    private static Component ringworld$buttonLabel(RingWorldConfig config) {
+        String size = "Custom";
+        for (RingWorldCreationUiModel.Preset preset : new RingWorldCreationUiModel.Preset[]{
+                RingWorldCreationUiModel.SMALL, RingWorldCreationUiModel.MEDIUM,
+                RingWorldCreationUiModel.LARGE}) {
+            if (config.circumferenceBlocks() == preset.circumferenceBlocks()
+                    && config.widthBlocks() == preset.widthBlocks()
+                    && config.wallHeightBlocks() == preset.wallHeightBlocks()) {
+                size = preset.label();
+                break;
+            }
+        }
+        return Component.literal("RingWorld: " + size);
+    }
+
+    @Unique
+    private static Tooltip ringworld$buttonTooltip(RingWorldConfig config) {
+        return Tooltip.create(Component.literal("RingWorld: %,d × %,d blocks; wall height %d"
+                .formatted(config.circumferenceBlocks(), config.widthBlocks(),
+                        config.wallHeightBlocks())));
     }
 
     @Override
@@ -75,6 +103,21 @@ abstract class CreateWorldScreenMixin extends Screen
     }
 
     @Override
+    public void ringworld$setPreviewSeedText(String seed) {
+        ringworld$appliedPreviewSeed = seed;
+        ringworld$setSeedText(seed);
+    }
+
+    @Override
+    public boolean ringworld$hasAppliedPreviewSeed() {
+        if (ringworld$appliedPreviewSeed != null
+                && !ringworld$appliedPreviewSeed.equals(ringworld$seedText())) {
+            ringworld$appliedPreviewSeed = null;
+        }
+        return ringworld$appliedPreviewSeed != null;
+    }
+
+    @Override
     public WorldCreationContext ringworld$creationContext() {
         return ((CreateWorldScreen)(Object)this).getUiState().getSettings();
     }
@@ -86,6 +129,14 @@ abstract class CreateWorldScreenMixin extends Screen
 
     @Override
     public void ringworld$openLayoutEditorForAutomation() {
+        if (ringworld$layoutButton == null) {
+            throw new IllegalStateException("RingWorld layout footer button was not initialized");
+        }
+        minecraft.setScreen(new RingWorldCreationScreen(this));
+    }
+
+    @Override
+    public void ringworld$openNewEditorForAutomation() {
         if (ringworld$layoutButton == null) {
             throw new IllegalStateException("RingWorld layout footer button was not initialized");
         }

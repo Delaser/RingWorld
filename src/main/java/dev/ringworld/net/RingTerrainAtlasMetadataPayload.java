@@ -13,7 +13,7 @@ public record RingTerrainAtlasMetadataPayload(long worldHash, int sampleStep, in
                                               long revision)
         implements CustomPacketPayload {
     public static final Type<RingTerrainAtlasMetadataPayload> ID = new Type<>(
-            ResourceLocation.fromNamespaceAndPath(RingWorldMod.MOD_ID, "terrain_atlas_metadata_v3"));
+            ResourceLocation.fromNamespaceAndPath(RingWorldMod.MOD_ID, "terrain_atlas_metadata_v4"));
     public static final StreamCodec<RegistryFriendlyByteBuf, RingTerrainAtlasMetadataPayload> CODEC =
             StreamCodec.of(RingTerrainAtlasMetadataPayload::encode,
                     RingTerrainAtlasMetadataPayload::decode);

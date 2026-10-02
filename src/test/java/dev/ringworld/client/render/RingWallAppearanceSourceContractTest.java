@@ -22,9 +22,9 @@ class RingWallAppearanceSourceContractTest {
         assertTrue(gpu.contains(".setColor(sideColor < 0 ? vertexArgb : 0xFF000000 | sideColor)"));
         assertTrue(renderer.contains("RingWallShaderStyle.encode("));
         assertTrue(renderer.contains("RingSurfaceGpu.packMesh("));
-        assertTrue(renderer.contains("inputs.wallStyle().vertexArgb()"));
+        assertTrue(renderer.contains("inputs.wallStyle()"));
         assertTrue(renderer.contains("RenderSystem.setShaderTexture(3,"));
-        assertTrue(renderer.contains("RingWallTexture.build("));
+        assertTrue(renderer.contains("RingWallTexture.buildMipmapped("));
     }
 
     @Test
@@ -37,7 +37,7 @@ class RingWallAppearanceSourceContractTest {
         assertTrue(fragment.contains("uniform sampler2D Sampler3"));
         assertTrue(fragment.contains("uniform vec4 RingWorldVertical"));
         assertTrue(fragment.contains("bool rimBridge = texCoord0.y < 0.0 || texCoord0.y > 1.0"));
-        assertTrue(fragment.contains("vec4 wall = texture(Sampler3,"));
+        assertTrue(fragment.contains("vec4 wall = filteredWall("));
         assertFalse(fragment.contains("weather * 0.35"),
                 "rim palette colours must not receive an extra green decay tint");
         assertTrue(fragment.contains("sampled.rgb = vertexColor.rgb * 0.85"));

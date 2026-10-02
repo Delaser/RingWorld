@@ -6,6 +6,7 @@ plugins {
 tasks.named('check') {
 	dependsOn(rootProject.tasks.named('verifyOutboundPositionPacketInventory'))
 	dependsOn(rootProject.tasks.named('verifyBackportDependencyInventory'))
+	dependsOn(rootProject.tasks.named('verifyBackportHandoffShaderBindings'))
 }
 
 version = rootProject.mod_version
@@ -840,8 +841,8 @@ def neoForgeMultiplayerWidthBlocks = neoForgeMultiplayerHarnessDimension(
         'ringMultiplayerWidthBlocks', '416', 128, true)
 def neoForgeMultiplayerWallHeightBlocks = neoForgeMultiplayerHarnessDimension(
         'ringMultiplayerWallHeightBlocks', '160', 32, false)
-def neoForgeMultiplayerAtlasCellCount = (neoForgeMultiplayerCircumferenceBlocks.longValue() / 8L)
-        * (neoForgeMultiplayerWidthBlocks.longValue() / 8L)
+def neoForgeMultiplayerAtlasCellCount = neoForgeMultiplayerCircumferenceBlocks.longValue()
+        * neoForgeMultiplayerWidthBlocks.longValue()
 
 def createCompatOuterJarSha256 = 'ef87fe5709f1ba1f5b8bb20a2925b5afb4669e178fd6d8bf10c167759eefe37a'
 def createCompatFlywheelNestedPath = 'META-INF/jarjar/flywheel-neoforge-1.21.1-1.0.6.jar'
@@ -2744,7 +2745,7 @@ tasks.register('verifyNeoForgeAtlasUiClient') {
         if (!log.contains('[atlas-ui-test] PASS') || log.contains('[atlas-ui-test] FAIL')) {
             throw new GradleException("NeoForge atlas UI client did not pass; inspect ${logFile}")
         }
-        def atlasHandshakeMarkers = ['[atlas-ui-test] client-ready', '[atlas-ui-test] settings-v3-mapping-4',
+        def atlasHandshakeMarkers = ['[atlas-ui-test] client-ready', '[atlas-ui-test] settings-v5-mapping-4',
          '[atlas-ui-test] disconnect-clear', '[atlas-ui-test] PASS']
         def previousAtlasHandshakeMarker = -1
         atlasHandshakeMarkers.each { marker ->
@@ -2754,9 +2755,9 @@ tasks.register('verifyNeoForgeAtlasUiClient') {
             }
             previousAtlasHandshakeMarker = markerIndex
         }
-        def atlasSettingsAck = log.indexOf('RingWorld settings acknowledged by AtlasUiTester on NeoForge: format 3')
+        def atlasSettingsAck = log.indexOf('RingWorld settings acknowledged by AtlasUiTester on NeoForge: format 5')
         if (atlasSettingsAck < 0 || atlasSettingsAck >= log.indexOf('[atlas-ui-test] disconnect-clear')) {
-            throw new GradleException("NeoForge Atlas UI integrated server did not accept the format-3 settings acknowledgement; inspect ${logFile}")
+            throw new GradleException("NeoForge Atlas UI integrated server did not accept the format-5 settings acknowledgement; inspect ${logFile}")
         }
         rootProject.ext.requirePartialAtlasHandoff(
                 logFile, 'NeoForge Atlas UI client')
@@ -3328,6 +3329,9 @@ tasks.register('prepareNeoForgeHeadlessPrewarmWorld') {
         config.setProperty('circumferenceBlocks',
                 providers.gradleProperty('ringNeoForgeHeadlessPrewarmCircumference').orElse('2048').get())
         config.setProperty('wallHeightBlocks', '160')
+        config.setProperty("atlasFidelity", providers.gradleProperty("ringNeoForgeHeadlessPrewarmAtlasFidelity").orElse("BALANCED").get())
+        config.setProperty("continuousRingRiver", providers.gradleProperty("ringNeoForgeHeadlessPrewarmContinuousRiver").orElse("false").get())
+        config.setProperty("moreStructures", providers.gradleProperty("ringNeoForgeHeadlessPrewarmMoreStructures").orElse("false").get())
         config.setProperty('testMode', 'false')
         config.setProperty('testViewDistanceChunks', '6')
         config.setProperty('pregenerateTerrainAtlas', 'false')

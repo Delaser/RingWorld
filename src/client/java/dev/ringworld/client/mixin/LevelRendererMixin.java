@@ -45,7 +45,7 @@ abstract class LevelRendererMixin implements RingDrawableSectionView {
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V", ordinal = 0))
     private void ringworld$curveBlockEntity(
             PoseStack poseStack, double x, double y, double z) {
-        applyCurvedPose(poseStack, cameraPosition(), x, y, z);
+        applyCurvedPose(poseStack, cameraPosition(), x, y, z, false);
     }
 
     @Redirect(
@@ -53,7 +53,7 @@ abstract class LevelRendererMixin implements RingDrawableSectionView {
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V", ordinal = 1))
     private void ringworld$curveGlobalBlockEntity(
             PoseStack poseStack, double x, double y, double z) {
-        applyCurvedPose(poseStack, cameraPosition(), x, y, z);
+        applyCurvedPose(poseStack, cameraPosition(), x, y, z, false);
     }
 
     @Redirect(
@@ -61,7 +61,7 @@ abstract class LevelRendererMixin implements RingDrawableSectionView {
             at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/vertex/PoseStack;translate(DDD)V", ordinal = 2))
     private void ringworld$curveBlockBreaking(
             PoseStack poseStack, double x, double y, double z) {
-        applyCurvedPose(poseStack, cameraPosition(), x, y, z);
+        applyCurvedPose(poseStack, cameraPosition(), x, y, z, true);
     }
 
     @Redirect(
@@ -78,7 +78,7 @@ abstract class LevelRendererMixin implements RingDrawableSectionView {
         }
 
         poseStack.pushPose();
-        applyCurvedPose(poseStack, cameraPosition(), x, y, z);
+        applyCurvedPose(poseStack, cameraPosition(), x, y, z, true);
         renderShape(poseStack, vertices, shape, 0.0, 0.0, 0.0,
                 red, green, blue, alpha);
         poseStack.popPose();
@@ -90,7 +90,7 @@ abstract class LevelRendererMixin implements RingDrawableSectionView {
     }
 
     private static void applyCurvedPose(
-            PoseStack poseStack, Vec3 camera, double x, double y, double z) {
+            PoseStack poseStack, Vec3 camera, double x, double y, double z, boolean matchTerrainScale) {
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null) {
             poseStack.translate(x, y, z);
@@ -101,6 +101,7 @@ abstract class LevelRendererMixin implements RingDrawableSectionView {
         Vec3 local = transform.cameraLocalPosition();
         poseStack.translate(local.x, local.y, local.z);
         poseStack.mulPose(Axis.ZP.rotation((float)transform.tangentAngleRadians()));
+        if (matchTerrainScale) poseStack.scale((float) transform.tangentScale(), 1.0f, 1.0f);
     }
 
     @Override

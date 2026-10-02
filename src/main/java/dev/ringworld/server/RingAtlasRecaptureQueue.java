@@ -17,6 +17,7 @@ final class RingAtlasRecaptureQueue {
             new LinkedHashSet<>();
     private RingAtlasPregenerationService.TileCoordinate activeTile;
     private int activeTileOffset;
+    private boolean preferOverflow;
 
     void enqueue(RingAtlasSurfaceInvalidation.Cell cell) {
         if (exact.size() < MAX_EXACT_CELLS) {
@@ -33,12 +34,15 @@ final class RingAtlasRecaptureQueue {
             throw new IllegalArgumentException("recapture drain bounds must be positive");
         }
         List<RingAtlasSurfaceInvalidation.Cell> drained = new ArrayList<>(maximum);
-        Iterator<RingAtlasSurfaceInvalidation.Cell> exactIterator = exact.iterator();
-        while (exactIterator.hasNext() && drained.size() < maximum) {
-            drained.add(exactIterator.next());
-            exactIterator.remove();
-        }
         while (drained.size() < maximum) {
+            if (!exact.isEmpty() && (!preferOverflow
+                    || (activeTile == null && overflowTiles.isEmpty()))) {
+                Iterator<RingAtlasSurfaceInvalidation.Cell> cells = exact.iterator();
+                drained.add(cells.next());
+                cells.remove();
+                preferOverflow = true;
+                continue;
+            }
             if (activeTile == null) {
                 Iterator<RingAtlasPregenerationService.TileCoordinate> tiles = overflowTiles.iterator();
                 if (!tiles.hasNext()) break;
@@ -57,6 +61,7 @@ final class RingAtlasRecaptureQueue {
             }
             if (column < columns && row < rows) {
                 drained.add(new RingAtlasSurfaceInvalidation.Cell(column, row));
+                preferOverflow = false;
             }
         }
         return drained;

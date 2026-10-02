@@ -76,7 +76,7 @@ abstract class GlobalSettingsMixin {
         set(shader, "RingWorldDetail",
                 profile == null ? 0.0F : (float)profile.detailStartBlocks(),
                 profile == null ? 0.0F : (float)profile.detailEndBlocks(),
-                profile == null ? 0.0F : (float)profile.revealNear(),
+                profile == null ? 0.0F : 1.0F,
                 profile == null ? 0.0F : (float)profile.revealFar());
         set(shader, "RingWorldAtmosphere",
                 profile == null ? 0.0F : (float)profile.hazeNear(),
@@ -94,16 +94,29 @@ abstract class GlobalSettingsMixin {
 
         RingCloudBounds cloudBounds = geometry == null ? null
                 : RingCloudBounds.betweenInnerRimFaces(
-                        geometry, RingGenerationBoundary.RIM_THICKNESS);
+                        geometry, ClientRingState.wallStyle().thicknessBlocks());
         set(shader, "RingWorldAtmosphere2",
                 profile == null ? 0.0F : (float)profile.cloudFadeEndBlocks(),
                 profile == null ? 0.0F : profile.visualProfileVersion(),
                 cloudBounds == null ? 0.0F : (float)cloudBounds.minimumZ(),
                 cloudBounds == null ? 0.0F : (float)cloudBounds.maximumZ());
+        waterBounds(shader, client, "RingWorldWaterStill", "block/water_still", active == 1);
+        waterBounds(shader, client, "RingWorldWaterFlow", "block/water_flow", active == 1);
         var atlasLight = RingAtlasLightTuning.profile();
         set(shader, "RingWorldAtlasLight",
                 atlasLight.shaderMode(), atlasLight.falloffExponent(),
                 atlasLight.peakStrength(), 0.0F);
+    }
+
+    private static void waterBounds(ShaderInstance shader, Minecraft client, String uniform, String path, boolean active) {
+        var texture = net.minecraft.resources.ResourceLocation.withDefaultNamespace(path);
+        var sprite = active && client.level != null ? client.getTextureAtlas(
+                net.minecraft.world.inventory.InventoryMenu.BLOCK_ATLAS).apply(texture) : null;
+        if (sprite == null || !sprite.contents().name().equals(texture)) {
+            set(shader, uniform, -1.0F, -1.0F, -1.0F, -1.0F);
+        } else {
+            set(shader, uniform, sprite.getU0(), sprite.getV0(), sprite.getU1(), sprite.getV1());
+        }
     }
 
     private static void set(ShaderInstance shader, String name,
