@@ -254,6 +254,13 @@ public final class RingAtlasPregenerationService {
         return requireState(world).dirtyTiles.hasPending();
     }
 
+    /** Server-thread observation for fixtures that require a settled Atlas. */
+    public static boolean hasPendingRecaptures(ServerLevel world) {
+        requireServerThread(world);
+        WorldState state = requireState(world);
+        return state.revisionPending || state.recaptures.hasPending();
+    }
+
     public static String status(ServerLevel world) {
         WorldState state = WORLDS.get(world);
         if (state == null) return "terrain atlas unavailable";

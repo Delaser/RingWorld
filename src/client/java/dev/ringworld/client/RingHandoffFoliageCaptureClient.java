@@ -4,9 +4,11 @@ import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.compat.Screenshot;
 import dev.ringworld.client.render.RingDrawableSectionView;
 import dev.ringworld.client.render.RingSurfaceTextureRenderer;
+import dev.ringworld.server.RingAtlasPregenerationService;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingRenderProfile;
 import dev.ringworld.world.RingTerrainAtlas;
+import net.minecraft.world.level.GameRules;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -115,6 +117,8 @@ public final class RingHandoffFoliageCaptureClient {
     private long atlasRevision;
     private long observedAtlasRevision = Long.MIN_VALUE;
     private int atlasStableTicks;
+    private volatile boolean atlasIdleProbePending;
+    private volatile long idleServerAtlasRevision = Long.MIN_VALUE;
     private boolean atlasRevisionArmed;
     private double cameraX;
     private double targetAtlasHeight;
@@ -377,6 +381,11 @@ public final class RingHandoffFoliageCaptureClient {
         RingIntegratedCaptureControl.execute(client, "handoff foliage initial placement",
                 context -> {
                     RingIntegratedCaptureControl.normalizeEnvironment(context, 6_000, false);
+                    // Pixel comparisons require an immutable terrain snapshot.
+                    // Suppress natural mutations only in this disposable fixture;
+                    // its explicit foliage edits still exercise live recaptures.
+                    context.world().getGameRules().getRule(GameRules.RULE_RANDOMTICKING)
+                            .set(0, context.server());
                     context.player().teleportTo(context.world(), cameraX, CAMERA_Y, INITIAL_Z,
                             Set.<RelativeMovement>of(), CAMERA_YAW, 0.0F);
                     initialPlacementComplete = true;
@@ -404,7 +413,7 @@ public final class RingHandoffFoliageCaptureClient {
             return true;
         }
         if (!fixtureBuildRequested) {
-            if (!atlasIsQuiescent(atlas, "pre-fixture")) return true;
+            if (!atlasIsQuiescent(client, atlas, "pre-fixture")) return true;
             captureFinalAtlasGeometry(client, geometry, atlas);
             fixtureBuildRequested = true;
             int[] fixtureCenters = planeCenterYs.clone();
@@ -453,7 +462,7 @@ public final class RingHandoffFoliageCaptureClient {
             }
             return true;
         }
-        if (!atlasIsQuiescent(atlas, "post-fixture")) return true;
+        if (!atlasIsQuiescent(client, atlas, "post-fixture")) return true;
         if (!fixtureConfirmed) {
             String geometryFailure = finalAtlasGeometryFailure(client, geometry, atlas);
             if (geometryFailure != null) return fail(client, geometryFailure);
@@ -639,9 +648,26 @@ public final class RingHandoffFoliageCaptureClient {
         return true;
     }
 
-    private boolean atlasIsQuiescent(RingTerrainAtlas atlas, String phase) {
+    private boolean atlasIsQuiescent(Minecraft client, RingTerrainAtlas atlas, String phase) {
+        if (!atlasIdleProbePending) {
+            atlasIdleProbePending = true;
+            RingIntegratedCaptureControl.execute(client, "handoff foliage Atlas drain probe",
+                    context -> {
+                        idleServerAtlasRevision =
+                                !RingAtlasPregenerationService.hasPendingRecaptures(context.world())
+                                && !RingAtlasPregenerationService.hasPendingDirtyTiles(context.world())
+                                ? RingAtlasPregenerationService.atlas(context.world()).revision()
+                                : Long.MIN_VALUE;
+                        atlasIdleProbePending = false;
+                    },
+                    () -> { },
+                    detail -> {
+                        atlasIdleProbePending = false;
+                        serverControlFailure = detail;
+                    });
+        }
         long revision = atlas.revision();
-        if (revision != observedAtlasRevision) {
+        if (revision != observedAtlasRevision || idleServerAtlasRevision != revision) {
             observedAtlasRevision = revision;
             atlasStableTicks = 0;
             return false;
@@ -650,7 +676,7 @@ public final class RingHandoffFoliageCaptureClient {
         if (atlasStableTicks == ATLAS_QUIESCENCE_TICKS) {
             RingWorldMod.LOGGER.info(
                     "[handoff-foliage-capture] Atlas quiescent phase={}, revision={}, "
-                            + "stableTicks={}",
+                            + "stableTicks={}, serverRecapturesDrained=true",
                     phase, revision, atlasStableTicks);
         }
         return atlasStableTicks >= ATLAS_QUIESCENCE_TICKS;
@@ -658,6 +684,7 @@ public final class RingHandoffFoliageCaptureClient {
 
     private void resetAtlasQuiescence() {
         observedAtlasRevision = Long.MIN_VALUE;
+        idleServerAtlasRevision = Long.MIN_VALUE;
         atlasStableTicks = 0;
     }
 
@@ -1025,7 +1052,7 @@ public final class RingHandoffFoliageCaptureClient {
             }
             return true;
         }
-        if (!atlasIsQuiescent(atlas, "post-clear")) return true;
+        if (!atlasIsQuiescent(client, atlas, "post-clear")) return true;
         String geometryFailure = finalAtlasGeometryFailure(client, geometry, atlas);
         if (geometryFailure != null) return fail(client, geometryFailure);
         if (!atlasRevisionArmed) {
