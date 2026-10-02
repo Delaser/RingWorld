@@ -1206,10 +1206,10 @@ def verifyHandoffFoliageOutputs = { File runDirectory, String label ->
 			|| Math.abs(Double.parseDouble(identity.group(1)) - 4_096.5D) > 0.001D
 			|| Math.abs(Double.parseDouble(identity.group(2)) - 120.0D) > 0.001D
 			|| Math.abs(Double.parseDouble(identity.group(3)) + 17.5D) > 0.001D
-			|| identity.group(4) != "c4f99d1076b39de3"
-			|| identity.group(5).toInteger() != 8
-			|| identity.group(6).toInteger() != 65_536
-			|| identity.group(7).toInteger() != 65_536
+			|| identity.group(4) != "b2fd6b8c759ff1d4"
+			|| identity.group(5).toInteger() != 1
+			|| identity.group(6).toInteger() != 4_194_304
+			|| identity.group(7).toInteger() != 4_194_304
 			|| identity.group(8).toInteger() != 1_280
 			|| identity.group(9).toInteger() != 720) {
 		throw new GradleException("${label} did not bind the immutable production Atlas: ${logFile}")

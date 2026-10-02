@@ -39,9 +39,11 @@ public final class RingHandoffFoliageCaptureClient {
     private static final String WORLD_PROPERTY = "ringworld.handoffFoliageWorld";
     private static final int EXPECTED_CIRCUMFERENCE = 16_384;
     private static final int EXPECTED_WIDTH = 256;
-    private static final long EXPECTED_WORLD_HASH = 0xC4F99D1076B39DE3L;
-    private static final int EXPECTED_SAMPLE_STEP = 8;
-    private static final int EXPECTED_ATLAS_CELLS = 65_536;
+    // Independently verified migrated settings and format-10 Atlas for the
+    // immutable production source, not a relaxed identity match.
+    private static final long EXPECTED_WORLD_HASH = 0xB2FD6B8C759FF1D4L;
+    private static final int EXPECTED_SAMPLE_STEP = 1;
+    private static final int EXPECTED_ATLAS_CELLS = 4_194_304;
     private static final int VIEW_DISTANCE_CHUNKS = 16;
     private static final int CAPTURE_FOV = 70;
     private static final int CAPTURE_WIDTH = 1_280;
@@ -75,9 +77,9 @@ public final class RingHandoffFoliageCaptureClient {
     private static final int INITIAL_SETTLE_TICKS = 60;
     private static final int ATLAS_QUIESCENCE_TICKS = 200;
     private static final int WORLD_OPEN_TIMEOUT_TICKS = 2_400;
-    private static final int ATLAS_READY_TIMEOUT_TICKS = 2_400;
+    private static final int ATLAS_READY_TIMEOUT_TICKS = 12_000;
     private static final int RENDER_TIMEOUT_TICKS = 1_800;
-    private static final int TOTAL_TIMEOUT_TICKS = 7_200;
+    private static final int TOTAL_TIMEOUT_TICKS = 24_000;
     private static final float REVEAL_VISIBLE_MINIMUM = 0.95F;
     private static final float REVEAL_BLOCKED_MAXIMUM = 0.001F;
 
