@@ -142,6 +142,9 @@ public final class RingTerrainAtlas {
     /** In-memory trial layers; deliberately excluded from the released wire/disk format. */
     public java.util.List<RingFloatingSurface> floatingTrial() { return floatingTrial; }
 
+    /** Keep captured ground samples while omitting detached geometry from this trial snapshot. */
+    public void omitFloatingTrialGeometry() { floatingTrial = java.util.List.of(); }
+
     /** Apply only to an independent rendering snapshot, never an authoritative/cache atlas. */
     public void applyFloatingTrial(java.util.List<RingFloatingSurface> layers) {
         floatingTrial = java.util.List.copyOf(layers);

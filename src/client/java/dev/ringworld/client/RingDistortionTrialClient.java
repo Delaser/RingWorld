@@ -74,7 +74,8 @@ public final class RingDistortionTrialClient {
             if (floatingChunk >= geometry.circumferenceChunks()*geometry.widthChunks()) {
                 RingFloatingAtlasTrial.publish(ClientRingState.terrainAtlas().worldHash(), floatingLayers);
                 dev.ringworld.client.render.RingSurfaceTextureRenderer.clear();
-                RingWorldMod.LOGGER.info("[floating-atlas-trial] captured {} detached columns; rebuilding layered surface", floatingLayers.size());
+                RingWorldMod.LOGGER.info("[floating-atlas-trial] captured {} detached columns; mode={}", floatingLayers.size(),
+                        Boolean.getBoolean("ringworld.floatingAtlasIgnore") ? "ignore structures, keep ground" : "layered surface");
                 phase = 5;
                 return true;
             }

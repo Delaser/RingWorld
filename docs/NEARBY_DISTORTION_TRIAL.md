@@ -397,3 +397,48 @@ heightfield curtain. The retained local image is
 `/tmp/ring-distortion-client-floating-v2.log`. The client remains open with the
 companion trial active. This floating-layer appearance has not yet received
 owner acceptance; the earlier acceptance refers to the nearby projection only.
+
+## Alternative trial: omit floating structures from the Atlas
+
+The owner asked to try the cheaper alternative of ignoring floating structures
+instead of rendering extra volumes. Add `-PringFloatingAtlasIgnore=true` to the
+floating-capture/resume invocation above. This remains separate from the
+accepted nearby-projection checkpoint and defaults off.
+
+The rendering snapshot first substitutes the captured ground height/colour,
+then `omitFloatingTrialGeometry()` clears the detached prism collection.
+Low, Medium and High retain that ground through normal downsampling; no extra
+prism vertices are emitted. Real chunks, blocks and authoritative Atlas/cache
+samples are unchanged. Omitted builds consequently disappear with the live
+chunks instead of receiving a distant replacement. The earlier volume trial
+remains available by omitting the ignore property.
+
+The ignore capture conservatively rejects layers whose top or bottom material
+is natural stone, dirt, sand, terracotta, logs, gravel, clay, snow or ice.
+Combined with the existing leaves/fluid exclusions and actual eight-block air
+gap requirement, this avoids stripping ordinary cave roofs and tree trunks.
+This is a material-based trial rule, not full structural-connectivity analysis:
+player-built floating structures using these natural materials can still form
+Atlas ramps, and mixed-material/vegetated builds are intentionally conservative.
+The same one-shot, integrated-world, one-gap and thickness limitations apply.
+
+`RingFloatingSurfaceTest` now verifies the omission path at every quality:
+underlying ground remains, the authoritative high sample stays intact, no prism
+vertices are emitted and High has the normal heightfield vertex budget.
+Compile/unit checks pass both loaders on 26.1.2 and 26.2 (456 cases each), and
+26.3 (459 each), zero failures/skips. Logs:
+`logs/nearby-distortion-trial/floating-ignore-<version>-build.log`.
+These retain the documented development-artifact/release qualification limits.
+
+Omission-mode 26.3 Fabric runtime: 1,024 chunks scanned, 21,523 candidate
+columns captured (versus 41,612 with the less conservative volume capture).
+After applying ground-only snapshots, the completed Medium Atlas uploads
+116,736 vertices, restoring the baseline mesh count from the volume trial's
+1,614,768. The client resumes the owner pose (368.550,94.126,27.466),
+yaw95.800/pitch−24.000. The saved view shows the underlying ring terrain
+without the distant white walkway/heightfield curtain. Local evidence:
+`logs/nearby-distortion-trial/review/floating-ignore-after.png` and
+`/tmp/ring-distortion-client-floating-ignore.log`. This is geometry/runtime
+confirmation, not an FPS benchmark or owner acceptance. The game remains open
+with ground-only omission enabled; no dedicated-server or release support is
+claimed. Development authentication-service errors are unrelated to this trial.

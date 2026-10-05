@@ -49,4 +49,27 @@ final class RingFloatingSurfaceTest {
             assertEquals(65,displayed.cellHeight(512/displayed.sampleStep(),64/displayed.sampleStep()));
         }
     }
+    @Test void ignoringDetachedGeometryKeepsGroundAtEveryQualityWithoutExtraVertices() {
+        var source = new RingTerrainAtlas(new RingGeometry(128,2048),123);
+        for (int x=0; x<source.columns(); x++) for (int z=0; z<source.rows(); z++)
+            source.putCell(x,z,65,0x446633);
+        var baseline = RingSurfaceMesh.build(source.geometry(),source,true,64);
+        source.putBlockSample(512,0,320,0xEEEEEE);
+        var snapshot = source.snapshot();
+        snapshot.applyFloatingTrial(List.of(new RingFloatingSurface(512,0,319,320,65,0x446633,0xEEEEEE,0)));
+        snapshot.omitFloatingTrialGeometry();
+        assertEquals(320,source.cellHeight(512,64),"real top sample must stay intact");
+        for (var quality : RingLodQuality.values()) {
+            var displayed = quality.displaySnapshot(snapshot);
+            assertTrue(displayed.floatingTrial().isEmpty());
+            assertEquals(65,displayed.cellHeight(512/displayed.sampleStep(),64/displayed.sampleStep()));
+            var mesh = RingSurfaceMesh.build(source.geometry(),displayed,true,64);
+            mesh.emitTriangles((x,y,z,u,v) -> {
+                assertTrue(u<2,"no detached prism may be emitted");
+                assertEquals(65,source.geometry().radius()+source.geometry().surfaceReferenceY()-Math.hypot(x,y),0.0001);
+            });
+            if (quality==RingLodQuality.HIGH) assertEquals(baseline.vertexCount(),mesh.vertexCount());
+        }
+    }
+
 }
