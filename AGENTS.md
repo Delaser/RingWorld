@@ -16,6 +16,9 @@ for live commands, the radius safeguard, source checks and the disposable
 minimum-new-ring (2048-block) build-height demo. Follow-up is tracked in
 [issue #256](https://github.com/Delaser/RingWorld/issues/256). Do not change normal world
 creation limits or server physics to accommodate the trial.
+The companion floating-build omission/volume and tint experiments are tracked
+separately in [issue #257](https://github.com/Delaser/RingWorld/issues/257); they
+remain opt-in integrated-world captures, not released Atlas support.
 
 ## Supported-version parity and release state
 

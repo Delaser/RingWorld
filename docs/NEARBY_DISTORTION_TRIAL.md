@@ -333,6 +333,9 @@ check, not a repeat of release or six-cell unit qualification.
 
 ## Floating-surface companion trial
 
+Separate follow-up: [issue #257](https://github.com/Delaser/RingWorld/issues/257)
+tracks both variants, the shared tint fix and their remaining qualification.
+
 The full-circumference floating walkway exposed a heightfield limitation:
 Atlas format 10 stores only the uppermost height per column, so neighbouring
 low ground and high platforms are joined as mountain slopes. A detached
