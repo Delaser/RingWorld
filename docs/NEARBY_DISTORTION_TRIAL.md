@@ -330,3 +330,70 @@ extension completed and verified every new placement at Y319 across the full
 The saved player pose was retained and the client stayed open. Log:
 `/tmp/ring-distortion-client-loop.log`. This was a fixture compile/runtime
 check, not a repeat of release or six-cell unit qualification.
+
+## Floating-surface companion trial
+
+The full-circumference floating walkway exposed a heightfield limitation:
+Atlas format 10 stores only the uppermost height per column, so neighbouring
+low ground and high platforms are joined as mountain slopes. A detached
+platform requires both its lower boundary and the surface underneath it.
+
+`-PringFloatingAtlasTrial=true` with `-PringDistortionTrialResume=true` enables
+an additional, one-shot integrated-world capture. `RingFloatingAtlasTrial`
+reads one canonical chunk per completed server-thread task across the small
+disposable world. It identifies a top solid interval no thicker than 64 blocks,
+followed by at least eight blocks of actual air and another exposed surface.
+Top leaves and fluids are excluded. This is based on real column occupancy,
+not a slope threshold that would simply cut off tall cliffs.
+
+The result is an immutable collection of `RingFloatingSurface` records keyed
+to the client Atlas world hash. Shared and 26.3 surface renderers apply it only
+to independent rendering snapshots: the heightfield is lowered to the observed
+underlying surface and each detached column is emitted as a separate closed
+one-block-wide prism with its real top/bottom. No prism vertex connects the
+platform to the ground. The existing projection, handoff and proxy-depth
+ordering apply to both layers. Snapshots retain the immutable layer collection,
+its contents contribute to mesh fingerprints, and disconnect clears capture
+state. Authoritative Atlas objects, tile payloads and disk caches stay unchanged.
+
+This is deliberately **not production floating-object support**. Only one
+upper interval and one lower surface are represented; small air gaps, thicker
+intervals, foliage and multiple stacked platforms need further work. Capture
+is one-shot, so later edits need a new capture/relaunch. It currently requires
+the integrated fixture and has no dedicated-server transport or persisted
+layer format. No low-detail meshing/coalescing is applied to the detached prisms;
+internal faces increase vertex/memory cost. Floating-layer colours are map
+colours and exposed block light is not captured separately. Adjacent lower
+samples at reduced LOD use the existing sampling grid and are approximate.
+
+Source changes: `RingFloatingSurface.java`, the in-memory snapshot/layer methods
+in `RingTerrainAtlas.java`, detached-prism emission in `RingSurfaceMesh.java`,
+`RingFloatingAtlasTrial.java`, both `RingSurfaceTextureRenderer.java` adapters,
+client-session reset, `RingLodQuality.displaySnapshot` layer preservation,
+the disposable fixture and its Gradle property.
+`RingFloatingSurfaceTest` checks that authoritative heights remain untouched,
+underlying ground stays below the platform, emitted platform vertices stay at
+the actual slab boundaries, vertex counts match, snapshot layers survive and
+insufficient gaps cannot be represented as detached intervals. It also verifies
+that Low, Medium and High downsampling retain detached layers; the first runtime
+pass exposed that omission before it was corrected. Release wire
+format 10 and its byte accounting are unchanged; trial layer allocations are
+additional to that accounting.
+
+Floating-trial verification (5 October 2026): final compile/unit checks pass on
+both loaders with 455 cases each on 26.1.2 and 26.2, and 458 each on 26.3,
+zero failures/skips. Logs: `logs/nearby-distortion-trial/floating-<version>-build.log`.
+As before, these use existing matching patched development artifacts and do
+not qualify a release. The second 26.3 Fabric runtime captures 41,612 detached
+columns across 1,024 canonical chunks and uploads a 1,614,768-vertex mesh
+(previous heightfield: 116,736 vertices). A one-time resource-update diagnostic
+reports 16.47 ms. Performance/frame pacing still require qualification and
+internal-face removal or coalescing would be needed before release.
+
+The owner view at (818.736,66,-37.225), yaw−52.251/pitch−56.400 shows the distant
+walkway as a narrow white strip above the underlying terrain rather than a
+heightfield curtain. The retained local image is
+`logs/nearby-distortion-trial/review/floating-platform-after.png`; runtime log
+`/tmp/ring-distortion-client-floating-v2.log`. The client remains open with the
+companion trial active. This floating-layer appearance has not yet received
+owner acceptance; the earlier acceptance refers to the nearby projection only.

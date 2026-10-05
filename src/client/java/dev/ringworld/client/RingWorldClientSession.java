@@ -10,6 +10,7 @@ public final class RingWorldClientSession {
         RingSurfaceTextureRenderer.clear();
         RingClientLodTuning.clearSession();
         RingDistortionTuning.clearSession();
+        RingFloatingAtlasTrial.clear();
         AtlasPregenerationClientState.clear();
         ClientRingState.clear();
     }

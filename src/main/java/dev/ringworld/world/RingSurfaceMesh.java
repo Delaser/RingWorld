@@ -68,6 +68,7 @@ public final class RingSurfaceMesh {
 
     /** Immutable, shared-vertex mesh data; triangles are emitted without indices. */
     public static final class Mesh {
+        private final java.util.List<RingFloatingSurface> floating;
         private final int segments;
         private final int bands;
         private final int columns;
@@ -95,6 +96,7 @@ public final class RingSurfaceMesh {
                      double referenceHeight, double wallTopHeight,
                      RingCloudBounds innerFaces, int segments, int bands) {
             this.geometry = geometry;
+            this.floating = detailed ? atlas.floatingTrial() : java.util.List.of();
             this.segments = segments;
             this.bands = bands;
             // Rims are vertical structures, while the terrain Atlas stores one
@@ -204,7 +206,8 @@ public final class RingSurfaceMesh {
             int surface = Math.multiplyExact(Math.multiplyExact(segments, bands), 6);
             // Two rims, each closed above the reference surface with an inner
             // face, an outer face, and a top face: six quads per segment.
-            return bridgeRims ? Math.addExact(surface, Math.multiplyExact(segments, 36)) : surface;
+            int terrain = bridgeRims ? Math.addExact(surface, Math.multiplyExact(segments, 36)) : surface;
+            return Math.addExact(terrain, Math.multiplyExact(floating.size(), 36));
         }
 
         /** Emits the two consistently wound triangles for every finite quad. */
@@ -218,6 +221,7 @@ public final class RingSurfaceMesh {
                     emitTriangle(consumer, a, c, d);
                 }
             }
+            for (var layer : floating) emitFloating(consumer, layer);
             consumer.sideColor(-1);
             if (bridgeRims) {
                 for (int segment = 0; segment < segments; segment++) {
@@ -235,6 +239,28 @@ public final class RingSurfaceMesh {
                     emitTopBridgeQuad(consumer, segment, outerMinimumZ, bridgeMinimumZ);
                     emitTopBridgeQuad(consumer, segment, bridgeMaximumZ, outerMaximumZ);
                 }
+            }
+        }
+
+        private void emitFloating(VertexConsumer consumer, RingFloatingSurface layer) {
+            consumer.sideColor(layer.color());
+            // Separate closed prisms: no interpolation from the platform down to ground.
+            double[][] points = {
+                {layer.x(), layer.bottom(), layer.z()}, {layer.x()+1, layer.bottom(), layer.z()},
+                {layer.x()+1, layer.bottom(), layer.z()+1}, {layer.x(), layer.bottom(), layer.z()+1},
+                {layer.x(), layer.top(), layer.z()}, {layer.x()+1, layer.top(), layer.z()},
+                {layer.x()+1, layer.top(), layer.z()+1}, {layer.x(), layer.top(), layer.z()+1}
+            };
+            int[][] faces = {{0,3,2,1}, {4,5,6,7}, {0,1,5,4}, {1,2,6,5}, {2,3,7,6}, {3,0,4,7}};
+            float u = 2 + (layer.x()+0.5F) / geometry.circumferenceBlocks();
+            float v = (layer.z()+0.5F-geometry.minWidthZ()) / geometry.widthBlocks();
+            for (int[] face : faces) for (int i : new int[]{0,1,2,0,2,3}) {
+                double[] point = points[face[i]];
+                double angle = point[0] == geometry.circumferenceBlocks() ? 0
+                        : point[0] * Math.PI * 2 / geometry.circumferenceBlocks();
+                double radius = geometry.physicalRadiusAt(point[1]);
+                consumer.vertex((float)(radius*Math.sin(angle)), (float)(-radius*Math.cos(angle)),
+                        (float)point[2], u, v);
             }
         }
 

@@ -37,6 +37,7 @@ public enum RingLodQuality {
                         source.cellSideColor(sourceCol, sourceRow), waterCoverage(source, col, row));
             }
         }
+        result.applyFloatingTrial(source.floatingTrial());
         return result;
     }
 

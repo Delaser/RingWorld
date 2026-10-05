@@ -15,7 +15,8 @@ import net.minecraft.world.level.block.Blocks;
 /** Disposable minimum-ring trial. Only active with -Dringworld.distortionTrial=true. */
 public final class RingDistortionTrialClient {
     private static final String NAME = "RingWorld Nearby Distortion Trial 2048";
-    private static int phase, settled, platformX;
+    private static int phase, settled, platformX, floatingChunk;
+    private static final java.util.List<dev.ringworld.world.RingFloatingSurface> floatingLayers = new java.util.ArrayList<>();
     private static boolean opened, requested;
     private static volatile boolean positioned, captured;
     private static volatile String failure;
@@ -62,6 +63,29 @@ public final class RingDistortionTrialClient {
             }
             return true;
         }
+        if (phase == 7) {
+            if (requested) {
+                if (!positioned) return true;
+                floatingChunk++;
+                if (floatingChunk % 128 == 0) RingWorldMod.LOGGER.info("[floating-atlas-trial] scanned {} chunks", floatingChunk);
+                requested = false; positioned = false;
+            }
+            var geometry = ClientRingState.geometry();
+            if (floatingChunk >= geometry.circumferenceChunks()*geometry.widthChunks()) {
+                RingFloatingAtlasTrial.publish(ClientRingState.terrainAtlas().worldHash(), floatingLayers);
+                dev.ringworld.client.render.RingSurfaceTextureRenderer.clear();
+                RingWorldMod.LOGGER.info("[floating-atlas-trial] captured {} detached columns; rebuilding layered surface", floatingLayers.size());
+                phase = 5;
+                return true;
+            }
+            int index = floatingChunk;
+            requested = true;
+            RingIntegratedCaptureControl.execute(client, "floating Atlas capture", context ->
+                    RingFloatingAtlasTrial.captureChunk(context, index/geometry.widthChunks(),
+                            geometry.minChunkZ()+index%geometry.widthChunks(), floatingLayers),
+                    () -> positioned = true, message -> failure = message);
+            return true;
+        }
         if (phase == 6) {
             if (requested) {
                 if (!positioned) return true;
@@ -71,7 +95,7 @@ public final class RingDistortionTrialClient {
             }
             if (platformX >= 2048) {
                 RingWorldMod.LOGGER.info("[distortion-trial] platform extension complete and verified: full 2048-block loop at Y319, Z=-4..4; original section preserved");
-                phase = 5;
+                phase = Boolean.getBoolean("ringworld.floatingAtlasTrial") ? 7 : 5;
                 return true;
             }
             int start = platformX;
@@ -117,7 +141,8 @@ public final class RingDistortionTrialClient {
                 RingWorldMod.LOGGER.info("[distortion-trial] resumed saved viewpoint {},{},{} yaw={} pitch={}",
                         client.player.getX(), client.player.getY(), client.player.getZ(),
                         client.player.getYRot(), client.player.getXRot());
-                phase = Boolean.getBoolean("ringworld.distortionTrialExtendPlatform") ? 6 : 5;
+                phase = Boolean.getBoolean("ringworld.distortionTrialExtendPlatform") ? 6
+                        : Boolean.getBoolean("ringworld.floatingAtlasTrial") ? 7 : 5;
                 return true;
             }
             RingIntegratedCaptureControl.execute(client, "distortion platform", context -> {

@@ -47,6 +47,7 @@ public final class RingTerrainAtlas {
     private final boolean[] present;
     private int presentCount;
     private long revision;
+    private java.util.List<RingFloatingSurface> floatingTrial = java.util.List.of();
 
     public RingTerrainAtlas(RingGeometry geometry, long worldHash) {
         this(geometry, worldHash, SAMPLE_STEP_BLOCKS);
@@ -111,6 +112,10 @@ public final class RingTerrainAtlas {
                     ? (0x1000000L | sideColors[index]) << 17 : 0L);
             fingerprint *= 0x100000001B3L;
         }
+        for (var layer : floatingTrial) {
+            fingerprint ^= layer.hashCode();
+            fingerprint *= 0x100000001B3L;
+        }
         fingerprint ^= Integer.toUnsignedLong(columns);
         fingerprint *= 0x100000001B3L;
         return fingerprint ^ Integer.toUnsignedLong(rows);
@@ -130,7 +135,20 @@ public final class RingTerrainAtlas {
         System.arraycopy(present, 0, copy.present, 0, present.length);
         copy.presentCount = presentCount;
         copy.revision = revision;
+        copy.floatingTrial = floatingTrial;
         return copy;
+    }
+
+    /** In-memory trial layers; deliberately excluded from the released wire/disk format. */
+    public java.util.List<RingFloatingSurface> floatingTrial() { return floatingTrial; }
+
+    /** Apply only to an independent rendering snapshot, never an authoritative/cache atlas. */
+    public void applyFloatingTrial(java.util.List<RingFloatingSurface> layers) {
+        floatingTrial = java.util.List.copyOf(layers);
+        for (var layer : floatingTrial) {
+            putBlockSample(layer.x(), layer.z(), layer.groundTop(), layer.groundColor(),
+                    0, layer.groundColor(), layer.waterCoverage());
+        }
     }
 
     /** Advances one coalesced authoritative surface-change generation. */
@@ -517,6 +535,7 @@ public final class RingTerrainAtlas {
     }
 
     public void clear() {
+        floatingTrial = java.util.List.of();
         Arrays.fill(heights, (short)0);
         Arrays.fill(colors, 0);
         Arrays.fill(blockLights, (byte)0);

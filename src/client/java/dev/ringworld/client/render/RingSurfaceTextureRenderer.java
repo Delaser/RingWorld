@@ -249,7 +249,7 @@ public final class RingSurfaceTextureRenderer {
 
         var quality = RingClientLodTuning.quality();
         long snapshotStarted = System.nanoTime();
-        RingTerrainAtlas snapshot = atlas.snapshot();
+        RingTerrainAtlas snapshot = dev.ringworld.client.RingFloatingAtlasTrial.snapshot(atlas);
         flagRenderStall("Atlas snapshot copy", snapshotStarted);
         RingRenderProfile profile = RingClientLodTuning.profile(geometry, 16.0);
         RingSurfaceBuildSnapshot buildSnapshot = new RingSurfaceBuildSnapshot(snapshot, revision);
