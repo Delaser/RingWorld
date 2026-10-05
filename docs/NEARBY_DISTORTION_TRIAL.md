@@ -274,6 +274,16 @@ sections, captures the current view, and leaves the client open for owner tests.
 This property is fixture-only, not a player setting. Never point the fixture at
 an owner production save.
 
+Add `-PringDistortionTrialExtendPlatform=true` alongside the resume property to
+extend this disposable world's Y319 platform around the full 2048-block
+circumference. The nine-block-wide path uses smooth quartz, gold stripes every
+16 blocks, and sea-lantern edges at Z=-4/+4. The original X432–592 section is
+preserved, including owner edits. Extension runs on the integrated server in
+one 16-block X slice per completion, verifies each new block placement, and
+leaves the saved player pose intact. It is opt-in fixture plumbing only; it
+does not change normal world generation or projection.
+
+
 For compile/unit checks, replace the resume property and run task with
 `:test :compileClientJava :neoforge:test :neoforge:compileJava`. The recorded
 checks additionally excluded `:neoforge:createMinecraftArtifacts` to reuse
@@ -313,3 +323,10 @@ band; `9251844` Atlas UV/geometry separation; `9398edd` fixed-height mapping and
 wider longitudinal fade. Retain the final behaviour and Atlas fix if carrying
 this forward; the superseded intermediate height-band behaviour is not the
 accepted design.
+
+Platform-loop runtime check (5 October 2026): the opt-in 26.3 Fabric resume
+extension completed and verified every new placement at Y319 across the full
+2048-block circumference, keeping Z=-4..4 and the original X432–592 section.
+The saved player pose was retained and the client stayed open. Log:
+`/tmp/ring-distortion-client-loop.log`. This was a fixture compile/runtime
+check, not a repeat of release or six-cell unit qualification.

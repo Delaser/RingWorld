@@ -15,7 +15,7 @@ import net.minecraft.world.level.block.Blocks;
 /** Disposable minimum-ring trial. Only active with -Dringworld.distortionTrial=true. */
 public final class RingDistortionTrialClient {
     private static final String NAME = "RingWorld Nearby Distortion Trial 2048";
-    private static int phase, settled;
+    private static int phase, settled, platformX;
     private static boolean opened, requested;
     private static volatile boolean positioned, captured;
     private static volatile String failure;
@@ -62,6 +62,36 @@ public final class RingDistortionTrialClient {
             }
             return true;
         }
+        if (phase == 6) {
+            if (requested) {
+                if (!positioned) return true;
+                platformX += 16;
+                positioned = false;
+                requested = false;
+            }
+            if (platformX >= 2048) {
+                RingWorldMod.LOGGER.info("[distortion-trial] platform extension complete and verified: full 2048-block loop at Y319, Z=-4..4; original section preserved");
+                phase = 5;
+                return true;
+            }
+            int start = platformX;
+            requested = true;
+            RingIntegratedCaptureControl.execute(client, "extend distortion platform", context -> {
+                int top = context.world().getMinY() + context.world().getHeight() - 1;
+                for (int x = start; x < start + 16; x++) for (int z = -4; z <= 4; z++) {
+                    // Keep the owner's existing platform and edits intact.
+                    if (x >= 432 && x <= 592) continue;
+                    var material = x % 16 == 0 ? Blocks.GOLD_BLOCK : Blocks.SMOOTH_QUARTZ;
+                    if (z == -4 || z == 4) material = Blocks.SEA_LANTERN;
+                    var pos = new BlockPos(x, top, z);
+                    context.world().setBlock(pos, material.defaultBlockState(), 3);
+                    if (!context.world().getBlockState(pos).is(material)) {
+                        throw new IllegalStateException("platform placement failed at " + pos);
+                    }
+                }
+            }, () -> positioned = true, message -> failure = message);
+            return true;
+        }
         if (phase == 5) {
             var atlas = ClientRingState.terrainAtlas();
             if (atlas == null || !atlas.isComplete()
@@ -87,7 +117,7 @@ public final class RingDistortionTrialClient {
                 RingWorldMod.LOGGER.info("[distortion-trial] resumed saved viewpoint {},{},{} yaw={} pitch={}",
                         client.player.getX(), client.player.getY(), client.player.getZ(),
                         client.player.getYRot(), client.player.getXRot());
-                phase = 5;
+                phase = Boolean.getBoolean("ringworld.distortionTrialExtendPlatform") ? 6 : 5;
                 return true;
             }
             RingIntegratedCaptureControl.execute(client, "distortion platform", context -> {
