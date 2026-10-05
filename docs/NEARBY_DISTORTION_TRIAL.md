@@ -96,3 +96,28 @@ resumed the saved test world/viewpoint, with correction enabled. Cold shader
 compilation and startup succeeded. Owner appearance acceptance remains pending.
 The first resumed capture ran before Atlas streaming finished; resumed captures
 now wait for a complete Atlas and a ready surface renderer.
+
+## Atlas holes on steep terrain
+
+The owner captured triangular holes after enabling the correction. The trial
+had incorrectly recovered canonical vertex phase from texture U. Steep Atlas
+faces deliberately use a constant upper-sample UV, independent of their shared
+physical lattice positions. Reprojecting that UV collapsed steep triangles and
+split them away from their neighbours. Both shader adapters now derive angle
+and radius from the actual physical Position; UVs only choose texture samples.
+The disabled path retains its original physical position and handoff behaviour.
+
+This inverse assumes a positive original physical radius, which holds through
+Y319 for all new-world layouts (minimum circumference 2048). Atlas heights
+beyond the original centre on legacy 1024-block rings remain unqualified;
+explicit canonical vertex metadata would be needed to disambiguate those.
+
+Verification: both 26.3 compile/unit suites still pass 455 cases each. The
+Fabric client cold-launches the corrected shader and resumes the saved ground
+viewpoint (503.589,64,-2.980, yaw89.650, pitch−44.550). The complete detailed
+Atlas capture no longer shows the triangular sky gaps visible in the owner's
+before image. Captures are retained in `logs/nearby-distortion-trial/review/`
+as `atlas-holes-before.png` and `atlas-holes-after.png`. These are saved-pose
+captures, not identical graphics-setting comparisons: the owner's before shot
+used 32 chunks; the resumed fixture used 12. The corrected game remains open
+with the trial enabled. Other loader/version runtime visuals remain pending.
