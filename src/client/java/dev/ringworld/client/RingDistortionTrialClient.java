@@ -60,10 +60,32 @@ public final class RingDistortionTrialClient {
             }
             return true;
         }
+        if (phase == 5) {
+            var atlas = ClientRingState.terrainAtlas();
+            if (atlas == null || !atlas.isComplete()
+                    || !dev.ringworld.client.render.RingSurfaceTextureRenderer.displayReady()) return true;
+            if (!client.levelRenderer.hasRenderedAllSections() || ++settled < 60) return true;
+            RingMinecraftClientAccess.setGuiHidden(client, true);
+            RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "distortion-height-band.png",
+                    RingMinecraftClientAccess.mainRenderTarget(client), 1,
+                    message -> client.execute(() -> RingMinecraftClientAccess.setGuiHidden(client, false)));
+            RingWorldMod.LOGGER.info("[distortion-trial] captured vertical-band fix at saved viewpoint");
+            phase = 4;
+            return false;
+        }
         if (phase == 1) {
             if (client.player == null || ClientRingState.geometry() == null) return true;
             if (ClientRingState.geometry().circumferenceBlocks() != 2048) {
                 failure = "expected the smallest ring (2048 blocks)";
+                return true;
+            }
+            if (Boolean.getBoolean("ringworld.distortionTrialResume")) {
+                RingDistortionTuning.select(true);
+                RingMinecraftClientAccess.setScreen(client, null);
+                RingWorldMod.LOGGER.info("[distortion-trial] resumed saved viewpoint {},{},{} yaw={} pitch={}",
+                        client.player.getX(), client.player.getY(), client.player.getZ(),
+                        client.player.getYRot(), client.player.getXRot());
+                phase = 5;
                 return true;
             }
             RingIntegratedCaptureControl.execute(client, "distortion platform", context -> {
