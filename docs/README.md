@@ -6,6 +6,10 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [`NEARBY_DISTORTION_TRIAL.md`](NEARBY_DISTORTION_TRIAL.md): accepted, unmerged
+  local block-proportion experiment, fixed-height projection, code map and
+  follow-up qualification.
+
 - [1.3 supported-version parity and release hold](RELEASE_1_3_PARITY.md):
   required 26.x/Fabric/NeoForge behaviour, port status and remaining checks.
 

@@ -8,9 +8,13 @@ rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
 `codex/nearby-distortion-trial` contains an opt-in client visual experiment.
 It defaults off and must not enter a release without owner acceptance and
-runtime qualification. See [`docs/NEARBY_DISTORTION_TRIAL.md`](docs/NEARBY_DISTORTION_TRIAL.md)
+runtime qualification. The owner accepted its current appearance on 5 October
+2026; it remains banked for follow-up, not approved for merge or release.
+Camera Y must only translate the trial scene; do not restore camera-dependent
+geometry weights or radius growth. See [`docs/NEARBY_DISTORTION_TRIAL.md`](docs/NEARBY_DISTORTION_TRIAL.md)
 for live commands, the radius safeguard, source checks and the disposable
-minimum-new-ring (2048-block) build-height demo. Do not change normal world
+minimum-new-ring (2048-block) build-height demo. Follow-up is tracked in
+[issue #256](https://github.com/Delaser/RingWorld/issues/256). Do not change normal world
 creation limits or server physics to accommodate the trial.
 
 ## Supported-version parity and release state

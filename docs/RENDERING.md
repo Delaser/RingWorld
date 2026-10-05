@@ -7,6 +7,17 @@ wall texture reuse target all supported 26.x versions on both loaders. The
 26.3-only checkpoints below describe where each technique was first tested,
 not a release-scope exception.
 
+## Unmerged nearby-proportion experiment
+
+The owner accepted the current appearance of the opt-in nearby block correction
+on 5 October 2026. It remains banked on `codex/nearby-distortion-trial`, default
+off and reset on disconnect. Its projection depends on vertex height and a
+fixed reference radius; vertical camera movement only translates the scene.
+See [the complete trial contract](NEARBY_DISTORTION_TRIAL.md) and
+[follow-up issue #256](https://github.com/Delaser/RingWorld/issues/256) for source
+ownership, validation and remaining work. This is not part of the released 1.3
+renderer; do not merge the experiment without the remaining qualification.
+
 ## Design goal
 
 The renderer must show one closed ring while Minecraft loads only an ordinary
@@ -40,6 +51,7 @@ RingWorldHandoff  = live fade start/end, proxy fade start/end
 RingWorldDetail   = detail start/end, near/far terrain reveal
 RingWorldAtmosphere = near/far haze, haze exponent, cloud fade start
 RingWorldAtmosphere2 = cloud fade end, visual profile version, inner cloud min/max Z planes
+RingWorldDistortion = trial enabled, correction core, fade end, fixed visual reference radius
 ```
 
 The vanilla camera, screen, time, menu-blur, and RGSS values keep their normal
