@@ -3,6 +3,7 @@
 
 #include <minecraft:dynamictransforms.glsl>
 #include <minecraft:globals.glsl>
+#include <minecraft:ringworld_projection.glsl>
 #include <minecraft:projection.glsl>
 
 layout(location = 0) in vec3 Position;
@@ -29,7 +30,16 @@ const float TAU = 6.28318530717958647692;
 const float FAR_BACKGROUND_DEPTH = 0.9999;
 
 void main() {
-    gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
+    vec3 projected = Position;
+    if (RingWorldDistortion.x > 0.5) {
+        // U carries the original phase even where the old signed radius inverted.
+        float phase = UV0.x * TAU;
+        float signedRadius = dot(Position.xy, vec2(sin(phase), -cos(phase)));
+        vec3 point = vec3(UV0.x * float(RingWorldLayout.y),
+                float(RingWorldLayout.y) / TAU + RingWorldVertical.x - signedRadius, Position.z);
+        projected = ring_trial_position(point, vec3(CameraBlockPos) - CameraOffset);
+    }
+    gl_Position = ProjMat * ModelViewMat * vec4(projected, 1.0);
     // Unclipped perspective depth is offset + scale / clipW. Derive the
     // compression join from the actual clip boundary to avoid any band of
     // equal depths before the correction starts.
@@ -65,14 +75,16 @@ void main() {
     // Position.xy is the global cylinder and ModelOffset.x is the canonical
     // camera angle. atan(sin, cos) produces the shortest periodic angle even
     // at U=0/1, so the handoff cannot acquire a second seam.
-    float vertexAngle = atan(Position.x, -Position.y);
+    float vertexAngle = RingWorldDistortion.x > 0.5 ? UV0.x * TAU : atan(Position.x, -Position.y);
     float deltaAngle = atan(
         sin(vertexAngle - ModelOffset.x),
         cos(vertexAngle - ModelOffset.x)
     );
     float surfaceDistance = abs(deltaAngle) * float(RingWorldLayout.y) / TAU;
     intrinsicDistance = length(vec2(surfaceDistance, Position.z - ModelOffset.y));
-    intrinsicHeight = length(Position.xy);
+    intrinsicHeight = RingWorldDistortion.x > 0.5
+            ? dot(Position.xy, vec2(sin(UV0.x * TAU), -cos(UV0.x * TAU)))
+            : length(Position.xy);
     // Native section traversal has a vertical range as well as an X/Z range.
     // Keep horizontal distance for materials; use canonical height for coverage.
     float cameraY = float(CameraBlockPos.y) - CameraOffset.y;

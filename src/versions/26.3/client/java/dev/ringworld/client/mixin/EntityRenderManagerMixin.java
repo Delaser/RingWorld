@@ -29,7 +29,7 @@ abstract class EntityRenderManagerMixin {
             matrices.translate(x, y, z);
             return;
         }
-        RingObjectTransform transform = RingObjectTransform.fromCameraRelative(
+        RingObjectTransform transform = dev.ringworld.client.RingDistortionTuning.object(
                 geometry, cameraState.pos, x, y, z);
         Vec3 localPosition = transform.cameraLocalPosition();
         matrices.translate(localPosition.x, localPosition.y, localPosition.z);
