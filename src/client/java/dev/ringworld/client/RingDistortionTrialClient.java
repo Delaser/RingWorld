@@ -36,8 +36,10 @@ public final class RingDistortionTrialClient {
                         .equals("AccessibilityOnboardingScreen")) {
             RingMinecraftClientAccess.setScreen(client, new TitleScreen());
         }
-        client.options.fov().set(70);
-        client.options.renderDistance().set(12);
+        if (!Boolean.getBoolean("ringworld.distortionTrialResume")) {
+            client.options.fov().set(70);
+            client.options.renderDistance().set(12);
+        }
         if (phase == 0) {
             if (!opened) {
                 if (!(RingMinecraftClientAccess.screen(client) instanceof TitleScreen)) return true;
@@ -66,10 +68,10 @@ public final class RingDistortionTrialClient {
                     || !dev.ringworld.client.render.RingSurfaceTextureRenderer.displayReady()) return true;
             if (!client.levelRenderer.hasRenderedAllSections() || ++settled < 60) return true;
             RingMinecraftClientAccess.setGuiHidden(client, true);
-            RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "distortion-height-band.png",
+            RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, "distortion-fixed-height.png",
                     RingMinecraftClientAccess.mainRenderTarget(client), 1,
                     message -> client.execute(() -> RingMinecraftClientAccess.setGuiHidden(client, false)));
-            RingWorldMod.LOGGER.info("[distortion-trial] captured vertical-band fix at saved viewpoint");
+            RingWorldMod.LOGGER.info("[distortion-trial] captured fixed-height correction at saved viewpoint");
             phase = 4;
             return false;
         }
