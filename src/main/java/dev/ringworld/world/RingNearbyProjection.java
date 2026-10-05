@@ -10,19 +10,16 @@ public record RingNearbyProjection(RingGeometry geometry, double referenceRadius
                                                double worldTopY, int chunks) {
         double core = Math.min(chunks * 16.0, geometry.circumferenceBlocks() / 8.0);
         double radius = Math.max(geometry.radius(),
-                Math.max(worldTopY, cameraY) - geometry.surfaceReferenceY() + core * 2.0);
+                worldTopY - geometry.surfaceReferenceY() + core * 2.0);
         return new RingNearbyProjection(geometry, radius, cameraY, core);
     }
 
     public double radiusAt(double y) { return referenceRadius + geometry.surfaceReferenceY() - y; }
     public double cameraRadius() { return radiusAt(cameraY); }
-    public double blendEnd() { return coreBlocks * 2.0; }
+    public double blendEnd() { return coreBlocks * 4.0; }
     private double nearSlope(double y) {
-        double t = Math.clamp((Math.abs(y - cameraY) - coreBlocks)
-                / (blendEnd() - coreBlocks), 0.0, 1.0);
-        double weight = 1.0 - t * t * (3.0 - 2.0 * t);
-        double original = 1.0 / geometry.radius();
-        return original + (1.0 / cameraRadius() - original) * weight;
+        // Use the vertex's fixed height, never the observer's changing altitude.
+        return 1.0 / Math.max(radiusAt(y), coreBlocks * 2.0);
     }
     private double farSlope(double y) {
         double midpoint = (coreBlocks + blendEnd()) * 0.5;
@@ -74,10 +71,10 @@ public record RingNearbyProjection(RingGeometry geometry, double referenceRadius
 
     public AABB bounds(AABB box, Vec3 camera) {
         double start = geometry.shortestCircumferenceDelta(camera.x, box.minX);
-        // Angle is affine in the height weight. Its extrema therefore occur
-        // at the vertical endpoints or the height nearest the camera.
+        // Angle is affine in nearSlope, which is monotone in vertex height.
+        // Its extrema therefore occur at the vertical endpoints.
         double a = Double.POSITIVE_INFINITY, b = Double.NEGATIVE_INFINITY;
-        for (double y : new double[]{box.minY, box.maxY, Math.clamp(cameraY, box.minY, box.maxY)}) {
+        for (double y : new double[]{box.minY, box.maxY}) {
             a = Math.min(a, angle(start, y));
             b = Math.max(b, angle(start + box.maxX - box.minX, y));
         }

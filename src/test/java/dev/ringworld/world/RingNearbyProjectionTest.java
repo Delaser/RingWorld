@@ -8,10 +8,10 @@ import static org.junit.jupiter.api.Assertions.*;
 final class RingNearbyProjectionTest {
     @Test void givesUnitNearbySpacingAtBothHeightExtremesWithoutInversion() {
         var geometry = new RingGeometry(128, 1024);
-        for (double y : new double[]{-64, 64, 321.62, 500}) {
+        for (double y : new double[]{-64, 64, 319}) {
             var mapping = RingNearbyProjection.create(geometry, y, 320, 3);
             var camera = new Vec3(1023.5, y, 0);
-            assertTrue(mapping.cameraRadius() >= 96 - 1e-9);
+            assertTrue(mapping.radiusAt(320) >= 96 - 1e-9);
             assertEquals(1, mapping.object(camera, 20, 0, 0).tangentScale(), 1e-9);
             assertEquals(1, mapping.position(camera.add(0, 1, 0), camera).y, 1e-9);
             assertEquals(128, mapping.position(camera.add(0, 0, 128), camera).z, 1e-9);
@@ -36,22 +36,32 @@ final class RingNearbyProjectionTest {
             }
         }
     }
-    @Test void groundBelowHighCameraKeepsOriginalAngularSpacing() {
+    @Test void verticalCameraMovementOnlyTranslatesTheScene() {
         var geometry = new RingGeometry(128, 2048);
-        var camera = new Vec3(512, 321.62, 0);
-        var mapping = RingNearbyProjection.create(geometry, camera.y, 320, 3);
-        for (double y : new double[]{-64, 64, camera.y - mapping.blendEnd(), camera.y + mapping.blendEnd()}) {
-            for (double x : new double[]{-1024, -100, 0, 20, 100, 1024}) {
-                assertEquals(x / geometry.radius(), mapping.angle(x, y), 1e-9);
-                assertEquals(1 / geometry.radius(), mapping.angularSlope(x, y), 1e-9);
+        var baselineCamera = new Vec3(512, 64, 10);
+        var baseline = RingNearbyProjection.create(geometry, baselineCamera.y, 320, 3);
+        var box = new AABB(500, -64, -64, 700, 320, 64);
+        var baselineBounds = baseline.bounds(box, baselineCamera);
+        for (double cameraY : new double[]{-100, 64, 321.62, 500}) {
+            var camera = new Vec3(baselineCamera.x, cameraY, baselineCamera.z);
+            var mapping = RingNearbyProjection.create(geometry, cameraY, 320, 3);
+            assertEquals(baseline.referenceRadius(), mapping.referenceRadius());
+            for (double y : new double[]{-64, 64, 319}) {
+                for (double x : new double[]{-1024, -192, -96, -48, 0, 20, 48, 96, 192, 512, 1024}) {
+                    var point = new Vec3(camera.x + x, y, 30);
+                    var expected = baseline.position(point, baselineCamera);
+                    var actual = mapping.position(point, camera);
+                    assertEquals(expected.x, actual.x, 1e-9);
+                    assertEquals(expected.y - (cameraY - baselineCamera.y), actual.y, 1e-9);
+                    assertEquals(expected.z, actual.z, 1e-9);
+                }
+                assertEquals(1, mapping.object(camera, 20, y - cameraY, 0).tangentScale(), 1e-9);
             }
-        }
-        // Only the documented small reference-radius safeguard remains below.
-        assertTrue(mapping.object(camera, 20, 64 - camera.y, 0).tangentScale() < 1.1);
-        assertEquals(1, mapping.object(camera, 20, 0, 0).tangentScale(), 1e-9);
-        for (double edge : new double[]{camera.y - mapping.coreBlocks(), camera.y - mapping.blendEnd()}) {
-            double slope = (mapping.angle(20, edge + 1e-4) - mapping.angle(20, edge - 1e-4)) / 2e-4;
-            assertEquals(0, slope, 1e-7);
+            var bounds = mapping.bounds(box, camera);
+            assertEquals(baselineBounds.minX, bounds.minX, 1e-9);
+            assertEquals(baselineBounds.maxX, bounds.maxX, 1e-9);
+            assertEquals(baselineBounds.minY - (cameraY - baselineCamera.y), bounds.minY, 1e-9);
+            assertEquals(baselineBounds.maxY - (cameraY - baselineCamera.y), bounds.maxY, 1e-9);
         }
     }
     @Test void curvedBoundsContainTerrainIncludingCanonicalSeam() {
