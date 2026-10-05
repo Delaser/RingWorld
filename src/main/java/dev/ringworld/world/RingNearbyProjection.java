@@ -17,19 +17,27 @@ public record RingNearbyProjection(RingGeometry geometry, double referenceRadius
     public double radiusAt(double y) { return referenceRadius + geometry.surfaceReferenceY() - y; }
     public double cameraRadius() { return radiusAt(cameraY); }
     public double blendEnd() { return coreBlocks * 2.0; }
-    private double nearSlope() { return 1.0 / cameraRadius(); }
-    private double farSlope() {
+    private double nearSlope(double y) {
+        double t = Math.clamp((Math.abs(y - cameraY) - coreBlocks)
+                / (blendEnd() - coreBlocks), 0.0, 1.0);
+        double weight = 1.0 - t * t * (3.0 - 2.0 * t);
+        double original = 1.0 / geometry.radius();
+        return original + (1.0 / cameraRadius() - original) * weight;
+    }
+    private double farSlope(double y) {
         double midpoint = (coreBlocks + blendEnd()) * 0.5;
-        return (Math.PI - nearSlope() * midpoint)
+        return (Math.PI - nearSlope(y) * midpoint)
                 / (geometry.circumferenceBlocks() * 0.5 - midpoint);
     }
 
     /** Integral of positive angular spacing, closing exactly after one circumference. */
-    public double angle(double delta) {
+    public double angle(double delta) { return angle(delta, cameraY); }
+
+    public double angle(double delta, double vertexY) {
         double circumference = geometry.circumferenceBlocks();
         double turns = Math.floor((delta + circumference * 0.5) / circumference);
         double wrapped = delta - turns * circumference;
-        double u = Math.abs(wrapped), near = nearSlope(), far = farSlope();
+        double u = Math.abs(wrapped), near = nearSlope(vertexY), far = farSlope(vertexY);
         double length = blendEnd() - coreBlocks;
         double value;
         if (u <= coreBlocks) value = near * u;
@@ -42,14 +50,16 @@ public record RingNearbyProjection(RingGeometry geometry, double referenceRadius
         return Math.copySign(value, wrapped) + turns * Math.PI * 2.0;
     }
 
-    public double angularSlope(double delta) {
+    public double angularSlope(double delta) { return angularSlope(delta, cameraY); }
+
+    public double angularSlope(double delta, double vertexY) {
         double u = Math.abs(geometry.shortestCircumferenceDelta(0.0, delta));
         double t = Math.clamp((u - coreBlocks) / (blendEnd() - coreBlocks), 0.0, 1.0);
-        return nearSlope() + (farSlope() - nearSlope()) * t * t * (3.0 - 2.0 * t);
+        return nearSlope(vertexY) + (farSlope(vertexY) - nearSlope(vertexY)) * t * t * (3.0 - 2.0 * t);
     }
 
     public Vec3 position(Vec3 point, Vec3 camera) {
-        double theta = angle(geometry.shortestCircumferenceDelta(camera.x, point.x));
+        double theta = angle(geometry.shortestCircumferenceDelta(camera.x, point.x), point.y);
         double radius = radiusAt(point.y);
         return new Vec3(radius * Math.sin(theta), cameraRadius() - radius * Math.cos(theta),
                 point.z - camera.z);
@@ -58,13 +68,19 @@ public record RingNearbyProjection(RingGeometry geometry, double referenceRadius
     public RingObjectTransform object(Vec3 camera, double x, double y, double z) {
         Vec3 point = camera.add(x, y, z);
         double delta = geometry.shortestCircumferenceDelta(camera.x, point.x);
-        return new RingObjectTransform(position(point, camera), angle(delta),
-                radiusAt(point.y) * angularSlope(delta));
+        return new RingObjectTransform(position(point, camera), angle(delta, point.y),
+                radiusAt(point.y) * angularSlope(delta, point.y));
     }
 
     public AABB bounds(AABB box, Vec3 camera) {
         double start = geometry.shortestCircumferenceDelta(camera.x, box.minX);
-        double a = angle(start), b = angle(start + box.maxX - box.minX);
+        // Angle is affine in the height weight. Its extrema therefore occur
+        // at the vertical endpoints or the height nearest the camera.
+        double a = Double.POSITIVE_INFINITY, b = Double.NEGATIVE_INFINITY;
+        for (double y : new double[]{box.minY, box.maxY, Math.clamp(cameraY, box.minY, box.maxY)}) {
+            a = Math.min(a, angle(start, y));
+            b = Math.max(b, angle(start + box.maxX - box.minX, y));
+        }
         double minX = Double.POSITIVE_INFINITY, minY = minX;
         double maxX = Double.NEGATIVE_INFINITY, maxY = maxX;
         int first = (int)Math.ceil(a / (Math.PI / 2.0));

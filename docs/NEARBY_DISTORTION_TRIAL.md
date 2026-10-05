@@ -7,7 +7,11 @@ part of the 1.3 release. It starts disabled and resets on disconnect.
 - `/ringworld distortion distance <1–8>`: chunks each way, default 3
 - In-world RingWorld menu → Display: trial toggle and correction distance
 
-The correction spans the full ring width. Within the chosen longitudinal
+The correction spans the full ring width. It is limited to the chosen distance
+above and below the camera as well as along the ring, fading vertically over
+another equal distance. Lower terrain outside this height band keeps its
+original angular spacing; the small reference-radius safeguard remains global.
+Within the chosen longitudinal
 radius, arc spacing at camera altitude becomes one rendered block per intrinsic
 block. A smooth transition over another equal radius redistributes the remaining
 angular spacing around the circumference. All angular slopes stay positive;
@@ -75,3 +79,20 @@ Minecraft's unauthenticated development profile logged account/Realms service
 errors; no trial shader, world-generation or render exceptions occurred during
 the successful run. Earlier setup failures (first-run onboarding and use of the
 legacy geometry minimum for new creation) were corrected before this run.
+
+## Vertical-band correction
+
+The first owner capture showed ground directly below a build-height observer
+being stretched. The original trial applied camera-altitude spacing to every
+height, widening reference-surface blocks by about 3.7× on the minimum ring.
+The follow-up limits that angular correction to the camera's height band.
+Regression coverage checks unchanged ground-level angular spacing, smooth
+vertical joins and bounds containment throughout the vertical fade. This does
+not remove the already documented global reference-radius safeguard.
+
+The 26.3 Fabric/NeoForge follow-up compile and unit suites pass 455 cases each.
+The Fabric client was relaunched with the new CPU and shader mapping and
+resumed the saved test world/viewpoint, with correction enabled. Cold shader
+compilation and startup succeeded. Owner appearance acceptance remains pending.
+The first resumed capture ran before Atlas streaming finished; resumed captures
+now wait for a complete Atlas and a ready surface renderer.

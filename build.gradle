@@ -232,6 +232,7 @@ loom {
 			name "RingWorld Nearby Distortion Trial"
 			runDir "logs/nearby-distortion-trial/run"
 			vmArg "-Dringworld.distortionTrial=true"
+			vmArg "-Dringworld.distortionTrialResume=" + providers.gradleProperty("ringDistortionTrialResume").orElse("false").get()
 			programArgs "--username", "DistortionTrial", "--width", "1600", "--height", "1000"
 		}
 		configureEach {
