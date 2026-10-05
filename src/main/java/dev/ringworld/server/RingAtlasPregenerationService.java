@@ -432,7 +432,8 @@ public final class RingAtlasPregenerationService {
         if (state.job != null) state.job.refreshProgress();
     }
 
-    private static int surfaceColor(ServerLevel world, BlockPos surface, BlockState state) {
+    /** Shared colour sampling for generated surfaces and integrated trial layers; server thread only. */
+    public static int surfaceColor(ServerLevel world, BlockPos surface, BlockState state) {
         var biome = world.getBiome(surface).value();
         if (state.getFluidState().is(FluidTags.WATER)) {
             return RingSurfaceLod.applyTextureLuminance(biome.getWaterColor(), WATER_TEXTURE_LUMINANCE);

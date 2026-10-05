@@ -50,15 +50,10 @@ public final class RingFloatingAtlasTrial {
             while (ground >= world.getMinY() && chunk.getBlockState(pos.set(bx,ground,bz)).isAir()) ground--;
             if (ground < world.getMinY() || bottom-ground-1 < 8) continue;
             var groundState = chunk.getBlockState(pos.set(bx,ground,bz));
-            int color = groundState.getMapColor(world,pos).col;
-            if (groundState.is(Blocks.GRASS_BLOCK))
-                color = RingSurfaceLod.applyTextureLuminanceWithMapFallback(
-                        world.getBiome(pos).value().getGrassColor(bx,bz),color,0.68);
+            int color = dev.ringworld.server.RingAtlasPregenerationService.surfaceColor(world,pos,groundState);
             int water = groundState.getFluidState().is(FluidTags.WATER) ? 15 : 0;
-            if (water != 0) color = RingSurfaceLod.applyTextureLuminance(
-                    world.getBiome(pos).value().getWaterColor(),0.58);
             layers.add(new RingFloatingSurface(bx,bz,bottom,top+1,ground+1,color,
-                    state.getMapColor(world,pos.set(bx,top,bz)).col,water));
+                    dev.ringworld.server.RingAtlasPregenerationService.surfaceColor(world,pos.set(bx,top,bz),state),water));
         }
     }
 

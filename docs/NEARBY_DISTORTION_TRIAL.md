@@ -442,3 +442,33 @@ without the distant white walkway/heightfield curtain. Local evidence:
 confirmation, not an FPS benchmark or owner acceptance. The game remains open
 with ground-only omission enabled; no dedicated-server or release support is
 claimed. Development authentication-service errors are unrelated to this trial.
+
+## Under-platform colour correction
+
+The omission trial produced a green stripe along the former platform footprint.
+Its bespoke lower-surface sampler tinted grass and water but left exposed leaves
+at their generic map RGB. The surrounding Atlas uses biome foliage tint and
+0.52 texture luminance, so identical leaves looked brighter and greener in the
+recovered strip. Short/tall grass, ferns and mycelium also had incomplete handling.
+
+`RingFloatingAtlasTrial.captureChunk` now delegates lower-surface and detached
+material RGB to `RingAtlasPregenerationService.surfaceColor` on the integrated
+server thread. That existing sampler is shared through a public internal helper;
+its production implementation and constants remain unchanged. The trial uses
+the same foliage/grass/water tints, luminance and mycelium correction as normal
+Atlas generation. This changes colours only; occupancy detection, grounding,
+geometry budgets, format 10, omission scope and one-shot limitations are unchanged.
+
+Tint-fix checks pass both loaders on 26.1.2/26.2 (456 cases each) and 26.3
+(459 each), zero failures/skips. Logs:
+`logs/nearby-distortion-trial/floating-tint-<version>-build.log`.
+The 26.3 Fabric runtime resumes (414.919,94.126,34.066), yaw−94.250/pitch−45.150,
+captures 21,524 candidate columns, and retains the 116,736-vertex Medium mesh.
+The saved view no longer shows an obvious uniform map-green strip in the
+recovered foliage; it is a different owner pose from the prior image, not an
+identical-view image comparison. Owner confirmation remains pending.
+Local evidence: `logs/nearby-distortion-trial/review/floating-ignore-tint-after.png`
+and `/tmp/ring-distortion-client-floating-tint.log`. Startup diagnostics flagged
+18.69 ms for snapshot copying/application and 19.57 ms for resource updating;
+this remains unqualified frame-pacing evidence, not a performance PASS.
+The game remains open with omission and tint correction active.
