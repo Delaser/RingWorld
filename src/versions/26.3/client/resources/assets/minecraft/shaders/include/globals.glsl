@@ -24,6 +24,8 @@ layout(std140) uniform Globals {
     // Current block-atlas bounds for water only; no colour-based material guesses.
     vec4 RingWorldWaterStill;
     vec4 RingWorldWaterFlow;
+    // enabled, correction distance, blend end, safe visual reference radius
+    vec4 RingWorldDistortion;
 };
 
 #endif

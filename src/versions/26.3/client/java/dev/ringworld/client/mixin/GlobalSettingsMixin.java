@@ -37,7 +37,7 @@ abstract class GlobalSettingsMixin {
             .putIVec3().putFloat().putVec3().putFloat().putVec2().putInt().putInt()
             .putIVec4().putVec4().putVec4().putVec4().putVec4().putVec4().putVec4().putVec4()
             .putVec4().putVec4()
-            .get();
+            .putVec4().get();
 
     @Unique private static final Identifier RINGWORLD_BLOCK_ATLAS = net.minecraft.data.AtlasIds.BLOCKS;
     @Unique private static final Identifier RINGWORLD_WATER_STILL = Identifier.withDefaultNamespace("block/water_still");
@@ -152,6 +152,12 @@ abstract class GlobalSettingsMixin {
                             atlasLight.peakStrength(), ClientRingState.skyProfile().backdrop().id());
             ringworld$waterBounds(builder, client, RINGWORLD_WATER_STILL, active == 1 && client.level != null);
             ringworld$waterBounds(builder, client, RINGWORLD_WATER_FLOW, active == 1 && client.level != null);
+            var distortion = geometry == null ? null
+                    : dev.ringworld.client.RingDistortionTuning.projection(geometry, cameraPosition);
+            builder.putVec4(geometry != null && dev.ringworld.client.RingDistortionTuning.enabled() ? 1.0F : 0.0F,
+                    distortion == null ? 0.0F : (float)distortion.coreBlocks(),
+                    distortion == null ? 0.0F : (float)distortion.blendEnd(),
+                    distortion == null ? 0.0F : (float)distortion.referenceRadius());
             var data = builder.get();
             dev.ringworld.client.render.RingSurfaceGpu.writeBuffer(buffer.slice(), data);
         }

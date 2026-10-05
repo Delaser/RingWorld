@@ -37,7 +37,7 @@ public final class CurvedRingFrustum extends Frustum {
 
     @Override
     public boolean isVisible(AABB canonicalBox) {
-        AABB local = geometry.toCameraLocalBounds(canonicalBox, cameraPosition);
+        AABB local = dev.ringworld.client.RingDistortionTuning.bounds(geometry, canonicalBox, cameraPosition);
         // Frustum stores an absolute camera origin and subtracts it internally.
         // Rebase the already camera-local curved envelope to that origin.
         AABB rebased = local.move(cameraPosition);

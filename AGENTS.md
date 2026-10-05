@@ -4,6 +4,15 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
+## Unmerged nearby-distortion trial
+
+`codex/nearby-distortion-trial` contains an opt-in client visual experiment.
+It defaults off and must not enter a release without owner acceptance and
+runtime qualification. See [`docs/NEARBY_DISTORTION_TRIAL.md`](docs/NEARBY_DISTORTION_TRIAL.md)
+for live commands, the radius safeguard, source checks and the disposable
+minimum-new-ring (2048-block) build-height demo. Do not change normal world
+creation limits or server physics to accommodate the trial.
+
 ## Supported-version parity and release state
 
 Every fix, performance improvement, and feature in a release must work on **all

@@ -235,6 +235,7 @@ public final class RingWorldClient implements ClientModInitializer {
                 dev.ringworld.world.RingLodCommandSuggestions.ensurePresent(
                         client.getConnection().getCommands());
             }
+            if (dev.ringworld.client.RingDistortionTrialClient.tick(client)) return;
             if (creationUiTest.startMenuIfEnabled(client)) {
                 creationUiTest.tick(client);
                 return;
@@ -265,6 +266,27 @@ public final class RingWorldClient implements ClientModInitializer {
 
     private static void registerAtlasLightCommand() {
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
+            var distortion = ClientCommands.literal("distortion").executes(context -> {
+                String message = dev.ringworld.client.RingDistortionTuning.summary();
+                context.getSource().sendFeedback(Component.literal(message));
+                return 1;
+            });
+            for (String action : new String[]{"on", "off", "show"}) {
+                distortion.then(ClientCommands.literal(action).executes(context -> {
+                    String message = action.equals("show") ? dev.ringworld.client.RingDistortionTuning.summary()
+                            : dev.ringworld.client.RingDistortionTuning.select(action.equals("on"));
+                    context.getSource().sendFeedback(Component.literal(message));
+                    return 1;
+                }));
+            }
+            distortion.then(ClientCommands.literal("distance").then(ClientCommands.argument("chunks",
+                    com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 8)).executes(context -> {
+                String message = dev.ringworld.client.RingDistortionTuning.distance(
+                        com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "chunks"));
+                context.getSource().sendFeedback(Component.literal(message));
+                return 1;
+            })));
+            dispatcher.register(ClientCommands.literal("ringworld").then(distortion));
             var lod = ClientCommands.literal("lod").executes(context -> {
                 String message = dev.ringworld.client.RingClientLodTuning.summary();
                 context.getSource().sendFeedback(Component.literal(message));

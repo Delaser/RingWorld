@@ -2,6 +2,7 @@
 
 #moj_import <minecraft:fog.glsl>
 #moj_import <minecraft:globals.glsl>
+#moj_import <minecraft:ringworld_projection.glsl>
 #moj_import <minecraft:chunksection.glsl>
 #moj_import <minecraft:projection.glsl>
 
@@ -39,6 +40,7 @@ vec4 minecraft_sample_lightmap(sampler2D lightMap, ivec2 uv) {
 // Converts a physical ring-space delta back into the camera's local Minecraft
 // axes: circumference (X), local up (Y), and band width (Z).
 vec3 camera_local_ring_position(vec3 vertexCanonical, vec3 cameraCanonical) {
+    if (RingWorldDistortion.x > 0.5) return ring_trial_position(vertexCanonical, cameraCanonical);
     float circumference = ring_circumference();
     float baseRadius = circumference / (2.0 * 3.14159265358979323846);
     float deltaAngle = 6.28318530717958647692

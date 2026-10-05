@@ -129,8 +129,10 @@ public final class RingSurfaceTextureRenderer {
         // Model vertices use global ring coordinates. Rotate the entire static
         // object into the camera's tangent frame, then move its centre to the
         // same local point used by curved real chunk vertices.
-        modelView.translate(0.0F, (float)cameraRadius, (float)-camera.z);
-        modelView.rotateZ((float)-cameraAngle);
+        if (!dev.ringworld.client.RingDistortionTuning.enabled()) {
+            modelView.translate(0.0F, (float)cameraRadius, (float)-camera.z);
+            modelView.rotateZ((float)-cameraAngle);
+        }
         GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(
                 modelView,
                 new Vector4f(ClientRingState.skyProfile().backdrop().id(),

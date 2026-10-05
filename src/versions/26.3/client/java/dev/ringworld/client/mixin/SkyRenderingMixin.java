@@ -95,7 +95,7 @@ abstract class SkyRenderingMixin {
 
         // Project the one physical star at the ring centre into the camera's
         // tangent frame. Crossing the finite width tilts it toward that point.
-        Vec3 starDirection = geometry.directionToRingCenter(camera.position());
+        Vec3 starDirection = dev.ringworld.client.RingDistortionTuning.centerDirection(geometry, camera.position());
         ringworld$starTiltRadians = (float)Math.atan2(starDirection.z, starDirection.y);
     }
 

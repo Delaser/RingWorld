@@ -71,10 +71,18 @@ public final class RingWorldMapScreen extends Screen {
                             RingClientLodTuning.select(level); rebuild();
                         }).bounds(left + i * (each + gap), 85, each, 20).build());
             }
+            addRenderableWidget(Button.builder(Component.literal("Nearby distortion trial: "
+                            + (RingDistortionTuning.enabled() ? "On" : "Off")), button -> {
+                        RingDistortionTuning.select(!RingDistortionTuning.enabled()); rebuild();
+                    }).bounds(left, 145, panel, 20).build());
+            addRenderableWidget(Button.builder(Component.literal("Correction distance: "
+                            + RingDistortionTuning.chunks() + " chunks each way"), button -> {
+                        RingDistortionTuning.distance(RingDistortionTuning.chunks() % 8 + 1); rebuild();
+                    }).bounds(left, 169, panel, 20).build());
             addRenderableWidget(Button.builder(Component.literal(
                             showDetails ? "Hide detail information" : "Detail information"),
                     button -> { showDetails = !showDetails; rebuild(); })
-                    .bounds(left, 156, panel, 20).build());
+                    .bounds(left, 196, panel, 20).build());
         } else {
             Optional<AtlasPregenerationStatus> current = AtlasPregenerationClientState.status();
             if (current.isPresent()) {
@@ -173,9 +181,9 @@ public final class RingWorldMapScreen extends Screen {
             g.text(font, Component.literal("Other players can choose differently."), left, 129, 0xFFB4C4BA);
             if (showDetails) {
                 g.text(font, Component.literal("Low 8-block; Medium 2-block; High 1-block samples."),
-                        left, 184, 0xFFB4C4BA);
+                        left, 224, 0xFFB4C4BA);
                 g.text(font, Component.literal("Source Atlas: one sample per block."),
-                        left, 197, 0xFFB4C4BA);
+                        left, 237, 0xFFB4C4BA);
             }
             return;
         }
