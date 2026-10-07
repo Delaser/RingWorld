@@ -141,9 +141,14 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
         double deltaAngle = tangentFrameAngle(cameraCanonicalPosition.x, canonicalPosition.x);
         double positionRadius = physicalRadiusAt(canonicalPosition.y);
         double cameraRadius = physicalRadiusAt(cameraCanonicalPosition.y);
+        // At Halo scale subtracting two five-million-block radii loses local precision.
+        double halfSine = Math.sin(deltaAngle * 0.5);
+        double localY = RingHaloTrial.active(this)
+                ? canonicalPosition.y - cameraCanonicalPosition.y + 2.0 * positionRadius * halfSine * halfSine
+                : cameraRadius - positionRadius * Math.cos(deltaAngle);
         return new Vec3(
                 positionRadius * Math.sin(deltaAngle),
-                cameraRadius - positionRadius * Math.cos(deltaAngle),
+                localY,
                 canonicalPosition.z - cameraCanonicalPosition.z);
     }
 

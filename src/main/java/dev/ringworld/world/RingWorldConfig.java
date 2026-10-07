@@ -215,6 +215,12 @@ public record RingWorldConfig(int widthBlocks, int circumferenceBlocks, int wall
                                        int wallHeightBlocks, int rimThicknessBlocks,
                                        int atlasSampleStepBlocks) {
         RingGeometry geometry = new RingGeometry(widthBlocks, circumferenceBlocks);
+        if (RingHaloTrial.active(geometry)) {
+            if (load().pregenerateTerrainAtlas()) {
+                throw new IllegalArgumentException("Halo trial requires pregenerateTerrainAtlas=false");
+            }
+            return; // Explicit disposable trial only; normal size/Atlas limits remain intact.
+        }
         if (circumferenceBlocks < RingWorldSettings.MIN_NEW_WORLD_CIRCUMFERENCE) {
             throw new IllegalArgumentException("circumferenceBlocks must be at least "
                     + RingWorldSettings.MIN_NEW_WORLD_CIRCUMFERENCE + " for a new RingWorld");

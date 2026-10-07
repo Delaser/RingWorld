@@ -239,6 +239,14 @@ loom {
 		}
 	}
 	runs {
+		haloTrialClient {
+			client()
+			name "RingWorld Literal Halo Scale Trial"
+			runDir "logs/halo-scale-trial/run"
+			vmArg "-Dringworld.haloTrial=true"
+			vmArg "-Dringworld.haloTrialSeed=" + providers.gradleProperty("ringHaloTrialSeed").orElse("67890").get()
+			programArgs "--username", "HaloTrial", "--width", "1600", "--height", "1000"
+		}
 		distortionTrialClient {
 			client()
 			name "RingWorld Nearby Distortion Trial"
@@ -2115,3 +2123,21 @@ ext.ringFidelityGalleryDirectory = qualificationRunFile('run-atlas-fidelity-gall
 apply from: rootProject.file('gradle/fidelity-gallery.gradle')
 
 apply from: rootProject.file('gradle/automated-clients.gradle')
+
+// Disposable literal-scale Halo experiment. This directory is independent of all owner saves.
+tasks.register('prepareHaloTrial') {
+    doLast {
+        def path = file('logs/halo-scale-trial/run/config/ringworld.properties')
+        path.parentFile.mkdirs()
+        def props = new Properties()
+        if (path.exists()) path.withInputStream { props.load(it) }
+        props.setProperty('widthBlocks', '318000')
+        props.setProperty('circumferenceBlocks', '31415920')
+        props.setProperty('wallHeightBlocks', '160')
+        props.setProperty('pregenerateTerrainAtlas', 'false')
+        props.setProperty('requestOceanMonument', 'false')
+        props.setProperty('testMode', 'false')
+        path.withOutputStream { props.store(it, 'Unmerged Halo scale trial: seed placeholder only, no pregeneration') }
+    }
+}
+tasks.named('runHaloTrialClient') { dependsOn 'prepareHaloTrial' }

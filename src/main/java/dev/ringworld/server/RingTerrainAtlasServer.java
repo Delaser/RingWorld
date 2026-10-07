@@ -181,6 +181,9 @@ public final class RingTerrainAtlasServer {
     }
 
     public static void tick(ServerLevel world) {
+        if (Boolean.getBoolean("ringworld.haloTrial")
+                && dev.ringworld.world.RingHaloTrial.active(
+                        dev.ringworld.world.RingWorldSettings.get(world).geometry())) return;
         RingAtlasPregenerationService.tick(world);
         if (world.getGameTime() % RingAtlasPregenerationService.TILE_PUBLICATION_INTERVAL_TICKS == 0) {
             queueDirtyTiles(world, RingAtlasPregenerationService.drainDirtyTiles(world));

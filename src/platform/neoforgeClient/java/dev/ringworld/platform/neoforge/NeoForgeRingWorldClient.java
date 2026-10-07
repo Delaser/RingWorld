@@ -285,6 +285,7 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft client = Minecraft.getInstance();
+        if (dev.ringworld.client.RingHaloTrialClient.tick(client)) return;
         if (dev.ringworld.client.RingDistortionTrialClient.tick(client)) return;
         if (CREATION_UI_TEST.startMenuIfEnabled(client)) {
             CREATION_UI_TEST.tick(client);

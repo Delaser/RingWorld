@@ -73,7 +73,9 @@ vec3 curve_cloud_position(vec3 pos) {
     float angle = 6.28318530717958647692 * delta / circumference;
     vec3 ringPosition = vec3(
         vertexRadius * sin(angle),
-        cameraRadius - vertexRadius * cos(angle),
+        baseRadius > 1000000.0
+            ? pos.y + 2.0 * vertexRadius * (sin(angle * 0.5) * sin(angle * 0.5))
+            : cameraRadius - vertexRadius * cos(angle),
         pos.z
     );
 

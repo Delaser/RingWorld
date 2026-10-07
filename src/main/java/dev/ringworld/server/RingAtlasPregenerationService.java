@@ -92,6 +92,10 @@ public final class RingAtlasPregenerationService {
         requireServerThread(world);
         RingWorldSettings settings = RingWorldSettings.get(world);
         RingGeometry geometry = settings.geometry();
+        if (dev.ringworld.world.RingHaloTrial.active(geometry)) {
+            RingWorldMod.LOGGER.info("[halo-trial] authoritative Atlas allocation and pregeneration disabled");
+            return;
+        }
         long hash = RingTerrainAtlas.worldHash(settings);
         Path path = cachePath(world);
         Path legacyPath = legacyCachePath(world);

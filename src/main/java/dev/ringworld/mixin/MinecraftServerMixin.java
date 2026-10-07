@@ -37,6 +37,10 @@ abstract class MinecraftServerMixin implements RingWorldStorageAccess {
         RingWorldConfig config = RingWorldConfig.load();
         RingGeometry geometry = new RingGeometry(config.widthBlocks(), config.circumferenceBlocks());
 
+        if (dev.ringworld.world.RingHaloTrial.active(geometry)) {
+            return new BlockPos(100_000, vanilla.getY(), 0);
+        }
+
         // Preserve vanilla's preferred biome along the periodic axis. Across
         // the finite width, fall back to the middle of the band whenever the
         // noise sampler selected the exterior or the rim's immediate margin.

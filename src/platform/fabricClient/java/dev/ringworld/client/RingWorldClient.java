@@ -235,6 +235,7 @@ public final class RingWorldClient implements ClientModInitializer {
                 dev.ringworld.world.RingLodCommandSuggestions.ensurePresent(
                         client.getConnection().getCommands());
             }
+            if (dev.ringworld.client.RingHaloTrialClient.tick(client)) return;
             if (dev.ringworld.client.RingDistortionTrialClient.tick(client)) return;
             if (creationUiTest.startMenuIfEnabled(client)) {
                 creationUiTest.tick(client);

@@ -138,6 +138,10 @@ public final class ClientRingState {
         cameraSeamCrossings = 0;
         seamCorrectionPackets = 0;
         terrainAtlas = null;
+        if (dev.ringworld.world.RingHaloTrial.active(newGeometry)) {
+            terrainAtlas = RingTerrainAtlas.haloPlaceholder(newGeometry,
+                    newLayoutFingerprint);
+        }
         terrainPreview = null;
         terrainPreviewStage = -1;
         serverAtlasWorldHash = 0L;

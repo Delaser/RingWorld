@@ -59,7 +59,9 @@ vec3 camera_local_ring_position(vec3 vertexCanonical, vec3 cameraCanonical) {
     float cameraRadius = baseRadius + RingWorldVertical.x - cameraCanonical.y;
     return vec3(
         vertexRadius * sin(deltaAngle),
-        cameraRadius - vertexRadius * cos(deltaAngle),
+        baseRadius > 1000000.0
+            ? vertexCanonical.y - cameraCanonical.y + 2.0 * vertexRadius * (sin(deltaAngle * 0.5) * sin(deltaAngle * 0.5))
+            : cameraRadius - vertexRadius * cos(deltaAngle),
         vertexCanonical.z - cameraCanonical.z
     );
 }

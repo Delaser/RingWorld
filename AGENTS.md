@@ -6,6 +6,13 @@ rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
 ## Unmerged nearby-distortion trial
 
+`codex/halo-scale-trial` adds a separate opt-in literal Halo-scale experiment:
+31,415,920 blocks around and 318,000 across. It uses a bounded, seed-derived
+placeholder only, with authoritative Atlas allocation and pregeneration
+disabled. Do not merge this trial or raise normal size limits. See
+[`docs/HALO_SCALE_TRIAL.md`](docs/HALO_SCALE_TRIAL.md). Full-circuit traversal
+extends past vanilla's positive coordinate limit and is not qualified.
+
 `codex/nearby-distortion-trial` contains an opt-in client visual experiment.
 It defaults off and must not enter a release without owner acceptance and
 runtime qualification. The owner accepted its current appearance on 5 October

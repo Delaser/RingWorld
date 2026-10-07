@@ -37,6 +37,7 @@ public final class RingTerrainAtlas {
     private final RingGeometry geometry;
     private final long worldHash;
     private final int sampleStep;
+    private final boolean haloPlaceholder;
     private final int columns;
     private final int rows;
     private final short[] heights;
@@ -54,9 +55,23 @@ public final class RingTerrainAtlas {
     }
 
     public RingTerrainAtlas(RingGeometry geometry, long worldHash, int sampleStep) {
-        if (sampleStep <= 0 || 16 % sampleStep != 0) {
+        this(geometry, worldHash, sampleStep, false);
+    }
+
+    /** In-memory empty handle for the seed preview; no real cells, cache or wire data. */
+    public static RingTerrainAtlas haloPlaceholder(RingGeometry geometry, long worldHash) {
+        if (!RingHaloTrial.dimensionsMatch(geometry)) {
+            throw new IllegalArgumentException("Halo placeholder requires the literal trial dimensions");
+        }
+        return new RingTerrainAtlas(geometry, worldHash, RingHaloTrial.PLACEHOLDER_STEP, true);
+    }
+
+    private RingTerrainAtlas(RingGeometry geometry, long worldHash, int sampleStep,
+                             boolean haloPlaceholder) {
+        if (!haloPlaceholder && (sampleStep <= 0 || 16 % sampleStep != 0)) {
             throw new IllegalArgumentException("atlas sample step must divide one chunk");
         }
+        this.haloPlaceholder = haloPlaceholder;
         this.geometry = geometry;
         this.worldHash = worldHash;
         this.sampleStep = sampleStep;
@@ -127,7 +142,7 @@ public final class RingTerrainAtlas {
      * mutate the live atlas without racing consumers of this snapshot.
      */
     public RingTerrainAtlas snapshot() {
-        RingTerrainAtlas copy = new RingTerrainAtlas(geometry, worldHash, sampleStep);
+        RingTerrainAtlas copy = new RingTerrainAtlas(geometry, worldHash, sampleStep, haloPlaceholder);
         System.arraycopy(heights, 0, copy.heights, 0, heights.length);
         System.arraycopy(colors, 0, copy.colors, 0, colors.length);
         System.arraycopy(sideColors, 0, copy.sideColors, 0, sideColors.length);
@@ -318,6 +333,7 @@ public final class RingTerrainAtlas {
     }
 
     public byte[] encodeTile(int tileX, int tileZ) {
+        if (haloPlaceholder) throw new IllegalStateException("Halo placeholder has no real Atlas tiles");
         checkTile(tileX, tileZ);
         try {
             ByteArrayOutputStream bytes = new ByteArrayOutputStream(MAX_TILE_BYTES);
@@ -400,6 +416,7 @@ public final class RingTerrainAtlas {
     }
 
     public void save(Path path) throws IOException {
+        if (haloPlaceholder) throw new IOException("Halo placeholder is not a persistent Atlas");
         Files.createDirectories(path.getParent());
         Path temporary = path.resolveSibling(path.getFileName() + ".tmp");
         try (DataOutputStream output = new DataOutputStream(new BufferedOutputStream(

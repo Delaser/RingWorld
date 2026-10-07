@@ -36,6 +36,9 @@ abstract class MinecraftServerMixin implements RingWorldStorageAccess {
         var vanilla = generator.getOrigin(state);
         RingWorldConfig config = RingWorldConfig.load();
         RingGeometry geometry = new RingGeometry(config.widthBlocks(), config.circumferenceBlocks());
+        if (dev.ringworld.world.RingHaloTrial.active(geometry)) {
+            return new net.minecraft.world.level.ChunkPos(6_250, 0);
+        }
         return new net.minecraft.world.level.ChunkPos(Math.floorMod(vanilla.x(), geometry.circumferenceChunks()),
                 Math.floorDiv(RingSpawnBounds.constrainInitialSpawnZ(vanilla.z() * 16 + 8, geometry), 16));
     }
