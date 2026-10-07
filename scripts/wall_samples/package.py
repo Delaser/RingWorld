@@ -1,6 +1,7 @@
 """Package real framebuffer captures as selector-ready assets; requires Pillow."""
 from pathlib import Path
 from PIL import Image, ImageDraw
+from compress_previews import BUNDLED_PREVIEWS, save_bundled_preview
 import argparse, hashlib, html, io, json, shutil, subprocess, zipfile
 p=argparse.ArgumentParser()
 p.add_argument('--raw',type=Path,required=True)
@@ -34,6 +35,7 @@ for row,(material,material_label) in enumerate(palettes):
                       round(im.width*0.8),round(im.height*0.8)))
         preview=crop.resize((640,355),Image.Resampling.LANCZOS)
         preview.save(out/'previews'/(name+'.png'),optimize=True)
+        save_bundled_preview(preview, BUNDLED_PREVIEWS/(name+'.png'))
         display=im.resize((1280,round(im.height*1280/im.width)),Image.Resampling.LANCZOS)
         card=Image.new('RGB',(1280,display.height+64),'#141c24'); card.paste(display,(0,64))
         label(card,material_label+' / '+pattern_label,20,18,3)
