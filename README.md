@@ -18,7 +18,7 @@ work across the join.
 
 Nearby Minecraft terrain visibly curves away from you. Beyond normal render
 distance, a lightweight copy of the generated surface continues around the
-sky, over your head, and back to the opposite horizon. The aim is to make the
+sky, over your head, and back to the opposite side. The aim is to make the
 Overworld feel like one continuous ring rather than a flat map with a trick at
 the edge.
 
@@ -37,7 +37,8 @@ on the finite Overworld ring, including after very long Nether journeys.
   are neighbours. You can travel, fight, build, place blocks, move through
   portals, and see other players across that join.
 - **Visible curvature.** Terrain, entities, clouds, the sun, and distant
-  scenery share the same cylindrical presentation.
+  scenery share the same cylindrical presentation. The sky continues around
+  the ring without a horizontal sunrise/sunset band.
 - **Normal Minecraft terrain.** Biomes, caves, ores, trees, structures,
   weather, mobs, loot, strongholds, and the End portal remain part of world
   generation.

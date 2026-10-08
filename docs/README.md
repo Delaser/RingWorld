@@ -6,6 +6,8 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [Overworld horizon removal (#259)](HORIZON_259.md): scoped atmospheric change,
+  matched captures and cross-version development checks.
 - [Exterior entity visibility #254](OFF_RING_ENTITY_VISIBILITY_254.md): bounded
   tracking over the void, client render selection and targeted regression.
 

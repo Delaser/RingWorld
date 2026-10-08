@@ -32,16 +32,11 @@ abstract class SkyRenderingMixin {
     @Invoker("renderSun")
     protected abstract void ringworld$invokeRenderSun(float alpha, PoseStack matrices);
 
-    @Invoker("renderDarkDisc")
-    protected abstract void ringworld$invokeRenderDarkDisc();
-
     @Unique private float ringworld$cameraY;
     @Unique private float ringworld$cameraZ;
     @Unique private double ringworld$cameraX;
     @Unique private float ringworld$starTiltRadians;
     @Unique private boolean ringworld$renderingCenteredSun;
-    @Unique private boolean ringworld$renderingLowerSky;
-    @Unique private int ringworld$skyColor;
     @Unique private RingSkyCycle.SunVisual ringworld$sunVisual =
             RingSkyCycle.sunVisual(6_000.0);
 
@@ -75,11 +70,9 @@ abstract class SkyRenderingMixin {
                 state.starBrightness = 0.0F;
             }
         }
-        // A cylindrical world has no flat-world under-horizon void. The
-        // matching lower sky hemisphere is drawn immediately after the upper
-        // disc, so suppress vanilla's later black bottom-disc pass.
+        // FogRenderer clears to the live backdrop. Flat sky discs would
+        // reintroduce a horizontal boundary over that continuous background.
         state.shouldRenderDarkDisc = false;
-        ringworld$skyColor = state.skyColor;
         ringworld$sunVisual = RingSkyCycle.sunVisual(world.getOverworldClockTime() + tickProgress);
         ringworld$cameraY = (float)camera.position().y;
         ringworld$cameraZ = (float)camera.position().z;
@@ -91,46 +84,10 @@ abstract class SkyRenderingMixin {
         ringworld$starTiltRadians = (float)Math.atan2(starDirection.z, starDirection.y);
     }
 
-    @Inject(method = "renderSkyDisc", at = @At("TAIL"))
-    private void ringworld$renderLowerAtmosphere(int skyColor, CallbackInfo ci) {
-        if (ClientRingState.geometry() == null || ringworld$renderingLowerSky) return;
-        ringworld$renderingLowerSky = true;
-        try {
-            ringworld$invokeRenderDarkDisc();
-        } finally {
-            ringworld$renderingLowerSky = false;
-        }
-    }
-
-    @ModifyConstant(method = "renderDarkDisc", constant = @Constant(floatValue = 12.0F))
-    private float ringworld$centerLowerAtmosphere(float vanillaTranslation) {
-        return ringworld$renderingLowerSky ? 0.0F : vanillaTranslation;
-    }
-
-    @Group(name = "ringworldLowerSkyTint", min = 1, max = 1)
-    @ModifyArg(
-            method = "renderDarkDisc",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4fc;Lorg/joml/Vector4fc;Lorg/joml/Vector3fc;Lorg/joml/Matrix4fc;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"),
-            index = 1,
-            require = 0)
-    private Vector4fc ringworld$tintLowerAtmosphere(Vector4fc vanillaColor) {
-        return ringworld$renderingLowerSky
-                ? net.minecraft.util.ARGB.vector4fFromARGB32(ringworld$skyColor)
-                : vanillaColor;
-    }
-
-    @Group(name = "ringworldLowerSkyTint", min = 1, max = 1)
-    @ModifyArg(
-            method = "renderDarkDisc",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/DynamicUniforms;writeTransform(Lorg/joml/Matrix4f;Lorg/joml/Vector4f;)Lcom/mojang/blaze3d/buffers/GpuBufferSlice;"),
-            index = 1,
-            require = 0)
-    private Vector4f ringworld$tintLowerAtmosphere26_2(Vector4f vanillaColor) {
-        return new Vector4f(ringworld$tintLowerAtmosphere(vanillaColor));
+    @Inject(method = {"renderSkyDisc", "renderDarkDisc", "renderSunriseAndSunset"},
+            at = @At("HEAD"), cancellable = true)
+    private void ringworld$hideFlatSky(CallbackInfo ci) {
+        if (ClientRingState.geometry() != null) ci.cancel();
     }
 
     @Inject(method = "renderMoon", at = @At("HEAD"), cancellable = true)

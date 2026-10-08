@@ -24,6 +24,8 @@ RenderPass through its drawing methods, and DynamicUniforms is now
 DynamicGpuData. The version-owned sky adapter uses those required targets,
 keeps the lower atmosphere in the sky pass, then draws the Atlas and centered
 sun after vanilla closes that pass. The sun scale now has one constant site.
+Subsequent [#259 work](HORIZON_259.md) removes flat sky-disc draws on every
+supported line and matches atmospheric fog to the continuous background.
 
 Fabric builds with **440 passing Java cases**. The hidden, muted Atlas UI
 fixture passes all eleven captures, completed generation, ordered live revision

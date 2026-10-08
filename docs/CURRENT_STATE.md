@@ -188,8 +188,9 @@ Unreleased optional-feature work after 1.1 currently includes:
   None) settings. Dark backdrops also use backdrop-matched proxy edge blending
   rather than the bright atmosphere fog colour. The star field is fixed in
   physical ring space: local sky orientation counter-rotates with longitude
-  and is inverted on the opposite side of the ring. A matching lower atmosphere
-  removes vanilla's flat sky-disc horizon above the finite rim. Changes can be applied live
+  and is inverted on the opposite side of the ring. Flat sky-disc draws are
+  suppressed; the background and atmospheric fog match at every height
+  (issue #259). Changes can be applied live
   with `/ringworld sky` and `/ringworld sun` and do not alter vanilla
   gameplay time or terrain identity;
 - a loader-neutral creation UI for selecting rim presets, detailed wall

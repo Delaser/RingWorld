@@ -1044,6 +1044,13 @@ version numbers.
 
 ## Current implementation cautions
 
+- RingWorld's Atmosphere backdrop matches fog to the live sky colour at every
+  height (#259), not only near wall tops. Skip flat upper/lower sky discs and
+  sunrise/sunset fans in both sky adapters; do not restore the lower-disc draw. Preserve fog distances, fluid and special darkness
+  fog, and null-geometry
+  Nether/End behavior. `RingHorizonCaptureClient` is an opt-in, muted disposable
+  fixture; see `docs/HORIZON_259.md` for evidence and limitations.
+
 - `/ringworld lod` is client-side on both loaders. Its Lowest-to-Max choices
   are `RingLodQuality` display budgets, not saved `RingAtlasFidelity` IDs.
   Preserve the server source Atlas; derive lower-resolution immutable snapshots
