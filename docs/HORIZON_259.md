@@ -1,7 +1,8 @@
 # Overworld horizon removal — issue #259
 
 Development change, 8 October 2026. This is not a published release or a full
-release qualification. Owner visual acceptance is still required.
+release qualification. The owner accepted the running 26.3 Fabric appearance
+on 8 October 2026 and marked this change ready for integration (PR #261).
 
 ## Cause and change
 
@@ -132,7 +133,7 @@ NeoForge 26.3.0.7-beta for 26.3. The shared oldest adapter covers the
 Final logs and screenshots live in `logs/horizon-259/verified-*`, with
 `verified-tests-*.json` and `verified-pixel-review.json`. The two preliminary
 26.3 blindness controls showed a black background; neither is a full status-
-effect, fluid or gameplay qualification. Owner visual acceptance remains
-pending. These checks do not qualify multiplayer, packaged release JARs,
+effect, fluid or gameplay qualification. Owner visual acceptance is complete
+for 26.3 Fabric. These checks do not qualify multiplayer, packaged release JARs,
 performance, third-party shaders/resource packs, or the shelved pink-End-sky
 report (#258).
