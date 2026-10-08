@@ -1442,6 +1442,14 @@ version numbers.
   `multiplayer-cold` phase telemetry and independent post-End readiness window
   before weather. Neither may load chunks, clear ordinary entities, weaken the
   watchdog, or alter production scheduling.
+- Exterior entities have no delivered terrain chunk. Keep their entity watch
+  window bounded by the normal periodic view distance while bypassing the Z
+  terrain clamp for pairing only. On the client, bypass only the compiled
+  terrain-section check outside the width band; keep entity frustum/distance
+  tests and first-person self-hiding. Do not send exterior chunks or tie this
+  behaviour to the outside-building toggle. See
+  `docs/OFF_RING_ENTITY_VISIBILITY_254.md` for version targets and the opt-in
+  two-client regression.
 - The vanilla entity loop's asynchronous simulation graph can retain the old
   side of a natural seam crossing. `ServerWorldMixin` first checks the
   canonical graph key, then falls back only to non-spectator players within

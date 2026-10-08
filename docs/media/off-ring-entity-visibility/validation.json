@@ -1,0 +1,67 @@
+{
+  "date": "2026-10-08",
+  "base": "a46965c",
+  "scope": "Targeted development validation; not frozen release qualification",
+  "cells": [
+    {
+      "minecraft": "26.1.2",
+      "loader": "fabric",
+      "java_cases": 450,
+      "build": "PASS",
+      "two_client_exterior_visibility": "PASS",
+      "visibility_stages_per_client": 7,
+      "vanilla_void_damage": "PASS",
+      "normal_process_stops": 3
+    },
+    {
+      "minecraft": "26.1.2",
+      "loader": "neoforge",
+      "java_cases": 450,
+      "build": "PASS",
+      "two_client_exterior_visibility": "PASS",
+      "visibility_stages_per_client": 7,
+      "vanilla_void_damage": "PASS",
+      "normal_process_stops": 3
+    },
+    {
+      "minecraft": "26.2",
+      "loader": "fabric",
+      "java_cases": 450,
+      "build": "PASS",
+      "two_client_exterior_visibility": "PASS",
+      "visibility_stages_per_client": 7,
+      "vanilla_void_damage": "PASS",
+      "normal_process_stops": 3
+    },
+    {
+      "minecraft": "26.2",
+      "loader": "neoforge",
+      "java_cases": 450,
+      "build": "PASS",
+      "two_client_exterior_visibility": "PASS",
+      "visibility_stages_per_client": 7,
+      "vanilla_void_damage": "PASS",
+      "normal_process_stops": 3
+    },
+    {
+      "minecraft": "26.3",
+      "loader": "fabric",
+      "java_cases": 453,
+      "build": "PASS",
+      "two_client_exterior_visibility": "PASS",
+      "visibility_stages_per_client": 7,
+      "vanilla_void_damage": "PASS",
+      "normal_process_stops": 3
+    },
+    {
+      "minecraft": "26.3",
+      "loader": "neoforge",
+      "java_cases": 453,
+      "build": "PASS",
+      "two_client_exterior_visibility": "PASS",
+      "visibility_stages_per_client": 7,
+      "vanilla_void_damage": "PASS",
+      "normal_process_stops": 3
+    }
+  ]
+}

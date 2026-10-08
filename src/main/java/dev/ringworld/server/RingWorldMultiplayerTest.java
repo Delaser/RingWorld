@@ -57,6 +57,10 @@ public final class RingWorldMultiplayerTest {
     private RingWorldMultiplayerTest() { }
 
     public static void recordClientResult(String role, String phase, boolean passed) {
+        if (Boolean.getBoolean("ringworld.offRingVisibilityTest")) {
+            RingOffRingVisibilityTest.record(role, phase, passed);
+            return;
+        }
         if (!Boolean.getBoolean("ringworld.multiplayerTest")) return;
         CLIENT_RESULTS.put(role + ':' + phase, passed);
         if (role.equals("A") && phase.equals("movement_started") && passed) {
@@ -79,6 +83,10 @@ public final class RingWorldMultiplayerTest {
     }
 
     static void tick(ServerLevel world, RingGeometry geometry) {
+        if (Boolean.getBoolean("ringworld.offRingVisibilityTest")) {
+            RingOffRingVisibilityTest.tick(world, geometry);
+            return;
+        }
         if (!Boolean.getBoolean("ringworld.multiplayerTest")) return;
         ServerPlayer playerA = playerNamed(world, "RingTesterA");
         ServerPlayer playerB = playerNamed(world, "RingTesterB");

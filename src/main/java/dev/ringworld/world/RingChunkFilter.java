@@ -33,6 +33,12 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
                 viewDistance, minChunkZ, maxChunkZ, x, z, includeEdge);
     }
 
+    /** Same bounded periodic window, including entities over the exterior void. */
+    public boolean containsEntity(int x, int z) {
+        return RingChunkTopology.isWithinVanillaDistance(circumferenceChunks,
+                center.x(), center.z(), viewDistance, x, z, true);
+    }
+
     static boolean isWithinRingDistance(int circumferenceChunks, int centerX, int centerZ,
                                         int viewDistance, int minChunkZ, int maxChunkZ,
                                         int x, int z, boolean includeEdge) {

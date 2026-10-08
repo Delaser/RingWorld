@@ -6,6 +6,9 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [Exterior entity visibility #254](OFF_RING_ENTITY_VISIBILITY_254.md): bounded
+  tracking over the void, client render selection and targeted regression.
+
 - [1.3 supported-version parity and release hold](RELEASE_1_3_PARITY.md):
   required 26.x/Fabric/NeoForge behaviour, port status and remaining checks.
 

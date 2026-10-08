@@ -105,6 +105,8 @@ public final class MultiplayerTestClient {
 
     public boolean tick(Minecraft client) {
         if (role.isEmpty()) return false;
+        if (Boolean.getBoolean("ringworld.offRingVisibilityTest")
+                && OffRingVisibilityTestClient.finishIfDisconnected(client)) return true;
         if (!optionsApplied) {
             client.options.renderDistance().set(Math.clamp(Integer.getInteger(
                     "ringworld.multiplayerTestViewDistanceChunks", 2), 2, 32));
@@ -132,6 +134,10 @@ public final class MultiplayerTestClient {
                 RingWorldMod.LOGGER.info("[multiplayer:{}] client world fully loaded x={}",
                         role, client.player.getX());
             }
+        }
+        if (Boolean.getBoolean("ringworld.offRingVisibilityTest")) {
+            OffRingVisibilityTestClient.tick(client, role);
+            return true;
         }
         stageTicks++;
         switch (stage) {
