@@ -1,5 +1,11 @@
 # Current state
 
+October 8 issue #254: exterior entity visibility is implemented on an isolated
+review branch. Client entity selection no longer requires an unsent exterior
+terrain section; server pairing uses the normal bounded watch window outside
+the Z band. Building policy remains independent. Owner review and integration
+are pending; see [implementation and targeted tests](OFF_RING_ENTITY_VISIBILITY_254.md).
+
 September 30 release status: six 1.3 JARs are staged from the same repaired
 source commit. Fresh quick qualification passes across the three supported
 Minecraft lines and both loaders. The 26.2 and 26.3 full nightly matrices each

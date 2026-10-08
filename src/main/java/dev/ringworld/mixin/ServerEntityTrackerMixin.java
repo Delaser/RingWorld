@@ -3,6 +3,7 @@ package dev.ringworld.mixin;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.world.RingChunkCoordinates;
+import dev.ringworld.world.RingChunkFilter;
 import dev.ringworld.world.RingEntityTracking;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingWorldConfig;
@@ -46,10 +47,11 @@ abstract class ServerEntityTrackerMixin {
      * pairing in that one tick loses a now-stationary vehicle permanently
      * because no later section change retries {@code updatePlayer}.
      *
-     * Initial pairing still requires vanilla chunk readiness. Existing
+     * Inside the terrain band, initial pairing requires chunk readiness. Existing
      * pairings survive only while the canonical destination remains inside
      * the same configured periodic watch window; tracking range was already
-     * checked immediately before this call.
+     * checked immediately before this call. Exterior entities use the same
+     * bounded watch distance without waiting for an unsent exterior void chunk.
      */
     @Redirect(
             method = "updatePlayer(Lnet/minecraft/server/level/ServerPlayer;)V",
@@ -69,9 +71,14 @@ abstract class ServerEntityTrackerMixin {
         int canonicalChunkX = RingChunkCoordinates.wrapChunkX(chunkX, geometry);
         boolean canonicalChunkWatched =
                 player.getChunkTrackingView().contains(canonicalChunkX, chunkZ);
+        boolean exteriorChunkWatched = (chunkZ < geometry.minChunkZ()
+                || chunkZ > geometry.maxChunkZ())
+                && player.getChunkTrackingView() instanceof RingChunkFilter filter
+                && filter.containsEntity(canonicalChunkX, chunkZ);
         boolean remainPaired = RingEntityTracking.shouldRemainPaired(
-                false, seenBy.contains(player.connection), canonicalChunkWatched);
-        if (remainPaired && RingWorldConfig.load().testMode()) {
+                false, seenBy.contains(player.connection), canonicalChunkWatched,
+                exteriorChunkWatched);
+        if (remainPaired && !exteriorChunkWatched && RingWorldConfig.load().testMode()) {
             RingWorldMod.LOGGER.info(
                     "[multiplayer] preserved pending entity pairing id={} type={} canonicalChunk={},{} player={}",
                     entity.getId(), entity.getType(), canonicalChunkX, chunkZ,
