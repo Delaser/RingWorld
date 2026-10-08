@@ -113,7 +113,12 @@ review; it does **not** qualify the final change.
 Additional 26.3 inward/upward daylight controls pass on both loaders: live
 terrain, the progressive Atlas, walls and the centered sun remain visible.
 These worlds deliberately disable pregeneration; this is not a fully generated
-Atlas quality comparison. After adding the opt-in scene poses, all six source
+Atlas quality comparison. The NeoForge ground pose exposes a gap in the
+partially generated Atlas/handoff region. A repeat with unchanged `a46965c`
+production renderers shows the same gap with the old dark sky band; #259
+removes that band but does not qualify or fix Atlas coverage. Both captures
+are retained in `scene-neoforge-26.3` and `scene-baseline-neoforge-26.3`.
+After adding the opt-in scene poses, all six source
 build/test cells were checked again; normal capture behaviour is unchanged.
 
 ![Atlas and sun after horizon removal](evidence/horizon-259/atlas-and-sun-26.3.png)
