@@ -36,15 +36,6 @@ class RingSkyCycleTest {
     }
 
     @Test
-    void exposedHorizonOnlyConvergesNearTheWallTop() {
-        assertEquals(0.0F, RingSkyCycle.exposedHorizonBlend(64.0, 96.0));
-        assertEquals(0.0F, RingSkyCycle.exposedHorizonBlend(80.0, 96.0));
-        assertEquals(0.5F, RingSkyCycle.exposedHorizonBlend(88.0, 96.0), 0.00001F);
-        assertEquals(1.0F, RingSkyCycle.exposedHorizonBlend(96.0, 96.0));
-        assertEquals(1.0F, RingSkyCycle.exposedHorizonBlend(140.0, 96.0));
-    }
-
-    @Test
     void noonIsBrightAndNeutral() {
         var noon = RingSkyCycle.sunVisual(6_000);
         assertEquals(1.0F, noon.brightness());

@@ -1,5 +1,15 @@
 # Testing
 
+## Overworld horizon regression (#259)
+
+`-Dringworld.captureHorizon=true` enables the shared muted
+`RingHorizonCaptureClient` through either loader's qualified `:runClient` task.
+It creates a disposable Creative world, captures six time/weather states at
+deck height and above the rim, then checks reload and Nether/End/Overworld
+transfers. `-Dringworld.horizonCaptureShort=true` selects sunset only. The
+`CAPTURE COMPLETE` marker certifies fixture completion, not visual correctness;
+review the PNGs separately. See [commands and evidence](HORIZON_259.md).
+
 ## 1.3 release hold and version parity
 
 The initial 29 September release test run was cancelled after a 26.3-only
@@ -2047,7 +2057,7 @@ sun plus the Large and None sun variants in the first world from a fixed
 sky-facing pose. A second Night capture half a circumference away provides a
 direct visual check that the physical-space star field inverts in the local
 tangent frame instead of following the player. A wall-top horizontal Atmosphere
-capture at dusk checks that the upper/lower sky and high-altitude fog converge
+capture at dusk checks that the continuous sky background and fog match
 without vanilla's flat horizon band. `-PringAppearanceSkyOnly=true` reuses that
 world to refresh only the sky captures. Outputs live below the ignored
 `run-appearance-comparison/screenshots/` directory. This fixture is review

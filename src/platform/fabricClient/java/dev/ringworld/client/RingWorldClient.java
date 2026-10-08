@@ -246,6 +246,7 @@ public final class RingWorldClient implements ClientModInitializer {
             if (!Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) {
                 ClientRingState.saveTerrainAtlasIfDue(false);
             }
+            if (dev.ringworld.client.RingHorizonCaptureClient.tickIfEnabled(client)) return;
             if (productionLifecycleTest.tick(client)) return;
             if (layoutSwitchTest.tick(client)) return;
             if (multiplayerTest.tick(client)) return;

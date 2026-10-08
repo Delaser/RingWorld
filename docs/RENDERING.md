@@ -571,17 +571,18 @@ appears as a pale outline. The ring shader therefore receives the saved
 backdrop ID and blends proxy edges to the exact dark backdrop colour in those
 two modes; Atmosphere retains ordinary fog matching.
 
-Vanilla's atmosphere is an upper disc whose fog gradient terminates at a flat
-horizon; below it, the framebuffer remains one constant fog colour (or a black
-bottom disc below vanilla's world horizon). That derivative break is visible
-from the top of a finite rim, especially at dusk. RingWorld renders the matching
-lower disc with the same live sky colour and centred geometry before celestial
-objects and the ring proxy, then suppresses vanilla's later black disc. The two
-fogged hemispheres meet without leaving an empty lower half or covering the
-authoritative ring surface. Across the final sixteen blocks below the saved
-wall top, the live atmospheric fog colour also smoothsteps into the current sky
-colour. Ground-level fog is unchanged, while the otherwise exposed rim-top
-view no longer contains a saturated flat horizon band.
+Vanilla's flat sky discs can expose a horizon boundary even after suppressing
+sunrise/sunset glow and the black bottom disc. RingWorld now skips the upper
+sky disc and removes its added lower-disc draw. The framebuffer clears to fog
+colour; atmospheric fog uses the live `SKY_COLOR` at **every height**, including
+below the rim. This replaces the earlier blend limited to sixteen blocks below
+the wall top. The background and distant surface fog share one colour without
+flat disc geometry. Sun, stars, clouds and the Atlas still render. The sky
+attribute follows time, biome and weather; fog distances and rain occlusion
+are unchanged. Underwater, lava and powder-snow fog bypass this adjustment;
+Atmosphere also preserves vanilla blindness/darkness fog colours. Nether and
+End retain vanilla rendering because client ring geometry is inactive there.
+See [issue #259 evidence](HORIZON_259.md).
 
 The original Minecraft sun texture, celestial atlas, and pipeline remain in
 use. `RingSkyCycle.sunVisual` maps the authoritative 24,000-tick world clock
