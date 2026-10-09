@@ -20,8 +20,14 @@ Cloud follow-up #268 aligns vanilla CPU face selection with the same saved-wall
 cloud base as GPU Globals: dimension minimum Y + saved wall height + 8. Curved
 Fancy cells retain both caps; Fast clouds retain one double-sided face. All six
 source builds/tests and 36 below/inside/above native captures pass at saved wall
-heights 160 and 256. The fix is on `codex/cloud-height-268` for owner review;
+heights 160 and 256. The owner accepted the fix and PR #269 is merged;
 no new release is published. See [details and limits](CLOUD_ALTITUDE_268.md).
+
+Wall-preview packaging #260 integrates the banked compact PNGs and capture
+packager, preserving website image quality. All six source builds/tests and
+180 final-JAR image comparisons pass; development JARs measure 3.36–3.39 MB
+instead of 13.64–13.66 MB. See [sizes and validation](WALL_PREVIEW_COMPRESSION_260.md).
+This is an upcoming packaging change, not a new release publication.
 
 September 30 release status: all six 1.3 JARs were approved on CurseForge and
 their CDN hashes matched the reviewed files. Modrinth and optional launcher
