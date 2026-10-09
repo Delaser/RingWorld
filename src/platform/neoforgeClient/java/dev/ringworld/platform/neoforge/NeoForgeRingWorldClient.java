@@ -98,6 +98,27 @@ public final class NeoForgeRingWorldClient {
 
     @SubscribeEvent
     public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
+        var distortion = Commands.literal("distortion").executes(context -> {
+            String message = dev.ringworld.client.RingDistortionTuning.summary();
+            context.getSource().sendSuccess(() -> Component.literal(message), false);
+            return 1;
+        });
+        for (String action : new String[]{"on", "off", "show"}) {
+            distortion.then(Commands.literal(action).executes(context -> {
+                String message = action.equals("show") ? dev.ringworld.client.RingDistortionTuning.summary()
+                        : dev.ringworld.client.RingDistortionTuning.select(action.equals("on"));
+                context.getSource().sendSuccess(() -> Component.literal(message), false);
+                return 1;
+            }));
+        }
+        distortion.then(Commands.literal("distance").then(Commands.argument("chunks",
+                com.mojang.brigadier.arguments.IntegerArgumentType.integer(1, 8)).executes(context -> {
+            String message = dev.ringworld.client.RingDistortionTuning.distance(
+                    com.mojang.brigadier.arguments.IntegerArgumentType.getInteger(context, "chunks"));
+            context.getSource().sendSuccess(() -> Component.literal(message), false);
+            return 1;
+        })));
+        event.getDispatcher().register(Commands.literal("ringworld").then(distortion));
         var lod = Commands.literal("lod").executes(context -> {
             String message = dev.ringworld.client.RingClientLodTuning.summary();
             context.getSource().sendSuccess(() -> Component.literal(message), false);
@@ -278,6 +299,7 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft client = Minecraft.getInstance();
+        if (dev.ringworld.client.RingDistortionTrialClient.tick(client)) return;
         if (CREATION_UI_TEST.startMenuIfEnabled(client)) {
             CREATION_UI_TEST.tick(client);
             return;

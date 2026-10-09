@@ -19,6 +19,13 @@ class RingLodCommandSuggestionsTest {
             assertFalse(parsed.getReader().canRead());
             assertNotNull(parsed.getContext().getCommand());
         }
+        for (String action : new String[]{"on", "off", "show", "distance 1", "distance 8"}) {
+            var parsed = dispatcher.parse("ringworld distortion " + action, new Object());
+            assertFalse(parsed.getReader().canRead());
+            assertNotNull(parsed.getContext().getCommand());
+        }
+        assertTrue(dispatcher.parse("ringworld distortion distance 9", new Object())
+                .getReader().canRead());
         var choices = dispatcher.getCompletionSuggestions(
                 dispatcher.parse("ringworld lod ", new Object())).get();
         assertEquals(java.util.Set.of("low", "medium", "high", "show", "reset"),

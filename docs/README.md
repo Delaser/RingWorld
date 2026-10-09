@@ -6,6 +6,9 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [Nearby block normalisation (#256)](NEARBY_DISTORTION_TRIAL.md): client controls,
+  fixed-height projection, integration checks and remaining limitations.
+
 - [Compressed wall previews (#260)](WALL_PREVIEW_COMPRESSION_260.md): shared PNG
   packaging, regeneration, decoder checks and six-JAR size measurements.
 

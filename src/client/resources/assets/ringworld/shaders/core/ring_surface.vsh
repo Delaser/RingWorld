@@ -2,6 +2,7 @@
 
 #moj_import <minecraft:dynamictransforms.glsl>
 #moj_import <minecraft:globals.glsl>
+#moj_import <minecraft:ringworld_projection.glsl>
 #moj_import <minecraft:projection.glsl>
 
 in vec3 Position;
@@ -28,7 +29,17 @@ const float TAU = 6.28318530717958647692;
 const float FAR_BACKGROUND_DEPTH = 0.9999;
 
 void main() {
-    gl_Position = ProjMat * ModelViewMat * vec4(Position, 1.0);
+    // Texture UVs can be constant across an entire steep face. Recover
+    // geometry from Position instead, so shared vertices stay shared.
+    float vertexAngle = atan(Position.x, -Position.y);
+    float originalRadius = length(Position.xy);
+    vec3 projected = Position;
+    if (RingWorldDistortion.x > 0.5) {
+        vec3 point = vec3(vertexAngle * float(RingWorldLayout.y) / TAU,
+                float(RingWorldLayout.y) / TAU + RingWorldVertical.x - originalRadius, Position.z);
+        projected = ring_trial_position(point, vec3(CameraBlockPos) - CameraOffset);
+    }
+    gl_Position = ProjMat * ModelViewMat * vec4(projected, 1.0);
     // Join perspective depth to an ordered far tail at the clipping boundary.
     float ndcOffset = ProjMat[2][2] / ProjMat[2][3];
     float ndcScale = ProjMat[3][2] - ndcOffset * ProjMat[3][3];
@@ -61,14 +72,13 @@ void main() {
     // Position.xy is the global cylinder and ModelOffset.x is the canonical
     // camera angle. atan(sin, cos) produces the shortest periodic angle even
     // at U=0/1, so the handoff cannot acquire a second seam.
-    float vertexAngle = atan(Position.x, -Position.y);
     float deltaAngle = atan(
         sin(vertexAngle - ModelOffset.x),
         cos(vertexAngle - ModelOffset.x)
     );
     float surfaceDistance = abs(deltaAngle) * float(RingWorldLayout.y) / TAU;
     intrinsicDistance = length(vec2(surfaceDistance, Position.z - ModelOffset.y));
-    intrinsicHeight = length(Position.xy);
+    intrinsicHeight = originalRadius;
     // Native section traversal has a vertical range as well as an X/Z range.
     // Keep horizontal distance for materials; use canonical height for coverage.
     float cameraY = float(CameraBlockPos.y) - CameraOffset.y;

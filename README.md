@@ -120,6 +120,13 @@ on the RingWorld Map or with `/ringworld lod`. Medium is the default; every
 level draws from the same one-block server Atlas. See the
 [technical guide](docs/OPTIONAL_WORLD_GENERATION.md).
 
+Upcoming development builds also offer **Nearby block normalisation** on the
+Display page or through `/ringworld distortion on|off|show` and
+`/ringworld distortion distance <1–8>`. It reduces squeezed/stretched nearby
+blocks on small rings. Default off, three chunks each way; it affects this
+client's rendering and resets on disconnect. See the
+[implementation notes](docs/NEARBY_DISTORTION_TRIAL.md).
+
 For dedicated-server configuration, commands, backups, and recovery, see the
 [operations guide](docs/OPERATIONS.md).
 

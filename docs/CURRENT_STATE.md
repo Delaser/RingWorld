@@ -1,5 +1,14 @@
 # Current state
 
+October 9: the owner approved #256 nearby block normalisation and requested
+a PR and merge. The accepted fixed-height mapping is ported onto current main,
+with unrelated trial experiments excluded. Client/session controls default off
+and retain the three-chunk correction distance. All six source builds/tests
+and 355 static checks pass. All six native integration checks pass: 30
+captures, live commands, reload, lower/above-build views and disconnect reset.
+See [design and evidence](NEARBY_DISTORTION_TRIAL.md). This is upcoming
+functionality, not a new release publication.
+
 October 9: exterior entity visibility (#254 / #262), horizon removal (#259 / #261)
 and outside building (#255 / #263) are merged. #264 / #265 is also merged on
 October 9 at the owner's request. It closes Atlas
@@ -27,7 +36,7 @@ Wall-preview packaging #260 integrates the banked compact PNGs and capture
 packager, preserving website image quality. All six source builds/tests and
 180 final-JAR image comparisons pass; development JARs measure 3.36–3.39 MB
 instead of 13.64–13.66 MB. See [sizes and validation](WALL_PREVIEW_COMPRESSION_260.md).
-This is an upcoming packaging change, not a new release publication.
+PR #270 is merged. This is an upcoming packaging change, not a new release publication.
 
 September 30 release status: all six 1.3 JARs were approved on CurseForge and
 their CDN hashes matched the reviewed files. Modrinth and optional launcher

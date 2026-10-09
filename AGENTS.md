@@ -4,6 +4,24 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
+## Nearby block normalisation (#256)
+
+The owner accepted the minimum-ring trial again on 9 October 2026 and
+requested a PR and merge. The accepted four-commit delta from
+`codex/nearby-distortion-trial` is integrated selectively; do not merge that
+branch wholesale because its other experiments are unrelated.
+Normalisation is a client/session Display option, default off, reset on
+disconnect. `/ringworld distortion on|off|show` and `distance <1–8>` select it
+live. Camera Y only translates geometry; keep the fixed visual radius and
+vertex-height mapping shared by CPU transforms, culling and all GPU entry
+points, including both 26.3 cloud shader names. Preserve the existing
+altitude-aware handoff, saved-height wall closure and dynamic cloud policy.
+Do not change generation, physical coordinates, server physics or creation
+limits to accommodate it. See
+[`docs/NEARBY_DISTORTION_TRIAL.md`](docs/NEARBY_DISTORTION_TRIAL.md) for design,
+validation and remaining limitations. Development integration is separate
+from fresh frozen-candidate release qualification.
+
 ## Supported-version parity and release state
 
 Every fix, performance improvement, and feature in a release must work on **all
