@@ -266,7 +266,43 @@ FPS mailbox with synthetic 40/60 FPS and requires 4→2→1→2→4. It does not
 that actual GPU/render performance was measured. The live client reads Minecraft
 FPS in the shared helper, registered through both loader tick hooks.
 
-Adaptive source builds/tests and six native lifecycle/stop/resume/reopen cells
-are currently running. New evidence is retained separately in
-`logs/atlas-auto-scaling-253/`; earlier fixed-policy and failed evidence remains
-intact. Normal production does not enable the synthetic probes or metrics.
+Adaptive source **fbe08ba59d6d31ae006620676bf35c469298ba07** passes all six
+source builds/tests and all six native lifecycle/stop/resume/reopen cells
+(18 launches). The fixture geometry, seed and independent disk checks are the
+same as the fixed-policy lifecycle matrix above. Each initial launch exercises
+pause/drain/resume/cancel/restart and controlled FPS pressure/recovery before
+normal interruption. Each subsequent resume reaches all 262,144 cells and all
+1,024 canonical region records; reopening preserves the completed height hash
+and admits no new requests.
+
+| Minecraft | Loader | Unit cases | Adaptive 4→2→1→2→4 and lifecycle | Interrupted report = disk cells | Resume / complete-cache reopen |
+|---|---|---:|---|---:|---|
+| 26.1.2 | Fabric | 482 | PASS | 70,656 | PASS / PASS |
+| 26.1.2 | NeoForge | 482 | PASS | 69,632 | PASS / PASS |
+| 26.2 | Fabric | 482 | PASS | 66,560 | PASS / PASS |
+| 26.2 | NeoForge | 482 | PASS | 74,752 | PASS / PASS |
+| 26.3 | Fabric | 485 | PASS | 69,888 | PASS / PASS |
+| 26.3 | NeoForge | 485 | PASS | 77,824 | PASS / PASS |
+
+All 2,898 local test executions pass with zero failures, errors or skips.
+All nine CI checks pass on the adaptive source: source workflow run
+37969029077, static run 37969029064 and packaging run 37969029139.
+The first exploratory compile failed because the NeoForge client hook lacked
+its shared-helper import; that failed log remains preserved. No Minecraft
+ERROR/FATAL entries occur in the passing adaptive native runs. Expected
+interruption-only Gradle finalizer failures remain recorded as interruptions,
+not completed generation.
+
+To exercise the adaptive probe on a fresh disposable fixture, replace the JVM
+options in the command above with:
+
+```sh
+JAVA_TOOL_OPTIONS="-Dringworld.atlasInFlightChunks=auto -Dringworld.measureAtlasConcurrency=true -Dringworld.testAtlasConcurrency=true -Dringworld.testAtlasAutoScale=true"
+```
+
+Keep `auto` for resume/reopen and remove both synthetic probe flags. New
+evidence is retained separately in `logs/atlas-auto-scaling-253/`; earlier
+fixed-policy and failed evidence remains intact. Normal production does not
+enable the synthetic probes or metrics. Actual integrated-client FPS,
+player-active priority/latency and wider feature/structure parity remain
+unqualified; these are development checks, not release qualification.

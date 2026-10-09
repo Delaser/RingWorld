@@ -4,9 +4,14 @@ October 9 follow-up: the owner requested automatic Atlas request scaling.
 The unpublished trial now defaults to auto: start four, reduce to two/one under
 sustained FPS or server tick pressure, then recover slowly. Integrated owner
 FPS uses a local server-thread mailbox; dedicated servers use tick time.
-Numeric JVM values retain fixed 1–8 limits. New source and adaptive native checks
-are running separately; the fixed-policy evidence below does not qualify this
-new default. See [policy and evidence](ATLAS_CONCURRENCY_253.md).
+Numeric JVM values retain fixed 1–8 limits. Adaptive source `fbe08ba` passes all
+six builds/tests (482 cases per loader on 26.1.2/26.2, 485 on 26.3), all nine CI
+checks, and all six native lifecycle cells (18 launches). Controlled synthetic
+FPS exercises 4→2→1→2→4 through the real mailbox; interruption counts match
+disk, all resumes reach complete coverage, and completed caches reopen without
+new requests. Actual graphical FPS and active-player impact remain unmeasured.
+The trial remains in draft PR #273, unmerged; published artifacts and live
+large-server generation are unchanged. See [policy and evidence](ATLAS_CONCURRENCY_253.md).
 
 October 9: #253 bounded Atlas concurrency is implemented and tested in draft
 PR #273 (`codex/atlas-concurrency-253`), based on merged #257. Four outstanding
