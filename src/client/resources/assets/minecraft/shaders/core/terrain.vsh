@@ -18,6 +18,7 @@ out float cylindricalVertexDistance;
 out vec4 vertexColor;
 out vec2 texCoord0;
 out float ringIntrinsicDistance;
+out float ringHandoffDistance;
 
 float ring_circumference() {
     return float(RingWorldLayout.y);
@@ -61,6 +62,7 @@ void main() {
         vertexColor = Color * minecraft_sample_lightmap(Sampler2, UV2);
         texCoord0 = UV0;
         ringIntrinsicDistance = -1.0;
+        ringHandoffDistance = -1.0;
         return;
     }
 
@@ -91,4 +93,6 @@ void main() {
     // surface shader. The fragment shader uses it to reveal the already-drawn
     // distant ring beneath only the final live terrain band.
     ringIntrinsicDistance = length(vanillaPos.xz);
+    // Match the proxy's intrinsic horizontal + canonical vertical coverage.
+    ringHandoffDistance = length(vanillaPos);
 }

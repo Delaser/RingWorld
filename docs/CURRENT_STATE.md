@@ -1,12 +1,20 @@
 # Current state
 
 October 9: exterior entity visibility (#254 / #262), horizon removal (#259 / #261)
-and outside building (#255 / #263) are merged. Follow-up #264 closes Atlas
+and outside building (#255 / #263) are merged. #264 / #265 is also merged on
+October 9 at the owner's request. It closes Atlas
 terrain edges and decayed wall crests, and derives exterior wall depth from the
 aligned top and saved World-settings height. The owner also reported that the
 bottom looks too low; the saved study's real columns and Atlas bounds agree at
 nominal Y=-64..96 for height 160. Visual acceptance of the bottom join is still
-pending. See [implementation and validation](ATLAS_WALL_CLOSURE_264.md).
+not separately recorded. See [implementation and validation](ATLAS_WALL_CLOSURE_264.md).
+
+Follow-up #266 fixes the high-altitude hole: native sections have a vertical
+view limit, but Atlas coverage previously considered only horizontal distance.
+The coordinated handoff now includes canonical height separation; material and
+detail distances stay horizontal. All six source build/test cells and 36 native
+captures pass; the fix is on `codex/atlas-altitude-handoff` for owner review.
+See [diagnosis and checks](ATLAS_ALTITUDE_HANDOFF_266.md).
 
 September 30 release status: all six 1.3 JARs were approved on CurseForge and
 their CDN hashes matched the reviewed files. Modrinth and optional launcher

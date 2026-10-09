@@ -14,6 +14,7 @@ uniform sampler2D Sampler3;
 layout(location = 0) in vec2 texCoord0;
 layout(location = 1) in vec4 vertexColor;
 layout(location = 2) in float intrinsicDistance;
+layout(location = 6) in float handoffDistance;
 layout(location = 3) in float intrinsicHeight;
 layout(location = 4) in float intrinsicWidth;
 layout(location = 5) flat in vec3 depthMapping;
@@ -129,7 +130,8 @@ void main() {
 
     float circumference = float(RingWorldLayout.y);
 
-    // Real chunks are the only local surface. Cross-fade the visual proxy
+    // Real chunks are the local surface within horizontal AND vertical range.
+    // Cross-fade the visual proxy
     // beneath the outer live-chunk band, but do not make it fully opaque until
     // beyond the nominal loaded range. This turns a missing/streaming edge
     // into a soft continuation and keeps nearby rim walls free of proxy
@@ -137,7 +139,7 @@ void main() {
     float proxyAlpha = smootherstep(
         RingWorldHandoff.z,
         RingWorldHandoff.w,
-        intrinsicDistance
+        handoffDistance
     );
     if (proxyAlpha <= 0.001) {
         discard;

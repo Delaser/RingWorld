@@ -54,18 +54,47 @@ public final class RingFloatingStructureCaptureClient {
                 || capturePending || RingMinecraftClientAccess.screen(client) != null) return true;
         RingMinecraftClientAccess.setGuiHidden(client, true);
         client.options.cloudStatus().set(net.minecraft.client.CloudStatus.OFF);
-        if (stage >= 3) {
-            RingWorldMod.LOGGER.info("[atlas-wall-review] CAPTURE COMPLETE: low/medium/high, closed edges, full-depth walls");
+        boolean altitude = Boolean.getBoolean("ringworld.captureAtlasAltitude");
+        if (stage >= (altitude ? 6 : 3)) {
+            RingWorldMod.LOGGER.info("[atlas-wall-review] CAPTURE COMPLETE: {}",
+                    altitude ? "altitude handoff: three qualities, lower/ground/above-build controls"
+                            : "low/medium/high, closed edges, full-depth walls");
             client.stop();
             return true;
         }
-        if (settle++ == 0) {
+        if (settle == 0) {
             client.options.renderDistance().set(10);
-            RingClientLodTuning.select(dev.ringworld.world.RingLodQuality.values()[stage]);
+            RingClientLodTuning.select(dev.ringworld.world.RingLodQuality.values()[stage < 3 ? stage : 1]);
+            if (altitude) {
+                setup = new CompletableFuture<>();
+                var server = client.getSingleplayerServer();
+                double y = stage < 3 ? 234.67834 : stage == 3 ? 185 : stage == 4 ? 130 : 340;
+                server.execute(() -> {
+                    try {
+                        var player = server.getPlayerList().getPlayers().getFirst();
+                        player.setGameMode(GameType.CREATIVE);
+                        player.getAbilities().flying = true;
+                        player.onUpdateAbilities();
+                        player.teleportTo(server.overworld(), 1192.649, y, 0.181,
+                                Set.<Relative>of(), -91.4F, 78.3F, false);
+                        setup.complete(null);
+                    } catch (Throwable failure) { setup.completeExceptionally(failure); }
+                });
+            }
+            settle = 1;
+            return true;
         }
+        if (altitude) {
+            if (!setup.isDone()) return true;
+            setup.join();
+        }
+        settle++;
         if (settle < 160 || !dev.ringworld.client.render.RingSurfaceTextureRenderer.displayReady()) return true;
         capturePending = true;
-        String name = "atlas-walls-" + RingClientLodTuning.quality().command();
+        String name = altitude ? "atlas-altitude-" + (stage < 3
+                ? "high-" + RingClientLodTuning.quality().command()
+                : stage == 3 ? "lower-medium" : stage == 4 ? "ground-medium" : "above-build-medium")
+                : "atlas-walls-" + RingClientLodTuning.quality().command();
         RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, name + ".png",
                 RingMinecraftClientAccess.mainRenderTarget(client), 1,
                 message -> client.execute(() -> {

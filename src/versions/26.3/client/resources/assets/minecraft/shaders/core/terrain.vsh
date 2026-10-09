@@ -28,6 +28,7 @@ layout(location = 2) out vec4 vertexColor;
 layout(location = 3) out vec2 texCoord0;
 layout(location = 4) out float chunkVisibility;
 layout(location = 5) out float ringIntrinsicDistance;
+layout(location = 6) out float ringHandoffDistance;
 
 float ring_circumference() {
     return float(RingWorldLayout.y);
@@ -76,6 +77,7 @@ void main() {
 #endif
         texCoord0 = UV0;
         ringIntrinsicDistance = -1.0;
+        ringHandoffDistance = -1.0;
         return;
     }
 
@@ -110,4 +112,6 @@ void main() {
     // surface shader. The fragment shader uses it to reveal the already-drawn
     // distant ring beneath only the final live terrain band.
     ringIntrinsicDistance = length(vanillaPos.xz);
+    // Match the proxy's intrinsic horizontal + canonical vertical coverage.
+    ringHandoffDistance = length(vanillaPos);
 }
