@@ -10,6 +10,8 @@ import dev.ringworld.net.RingSettingsAckPayload;
 import dev.ringworld.net.RingSettingsHandshake;
 import dev.ringworld.net.RingSettingsPayload;
 import dev.ringworld.net.RingSkyProfilePayload;
+import dev.ringworld.net.RingBuildingSettingsPayload;
+import dev.ringworld.net.RingBuildingControlPayload;
 import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRequestPayload;
 import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
@@ -41,6 +43,13 @@ public final class NeoForgeRingWorldNetworking {
         var registrar = event.registrar(CHANNEL_VERSION);
         registrar.playToClient(RingSettingsPayload.ID, RingSettingsPayload.CODEC);
         registrar.playToClient(RingSkyProfilePayload.ID, RingSkyProfilePayload.CODEC);
+        registrar.playToClient(RingBuildingSettingsPayload.ID, RingBuildingSettingsPayload.CODEC);
+        registrar.playToServer(RingBuildingControlPayload.ID, RingBuildingControlPayload.CODEC, (payload, context) ->
+                context.enqueueWork(() -> {
+                    if (context.player() instanceof ServerPlayer player && requireAcknowledged(player, context)) {
+                        RingTerrainAtlasServer.controlBuilding(player, payload.fingerprint(), payload.enabled());
+                    }
+                }));
         registrar.playToServer(RingSettingsAckPayload.ID, RingSettingsAckPayload.CODEC,
                 NeoForgeRingWorldNetworking::handleAcknowledgement);
         registrar.playToServer(RingMultiplayerTestPayload.ID, RingMultiplayerTestPayload.CODEC,
@@ -113,6 +122,7 @@ public final class NeoForgeRingWorldNetworking {
             RingWorldMod.LOGGER.info("RingWorld settings acknowledged by {} on NeoForge: format {}",
                     player.getName().getString(), payload.formatVersion());
             RingTerrainAtlasServer.sendMetadata(player);
+            RingTerrainAtlasServer.sendBuildingSettings(player);
         }
     }
 

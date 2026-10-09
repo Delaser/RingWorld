@@ -6,7 +6,7 @@ import java.util.function.Consumer;
 import net.minecraft.server.level.ChunkTrackingView;
 import net.minecraft.world.level.ChunkPos;
 
-/** A vanilla-shaped view window whose X axis is a finite periodic graph. */
+/** A bounded periodic view window; generation width does not limit player builds. */
 public record RingChunkFilter(ChunkPos center, int logicalCenterX,
                               int viewDistance, int circumferenceChunks,
                               int minChunkZ, int maxChunkZ) implements ChunkTrackingView {
@@ -42,7 +42,6 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
     static boolean isWithinRingDistance(int circumferenceChunks, int centerX, int centerZ,
                                         int viewDistance, int minChunkZ, int maxChunkZ,
                                         int x, int z, boolean includeEdge) {
-        if (z < minChunkZ || z > maxChunkZ) return false;
         return RingChunkTopology.isWithinVanillaDistance(
                 circumferenceChunks, centerX, centerZ, viewDistance, x, z, includeEdge);
     }
@@ -53,8 +52,8 @@ public record RingChunkFilter(ChunkPos center, int logicalCenterX,
         int extent = viewDistance + 1;
         for (int dx = -extent; dx <= extent; dx++) {
             int x = Math.floorMod(center.x() + dx, circumferenceChunks);
-            int firstZ = Math.max(minChunkZ, center.z() - extent);
-            int lastZ = Math.min(maxChunkZ, center.z() + extent);
+            int firstZ = center.z() - extent;
+            int lastZ = center.z() + extent;
             for (int z = firstZ; z <= lastZ; z++) {
                 if (!contains(x, z)) continue;
                 long packed = ChunkPos.pack(x, z);

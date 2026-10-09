@@ -34,11 +34,11 @@ class RingEntityTrackingTest {
 
     @Test
     void exteriorWatchRemainsBoundedAndPeriodic() {
-        assertFalse(RingChunkFilter.isWithinRingDistance(128, 0, 3, 5, -4, 3, 127, 4, true));
+        assertTrue(RingChunkFilter.isWithinRingDistance(128, 0, 3, 5, -4, 3, 127, 4, true));
         assertTrue(RingChunkTopology.isWithinVanillaDistance(128, 0, 3, 5, 127, 4, true));
         assertFalse(RingChunkTopology.isWithinVanillaDistance(128, 0, 3, 5, 0, 20, true));
         assertFalse(RingChunkTopology.isWithinVanillaDistance(128, 0, 3, 5, 64, 4, true));
-        assertFalse(RingChunkFilter.isWithinRingDistance(128, 127, -4, 5, -4, 3, 0, -5, true));
+        assertTrue(RingChunkFilter.isWithinRingDistance(128, 127, -4, 5, -4, 3, 0, -5, true));
         assertTrue(RingChunkTopology.isWithinVanillaDistance(128, 127, -4, 5, 0, -5, true));
     }
 }

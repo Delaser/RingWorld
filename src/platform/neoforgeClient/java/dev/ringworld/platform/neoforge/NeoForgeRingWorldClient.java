@@ -87,6 +87,8 @@ public final class NeoForgeRingWorldClient {
     private static void registerPayloadHandlers(RegisterClientPayloadHandlersEvent event) {
         event.register(RingSettingsPayload.ID, NeoForgeRingWorldClient::handleSettings);
         event.register(RingSkyProfilePayload.ID, NeoForgeRingWorldClient::handleSkyProfile);
+        event.register(dev.ringworld.net.RingBuildingSettingsPayload.ID, (payload, context) ->
+                context.enqueueWork(() -> ClientRingState.setBuildingSettings(payload)));
         event.register(RingTerrainAtlasMetadataPayload.ID, NeoForgeRingWorldClient::handleAtlasMetadata);
         event.register(RingTerrainAtlasTilePayload.ID, NeoForgeRingWorldClient::handleAtlasTile);
         event.register(RingTerrainAtlasRevisionPayload.ID, NeoForgeRingWorldClient::handleAtlasRevision);
@@ -119,6 +121,18 @@ public final class NeoForgeRingWorldClient {
             }));
         }
         event.getDispatcher().register(Commands.literal("ringworld").then(lod));
+        // The client root must explicitly forward server-owned building commands.
+        var outside = Commands.literal("outside");
+        for (String operation : new String[] { "on", "off", "show" }) {
+            outside.then(Commands.literal(operation).executes(context -> {
+                var connection = Minecraft.getInstance().getConnection();
+                if (connection == null) return 0;
+                connection.send(new net.minecraft.network.protocol.game.ServerboundChatCommandPacket(context.getInput()));
+                return 1;
+            }));
+        }
+        event.getDispatcher().register(Commands.literal("ringworld").then(Commands.literal("building").then(outside)));
+
         var falloff = Commands.argument("falloff", FloatArgumentType.floatArg(
                         dev.ringworld.world.RingAtlasLightProfile.MIN_FALLOFF,
                         dev.ringworld.world.RingAtlasLightProfile.MAX_FALLOFF))
@@ -275,7 +289,8 @@ public final class NeoForgeRingWorldClient {
         if (!Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) {
             ClientRingState.saveTerrainAtlasIfDue(false);
         }
-        if (dev.ringworld.client.RingHorizonCaptureClient.tickIfEnabled(client)) return;
+        if (dev.ringworld.client.RingFloatingStructureCaptureClient.tickIfEnabled(client)) return;
+            if (dev.ringworld.client.RingHorizonCaptureClient.tickIfEnabled(client)) return;
         if (PRODUCTION_LIFECYCLE.tick(client)) return;
         if (LAYOUT_SWITCH.tick(client)) return;
         if (MULTIPLAYER_TEST.tick(client)) return;

@@ -173,3 +173,14 @@ the named outer `tick` method.
 It sets GLFW visibility/focus hints immediately before window creation so the
 fixture can capture full game frames without desktop activation. It does not
 change ordinary game windows, topology, or rendering.
+
+## Outside-building policy (#255)
+
+`BlockItemMixin` and `ClientBlockItemMixin` gate player block placement at the
+computed target, including both bed halves. `BucketItemMixin` and
+`ClientBucketItemMixin` gate direct player fluid placement. Server SavedData is
+authoritative; the client mirrors the acknowledged fingerprint-bound snapshot
+for prediction. Automation, flowing fluids, existing blocks, Nether and End
+are unaffected. Exterior terrain queue seeds use the camera position; normal
+curved frustum and view-distance bounds remain enabled. See
+[implementation and evidence](OUTSIDE_BUILDING_255.md).

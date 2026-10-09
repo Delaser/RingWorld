@@ -6,6 +6,9 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [Outside building (#255)](OUTSIDE_BUILDING_255.md): default-on saved policy,
+  server commands, World-page control, exterior delivery and native samples.
+
 - [Overworld horizon removal (#259)](HORIZON_259.md): scoped atmospheric change,
   matched captures and cross-version development checks.
 - [Exterior entity visibility #254](OFF_RING_ENTITY_VISIBILITY_254.md): bounded

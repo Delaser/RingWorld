@@ -62,7 +62,7 @@ class RingChunkTopologyTest {
     }
 
     @Test
-    void wholeRingViewLoadsEveryTerrainChunkButNoExteriorVoid() {
+    void wholeRingViewIncludesNearbyExteriorChunksWithinNormalDistance() {
         int included = 0;
         for (int x = 0; x < 100; x++) {
             for (int z = -10; z <= 9; z++) {
@@ -76,9 +76,9 @@ class RingChunkTopologyTest {
                 100, 0, 0, 100, -10, 9, 50, -10, false));
         assertTrue(RingChunkFilter.isWithinRingDistance(
                 100, 0, 0, 100, -10, 9, 50, 9, false));
-        assertFalse(RingChunkFilter.isWithinRingDistance(
+        assertTrue(RingChunkFilter.isWithinRingDistance(
                 100, 0, 0, 100, -10, 9, 0, -11, false));
-        assertFalse(RingChunkFilter.isWithinRingDistance(
+        assertTrue(RingChunkFilter.isWithinRingDistance(
                 100, 0, 0, 100, -10, 9, 0, 10, false));
     }
 }

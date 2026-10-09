@@ -14,9 +14,9 @@ import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
-/** Non-pausing generation progress and player-local Atlas display controls. */
+/** Non-pausing generation progress, shared world policy and local display controls. */
 public final class RingWorldMapScreen extends Screen {
-    private enum Page { GENERATION, DISPLAY }
+    private enum Page { GENERATION, WORLD, DISPLAY }
     private Page page = Page.GENERATION;
     private boolean showDetails;
     private long requestedWorldHash = Long.MIN_VALUE;
@@ -45,23 +45,38 @@ public final class RingWorldMapScreen extends Screen {
             AtlasPregenerationClientState.request(requestedWorldHash);
         }
         String actions = current.map(value -> AtlasPregenerationView.from(value).actions().toString())
-                .orElse("loading");
+                .orElse("loading") + ClientRingState.outsideBuilding() + ClientRingState.canControlBuilding();
         if (!actions.equals(lastActions)) rebuild();
     }
 
     private void rebuild() {
         clearWidgets();
+        lastActions = AtlasPregenerationClientState.status()
+                .map(value -> AtlasPregenerationView.from(value).actions().toString()).orElse("loading")
+                + ClientRingState.outsideBuilding() + ClientRingState.canControlBuilding();
         int panel = Math.min(360, width - 16), left = (width - panel) / 2;
-        int half = (panel - 6) / 2;
+        int third = (panel - 12) / 3;
         addRenderableWidget(Button.builder(Component.literal("Generation"
                         + (page == Page.GENERATION ? " *" : "")), button -> {
                     page = Page.GENERATION; rebuild();
-                }).bounds(left, 36, half, 20).build());
+                }).bounds(left, 36, third, 20).build());
         addRenderableWidget(Button.builder(Component.literal("Display"
                         + (page == Page.DISPLAY ? " *" : "")), button -> {
                     page = Page.DISPLAY; rebuild();
-                }).bounds(left + half + 6, 36, half, 20).build());
-        if (page == Page.DISPLAY) {
+                }).bounds(left + 2 * (third + 6), 36, third, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("World"
+                        + (page == Page.WORLD ? " *" : "")), button -> {
+                    page = Page.WORLD; rebuild();
+                }).bounds(left + third + 6, 36, third, 20).build());
+        if (page == Page.WORLD) {
+            Button building = Button.builder(Component.literal("Outside building: "
+                    + (ClientRingState.outsideBuilding() ? "On" : "Off")), button -> {
+                RingClientPayloadTransport.send(new dev.ringworld.net.RingBuildingControlPayload(
+                        ClientRingState.layoutFingerprint(), !ClientRingState.outsideBuilding()));
+            }).bounds(left, 94, panel, 20).build();
+            building.active = ClientRingState.canControlBuilding();
+            addRenderableWidget(building);
+        } else if (page == Page.DISPLAY) {
             RingLodQuality[] levels = RingLodQuality.values();
             int gap = 4, each = (panel - gap * 2) / 3;
             for (int i = 0; i < levels.length; i++) {
@@ -82,7 +97,7 @@ public final class RingWorldMapScreen extends Screen {
                 requestedWorldHash = status.worldHash();
                 AtlasPregenerationClientState.request(status.worldHash());
                 AtlasPregenerationView view = AtlasPregenerationView.from(status);
-                lastActions = view.actions().toString();
+                lastActions = view.actions().toString() + ClientRingState.outsideBuilding() + ClientRingState.canControlBuilding();
                 int y = Math.min(height - 92, 150);
                 if (!(showDetails && height < 320)) {
                 if (view.actions().contains(AtlasPregenerationAction.START)) {
@@ -104,7 +119,7 @@ public final class RingWorldMapScreen extends Screen {
                             button -> confirmStop(status)).bounds(left, y, panel, 20).build());
                 }
                 }
-            } else lastActions = "loading";
+            } else lastActions = "loading" + ClientRingState.outsideBuilding() + ClientRingState.canControlBuilding();
             addRenderableWidget(Button.builder(Component.literal(
                             showDetails ? "Hide technical details" : "Technical details"),
                     button -> { showDetails = !showDetails; rebuild(); })
@@ -167,6 +182,15 @@ public final class RingWorldMapScreen extends Screen {
         super.extractRenderState(g, mouseX, mouseY, delta);
         int center = width / 2, left = center - Math.min(360, width - 16) / 2;
         g.centeredText(font, title, center, 11, 0xFFFFFFFF);
+        if (page == Page.WORLD) {
+            g.text(font, Component.literal("Building beyond the side walls"), left, 69, 0xFFE5ECE5);
+            g.text(font, Component.literal("Shared by everyone in this world."), left, 126, 0xFFB4C4BA);
+            g.text(font, Component.literal("Turning off keeps existing builds."), left, 139, 0xFFB4C4BA);
+            if (!ClientRingState.canControlBuilding())
+                g.text(font, Component.literal("Only the owner or a gamemaster can change this."),
+                        left, 163, 0xFFFFD060);
+            return;
+        }
         if (page == Page.DISPLAY) {
             g.text(font, Component.literal("Distant terrain detail"), left, 69, 0xFFE5ECE5);
             g.text(font, Component.literal("Applies to this player immediately."), left, 116, 0xFFB4C4BA);

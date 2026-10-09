@@ -18,6 +18,8 @@ import net.minecraft.server.network.ServerGamePacketListenerImpl;
 import net.minecraft.world.level.Level;
 
 import java.util.UUID;
+import dev.ringworld.net.RingBuildingSettingsPayload;
+import dev.ringworld.net.RingBuildingControlPayload;
 
 /** Performs the mandatory client-mod handshake and ships immutable settings. */
 public final class RingWorldNetworking {
@@ -28,6 +30,8 @@ public final class RingWorldNetworking {
     public static void registerPayloads() {
         PayloadTypeRegistry.clientboundPlay().register(RingSettingsPayload.ID, RingSettingsPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(RingSkyProfilePayload.ID, RingSkyProfilePayload.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(RingBuildingSettingsPayload.ID, RingBuildingSettingsPayload.CODEC);
+        PayloadTypeRegistry.serverboundPlay().register(RingBuildingControlPayload.ID, RingBuildingControlPayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(RingSettingsAckPayload.ID, RingSettingsAckPayload.CODEC);
         PayloadTypeRegistry.serverboundPlay().register(RingMultiplayerTestPayload.ID, RingMultiplayerTestPayload.CODEC);
         PayloadTypeRegistry.clientboundPlay().register(RingTerrainAtlasMetadataPayload.ID, RingTerrainAtlasMetadataPayload.CODEC);
@@ -50,6 +54,11 @@ public final class RingWorldNetworking {
             if (HeadlessPrewarmCoordinator.rejectPlayerJoins(server)) return;
             sendSettings(handler);
         });
+        ServerPlayNetworking.registerGlobalReceiver(RingBuildingControlPayload.ID, (payload, context) ->
+                context.server().execute(() -> {
+                    if (!requireAcknowledged(context.player())) return;
+                    RingTerrainAtlasServer.controlBuilding(context.player(), payload.fingerprint(), payload.enabled());
+                }));
         ServerPlayNetworking.registerGlobalReceiver(RingSettingsAckPayload.ID, (payload, context) ->
                 context.server().execute(() -> validateAcknowledgement(payload, context.player().connection)));
         ServerPlayNetworking.registerGlobalReceiver(RingMultiplayerTestPayload.ID, (payload, context) -> {
@@ -101,6 +110,7 @@ public final class RingWorldNetworking {
         }
         if (!ServerPlayNetworking.canSend(handler.player, RingTerrainAtlasMetadataPayload.ID)
                 || !ServerPlayNetworking.canSend(handler.player, RingSkyProfilePayload.ID)
+                || !ServerPlayNetworking.canSend(handler.player, RingBuildingSettingsPayload.ID)
                 || !ServerPlayNetworking.canSend(handler.player, RingTerrainAtlasTilePayload.ID)
                 || !ServerPlayNetworking.canSend(handler.player, RingTerrainAtlasRevisionPayload.ID)
                 || !ServerPlayNetworking.canSend(handler.player, RingTerrainPreviewPayload.ID)
@@ -146,6 +156,7 @@ public final class RingWorldNetworking {
                 handler.player.getName().getString(), settings.circumferenceBlocks(),
                 settings.widthBlocks(), payload.formatVersion());
         RingTerrainAtlasServer.sendMetadata(handler.player);
+        RingTerrainAtlasServer.sendBuildingSettings(handler.player);
     }
 
     private static boolean requireAcknowledged(ServerPlayer player) {
