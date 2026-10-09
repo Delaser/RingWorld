@@ -10,9 +10,9 @@ caches. All six source builds/tests pass: 467 cases per loader on 26.1.2 and
 checks pass with 30 captures, including initial/live sampling, stacked builds,
 seam/material controls, support edits and save/reopen.
 The first 26.3 NeoForge disconnect logged Netty closed-channel errors; an unchanged
-retry passes, and the failed log is retained. Draft PR #272 contains the change.
-Dedicated-server lifecycle testing, full frozen release qualification and owner
-appearance review remain separate gates. See [policy and evidence](FLOATING_ATLAS_257.md).
+retry passes, and the failed log is retained. The owner accepted the gallery
+and authorized merging PR #272 on 9 October. Dedicated-server lifecycle testing
+and full frozen release qualification remain required before publication. See [policy and evidence](FLOATING_ATLAS_257.md).
 
 October 9: the owner approved #256 nearby block normalisation and requested
 a PR and merge. The accepted fixed-height mapping is ported onto current main,

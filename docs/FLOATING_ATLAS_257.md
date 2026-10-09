@@ -89,9 +89,9 @@ above 50 ms at a 60 FPS cap; these observations are not an uncapped benchmark.
 The runner mutes the disposable client and uses a hidden window.
 
 Evidence is retained under ignored `logs/floating-atlas-257/`. These are focused
-source-development checks, not frozen-candidate release qualification. Owner
-motion/appearance review and the full release suite remain separate gates before
-merge/publication. All six source build/test cells pass: 467 Java cases per loader on 26.1.2/26.2
+source-development checks, not frozen-candidate release qualification. The owner accepted the screenshot gallery and requested merge on 9 October
+2026. Dedicated-server lifecycle checks and the full frozen release suite remain
+required before publication; separate owner motion review is not recorded. All six source build/test cells pass: 467 Java cases per loader on 26.1.2/26.2
 and 470 per loader on 26.3, with zero failures/errors/skips. The 355 static checks
 pass. All six focused native integration checks pass, with 30 unaltered captures.
 
@@ -127,8 +127,9 @@ condition, not arbitrary runtime errors. All successful runtimes exited normally
 Frame observations contain occasional slow frames across the capped 4K windows.
 There is no matched pre-change benchmark, so these results do not establish
 unchanged performance or absence of stutter. Dedicated-server lifecycle testing,
-owner motion/appearance acceptance and full frozen release qualification remain
-outstanding. The large server preparation uses published 1.3 and therefore does
+full frozen release qualification remain outstanding before publication. The
+owner accepted the screenshot appearance and authorized merge on 9 October
+2026; separate motion review is not recorded. The large server preparation uses published 1.3 and therefore does
 not qualify this branch.
 
 To reproduce, enable `-Dringworld.captureFloatingAtlas=true` on `:runClient` or
