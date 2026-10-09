@@ -16,6 +16,10 @@ must then resume/reopen successfully. Metrics are optional via
 `ringworld.testAtlasAutoScale=true` probe injects synthetic owner FPS through the
 same mailbox, requiring 4→2→1→2→4 before interrupting. Keep it paired with auto,
 not a numeric override. Its simulated feedback is not a real graphical FPS test.
+For the live command follow-up, exercise `ringworld chunk_gen_rate` through the
+real RCON dispatcher: 1/2/4/8, auto and bare status, plus rejected values. Verify
+the cap in progress output, drain after lowering, no implicit unpause, override
+survival across job replacement, and independent disk coverage after resume.
 See [commands, results and remaining
 limits](ATLAS_CONCURRENCY_253.md); these are development checks, not release
 qualification or player-active multiplayer acceptance.

@@ -4,7 +4,11 @@ Development #253 Atlas trial: absent `ringworld.atlasInFlightChunks`, or
 `-Dringworld.atlasInFlightChunks=auto`, starts with four requests and adapts
 4→2→1 under sustained tick/FPS pressure, recovering slowly. Explicit numeric
 1–8 selects fixed concurrency. Read the property on the **game/server JVM**;
-restart to change policy. Integrated single-player uses focused owner FPS and
+that sets the startup default. `/ringworld chunk_gen_rate 1|2|4|8` selects a
+fixed limit live; `/ringworld chunk_gen_rate auto` restores auto. The bare
+command reports the mode and current target. These gamemaster-only overrides
+last until world unload, apply to subsequent jobs, and let existing requests
+finish when lowering the limit. Integrated single-player uses focused owner FPS and
 tick time; dedicated servers use tick time. This is a process performance
 setting, not saved world geometry. `/ringworld atlas status` reports the active
 target and auto/fixed mode. See [policy and validation](ATLAS_CONCURRENCY_253.md).

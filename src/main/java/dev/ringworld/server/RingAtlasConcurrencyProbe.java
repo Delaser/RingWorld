@@ -48,6 +48,8 @@ final class RingAtlasConcurrencyProbe {
                 stage = 2;
             }
         } else if (stage == 2 && inFlight >= 2) {
+            if (Boolean.getBoolean("ringworld.testAtlasRateCommand"))
+                require(RingAtlasPregenerationService.setChunkGenerationRate(world, 2), "rate override failed");
             handle.cancel();
             stage = 3;
         } else if (stage == 3) {
@@ -56,6 +58,15 @@ final class RingAtlasConcurrencyProbe {
             require(handle.completion().toCompletableFuture().isCompletedExceptionally(), "cancel future did not terminate");
             handle = RingAtlasPregenerationService.pregenerate(world,
                     AtlasPregenerationOptions.headlessPrewarmDefaults(), progress -> {});
+            if (Boolean.getBoolean("ringworld.testAtlasRateCommand")) {
+                require(RingAtlasPregenerationService.maxInFlightChunks(world) == 2,
+                        "replacement job lost session rate override");
+                require(RingAtlasPregenerationService.chunkGenerationRate(world).startsWith("fixed"),
+                        "replacement job lost fixed mode");
+                require(RingAtlasPregenerationService.setChunkGenerationRate(world, 0), "auto restore failed");
+                require(RingAtlasPregenerationService.maxInFlightChunks(world) == 4, "auto restore did not reset target");
+                RingWorldMod.LOGGER.info("[atlas-rate-test] PASS session override across cancel/restart");
+            }
             stage = 4;
             RingWorldMod.LOGGER.info("[atlas-concurrency-test] PASS pause/drain/resume/cancel/restart peakRequests={}", peak);
         }

@@ -1,5 +1,13 @@
 # Current state
 
+October 9 live-command follow-up: `/ringworld chunk_gen_rate 1|2|4|8|auto`
+selects a fixed or automatic admission limit without restarting generation.
+The bare command reports mode/target. Gamemaster-only overrides last for the
+world session and apply to replacement jobs; lowering drains existing requests.
+The same bounded eight slots retain the cursor and leases. Source builds and
+real-dispatcher native checks for this follow-up are pending; previous adaptive
+evidence below applies to its recorded earlier source.
+
 October 9 follow-up: the owner requested automatic Atlas request scaling.
 The unpublished trial now defaults to auto: start four, reduce to two/one under
 sustained FPS or server tick pressure, then recover slowly. Integrated owner

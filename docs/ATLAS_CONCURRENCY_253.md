@@ -12,8 +12,13 @@ The current unpublished trial defaults to **auto**, starting with four requests.
 Absent `ringworld.atlasInFlightChunks`, or `-Dringworld.atlasInFlightChunks=auto`,
 selects auto. Numeric values 1–8 select a **fixed** limit, including the serial
 baseline (`=1`) and fixed four-request comparison (`=4`). This process setting
-is read when creating a job; restart to change policy. It is not a saved world
-setting. Background, interactive and headless calls share the same world-owned
+is read when creating a job. `/ringworld chunk_gen_rate 1|2|4|8` changes the
+fixed limit live; `/ringworld chunk_gen_rate auto` restores automatic scaling
+starting at four. The bare command shows the current mode/target. It requires
+the existing gamemaster permission and always controls the server's Overworld,
+including when issued from Nether/End or console. The override applies to
+current and subsequent jobs until world unload, then the JVM default returns.
+It is not a saved world setting. Background, interactive and headless calls share the same world-owned
 writer and capacity policy.
 
 Auto observes performance about once per second and selects 4 / 2 / 1.
@@ -23,7 +28,9 @@ step (1→2 or 2→4). Borderline measurements reset recovery, preventing oscill
 No request is cancelled to reduce the target: already issued work drains,
 while admission stops at the lower target. Rotating admission also prevents
 retained retries from starving when the target is smaller than the slot count.
-The slot capacity remains four, with one explicit ready capture per tick.
+Eight bounded slots are reserved once so live increases preserve the same
+cursor, retries and ticket leases; admission follows the selected target.
+One explicit ready capture per tick remains unchanged.
 
 Integrated single-player uses both server tick pressure and focused, unpaused
 owner FPS. The client reports roughly once per second through the integrated
@@ -40,7 +47,11 @@ healthy FPS. These are initial policy thresholds, not a guarantee of minimum FPS
 or multiplayer latency. Disk stalls, GPU load and other mods may not improve
 when request count falls. Client feedback and policy changes never read or
 mutate a live world off its server thread. `/ringworld atlas status` reports the
-current target and auto/fixed policy; no new slash-command setter is added here.
+current target and auto/fixed policy. Selecting a numeric command disables
+automatic backoff until `auto` is selected again. Mode changes discard previous
+FPS samples and automatic observation history, so stale pressure cannot leak
+into the restored automatic policy. Commands do not start a stopped job or
+change its paused/running state.
 
 The existing 64-pending-task threshold is checked before every new request,
 including between starts in one tick. This is a soft submission gate;

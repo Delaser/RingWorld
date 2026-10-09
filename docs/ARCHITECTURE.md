@@ -629,6 +629,9 @@ chunk per tick without waiting for an earlier unfinished request. Reducing the
 target drains existing requests without cancellation. Integrated owner FPS
 arrives through a local server task; dedicated servers use tick pressure. The
 controller backs off quickly and recovers after sustained healthy observations;
+gamemaster `/ringworld chunk_gen_rate 1|2|4|8|auto` changes admission live,
+retaining eight bounded slots and the original cursor/leases. A world-session
+override applies to future jobs too; unload restores the JVM startup policy.
 normal remote clients cannot submit FPS to influence the server. See the
 adaptive thresholds and stale/paused feedback policy in the design document.
 

@@ -280,7 +280,34 @@ public final class RingAtlasPregenerationService {
                 + percent(state.atlas.completion()) + "%), generation "
                 + progress.state().name().toLowerCase(java.util.Locale.ROOT) + rate
                 + (state.job == null ? "" : ", requests " + state.job.requestLimit()
-                + (state.job.adaptive == null ? " (fixed)" : " (auto)"));
+                + (state.job.adaptive.automatic() ? " (auto)" : " (fixed)"));
+    }
+
+    /** Session-only server-thread override, including future jobs in this world. Zero restores auto. */
+    public static boolean setChunkGenerationRate(ServerLevel world, Integer rate) {
+        requireServerThread(world);
+        if (rate != null && rate != 0 && rate != 1 && rate != 2 && rate != 4 && rate != 8)
+            throw new IllegalArgumentException("Use auto, 1, 2, 4 or 8");
+        WorldState state = WORLDS.get(world);
+        if (state == null || state.stopping) return false;
+        if (rate != null) {
+            state.requestLimitOverride = rate;
+            state.hasFrameFeedback = false;
+            if (state.job != null) state.job.setRequestLimit(rate);
+        }
+        return true;
+    }
+
+    public static String chunkGenerationRate(ServerLevel world) {
+        WorldState state = requireState(world);
+        if (state.job != null) return (state.job.adaptive.automatic() ? "auto" : "fixed")
+                + ", " + state.job.requestLimit() + " concurrent requests";
+        int rate = state.requestLimitOverride == null
+                ? (AtlasPregenerationOptions.isAdaptiveConcurrency(System.getProperty(
+                        AtlasPregenerationOptions.CONCURRENCY_PROPERTY)) ? 0
+                        : AtlasPregenerationOptions.backgroundDefaults().maxInFlightChunks())
+                : state.requestLimitOverride;
+        return (rate == 0 ? "auto" : "fixed") + ", " + (rate == 0 ? 4 : rate) + " concurrent requests";
     }
 
     private static AtlasPregenerationProgress idleProgress(WorldState state) {
@@ -338,7 +365,7 @@ public final class RingAtlasPregenerationService {
         long sampledAt = System.nanoTime();
         Runnable update = () -> {
             WorldState state = WORLDS.get(server.overworld());
-            if (state == null || state.stopping || state.job == null || state.job.adaptive == null) return;
+            if (state == null || state.stopping || state.job == null || !state.job.adaptive.automatic()) return;
             if (System.nanoTime() - sampledAt > 3_000_000_000L) return;
             state.localFps = fps;
             state.localFrameTarget = Math.min(60, target);
@@ -600,6 +627,7 @@ public final class RingAtlasPregenerationService {
         private double localFps;
         private double localFrameTarget;
         private long frameFeedbackNanos;
+        private Integer requestLimitOverride;
         private boolean revisionPending;
         private long ticks;
         private Job job;
@@ -635,10 +663,13 @@ public final class RingAtlasPregenerationService {
             this.world = world;
             this.owner = owner;
             this.options = options;
-            this.requests = new RingAtlasPregenerationBatch<>(owner.atlas, options.maxInFlightChunks());
-            this.adaptive = options.maxInFlightChunks() == RingAtlasAdaptiveConcurrency.MAX_REQUESTS
-                    && AtlasPregenerationOptions.isAdaptiveConcurrency(System.getProperty(
-                            AtlasPregenerationOptions.CONCURRENCY_PROPERTY)) ? new RingAtlasAdaptiveConcurrency() : null;
+            // Reserve bounded slots once so live increases never replace a cursor or existing lease.
+            this.requests = new RingAtlasPregenerationBatch<>(owner.atlas, RingAtlasPregenerationBatch.MAX_REQUESTS);
+            this.adaptive = new RingAtlasAdaptiveConcurrency();
+            if (owner.requestLimitOverride != null) setRequestLimit(owner.requestLimitOverride);
+            else if (options.maxInFlightChunks() != RingAtlasAdaptiveConcurrency.MAX_REQUESTS
+                    || !AtlasPregenerationOptions.isAdaptiveConcurrency(System.getProperty(
+                            AtlasPregenerationOptions.CONCURRENCY_PROPERTY))) adaptive.setFixed(options.maxInFlightChunks());
             this.startingPresentCells = owner.atlas.presentCount();
             addListener(listener);
             this.published = snapshot();
@@ -718,10 +749,15 @@ public final class RingAtlasPregenerationService {
                 fail(new IllegalStateException("Atlas cursor exhausted with missing cells"));
             }
         }
-        private int requestLimit() { return adaptive == null ? options.maxInFlightChunks() : adaptive.limit(); }
+        private int requestLimit() { return adaptive.limit(); }
+
+        private void setRequestLimit(int rate) {
+            if (rate == 0) adaptive.useAutomatic();
+            else adaptive.setFixed(rate);
+        }
 
         private void updateRequestLimit() {
-            if (adaptive == null) return;
+            if (!adaptive.automatic()) return;
             long now = System.nanoTime();
             long[] times = world.getServer().getTickTimesNanos();
             int tick = world.getServer().getTickCount();

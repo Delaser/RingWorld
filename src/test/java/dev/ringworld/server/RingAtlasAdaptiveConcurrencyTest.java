@@ -4,6 +4,33 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RingAtlasAdaptiveConcurrencyTest {
+    @Test void liveFixedOverrideIgnoresPressureAndCanIncreaseToEight() {
+        var policy = new RingAtlasAdaptiveConcurrency();
+        for (int rate : new int[] {1, 2, 4, 8}) {
+            policy.setFixed(rate);
+            assertFalse(policy.automatic());
+            assertEquals(rate, policy.observe(0, 200, 10, 60));
+        }
+        policy.setFixed(1);
+        assertEquals(1, policy.limit());
+    }
+    @Test void returningToAutoDiscardsOldPressureAndRecoveryHistory() {
+        var policy = new RingAtlasAdaptiveConcurrency();
+        policy.observe(0, 200, -1, -1);
+        policy.setFixed(8);
+        policy.useAutomatic();
+        assertTrue(policy.automatic());
+        assertEquals(4, policy.limit());
+        assertEquals(4, policy.observe(0, 45, -1, -1));
+        assertEquals(2, policy.observe(1_000_000_000L, 45, -1, -1));
+    }
+    @Test void invalidFixedLimitsLeaveTheCurrentPolicyIntact() {
+        var policy = new RingAtlasAdaptiveConcurrency();
+        policy.setFixed(2);
+        assertThrows(IllegalArgumentException.class, () -> policy.setFixed(0));
+        assertThrows(IllegalArgumentException.class, () -> policy.setFixed(9));
+        assertEquals(2, policy.limit());
+    }
     @Test void sustainedFramePressureStepsDownWithoutReactingToOneSample() {
         var policy = new RingAtlasAdaptiveConcurrency();
         assertEquals(4, policy.limit());

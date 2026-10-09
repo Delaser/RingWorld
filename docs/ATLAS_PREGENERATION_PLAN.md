@@ -4,6 +4,8 @@ Current #253 development trial adds bounded 1–8 outstanding requests while
 keeping one explicit ready-chunk capture per tick and the 64-task backpressure
 threshold. The unpublished default is adaptive 4 / 2 / 1 under tick/FPS
 pressure; numeric JVM overrides retain fixed 1–8 limits.
+Gamemaster `/ringworld chunk_gen_rate 1|2|4|8|auto` overrides the limit live for
+the world session; existing requests drain and the original cursor is retained.
 See [current policy, lifecycle and evidence](ATLAS_CONCURRENCY_253.md).
 The one-request restrictions below describe the initial implementation.
 

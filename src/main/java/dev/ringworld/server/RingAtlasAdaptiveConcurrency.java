@@ -1,6 +1,6 @@
 package dev.ringworld.server;
 
-/** One-second observations with fast backoff and slow recovery. No Minecraft dependencies. */
+/** Live request policy: fixed override or one-second automatic backoff/recovery. */
 final class RingAtlasAdaptiveConcurrency {
     static final int MAX_REQUESTS = 4;
     private int limit = MAX_REQUESTS;
@@ -8,10 +8,26 @@ final class RingAtlasAdaptiveConcurrency {
     private int healthySamples;
     private boolean sampled;
     private long lastSample;
+    private Integer fixedLimit;
 
-    int limit() { return limit; }
+    int limit() { return fixedLimit == null ? limit : fixedLimit; }
+    boolean automatic() { return fixedLimit == null; }
+
+    void setFixed(int value) {
+        if (value < 1 || value > RingAtlasPregenerationBatch.MAX_REQUESTS)
+            throw new IllegalArgumentException("Atlas concurrency must be 1..8");
+        fixedLimit = value;
+    }
+
+    void useAutomatic() {
+        fixedLimit = null;
+        limit = MAX_REQUESTS;
+        badSamples = healthySamples = 0;
+        sampled = false;
+    }
 
     int observe(long now, double tickMs, double fps, double frameTarget) {
+        if (!automatic()) return limit();
         if (sampled && now - lastSample < 1_000_000_000L) return limit;
         sampled = true;
         lastSample = now;
