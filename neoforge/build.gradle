@@ -1200,20 +1200,8 @@ tasks.register('verifyNeoForgeProductionProjectionClient') {
     description = 'Fails unless the NeoForge projection client completed all three captures.'
     mustRunAfter('runProductionProjectionClient')
     doLast {
-        def logFile = new File(neoForgeProjectionRun, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
-        if (!log.contains('[projection-capture] result=true, captures complete')) {
-            throw new GradleException("NeoForge projection capture did not pass; inspect ${logFile}")
-        }
-        def environment = providers.gradleProperty('ringNeoForgeProjectionEnvironment')
-                .orElse('noon').get().trim().toLowerCase(Locale.ROOT)
-        def prefix = environment == 'noon' ? 'ringworld-projection-' : "ringworld-projection-${environment}-"
-        ['tangent', 'handoff', 'up'].each { view ->
-            def screenshot = new File(neoForgeProjectionRun, "screenshots/${prefix}${view}.png")
-            if (!screenshot.isFile()) {
-                throw new GradleException("NeoForge projection capture is missing ${screenshot}")
-            }
-        }
+        rootProject.ext.verifyRingProjectionOutputs(neoForgeProjectionRun,
+                providers.gradleProperty('ringNeoForgeProjectionEnvironment').orElse('noon').get())
     }
 }
 

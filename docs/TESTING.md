@@ -3292,3 +3292,6 @@ visible test. This replaces per-run local init scripts for these fixtures.
 The frozen production-render operator and nightly coordinator expose this
 camera override as `--projection-camera-x`; it is forwarded through
 `-PringProjectionCameraX` and recorded with the runtime command.
+
+See [release-test setup and capture consolidation](RELEASE_TEST_SPEED.md) for
+verified cache inputs and one-session four-environment projection coverage.

@@ -50,7 +50,7 @@ QUICK_FIXTURES = {"worldgen", "atlas-recovery", "multiplayer", "raid",
 PRODUCTION_FIXTURES = {"production-lifecycle", "production-render"}
 GRADLE_FIXTURES = {"creation-ui", "atlas-ui", "multiplayer", "raid", "map-compass",
                    "production-lifecycle", "curved-objects", "production-render"}
-LOOM_SEED_FIXTURES = {"multiplayer", "raid", "production-lifecycle", "production-render"}
+LOOM_SEED_FIXTURES = GRADLE_FIXTURES
 EXACT_CANDIDATE_FIXTURES = {"worldgen", "atlas-recovery", "multiplayer", "raid",
                             "production-lifecycle", "production-render"}
 DEFAULT_MULTIPLAYER_COOLDOWN_SECONDS = 120

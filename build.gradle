@@ -594,21 +594,34 @@ def requireNonUniformPng = { File screenshot, String label ->
 
 def verifyFabricProjectionOutputs = { File runDirectory, String environment ->
 	def normalizedEnvironment = environment.trim().toLowerCase(Locale.ROOT)
-	if (!(normalizedEnvironment in ["noon", "dusk", "night", "rain"])) {
-		throw new GradleException(
-				"ringProjectionEnvironment must be one of noon, dusk, night, or rain")
+	if (!(normalizedEnvironment in ["noon", "dusk", "night", "rain", "all"])) {
+		throw new GradleException("ringProjectionEnvironment must be noon, dusk, night, rain, or all")
 	}
 	def logFile = new File(runDirectory, "logs/latest.log")
 	requireFabricRuntimeGateLog(logFile,
 			"[projection-capture] result=true, captures complete",
-			"[projection-capture] result=false", "Fabric projection capture")
-	def prefix = normalizedEnvironment == "noon"
-			? "ringworld-projection-" : "ringworld-projection-${normalizedEnvironment}-"
-	["tangent", "handoff", "up"].each { view ->
-		requireReadablePng(new File(runDirectory, "screenshots/${prefix}${view}.png"),
-				"Fabric projection capture")
+			"[projection-capture] result=false", "Projection capture")
+	def environments = normalizedEnvironment == "all"
+			? ["noon", "dusk", "night", "rain"] : [normalizedEnvironment]
+	environments.each { mode ->
+		if (normalizedEnvironment == "all") {
+			if (!logFile.text.contains("[projection-capture] environment=${mode} complete")) {
+				throw new GradleException("Projection capture is missing ${mode} completion")
+			}
+			["tangent", "handoff", "radial-up"].each { view ->
+				if (!logFile.text.contains("[projection-capture] environment=${mode} ${view} frame metrics:")) {
+					throw new GradleException("Projection capture is missing ${mode} ${view} frame metrics")
+				}
+			}
+		}
+		def prefix = mode == "noon" ? "ringworld-projection-" : "ringworld-projection-${mode}-"
+		["tangent", "handoff", "up"].each { view ->
+			requireReadablePng(new File(runDirectory, "screenshots/${prefix}${view}.png"), "Projection capture")
+		}
 	}
 }
+// Both loader finalizers use the same screenshot and batch-evidence contract.
+ext.verifyRingProjectionOutputs = verifyFabricProjectionOutputs
 
 def requireVisualParitySeamMotionMetrics = { File logFile, String label ->
 	def metrics = logFile.readLines("UTF-8").findAll {
@@ -1818,6 +1831,27 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 		expectRejected("invalid projection environment") {
 			verifyFabricProjectionOutputs(projection, "invalid")
 		}
+
+		def batchLog = "[projection-capture] result=true, captures complete\n"
+		["noon", "dusk", "night", "rain"].each { mode ->
+			batchLog += "[projection-capture] environment=${mode} complete\n"
+			["tangent", "handoff", "radial-up"].each { view ->
+				batchLog += "[projection-capture] environment=${mode} ${view} frame metrics: samples=12\n"
+			}
+			def prefix = mode == "noon" ? "ringworld-projection-" : "ringworld-projection-${mode}-"
+			["tangent", "handoff", "up"].each { view ->
+				writePng(new File(projection, "screenshots/${prefix}${view}.png"))
+			}
+		}
+		writeText(new File(projection, "logs/latest.log"), batchLog)
+		verifyFabricProjectionOutputs(projection, "all")
+		writeText(new File(projection, "logs/latest.log"), batchLog.replace("environment=rain complete", "missing"))
+		expectRejected("batch missing one environment") { verifyFabricProjectionOutputs(projection, "all") }
+		writeText(new File(projection, "logs/latest.log"), batchLog.replace("environment=night handoff frame metrics", "missing"))
+		expectRejected("batch missing one frame metric") { verifyFabricProjectionOutputs(projection, "all") }
+		writeText(new File(projection, "logs/latest.log"), batchLog)
+		delete(new File(projection, "screenshots/ringworld-projection-rain-up.png"))
+		expectRejected("batch missing one screenshot") { verifyFabricProjectionOutputs(projection, "all") }
 
 		def visualParity = new File(fixtureRoot, "visual-parity")
 		writeText(new File(visualParity, "logs/latest.log"),

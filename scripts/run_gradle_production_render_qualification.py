@@ -151,8 +151,10 @@ def _verify_projection(prepared: Any, environment: str) -> tuple[dict[str, Any],
     if "[projection-capture] result=false" in text \
             or "[projection-capture] result=true, captures complete" not in text:
         raise GradleProductionRenderError(f"{environment} projection did not pass")
+    if f"[projection-capture] environment={environment} complete" not in text:
+        raise GradleProductionRenderError(f"{environment} projection completion is missing")
     for view in ("tangent", "handoff", "radial-up"):
-        if f"[projection-capture] {view} frame metrics:" not in text:
+        if f"[projection-capture] environment={environment} {view} frame metrics:" not in text:
             raise GradleProductionRenderError(f"{environment} {view} frame metrics are missing")
     prefix = "ringworld-projection-" if environment == "noon" \
         else f"ringworld-projection-{environment}-"
@@ -221,26 +223,24 @@ def _execute(prepared: Any, source_world: Path, dependency_cache: Path | None,
     commands.append(_executed_record("assets", assets))
     if assets.verdict is not Verdict.PASS:
         raise GradleProductionRenderError("serial asset warmup failed")
-    ordinal = 2
+    _fresh_copy(source_world, projection_world, source_inventory)
+    arguments = (
+        *camera_arguments,
+        f"-PringProjectionDestination={PROJECTION_DESTINATION}",
+        "-PringProjectionEnvironment=all",
+        f"-PringNeoForgeProjectionDestination={PROJECTION_DESTINATION}",
+        "-PringNeoForgeProjectionEnvironment=all",
+        tasks["projection"], "-x", tasks["projection_prepare"],
+    )
+    result = execute_command(_record(prepared, arguments, timeout, dependency_cache),
+                             paths, ordinal=2)
+    commands.append(_executed_record("projection-all-environments", result))
+    if result.verdict is not Verdict.PASS:
+        raise GradleProductionRenderError("batched projection Gradle run failed")
     for environment in ENVIRONMENTS:
-        _fresh_copy(source_world, projection_world, source_inventory)
-        arguments = (
-            *camera_arguments,
-            f"-PringProjectionDestination={PROJECTION_DESTINATION}",
-            f"-PringProjectionEnvironment={environment}",
-            f"-PringNeoForgeProjectionDestination={PROJECTION_DESTINATION}",
-            f"-PringNeoForgeProjectionEnvironment={environment}",
-            tasks["projection"], "-x", tasks["projection_prepare"],
-        )
-        result = execute_command(_record(prepared, arguments, timeout, dependency_cache),
-                                 paths, ordinal=ordinal)
-        commands.append(_executed_record(f"projection-{environment}", result))
-        if result.verdict is not Verdict.PASS:
-            raise GradleProductionRenderError(f"{environment} projection Gradle run failed")
         captures.extend(_verify_projection(prepared, environment))
-        logs.append(_copy_log(prepared, "run-production-projection",
-                              f"projection-{environment}-game.log"))
-        ordinal += 1
+    logs.append(_copy_log(prepared, "run-production-projection", "projection-all-environments-game.log"))
+    ordinal = 3
     _fresh_copy(source_world, parity_world, source_inventory)
     parity_args = (
         f"-PringVisualParityDestination={PARITY_DESTINATION}",

@@ -1,0 +1,25 @@
+{
+  "artifact_version": "1.4.0+mc26.1",
+  "release_label": "1.4",
+  "game_versions": [
+    "26.1",
+    "26.1.1",
+    "26.1.2"
+  ],
+  "modrinth": {
+    "fabric_version_number": "1.4.0-fabric+mc26.1",
+    "neoforge_version_number": "1.4.0-neoforge+mc26.1",
+    "project_id": "ringworld",
+    "fabric_api_project_id": "P7dR8mSH"
+  },
+  "curseforge": {
+    "project_id": 1645598,
+    "fabric_api_project_id": 306612
+  },
+  "rollback": {
+    "version": "1.3.0+mc26.1",
+    "source_revision": "f1b243af48f44452179f7a109877799584c8f47d",
+    "fabric_sha256": "d47b92b43de08f08726c72f8c9c2dd56d63e9d757f260c45be7993f0a27ae0af",
+    "neoforge_sha256": "7d21ff3807cce833a8dd048475a41a4638c0c2704bb8247fd565e68e0493d69a"
+  }
+}

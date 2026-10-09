@@ -7,6 +7,7 @@ import dev.ringworld.world.RingTerrainAtlas;
 import net.minecraft.client.InactivityFpsLimit;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.PauseScreen;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Opt-in, non-destructive visual probe for the projection directions and
@@ -27,6 +28,10 @@ public final class RingProjectionCaptureClient {
     private static final int RENDER_TIMEOUT_TICKS = 1_200;
     private static final double CAPTURE_CAMERA_Y = 120.0;
     private int stage;
+    private int environmentIndex;
+    private final AtomicInteger pendingScreenshots = new AtomicInteger();
+    private final boolean allEnvironments = "all".equalsIgnoreCase(
+            System.getProperty(ENVIRONMENT_PROPERTY, "noon").trim());
     private int settleTicks;
     private int atlasWaitTicks;
     private boolean waitingLogged;
@@ -57,7 +62,21 @@ public final class RingProjectionCaptureClient {
         if (stage >= 4) return true;
         if (!ensureWorldOpen(client)) return true;
         if (stage == 3) {
-            if (++completionTicks >= 20) finish(client, true, "captures complete");
+            if (++completionTicks > POSITION_TIMEOUT_TICKS) {
+                finish(client, false, "timed out saving projection screenshots");
+                return true;
+            }
+            if (completionTicks < 20 || pendingScreenshots.get() != 0) return true;
+            RingWorldMod.LOGGER.info("[projection-capture] environment={} complete", selectedEnvironment().id);
+            if (allEnvironments && ++environmentIndex < CaptureEnvironment.values().length) {
+                selectedEnvironment = CaptureEnvironment.values()[environmentIndex];
+                stage = 0;
+                completionTicks = 0;
+                captureSetupRequested = false;
+                captureSetupComplete = false;
+                capturePoseWaitTicks = 0;
+                renderReadyWaitTicks = 0;
+            } else finish(client, true, "captures complete");
             return true;
         }
         if (RingMinecraftClientAccess.screen(client) instanceof PauseScreen) RingMinecraftClientAccess.setScreen(client, null);
@@ -97,12 +116,7 @@ public final class RingProjectionCaptureClient {
         settleTicks = 0;
 
         if (stage == 0) {
-            RingMinecraftClientAccess.grabScreenshot(
-                    client.gameDirectory, screenshotName("tangent"),
-                    RingMinecraftClientAccess.mainRenderTarget(client), 1,
-                    message -> RingWorldMod.LOGGER.info(
-                            "[projection-capture] tangent screenshot: {}",
-                            message.getString()));
+            captureScreenshot(client, "tangent");
             RingWorldMod.LOGGER.info(
                     "[projection-capture] tangent/along-ring view captured at C={}, R={}",
                     geometry.circumferenceBlocks(), geometry.radius());
@@ -111,12 +125,7 @@ public final class RingProjectionCaptureClient {
         }
 
         if (stage == 1) {
-            RingMinecraftClientAccess.grabScreenshot(
-                    client.gameDirectory, screenshotName("handoff"),
-                    RingMinecraftClientAccess.mainRenderTarget(client), 1,
-                    message -> RingWorldMod.LOGGER.info(
-                            "[projection-capture] live/proxy handoff screenshot: {}",
-                            message.getString()));
+            captureScreenshot(client, "handoff");
             RingWorldMod.LOGGER.info(
                     "[projection-capture] live/proxy handoff captured at pitch={}",
                     capturePitch);
@@ -124,12 +133,7 @@ public final class RingProjectionCaptureClient {
             return true;
         }
 
-        RingMinecraftClientAccess.grabScreenshot(
-                client.gameDirectory, screenshotName("up"),
-                RingMinecraftClientAccess.mainRenderTarget(client), 1,
-                message -> RingWorldMod.LOGGER.info(
-                        "[projection-capture] radial-up screenshot: {}",
-                        message.getString()));
+        captureScreenshot(client, "up");
         RingWorldMod.LOGGER.info(
                 "[projection-capture] radial/up view captured at C={}, diameter={}; complete",
                 geometry.circumferenceBlocks(), geometry.radius() * 2.0);
@@ -267,11 +271,22 @@ public final class RingProjectionCaptureClient {
         double averageMillis = frameSamples == 0
                 ? 0.0 : totalFrameNanos / 1_000_000.0 / frameSamples;
         RingWorldMod.LOGGER.info(
-                "[projection-capture] {} frame metrics: samples={}, average={} ms, max={} ms, over50ms={}",
-                label, frameSamples, averageMillis,
+                "[projection-capture] environment={} {} frame metrics: samples={}, average={} ms, max={} ms, over50ms={}",
+                selectedEnvironment().id, label, frameSamples, averageMillis,
                 maxFrameNanos / 1_000_000.0, slowFrames);
         stage++;
         captureStageArmed = false;
+    }
+
+    private void captureScreenshot(Minecraft client, String view) {
+        pendingScreenshots.incrementAndGet();
+        RingMinecraftClientAccess.grabScreenshot(
+                client.gameDirectory, screenshotName(view),
+                RingMinecraftClientAccess.mainRenderTarget(client), 1,
+                message -> {
+                    RingWorldMod.LOGGER.info("[projection-capture] screenshot: {}", message.getString());
+                    pendingScreenshots.decrementAndGet();
+                });
     }
 
     private void resetFrameMetrics() {
@@ -298,6 +313,7 @@ public final class RingProjectionCaptureClient {
 
     private CaptureEnvironment selectedEnvironment() {
         if (selectedEnvironment != null) return selectedEnvironment;
+        if (allEnvironments) return selectedEnvironment = CaptureEnvironment.values()[environmentIndex];
         String configured = System.getProperty(
                 ENVIRONMENT_PROPERTY, CaptureEnvironment.NOON.id).trim();
         for (CaptureEnvironment candidate : CaptureEnvironment.values()) {

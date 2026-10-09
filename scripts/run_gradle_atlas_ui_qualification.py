@@ -31,7 +31,7 @@ from run_minecraft_qualification import (
     load_manifest,
     stage_gradle_distribution_zip,
     validate_gradle_dependency_cache,
-    validate_gradle_distribution_zip,
+    validate_gradle_distribution_zip, _stage_validated_loom_seed,
 )
 
 
@@ -215,6 +215,7 @@ def run(
     command_executor: Callable[..., Any] = execute_command,
     gradle_dependency_cache: Path | None = None,
     gradle_distribution_zip: Path | None = None,
+    gradle_loom_cache: Path | None = None,
 ) -> dict[str, Any]:
     root = repository_root.resolve(strict=False)
     manifest_path = (root / manifest_relative).resolve(strict=False)
@@ -231,6 +232,7 @@ def run(
     log = paths.run_directory / "run-atlas-ui" / "logs" / "latest.log"
     captures: tuple[Path, ...] = ()
     with QualificationLock.acquire(paths.lock_path, run_id):
+        _stage_validated_loom_seed(gradle_loom_cache, root, paths, cell)
         stage_gradle_distribution_zip(
             distribution_seed.source if distribution_seed is not None else None, root, paths,
         )
@@ -267,6 +269,7 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--manifest", default="config/minecraft-version-matrix.json")
     result.add_argument("--gradle-dependency-cache")
     result.add_argument("--gradle-distribution-zip")
+    result.add_argument("--gradle-loom-cache")
     return result
 
 
@@ -275,6 +278,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         result = run(
             arguments.cell,
+            gradle_loom_cache=Path(arguments.gradle_loom_cache) if arguments.gradle_loom_cache else None,
             manifest_relative=arguments.manifest,
             gradle_dependency_cache=(Path(arguments.gradle_dependency_cache) if arguments.gradle_dependency_cache else None),
             gradle_distribution_zip=(Path(arguments.gradle_distribution_zip) if arguments.gradle_distribution_zip else None),
