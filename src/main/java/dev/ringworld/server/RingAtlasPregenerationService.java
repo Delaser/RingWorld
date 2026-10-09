@@ -335,12 +335,14 @@ public final class RingAtlasPregenerationService {
     /** Local integrated-client feedback only; no remote-player packets or world access off-thread. */
     public static void reportLocalFrameRate(MinecraftServer server, int fps, int target) {
         if (fps <= 0 || target <= 0) return;
+        long sampledAt = System.nanoTime();
         Runnable update = () -> {
             WorldState state = WORLDS.get(server.overworld());
             if (state == null || state.stopping || state.job == null || state.job.adaptive == null) return;
+            if (System.nanoTime() - sampledAt > 3_000_000_000L) return;
             state.localFps = fps;
             state.localFrameTarget = Math.min(60, target);
-            state.frameFeedbackNanos = System.nanoTime();
+            state.frameFeedbackNanos = sampledAt;
             state.hasFrameFeedback = true;
         };
         if (server.isSameThread()) update.run();
