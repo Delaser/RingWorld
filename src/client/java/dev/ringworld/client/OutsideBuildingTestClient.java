@@ -8,7 +8,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.network.protocol.game.ServerboundMovePlayerPacket;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.level.block.Blocks;
@@ -86,8 +85,7 @@ public final class OutsideBuildingTestClient {
             if (actor && seamTravel < 2) {
                 double nextX = client.player.getX() + .25;
                 client.player.setPos(nextX, client.player.getY(), client.player.getZ());
-                client.getConnection().send(new ServerboundMovePlayerPacket.PosRot(nextX, client.player.getY(),
-                        client.player.getZ(), client.player.getYRot(), client.player.getXRot(), client.player.onGround(), false));
+                // Let vanilla send the pose; 26.3 rejects two position packets in one tick.
                 seamTravel += .25;
                 return;
             }
