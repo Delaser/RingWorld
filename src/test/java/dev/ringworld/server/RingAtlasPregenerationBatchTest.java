@@ -107,11 +107,16 @@ class RingAtlasPregenerationBatchTest {
         var batch = new RingAtlasPregenerationBatch<String>(atlas, 4);
         var goodReleases = new AtomicInteger();
         for (int i=0; i<4; i++) {
-            if (i%2==0) batch.slots.get(i).request = ready(() -> { throw new IllegalStateException("retained ticket"); });
+            String ticket = "ticket-" + i;
+            if (i%2==0) batch.slots.get(i).request = ready(() -> { throw new IllegalStateException(ticket); });
             else batch.slots.get(i).request = ready(goodReleases::incrementAndGet);
         }
         var failure = assertThrows(IllegalStateException.class, () -> batch.cancelAll(3));
-        assertEquals(1, failure.getSuppressed().length);
+        assertEquals("ticket-0", failure.getMessage());
+        // Teardown retains each attempt's failure too; require the other lease's
+        // failure rather than assuming the aggregate contains no retry history.
+        assertTrue(java.util.Arrays.stream(failure.getSuppressed())
+                .anyMatch(other -> "ticket-2".equals(other.getMessage())));
         assertEquals(2, goodReleases.get());
         assertEquals(2, batch.inFlight());
     }
