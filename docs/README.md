@@ -164,5 +164,9 @@ Start here:
   hygiene, correctness repairs, validation, disk cleanup, and retained-risk
   record for the optional-feature branch.
 
+- [`CODE_REVIEW_DEBLOAT_2026-10-09.md`](CODE_REVIEW_DEBLOAT_2026-10-09.md):
+  focused correctness review, repaired 26.3 saved-wall inputs, and shared
+  seed-preview/override cleanup.
+
 The top-level [`README.md`](../README.md) remains the user-facing overview.
 When it conflicts with these files, verify the source and correct both.

@@ -1,5 +1,11 @@
 # Current state
 
+October 9 code review: repaired a stale 26.3 Atlas wall mesh call that lost
+saved style/decay/seed inputs. The renderer now matches shared logic except
+for GPU imports, guarded by a static parity regression. Seed preview is shared
+through a small version-owned noise-state factory; three identical overrides
+are removed. See [review and validation](CODE_REVIEW_DEBLOAT_2026-10-09.md).
+
 October 9 live-command follow-up: `/ringworld chunk_gen_rate 1|2|4|8|auto`
 selects a fixed or automatic admission limit without restarting generation.
 The bare command reports mode/target. Gamemaster-only overrides last for the

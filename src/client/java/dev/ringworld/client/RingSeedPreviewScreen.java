@@ -238,8 +238,8 @@ public final class RingSeedPreviewScreen extends Screen {
         NoiseBasedChunkGenerator generator = new NoiseBasedChunkGenerator(
                 input.biomeSource(), input.settings());
         if (!((Object)generator instanceof RingWorldGeneratorAccess access)) return null;
-        RandomState randomState = RandomState.create(
-                input.worldgenLoadContext(), input.settingsKey(), seed);
+        RandomState randomState = RingMinecraftClientAccess.createPreviewRandomState(
+                input.worldgenLoadContext(), input.settings(), input.settingsKey(), seed);
         LevelHeightAccessor height = LevelHeightAccessor.create(input.minY(), input.height());
         access.ringworld$setGeometry(geometry);
         access.ringworld$setTerrainNoiseMapping(RingTerrainNoiseMapping.CURRENT);

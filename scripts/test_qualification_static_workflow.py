@@ -18,6 +18,9 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
         self.assertIn("python -m unittest", source)
         self.assertIn('"scripts/external_graphical_*.py"', source)
         self.assertIn('"scripts/run_*_qualification.py"', source)
+        # Shared-only renderer/preview edits must run the ABI parity guard on
+        # pull requests and main pushes, just like version-owned edits.
+        self.assertEqual(2, source.count('- "src/client/**"'))
         for test in (
             "test_validate_minecraft_version_matrix.py",
             "test_qualification_gradle_isolation.py",

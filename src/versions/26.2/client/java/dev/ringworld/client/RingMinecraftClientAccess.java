@@ -8,12 +8,25 @@ import net.minecraft.client.Screenshot;
 import net.minecraft.client.Camera;
 import net.minecraft.client.gui.components.toasts.ToastManager;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.Holder;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.world.level.levelgen.NoiseGeneratorSettings;
+import net.minecraft.world.level.levelgen.RandomState;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.Entity;
 
 /** Minecraft 26.2 client accessors retained behind the shared client source ABI. */
 public final class RingMinecraftClientAccess {
     private RingMinecraftClientAccess() { }
+
+    /** Create isolated preview noise state from the worker's immutable registry snapshot. */
+    public static RandomState createPreviewRandomState(RegistryAccess.Frozen registries,
+                                                      Holder<NoiseGeneratorSettings> settings,
+                                                      ResourceKey<NoiseGeneratorSettings> settingsKey,
+                                                      long seed) {
+        return RandomState.create(registries, settingsKey, seed);
+    }
 
     /** Reveal an opt-in hidden review window without activating the desktop app. */
     public static void showBackgroundReviewWindow(Minecraft client) {

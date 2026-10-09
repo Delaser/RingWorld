@@ -1,5 +1,12 @@
 # Testing
 
+The source-ABI guard includes complete Atlas renderer logic parity after GPU
+import normalisation and client-adapter signatures across 26.1/26.2/26.3.
+Run `python3 -m unittest scripts.test_minecraft_version_sources` when editing
+those paths. A shared mesh test cannot detect an incorrect renderer overload;
+retain this call-site guard. Shared seed-preview changes also need native
+creation-UI checks that finish both seed previews and exercise Use/Apply.
+
 ## Bounded Atlas requests (#253)
 
 The implementation defaults to auto (initially four requests); explicit numeric

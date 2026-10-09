@@ -69,6 +69,16 @@ from fresh frozen-candidate release qualification.
 
 ## Supported-version parity and release state
 
+The 26.3 surface renderer must retain the shared renderer's complete mesh,
+texture, worker and lifecycle logic; only its GPU package imports differ.
+`scripts/test_minecraft_version_sources.py` checks that parity. In particular,
+pass captured saved wall height, style and seed into the full `RingSurfaceMesh`
+overload. The legacy overload is not suitable for saved-world rendering.
+Seed preview UI is shared; isolate the differing `RandomState.create` APIs in
+`RingMinecraftClientAccess.createPreviewRandomState`, using immutable preview
+inputs. Do not duplicate the screen to adapt one API call. See the
+[review and cleanup record](docs/CODE_REVIEW_DEBLOAT_2026-10-09.md).
+
 Every fix, performance improvement, and feature in a release must work on **all
 supported Minecraft 26.x versions**, currently 26.1–26.1.2, 26.2, and 26.3,
 on both Fabric and NeoForge. Carry this rule forward as new 26.x versions are
