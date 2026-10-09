@@ -2,13 +2,14 @@
 
 ## Status
 
-Implemented on an isolated branch from `a46965c`; pending owner visual review
-and integration. This change does not include the separate horizon PR #261 or
-the outside-building option tracked by #255.
+Owner accepted the in-game review. PR #262 merged on 8 October 2026 at
+`62259175b87dbebcfde5dc7057af4dfb8bb8848f`. The horizon change merged separately
+in #261. The outside-building option is tracked by #255; it now delivers nearby
+exterior terrain chunks independently of the placement setting.
 
 ## Cause and fix
 
-Exterior Z columns deliberately have no client terrain chunks. Vanilla rejects
+Before #255, exterior Z columns deliberately had no client terrain chunks. Vanilla rejects
 entity render extraction when the entity's terrain section is not compiled and
 visible. That hides even the local third-person model after it leaves the band.
 The server also used the finite terrain watch filter when pairing remote

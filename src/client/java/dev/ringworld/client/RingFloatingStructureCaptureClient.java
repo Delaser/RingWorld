@@ -60,6 +60,8 @@ public final class RingFloatingStructureCaptureClient {
             player.teleportTo(server.overworld(), pose.x, pose.y, pose.z, Set.<Relative>of(), yaw, pitch, false);
             RingWorldMod.LOGGER.info("[floating-study] REVIEW READY: normal walls, near viewpoint, player control, muted, staying open");
         });
+        if (Boolean.getBoolean("ringworld.backgroundTestWindow"))
+            RingMinecraftClientAccess.showBackgroundReviewWindow(client);
         reviewReady = true;
         return true;
     }

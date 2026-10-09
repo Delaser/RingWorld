@@ -1,7 +1,8 @@
-# Outside building — issue #255 (development work in progress)
+# Outside building — issue #255
 
 Branch: `codex/outside-building-255`, based on `1914255` after merging #261 and
-#262. This feature is not merged or release-qualified yet.
+#262. PR #263 is validated and prepared for owner-authorized integration.
+This is development evidence, not frozen release qualification.
 
 Nearby exterior chunks now use the normal bounded periodic view-distance
 window. Natural generation remains void outside finite Z, and Atlas coverage
@@ -37,8 +38,23 @@ seed their own delivered chunks. Curved frustum culling and ordinary view
   placement policy needed no production correction for that setup error.
 - Native 26.1.2 Fabric floating-structure capture completed with a fully
   generated Atlas, muted hidden window, normal save and clean process exit.
-- Remaining five runtime cells and all-six final build/test checks are running.
-  Do not claim supported-version parity or merge before verification.
+- Final all-six development matrix passes: 452 Java tests per loader on
+  26.1.2 and 26.2; 455 per loader on 26.3, with zero failures or skips.
+  All six fresh and all six retained-world two-client runs pass, and all 36
+  server/client processes exit normally with code 0.
+- Production behavior is checked on `d9f103f`. The final opt-in review-window
+  helper only reveals the muted review window without focusing the desktop;
+  it does not change normal clients or the placement fixture.
+- The initial 26.3 seam fixture sent an extra position packet in one tick and
+  was rejected. It now lets vanilla send movement, matching the existing 26.3
+  release fixture. The final matrix reran every cell after that correction.
+  The rejected run is preserved under `263-fabric/failure-extra-movement-packet`.
+
+| Minecraft | Fabric build/tests | NeoForge build/tests | Fresh + saved-world two-client runs |
+| --- | --- | --- | --- |
+| 26.1.2 (26.1 ABI) | PASS, 452 | PASS, 452 | PASS on both loaders |
+| 26.2 | PASS, 452 | PASS, 452 | PASS on both loaders |
+| 26.3 | PASS, 455 | PASS, 455 | PASS on both loaders |
 
 Run `scripts/run_outside_building_test.py {261|262|263} {fabric|neoforge}`
 with Java 25. It uses ignored disposable multiplayer worlds, then reopens
@@ -86,7 +102,9 @@ authored top to conceal it. No fix has been applied yet.
 
 `ringworld.floatingStructureReview=true` opens the corrected existing sample at
 the nearby capture viewpoint, enables Creative flight, leaves ordinary player
-control active, and keeps the game loaded and muted. It does not rebuild the
+control active, and keeps the game loaded and muted. Combined with
+`ringworld.backgroundTestWindow=true`, it reveals the review window after
+loading without taking desktop focus. It does not rebuild the
 structure or rerun the capture sequence.
 
 ### Additional observation: holes in the wall placeholder
@@ -94,7 +112,7 @@ structure or rerun the capture sequence.
 The owner also identified rectangular sky-coloured openings inside the distant
 wall itself while looking along the rim. Captured the actual running Java
 window without focusing it: [live evidence](media/floating-exterior-structure/wall-placeholder-gaps-live.png).
-The game remains open and muted for review.
+The opt-in review flag reopens this sample and leaves it muted for review.
 
 The wall texture uses `RingWallPattern.blockPresent` to write transparent
 texels for decayed top columns. `ring_surface.fsh` discards those texels.
@@ -109,3 +127,8 @@ Treat this as a second geometry/coverage case in the wall-gap investigation:
 compare zero-decay and normal-decay samples, verify exposed terrain side faces
 and caps at the actual remaining wall height, then test both inner/outer views.
 No fix or diagnosis of every individual opening is claimed yet.
+
+The controlled geometry/material investigation is now recorded in
+[Atlas wall openings](ATLAS_WALL_GAPS_2026_10_09.md). Both missing edge geometry
+and missing decayed caps are confirmed; pixel attribution and a production
+mesh fix remain separate follow-up work.

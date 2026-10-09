@@ -6,6 +6,9 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [Atlas wall gap diagnosis](ATLAS_WALL_GAPS_2026_10_09.md): missing terrain
+  edge faces and decayed-wall caps, with a controlled geometry/material probe.
+
 - [Outside building (#255)](OUTSIDE_BUILDING_255.md): default-on saved policy,
   server commands, World-page control, exterior delivery and native samples.
 
