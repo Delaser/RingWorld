@@ -1,5 +1,10 @@
 # Configuration and operations
 
+For supported-version runtime JAR exports, use [JAR export](JAR_EXPORT.md).
+The six-file release needs no launcher/server bundles. Optional package examples
+below retain older workflows; they do not make `stage_modrinth_release.py` the
+current matrix-release staging route.
+
 Upcoming-release #253 Atlas concurrency: absent `ringworld.atlasInFlightChunks`, or
 `-Dringworld.atlasInFlightChunks=auto`, starts with four requests and adapts
 4→2→1 under sustained tick/FPS pressure, recovering slowly. Explicit numeric

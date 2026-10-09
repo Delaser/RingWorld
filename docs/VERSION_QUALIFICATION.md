@@ -205,6 +205,11 @@ frozen-build commit from strict quick evidence (which must be in pushed public
 history), while the current clean staging checkout is recorded separately as
 operator provenance. It neither reruns nor claims runtime qualification.
 
+New staging invocations require explicit `--manifest`, `--config` and
+`--changelog`; the previous implicit 1.1 inputs are removed. See the current
+[six-JAR export sequence](JAR_EXPORT.md). Quick evidence qualifies staging,
+but full release/nightly review and owner visual checks remain separate gates.
+
 For 1.3 onward, public NeoForge metadata uses
 `SupportContract.neoforge_release_range`: `[minimum,)`, derived from the
 oldest pinned NeoForge version. Minecraft bounds remain unchanged. Frozen

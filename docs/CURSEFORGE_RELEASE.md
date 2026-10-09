@@ -1,135 +1,49 @@
 # CurseForge release workflow
 
-CurseForge project `1645598` is the official RingWorld Minecraft Mod listing:
-`https://www.curseforge.com/minecraft/mc-mods/ringworld`. The project and its
-first files were submitted for moderation on 2026-08-09. CurseForge may keep
-the public page unavailable until moderation is complete.
+RingWorld's official project is [1645598](https://www.curseforge.com/minecraft/mc-mods/ringworld).
+Use the [current JAR export runbook](JAR_EXPORT.md) for qualification, staging
+and the six supported-version/loader files. The 1.0 staging command is historical.
 
-The [1.1 publication record](RELEASE_1_1_PUBLICATION_2026-08-27.md) lists the
-four current file IDs and independently verified CDN hashes. The older
-sections below retain the exact 1.0/26.1.2 host record and manual upload runbook.
-The qualification, staging, and dual-host delivery plan for 26.1.x and later
-stable lines is
-[`MINECRAFT_VERSION_SUPPORT_PLAN.md`](MINECRAFT_VERSION_SUPPORT_PLAN.md).
+## Submission and verification
 
-## File changelogs
+Dry-run `scripts/publish_qualified_release.py` for the exact qualified stage and
+loader. Review its metadata and staged checksum. After owner authorization,
+execution uses `CURSEFORGE_API_TOKEN`, `--execute` and the exact authorization
+record. It submits a new held file; it does not publish/promote it or modify
+previous uploads. The author UI remains an alternative for the same reviewed
+runtime JAR when API submission is unavailable.
 
-The public **What's new** section must contain actual changes and fixes only.
-Do not paste the project description, existing features, installation steps,
-test reports or promotional copy into it. Shared changes may legitimately be
-the same on both loaders; do not invent loader-specific fixes.
+Upload only one standalone runtime JAR per file. Select the correct game group,
+loader, Client and Server, and release channel. Require Fabric API project
+306612 only on Fabric; NeoForge has no external dependency. Changelogs describe
+changes and fixes, with the generated immutable corresponding-source link.
+Do not paste installation instructions, project descriptions or test reports.
 
-On 2026-08-28 the owner requested in-place corrections to the four 1.1 files.
-Their changelogs now describe the 26.1.x support extension or the 26.2 port,
-reversed-depth rendering and world-generation/menu adaptations. File IDs,
-runtime jars, version/loader tags and dependencies are unchanged. Nothing was
-deleted, downloaded or re-uploaded for this correction. The initial staged
-changelog text is historical and must not overwrite these corrected notes.
-Corresponding source remains available through the project's Source link and
-the exact GitHub release tags recorded in the publication record.
+Record the returned ID and moderation state, inspect the author listing, and
+independently download/hash each hosted JAR before claiming publication. After
+an uncertain failure, inspect the listing before retrying to avoid duplicates.
+Keep diagnostic screenshots out of the public showcase gallery.
 
-## Author Upload API
+## Author API contract
 
-CurseForge provides an official author API for automated project-file uploads.
-It uses a token generated from the CurseForge author account and supplied in
-the `X-Api-Token` header. A multipart request to
-`https://minecraft.curseforge.com/api/projects/{projectId}/upload-file`
-contains a JSON `metadata` field and the actual `file`; a successful response
-returns the new CurseForge file ID. The metadata supports changelog and type,
-display name, game-version IDs or names, `alpha`/`beta`/`release`, optional
-manual-release hold, and dependency relations. Current game-version and
-dependency values are available from the corresponding official API
-endpoints.
+The repository publisher uses the author upload endpoint
+`https://minecraft.curseforge.com/api/projects/1645598/upload-file`, with
+`X-Api-Token`, multipart JSON `metadata` and the runtime `file`. Credentials must
+remain outside source, stages and logs. The retained live schema findings require
+integer relation `projectID`, a dependency `slug`, and omission of `relations`
+when there are no dependencies. The current publisher enforces the reviewed
+Fabric API relation and validates metadata before a request.
 
-The existing releases were uploaded manually. Future automation must remain
-dry-run-first, read its token only from an environment variable or OS
-credential store, redact authorization data, consume only a verified staged
-jar, require explicit owner authorization for execution, and record the
-returned file ID. Fabric API is a `requiredDependency` only for the Fabric
-file. Upload automation does not bypass CurseForge moderation and must never
-archive, delete, update, or resubmit files automatically.
+[Official API reference](https://support.curseforge.com/support/solutions/articles/9000197321-curseforge-upload-api).
+This audit performs no live submission and does not newly qualify the API end
+to end. Earlier API failures and UI fallbacks remain in publication records.
 
-Official reference:
-[CurseForge Upload API](https://support.curseforge.com/support/solutions/articles/9000197321-curseforge-upload-api).
+## Historical releases
 
-The 2026-08-27 live submission preflight confirmed that the author API rejects
-`relations.projects: []` with HTTP 400/error 1002. Dependency-free NeoForge
-submissions must omit `relations` entirely; Fabric retains its required Fabric
-API relation. The publisher and focused regression test enforce this shape.
-The same live schema requires `projectID` as a JSON integer and a `slug` on
-each relation, despite the older example's string ID. Fabric API uses the
-reviewed pair `306612` / `fabric-api`; unknown dependency IDs without an
-explicit slug fail before submission.
+- [1.3 publication](RELEASE_1_3_PUBLICATION_2026-09-30.md): six files, source,
+  submitted states and independently matched CDN hashes.
+- [1.2 publication](RELEASE_1_2_PUBLICATION_2026-09-20.md).
+- [1.1 publication](RELEASE_1_1_PUBLICATION_2026-08-27.md).
+- [1.0 owner sign-off and publication context](OWNER_RELEASE_SIGNOFF_2026-08-09.md).
 
-Corrected live requests then returned HTTP 500 without a successful file ID.
-After checking the author listing for duplicates, the owner-authorized 1.1
-uploads used the author UI. Do not treat this as proof that the API uploader
-works end to end, and do not resubmit these files to diagnose the API.
-
-## Current 1.0 uploads
-
-On 2026-08-10 the owner-authorized 1.0 files were submitted as `Release`:
-
-| Loader | Display name | SHA-256 | Current host state |
-| --- | --- | --- | --- |
-| Fabric | `RingWorld 1.0 for Fabric` | `ec06f6dbf81a6ac1c662f87f2fdb6a3d30297222e61da7094212b125a568c421` | Under Review |
-| NeoForge | `RingWorld 1.0 for NeoForge` | `ad818e6aec7aaf64f4d0618975c667d8b9163965e83e32408d8fc98797e700d5` | Baking |
-
-Both use exact source commit `f3a5ce12a3d72a7e2253e893ca385e27f3fe7448`.
-Fabric declares Fabric API project `306612` as a required dependency;
-NeoForge has no external relation. These states may advance asynchronously
-through CurseForge review without another source change.
-
-## Historical alpha 3 uploads
-
-The owner-authorized Fabric and NeoForge alpha 3 uploads use the same exact
-runtime jars and corresponding source as the verified Modrinth files:
-
-| Loader | Display name | SHA-256 |
-| --- | --- | --- |
-| Fabric | `RingWorld 0.2.0 for Fabric — alpha 3` | `9ec25789e1418fd3b1877c3c23d8388cbb880a0ed562ef5f0608498df0605097` |
-| NeoForge | `RingWorld 0.2.0 for NeoForge — alpha 3` | `ac8b8776d85038512bb85dab8967a32a53e8d33128a4ccae17b51b65b214938a` |
-
-Both files target Minecraft 26.1.2 and Java 25, are marked `Alpha`, and are
-required on client and server. The Fabric file declares Fabric API project
-`306612` as a required dependency. The NeoForge file has no external
-dependency. Both changelogs link corresponding source commit
-`94c8c9eb8a1a0e3d399ffd08a87af5c70b60b9b7`.
-
-Both files reached CurseForge's `Under Review` state after upload processing.
-The project is in the `Mods` class with `World Gen` as its main category and
-`Dimensions` and `Player Transport` as additional categories. It declares
-Mozilla Public License 2.0, permits third-party distribution, allows comments,
-and points its public source field at `https://github.com/Delaser/RingWorld`.
-
-The media gallery uses the six in-game images from the official showcase page,
-not automated test-fixture captures: `ring-snow-arch`, the open/tight/compact
-ratio views, and the distant/nearby Atlas views. CurseForge's 2 MiB media limit
-required the 3.2 MiB snow PNG to be uploaded as a visually equivalent JPEG;
-the other showcase files were accepted unchanged.
-
-## Future upload checklist
-
-1. Stage and verify both jars from one clean, pushed commit using
-   `scripts/stage_modrinth_release.py --loader both --build` under Java 25.
-2. Record the exact commit and SHA-256 values before opening either host.
-3. Upload one standalone runtime jar per loader. Never upload Minecraft,
-   development/source jars, Prism bundles, server overlays, or both loaders in
-   one file.
-4. Select Client and Server, Java 25, Minecraft 26.1.2, and only the matching
-   loader. The completed owner gate authorizes the 1.0 files as Release.
-5. Add Fabric API as a required relation only to the Fabric file.
-6. Put the exact immutable source-commit URL in both changelogs. Confirm the
-   project remains MPL-2.0 and its Source tab still points to the public repo.
-7. Wait for malware scanning, file review, and project moderation. Once
-   downloadable, fetch each hosted jar, compare its SHA-256, and run the
-   loader-specific distribution/licence verifier.
-8. Record hosted file IDs, review status, hashes, and any moderation feedback
-   in the current release-candidate evidence.
-9. Reuse approved showcase imagery for the gallery. Do not publish diagnostic
-   captures with test overlays, debug text, or known visual defects as release
-   screenshots.
-
-The 2026-08-10 owner instruction explicitly authorizes the matched 1.0 upload,
-showcase-link update, and rollback-safe NeoForge demo migration. Future uploads
-or world changes require a new explicit go/no-go.
+Historical release inputs and approvals do not authorize a new upload.

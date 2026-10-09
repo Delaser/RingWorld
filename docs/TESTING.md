@@ -1,5 +1,12 @@
 # Testing
 
+JAR export tooling checks run with
+`PYTHONPATH=scripts python3 -m unittest scripts.test_stage_qualified_release scripts.test_publish_qualified_release`.
+They cover explicit candidate-group inputs, public identity/project checks,
+host metadata/source/notes/dependency consistency and rollback of failed stage
+replacement. They make no network requests and do not authorize publication.
+See [the export runbook](JAR_EXPORT.md).
+
 The source-ABI guard includes complete Atlas renderer logic parity after GPU
 import normalisation and client-adapter signatures across 26.1/26.2/26.3.
 Run `python3 -m unittest scripts.test_minecraft_version_sources` when editing

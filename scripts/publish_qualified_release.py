@@ -9,6 +9,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
+import re
 import secrets
 import stat
 from typing import Any, Mapping
@@ -16,6 +17,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
 from stage_modrinth_release import VerificationError, current_public_source
+from stage_qualified_release import _metadata
 
 
 MARKER = ".ringworld-qualified-stage"
@@ -68,6 +70,9 @@ def publication_plan(stage: Path, host: str, loader: str) -> dict[str, Any]:
         raise PublishPlanError("qualified stage marker is invalid")
     folder = stage / loader
     manifest = _json(folder / "STAGING-MANIFEST.json", "staging manifest")
+    if manifest.get("format") != 1 or manifest.get("generated") is not True \
+            or manifest.get("upload_file_only") is not True:
+        raise PublishPlanError("publication requires a generated qualified staging manifest")
     if manifest.get("loader") != loader or manifest.get("publication_action") != "manual_owner_authorization_required":
         raise PublishPlanError("staging manifest loader/authority is invalid")
     upload_name = manifest.get("upload_file")
@@ -82,12 +87,39 @@ def publication_plan(stage: Path, host: str, loader: str) -> dict[str, Any]:
         raise PublishPlanError("staged runtime jar hash does not match its manifest")
     source = manifest.get("source")
     if not isinstance(source, Mapping) or not isinstance(source.get("revision"), str) \
+            or re.fullmatch(r"[0-9a-f]{40}", source["revision"]) is None \
             or source.get("url") != f"https://github.com/Delaser/RingWorld/commit/{source.get('revision')}":
         raise PublishPlanError("staging manifest source is invalid")
+    artifact = manifest.get("artifact_version")
+    label = manifest.get("release_label")
+    versions = manifest.get("game_versions")
+    if not isinstance(artifact, str) \
+            or re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+\+mc[0-9]+\.[0-9]+(?:\.[0-9]+)?", artifact) is None \
+            or not isinstance(label, str) or re.fullmatch(r"[0-9]+(?:\.[0-9]+)*", label) is None \
+            or not isinstance(versions, list) or not versions \
+            or any(not isinstance(value, str) or re.fullmatch(r"[0-9]+\.[0-9]+(?:\.[0-9]+)?", value) is None
+                   for value in versions):
+        raise PublishPlanError("staging manifest release identity is invalid")
+    release_version, game_version = artifact.split("+mc")
+    if game_version != versions[0] or len(set(versions)) != len(versions) \
+            or any(value.split(".")[:2] != game_version.split(".")[:2] for value in versions):
+        raise PublishPlanError("staging manifest candidate group is inconsistent")
+    notes = _regular(folder / "CHANGELOG.md", "staged changelog").read_text(encoding="utf-8")
+    if source["url"] not in notes or "{{" in notes:
+        raise PublishPlanError("staged changelog has no rendered corresponding-source link")
+    # Reuse staging's metadata generator so tags, identities and dependencies
+    # cannot drift between the two tools. The publisher targets official projects.
+    config = {"release_label": label, "game_versions": versions,
+              "modrinth": {"project_id": "ringworld", "fabric_api_project_id": "P7dR8mSH",
+                           **{f"{item}_version_number": f"{release_version}-{item}+mc{game_version}"
+                              for item in LOADERS}},
+              "curseforge": {"project_id": 1645598, "fabric_api_project_id": 306612}}
+    expected_modrinth, expected_curseforge = _metadata(config, loader, notes)
     metadata_name = "MODRINTH-VERSION.json" if host == "modrinth" else "CURSEFORGE-UPLOAD.json"
     metadata = _json(folder / metadata_name, f"{host} metadata")
-    if metadata.get("loader") not in (None, loader):
-        raise PublishPlanError(f"{host} metadata loader mismatch")
+    expected = expected_modrinth if host == "modrinth" else expected_curseforge
+    if metadata != expected:
+        raise PublishPlanError(f"{host} metadata does not match the staged release identity, notes and dependencies")
     if host == "modrinth":
         data = dict(metadata)
         data.update({"file_parts": ["file"], "primary_file": "file", "status": "unlisted",
