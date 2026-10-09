@@ -119,6 +119,7 @@ public final class RingAtlasPregenerationService {
         requireServerThread(world);
         WorldState state = WORLDS.get(world);
         if (state == null) return;
+        state.stopping = true;
         // Level unload can run after the chunk source has evicted the result
         // named by an already-completed load future. Never resolve that result
         // during teardown: cancel/release its ticket and leave the selected
@@ -210,7 +211,7 @@ public final class RingAtlasPregenerationService {
     public static void captureLoadedChunk(ServerLevel world, LevelChunk chunk) {
         requireServerThread(world);
         WorldState state = WORLDS.get(world);
-        if (state != null) {
+        if (state != null && !state.stopping) {
             boolean wasComplete = state.atlas.isComplete();
             CaptureResult result = captureChunk(world, chunk, state);
             if (wasComplete && result.changed()) state.revisionPending = true;
@@ -530,7 +531,12 @@ public final class RingAtlasPregenerationService {
     public static void interruptForServerStop(ServerLevel world) {
         requireServerThread(world);
         WorldState state = WORLDS.get(world);
-        if (state == null || state.job == null) return;
+        if (state == null) return;
+        // NeoForge may deliver further CHUNK_LOAD callbacks while Minecraft
+        // drains its final save. Freeze captures before checkpoint/report so
+        // their durable cell counts cannot change underneath the stop result.
+        state.stopping = true;
+        if (state.job == null) return;
         // Shutdown is not a normal completed-request consumption tick. The
         // chunk source may already be tearing down, so discard the lease and
         // checkpoint only cells that were authoritatively captured earlier.
@@ -569,6 +575,7 @@ public final class RingAtlasPregenerationService {
         private final RingAtlasDirtyTileQueue dirtyTiles = new RingAtlasDirtyTileQueue();
         private final RingAtlasRecaptureQueue recaptures = new RingAtlasRecaptureQueue();
         private boolean dirty;
+        private boolean stopping;
         private boolean revisionPending;
         private long ticks;
         private Job job;
