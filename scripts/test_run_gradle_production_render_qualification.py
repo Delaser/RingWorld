@@ -30,6 +30,12 @@ class GradleProductionRenderQualificationTest(unittest.TestCase):
         with self.assertRaises(GradleProductionRenderError):
             _tasks("forge")
 
+    def test_loader_finalizers_share_the_batch_verifier(self) -> None:
+        fabric = (ROOT / "build.gradle").read_text()
+        neo = (ROOT / "neoforge/build.gradle").read_text()
+        self.assertIn("ext.verifyRingProjectionOutputs = verifyFabricProjectionOutputs", fabric)
+        self.assertIn("rootProject.ext.verifyRingProjectionOutputs(neoForgeProjectionRun", neo)
+
     def test_all_environment_modes_are_owned(self) -> None:
         self.assertEqual(("noon", "dusk", "night", "rain"), ENVIRONMENTS)
 
