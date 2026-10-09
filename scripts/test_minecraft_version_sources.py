@@ -36,11 +36,19 @@ def selected_source_abi(target: str) -> str:
 def adapter_contract(path: Path) -> set[tuple[str, str, str]]:
     source = path.read_text(encoding="utf-8")
     return set(re.findall(
-        r"public static ([\w<>?, ]+) (\w+)\(([^)]*)\)", source,
+        r"public static ([\w<>?, .]+) (\w+)\(([^)]*)\)", source,
     ))
 
 
 class MinecraftVersionSourcesTest(unittest.TestCase):
+    def test_atlas_renderer_logic_matches_across_gpu_package_abis(self):
+        shared = (ROOT / "src/client/java/dev/ringworld/client/render/RingSurfaceTextureRenderer.java").read_text()
+        current = (VERSION_ROOT / "26.3/client/java/dev/ringworld/client/render/RingSurfaceTextureRenderer.java").read_text()
+        # GPU package migration is the only supported difference. Compare the
+        # complete logic so saved style/seed inputs cannot silently regress.
+        current = current.replace("com.mojang.renderpearl.api", "com.mojang.blaze3d")
+        self.assertEqual(shared, current)
+
     def test_selector_uses_the_newest_reviewed_abi_not_newer_than_target(self):
         self.assertEqual("26.1", selected_source_abi("26.1"))
         self.assertEqual("26.1", selected_source_abi("26.1.2"))
@@ -62,15 +70,16 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         self.assertFalse(shared_helper.exists())
         adapters = [
             VERSION_ROOT / version / "client/java/dev/ringworld/client/RingMinecraftClientAccess.java"
-            for version in ("26.1", "26.2")
+            for version in ("26.1", "26.2", "26.3")
         ]
         self.assertTrue(all(adapter.is_file() for adapter in adapters))
         self.assertEqual(adapter_contract(adapters[0]), adapter_contract(adapters[1]))
+        self.assertEqual(adapter_contract(adapters[0]), adapter_contract(adapters[2]))
         names = {name for _, name, _ in adapter_contract(adapters[0])}
         self.assertEqual(
             {"screen", "setScreen", "mainRenderTarget", "toastManager", "cameraEntity",
              "camera", "hideGui", "setGuiHidden", "invalidateChunks", "grabScreenshot", "maxTextureSize",
-                 "showBackgroundReviewWindow"},
+                 "showBackgroundReviewWindow", "createPreviewRandomState"},
             names,
         )
 

@@ -47,6 +47,13 @@ GPU work remains on the render thread.
 
 ## Verification
 
+The 9 October [code review](CODE_REVIEW_DEBLOAT_2026-10-09.md) subsequently
+found that the 26.3 renderer still called the legacy mesh overload despite
+the shared mesh regressions passing. This dropped saved style/decay/seed inputs
+at the call site. Its corrected full-overload call and renderer parity guard
+supersede the earlier implication that those inputs were wired on every ABI.
+Earlier captures remain historical evidence and do not qualify the repair.
+
 Geometry regressions cover exact terrain-edge joins, full exterior depth,
 aligned-top height anchoring at several elevations and heights, retained decay,
 shared cap/face/X-seam boundaries, walls below reference terrain, and bounded
