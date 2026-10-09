@@ -1,5 +1,12 @@
 # Current state
 
+October 9 export audit: the current six-JAR route is documented in
+[JAR export](JAR_EXPORT.md). Staging requires explicit manifest/config/notes,
+public identities and projects are checked, and publication rejects host
+metadata drift. The unused Maven publishing plugin is removed; legacy
+verification helpers, source JARs and optional package tooling remain. See
+[audit and validation](JAR_EXPORT_AUDIT_2026-10-09.md).
+
 October 9 code review: repaired a stale 26.3 Atlas wall mesh call that lost
 saved style/decay/seed inputs. The renderer now matches shared logic except
 for GPU imports, guarded by a static parity regression. Seed preview is shared

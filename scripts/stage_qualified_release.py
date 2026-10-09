@@ -88,6 +88,18 @@ def _load_config(path: Path, contract: SupportContract = LEGACY_CONTRACT) -> dic
             or not artifact.endswith("+mc" + contract.oldest) \
             or not isinstance(label, str) or _RELEASE_LABEL.fullmatch(label) is None:
         raise QualifiedStageError("release config has an unsafe public identity for its candidate group")
+    modrinth = value["modrinth"]
+    curseforge = value["curseforge"]
+    if not isinstance(modrinth, Mapping) or not isinstance(curseforge, Mapping) \
+            or modrinth.get("project_id") != "ringworld" \
+            or modrinth.get("fabric_api_project_id") != "P7dR8mSH" \
+            or curseforge.get("project_id") != 1645598 \
+            or curseforge.get("fabric_api_project_id") != 306612:
+        raise QualifiedStageError("release config must target the official projects and dependencies")
+    release_version, game_version = artifact.split("+mc")
+    if any(modrinth.get(f"{loader}_version_number") != f"{release_version}-{loader}+mc{game_version}"
+           for loader in LOADERS):
+        raise QualifiedStageError("public version numbers must match the runtime artifact and loader")
     return value
 
 
@@ -227,13 +239,21 @@ def _metadata(config: Mapping[str, Any], loader: str, changelog: str) -> tuple[d
     return modrinth_record, curseforge_record
 
 
-def _replace_stage(target: Path) -> None:
+def _replace_stage(target: Path, prepared: Path) -> None:
     if not target.exists():
+        prepared.replace(target)
         return
     marker = target / MARKER
-    if not marker.is_file() or marker.read_text(encoding="utf-8") != "generated\n":
+    if target.is_symlink() or not marker.is_file() or marker.read_text(encoding="utf-8") != "generated\n":
         raise QualifiedStageError(f"refusing to replace unrecognized stage {target}")
-    shutil.rmtree(target)
+    previous = prepared.with_name(prepared.name + "-previous")
+    target.replace(previous)
+    try:
+        prepared.replace(target)
+    except Exception:
+        previous.replace(target)
+        raise
+    shutil.rmtree(previous)
 
 
 def stage_qualified_release(
@@ -302,7 +322,6 @@ def stage_qualified_release(
     template = _regular(changelog_path, "qualified changelog").read_text(encoding="utf-8")
     target = output_root / config["artifact_version"]
     target.parent.mkdir(parents=True, exist_ok=True)
-    _replace_stage(target)
     temporary = Path(tempfile.mkdtemp(prefix=".qualified-stage-", dir=target.parent))
     try:
         for loader in LOADERS:
@@ -333,7 +352,7 @@ def stage_qualified_release(
             (folder / "CHANGELOG.md").write_text(changelog, encoding="utf-8")
             (folder / "SHA256SUMS.txt").write_text(f"{hashes['sha256']}  {staged_jar.name}\n")
         (temporary / MARKER).write_text("generated\n")
-        temporary.replace(target)
+        _replace_stage(target, temporary)
     except Exception:
         shutil.rmtree(temporary, ignore_errors=True)
         raise
@@ -350,9 +369,9 @@ def main() -> int:
     parser.add_argument("--neoforge-jar", type=Path)
     parser.add_argument("--from-frozen", action="store_true",
                         help="materialize only approved public metadata from retained frozen candidates")
-    parser.add_argument("--manifest", type=Path, default=Path("config/minecraft-version-matrix.json"))
-    parser.add_argument("--config", type=Path, default=Path("deploy/qualified/26.1.x-release.json"))
-    parser.add_argument("--changelog", type=Path, default=Path("deploy/qualified/26.1.x-changelog.md"))
+    parser.add_argument("--manifest", type=Path, required=True)
+    parser.add_argument("--config", type=Path, required=True)
+    parser.add_argument("--changelog", type=Path, required=True)
     parser.add_argument("--output-root", type=Path, default=Path("dist/qualified-release"))
     args = parser.parse_args()
     try:

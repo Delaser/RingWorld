@@ -10,6 +10,10 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [JAR export](JAR_EXPORT.md): current six-file qualification, staging and host
+  publication route; [export audit](JAR_EXPORT_AUDIT_2026-10-09.md) records cleanup
+  and remaining manual checks.
+
 - [Floating-build Atlas sampling (#257)](FLOATING_ATLAS_257.md): conservative
   server capture/live updates, cache invalidation and native checks.
 

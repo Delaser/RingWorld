@@ -69,6 +69,17 @@ from fresh frozen-candidate release qualification.
 
 ## Supported-version parity and release state
 
+For new releases, follow [`docs/JAR_EXPORT.md`](docs/JAR_EXPORT.md): six
+standalone runtime JARs, frozen qualification across all groups/loaders, explicit
+staging `--manifest`, `--config`, `--changelog`, then reviewed publication plans.
+There are no implicit 1.1 staging defaults. Upload metadata must match staged
+identity/notes, official projects and Fabric API relations. The historical
+`stage_modrinth_release.py` CLI is not the current release route; its verification
+helpers and optional-package support are still required. Do not delete that
+module or make launcher bundles part of normal JAR export. Maven publishing is
+unused and removed. Nightly/composite review, owner visuals, six-file same-source
+review, host promotion and CDN verification remain required operator gates.
+
 The 26.3 surface renderer must retain the shared renderer's complete mesh,
 texture, worker and lifecycle logic; only its GPU package imports differ.
 `scripts/test_minecraft_version_sources.py` checks that parity. In particular,
@@ -1046,7 +1057,7 @@ a qualified `:neoforge:runAtlasUiClient` additionally verifies the shared
 pause-menu atlas workflow and all eleven screenshots. Release publication is
 tracked under #97; #12, #13, #95, and #96 are complete.
 
-`scripts/stage_modrinth_release.py --loader both --build` checks the active
+The historical `scripts/stage_modrinth_release.py --loader both --build` checks the active
 Java generation, always performs a fresh dual build, pair-validates the known
 outputs, writes provenance manifests consumed by optional packaging, and
 renders the exact verified public commit URL into every staged public
@@ -1054,7 +1065,7 @@ renders the exact verified public commit URL into every staged public
 It also verifies the embedded `ringworld-build.properties` identity displayed
 by the RingWorld Map, so `release_label` must advance with both loader release
 descriptors.
-The current release metadata separates the shared runtime artifact version
+Its historical release metadata separates the shared runtime artifact version
 from loader-specific public 1.0 identifiers; never relabel a generic
 artifact as a new hosted file outside this fail-closed path.
 Keep that fail-closed Java 25 preflight and source-link placeholder validation

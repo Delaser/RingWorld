@@ -52,11 +52,11 @@ on the finite Overworld ring, including after very long Nether journeys.
 
 ## Download and requirements
 
-**RingWorld 1.2 supports Minecraft Java 26.1, 26.1.1, 26.1.2, 26.2 and 26.3.**
+**RingWorld 1.3 supports Minecraft Java 26.1, 26.1.1, 26.1.2, 26.2 and 26.3.**
 Choose the file for your Minecraft version and loader. The 26.1.x files cover
-all three patches; 26.2 and 26.3 have separate files. All six 1.2 files are
+all three patches; 26.2 and 26.3 have separate files. All six 1.3 files are
 on CurseForge; Modrinth currently has the older 1.1 release.
-See the [1.2 publication record](docs/RELEASE_1_2_PUBLICATION_2026-09-20.md).
+See the [1.3 publication record](docs/RELEASE_1_3_PUBLICATION_2026-09-30.md).
 
 | Minecraft | Fabric Loader / API | NeoForge |
 | --- | --- | --- |
@@ -70,16 +70,16 @@ All five versions require **Java 25**. The table lists the tested dependency
 versions; NeoForge does not need Fabric API. Back up worlds before upgrading
 Minecraft and do not reopen upgraded saves in older versions.
 
-The published 1.2 NeoForge jars reject loader builds above their tested range
-(26.3 requires `26.3.0.7-beta`). The upcoming 1.3 release removes this upper
-cap while retaining the minimum loader and supported Minecraft versions.
+The 1.3 NeoForge jars remove the upper loader-version cap while retaining the
+minimum loader and supported Minecraft versions. The older 1.2 jars still
+reject loader builds above their original tested range.
 
 Install the Fabric **or** NeoForge RingWorld jar in the normal `mods` folder.
 Do not install both. A Fabric client joins a Fabric RingWorld server; a
 NeoForge client joins a NeoForge RingWorld server. The server and every client
 must use compatible RingWorld builds.
 
-CurseForge provides the 1.2 mod files; Modrinth provides 1.1 files. The
+CurseForge provides the 1.3 mod files; Modrinth provides 1.1 files. The
 [showcase site](https://andwhatnotstudio.com/ringworld/) has additional project
 information and demo material.
 
@@ -247,6 +247,7 @@ the project documentation:
 | [Current state](docs/CURRENT_STATE.md) | Implemented behavior, evidence, open work, and current qualification status |
 | [Architecture](docs/ARCHITECTURE.md) | Canonical coordinates, client charts, rendering, and data flow |
 | [Operations](docs/OPERATIONS.md) | World configuration, servers, commands, backups, Atlas recovery, and packaging |
+| [JAR export](docs/JAR_EXPORT.md) | Six-file qualification, staging, publication and hosted verification |
 | [Compatibility](docs/COMPATIBILITY.md) | Supported environment, API contract, and known mod conflicts |
 | [Rendering](docs/RENDERING.md) | Curvature, distant terrain, fog, sky, clouds, and visual handoff |
 | [Network protocol](docs/NETWORK_PROTOCOL.md) | Required settings handshake and Atlas transport |

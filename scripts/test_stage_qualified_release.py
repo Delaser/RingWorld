@@ -8,6 +8,7 @@ import hashlib
 from pathlib import Path
 import tempfile
 import unittest
+import sys
 from unittest.mock import patch
 
 from external_runtime_qualification_adapter import canonical_cells_from_manifest
@@ -17,6 +18,8 @@ from run_minecraft_qualification import load_manifest
 from stage_qualified_release import (
     QualifiedStageError, _frozen_build_source, _load_config, _metadata, _render_changelog,
     validate_quick_matrix,
+    main,
+    _replace_stage,
 )
 from test_minecraft_qualification_evidence import passing_record
 
@@ -26,6 +29,54 @@ RUN_ID = "20260827T120000Z-0123456789ab"
 
 
 class QualifiedReleaseStageTest(unittest.TestCase):
+    def test_stage_replacement_restores_previous_export_on_rename_failure(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target, prepared = root / "stage", root / ".prepared"
+            for folder in (target, prepared):
+                folder.mkdir()
+                (folder / ".ringworld-qualified-stage").write_text("generated\n")
+            (target / "old.jar").write_bytes(b"approved export")
+            (prepared / "new.jar").write_bytes(b"replacement")
+            replace = Path.replace
+            def fail_promotion(path, destination):
+                if path == prepared:
+                    raise OSError("simulated promotion failure")
+                return replace(path, destination)
+            with patch.object(Path, "replace", fail_promotion), self.assertRaises(OSError):
+                _replace_stage(target, prepared)
+            self.assertEqual(b"approved export", (target / "old.jar").read_bytes())
+            self.assertEqual(b"replacement", (prepared / "new.jar").read_bytes())
+            _replace_stage(target, prepared)
+            self.assertEqual(b"replacement", (target / "new.jar").read_bytes())
+            self.assertFalse((target / "old.jar").exists())
+
+    def test_stage_replacement_preserves_unrecognized_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            target, prepared = root / "stage", root / ".prepared"
+            target.mkdir(); prepared.mkdir()
+            (target / "keep.txt").write_text("user file")
+            with self.assertRaises(QualifiedStageError):
+                _replace_stage(target, prepared)
+            self.assertEqual("user file", (target / "keep.txt").read_text())
+
+    def test_cli_requires_explicit_candidate_group_and_release_inputs(self) -> None:
+        from contextlib import redirect_stderr
+        from io import StringIO
+        arguments = {"--manifest": "matrix.json", "--config": "release.json", "--changelog": "notes.md"}
+        for omitted in arguments:
+            argv = ["stage_qualified_release.py", "--quick-run-id", RUN_ID, "--from-frozen"]
+            for name, value in arguments.items():
+                if name != omitted:
+                    argv.extend((name, value))
+            with self.subTest(omitted=omitted), patch.object(sys, "argv", argv), \
+                    patch("stage_qualified_release.stage_qualified_release") as stage, \
+                    redirect_stderr(StringIO()), self.assertRaises(SystemExit) as error:
+                main()
+            self.assertEqual(2, error.exception.code)
+            stage.assert_not_called()
+
     def test_frozen_materialization_provenance_is_hash_bound_and_public(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             repository = Path(temporary)
@@ -134,6 +185,8 @@ class QualifiedReleaseStageTest(unittest.TestCase):
             path = Path(temporary) / "release.json"
             config = json.loads(Path("deploy/qualified/26.1.x-release.json").read_text())
             config.update({"artifact_version": "1.2.0+mc26.2", "release_label": "1.2", "game_versions": ["26.2"]})
+            config["modrinth"].update({"fabric_version_number": "1.2.0-fabric+mc26.2",
+                                       "neoforge_version_number": "1.2.0-neoforge+mc26.2"})
             path.write_text(json.dumps(config))
             loaded = _load_config(path, contract)
             modrinth, _ = _metadata(loaded, "fabric", "notes")
@@ -145,6 +198,19 @@ class QualifiedReleaseStageTest(unittest.TestCase):
                 _load_config(path, contract)
             with self.assertRaisesRegex(QualifiedStageError, "reviewed support contract"):
                 _load_config(path, "26.2")  # type: ignore[arg-type]
+
+    def test_config_rejects_stale_public_version_and_wrong_project(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            path = Path(temporary) / "release.json"
+            original = json.loads((ROOT / "deploy/qualified/26.1.x-release.json").read_text())
+            for field, value in (("fabric_version_number", "1.0.0-fabric+mc26.1"),
+                                 ("project_id", "wrong-project")):
+                with self.subTest(field=field):
+                    config = json.loads(json.dumps(original))
+                    config["modrinth"][field] = value
+                    path.write_text(json.dumps(config))
+                    with self.assertRaises(QualifiedStageError):
+                        _load_config(path)
 
     def test_26_2_quick_matrix_requires_every_matching_passed_cell(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
