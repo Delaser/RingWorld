@@ -93,4 +93,46 @@ source-development checks, not frozen-candidate release qualification. Owner
 motion/appearance review and the full release suite remain separate gates before
 merge/publication. All six source build/test cells pass: 467 Java cases per loader on 26.1.2/26.2
 and 470 per loader on 26.3, with zero failures/errors/skips. The 355 static checks
-pass. The final native evidence table is pending completion of the six-cell run.
+pass. All six focused native integration checks pass, with 30 unaltered captures.
+
+| Minecraft | Loader | Java cases | Native sampling / live support / save-reopen | Captures |
+| --- | --- | ---: | --- | ---: |
+| 26.1.2 | Fabric | 467 | PASS | 5 |
+| 26.1.2 | NeoForge | 467 | PASS | 5 |
+| 26.2 | Fabric | 467 | PASS | 5 |
+| 26.2 | NeoForge | 467 | PASS | 5 |
+| 26.3 | Fabric | 470 | PASS | 5 |
+| 26.3 | NeoForge | 470 | PASS on unchanged retry | 5 |
+
+The local gallery is `logs/floating-atlas-257/index.html`, accompanied by
+`native-results.json`, six `native-<version>-<loader>.log` files and
+`frame-observations.json`. This ignored evidence is not a distributable website
+asset. Fixture source and this result record are committed.
+
+The first fixture run exposed incomplete floor setup in unloaded test chunks;
+forcing/loading the disposable chunks repaired that setup. The next run exposed
+an actual live-invalidation bug: removing support below a cached high face did
+not queue a resample. The manufactured-top invalidation exception fixes it and
+all final cells verify the support insertion/removal cycle. Both failed logs
+are retained. The first 26.3 NeoForge run completed every fixture assertion but
+logged two Netty `ClosedChannelException` errors during normal disconnect; it
+failed the strict log gate. An unchanged-code retry passed the complete fixture
+and strict gate. Its failed log remains as `native-26.3-neoforge-disconnect-error.log`;
+the successful retry does not erase the transient disconnect concern.
+
+26.2 Fabric's development profile-key authentication failures are recorded
+separately; the runner permits only that known unauthenticated-development
+condition, not arbitrary runtime errors. All successful runtimes exited normally.
+
+Frame observations contain occasional slow frames across the capped 4K windows.
+There is no matched pre-change benchmark, so these results do not establish
+unchanged performance or absence of stutter. Dedicated-server lifecycle testing,
+owner motion/appearance acceptance and full frozen release qualification remain
+outstanding. The large server preparation uses published 1.3 and therefore does
+not qualify this branch.
+
+To reproduce, enable `-Dringworld.captureFloatingAtlas=true` on `:runClient` or
+`:neoforge:runClient` with a disposable copy of the documented source world.
+The fixture's `RingWorld Floating Atlas Review` save is mutated intentionally;
+never point it at a valued world. Use the corresponding supported-version
+Gradle pins and `-Dringworld.backgroundTestWindow=true` for a hidden, muted run.

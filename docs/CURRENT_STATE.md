@@ -6,9 +6,13 @@ stacked layers and live support removal beneath the stored face. Real blocks
 remain intact; normal terrain material/light/water sampling and existing
 tile/revision transport are retained. Format 11 invalidates stale top-only
 caches. All six source builds/tests pass: 467 cases per loader on 26.1.2 and
-26.2, 470 per loader on 26.3. The 355 static checks pass. Focused native
-checks are in progress; full frozen release qualification and owner appearance
-review remain separate gates. See [policy and evidence](FLOATING_ATLAS_257.md).
+26.2, 470 per loader on 26.3. The 355 static checks pass. All six focused native
+checks pass with 30 captures, including initial/live sampling, stacked builds,
+seam/material controls, support edits and save/reopen.
+The first 26.3 NeoForge disconnect logged Netty closed-channel errors; an unchanged
+retry passes, and the failed log is retained. Draft PR #272 contains the change.
+Dedicated-server lifecycle testing, full frozen release qualification and owner
+appearance review remain separate gates. See [policy and evidence](FLOATING_ATLAS_257.md).
 
 October 9: the owner approved #256 nearby block normalisation and requested
 a PR and merge. The accepted fixed-height mapping is ported onto current main,
