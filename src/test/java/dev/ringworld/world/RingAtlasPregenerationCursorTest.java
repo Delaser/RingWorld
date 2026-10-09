@@ -78,7 +78,7 @@ class RingAtlasPregenerationCursorTest {
     void optionsHaveConservativeDefaultsAndRejectInvalidPolicy() {
         for (AtlasPregenerationMode mode : AtlasPregenerationMode.values()) {
             AtlasPregenerationOptions options = AtlasPregenerationOptions.defaults(mode);
-            assertEquals(1, options.maxInFlightChunks());
+            assertEquals(4, options.maxInFlightChunks());
             assertEquals(64, options.pendingTaskSoftLimit());
             assertEquals(mode == AtlasPregenerationMode.HEADLESS_PREWARM,
                     options.stopServerWhenComplete());

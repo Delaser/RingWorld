@@ -7,13 +7,40 @@ The user authorized implementation on 9 October 2026.
 
 ## Policy and controls
 
-`-Dringworld.atlasInFlightChunks=4` opts into four outstanding requests. The
-accepted trial range is 1–8; 1 retains the serial baseline. The normal default
-remains one until runtime evidence and ordinary-play impact are reviewed.
-This is an operational JVM property, not a saved world-generation option.
-Read it when creating the world-owned job. Background, interactive and headless
-callers use the same execution policy, so UI/commands do not start competing
-writers. Changing it requires restarting with no retained old job.
+The owner authorized automatic scaling after the fixed-request benchmark.
+The current unpublished trial defaults to **auto**, starting with four requests.
+Absent `ringworld.atlasInFlightChunks`, or `-Dringworld.atlasInFlightChunks=auto`,
+selects auto. Numeric values 1–8 select a **fixed** limit, including the serial
+baseline (`=1`) and fixed four-request comparison (`=4`). This process setting
+is read when creating a job; restart to change policy. It is not a saved world
+setting. Background, interactive and headless calls share the same world-owned
+writer and capacity policy.
+
+Auto observes performance about once per second and selects 4 / 2 / 1.
+Two consecutive poor observations halve the target; severe pressure selects
+one immediately. Ten consecutive healthy observations allow one recovery
+step (1→2 or 2→4). Borderline measurements reset recovery, preventing oscillation.
+No request is cancelled to reduce the target: already issued work drains,
+while admission stops at the lower target. Rotating admission also prevents
+retained retries from starving when the target is smaller than the slot count.
+The slot capacity remains four, with one explicit ready capture per tick.
+
+Integrated single-player uses both server tick pressure and focused, unpaused
+owner FPS. The client reports roughly once per second through the integrated
+server's task queue; there are no new packets and remote clients cannot throttle
+a dedicated server with FPS reports. The target is min(60, configured FPS cap).
+FPS below 80% of target is poor, below 40% severe, and at least 95% healthy.
+Thus a deliberate 30 FPS cap is judged against 30, not 60. Zero/uninitialised
+FPS is ignored. Paused/unfocused feedback stops and expires after three seconds.
+
+Dedicated/headless servers have no FPS; they use the mean of the last twenty
+completed tick samples. Mean above 40 ms is poor, at least 100 ms severe, below
+25 ms healthy. Recovery requires healthy tick pressure and, when available,
+healthy FPS. These are initial policy thresholds, not a guarantee of minimum FPS
+or multiplayer latency. Disk stalls, GPU load and other mods may not improve
+when request count falls. Client feedback and policy changes never read or
+mutate a live world off its server thread. `/ringworld atlas status` reports the
+current target and auto/fixed policy; no new slash-command setter is added here.
 
 The existing 64-pending-task threshold is checked before every new request,
 including between starts in one tick. This is a soft submission gate;
@@ -101,7 +128,7 @@ the second pass reverses the first order. No client or players were connected.
 | 4 | 65.43 / 62.90 | 64.16 | 2.72× | 2.25 | 825 / 660 | 38.62 / 23.08 |
 | 8 | 59.36 / 59.43 | 59.40 | 2.94× | 2.14 | 597 / 519 | 18.83 / 22.00 |
 
-Four requests are the recommended **opt-in trial**. Eight saved only another
+Four is the measured starting ceiling for the new **adaptive trial**. Eight saved only another
 7.4% of elapsed time on these means. Processing 1,024 explicit captures at
 one per tick and 20 ticks/second takes 51.2 seconds, before other costs. Normal
 chunk-load callbacks also capture surfaces through their unchanged path, so
@@ -140,7 +167,7 @@ bricks/tiles in the manufactured wall, expected under #257. This is evidence
 against premature natural-surface capture in those worlds, not proof of every
 seed or generation feature. The diagnostic serial run overlapped analysis and
 is excluded from the matched timing table. Preserve this variation as a limit
-before making four requests a normal default.
+when reviewing adaptive mode for integration.
 
 ## Validation status and reproduction
 
@@ -225,5 +252,21 @@ large-server generation.
 Development checks are not full frozen-candidate release qualification.
 Do not merge or publish this trial until its measured recommendation and
 remaining limits are reviewed. Player-active priority/latency and wider
-feature/structure-content testing remain necessary before enabling a new
-default. The published 1.3 server is still generating with its original policy.
+feature/structure-content testing remain necessary before integrating the
+adaptive default into main. The published 1.3 server is still generating with its original policy.
+
+## Adaptive validation follow-up
+
+The fixed-policy tables above record source 9c80117, before adaptive scaling;
+they do not qualify the new default. `RingAtlasAdaptiveConcurrencyTest` covers
+sustained FPS/tick backoff, severe pressure, capped FPS, isolated dips,
+measurement cadence, missing measurements and gradual recovery. A controlled
+headless probe (`ringworld.testAtlasAutoScale=true`) uses the same integrated
+FPS mailbox with synthetic 40/60 FPS and requires 4→2→1→2→4. It does not claim
+that actual GPU/render performance was measured. The live client reads Minecraft
+FPS in the shared helper, registered through both loader tick hooks.
+
+Adaptive source builds/tests and six native lifecycle/stop/resume/reopen cells
+are currently running. New evidence is retained separately in
+`logs/atlas-auto-scaling-253/`; earlier fixed-policy and failed evidence remains
+intact. Normal production does not enable the synthetic probes or metrics.

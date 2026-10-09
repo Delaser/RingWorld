@@ -17,6 +17,7 @@ import dev.ringworld.world.RingWorldConfig;
 import dev.ringworld.world.RingWorldSettings;
 import dev.ringworld.world.RingWorldStorageAccess;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.TicketType;
 import net.minecraft.tags.BlockTags;
@@ -277,7 +278,9 @@ public final class RingAtlasPregenerationService {
                 : "";
         return progress.presentCells() + "/" + progress.totalCells() + " cells ("
                 + percent(state.atlas.completion()) + "%), generation "
-                + progress.state().name().toLowerCase(java.util.Locale.ROOT) + rate;
+                + progress.state().name().toLowerCase(java.util.Locale.ROOT) + rate
+                + (state.job == null ? "" : ", requests " + state.job.requestLimit()
+                + (state.job.adaptive == null ? " (fixed)" : " (auto)"));
     }
 
     private static AtlasPregenerationProgress idleProgress(WorldState state) {
@@ -329,6 +332,21 @@ public final class RingAtlasPregenerationService {
         }
     }
 
+    /** Local integrated-client feedback only; no remote-player packets or world access off-thread. */
+    public static void reportLocalFrameRate(MinecraftServer server, int fps, int target) {
+        if (fps <= 0 || target <= 0) return;
+        Runnable update = () -> {
+            WorldState state = WORLDS.get(server.overworld());
+            if (state == null || state.stopping || state.job == null || state.job.adaptive == null) return;
+            state.localFps = fps;
+            state.localFrameTarget = Math.min(60, target);
+            state.frameFeedbackNanos = System.nanoTime();
+            state.hasFrameFeedback = true;
+        };
+        if (server.isSameThread()) update.run();
+        else server.execute(update);
+    }
+
     static int inFlightChunks(ServerLevel world) {
         Job job = requireState(world).job;
         return job == null ? 0 : job.requests.inFlight();
@@ -336,7 +354,7 @@ public final class RingAtlasPregenerationService {
 
     static int maxInFlightChunks(ServerLevel world) {
         Job job = requireState(world).job;
-        return job == null ? 0 : job.options.maxInFlightChunks();
+        return job == null ? 0 : job.requestLimit();
     }
 
     private static CaptureResult captureChunk(ServerLevel world, LevelChunk chunk, WorldState state) {
@@ -576,6 +594,10 @@ public final class RingAtlasPregenerationService {
         private final RingAtlasRecaptureQueue recaptures = new RingAtlasRecaptureQueue();
         private boolean dirty;
         private boolean stopping;
+        private boolean hasFrameFeedback;
+        private double localFps;
+        private double localFrameTarget;
+        private long frameFeedbackNanos;
         private boolean revisionPending;
         private long ticks;
         private Job job;
@@ -592,6 +614,8 @@ public final class RingAtlasPregenerationService {
         private final WorldState owner;
         private final AtlasPregenerationOptions options;
         private final RingAtlasPregenerationBatch<LevelChunk> requests;
+        private final RingAtlasAdaptiveConcurrency adaptive;
+        private int nextAdmissionSlot;
         private final CompletableFuture<AtlasPregenerationResult> completion = new CompletableFuture<>();
         private final ArrayDeque<AtlasPregenerationListener> listeners = new ArrayDeque<>();
         private AtlasPregenerationState state = AtlasPregenerationState.IDLE;
@@ -610,6 +634,9 @@ public final class RingAtlasPregenerationService {
             this.owner = owner;
             this.options = options;
             this.requests = new RingAtlasPregenerationBatch<>(owner.atlas, options.maxInFlightChunks());
+            this.adaptive = options.maxInFlightChunks() == RingAtlasAdaptiveConcurrency.MAX_REQUESTS
+                    && AtlasPregenerationOptions.isAdaptiveConcurrency(System.getProperty(
+                            AtlasPregenerationOptions.CONCURRENCY_PROPERTY)) ? new RingAtlasAdaptiveConcurrency() : null;
             this.startingPresentCells = owner.atlas.presentCount();
             addListener(listener);
             this.published = snapshot();
@@ -660,8 +687,11 @@ public final class RingAtlasPregenerationService {
                 if (requests.inFlight() == 0) finish();
                 return;
             }
-            for (var slot : requests.slots) {
-                if (state != AtlasPregenerationState.RUNNING) break;
+            updateRequestLimit();
+            int admissionStart = nextAdmissionSlot;
+            for (int offset = 0; offset < requests.slots.size(); offset++) {
+                var slot = requests.slots.get((admissionStart + offset) % requests.slots.size());
+                if (state != AtlasPregenerationState.RUNNING || requests.inFlight() >= requestLimit()) break;
                 if (slot.request != null || !slot.selection.mayRetryAt(owner.ticks)) continue;
                 // Recheck between starts so one batch cannot ignore player-queue backpressure.
                 if (world.getChunkSource().getPendingTasksCount() >= options.pendingTaskSoftLimit()) break;
@@ -676,6 +706,7 @@ public final class RingAtlasPregenerationService {
                             () -> world.getChunkSource().getChunkNow(selected.chunkX(), selected.chunkZ()),
                             () -> world.getChunkSource().removeTicketWithRadius(ticket, position, 0));
                     slot.processed = false;
+                    nextAdmissionSlot = (admissionStart + offset + 1) % requests.slots.size();
                 } catch (RuntimeException failure) {
                     recordFailure(slot, failure);
                 }
@@ -685,6 +716,30 @@ public final class RingAtlasPregenerationService {
                 fail(new IllegalStateException("Atlas cursor exhausted with missing cells"));
             }
         }
+        private int requestLimit() { return adaptive == null ? options.maxInFlightChunks() : adaptive.limit(); }
+
+        private void updateRequestLimit() {
+            if (adaptive == null) return;
+            long now = System.nanoTime();
+            long[] times = world.getServer().getTickTimesNanos();
+            int tick = world.getServer().getTickCount();
+            long sum = 0;
+            int samples = 0;
+            for (int i = 1; i <= Math.min(20, times.length); i++) {
+                long value = times[Math.floorMod(tick - i, times.length)];
+                if (value > 0) { sum += value; samples++; }
+            }
+            double meanMs = samples == 0 ? -1 : sum / (double)samples / 1e6;
+            long age = now - owner.frameFeedbackNanos;
+            boolean freshFrames = owner.hasFrameFeedback && age >= 0 && age <= 3_000_000_000L;
+            int before = adaptive.limit();
+            int after = adaptive.observe(now, meanMs, freshFrames ? owner.localFps : -1,
+                    freshFrames ? owner.localFrameTarget : -1);
+            if (after != before) RingWorldMod.LOGGER.info(
+                    "RingWorld Atlas auto requests {} -> {} (mean tick {} ms, local FPS {})",
+                    before, after, meanMs, freshFrames ? owner.localFps : "unavailable");
+        }
+
         private void recordFailure(RingAtlasPregenerationBatch.Slot<LevelChunk> slot, RuntimeException exception) {
             lastError = Optional.ofNullable(exception.getMessage()).or(() -> Optional.of(exception.getClass().getSimpleName()));
             if (!slot.selection.failed(owner.ticks, MAX_RETRIES)) {

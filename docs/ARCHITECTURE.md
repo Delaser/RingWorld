@@ -620,12 +620,17 @@ not a missing-data migration.
 ```
 
 `RingAtlasPregenerationService` is the sole server-side Atlas writer for one
-RingWorld Overworld. It normally retains one ticket-backed chunk request; the
-unpublished #253 JVM trial accepts 1–8 bounded requests with one shared
+RingWorld Overworld. The unpublished #253 trial adaptively targets 4 / 2 / 1
+ticket-backed requests (numeric JVM overrides are fixed 1–8), with one shared
 canonical cursor and independent selection/retry/lease slots. All reads and
 captures remain on the server thread. Each submission checks player-queue
 backpressure, and the rotating consumer explicitly captures at most one ready
-chunk per tick without waiting for an earlier unfinished request.
+chunk per tick without waiting for an earlier unfinished request. Reducing the
+target drains existing requests without cancellation. Integrated owner FPS
+arrives through a local server task; dedicated servers use tick pressure. The
+controller backs off quickly and recovers after sustained healthy observations;
+normal remote clients cannot submit FPS to influence the server. See the
+adaptive thresholds and stale/paused feedback policy in the design document.
 
 The service checkpoints every 200 ticks and reopens current format-11 storage
 to verify complete coverage and matching revision before reporting completion.

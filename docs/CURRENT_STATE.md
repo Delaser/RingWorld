@@ -1,8 +1,16 @@
 # Current state
 
+October 9 follow-up: the owner requested automatic Atlas request scaling.
+The unpublished trial now defaults to auto: start four, reduce to two/one under
+sustained FPS or server tick pressure, then recover slowly. Integrated owner
+FPS uses a local server-thread mailbox; dedicated servers use tick time.
+Numeric JVM values retain fixed 1–8 limits. New source and adaptive native checks
+are running separately; the fixed-policy evidence below does not qualify this
+new default. See [policy and evidence](ATLAS_CONCURRENCY_253.md).
+
 October 9: #253 bounded Atlas concurrency is implemented and tested in draft
 PR #273 (`codex/atlas-concurrency-253`), based on merged #257. Four outstanding
-requests are an explicit JVM-property trial; normal defaults remain serial.
+requests were the fixed JVM-property trial before the adaptive follow-up.
 Two matched local 26.1.2 Fabric passes average 175/89/64/59 seconds for 1/2/4/8
 requests; four uses 2.25 busy cores on average versus 0.98 for one. All six
 source builds/tests pass (475 cases per loader on 26.1.2/26.2, 478 on 26.3),

@@ -6,9 +6,14 @@ rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
 ## Atlas concurrency trial (#253)
 
-`codex/atlas-concurrency-253` trials 1–8 ticket-backed chunk requests with one
-shared canonical cursor and independent retry/lease slots. The normal default
-remains serial; `-Dringworld.atlasInFlightChunks=4` opts in. Preserve the
+`codex/atlas-concurrency-253` trials bounded ticket-backed requests with a shared
+canonical cursor and independent retry/lease slots. The current unpublished
+trial defaults to auto, starting at four and reducing to two/one under sustained
+FPS/tick pressure, with slow recovery. Absent/`auto` JVM policy selects adaptive;
+explicit numeric 1–8 remains fixed (1 preserves the benchmark baseline).
+Integrated owner FPS is reported through the server task queue; dedicated
+servers use tick time and accept no remote FPS packets. Never cancel requests
+solely to lower the admission target, or let retained retries starve. Preserve the
 64-task player backpressure gate before every submission, fair out-of-order
 consumption and one explicit pregeneration capture per tick. All world/Atlas
 access remains on the server thread; use vanilla's asynchronous pipeline.

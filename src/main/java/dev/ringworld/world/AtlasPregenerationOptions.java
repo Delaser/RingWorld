@@ -5,7 +5,7 @@ import java.util.Objects;
 /**
  * Immutable, loader-neutral scheduling policy for an atlas pregeneration job.
  *
- * <p>The default remains one request with a pending-task soft limit of 64.
+ * <p>The default is adaptive, starting at four requests with a pending-task soft limit of 64.
  * The explicit concurrency trial accepts up to eight requests; all callers
  * share the same server-owned writer and bounded completion capture.</p>
  */
@@ -16,7 +16,7 @@ public record AtlasPregenerationOptions(
         int checkpointIntervalChunks,
         int progressIntervalTicks,
         boolean stopServerWhenComplete) {
-    public static final int DEFAULT_MAX_IN_FLIGHT_CHUNKS = 1;
+    public static final int DEFAULT_MAX_IN_FLIGHT_CHUNKS = 4;
     public static final String CONCURRENCY_PROPERTY = "ringworld.atlasInFlightChunks";
     public static final int DEFAULT_PENDING_TASK_SOFT_LIMIT = 64;
     public static final int DEFAULT_CHECKPOINT_INTERVAL_CHUNKS = 200;
@@ -63,14 +63,18 @@ public record AtlasPregenerationOptions(
                 mode == AtlasPregenerationMode.HEADLESS_PREWARM);
     }
 
-    /** Explicit opt-in trial, read when creating a job. Defaults remain serial until measured. */
+    /** Numeric overrides are fixed; absent/auto starts the adaptive four-request policy. */
     public static int trialConcurrency(String value) {
-        if (value == null) return DEFAULT_MAX_IN_FLIGHT_CHUNKS;
+        if (isAdaptiveConcurrency(value)) return DEFAULT_MAX_IN_FLIGHT_CHUNKS;
         try {
             int result = Integer.parseInt(value.trim());
             if (result >= 1 && result <= 8) return result;
         } catch (NumberFormatException ignored) { }
-        throw new IllegalArgumentException(CONCURRENCY_PROPERTY + " must be an integer from 1 to 8");
+        throw new IllegalArgumentException(CONCURRENCY_PROPERTY + " must be auto or an integer from 1 to 8");
+    }
+
+    public static boolean isAdaptiveConcurrency(String value) {
+        return value == null || "auto".equalsIgnoreCase(value.trim());
     }
 
     /**

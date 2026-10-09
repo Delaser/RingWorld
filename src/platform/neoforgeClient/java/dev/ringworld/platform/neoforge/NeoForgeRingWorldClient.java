@@ -17,6 +17,7 @@ import dev.ringworld.client.RingVisualParityCaptureClient;
 import dev.ringworld.client.RingWorldClientSession;
 import dev.ringworld.client.RingWorldCreationUiTestClient;
 import dev.ringworld.client.RingAtlasLightTuning;
+import dev.ringworld.client.RingAtlasPerformanceFeedback;
 import dev.ringworld.net.RingAtlasPregenerationStatusPayload;
 import dev.ringworld.net.RingSettingsHandshake;
 import dev.ringworld.net.RingSettingsPayload;
@@ -299,6 +300,7 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft client = Minecraft.getInstance();
+        RingAtlasPerformanceFeedback.tick(client);
         if (dev.ringworld.client.RingDistortionTrialClient.tick(client)) return;
         if (CREATION_UI_TEST.startMenuIfEnabled(client)) {
             CREATION_UI_TEST.tick(client);

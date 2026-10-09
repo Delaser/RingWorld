@@ -1,12 +1,14 @@
 # Configuration and operations
 
-Development #253 Atlas trial: add `-Dringworld.atlasInFlightChunks=4` to the
-**game/server JVM** to allow up to four requests (accepted range 1–8, default
-1). This is a process scheduling setting and does not change saved worlds.
-Restart to change it. Keep the current queue threshold/capture budget; do not
-set arbitrary worldgen calls on worker threads. See
-[limits and validation](ATLAS_CONCURRENCY_253.md). This trial is not published
-and has not been installed on the large 1.3 server.
+Development #253 Atlas trial: absent `ringworld.atlasInFlightChunks`, or
+`-Dringworld.atlasInFlightChunks=auto`, starts with four requests and adapts
+4→2→1 under sustained tick/FPS pressure, recovering slowly. Explicit numeric
+1–8 selects fixed concurrency. Read the property on the **game/server JVM**;
+restart to change policy. Integrated single-player uses focused owner FPS and
+tick time; dedicated servers use tick time. This is a process performance
+setting, not saved world geometry. `/ringworld atlas status` reports the active
+target and auto/fixed mode. See [policy and validation](ATLAS_CONCURRENCY_253.md).
+The trial is unpublished and is not installed on the large 1.3 server.
 
 
 ## Active development stack
@@ -223,8 +225,8 @@ growth scale with ring size and vary with seed, storage, CPU, active players,
 and other mods. Use the current rate and ETA rather than promising the
 development benchmark on production hardware.
 
-Atlas pregeneration normally requests one missing canonical chunk at a time.
-The unpublished #253 JVM trial permits 1–8 outstanding requests; all policies
+The unpublished #253 trial adaptively targets 4 / 2 / 1 outstanding requests,
+or a fixed 1–8 numeric JVM override; all policies
 check the normal server queue's 64-task submission threshold before each
 request and explicitly capture at most one ready chunk per tick.
 

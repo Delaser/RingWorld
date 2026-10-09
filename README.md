@@ -231,8 +231,9 @@ the testing and release documentation before distributing a build.
 
 The unpublished [Atlas concurrency trial (#253)](docs/ATLAS_CONCURRENCY_253.md)
 allows several chunk requests through Minecraft's existing generation pipeline.
-The normal default remains one; `-Dringworld.atlasInFlightChunks=4` on the
-game/server JVM enables the trial. See the linked local benchmarks, lifecycle
+The unpublished trial defaults to auto (4→2→1 under performance pressure,
+with slow recovery). Numeric `ringworld.atlasInFlightChunks` JVM overrides keep
+a fixed 1–8 request limit. See the linked local benchmarks, lifecycle
 checks and remaining multiplayer/content limits before enabling it.
 
 The detailed engineering information previously kept on this page lives in

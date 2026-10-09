@@ -93,8 +93,11 @@ class RingAtlasPregenerationBatchTest {
         assertEquals(0, restarted.slots.get(0).selection.select().orElseThrow().index());
     }
 
-    @Test void trialAdmissionKeepsSerialDefaultAndRejectsUnboundedRequests() {
-        assertEquals(1, AtlasPregenerationOptions.trialConcurrency(null));
+    @Test void trialAdmissionDefaultsToAutoAndKeepsExplicitSerialBaseline() {
+        assertEquals(4, AtlasPregenerationOptions.trialConcurrency(null));
+        assertEquals(4, AtlasPregenerationOptions.trialConcurrency("auto"));
+        assertTrue(AtlasPregenerationOptions.isAdaptiveConcurrency(null));
+        assertFalse(AtlasPregenerationOptions.isAdaptiveConcurrency("4"));
         for (int count : new int[]{1,2,4,8}) assertEquals(count, AtlasPregenerationOptions.trialConcurrency(""+count));
         for (String bad : new String[]{"0","9","-1","a",""})
             assertThrows(IllegalArgumentException.class, () -> AtlasPregenerationOptions.trialConcurrency(bad));

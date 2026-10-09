@@ -2,7 +2,8 @@
 
 Current #253 development trial adds bounded 1–8 outstanding requests while
 keeping one explicit ready-chunk capture per tick and the 64-task backpressure
-threshold. Defaults remain serial; `-Dringworld.atlasInFlightChunks=4` opts in.
+threshold. The unpublished default is adaptive 4 / 2 / 1 under tick/FPS
+pressure; numeric JVM overrides retain fixed 1–8 limits.
 See [current policy, lifecycle and evidence](ATLAS_CONCURRENCY_253.md).
 The one-request restrictions below describe the initial implementation.
 
