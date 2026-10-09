@@ -4,6 +4,34 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
+## Atlas pregeneration concurrency (#253)
+
+The owner approved integration through PR #273 on 9 October 2026. Shared
+bounded ticket-backed requests use a canonical cursor and independent
+retry/lease slots. The upcoming-release implementation defaults to auto, starting at four and reducing to two/one under sustained
+FPS/tick pressure, with slow recovery. Absent/`auto` JVM policy selects adaptive;
+explicit numeric 1–8 remains fixed (1 preserves the benchmark baseline).
+`/ringworld chunk_gen_rate 1|2|4|8|auto` provides a gamemaster-only live override;
+the bare command reports the target. Keep overrides world-session-local and
+apply them to replacement jobs, without resuming or starting a job implicitly.
+Reserve eight bounded lease slots so increases preserve the existing cursor.
+Integrated owner FPS is reported through the server task queue; dedicated
+servers use tick time and accept no remote FPS packets. Never cancel requests
+solely to lower the admission target, or let retained retries starve. Preserve the
+64-task player backpressure gate before every submission, fair out-of-order
+consumption and one explicit pregeneration capture per tick. All world/Atlas
+access remains on the server thread; use vanilla's asynchronous pipeline.
+Cancel/failure/unload must attempt every lease, retain failed releases and block
+replacement until cleanup succeeds. Freeze chunk-load captures before server
+stop/world-unload checkpointing so late save-drain callbacks cannot change a
+reported interruption count; ordinary user pause/cancel must not freeze them.
+Durable cells are the resume journal;
+never infer completion from cursor exhaustion alone. An empty request batch
+waiting on queue backpressure still has work until its shared cursor is consumed.
+Tests/probes are opt-in
+and source-development evidence. Apply equivalent behaviour on all supported
+26.x lines and both loaders. See [design/evidence](docs/ATLAS_CONCURRENCY_253.md).
+
 ## Floating-build Atlas sampling (#257)
 
 The selected omission policy is shared server-side sampling, not a client-only

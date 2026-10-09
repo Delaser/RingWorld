@@ -1,5 +1,29 @@
 # Testing
 
+## Bounded Atlas requests (#253)
+
+The implementation defaults to auto (initially four requests); explicit numeric
+`ringworld.atlasInFlightChunks` JVM values retain fixed 1–8 limits. `ringworld.testAtlasConcurrency=true` enables a disposable
+headless pause/drain/resume/cancel/restart probe. Run both loaders across all
+three 26.x families, then interrupt normally, resume to verified complete
+coverage and reopen the complete cache. The interruption's completion-only
+Gradle finalizer is expected to fail; its report must say INTERRUPTED, not
+COMPLETE. Keep failed logs and independently inspect Atlas presence bytes and
+canonical region records. The interruption report must match saved presence
+bytes after shutdown, including late NeoForge save-drain callbacks; full runs
+must then resume/reopen successfully. Metrics are optional via
+`ringworld.measureAtlasConcurrency=true`. The additional
+`ringworld.testAtlasAutoScale=true` probe injects synthetic owner FPS through the
+same mailbox, requiring 4→2→1→2→4 before interrupting. Keep it paired with auto,
+not a numeric override. Its simulated feedback is not a real graphical FPS test.
+For the live command follow-up, exercise `ringworld chunk_gen_rate` through the
+real RCON dispatcher: 1/2/4/8, auto and bare status, plus rejected values. Verify
+the cap in progress output, drain after lowering, no implicit unpause, override
+survival across job replacement, and independent disk coverage after resume.
+See [commands, results and remaining
+limits](ATLAS_CONCURRENCY_253.md); these are development checks, not release
+qualification or player-active multiplayer acceptance.
+
 ## Overworld horizon regression (#259)
 
 `-Dringworld.captureHorizon=true` enables the shared muted

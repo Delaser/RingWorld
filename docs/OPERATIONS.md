@@ -1,5 +1,20 @@
 # Configuration and operations
 
+Upcoming-release #253 Atlas concurrency: absent `ringworld.atlasInFlightChunks`, or
+`-Dringworld.atlasInFlightChunks=auto`, starts with four requests and adapts
+4→2→1 under sustained tick/FPS pressure, recovering slowly. Explicit numeric
+1–8 selects fixed concurrency. Read the property on the **game/server JVM**;
+that sets the startup default. `/ringworld chunk_gen_rate 1|2|4|8` selects a
+fixed limit live; `/ringworld chunk_gen_rate auto` restores auto. The bare
+command reports the mode and current target. These gamemaster-only overrides
+last until world unload, apply to subsequent jobs, and let existing requests
+finish when lowering the limit. Integrated single-player uses focused owner FPS and
+tick time; dedicated servers use tick time. This is a process performance
+setting, not saved world geometry. `/ringworld atlas status` reports the active
+target and auto/fixed mode. See [policy and validation](ATLAS_CONCURRENCY_253.md).
+The owner approved integration in PR #273. This is not installed on the large 1.3 server.
+
+
 ## Active development stack
 
 | Component | Version |
@@ -214,8 +229,10 @@ growth scale with ring size and vary with seed, storage, CPU, active players,
 and other mods. Use the current rate and ETA rather than promising the
 development benchmark on production hardware.
 
-Atlas pregeneration visits one missing canonical chunk at a time when the
-normal server chunk queue has fewer than 64 pending tasks.
+The upcoming-release #253 implementation adaptively targets 4 / 2 / 1 outstanding requests,
+or a fixed 1–8 numeric JVM override; all policies
+check the normal server queue's 64-task submission threshold before each
+request and explicitly capture at most one ready chunk per tick.
 
 | Geometry | Canonical chunks | Performance / Balanced / High / Very high cells |
 | --- | ---: | ---: |
@@ -296,8 +313,8 @@ shows the embedded release/artifact identity (`1.0 · 1.0.0+mc26.1.2` for
 the prepared candidate), and the first status line shows the persisted terrain
 mapping so a screenshot identifies both the installed build and worldgen.
 
-Pause stops scheduling new atlas chunks after any one in-flight chunk
-completes. Player-driven chunk capture, cache saving, and client tile streaming
+Pause stops scheduling new Atlas chunks immediately; already issued requests
+can finish and drain. Player-driven chunk capture, cache saving, and client tile streaming
 continue. The pause is operational process state rather than saved layout
 state, so a server restart returns to the configured
 `pregenerateTerrainAtlas` behavior.

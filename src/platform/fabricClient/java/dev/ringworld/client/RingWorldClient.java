@@ -235,6 +235,7 @@ public final class RingWorldClient implements ClientModInitializer {
             atlasPregenerationUiTest.frameRendered();
         });
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            RingAtlasPerformanceFeedback.tick(client);
             if (client.getConnection() != null && ClientCommands.getActiveDispatcher() != null) {
                 dev.ringworld.world.RingLodCommandSuggestions.ensurePresent(
                         client.getConnection().getCommands());

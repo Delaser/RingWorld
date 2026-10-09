@@ -32,16 +32,21 @@ final class RingAtlasChunkRequest<T> implements AutoCloseable {
                                                Runnable release) {
         Objects.requireNonNull(load, "load");
         Objects.requireNonNull(release, "release");
+        Objects.requireNonNull(loadedResult, "loadedResult");
+        CompletableFuture<?> future;
         try {
-            return new RingAtlasChunkRequest<>(load.get(), loadedResult, release);
-        } catch (RuntimeException | Error failure) {
-            try {
-                release.run();
-            } catch (RuntimeException | Error releaseFailure) {
-                failure.addSuppressed(releaseFailure);
-            }
+            future = Objects.requireNonNull(load.get(), "chunk load returned no future");
+        } catch (RuntimeException failure) {
+            // addTicketAndLoad may have installed a lease before throwing.
+            // Retain it even if its eventual release fails; the service owns
+            // this failed future until close/cancel succeeds, blocking replacement.
+            future = CompletableFuture.failedFuture(failure);
+        } catch (Error failure) {
+            try { release.run(); }
+            catch (RuntimeException | Error releaseFailure) { failure.addSuppressed(releaseFailure); }
             throw failure;
         }
+        return new RingAtlasChunkRequest<>(future, loadedResult, release);
     }
 
     boolean isDone() {

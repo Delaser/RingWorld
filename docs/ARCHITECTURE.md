@@ -619,23 +619,37 @@ not a missing-data migration.
 <world>/dimensions/minecraft/overworld/data/ringworld/terrain-atlas.rwat.gz
 ```
 
-`RingAtlasPregenerationService` is the sole server-side atlas writer for one
-RingWorld Overworld. It consumes completed ticket-backed `RingAtlasChunkRequest`
-loads only on the server thread, gives player-loaded chunks priority, retains a failed selected cursor
-chunk for retry, checkpoints every 200 ticks, and verifies the final atomic
-save by reopening current format-8 storage before reporting completion. Normal runtime
-ticks consume a completed ticket-backed request while the selected
-chunk is still authoritative. Shutdown and level-unload paths do not consume:
-they cancel/release the request, retain the unadvanced selection, and checkpoint
-only captured cells because Minecraft may already have evicted the completed
-request's chunk during teardown. Successful server block mutations enqueue
-affected canonical sample cells; the service
-recaptures at most 64 cells per tick and collapses extreme exact-cell queues
-into atlas tiles before they can become an unbounded server-thread storm.
-If a normal consume-side ticket release fails, the terminal job retains its
-request for the next tick's idempotent close retry. The world-owned job slot is
-not replaceable until that request is released; command and map-control starts
-fail explicitly during the retry window instead of orphaning a loading ticket.
+`RingAtlasPregenerationService` is the sole server-side Atlas writer for one
+RingWorld Overworld. The upcoming-release #253 implementation adaptively targets 4 / 2 / 1
+ticket-backed requests (numeric JVM overrides are fixed 1–8), with one shared
+canonical cursor and independent selection/retry/lease slots. All reads and
+captures remain on the server thread. Each submission checks player-queue
+backpressure, and the rotating consumer explicitly captures at most one ready
+chunk per tick without waiting for an earlier unfinished request. Reducing the
+target drains existing requests without cancellation. Integrated owner FPS
+arrives through a local server task; dedicated servers use tick pressure. The
+controller backs off quickly and recovers after sustained healthy observations;
+gamemaster `/ringworld chunk_gen_rate 1|2|4|8|auto` changes admission live,
+retaining eight bounded slots and the original cursor/leases. A world-session
+override applies to future jobs too; unload restores the JVM startup policy.
+normal remote clients cannot submit FPS to influence the server. See the
+adaptive thresholds and stale/paused feedback policy in the design document.
+
+The service checkpoints every 200 ticks and reopens current format-11 storage
+to verify complete coverage and matching revision before reporting completion.
+An empty batch waiting on the queue is not cursor exhaustion. Pause stops new
+submissions while issued work drains. Shutdown and level unload never resolve
+discarded results: they freeze ordinary chunk-load captures before the stop
+checkpoint/report, cancel/release every request and save only captured cells.
+This prevents late save-drain callbacks from changing a reported cell count. Durable present cells drive restart, including earlier holes
+beneath later completed chunks. Release failures remain reachable for retry and
+block job replacement; every other lease is still attempted. A recoverable
+start failure also retains its lease until cleanup succeeds. See
+[policy, lifecycle and evidence](ATLAS_CONCURRENCY_253.md).
+
+Successful server block mutations enqueue affected canonical sample cells;
+the service recaptures at most 64 cells per tick and collapses extreme exact-cell
+queues into Atlas tiles before they become an unbounded server-thread storm.
 `RingTerrainAtlasServer` is the loader-neutral command/lifecycle/streaming coordinator:
 it drains service-published dirty tiles at the existing 20-tick cadence and
 streams them to persistent client subscriptions. It sends a revision commit
