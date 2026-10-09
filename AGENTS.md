@@ -13,8 +13,13 @@ remains serial; `-Dringworld.atlasInFlightChunks=4` opts in. Preserve the
 consumption and one explicit pregeneration capture per tick. All world/Atlas
 access remains on the server thread; use vanilla's asynchronous pipeline.
 Cancel/failure/unload must attempt every lease, retain failed releases and block
-replacement until cleanup succeeds. Durable cells are the resume journal;
-never infer completion from cursor exhaustion alone. Tests/probes are opt-in
+replacement until cleanup succeeds. Freeze chunk-load captures before server
+stop/world-unload checkpointing so late save-drain callbacks cannot change a
+reported interruption count; ordinary user pause/cancel must not freeze them.
+Durable cells are the resume journal;
+never infer completion from cursor exhaustion alone. An empty request batch
+waiting on queue backpressure still has work until its shared cursor is consumed.
+Tests/probes are opt-in
 and source-development evidence. Apply equivalent behaviour on all supported
 26.x lines and both loaders. See [design/evidence](docs/ATLAS_CONCURRENCY_253.md).
 

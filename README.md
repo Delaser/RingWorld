@@ -229,6 +229,12 @@ the testing and release documentation before distributing a build.
 
 ## Technical documentation
 
+The unpublished [Atlas concurrency trial (#253)](docs/ATLAS_CONCURRENCY_253.md)
+allows several chunk requests through Minecraft's existing generation pipeline.
+The normal default remains one; `-Dringworld.atlasInFlightChunks=4` on the
+game/server JVM enables the trial. See the linked local benchmarks, lifecycle
+checks and remaining multiplayer/content limits before enabling it.
+
 The detailed engineering information previously kept on this page lives in
 the project documentation:
 

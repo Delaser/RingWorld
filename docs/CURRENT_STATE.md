@@ -1,13 +1,20 @@
 # Current state
 
-October 9: #253 bounded Atlas concurrency is being tested on
-`codex/atlas-concurrency-253`, based on merged #257. Four outstanding requests
-are an explicit JVM-property trial; normal defaults remain serial. The shared
-server keeps player-queue backpressure, one ready chunk capture per tick,
-per-request retry/ticket cleanup and the durable Atlas resume journal. Matched
-benchmarks and six dedicated lifecycle/stop/resume/reopen cells are running;
-see [design and evidence](ATLAS_CONCURRENCY_253.md). Published 1.3 and the
-ongoing large-server pregeneration are unchanged.
+October 9: #253 bounded Atlas concurrency is implemented and tested in draft
+PR #273 (`codex/atlas-concurrency-253`), based on merged #257. Four outstanding
+requests are an explicit JVM-property trial; normal defaults remain serial.
+Two matched local 26.1.2 Fabric passes average 175/89/64/59 seconds for 1/2/4/8
+requests; four uses 2.25 busy cores on average versus 0.98 for one. All six
+source builds/tests pass (475 cases per loader on 26.1.2/26.2, 478 on 26.3),
+all nine source CI checks pass, and all six corrected dedicated native cells
+pass pause/drain/resume/cancel/restart, normal interruption, resume to complete
+coverage and complete-cache reopen (18 launches). Checks exposed and corrected
+empty-batch backpressure failure and late NeoForge shutdown captures; failed
+logs remain preserved. Underlying ground matches in the vegetation-difference
+audit, but exact feature/structure parity and active-player impact remain
+unproved. See [design, measurements and evidence](ATLAS_CONCURRENCY_253.md).
+The trial remains unmerged and is not release qualification. Published 1.3 and
+the ongoing large-server pregeneration are unchanged.
 
 October 9: #257 floating-build omission is implemented on `codex/floating-atlas-257`.
 Both server capture paths share a bounded manufactured-layer selector, including

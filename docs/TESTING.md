@@ -1,5 +1,21 @@
 # Testing
 
+## Bounded Atlas request trial (#253)
+
+The opt-in `ringworld.atlasInFlightChunks` JVM property accepts 1–8 requests;
+normal default is 1. `ringworld.testAtlasConcurrency=true` enables a disposable
+headless pause/drain/resume/cancel/restart probe. Run both loaders across all
+three 26.x families, then interrupt normally, resume to verified complete
+coverage and reopen the complete cache. The interruption's completion-only
+Gradle finalizer is expected to fail; its report must say INTERRUPTED, not
+COMPLETE. Keep failed logs and independently inspect Atlas presence bytes and
+canonical region records. The interruption report must match saved presence
+bytes after shutdown, including late NeoForge save-drain callbacks; full runs
+must then resume/reopen successfully. Metrics are optional via
+`ringworld.measureAtlasConcurrency=true`. See [commands, results and remaining
+limits](ATLAS_CONCURRENCY_253.md); these are development checks, not release
+qualification or player-active multiplayer acceptance.
+
 ## Overworld horizon regression (#259)
 
 `-Dringworld.captureHorizon=true` enables the shared muted

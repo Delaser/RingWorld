@@ -16,7 +16,8 @@ callers use the same execution policy, so UI/commands do not start competing
 writers. Changing it requires restarting with no retained old job.
 
 The existing 64-pending-task threshold is checked before every new request,
-including between starts in one tick. Capacity is an upper bound, not a
+including between starts in one tick. This is a soft submission gate;
+generation dependencies can produce a larger queue after admission. Capacity is an upper bound, not a
 promise of that many active requests or cores. Player work and the vanilla
 chunk dependency graph can reduce it. No vanilla worker-thread limit changes.
 
@@ -40,12 +41,18 @@ replacement. Teardown retries every retained lease up to the existing three
 attempts and fails closed if any cannot be released.
 
 A failed chunk keeps its own selection and retry/backoff; other slots may
-progress. The Atlas remains the durable journal. On restart, earlier holes are
-retried while out-of-order completed chunks are skipped. Cursor exhaustion
+progress. Even a recoverable start failure after installing a ticket returns
+a retained failed future: its lease remains owned until release succeeds, so
+a simultaneous start/release failure cannot orphan a ticket. An empty batch
+waiting on queue backpressure must not be treated as an exhausted cursor.
+The Atlas remains the durable journal. On restart, earlier holes are retried while out-of-order completed chunks are skipped. Cursor exhaustion
 cannot publish a partial Atlas as COMPLETE. Complete Atlas data alone is not
 enough: every outstanding ticket must drain, then the saved Atlas must reopen
 with complete coverage and matching revision before the completion future is
-published.
+published. Server stop and world unload freeze ordinary chunk-load capture
+before checkpointing, so late save-drain callbacks cannot change the durable
+cell count after an interruption report. User pause/cancel does not apply this
+shutdown-only capture barrier.
 
 No cache-format, seed, geometry, generation-settings, topology or network-schema
 change is introduced. The current shared cache format remains 11 from #257.
@@ -80,8 +87,143 @@ separate interval. Native benchmarks use identical seed 25320261009,
 loopback-only servers. Fresh runs compare 1/2/4/8 requests twice in reversed
 order. Results cannot establish multiplayer latency or long-session behaviour.
 
-Build, native, independent gzip/region coverage checks and performance results
-are retained under ignored `logs/atlas-concurrency-253/`. Final tables are
-pending the six-cell native matrix and matched benchmarks. Development checks
-are not full frozen-candidate release qualification. Do not merge or publish
-this trial until its measured recommendation and remaining limits are reviewed.
+## Matched benchmark results
+
+Mac14,2: eight logical cores, 16 GiB RAM, Java 25.0.4+7, Minecraft 26.1.2
+Fabric. Each cell generated 1,024 canonical chunks and 262,144 one-block Atlas
+samples from a fresh world. Two runs per request count, serial local execution;
+the second pass reverses the first order. No client or players were connected.
+
+| Requests | Pass 1 / pass 2 generation seconds | Mean seconds | Speedup vs 1 | Mean busy CPU cores | Peak used heap MiB, pass 1 / 2 | p99 tick ms, pass 1 / 2 |
+| --- | --- | --- | --- | --- | --- | --- |
+| 1 | 195.61 / 153.61 | 174.61 | 1.00× | 0.98 | 542 / 514 | 34.63 / 14.46 |
+| 2 | 90.97 / 87.00 | 88.98 | 1.96× | 1.62 | 596 / 523 | 31.73 / 17.65 |
+| 4 | 65.43 / 62.90 | 64.16 | 2.72× | 2.25 | 825 / 660 | 38.62 / 23.08 |
+| 8 | 59.36 / 59.43 | 59.40 | 2.94× | 2.14 | 597 / 519 | 18.83 / 22.00 |
+
+Four requests are the recommended **opt-in trial**. Eight saved only another
+7.4% of elapsed time on these means. Processing 1,024 explicit captures at
+one per tick and 20 ticks/second takes 51.2 seconds, before other costs. Normal
+chunk-load callbacks also capture surfaces through their unchanged path, so
+this is a capture-budget reference rather than a strict wall-clock floor.
+Increasing requests does not raise the explicit consumer budget.
+The serial baseline varied substantially between passes, so these are observed
+local results rather than a promised speed multiplier.
+
+Slow ticks still occurred. Over-50 ms tick counts for the two passes were
+16/1, 7/2, 9/4 and 5/3 for 1/2/4/8 requests respectively. Maxima were
+644/75, 103/62, 75/88 and 87/75 ms. Startup/save/GC and generation are included;
+this does not demonstrate hitch-free play or multiplayer latency. Pending
+queues peaked at 492–703 tasks despite the 64-task submission gate because
+Minecraft expands generation dependencies after admission.
+
+The benchmark passes preceded the final empty-batch/backpressure correction.
+Pass 1 also preceded the failed-start lease retention correction; pass 2
+included that correction. Both preceded the shutdown capture barrier. Those fixes target failed starts and cancellation
+restart/backpressure; healthy capture/scheduling is unchanged. Final native
+lifecycle checks and source builds below use the corrected candidate. Do not
+call these timings frozen-JAR release qualification.
+
+## Sample-content investigation
+
+Comparing initial serial/four-request Atlas heights found differences, so the
+benchmark was paused for a saved-world audit. Separate diagnostic 1/4 worlds
+had 1,131 changed top heights in 24 chunks. Removing vegetation and snow for
+comparison left **zero underlying-ground height differences** in those columns.
+A repeated serial run also changed 199 top heights. This is consistent with
+feature-placement order/timing affecting vegetation; exact feature or structure
+parity across concurrency counts has not been established.
+
+In both diagnostic saved worlds, every natural Atlas height matched its own
+canonical `WORLD_SURFACE` heightmap. The only 212 exclusions were deepslate
+bricks/tiles in the manufactured wall, expected under #257. This is evidence
+against premature natural-surface capture in those worlds, not proof of every
+seed or generation feature. The diagnostic serial run overlapped analysis and
+is excluded from the matched timing table. Preserve this variation as a limit
+before making four requests a normal default.
+
+## Validation status and reproduction
+
+The final native matrix passes on source
+`9c801171af51dd22e9b2a45ad2401b2bc780da7f`: six version/loader cells,
+three launches each. Each fresh run passes the multiple-request
+pause/drain/resume/cancel/restart probe, then stops through normal RCON with
+several live requests. Its INTERRUPTED report matches saved presence bytes.
+Each resumed and reopened run independently has every Atlas cell and all
+1,024 canonical region chunk records. No Minecraft ERROR/FATAL entries occurred
+in these passing runs. Complete-cache reopen reports zero generation elapsed
+time and issues no chunk requests. Resumed timings are not fresh benchmarks.
+
+| Minecraft | Loader | Lifecycle probe | Interrupted cells, report = disk | Resumed coverage | Complete-cache reopen |
+| --- | --- | --- | --- | --- | --- |
+| 26.1.2 | Fabric | PASS | 13,056 | 262,144 / 262,144 | PASS, 0 ms |
+| 26.1.2 | NeoForge | PASS | 10,752 | 262,144 / 262,144 | PASS, 0 ms |
+| 26.2 | Fabric | PASS | 9,984 | 262,144 / 262,144 | PASS, 0 ms |
+| 26.2 | NeoForge | PASS | 10,496 | 262,144 / 262,144 | PASS, 0 ms |
+| 26.3 | Fabric | PASS | 11,520 | 262,144 / 262,144 | PASS, 0 ms |
+| 26.3 | NeoForge | PASS | 13,312 | 262,144 / 262,144 | PASS, 0 ms |
+
+Native pins: 26.1.2 Fabric Loader 0.19.3/API 0.155.2+26.1.2 and NeoForge
+26.1.2.87; 26.2 Loader 0.19.3/API 0.158.0+26.2 and NeoForge 26.2.0.69;
+26.3 Loader 0.19.5/API 0.160.5+26.3 and NeoForge 26.3.0.7-beta. Java
+25.0.4+7 throughout; Gradle 9.5.1, one Gradle worker, sequential servers.
+All six local source builds/tests pass on the same source (2,856 test-case
+executions, zero failures/errors/skips). GitHub's six source cells (26.1 / 26.2 /
+26.3, both loaders), two static guards and packaging also pass; source workflow
+run 37960719459, static 37960719438, packaging 37960719565. The broader local
+Python suite passed 440 tests with two expected platform skips before these
+Java-only lifecycle corrections; the final static CI guards pass afterward.
+
+| Minecraft | Loader | Build | Java test cases | Failures / errors / skips |
+| --- | --- | --- | --- | --- |
+| 26.1.2 | Fabric | PASS | 475 | 0 / 0 / 0 |
+| 26.1.2 | NeoForge | PASS | 475 | 0 / 0 / 0 |
+| 26.2 | Fabric | PASS | 475 | 0 / 0 / 0 |
+| 26.2 | NeoForge | PASS | 475 | 0 / 0 / 0 |
+| 26.3 | Fabric | PASS | 478 | 0 / 0 / 0 |
+| 26.3 | NeoForge | PASS | 478 | 0 / 0 / 0 |
+
+The earlier `1021e5f` matrix had five completed cells; its final 26.3 NeoForge
+interruption report recorded 10,496 cells but later unload saved 11,008. The
+shutdown capture barrier fixes that discrepancy. All previous logs/worlds,
+including the failing run, remain under `before-shutdown-barrier/`.
+
+Build/native logs, reports, independent gzip/region coverage checks and sample
+content audits are retained under ignored `logs/atlas-concurrency-253/`.
+The cancelled benchmark log and failed backpressure lifecycle log remain there;
+neither is a passing run. A test-only missing assertion import was repaired
+after the first failed-start cleanup CI run. The first 26.3 shutdown was
+rejected by a legacy save-summary log assertion: 26.3 omits that message. Its
+log/world are retained, and the corrected check requires normal shutdown, final
+save entries for all three dimensions and independent disk verification, then
+resume/reopen. No Minecraft ERROR/FATAL entries are accepted in passing runs.
+Older versions still require their original save-summary marker.
+
+For a fresh disposable Fabric fixture, use the existing headless task with
+accepted local EULA and a loopback-only `server.properties` (seed 25320261009,
+view/simulation distance 2):
+
+```sh
+JAVA_TOOL_OPTIONS="-Dringworld.atlasInFlightChunks=4 -Dringworld.measureAtlasConcurrency=true -Dringworld.testAtlasConcurrency=true" \
+  ./gradlew :runHeadlessPrewarmServer \
+  -PringHeadlessPrewarmCircumference=2048 -PringHeadlessPrewarmWidth=128 \
+  --max-workers=1 --console=plain
+```
+
+Use `:neoforge:runHeadlessPrewarmServer` with the
+`ringNeoForgeHeadlessPrewarm` property prefix for NeoForge. Normal RCON `stop`
+before completion is expected to produce INTERRUPTED and a failed
+completion-only Gradle finalizer; preserve that report. Repeat with
+`-PringHeadlessPrewarmResume=true` (or the NeoForge prefix) and without the
+lifecycle probe, first to complete and then to reopen the complete cache.
+Fresh fixture preparation replaces only its dedicated disposable world; use
+resume for the interruption/reopen legs. Independently verify the saved gzip's
+world hash, format 11, all cell presence bytes and every canonical MCA chunk
+record. Do not run these tasks against a valuable world or change the live
+large-server generation.
+
+Development checks are not full frozen-candidate release qualification.
+Do not merge or publish this trial until its measured recommendation and
+remaining limits are reviewed. Player-active priority/latency and wider
+feature/structure-content testing remain necessary before enabling a new
+default. The published 1.3 server is still generating with its original policy.

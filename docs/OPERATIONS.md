@@ -223,8 +223,10 @@ growth scale with ring size and vary with seed, storage, CPU, active players,
 and other mods. Use the current rate and ETA rather than promising the
 development benchmark on production hardware.
 
-Atlas pregeneration visits one missing canonical chunk at a time when the
-normal server chunk queue has fewer than 64 pending tasks.
+Atlas pregeneration normally requests one missing canonical chunk at a time.
+The unpublished #253 JVM trial permits 1–8 outstanding requests; all policies
+check the normal server queue's 64-task submission threshold before each
+request and explicitly capture at most one ready chunk per tick.
 
 | Geometry | Canonical chunks | Performance / Balanced / High / Very high cells |
 | --- | ---: | ---: |
@@ -305,8 +307,8 @@ shows the embedded release/artifact identity (`1.0 · 1.0.0+mc26.1.2` for
 the prepared candidate), and the first status line shows the persisted terrain
 mapping so a screenshot identifies both the installed build and worldgen.
 
-Pause stops scheduling new atlas chunks after any one in-flight chunk
-completes. Player-driven chunk capture, cache saving, and client tile streaming
+Pause stops scheduling new Atlas chunks immediately; already issued requests
+can finish and drain. Player-driven chunk capture, cache saving, and client tile streaming
 continue. The pause is operational process state rather than saved layout
 state, so a server restart returns to the configured
 `pregenerateTerrainAtlas` behavior.
