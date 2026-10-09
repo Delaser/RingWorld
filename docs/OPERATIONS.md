@@ -1,6 +1,6 @@
 # Configuration and operations
 
-Development #253 Atlas trial: absent `ringworld.atlasInFlightChunks`, or
+Upcoming-release #253 Atlas concurrency: absent `ringworld.atlasInFlightChunks`, or
 `-Dringworld.atlasInFlightChunks=auto`, starts with four requests and adapts
 4→2→1 under sustained tick/FPS pressure, recovering slowly. Explicit numeric
 1–8 selects fixed concurrency. Read the property on the **game/server JVM**;
@@ -12,7 +12,7 @@ finish when lowering the limit. Integrated single-player uses focused owner FPS 
 tick time; dedicated servers use tick time. This is a process performance
 setting, not saved world geometry. `/ringworld atlas status` reports the active
 target and auto/fixed mode. See [policy and validation](ATLAS_CONCURRENCY_253.md).
-The trial is unpublished and is not installed on the large 1.3 server.
+The owner approved integration in PR #273. This is not installed on the large 1.3 server.
 
 
 ## Active development stack
@@ -229,7 +229,7 @@ growth scale with ring size and vary with seed, storage, CPU, active players,
 and other mods. Use the current rate and ETA rather than promising the
 development benchmark on production hardware.
 
-The unpublished #253 trial adaptively targets 4 / 2 / 1 outstanding requests,
+The upcoming-release #253 implementation adaptively targets 4 / 2 / 1 outstanding requests,
 or a fixed 1–8 numeric JVM override; all policies
 check the normal server queue's 64-task submission threshold before each
 request and explicitly capture at most one ready chunk per tick.

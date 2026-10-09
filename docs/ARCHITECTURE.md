@@ -620,7 +620,7 @@ not a missing-data migration.
 ```
 
 `RingAtlasPregenerationService` is the sole server-side Atlas writer for one
-RingWorld Overworld. The unpublished #253 trial adaptively targets 4 / 2 / 1
+RingWorld Overworld. The upcoming-release #253 implementation adaptively targets 4 / 2 / 1
 ticket-backed requests (numeric JVM overrides are fixed 1–8), with one shared
 canonical cursor and independent selection/retry/lease slots. All reads and
 captures remain on the server thread. Each submission checks player-queue

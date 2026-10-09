@@ -10,11 +10,12 @@ cells (18 passing launches). All rates, auto, queries, rejected values, paused
 state, live 8→1 drainage and override survival across job replacement pass.
 Every resume reaches independently verified complete coverage and reopens
 without new requests. One Mojang key-fetch failure was retained separately;
-an unchanged retry passes. Actual gameplay FPS remains unmeasured, and draft
-PR #273 remains unmerged. See [policy and evidence](ATLAS_CONCURRENCY_253.md).
+an unchanged retry passes. Actual gameplay FPS remains unmeasured. The owner
+approved integration through PR #273 on 9 October; release qualification and
+publication remain separate. See [policy and evidence](ATLAS_CONCURRENCY_253.md).
 
 October 9 follow-up: the owner requested automatic Atlas request scaling.
-The unpublished trial now defaults to auto: start four, reduce to two/one under
+The upcoming-release implementation defaults to auto: start four, reduce to two/one under
 sustained FPS or server tick pressure, then recover slowly. Integrated owner
 FPS uses a local server-thread mailbox; dedicated servers use tick time.
 Numeric JVM values retain fixed 1–8 limits. Adaptive source `fbe08ba` passes all
@@ -23,10 +24,10 @@ checks, and all six native lifecycle cells (18 launches). Controlled synthetic
 FPS exercises 4→2→1→2→4 through the real mailbox; interruption counts match
 disk, all resumes reach complete coverage, and completed caches reopen without
 new requests. Actual graphical FPS and active-player impact remain unmeasured.
-The trial remains in draft PR #273, unmerged; published artifacts and live
-large-server generation are unchanged. See [policy and evidence](ATLAS_CONCURRENCY_253.md).
+Integration was approved through PR #273 on 9 October; published artifacts
+and live large-server generation are unchanged. See [policy and evidence](ATLAS_CONCURRENCY_253.md).
 
-October 9: #253 bounded Atlas concurrency is implemented and tested in draft
+October 9: #253 bounded Atlas concurrency is implemented and tested in
 PR #273 (`codex/atlas-concurrency-253`), based on merged #257. Four outstanding
 requests were the fixed JVM-property trial before the adaptive follow-up.
 Two matched local 26.1.2 Fabric passes average 175/89/64/59 seconds for 1/2/4/8
@@ -39,7 +40,8 @@ empty-batch backpressure failure and late NeoForge shutdown captures; failed
 logs remain preserved. Underlying ground matches in the vegetation-difference
 audit, but exact feature/structure parity and active-player impact remain
 unproved. See [design, measurements and evidence](ATLAS_CONCURRENCY_253.md).
-The trial remains unmerged and is not release qualification. Published 1.3 and
+The owner approved integration on 9 October; these checks are not release
+qualification. Published 1.3 and
 the ongoing large-server pregeneration are unchanged.
 
 October 9: #257 floating-build omission is implemented on `codex/floating-atlas-257`.

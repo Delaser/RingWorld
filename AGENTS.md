@@ -4,11 +4,11 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
-## Atlas concurrency trial (#253)
+## Atlas pregeneration concurrency (#253)
 
-`codex/atlas-concurrency-253` trials bounded ticket-backed requests with a shared
-canonical cursor and independent retry/lease slots. The current unpublished
-trial defaults to auto, starting at four and reducing to two/one under sustained
+The owner approved integration through PR #273 on 9 October 2026. Shared
+bounded ticket-backed requests use a canonical cursor and independent
+retry/lease slots. The upcoming-release implementation defaults to auto, starting at four and reducing to two/one under sustained
 FPS/tick pressure, with slow recovery. Absent/`auto` JVM policy selects adaptive;
 explicit numeric 1–8 remains fixed (1 preserves the benchmark baseline).
 `/ringworld chunk_gen_rate 1|2|4|8|auto` provides a gamemaster-only live override;

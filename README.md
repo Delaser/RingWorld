@@ -229,9 +229,9 @@ the testing and release documentation before distributing a build.
 
 ## Technical documentation
 
-The unpublished [Atlas concurrency trial (#253)](docs/ATLAS_CONCURRENCY_253.md)
+The upcoming-release [Atlas pregeneration concurrency (#253)](docs/ATLAS_CONCURRENCY_253.md)
 allows several chunk requests through Minecraft's existing generation pipeline.
-The unpublished trial defaults to auto (4→2→1 under performance pressure,
+It defaults to auto (4→2→1 under performance pressure,
 with slow recovery). Numeric `ringworld.atlasInFlightChunks` JVM overrides keep
 a fixed 1–8 request limit. Gamemasters can change it live with
 `/ringworld chunk_gen_rate 1|2|4|8|auto`; the bare command shows the current

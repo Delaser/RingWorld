@@ -1,8 +1,8 @@
 # Testing
 
-## Bounded Atlas request trial (#253)
+## Bounded Atlas requests (#253)
 
-The trial defaults to auto (initially four requests); explicit numeric
+The implementation defaults to auto (initially four requests); explicit numeric
 `ringworld.atlasInFlightChunks` JVM values retain fixed 1–8 limits. `ringworld.testAtlasConcurrency=true` enables a disposable
 headless pause/drain/resume/cancel/restart probe. Run both loaders across all
 three 26.x families, then interrupt normally, resume to verified complete

@@ -1,6 +1,6 @@
 # Bounded Atlas pregeneration concurrency (#253)
 
-This development trial feeds several independent FULL chunk requests into
+This implementation feeds several independent FULL chunk requests into
 Minecraft's existing generation pipeline. It does not create a replacement
 worldgen executor, assign cores, or read live world data on worker threads.
 The user authorized implementation on 9 October 2026.
@@ -8,7 +8,7 @@ The user authorized implementation on 9 October 2026.
 ## Policy and controls
 
 The owner authorized automatic scaling after the fixed-request benchmark.
-The current unpublished trial defaults to **auto**, starting with four requests.
+The upcoming-release implementation defaults to **auto**, starting with four requests.
 Absent `ringworld.atlasInFlightChunks`, or `-Dringworld.atlasInFlightChunks=auto`,
 selects auto. Numeric values 1–8 select a **fixed** limit, including the serial
 baseline (`=1`) and fixed four-request comparison (`=4`). This process setting
@@ -261,10 +261,11 @@ record. Do not run these tasks against a valuable world or change the live
 large-server generation.
 
 Development checks are not full frozen-candidate release qualification.
-Do not merge or publish this trial until its measured recommendation and
-remaining limits are reviewed. Player-active priority/latency and wider
-feature/structure-content testing remain necessary before integrating the
-adaptive default into main. The published 1.3 server is still generating with its original policy.
+The owner approved integration through PR #273 on 9 October after reviewing
+the measurements and automatic/live controls. Player-active priority/latency,
+actual client FPS and wider feature/structure-content testing remain release
+qualification work, tracked in #253. Integration does not authorize publication
+or deployment. The published 1.3 server still uses its original policy.
 
 ## Adaptive validation follow-up
 
@@ -355,4 +356,5 @@ transcript and world remain under `failed-yggdrasil-26.2-neoforge/`. The unchang
 retry passes cleanly; the failed run is not counted as passing evidence.
 
 These checks do not measure actual graphical FPS or qualify a release.
-The draft PR remains unmerged and the live published server is unchanged.
+The owner approved integration through PR #273 on 9 October. The live published
+server is unchanged; full release qualification remains separate.
