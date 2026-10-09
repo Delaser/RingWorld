@@ -292,8 +292,10 @@ public final class AtlasPregenerationUiTestClient {
                 editedBlockX = editedCellColumn * step + step / 2;
                 editedBlockZ = atlas.geometry().minWidthZ() + editedCellRow * step + step / 2;
                 revisionBeforeEdit = atlas.revision();
+                // Natural material remains in the Atlas. A floating manufactured
+                // marker is intentionally omitted by the floating-platform selector.
                 client.getConnection().sendCommand("setblock " + editedBlockX + " 200 " + editedBlockZ
-                        + " minecraft:gold_block");
+                        + " minecraft:stone");
                 stage++;
             }
             case 15 -> {

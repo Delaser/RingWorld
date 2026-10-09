@@ -204,6 +204,9 @@ class GradleAtlasUiQualificationTest(unittest.TestCase):
         self.assertIn("client.disconnectFromWorld", source)
         self.assertIn("RingWorldClientSession.isCleared()", source)
         self.assertIn("[atlas-ui-test] settings-current-mapping-current", source)
+        # The revision proof must survive floating manufactured-layer omission.
+        self.assertIn('" minecraft:stone"', source)
+        self.assertNotIn('" minecraft:gold_block"', source)
 
     def test_both_loader_verifiers_require_current_ack_and_disconnect_markers(self) -> None:
         root_build = (ROOT / "build.gradle").read_text(encoding="utf-8")
