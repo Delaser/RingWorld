@@ -4,6 +4,20 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
+## Atlas concurrency trial (#253)
+
+`codex/atlas-concurrency-253` trials 1–8 ticket-backed chunk requests with one
+shared canonical cursor and independent retry/lease slots. The normal default
+remains serial; `-Dringworld.atlasInFlightChunks=4` opts in. Preserve the
+64-task player backpressure gate before every submission, fair out-of-order
+consumption and one explicit pregeneration capture per tick. All world/Atlas
+access remains on the server thread; use vanilla's asynchronous pipeline.
+Cancel/failure/unload must attempt every lease, retain failed releases and block
+replacement until cleanup succeeds. Durable cells are the resume journal;
+never infer completion from cursor exhaustion alone. Tests/probes are opt-in
+and source-development evidence. Apply equivalent behaviour on all supported
+26.x lines and both loaders. See [design/evidence](docs/ATLAS_CONCURRENCY_253.md).
+
 ## Floating-build Atlas sampling (#257)
 
 The selected omission policy is shared server-side sampling, not a client-only

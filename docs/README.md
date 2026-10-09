@@ -1,5 +1,9 @@
 # RingWorld documentation
 
+- [Bounded Atlas concurrency trial (#253)](ATLAS_CONCURRENCY_253.md): shared
+  request slots, lifecycle safety, JVM trial control and measured evidence.
+
+
 These files describe the implementation currently in the repository. They are
 maintained alongside code and should be updated whenever an invariant, packet
 path, mixin, configuration field, or operational procedure changes.

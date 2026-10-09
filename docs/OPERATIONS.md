@@ -1,5 +1,14 @@
 # Configuration and operations
 
+Development #253 Atlas trial: add `-Dringworld.atlasInFlightChunks=4` to the
+**game/server JVM** to allow up to four requests (accepted range 1–8, default
+1). This is a process scheduling setting and does not change saved worlds.
+Restart to change it. Keep the current queue threshold/capture budget; do not
+set arbitrary worldgen calls on worker threads. See
+[limits and validation](ATLAS_CONCURRENCY_253.md). This trial is not published
+and has not been installed on the large 1.3 server.
+
+
 ## Active development stack
 
 | Component | Version |

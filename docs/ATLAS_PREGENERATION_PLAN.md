@@ -1,5 +1,12 @@
 # Atlas pregeneration service plan
 
+Current #253 development trial adds bounded 1–8 outstanding requests while
+keeping one explicit ready-chunk capture per tick and the 64-task backpressure
+threshold. Defaults remain serial; `-Dringworld.atlasInFlightChunks=4` opts in.
+See [current policy, lifecycle and evidence](ATLAS_CONCURRENCY_253.md).
+The one-request restrictions below describe the initial implementation.
+
+
 Status: Phases 1b and 2's player-facing workflow landed on 2026-08-01 and its
 shared Fabric/NeoForge UI parity gate passed on 2026-08-02.
 `RingAtlasPregenerationService` now owns one Overworld atlas writer, its

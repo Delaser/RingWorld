@@ -1,5 +1,14 @@
 # Current state
 
+October 9: #253 bounded Atlas concurrency is being tested on
+`codex/atlas-concurrency-253`, based on merged #257. Four outstanding requests
+are an explicit JVM-property trial; normal defaults remain serial. The shared
+server keeps player-queue backpressure, one ready chunk capture per tick,
+per-request retry/ticket cleanup and the durable Atlas resume journal. Matched
+benchmarks and six dedicated lifecycle/stop/resume/reopen cells are running;
+see [design and evidence](ATLAS_CONCURRENCY_253.md). Published 1.3 and the
+ongoing large-server pregeneration are unchanged.
+
 October 9: #257 floating-build omission is implemented on `codex/floating-atlas-257`.
 Both server capture paths share a bounded manufactured-layer selector, including
 stacked layers and live support removal beneath the stored face. Real blocks
