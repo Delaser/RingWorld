@@ -6,6 +6,9 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [Altitude-aware terrain handoff (#266)](ATLAS_ALTITUDE_HANDOFF_266.md):
+  high-camera coverage gap, coordinated live/Atlas distance and native checks.
+
 - [Atlas wall closure (#264)](ATLAS_WALL_CLOSURE_264.md): terrain edge faces,
   closed decayed crests, saved-height anchoring and native comparisons.
 

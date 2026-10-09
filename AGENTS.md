@@ -1659,6 +1659,14 @@ Completion means:
 
 - Atlas proxy depth writes must remain enabled, with the version-owned forward/reversed comparison. Keep the proxy's smooth alpha fade and fade window-space depth from the backend far plane to actual surface depth with opacity; discard fully invisible fragments before depth writes. Adding a second screen-space dither mask to the proxy caused visible flicker; the existing live terrain dither remains unchanged.
 
+- Atlas/live terrain coverage includes canonical vertical separation as well
+  as periodic intrinsic horizontal distance. Vanilla section traversal has a
+  vertical view-distance limit; a horizontal-only proxy mask leaves holes below
+  high cameras. Material/detail distances remain horizontal. Keep matching
+  shader varyings on both resource ABIs (including 26.3 OIT passes), normal
+  section budgets and backend depth ordering. See #266 and
+  `docs/ATLAS_ALTITUDE_HANDOFF_266.md`.
+
 - Atlas format 10 carries representative side colours and authored water coverage through snapshots, v4 metadata/tiles, disk, and local LOD downsampling. The existing byte packs block light in its low nibble and water coverage in its high nibble; never read the full byte as light. Account for twelve bytes per cell and invalidate older caches. Side sampling must stay bounded to the current chunk; preserve foliage/fluid colour and avoid neighbour loads. Distinct side-material changes must invalidate the mesh because steep faces carry this colour in existing GPU vertices.
 
 - Atlas surface jobs now prepare geometry and native vertex bytes on the serial surface worker using the same captured snapshot as texture pixels. Keep all GPU calls on the render thread and close packed/native data on stale, failed and abandoned results. Capture world/quality/wall inputs before scheduling. Do not reintroduce live client-state reads in worker texture/mesh preparation. GPU upload and owner-thread snapshot copies remain measured stutter sources; preserve >=16ms diagnostics and do not equate worker completion with hitch-free frame pacing.

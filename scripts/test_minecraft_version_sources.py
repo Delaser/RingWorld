@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import math
 import re
 import unittest
 
@@ -171,6 +172,42 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         self.assertNotIn("ring_dither_threshold", proxy)
         self.assertIn("if (proxyAlpha <= 0.001)", proxy)
         self.assertIn("fragColor = vec4(mix(ring_handoff_edge_color(), litTerrain, reveal), proxyAlpha)", proxy)
+
+    def test_altitude_handoff_covers_terrain_below_native_vertical_range(self):
+        # Both resource ABIs must coordinate coverage, including 26.3 OIT.
+        for resources in (ROOT / "src/client/resources",
+                          VERSION_ROOT / "26.3/client/resources"):
+            proxy_vertex = (resources / "assets/ringworld/shaders/core/ring_surface.vsh").read_text()
+            proxy_fragment = (resources / "assets/ringworld/shaders/core/ring_surface.fsh").read_text()
+            live_vertex = (resources / "assets/minecraft/shaders/core/terrain.vsh").read_text()
+            live_fragment = (resources / "assets/minecraft/shaders/core/terrain.fsh").read_text()
+            self.assertIn("float cameraY = float(CameraBlockPos.y) - CameraOffset.y", proxy_vertex)
+            self.assertIn("float worldY = RingWorldVertical.w - intrinsicHeight", proxy_vertex)
+            self.assertIn("handoffDistance = length(vec2(intrinsicDistance, worldY - cameraY))", proxy_vertex)
+            self.assertRegex(proxy_fragment, r"RingWorldHandoff\.w,\s+handoffDistance")
+            self.assertIn("ringHandoffDistance = length(vanillaPos)", live_vertex)
+            self.assertIn("ringHandoffDistance = -1.0", live_vertex)
+            self.assertRegex(live_fragment, r"RingWorldHandoff\.y,\s+ringHandoffDistance")
+            # Material/detail distance stays horizontal, including the X seam.
+            self.assertIn("ringIntrinsicDistance = length(vanillaPos.xz)", live_vertex)
+            self.assertIn("sin(vertexAngle - ModelOffset.x)", proxy_vertex)
+
+        policy = (ROOT / "src/main/java/dev/ringworld/world/RingRenderProfile.java").read_text()
+        proxy_end = float(re.search(r"PROXY_FADE_END_FACTOR = ([0-9.]+)", policy)[1])
+        proxy_start = float(re.search(r"PROXY_FADE_START_FACTOR = ([0-9.]+)", policy)[1])
+        for chunks in (2, 6, 10, 28):
+            for camera_y in (130.0, 234.67834, 340.0, -100.0):
+                camera_section = math.floor(camera_y / 16)
+                # Nearest block faces excluded by native vertical traversal.
+                for world_y in ((camera_section - chunks) * 16,
+                                (camera_section + chunks + 1) * 16):
+                    self.assertGreaterEqual(abs(world_y - camera_y), chunks * 16 * proxy_end)
+        # The reported hole had zero horizontal coverage and full vertical coverage.
+        self.assertLess(0.0, 160 * proxy_start)
+        self.assertGreater(234.67834 - 63.0, 160 * proxy_end)
+        # Ground-level coverage is unchanged when vertical separation is zero.
+        for horizontal in (0.0, 100.0, 160.0):
+            self.assertEqual(horizontal, math.hypot(horizontal, 0.0))
 
     def test_proxy_far_clamp_preserves_perspective_and_uses_backend_depth(self):
         shader = (ROOT / "src/client/resources/assets/ringworld/shaders/core/ring_surface.vsh").read_text()

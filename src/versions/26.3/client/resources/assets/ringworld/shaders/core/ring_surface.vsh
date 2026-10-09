@@ -12,6 +12,7 @@ layout(location = 2) in vec4 Color;
 layout(location = 0) out vec2 texCoord0;
 layout(location = 1) out vec4 vertexColor;
 layout(location = 2) out float intrinsicDistance;
+layout(location = 6) out float handoffDistance;
 layout(location = 3) out float intrinsicHeight;
 layout(location = 4) out float intrinsicWidth;
 layout(location = 5) flat out vec3 depthMapping;
@@ -72,6 +73,11 @@ void main() {
     float surfaceDistance = abs(deltaAngle) * float(RingWorldLayout.y) / TAU;
     intrinsicDistance = length(vec2(surfaceDistance, Position.z - ModelOffset.y));
     intrinsicHeight = length(Position.xy);
+    // Native section traversal has a vertical range as well as an X/Z range.
+    // Keep horizontal distance for materials; use canonical height for coverage.
+    float cameraY = float(CameraBlockPos.y) - CameraOffset.y;
+    float worldY = RingWorldVertical.w - intrinsicHeight;
+    handoffDistance = length(vec2(intrinsicDistance, worldY - cameraY));
     intrinsicWidth = Position.z;
     texCoord0 = UV0;
     vertexColor = Color;

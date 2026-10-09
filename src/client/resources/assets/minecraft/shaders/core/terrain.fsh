@@ -12,6 +12,7 @@ in float cylindricalVertexDistance;
 in vec4 vertexColor;
 in vec2 texCoord0;
 in float ringIntrinsicDistance;
+in float ringHandoffDistance;
 
 out vec4 fragColor;
 
@@ -138,7 +139,7 @@ void main() {
         float proxyReveal = smootherstep(
             RingWorldHandoff.x,
             RingWorldHandoff.y,
-            ringIntrinsicDistance
+            ringHandoffDistance
         );
         if (ring_dither_threshold(gl_FragCoord.xy) < proxyReveal) {
             discard;

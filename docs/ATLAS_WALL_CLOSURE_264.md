@@ -1,6 +1,7 @@
 # Atlas terrain/wall closure — #264
 
-Unreleased rendering change on `codex/atlas-wall-closure`. Tracks
+Merged through [PR #265](https://github.com/Delaser/RingWorld/pull/265) on
+2026-10-09 at the owner's request; not yet published in a release. Tracks
 [issue #264](https://github.com/Delaser/RingWorld/issues/264), following the
 [pre-fix investigation](ATLAS_WALL_GAPS_2026_10_09.md). Outside building was
 already merged in #263 and is not changed here.

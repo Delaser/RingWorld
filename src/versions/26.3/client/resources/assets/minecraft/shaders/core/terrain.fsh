@@ -15,6 +15,7 @@ layout(location = 2) in vec4 vertexColor;
 layout(location = 3) in vec2 texCoord0;
 layout(location = 4) in float chunkVisibility;
 layout(location = 5) in float ringIntrinsicDistance;
+layout(location = 6) in float ringHandoffDistance;
 
 #ifndef OIT_ALPHA_ONLY
 layout(location = 0) out vec4 fragColor;
@@ -150,7 +151,7 @@ void main() {
         float proxyReveal = smootherstep(
             RingWorldHandoff.x,
             RingWorldHandoff.y,
-            ringIntrinsicDistance
+            ringHandoffDistance
         );
         if (ring_dither_threshold(gl_FragCoord.xy) < proxyReveal) {
             discard;
