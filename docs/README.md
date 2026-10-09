@@ -6,6 +6,9 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [Atlas wall closure (#264)](ATLAS_WALL_CLOSURE_264.md): terrain edge faces,
+  closed decayed crests, saved-height anchoring and native comparisons.
+
 - [Atlas wall gap diagnosis](ATLAS_WALL_GAPS_2026_10_09.md): missing terrain
   edge faces and decayed-wall caps, with a controlled geometry/material probe.
 

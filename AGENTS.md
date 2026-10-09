@@ -1646,6 +1646,15 @@ Completion means:
 
 - Client Atlas cache writes must remain off the render thread. Queue immutable snapshots with captured paths through the single RingAtlasCacheWriter; preserve per-path coalescing, final disconnect snapshot ordering, and shutdown draining. Worker completions must not mutate a later client session. Do not reintroduce forced synchronous saves on every revision commit.
 
+- Atlas finite terrain edges need side-material closure above the rim. The wall
+  crest is a bounded, shared height field from captured style/seed decay; wall
+  colour mips stay opaque because decay is carried by geometry. Keep the nominal
+  wall top aligned and derive the exterior bottom as top minus the saved world
+  wall height. Inner faces retain local terrain bottom bounds to avoid occluding
+  distant valleys. Positive outer Z is maxWidthZ + 1, the real block-face plane.
+  Do not add a distant underside or screen-space proxy dithering. See
+  `docs/ATLAS_WALL_CLOSURE_264.md` for regression and native capture evidence.
+
 - Detailed Atlas steep-face UVs deliberately select an upper sample; geometry continuity tests must still compare exact physical positions. Gentle UVs and periodic wrapping remain unchanged. Keep rim bottom heights local to each segment and width edge: a global minimum can make distant wall faces cover the terrain in the sky pass.
 
 - Atlas proxy depth writes must remain enabled, with the version-owned forward/reversed comparison. Keep the proxy's smooth alpha fade and fade window-space depth from the backend far plane to actual surface depth with opacity; discard fully invisible fragments before depth writes. Adding a second screen-space dither mask to the proxy caused visible flicker; the existing live terrain dither remains unchanged.

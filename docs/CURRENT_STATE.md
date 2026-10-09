@@ -1,11 +1,12 @@
 # Current state
 
-October 8: owner accepted exterior entity visibility (#254); PR #262 is merged.
-The accepted horizon removal (#259) is also merged in PR #261. Outside building
-(#255) passes final all-six development checks and is ready to merge in PR #263; see
-[implementation and targeted tests](OUTSIDE_BUILDING_255.md). The separately
-observed wall/terrain openings have a controlled
-[Atlas geometry diagnosis](ATLAS_WALL_GAPS_2026_10_09.md); no mesh fix is claimed.
+October 9: exterior entity visibility (#254 / #262), horizon removal (#259 / #261)
+and outside building (#255 / #263) are merged. Follow-up #264 closes Atlas
+terrain edges and decayed wall crests, and derives exterior wall depth from the
+aligned top and saved World-settings height. The owner also reported that the
+bottom looks too low; the saved study's real columns and Atlas bounds agree at
+nominal Y=-64..96 for height 160. Visual acceptance of the bottom join is still
+pending. See [implementation and validation](ATLAS_WALL_CLOSURE_264.md).
 
 September 30 release status: all six 1.3 JARs were approved on CurseForge and
 their CDN hashes matched the reviewed files. Modrinth and optional launcher

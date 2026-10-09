@@ -99,7 +99,8 @@ final class RingWallTexture {
                     for (int row = 0; row < rows; row++) {
                         int y = bottom + (int)((row + 0.5) * height / rows);
                         int color = 0;
-                        if (RingWallPattern.blockPresent(style, x, y, depth, top, geometry.circumferenceBlocks(), seed)) {
+                        // Closed mesh carries decay; colour mips must stay opaque.
+                        {
                             int roll = RingWallPattern.materialRoll(style, x, y, depth, geometry.circumferenceBlocks(), seed);
                             float shade = 1.0F;
                             if (inner && RingIndustrialElements.enabled(style)) {

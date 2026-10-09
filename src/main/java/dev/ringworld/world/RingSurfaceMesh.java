@@ -39,6 +39,17 @@ public final class RingSurfaceMesh {
     public static Mesh build(RingGeometry geometry, RingTerrainAtlas atlas,
                              boolean detailed, double referenceHeight,
                              double wallTopHeight, int rimThicknessBlocks, RingRenderProfile profile) {
+        return build(geometry, atlas, detailed, referenceHeight, wallTopHeight,
+                wallTopHeight > referenceHeight
+                        ? (int)Math.ceil(wallTopHeight - RingDimensionReport.VANILLA_OVERWORLD_BOTTOM_Y) : 0,
+                RingWallStyle.custom(rimThicknessBlocks, RingWallStyle.LEGACY.palette(),
+                        RingWallStyle.LEGACY.pattern(), 0), 0L, profile);
+    }
+
+    /** All wall inputs are captured with the Atlas snapshot before worker submission. */
+    public static Mesh build(RingGeometry geometry, RingTerrainAtlas atlas,
+                             boolean detailed, double referenceHeight, double wallTopHeight,
+                             int wallHeightBlocks, RingWallStyle style, long seed, RingRenderProfile profile) {
         Objects.requireNonNull(geometry, "geometry");
         Objects.requireNonNull(atlas, "atlas");
         if (!geometry.equals(atlas.geometry())) {
@@ -50,13 +61,14 @@ public final class RingSurfaceMesh {
         if (!Double.isFinite(wallTopHeight)) {
             throw new IllegalArgumentException("wall top height must be finite");
         }
+        if (wallHeightBlocks < 0) throw new IllegalArgumentException("wall height must be non-negative");
         RingCloudBounds innerFaces = RingCloudBounds.betweenInnerRimFaces(
-                geometry, rimThicknessBlocks);
+                geometry, style.thicknessBlocks());
 
         int segments = Math.min(atlas.columns(), profile.circumferenceSegments());
         int bands = Math.min(atlas.rows(), profile.widthBands());
         return new Mesh(geometry, atlas, detailed, referenceHeight, wallTopHeight,
-                innerFaces, segments, bands);
+                innerFaces, segments, bands, wallHeightBlocks, style, seed);
     }
 
     /** A consumer of the exact float vertex values written to the GPU buffer. */
@@ -85,7 +97,10 @@ public final class RingSurfaceMesh {
         private final boolean bridgeRims;
         private final float[] minimumRimBottom;
         private final float[] maximumRimBottom;
-        private final float bridgeTopY;
+        private final float wallBottomY;
+        private final int capBands;
+        private final float[][] wallTops;
+        private final int[] edgeColors;
         private final float bridgeMinimumZ;
         private final float bridgeMaximumZ;
         private final float outerMinimumZ;
@@ -93,7 +108,8 @@ public final class RingSurfaceMesh {
 
         private Mesh(RingGeometry geometry, RingTerrainAtlas atlas, boolean detailed,
                      double referenceHeight, double wallTopHeight,
-                     RingCloudBounds innerFaces, int segments, int bands) {
+                     RingCloudBounds innerFaces, int segments, int bands,
+                     int wallHeightBlocks, RingWallStyle style, long seed) {
             this.geometry = geometry;
             this.segments = segments;
             this.bands = bands;
@@ -102,14 +118,31 @@ public final class RingSurfaceMesh {
             // through those high rim samples produces a broad ramp once the
             // Atlas completes. Keep the style-derived closed rim at every Atlas
             // stage and terminate terrain at its inner faces instead.
-            bridgeRims = wallTopHeight > referenceHeight;
+            bridgeRims = wallHeightBlocks > 0;
             minimumRimBottom = new float[segments + 1];
             maximumRimBottom = new float[segments + 1];
-            bridgeTopY = (float)wallTopHeight;
+            // The nominal top is the alignment plane. The saved height controls
+            // downward extent; terrain elevation never changes that depth.
+            this.wallBottomY = (float)(wallTopHeight - wallHeightBlocks);
+            // A bounded cross-depth height field closes the broken crest. Decay
+            // belongs to geometry rather than transparent holes in flat curtains.
+            capBands = Math.min(4, style.thicknessBlocks());
+            wallTops = new float[capBands + 1][segments + 1];
+            for (int depthBand = 0; depthBand <= capBands; depthBand++) {
+                int depth = Math.min(style.thicknessBlocks() - 1,
+                        depthBand * style.thicknessBlocks() / capBands);
+                for (int segment = 0; segment <= segments; segment++) {
+                    int x = segment == segments ? 0
+                            : (int)((long)segment * geometry.circumferenceBlocks() / segments);
+                    wallTops[depthBand][segment] = Math.max(wallBottomY,
+                            (float)wallTopHeight - RingWallPattern.topCollapseDepth(
+                                    style, x, depth, geometry.circumferenceBlocks(), seed));
+                }
+            }
             bridgeMinimumZ = (float)innerFaces.minimumZ();
             bridgeMaximumZ = (float)innerFaces.maximumZ();
             outerMinimumZ = (float)geometry.minWidthZ();
-            outerMaximumZ = (float)geometry.maxWidthZ();
+            outerMaximumZ = (float)geometry.maxWidthZ() + 1.0F;
             this.columns = Math.addExact(segments, 1);
             int rows = Math.addExact(bands, 1);
             int vertices = Math.multiplyExact(columns, rows);
@@ -122,6 +155,7 @@ public final class RingSurfaceMesh {
             this.upperU = new float[vertices];
             this.upperV = new float[vertices];
             this.upperSideColor = new int[vertices];
+            this.edgeColors = new int[vertices];
             java.util.Arrays.fill(upperSideColor, -1);
             this.steepHeightThreshold = Math.max(3.0, Math.max(
                     (double)geometry.circumferenceBlocks() / segments,
@@ -171,6 +205,7 @@ public final class RingSurfaceMesh {
                     textureV[index] = (float)((sampleZ - geometry.minWidthZ())
                             / geometry.widthBlocks());
                     heights[index] = (float)surfaceHeight;
+                    edgeColors[index] = atlas.sample(canonicalX, sampleZ).color();
                     upperU[index] = u;
                     upperV[index] = textureV[index];
                     if (detailed) {
@@ -190,6 +225,7 @@ public final class RingSurfaceMesh {
                                 upperU[index] = (col + 0.5F) / atlas.columns();
                                 upperV[index] = (row + 0.5F) / atlas.rows();
                                 int side = atlas.cellSideColor(col, row);
+                                edgeColors[index] = side;
                                 upperSideColor[index] = side == atlas.cellColor(col, row) ? -1 : side;
                             }
                         }
@@ -202,9 +238,9 @@ public final class RingSurfaceMesh {
         public int bands() { return bands; }
         public int vertexCount() {
             int surface = Math.multiplyExact(Math.multiplyExact(segments, bands), 6);
-            // Two rims, each closed above the reference surface with an inner
-            // face, an outer face, and a top face: six quads per segment.
-            return bridgeRims ? Math.addExact(surface, Math.multiplyExact(segments, 36)) : surface;
+            // Four wall faces, bounded cap bands on both rims, two terrain edges.
+            return bridgeRims ? Math.addExact(surface,
+                    Math.multiplyExact(segments, 36 + 12 * capBands)) : surface;
         }
 
         /** Emits the two consistently wound triangles for every finite quad. */
@@ -221,45 +257,76 @@ public final class RingSurfaceMesh {
             consumer.sideColor(-1);
             if (bridgeRims) {
                 for (int segment = 0; segment < segments; segment++) {
-                    // V outside the surface's [0,1] range is a shader-stable
-                    // wall marker. The temporary wall is a closed prism rather
-                    // than the old pair of inner-face curtains.
                     emitVerticalBridgeQuad(consumer, segment, bridgeMinimumZ,
-                            MINIMUM_BRIDGE_TEXTURE_V);
+                            MINIMUM_BRIDGE_TEXTURE_V, false);
                     emitVerticalBridgeQuad(consumer, segment, bridgeMaximumZ,
-                            MAXIMUM_BRIDGE_TEXTURE_V);
+                            MAXIMUM_BRIDGE_TEXTURE_V, false);
                     emitVerticalBridgeQuad(consumer, segment, outerMinimumZ,
-                            OUTER_BRIDGE_TEXTURE_V);
+                            OUTER_BRIDGE_TEXTURE_V, true);
                     emitVerticalBridgeQuad(consumer, segment, outerMaximumZ,
-                            OUTER_BRIDGE_TEXTURE_V);
-                    emitTopBridgeQuad(consumer, segment, outerMinimumZ, bridgeMinimumZ);
-                    emitTopBridgeQuad(consumer, segment, bridgeMaximumZ, outerMaximumZ);
+                            OUTER_BRIDGE_TEXTURE_V, true);
+                    for (int depth = 0; depth < capBands; depth++) {
+                        emitTopBridgeQuad(consumer, segment, depth, outerMinimumZ, bridgeMinimumZ);
+                        emitTopBridgeQuad(consumer, segment, depth, outerMaximumZ, bridgeMaximumZ);
+                    }
+                    emitTerrainEdge(consumer, segment, 0);
+                    emitTerrainEdge(consumer, segment, bands);
+                    consumer.sideColor(-1);
                 }
             }
         }
 
-        private void emitVerticalBridgeQuad(VertexConsumer consumer, int segment, float z, float v) {
+        private void emitVerticalBridgeQuad(VertexConsumer consumer, int segment, float z, float v,
+                                            boolean outer) {
             float u0 = (float)segment / segments;
             float u1 = (float)(segment + 1) / segments;
             float[] bottom = z < 0 ? minimumRimBottom : maximumRimBottom;
-            emitBridgeVertex(consumer, segment, bottom[segment], z, u0, v);
-            emitBridgeVertex(consumer, segment + 1, bottom[segment + 1], z, u1, v);
-            emitBridgeVertex(consumer, segment + 1, bridgeTopY, z, u1, v);
-            emitBridgeVertex(consumer, segment, bottom[segment], z, u0, v);
-            emitBridgeVertex(consumer, segment + 1, bridgeTopY, z, u1, v);
-            emitBridgeVertex(consumer, segment, bridgeTopY, z, u0, v);
+            float[] top = wallTops[outer ? 0 : capBands];
+            float y0 = outer ? wallBottomY : Math.min(bottom[segment], top[segment]);
+            float y1 = outer ? wallBottomY : Math.min(bottom[segment + 1], top[segment + 1]);
+            emitBridgeVertex(consumer, segment, y0, z, u0, v);
+            emitBridgeVertex(consumer, segment + 1, y1, z, u1, v);
+            emitBridgeVertex(consumer, segment + 1, top[segment + 1], z, u1, v);
+            emitBridgeVertex(consumer, segment, y0, z, u0, v);
+            emitBridgeVertex(consumer, segment + 1, top[segment + 1], z, u1, v);
+            emitBridgeVertex(consumer, segment, top[segment], z, u0, v);
         }
 
-        private void emitTopBridgeQuad(VertexConsumer consumer, int segment,
-                                       float z0, float z1) {
-            float u0 = (float)segment / segments;
-            float u1 = (float)(segment + 1) / segments;
-            emitBridgeVertex(consumer, segment, bridgeTopY, z0, u0, TOP_BRIDGE_TEXTURE_V);
-            emitBridgeVertex(consumer, segment + 1, bridgeTopY, z0, u1, TOP_BRIDGE_TEXTURE_V);
-            emitBridgeVertex(consumer, segment + 1, bridgeTopY, z1, u1, TOP_BRIDGE_TEXTURE_V);
-            emitBridgeVertex(consumer, segment, bridgeTopY, z0, u0, TOP_BRIDGE_TEXTURE_V);
-            emitBridgeVertex(consumer, segment + 1, bridgeTopY, z1, u1, TOP_BRIDGE_TEXTURE_V);
-            emitBridgeVertex(consumer, segment, bridgeTopY, z1, u0, TOP_BRIDGE_TEXTURE_V);
+        private void emitTopBridgeQuad(VertexConsumer consumer, int segment, int depth,
+                                       float outerZ, float innerZ) {
+            float z0 = outerZ + (innerZ - outerZ) * depth / capBands;
+            float z1 = outerZ + (innerZ - outerZ) * (depth + 1) / capBands;
+            float u0 = (float)segment / segments, u1 = (float)(segment + 1) / segments;
+            emitBridgeVertex(consumer, segment, wallTops[depth][segment], z0, u0, TOP_BRIDGE_TEXTURE_V);
+            emitBridgeVertex(consumer, segment + 1, wallTops[depth][segment + 1], z0, u1, TOP_BRIDGE_TEXTURE_V);
+            emitBridgeVertex(consumer, segment + 1, wallTops[depth + 1][segment + 1], z1, u1, TOP_BRIDGE_TEXTURE_V);
+            emitBridgeVertex(consumer, segment, wallTops[depth][segment], z0, u0, TOP_BRIDGE_TEXTURE_V);
+            emitBridgeVertex(consumer, segment + 1, wallTops[depth + 1][segment + 1], z1, u1, TOP_BRIDGE_TEXTURE_V);
+            emitBridgeVertex(consumer, segment, wallTops[depth + 1][segment], z1, u0, TOP_BRIDGE_TEXTURE_V);
+        }
+
+        private float lowestCrest(int segment) {
+            float lowest = wallTops[0][segment];
+            for (int depth = 1; depth <= capBands; depth++) lowest = Math.min(lowest, wallTops[depth][segment]);
+            return lowest;
+        }
+
+        private void emitTerrainEdge(VertexConsumer consumer, int segment, int band) {
+            int a = index(segment, band), b = index(segment + 1, band);
+            int color = heights[a] >= heights[b] ? a : b;
+            consumer.sideColor(edgeColors[color]);
+            float u = upperU[color] + 2.0F, v = upperV[color];
+            // Share the exact top lattice. The lower edge is hidden inside the
+            // crest, including decay, so mountains cannot leave an open sky slit.
+            float y0 = Math.min(heights[a], lowestCrest(segment) - 2.0F);
+            float y1 = Math.min(heights[b], lowestCrest(segment + 1) - 2.0F);
+            float z = positionsZ[a];
+            consumer.vertex(positionsX[a], positionsY[a], z, u, v);
+            consumer.vertex(positionsX[b], positionsY[b], z, u, v);
+            emitBridgeVertex(consumer, segment + 1, y1, z, u, v);
+            consumer.vertex(positionsX[a], positionsY[a], z, u, v);
+            emitBridgeVertex(consumer, segment + 1, y1, z, u, v);
+            emitBridgeVertex(consumer, segment, y0, z, u, v);
         }
 
         private void emitBridgeVertex(VertexConsumer consumer, int segment, float y, float z,
