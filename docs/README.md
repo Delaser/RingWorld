@@ -6,6 +6,9 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [Compressed wall previews (#260)](WALL_PREVIEW_COMPRESSION_260.md): shared PNG
+  packaging, regeneration, decoder checks and six-JAR size measurements.
+
 - [Dynamic cloud height and curved faces (#268)](CLOUD_ALTITUDE_268.md):
   shared CPU/GPU saved-wall altitude and Fancy cap retention.
 

@@ -1694,3 +1694,12 @@ Completion means:
   update starves slower initial meshes during large Atlas downloads. Never mix
   that captured texture with live mesh data or allow displayed revisions to
   move backwards; retain the dedicated publication-policy tests.
+
+## In-game wall preview packaging
+
+The 30 shared selector previews under `textures/gui/wall_samples` are compact
+384x213 indexed PNGs (256 colours). Keep website originals separate. Regenerate
+with `scripts/wall_samples/compress_previews.py` (Pillow); the capture packager
+also uses this helper. Retain PNG because NativeImage validates its header, and
+verify the shared compact assets in every supported loader/version JAR. See
+`docs/WALL_PREVIEW_COMPRESSION_260.md` for size measurements and native decoder checks.
