@@ -180,6 +180,10 @@ sides of it should still be nearby, visible, and able to interact normally.
   block-light layer, but cannot reproduce individual distant blocks,
   buildings, mobs, transparent layers, exact light geometry, or live weather
   volumes.
+- In upcoming development builds, recognized thin floating structures are omitted
+  from the distant Atlas and the ground beneath is sampled. They still render
+  normally in real chunks nearby. Natural-material builds and short gaps are
+  retained; see [the sampling limits](docs/FLOATING_ATLAS_257.md).
 - Existing worlds cannot be converted or resized in place.
 - The supported Minecraft versions are the qualified versions in the download
   table above. A future version is not supported merely because it compiles or

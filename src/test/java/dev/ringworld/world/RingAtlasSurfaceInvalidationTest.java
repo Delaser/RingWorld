@@ -19,6 +19,13 @@ class RingAtlasSurfaceInvalidationTest {
     }
 
     @Test
+    void supportRemovalBeneathManufacturedTopCanChangeOmission() {
+        assertTrue(RingAtlasSurfaceInvalidation.mayAffectSurface(65, 252, true));
+        assertFalse(RingAtlasSurfaceInvalidation.mayAffectSurface(65, 252, false));
+        assertTrue(RingAtlasSurfaceInvalidation.mayAffectSurface(251, 252, false));
+    }
+
+    @Test
     void onlyChangesAtOrAboveStoredTopCanAffectSurface() {
         assertFalse(RingAtlasSurfaceInvalidation.mayAffectSurface(62, 64));
         assertTrue(RingAtlasSurfaceInvalidation.mayAffectSurface(63, 64));

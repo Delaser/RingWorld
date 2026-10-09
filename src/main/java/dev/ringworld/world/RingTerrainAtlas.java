@@ -26,7 +26,8 @@ import java.util.zip.GZIPOutputStream;
  */
 public final class RingTerrainAtlas {
     /** Format 10 adds water coverage in the upper nibble of the existing light byte. */
-    public static final int FORMAT_VERSION = 10;
+    // Sampling semantics changed: cached top-only columns must be rebuilt.
+    public static final int FORMAT_VERSION = 11;
     public static final int SAMPLE_STEP_BLOCKS = 1;
     public static final int TILE_SIZE = 16;
     /** Short height, top and side colours, packed light/water byte, and presence accounting per cell. */

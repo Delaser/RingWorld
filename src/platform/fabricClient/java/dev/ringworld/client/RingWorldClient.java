@@ -230,6 +230,7 @@ public final class RingWorldClient implements ClientModInitializer {
         LevelRenderEvents.END_MAIN.register(context -> {
             recordTestFrame();
             projectionCapture.frameRendered();
+            dev.ringworld.client.RingFloatingAtlasCaptureClient.frameRendered();
             visualParityCapture.frameRendered();
             atlasPregenerationUiTest.frameRendered();
         });
@@ -250,6 +251,7 @@ public final class RingWorldClient implements ClientModInitializer {
             if (!Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) {
                 ClientRingState.saveTerrainAtlasIfDue(false);
             }
+            if (dev.ringworld.client.RingFloatingAtlasCaptureClient.tickIfEnabled(client)) return;
             if (dev.ringworld.client.RingFloatingStructureCaptureClient.tickIfEnabled(client)) return;
             if (dev.ringworld.client.RingHorizonCaptureClient.tickIfEnabled(client)) return;
             if (productionLifecycleTest.tick(client)) return;
