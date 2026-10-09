@@ -20,6 +20,7 @@ import dev.ringworld.world.RingTerrainPreview;
 import dev.ringworld.world.RingTerrainPreviewStage;
 import dev.ringworld.world.RingSkyProfile;
 import dev.ringworld.world.RingSkySettings;
+import dev.ringworld.world.RingWorldSettings;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.minecraft.commands.Commands;
@@ -80,6 +81,10 @@ public final class RingTerrainAtlasServer {
         dispatcher.register(Commands.literal("ringworld")
                         .requires(source -> source.permissions().hasPermission(
                                 new Permission.HasCommandLevel(PermissionLevel.GAMEMASTERS)))
+                        .then(Commands.literal("building").then(Commands.literal("outside")
+                                .then(Commands.literal("on").executes(c -> outsideBuilding(c.getSource(), true)))
+                                .then(Commands.literal("off").executes(c -> outsideBuilding(c.getSource(), false)))
+                                .then(Commands.literal("show").executes(c -> outsideBuilding(c.getSource(), null)))))
                         .then(Commands.literal("atlas")
                                 .then(Commands.literal("status").executes(context -> {
                                     ServerLevel world = context.getSource().getServer().getLevel(Level.OVERWORLD);
@@ -107,6 +112,39 @@ public final class RingTerrainAtlasServer {
                                         .executes(context -> setSunStyle(
                                                 context.getSource(),
                                                 StringArgumentType.getString(context, "style"))))));
+    }
+
+    private static int outsideBuilding(CommandSourceStack source, Boolean enabled) {
+        ServerLevel world = source.getServer().getLevel(Level.OVERWORLD);
+        if (world == null) return 0;
+        if (enabled != null) {
+            dev.ringworld.world.RingBuildingSettings.get(world).setOutsideBuilding(enabled);
+            for (ServerPlayer player : source.getServer().getPlayerList().getPlayers()) sendBuildingSettings(player);
+        }
+        source.sendSuccess(() -> Component.literal("RingWorld outside building: "
+                + (dev.ringworld.world.RingBuildingSettings.get(world).outsideBuilding() ? "on" : "off")
+                + (Boolean.FALSE.equals(enabled) ? ". Existing builds are kept." : ".")), enabled != null);
+        return 1;
+    }
+
+    public static void sendBuildingSettings(ServerPlayer player) {
+        ServerLevel world = player.level().getServer().getLevel(Level.OVERWORLD);
+        if (world == null) return;
+        var payload = new dev.ringworld.net.RingBuildingSettingsPayload(
+                RingWorldSettings.get(world).layoutFingerprint(),
+                dev.ringworld.world.RingBuildingSettings.get(world).outsideBuilding(), canControl(player));
+        if (transport.canSend(player, dev.ringworld.net.RingBuildingSettingsPayload.ID)) transport.send(player, payload);
+    }
+
+    public static void controlBuilding(ServerPlayer player, long fingerprint, boolean enabled) {
+        ServerLevel world = player.level().getServer().getLevel(Level.OVERWORLD);
+        if (world == null || player.level().dimension() != Level.OVERWORLD) return;
+        if (RingWorldSettings.get(world).layoutFingerprint() != fingerprint || !canControl(player)) {
+            sendBuildingSettings(player);
+            return;
+        }
+        dev.ringworld.world.RingBuildingSettings.get(world).setOutsideBuilding(enabled);
+        for (ServerPlayer viewer : world.getServer().getPlayerList().getPlayers()) sendBuildingSettings(viewer);
     }
 
     private static int setSkyBackdrop(CommandSourceStack source, String name) {

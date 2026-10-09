@@ -1449,14 +1449,17 @@ version numbers.
   `multiplayer-cold` phase telemetry and independent post-End readiness window
   before weather. Neither may load chunks, clear ordinary entities, weaken the
   watchdog, or alter production scheduling.
-- Exterior entities have no delivered terrain chunk. Keep their entity watch
-  window bounded by the normal periodic view distance while bypassing the Z
-  terrain clamp for pairing only. On the client, bypass only the compiled
-  terrain-section check outside the width band; keep entity frustum/distance
-  tests and first-person self-hiding. Do not send exterior chunks or tie this
-  behaviour to the outside-building toggle. See
-  `docs/OFF_RING_ENTITY_VISIBILITY_254.md` for version targets and the opt-in
-  two-client regression.
+- Outside-building (#255) delivers nearby exterior chunks within the normal
+  periodic view-distance window, independently of the saved placement toggle.
+  Natural generation outside the finite Z band remains void; Atlas coverage
+  stays finite. OFF rejects new player block/bed/direct bucket placement but
+  retains existing blocks, collision and entity visibility. The default-on
+  saved policy is separate from immutable geometry/Atlas identity. Commands
+  use `/ringworld building outside on|off|show`; the World page uses an
+  acknowledged, fingerprint-bound, server-permission-checked request.
+  Keep the #254 exterior entity fallback limited to compiled-section culling;
+  retain frustum/distance tests and first-person self-hiding. See
+  `docs/OUTSIDE_BUILDING_255.md` and `docs/OFF_RING_ENTITY_VISIBILITY_254.md`.
 - The vanilla entity loop's asynchronous simulation graph can retain the old
   side of a natural seam crossing. `ServerWorldMixin` first checks the
   canonical graph key, then falls back only to non-spectator players within
@@ -1658,9 +1661,9 @@ Completion means:
   POI lookup. Preserve the matching `lithium:options` overrides in Fabric and
   NeoForge metadata; do not resolve the collision by dropping seam semantics.
 - `SectionOcclusionGraph.initializeQueueForFullUpdate` takes Camera in 26.1 and
-  BlockPos in 26.2. The finite-band seed clamp targets the shared SectionPos
-  lookup; a BlockPos HEAD argument modifier crashes 26.1 clients even though
-  both source builds compile. Retain real-client checks on both ABI lines.
+  BlockPos in 26.2. #255 removes the finite-band queue seed clamp so exterior
+  cameras seed their own delivered chunks. Keep curved frustum culling and
+  normal view distances; retain real-client checks on both ABI lines.
 - A surface build may publish a coherent revision older than the newest received
   tiles, provided it advances the displayed revision and still matches the
   world and session/quality generation. Requiring equality with every live tile

@@ -15,6 +15,11 @@ import net.minecraft.world.entity.Entity;
 public final class RingMinecraftClientAccess {
     private RingMinecraftClientAccess() { }
 
+    /** Reveal an opt-in hidden review window without activating the desktop app. */
+    public static void showBackgroundReviewWindow(Minecraft client) {
+        org.lwjgl.glfw.GLFW.glfwShowWindow(client.getWindow().handle());
+    }
+
     public static int maxTextureSize() { return com.mojang.blaze3d.systems.RenderSystem.getDevice().getMaxTextureSize(); }
 
     public static Screen screen(Minecraft client) { return client.screen; }

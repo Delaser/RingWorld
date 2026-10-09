@@ -1,24 +1,22 @@
 # Current state
 
-October 8 issue #254: exterior entity visibility is implemented on an isolated
-review branch. Client entity selection no longer requires an unsent exterior
-terrain section; server pairing uses the normal bounded watch window outside
-the Z band. Building policy remains independent. Owner review and integration
-are pending; see [implementation and targeted tests](OFF_RING_ENTITY_VISIBILITY_254.md).
+October 8: owner accepted exterior entity visibility (#254); PR #262 is merged.
+The accepted horizon removal (#259) is also merged in PR #261. Outside building
+(#255) passes final all-six development checks and is ready to merge in PR #263; see
+[implementation and targeted tests](OUTSIDE_BUILDING_255.md). The separately
+observed wall/terrain openings have a controlled
+[Atlas geometry diagnosis](ATLAS_WALL_GAPS_2026_10_09.md); no mesh fix is claimed.
 
-September 30 release status: six 1.3 JARs are staged from the same repaired
-source commit. Fresh quick qualification passes across the three supported
-Minecraft lines and both loaders. The 26.2 and 26.3 full nightly matrices each
-pass 20/20; 26.1–26.1.2 has reviewed 60/60 composite fixture coverage, not a
-single uninterrupted nightly PASS. The exact staged NeoForge files start,
-save and stop on newer loaders for all three lines. The owner will visually
-review the release before upload; no 1.3 file has been published. This follows
-the September 29 gate, when the owner stopped release testing because 26.3
-rendering fixes were missing from 26.1/26.2. All fixes, performance
-improvements and features require player-facing parity on every supported
-26.x line and both loaders. See
-[the parity matrix](RELEASE_1_3_PARITY.md), [agent policy](../AGENTS.md) and
-[release preparation](../deploy/qualified/1.3/README.md).
+September 30 release status: all six 1.3 JARs were approved on CurseForge and
+their CDN hashes matched the reviewed files. Modrinth and optional launcher
+bundles remain deferred. The 26.2 and 26.3 full nightly matrices each passed
+20/20; 26.1–26.1.2 has reviewed 60/60 composite coverage rather than one
+uninterrupted nightly PASS. See the
+[publication record](RELEASE_1_3_PUBLICATION_2026-09-30.md). Post-release feature
+checks below are development evidence, not qualification for another release.
+All fixes, improvements and features require equivalent player-facing behavior
+on every supported 26.x line and both loaders; see
+[the parity matrix](RELEASE_1_3_PARITY.md) and [agent policy](../AGENTS.md).
 
 September 29 issue #248: block outlines and mining overlays now include the
 same height-dependent tangent scale as curved terrain. The three version-owned

@@ -2,7 +2,8 @@
 
 Development change, 8 October 2026. This is not a published release or a full
 release qualification. The owner accepted the running 26.3 Fabric appearance
-on 8 October 2026 and marked this change ready for integration (PR #261).
+on 8 October 2026. PR #261 merged at
+`1914255c003fa70a6f0ddb7a78b9be3ee0a18f8d`.
 
 ## Cause and change
 

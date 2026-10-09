@@ -161,7 +161,8 @@ public final class RingWorldClient implements ClientModInitializer {
                     if (!RingClientPayloadTransport.canSend(RingSettingsAckPayload.ID)
                             || !RingClientPayloadTransport.canSend(RingTerrainAtlasRequestPayload.ID)
                             || !RingClientPayloadTransport.canSend(RingAtlasPregenerationStatusRequestPayload.ID)
-                            || !RingClientPayloadTransport.canSend(RingAtlasPregenerationControlPayload.ID)) {
+                            || !RingClientPayloadTransport.canSend(RingAtlasPregenerationControlPayload.ID)
+                            || !RingClientPayloadTransport.canSend(dev.ringworld.net.RingBuildingControlPayload.ID)) {
                         var handler = context.client().getConnection();
                         if (handler != null) {
                             handler.getConnection().disconnect(Component.literal(
@@ -178,6 +179,8 @@ public final class RingWorldClient implements ClientModInitializer {
                             payload.formatVersion(), fingerprint);
                     RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
                 }));
+        ClientPlayNetworking.registerGlobalReceiver(dev.ringworld.net.RingBuildingSettingsPayload.ID,
+                (payload, context) -> context.client().execute(() -> ClientRingState.setBuildingSettings(payload)));
         ClientPlayNetworking.registerGlobalReceiver(RingSkyProfilePayload.ID, (payload, context) ->
                 context.client().execute(() -> {
                     try {
@@ -246,6 +249,7 @@ public final class RingWorldClient implements ClientModInitializer {
             if (!Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) {
                 ClientRingState.saveTerrainAtlasIfDue(false);
             }
+            if (dev.ringworld.client.RingFloatingStructureCaptureClient.tickIfEnabled(client)) return;
             if (dev.ringworld.client.RingHorizonCaptureClient.tickIfEnabled(client)) return;
             if (productionLifecycleTest.tick(client)) return;
             if (layoutSwitchTest.tick(client)) return;
@@ -289,6 +293,18 @@ public final class RingWorldClient implements ClientModInitializer {
                 }));
             }
             dispatcher.register(ClientCommands.literal("ringworld").then(lod));
+            // The client root must explicitly forward server-owned building commands.
+            var outside = ClientCommands.literal("outside");
+            for (String operation : new String[] { "on", "off", "show" }) {
+                outside.then(ClientCommands.literal(operation).executes(context -> {
+                    var connection = Minecraft.getInstance().getConnection();
+                    if (connection == null) return 0;
+                    connection.send(new net.minecraft.network.protocol.game.ServerboundChatCommandPacket(context.getInput()));
+                    return 1;
+                }));
+            }
+            dispatcher.register(ClientCommands.literal("ringworld").then(ClientCommands.literal("building").then(outside)));
+
             var falloff = ClientCommands.argument("falloff", FloatArgumentType.floatArg(
                             dev.ringworld.world.RingAtlasLightProfile.MIN_FALLOFF,
                             dev.ringworld.world.RingAtlasLightProfile.MAX_FALLOFF))

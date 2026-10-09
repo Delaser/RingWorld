@@ -18,7 +18,7 @@
     "FogRendererMixin",
     "GuiMixin",
     "LevelRendererMixin",
-    "ClientChunkMapMixin",
+    "ClientBlockItemMixin", "ClientBucketItemMixin", "ClientChunkMapMixin",
     "ClientConnectionMixin",
     "ClientPlayNetworkHandlerMixin",
     "ChunkBuilderBuiltChunkMixin",
