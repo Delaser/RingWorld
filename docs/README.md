@@ -6,6 +6,9 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [Dynamic cloud height and curved faces (#268)](CLOUD_ALTITUDE_268.md):
+  shared CPU/GPU saved-wall altitude and Fancy cap retention.
+
 - [Altitude-aware terrain handoff (#266)](ATLAS_ALTITUDE_HANDOFF_266.md):
   high-camera coverage gap, coordinated live/Atlas distance and native checks.
 

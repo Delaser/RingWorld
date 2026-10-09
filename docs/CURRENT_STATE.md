@@ -13,8 +13,15 @@ Follow-up #266 fixes the high-altitude hole: native sections have a vertical
 view limit, but Atlas coverage previously considered only horizontal distance.
 The coordinated handoff now includes canonical height separation; material and
 detail distances stay horizontal. All six source build/test cells and 36 native
-captures pass; the fix is on `codex/atlas-altitude-handoff` for owner review.
+captures pass; the owner accepted the fix and PR #267 is merged.
 See [diagnosis and checks](ATLAS_ALTITUDE_HANDOFF_266.md).
+
+Cloud follow-up #268 aligns vanilla CPU face selection with the same saved-wall
+cloud base as GPU Globals: dimension minimum Y + saved wall height + 8. Curved
+Fancy cells retain both caps; Fast clouds retain one double-sided face. All six
+source builds/tests and 36 below/inside/above native captures pass at saved wall
+heights 160 and 256. The fix is on `codex/cloud-height-268` for owner review;
+no new release is published. See [details and limits](CLOUD_ALTITUDE_268.md).
 
 September 30 release status: all six 1.3 JARs were approved on CurseForge and
 their CDN hashes matched the reviewed files. Modrinth and optional launcher

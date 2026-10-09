@@ -1502,8 +1502,15 @@ version numbers.
   beyond the already-created atlas snapshot: it records
   `NO_DETAILED_HEIGHT_FINGERPRINT`, and the worker resolves a real fingerprint
   only for complete content.
-- Cloud base is synchronized as saved wall top plus eight blocks. Do not
-  reintroduce a literal Y=104; custom wall height must move both.
+- Cloud base is synchronized as saved wall top plus eight blocks through
+  `RingCloudBounds.baseHeight(minY, savedWallHeight)`. Both the CPU cloud renderer
+  (`render` on 26.1/26.2, `prepare` on 26.3) and GPU Globals must use that value;
+  a shader-only height correction leaves vanilla face selection at the wrong
+  altitude. Do not reintroduce a literal Y=104. Curved Fancy cells retain both
+  caps because distant cells can bend above an eye which is above the near
+  deck. Fast clouds keep their existing single double-sided face. Invalidate
+  the mesh when switching between curved and vanilla face policies. See
+  `docs/CLOUD_ALTITUDE_268.md`.
 - The active local development geometry is the safe-small 2,048-by-416 preset
   (128 by 26 chunks). The retired 1,600-block circumference is not safe across
   the complete vanilla build height: with `SURFACE_Y=64`, its physical centre
