@@ -5,7 +5,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-/** Session-local visual experiment; default off, with no resource reload. */
+/** Session-local nearby normalisation; default off, with no resource reload. */
 public final class RingDistortionTuning {
     private static boolean enabled;
     private static int chunks = 3;
@@ -19,7 +19,7 @@ public final class RingDistortionTuning {
     }
     public static void clearSession() { enabled = false; chunks = 3; }
     public static String summary() {
-        return "Nearby block distortion trial: " + (enabled ? "on" : "off")
+        return "Nearby block normalisation: " + (enabled ? "on" : "off")
                 + "; correction " + chunks + " chunks in each direction (this client only)";
     }
     public static RingNearbyProjection projection(RingGeometry geometry, Vec3 camera) {

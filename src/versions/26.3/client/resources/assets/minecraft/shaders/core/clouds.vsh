@@ -4,6 +4,7 @@
 #include <minecraft:fog.glsl>
 #include <minecraft:dynamictransforms.glsl>
 #include <minecraft:globals.glsl>
+#include <minecraft:ringworld_projection.glsl>
 #include <minecraft:projection.glsl>
 
 const int FLAG_MASK_DIR = 7;
@@ -47,6 +48,11 @@ bool ring_active() {
 }
 
 vec3 curve_cloud_position(vec3 pos) {
+    if (RingWorldDistortion.x > 0.5) {
+        vec3 camera = vec3(CameraBlockPos) - CameraOffset;
+        return ring_trial_position(camera + pos, camera);
+    }
+
     float circumference = ring_circumference();
     float baseRadius = circumference / (2.0 * 3.14159265358979323846);
     float cameraX = float(CameraBlockPos.x) - CameraOffset.x;

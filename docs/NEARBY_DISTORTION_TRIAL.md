@@ -1,11 +1,14 @@
-# Nearby block distortion trial
+# Nearby block normalisation (#256)
 
-This is an unmerged visual experiment on `codex/nearby-distortion-trial`, not
-part of the 1.3 release. It starts disabled and resets on disconnect.
+The owner approved the trial on 5 October and again on 9 October 2026,
+then requested integration through a PR. It was ported onto current main
+without the trial branch's unified-JAR or floating-Atlas experiments.
+This is upcoming functionality; published 1.3 files are unchanged.
+It starts disabled and resets on disconnect.
 
 - `/ringworld distortion on`, `off`, or `show`
 - `/ringworld distortion distance <1–8>`: chunks each way, default 3
-- In-world RingWorld menu → Display: trial toggle and correction distance
+- In-world RingWorld menu → Display: Nearby block normalisation and correction distance
 
 The correction spans the full ring width. Within the chosen longitudinal
 radius, arc spacing becomes one rendered block per intrinsic block at each
@@ -52,11 +55,14 @@ The fixture captures `screenshots/distortion-off.png` and `distortion-on.png`
 from the same pose, checks the live client command, then leaves the game open
 with correction enabled. Existing owner worlds are not modified.
 
-Validation is recorded below as it completes. This trial is not release
-qualification: no multiplayer, external renderer, performance or full release
-suite claims are implied.
+For unattended development checks, `-Dringworld.distortionTrialExit=true`
+waits for the complete Atlas, exercises distances 1, 8 and 3, reloads resources,
+captures lower/above-build views, checks disconnect reset, and saves/stops normally.
+The runner supplies disposable save copies. Its copied-world file-fix helper
+handles only the named backup/completion flow while this exit-mode opt-in is set. Checks described here are development
+evidence, not frozen-candidate release qualification.
 
-## Verification (5 October 2026)
+## Historical trial verification (5 October 2026)
 
 | Minecraft line | Fabric compile + unit suite | NeoForge compile + unit suite |
 | --- | --- | --- |
@@ -157,3 +163,67 @@ Terrain and walls appear continuous in this static capture. Vertical-motion
 invariance is covered by the regression test; owner motion review is pending.
 The client remains open with the trial enabled. No release qualification or
 other loader/version runtime visuals are claimed.
+
+## Integration on current main (9 October 2026)
+
+The port includes only commits `0ed709c`, `bbe503d`, `9251844` and `9398edd`
+relative to the trial's `c9f23dd` baseline. Their net result is the accepted
+fixed-height mapping. The unified-JAR baseline and later floating-object Atlas
+experiments (#257) are excluded.
+
+The current wall closure, top-anchored saved wall height, altitude-aware handoff,
+depth ordering, horizon removal, outside building and dynamic cloud fixes are
+preserved. Both 26.3 cloud shader entry points now use the same correction;
+Globals and its Java buffer writer gain one matching vec4 in each resource ABI.
+The disabled branch still uses the original transform. No atlas/save/network
+format or server configuration changes are introduced.
+
+### Source map
+
+- `RingNearbyProjection`: fixed radius, smooth periodic angular mapping,
+  local object transforms and conservative bounds.
+- `RingDistortionTuning`: client/session toggle, range and disconnect reset.
+- `ringworld_projection.glsl`: GPU equivalent for terrain, clouds and Atlas.
+- Shared and 26.3 Globals adapters: per-frame toggle/core/fade/radius values.
+- Version-owned LevelRenderer and entity adapters: outlines, overlays and anchors;
+  `CurvedRingFrustum` and SkyRendering: matching culling and centre direction.
+- Fabric/NeoForge command registration and RingWorld Display screen: live controls.
+- `RingDistortionTrialClient`: opt-in disposable minimum-ring native checks.
+
+### Integration checks
+
+All six source builds/unit suites pass: 462 cases per loader on 26.1.2 and
+26.2, and 465 on 26.3, with no failures or skips. The 355-test static contract
+suite passes. Regression cases cover legal-height unit spacing, vertical
+camera invariance, positive angular slopes, smooth joins, full ring closure
+and culling containment through the canonical seam.
+
+All six native checks pass on disposable copies of the completed 2048×128
+study: 30 captures total (off/on, resource reload, lower camera and above-build
+camera), live command execution at distances 1/8/3, complete Atlas streaming,
+normal save/stop and disconnect reset. Source-runtime loaders are Fabric
+0.19.3/0.19.5 and NeoForge 26.1.2.87 / 26.2.0.69 / 26.3.0.7-beta.
+Representative captures from each source ABI and both loaders were inspected;
+these static captures do not establish full motion or multiplayer parity.
+
+The first 26.2 Fabric attempt was terminated at the copied-world file-fix
+prompt (exit 143). Its log is retained as
+`native-26.2-fabric-file-fix-blocked.log`. The helper was repaired to use the
+existing narrow backup/completion flow, and the subsequent run passes.
+A development-profile certificate HTTP 401 appears in the successful 26.2
+Fabric log; no other ERROR/FATAL entries occur in the six successful runs.
+This service authentication failure is recorded separately from rendering checks.
+Local ignored evidence: `logs/nearby-normalisation-256/`. The owner's minimum-ring
+26.3 Fabric motion/performance review was accepted before requesting this merge.
+No numerical FPS benchmark is claimed.
+
+### Remaining release checks and limitations
+
+The local moving correction still changes surrounding geometry while travelling
+along X; the four-times fade softens this. Exact cubes throughout the ring are
+not promised. Default off and session-local controls are intentional.
+Particles, third-party renderers and multiplayer presentation have not received
+new native qualification for this option. Legacy 1024-block Atlas inversion
+above its original centre remains unqualified. Run fresh frozen-candidate
+release qualification before publishing; the already-published 1.3 evidence
+does not qualify changed bytes.

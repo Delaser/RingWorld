@@ -86,7 +86,7 @@ public final class RingWorldMapScreen extends Screen {
                             RingClientLodTuning.select(level); rebuild();
                         }).bounds(left + i * (each + gap), 85, each, 20).build());
             }
-            addRenderableWidget(Button.builder(Component.literal("Nearby distortion trial: "
+            addRenderableWidget(Button.builder(Component.literal("Nearby block normalisation: "
                             + (RingDistortionTuning.enabled() ? "On" : "Off")), button -> {
                         RingDistortionTuning.select(!RingDistortionTuning.enabled()); rebuild();
                     }).bounds(left, 145, panel, 20).build());

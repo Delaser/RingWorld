@@ -4,14 +4,23 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
-## Unmerged nearby-distortion trial
+## Nearby block normalisation (#256)
 
-`codex/nearby-distortion-trial` contains an opt-in client visual experiment.
-It defaults off and must not enter a release without owner acceptance and
-runtime qualification. See [`docs/NEARBY_DISTORTION_TRIAL.md`](docs/NEARBY_DISTORTION_TRIAL.md)
-for live commands, the radius safeguard, source checks and the disposable
-minimum-new-ring (2048-block) build-height demo. Do not change normal world
-creation limits or server physics to accommodate the trial.
+The owner accepted the minimum-ring trial again on 9 October 2026 and
+requested a PR and merge. The accepted four-commit delta from
+`codex/nearby-distortion-trial` is integrated selectively; do not merge that
+branch wholesale because its other experiments are unrelated.
+Normalisation is a client/session Display option, default off, reset on
+disconnect. `/ringworld distortion on|off|show` and `distance <1–8>` select it
+live. Camera Y only translates geometry; keep the fixed visual radius and
+vertex-height mapping shared by CPU transforms, culling and all GPU entry
+points, including both 26.3 cloud shader names. Preserve the existing
+altitude-aware handoff, saved-height wall closure and dynamic cloud policy.
+Do not change generation, physical coordinates, server physics or creation
+limits to accommodate it. See
+[`docs/NEARBY_DISTORTION_TRIAL.md`](docs/NEARBY_DISTORTION_TRIAL.md) for design,
+validation and remaining limitations. Development integration is separate
+from fresh frozen-candidate release qualification.
 
 ## Supported-version parity and release state
 

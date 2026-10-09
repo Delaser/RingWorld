@@ -42,6 +42,7 @@ class CopiedWorldFileFixUpgradeTest(unittest.TestCase):
             "ringworld.captureRingVisualParity",
             "ringworld.productionLifecycleTest",
             "ringworld.captureAtlasWalls",
+            "ringworld.distortionTrialExit",
         ):
             self.assertIn(property_name, self.helper)
         self.assertIn("if (!fixtureEnabled()) return false", self.helper)

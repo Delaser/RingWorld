@@ -3,7 +3,7 @@ package dev.ringworld.world;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-/** Trial-only visual mapping. Never use this for generation, collision or storage. */
+/** Client-only visual mapping. Never use this for generation, collision or storage. */
 public record RingNearbyProjection(RingGeometry geometry, double referenceRadius,
                                    double cameraY, double coreBlocks) {
     public static RingNearbyProjection create(RingGeometry geometry, double cameraY,

@@ -19,7 +19,8 @@ final class CopiedWorldFileFixUpgrade {
             "ringworld.captureRingProjection",
             "ringworld.captureRingVisualParity",
             "ringworld.productionLifecycleTest",
-            "ringworld.captureAtlasWalls"
+            "ringworld.captureAtlasWalls",
+            "ringworld.distortionTrialExit"
     };
     private static final String BACKUP_CONFIRM_SCREEN =
             "net.minecraft.client.gui.screens.BackupConfirmScreen";
