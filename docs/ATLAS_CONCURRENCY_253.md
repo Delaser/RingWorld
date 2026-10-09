@@ -317,3 +317,42 @@ fixed-policy and failed evidence remains intact. Normal production does not
 enable the synthetic probes or metrics. Actual integrated-client FPS,
 player-active priority/latency and wider feature/structure parity remain
 unqualified; these are development checks, not release qualification.
+
+## Live chunk generation rate command follow-up
+
+The owner requested `/ringworld chunk_gen_rate 1|2|4|8` after the adaptive
+trial. `auto` restores automatic scaling, and the bare command shows the
+current setting. Source **7505fb38184dbd1d20f2238cb048ec1e2a7ca4f9** passes
+all six local builds/tests (2,916 executions), all nine CI checks, and all six
+real-dispatcher native cells (18 passing launches):
+
+| Minecraft | Loader | Unit cases | Command / adaptive / lifecycle | Observed live high → drained low | Resume / cache reopen |
+|---|---|---:|---|---|---|
+| 26.1.2 | Fabric | 485 | PASS | 8 → 1 | PASS / PASS |
+| 26.1.2 | NeoForge | 485 | PASS | 7 → 1 | PASS / PASS |
+| 26.2 | Fabric | 485 | PASS | 8 → 1 | PASS / PASS |
+| 26.2 | NeoForge | 485 | PASS | 7 → 1 | PASS / PASS |
+| 26.3 | Fabric | 488 | PASS | 8 → 1 | PASS / PASS |
+| 26.3 | NeoForge | 488 | PASS | 8 → 1 | PASS / PASS |
+
+Each initial native run uses actual authenticated loopback RCON commands to
+set and query 1/2/4/8, reject 0/3/9 without altering the setting, retain pause
+while changing all four values, resume with a target of eight, observe more
+than four outstanding requests, lower to one and verify drainage, then
+restore auto at four. The opt-in `ringworld.testAtlasRateCommand=true`
+extends the existing concurrency probe to verify that a fixed session
+override survives cancel/replacement and can return to auto. It is disabled
+in normal play; use it alongside the two existing probes on a disposable
+headless fixture. The ordinary adaptive pressure/recovery probe also passes.
+
+All interrupted reports match saved presence counts; each resume completes
+all 262,144 cells and all 1,024 canonical region records. Complete-cache
+reopen preserves the height hash and issues no requests. Evidence and 19-entry
+command transcripts per cell are retained under ignored
+`logs/atlas-rate-command-253/`. The first 26.2 NeoForge run passed its command
+checks but was rejected for a Mojang Yggdrasil public-key fetch ERROR; its log,
+transcript and world remain under `failed-yggdrasil-26.2-neoforge/`. The unchanged
+retry passes cleanly; the failed run is not counted as passing evidence.
+
+These checks do not measure actual graphical FPS or qualify a release.
+The draft PR remains unmerged and the live published server is unchanged.

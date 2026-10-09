@@ -4,9 +4,14 @@ October 9 live-command follow-up: `/ringworld chunk_gen_rate 1|2|4|8|auto`
 selects a fixed or automatic admission limit without restarting generation.
 The bare command reports mode/target. Gamemaster-only overrides last for the
 world session and apply to replacement jobs; lowering drains existing requests.
-The same bounded eight slots retain the cursor and leases. Source builds and
-real-dispatcher native checks for this follow-up are pending; previous adaptive
-evidence below applies to its recorded earlier source.
+The same bounded eight slots retain the cursor and leases. Source `7505fb3` passes all six builds/tests (485 cases per loader on
+26.1.2/26.2, 488 on 26.3), all nine CI checks and all six real-dispatcher native
+cells (18 passing launches). All rates, auto, queries, rejected values, paused
+state, live 8→1 drainage and override survival across job replacement pass.
+Every resume reaches independently verified complete coverage and reopens
+without new requests. One Mojang key-fetch failure was retained separately;
+an unchanged retry passes. Actual gameplay FPS remains unmeasured, and draft
+PR #273 remains unmerged. See [policy and evidence](ATLAS_CONCURRENCY_253.md).
 
 October 9 follow-up: the owner requested automatic Atlas request scaling.
 The unpublished trial now defaults to auto: start four, reduce to two/one under
