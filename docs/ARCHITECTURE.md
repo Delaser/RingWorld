@@ -653,8 +653,10 @@ raw executor thread either: a late cancellation can target another world's task.
 Preview cancellation never changes authoritative Atlas progress or saved terrain.
 
 The world hash includes the complete layout fingerprint plus atlas format and
-sample semantics. The atlas file has its own format version. Atlas format 8
-samples the highest surface block, stores its exposed top-face height, and
+sample semantics. The atlas file has its own format version, currently 11.
+The shared server column selector omits recognized detached building intervals
+and keeps the underlying terrain; see [#257 sampling](FLOATING_ATLAS_257.md).
+Both initial capture and live recapture store the selected block's exposed top-face height, and
 records texture-luminance-corrected biome RGB for water, grass, and foliage.
 Each cell also stores exposed block light from 0–15. Surface edits invalidate
 the changed cell and the nearby 15-block light footprint, including across the

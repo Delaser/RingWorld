@@ -4,6 +4,23 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
+## Floating-build Atlas sampling (#257)
+
+The selected omission policy is shared server-side sampling, not a client-only
+trial or an extra mesh layer. Both initial capture and dirty-cell recapture use
+`RingAtlasSurfaceSampler` / `RingAtlasColumnSurface`: recognized manufactured
+intervals at most 64 blocks thick above at least eight air blocks can be skipped,
+including stacked layers. Natural and unknown materials are retained. Keep the
+normal foliage/water/side-colour/light samplers and the existing single-writer
+queue, tile and revision paths. Support edits beneath manufactured tops must
+invalidate the column even below the stored face; classify only the top in the
+edit hook and leave scanning queued. Do not load neighbours for classification.
+Current Atlas disk format is **11**; its derived world hash invalidates format-10
+and earlier samples. Cell fields and v4 transport are unchanged. Keep the Python
+recovery reader and Java identity goldens aligned. All supported version lines
+and both loaders must be tested. See
+[`docs/FLOATING_ATLAS_257.md`](docs/FLOATING_ATLAS_257.md) for limits and evidence.
+
 ## Nearby block normalisation (#256)
 
 The owner accepted the minimum-ring trial again on 9 October 2026 and

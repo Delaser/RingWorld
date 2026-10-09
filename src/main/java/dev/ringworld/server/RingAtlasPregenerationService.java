@@ -227,8 +227,14 @@ public final class RingAtlasPregenerationService {
         RingAtlasSurfaceInvalidation.Cell cell = RingAtlasSurfaceInvalidation.cellFor(
                 atlas.geometry(), atlas.sampleStep(), position.getX(), position.getZ()).orElse(null);
         if (cell == null || !atlas.hasCell(cell.column(), cell.row())) return;
-        if (RingAtlasSurfaceInvalidation.mayAffectSurface(
-                position.getY(), atlas.cellHeight(cell.column(), cell.row()))) {
+        boolean reachesStoredSurface = RingAtlasSurfaceInvalidation.mayAffectSurface(
+                position.getY(), atlas.cellHeight(cell.column(), cell.row()));
+        // A support edit can change omission without touching the highest block.
+        // Inspect only the current top here; defer the column scan to the bounded writer.
+        boolean manufacturedTop = !reachesStoredSurface && RingAtlasSurfaceSampler.hasManufacturedTop(
+                world.getChunkAt(position), position.getX() & 15, position.getZ() & 15);
+        if (RingAtlasSurfaceInvalidation.mayAffectSurface(position.getY(),
+                atlas.cellHeight(cell.column(), cell.row()), manufacturedTop)) {
             // Vanilla block light reaches fifteen blocks. Queue the changed
             // cell and its bounded neighbours so a torch close to an Atlas
             // sample boundary can illuminate both sides, and removing it
@@ -338,7 +344,7 @@ public final class RingAtlasPregenerationService {
         int step = atlas.sampleStep();
         for (int localZ = step / 2; localZ < 16; localZ += step) {
             for (int localX = step / 2; localX < 16; localX += step) {
-                int surfaceY = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, localX, localZ);
+                int surfaceY = RingAtlasSurfaceSampler.surfaceY(chunk, localX, localZ);
                 int blockX = chunk.getPos().getMinBlockX() + localX;
                 int blockZ = chunk.getPos().getMinBlockZ() + localZ;
                 BlockPos surface = new BlockPos(blockX, surfaceY, blockZ);
@@ -407,7 +413,7 @@ public final class RingAtlasPregenerationService {
             LevelChunk chunk = world.getChunkAt(sample);
             int localX = Math.floorMod(blockX, 16);
             int localZ = Math.floorMod(blockZ, 16);
-            int surfaceY = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, localX, localZ);
+            int surfaceY = RingAtlasSurfaceSampler.surfaceY(chunk, localX, localZ);
             BlockPos surface = new BlockPos(blockX, surfaceY, blockZ);
             BlockState surfaceState = chunk.getBlockState(surface);
             int color = surfaceColor(world, surface, surfaceState);

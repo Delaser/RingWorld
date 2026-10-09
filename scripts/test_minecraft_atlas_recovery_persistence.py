@@ -10,7 +10,7 @@ import struct
 import unittest
 
 from minecraft_atlas_recovery_persistence import parse_persisted_ring_settings, parse_ring_terrain_atlas
-from minecraft_atlas_recovery_qualification import atlas_world_hash, layout_fingerprint
+from minecraft_atlas_recovery_qualification import ATLAS_FORMAT_VERSION, atlas_world_hash, layout_fingerprint
 from minecraft_qualification_model import InvocationError
 
 
@@ -42,7 +42,7 @@ def settings_bytes(seed: int = 155_088_888, *, width=416, circumference=2048,
 
 def atlas_bytes(world_hash: int, present_cells: int, *, trailing: bytes = b"") -> bytes:
     columns, rows = 2048, 416
-    header = struct.pack(">IIQIIIIIQ", 0x52574154, 10, world_hash, 416, 2_048, 1, columns, rows, 7)
+    header = struct.pack(">IIQIIIIIQ", 0x52574154, ATLAS_FORMAT_VERSION, world_hash, 416, 2_048, 1, columns, rows, 7)
     cells = b"".join((b"\x01" if index < present_cells else b"\x00") + struct.pack(">hIBI", 64, 0, 0, 0x334455)
                      for index in range(columns * rows))
     return gzip.compress(header + cells + trailing, mtime=0)
@@ -53,7 +53,7 @@ class AtlasRecoveryPersistenceTest(unittest.TestCase):
         settings = parse_persisted_ring_settings(settings_bytes(), Path("/world/settings.dat"))
         self.assertEqual(64, settings.surface_reference_y)  # optional persisted default
         self.assertEqual("16011387810716297352", layout_fingerprint(settings))
-        self.assertEqual("8360113050493173708", atlas_world_hash(settings))
+        self.assertEqual("1954828054372612691", atlas_world_hash(settings))
 
     def test_current_options_match_real_java_prewarm_identity(self) -> None:
         # Cross-checked by RingTerrainAtlasTest.fixedMasterIdentityMatchesQualificationReader.
@@ -67,7 +67,7 @@ class AtlasRecoveryPersistenceTest(unittest.TestCase):
                 settings.wall_palette, settings.wall_pattern, settings.wall_decay,
                 settings.atlas_fidelity))
         self.assertEqual("6214264662786933286", layout_fingerprint(settings))
-        self.assertEqual("10564136735434774545", atlas_world_hash(settings))
+        self.assertEqual("12595855380162204875", atlas_world_hash(settings))
 
     def test_rejects_unknown_or_incomplete_saved_options(self) -> None:
         for wall in (dict(thickness=7),
@@ -105,10 +105,10 @@ class AtlasRecoveryPersistenceTest(unittest.TestCase):
 
     def test_rejects_obsolete_atlas_and_accepts_packed_water_light(self) -> None:
         data = bytearray(gzip.decompress(atlas_bytes(1, 4)))
-        data[4:8] = struct.pack(">I", 6)
+        data[4:8] = struct.pack(">I", ATLAS_FORMAT_VERSION - 1)
         with self.assertRaises(InvocationError):
             parse_ring_terrain_atlas(gzip.compress(data), Path("/atlas"))
-        data[4:8] = struct.pack(">I", 10)
+        data[4:8] = struct.pack(">I", ATLAS_FORMAT_VERSION)
         data[44 + 7] = 255  # full water and full block light
         parse_ring_terrain_atlas(gzip.compress(data), Path("/atlas"))
 

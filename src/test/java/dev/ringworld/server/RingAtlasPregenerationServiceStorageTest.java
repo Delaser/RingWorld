@@ -35,7 +35,7 @@ class RingAtlasPregenerationServiceStorageTest {
     }
 
     @Test
-    void completeReloadIsIdempotentAndPreservesVerifiedFormatTenBytes(@TempDir Path directory)
+    void completeReloadIsIdempotentAndPreservesVerifiedCurrentFormatBytes(@TempDir Path directory)
             throws Exception {
         Path path = directory.resolve("terrain-atlas.rwat.gz");
         RingTerrainAtlas atlas = completeAtlas();
@@ -45,7 +45,7 @@ class RingAtlasPregenerationServiceStorageTest {
         RingTerrainAtlas reloaded = RingTerrainAtlas.load(path, GEOMETRY, HASH);
 
         assertTrue(reloaded.isComplete());
-        assertEquals(10, RingTerrainAtlas.FORMAT_VERSION);
+        assertEquals(11, RingTerrainAtlas.FORMAT_VERSION);
         assertArrayEquals(expected, Files.readAllBytes(path));
     }
 

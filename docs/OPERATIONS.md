@@ -407,9 +407,11 @@ already exists but is invalid, it is authoritative and rebuilt without legacy
 fallback. A leftover `.tmp` file from an interrupted write is safe: the next
 successful save or validated migration replaces it atomically.
 
-The current disk atlas format is 8. Upgrading from an older format
+The current disk atlas format is 11. Upgrading from an older format
 automatically invalidates and rebuilds both server and client caches so the
-renderer samples the actual highest block rather than the block below it,
+renderer samples the selected surface block rather than the block below it.
+Format 11 skips recognized detached manufactured layers when underlying terrain
+exists; see [floating-build sampling and limits](FLOATING_ATLAS_257.md). It
 records its exposed top-face height, and receives texture-luminance-corrected
 biome surface colours. Format 5 also replaces zero grass/foliage tint from a
 dedicated server's unloaded client-only colour maps with the sampled block map

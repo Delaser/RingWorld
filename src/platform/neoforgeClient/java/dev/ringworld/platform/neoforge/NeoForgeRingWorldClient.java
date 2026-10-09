@@ -311,8 +311,9 @@ public final class NeoForgeRingWorldClient {
         if (!Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) {
             ClientRingState.saveTerrainAtlasIfDue(false);
         }
+        if (dev.ringworld.client.RingFloatingAtlasCaptureClient.tickIfEnabled(client)) return;
         if (dev.ringworld.client.RingFloatingStructureCaptureClient.tickIfEnabled(client)) return;
-            if (dev.ringworld.client.RingHorizonCaptureClient.tickIfEnabled(client)) return;
+        if (dev.ringworld.client.RingHorizonCaptureClient.tickIfEnabled(client)) return;
         if (PRODUCTION_LIFECYCLE.tick(client)) return;
         if (LAYOUT_SWITCH.tick(client)) return;
         if (MULTIPLAYER_TEST.tick(client)) return;
@@ -327,6 +328,7 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onAfterLevel(RenderLevelStageEvent.AfterLevel event) {
         PROJECTION_CAPTURE.frameRendered();
+        dev.ringworld.client.RingFloatingAtlasCaptureClient.frameRendered();
         VISUAL_PARITY_CAPTURE.frameRendered();
         ATLAS_PREGENERATION_UI_TEST.frameRendered();
     }

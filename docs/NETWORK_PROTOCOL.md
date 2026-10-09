@@ -152,17 +152,22 @@ reading a stale client chart or level.
 
 ## Atlas wire format
 
-The source atlas samples the complete canonical surface every eight blocks by
-default. One tile contains up to 16×16 cells. Each cell encodes:
+The source atlas samples the complete canonical surface every block. One tile contains up to 16×16 cells. Each cell encodes:
 
 ```text
 present: boolean
 height: signed short
 surface RGB: int (low 24 bits)
+packed light/water: byte (low/high nibble, each 0–15)
+side RGB: int (low 24 bits)
 ```
 
-The height is the exposed top face at one coordinate above the highest surface
-block. RGB is sampled from that highest block, applies representative texture
+Current metadata and tile channels are v4; cells remain twelve bytes each.
+Disk format 11 invalidates the previous top-only cache identity without adding
+wire fields. The height is the exposed top face one coordinate above the
+selected surface block. Recognized detached manufactured layers can be skipped
+by the shared server sampler in both capture paths; see [#257](FLOATING_ATLAS_257.md).
+RGB is sampled from that selected block, applies representative texture
 luminance to biome water, grass, and foliage tint, and uses block map colour
 otherwise. These semantics are stored as terrain-atlas disk format 4; the
 format-5 disk semantics add a dedicated-server map-colour fallback for
@@ -191,6 +196,8 @@ The server:
 
 - streams at most 8 tiles per player per tick;
 - queues dirty tiles for every connected atlas subscriber every 20 ticks;
+- resamples support edits beneath manufactured tops even below the cached face,
+  so later attachment/detachment reaches every subscriber;
 - persists dirty atlas state every 200 ticks;
 - retains complete subscriptions for later terrain edits;
 - commits a new revision only after all preceding changed tiles are queued on

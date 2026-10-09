@@ -6,6 +6,9 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [Floating-build Atlas sampling (#257)](FLOATING_ATLAS_257.md): conservative
+  server capture/live updates, cache invalidation and native checks.
+
 - [Nearby block normalisation (#256)](NEARBY_DISTORTION_TRIAL.md): client controls,
   fixed-height projection, integration checks and remaining limitations.
 
