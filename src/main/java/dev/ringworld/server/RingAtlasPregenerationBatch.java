@@ -10,11 +10,12 @@ final class RingAtlasPregenerationBatch<T> {
     static final int MAX_REQUESTS = 8;
     final List<Slot<T>> slots;
     final long totalChunks;
+    private final RingAtlasPregenerationCursor cursor;
     private int nextCompletedSlot;
 
     RingAtlasPregenerationBatch(RingTerrainAtlas atlas, int capacity) {
         if (capacity < 1 || capacity > MAX_REQUESTS) throw new IllegalArgumentException("Atlas concurrency must be 1..8");
-        var cursor = new RingAtlasPregenerationCursor(atlas.geometry(), atlas);
+        cursor = new RingAtlasPregenerationCursor(atlas.geometry(), atlas);
         totalChunks = cursor.totalChunks();
         var entries = new ArrayList<Slot<T>>(capacity);
         for (int i = 0; i < capacity; i++) entries.add(new Slot<>(cursor));
@@ -22,7 +23,12 @@ final class RingAtlasPregenerationBatch<T> {
     }
 
     int inFlight() { return (int) slots.stream().filter(slot -> slot.request != null).count(); }
-    boolean hasWork() { return slots.stream().anyMatch(slot -> slot.request != null || slot.selection.selected() != null); }
+    boolean hasWork() {
+        // An empty batch may simply be waiting for player-queue backpressure
+        // to clear. Only a consumed cursor with no retained selection is empty.
+        return cursor.nextIndex() < totalChunks
+                || slots.stream().anyMatch(slot -> slot.request != null || slot.selection.selected() != null);
+    }
 
     /** One ready slot per tick, fairly rotating; unfinished older loads never block ready ones. */
     Slot<T> nextCompleted() {

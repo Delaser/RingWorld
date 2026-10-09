@@ -12,6 +12,20 @@ import static org.junit.jupiter.api.Assertions.*;
 class RingAtlasPregenerationBatchTest {
     private final RingTerrainAtlas atlas = new RingTerrainAtlas(new RingGeometry(256, 1024), 7L);
 
+    @Test void emptySlotsWaitingOnBackpressureDoNotMeanCursorExhaustion() {
+        var batch = new RingAtlasPregenerationBatch<String>(atlas, 4);
+        assertEquals(0, batch.inFlight());
+        assertTrue(batch.hasWork());
+        var slot = batch.slots.get(0);
+        for (long index = 0; index < batch.totalChunks; index++) {
+            assertEquals(index, slot.selection.select().orElseThrow().index());
+            assertTrue(batch.hasWork());
+            slot.selection.captured();
+        }
+        assertFalse(batch.hasWork());
+        assertTrue(slot.selection.select().isEmpty());
+    }
+
     @Test void sharedCursorNeverDuplicatesConcurrentSelectionsAndRetriesStayLocal() {
         var batch = new RingAtlasPregenerationBatch<String>(atlas, 8);
         var indices = new HashSet<Long>();
