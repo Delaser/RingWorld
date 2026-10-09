@@ -21,12 +21,61 @@ public final class RingFloatingStructureCaptureClient {
     private int stage, ticks, settle;
     private boolean opening, creating, capturePending;
     private boolean reviewOpening, reviewReady;
+    private final CopiedWorldFileFixUpgrade wallFileFix = new CopiedWorldFileFixUpgrade();
     private CompletableFuture<Void> setup;
 
     public static boolean tickIfEnabled(Minecraft client) {
+        if (Boolean.getBoolean("ringworld.captureAtlasWalls")) return INSTANCE.captureWalls(client);
         if (Boolean.getBoolean("ringworld.floatingStructureReview")) return INSTANCE.review(client);
         return Boolean.getBoolean("ringworld.captureFloatingStructure") && INSTANCE.tick(client);
     }
+    /** Opt-in regression capture; the runner supplies a disposable copy of the saved study. */
+    private boolean captureWalls(Minecraft client) {
+        client.options.getSoundSourceOptionInstance(net.minecraft.sounds.SoundSource.MASTER).set(0.0);
+        client.options.pauseOnLostFocus = false;
+        client.options.onboardAccessibility = false;
+        client.options.enableVsync().set(false);
+        client.options.framerateLimit().set(60);
+        if (++ticks > 9000) throw new IllegalStateException("Atlas wall capture timed out at " + stage
+                + " screen=" + CopiedWorldFileFixUpgrade.currentScreen(client));
+        if (wallFileFix.handleIfRequired(client, "atlas-wall-review", "Atlas Wall Review")) return true;
+        if (client.level == null || client.player == null) {
+            if (!opening && client.isGameLoadFinished()
+                    && RingMinecraftClientAccess.screen(client) instanceof TitleScreen) {
+                opening = true;
+                client.createWorldOpenFlows().openWorld("Atlas Wall Review",
+                        () -> { throw new IllegalStateException("Atlas wall review cancelled"); });
+            }
+            return true;
+        }
+        var geometry = ClientRingState.geometry();
+        var atlas = ClientRingState.terrainAtlas();
+        if (geometry == null || atlas == null || !atlas.isComplete()
+                || capturePending || RingMinecraftClientAccess.screen(client) != null) return true;
+        RingMinecraftClientAccess.setGuiHidden(client, true);
+        client.options.cloudStatus().set(net.minecraft.client.CloudStatus.OFF);
+        if (stage >= 3) {
+            RingWorldMod.LOGGER.info("[atlas-wall-review] CAPTURE COMPLETE: low/medium/high, closed edges, full-depth walls");
+            client.stop();
+            return true;
+        }
+        if (settle++ == 0) {
+            client.options.renderDistance().set(10);
+            RingClientLodTuning.select(dev.ringworld.world.RingLodQuality.values()[stage]);
+        }
+        if (settle < 160 || !dev.ringworld.client.render.RingSurfaceTextureRenderer.displayReady()) return true;
+        capturePending = true;
+        String name = "atlas-walls-" + RingClientLodTuning.quality().command();
+        RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, name + ".png",
+                RingMinecraftClientAccess.mainRenderTarget(client), 1,
+                message -> client.execute(() -> {
+                    capturePending = false;
+                    RingWorldMod.LOGGER.info("[atlas-wall-review] screenshot {}", message.getString());
+                }));
+        stage++; settle = 0;
+        return true;
+    }
+
     /** Open the existing sample once, then hand control back to the player. */
     private boolean review(Minecraft client) {
         if (reviewReady) return false;
@@ -49,11 +98,13 @@ public final class RingFloatingStructureCaptureClient {
         var server = client.getSingleplayerServer();
         server.execute(() -> {
             var player = server.getPlayerList().getPlayers().getFirst();
-            Vec3 pose = new Vec3(570, 185, geometry.maxWidthZ() + 94);
+            boolean keepPose = Boolean.getBoolean("ringworld.keepReviewPose");
+            Vec3 pose = keepPose ? player.position() : new Vec3(570, 185, geometry.maxWidthZ() + 94);
             Vec3 target = new Vec3(512, 148, geometry.maxWidthZ() + 29);
             Vec3 direction = geometry.toCameraLocal(target, pose.add(0, player.getEyeHeight(), 0));
-            float yaw = (float)Math.toDegrees(Math.atan2(-direction.x, direction.z));
-            float pitch = (float)-Math.toDegrees(Math.atan2(direction.y, Math.hypot(direction.x, direction.z)));
+            float yaw = keepPose ? player.getYRot() : (float)Math.toDegrees(Math.atan2(-direction.x, direction.z));
+            float pitch = keepPose ? player.getXRot()
+                    : (float)-Math.toDegrees(Math.atan2(direction.y, Math.hypot(direction.x, direction.z)));
             player.setGameMode(GameType.CREATIVE);
             player.getAbilities().flying = true;
             player.onUpdateAbilities();

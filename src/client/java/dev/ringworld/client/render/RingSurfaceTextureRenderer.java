@@ -257,7 +257,7 @@ public final class RingSurfaceTextureRenderer {
                 : client.level.getMinY();
         MeshInputs meshInputs = new MeshInputs(ClientRingState.surfaceReferenceY(),
                 worldBottomY + ClientRingState.wallHeightBlocks(),
-                ClientRingState.wallStyle().thicknessBlocks(),
+                ClientRingState.wallHeightBlocks(),
                 RingWallShaderStyle.encode(ClientRingState.wallStyle(), ClientRingState.generatorSeed(), client.level),
                 geometry.equals(bufferedGeometry) && atlas.worldHash() == bufferedWorldHash,
                 vertexBuffer != null, bufferedMeshDetailed, bufferedMeshHeightFingerprint,
@@ -291,7 +291,8 @@ public final class RingSurfaceTextureRenderer {
             if (RingSurfaceMeshRefreshPolicy.shouldRebuild(inputs.sameAtlas(), inputs.hasMesh(),
                     atlas.isComplete(), inputs.detailed(), preparedSnapshot.heightFingerprint(), inputs.fingerprint())) {
                 RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(atlas.geometry(), atlas, atlas.isComplete(),
-                        inputs.referenceY(), inputs.wallTopY(), inputs.wallThickness(), profile);
+                        inputs.referenceY(), inputs.wallTopY(), inputs.wallHeightBlocks(),
+                        inputs.savedStyle(), inputs.seed(), profile);
                 packed = RingSurfaceGpu.packMesh(mesh, inputs.wallStyle().vertexArgb());
                 int wallColumns = Math.min(16384, profile.textureColumns());
                 nextWallTextureKey = RingWallTexture.contentKey(atlas, inputs.savedStyle(), inputs.seed(),
@@ -499,7 +500,7 @@ public final class RingSurfaceTextureRenderer {
         }
     }
 
-    private record MeshInputs(int referenceY, int wallTopY, int wallThickness,
+    private record MeshInputs(int referenceY, int wallTopY, int wallHeightBlocks,
                               RingWallShaderStyle.Encoded wallStyle, boolean sameAtlas,
                               boolean hasMesh, boolean detailed, long fingerprint,
                               dev.ringworld.world.RingWallStyle savedStyle, long seed, int bottomY,

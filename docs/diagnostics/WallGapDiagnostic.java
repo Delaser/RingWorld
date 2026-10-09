@@ -3,7 +3,7 @@ package dev.ringworld.world;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Isolated CPU probe of the pre-fix Atlas mesh and deterministic wall decay. */
+/** Isolated CPU probe of the closed Atlas mesh and deterministic wall decay. */
 public final class WallGapDiagnostic {
     public static void main(String[] args) {
         var geometry = new RingGeometry(128, 2048);
@@ -11,7 +11,8 @@ public final class WallGapDiagnostic {
         for (int z = 0; z < atlas.rows(); z++) {
             for (int x = 0; x < atlas.columns(); x++) atlas.putCell(x, z, 144, 0x336699);
         }
-        var mesh = RingSurfaceMesh.build(geometry, atlas, true, 64, 96, 5);
+        var mesh = RingSurfaceMesh.build(geometry, atlas, true, 64, 96, 160,
+                RingWallStyle.DEFAULT, 255, RingLodQuality.MEDIUM.profile(geometry, 96));
         List<double[]> vertices = new ArrayList<>();
         mesh.emitTriangles((x, y, z, u, v) -> vertices.add(new double[] {
                 geometry.physicalCenterY() - Math.hypot(x, y), z, v }));
@@ -40,12 +41,12 @@ public final class WallGapDiagnostic {
                 if (!RingWallPattern.blockPresent(decayed, x, y, 4, 96, 2048, 255)) decayedMissing++;
             }
         }
-        System.out.printf("terrain=144 wallTop=96 missing span=48 blocks; vertical faces covering span=%d%n", terrainSides);
+        System.out.printf("terrain=144 wallTop=96 formerly missing span=48 blocks; vertical faces covering span=%d%n", terrainSides);
         System.out.printf("stepped wall caps below original top=%d; zero-decay transparent blocks=%d; normal-decay transparent blocks=%d; differing inner/outer column heights=%d%n",
                 steppedWallCaps, intactMissing, decayedMissing, depthDifferences);
-        if (terrainSides != 0 || steppedWallCaps != 0 || intactMissing != 0
+        if (terrainSides == 0 || steppedWallCaps == 0 || intactMissing != 0
                 || decayedMissing == 0 || depthDifferences == 0) {
-            throw new AssertionError("Diagnostic no longer matches geometry; re-investigate");
+            throw new AssertionError("Closed geometry regression");
         }
     }
 }

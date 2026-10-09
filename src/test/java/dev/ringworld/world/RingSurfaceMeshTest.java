@@ -82,14 +82,14 @@ class RingSurfaceMeshTest {
         RingSurfaceMesh.Mesh detailedWithReturns = RingSurfaceMesh.build(
                 geometry, variedCompleteAtlas(geometry), true, 64.0, 96.0, 5);
 
-        assertEquals(withoutReturns.vertexCount() + withReturns.segments() * 36,
+        assertEquals(withoutReturns.vertexCount() + withReturns.segments() * 84,
                 withReturns.vertexCount());
-        assertEquals(withoutReturns.vertexCount() + detailedWithReturns.segments() * 36,
+        assertEquals(withoutReturns.vertexCount() + detailedWithReturns.segments() * 84,
                 detailedWithReturns.vertexCount());
         List<RingSurfaceMesh.Vertex> vertices = emitted(withReturns);
         int surfaceVertices = withoutReturns.vertexCount();
         for (int segment = 0; segment < withReturns.segments(); segment++) {
-            int bridgeOffset = surfaceVertices + segment * 36;
+            int bridgeOffset = surfaceVertices + segment * 84;
             for (int vertex = 0; vertex < 6; vertex++) {
                 assertEquals(RingSurfaceMesh.MINIMUM_BRIDGE_TEXTURE_V,
                         vertices.get(bridgeOffset + vertex).v());
@@ -101,8 +101,8 @@ class RingSurfaceMeshTest {
                         vertices.get(bridgeOffset + 18 + vertex).v());
                 assertEquals(RingSurfaceMesh.TOP_BRIDGE_TEXTURE_V,
                         vertices.get(bridgeOffset + 24 + vertex).v());
-                assertEquals(RingSurfaceMesh.TOP_BRIDGE_TEXTURE_V,
-                        vertices.get(bridgeOffset + 30 + vertex).v());
+                for (int cap = 0; cap < 8; cap++) assertEquals(RingSurfaceMesh.TOP_BRIDGE_TEXTURE_V,
+                        vertices.get(bridgeOffset + 24 + cap * 6 + vertex).v());
             }
         }
     }
@@ -152,6 +152,107 @@ class RingSurfaceMeshTest {
         int firstWall = mesh.segments() * mesh.bands() * 6;
         var bottom = vertices.get(firstWall);
         assertEquals(geometry.physicalRadiusAt(46), Math.hypot(bottom.x(), bottom.y()), 0.0001);
+    }
+
+    @Test
+    void elevatedFiniteTerrainEdgesUseExactLatticeAndReachInsideTheCrest() {
+        var geometry = new RingGeometry(128, 2048);
+        var mesh = RingSurfaceMesh.build(geometry, flatCompleteAtlas(geometry, 144), true,
+                64, 96, 160, RingWallStyle.DEFAULT, 255,
+                RingLodQuality.MEDIUM.profile(geometry, 96));
+        var vertices = emitted(mesh);
+        int surface = mesh.segments() * mesh.bands() * 6;
+        for (int segment = 0; segment < mesh.segments(); segment++) {
+            for (int side = 0; side < 2; side++) {
+                int offset = surface + segment * 84 + 72 + side * 6;
+                var top = mesh.triangleVertex(segment, side == 0 ? 0 : mesh.bands() - 1,
+                        side == 0 ? 0 : 5);
+                assertPositionEquals(top, vertices.get(offset));
+                var bottom = vertices.get(offset + 5);
+                assertTrue(geometry.physicalCenterY() - Math.hypot(bottom.x(), bottom.y()) < 96);
+                assertEquals(top.z(), bottom.z());
+                assertTrue(bottom.u() >= 2, "terrain edge uses side material, not wall material");
+            }
+        }
+    }
+
+    @Test
+    void exteriorWallsMatchWorldFloorAndDecayedCapsShareEveryFaceEdge() {
+        var geometry = new RingGeometry(128, 2048);
+        var style = RingWallStyle.DEFAULT;
+        var mesh = RingSurfaceMesh.build(geometry, flatCompleteAtlas(geometry, 64), true,
+                64, 96, 160, style, 255, RingLodQuality.HIGH.profile(geometry, 96));
+        var vertices = emitted(mesh);
+        int surface = mesh.segments() * mesh.bands() * 6;
+        boolean decayed = false;
+        for (int segment = 0; segment < mesh.segments(); segment++) {
+            int start = surface + segment * 84;
+            for (int side = 0; side < 2; side++) {
+                int face = start + 12 + side * 6;
+                var bottom = vertices.get(face);
+                assertEquals(geometry.physicalRadiusAt(-64), Math.hypot(bottom.x(), bottom.y()), 0.0001);
+                assertEquals(side == 0 ? -64 : 64, bottom.z());
+                // Exterior crest meets the first cap; interior meets the last.
+                int firstCap = start + 24 + side * 6;
+                int lastCap = start + 24 + 3 * 12 + side * 6;
+                assertPositionEquals(vertices.get(face + 5), vertices.get(firstCap));
+                assertPositionEquals(vertices.get(start + side * 6 + 5), vertices.get(lastCap + 5));
+                for (int depth = 0; depth < 3; depth++) {
+                    int cap = firstCap + depth * 12;
+                    assertPositionEquals(vertices.get(cap + 5), vertices.get(cap + 12));
+                    assertPositionEquals(vertices.get(cap + 2), vertices.get(cap + 13));
+                }
+                int x = segment * geometry.circumferenceBlocks() / mesh.segments();
+                int expected = 96 - RingWallPattern.topCollapseDepth(style, x, 0, 2048, 255);
+                assertEquals(geometry.physicalRadiusAt(expected),
+                        Math.hypot(vertices.get(face + 5).x(), vertices.get(face + 5).y()), 0.0001);
+                decayed |= expected < 96;
+                int next = surface + ((segment + 1) % mesh.segments()) * 84;
+                assertPositionEquals(vertices.get(face + 2), vertices.get(next + 12 + side * 6 + 5));
+            }
+        }
+        assertTrue(decayed, "do not erase intentional decay to hide holes");
+    }
+
+    @Test
+    void savedHeightExtendsDownFromTheAlignedTopAtAnyElevation() {
+        var geometry = new RingGeometry(128, 2048);
+        var atlas = flatCompleteAtlas(geometry, 144);
+        for (int top : new int[]{96, 120}) for (int height : new int[]{32, 160, 256}) {
+            var mesh = RingSurfaceMesh.build(geometry, atlas, true, 64, top, height,
+                    RingWallStyle.DEFAULT, 255, RingLodQuality.LOW.profile(geometry, 96));
+            var vertices = emitted(mesh);
+            int firstOuter = mesh.segments() * mesh.bands() * 6 + 12;
+            var bottom = vertices.get(firstOuter);
+            assertEquals(geometry.physicalRadiusAt(top - height), Math.hypot(bottom.x(), bottom.y()), 0.0001);
+            assertThrows(IllegalArgumentException.class, () -> RingSurfaceMesh.build(geometry, atlas,
+                    true, 64, top, -1, RingWallStyle.DEFAULT, 255, RingLodQuality.LOW.profile(geometry, 96)));
+        }
+    }
+
+    @Test
+    void wallsBelowReferenceStillCloseTerrainAndReachWorldBottom() {
+        var geometry = new RingGeometry(128, 2048);
+        var mesh = RingSurfaceMesh.build(geometry, flatCompleteAtlas(geometry, 144), true,
+                64, -32, 32, RingWallStyle.DEFAULT, 255,
+                RingLodQuality.LOW.profile(geometry, 96));
+        assertEquals(mesh.segments() * (mesh.bands() * 6 + 84), emitted(mesh).size());
+    }
+
+    @Test
+    void widestWallsKeepCapGeometryBoundedAtEveryQuality() {
+        var geometry = new RingGeometry(128, 2048);
+        var atlas = flatCompleteAtlas(geometry, 144);
+        for (var quality : RingLodQuality.values()) {
+            for (int thickness : new int[]{1, 5, 32}) {
+                var style = RingWallStyle.custom(thickness, RingWallStyle.DEFAULT.palette(),
+                        RingWallStyle.DEFAULT.pattern(), 100);
+                var mesh = RingSurfaceMesh.build(geometry, atlas, true, 64, 96, 160,
+                        style, 255, quality.profile(geometry, 96));
+                assertEquals(mesh.segments() * (mesh.bands() * 6 + 36 + 12 * Math.min(4, thickness)),
+                        emitted(mesh).size());
+            }
+        }
     }
 
     private static void assertPositionEquals(RingSurfaceMesh.Vertex a, RingSurfaceMesh.Vertex b) {

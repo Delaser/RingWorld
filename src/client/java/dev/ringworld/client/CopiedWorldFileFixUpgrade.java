@@ -18,7 +18,8 @@ final class CopiedWorldFileFixUpgrade {
     private static final String[] FIXTURE_ENABLE_PROPERTIES = {
             "ringworld.captureRingProjection",
             "ringworld.captureRingVisualParity",
-            "ringworld.productionLifecycleTest"
+            "ringworld.productionLifecycleTest",
+            "ringworld.captureAtlasWalls"
     };
     private static final String BACKUP_CONFIRM_SCREEN =
             "net.minecraft.client.gui.screens.BackupConfirmScreen";

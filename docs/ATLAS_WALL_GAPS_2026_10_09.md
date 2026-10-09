@@ -1,4 +1,7 @@
-# Atlas wall openings: investigation, 2026-10-09
+# Atlas wall openings: pre-fix investigation, 2026-10-09
+
+The following describes the pre-fix mesh. The implementation and subsequent
+verification are recorded in [issue #264 implementation](ATLAS_WALL_CLOSURE_264.md).
 
 The outside-building feature does not change the Atlas footprint or its wall
 mesh. The observed openings have two independently reproducible geometry causes.
@@ -45,5 +48,6 @@ or adding distant underside meshes.
 Evidence: the native [live view](media/floating-exterior-structure/wall-placeholder-gaps-live.png)
 and [sample gallery](media/floating-exterior-structure/index.html). The small
 [standalone geometry diagnostic](diagnostics/WallGapDiagnostic.java) is banked
-in the repository; compile/run it with the development runtime classpath. Its
-output is retained locally under `logs/atlas-wall-gap-diagnosis/`. No production mesh/shader fix is claimed.
+in the repository; compile/run it with the development runtime classpath. The original output is retained locally under `logs/atlas-wall-gap-diagnosis/`.
+The diagnostic now asserts that edge faces and lowered caps exist; see the
+implementation record for the original and repaired evidence boundaries.

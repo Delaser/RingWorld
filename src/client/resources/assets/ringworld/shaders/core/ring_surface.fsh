@@ -122,7 +122,7 @@ void main() {
         float strip = intrinsicWidth < 0.0 ? 0.0 : 1.0;
         if (texCoord0.y < -1.5 || texCoord0.y > 2.5) strip += 2.0;
         vec4 wall = filteredWall(vec2(texCoord0.x, (strip + vertical) / 4.0), strip);
-        if (wall.a < 0.5) discard;
+        // Decay is a closed height field; never punch holes in wall faces.
         sampled = vec4(wall.rgb, 0.0);
     }
 
