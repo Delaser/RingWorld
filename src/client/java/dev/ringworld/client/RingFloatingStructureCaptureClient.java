@@ -53,22 +53,33 @@ public final class RingFloatingStructureCaptureClient {
         if (geometry == null || atlas == null || !atlas.isComplete()
                 || capturePending || RingMinecraftClientAccess.screen(client) != null) return true;
         RingMinecraftClientAccess.setGuiHidden(client, true);
-        client.options.cloudStatus().set(net.minecraft.client.CloudStatus.OFF);
+        boolean clouds = Boolean.getBoolean("ringworld.captureCloudAltitude");
+        client.options.cloudStatus().set(clouds ? (stage < 3
+                ? net.minecraft.client.CloudStatus.FANCY : net.minecraft.client.CloudStatus.FAST)
+                : net.minecraft.client.CloudStatus.OFF);
         boolean altitude = Boolean.getBoolean("ringworld.captureAtlasAltitude");
-        if (stage >= (altitude ? 6 : 3)) {
+        if (stage >= (altitude || clouds ? 6 : 3)) {
             RingWorldMod.LOGGER.info("[atlas-wall-review] CAPTURE COMPLETE: {}",
-                    altitude ? "altitude handoff: three qualities, lower/ground/above-build controls"
+                    clouds ? "cloud altitude: fancy/fast below/inside/above dynamic deck"
+                            : altitude ? "altitude handoff: three qualities, lower/ground/above-build controls"
                             : "low/medium/high, closed edges, full-depth walls");
             client.stop();
             return true;
         }
         if (settle == 0) {
             client.options.renderDistance().set(10);
-            RingClientLodTuning.select(dev.ringworld.world.RingLodQuality.values()[stage < 3 ? stage : 1]);
-            if (altitude) {
+            RingClientLodTuning.select(dev.ringworld.world.RingLodQuality.values()[!clouds && stage < 3 ? stage : 1]);
+            if (altitude || clouds) {
                 setup = new CompletableFuture<>();
                 var server = client.getSingleplayerServer();
-                double y = stage < 3 ? 234.67834 : stage == 3 ? 185 : stage == 4 ? 130 : 340;
+                int cloudBase = dev.ringworld.world.RingCloudBounds.baseHeight(
+                        client.level.getMinY(), ClientRingState.wallHeightBlocks());
+                double y = clouds ? cloudBase + (stage % 3 == 0 ? -16 : stage % 3 == 1 ? 2 : 16)
+                        - client.player.getEyeHeight()
+                        : stage < 3 ? 234.67834 : stage == 3 ? 185 : stage == 4 ? 130 : 340;
+                if (clouds) RingWorldMod.LOGGER.info("[cloud-altitude-review] wallHeight={} base={} eyeY={} mode={}",
+                        ClientRingState.wallHeightBlocks(), cloudBase, y + client.player.getEyeHeight(),
+                        client.options.cloudStatus().get());
                 server.execute(() -> {
                     try {
                         var player = server.getPlayerList().getPlayers().getFirst();
@@ -76,7 +87,7 @@ public final class RingFloatingStructureCaptureClient {
                         player.getAbilities().flying = true;
                         player.onUpdateAbilities();
                         player.teleportTo(server.overworld(), 1192.649, y, 0.181,
-                                Set.<Relative>of(), -91.4F, 78.3F, false);
+                                Set.<Relative>of(), -91.4F, clouds ? -12F : 78.3F, false);
                         setup.complete(null);
                     } catch (Throwable failure) { setup.completeExceptionally(failure); }
                 });
@@ -84,14 +95,16 @@ public final class RingFloatingStructureCaptureClient {
             settle = 1;
             return true;
         }
-        if (altitude) {
+        if (altitude || clouds) {
             if (!setup.isDone()) return true;
             setup.join();
         }
         settle++;
         if (settle < 160 || !dev.ringworld.client.render.RingSurfaceTextureRenderer.displayReady()) return true;
         capturePending = true;
-        String name = altitude ? "atlas-altitude-" + (stage < 3
+        String name = clouds ? "cloud-altitude-" + (stage < 3 ? "fancy-" : "fast-")
+                + (stage % 3 == 0 ? "below" : stage % 3 == 1 ? "inside" : "above")
+                : altitude ? "atlas-altitude-" + (stage < 3
                 ? "high-" + RingClientLodTuning.quality().command()
                 : stage == 3 ? "lower-medium" : stage == 4 ? "ground-medium" : "above-build-medium")
                 : "atlas-walls-" + RingClientLodTuning.quality().command();

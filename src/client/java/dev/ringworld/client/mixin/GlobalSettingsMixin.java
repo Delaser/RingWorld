@@ -87,7 +87,7 @@ abstract class GlobalSettingsMixin {
                 : RingDimensionReport.VANILLA_OVERWORLD_BOTTOM_Y;
         float wallTopY = active == 1 ? worldBottomY + wallHeight : 0.0F;
         float cloudBaseY = active == 1
-                ? wallTopY + RingDimensionReport.CLOUD_CLEARANCE_BLOCKS
+                ? RingCloudBounds.baseHeight(worldBottomY, wallHeight)
                 : 0.0F;
         float physicalCenterY = geometry == null ? 0.0F : (float)geometry.physicalCenterY();
 

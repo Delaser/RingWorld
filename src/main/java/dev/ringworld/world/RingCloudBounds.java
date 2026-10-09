@@ -2,6 +2,12 @@ package dev.ringworld.world;
 
 /** Intrinsic-Z clipping planes for the finite RingWorld cloud deck. */
 public record RingCloudBounds(double minimumZ, double maximumZ) {
+    /** One deck altitude for CPU face selection and GPU projection. */
+    public static int baseHeight(int worldBottomY, int wallHeightBlocks) {
+        return Math.addExact(Math.addExact(worldBottomY, wallHeightBlocks),
+                RingDimensionReport.CLOUD_CLEARANCE_BLOCKS);
+    }
+
     public RingCloudBounds {
         if (!Double.isFinite(minimumZ) || !Double.isFinite(maximumZ)
                 || maximumZ <= minimumZ) {
