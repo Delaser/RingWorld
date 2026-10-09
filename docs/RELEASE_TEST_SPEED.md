@@ -28,7 +28,15 @@ immutability checks and hash-bound retention remain active.
 Development may select affected fixtures for feedback; partial selections remain
 INCOMPLETE and cannot replace complete final-candidate release qualification.
 
-Validation before integration: 451 Python tests (two platform skips on macOS),
+Validation before integration: 452 Python tests (two platform skips on macOS),
 Fabric/NeoForge Java build checks and the GitHub six-cell build matrix. Fresh full
 release qualification and native batching evidence are recorded separately in
 `deploy/qualified/1.4/README.md`; do not infer a release PASS from this document.
+
+The first full 1.4 run exposed an obsolete Atlas UI revision marker: a floating
+gold block was correctly omitted by the new manufactured-platform selector, so
+the fixture could never observe its expected height. The revision proof now
+places and removes stone, a natural material which must remain represented.
+Its revision, height, removal, handshake and normal-disconnect assertions remain
+required. The stopped run and logs remain under `logs/release-1.4`; qualification
+must restart with freshly frozen candidates from the corrected source.
