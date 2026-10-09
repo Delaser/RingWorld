@@ -283,3 +283,6 @@ settling, image, geometry and frame checks. The September 20 copied wall-study
 world uses X=3072. An explicitly requested visible Gradle qualification run can
 set `-PringQualificationBackgroundClient=false`. These fixture changes do not
 modify the retained frozen mod jar or its recorded candidate-source identity.
+
+See [release-test setup and capture consolidation](RELEASE_TEST_SPEED.md) for
+verified cache inputs and one-session four-environment projection coverage.

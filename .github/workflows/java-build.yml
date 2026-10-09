@@ -60,6 +60,14 @@ jobs:
         with:
           distribution: temurin
           java-version: "25"
+          cache: gradle
+          cache-dependency-path: |
+            build.gradle
+            neoforge/build.gradle
+            settings.gradle
+            gradle.properties
+            gradle/wrapper/gradle-wrapper.properties
+            config/minecraft-version-matrix*.json
       - name: Build and test ${{ matrix.loader }}
         shell: bash
         env:

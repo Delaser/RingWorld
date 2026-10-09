@@ -17,7 +17,7 @@ if str(SCRIPTS) not in sys.path:
     sys.path.insert(0, str(SCRIPTS))
 
 from run_minecraft_nightly_matrix import (  # noqa: E402
-    FIXTURES, GRADLE_DOWNLOAD_FAILURE_REASON, NightlyMatrixError, _child_argv,
+    FIXTURES, GRADLE_FIXTURES, GRADLE_DOWNLOAD_FAILURE_REASON, NightlyMatrixError, _child_argv,
     _classified_infrastructure_reason, _cleanup_disposable_child_state, _cooldown,
     _retain_terminal_artifacts, _retryable_infrastructure_failure,
     _schedule_infrastructure_retry, _selected_fixtures, _terminal_markdown,
@@ -52,6 +52,13 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             self.assertIn(value, joined)
         source_index = command.index("--source-world")
         self.assertEqual(str(Path("/world")), command[source_index + 1])
+
+    def test_every_gradle_fixture_receives_verified_asset_seed(self) -> None:
+        for fixture in GRADLE_FIXTURES:
+            with self.subTest(fixture=fixture):
+                command = _child_argv(ROOT, "26.1-fabric", fixture,
+                                      self.arguments(), Path("/world"))
+                self.assertEqual("/loom", command[command.index("--gradle-loom-cache") + 1])
 
     def test_worldgen_command_does_not_receive_gradle_or_world_options(self) -> None:
         command = _child_argv(ROOT, "26.1-neoforge", "worldgen",

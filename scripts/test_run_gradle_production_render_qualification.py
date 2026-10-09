@@ -7,6 +7,9 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
+import run_gradle_production_render_qualification as runner
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
@@ -36,6 +39,47 @@ class GradleProductionRenderQualificationTest(unittest.TestCase):
         for value in (-1, 16384, float("nan"), float("inf")):
             with self.subTest(value=value), self.assertRaises(GradleProductionRenderError):
                 _camera_arguments(value)
+
+    def test_batch_requires_each_environment_completion_and_frame_metrics(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            runtime = Path(directory)
+            (runtime / "logs").mkdir()
+            prepared = SimpleNamespace(cell={"minecraft": {"version": "26.3"}, "loader": "fabric"})
+            base = "Loading Minecraft 26.3 with Fabric\n[projection-capture] result=true, captures complete\n"
+            evidence = "[projection-capture] environment=night complete\n" + "\n".join(
+                f"[projection-capture] environment=night {view} frame metrics: samples=100"
+                for view in ("tangent", "handoff", "radial-up"))
+            log = runtime / "logs/latest.log"
+            with patch.object(runner, "_runtime", return_value=runtime), patch.object(runner, "_png", return_value={}):
+                log.write_text(base + evidence)
+                self.assertEqual(3, len(runner._verify_projection(prepared, "night")))
+                with self.assertRaisesRegex(GradleProductionRenderError, "completion"):
+                    runner._verify_projection(prepared, "rain")
+                log.write_text(base + evidence.replace("environment=night handoff", "environment=rain handoff"))
+                with self.assertRaisesRegex(GradleProductionRenderError, "frame metrics"):
+                    runner._verify_projection(prepared, "night")
+
+    def test_all_weather_modes_use_one_projection_launch_and_world_copy(self) -> None:
+        prepared = SimpleNamespace(paths=SimpleNamespace(repository_root=ROOT, gradle_home=Path("/seed")),
+                                   cell={"loader": "fabric", "minecraft": {"version": "26.3"}, "profile": {"timeout_seconds": 3600}})
+        passed = SimpleNamespace(verdict=runner.Verdict.PASS)
+        with patch.object(runner, "create_contained_directories"), patch.object(runner, "stage_gradle_distribution_zip"), \
+             patch.object(runner, "_stage_loom_seed"), patch.object(runner, "_world_inventory", return_value={}), \
+             patch.object(runner, "_world_observation", return_value={"minecraft_version": "26.3"}), \
+             patch.object(runner, "_runtime", side_effect=lambda p,n: Path("/fixture")/n), \
+             patch.object(runner, "_install_runtime", return_value={}), patch.object(runner, "_fresh_copy") as copies, \
+             patch.object(runner, "_record", side_effect=lambda p,args,*rest: args), \
+             patch.object(runner, "execute_command", return_value=passed) as execute, \
+             patch.object(runner, "_executed_record", return_value={}), \
+             patch.object(runner, "_verify_projection", return_value=({}, {}, {})) as verify, \
+             patch.object(runner, "_verify_parity", return_value=({}, {}, {}, {})), \
+             patch.object(runner, "_copy_log", return_value={}):
+            result = runner._execute(prepared, Path("/source"), None, None, ())
+            self.assertEqual(3, execute.call_count)  # assets, batched projection, parity
+            self.assertEqual(2, copies.call_count)
+            self.assertEqual(list(ENVIRONMENTS), [c.args[1] for c in verify.call_args_list])
+            self.assertEqual(16, len(result["captures"]))
+            self.assertIn("-PringProjectionEnvironment=all", execute.call_args_list[1].args[0])
 
     def test_png_verifier_rejects_non_png(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

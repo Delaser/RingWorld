@@ -67,6 +67,17 @@ limits to accommodate it. See
 validation and remaining limitations. Development integration is separate
 from fresh frozen-candidate release qualification.
 
+## Release-test setup and captures
+
+All Gradle nightly fixtures accept the same hash-checked `--gradle-loom-cache`
+seed while retaining isolated writable state. Production projection runs all
+four weather/time conditions in one JVM; require every environment completion,
+per-view frame metric and screenshot. Wait for async screenshot callbacks before
+advancing, and keep visual parity in its own fresh world/session. Retain restart,
+recovery, lifecycle, multiplayer gates and documented settle intervals. See
+[`docs/RELEASE_TEST_SPEED.md`](docs/RELEASE_TEST_SPEED.md). Partial development
+runs remain INCOMPLETE; final release qualification covers all ten cells.
+
 ## Supported-version parity and release state
 
 For new releases, follow [`docs/JAR_EXPORT.md`](docs/JAR_EXPORT.md): six

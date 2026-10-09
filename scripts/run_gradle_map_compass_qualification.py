@@ -22,7 +22,7 @@ from run_gradle_creation_ui_qualification import _RUN_ID, _one_cell, _sha256
 from run_minecraft_qualification import (
     ROOT, SourceProvenance, collect_source_provenance, load_manifest,
     stage_gradle_distribution_zip, validate_gradle_dependency_cache,
-    validate_gradle_distribution_zip,
+    validate_gradle_distribution_zip, _stage_validated_loom_seed,
 )
 
 
@@ -118,7 +118,8 @@ def run(cell_id: str, *, repository_root: Path = ROOT,
         provenance_provider: Callable[[Path, Path], SourceProvenance] = collect_source_provenance,
         command_executor: Callable[..., Any] = execute_command,
         gradle_dependency_cache: Path | None = None,
-        gradle_distribution_zip: Path | None = None) -> dict[str, Any]:
+        gradle_distribution_zip: Path | None = None,
+        gradle_loom_cache: Path | None = None) -> dict[str, Any]:
     root = repository_root.resolve(strict=False)
     manifest_path = (root / manifest_relative).resolve(strict=False)
     cell = _one_cell(load_manifest(manifest_path), cell_id)
@@ -132,6 +133,7 @@ def run(cell_id: str, *, repository_root: Path = ROOT,
     create_contained_directories(paths)
     command = _command(cell, paths, dependency_cache)
     with QualificationLock.acquire(paths.lock_path, run_id):
+        _stage_validated_loom_seed(gradle_loom_cache, root, paths, cell)
         stage_gradle_distribution_zip(distribution_seed.source if distribution_seed else None, root, paths)
         result = command_executor(command, paths, ordinal=1)
     verdict, reason = result.verdict, result.reason
@@ -185,10 +187,12 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--manifest", default="config/minecraft-version-matrix.json")
     parser.add_argument("--gradle-dependency-cache")
     parser.add_argument("--gradle-distribution-zip")
+    parser.add_argument("--gradle-loom-cache")
     args = parser.parse_args(argv)
     try:
         result = run(
             args.cell, manifest_relative=args.manifest,
+            gradle_loom_cache=Path(args.gradle_loom_cache) if args.gradle_loom_cache else None,
             gradle_dependency_cache=Path(args.gradle_dependency_cache) if args.gradle_dependency_cache else None,
             gradle_distribution_zip=Path(args.gradle_distribution_zip) if args.gradle_distribution_zip else None,
         )
