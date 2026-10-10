@@ -26,7 +26,8 @@
 - Moved periodic server Atlas serialization, compression and file writes to a
   bounded background worker. Changes made during a save remain pending; normal
   completion waits for saved-file verification without blocking gameplay.
-  Snapshot preparation remains on the server thread. Final stop/unload drains
+  Snapshot preparation is spread across server ticks and reuses its buffer.
+  Final stop/unload drains
   the worker so partial pregeneration can resume safely.
 
 - Atlas pregeneration now admits several asynchronous chunk requests at once.

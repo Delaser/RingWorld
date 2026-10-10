@@ -34,6 +34,10 @@ and source-development evidence. Apply equivalent behaviour on all supported
 
 ## Server Atlas checkpoint persistence
 
+The six `6ee5bd56` 1.4 JARs predate this fix and are on publication hold.
+Do not reuse their full-suite PASS to qualify replacements.
+
+
 Periodic checkpoints prepare one immutable Atlas snapshot across bounded server ticks;
 a world-owned `RingAtlasCheckpointWriter` allocates privately, then serializes, GZIP-compresses, replaces,
 and optionally verifies it on one worker. Never read the mutable live Atlas from

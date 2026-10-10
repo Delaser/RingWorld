@@ -1,8 +1,14 @@
-# Server Atlas checkpoint follow-up — in validation
+# Server Atlas checkpoint follow-up — development validation complete
 
 The six qualified 1.4 files from `6ee5bd56` predate this persistence fix. Their
 100-fixture PASS does not qualify replacement JARs. The checkpoint change and
-authorized Large-server update are tracked in `SERVER_ATLAS_CHECKPOINTS.md`.
+authorized Large-server update are tracked in [checkpoint persistence](SERVER_ATLAS_CHECKPOINTS.md).
+All six source/loader builds and tests pass, together with 24 native save,
+interruption, resume and reopen phases. Six paired measurements on the actual
+Large server reduced the worst observed checkpoint tick from 7,999 ms to 13.49 ms.
+The final server build is running with the comparison probe disabled and normal
+Atlas recapture restored; the original world and installation are backed up.
+The old six release files must be rebuilt and fully requalified before publication.
 No new public upload is authorized.
 
 # Current state

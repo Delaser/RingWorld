@@ -85,3 +85,82 @@ FPS, packet-loss testing and full release qualification.
 
 Retained deployment, build, benchmark and native lifecycle evidence is under
 ignored `logs/server-atlas-checkpoint/`. Final results are appended after testing.
+
+## Large server comparison — 10 October 2026
+
+Four logical CPUs, 7,941 MiB host RAM, 4 GiB Java heap, Minecraft 26.3 /
+NeoForge 26.3.0.37-beta. No players connected. The normal Atlas rebuild was
+paused. Both paths used the complete 32,768 × 512 Atlas from the owner's
+pregenerated Large-world backup, with identical data and codec. Warm each path
+once, then alternate six AB/BA pairs. The intentional synchronous test reproduced
+seven-to-eight-second overload warnings.
+
+| Measurement | Original synchronous path | Bounded worker with buffer reuse |
+| --- | ---: | ---: |
+| Measured checkpoints | 6 | 6 |
+| Mean largest owner-thread step per checkpoint | 7,559.62 ms | 6.14 ms |
+| Worst owner-thread checkpoint step | 7,998.10 ms | 12.63 ms |
+| Worst observed server tick during checkpoint | 7,999.10 ms | 13.49 ms |
+| Mean serialization/compression/write time | 7,559.57 ms, on server thread | 7,699.32 ms, on worker |
+
+The worst observed checkpoint tick was 99.83% shorter. This is removal of a
+server-thread stall, not a claim of faster disk writes or improved client FPS.
+The two-millisecond slice target is soft: the observed worst copy step exceeded
+it, but remained below the normal 50 ms tick budget in this test.
+
+The source input SHA-256 is
+`743b8f062d0d33bef3ca472395b67d77975c6e7ae95da6e529d17bb2dbb4ffd5`.
+The measured trial JAR SHA-256 is
+`1e19417b7c655d7a0289700e4815d597a28c4fb78af75833f0456f1f2be618eb`.
+The final code also catches fatal worker failures to terminate the checkpoint
+future instead of leaving it pending; that does not change the successful
+measured path. See [machine-readable measurements](evidence/server-atlas-checkpoint-2026-10-10.json)
+for every raw warmup/measured operation. Raw server logs are retained locally.
+
+The original 1.3 installation and complete world/config are preserved under
+`/opt/ringworld-server-archives/pre-1.4-checkpoint-20261010/`. The test reader never
+installs the old format-10 samples as a new format-11 authoritative cache.
+Real world chunks remain pregenerated; the normal 1.4 Atlas needs its separate
+format-11 recapture/rebuild. Background generation is restored and the
+comparison probe is disabled after measurement.
+
+## Final development validation and server state
+
+All six source targets build and pass Java tests: Fabric and NeoForge on 26.1
+(oldest shared 26.1.x ABI), 26.2 and 26.3. The oldest pair each runs 492 Java tests
+with no failures; the shared Python suite runs 452 tests, with 450 passing and two
+Windows-only skips on macOS. Seven new checkpoint tests cover coherent repaired
+copies, byte-equivalence, one outstanding save, changes during writing, buffer
+reuse, failure/retry, verification and teardown without server-queue callbacks.
+
+Each of the six targets passes four dedicated native phases: fresh generation
+with real pause/drain/resume/cancel/restart and rate-command probes; normal stop
+partway through generation; resume to completion; and reopen of the complete
+cache. All 24 retained files were independently GZIP-decoded, presence-counted
+against their reports and SHA-256 audited. Interrupted files contain partial
+coverage; all resumed files contain complete coverage. Complete reopens have
+zero elapsed generation time and byte-identical caches. The interruption runner
+expects a nonzero completion-only Gradle finalizer exit with an `INTERRUPTED`
+report; it is not a runtime failure. One earlier readiness race in the test's RCON
+stop request is retained separately; the final runner waits for listener readiness.
+
+The final remote JAR SHA-256 is
+`f98f421baca28dcc4b3815f2b85c0130604e67f35e8325d5da647ee578470693`.
+The service runs this 1.4 development build with only `atlasSaveTimings` enabled,
+not the comparison probe. A normal restart durably retained 2,922,496 format-11
+cells; recapture subsequently passed 31% and continued at roughly 5,100 cells/s.
+A separate read-only region-header audit finds all 65,536 canonical chunk records
+present in 128 region files. This proves record coverage, not every terrain value.
+World chunks remain intact; rebuilding the Atlas is separate from regenerating them.
+
+The retained post-restart window contains 32 successful periodic checkpoints,
+zero overload warnings, zero save errors and zero flush errors. Its worst recorded
+owner copy step is 63.89 ms shortly after restart. Preserve this outlier alongside
+the controlled 13.49 ms maximum: the two-millisecond copy target is soft and the
+fix does not promise every gameplay tick stays below 50 ms. No active-player or
+packet-loss comparison was performed.
+
+This is development validation of the shared persistence fix, not replacement
+release qualification. Keep the previous six qualified JARs and evidence intact;
+rebuild and run the full release suite on all supported runtime cells before
+publishing the changed 1.4 files. No public upload was performed.
