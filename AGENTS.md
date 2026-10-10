@@ -37,6 +37,12 @@ and source-development evidence. Apply equivalent behaviour on all supported
 
 ## Server Atlas checkpoint persistence
 
+Completed Atlas progress reports must use the maintained present-cell count to
+return total chunk coverage in constant time. Do not rescan every cell for every
+connected player: the three-client Large-server trial found this consumed about
+45% of sampled server-thread execution. Preserve exact partial-coverage counting
+and clearing semantics. See [multiplayer measurements](docs/SERVER_MULTIPLAYER_LOAD_2026_10_10.md).
+
 The six `6ee5bd56` 1.4 JARs predate this fix and are on publication hold.
 Do not reuse their full-suite PASS to qualify replacements.
 

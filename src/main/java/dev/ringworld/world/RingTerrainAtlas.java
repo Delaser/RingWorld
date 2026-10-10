@@ -532,6 +532,9 @@ public final class RingTerrainAtlas {
 
     /** Exact durable count used for progress reporting after restart/resume. */
     public long presentChunkCount() {
+        // Completed worlds publish status to each player repeatedly. The cell
+        // counter already proves every chunk is present; avoid a full scan.
+        if (isComplete()) return (long)geometry.circumferenceChunks() * geometry.widthChunks();
         long count = 0;
         for (int chunkX = 0; chunkX < geometry.circumferenceChunks(); chunkX++) {
             for (int chunkRow = 0; chunkRow < geometry.widthChunks(); chunkRow++) {

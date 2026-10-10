@@ -17,6 +17,8 @@ work across the join.
 Atlas checkpoint saves run on a background worker, keeping compression and file
 writes off the server tick thread. Snapshot preparation still uses the server
 thread; see [checkpoint behaviour](docs/SERVER_ATLAS_CHECKPOINTS.md).
+Completed-world progress reports also avoid repeatedly scanning the Atlas for
+each player; see [the three-client server trial](docs/SERVER_MULTIPLAYER_LOAD_2026_10_10.md).
 
 ## What does it look like?
 

@@ -1,3 +1,16 @@
+# Large-server multiplayer trial — follow-up fix tested
+
+October 10: three real hidden/muted clients exposed repeated complete-Atlas
+coverage scans in player progress updates. The shared constant-time completion
+shortcut passes 23 Atlas tests in all six source/loader groups. Walking average
+tick time fell from 39.0 to 23.2 ms, and median window P95 from 296.7 to 41.7 ms.
+Remaining loading outliers include a 1,135 ms P99 window on an additional in-band
+transition; this is not hitch-free or a full release qualification. The public
+Large server is restored with tested diagnostic JAR `9f6c522f`, complete Atlas,
+auto policy and authentication preserved. Test clients/tunnel are stopped.
+See [trial, limitations and evidence](SERVER_MULTIPLAYER_LOAD_2026_10_10.md).
+The old six 1.4 release JARs remain held; PR #279 is not merged or published.
+
 # Adaptive Atlas capture — development validation complete
 
 October 10: source `3ea998d` extends the existing auto request policy to ready

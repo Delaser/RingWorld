@@ -1,5 +1,7 @@
 # RingWorld documentation
 
+- [Large-server multiplayer load trial](SERVER_MULTIPLAYER_LOAD_2026_10_10.md):
+  three real clients, completion-status scan fix, measurements and remaining stalls.
 - [Server Atlas checkpoint persistence](SERVER_ATLAS_CHECKPOINTS.md): bounded
   snapshot preparation, worker saves, recovery and Large-server measurements.
 

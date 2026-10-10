@@ -64,6 +64,12 @@ same-path replacement is rejected while an old state remains owned.
 
 ## Diagnostics and comparison
 
+The later [three-client Large-server trial](SERVER_MULTIPLAYER_LOAD_2026_10_10.md)
+found a separate multiplayer-only hot path: completed-chunk status reports
+rescanned all cells for each player. Complete Atlases now return the exact total
+from their maintained present-cell count without scanning. Partial coverage
+keeps its existing exact scan; this shortcut does not change save or capture work.
+
 `-Dringworld.atlasSaveTimings=true` logs copied-cell count, total owner copy work,
 maximum copy step, worker write duration and verification duration.
 

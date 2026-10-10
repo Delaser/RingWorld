@@ -23,6 +23,8 @@
 
 ## Performance and size
 
+- Removed repeated full-Atlas scans when reporting progress in fully generated
+  multiplayer worlds, reducing periodic server tick spikes on Large rings.
 - Moved periodic server Atlas serialization, compression and file writes to a
   bounded background worker. Changes made during a save remain pending; normal
   completion waits for saved-file verification without blocking gameplay.
