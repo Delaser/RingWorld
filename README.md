@@ -14,6 +14,12 @@ work across the join.
 [Report a problem](https://github.com/Delaser/RingWorld/issues) ·
 [Join us on Discord](https://discord.com/invite/wBMY5Ab7su)
 
+Atlas checkpoint saves run on a background worker, keeping compression and file
+writes off the server tick thread. Snapshot preparation still uses the server
+thread; see [checkpoint behaviour](docs/SERVER_ATLAS_CHECKPOINTS.md).
+Completed-world progress reports also avoid repeatedly scanning the Atlas for
+each player; see [the three-client server trial](docs/SERVER_MULTIPLAYER_LOAD_2026_10_10.md).
+
 ## What does it look like?
 
 Nearby Minecraft terrain visibly curves away from you. Beyond normal render
@@ -235,7 +241,11 @@ It defaults to auto (4→2→1 under performance pressure,
 with slow recovery). Numeric `ringworld.atlasInFlightChunks` JVM overrides keep
 a fixed 1–8 request limit. Gamemasters can change it live with
 `/ringworld chunk_gen_rate 1|2|4|8|auto`; the bare command shows the current
-mode/target. Overrides last for the world session. See the linked local benchmarks, lifecycle
+mode/target. Ready-chunk and player-loaded Atlas captures share that target,
+up to four chunks per tick within a soft 2 ms budget, and back down with the
+same performance feedback. Player-load callbacks queue coordinates rather than
+sampling every arriving chunk immediately. Individual chunks can exceed the budget.
+Overrides last for the world session. See the linked local benchmarks, lifecycle
 checks and remaining multiplayer/content limits before enabling it.
 
 The detailed engineering information previously kept on this page lives in

@@ -27,6 +27,8 @@ final class RingAtlasAutoScaleProbe {
         if (++ticks > 2400 || System.nanoTime() - started > 120_000_000_000L)
             throw new IllegalStateException("Atlas auto-scaling fixture watchdog, stage=" + stage);
         int limit = RingAtlasPregenerationService.maxInFlightChunks(world);
+        require(RingAtlasCaptureBudget.allows(limit - 1, limit, 0), "capture target does not follow auto requests");
+        require(!RingAtlasCaptureBudget.allows(limit, limit, 0), "capture exceeded auto target");
         if (stage == 0) {
             require(limit == 4, "auto did not start at four");
             stage = 1;

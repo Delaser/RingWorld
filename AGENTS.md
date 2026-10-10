@@ -19,7 +19,10 @@ Integrated owner FPS is reported through the server task queue; dedicated
 servers use tick time and accept no remote FPS packets. Never cancel requests
 solely to lower the admission target, or let retained retries starve. Preserve the
 64-task player backpressure gate before every submission, fair out-of-order
-consumption and one explicit pregeneration capture per tick. All world/Atlas
+consumption. Ready capture now follows the same 4/2/1 adaptive target, capped at
+four chunks and a soft 2 ms per-tick budget (one indivisible chunk can exceed it).
+Numeric request limits also bound capture, with eight requests still capped at
+four captures. Preserve pause drainage and per-slot retry/release semantics. All world/Atlas
 access remains on the server thread; use vanilla's asynchronous pipeline.
 Cancel/failure/unload must attempt every lease, retain failed releases and block
 replacement until cleanup succeeds. Freeze chunk-load captures before server
@@ -31,6 +34,77 @@ waiting on queue backpressure still has work until its shared cursor is consumed
 Tests/probes are opt-in
 and source-development evidence. Apply equivalent behaviour on all supported
 26.x lines and both loaders. See [design/evidence](docs/ATLAS_CONCURRENCY_253.md).
+
+## Server Atlas checkpoint persistence
+
+Precise Large-server traces identify vanilla's five-minute non-flushing autosave
+as an unbounded server-thread snapshot pass, plus synchronous structure-query
+ticket updates and mandatory unload-queue drainage above 2,000 callbacks.
+Atlas budgets do not bound those paths. Use precise operation/tick boundaries;
+delayed slow-tick log timestamps and P99 windows cannot establish attribution.
+Keep GC overlap separate from active work and never count unload callbacks as
+unique chunks. Scheduled Overworld autosaves now queue a coordinate-only sweep:
+at most 128 coordinates/four save attempts per tick, sharing its time allowance
+with unload/eager work. Ordinary cleanup uses 2 ms / 256 scans or callbacks /
+16 save attempts. Backlog above 2,000 or used/max heap at 80% raises that to
+8 ms / 4,096 / 64; backlog at least 8,192 or heap at 90% selects
+20 ms / 16,384 / 128. These are soft time limits, with vanilla's 128-active-write
+backpressure retained. A fixed tiny cleanup allowance reproduced full-GC stalls;
+never allow a backlog to grow indefinitely merely to honour a short deadline.
+Explicit commands, flush and stop remain complete vanilla saves;
+reset the ordinary-tick flag before shutdown, including after a failed tick.
+One snapshot, GC or preemption can exceed the soft allowance. Optional location
+checks defer once after observed chunk movement, with a maximum extra vanilla
+20-tick interval; continuous movement must not starve them. Keep the three API
+adapters equivalent. **Do not split the live loading-ticket graph across ticks**
+without staging holder state and validating retention: the rejected trial
+exposed an unloaded-future crash and new full-GC stalls. Ticket operations remain
+vanilla and can still exceed a tick's allowance. The matched `cf3c5b6` run lowers
+targeted bursts but has one new 682 ms full G1 compaction; overall release
+acceptance stays held. Completed-cache reopen must match the immediately preceding
+resumed save, not an earlier fresh rebuild of a world that continues ticking.
+See the causes and validation in
+`docs/SERVER_STALL_INVESTIGATION_2026_10_10.md`.
+
+For stall profiling, disable JFR heap-statistics/ObjectCount collection: the
+initial multiplayer profiler forced 0.6–0.7 second full GCs. Use GC pause events,
+not summed concurrent GC duration, and retain timestamped workload windows.
+Player-load callbacks only enqueue coalesced canonical coordinates. Drain them
+on the owner thread with `getChunkNow`, sharing the ready-capture 4/2/1 limit
+and soft 2 ms budget. Reserve the first slot for player work; acknowledge an
+already captured pregeneration result without sampling it twice. Never retain
+live chunks or force loads to drain the queue. Freeze admission before draining
+still-loaded entries on stop/unload, then checkpoint. Missing/unloaded entries
+remain recoverable through normal pregeneration and dirty-cell queues. Tint-only
+biome queries and the two-byte tile-header reservation preserve colours and
+wire format. A single capture, GC or preemption may exceed the soft budget. See the
+[remaining stall investigation](docs/SERVER_STALL_INVESTIGATION_2026_10_10.md).
+
+Completed Atlas progress reports must use the maintained present-cell count to
+return total chunk coverage in constant time. Do not rescan every cell for every
+connected player: the three-client Large-server trial found this consumed about
+45% of sampled server-thread execution. Preserve exact partial-coverage counting
+and clearing semantics. See [multiplayer measurements](docs/SERVER_MULTIPLAYER_LOAD_2026_10_10.md).
+
+The six `6ee5bd56` 1.4 JARs predate this fix and are on publication hold.
+Do not reuse their full-suite PASS to qualify replacements.
+
+
+Periodic checkpoints prepare one immutable Atlas snapshot across bounded server ticks;
+a world-owned `RingAtlasCheckpointWriter` allocates privately, then serializes, GZIP-compresses, replaces,
+and optionally verifies it on one worker. Never read the mutable live Atlas from
+a worker. Track edits to copied slices and repair them before finalizing metadata. Reuse the buffer only after its worker completes; at most one snapshot is outstanding; retain newer mutations as a dirty
+generation, not queued snapshots. A completed write acknowledges only its captured
+mutation generation (network revision alone is insufficient during pregeneration).
+Poll worker results on the owning thread. Ordinary completion/cancellation remains
+pending until its checkpoint succeeds; only server stop/world unload may block
+while draining. Preserve capture freeze, ticket cleanup, failed-write dirtiness,
+atomic replacement and same-path ownership until unload succeeds. Keep format 11
+and the 200-tick cadence. Large snapshot copies remain an explicit measured cost.
+Opt-in `ringworld.atlasSaveTimings` logs phases; `ringworld.atlasCheckpointProbe`
+compares the original synchronous codec with the worker against real complete
+Atlas data in a separate disposable file. Neither enables itself in normal play.
+See [design and validation](docs/SERVER_ATLAS_CHECKPOINTS.md).
 
 ## Floating-build Atlas sampling (#257)
 
@@ -1260,8 +1334,8 @@ version numbers.
   and loader concerns out of this model until the service extraction lands.
 - `RingAtlasPregenerationService` is now the only server-side writer after an
   atlas loads. Its state transitions, future consumption, capture, dirty-tile
-  publication, checkpointing, and verified completion run on the server
-  thread. Handles enqueue off-thread control requests; do not mutate the
+  publication and job state run on the server thread. Checkpoint snapshots
+  are captured there; serialization and verification run on the persistence worker. Handles enqueue off-thread control requests; do not mutate the
   atlas from the Fabric adapter. Retain a selected canonical chunk until a
   full result is captured, including retry/cancel/unload paths, or a failed
   future can skip terrain permanently.

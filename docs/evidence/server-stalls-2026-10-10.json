@@ -1,0 +1,58 @@
+{
+  "source": "adca86c",
+  "diagnosticJarSha256": "9f6c522fd83d1c82231beb8f06e869a427efbc642c8d556b5c3e37c33530e5e1",
+  "method": "three real hidden muted clients; same isolated Large-world copy; profiler ObjectCount and OldObjectSample disabled; unchanged Java heap and mod",
+  "phases": {
+    "joining": {
+      "meanTickMs": 18.91,
+      "medianWindowP95Ms": 17.349999999999998,
+      "worstWindowP99Ms": 434.2
+    },
+    "outside": {
+      "meanTickMs": 25.86,
+      "medianWindowP95Ms": 41.1,
+      "worstWindowP99Ms": 163.6
+    },
+    "center-first": {
+      "meanTickMs": 32.54,
+      "medianWindowP95Ms": 49.85,
+      "worstWindowP99Ms": 550.6
+    },
+    "outside-repeat": {
+      "meanTickMs": 26.29,
+      "medianWindowP95Ms": 32.2,
+      "worstWindowP99Ms": 1264.7
+    },
+    "center-repeat": {
+      "meanTickMs": 33.02,
+      "medianWindowP95Ms": 45.65,
+      "worstWindowP99Ms": 1005.9
+    }
+  },
+  "travelWindowUtc": [
+    "2026-10-10T18:38:40",
+    "2026-10-10T18:42:32"
+  ],
+  "serverSamples": 7221,
+  "inclusiveStackSamples": {
+    "captureChunk": 497,
+    "processRecaptures": 35,
+    "RingAtlasCheckpointWriter": 188,
+    "encodeTile": 251,
+    "NaturalSpawner": 1363,
+    "tickNonPassenger": 1160,
+    "runDistanceManagerUpdates": 661,
+    "processUnloads": 215
+  },
+  "gcStopWorldTotalMs": 10668.508139000001,
+  "gcEventsInTravelWindow": 106,
+  "largestGcPauseMs": 391.316447,
+  "heapInspectionGcCount": 0,
+  "limitations": [
+    "Tick query percentiles are 100-tick window summaries, not exact tick boundaries.",
+    "Inclusive stack categories overlap; CPU samples do not include GC pauses.",
+    "No new before/after production code change, release qualification or packet-loss measurement.",
+    "Three simultaneous long teleports stress unload/reload; this does not quantify ordinary walking.",
+    "Same existing test-world copy reused; OS cache/entity state differ from earlier run."
+  ]
+}

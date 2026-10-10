@@ -1,0 +1,419 @@
+{
+  "phases": {
+    "joining": {
+      "meanTickMs": 12.575,
+      "medianWindowP95Ms": 1.2999999999999998,
+      "worstWindowP99Ms": 282.4
+    },
+    "outside": {
+      "meanTickMs": 27.744444444444444,
+      "medianWindowP95Ms": 45.6,
+      "worstWindowP99Ms": 220.8
+    },
+    "center-first": {
+      "meanTickMs": 36.275,
+      "medianWindowP95Ms": 50.55,
+      "worstWindowP99Ms": 1183.1
+    },
+    "outside-repeat": {
+      "meanTickMs": 28.31111111111111,
+      "medianWindowP95Ms": 40.1,
+      "worstWindowP99Ms": 395.5
+    },
+    "center-repeat": {
+      "meanTickMs": 35.266666666666666,
+      "medianWindowP95Ms": 48.599999999999994,
+      "worstWindowP99Ms": 1228.1
+    }
+  },
+  "maxChunksPerTick": 4,
+  "maxPendingLoadedChunks": 4226,
+  "lastPendingLoadedChunks": 1446,
+  "slowTickCount": 61,
+  "slowTickMaxMs": 1228.138522,
+  "overloadWarnings": 2,
+  "serverThreadErrors": 0,
+  "travelWindowUtc": [
+    "2026-10-10T19:06:48.907024+00:00",
+    "2026-10-10T19:10:34.477684+00:00"
+  ],
+  "serverSamples": 7093,
+  "inclusiveStackSamples": {
+    "NaturalSpawner": 1338,
+    "tickNonPassenger": 1256,
+    "encodeTile": 239,
+    "runDistanceManagerUpdates": 714,
+    "captureChunk": 104,
+    "processUnloads": 244,
+    "processRecaptures": 33,
+    "RingAtlasCheckpointWriter": 162
+  },
+  "gcEventsInTravelWindow": 120,
+  "gcStopWorldTotalMs": 10847.816391,
+  "largestGcPauseMs": 303.524967,
+  "heapInspectionGcCount": 0,
+  "topWeightedAllocationSites": [
+    [
+      "it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap.clone",
+      24115599344
+    ],
+    [
+      "net.minecraft.world.level.chunk.PalettedContainer.reencodeContents",
+      14424363064
+    ],
+    [
+      "java.lang.invoke.DirectMethodHandle.allocateInstance",
+      3307743112
+    ],
+    [
+      "com.mojang.serialization.DataResult.success",
+      2928284912
+    ],
+    [
+      "com.mojang.serialization.DataResult$Success.map",
+      2331459960
+    ],
+    [
+      "it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap.clone",
+      1753671008
+    ],
+    [
+      "com.mojang.serialization.DataResult$Success.setLifecycle",
+      1476118832
+    ],
+    [
+      "com.mojang.datafixers.util.Pair.of",
+      1348766072
+    ],
+    [
+      "it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap.clone",
+      1158757760
+    ],
+    [
+      "java.util.HashMap.newNode",
+      1137455872
+    ],
+    [
+      "java.util.HashMap.resize",
+      1039737808
+    ],
+    [
+      "java.util.Arrays.copyOf",
+      935599032
+    ]
+  ],
+  "diagnosticJarSha256": "e564df76766d25ee11c8b1b9f77259c0e5ef338f92797f525b7c57af65d8f3ee",
+  "baseline": {
+    "joining": {
+      "meanTickMs": 18.91,
+      "medianWindowP95Ms": 17.349999999999998,
+      "worstWindowP99Ms": 434.2
+    },
+    "outside": {
+      "meanTickMs": 25.86,
+      "medianWindowP95Ms": 41.1,
+      "worstWindowP99Ms": 163.6
+    },
+    "center-first": {
+      "meanTickMs": 32.54,
+      "medianWindowP95Ms": 49.85,
+      "worstWindowP99Ms": 550.6
+    },
+    "outside-repeat": {
+      "meanTickMs": 26.29,
+      "medianWindowP95Ms": 32.2,
+      "worstWindowP99Ms": 1264.7
+    },
+    "center-repeat": {
+      "meanTickMs": 33.02,
+      "medianWindowP95Ms": 45.65,
+      "worstWindowP99Ms": 1005.9
+    }
+  },
+  "limitations": [
+    "Sequential same-host same-workload trial; reused world, entity state and OS cache were not reset. No causal overall speedup established.",
+    "Tick query results are summaries of 100-tick windows; not pooled percentiles.",
+    "Sample categories overlap and exclude stop-the-world pauses; reduced capture share includes delayed work and tint lookup removal.",
+    "Long simultaneous three-player teleports are a stress test, not ordinary walking or packet-loss measurement.",
+    "Capture time limit is soft; pending Atlas refreshes can lag behind delivered terrain.",
+    "Slow-tick logs observe the previous completed tick at a later hook, not exact start/end boundaries.",
+    "Client startup differed (65.3s before, 90.5s after), giving unequal post-join settle within the fixed120s phase; local native fixtures were running during the new client startup. Future controlled comparisons need a readiness barrier and fixed settle."
+  ],
+  "joinTimingSeconds": {
+    "beforeAllThreeJoined": 65.289,
+    "afterAllThreeJoined": 90.484,
+    "fixedJoiningPhase": 120
+  },
+  "source": "6d40faab3152bda95af8a2715b8ba2d6724a91b8",
+  "nativeValidation": [
+    {
+      "cell": "26.3-fabric",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 102353,
+      "sha256": "111493e902a073b9fcf68aecd69a9b77fed04a2001294b1c5867880dfc63d98b"
+    },
+    {
+      "cell": "26.3-fabric",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "completedCells": 9728,
+      "totalCells": 524288,
+      "elapsedMillis": 12527,
+      "sha256": "c10435cb615dfa5ddc2b46c3ee3a62cc5240af9c9e125e00f03b50b309a712a3"
+    },
+    {
+      "cell": "26.3-fabric",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 223163,
+      "sha256": "3688bf300ee1bd1e31ac4108571638e92ec66ef81984e8ab8f2ed55c9979a107"
+    },
+    {
+      "cell": "26.3-fabric",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 0,
+      "sha256": "3688bf300ee1bd1e31ac4108571638e92ec66ef81984e8ab8f2ed55c9979a107"
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 105698,
+      "sha256": "7c14df6c883cae101734ce7102ee62d2395239609c3256979d5e8b76eb6961f8"
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "completedCells": 10496,
+      "totalCells": 524288,
+      "elapsedMillis": 10314,
+      "sha256": "492bc128f9b47177eb5662a196a1c33d3aa87841a5f203f3841288561a392e7f"
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 100724,
+      "sha256": "67958ff0ad357dcc385227f0031115e7d238921e178a5047e29d21035c2a246f"
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 0,
+      "sha256": "67958ff0ad357dcc385227f0031115e7d238921e178a5047e29d21035c2a246f"
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 114803,
+      "sha256": "e56ceed82cdd30c6175b28370c18b96177bda8a583b7d02bfdc1815bdb098a24"
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "completedCells": 9728,
+      "totalCells": 524288,
+      "elapsedMillis": 11215,
+      "sha256": "4d880ea444997be7e424345d48c2000f2a098993831ce337bd216760a8d182d3"
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 117120,
+      "sha256": "f19ae1d920d3efb8e623ed713450e569dc6fefcf4b5c515217210e68f9df0abc"
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 0,
+      "sha256": "f19ae1d920d3efb8e623ed713450e569dc6fefcf4b5c515217210e68f9df0abc"
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 117799,
+      "sha256": "36884954f92c22bb31bebab7ae9e98270f6f5f7246e18a918fff8786dbd66a9b"
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "completedCells": 10496,
+      "totalCells": 524288,
+      "elapsedMillis": 11412,
+      "sha256": "722d423156eb0385a53302817894ec6543704ebc599ff608cba5f5283b109cbb"
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 108879,
+      "sha256": "f0e6c710071427b0c54e687a46cbeccce9da015d91f0c57264cbb5366bfdd18e"
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 0,
+      "sha256": "f0e6c710071427b0c54e687a46cbeccce9da015d91f0c57264cbb5366bfdd18e"
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 123700,
+      "sha256": "bbb846b8e37a26e2e30dc4785e960eff009aec4f9b38b3f788639da4e4ac57cd"
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "completedCells": 9472,
+      "totalCells": 524288,
+      "elapsedMillis": 12503,
+      "sha256": "2460be834b89bc76a452b94746e00ee6ce8eb90593d92afaaebb711618db7166"
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 111853,
+      "sha256": "a2aae16d20acc1041a94824bbe9daa79e856d61da951aabe38bd228d42838df8"
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 0,
+      "sha256": "a2aae16d20acc1041a94824bbe9daa79e856d61da951aabe38bd228d42838df8"
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 129896,
+      "sha256": "80abbf34974b24fa115aef81f8240a39ea6170f287023336fafcb07e1ffe22f3"
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "completedCells": 9472,
+      "totalCells": 524288,
+      "elapsedMillis": 13391,
+      "sha256": "8c5940f9dcf88c19679ce41d6ceae291d1dc591927df0030f80644496175098f"
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 118387,
+      "sha256": "690ad4873bab66328c4a4eedca7de9ac1fdebced6da3833cf3e2464a143f9d71"
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "elapsedMillis": 0,
+      "sha256": "690ad4873bab66328c4a4eedca7de9ac1fdebced6da3833cf3e2464a143f9d71"
+    }
+  ],
+  "javaValidation": [
+    {
+      "minecraft": "26.1",
+      "loader": "fabric",
+      "tests": 499,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "minecraft": "26.1",
+      "loader": "neoforge",
+      "tests": 499,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "minecraft": "26.2",
+      "loader": "fabric",
+      "tests": 499,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "minecraft": "26.2",
+      "loader": "neoforge",
+      "tests": 499,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "minecraft": "26.3",
+      "loader": "fabric",
+      "tests": 502,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    {
+      "minecraft": "26.3",
+      "loader": "neoforge",
+      "tests": 502,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  ],
+  "staticValidation": "367 qualification-static Python tests pass; all nine CI checks pass on 6d40faa",
+  "publicRestoration": "Verified active, zero players, 0.2 ms mean tick; Atlas 16777216/16777216 complete, auto4. All three clients and tunnel stopped, isolated service and restoration timer stopped.",
+  "qualification": "Development source runtimes only; no replacement frozen-JAR full release qualification or upload."
+}

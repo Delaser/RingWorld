@@ -1,0 +1,368 @@
+{
+  "functionalSource": "cf3c5b67c81ff6f3b325455d10d1433bf748783e",
+  "qualification": "Development source validation; not frozen-JAR release qualification",
+  "staticTests": {
+    "tests": 367,
+    "failures": 0,
+    "errors": 0
+  },
+  "javaSuites": {
+    "26.1-fabric": {
+      "tests": 503,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "26.1-neoforge": {
+      "tests": 503,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "26.2-fabric": {
+      "tests": 503,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "26.2-neoforge": {
+      "tests": 503,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "26.3-fabric": {
+      "tests": 506,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "26.3-neoforge": {
+      "tests": 506,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "nativePhases": [
+    {
+      "cell": "26.3-fabric",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 119.5376980304718,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "26939bb37795b7c99402b2c25bd9ba5972ae358ab530fee3c05909273f2d9e14",
+      "reportSha256": "6a925dba05ff20d443f3dd9caa12732367ebb7a924b7b2fe77c62f1af7af001f",
+      "elapsedGenerationMillis": 93458,
+      "probePasses": {
+        "atlas-rate-test": true,
+        "atlas-concurrency-test": true,
+        "atlas-auto-test": true
+      }
+    },
+    {
+      "cell": "26.3-fabric",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "exit": 1,
+      "elapsed": 25.14601492881775,
+      "completedCells": 13568,
+      "totalCells": 524288,
+      "savedSha256": "a77c19d29e0882ec3eb852a99f1f9ecc492a7f8ff0fc0913422a43a963aa919d",
+      "reportSha256": "95f138e12f001abbd0d489cdbd5965ac5a8079c9d8272248bb0467d51c5dfc32",
+      "elapsedGenerationMillis": 11246
+    },
+    {
+      "cell": "26.3-fabric",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 96.79936695098877,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "e17eed102f1675ba2982209ad5ad9aee05763756de46c70fac6e0dd0da1cfb26",
+      "reportSha256": "d95fd7c757acaf2184131a952459bd587d40c0a57f1cb3dfc36c9f6205bb378f",
+      "elapsedGenerationMillis": 80757
+    },
+    {
+      "cell": "26.3-fabric",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 14.790049076080322,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "e17eed102f1675ba2982209ad5ad9aee05763756de46c70fac6e0dd0da1cfb26",
+      "reportSha256": "a9fa4e559d26e6eb31da466ddeaa413427f42c162fbacc1e2f96826f6af450ee",
+      "elapsedGenerationMillis": 0
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 121.1289758682251,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "b336e2ae166630fd9f366a8a6af4a79dd73509b09238daeec6c3dfadcb87b9ff",
+      "reportSha256": "a078b1eba9e11afb22525f4a38207fc2b95f192cdab94f17b071e1fe1fbac21b",
+      "elapsedGenerationMillis": 97693,
+      "probePasses": {
+        "atlas-rate-test": true,
+        "atlas-concurrency-test": true,
+        "atlas-auto-test": true
+      }
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "exit": 1,
+      "elapsed": 22.45380997657776,
+      "completedCells": 10496,
+      "totalCells": 524288,
+      "savedSha256": "d2a536e788f101febad332fd812c394e584a2f068c0d223b28620222b4a47dc7",
+      "reportSha256": "1890ce740b41d9787eeecdf5e8b93dd4d222980bff4f51a80249d09526707a94",
+      "elapsedGenerationMillis": 8534
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 102.19047617912292,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "2dd276a89ce5eb8c227c81f97b46b358598ef02a98e88af449c13f2f5c8dd67e",
+      "reportSha256": "e52de165f27b5089d9fa1f7ad5e564766398d464d277eeb88ac555daa3afb246",
+      "elapsedGenerationMillis": 85650
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 16.66404914855957,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "2dd276a89ce5eb8c227c81f97b46b358598ef02a98e88af449c13f2f5c8dd67e",
+      "reportSha256": "a9fa4e559d26e6eb31da466ddeaa413427f42c162fbacc1e2f96826f6af450ee",
+      "elapsedGenerationMillis": 0
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 139.68830966949463,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "0bf96d79c5e9779e416bdc1905d2d074d5989d350511386c870e5978d6c1b0fb",
+      "reportSha256": "763b0abaa8e04afba79b80f8791b0cbc0d0b25edc134c4d0df55cd77456543ec",
+      "elapsedGenerationMillis": 115053,
+      "probePasses": {
+        "atlas-rate-test": true,
+        "atlas-concurrency-test": true,
+        "atlas-auto-test": true
+      }
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "exit": 1,
+      "elapsed": 25.653836011886597,
+      "completedCells": 10752,
+      "totalCells": 524288,
+      "savedSha256": "1a676d38d8d84574d531886c36b85da6d9fd30d17c079da17ae80883948251b2",
+      "reportSha256": "d62678b6de7c2c808d1216dfd42ea6651175fc48e0313345a6bad59545ae0b48",
+      "elapsedGenerationMillis": 11201
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 114.99271035194397,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "59b0f0e45066a1be2b0a3e2349423d539bf940771ea9880851934362a6b943cc",
+      "reportSha256": "0c403ebbcb51e8c0209dd18b916256bc10beef2f361f868b2b12e5bf91138482",
+      "elapsedGenerationMillis": 99401
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 15.884281873703003,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "59b0f0e45066a1be2b0a3e2349423d539bf940771ea9880851934362a6b943cc",
+      "reportSha256": "a9fa4e559d26e6eb31da466ddeaa413427f42c162fbacc1e2f96826f6af450ee",
+      "elapsedGenerationMillis": 0
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 137.48426604270935,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "85fdb375d3eaf013edf4d1f0aee594f9dd8e3b3bf37cc96af07d45737b9dda15",
+      "reportSha256": "a35e7a7f85dd4aa77889cecc016140c4d77fe2703f3479a02b77ecaf88889510",
+      "elapsedGenerationMillis": 112344,
+      "probePasses": {
+        "atlas-rate-test": true,
+        "atlas-concurrency-test": true,
+        "atlas-auto-test": true
+      }
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "exit": 1,
+      "elapsed": 25.63508701324463,
+      "completedCells": 12032,
+      "totalCells": 524288,
+      "savedSha256": "b7f9b8d5b3fd48709bbdece0329acf3f87abafcb0b2ce4e1860f2a3ebbb901fa",
+      "reportSha256": "78cf8a7ed08a8d0d14805dac11c20131a554688d1c707b61177c8c5a0e14602e",
+      "elapsedGenerationMillis": 11347
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 115.66327619552612,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "59a7126ebf388e5daac1bb3a2c328ba26f2be352e3454c29d14c6cfeffb579a5",
+      "reportSha256": "d4cf8cb04f9bdd21e4da143141464438813cee043c66978247f4bf39c41159dd",
+      "elapsedGenerationMillis": 99225
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 16.199492931365967,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "59a7126ebf388e5daac1bb3a2c328ba26f2be352e3454c29d14c6cfeffb579a5",
+      "reportSha256": "a9fa4e559d26e6eb31da466ddeaa413427f42c162fbacc1e2f96826f6af450ee",
+      "elapsedGenerationMillis": 0
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 145.5842480659485,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "06fcb997c1460b40ddc75ceebfd2c9d14059e5f1a4a94683e737452f6c954eff",
+      "reportSha256": "5fc5139179cb7d41c030d3e53792784c65cc01703f5b9a371966ed38ad5958f5",
+      "elapsedGenerationMillis": 118897,
+      "probePasses": {
+        "atlas-rate-test": true,
+        "atlas-concurrency-test": true,
+        "atlas-auto-test": true
+      }
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "exit": 1,
+      "elapsed": 25.397445917129517,
+      "completedCells": 9728,
+      "totalCells": 524288,
+      "savedSha256": "60d59d584473a556cc0af0bfc6bd49e0a71649e52320bab511d2699b08dec85b",
+      "reportSha256": "7995153090c06df560bb8c4814c8fd835317bad84b87f006c67486a9b6615f93",
+      "elapsedGenerationMillis": 12231
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 123.47284603118896,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "e4c815b71da40063b9ff3963d45f86b6ab541b296c53bd750926e75baee0411f",
+      "reportSha256": "dc1b14198041327bbd7effcb0b85e0ca6541f8ae70acfc67466256c7a1770aa2",
+      "elapsedGenerationMillis": 108001
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 15.267040014266968,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "e4c815b71da40063b9ff3963d45f86b6ab541b296c53bd750926e75baee0411f",
+      "reportSha256": "a9fa4e559d26e6eb31da466ddeaa413427f42c162fbacc1e2f96826f6af450ee",
+      "elapsedGenerationMillis": 0
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 136.44954419136047,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "3601e019ca76927a9c6de67b92e52dae49d53c7e325b9545fe99972378517514",
+      "reportSha256": "5f377167b4b111d9f77a4d84279990c56eab48e6f963b842c2ba47b5e9aa9865",
+      "elapsedGenerationMillis": 111899,
+      "probePasses": {
+        "atlas-rate-test": true,
+        "atlas-concurrency-test": true,
+        "atlas-auto-test": true
+      }
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "exit": 1,
+      "elapsed": 25.389779090881348,
+      "completedCells": 12544,
+      "totalCells": 524288,
+      "savedSha256": "f12ddbe7b22663a501c9a6ce46643299624ebebe3d903faa50122a7392523f7d",
+      "reportSha256": "da9d213f683708e4d03317d9c815ec37d2449419b4a5f9e5ca8505d50a18965b",
+      "elapsedGenerationMillis": 11598
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 121.85527110099792,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "0609ee36226a235b4a2280ffd002b5587b98f41984c6732b750e3f135f25e0c0",
+      "reportSha256": "6ff0e11c8b5a1e852aeb1a96cc3e439f21178bfdcb9dc5c75a1fdaa1338f8770",
+      "elapsedGenerationMillis": 105601
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "exit": 0,
+      "elapsed": 15.481567859649658,
+      "completedCells": 524288,
+      "totalCells": 524288,
+      "savedSha256": "0609ee36226a235b4a2280ffd002b5587b98f41984c6732b750e3f135f25e0c0",
+      "reportSha256": "a9fa4e559d26e6eb31da466ddeaa413427f42c162fbacc1e2f96826f6af450ee",
+      "elapsedGenerationMillis": 0
+    }
+  ],
+  "harnessCorrection": "First reopen assertion incorrectly compared to fresh rebuild; corrected to preceding resumed cache. Failed assertion retained and affected reopen rerun. Independent counts remain checked for all phases."
+}

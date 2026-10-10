@@ -23,10 +23,34 @@
 
 ## Performance and size
 
+- Removed repeated full-Atlas scans when reporting progress in fully generated
+  multiplayer worlds, reducing periodic server tick spikes on Large rings.
+- Moved periodic server Atlas serialization, compression and file writes to a
+  bounded background worker. Changes made during a save remain pending; normal
+  completion waits for saved-file verification without blocking gameplay.
+  Snapshot preparation is spread across server ticks and reuses its buffer.
+  Final stop/unload drains
+  the worker so partial pregeneration can resume safely.
+
+- Scheduled Overworld chunk autosaves spread their snapshots across ticks.
+  Ordinary unload and eager-save work has a small allowance that increases under
+  backlog or heap pressure. Manual saves, flushes and shutdown still complete
+  their normal save paths. These changes remain under development validation
+  because a full-GC pause remains in the Large-server repeat.
+- After crossing chunks, the optional location advancement check waits one extra
+  normal interval before querying structures, reducing immediate ticket-update
+  bursts. Continuous movement cannot starve the check.
 - Atlas pregeneration now admits several asynchronous chunk requests at once.
   Auto starts at four and backs down under sustained frame/tick pressure, then
   recovers gradually. `/ringworld chunk_gen_rate 1|2|4|8|auto` controls it live;
   dedicated servers use tick timing rather than client FPS.
+  Ready-chunk capture now scales with that policy too, up to four chunks per
+  tick within a small time budget, accelerating Atlas rebuilding when there is
+  headroom and reducing work under sustained pressure.
+- Player-loaded chunks now queue their Atlas updates under the same adaptive
+  capture budget, avoiding unbounded sampling bursts as chunks arrive. Atlas
+  refreshes can catch up after terrain loads during heavy bursts. Removed
+  unnecessary biome lookups for untinted materials and an extra tile-buffer copy.
 - Compressed the wall selector previews, bringing development JARs down from
   roughly 13 MB to roughly 3.3 MB while preserving the selector images.
 - Shared seed-preview UI code and removed duplicate sources.
