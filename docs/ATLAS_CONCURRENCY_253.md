@@ -74,8 +74,9 @@ chunks per tick within its soft time budget**, scaling to two/one with the share
 policy. Observe performance before capture, so the new target applies that tick.
 Existing normal
 player-loaded chunk callbacks and bounded dirty-cell recapture remain separate.
-Atlas/world reads, capture, tile/revision changes and saves stay server-thread
-owned. The existing 200-tick checkpoint cadence is unchanged.
+Atlas/world reads, capture, tile/revision changes and checkpoint ownership stay
+server-thread owned; immutable checkpoint serialization runs on its bounded
+worker. The existing 200-tick checkpoint cadence is unchanged.
 
 ## Lifecycle and correctness
 
@@ -120,7 +121,72 @@ results. Checkpoint copying and dirty-cell recapture retain their separate budge
 logs explicit capture attempts, total/maximum owner duration, maximum observed
 completed server tick and request target. The duration includes result handling
 and processed-lease cleanup, but not normal chunk-load callback captures. This
-must not be presented as total Atlas CPU cost. Final validation follows below.
+must not be presented as total Atlas CPU cost.
+
+### Large-server measurement
+
+On the owner's pregenerated Large world, Minecraft 26.3 / NeoForge 26.3.0.37-beta,
+four logical CPUs and a 4 GiB heap, six policy operations alternate
+`1, auto, auto, 1, 1, auto`. Discard the first 200-tick window after each switch
+and retain the next two: six measured windows per mode, with no players online.
+Both modes retain the background checkpoint fix. These compare complete policies:
+fixed one reduces admission as well as capture, so it is not an isolated baseline
+for the previous four-request/one-capture implementation.
+
+| Measured policy | Fixed one | Auto, target four |
+| --- | ---: | ---: |
+| Explicit chunks per 200 ticks, mean | 99.83 | 501.50 |
+| Cells/second at 20 TPS | 2,556 | 12,838 |
+| Explicit capture owner work per tick, mean | 0.48 ms | 1.95 ms |
+| Largest explicit owner step | 11.70 ms | 20.75 ms |
+| Worst observed full server tick | 37.25 ms | 33.41 ms |
+
+The earlier normal rebuild, with four requests and one explicit capture per tick,
+sustained about 5,112 cells/second. The new observed auto rate is roughly 2.5 times
+that rate. Terrain portions and times differ; this is an observational comparison,
+not identical-chunk benchmarking. Sustaining the new rate would imply about
+22 minutes for the full Atlas, not the ideal fourteen-minute four-per-tick ceiling.
+The measured world was already partially captured; no complete fresh-generation
+duration or overall CPU percentage is claimed. Explicit owner timing excludes
+chunk-load callback capture, chunk IO/generation, and checkpoint work.
+
+The budget is deliberately soft: individual steps exceeded two milliseconds.
+The settled auto windows remained below 50 ms full ticks on this empty server;
+active-player latency and graphical FPS remain unmeasured. No overload, Atlas
+save or flush errors occurred in the retained normal-run window.
+
+The final saved cache independently contains all 16,777,216 cells. A normal
+server restart reopens at 100% without new Atlas generation, with an unchanged
+cache SHA-256 of `3bca663214e181e632cc97e31f4f10f78f312124a7f2f90d4f7bb1d9645e90c9`.
+The running diagnostic JAR SHA-256 is
+`a13bcbee0b655bf805f6e0883a31e5e6a84e2ddf6933468e10114d33f64bfe2b`;
+its working tree was subsequently committed as `3ea998d`. Auto is restored and
+save/capture timing diagnostics and comparison probes are off. The original
+pre-1.4 world/config/installation backup remains intact. Raw policy operations and
+scope are retained in [machine-readable evidence](evidence/atlas-capture-auto-2026-10-10.json).
+
+### Adaptive-capture development validation
+
+All six source targets pass build and Java tests: 496 cases per loader on
+26.1/26.2 and 499 on 26.3. Python runs 452 tests: 450 pass and two Windows-only
+tests skip on macOS. All nine CI checks on source `3ea998d` pass. Four new pure
+tests cover the soft budget boundary, first-chunk progress, fixed/eight-request
+ceilings and coupling to both tick/FPS backoff and recovery.
+
+Each source/loader target passes fresh generation, normal interruption, resume
+and complete-cache reopen: 24 launches total. Every fresh run exercises the real
+pause/drain/resume/cancel/restart and session-rate probes, then the existing local
+FPS mailbox through 4→2→1→2→4. Each saved checkpoint is independently GZIP-decoded,
+presence-counted against its report and SHA-256 audited. Partial interruption
+files resume to full coverage; completed reopens have zero elapsed generation
+and byte-identical caches. Runner scripts, logs, native worlds and checkpoint
+copies remain under ignored `logs/atlas-capture-auto/` and
+`dist/qualification/capture-auto-runtime-20261010/`.
+
+These are source-development runs on the oldest 26.1 ABI, 26.2 and 26.3, not
+frozen-JAR qualification on every 26.1.x runtime. The previous six qualified
+release files predate both persistence and capture changes and remain on hold.
+Rebuild and fully qualify replacements before publication; nothing was uploaded.
 
 ## Development evidence
 

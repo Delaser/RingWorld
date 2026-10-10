@@ -1,3 +1,25 @@
+# Adaptive Atlas capture — development validation complete
+
+October 10: source `3ea998d` extends the existing auto request policy to ready
+capture: 4/2/1 chunks per tick, capped at four within a soft 2 ms budget. Existing
+commands and local FPS/server tick feedback are reused. All six builds/tests
+pass: 496 Java cases per loader on 26.1/26.2 and 499 on 26.3; Python runs 452
+with two Windows-only skips. All nine CI checks pass. All 24 native fresh,
+interruption, resume and reopen phases pass, with real concurrency/rate probes
+and synthetic local FPS 4→2→1→2→4 in every fresh runtime. Independently audited
+saved files match their reports; completed reopens have zero elapsed generation
+and unchanged cache bytes. These are development runs on each source ABI, not
+fresh frozen-JAR release qualification across all ten runtime cells.
+
+The actual Large server observes ~12,838 cells/s on auto, versus the previous
+normal rebuild's ~5,112 cells/s (different terrain portions/times). Explicit
+capture averages 1.95 ms/tick; the settled auto windows' worst full tick is
+33.41 ms. Its Atlas is now independently verified complete and reopens at 100%
+with unchanged bytes. Auto is restored and all timing/probe flags are off.
+See [policy, measurements and evidence](ATLAS_CONCURRENCY_253.md). Both this
+change and the checkpoint fix remain in PR #279; the old six release files stay
+held pending replacement and full qualification. Nothing is publicly uploaded.
+
 # Server Atlas checkpoint follow-up — development validation complete
 
 The six qualified 1.4 files from `6ee5bd56` predate this persistence fix. Their

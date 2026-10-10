@@ -144,9 +144,9 @@ expects a nonzero completion-only Gradle finalizer exit with an `INTERRUPTED`
 report; it is not a runtime failure. One earlier readiness race in the test's RCON
 stop request is retained separately; the final runner waits for listener readiness.
 
-The final remote JAR SHA-256 is
+The checkpoint-only remote JAR SHA-256 was
 `f98f421baca28dcc4b3815f2b85c0130604e67f35e8325d5da647ee578470693`.
-The service runs this 1.4 development build with only `atlasSaveTimings` enabled,
+That deployment ran with only `atlasSaveTimings` enabled,
 not the comparison probe. A normal restart durably retained 2,922,496 format-11
 cells; recapture subsequently passed 31% and continued at roughly 5,100 cells/s.
 A separate read-only region-header audit finds all 65,536 canonical chunk records
@@ -159,6 +159,11 @@ owner copy step is 63.89 ms shortly after restart. Preserve this outlier alongsi
 the controlled 13.49 ms maximum: the two-millisecond copy target is soft and the
 fix does not promise every gameplay tick stays below 50 ms. No active-player or
 packet-loss comparison was performed.
+
+The later [adaptive capture follow-up](ATLAS_CONCURRENCY_253.md#adaptive-capture-follow-up--10-october-2026)
+supersedes that server JAR, reaches full Atlas coverage, and reopens cleanly with
+all timing/probe flags disabled. Its separate evidence records the final JAR and
+cache hashes; the paired save measurements above remain historical and unchanged.
 
 This is development validation of the shared persistence fix, not replacement
 release qualification. Keep the previous six qualified JARs and evidence intact;
