@@ -1,7 +1,5 @@
 package dev.ringworld.mixin;
 
-import dev.ringworld.server.RingChunkWorkBudget;
-import dev.ringworld.server.RingChunkGraphAccess;
 import dev.ringworld.server.RingChunkWorkContext;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
@@ -62,12 +60,6 @@ abstract class ChunkMapMaintenanceMixin {
         finally { ringworld$ordinaryTick = ordinary; }
     }
 
-    @Inject(method = "processUnloads", at = @At("HEAD"), cancellable = true)
-    private void ringworld$keepTransitionalHolders(BooleanSupplier haveTime, CallbackInfo ci) {
-        if (ringworld$ordinaryTick
-                && ((RingChunkGraphAccess) level.getChunkSource()).ringworld$graphPending()) ci.cancel();
-    }
-
     @Inject(method = "tick(Ljava/util/function/BooleanSupplier;)V", at = @At("HEAD"))
     private void ringworld$begin(BooleanSupplier haveTime, CallbackInfo ci) {
         // Also clear an interrupted ordinary tick before the shutdown drain starts.
@@ -80,8 +72,7 @@ abstract class ChunkMapMaintenanceMixin {
         // Reserve a little progress for the sweep, then share the remainder with unload/eager work.
         int examined = 0;
         while (ringworld$saveKeys != null && ringworld$saveCursor < ringworld$saveKeys.length
-                && examined < 128 && ringworld$saves < 4 && ringworld$allowsWork()
-                && !((RingChunkGraphAccess) level.getChunkSource()).ringworld$graphPending()) {
+                && examined < 128 && ringworld$saves < 4 && ringworld$allowsWork()) {
             long key = ringworld$saveKeys[ringworld$saveCursor++];
             examined++; ringworld$tasks++;
             ChunkHolder holder = visibleChunkMap.get(key);
@@ -114,7 +105,7 @@ abstract class ChunkMapMaintenanceMixin {
 
     @Unique private boolean ringworld$allowsWork() {
         return ringworld$saves < 16 && ringworld$tasks < 256 && activeChunkWrites.get() < 128
-                && (ringworld$tasks == 0 || System.nanoTime() - ringworld$start < RingChunkWorkBudget.NANOS);
+                && (ringworld$tasks == 0 || System.nanoTime() - ringworld$start < 2_000_000L);
     }
 
     @Redirect(method = "processUnloads", at = @At(value = "INVOKE", target = "Ljava/util/Queue;size()I"))

@@ -844,8 +844,7 @@ public final class RingAtlasPregenerationService {
                 if (state != AtlasPregenerationState.RUNNING || requests.inFlight() >= requestLimit()) break;
                 if (slot.request != null || !slot.selection.mayRetryAt(owner.ticks)) continue;
                 // Recheck between starts so one batch cannot ignore player-queue backpressure.
-                if (world.getChunkSource().getPendingTasksCount() >= options.pendingTaskSoftLimit()
-                        || ((RingChunkGraphAccess) world.getChunkSource()).ringworld$graphPending()) break;
+                if (world.getChunkSource().getPendingTasksCount() >= options.pendingTaskSoftLimit()) break;
                 var selected = slot.selection.select().orElse(null);
                 if (selected == null) continue;
                 try {
