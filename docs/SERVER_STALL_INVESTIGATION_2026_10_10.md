@@ -113,7 +113,7 @@ other stacks and exclude time stopped by GC; they are not additive CPU percentag
 
 The owner approved this route. Shared queued player captures, tint-only biome
 lookups and the tile-header reservation are implemented on PR #279. Development
-validation is in progress; the repeat three-client test is complete below. The held release JARs
+validation and the repeat three-client test are complete below. The held release JARs
 still require fresh full qualification; chunk-retention and heap policy have not
 changed. The findings above describe the pre-fix recording.
 
@@ -142,7 +142,12 @@ heap-inspection events remain disabled. Results are mixed:
 | In-band, repeat | 33.0 / 1,005.9 | 35.3 / 1,228.1 |
 
 These are sequential same-workload trials on a reused world, not a reset-world
-A/B. Entity state, cache state and workload timing vary. They establish **no
+A/B. Entity state, cache state and workload timing vary. All three clients joined
+at 90.5 seconds in this run versus 65.3 seconds before; the fixed 120-second
+joining phase therefore gave them about 30 versus 55 seconds to settle. Local
+lifecycle fixtures were also running during this run's client startup. A controlled
+future comparison must use a client-ready barrier plus the same post-join settle
+interval and separate local workloads. They establish **no
 overall tick-time improvement** and do not qualify a release.
 
 The four-chunk ceiling is observed; automatic targets of 4, 2 and 1 are logged.
@@ -171,12 +176,27 @@ thread before worker encoding/writes. The recording lacks unload-queue sizes,
 so it cannot establish whether the forced-drain branch fired. Allocation samples remain dominated by
 chunk/light-map cloning and palette re-encoding. A retention grace period could
 increase this four-GiB server's memory pressure, so it was **not enabled**.
-The next experiment should isolate and measure the forced unload/save burst
-with bounded memory and persistence safeguards. Heap tuning and changing
+The next experiment should instrument unload-queue lengths and per-tick
+snapshot counts, then isolate the unload/save burst with bounded memory and
+persistence safeguards. A short retention grace period cannot reuse chunks
+across this test's widely separated teleports and 45–60-second holds; retaining
+both regions that long would raise memory cost. Heap tuning and changing
 vanilla unload scheduling are separate experiments, not included in this fix.
 
-All-version development validation is in progress. Fresh full qualification of
-replacement frozen JARs remains held while these transition stalls are unresolved.
+All six source/loader builds and Java suites pass: 499 cases per loader on
+26.1/26.2 and 502 on 26.3, totalling 3,000 executions. Local static qualification
+runs 367 Python tests successfully, and all nine CI checks pass on source
+`6d40faa`. All 24 native fresh/interrupted/resumed/reopened phases pass, including
+pause/drain/cancel/restart, live rate override and local FPS 4→2→1→2→4 probes
+in every fresh runtime. Independently decoded format-11 saved files match
+reported partial/complete cell counts and hashes. Completed reopens take zero
+generation time and preserve saved bytes. These are development source runtimes
+on the three ABIs, not frozen-JAR qualification across all ten runtime cells.
+Fresh full qualification of replacements remains held while these transition
+stalls are unresolved. The public server is verified active again with zero
+players, 0.2 ms mean ticks and its complete 16,777,216-cell Atlas; all test clients,
+tunnel, isolated service and restoration timer are stopped. Its previous
+diagnostic build remains installed; the queue trial was isolated.
 See [checked-in follow-up evidence](evidence/atlas-player-capture-2026-10-10.json).
 Raw captures, logs, reproduction scripts and decoded events are retained under
 `logs/atlas-player-capture/`; the earlier recording is unchanged.

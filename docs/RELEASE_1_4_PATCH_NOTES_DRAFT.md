@@ -40,7 +40,8 @@
   tick within a small time budget, accelerating Atlas rebuilding when there is
   headroom and reducing work under sustained pressure.
 - Player-loaded chunks now queue their Atlas updates under the same adaptive
-  capture budget, avoiding unbounded sampling bursts as chunks arrive. Removed
+  capture budget, avoiding unbounded sampling bursts as chunks arrive. Atlas
+  refreshes can catch up after terrain loads during heavy bursts. Removed
   unnecessary biome lookups for untinted materials and an extra tile-buffer copy.
 - Compressed the wall selector previews, bringing development JARs down from
   roughly 13 MB to roughly 3.3 MB while preserving the selector images.

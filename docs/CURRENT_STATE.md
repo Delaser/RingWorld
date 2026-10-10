@@ -1,4 +1,4 @@
-# Queued player-load Atlas capture — repeat trial complete, parity tests running
+# Queued player-load Atlas capture — development validation complete
 
 The approved shared queue, tint-only biome lookups and tile-header reservation
 are implemented on PR #279. Player and ready captures share the existing 4/2/1
@@ -6,11 +6,14 @@ policy and soft 2 ms budget. The actual three-client Large-server repeat observe
 the four-chunk ceiling and a lower Atlas capture sample share (6.9%→1.5%), but
 **no overall tick-time improvement**. In-band transition spikes still reach
 1,228 ms, surrounding vanilla unload/save snapshots and GC. Queue refreshes may
-lag during bursts. No retention or heap change was added. All-version lifecycle
-validation is running; old release JARs and full replacement qualification stay
-held. See [results and limits](SERVER_STALL_INVESTIGATION_2026_10_10.md).
+lag during bursts. No retention or heap change was added. All six local builds/Java suites pass
+(3,000 test executions), together with 367 local static qualification tests and
+all nine CI checks. All 24 native fresh/interrupted/resumed/reopened phases pass
+across the three source ABIs and both loaders; independent saved-file audits
+match every reported count, and completed reopens preserve bytes with zero
+generation time. Old release JARs and full replacement qualification stay held. See [results and limits](SERVER_STALL_INVESTIGATION_2026_10_10.md).
 
-# Large-server stalls — investigation complete, follow-up fixes pending
+# Pre-queue Large-server investigation — historical baseline
 
 The lighter three-client recording reproduces 1,265/1,006 ms transition P99
 windows without heap-inspection GC. Chunk unloading/snapshotting and ticket
@@ -18,7 +21,7 @@ updates coincide with the longest transition; genuine GC pauses reach 391 ms.
 Inline player-loaded Atlas captures bypass the pregen budget and contribute
 6.9% of travel execution samples. Recommended follow-ups are bounded load
 captures, tint-only biome lookups, and the tile-header buffer correction, then
-matched chunk-churn/GC experiments. No new production fix was made. Public
+matched chunk-churn/GC experiments. No production fix was made during that baseline recording. Public
 server restored; clients/tunnel stopped. See the
 [investigation and limitations](SERVER_STALL_INVESTIGATION_2026_10_10.md).
 
