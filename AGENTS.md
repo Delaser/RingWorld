@@ -98,6 +98,13 @@ runs remain INCOMPLETE; final release qualification covers all ten cells.
 
 ## Supported-version parity and release state
 
+October 10, 2026: six 1.4 JARs from `6ee5bd56c1de8044c658d80d5a0c0f4a9d6c4085`
+pass all ten quick cells and 100 complete full-suite fixture invocations. Nothing
+is uploaded; owner visuals remain pending. Preserve the clean pushed
+`codex/release-1.4-final-candidate` source checkout and canonical staging evidence
+for later publication. The later documentation-only record does not alter the
+frozen candidates. See [`deploy/qualified/1.4/README.md`](deploy/qualified/1.4/README.md).
+
 For new releases, follow [`docs/JAR_EXPORT.md`](docs/JAR_EXPORT.md): six
 standalone runtime JARs, frozen qualification across all groups/loaders, explicit
 staging `--manifest`, `--config`, `--changelog`, then reviewed publication plans.
