@@ -1,0 +1,141 @@
+diff --git a/src/main/resources/ringworld.mixins.json b/src/main/resources/ringworld.mixins.json
+index a26477c..6b7cf04 100644
+--- a/src/main/resources/ringworld.mixins.json
++++ b/src/main/resources/ringworld.mixins.json
+@@ -2,6 +2,6 @@
+   "required": true,
+   "package": "dev.ringworld.mixin",
+   "compatibilityLevel": "JAVA_25",
+-  "mixins": ["BlockEntityMixin", "BlockItemMixin", "BucketItemMixin", "BlockEntityPositionAccessor", "BoundedRegionArrayMixin", "ChunkGeneratorLocateMixin", "ChunkGeneratorMixin", "ChunkGeneratorStructureStateMixin", "ChunkNoiseSamplerMixin", "ChunkPosDistanceLevelPropagatorMixin", "ChunkRegionMixin", "DensityCoordinateConsumerMixin", "EntityDistanceMixin", "EntityNavigationMixin", "EntityTrackingSectionMixin", "ExplosionImplMixin", "EyeOfEnderMixin", "LevelChunkMixin", "LevelMixin", "MapItemMixin", "MapItemSavedDataMixin", "MinecraftServerMixin", "MultiTickSchedulerMixin", "NoiseChunkGeneratorMixin", "PeriodicSurfaceSystemMixin", "OceanMonumentStructureMixin", "PathfindToRaidGoalMixin", "PlayerInteractionDistanceMixin", "PortalForcerMixin", "ProjectileUtilMixin", "RaidFixtureAccessor", "RaidMixin", "RaiderMoveThroughVillageGoalMixin", "RaidsAccessor", "RaidsMixin", "RandomSpreadStructurePlacementMixin", "ServerChunkManagerMixin", "ServerChunkLoadingManagerMixin", "ServerEntityManagerMixin", "ServerEntityManagerListenerMixin", "ServerEntityTrackerMixin", "ServerPlayNetworkHandlerMixin", "ServerPlayerSleepMixin", "ServerWorldMixin", "StrongholdStructureMixin", "StructureBiomeMixin", "StructurePlacementMixin", "SurfaceNoiseThresholdMixin", "SurfaceSystemMixin", "WorldEntityLookupMixin", "WorldTickSchedulerMixin"],
++  "mixins": ["StallCauseChunkMapMixin", "StallCauseTickMixin", "BlockEntityMixin", "BlockItemMixin", "BucketItemMixin", "BlockEntityPositionAccessor", "BoundedRegionArrayMixin", "ChunkGeneratorLocateMixin", "ChunkGeneratorMixin", "ChunkGeneratorStructureStateMixin", "ChunkNoiseSamplerMixin", "ChunkPosDistanceLevelPropagatorMixin", "ChunkRegionMixin", "DensityCoordinateConsumerMixin", "EntityDistanceMixin", "EntityNavigationMixin", "EntityTrackingSectionMixin", "ExplosionImplMixin", "EyeOfEnderMixin", "LevelChunkMixin", "LevelMixin", "MapItemMixin", "MapItemSavedDataMixin", "MinecraftServerMixin", "MultiTickSchedulerMixin", "NoiseChunkGeneratorMixin", "PeriodicSurfaceSystemMixin", "OceanMonumentStructureMixin", "PathfindToRaidGoalMixin", "PlayerInteractionDistanceMixin", "PortalForcerMixin", "ProjectileUtilMixin", "RaidFixtureAccessor", "RaidMixin", "RaiderMoveThroughVillageGoalMixin", "RaidsAccessor", "RaidsMixin", "RandomSpreadStructurePlacementMixin", "ServerChunkManagerMixin", "ServerChunkLoadingManagerMixin", "ServerEntityManagerMixin", "ServerEntityManagerListenerMixin", "ServerEntityTrackerMixin", "ServerPlayNetworkHandlerMixin", "ServerPlayerSleepMixin", "ServerWorldMixin", "StrongholdStructureMixin", "StructureBiomeMixin", "StructurePlacementMixin", "SurfaceNoiseThresholdMixin", "SurfaceSystemMixin", "WorldEntityLookupMixin", "WorldTickSchedulerMixin"],
+   "injectors": {"defaultRequire": 1}
+ }
+diff --git a/src/main/java/dev/ringworld/mixin/StallCauseChunkMapMixin.java b/src/main/java/dev/ringworld/mixin/StallCauseChunkMapMixin.java
+new file mode 100644
+index 0000000..d13953e
+--- /dev/null
++++ b/src/main/java/dev/ringworld/mixin/StallCauseChunkMapMixin.java
+@@ -0,0 +1,85 @@
++package dev.ringworld.mixin;
++
++import java.util.Queue;
++import java.util.function.BooleanSupplier;
++import jdk.jfr.Event;
++import jdk.jfr.Name;
++import jdk.jfr.Threshold;
++import net.minecraft.server.level.ChunkMap;
++import net.minecraft.server.level.ServerLevel;
++import net.minecraft.world.level.chunk.ChunkAccess;
++import net.minecraft.world.level.chunk.storage.SerializableChunkData;
++import org.spongepowered.asm.mixin.Mixin;
++import org.spongepowered.asm.mixin.Unique;
++import org.spongepowered.asm.mixin.injection.At;
++import org.spongepowered.asm.mixin.injection.Inject;
++import org.spongepowered.asm.mixin.injection.Redirect;
++import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
++
++/** Temporary measurement only. No scheduling, persistence or queue behaviour changes. */
++@Mixin(ChunkMap.class)
++abstract class StallCauseChunkMapMixin {
++    @Unique private Unloads ringworld$unloads;
++
++    @Name("ringworld.DiagnosticUnloads") @Threshold("1 ms")
++    public static class Unloads extends Event {
++        public int queueBefore;
++        public int forcedMinimum;
++        public int tasks;
++        public int snapshots;
++        public double snapshotMs;
++    }
++
++    @Name("ringworld.DiagnosticSnapshot") @Threshold("1 ms")
++    public static class Snapshot extends Event {
++        public int x;
++        public int z;
++        public boolean unloading;
++    }
++
++    @Inject(method = "processUnloads", at = @At("HEAD"))
++    private void ringworld$begin(BooleanSupplier haveTime, CallbackInfo ci) {
++        if (!Boolean.getBoolean("ringworld.stallCause")) return;
++        ringworld$unloads = new Unloads();
++        ringworld$unloads.begin();
++    }
++
++    @Redirect(method = "processUnloads", at = @At(value = "INVOKE", target = "Ljava/util/Queue;size()I"))
++    private int ringworld$size(Queue<Runnable> queue) {
++        int size = queue.size();
++        if (ringworld$unloads != null) {
++            ringworld$unloads.queueBefore = size;
++            ringworld$unloads.forcedMinimum = Math.max(0, size - 2000);
++        }
++        return size;
++    }
++
++    @Redirect(method = "processUnloads", at = @At(value = "INVOKE", target = "Ljava/lang/Runnable;run()V"))
++    private void ringworld$task(Runnable task) {
++        if (ringworld$unloads != null) ringworld$unloads.tasks++;
++        task.run();
++    }
++
++    @Redirect(method = "save", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/level/chunk/storage/SerializableChunkData;copyOf(Lnet/minecraft/server/level/ServerLevel;Lnet/minecraft/world/level/chunk/ChunkAccess;)Lnet/minecraft/world/level/chunk/storage/SerializableChunkData;"))
++    private SerializableChunkData ringworld$snapshot(ServerLevel level, ChunkAccess chunk) {
++        if (!Boolean.getBoolean("ringworld.stallCause")) return SerializableChunkData.copyOf(level, chunk);
++        Snapshot event = new Snapshot();
++        event.x = chunk.getPos().x(); event.z = chunk.getPos().z();
++        event.unloading = ringworld$unloads != null;
++        long start = System.nanoTime(); event.begin();
++        try { return SerializableChunkData.copyOf(level, chunk); }
++        finally {
++            event.end(); event.commit();
++            if (ringworld$unloads != null) {
++                ringworld$unloads.snapshots++;
++                ringworld$unloads.snapshotMs += (System.nanoTime() - start) / 1_000_000.0;
++            }
++        }
++    }
++
++    @Inject(method = "processUnloads", at = @At("RETURN"))
++    private void ringworld$end(BooleanSupplier haveTime, CallbackInfo ci) {
++        if (ringworld$unloads == null) return;
++        ringworld$unloads.end(); ringworld$unloads.commit(); ringworld$unloads = null;
++    }
++}
+diff --git a/src/main/java/dev/ringworld/mixin/StallCauseTickMixin.java b/src/main/java/dev/ringworld/mixin/StallCauseTickMixin.java
+new file mode 100644
+index 0000000..6204946
+--- /dev/null
++++ b/src/main/java/dev/ringworld/mixin/StallCauseTickMixin.java
+@@ -0,0 +1,32 @@
++package dev.ringworld.mixin;
++
++import java.util.function.BooleanSupplier;
++import jdk.jfr.Event;
++import jdk.jfr.Name;
++import jdk.jfr.Threshold;
++import net.minecraft.server.MinecraftServer;
++import org.spongepowered.asm.mixin.Mixin;
++import org.spongepowered.asm.mixin.Unique;
++import org.spongepowered.asm.mixin.injection.At;
++import org.spongepowered.asm.mixin.injection.Inject;
++import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
++
++/** Temporary exact boundaries; does not change vanilla tick timing. */
++@Mixin(MinecraftServer.class)
++abstract class StallCauseTickMixin {
++    @Unique private Tick ringworld$tick;
++    @Name("ringworld.DiagnosticTick") @Threshold("50 ms")
++    public static class Tick extends Event { public int tick; }
++    @Inject(method = "tickServer", at = @At("HEAD"))
++    private void ringworld$begin(BooleanSupplier haveTime, CallbackInfo ci) {
++        if (!Boolean.getBoolean("ringworld.stallCause")) return;
++        ringworld$tick = new Tick();
++        ringworld$tick.tick = ((MinecraftServer)(Object)this).getTickCount() + 1;
++        ringworld$tick.begin();
++    }
++    @Inject(method = "tickServer", at = @At("RETURN"))
++    private void ringworld$end(BooleanSupplier haveTime, CallbackInfo ci) {
++        if (ringworld$tick == null) return;
++        ringworld$tick.end(); ringworld$tick.commit(); ringworld$tick = null;
++    }
++}

@@ -1,3 +1,16 @@
+# Remaining Large-server hitches — causes identified
+
+Precise three-client JFR measurements identify three remaining burst paths:
+Minecraft's five-minute non-flushing autosave (1,019 ms tick; 20/21 server
+samples in autosave), synchronous advancement structure lookup pumping the
+unbounded loading-ticket graph (620 ms tick, no GC), and mandatory unload
+queue drainage (14,600 queued callbacks → 12,600 executed in one 178 ms pass).
+GC amplifies some bursts but does not explain the latter two. These are separate
+from the asynchronous Atlas checkpoint and its bounded capture queue. Temporary
+diagnostic mixins were removed; source behaviour and release hold are unchanged.
+Public server restored; muted test clients/tunnel stopped. See
+[confirmed causes and reproducible evidence](SERVER_STALL_INVESTIGATION_2026_10_10.md).
+
 # Queued player-load Atlas capture — development validation complete
 
 The approved shared queue, tint-only biome lookups and tile-header reservation

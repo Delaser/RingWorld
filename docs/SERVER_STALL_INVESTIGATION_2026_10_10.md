@@ -1,10 +1,156 @@
 # Remaining Large-server stalls — 10 October 2026
 
+## Confirmed causes from precise tick boundaries
+
+A third three-client run identifies the remaining large hitches as **bursts of
+normal chunk persistence and ticket processing**, rather than another synchronous
+Atlas-file write. The clearest periodic cause is Minecraft's five-minute
+**non-flushing autosave**: it still scans every visible chunk and snapshots dirty
+chunk contents on the server thread. Asynchronous encoding/disk writes do not
+make that preparation asynchronous or bounded.
+
+The new measurement-only JAR (`fd00a979`, functional source `6d40faa`) adds JFR
+boundaries around `tickServer`, `processUnloads` and `SerializableChunkData.copyOf`.
+It also counts the actual unload queue, mandatory drainage, executed callbacks,
+and snapshots. No scheduling or save behaviour changed. The temporary mixins
+were removed after measurement; the [reproduction patch](evidence/server-stall-cause-probes.patch)
+and [compact trace evidence](evidence/server-stall-causes-2026-10-10.json) are retained.
+For reproduction, apply that patch to the recorded source and enable
+`-Dringworld.stallCause=true` with startup JFR; keep heap-inspection events disabled.
+Raw recording, decoder, controller, phase JSON and build log are retained locally
+under `logs/stall-cause/`. The diagnostic build passes all 502 NeoForge 26.3 Java
+cases. It is not a staged release JAR.
+
+All three hidden/muted clients joined before a fixed 60-second settling period.
+The same outside/in-band transitions followed, with no overlapping local builds
+or lifecycle fixtures. The private Large-world copy, 4 GiB maximum heap and
+NeoForge 26.3.0.37-beta were retained. This is diagnosis on an evolving world,
+not a reset A/B performance comparison or replacement release qualification.
+
+| Exact tick | Duration | Confirmed work |
+|---|---:|---|
+| 6000, 20:43:44.193 UTC | 1,018.73 ms | Five-minute autosave: 20 of 21 server execution samples in `autoSave`; 12 include `SerializableChunkData.copyOf`. No recorded unload span overlaps this tick. GC pauses overlap 221.58 ms. |
+| 6140, 20:43:51.821 UTC | 619.90 ms | Immediately after the return transition: 21 execution/native samples in ticket/distance updates. An advancement structure lookup synchronously requests a chunk and pumps the ticket graph. Unload processing occupies only 7.03 ms; no GC pause overlaps. |
+| 6141, 20:43:52.587 UTC | 218.72 ms | The next tick drains 12,600 callbacks from a queue of 14,600. `processUnloads` occupies 178.07 ms and prepares 796 chunk snapshots, taking 66.30 ms in aggregate. No GC pause overlaps. |
+
+These durations come from JFR operation boundaries, not `tick query` window
+percentiles or log timestamps. Execution samples remain sampled evidence, not a
+complete CPU-time decomposition. GC time is already included in operation wall
+time and must not be added to it again.
+
+### 1. Periodic autosave performs an unbounded main-thread pass
+
+The observed stack is:
+
+```text
+MinecraftServer.tickServer → autoSave → saveEverything
+  → saveAllChunks → ServerLevel.save → ServerChunkCache.save
+    → ChunkMap.saveAllChunks(false) → saveChunkIfNeeded → save
+      → SerializableChunkData.copyOf
+```
+
+In the inspected 26.3.0.37-beta source, `computeNextAutosaveInterval` selects
+300 seconds, or 6,000 ticks at 20 TPS. `autoSave` invokes
+`saveEverything(true, false, false)`. The non-flushing branch clears
+`nextChunkSaveTime` and calls `saveChunkIfNeeded` for **every** holder in
+`visibleChunkMap`, without the ordinary tick deadline or a snapshot-count cap.
+`save` copies the live chunk's sections, palettes, light arrays, heightmaps,
+block-entity data and ticks before submitting NBT encoding to the background
+executor. Level saved-data and world metadata preparation also occur in the
+same save call; not all of its time is chunk copying.
+
+Tick 6000 is the largest tick in this recording. Autosave appears in 20 of its
+21 server execution samples, spanning 20:43:44.296–20:43:45.141 UTC. The 62
+individual snapshot events exceeding the 1 ms recording threshold are all
+outside `processUnloads`; their inclusive durations total 326.38 ms. That is a
+thresholded subset, **not** the total snapshot count or total snapshot time.
+This establishes the periodic autosave path as the large recurring hitch in
+this reproduction. The Atlas capture queue cannot budget this vanilla pass.
+
+### 2. A synchronous structure lookup pumps an unbounded ticket update
+
+Tick 6140's sampled caller chain is:
+
+```text
+ServerPlayer.doTick → PlayerTrigger.trigger → LocationPredicate.matches
+  → StructureManager.getStructureWithPieceAt → fillStartsForStructure
+    → LevelReader.getChunk → ServerChunkCache.getChunk
+      → managedBlock → MainThreadExecutor.pollTask
+        → runDistanceManagerUpdates → DistanceManager.runAllUpdates
+```
+
+The active stack is loading-ticket graph propagation, including RingWorld's
+periodic-neighbour context, after three large simultaneous position changes.
+Vanilla calls `loadingChunkTracker.runDistanceUpdates(Integer.MAX_VALUE)` and
+updates the affected holders/futures in the same call. Therefore a synchronous
+chunk-dependent query can pull a substantial outstanding ticket transition into
+the current tick. This is real server work, not a GC-only pause: there is no
+GC pause in this 619.90 ms tick.
+
+The recording does not establish that RingWorld's wrapping alone causes the
+cost or that vanilla would take the same time on a non-ring world. The clear
+trigger and path are the structure query and full ticket-graph update. Do not
+blindly cap that graph call: a caller synchronously waiting for a chunk must
+still be able to make progress.
+
+### 3. Vanilla deliberately bypasses its unload deadline above 2,000 callbacks
+
+The previously suspected queue condition is now observed directly. Vanilla uses:
+
+```java
+int minimum = Math.max(0, unloadQueue.size() - 2000);
+while ((minimum > 0 || haveTime.getAsBoolean()) && (task = unloadQueue.poll()) != null) {
+    minimum--;
+    task.run();
+}
+```
+
+At tick 6141, the queue contains 14,600 callbacks and the mandatory minimum is
+12,600; exactly 12,600 run in that call. Only 796 chunk snapshots are prepared:
+callbacks can be stale or reschedule around save futures, so callbacks must not
+be reported as distinct chunks. The measured 178.07 ms pass exceeds a tick's
+50 ms allowance even with no GC pause. `processUnloads` also includes ordinary
+eager saves; the aggregate snapshot counter covers both paths.
+
+### GC amplifies some bursts but does not explain all of them
+
+Tick 5843 lasts 249.59 ms; an eager-save pass lasts 223.67 ms and overlaps
+221.55 ms of GC, despite having zero unload callbacks and no forced drainage.
+A slow snapshot wall time can therefore mostly be a collection pause, not an
+intrinsically expensive copy. Conversely, ticks 6140/6141 demonstrate substantial
+work without GC. Earlier allocation samples locate large whole-map light-data
+clones in worker-side `LayerLightSectionStorage.swapSectionMap`, plus palette
+re-encoding for chunk saves. Weighted allocation samples do not prove which
+allocation caused a particular collection.
+
+The largest unload pass in the entire recording (266.72 ms) occurs after client
+disconnection and overlaps 232.96 ms of GC. It is retained in the evidence but
+is not used as a normal-play transition result.
+
+### Consequence for the next fix
+
+Address the autosave's main-thread preparation separately from the already-fixed
+Atlas checkpoint writer. A safe implementation would spread dirty-chunk snapshot
+preparation over ticks while preserving durability, dirty-state acknowledgement,
+explicit `save-all`/flush and stop semantics; live chunks still cannot be read by
+workers. Ticket-transition churn and the forced-unload backlog need their own
+bounded policy and correctness checks. Adding Atlas workers, increasing its
+capture rate or merely raising the heap will not bound either vanilla path.
+
+The public server was restored with its prior JAR and authentication settings;
+all test clients and the SSH tunnel were stopped. No production behaviour change
+or new release qualification is claimed. The first diagnostic attempt failed
+before clients joined because of a stale local classes path; its logs are retained
+separately and excluded. Packet loss remains unmeasured. Exact causes of every
+older window cannot be reconstructed retrospectively: the earlier approximate
+unload correlations must not be treated as exact attribution.
+
+## Earlier recordings — historical context
+
 The remaining stalls have more than one cause. A second three-client run reproduced
 1,265 ms and 1,006 ms P99 windows without the heap-inspection collections caused by
-the first profiler. The transition recording shows chunk unloading/snapshotting,
-ticket-graph updates and real GC pauses. Player-loaded Atlas sampling adds work,
-but the evidence does not attribute the whole stall to the Atlas.
+the first profiler. It showed chunk unloading/snapshotting, ticket-graph updates
+and real GC pauses, but lacked the precise tick boundaries used above.
 
 ## Method and results
 

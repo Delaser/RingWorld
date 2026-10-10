@@ -37,6 +37,16 @@ and source-development evidence. Apply equivalent behaviour on all supported
 
 ## Server Atlas checkpoint persistence
 
+Precise Large-server traces identify vanilla's five-minute non-flushing autosave
+as an unbounded server-thread snapshot pass, plus synchronous structure-query
+ticket updates and mandatory unload-queue drainage above 2,000 callbacks.
+Atlas budgets do not bound those paths. Use precise operation/tick boundaries;
+delayed slow-tick log timestamps and P99 windows cannot establish attribution.
+Keep GC overlap separate from active work and never count unload callbacks as
+unique chunks. Any future persistence amortisation must preserve explicit flush,
+stop and dirty-state semantics. See the confirmed causes in
+`docs/SERVER_STALL_INVESTIGATION_2026_10_10.md`.
+
 For stall profiling, disable JFR heap-statistics/ObjectCount collection: the
 initial multiplayer profiler forced 0.6–0.7 second full GCs. Use GC pause events,
 not summed concurrent GC duration, and retain timestamped workload windows.

@@ -1,0 +1,1203 @@
+{
+  "customCounts": {
+    "ringworld.DiagnosticUnloads": 2351,
+    "ringworld.DiagnosticTick": 449,
+    "ringworld.DiagnosticSnapshot": 482
+  },
+  "worstTicks": [
+    {
+      "phase": "outside-repeat",
+      "tick": 6000,
+      "start": "2026-10-10T20:43:44.193302782Z",
+      "durationMs": 1018.728407,
+      "unloadOverlapMs": 0,
+      "unloads": [],
+      "gcPauseOverlapMs": 221.58193588256836,
+      "largestSnapshotMs": 106.589834,
+      "serverSamples": {
+        "tickNonPassenger": 1,
+        "copyOf": 12
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "center-repeat",
+      "tick": 6140,
+      "start": "2026-10-10T20:43:51.820605097Z",
+      "durationMs": 619.895764,
+      "unloadOverlapMs": 7.025480270385742,
+      "unloads": [
+        {
+          "time": "2026-10-10T20:43:51.826276341Z",
+          "durationMs": 7.02556,
+          "queueBefore": 2242,
+          "forcedMinimum": 242,
+          "tasks": 242,
+          "snapshots": 14,
+          "snapshotMs": 1.2686060000000001
+        }
+      ],
+      "gcPauseOverlapMs": 0,
+      "largestSnapshotMs": 0,
+      "serverSamples": {
+        "runDistanceManagerUpdates": 21
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "startup/join/between-phases",
+      "tick": 1341,
+      "start": "2026-10-10T20:39:51.973977870Z",
+      "durationMs": 400.133877,
+      "unloadOverlapMs": 0,
+      "unloads": [],
+      "gcPauseOverlapMs": 0,
+      "largestSnapshotMs": 0,
+      "serverSamples": {
+        "runDistanceManagerUpdates": 5,
+        "NaturalSpawner": 1,
+        "tickNonPassenger": 2
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "startup/join/between-phases",
+      "tick": 7741,
+      "start": "2026-10-10T20:45:11.390849479Z",
+      "durationMs": 308.794303,
+      "unloadOverlapMs": 266.7219638824463,
+      "unloads": [
+        {
+          "time": "2026-10-10T20:45:11.413425568Z",
+          "durationMs": 266.721889,
+          "queueBefore": 2466,
+          "forcedMinimum": 466,
+          "tasks": 466,
+          "snapshots": 307,
+          "snapshotMs": 256.6511799999998
+        }
+      ],
+      "gcPauseOverlapMs": 232.96284675598145,
+      "largestSnapshotMs": 234.091474,
+      "serverSamples": {
+        "processUnloads": 2,
+        "copyOf": 1
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "startup/join/between-phases",
+      "tick": 2878,
+      "start": "2026-10-10T20:41:08.088652925Z",
+      "durationMs": 299.740988,
+      "unloadOverlapMs": 0,
+      "unloads": [],
+      "gcPauseOverlapMs": 0.34046173095703125,
+      "largestSnapshotMs": 0,
+      "serverSamples": {
+        "runDistanceManagerUpdates": 10
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "outside-repeat",
+      "tick": 5843,
+      "start": "2026-10-10T20:43:36.104618651Z",
+      "durationMs": 249.587835,
+      "unloadOverlapMs": 223.67000579833984,
+      "unloads": [
+        {
+          "time": "2026-10-10T20:43:36.115694392Z",
+          "durationMs": 223.670103,
+          "queueBefore": 0,
+          "forcedMinimum": 0,
+          "tasks": 0,
+          "snapshots": 10,
+          "snapshotMs": 222.894295
+        }
+      ],
+      "gcPauseOverlapMs": 221.54664993286133,
+      "largestSnapshotMs": 222.503523,
+      "serverSamples": {
+        "NaturalSpawner": 1
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "startup/join/between-phases",
+      "tick": 7554,
+      "start": "2026-10-10T20:45:01.656713544Z",
+      "durationMs": 242.07898,
+      "unloadOverlapMs": 0,
+      "unloads": [],
+      "gcPauseOverlapMs": 204.2222023010254,
+      "largestSnapshotMs": 0,
+      "serverSamples": {
+        "NaturalSpawner": 1
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "startup/join/between-phases",
+      "tick": 7520,
+      "start": "2026-10-10T20:44:59.954677947Z",
+      "durationMs": 233.410456,
+      "unloadOverlapMs": 0,
+      "unloads": [],
+      "gcPauseOverlapMs": 193.39752197265625,
+      "largestSnapshotMs": 0,
+      "serverSamples": {
+        "NaturalSpawner": 1,
+        "tickNonPassenger": 1
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "outside-repeat",
+      "tick": 5844,
+      "start": "2026-10-10T20:43:36.354327757Z",
+      "durationMs": 222.112551,
+      "unloadOverlapMs": 0,
+      "unloads": [],
+      "gcPauseOverlapMs": 168.12777519226074,
+      "largestSnapshotMs": 0,
+      "serverSamples": {},
+      "blockingEvents": []
+    },
+    {
+      "phase": "center-repeat",
+      "tick": 6141,
+      "start": "2026-10-10T20:43:52.587263441Z",
+      "durationMs": 218.717025,
+      "unloadOverlapMs": 178.07388305664062,
+      "unloads": [
+        {
+          "time": "2026-10-10T20:43:52.591307898Z",
+          "durationMs": 178.0738,
+          "queueBefore": 14600,
+          "forcedMinimum": 12600,
+          "tasks": 12600,
+          "snapshots": 796,
+          "snapshotMs": 66.29649300000001
+        }
+      ],
+      "gcPauseOverlapMs": 0,
+      "largestSnapshotMs": 6.36618,
+      "serverSamples": {
+        "processUnloads": 8,
+        "copyOf": 2
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "startup/join/between-phases",
+      "tick": 7744,
+      "start": "2026-10-10T20:45:12.090891441Z",
+      "durationMs": 217.804059,
+      "unloadOverlapMs": 64.59522247314453,
+      "unloads": [
+        {
+          "time": "2026-10-10T20:45:12.106821748Z",
+          "durationMs": 64.595293,
+          "queueBefore": 3018,
+          "forcedMinimum": 1018,
+          "tasks": 1018,
+          "snapshots": 9,
+          "snapshotMs": 4.873107000000001
+        }
+      ],
+      "gcPauseOverlapMs": 103.6839485168457,
+      "largestSnapshotMs": 2.992478,
+      "serverSamples": {
+        "processUnloads": 1
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "center-first",
+      "tick": 4565,
+      "start": "2026-10-10T20:42:32.205451001Z",
+      "durationMs": 203.715228,
+      "unloadOverlapMs": 1.119852066040039,
+      "unloads": [
+        {
+          "time": "2026-10-10T20:42:32.229098470Z",
+          "durationMs": 1.119762,
+          "queueBefore": 0,
+          "forcedMinimum": 0,
+          "tasks": 0,
+          "snapshots": 18,
+          "snapshotMs": 0.9997190000000001
+        }
+      ],
+      "gcPauseOverlapMs": 164.9179458618164,
+      "largestSnapshotMs": 0,
+      "serverSamples": {
+        "NaturalSpawner": 1
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "center-repeat",
+      "tick": 6610,
+      "start": "2026-10-10T20:44:14.454576483Z",
+      "durationMs": 200.068005,
+      "unloadOverlapMs": 0,
+      "unloads": [],
+      "gcPauseOverlapMs": 164.95728492736816,
+      "largestSnapshotMs": 0,
+      "serverSamples": {},
+      "blockingEvents": []
+    },
+    {
+      "phase": "startup/join/between-phases",
+      "tick": 7742,
+      "start": "2026-10-10T20:45:11.750507375Z",
+      "durationMs": 194.849532,
+      "unloadOverlapMs": 102.89192199707031,
+      "unloads": [
+        {
+          "time": "2026-10-10T20:45:11.822622470Z",
+          "durationMs": 102.891931,
+          "queueBefore": 3158,
+          "forcedMinimum": 1158,
+          "tasks": 1158,
+          "snapshots": 637,
+          "snapshotMs": 73.56811699999993
+        }
+      ],
+      "gcPauseOverlapMs": 0,
+      "largestSnapshotMs": 5.129778,
+      "serverSamples": {
+        "runDistanceManagerUpdates": 1,
+        "NaturalSpawner": 1,
+        "processUnloads": 5,
+        "copyOf": 3
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "outside",
+      "tick": 2904,
+      "start": "2026-10-10T20:41:10.724100286Z",
+      "durationMs": 193.492044,
+      "unloadOverlapMs": 59.82851982116699,
+      "unloads": [
+        {
+          "time": "2026-10-10T20:41:10.725695229Z",
+          "durationMs": 59.82848,
+          "queueBefore": 3928,
+          "forcedMinimum": 1928,
+          "tasks": 1928,
+          "snapshots": 39,
+          "snapshotMs": 5.599003000000001
+        }
+      ],
+      "gcPauseOverlapMs": 0,
+      "largestSnapshotMs": 2.47359,
+      "serverSamples": {
+        "processUnloads": 1,
+        "runDistanceManagerUpdates": 2
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "center-repeat",
+      "tick": 7113,
+      "start": "2026-10-10T20:44:39.605345108Z",
+      "durationMs": 192.054148,
+      "unloadOverlapMs": 1.4104843139648438,
+      "unloads": [
+        {
+          "time": "2026-10-10T20:44:39.627923453Z",
+          "durationMs": 1.410428,
+          "queueBefore": 0,
+          "forcedMinimum": 0,
+          "tasks": 0,
+          "snapshots": 20,
+          "snapshotMs": 1.211259
+        }
+      ],
+      "gcPauseOverlapMs": 151.7484188079834,
+      "largestSnapshotMs": 0,
+      "serverSamples": {
+        "processUnloads": 1,
+        "copyOf": 1,
+        "tickNonPassenger": 1
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "outside-repeat",
+      "tick": 5997,
+      "start": "2026-10-10T20:43:43.805770584Z",
+      "durationMs": 189.636569,
+      "unloadOverlapMs": 0,
+      "unloads": [],
+      "gcPauseOverlapMs": 163.42425346374512,
+      "largestSnapshotMs": 0,
+      "serverSamples": {
+        "copyOf": 1,
+        "tickNonPassenger": 1
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "center-repeat",
+      "tick": 6776,
+      "start": "2026-10-10T20:44:22.754512741Z",
+      "durationMs": 185.794542,
+      "unloadOverlapMs": 0,
+      "unloads": [],
+      "gcPauseOverlapMs": 156.03303909301758,
+      "largestSnapshotMs": 0,
+      "serverSamples": {},
+      "blockingEvents": []
+    },
+    {
+      "phase": "outside-repeat",
+      "tick": 5292,
+      "start": "2026-10-10T20:43:08.564511413Z",
+      "durationMs": 184.960913,
+      "unloadOverlapMs": 0,
+      "unloads": [],
+      "gcPauseOverlapMs": 142.11344718933105,
+      "largestSnapshotMs": 0,
+      "serverSamples": {
+        "tickNonPassenger": 1
+      },
+      "blockingEvents": []
+    },
+    {
+      "phase": "outside-repeat",
+      "tick": 5427,
+      "start": "2026-10-10T20:43:15.305229035Z",
+      "durationMs": 182.508835,
+      "unloadOverlapMs": 0,
+      "unloads": [],
+      "gcPauseOverlapMs": 157.06729888916016,
+      "largestSnapshotMs": 0,
+      "serverSamples": {},
+      "blockingEvents": []
+    }
+  ],
+  "largestUnloads": [
+    {
+      "time": "2026-10-10T20:45:11.413425568Z",
+      "durationMs": 266.721889,
+      "queueBefore": 2466,
+      "forcedMinimum": 466,
+      "tasks": 466,
+      "snapshots": 307,
+      "snapshotMs": 256.6511799999998
+    },
+    {
+      "time": "2026-10-10T20:43:36.115694392Z",
+      "durationMs": 223.670103,
+      "queueBefore": 0,
+      "forcedMinimum": 0,
+      "tasks": 0,
+      "snapshots": 10,
+      "snapshotMs": 222.894295
+    },
+    {
+      "time": "2026-10-10T20:43:52.591307898Z",
+      "durationMs": 178.0738,
+      "queueBefore": 14600,
+      "forcedMinimum": 12600,
+      "tasks": 12600,
+      "snapshots": 796,
+      "snapshotMs": 66.29649300000001
+    },
+    {
+      "time": "2026-10-10T20:43:20.373337979Z",
+      "durationMs": 148.923748,
+      "queueBefore": 0,
+      "forcedMinimum": 0,
+      "tasks": 0,
+      "snapshots": 2,
+      "snapshotMs": 148.88943799999998
+    },
+    {
+      "time": "2026-10-10T20:42:00.211402214Z",
+      "durationMs": 120.382725,
+      "queueBefore": 2778,
+      "forcedMinimum": 778,
+      "tasks": 778,
+      "snapshots": 117,
+      "snapshotMs": 10.421457999999998
+    },
+    {
+      "time": "2026-10-10T20:42:00.526545102Z",
+      "durationMs": 113.980994,
+      "queueBefore": 5814,
+      "forcedMinimum": 3814,
+      "tasks": 3814,
+      "snapshots": 489,
+      "snapshotMs": 40.38625600000001
+    },
+    {
+      "time": "2026-10-10T20:44:27.079406511Z",
+      "durationMs": 110.575964,
+      "queueBefore": 0,
+      "forcedMinimum": 0,
+      "tasks": 0,
+      "snapshots": 4,
+      "snapshotMs": 110.517759
+    },
+    {
+      "time": "2026-10-10T20:45:11.822622470Z",
+      "durationMs": 102.891931,
+      "queueBefore": 3158,
+      "forcedMinimum": 1158,
+      "tasks": 1158,
+      "snapshots": 637,
+      "snapshotMs": 73.56811699999993
+    },
+    {
+      "time": "2026-10-10T20:42:51.076860078Z",
+      "durationMs": 99.76285,
+      "queueBefore": 0,
+      "forcedMinimum": 0,
+      "tasks": 0,
+      "snapshots": 9,
+      "snapshotMs": 98.829624
+    },
+    {
+      "time": "2026-10-10T20:43:51.035242232Z",
+      "durationMs": 97.799672,
+      "queueBefore": 3463,
+      "forcedMinimum": 1463,
+      "tasks": 1463,
+      "snapshots": 90,
+      "snapshotMs": 40.76824700000001
+    },
+    {
+      "time": "2026-10-10T20:43:50.765562570Z",
+      "durationMs": 77.029406,
+      "queueBefore": 4912,
+      "forcedMinimum": 2912,
+      "tasks": 2912,
+      "snapshots": 123,
+      "snapshotMs": 42.546349
+    },
+    {
+      "time": "2026-10-10T20:41:10.472576235Z",
+      "durationMs": 76.750531,
+      "queueBefore": 2743,
+      "forcedMinimum": 743,
+      "tasks": 743,
+      "snapshots": 5,
+      "snapshotMs": 1.332421
+    },
+    {
+      "time": "2026-10-10T20:41:58.795592323Z",
+      "durationMs": 75.51237,
+      "queueBefore": 5173,
+      "forcedMinimum": 3173,
+      "tasks": 3173,
+      "snapshots": 409,
+      "snapshotMs": 43.34733799999999
+    },
+    {
+      "time": "2026-10-10T20:41:17.563464316Z",
+      "durationMs": 68.575247,
+      "queueBefore": 0,
+      "forcedMinimum": 0,
+      "tasks": 0,
+      "snapshots": 15,
+      "snapshotMs": 66.71125199999999
+    },
+    {
+      "time": "2026-10-10T20:45:12.106821748Z",
+      "durationMs": 64.595293,
+      "queueBefore": 3018,
+      "forcedMinimum": 1018,
+      "tasks": 1018,
+      "snapshots": 9,
+      "snapshotMs": 4.873107000000001
+    },
+    {
+      "time": "2026-10-10T20:41:09.542879791Z",
+      "durationMs": 64.163143,
+      "queueBefore": 5264,
+      "forcedMinimum": 3264,
+      "tasks": 3264,
+      "snapshots": 41,
+      "snapshotMs": 20.928855999999996
+    },
+    {
+      "time": "2026-10-10T20:45:17.042341480Z",
+      "durationMs": 62.706721,
+      "queueBefore": 4657,
+      "forcedMinimum": 2657,
+      "tasks": 2657,
+      "snapshots": 170,
+      "snapshotMs": 36.71691200000001
+    },
+    {
+      "time": "2026-10-10T20:41:09.679769505Z",
+      "durationMs": 62.158849,
+      "queueBefore": 3571,
+      "forcedMinimum": 1571,
+      "tasks": 1571,
+      "snapshots": 47,
+      "snapshotMs": 19.340925999999996
+    },
+    {
+      "time": "2026-10-10T20:41:10.725695229Z",
+      "durationMs": 59.82848,
+      "queueBefore": 3928,
+      "forcedMinimum": 1928,
+      "tasks": 1928,
+      "snapshots": 39,
+      "snapshotMs": 5.599003000000001
+    },
+    {
+      "time": "2026-10-10T20:45:12.015813798Z",
+      "durationMs": 52.871044,
+      "queueBefore": 4247,
+      "forcedMinimum": 2247,
+      "tasks": 2247,
+      "snapshots": 793,
+      "snapshotMs": 26.461739000000016
+    }
+  ],
+  "maxQueueBefore": 14600,
+  "forcedEvents": 64,
+  "identity": {
+    "base": "6d40faab3152bda95af8a2715b8ba2d6724a91b8",
+    "jarSha256": "fd00a979b2c34f987c61fb189c8704f0343762cbd7f4f4374d011ca21c22384f",
+    "scope": "Temporary measurement-only mixins, private isolated server only"
+  },
+  "clientReadiness": {
+    "timestampUtc": "2026-10-10T20:39:58.281468+00:00",
+    "joinSeconds": 69.84863795799998,
+    "players": "There are 3 of a max of 20 players online: RingLoad2, RingLoad1, RingLoad3\n\n"
+  },
+  "recording": {
+    "sha256": "737e466c2d1aa63a5068785e552f52370e12c2987497d34b9aad8a10117b69dc",
+    "bytes": 18391174,
+    "executionSamplePeriodMs": 20,
+    "thresholdsMs": {
+      "tick": 50,
+      "processUnloads": 1,
+      "snapshot": 1
+    },
+    "heapInspectionEnabled": false,
+    "phaseOrder": [
+      "settled",
+      "outside",
+      "center-first",
+      "outside-repeat",
+      "center-repeat"
+    ]
+  },
+  "causalStacks": {
+    "6000": {
+      "totalExecutionSamples": 21,
+      "autoSaveSamples": 20,
+      "snapshotEventsAtLeast1Ms": 62,
+      "snapshotEventDurationSumMs": 326.379329,
+      "nonUnloadSnapshotEvents": 62,
+      "topStacks": [
+        {
+          "samples": 4,
+          "stack": [
+            "net.minecraft.world.level.chunk.PalettedContainer$Data.copy",
+            "net.minecraft.world.level.chunk.PalettedContainer.<init>",
+            "net.minecraft.world.level.chunk.PalettedContainer.copy",
+            "net.minecraft.world.level.chunk.LevelChunkSection.<init>",
+            "net.minecraft.world.level.chunk.LevelChunkSection.copy",
+            "net.minecraft.world.level.chunk.storage.SerializableChunkData.copyOf",
+            "net.minecraft.server.level.ChunkMap.redirect$zcn000$ringworld$snapshot",
+            "net.minecraft.server.level.ChunkMap.save",
+            "net.minecraft.server.level.ChunkMap.saveChunkIfNeeded",
+            "net.minecraft.server.level.ChunkMap.saveAllChunks",
+            "net.minecraft.server.level.ServerChunkCache.save",
+            "net.minecraft.server.level.ServerLevel.save",
+            "net.minecraft.server.MinecraftServer.saveAllChunks",
+            "net.minecraft.server.dedicated.DedicatedServer.saveAllChunks",
+            "net.minecraft.server.MinecraftServer.saveEverything",
+            "net.minecraft.server.MinecraftServer.autoSave",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        },
+        {
+          "samples": 2,
+          "stack": [
+            "it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap.get",
+            "net.minecraft.world.level.lighting.DataLayerStorageMap.getLayer",
+            "net.minecraft.world.level.lighting.LayerLightSectionStorage.getDataLayer",
+            "net.minecraft.world.level.lighting.LayerLightSectionStorage.getDataLayer",
+            "net.minecraft.world.level.lighting.LayerLightSectionStorage.getDataLayerData",
+            "net.minecraft.world.level.lighting.LightEngine.getDataLayerData",
+            "net.minecraft.world.level.chunk.storage.SerializableChunkData.copyOf",
+            "net.minecraft.server.level.ChunkMap.redirect$zcn000$ringworld$snapshot",
+            "net.minecraft.server.level.ChunkMap.save",
+            "net.minecraft.server.level.ChunkMap.saveChunkIfNeeded",
+            "net.minecraft.server.level.ChunkMap.saveAllChunks",
+            "net.minecraft.server.level.ServerChunkCache.save",
+            "net.minecraft.server.level.ServerLevel.save",
+            "net.minecraft.server.MinecraftServer.saveAllChunks",
+            "net.minecraft.server.dedicated.DedicatedServer.saveAllChunks",
+            "net.minecraft.server.MinecraftServer.saveEverything",
+            "net.minecraft.server.MinecraftServer.autoSave",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        },
+        {
+          "samples": 1,
+          "stack": [
+            "net.minecraft.world.level.entity.EntitySection.handler$zzm000$ringworld$canonicalBounds",
+            "net.minecraft.world.level.entity.EntitySection.getEntities",
+            "net.minecraft.world.level.entity.EntitySectionStorage.lambda$getEntities$0",
+            "net.minecraft.world.level.entity.EntitySectionStorage$$Lambda.0x00000000454c6c58.accept",
+            "net.minecraft.world.level.entity.EntitySectionStorage.forEachAccessibleNonEmptySection",
+            "net.minecraft.world.level.entity.EntitySectionStorage.getEntities",
+            "net.minecraft.world.level.entity.LevelEntityGetterAdapter.get",
+            "net.minecraft.world.level.Level.getEntities",
+            "net.minecraft.world.level.EntityGetter.getEntityCollisions",
+            "net.minecraft.world.level.CommonLevelAccessor.getEntityCollisions",
+            "net.minecraft.world.entity.Entity.collide",
+            "net.minecraft.world.entity.Entity.move",
+            "net.minecraft.world.entity.LivingEntity.handleRelativeFrictionAndCalculateMovement",
+            "net.minecraft.world.entity.LivingEntity.travelInAir",
+            "net.minecraft.world.entity.LivingEntity.travel",
+            "net.minecraft.world.entity.LivingEntity.aiStep",
+            "net.minecraft.world.entity.Mob.aiStep",
+            "net.minecraft.world.entity.AgeableMob.aiStep",
+            "net.minecraft.world.entity.animal.Animal.aiStep",
+            "net.minecraft.world.entity.animal.fox.Fox.aiStep",
+            "net.minecraft.world.entity.LivingEntity.tick",
+            "net.minecraft.world.entity.Mob.tick",
+            "net.minecraft.world.entity.animal.fox.Fox.tick",
+            "net.minecraft.server.level.ServerLevel.tickNonPassenger",
+            "net.minecraft.server.level.ServerLevel$$Lambda.0x00000000454ce210.accept",
+            "net.minecraft.world.level.Level.guardEntityTick",
+            "net.minecraft.server.level.ServerLevel.lambda$tick$0",
+            "net.minecraft.server.level.ServerLevel$$Lambda.0x0000000045325f20.accept",
+            "net.minecraft.world.level.entity.EntityTickList.forEach",
+            "net.minecraft.server.level.ServerLevel.tick",
+            "net.minecraft.server.MinecraftServer.tickChildren",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        },
+        {
+          "samples": 1,
+          "stack": [
+            "net.minecraft.world.level.TicketStorage.forEachTicket",
+            "net.minecraft.world.level.TicketStorage.forEachTicket",
+            "net.minecraft.world.level.TicketStorage.packTickets",
+            "net.minecraft.world.level.TicketStorage$$Lambda.0x00000000452896d8.apply",
+            "com.mojang.serialization.codecs.RecordCodecBuilder$Instance.lambda$ap2$4",
+            "com.mojang.serialization.codecs.RecordCodecBuilder$Instance$$Lambda.0x00000000442e4538.apply",
+            "com.mojang.serialization.codecs.RecordCodecBuilder$2.encode",
+            "com.mojang.serialization.MapCodec$MapCodecCodec.encode",
+            "com.mojang.serialization.Encoder.encodeStart",
+            "net.minecraft.world.level.storage.SavedDataStorage.encodeUnchecked",
+            "net.minecraft.world.level.storage.SavedDataStorage.lambda$collectDirtyTagsToSave$1",
+            "net.minecraft.world.level.storage.SavedDataStorage$$Lambda.0x000000004530acd0.accept",
+            "java.util.Optional.ifPresent",
+            "net.minecraft.world.level.storage.SavedDataStorage.lambda$collectDirtyTagsToSave$0",
+            "net.minecraft.world.level.storage.SavedDataStorage$$Lambda.0x000000004530a838.accept",
+            "java.util.HashMap.forEach",
+            "net.minecraft.world.level.storage.SavedDataStorage.collectDirtyTagsToSave",
+            "net.minecraft.world.level.storage.SavedDataStorage.scheduleSave",
+            "net.minecraft.server.level.ServerLevel.saveLevelData",
+            "net.minecraft.server.level.ServerLevel.save",
+            "net.minecraft.server.MinecraftServer.saveAllChunks",
+            "net.minecraft.server.dedicated.DedicatedServer.saveAllChunks",
+            "net.minecraft.server.MinecraftServer.saveEverything",
+            "net.minecraft.server.MinecraftServer.autoSave",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        },
+        {
+          "samples": 1,
+          "stack": [
+            "java.util.ArrayList.addAll",
+            "net.minecraft.world.ticks.LevelChunkTicks.pack",
+            "net.minecraft.world.level.chunk.LevelChunk.getTicksForSerialization",
+            "net.minecraft.world.level.chunk.storage.SerializableChunkData.copyOf",
+            "net.minecraft.server.level.ChunkMap.redirect$zcn000$ringworld$snapshot",
+            "net.minecraft.server.level.ChunkMap.save",
+            "net.minecraft.server.level.ChunkMap.saveChunkIfNeeded",
+            "net.minecraft.server.level.ChunkMap.saveAllChunks",
+            "net.minecraft.server.level.ServerChunkCache.save",
+            "net.minecraft.server.level.ServerLevel.save",
+            "net.minecraft.server.MinecraftServer.saveAllChunks",
+            "net.minecraft.server.dedicated.DedicatedServer.saveAllChunks",
+            "net.minecraft.server.MinecraftServer.saveEverything",
+            "net.minecraft.server.MinecraftServer.autoSave",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        },
+        {
+          "samples": 1,
+          "stack": [
+            "java.util.concurrent.CompletableFuture.reportJoin",
+            "java.util.concurrent.CompletableFuture.getNow",
+            "net.minecraft.server.level.GenerationChunkHolder.getChunkIfPresentUnchecked",
+            "net.minecraft.server.level.GenerationChunkHolder.getLatestChunk",
+            "net.minecraft.server.level.ChunkMap.saveChunkIfNeeded",
+            "net.minecraft.server.level.ChunkMap.saveAllChunks",
+            "net.minecraft.server.level.ServerChunkCache.save",
+            "net.minecraft.server.level.ServerLevel.save",
+            "net.minecraft.server.MinecraftServer.saveAllChunks",
+            "net.minecraft.server.dedicated.DedicatedServer.saveAllChunks",
+            "net.minecraft.server.MinecraftServer.saveEverything",
+            "net.minecraft.server.MinecraftServer.autoSave",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        },
+        {
+          "samples": 1,
+          "stack": [
+            "net.minecraft.server.level.ChunkMap.saveAllChunks",
+            "net.minecraft.server.level.ServerChunkCache.save",
+            "net.minecraft.server.level.ServerLevel.save",
+            "net.minecraft.server.MinecraftServer.saveAllChunks",
+            "net.minecraft.server.dedicated.DedicatedServer.saveAllChunks",
+            "net.minecraft.server.MinecraftServer.saveEverything",
+            "net.minecraft.server.MinecraftServer.autoSave",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        }
+      ]
+    },
+    "6140": {
+      "totalExecutionSamples": 24,
+      "autoSaveSamples": 0,
+      "snapshotEventsAtLeast1Ms": 0,
+      "snapshotEventDurationSumMs": 0,
+      "nonUnloadSnapshotEvents": 0,
+      "topStacks": [
+        {
+          "samples": 5,
+          "stack": [
+            "it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap.get",
+            "net.minecraft.server.level.ChunkMap.getUpdatingChunkIfPresent",
+            "net.minecraft.server.level.ChunkMap$DistanceManager.getChunk",
+            "net.minecraft.server.level.LoadingChunkTracker.getLevel",
+            "net.minecraft.server.level.ChunkTracker.getComputedLevel",
+            "net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint.checkEdge",
+            "net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint.checkNeighbor",
+            "net.minecraft.server.level.ChunkTracker.checkNeighborsAfterUpdate",
+            "net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint.runUpdates",
+            "net.minecraft.server.level.LoadingChunkTracker.runDistanceUpdates",
+            "net.minecraft.server.level.DistanceManager.runAllUpdates",
+            "net.minecraft.server.level.ServerChunkCache.md0a0588$ringworld$lambda$ringworld$updatePeriodicChunkGraph$0$0",
+            "net.minecraft.server.level.ServerChunkCache$$Lambda.0x0000000045301000.getAsBoolean",
+            "dev.ringworld.world.RingChunkLevelContext.run",
+            "net.minecraft.server.level.ServerChunkCache.redirect$zbo000$ringworld$updatePeriodicChunkGraph",
+            "net.minecraft.server.level.ServerChunkCache.runDistanceManagerUpdates",
+            "net.minecraft.server.level.ServerChunkCache$MainThreadExecutor.pollTask",
+            "net.minecraft.util.thread.BlockableEventLoop.managedBlock",
+            "net.minecraft.server.level.ServerChunkCache.getChunk",
+            "net.minecraft.world.level.Level.getChunk",
+            "net.minecraft.world.level.LevelReader.getChunk",
+            "net.minecraft.world.level.StructureManager.fillStartsForStructure",
+            "net.minecraft.world.level.StructureManager.startsForStructure",
+            "net.minecraft.world.level.StructureManager.getStructureWithPieceAt",
+            "net.minecraft.world.level.StructureManager.getStructureWithPieceAt",
+            "net.minecraft.advancements.predicates.LocationPredicate.matches",
+            "net.minecraft.advancements.predicates.entity.EntityLocationPredicate.matches",
+            "net.minecraft.advancements.predicates.entity.EntityPredicate.matches",
+            "net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition.test",
+            "net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition.test",
+            "net.minecraft.advancements.triggers.SimpleCriterionTrigger.trigger",
+            "net.minecraft.advancements.triggers.PlayerTrigger.trigger",
+            "net.minecraft.server.level.ServerPlayer.doTick",
+            "net.minecraft.server.network.ServerGamePacketListenerImpl.tickPlayer",
+            "net.minecraft.server.network.ServerGamePacketListenerImpl.tick",
+            "net.minecraft.network.Connection.tick",
+            "net.minecraft.server.network.ServerConnectionListener.tick",
+            "net.minecraft.server.MinecraftServer.tickConnection",
+            "net.minecraft.server.dedicated.DedicatedServer.tickConnection",
+            "net.minecraft.server.MinecraftServer.tickChildren",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        },
+        {
+          "samples": 3,
+          "stack": [
+            "it.unimi.dsi.fastutil.longs.LongOpenHashSet.contains",
+            "net.minecraft.server.level.ChunkMap$DistanceManager.isChunkToRemove",
+            "net.minecraft.server.level.LoadingChunkTracker.getLevel",
+            "net.minecraft.server.level.ChunkTracker.getComputedLevel",
+            "net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint.checkEdge",
+            "net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint.checkNeighbor",
+            "net.minecraft.server.level.ChunkTracker.checkNeighborsAfterUpdate",
+            "net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint.runUpdates",
+            "net.minecraft.server.level.LoadingChunkTracker.runDistanceUpdates",
+            "net.minecraft.server.level.DistanceManager.runAllUpdates",
+            "net.minecraft.server.level.ServerChunkCache.md0a0588$ringworld$lambda$ringworld$updatePeriodicChunkGraph$0$0",
+            "net.minecraft.server.level.ServerChunkCache$$Lambda.0x0000000045301000.getAsBoolean",
+            "dev.ringworld.world.RingChunkLevelContext.run",
+            "net.minecraft.server.level.ServerChunkCache.redirect$zbo000$ringworld$updatePeriodicChunkGraph",
+            "net.minecraft.server.level.ServerChunkCache.runDistanceManagerUpdates",
+            "net.minecraft.server.level.ServerChunkCache$MainThreadExecutor.pollTask",
+            "net.minecraft.util.thread.BlockableEventLoop.managedBlock",
+            "net.minecraft.server.level.ServerChunkCache.getChunk",
+            "net.minecraft.world.level.Level.getChunk",
+            "net.minecraft.world.level.LevelReader.getChunk",
+            "net.minecraft.world.level.StructureManager.fillStartsForStructure",
+            "net.minecraft.world.level.StructureManager.startsForStructure",
+            "net.minecraft.world.level.StructureManager.getStructureWithPieceAt",
+            "net.minecraft.world.level.StructureManager.getStructureWithPieceAt",
+            "net.minecraft.advancements.predicates.LocationPredicate.matches",
+            "net.minecraft.advancements.predicates.entity.EntityLocationPredicate.matches",
+            "net.minecraft.advancements.predicates.entity.EntityPredicate.matches",
+            "net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition.test",
+            "net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition.test",
+            "net.minecraft.advancements.triggers.SimpleCriterionTrigger.trigger",
+            "net.minecraft.advancements.triggers.PlayerTrigger.trigger",
+            "net.minecraft.server.level.ServerPlayer.doTick",
+            "net.minecraft.server.network.ServerGamePacketListenerImpl.tickPlayer",
+            "net.minecraft.server.network.ServerGamePacketListenerImpl.tick",
+            "net.minecraft.network.Connection.tick",
+            "net.minecraft.server.network.ServerConnectionListener.tick",
+            "net.minecraft.server.MinecraftServer.tickConnection",
+            "net.minecraft.server.dedicated.DedicatedServer.tickConnection",
+            "net.minecraft.server.MinecraftServer.tickChildren",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        },
+        {
+          "samples": 2,
+          "stack": [
+            "java.lang.ThreadLocal$ThreadLocalMap.getEntryAfterMiss",
+            "java.lang.ThreadLocal$ThreadLocalMap.getEntry",
+            "java.lang.ThreadLocal.get",
+            "java.lang.ThreadLocal.get",
+            "dev.ringworld.world.RingChunkLevelContext.activeGeometry",
+            "net.minecraft.server.level.ChunkTracker.redirect$zzi000$ringworld$periodicNeighbor",
+            "net.minecraft.server.level.ChunkTracker.getComputedLevel",
+            "net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint.checkEdge",
+            "net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint.checkNeighbor",
+            "net.minecraft.server.level.ChunkTracker.checkNeighborsAfterUpdate",
+            "net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint.runUpdates",
+            "net.minecraft.server.level.LoadingChunkTracker.runDistanceUpdates",
+            "net.minecraft.server.level.DistanceManager.runAllUpdates",
+            "net.minecraft.server.level.ServerChunkCache.md0a0588$ringworld$lambda$ringworld$updatePeriodicChunkGraph$0$0",
+            "net.minecraft.server.level.ServerChunkCache$$Lambda.0x0000000045301000.getAsBoolean",
+            "dev.ringworld.world.RingChunkLevelContext.run",
+            "net.minecraft.server.level.ServerChunkCache.redirect$zbo000$ringworld$updatePeriodicChunkGraph",
+            "net.minecraft.server.level.ServerChunkCache.runDistanceManagerUpdates",
+            "net.minecraft.server.level.ServerChunkCache$MainThreadExecutor.pollTask",
+            "net.minecraft.util.thread.BlockableEventLoop.managedBlock",
+            "net.minecraft.server.level.ServerChunkCache.getChunk",
+            "net.minecraft.world.level.Level.getChunk",
+            "net.minecraft.world.level.LevelReader.getChunk",
+            "net.minecraft.world.level.StructureManager.fillStartsForStructure",
+            "net.minecraft.world.level.StructureManager.startsForStructure",
+            "net.minecraft.world.level.StructureManager.getStructureWithPieceAt",
+            "net.minecraft.world.level.StructureManager.getStructureWithPieceAt",
+            "net.minecraft.advancements.predicates.LocationPredicate.matches",
+            "net.minecraft.advancements.predicates.entity.EntityLocationPredicate.matches",
+            "net.minecraft.advancements.predicates.entity.EntityPredicate.matches",
+            "net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition.test",
+            "net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition.test",
+            "net.minecraft.advancements.triggers.SimpleCriterionTrigger.trigger",
+            "net.minecraft.advancements.triggers.PlayerTrigger.trigger",
+            "net.minecraft.server.level.ServerPlayer.doTick",
+            "net.minecraft.server.network.ServerGamePacketListenerImpl.tickPlayer",
+            "net.minecraft.server.network.ServerGamePacketListenerImpl.tick",
+            "net.minecraft.network.Connection.tick",
+            "net.minecraft.server.network.ServerConnectionListener.tick",
+            "net.minecraft.server.MinecraftServer.tickConnection",
+            "net.minecraft.server.dedicated.DedicatedServer.tickConnection",
+            "net.minecraft.server.MinecraftServer.tickChildren",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        },
+        {
+          "samples": 1,
+          "stack": [
+            "java.util.concurrent.CompletableFuture.reportJoin",
+            "java.util.concurrent.CompletableFuture.getNow",
+            "net.minecraft.server.level.ChunkHolder.getTickingChunk",
+            "net.minecraft.server.level.ChunkMap.collectSpawningChunks",
+            "net.minecraft.server.level.ServerChunkCache.tickChunks",
+            "net.minecraft.server.level.ServerChunkCache.tickChunks",
+            "net.minecraft.server.level.ServerChunkCache.tick",
+            "net.minecraft.server.level.ServerLevel.tick",
+            "net.minecraft.server.MinecraftServer.tickChildren",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        },
+        {
+          "samples": 1,
+          "stack": [
+            "it.unimi.dsi.fastutil.longs.LongOpenHashSet.contains",
+            "net.minecraft.server.level.ChunkMap$DistanceManager.isChunkToRemove",
+            "net.minecraft.server.level.LoadingChunkTracker.getLevel",
+            "net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint.checkEdge",
+            "net.minecraft.server.level.ChunkTracker.update",
+            "net.minecraft.server.level.LoadingChunkTracker$$Lambda.0x00000000451b8920.update",
+            "net.minecraft.world.level.TicketStorage.removeTicket",
+            "net.minecraft.server.level.DistanceManager$PlayerTicketTracker.lambda$onLevelChange$5",
+            "net.minecraft.server.level.DistanceManager$PlayerTicketTracker$$Lambda.0x000000004557de88.run",
+            "net.minecraft.util.thread.BlockableEventLoop.doRunTask",
+            "net.minecraft.server.level.ServerChunkCache$MainThreadExecutor.doRunTask",
+            "net.minecraft.util.thread.BlockableEventLoop.pollTask",
+            "net.minecraft.server.level.ServerChunkCache$MainThreadExecutor.pollTask",
+            "net.minecraft.util.thread.BlockableEventLoop.managedBlock",
+            "net.minecraft.server.level.ServerChunkCache.getChunk",
+            "net.minecraft.world.level.Level.getChunk",
+            "net.minecraft.world.level.LevelReader.getChunk",
+            "net.minecraft.world.level.StructureManager.fillStartsForStructure",
+            "net.minecraft.world.level.StructureManager.startsForStructure",
+            "net.minecraft.world.level.StructureManager.getStructureWithPieceAt",
+            "net.minecraft.world.level.StructureManager.getStructureWithPieceAt",
+            "net.minecraft.advancements.predicates.LocationPredicate.matches",
+            "net.minecraft.advancements.predicates.entity.EntityLocationPredicate.matches",
+            "net.minecraft.advancements.predicates.entity.EntityPredicate.matches",
+            "net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition.test",
+            "net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition.test",
+            "net.minecraft.advancements.triggers.SimpleCriterionTrigger.trigger",
+            "net.minecraft.advancements.triggers.PlayerTrigger.trigger",
+            "net.minecraft.server.level.ServerPlayer.doTick",
+            "net.minecraft.server.network.ServerGamePacketListenerImpl.tickPlayer",
+            "net.minecraft.server.network.ServerGamePacketListenerImpl.tick",
+            "net.minecraft.network.Connection.tick",
+            "net.minecraft.server.network.ServerConnectionListener.tick",
+            "net.minecraft.server.MinecraftServer.tickConnection",
+            "net.minecraft.server.dedicated.DedicatedServer.tickConnection",
+            "net.minecraft.server.MinecraftServer.tickChildren",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        },
+        {
+          "samples": 1,
+          "stack": [
+            "java.util.Spliterator.getExactSizeIfKnown",
+            "java.util.stream.AbstractPipeline.copyInto",
+            "java.util.stream.AbstractPipeline.wrapAndCopyInto",
+            "java.util.stream.ForEachOps$ForEachOp.evaluateSequential",
+            "java.util.stream.ForEachOps$ForEachOp$OfRef.evaluateSequential",
+            "java.util.stream.AbstractPipeline.evaluate",
+            "java.util.stream.ReferencePipeline.forEach",
+            "net.minecraft.world.level.entity.PersistentEntitySectionManager.updateChunkStatus",
+            "net.minecraft.world.level.entity.PersistentEntitySectionManager.updateChunkStatus",
+            "net.minecraft.server.level.ServerLevel$$Lambda.0x0000000045283720.onChunkStatusChange",
+            "net.minecraft.server.level.ChunkMap.onFullChunkStatusChange",
+            "net.minecraft.server.level.ChunkHolder.demoteFullChunk",
+            "net.minecraft.server.level.ChunkHolder.updateFutures",
+            "net.minecraft.server.level.DistanceManager.runAllUpdates",
+            "net.minecraft.server.level.ServerChunkCache.md0a0588$ringworld$lambda$ringworld$updatePeriodicChunkGraph$0$0",
+            "net.minecraft.server.level.ServerChunkCache$$Lambda.0x0000000045301000.getAsBoolean",
+            "dev.ringworld.world.RingChunkLevelContext.run",
+            "net.minecraft.server.level.ServerChunkCache.redirect$zbo000$ringworld$updatePeriodicChunkGraph",
+            "net.minecraft.server.level.ServerChunkCache.runDistanceManagerUpdates",
+            "net.minecraft.server.level.ServerChunkCache$MainThreadExecutor.pollTask",
+            "net.minecraft.util.thread.BlockableEventLoop.managedBlock",
+            "net.minecraft.server.level.ServerChunkCache.getChunk",
+            "net.minecraft.world.level.Level.getChunk",
+            "net.minecraft.world.level.LevelReader.getChunk",
+            "net.minecraft.world.level.StructureManager.fillStartsForStructure",
+            "net.minecraft.world.level.StructureManager.startsForStructure",
+            "net.minecraft.world.level.StructureManager.getStructureWithPieceAt",
+            "net.minecraft.world.level.StructureManager.getStructureWithPieceAt",
+            "net.minecraft.advancements.predicates.LocationPredicate.matches",
+            "net.minecraft.advancements.predicates.entity.EntityLocationPredicate.matches",
+            "net.minecraft.advancements.predicates.entity.EntityPredicate.matches",
+            "net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition.test",
+            "net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition.test",
+            "net.minecraft.advancements.triggers.SimpleCriterionTrigger.trigger",
+            "net.minecraft.advancements.triggers.PlayerTrigger.trigger",
+            "net.minecraft.server.level.ServerPlayer.doTick",
+            "net.minecraft.server.network.ServerGamePacketListenerImpl.tickPlayer",
+            "net.minecraft.server.network.ServerGamePacketListenerImpl.tick",
+            "net.minecraft.network.Connection.tick",
+            "net.minecraft.server.network.ServerConnectionListener.tick",
+            "net.minecraft.server.MinecraftServer.tickConnection",
+            "net.minecraft.server.dedicated.DedicatedServer.tickConnection",
+            "net.minecraft.server.MinecraftServer.tickChildren",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        },
+        {
+          "samples": 1,
+          "stack": [
+            "net.minecraft.server.level.ChunkTracker.checkNeighborsAfterUpdate",
+            "net.minecraft.world.level.lighting.DynamicGraphMinFixedPoint.runUpdates",
+            "net.minecraft.server.level.LoadingChunkTracker.runDistanceUpdates",
+            "net.minecraft.server.level.DistanceManager.runAllUpdates",
+            "net.minecraft.server.level.ServerChunkCache.md0a0588$ringworld$lambda$ringworld$updatePeriodicChunkGraph$0$0",
+            "net.minecraft.server.level.ServerChunkCache$$Lambda.0x0000000045301000.getAsBoolean",
+            "dev.ringworld.world.RingChunkLevelContext.run",
+            "net.minecraft.server.level.ServerChunkCache.redirect$zbo000$ringworld$updatePeriodicChunkGraph",
+            "net.minecraft.server.level.ServerChunkCache.runDistanceManagerUpdates",
+            "net.minecraft.server.level.ServerChunkCache$MainThreadExecutor.pollTask",
+            "net.minecraft.util.thread.BlockableEventLoop.managedBlock",
+            "net.minecraft.server.level.ServerChunkCache.getChunk",
+            "net.minecraft.world.level.Level.getChunk",
+            "net.minecraft.world.level.LevelReader.getChunk",
+            "net.minecraft.world.level.StructureManager.fillStartsForStructure",
+            "net.minecraft.world.level.StructureManager.startsForStructure",
+            "net.minecraft.world.level.StructureManager.getStructureWithPieceAt",
+            "net.minecraft.world.level.StructureManager.getStructureWithPieceAt",
+            "net.minecraft.advancements.predicates.LocationPredicate.matches",
+            "net.minecraft.advancements.predicates.entity.EntityLocationPredicate.matches",
+            "net.minecraft.advancements.predicates.entity.EntityPredicate.matches",
+            "net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition.test",
+            "net.minecraft.world.level.storage.loot.predicates.LootItemEntityPropertyCondition.test",
+            "net.minecraft.advancements.triggers.SimpleCriterionTrigger.trigger",
+            "net.minecraft.advancements.triggers.PlayerTrigger.trigger",
+            "net.minecraft.server.level.ServerPlayer.doTick",
+            "net.minecraft.server.network.ServerGamePacketListenerImpl.tickPlayer",
+            "net.minecraft.server.network.ServerGamePacketListenerImpl.tick",
+            "net.minecraft.network.Connection.tick",
+            "net.minecraft.server.network.ServerConnectionListener.tick",
+            "net.minecraft.server.MinecraftServer.tickConnection",
+            "net.minecraft.server.dedicated.DedicatedServer.tickConnection",
+            "net.minecraft.server.MinecraftServer.tickChildren",
+            "net.minecraft.server.MinecraftServer.tickServer",
+            "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+            "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+            "net.minecraft.server.MinecraftServer.runServer",
+            "net.minecraft.server.MinecraftServer.lambda$spin$0",
+            "net.minecraft.server.MinecraftServer$$Lambda.0x00000000451f4000.run",
+            "java.lang.Thread.runWith",
+            "java.lang.Thread.run"
+          ]
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "Diagnostic measurement on NeoForge 26.3.0.37-beta; not an A/B or release qualification.",
+    "Reused evolving private Large world, not reset against earlier runs.",
+    "Tasks are unload callbacks, not unique chunks. processUnloads includes eager saves.",
+    "JFR execution and weighted allocation samples are estimates; GC overlaps operation wall times and must not be added again.",
+    "Startup, joining, gaps and disconnect ticks are labelled separately.",
+    "No packet loss measured; no proof that every older spike had these exact causes.",
+    "First attempt failed before clients joined due to a stale local classes path, retained separately and excluded."
+  ],
+  "retainedLocalRoot": "logs/stall-cause/",
+  "phases": {
+    "settled": {
+      "durationSeconds": 60,
+      "firstSampleUtc": "2026-10-10T20:40:04.821548+00:00",
+      "lastSampleUtc": "2026-10-10T20:41:00.399183+00:00",
+      "fileSha256": "564682eec9c0dbd48831cb096595cc979694d083ebb22c6e549729ca0813a3ed"
+    },
+    "outside": {
+      "durationSeconds": 45,
+      "firstSampleUtc": "2026-10-10T20:41:10.370818+00:00",
+      "lastSampleUtc": "2026-10-10T20:41:50.687356+00:00",
+      "fileSha256": "a7e2e1bfa1871dd018e85f0d74b3dac20a6dfb054cc68be59c3ca41c387f821e"
+    },
+    "center-first": {
+      "durationSeconds": 60,
+      "firstSampleUtc": "2026-10-10T20:41:58.089528+00:00",
+      "lastSampleUtc": "2026-10-10T20:42:53.593287+00:00",
+      "fileSha256": "bd297b0339962475f3bfc2448e6cfd2ee3acbd7715ff495ad190f75efe56331e"
+    },
+    "outside-repeat": {
+      "durationSeconds": 45,
+      "firstSampleUtc": "2026-10-10T20:43:02.667806+00:00",
+      "lastSampleUtc": "2026-10-10T20:43:43.098217+00:00",
+      "fileSha256": "645e5280d193eab275f631ea43f32213952d787fdcb7bbd7f53ff3ddea9149fe"
+    },
+    "center-repeat": {
+      "durationSeconds": 60,
+      "firstSampleUtc": "2026-10-10T20:43:50.182631+00:00",
+      "lastSampleUtc": "2026-10-10T20:44:45.764796+00:00",
+      "fileSha256": "dc5d38a9a5e2c688936b190c42995d4b39907eec73a3e135d10688bb66019e7f"
+    }
+  }
+}
