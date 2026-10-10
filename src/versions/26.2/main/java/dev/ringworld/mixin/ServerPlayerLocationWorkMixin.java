@@ -13,15 +13,19 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(ServerPlayer.class)
 abstract class ServerPlayerLocationWorkMixin {
     @Unique private long ringworld$lastLocationChunk = Long.MIN_VALUE;
+    @Unique private boolean ringworld$locationDeferred;
 
     @Redirect(method = "doTick", at = @At(value = "INVOKE", target = "Lnet/minecraft/advancements/triggers/PlayerTrigger;trigger(Lnet/minecraft/server/level/ServerPlayer;)V"))
     private void ringworld$locationAfterTickets(PlayerTrigger trigger, ServerPlayer player) {
         if (trigger == CriteriaTriggers.LOCATION && player.level().dimension() == Level.OVERWORLD) {
             long chunk = player.chunkPosition().pack();
-            if (ringworld$lastLocationChunk != chunk) {
-                ringworld$lastLocationChunk = chunk;
-                return; // Retry at the next vanilla location check, after ticket movement settles.
+            boolean moved = ringworld$lastLocationChunk != chunk;
+            ringworld$lastLocationChunk = chunk;
+            if (moved && !ringworld$locationDeferred) {
+                ringworld$locationDeferred = true;
+                return; // Retry once at the next vanilla check; continuous movement cannot starve it.
             }
+            ringworld$locationDeferred = false;
         }
         trigger.trigger(player);
     }
