@@ -20,6 +20,8 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Makes every server chunk acquisition use the canonical circumference chunk.
@@ -31,12 +33,23 @@ abstract class ServerChunkManagerMixin implements RingChunkGraphAccess {
     @Shadow @Final private DistanceManager distanceManager;
     @Unique private final RingChunkWorkBudget ringworld$graphBudget = new RingChunkWorkBudget();
     @Unique private int ringworld$blockingDepth;
+    @Unique private int ringworld$loggedTick = Integer.MIN_VALUE;
+    @Unique private int ringworld$loggedNodes;
 
     @Override public boolean ringworld$graphPending() {
         return ((RingChunkGraphAccess) distanceManager).ringworld$graphPending();
     }
 
     @Shadow abstract boolean runDistanceManagerUpdates();
+
+    @Inject(method = "getChunkFutureMainThread", at = @At("HEAD"))
+    private void ringworld$settleRequiredLookup(int x, int z,
+            net.minecraft.world.level.chunk.status.ChunkStatus status, boolean loadOrGenerate,
+            CallbackInfoReturnable<java.util.concurrent.CompletableFuture<net.minecraft.server.level.ChunkResult<net.minecraft.world.level.chunk.ChunkAccess>>> cir) {
+        // A partial graph may have changed ticket levels before publishing holder futures.
+        // Vanilla's chunkAbsent shortcut then skips its own update and can return UNLOADED.
+        if (loadOrGenerate && ringworld$graphPending()) ringworld$admitFuture((ServerChunkCache) (Object) this);
+    }
 
     @Redirect(method = {"getChunkFutureMainThread", "addTicketAndLoadWithRadius"},
             at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerChunkCache;runDistanceManagerUpdates()Z"))
@@ -116,10 +129,14 @@ abstract class ServerChunkManagerMixin implements RingChunkGraphAccess {
         RingGeometry geometry = RingWorldServer.geometryFor(serverWorld);
         ringworld$graphBudget.begin(serverWorld.getServer().getTickCount());
         RingChunkWorkBudget budget = ringworld$blockingDepth == 0 && serverWorld.getServer().isRunning()
+                && (!serverWorld.getServer().isCurrentlySaving() || RingChunkWorkContext.periodicSave())
                 ? ringworld$graphBudget : null;
         boolean updated = RingChunkLevelContext.run(geometry,
                 () -> RingChunkWorkContext.graph(budget, () -> manager.runAllUpdates(loadingManager)));
-        if (budget != null && budget.processedNodes() > 0 && Boolean.getBoolean("ringworld.chunkWorkTimings")) {
+        int tick = serverWorld.getServer().getTickCount();
+        if (ringworld$loggedTick != tick) { ringworld$loggedTick = tick; ringworld$loggedNodes = 0; }
+        if (budget != null && budget.processedNodes() > ringworld$loggedNodes && Boolean.getBoolean("ringworld.chunkWorkTimings")) {
+            ringworld$loggedNodes = budget.processedNodes();
             org.slf4j.LoggerFactory.getLogger("ringworld").info(
                     "RingWorld chunk graph tick={} nodes={} propagationMs={} pending={}",
                     serverWorld.getServer().getTickCount(), budget.processedNodes(),

@@ -69,7 +69,7 @@ abstract class ChunkMapMaintenanceMixin {
 
     @Inject(method = "tick(Ljava/util/function/BooleanSupplier;)V", at = @At("HEAD"))
     private void ringworld$begin(BooleanSupplier haveTime, CallbackInfo ci) {
-        if (level.dimension() != Level.OVERWORLD) return;
+        if (level.dimension() != Level.OVERWORLD || level.getServer().isCurrentlySaving()) return;
         ringworld$ordinaryTick = true;
         ringworld$start = System.nanoTime();
         ringworld$tasks = 0;
