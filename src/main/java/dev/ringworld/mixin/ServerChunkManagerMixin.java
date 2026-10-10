@@ -10,6 +10,12 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.Level;
 import dev.ringworld.server.RingWorldServer;
+import dev.ringworld.server.RingChunkGraphAccess;
+import dev.ringworld.server.RingChunkWorkBudget;
+import dev.ringworld.server.RingChunkWorkContext;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
@@ -21,7 +27,40 @@ import org.spongepowered.asm.mixin.injection.Redirect;
  * dependencies, and worldgen neighbour reads use the same ring topology.
  */
 @Mixin(ServerChunkCache.class)
-abstract class ServerChunkManagerMixin {
+abstract class ServerChunkManagerMixin implements RingChunkGraphAccess {
+    @Shadow @Final private DistanceManager distanceManager;
+    @Unique private final RingChunkWorkBudget ringworld$graphBudget = new RingChunkWorkBudget();
+    @Unique private int ringworld$blockingDepth;
+
+    @Override public boolean ringworld$graphPending() {
+        return ((RingChunkGraphAccess) distanceManager).ringworld$graphPending();
+    }
+
+    @Shadow abstract boolean runDistanceManagerUpdates();
+
+    @Redirect(method = {"getChunkFutureMainThread", "addTicketAndLoadWithRadius"},
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerChunkCache;runDistanceManagerUpdates()Z"))
+    private boolean ringworld$admitFuture(ServerChunkCache cache) {
+        ringworld$blockingDepth++;
+        try { return runDistanceManagerUpdates(); }
+        finally { ringworld$blockingDepth--; }
+    }
+
+    @Redirect(method = "save", at = @At(value = "INVOKE", target = "Lnet/minecraft/server/level/ServerChunkCache;runDistanceManagerUpdates()Z"))
+    private boolean ringworld$saveGraph(ServerChunkCache cache) {
+        if (RingChunkWorkContext.periodicSave()) return runDistanceManagerUpdates();
+        return ringworld$admitFuture(cache);
+    }
+
+    @Redirect(method = {"getChunk", "getChunkFuture"}, at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/server/level/ServerChunkCache$MainThreadExecutor;managedBlock(Ljava/util/function/BooleanSupplier;)V"))
+    private void ringworld$blockingWait(@org.spongepowered.asm.mixin.injection.Coerce Object executor,
+                                       java.util.function.BooleanSupplier ready) {
+        ringworld$blockingDepth++;
+        try { ((net.minecraft.util.thread.BlockableEventLoop<?>) executor).managedBlock(ready); }
+        finally { ringworld$blockingDepth--; }
+    }
+
     @ModifyVariable(
             method = "getChunk(IILnet/minecraft/world/level/chunk/status/ChunkStatus;Z)Lnet/minecraft/world/level/chunk/ChunkAccess;",
             at = @At("HEAD"), argsOnly = true, ordinal = 0)
@@ -75,6 +114,17 @@ abstract class ServerChunkManagerMixin {
             return manager.runAllUpdates(loadingManager);
         }
         RingGeometry geometry = RingWorldServer.geometryFor(serverWorld);
-        return RingChunkLevelContext.run(geometry, () -> manager.runAllUpdates(loadingManager));
+        ringworld$graphBudget.begin(serverWorld.getServer().getTickCount());
+        RingChunkWorkBudget budget = ringworld$blockingDepth == 0 && serverWorld.getServer().isRunning()
+                ? ringworld$graphBudget : null;
+        boolean updated = RingChunkLevelContext.run(geometry,
+                () -> RingChunkWorkContext.graph(budget, () -> manager.runAllUpdates(loadingManager)));
+        if (budget != null && budget.processedNodes() > 0 && Boolean.getBoolean("ringworld.chunkWorkTimings")) {
+            org.slf4j.LoggerFactory.getLogger("ringworld").info(
+                    "RingWorld chunk graph tick={} nodes={} propagationMs={} pending={}",
+                    serverWorld.getServer().getTickCount(), budget.processedNodes(),
+                    budget.processingNanos() / 1_000_000.0, ((RingChunkGraphAccess) manager).ringworld$graphPending());
+        }
+        return updated;
     }
 }
