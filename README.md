@@ -239,7 +239,9 @@ It defaults to auto (4→2→1 under performance pressure,
 with slow recovery). Numeric `ringworld.atlasInFlightChunks` JVM overrides keep
 a fixed 1–8 request limit. Gamemasters can change it live with
 `/ringworld chunk_gen_rate 1|2|4|8|auto`; the bare command shows the current
-mode/target. Overrides last for the world session. See the linked local benchmarks, lifecycle
+mode/target. Ready-chunk capture follows that target, up to four chunks per tick
+within a soft 2 ms budget, and backs down with the same performance feedback.
+Overrides last for the world session. See the linked local benchmarks, lifecycle
 checks and remaining multiplayer/content limits before enabling it.
 
 The detailed engineering information previously kept on this page lives in

@@ -1,6 +1,6 @@
 package dev.ringworld.server;
 
-/** Live request policy: fixed override or one-second automatic backoff/recovery. */
+/** Shared request/capture policy: fixed override or one-second automatic backoff/recovery. */
 final class RingAtlasAdaptiveConcurrency {
     static final int MAX_REQUESTS = 4;
     private int limit = MAX_REQUESTS;

@@ -34,6 +34,9 @@
   Auto starts at four and backs down under sustained frame/tick pressure, then
   recovers gradually. `/ringworld chunk_gen_rate 1|2|4|8|auto` controls it live;
   dedicated servers use tick timing rather than client FPS.
+  Ready-chunk capture now scales with that policy too, up to four chunks per
+  tick within a small time budget, accelerating Atlas rebuilding when there is
+  headroom and reducing work under sustained pressure.
 - Compressed the wall selector previews, bringing development JARs down from
   roughly 13 MB to roughly 3.3 MB while preserving the selector images.
 - Shared seed-preview UI code and removed duplicate sources.

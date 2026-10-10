@@ -19,7 +19,10 @@ Integrated owner FPS is reported through the server task queue; dedicated
 servers use tick time and accept no remote FPS packets. Never cancel requests
 solely to lower the admission target, or let retained retries starve. Preserve the
 64-task player backpressure gate before every submission, fair out-of-order
-consumption and one explicit pregeneration capture per tick. All world/Atlas
+consumption. Ready capture now follows the same 4/2/1 adaptive target, capped at
+four chunks and a soft 2 ms per-tick budget (one indivisible chunk can exceed it).
+Numeric request limits also bound capture, with eight requests still capped at
+four captures. Preserve pause drainage and per-slot retry/release semantics. All world/Atlas
 access remains on the server thread; use vanilla's asynchronous pipeline.
 Cancel/failure/unload must attempt every lease, retain failed releases and block
 replacement until cleanup succeeds. Freeze chunk-load captures before server

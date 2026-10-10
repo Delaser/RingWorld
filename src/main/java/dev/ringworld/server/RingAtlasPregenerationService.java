@@ -203,6 +203,7 @@ public final class RingAtlasPregenerationService {
         if (state == null) return;
         state.ticks++;
         pollCheckpoint(state);
+        if (state.job != null && !state.stopping && !state.job.state.isTerminal()) state.job.updateRequestLimit();
         consumeFuture(world, state);
         processRecaptures(world, state);
         commitPendingRevision(state);
@@ -216,6 +217,7 @@ public final class RingAtlasPregenerationService {
         }
         state.checkpoints.advance(state.atlas);
         if (state.probe != null && !state.checkpoints.busy()) state.probe.tick(world.getServer(), state.atlas);
+        if (Boolean.getBoolean("ringworld.atlasCaptureTimings")) logCaptureTimings(world, state);
     }
 
     /** Player-loaded chunks have priority and always populate the same atlas. */
@@ -311,13 +313,16 @@ public final class RingAtlasPregenerationService {
     public static String chunkGenerationRate(ServerLevel world) {
         WorldState state = requireState(world);
         if (state.job != null) return (state.job.adaptive.automatic() ? "auto" : "fixed")
-                + ", " + state.job.requestLimit() + " concurrent requests";
+                + ", " + state.job.requestLimit() + " concurrent requests, up to "
+                + Math.min(RingAtlasCaptureBudget.MAX_CHUNKS, state.job.requestLimit()) + " captures/tick (2 ms budget)";
         int rate = state.requestLimitOverride == null
                 ? (AtlasPregenerationOptions.isAdaptiveConcurrency(System.getProperty(
                         AtlasPregenerationOptions.CONCURRENCY_PROPERTY)) ? 0
                         : AtlasPregenerationOptions.backgroundDefaults().maxInFlightChunks())
                 : state.requestLimitOverride;
-        return (rate == 0 ? "auto" : "fixed") + ", " + (rate == 0 ? 4 : rate) + " concurrent requests";
+        int limit = rate == 0 ? 4 : rate;
+        return (rate == 0 ? "auto" : "fixed") + ", " + limit + " concurrent requests, up to "
+                + Math.min(RingAtlasCaptureBudget.MAX_CHUNKS, limit) + " captures/tick (2 ms budget)";
     }
 
     private static AtlasPregenerationProgress idleProgress(WorldState state) {
@@ -336,8 +341,13 @@ public final class RingAtlasPregenerationService {
             job.releaseOutstandingRequest(true);
             return;
         }
-        var ready = job.requests.nextCompleted();
-        if (ready != null) {
+        long start = System.nanoTime();
+        int captured = 0;
+        while (!job.state.isTerminal() && !job.cancelRequested
+                && RingAtlasCaptureBudget.allows(captured, job.requestLimit(), System.nanoTime() - start)) {
+            var ready = job.requests.nextCompleted();
+            if (ready == null) break;
+            captured++;
             try {
                 LevelChunk chunk = ready.request.joinResult();
                 if (chunk == null || !ready.selection.accepts(chunk.getPos().x(), chunk.getPos().z())) {
@@ -367,6 +377,24 @@ public final class RingAtlasPregenerationService {
                 job.fail(new IllegalStateException("could not release RingWorld atlas chunk ticket", failure));
             }
         }
+        if (Boolean.getBoolean("ringworld.atlasCaptureTimings")) {
+            long elapsed = System.nanoTime() - start;
+            state.captureChunks += captured;
+            state.captureNanos += elapsed;
+            state.maxCaptureNanos = Math.max(state.maxCaptureNanos, elapsed);
+        }
+    }
+
+    private static void logCaptureTimings(ServerLevel world, WorldState state) {
+        long[] times = world.getServer().getTickTimesNanos();
+        int previous = Math.floorMod(world.getServer().getTickCount() - 1, times.length);
+        state.maxObservedTickNanos = Math.max(state.maxObservedTickNanos, times[previous]);
+        if (state.ticks % 200 != 0) return;
+        RingWorldMod.LOGGER.info("RingWorld Atlas capture window chunks={} ownerTotalMs={} ownerMaxMs={} observedTickMaxMs={} target={}",
+                state.captureChunks, state.captureNanos / 1e6, state.maxCaptureNanos / 1e6,
+                state.maxObservedTickNanos / 1e6, state.job == null ? 0 : state.job.requestLimit());
+        state.captureChunks = 0;
+        state.captureNanos = state.maxCaptureNanos = state.maxObservedTickNanos = 0;
     }
 
     /** Local integrated-client feedback only; no remote-player packets or world access off-thread. */
@@ -649,6 +677,10 @@ public final class RingAtlasPregenerationService {
         private Integer requestLimitOverride;
         private boolean revisionPending;
         private long ticks;
+        private int captureChunks;
+        private long captureNanos;
+        private long maxCaptureNanos;
+        private long maxObservedTickNanos;
         private Job job;
         private WorldState(RingTerrainAtlas atlas, Path path, boolean dirty) {
             this.atlas = atlas;
@@ -746,7 +778,6 @@ public final class RingAtlasPregenerationService {
                 if (requests.inFlight() == 0) finish();
                 return;
             }
-            updateRequestLimit();
             int admissionStart = nextAdmissionSlot;
             for (int offset = 0; offset < requests.slots.size(); offset++) {
                 var slot = requests.slots.get((admissionStart + offset) % requests.slots.size());

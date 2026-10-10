@@ -30,7 +30,13 @@ while admission stops at the lower target. Rotating admission also prevents
 retained retries from starving when the target is smaller than the slot count.
 Eight bounded slots are reserved once so live increases preserve the same
 cursor, retries and ticket leases; admission follows the selected target.
-One explicit ready capture per tick remains unchanged.
+Ready capture now shares this adaptive target: up to four chunks per tick,
+checking a soft two-millisecond budget between complete chunks. It always allows
+one ready chunk to make progress. A single chunk, chunk-load callbacks, GC or
+scheduling can exceed the target; this is not a hard tick-time guarantee.
+Numeric limits 1/2/4 bound both stages, while eight concurrent requests still
+allow at most four explicit captures per tick. Fixed modes retain the time
+budget but disable automatic pressure backoff, as before.
 
 Integrated single-player uses both server tick pressure and focused, unpaused
 owner FPS. The client reports roughly once per second through the integrated
@@ -63,8 +69,10 @@ One shared X-major canonical cursor feeds bounded slots. Each slot retains its
 selected chunk, future, processed marker, retry count/backoff and loading ticket
 until safely captured/released. Completion order can differ from selection
 order. A rotating ready-slot search prevents both head-of-line blocking and
-starvation. The explicit pregeneration consumer captures **at most one ready
-chunk per tick**, preserving its serial capture budget. Existing normal
+starvation. The explicit pregeneration consumer captures **up to four ready
+chunks per tick within its soft time budget**, scaling to two/one with the shared
+policy. Observe performance before capture, so the new target applies that tick.
+Existing normal
 player-loaded chunk callbacks and bounded dirty-cell recapture remain separate.
 Atlas/world reads, capture, tile/revision changes and saves stay server-thread
 owned. The existing 200-tick checkpoint cadence is unchanged.
@@ -94,7 +102,25 @@ shutdown-only capture barrier.
 
 No cache-format, seed, geometry, generation-settings, topology or network-schema
 change is introduced. The current shared cache format remains 11 from #257.
-The published 1.3 large server is unchanged; it is not an experiment target.
+The owner authorized the Large server's 1.4 update on 10 October. Its original
+world and installation are backed up; see [checkpoint follow-up](SERVER_ATLAS_CHECKPOINTS.md).
+
+## Adaptive capture follow-up — 10 October 2026
+
+The owner authorized extending auto scaling to capture after the one-per-tick
+limit was identified as a roughly 55-minute floor for a Large Atlas rebuild.
+This reuses the existing controller, commands and feedback mailbox; it adds no
+threads, packets, saved settings or cache-format changes. Capture remains on the
+server thread. Rotating ready slots are marked processed after each attempt;
+every processed lease is still released even if another attempt fails. Pause
+drains already issued work at the bounded rate; cancel never resolves discarded
+results. Checkpoint copying and dirty-cell recapture retain their separate budgets.
+
+`-Dringworld.atlasCaptureTimings=true` is optional diagnostics. Every 200 ticks it
+logs explicit capture attempts, total/maximum owner duration, maximum observed
+completed server tick and request target. The duration includes result handling
+and processed-lease cleanup, but not normal chunk-load callback captures. This
+must not be presented as total Atlas CPU cost. Final validation follows below.
 
 ## Development evidence
 
