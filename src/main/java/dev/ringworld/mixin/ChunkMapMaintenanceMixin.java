@@ -5,6 +5,7 @@ import dev.ringworld.server.RingChunkGraphAccess;
 import dev.ringworld.server.RingChunkWorkContext;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongIterator;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
@@ -69,6 +70,8 @@ abstract class ChunkMapMaintenanceMixin {
 
     @Inject(method = "tick(Ljava/util/function/BooleanSupplier;)V", at = @At("HEAD"))
     private void ringworld$begin(BooleanSupplier haveTime, CallbackInfo ci) {
+        // Also clear an interrupted ordinary tick before the shutdown drain starts.
+        ringworld$ordinaryTick = false;
         if (level.dimension() != Level.OVERWORLD || level.getServer().isCurrentlySaving()) return;
         ringworld$ordinaryTick = true;
         ringworld$start = System.nanoTime();
@@ -118,6 +121,17 @@ abstract class ChunkMapMaintenanceMixin {
     private int ringworld$boundedMandatoryDrain(Queue<Runnable> queue) {
         int size = queue.size();
         return ringworld$ordinaryTick ? Math.min(size, 2000) : size;
+    }
+
+    @Redirect(method = "processUnloads", at = @At(value = "INVOKE", target = "Lit/unimi/dsi/fastutil/longs/LongIterator;hasNext()Z"))
+    private boolean ringworld$boundedDropScheduling(LongIterator iterator) {
+        return (!ringworld$ordinaryTick || ringworld$allowsWork()) && iterator.hasNext();
+    }
+
+    @Redirect(method = {"processUnloads", "saveChunksEagerly"}, at = @At(value = "INVOKE", target = "Lit/unimi/dsi/fastutil/longs/LongIterator;nextLong()J"))
+    private long ringworld$countScan(LongIterator iterator) {
+        if (ringworld$ordinaryTick) ringworld$tasks++;
+        return iterator.nextLong();
     }
 
     @Redirect(method = {"processUnloads", "saveChunksEagerly"}, at = @At(value = "INVOKE", target = "Ljava/util/function/BooleanSupplier;getAsBoolean()Z"))
