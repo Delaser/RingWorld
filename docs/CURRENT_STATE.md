@@ -1,5 +1,11 @@
 # Current state
 
+October 10: RingWorld 1.4 has six locally prepared standalone JARs from merged
+source `6ee5bd5`. All ten quick cells and all 100 full-suite fixture invocations
+pass across 26.1–26.1.2, 26.2 and 26.3, Fabric and NeoForge. Final hashes,
+retained evidence and six publication dry runs pass; no upload was performed.
+Owner visual confirmation remains pending. See the [qualification record](../deploy/qualified/1.4/README.md).
+
 October 9 export audit: the current six-JAR route is documented in
 [JAR export](JAR_EXPORT.md). Staging requires explicit manifest/config/notes,
 public identities and projects are checked, and publication rejects host
