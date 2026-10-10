@@ -40,8 +40,15 @@ and source-development evidence. Apply equivalent behaviour on all supported
 For stall profiling, disable JFR heap-statistics/ObjectCount collection: the
 initial multiplayer profiler forced 0.6–0.7 second full GCs. Use GC pause events,
 not summed concurrent GC duration, and retain timestamped workload windows.
-Player-load Atlas captures currently run inline outside the explicit pregen
-budget; do not claim the ready-capture limit bounds them. See the
+Player-load callbacks only enqueue coalesced canonical coordinates. Drain them
+on the owner thread with `getChunkNow`, sharing the ready-capture 4/2/1 limit
+and soft 2 ms budget. Reserve the first slot for player work; acknowledge an
+already captured pregeneration result without sampling it twice. Never retain
+live chunks or force loads to drain the queue. Freeze admission before draining
+still-loaded entries on stop/unload, then checkpoint. Missing/unloaded entries
+remain recoverable through normal pregeneration and dirty-cell queues. Tint-only
+biome queries and the two-byte tile-header reservation preserve colours and
+wire format. A single capture, GC or preemption may exceed the soft budget. See the
 [remaining stall investigation](docs/SERVER_STALL_INVESTIGATION_2026_10_10.md).
 
 Completed Atlas progress reports must use the maintained present-cell count to

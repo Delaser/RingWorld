@@ -30,12 +30,12 @@ while admission stops at the lower target. Rotating admission also prevents
 retained retries from starving when the target is smaller than the slot count.
 Eight bounded slots are reserved once so live increases preserve the same
 cursor, retries and ticket leases; admission follows the selected target.
-Ready capture now shares this adaptive target: up to four chunks per tick,
-checking a soft two-millisecond budget between complete chunks. It always allows
-one ready chunk to make progress. A single chunk, chunk-load callbacks, GC or
+Ready and player-loaded captures now share this adaptive target: up to four chunks
+per tick, checking a soft two-millisecond budget between complete chunks. It always
+allows one queued/ready chunk to make progress. A single chunk, GC or
 scheduling can exceed the target; this is not a hard tick-time guarantee.
 Numeric limits 1/2/4 bound both stages, while eight concurrent requests still
-allow at most four explicit captures per tick. Fixed modes retain the time
+allow at most four combined captures per tick. Fixed modes retain the time
 budget but disable automatic pressure backoff, as before.
 
 Integrated single-player uses both server tick pressure and focused, unpaused
@@ -69,11 +69,17 @@ One shared X-major canonical cursor feeds bounded slots. Each slot retains its
 selected chunk, future, processed marker, retry count/backoff and loading ticket
 until safely captured/released. Completion order can differ from selection
 order. A rotating ready-slot search prevents both head-of-line blocking and
-starvation. The explicit pregeneration consumer captures **up to four ready
-chunks per tick within its soft time budget**, scaling to two/one with the shared
-policy. Observe performance before capture, so the new target applies that tick.
-Existing normal
-player-loaded chunk callbacks and bounded dirty-cell recapture remain separate.
+starvation. Player-load callbacks enqueue canonical coordinates in a coalescing FIFO;
+the queue retains no chunk references. Each tick gives the first available capture
+slot to a still-loaded player chunk, then consumes ready pregeneration, then uses
+any remaining capacity for player loads. The combined ceiling is **four captures
+per tick within a soft time budget**, scaling to two/one with the shared policy.
+An already captured ready result still validates identity/coverage and releases
+its lease, without resampling or spending another capture slot. Queue drainage
+uses `getChunkNow` without loading chunks; stale entries are dropped with bounded
+cleanup. Missing cells remain the pregeneration journal. Dirty-cell edit/light
+recapture keeps its separate existing limit. Observe performance before capture,
+even for completed/paused jobs, so the current target applies to player loads too.
 Atlas/world reads, capture, tile/revision changes and checkpoint ownership stay
 server-thread owned; immutable checkpoint serialization runs on its bounded
 worker. The existing 200-tick checkpoint cadence is unchanged.
@@ -97,7 +103,8 @@ cannot publish a partial Atlas as COMPLETE. Complete Atlas data alone is not
 enough: every outstanding ticket must drain, then the saved Atlas must reopen
 with complete coverage and matching revision before the completion future is
 published. Server stop and world unload freeze ordinary chunk-load capture
-before checkpointing, so late save-drain callbacks cannot change the durable
+before draining still-resident queued coordinates and checkpointing, so late
+save-drain callbacks cannot change the durable
 cell count after an interruption report. User pause/cancel does not apply this
 shutdown-only capture barrier.
 

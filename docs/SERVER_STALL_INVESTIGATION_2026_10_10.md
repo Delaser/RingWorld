@@ -111,9 +111,75 @@ other stacks and exclude time stopped by GC; they are not additive CPU percentag
    if necessary. Do not change heap, retention and Atlas scheduling together and
    call the combined result proof of one fix.
 
-No production fix from this investigation has been implemented or qualified.
-Any resulting shared change must pass all supported 26.x versions and both
-loaders; the held release JARs still require fresh full qualification.
+The owner approved this route. Shared queued player captures, tint-only biome
+lookups and the tile-header reservation are implemented on PR #279. Development
+validation is in progress; the repeat three-client test is complete below. The held release JARs
+still require fresh full qualification; chunk-retention and heap policy have not
+changed. The findings above describe the pre-fix recording.
+
+## Approved queue fix — follow-up results
+
+Player-load callbacks now enqueue coalesced canonical coordinates. The owner
+thread samples still-loaded chunks with the shared 4/2/1 adaptive capture policy
+and soft 2 ms budget, reserving the first slot for player work. Ready pregen
+results already sampled by that queue validate their identity/coverage and
+release their tickets without a duplicate sample. Stop/unload freezes admission,
+drains still-resident queued chunks and flushes the checkpoint. No chunk
+references, extra thread pool, neighbour loads or disk-format changes were added.
+Untinted materials skip the biome lookup, and tile encoding reserves its header.
+
+The repeat used diagnostic JAR `e564df76`, the same NeoForge .37 host and Java
+heap, the existing Large-world copy and the same three-client script. A failed
+client launch referenced stale compiled output; it never reached multiplayer
+and is excluded. The corrected clients use the tested isolated output. Profiler
+heap-inspection events remain disabled. Results are mixed:
+
+| Phase | Before mean / worst P99, ms | After mean / worst P99, ms |
+|---|---:|---:|
+| Outside, first | 25.9 / 163.6 | 27.7 / 220.8 |
+| In-band, first | 32.5 / 550.6 | 36.3 / 1,183.1 |
+| Outside, repeat | 26.3 / 1,264.7 | 28.3 / 395.5 |
+| In-band, repeat | 33.0 / 1,005.9 | 35.3 / 1,228.1 |
+
+These are sequential same-workload trials on a reused world, not a reset-world
+A/B. Entity state, cache state and workload timing vary. They establish **no
+overall tick-time improvement** and do not qualify a release.
+
+The four-chunk ceiling is observed; automatic targets of 4, 2 and 1 are logged.
+The queue reaches 4,226 coordinates; the last timing window before shutdown
+still contains 1,446. Atlas refreshes can lag behind delivered terrain during
+bursts. Queued coordinates retain no live chunks and shutdown drains only those
+still resident. Maximum measured capture-step wall time is 15.6 ms; the budget
+is soft. Capture occupies 104 of 7,093 travel execution samples (1.5%), versus
+497 of 7,221 (6.9%) before. This lower share includes delayed work and the tint
+lookup change; it is not a pure CPU-time speedup measurement.
+
+The largest observed completed tick is 1,228 ms. The approximate surrounding
+recording window contains 19 unload samples, including 15 chunk-save snapshot
+samples, and three GC pauses totalling about 265 ms. The other 1,183 ms spike
+also surrounds chunk unloading/snapshotting and GC. Neither window samples
+Atlas capture or the checkpoint writer. Slow-tick logs observe the previous
+completed tick from a later world hook; these are approximate correlations, not
+exact operation/tick boundaries. Travel GC pause time is 10.85 seconds, close to
+the earlier 10.67 seconds; the largest individual pause is 304 ms. There are two
+overload warnings, zero server-thread errors and zero heap-inspection GCs.
+
+Reviewing the actual .37 Minecraft sources confirms `ChunkMap.processUnloads`
+forces its unload queue down toward 2,000 entries even when its normal time
+supplier expires. Its save path still snapshots mutable chunks on the server
+thread before worker encoding/writes. The recording lacks unload-queue sizes,
+so it cannot establish whether the forced-drain branch fired. Allocation samples remain dominated by
+chunk/light-map cloning and palette re-encoding. A retention grace period could
+increase this four-GiB server's memory pressure, so it was **not enabled**.
+The next experiment should isolate and measure the forced unload/save burst
+with bounded memory and persistence safeguards. Heap tuning and changing
+vanilla unload scheduling are separate experiments, not included in this fix.
+
+All-version development validation is in progress. Fresh full qualification of
+replacement frozen JARs remains held while these transition stalls are unresolved.
+See [checked-in follow-up evidence](evidence/atlas-player-capture-2026-10-10.json).
+Raw captures, logs, reproduction scripts and decoded events are retained under
+`logs/atlas-player-capture/`; the earlier recording is unchanged.
 
 ## Evidence and recovery
 

@@ -1,6 +1,6 @@
 package dev.ringworld.server;
 
-/** Bound explicit ready-chunk capture; a single chunk is never split across ticks. */
+/** Shared player-load/ready-chunk capture ceiling; a single chunk is never split across ticks. */
 final class RingAtlasCaptureBudget {
     static final int MAX_CHUNKS = 4;
     static final long NANOS = 2_000_000;

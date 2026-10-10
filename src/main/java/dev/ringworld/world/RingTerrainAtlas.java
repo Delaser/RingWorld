@@ -324,7 +324,7 @@ public final class RingTerrainAtlas {
     public byte[] encodeTile(int tileX, int tileZ) {
         checkTile(tileX, tileZ);
         try {
-            ByteArrayOutputStream bytes = new ByteArrayOutputStream(MAX_TILE_BYTES);
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream(MAX_TILE_BYTES + 2);
             try (DataOutputStream output = new DataOutputStream(bytes)) {
                 int firstX = tileX * TILE_SIZE;
                 int firstZ = tileZ * TILE_SIZE;

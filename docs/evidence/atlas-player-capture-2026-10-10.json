@@ -1,0 +1,141 @@
+{
+  "phases": {
+    "joining": {
+      "meanTickMs": 12.575,
+      "medianWindowP95Ms": 1.2999999999999998,
+      "worstWindowP99Ms": 282.4
+    },
+    "outside": {
+      "meanTickMs": 27.744444444444444,
+      "medianWindowP95Ms": 45.6,
+      "worstWindowP99Ms": 220.8
+    },
+    "center-first": {
+      "meanTickMs": 36.275,
+      "medianWindowP95Ms": 50.55,
+      "worstWindowP99Ms": 1183.1
+    },
+    "outside-repeat": {
+      "meanTickMs": 28.31111111111111,
+      "medianWindowP95Ms": 40.1,
+      "worstWindowP99Ms": 395.5
+    },
+    "center-repeat": {
+      "meanTickMs": 35.266666666666666,
+      "medianWindowP95Ms": 48.599999999999994,
+      "worstWindowP99Ms": 1228.1
+    }
+  },
+  "maxChunksPerTick": 4,
+  "maxPendingLoadedChunks": 4226,
+  "lastPendingLoadedChunks": 1446,
+  "slowTickCount": 61,
+  "slowTickMaxMs": 1228.138522,
+  "overloadWarnings": 2,
+  "serverThreadErrors": 0,
+  "travelWindowUtc": [
+    "2026-10-10T19:06:48.907024+00:00",
+    "2026-10-10T19:10:34.477684+00:00"
+  ],
+  "serverSamples": 7093,
+  "inclusiveStackSamples": {
+    "NaturalSpawner": 1338,
+    "tickNonPassenger": 1256,
+    "encodeTile": 239,
+    "runDistanceManagerUpdates": 714,
+    "captureChunk": 104,
+    "processUnloads": 244,
+    "processRecaptures": 33,
+    "RingAtlasCheckpointWriter": 162
+  },
+  "gcEventsInTravelWindow": 120,
+  "gcStopWorldTotalMs": 10847.816391,
+  "largestGcPauseMs": 303.524967,
+  "heapInspectionGcCount": 0,
+  "topWeightedAllocationSites": [
+    [
+      "it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap.clone",
+      24115599344
+    ],
+    [
+      "net.minecraft.world.level.chunk.PalettedContainer.reencodeContents",
+      14424363064
+    ],
+    [
+      "java.lang.invoke.DirectMethodHandle.allocateInstance",
+      3307743112
+    ],
+    [
+      "com.mojang.serialization.DataResult.success",
+      2928284912
+    ],
+    [
+      "com.mojang.serialization.DataResult$Success.map",
+      2331459960
+    ],
+    [
+      "it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap.clone",
+      1753671008
+    ],
+    [
+      "com.mojang.serialization.DataResult$Success.setLifecycle",
+      1476118832
+    ],
+    [
+      "com.mojang.datafixers.util.Pair.of",
+      1348766072
+    ],
+    [
+      "it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap.clone",
+      1158757760
+    ],
+    [
+      "java.util.HashMap.newNode",
+      1137455872
+    ],
+    [
+      "java.util.HashMap.resize",
+      1039737808
+    ],
+    [
+      "java.util.Arrays.copyOf",
+      935599032
+    ]
+  ],
+  "diagnosticJarSha256": "e564df76766d25ee11c8b1b9f77259c0e5ef338f92797f525b7c57af65d8f3ee",
+  "baseline": {
+    "joining": {
+      "meanTickMs": 18.91,
+      "medianWindowP95Ms": 17.349999999999998,
+      "worstWindowP99Ms": 434.2
+    },
+    "outside": {
+      "meanTickMs": 25.86,
+      "medianWindowP95Ms": 41.1,
+      "worstWindowP99Ms": 163.6
+    },
+    "center-first": {
+      "meanTickMs": 32.54,
+      "medianWindowP95Ms": 49.85,
+      "worstWindowP99Ms": 550.6
+    },
+    "outside-repeat": {
+      "meanTickMs": 26.29,
+      "medianWindowP95Ms": 32.2,
+      "worstWindowP99Ms": 1264.7
+    },
+    "center-repeat": {
+      "meanTickMs": 33.02,
+      "medianWindowP95Ms": 45.65,
+      "worstWindowP99Ms": 1005.9
+    }
+  },
+  "limitations": [
+    "Sequential same-host same-workload trial; reused world, entity state and OS cache were not reset. No causal overall speedup established.",
+    "Tick query results are summaries of 100-tick windows; not pooled percentiles.",
+    "Sample categories overlap and exclude stop-the-world pauses; reduced capture share includes delayed work and tint lookup removal.",
+    "Long simultaneous three-player teleports are a stress test, not ordinary walking or packet-loss measurement.",
+    "Capture time limit is soft; pending Atlas refreshes can lag behind delivered terrain.",
+    "Slow-tick logs observe the previous completed tick at a later hook, not exact start/end boundaries."
+  ]
+}
