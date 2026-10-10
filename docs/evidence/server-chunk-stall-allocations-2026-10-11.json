@@ -1,0 +1,332 @@
+{
+  "matched-before": {
+    "seconds": 360.1526641845703,
+    "sampledWeightedGiB": 86.07825396955013,
+    "estimatedMiBPerSecond": 244.74102465516515,
+    "topStacks": [
+      {
+        "weightedGiB": 14.770785696804523,
+        "stack": [
+          "net.minecraft.world.level.chunk.PalettedContainer.reencodeContents",
+          "net.minecraft.world.level.chunk.PalettedContainer.pack",
+          "net.minecraft.world.level.chunk.PalettedContainer.lambda$codec$2",
+          "net.minecraft.world.level.chunk.PalettedContainer$$Lambda.0x00000000722751f0.apply",
+          "com.mojang.serialization.Encoder$1.encode",
+          "com.mojang.serialization.Codec$2.encode",
+          "com.mojang.serialization.Encoder.encodeStart",
+          "net.minecraft.nbt.CompoundTag.store",
+          "net.minecraft.nbt.CompoundTag.store",
+          "net.minecraft.world.level.chunk.storage.SerializableChunkData.write",
+          "net.minecraft.server.level.ChunkMap$$Lambda.0x00000000723e4b88.get",
+          "java.util.concurrent.CompletableFuture$AsyncSupply.run",
+          "java.util.concurrent.CompletableFuture$AsyncSupply.exec",
+          "java.util.concurrent.ForkJoinTask.doExec",
+          "java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec",
+          "java.util.concurrent.ForkJoinPool.runWorker",
+          "java.util.concurrent.ForkJoinWorkerThread.run"
+        ]
+      },
+      {
+        "weightedGiB": 11.674182169139385,
+        "stack": [
+          "it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap.clone",
+          "net.minecraft.world.level.lighting.SkyLightSectionStorage$SkyDataLayerStorageMap.copy",
+          "net.minecraft.world.level.lighting.SkyLightSectionStorage$SkyDataLayerStorageMap.copy",
+          "net.minecraft.world.level.lighting.LayerLightSectionStorage.swapSectionMap",
+          "net.minecraft.world.level.lighting.LightEngine.runLightUpdates",
+          "net.minecraft.world.level.lighting.LevelLightEngine.runLightUpdates",
+          "net.minecraft.server.level.ThreadedLevelLightEngine.runUpdate",
+          "net.minecraft.server.level.ThreadedLevelLightEngine.lambda$tryScheduleUpdate$0",
+          "net.minecraft.server.level.ThreadedLevelLightEngine$$Lambda.0x00000000723ae488.run",
+          "net.minecraft.util.Util.runNamed",
+          "net.minecraft.util.thread.AbstractConsecutiveExecutor.pollTask",
+          "net.minecraft.util.thread.AbstractConsecutiveExecutor.run",
+          "java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute",
+          "java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute",
+          "java.util.concurrent.ForkJoinTask$InterruptibleTask.exec",
+          "java.util.concurrent.ForkJoinTask.doExec",
+          "java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec",
+          "java.util.concurrent.ForkJoinPool.runWorker",
+          "java.util.concurrent.ForkJoinWorkerThread.run"
+        ]
+      },
+      {
+        "weightedGiB": 9.460985094308853,
+        "stack": [
+          "it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap.clone",
+          "net.minecraft.world.level.lighting.BlockLightSectionStorage$BlockDataLayerStorageMap.copy",
+          "net.minecraft.world.level.lighting.BlockLightSectionStorage$BlockDataLayerStorageMap.copy",
+          "net.minecraft.world.level.lighting.LayerLightSectionStorage.swapSectionMap",
+          "net.minecraft.world.level.lighting.LightEngine.runLightUpdates",
+          "net.minecraft.world.level.lighting.LevelLightEngine.runLightUpdates",
+          "net.minecraft.server.level.ThreadedLevelLightEngine.runUpdate",
+          "net.minecraft.server.level.ThreadedLevelLightEngine.lambda$tryScheduleUpdate$0",
+          "net.minecraft.server.level.ThreadedLevelLightEngine$$Lambda.0x00000000723ae488.run",
+          "net.minecraft.util.Util.runNamed",
+          "net.minecraft.util.thread.AbstractConsecutiveExecutor.pollTask",
+          "net.minecraft.util.thread.AbstractConsecutiveExecutor.run",
+          "java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute",
+          "java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute",
+          "java.util.concurrent.ForkJoinTask$InterruptibleTask.exec",
+          "java.util.concurrent.ForkJoinTask.doExec",
+          "java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec",
+          "java.util.concurrent.ForkJoinPool.runWorker",
+          "java.util.concurrent.ForkJoinWorkerThread.run"
+        ]
+      },
+      {
+        "weightedGiB": 1.3438400253653526,
+        "stack": [
+          "it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap.clone",
+          "net.minecraft.server.level.ChunkMap.promoteChunkMap",
+          "net.minecraft.server.level.ServerChunkCache.runDistanceManagerUpdates",
+          "net.minecraft.server.level.ServerChunkCache$MainThreadExecutor.pollTask",
+          "net.minecraft.server.level.ServerChunkCache.pollTask",
+          "net.minecraft.server.MinecraftServer.pollTaskInternal",
+          "net.minecraft.server.MinecraftServer.pollTask",
+          "net.minecraft.util.thread.BlockableEventLoop.managedBlock",
+          "net.minecraft.server.MinecraftServer.waitUntilNextTick",
+          "net.minecraft.server.MinecraftServer.runServer",
+          "net.minecraft.server.MinecraftServer.lambda$spin$0",
+          "net.minecraft.server.MinecraftServer$$Lambda.0x00000000721f0e10.run",
+          "java.lang.Thread.runWith",
+          "java.lang.Thread.run"
+        ]
+      },
+      {
+        "weightedGiB": 1.0101723223924637,
+        "stack": [
+          "it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap.clone",
+          "net.minecraft.world.level.lighting.SkyLightSectionStorage$SkyDataLayerStorageMap.copy",
+          "net.minecraft.world.level.lighting.SkyLightSectionStorage$SkyDataLayerStorageMap.copy",
+          "net.minecraft.world.level.lighting.LayerLightSectionStorage.swapSectionMap",
+          "net.minecraft.world.level.lighting.LightEngine.runLightUpdates",
+          "net.minecraft.world.level.lighting.LevelLightEngine.runLightUpdates",
+          "net.minecraft.server.level.ThreadedLevelLightEngine.runUpdate",
+          "net.minecraft.server.level.ThreadedLevelLightEngine.lambda$tryScheduleUpdate$0",
+          "net.minecraft.server.level.ThreadedLevelLightEngine$$Lambda.0x00000000723ae488.run",
+          "net.minecraft.util.Util.runNamed",
+          "net.minecraft.util.thread.AbstractConsecutiveExecutor.pollTask",
+          "net.minecraft.util.thread.AbstractConsecutiveExecutor.run",
+          "java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute",
+          "java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute",
+          "java.util.concurrent.ForkJoinTask$InterruptibleTask.exec",
+          "java.util.concurrent.ForkJoinTask.doExec",
+          "java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec",
+          "java.util.concurrent.ForkJoinPool.runWorker",
+          "java.util.concurrent.ForkJoinWorkerThread.run"
+        ]
+      }
+    ],
+    "classes": [
+      [
+        "[J",
+        23039012488
+      ],
+      [
+        "[I",
+        16860082912
+      ],
+      [
+        "[Ljava.lang.Object;",
+        8211998008
+      ],
+      [
+        "com.mojang.serialization.DataResult$Success",
+        7156877584
+      ],
+      [
+        "[B",
+        6849058264
+      ]
+    ],
+    "threads": [
+      [
+        "Worker-Main-5",
+        21800625160
+      ],
+      [
+        "Worker-Main-4",
+        21581284920
+      ],
+      [
+        "Worker-Main-6",
+        21546582456
+      ],
+      [
+        "Server thread",
+        19024738168
+      ],
+      [
+        "IO-Worker-8",
+        1028293264
+      ]
+    ]
+  },
+  "matched-after": {
+    "seconds": 361.6285719871521,
+    "sampledWeightedGiB": 89.58977156877518,
+    "estimatedMiBPerSecond": 253.68550273092112,
+    "topStacks": [
+      {
+        "weightedGiB": 14.644868724048138,
+        "stack": [
+          "it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap.clone",
+          "net.minecraft.world.level.lighting.SkyLightSectionStorage$SkyDataLayerStorageMap.copy",
+          "net.minecraft.world.level.lighting.SkyLightSectionStorage$SkyDataLayerStorageMap.copy",
+          "net.minecraft.world.level.lighting.LayerLightSectionStorage.swapSectionMap",
+          "net.minecraft.world.level.lighting.LightEngine.runLightUpdates",
+          "net.minecraft.world.level.lighting.LevelLightEngine.runLightUpdates",
+          "net.minecraft.server.level.ThreadedLevelLightEngine.runUpdate",
+          "net.minecraft.server.level.ThreadedLevelLightEngine.lambda$tryScheduleUpdate$0",
+          "net.minecraft.server.level.ThreadedLevelLightEngine$$Lambda.0x000000006c3cc8b8.run",
+          "net.minecraft.util.Util.runNamed",
+          "net.minecraft.util.thread.AbstractConsecutiveExecutor.pollTask",
+          "net.minecraft.util.thread.AbstractConsecutiveExecutor.run",
+          "java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute",
+          "java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute",
+          "java.util.concurrent.ForkJoinTask$InterruptibleTask.exec",
+          "java.util.concurrent.ForkJoinTask.doExec",
+          "java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec",
+          "java.util.concurrent.ForkJoinPool.runWorker",
+          "java.util.concurrent.ForkJoinWorkerThread.run"
+        ]
+      },
+      {
+        "weightedGiB": 14.347576148808002,
+        "stack": [
+          "net.minecraft.world.level.chunk.PalettedContainer.reencodeContents",
+          "net.minecraft.world.level.chunk.PalettedContainer.pack",
+          "net.minecraft.world.level.chunk.PalettedContainer.lambda$codec$2",
+          "net.minecraft.world.level.chunk.PalettedContainer$$Lambda.0x000000006c279990.apply",
+          "com.mojang.serialization.Encoder$1.encode",
+          "com.mojang.serialization.Codec$2.encode",
+          "com.mojang.serialization.Encoder.encodeStart",
+          "net.minecraft.nbt.CompoundTag.store",
+          "net.minecraft.nbt.CompoundTag.store",
+          "net.minecraft.world.level.chunk.storage.SerializableChunkData.write",
+          "net.minecraft.server.level.ChunkMap$$Lambda.0x000000006c3f5f80.get",
+          "java.util.concurrent.CompletableFuture$AsyncSupply.run",
+          "java.util.concurrent.CompletableFuture$AsyncSupply.exec",
+          "java.util.concurrent.ForkJoinTask.doExec",
+          "java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec",
+          "java.util.concurrent.ForkJoinPool.runWorker",
+          "java.util.concurrent.ForkJoinWorkerThread.run"
+        ]
+      },
+      {
+        "weightedGiB": 13.67090354859829,
+        "stack": [
+          "it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap.clone",
+          "net.minecraft.world.level.lighting.BlockLightSectionStorage$BlockDataLayerStorageMap.copy",
+          "net.minecraft.world.level.lighting.BlockLightSectionStorage$BlockDataLayerStorageMap.copy",
+          "net.minecraft.world.level.lighting.LayerLightSectionStorage.swapSectionMap",
+          "net.minecraft.world.level.lighting.LightEngine.runLightUpdates",
+          "net.minecraft.world.level.lighting.LevelLightEngine.runLightUpdates",
+          "net.minecraft.server.level.ThreadedLevelLightEngine.runUpdate",
+          "net.minecraft.server.level.ThreadedLevelLightEngine.lambda$tryScheduleUpdate$0",
+          "net.minecraft.server.level.ThreadedLevelLightEngine$$Lambda.0x000000006c3cc8b8.run",
+          "net.minecraft.util.Util.runNamed",
+          "net.minecraft.util.thread.AbstractConsecutiveExecutor.pollTask",
+          "net.minecraft.util.thread.AbstractConsecutiveExecutor.run",
+          "java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute",
+          "java.util.concurrent.ForkJoinTask$RunnableExecuteAction.compute",
+          "java.util.concurrent.ForkJoinTask$InterruptibleTask.exec",
+          "java.util.concurrent.ForkJoinTask.doExec",
+          "java.util.concurrent.ForkJoinPool$WorkQueue.topLevelExec",
+          "java.util.concurrent.ForkJoinPool.runWorker",
+          "java.util.concurrent.ForkJoinWorkerThread.run"
+        ]
+      },
+      {
+        "weightedGiB": 1.1906030252575874,
+        "stack": [
+          "it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap.clone",
+          "net.minecraft.server.level.ChunkMap.promoteChunkMap",
+          "net.minecraft.server.level.ServerChunkCache.runDistanceManagerUpdates",
+          "net.minecraft.server.level.ServerChunkCache$MainThreadExecutor.pollTask",
+          "net.minecraft.server.level.ServerChunkCache.pollTask",
+          "net.minecraft.server.MinecraftServer.pollTaskInternal",
+          "net.minecraft.server.MinecraftServer.pollTask",
+          "net.minecraft.util.thread.BlockableEventLoop.managedBlock",
+          "net.minecraft.server.MinecraftServer.waitUntilNextTick",
+          "net.minecraft.server.MinecraftServer.runServer",
+          "net.minecraft.server.MinecraftServer.lambda$spin$0",
+          "net.minecraft.server.MinecraftServer$$Lambda.0x000000006c1f7af0.run",
+          "java.lang.Thread.runWith",
+          "java.lang.Thread.run"
+        ]
+      },
+      {
+        "weightedGiB": 0.7912681773304939,
+        "stack": [
+          "net.minecraft.world.level.Level.getBlockRandomPos",
+          "net.minecraft.server.level.ServerLevel.tickChunk",
+          "net.minecraft.server.level.ServerChunkCache.lambda$tickChunks$0",
+          "net.minecraft.server.level.ServerChunkCache$$Lambda.0x000000006c31d7b8.accept",
+          "net.minecraft.server.level.ChunkMap.lambda$forEachBlockTickingChunk$0",
+          "net.minecraft.server.level.ChunkMap$$Lambda.0x000000006c31d9f8.accept",
+          "net.minecraft.server.level.DistanceManager.forEachEntityTickingChunk",
+          "net.minecraft.server.level.ChunkMap.forEachBlockTickingChunk",
+          "net.minecraft.server.level.ServerChunkCache.tickChunks",
+          "net.minecraft.server.level.ServerChunkCache.tickChunks",
+          "net.minecraft.server.level.ServerChunkCache.tick",
+          "net.minecraft.server.level.ServerLevel.tick",
+          "net.minecraft.server.MinecraftServer.tickChildren",
+          "net.minecraft.server.MinecraftServer.tickServer",
+          "net.minecraft.server.dedicated.DedicatedServer.tickServer",
+          "net.minecraft.server.MinecraftServer.processPacketsAndTick",
+          "net.minecraft.server.MinecraftServer.runServer",
+          "net.minecraft.server.MinecraftServer.lambda$spin$0",
+          "net.minecraft.server.MinecraftServer$$Lambda.0x000000006c1f7af0.run",
+          "java.lang.Thread.runWith",
+          "java.lang.Thread.run"
+        ]
+      }
+    ],
+    "classes": [
+      [
+        "[J",
+        31232415416
+      ],
+      [
+        "[I",
+        16088159200
+      ],
+      [
+        "[Ljava.lang.Object;",
+        7017060952
+      ],
+      [
+        "[B",
+        6589019048
+      ],
+      [
+        "com.mojang.serialization.DataResult$Success",
+        6520017928
+      ]
+    ],
+    "threads": [
+      [
+        "Worker-Main-5",
+        23814850816
+      ],
+      [
+        "Worker-Main-4",
+        22988722624
+      ],
+      [
+        "Worker-Main-6",
+        22572859080
+      ],
+      [
+        "Server thread",
+        18857033504
+      ],
+      [
+        "IO-Worker-5",
+        949988744
+      ]
+    ]
+  }
+}

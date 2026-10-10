@@ -1,5 +1,169 @@
 # Remaining Large-server stalls — 10 October 2026
 
+## Follow-up implementation: ordinary chunk work
+
+The approved fix adds owner-thread work limits separately from Atlas persistence:
+
+- Scheduled Overworld autosaves queue one array of visible chunk coordinates.
+  Ordinary ticks revisit current holders, clear their save cooldown and use
+  vanilla's dirty-chunk save path. The sweep examines at most 128 coordinates
+  and attempts at most four saves per tick, sharing the cleanup time allowance with
+  unloading/eager saving. A subsequent autosave requests another sweep rather
+  than retaining another holder graph or an unbounded queue of snapshots.
+- Ordinary unload/eager work normally shares a 256-task/scan and 16-save-attempt
+  ceiling within a soft 2 ms allowance. Backlog above 2,000 or used/max heap at
+  80% selects 8 ms / 4,096 / 64; backlog at least 8,192 or heap at 90% selects
+  20 ms / 16,384 / 128. Vanilla's 128-active-write backpressure is retained.
+  These are cleanup allowances, not changes to heap size or pregeneration rate.
+  The mandatory
+  `queueSize - 2000` bypass is disabled for this ordinary path. One indivisible
+  operation can exceed the time allowance; one operation is allowed to ensure
+  progress even when a tick's vanilla deadline has already expired.
+- The optional location advancement check is deferred once after its observed
+  player chunk changes, then retried on the next vanilla invocation even if
+  movement continues. The maximum additional delay is one normal 20-tick
+  interval; checks cannot starve during continuous travel. This avoids an
+  immediate optional structure query forcing the whole ticket graph to settle.
+- Ticket updates remain complete vanilla operations. Required chunk lookups,
+  future admission, explicit saves, flushes and shutdown retain their normal
+  progress and durability. Scheduled-save scopes restore their state with
+  `finally`; ordinary maintenance counters reset each tick, including after an
+  interrupted tick. No worker reads live chunks or level state.
+
+The maintenance allowance does **not** bound ticket propagation, holder-future
+publication, player/level metadata serialization, an individual snapshot, or
+GC. Delayed unloading can temporarily retain more holders. These are explicit
+tradeoffs to validate, not a guarantee of hitch-free play.
+`-Dringworld.chunkWorkTimings=true` enables per-tick maintenance counters for
+development measurements and is off by default.
+
+### Failed development run retained
+
+The first three-client test of `eeb6b33` failed during its first return transition.
+A ticking vault's neighbour query found a holder whose ticket level was updated
+but whose future was not published; vanilla's `chunkAbsent` shortcut skipped
+propagation and returned an unloaded chunk. The server crashed. Its shutdown
+drain also needed to bypass the tick allowance when the normal tick counter
+stopped advancing. This is a **failed run**, excluded from performance claims.
+The corrected required-lookup guard and save/stop escape are in `53d466f`.
+The subsequent `53d466f` run survived both movement cycles, completed its
+save sweep and preserved a newly edited gold block after an explicit flush and
+restart (the on-disk baseline was a diamond block). Tick 6000 fell to 110.00 ms,
+but four genuine full G1 compactions appeared, with pauses up to 1,003 ms;
+the earlier baseline had no full compactions. This candidate is rejected as an
+overall performance result. Splitting ticket processing across ticks was
+removed rather than accepting its new consistency/retention risks. Attribution
+of the additional allocation/retention pressure requires the safe-policy repeat;
+the observation alone does not isolate its source from the unload changes.
+
+That run's restart harness also expected the incorrect English response
+`The time is`; Minecraft returned `The game time is … tick(s)` for the successful
+conditional gold-block query. A separate recorded read-back verified the gold
+block. The final harness checks the actual response, fails on any client
+loss, and explicitly establishes the saved diamond baseline before changing it.
+
+Raw records remain under `logs/chunk-stall-fix/`; rejected candidates are kept
+separately. The public server was restored between runs. Temporary tick/graph
+measurement mixins are not production changes or release JARs.
+
+Removing the graph limiter alone (`acf7b54`) did not resolve the regression:
+the fixed 2 ms unload policy also reproduced multi-second GC stalls. This run
+was stopped during the post-movement waiting phase; normal shutdown/restart
+preserved the newly edited gold block, but its interrupted controller is not
+a completed performance/explicit-flush PASS. Its records are retained under
+`logs/chunk-stall-fix/rejected-small-unload-budget/`.
+
+Allocation samples over the first outside/return cycle estimate similar total
+allocation rates (376.5 versus 382.8 MiB/s), but the two leading sky/block light
+map clone stacks rise from about 13.0 GiB to 23.9 GiB over approximately two
+minutes. Palette-encoding allocations fall. These are sample-weight estimates,
+not measured retained heap or proof that an individual allocation caused a
+particular collection. They show why total allocation rate alone hid the changed
+allocation mix. The selected follow-up is a bounded catch-up allowance for
+cleanup backlogs, rather than indefinitely retaining unload work to honour a
+tiny deadline. It must be validated against the same workload before acceptance.
+
+The first restored-snapshot run is also excluded from performance comparisons:
+the private server forced Survival on login while the saved test players were
+over the void. They died during settling but remained in the connected-player
+list. Its quiet 75 ms autosave result does not represent the intended workload.
+The corrected harness forces Spectator on login, checks all three players have
+20 health in every sampling window, records their positions, and uses the same
+pristine world fingerprint before each comparison. An independent region-file
+reader checks the edited gold block before issuing an explicit save command.
+
+### Matched Large-server result — 11 October
+
+Functional baseline `6d40faa` and candidate `cf3c5b6` each start from the exact
+same 456-file / 981,494,919-byte world snapshot (`90b4d5fe…`). Its Large ring is
+32,768 × 512 blocks and its Atlas has all 16,777,216 cells. Both use NeoForge
+26.3.0.37-beta, four logical server CPUs, the unchanged 4 GiB maximum heap,
+view distance 28/simulation distance 8, and three real hidden/muted clients.
+The health-checked workload is 60 seconds settling, two 45-second side/60-second
+centre cycles, then 120 seconds waiting for ordinary saving. No local builds or
+native tests compete with those clients during the measurement.
+
+| Measurement | Before | Candidate |
+| --- | ---: | ---: |
+| Scheduled autosave tick 6000 | 386.61 ms | 105.81 ms |
+| Worst GC-free movement tick | 1,028.93 ms | 177.42 ms |
+| Worst tick in the ordinary measured window, including GC | 1,939.22 ms | 796.01 ms |
+| First return, worst sampled 100-tick-window P99 | 1,939.2 ms | 203.3 ms |
+| Second return, worst sampled 100-tick-window P99 | 1,051.7 ms | 204.2 ms |
+| Largest individual GC pause | 270.27 ms | 681.90 ms |
+| Full G1 compactions in ordinary window | 0 | 1 |
+| Edit on disk before explicit flush; read back after restart | PASS | PASS |
+
+The baseline's 1,029/663 ms GC-free movement ticks have 43/28 server samples in
+the synchronous ticket graph beneath the location advancement's structure
+query. Autosave has 13 server samples, including nine in chunk snapshot copying.
+The candidate autosave has no chunk-copy sample, and its 6,553-coordinate sweep
+finishes at tick 6,775 (774 maintenance ticks after it starts). Ordinary cleanup
+observes the configured ceilings: normal 256 tasks/16 save attempts, catch-up
+3,605/64, pressure 4,086/128. Task counts include scans and callbacks, not unique
+chunks. The soft time ceiling can be exceeded by indivisible work or a GC pause.
+
+**The targeted bursts improve, but this is not overall release acceptance.**
+The candidate run contains one 682 ms full compaction in a pair whose baseline
+has none; its worst tick contains about 755 ms of accumulated GC pause overlap.
+Consequently this candidate stays in development and PR #279 remains open.
+Matched-window allocation samples estimate 244.7 versus 253.7 MiB/s overall.
+The two leading sky/block light-map clone stacks rise from 21.2 to 28.3 GiB of
+sample weight, while palette packing falls slightly (14.8 to 14.3 GiB). These
+estimates identify a changed allocation mix, not retained heap or proof of why
+this particular full collection occurred. See
+[`evidence/server-chunk-stall-allocations-2026-10-11.json`](evidence/server-chunk-stall-allocations-2026-10-11.json). Do not declare the GC regression fixed or promote the
+candidate solely on its lower tick-window numbers. Required ticket operations
+also remain complete and can still exceed a tick budget.
+
+This is one paired development experiment, not a repeated statistical result
+or frozen-JAR release qualification. Baseline diagnostic ticks have a 50 ms
+threshold; candidate diagnostics record every tick plus graph spans. Do not
+compare pooled tick percentiles or graph-span counts across those instruments.
+Baseline phase samples omit absolute timestamps, so its travel-end boundary
+uses the controller file modification time; precise tick/operation events and
+the normal measurement window retain UTC timestamps. Explicit flush, client
+shutdown and restart are outside the ordinary performance window.
+
+Both runs establish a saved diamond block, change it to gold, inspect the exact
+on-disk region position before issuing a new save command, complete explicit
+flush/stop, and verify gold after restart. The public server is restored to its
+prior JAR; the development candidate is not promoted or uploaded. Raw traces,
+GC logs, phase results and hashes remain under `logs/chunk-stall-fix/`.
+Compact measurements and identities are banked in
+[`evidence/server-chunk-stall-fix-2026-10-11.json`](evidence/server-chunk-stall-fix-2026-10-11.json).
+Temporary measurement mixins are excluded from production source; their patch is
+[`evidence/server-chunk-stall-measurement-probes.patch`](evidence/server-chunk-stall-measurement-probes.patch).
+
+All six builds/Java suites pass (503 cases per loader on 26.1/26.2, 506 on 26.3;
+3,024 executions), together with the nine source CI checks. All 367 local static
+checks also pass on the final cleanup-pressure tree. All 24 corrected native fresh/interrupted/resumed/reopened lifecycle phases
+pass across the six source/loader runtimes. Independent format/count audits pass
+for every saved file, every completed reopen matches its preceding resumed file
+byte-for-byte with zero generation time, and all six fresh command/concurrency/
+synthetic-FPS probes pass. See the [validation record](evidence/server-chunk-stall-validation-2026-10-11.json).
+The old release files and full replacement qualification remain on hold.
+
 ## Confirmed causes from precise tick boundaries
 
 A third three-client run identifies the remaining large hitches as **bursts of
@@ -358,3 +522,16 @@ Raw captures, logs, reproduction scripts and decoded events are retained under
   with its original world and previous diagnostic build; the test service and
   restoration timer are stopped. The final empty-server check averaged 0.9 ms
   per tick. No public release upload occurred.
+
+## Native harness correction for this candidate
+
+The first 26.3 Fabric reopen assertion compared the completed resumed cache
+with a previous fresh rebuild, rather than with the file immediately before
+reopen. The server reported COMPLETE with zero generation time; independent
+read-back showed reopened and resumed files were byte-identical. Fresh and
+resumed captures differ in 28,196 of 524,288 cells in this ticking terrain
+fixture, including height/material/light fields; this is not evidence of a
+reopen mutation. Exact fresh-versus-resumed feature parity is not claimed.
+The corrected assertion compares reopen against resumed, while retaining the
+independent present-cell and format audits for every phase. The failed assertion
+and snapshots remain preserved; the affected reopen is rerun before continuing.

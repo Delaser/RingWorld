@@ -1,15 +1,16 @@
-# Remaining Large-server hitches — causes identified
+# Large-server chunk-work fixes — development candidate, GC follow-up required
 
-Precise three-client JFR measurements identify three remaining burst paths:
-Minecraft's five-minute non-flushing autosave (1,019 ms tick; 20/21 server
-samples in autosave), synchronous advancement structure lookup pumping the
-unbounded loading-ticket graph (620 ms tick, no GC), and mandatory unload
-queue drainage (14,600 queued callbacks → 12,600 executed in one 178 ms pass).
-GC amplifies some bursts but does not explain the latter two. These are separate
-from the asynchronous Atlas checkpoint and its bounded capture queue. Temporary
-diagnostic mixins were removed; source behaviour and release hold are unchanged.
-Public server restored; muted test clients/tunnel stopped. See
-[confirmed causes and reproducible evidence](SERVER_STALL_INVESTIGATION_2026_10_10.md).
+October 11: PR #279 now spreads scheduled Overworld chunk snapshots across ticks,
+bounds ordinary unload/eager work with pressure-based catch-up, and defers the
+first optional location check after movement by one vanilla interval. Required
+ticket graphs, explicit saves, flush and shutdown stay complete. A matched
+three-client Large-world pair reduces autosave from 387 to 106 ms and the worst
+GC-free movement tick from 1,029 to 177 ms. The worst full tick falls from 1,939
+to 796 ms, but one new 682 ms full G1 compaction remains a release concern.
+Do not treat this as overall acceptance. Edit-on-disk and restart read-back pass;
+all six builds/Java suites and nine CI checks pass. All 24 corrected native lifecycle phases and independent saved-file audits pass. Public service restored to its prior JAR, clients/tunnel stopped;
+PR #279 and all replacement/release qualification remain held. See
+[implementation, matched evidence and limits](SERVER_STALL_INVESTIGATION_2026_10_10.md).
 
 # Queued player-load Atlas capture — development validation complete
 

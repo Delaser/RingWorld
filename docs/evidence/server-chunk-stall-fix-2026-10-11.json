@@ -1,0 +1,1041 @@
+{
+  "description": "One restored-snapshot pair, three real hidden muted clients; source-development evidence, not release qualification. Baseline tick events have a 50 ms threshold; candidate events include all ticks and exact graph spans. Do not compare pooled percentiles or graph-span counts. Baseline phase travel end uses controller file mtime; normal window and operation boundaries use recorded UTC timestamps.",
+  "results": {
+    "matched-before": {
+      "identity": {
+        "functionalSource": "6d40faab3152bda95af8a2715b8ba2d6724a91b8",
+        "jarSha256": "fd00a979b2c34f987c61fb189c8704f0343762cbd7f4f4374d011ca21c22384f",
+        "scope": "Previous build with original measurement-only tick/unload/snapshot probes; same reset world and workload"
+      },
+      "fixture": {
+        "treeSha256": "90b4d5fe3a5620aa5c65af02936734700996ca0cf2ffcca79de4636d15270733",
+        "bytes": 981494919,
+        "files": 456,
+        "atlasSha256": "c32781392639e40be5e9d031ca1cd53f3d47b6d07853830c04ac609e65c8b5bd",
+        "restoredFrom": "/opt/ringworld-load-test-20261010/world-before",
+        "archivedPrior": "/opt/ringworld-load-test-20261010/world-measured-dead-clients"
+      },
+      "normalWindow": {
+        "startUtc": "2026-10-10T22:50:29.616562+00:00",
+        "endUtc": "2026-10-10T22:56:29.769226+00:00",
+        "ticks": 366
+      },
+      "autosaveTicks": [
+        {
+          "tick": 6000,
+          "startUtc": "2026-10-10T22:53:47.083255230Z",
+          "durationMs": 386.607463,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 14,
+          "sampleTags": {
+            "autoSave": 13,
+            "processUnloads": 0,
+            "copyOf": 9,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 13,
+            "tickNonPassenger": 0
+          }
+        }
+      ],
+      "worstTravelTicksWithoutGCPause": [
+        {
+          "tick": 3427,
+          "startUtc": "2026-10-10T22:51:33.390644940Z",
+          "durationMs": 1028.934342,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 46,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 1,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 43,
+            "runAllUpdates": 43,
+            "updateFutures": 3,
+            "managedBlock": 44,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 5607,
+          "startUtc": "2026-10-10T22:53:25.758796118Z",
+          "durationMs": 663.058826,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 30,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 28,
+            "runAllUpdates": 28,
+            "updateFutures": 4,
+            "managedBlock": 29,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 6000,
+          "startUtc": "2026-10-10T22:53:47.083255230Z",
+          "durationMs": 386.607463,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 14,
+          "sampleTags": {
+            "autoSave": 13,
+            "processUnloads": 0,
+            "copyOf": 9,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 13,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 2434,
+          "startUtc": "2026-10-10T22:50:43.541582446Z",
+          "durationMs": 194.244998,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 7,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 1
+          }
+        },
+        {
+          "tick": 4642,
+          "startUtc": "2026-10-10T22:52:37.147806011Z",
+          "durationMs": 181.330426,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 2,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 2,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        }
+      ],
+      "worstNormalTicks": [
+        {
+          "tick": 3428,
+          "startUtc": "2026-10-10T22:51:34.556267640Z",
+          "durationMs": 1939.222643,
+          "gcPauseOverlapMs": 428.9569854736328,
+          "serverSampleCount": 54,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 53,
+            "copyOf": 24,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 5608,
+          "startUtc": "2026-10-10T22:53:26.492980511Z",
+          "durationMs": 1051.708234,
+          "gcPauseOverlapMs": 286.7255210876465,
+          "serverSampleCount": 29,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 29,
+            "copyOf": 19,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 3427,
+          "startUtc": "2026-10-10T22:51:33.390644940Z",
+          "durationMs": 1028.934342,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 46,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 1,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 43,
+            "runAllUpdates": 43,
+            "updateFutures": 3,
+            "managedBlock": 44,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 5607,
+          "startUtc": "2026-10-10T22:53:25.758796118Z",
+          "durationMs": 663.058826,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 30,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 28,
+            "runAllUpdates": 28,
+            "updateFutures": 4,
+            "managedBlock": 29,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 6008,
+          "startUtc": "2026-10-10T22:53:47.773726613Z",
+          "durationMs": 451.797928,
+          "gcPauseOverlapMs": 415.7590866088867,
+          "serverSampleCount": 1,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 6000,
+          "startUtc": "2026-10-10T22:53:47.083255230Z",
+          "durationMs": 386.607463,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 14,
+          "sampleTags": {
+            "autoSave": 13,
+            "processUnloads": 0,
+            "copyOf": 9,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 13,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 4517,
+          "startUtc": "2026-10-10T22:52:30.884858957Z",
+          "durationMs": 259.056008,
+          "gcPauseOverlapMs": 225.7702350616455,
+          "serverSampleCount": 2,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 8197,
+          "startUtc": "2026-10-10T22:55:36.932919185Z",
+          "durationMs": 239.177283,
+          "gcPauseOverlapMs": 199.4912624359131,
+          "serverSampleCount": 2,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 3966,
+          "startUtc": "2026-10-10T22:52:03.354970306Z",
+          "durationMs": 219.464574,
+          "gcPauseOverlapMs": 190.47260284423828,
+          "serverSampleCount": 1,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 3522,
+          "startUtc": "2026-10-10T22:51:41.132866249Z",
+          "durationMs": 213.767755,
+          "gcPauseOverlapMs": 124.38535690307617,
+          "serverSampleCount": 3,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 4733,
+          "startUtc": "2026-10-10T22:52:41.686403641Z",
+          "durationMs": 204.018613,
+          "gcPauseOverlapMs": 163.76900672912598,
+          "serverSampleCount": 2,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 1
+          }
+        },
+        {
+          "tick": 6383,
+          "startUtc": "2026-10-10T22:54:06.232989605Z",
+          "durationMs": 203.103471,
+          "gcPauseOverlapMs": 169.34466361999512,
+          "serverSampleCount": 2,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        }
+      ],
+      "fullGCsInNormalWindow": [],
+      "maxGCPauseMs": 270.267049,
+      "largestGraphOperations": [],
+      "maintenance": {
+        "records": 0,
+        "byBudget": {
+          "2": {
+            "records": 0,
+            "maxTasks": 0,
+            "maxSaves": 0
+          },
+          "8": {
+            "records": 0,
+            "maxTasks": 0,
+            "maxSaves": 0
+          },
+          "20": {
+            "records": 0,
+            "maxTasks": 0,
+            "maxSaves": 0
+          }
+        },
+        "maxTasks": 0,
+        "maxSaveAttempts": 0,
+        "firstSweep": [],
+        "lastSweep": [],
+        "completedSweeps": []
+      },
+      "profileSha256": "a30170328188be1ed3bdb5b608f59b0e2bb12d9e59c574118e16d4d93b87aade",
+      "onDiskMarkerBeforeExplicitFlush": {
+        "readUtc": "2026-10-10T22:56:29.644412+00:00",
+        "position": [
+          8193,
+          181,
+          0
+        ],
+        "block": "minecraft:gold_block",
+        "region": "/opt/ringworld-load-test-20261010/world/dimensions/minecraft/overworld/region/r.16.0.mca",
+        "source": "on-disk region, no save command"
+      },
+      "explicitFlush": {
+        "startUtc": "2026-10-10T22:56:29.769226+00:00",
+        "endUtc": "2026-10-10T22:56:32.781710+00:00",
+        "response": "Saving the game (this may take a moment!)\nSaved the game\n\n"
+      },
+      "reopen": {
+        "response": "The game time is 1320683 tick(s)\n\n",
+        "atlas": "RingWorld atlas: 16777216/16777216 cells (100.0%), generation complete, requests 4 (auto)\n\n"
+      },
+      "phaseWindows": {
+        "settled": {
+          "samples": 12,
+          "allThreeHealthy": true,
+          "maxP99Ms": 128.0
+        },
+        "outside": {
+          "samples": 9,
+          "allThreeHealthy": true,
+          "maxP99Ms": 194.2
+        },
+        "center-first": {
+          "samples": 12,
+          "allThreeHealthy": true,
+          "maxP99Ms": 1939.2
+        },
+        "outside-repeat": {
+          "samples": 9,
+          "allThreeHealthy": true,
+          "maxP99Ms": 203.9
+        },
+        "center-repeat": {
+          "samples": 12,
+          "allThreeHealthy": true,
+          "maxP99Ms": 1051.7
+        },
+        "autosave-settle": {
+          "samples": 24,
+          "allThreeHealthy": true,
+          "maxP99Ms": 239.1
+        }
+      }
+    },
+    "matched-after": {
+      "identity": {
+        "functionalSource": "cf3c5b67c81ff6f3b325455d10d1433bf748783e",
+        "jarSha256": "b37ed02d3e0c35e839d823889b570b6852b4421905aa50fb08cdb75c9ce649d5",
+        "scope": "Measurement-only exact tick and graph probes; functional cf3c5b6 otherwise unchanged"
+      },
+      "fixture": {
+        "treeSha256": "90b4d5fe3a5620aa5c65af02936734700996ca0cf2ffcca79de4636d15270733",
+        "bytes": 981494919,
+        "files": 456,
+        "atlasSha256": "c32781392639e40be5e9d031ca1cd53f3d47b6d07853830c04ac609e65c8b5bd",
+        "restoredFrom": "/opt/ringworld-load-test-20261010/world-before",
+        "archivedPrior": "/opt/ringworld-load-test-20261010/world-measured-matched-before"
+      },
+      "normalWindow": {
+        "startUtc": "2026-10-10T23:02:01.547532+00:00",
+        "endUtc": "2026-10-10T23:08:03.176104+00:00",
+        "ticks": 7232
+      },
+      "autosaveTicks": [
+        {
+          "tick": 6000,
+          "startUtc": "2026-10-10T23:05:09.467624406Z",
+          "durationMs": 105.814029,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 4,
+          "sampleTags": {
+            "autoSave": 2,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 2,
+            "tickNonPassenger": 0
+          }
+        }
+      ],
+      "worstTravelTicksWithoutGCPause": [
+        {
+          "tick": 2529,
+          "startUtc": "2026-10-10T23:02:16.307367845Z",
+          "durationMs": 177.42138,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 7,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 1
+          }
+        },
+        {
+          "tick": 3522,
+          "startUtc": "2026-10-10T23:03:06.182417790Z",
+          "durationMs": 175.10866,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 6,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 3,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 3,
+            "runAllUpdates": 3,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 3539,
+          "startUtc": "2026-10-10T23:03:07.630965696Z",
+          "durationMs": 151.703558,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 5,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 1,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 1,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 2,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 2528,
+          "startUtc": "2026-10-10T23:02:16.129481217Z",
+          "durationMs": 136.956433,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 6,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 1,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 2,
+            "runAllUpdates": 2,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 2
+          }
+        },
+        {
+          "tick": 2525,
+          "startUtc": "2026-10-10T23:02:15.806521337Z",
+          "durationMs": 110.771603,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 4,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 1
+          }
+        }
+      ],
+      "worstNormalTicks": [
+        {
+          "tick": 4918,
+          "startUtc": "2026-10-10T23:04:15.549371741Z",
+          "durationMs": 796.014667,
+          "gcPauseOverlapMs": 754.8482418060303,
+          "serverSampleCount": 1,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 7471,
+          "startUtc": "2026-10-10T23:06:23.031788755Z",
+          "durationMs": 265.394063,
+          "gcPauseOverlapMs": 221.4808464050293,
+          "serverSampleCount": 2,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 1
+          }
+        },
+        {
+          "tick": 5635,
+          "startUtc": "2026-10-10T23:04:51.218071163Z",
+          "durationMs": 232.841431,
+          "gcPauseOverlapMs": 202.53419876098633,
+          "serverSampleCount": 1,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 5837,
+          "startUtc": "2026-10-10T23:05:01.322040015Z",
+          "durationMs": 204.232983,
+          "gcPauseOverlapMs": 182.6004981994629,
+          "serverSampleCount": 0,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 3702,
+          "startUtc": "2026-10-10T23:03:14.619867418Z",
+          "durationMs": 203.283114,
+          "gcPauseOverlapMs": 166.73874855041504,
+          "serverSampleCount": 2,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 1
+          }
+        },
+        {
+          "tick": 7234,
+          "startUtc": "2026-10-10T23:06:11.166990745Z",
+          "durationMs": 201.875817,
+          "gcPauseOverlapMs": 157.90534019470215,
+          "serverSampleCount": 1,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 3597,
+          "startUtc": "2026-10-10T23:03:10.079698970Z",
+          "durationMs": 196.147759,
+          "gcPauseOverlapMs": 120.61882019042969,
+          "serverSampleCount": 2,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 6491,
+          "startUtc": "2026-10-10T23:05:34.016993374Z",
+          "durationMs": 192.568841,
+          "gcPauseOverlapMs": 158.25510025024414,
+          "serverSampleCount": 2,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 1
+          }
+        },
+        {
+          "tick": 4555,
+          "startUtc": "2026-10-10T23:03:57.217019123Z",
+          "durationMs": 192.023726,
+          "gcPauseOverlapMs": 160.67004203796387,
+          "serverSampleCount": 1,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 3898,
+          "startUtc": "2026-10-10T23:03:24.366983790Z",
+          "durationMs": 191.642046,
+          "gcPauseOverlapMs": 147.71699905395508,
+          "serverSampleCount": 2,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 1,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 5690,
+          "startUtc": "2026-10-10T23:04:53.966977263Z",
+          "durationMs": 182.926463,
+          "gcPauseOverlapMs": 157.16195106506348,
+          "serverSampleCount": 2,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        },
+        {
+          "tick": 3806,
+          "startUtc": "2026-10-10T23:03:19.768560951Z",
+          "durationMs": 182.742034,
+          "gcPauseOverlapMs": 123.57902526855469,
+          "serverSampleCount": 2,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          }
+        }
+      ],
+      "fullGCsInNormalWindow": [
+        {
+          "endUtc": "2026-10-10T23:04:16.302000+00:00",
+          "durationMs": 681.926
+        }
+      ],
+      "maxGCPauseMs": 681.900196,
+      "largestGraphOperations": [
+        {
+          "tick": 5129,
+          "startUtc": "2026-10-10T23:04:25.947295903Z",
+          "durationMs": 97.277278,
+          "gcPauseOverlapMs": 96.98343276977539,
+          "serverSampleCount": 0,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          },
+          "insideTickMs": 0,
+          "outsideTickMs": 97.277278
+        },
+        {
+          "tick": 2346,
+          "startUtc": "2026-10-10T23:02:06.831735040Z",
+          "durationMs": 76.869397,
+          "gcPauseOverlapMs": 75.00958442687988,
+          "serverSampleCount": 0,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          },
+          "insideTickMs": 0,
+          "outsideTickMs": 76.869397
+        },
+        {
+          "tick": 4901,
+          "startUtc": "2026-10-10T23:04:14.545443936Z",
+          "durationMs": 73.308522,
+          "gcPauseOverlapMs": 69.00286674499512,
+          "serverSampleCount": 0,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 0,
+            "runAllUpdates": 0,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          },
+          "insideTickMs": 0,
+          "outsideTickMs": 73.308522
+        },
+        {
+          "tick": 3522,
+          "startUtc": "2026-10-10T23:03:06.196291904Z",
+          "durationMs": 71.970768,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 3,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 3,
+            "runAllUpdates": 3,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          },
+          "insideTickMs": 71.97070121765137,
+          "outsideTickMs": 6.678234863954913e-05
+        },
+        {
+          "tick": 2527,
+          "startUtc": "2026-10-10T23:02:15.989385025Z",
+          "durationMs": 60.168107,
+          "gcPauseOverlapMs": 0,
+          "serverSampleCount": 3,
+          "sampleTags": {
+            "autoSave": 0,
+            "processUnloads": 0,
+            "copyOf": 0,
+            "runDistanceManagerUpdates": 3,
+            "runAllUpdates": 3,
+            "updateFutures": 0,
+            "managedBlock": 0,
+            "captureChunk": 0,
+            "saveEverything": 0,
+            "tickNonPassenger": 0
+          },
+          "insideTickMs": 60.16802787780762,
+          "outsideTickMs": 7.912219238193074e-05
+        }
+      ],
+      "maintenance": {
+        "records": 8648,
+        "byBudget": {
+          "2": {
+            "records": 6798,
+            "maxTasks": 256,
+            "maxSaves": 16
+          },
+          "8": {
+            "records": 917,
+            "maxTasks": 3605,
+            "maxSaves": 64
+          },
+          "20": {
+            "records": 933,
+            "maxTasks": 4086,
+            "maxSaves": 128
+          }
+        },
+        "maxTasks": 4086,
+        "maxSaveAttempts": 128,
+        "firstSweep": [
+          {
+            "tick": 6001,
+            "tasks": 59,
+            "saveAttempts": 4,
+            "sweepRemaining": 6494,
+            "spanMs": 1.90191,
+            "budgetMs": 8.0
+          }
+        ],
+        "lastSweep": [
+          {
+            "tick": 6774,
+            "tasks": 251,
+            "saveAttempts": 0,
+            "sweepRemaining": 4,
+            "spanMs": 0.310295,
+            "budgetMs": 2.0
+          }
+        ],
+        "completedSweeps": [
+          {
+            "tick": 6775,
+            "tasks": 78,
+            "saveAttempts": 16,
+            "sweepRemaining": 0,
+            "spanMs": 2.009265,
+            "budgetMs": 2.0
+          }
+        ]
+      },
+      "profileSha256": "ac4edf3e844e942c988fb45d5a6c31938e0540007b35288283c31d5f259dcd92",
+      "onDiskMarkerBeforeExplicitFlush": {
+        "readUtc": "2026-10-10T23:08:03.083665+00:00",
+        "position": [
+          8193,
+          181,
+          0
+        ],
+        "block": "minecraft:gold_block",
+        "region": "/opt/ringworld-load-test-20261010/world/dimensions/minecraft/overworld/region/r.16.0.mca",
+        "source": "on-disk region, no save command"
+      },
+      "explicitFlush": {
+        "startUtc": "2026-10-10T23:08:03.176104+00:00",
+        "endUtc": "2026-10-10T23:08:06.530816+00:00",
+        "response": "Saving the game (this may take a moment!)\nSaved the game\n\n"
+      },
+      "reopen": {
+        "response": "The game time is 1320661 tick(s)\n\n",
+        "atlas": "RingWorld atlas: 16777216/16777216 cells (100.0%), generation complete, requests 4 (auto)\n\n"
+      },
+      "phaseWindows": {
+        "settled": {
+          "samples": 12,
+          "allThreeHealthy": true,
+          "maxP99Ms": 229.2
+        },
+        "outside": {
+          "samples": 9,
+          "allThreeHealthy": true,
+          "maxP99Ms": 177.4
+        },
+        "center-first": {
+          "samples": 12,
+          "allThreeHealthy": true,
+          "maxP99Ms": 203.3
+        },
+        "outside-repeat": {
+          "samples": 9,
+          "allThreeHealthy": true,
+          "maxP99Ms": 795.9
+        },
+        "center-repeat": {
+          "samples": 12,
+          "allThreeHealthy": true,
+          "maxP99Ms": 204.2
+        },
+        "autosave-settle": {
+          "samples": 24,
+          "allThreeHealthy": true,
+          "maxP99Ms": 265.4
+        }
+      }
+    }
+  }
+}

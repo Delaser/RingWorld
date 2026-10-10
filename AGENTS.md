@@ -43,8 +43,27 @@ ticket updates and mandatory unload-queue drainage above 2,000 callbacks.
 Atlas budgets do not bound those paths. Use precise operation/tick boundaries;
 delayed slow-tick log timestamps and P99 windows cannot establish attribution.
 Keep GC overlap separate from active work and never count unload callbacks as
-unique chunks. Any future persistence amortisation must preserve explicit flush,
-stop and dirty-state semantics. See the confirmed causes in
+unique chunks. Scheduled Overworld autosaves now queue a coordinate-only sweep:
+at most 128 coordinates/four save attempts per tick, sharing its time allowance
+with unload/eager work. Ordinary cleanup uses 2 ms / 256 scans or callbacks /
+16 save attempts. Backlog above 2,000 or used/max heap at 80% raises that to
+8 ms / 4,096 / 64; backlog at least 8,192 or heap at 90% selects
+20 ms / 16,384 / 128. These are soft time limits, with vanilla's 128-active-write
+backpressure retained. A fixed tiny cleanup allowance reproduced full-GC stalls;
+never allow a backlog to grow indefinitely merely to honour a short deadline.
+Explicit commands, flush and stop remain complete vanilla saves;
+reset the ordinary-tick flag before shutdown, including after a failed tick.
+One snapshot, GC or preemption can exceed the soft allowance. Optional location
+checks defer once after observed chunk movement, with a maximum extra vanilla
+20-tick interval; continuous movement must not starve them. Keep the three API
+adapters equivalent. **Do not split the live loading-ticket graph across ticks**
+without staging holder state and validating retention: the rejected trial
+exposed an unloaded-future crash and new full-GC stalls. Ticket operations remain
+vanilla and can still exceed a tick's allowance. The matched `cf3c5b6` run lowers
+targeted bursts but has one new 682 ms full G1 compaction; overall release
+acceptance stays held. Completed-cache reopen must match the immediately preceding
+resumed save, not an earlier fresh rebuild of a world that continues ticking.
+See the causes and validation in
 `docs/SERVER_STALL_INVESTIGATION_2026_10_10.md`.
 
 For stall profiling, disable JFR heap-statistics/ObjectCount collection: the

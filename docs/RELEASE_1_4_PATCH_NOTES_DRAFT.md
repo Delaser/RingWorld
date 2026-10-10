@@ -32,6 +32,14 @@
   Final stop/unload drains
   the worker so partial pregeneration can resume safely.
 
+- Scheduled Overworld chunk autosaves spread their snapshots across ticks.
+  Ordinary unload and eager-save work has a small allowance that increases under
+  backlog or heap pressure. Manual saves, flushes and shutdown still complete
+  their normal save paths. These changes remain under development validation
+  because a full-GC pause remains in the Large-server repeat.
+- After crossing chunks, the optional location advancement check waits one extra
+  normal interval before querying structures, reducing immediate ticket-update
+  bursts. Continuous movement cannot starve the check.
 - Atlas pregeneration now admits several asynchronous chunk requests at once.
   Auto starts at four and backs down under sustained frame/tick pressure, then
   recovers gradually. `/ringworld chunk_gen_rate 1|2|4|8|auto` controls it live;
