@@ -90,6 +90,12 @@ is retained, not counted as a pass.
 
 ## Remaining work and limits
 
+The [follow-up stall investigation](SERVER_STALL_INVESTIGATION_2026_10_10.md)
+reproduces long transitions without heap-inspection GC, identifies chunk
+unload/ticket churn, real GC and unbudgeted player-load Atlas captures, and
+records the profiler-induced pauses in the original recordings. The table
+above remains the original trial's measurements, including that limitation.
+
 - Profile the remaining transition/chunk-loading outliers, including the in-band
   1.1-second event. The status shortcut solves one demonstrated cause, not all stalls.
 - Partial Atlas progress still uses an exact scan; this complete-world shortcut

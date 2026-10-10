@@ -37,6 +37,13 @@ and source-development evidence. Apply equivalent behaviour on all supported
 
 ## Server Atlas checkpoint persistence
 
+For stall profiling, disable JFR heap-statistics/ObjectCount collection: the
+initial multiplayer profiler forced 0.6–0.7 second full GCs. Use GC pause events,
+not summed concurrent GC duration, and retain timestamped workload windows.
+Player-load Atlas captures currently run inline outside the explicit pregen
+budget; do not claim the ready-capture limit bounds them. See the
+[remaining stall investigation](docs/SERVER_STALL_INVESTIGATION_2026_10_10.md).
+
 Completed Atlas progress reports must use the maintained present-cell count to
 return total chunk coverage in constant time. Do not rescan every cell for every
 connected player: the three-client Large-server trial found this consumed about

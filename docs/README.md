@@ -1,5 +1,7 @@
 # RingWorld documentation
 
+- [Remaining Large-server stalls](SERVER_STALL_INVESTIGATION_2026_10_10.md):
+  lighter three-client profiling, chunk churn/GC findings and next fixes.
 - [Large-server multiplayer load trial](SERVER_MULTIPLAYER_LOAD_2026_10_10.md):
   three real clients, completion-status scan fix, measurements and remaining stalls.
 - [Server Atlas checkpoint persistence](SERVER_ATLAS_CHECKPOINTS.md): bounded

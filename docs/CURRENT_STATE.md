@@ -1,3 +1,15 @@
+# Large-server stalls — investigation complete, follow-up fixes pending
+
+The lighter three-client recording reproduces 1,265/1,006 ms transition P99
+windows without heap-inspection GC. Chunk unloading/snapshotting and ticket
+updates coincide with the longest transition; genuine GC pauses reach 391 ms.
+Inline player-loaded Atlas captures bypass the pregen budget and contribute
+6.9% of travel execution samples. Recommended follow-ups are bounded load
+captures, tint-only biome lookups, and the tile-header buffer correction, then
+matched chunk-churn/GC experiments. No new production fix was made. Public
+server restored; clients/tunnel stopped. See the
+[investigation and limitations](SERVER_STALL_INVESTIGATION_2026_10_10.md).
+
 # Large-server multiplayer trial — follow-up fix tested
 
 October 10: three real hidden/muted clients exposed repeated complete-Atlas
