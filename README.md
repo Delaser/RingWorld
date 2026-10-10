@@ -14,6 +14,10 @@ work across the join.
 [Report a problem](https://github.com/Delaser/RingWorld/issues) ·
 [Join us on Discord](https://discord.com/invite/wBMY5Ab7su)
 
+Atlas checkpoint saves run on a background worker, keeping compression and file
+writes off the server tick thread. Snapshot preparation still uses the server
+thread; see [checkpoint behaviour](docs/SERVER_ATLAS_CHECKPOINTS.md).
+
 ## What does it look like?
 
 Nearby Minecraft terrain visibly curves away from you. Beyond normal render

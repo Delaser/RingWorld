@@ -358,3 +358,11 @@ retry passes cleanly; the failed run is not counted as passing evidence.
 These checks do not measure actual graphical FPS or qualify a release.
 The owner approved integration through PR #273 on 9 October. The live published
 server is unchanged; full release qualification remains separate.
+
+## Server checkpoint follow-up (10 October 2026)
+
+The concurrency benchmarks above measure generation admission. They do not
+remove the synchronous full-Atlas save stall. The checkpoint implementation now
+uses bounded worker persistence; see `SERVER_ATLAS_CHECKPOINTS.md` for current
+semantics and separate same-world performance evidence. Cancellation tests wait
+for durable asynchronous cancellation before asserting termination/replacement.

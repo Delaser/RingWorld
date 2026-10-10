@@ -705,7 +705,7 @@ Created RingWorld layout
 Migrated RingWorld settings format
 [diagnostic] joined ring world
 RingWorld settings acknowledged
-Loaded/Saved RingWorld terrain atlas
+Loaded RingWorld terrain atlas / RingWorld Atlas checkpoint (with atlasSaveTimings)
 RingWorld terrain atlas progress
 RingWorld atlas: ... generation running|paused|complete
 Textured ring surface ready
@@ -740,3 +740,12 @@ F3 replaces the normal position section in the Overworld with:
   latitude. Existing safe canonical portals are reused across the X seam.
   There is no operator setting for this policy and an existing world does not
   need regeneration after the mod update.
+
+## Server checkpoint performance
+
+Periodic Atlas writes and completion verification now use the bounded persistence
+worker. Main-thread snapshot preparation copies/repairs slices across ticks. Only
+normal stop/unload drains synchronously. Enable `-Dringworld.atlasSaveTimings=true`
+for phase timings; see [checkpoint design and evidence](SERVER_ATLAS_CHECKPOINTS.md).
+Do not enable the intentional synchronous comparison probe on a public server
+with players connected.

@@ -48,7 +48,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * <p>This service deliberately contains no Fabric registrations. The Fabric
  * adapter calls its lifecycle, chunk-capture, and tile-publication methods;
- * all atlas writes, saves, cursor advancement, and job state live here so
+ * all live Atlas mutations, cursor advancement, and job state live here so
  * there is never a competing scheduler or atlas writer.</p>
  */
 public final class RingAtlasPregenerationService {
@@ -95,6 +95,9 @@ public final class RingAtlasPregenerationService {
         RingGeometry geometry = settings.geometry();
         long hash = RingTerrainAtlas.worldHash(settings);
         Path path = cachePath(world);
+        if (WORLDS.values().stream().anyMatch(existing -> existing.path.equals(path))) {
+            throw new IllegalStateException("Atlas state already owns " + path + "; finish unload before replacement");
+        }
         Path legacyPath = legacyCachePath(world);
         int sampleStep = RingTerrainAtlas.SAMPLE_STEP_BLOCKS;
         RingTerrainAtlas.StorageLoad storage = RingTerrainAtlas.loadStorage(
@@ -112,7 +115,7 @@ public final class RingAtlasPregenerationService {
             // IDLE. Player chunk capture still mutates this atlas, while a
             // later explicit matching start can transition the handle once.
             state.job = new Job(world, state, AtlasPregenerationOptions.backgroundDefaults(), NOOP_LISTENER);
-            if (state.atlas.isComplete() && !state.dirty) state.job.completeAlreadyVerified();
+            if (state.atlas.isComplete() && !state.checkpoints.dirty()) state.job.completeAlreadyVerified();
         }
     }
 
@@ -129,7 +132,9 @@ public final class RingAtlasPregenerationService {
         // is actually released. Persistent release failure is exceptional and
         // fails this unload closed with the state still reachable.
         if (state.job != null) state.job.cancelForUnload();
-        save(state, true);
+        if (!flushCheckpoint(state)) throw new IllegalStateException("could not flush Atlas on world unload");
+        if (state.probe != null) state.probe.close(state.atlas);
+        state.checkpoints.close();
         WORLDS.remove(world, state);
     }
 
@@ -173,7 +178,7 @@ public final class RingAtlasPregenerationService {
         }
         Job job = new Job(world, state, options, listener);
         state.job = job;
-        if (state.atlas.isComplete() && !state.dirty) {
+        if (state.atlas.isComplete() && !state.checkpoints.dirty()) {
             // A loaded, complete cache was already validated by loadStorage.
             job.completeAlreadyVerified();
         } else {
@@ -197,6 +202,7 @@ public final class RingAtlasPregenerationService {
         WorldState state = WORLDS.get(world);
         if (state == null) return;
         state.ticks++;
+        pollCheckpoint(state);
         consumeFuture(world, state);
         processRecaptures(world, state);
         commitPendingRevision(state);
@@ -205,7 +211,11 @@ public final class RingAtlasPregenerationService {
             job.tick();
             if (state.ticks % job.options.progressIntervalTicks() == 0) job.refreshProgress();
         }
-        if (state.dirty && state.ticks % SAVE_INTERVAL_TICKS == 0) save(state, false);
+        if (!state.stopping && state.ticks % SAVE_INTERVAL_TICKS == 0) {
+            state.checkpoints.request(state.atlas, false);
+        }
+        state.checkpoints.advance(state.atlas);
+        if (state.probe != null && !state.checkpoints.busy()) state.probe.tick(world.getServer(), state.atlas);
     }
 
     /** Player-loaded chunks have priority and always populate the same atlas. */
@@ -413,13 +423,14 @@ public final class RingAtlasPregenerationService {
                     changed = true;
                     int atlasX = atlas.geometry().wrapBlockX(blockX) / step;
                     int atlasZ = Math.floorDiv(blockZ - atlas.geometry().minWidthZ(), step);
+                    state.checkpoints.changedCell(atlasX, atlasZ, atlas.columns());
                     state.dirtyTiles.publish(new TileCoordinate(atlasX / RingTerrainAtlas.TILE_SIZE,
                             atlasZ / RingTerrainAtlas.TILE_SIZE));
                 }
             }
         }
         if (changed) {
-            state.dirty = true;
+            state.checkpoints.markDirty();
             if (state.job != null) state.job.refreshProgress();
         }
         return new CaptureResult(true, changed);
@@ -478,6 +489,7 @@ public final class RingAtlasPregenerationService {
                         sideColor(world, chunk, surface, surfaceState, color, atlas.sampleStep()),
                         surfaceState.getFluidState().is(FluidTags.WATER) ? 15 : 0)) {
                 changed = true;
+                state.checkpoints.changedCell(cell.column(), cell.row(), atlas.columns());
                 state.dirtyTiles.publish(new TileCoordinate(
                         cell.column() / RingTerrainAtlas.TILE_SIZE,
                         cell.row() / RingTerrainAtlas.TILE_SIZE));
@@ -490,7 +502,7 @@ public final class RingAtlasPregenerationService {
         if (!state.revisionPending) return;
         state.revisionPending = false;
         state.atlas.advanceRevision();
-        state.dirty = true;
+        state.checkpoints.markDirty();
         if (state.job != null) state.job.refreshProgress();
     }
 
@@ -521,26 +533,32 @@ public final class RingAtlasPregenerationService {
                 world.getBrightness(LightLayer.BLOCK, surface.above())));
     }
 
-    private static boolean save(WorldState state, boolean log) {
-        commitPendingRevision(state);
-        if (!state.dirty) return true;
+    private static void pollCheckpoint(WorldState state) {
         try {
-            state.atlas.save(state.path);
-            state.dirty = false;
-            if (log) RingWorldMod.LOGGER.info("Saved RingWorld terrain atlas {} ({})", state.path,
-                    percent(state.atlas.completion()) + "%");
-            return true;
-        } catch (IOException exception) {
+            RingAtlasCheckpointWriter.Result result = state.checkpoints.poll();
+            if (result != null && Boolean.getBoolean("ringworld.atlasSaveTimings")) {
+                RingWorldMod.LOGGER.info("RingWorld Atlas checkpoint cells={} snapshotMs={} writeMs={} verifyMs={} maxCopyTickMs={}",
+                        result.cells(), result.snapshotNanos() / 1e6, result.writeNanos() / 1e6,
+                        result.verificationNanos() / 1e6, result.maxCopyStepNanos() / 1e6);
+            }
+        } catch (java.util.concurrent.CompletionException exception) {
             RingWorldMod.LOGGER.error("Could not save RingWorld terrain atlas " + state.path, exception);
-            return false;
         }
     }
 
-    private static void verifyComplete(WorldState state) throws IOException {
-        RingTerrainAtlas reopened = RingTerrainAtlas.load(state.path, state.atlas.geometry(), state.atlas.worldHash());
-        if (!reopened.isComplete()) throw new IOException("reopened atlas is incomplete");
-        if (reopened.revision() != state.atlas.revision()) {
-            throw new IOException("reopened atlas revision does not match saved state");
+    /** Blocking drain is reserved for server stop/world unload, never a gameplay tick. */
+    private static boolean flushCheckpoint(WorldState state) {
+        commitPendingRevision(state);
+        try {
+            state.checkpoints.awaitActive(state.atlas);
+            pollCheckpoint(state);
+            state.checkpoints.request(state.atlas, false);
+            state.checkpoints.awaitActive(state.atlas);
+            pollCheckpoint(state);
+            return !state.checkpoints.dirty();
+        } catch (java.util.concurrent.CompletionException exception) {
+            RingWorldMod.LOGGER.error("Could not flush RingWorld terrain atlas " + state.path, exception);
+            return false;
         }
     }
 
@@ -621,7 +639,8 @@ public final class RingAtlasPregenerationService {
         private final Path path;
         private final RingAtlasDirtyTileQueue dirtyTiles = new RingAtlasDirtyTileQueue();
         private final RingAtlasRecaptureQueue recaptures = new RingAtlasRecaptureQueue();
-        private boolean dirty;
+        private final RingAtlasCheckpointWriter checkpoints;
+        private final RingAtlasCheckpointProbe probe;
         private boolean stopping;
         private boolean hasFrameFeedback;
         private double localFps;
@@ -634,7 +653,8 @@ public final class RingAtlasPregenerationService {
         private WorldState(RingTerrainAtlas atlas, Path path, boolean dirty) {
             this.atlas = atlas;
             this.path = path;
-            this.dirty = dirty;
+            this.checkpoints = new RingAtlasCheckpointWriter(path, dirty);
+            this.probe = Boolean.getBoolean("ringworld.atlasCheckpointProbe") ? new RingAtlasCheckpointProbe(path) : null;
         }
     }
 
@@ -656,6 +676,8 @@ public final class RingAtlasPregenerationService {
         private int startingPresentCells;
         private Optional<String> lastError = Optional.empty();
         private boolean cancelRequested;
+        private String cancellationReason;
+        private CompletableFuture<RingAtlasCheckpointWriter.Result> finalCheckpoint;
         private volatile AtlasPregenerationProgress published;
 
         private Job(ServerLevel world, WorldState owner, AtlasPregenerationOptions options,
@@ -712,6 +734,10 @@ public final class RingAtlasPregenerationService {
                 cancelRequested = false;
                 if (state.isTerminal()) return;
                 cancelNow("cancelled");
+                return;
+            }
+            if (state == AtlasPregenerationState.SAVING || cancellationReason != null) {
+                finishCheckpoint();
                 return;
             }
             if (!RingAtlasPregenerationSchedulingPolicy.maySchedule(state)) return;
@@ -789,20 +815,40 @@ public final class RingAtlasPregenerationService {
         }
         private void finish() {
             transition(AtlasPregenerationState.SAVING);
-            if (!save(owner, true)) {
-                fail(new IOException("could not save completed terrain atlas"));
-                return;
+            finishCheckpoint();
+        }
+        private void finishCheckpoint() {
+            if (state.isTerminal()) return;
+            if (finalCheckpoint == null) {
+                if (owner.checkpoints.busy()) return;
+                commitPendingRevision(owner);
+                finalCheckpoint = owner.checkpoints.request(owner.atlas, cancellationReason == null);
+                if (finalCheckpoint == null) {
+                    // Cancellation of a clean Atlas needs no additional write.
+                    finishCancellation();
+                    return;
+                }
             }
+            if (!finalCheckpoint.isDone()) return;
             try {
-                verifyComplete(owner);
+                RingAtlasCheckpointWriter.Result checkpoint = finalCheckpoint.join();
+                if (cancellationReason != null) {
+                    finishCancellation();
+                    return;
+                }
                 transition(AtlasPregenerationState.COMPLETE);
                 AtlasPregenerationResult result = new AtlasPregenerationResult(owner.atlas.worldHash(), completedChunks,
-                        owner.atlas.presentCount(), Duration.ofNanos(System.nanoTime() - startedNanos), owner.path);
+                        checkpoint.cells(), Duration.ofNanos(System.nanoTime() - startedNanos), owner.path);
                 completion.complete(result);
                 for (AtlasPregenerationListener listener : listeners) listener.onComplete(result);
-            } catch (IOException exception) {
-                fail(exception);
+            } catch (java.util.concurrent.CompletionException exception) {
+                fail(exception.getCause());
             }
+        }
+        private void finishCancellation() {
+            transition(AtlasPregenerationState.CANCELLED);
+            completion.completeExceptionally(new IllegalStateException("atlas pregeneration " + cancellationReason));
+            notifyProgress();
         }
         private void completeAlreadyVerified() {
             transition(AtlasPregenerationState.RUNNING);
@@ -833,13 +879,19 @@ public final class RingAtlasPregenerationService {
                 }
                 return;
             }
-            if (!save(owner, true)) {
-                fail(new IOException("could not checkpoint terrain atlas before " + reason));
-                return;
+            cancellationReason = reason;
+            if (owner.stopping) {
+                if (!flushCheckpoint(owner)) {
+                    throw new IllegalStateException("could not checkpoint terrain atlas before " + reason);
+                }
+                finishCancellation();
+            } else {
+                // IDLE/PAUSED can remain in their state until cancellation is durable.
+                if (state == AtlasPregenerationState.RUNNING) transition(AtlasPregenerationState.SAVING);
+                // A pending completion save cannot acknowledge edits made before cancellation.
+                finalCheckpoint = null;
+                finishCheckpoint();
             }
-            transition(AtlasPregenerationState.CANCELLED);
-            completion.completeExceptionally(new IllegalStateException("atlas pregeneration " + reason));
-            notifyProgress();
         }
         private void cancelForUnload() {
             cancelNow("cancelled by world unload", TEARDOWN_RELEASE_ATTEMPTS);

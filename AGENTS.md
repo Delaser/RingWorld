@@ -32,6 +32,24 @@ Tests/probes are opt-in
 and source-development evidence. Apply equivalent behaviour on all supported
 26.x lines and both loaders. See [design/evidence](docs/ATLAS_CONCURRENCY_253.md).
 
+## Server Atlas checkpoint persistence
+
+Periodic checkpoints prepare one immutable Atlas snapshot across bounded server ticks;
+a world-owned `RingAtlasCheckpointWriter` allocates privately, then serializes, GZIP-compresses, replaces,
+and optionally verifies it on one worker. Never read the mutable live Atlas from
+a worker. Track edits to copied slices and repair them before finalizing metadata. Reuse the buffer only after its worker completes; at most one snapshot is outstanding; retain newer mutations as a dirty
+generation, not queued snapshots. A completed write acknowledges only its captured
+mutation generation (network revision alone is insufficient during pregeneration).
+Poll worker results on the owning thread. Ordinary completion/cancellation remains
+pending until its checkpoint succeeds; only server stop/world unload may block
+while draining. Preserve capture freeze, ticket cleanup, failed-write dirtiness,
+atomic replacement and same-path ownership until unload succeeds. Keep format 11
+and the 200-tick cadence. Large snapshot copies remain an explicit measured cost.
+Opt-in `ringworld.atlasSaveTimings` logs phases; `ringworld.atlasCheckpointProbe`
+compares the original synchronous codec with the worker against real complete
+Atlas data in a separate disposable file. Neither enables itself in normal play.
+See [design and validation](docs/SERVER_ATLAS_CHECKPOINTS.md).
+
 ## Floating-build Atlas sampling (#257)
 
 The selected omission policy is shared server-side sampling, not a client-only
@@ -1253,8 +1271,8 @@ version numbers.
   and loader concerns out of this model until the service extraction lands.
 - `RingAtlasPregenerationService` is now the only server-side writer after an
   atlas loads. Its state transitions, future consumption, capture, dirty-tile
-  publication, checkpointing, and verified completion run on the server
-  thread. Handles enqueue off-thread control requests; do not mutate the
+  publication and job state run on the server thread. Checkpoint snapshots
+  are captured there; serialization and verification run on the persistence worker. Handles enqueue off-thread control requests; do not mutate the
   atlas from the Fabric adapter. Retain a selected canonical chunk until a
   full result is captured, including retry/cancel/unload paths, or a failed
   future can skip terrain permanently.

@@ -1,5 +1,8 @@
 # RingWorld documentation
 
+- [Server Atlas checkpoint persistence](SERVER_ATLAS_CHECKPOINTS.md): bounded
+  snapshot preparation, worker saves, recovery and Large-server measurements.
+
 - [Bounded Atlas concurrency trial (#253)](ATLAS_CONCURRENCY_253.md): shared
   request slots, lifecycle safety, JVM trial control and measured evidence.
 

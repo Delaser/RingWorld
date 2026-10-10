@@ -134,6 +134,30 @@ public final class RingTerrainAtlas {
         return copy;
     }
 
+    /** Owner-thread checkpoint slice; destination is exclusively owned until copying finishes. */
+    public void copyCheckpointCells(RingTerrainAtlas destination, int first, int count) {
+        if (!geometry.equals(destination.geometry) || worldHash != destination.worldHash
+                || sampleStep != destination.sampleStep || first < 0 || count < 0
+                || first > present.length - count) throw new IllegalArgumentException("invalid checkpoint slice");
+        for (int i = first; i < first + count; i++) {
+            if (present[i] != destination.present[i]) destination.presentCount += present[i] ? 1 : -1;
+        }
+        System.arraycopy(heights, first, destination.heights, first, count);
+        System.arraycopy(colors, first, destination.colors, first, count);
+        System.arraycopy(sideColors, first, destination.sideColors, first, count);
+        System.arraycopy(blockLights, first, destination.blockLights, first, count);
+        System.arraycopy(present, first, destination.present, first, count);
+    }
+
+    /** Call only after all slices and subsequently dirtied slices match this live source. */
+    public void finishCheckpointCopy(RingTerrainAtlas source) {
+        if (!geometry.equals(source.geometry) || worldHash != source.worldHash
+                || sampleStep != source.sampleStep || presentCount != source.presentCount) {
+            throw new IllegalStateException("incomplete checkpoint copy");
+        }
+        revision = source.revision;
+    }
+
     /** Advances one coalesced authoritative surface-change generation. */
     public long advanceRevision() {
         revision = Math.addExact(revision, 1L);

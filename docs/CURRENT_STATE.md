@@ -1,3 +1,10 @@
+# Server Atlas checkpoint follow-up — in validation
+
+The six qualified 1.4 files from `6ee5bd56` predate this persistence fix. Their
+100-fixture PASS does not qualify replacement JARs. The checkpoint change and
+authorized Large-server update are tracked in `SERVER_ATLAS_CHECKPOINTS.md`.
+No new public upload is authorized.
+
 # Current state
 
 October 9 export audit: the current six-JAR route is documented in

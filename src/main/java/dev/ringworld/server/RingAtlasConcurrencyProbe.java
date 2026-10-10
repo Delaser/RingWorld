@@ -53,6 +53,11 @@ final class RingAtlasConcurrencyProbe {
             handle.cancel();
             stage = 3;
         } else if (stage == 3) {
+            // Cancellation now waits for the captured checkpoint on the persistence worker.
+            if (handle.progress().state() == AtlasPregenerationState.SAVING) {
+                require(inFlight == 0, "cancelling job leaked loading tickets");
+                return handle;
+            }
             require(handle.progress().state() == AtlasPregenerationState.CANCELLED, "cancel did not apply");
             require(inFlight == 0, "cancel leaked loading tickets");
             require(handle.completion().toCompletableFuture().isCompletedExceptionally(), "cancel future did not terminate");
