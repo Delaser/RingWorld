@@ -1,5 +1,13 @@
 # Current state
 
+October 11: Nearby block correction (previously labelled normalisation) defaults
+on, including after disconnect. The Display toggle, live `/ringworld distortion`
+commands and three-chunk default range remain. Shared client sources compile for
+all six supported version/loader groups; 12 version-source checks pass. The
+capture fixture selects Off explicitly for its baseline and expects On after
+disconnect. Native capture and frozen release qualification were not rerun for
+this default change; the previously staged JARs do not contain it.
+
 October 10: RingWorld 1.4 has six locally prepared standalone JARs from merged
 source `6ee5bd5`. All ten quick cells and all 100 full-suite fixture invocations
 pass across 26.1–26.1.2, 26.2 and 26.3, Fabric and NeoForge. Final hashes,

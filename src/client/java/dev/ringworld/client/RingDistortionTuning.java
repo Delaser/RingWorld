@@ -5,9 +5,9 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 
-/** Session-local nearby normalisation; default off, with no resource reload. */
+/** Session-local nearby block correction; default on, with no resource reload. */
 public final class RingDistortionTuning {
-    private static boolean enabled;
+    private static boolean enabled = true;
     private static int chunks = 3;
     private RingDistortionTuning() { }
     public static boolean enabled() { return enabled; }
@@ -17,9 +17,9 @@ public final class RingDistortionTuning {
         if (value < 1 || value > 8) throw new IllegalArgumentException("distance must be 1–8 chunks");
         chunks = value; return summary();
     }
-    public static void clearSession() { enabled = false; chunks = 3; }
+    public static void clearSession() { enabled = true; chunks = 3; }
     public static String summary() {
-        return "Nearby block normalisation: " + (enabled ? "on" : "off")
+        return "Nearby block correction: " + (enabled ? "on" : "off")
                 + "; correction " + chunks + " chunks in each direction (this client only)";
     }
     public static RingNearbyProjection projection(RingGeometry geometry, Vec3 camera) {

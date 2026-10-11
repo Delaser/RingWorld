@@ -49,15 +49,16 @@ recovery reader and Java identity goldens aligned. All supported version lines
 and both loaders must be tested. See
 [`docs/FLOATING_ATLAS_257.md`](docs/FLOATING_ATLAS_257.md) for limits and evidence.
 
-## Nearby block normalisation (#256)
+## Nearby block correction (#256)
 
 The owner accepted the minimum-ring trial again on 9 October 2026 and
 requested a PR and merge. The accepted four-commit delta from
 `codex/nearby-distortion-trial` is integrated selectively; do not merge that
 branch wholesale because its other experiments are unrelated.
-Normalisation is a client/session Display option, default off, reset on
-disconnect. `/ringworld distortion on|off|show` and `distance <1–8>` select it
-live. Camera Y only translates geometry; keep the fixed visual radius and
+Nearby block correction is a client/session Display option. As of the owner’s
+11 October direction it defaults on and resets to on at disconnect.
+`/ringworld distortion on|off|show` and `distance <1–8>` select it live.
+Camera Y only translates geometry; keep the fixed visual radius and
 vertex-height mapping shared by CPU transforms, culling and all GPU entry
 points, including both 26.3 cloud shader names. Preserve the existing
 altitude-aware handoff, saved-height wall closure and dynamic cloud policy.

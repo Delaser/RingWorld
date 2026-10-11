@@ -1,14 +1,16 @@
-# Nearby block normalisation (#256)
+# Nearby block correction (#256)
 
 The owner approved the trial on 5 October and again on 9 October 2026,
 then requested integration through a PR. It was ported onto current main
 without the trial branch's unified-JAR or floating-Atlas experiments.
 This is upcoming functionality; published 1.3 files are unchanged.
-It starts disabled and resets on disconnect.
+Following the owner’s 11 October review, it starts enabled and resets to On
+on disconnect. The UI and command summary call it Nearby block correction.
+The correction distance still defaults to three chunks each way.
 
 - `/ringworld distortion on`, `off`, or `show`
 - `/ringworld distortion distance <1–8>`: chunks each way, default 3
-- In-world RingWorld menu → Display: Nearby block normalisation and correction distance
+- In-world RingWorld menu → Display: Nearby block correction and correction distance
 
 The correction spans the full ring width. Within the chosen longitudinal
 radius, arc spacing becomes one rendered block per intrinsic block at each
@@ -221,7 +223,8 @@ No numerical FPS benchmark is claimed.
 
 The local moving correction still changes surrounding geometry while travelling
 along X; the four-times fade softens this. Exact cubes throughout the ring are
-not promised. Default off and session-local controls are intentional.
+not promised. Controls remain session-local; the owner enabled the option by
+default on 11 October. Earlier native results predate that default change.
 Particles, third-party renderers and multiplayer presentation have not received
 new native qualification for this option. Legacy 1024-block Atlas inversion
 above its original centre remains unqualified. Run fresh frozen-candidate
