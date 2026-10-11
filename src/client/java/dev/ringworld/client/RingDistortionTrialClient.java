@@ -104,6 +104,7 @@ public final class RingDistortionTrialClient {
                 phase = 5;
                 return true;
             }
+            RingDistortionTuning.select(false);
             RingIntegratedCaptureControl.execute(client, "distortion platform", context -> {
                 RingIntegratedCaptureControl.normalizeEnvironment(context, 6000, false);
                 context.player().setGameMode(GameType.CREATIVE);
@@ -173,7 +174,7 @@ public final class RingDistortionTrialClient {
             return true;
         }
         if (nativeStage == 5) {
-            if (!RingWorldClientSession.isCleared() || RingDistortionTuning.enabled()
+            if (!RingWorldClientSession.isCleared() || !RingDistortionTuning.enabled()
                     || RingDistortionTuning.chunks() != 3) {
                 if (++nativeTicks < 100) return true;
                 throw new IllegalStateException("nearby normalisation did not reset on disconnect");
