@@ -47,9 +47,9 @@
   when viewed from different heights and on rings with different wall sizes.
 - Removed the flat Overworld horizon band > Cleaner skies around the ring,
   including sunrise and sunset.
-- Added optional nearby block normalisation > Reduces squeezed and stretched
-  blocks on small rings > Off by default; enable it in Display settings or with
-  `/ringworld distortion on`. `/ringworld distortion distance <1–8>` adjusts its
+- Added nearby block correction > Reduces squeezed and stretched
+  blocks on small rings > On by default; toggle it in Display settings or with
+  `/ringworld distortion on|off`. `/ringworld distortion distance <1–8>` adjusts its
   range. This changes appearance only.
 - Improved how the Atlas handles floating platforms > Recognized thin,
   manufactured platforms with clear air underneath no longer turn the terrain

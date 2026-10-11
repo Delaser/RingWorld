@@ -1,5 +1,12 @@
 # Large-server lighting allocation — development validation complete
 
+October 11: nearby block correction (previously labelled normalisation) now
+defaults on, including after disconnect. The client Display toggle, live
+`/ringworld distortion` commands and default three-chunk range remain available.
+All six client/loader compilation checks and 12 version-source checks pass.
+The capture fixture explicitly selects Off for its baseline and expects On
+after disconnect; native capture/release qualification was not rerun for this change.
+
 October 11: server Overworld lighting snapshots now share unchanged lookup
 partitions instead of cloning every section map on each publication. Two
 pristine Large-world / three-client repeats show zero full G1 compactions,

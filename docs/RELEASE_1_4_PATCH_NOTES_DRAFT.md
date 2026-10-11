@@ -11,10 +11,10 @@
   above the ring, so terrain stays visible instead of leaving holes.
 - Clouds follow the configured wall height and remain consistent across viewpoints.
 - Removed the flat Overworld horizon band, including sunrise and sunset.
-- Added optional nearby block normalisation to reduce stretched or squeezed blocks
-  on small rings. Enable it in Display settings or with `/ringworld distortion on`;
-  `/ringworld distortion distance <1–8>` adjusts its range. It defaults off and
-  changes rendering only.
+- Added nearby block correction to reduce stretched or squeezed blocks
+  on small rings. It defaults on; toggle it in Display settings or with
+  `/ringworld distortion on|off`. `/ringworld distortion distance <1–8>` adjusts
+  its range. It changes rendering only.
 - The Atlas skips recognized thin floating manufactured platforms with clear air
   underneath, keeping them from turning the terrain below into artificial mountains.
   Natural and unknown materials remain visible. Atlas format 11 rebuilds older caches.
