@@ -1,5 +1,15 @@
 # Large-server lighting allocation — development validation complete
 
+October 11: fresh Windows qualification on `eb414a55` passed all ten quick
+cells and the creation-UI development slice. The full run passed creation UI
+and world generation, then Atlas recovery rejected the game's native
+`.\\world\\...` report path despite a successful durable interrupted save.
+The coordinator was stopped; the other 97 fixtures are incomplete or unstarted.
+The focused parser fix accepts only exact native relative spellings alongside
+the existing POSIX/absolute paths, retaining traversal rejection and recovery
+identity/byte checks. Preserve these partial reports; fresh qualification is
+required from the merged fix before staging replacement JARs. Nothing uploaded.
+
 October 11: native Windows qualification on `fdabc511` passed all ten quick
 cells, then found missing child-home environment variables and long-path cleanup
 errors in the full coordinators. Latest full reports contain ten FAIL and ninety

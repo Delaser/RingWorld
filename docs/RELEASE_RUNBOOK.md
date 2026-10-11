@@ -73,6 +73,12 @@ tests require Windows symlink privileges; report an unavailable privilege
 separately and retain native CI evidence, rather than removing those checks or
 claiming a complete local static PASS.
 
+Atlas recovery accepts the exact expected report path in native relative form
+(including `.\\world\\...` on Windows), POSIX relative form, or native absolute
+form. Other roots and traversal spellings remain invalid; do not rewrite captured
+reports to pass validation. Native regression coverage exercises both relative
+spellings through both loaders' interrupted and resumed recovery stages.
+
 ## Prepare the production test world
 
 The production fixtures need a stopped, fully pregenerated world saved in **26.1**,
@@ -213,7 +219,7 @@ needed for this handoff.
 
 ## Validation boundary
 
-All 463 local Python tests run on macOS (459 pass, four Windows-only tests
+All 465 local Python tests run on macOS (461 pass, four Windows-only tests
 skip). Windows/Linux static CI passes, including the actual parent/child timeout
 test on Windows. This preparation is not a claim that replacement Minecraft
 release candidates have completed their full suite on either host. Whichever
@@ -230,3 +236,12 @@ regressions and a targeted development fixture, then use fresh quick candidates
 and all 100 full fixtures from the approved pushed source. Do not combine the
 earlier quick runs with a changed-source full run or claim the old candidates
 are staged releases.
+
+The next Windows cycle on `eb414a55` passed all ten fresh quick cells and the
+creation-UI development slice. Its full run passed creation UI and world
+generation, then failed Atlas recovery on the native relative report spelling.
+The owned coordinator was stopped, leaving 97 fixtures incomplete or unstarted.
+After the exact-path parser fix, verify its native regression and a targeted
+Atlas recovery development fixture, then run fresh quick and complete full
+qualification from the approved merged source. Historical reports and frozen
+candidates keep their original source identity.
