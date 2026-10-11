@@ -136,8 +136,9 @@ On failure, retain the logs, terminal reports, source SHA and frozen hashes.
 Identify the cause before retrying; do not overwrite evidence or quietly call a
 set of repaired runs a monolithic PASS. Code fixes require fresh candidates.
 Windows timeout cleanup uses `taskkill /T /F` only for the owned test process tree;
-do not kill unrelated Java processes. Never reuse a retained cell while its
-processes still run.
+an already-exited PID is accepted only after confirming the exit. Other cleanup
+failures still fail the fixture. Do not kill unrelated Java processes. Never
+reuse a retained cell while its processes still run.
 
 ## Stage and hand back six JARs
 

@@ -34,10 +34,17 @@ def terminate_process_tree(process: subprocess.Popen, *, timeout: int = 5) -> No
         # /T includes Gradle's Java/Minecraft children; terminating only the
         # parent leaves locks, ports and log pipes held after a timeout.
         system_root = Path(os.environ.get("SystemRoot", r"C:\Windows"))
-        subprocess.run(
-            [str(system_root / "System32/taskkill.exe"), "/PID", str(process.pid), "/T", "/F"],
-            check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=timeout,
-        )
+        try:
+            subprocess.run(
+                [str(system_root / "System32/taskkill.exe"), "/PID", str(process.pid), "/T", "/F"],
+                check=True, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, timeout=timeout,
+            )
+        except subprocess.CalledProcessError as error:
+            # The process may exit between poll() and taskkill. Windows returns
+            # 128 when the PID is no longer present; confirm that race before
+            # accepting it. A live process or another cleanup error still fails.
+            if error.returncode != 128 or process.poll() is None:
+                raise
         process.wait(timeout=timeout)
         return
     os.killpg(process.pid, signal.SIGTERM)

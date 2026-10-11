@@ -13,7 +13,8 @@ import qualification_host as host
 class QualificationHostTest(unittest.TestCase):
     def test_posix_keeps_existing_wrapper(self):
         with patch.object(host, "is_windows", return_value=False):
-            self.assertEqual(host.gradle_argv(Path("/checkout")), ("/checkout/gradlew",))
+            root = Path("/checkout")
+            self.assertEqual(host.gradle_argv(root), (str(root / "gradlew"),))
 
     def test_windows_uses_reviewed_wrapper_without_command_interpreter(self):
         root = Path("checkout space %PATH% & Unicode \u2713")
@@ -48,6 +49,25 @@ class QualificationHostTest(unittest.TestCase):
     def test_failed_windows_tree_cleanup_is_not_reported_as_success(self):
         process = Mock(pid=1234)
         process.poll.return_value = None
+        with patch.object(host, "is_windows", return_value=True), \
+                patch.object(host.subprocess, "run",
+                             side_effect=subprocess.CalledProcessError(128, "taskkill")):
+            with self.assertRaises(subprocess.CalledProcessError):
+                host.terminate_process_tree(process)
+        process.wait.assert_not_called()
+
+    def test_windows_process_can_exit_before_taskkill_finds_it(self):
+        process = Mock(pid=1234)
+        process.poll.side_effect = [None, 0]
+        with patch.object(host, "is_windows", return_value=True), \
+                patch.object(host.subprocess, "run",
+                             side_effect=subprocess.CalledProcessError(128, "taskkill")):
+            host.terminate_process_tree(process)
+        process.wait.assert_called_once_with(timeout=5)
+
+    def test_other_windows_cleanup_errors_still_fail_after_process_exits(self):
+        process = Mock(pid=1234)
+        process.poll.side_effect = [None, 0]
         with patch.object(host, "is_windows", return_value=True), \
                 patch.object(host.subprocess, "run",
                              side_effect=subprocess.CalledProcessError(1, "taskkill")):
