@@ -197,6 +197,69 @@ an already-exited PID is accepted only after confirming the exit. Other cleanup
 failures still fail the fixture. Do not kill unrelated Java processes. Never
 reuse a retained cell while its processes still run.
 
+## Autonomous recovery during an authorized release
+
+The release agent owns diagnosis and routine harness/tooling repairs through
+qualification and staging. A failed fixture is evidence to investigate, not a
+reason to request another generic permission to continue. The owner's standing
+release scope authorizes reversible development, focused tests, a reviewed PR,
+and merge of a verified repair. It does not authorize publication or weaker gates.
+
+1. Retain the failed run ID, source SHA, frozen hashes, terminal report, relevant
+   logs/screenshots and exact failure stage. Stop only the owned coordinator and
+   its descendants; confirm cleanup before reusing a runtime. Keep the stopped
+   production input world and prior reports unchanged.
+2. Classify the cause from evidence: host/dependency failure, harness failure,
+   or product regression. Inspect the first actual error and player/screen state,
+   rather than treating the final timeout as the cause. Do not repeat a known
+   failure unchanged or increase timeouts to hide it.
+3. For host failures, restore the documented prerequisite and verify it with a
+   small real probe before rerunning. Reuse hash-verified dependency, Loom and
+   Gradle-distribution caches through supported flags. Do not change dependency
+   pins or product code to compensate for a missing display or download timeout.
+4. For harness/product defects, use a clean branch from current main, make the
+   smallest correction and add a regression for the observed failure. Keep both
+   Windows and macOS launch/path/process behavior and every supported 26.x loader
+   equivalent. Run focused static checks and the actual failing fixture as a
+   diagnostic. Do not change the checkout during an active qualification run.
+5. Review the diff and native CI results, merge the verified PR within the
+   authorized repair scope, then start from clean pushed main. Any source change,
+   including test harness changes, requires fresh quick runs, frozen candidates
+   and all 100 full fixtures. Development probes and previous-source PASS results
+   cannot qualify those replacements. An unchanged-source host repair may retain
+   its quick candidates, but still needs a complete fresh unfiltered full run.
+6. Continue the next suite automatically after a complete PASS. Stage all six
+   JARs only after the full gates pass; hand back hashes, checklists and screenshots
+   for owner visual review. No upload, release tag or public-server update.
+
+Stop for a specific action outside the authorized scope, an unavailable OS
+security interaction, the owner's usage floor, or a cause that remains unresolved
+after evidence-driven investigation. Report the exact boundary and smallest
+required intervention. Do not invent an approval checkpoint merely because a
+repair changes the source SHA. If cross-host messaging is unavailable, write a
+self-contained blocker/continuation report in the build thread and retained logs;
+continue independent authorized repairs instead of waiting for another chat.
+
+Graphical prerequisites apply on both hosts: an active desktop and genuine
+hardware OpenGL, even for hidden clients. On headless Windows, a standalone
+persistent virtual display is a host prerequisite; TeamViewer presence or an
+installed GPU alone is insufficient. After driver installation, verify active
+resolution/refresh, SDR, capture, NVIDIA hardware OpenGL and separate client
+launches with TeamViewer disconnected. Do not disconnect a human session or
+install a driver without authorization. macOS uses its native desktop/graphics
+context and process groups; do not apply Windows display commands there. Driver
+installation and security prompts remain host setup, not release-suite steps.
+
+Production lifecycle trials must keep their opt-in test player safe during the
+entire close/reopen sequence, including after dimension transfers finish. Flight
+abilities can reset on reopen. Protection must be test-scoped, server-owned and
+must not suppress dimension, complete-Atlas, geometry or retained-world assertions.
+A dead player or death screen is a fixture failure, never a reason to dismiss the
+screen and declare success. The Windows run on `61e409db` passed seven full
+fixtures before its reopened survival player fell from `(0.5, 200, 0.5)` and the
+lifecycle timed out. Keep that failure as historical evidence; it is separate
+from the resolved standalone-display/OpenGL prerequisite.
+
 ## Stage and hand back six JARs
 
 After all three full suites pass, create new release inputs below an ignored
