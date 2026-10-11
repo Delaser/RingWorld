@@ -176,6 +176,12 @@ cleanup errors into PASS. The initial native full run found these two harness
 bugs after all ten quick cells passed. Fixed runners require fresh qualification;
 earlier frozen candidates and failed reports retain their original source identity.
 
+Atlas recovery reports may name the expected Atlas with native relative separators
+and a native leading dot (`.\\world\\...` on Windows), as well as the existing
+POSIX spellings and exact absolute path. Compare only these explicit spellings;
+do not resolve arbitrary report paths or accept traversal/other roots. Keep both
+loaders' interrupted/recovery byte-equivalence and identity checks intact.
+
 All Gradle nightly fixtures accept the same hash-checked `--gradle-loom-cache`
 seed while retaining isolated writable state. Production projection runs all
 four weather/time conditions in one JVM; require every environment completion,

@@ -9,6 +9,7 @@ from dataclasses import replace
 import gzip
 import hashlib
 import json
+import os
 from pathlib import Path
 import struct
 import sys
@@ -23,6 +24,7 @@ if str(SCRIPTS) not in sys.path:
 from external_runtime_atlas_recovery_executor import (  # noqa: E402
     AtlasRecoveryExecutionError,
     AtlasRecoveryStageResult,
+    _parse_report,
     _read_regular,
     execute_external_runtime_atlas_recovery,
 )
@@ -206,7 +208,7 @@ class ExternalRuntimeAtlasRecoveryExecutorTest(unittest.TestCase):
         return run
 
     @staticmethod
-    def stage_runner(plan):
+    def stage_runner(plan, *, reported_atlas: str | None = None):
         settings = settings_bytes()
         from minecraft_atlas_recovery_persistence import parse_persisted_ring_settings
         observed = parse_persisted_ring_settings(settings, plan.settings_path)
@@ -230,7 +232,8 @@ class ExternalRuntimeAtlasRecoveryExecutorTest(unittest.TestCase):
                 "circumferenceBlocks": 2048, "widthBlocks": 416, "completedChunks": chunks,
                 "totalChunks": EXPECTED_TOTAL_CHUNKS, "completedCells": cells,
                 "totalCells": EXPECTED_TOTAL_CELLS, "elapsedMillis": revision,
-                "atlasPath": "world/dimensions/minecraft/overworld/data/ringworld/terrain-atlas.rwat.gz",
+                "atlasPath": reported_atlas if reported_atlas is not None else
+                    "world/dimensions/minecraft/overworld/data/ringworld/terrain-atlas.rwat.gz",
                 "failureReason": "controlled interruption" if stage.name == "interrupted" else None,
             }
             stage.runtime_report_path.write_text(json.dumps(report), encoding="utf-8")
@@ -280,6 +283,41 @@ class ExternalRuntimeAtlasRecoveryExecutorTest(unittest.TestCase):
                     args = plan.smoke.layout.neoforge_user_jvm_args.read_text(encoding="utf-8")
                     self.assertIn("-Dringworld.headlessPrewarm=true", args)
                     self.assertIn("-Dringworld.headlessPrewarmReport=result.json", args)
+
+    def test_native_relative_report_paths_complete_both_recovery_stages(self) -> None:
+        for cell_id in ("26.1-fabric", "26.1-neoforge"):
+            for prefix in ("", f".{os.sep}"):
+                with self.subTest(cell_id=cell_id, prefix=prefix), tempfile.TemporaryDirectory() as directory:
+                    paths, plan, bodies = self.make_plan(Path(directory), cell_id)
+                    native_relative = str(plan.atlas_path.relative_to(plan.runtime_root))
+                    result = execute_external_runtime_atlas_recovery(
+                        plan, paths, paths.run_id,
+                        canonical_cells=canonical_cells(), range_identities=RANGES,
+                        opener=self.opener(bodies), command_executor=self.installer(plan),
+                        stage_runner=self.stage_runner(plan, reported_atlas=prefix + native_relative),
+                        candidate_inspector=self.candidate_inspector(plan),
+                        execution_source_provenance=EXECUTION_PROVENANCE,
+                    )
+                    self.assertEqual(Verdict.PASS, result.verdict)
+                    self.assertEqual((plan.evidence_root / "interrupted-atlas.rwat.gz").read_bytes(),
+                                     (plan.evidence_root / "recovery-input-atlas.rwat.gz").read_bytes())
+
+    def test_report_path_allowlist_rejects_other_locations_and_traversal(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            paths, plan, _ = self.make_plan(Path(directory), "26.1-fabric")
+            stage = plan.stages[0]
+            self.stage_runner(plan)(stage, plan, paths)
+            data = json.loads(stage.runtime_report_path.read_bytes())
+            relative = plan.atlas_path.relative_to(plan.runtime_root)
+            for unexpected in (
+                "outside.rwat.gz", str(plan.runtime_root.parent / relative),
+                "../" + relative.as_posix(), "./../" + relative.as_posix(),
+                "..\\" + str(relative), ".\\..\\" + str(relative),
+                "world/../" + relative.as_posix(),
+            ):
+                with self.subTest(path=unexpected):
+                    with self.assertRaisesRegex(AtlasRecoveryExecutionError, "unexpected Atlas path"):
+                        _parse_report(json.dumps({**data, "atlasPath": unexpected}).encode(), stage, plan)
 
     def test_default_runner_cannot_claim_a_runtime_pass(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

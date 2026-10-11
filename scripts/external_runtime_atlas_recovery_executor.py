@@ -243,8 +243,13 @@ def _parse_report(
     if status != stage.expected_status:
         raise AtlasRecoveryExecutionError(f"headless Atlas report expected {stage.expected_status}, got {status}")
     reported_atlas = _require_json_string(parsed, "atlasPath")
-    relative = plan.atlas_path.relative_to(plan.runtime_root).as_posix()
-    accepted_paths = {str(plan.atlas_path), relative, "./" + relative}
+    relative_path = plan.atlas_path.relative_to(plan.runtime_root)
+    relative = relative_path.as_posix()
+    native_relative = str(relative_path)
+    accepted_paths = {
+        str(plan.atlas_path), relative, "./" + relative,
+        native_relative, f".{os.sep}{native_relative}",
+    }
     if reported_atlas not in accepted_paths:
         raise AtlasRecoveryExecutionError("headless Atlas report names an unexpected Atlas path")
     failure = parsed.get("failureReason")
