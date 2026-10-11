@@ -4,6 +4,11 @@ This is the current export route for supported Minecraft 26.x releases.
 The last published release is [1.3 on CurseForge](RELEASE_1_3_PUBLICATION_2026-09-30.md).
 The latest development source requires fresh qualification before another release.
 
+Use the [full release runbook](RELEASE_RUNBOOK.md) on either macOS or Windows.
+Both hosts run the same Python coordinators, manifests and quick/full gates;
+only native launch and process cleanup differ. It covers host preflight,
+production-world preparation, all three qualification groups and staging.
+
 ## Outputs
 
 | Candidate group | Qualification manifest | Runtime files |

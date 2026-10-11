@@ -12,6 +12,8 @@ on:
       - "src/versions/**"
       - "src/client/**"
       - "scripts/minecraft_qualification_*.py"
+      - "scripts/qualification_host.py"
+      - "scripts/test_qualification_host.py"
       - "scripts/run_minecraft_qualification.py"
       - "scripts/external_runtime_*.py"
       - "scripts/external_graphical_*.py"
@@ -41,6 +43,8 @@ on:
       - "src/versions/**"
       - "src/client/**"
       - "scripts/minecraft_qualification_*.py"
+      - "scripts/qualification_host.py"
+      - "scripts/test_qualification_host.py"
       - "scripts/run_minecraft_qualification.py"
       - "scripts/external_runtime_*.py"
       - "scripts/external_graphical_*.py"
@@ -94,6 +98,7 @@ jobs:
           scripts/test_minecraft_frozen_candidate.py
           scripts/test_minecraft_qualification_evidence.py
           scripts/test_minecraft_qualification_executor.py
+          scripts/test_qualification_host.py
           scripts/test_external_runtime_smoke.py
           scripts/test_external_runtime_executor.py
           scripts/test_external_runtime_qualification_adapter.py

@@ -159,7 +159,6 @@ class QualificationExecutorTest(unittest.TestCase):
             self.assertIn("<redacted>", text)
             self.assertLessEqual(Path(result.stdout_log).stat().st_size, MAX_LOG_BYTES)
 
-    @unittest.skipIf(os.name == "nt", "process-group probe uses POSIX signal semantics")
     def test_timeout_terminates_descendant_process_group(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -178,6 +177,25 @@ class QualificationExecutorTest(unittest.TestCase):
             result = execute_command(command, paths, ordinal=1)
             self.assertEqual("TIMEOUT_AFTER_1_SECONDS", result.reason)
             child_pid = int(Path(result.stdout_log).read_text(encoding="utf-8").strip())
+            if os.name == "nt":
+                import ctypes
+                from ctypes import wintypes
+                kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+                kernel.OpenProcess.argtypes = (wintypes.DWORD, wintypes.BOOL, wintypes.DWORD)
+                kernel.OpenProcess.restype = wintypes.HANDLE
+                kernel.GetExitCodeProcess.argtypes = (wintypes.HANDLE, ctypes.POINTER(wintypes.DWORD))
+                kernel.CloseHandle.argtypes = (wintypes.HANDLE,)
+                handle = kernel.OpenProcess(0x1000, False, child_pid)
+                if handle:
+                    try:
+                        code = wintypes.DWORD()
+                        self.assertTrue(kernel.GetExitCodeProcess(handle, ctypes.byref(code)))
+                        self.assertNotEqual(259, code.value, "timeout left the descendant process alive")
+                    finally:
+                        kernel.CloseHandle(handle)
+                else:
+                    self.assertEqual(87, ctypes.get_last_error(), "cannot verify descendant process exit")
+                return
             for _ in range(50):
                 try:
                     os.kill(child_pid, 0)

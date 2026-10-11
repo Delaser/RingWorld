@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 from dataclasses import replace
 import gzip
 import hashlib
@@ -135,7 +137,7 @@ class ExternalRuntimeWorldgenExecutorTest(unittest.TestCase):
                 mods = list(stage.smoke.mods)
                 for index, entry in enumerate(stage.smoke.downloads):
                     body = installer if index == 0 else ("api-" + cell_id).encode()
-                    changed = RuntimeDownload(entry.name, f"https://test.invalid/{index}.jar", "sha256", sha256(body), entry.destination)
+                    changed = RuntimeDownload(entry.name, f"https://test.invalid{urlparse(entry.url).path}", "sha256", sha256(body), entry.destination)
                     downloads.append(changed)
                     bodies[changed.url] = body
                     if index:
@@ -169,6 +171,10 @@ class ExternalRuntimeWorldgenExecutorTest(unittest.TestCase):
                 smoke.layout.neoforge_run_script.write_text("#!/bin/sh\n", encoding="utf-8")  # type: ignore[union-attr]
                 smoke.layout.neoforge_run_script.chmod(0o700)  # type: ignore[union-attr]
                 smoke.layout.neoforge_user_jvm_args.write_text("-Xmx1G\n", encoding="utf-8")  # type: ignore[union-attr]
+                if smoke.launch.argv[0] == "java":
+                    args = smoke.layout.root / smoke.launch.argv[2][1:]
+                    args.parent.mkdir(parents=True, exist_ok=True)
+                    args.write_text("# generated Windows arguments\n", encoding="utf-8")
                 installed_server = (
                     smoke.layout.root / "libraries" / "net" / "minecraft" / "server"
                     / smoke.minecraft_version

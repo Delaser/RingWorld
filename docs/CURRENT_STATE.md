@@ -1,5 +1,12 @@
 # Large-server lighting allocation — development validation complete
 
+October 11: release qualification uses the same coordinators on macOS and Windows.
+Windows uses Java to launch the reviewed Gradle wrapper and NeoForge argument
+files, with tree-wide timeout cleanup; macOS retains its native scripts/process groups.
+Follow [the shared runbook](RELEASE_RUNBOOK.md) for native preflight,
+fresh quick candidates, all 100 full fixtures and six-JAR staging. Earlier
+macOS release evidence cannot qualify replacement files or claim Windows runtime PASS.
+
 October 11: nearby block correction (previously labelled normalisation) now
 defaults on, including after disconnect. The client Display toggle, live
 `/ringworld distortion` commands and default three-chunk range remain available.

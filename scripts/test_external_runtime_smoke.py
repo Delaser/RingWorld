@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+from qualification_host import is_windows
+
 import copy
 import importlib.util
 import json
 from pathlib import Path
 import sys
 import unittest
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -45,6 +48,16 @@ class ExternalRuntimeSmokePlanTest(unittest.TestCase):
         paths = MODEL.QualificationPaths.from_cell(ROOT, cell, "external-plan")
         return SMOKE.external_runtime_smoke_plan(cell, self.candidate(cell["loader"]), paths,
                                                  frozen_candidate_root=self.frozen_root)
+
+    def test_windows_neoforge_plan_uses_pinned_installer_version(self) -> None:
+        with patch.object(SMOKE, "is_windows", return_value=True):
+            plan = self.plan("26.1-neoforge")
+        self.assertEqual(plan.layout.neoforge_run_script.name, "run.bat")
+        self.assertEqual(plan.launch.argv, plan.generated_run_script.launch_argv)
+        version = next(item["version"] for item in self.cells["26.1-neoforge"]["dependencies"]
+                       if item["coordinate"] == "net.neoforged:neoforge")
+        self.assertEqual(plan.launch.argv, ("java", "@user_jvm_args.txt",
+            f"@libraries/net/neoforged/neoforge/{version}/win_args.txt", "nogui"))
 
     def test_every_cell_has_isolated_safe_small_plan_and_stable_lock(self) -> None:
         lock_by_cell: dict[str, Path] = {}
@@ -104,7 +117,11 @@ class ExternalRuntimeSmokePlanTest(unittest.TestCase):
             self.assertEqual(["NeoForge Installer"], [item.name for item in plan.downloads])
             self.assertEqual("server", plan.minecraft_server.name)
             self.assertEqual(("--installServer", str(plan.layout.root)), plan.installer.argv[-2:])
-            self.assertEqual(("./run.sh", "nogui"), plan.launch.argv)
+            if is_windows():
+                self.assertEqual("java", plan.launch.argv[0])
+                self.assertTrue(plan.launch.argv[2].endswith("/win_args.txt"))
+            else:
+                self.assertEqual(("./run.sh", "nogui"), plan.launch.argv)
             self.assertIsNotNone(plan.generated_run_script)
             assert plan.generated_run_script is not None
             self.assertEqual(plan.layout.neoforge_run_script, plan.generated_run_script.path)

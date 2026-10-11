@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from pathlib import Path
 import re
 from typing import Any, Mapping, Sequence
+from qualification_host import is_windows, neoforge_windows_argv
 
 from minecraft_qualification_model import (
     InvocationError,
@@ -233,7 +234,7 @@ def runtime_layout(
         ringworld_properties_path=contained_path(root, "config/ringworld.properties", "RingWorld config path"),
         log_path=contained_path(root, "logs/latest.log", "server log path"),
         fabric_server_jar=contained_path(root, "fabric-server-launch.jar", "Fabric launch jar") if loader == "fabric" else None,
-        neoforge_run_script=contained_path(root, "run.sh", "NeoForge run script") if loader == "neoforge" else None,
+        neoforge_run_script=contained_path(root, "run.bat" if is_windows() else "run.sh", "NeoForge run script") if loader == "neoforge" else None,
         neoforge_user_jvm_args=contained_path(root, "user_jvm_args.txt", "NeoForge JVM arguments") if loader == "neoforge" else None,
     )
     _assert_disposable(layout, paths)
@@ -377,7 +378,8 @@ def external_runtime_smoke_plan(
         assert layout.neoforge_run_script is not None and layout.neoforge_user_jvm_args is not None
         generated_run_script = GeneratedRunScriptContract(
             layout.neoforge_run_script,
-            ("./run.sh", "nogui"),
+            neoforge_windows_argv(str(_dependency(cell, "net.neoforged:neoforge")["version"]))
+            if is_windows() else ("./run.sh", "nogui"),
             layout.neoforge_user_jvm_args,
         )
         launch = LaunchPlan(generated_run_script.launch_argv, layout.root, timeout_seconds)

@@ -158,6 +158,15 @@ from fresh frozen-candidate release qualification.
 
 ## Release-test setup and captures
 
+For release agents on either macOS or Windows, follow `docs/RELEASE_RUNBOOK.md`.
+Use the same Python coordinators, manifests and test gates on both hosts. Qualification
+launches Gradle's checked-in wrapper JAR directly through Java on Windows and uses
+NeoForge's installer-generated Windows argument files; never run Unix scripts
+there or send dynamic paths through a command shell. Preserve tree-wide timeout
+cleanup and the Windows native parent/child probe. Windows static CI is not proof
+of full Minecraft runtime qualification. Fresh quick and all 100 full fixtures
+remain required, with one clean pushed source and unchanged frozen candidates.
+
 All Gradle nightly fixtures accept the same hash-checked `--gradle-loom-cache`
 seed while retaining isolated writable state. Production projection runs all
 four weather/time conditions in one JVM; require every environment completion,

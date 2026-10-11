@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from qualification_host import is_windows
+
 import json
 from pathlib import Path
 import sys
@@ -59,7 +61,11 @@ class ExternalRuntimeAtlasRecoveryPlanTest(unittest.TestCase):
         self.assertLess(argv.index("-Dringworld.headlessPrewarmReport=result.json"), jar)
         neoforge, _ = self.plan("26.1-neoforge")
         self.assertEqual(neoforge.smoke.launch, neoforge.stages[0].launch)
-        self.assertEqual(("./run.sh", "nogui"), neoforge.stages[0].launch.argv)
+        if is_windows():
+            self.assertEqual("java", neoforge.stages[0].launch.argv[0])
+            self.assertTrue(neoforge.stages[0].launch.argv[2].endswith("/win_args.txt"))
+        else:
+            self.assertEqual(("./run.sh", "nogui"), neoforge.stages[0].launch.argv)
 
     def test_rejects_explicit_runtime_outside_qualification_cell(self) -> None:
         cell = self.cells["26.1-fabric"]
