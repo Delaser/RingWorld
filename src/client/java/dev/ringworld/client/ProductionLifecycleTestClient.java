@@ -6,6 +6,7 @@ import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingTerrainAtlas;
 import dev.ringworld.world.RingWorldSettings;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.level.Level;
 
@@ -34,6 +35,12 @@ public final class ProductionLifecycleTestClient {
         if (!Boolean.getBoolean("ringworld.productionLifecycleTest")) return false;
         if (worldName.isEmpty()) {
             finish(client, false, "missing productionLifecycleWorld");
+            return true;
+        }
+        if (client.screen instanceof DeathScreen
+                || (client.player != null && !client.player.isAlive())) {
+            finish(client, false, "player died stage=" + stage
+                    + " screen=" + CopiedWorldFileFixUpgrade.currentScreen(client));
             return true;
         }
         if (!client.isGameLoadFinished() && client.level == null) {

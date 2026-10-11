@@ -57,7 +57,16 @@ public final class RingWorldProductionLifecycleTest {
 
     /** Invoked once per server tick, rather than from the Overworld-only seam loop. */
     public static void tick(MinecraftServer server) {
-        if (!enabled() || transferCycleFinished) return;
+        if (!enabled()) return;
+        // Reopening replaces ServerPlayer and restores survival abilities. The
+        // transfer result intentionally survives that close/reopen in this JVM;
+        // player safety must survive it too, until the client reports and exits.
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (CLIENT_READY.contains(player.getUUID()) && player.isAlive()) {
+                preparePlayer(player);
+            }
+        }
+        if (transferCycleFinished) return;
         ServerLevel overworld = server.getLevel(Level.OVERWORLD);
         if (overworld == null) return;
 
@@ -149,9 +158,13 @@ public final class RingWorldProductionLifecycleTest {
     }
 
     private static void preparePlayer(ServerPlayer player) {
+        boolean update = !player.getAbilities().mayfly || !player.getAbilities().flying
+                || !player.getAbilities().invulnerable;
         player.getAbilities().mayfly = true;
         player.getAbilities().flying = true;
-        player.onUpdateAbilities();
+        player.getAbilities().invulnerable = true;
+        player.setNoGravity(true);
+        if (update) player.onUpdateAbilities();
         player.setDeltaMovement(Vec3.ZERO);
     }
 
