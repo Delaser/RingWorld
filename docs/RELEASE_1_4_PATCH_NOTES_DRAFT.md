@@ -37,8 +37,11 @@
   backlog or heap pressure. Manual saves, flushes and shutdown still complete
   their normal save paths. Replacement release qualification remains pending.
 - Server lighting snapshots share unchanged lookup partitions, reducing large
-  temporary map copies during heavy chunk loading and unloading. Two Large-ring
-  repeats avoid the full-GC stall observed in the earlier development candidate.
+  temporary map copies during heavy chunk loading and unloading. In two matched
+  three-player Large-ring tests with a 4 GB server heap, memory allocation fell
+  28–29%. The earlier 682 ms full garbage-collection stall did not recur, and the
+  worst server tick fell from 796 ms to 277 ms and 266 ms. These are measured test
+  results; shorter pauses from other server work remain possible.
 - After crossing chunks, the optional location advancement check waits one extra
   normal interval before querying structures, reducing immediate ticket-update
   bursts. Continuous movement cannot starve the check.
