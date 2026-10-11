@@ -158,7 +158,8 @@ from fresh frozen-candidate release qualification.
 
 ## Release-test setup and captures
 
-For Windows release agents, follow `docs/WINDOWS_RELEASE_RUNBOOK.md`. Qualification
+For release agents on either macOS or Windows, follow `docs/RELEASE_RUNBOOK.md`.
+Use the same Python coordinators, manifests and test gates on both hosts. Qualification
 launches Gradle's checked-in wrapper JAR directly through Java on Windows and uses
 NeoForge's installer-generated Windows argument files; never run Unix scripts
 there or send dynamic paths through a command shell. Preserve tree-wide timeout

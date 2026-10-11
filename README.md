@@ -259,7 +259,7 @@ the project documentation:
 | [Current state](docs/CURRENT_STATE.md) | Implemented behavior, evidence, open work, and current qualification status |
 | [Architecture](docs/ARCHITECTURE.md) | Canonical coordinates, client charts, rendering, and data flow |
 | [Operations](docs/OPERATIONS.md) | World configuration, servers, commands, backups, Atlas recovery, and packaging |
-| [JAR export](docs/JAR_EXPORT.md) | Six-file qualification, staging, publication and hosted verification |
+| [JAR export](docs/JAR_EXPORT.md) | Six-file qualification, staging, publication and hosted verification; [macOS/Windows runbook](docs/RELEASE_RUNBOOK.md) |
 | [Compatibility](docs/COMPATIBILITY.md) | Supported environment, API contract, and known mod conflicts |
 | [Rendering](docs/RENDERING.md) | Curvature, distant terrain, fog, sky, clouds, and visual handoff |
 | [Network protocol](docs/NETWORK_PROTOCOL.md) | Required settings handshake and Atlas transport |

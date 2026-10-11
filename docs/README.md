@@ -23,7 +23,7 @@ Start here:
   publication route; [export audit](JAR_EXPORT_AUDIT_2026-10-09.md) records cleanup
   and remaining manual checks.
 
-- [Windows release runbook](WINDOWS_RELEASE_RUNBOOK.md): native host preflight,
+- [Full release runbook](RELEASE_RUNBOOK.md): shared macOS/Windows workflow, native host preflight,
   production-world preparation, fresh six-JAR qualification and handoff.
 
 - [Floating-build Atlas sampling (#257)](FLOATING_ATLAS_257.md): conservative

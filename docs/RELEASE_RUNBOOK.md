@@ -1,6 +1,10 @@
-# Full release qualification on Windows
+# Full release qualification on macOS and Windows
 
-Use this from a native Windows PowerShell session in a clean, pushed checkout.
+Use the same release workflow from macOS Terminal or native Windows PowerShell
+in a clean, pushed checkout. Both hosts use the same Python coordinators,
+manifests, frozen-candidate rules and test gates; launcher and process cleanup
+adapt to the host. Shared examples use `python`; use `python3` on macOS if that
+is the installed Python 3 command.
 It prepares six JARs and their evidence; **do not upload, publish, tag a release,
 or update the public server**. The earlier staged 1.4 JARs predate the latest fixes.
 Use fresh quick runs and test their exact frozen candidates throughout.
@@ -9,14 +13,17 @@ Use fresh quick runs and test their exact frozen candidates throughout.
 
 - Git, Python 3.13, and a JDK 25 installation. Put the JDK's `bin` first on PATH
   and set `JAVA_HOME` to that same installation.
-- Use a short local checkout path, such as `C:\rw`, with Windows long-path
-  support available. Avoid OneDrive, network shares and junction/symlink checkouts.
-- Keep an interactive Windows desktop session available for graphical tests.
+- Use a local checkout with adequate free space. On Windows, prefer a short path
+  such as `C:\rw`, with long-path support available. Avoid cloud-synced folders,
+  network shares and junction/symlink checkouts.
+- Keep an interactive desktop session available for graphical tests.
   Clients run hidden and muted, but still need a working graphics driver/context.
 - Allow space for Gradle dependencies, copied worlds and retained screenshots/logs.
   Run the groups serially; do not run multiple release coordinators at once.
-- Begin from the merged Windows preparation commit or a later approved main
+- Begin from the merged cross-platform preparation commit or a later approved main
   commit. Record the full source SHA before starting; do not edit or pull midway.
+
+Windows PowerShell:
 
 ```powershell
 Set-Location C:\rw
@@ -33,12 +40,29 @@ python -m unittest scripts/test_qualification_host.py scripts/test_minecraft_qua
 if ($LASTEXITCODE -ne 0) { throw 'Windows host preflight failed' }
 ```
 
+macOS Terminal (substitute your checkout path):
+
+```sh
+cd /path/to/RingWorld
+git fetch origin
+git switch main
+git pull --ff-only
+git status --porcelain
+git rev-parse HEAD
+git rev-parse '@{upstream}'
+java -version
+python3 --version
+export PYTHONPATH=scripts
+python3 -m unittest scripts/test_qualification_host.py scripts/test_minecraft_qualification_executor.py
+```
+
 Require empty Git status, equal HEAD/upstream SHAs, Java 25, and passing preflight.
 The preflight includes a real timed-out parent/child process test: verify that
-neither process survives. Qualification calls the reviewed Gradle wrapper JAR
-directly through Java on Windows, avoiding batch quoting. Dedicated NeoForge
-uses the pinned installer's `user_jvm_args.txt` and `win_args.txt` through Java.
-Normal manual `gradlew.bat` commands remain available.
+neither process survives. On macOS, qualification uses `gradlew`, NeoForge's
+generated `run.sh` and POSIX process groups. On Windows, it calls the reviewed
+Gradle wrapper JAR directly through Java, avoiding batch quoting, and uses the
+pinned NeoForge installer's `user_jvm_args.txt` and `win_args.txt` through Java.
+Normal manual `gradlew.bat` commands remain available on Windows.
 
 ## Prepare the production test world
 
@@ -52,6 +76,8 @@ and verify its transferred hashes, or generate a new disposable one as below.
 This is test-input preparation, not release-candidate qualification. The example
 matches the earlier production fixture's 16,384 × 256 size and seed.
 Review the Minecraft EULA before setting `eula=true`.
+
+Windows PowerShell:
 
 ```powershell
 $repo = (Get-Location).Path
@@ -83,6 +109,29 @@ if ($report.status -ne 'COMPLETE' -or $report.completedCells -ne $report.totalCe
 }
 ```
 
+macOS Terminal:
+
+```sh
+source_root="$PWD/dist/qualification/macos-production-source"
+source_run="$source_root/26.1-fabric/run/run-headless-prewarm"
+mkdir -p "$source_run"
+printf '%s\n' 'eula=true' > "$source_run/eula.txt"
+printf '%s\n' 'server-ip=127.0.0.1' 'level-seed=2939526885284649652' \
+  'view-distance=2' 'simulation-distance=2' > "$source_run/server.properties"
+./gradlew :runHeadlessPrewarmServer --max-workers=1 --console=plain \
+  -Pminecraft_version=26.1 -Ploader_version=0.19.3 \
+  -Ploom_version=1.17.19 -Pfabric_api_version=0.145.1+26.1 \
+  -Pneoforge_version=26.1.0.19-beta -Pmoddevgradle_version=2.0.143 \
+  -Pmod_version=0.0.0-qualification+mc26.1 -Prelease_label=qualification \
+  "-PringQualificationRoot=$source_root" -PringQualificationCell=26.1-fabric \
+  -PringHeadlessPrewarmCircumference=16384 -PringHeadlessPrewarmWidth=256
+```
+
+Require exit code 0 and `status: COMPLETE` with equal `completedCells` and
+`totalCells` in `$source_run/world/ringworld-prewarm/result.json`.
+On either host, record the absolute path to the resulting `world` directory
+for the shared full-suite commands below.
+
 Keep this source stopped and unchanged. The coordinator independently inventories
 and checks its version, settings and Atlas before copying it into disposable tests.
 If a regenerated fixture has an obstructed projection viewpoint, inspect it and
@@ -95,13 +144,10 @@ Run each command separately, requiring exit code 0 and a complete PASS report.
 Record each printed run ID with its manifest. Reports are retained below
 `dist/qualification/matrix/<run-id>`; do not select an old run by directory order.
 
-```powershell
+```text
 python scripts/run_minecraft_qualification.py --tier quick --manifest config/minecraft-version-matrix.json --all
-if ($LASTEXITCODE -ne 0) { throw '26.1.x quick qualification failed' }
 python scripts/run_minecraft_qualification.py --tier quick --manifest config/minecraft-version-matrix-26.2.json --all
-if ($LASTEXITCODE -ne 0) { throw '26.2 quick qualification failed' }
 python scripts/run_minecraft_qualification.py --tier quick --manifest config/minecraft-version-matrix-26.3.json --all
-if ($LASTEXITCODE -ne 0) { throw '26.3 quick qualification failed' }
 ```
 
 This creates six frozen candidates and tests ten runtime cells. The 26.1.x pair
@@ -111,19 +157,15 @@ the existing cache flags; Mac caches and absolute paths are not prerequisites.
 
 ## Full release suite
 
-Replace the three values below with the **new PASS quick run IDs**. Run all ten
+Replace the run-ID and world-path placeholders below with the **new PASS quick
+run IDs** and prepared world's absolute path. Run each command separately,
+requiring exit code 0 and complete PASS before proceeding. Run all ten
 fixtures per cell without `--cell` or `--fixture` filters: 60 + 20 + 20 = 100.
 
-```powershell
-$quick261 = 'REPLACE_WITH_NEW_26_1_X_QUICK_RUN_ID'
-$quick262 = 'REPLACE_WITH_NEW_26_2_QUICK_RUN_ID'
-$quick263 = 'REPLACE_WITH_NEW_26_3_QUICK_RUN_ID'
-python scripts/run_minecraft_nightly_matrix.py --manifest config/minecraft-version-matrix.json --quick-run-id $quick261 --production-world $world --execute
-if ($LASTEXITCODE -ne 0) { throw '26.1.x full suite failed' }
-python scripts/run_minecraft_nightly_matrix.py --manifest config/minecraft-version-matrix-26.2.json --quick-run-id $quick262 --production-world $world --execute
-if ($LASTEXITCODE -ne 0) { throw '26.2 full suite failed' }
-python scripts/run_minecraft_nightly_matrix.py --manifest config/minecraft-version-matrix-26.3.json --quick-run-id $quick263 --production-world $world --execute
-if ($LASTEXITCODE -ne 0) { throw '26.3 full suite failed' }
+```text
+python scripts/run_minecraft_nightly_matrix.py --manifest config/minecraft-version-matrix.json --quick-run-id NEW_26_1_X_QUICK_RUN_ID --production-world "PATH_TO_COMPLETE_26_1_WORLD" --execute
+python scripts/run_minecraft_nightly_matrix.py --manifest config/minecraft-version-matrix-26.2.json --quick-run-id NEW_26_2_QUICK_RUN_ID --production-world "PATH_TO_COMPLETE_26_1_WORLD" --execute
+python scripts/run_minecraft_nightly_matrix.py --manifest config/minecraft-version-matrix-26.3.json --quick-run-id NEW_26_3_QUICK_RUN_ID --production-world "PATH_TO_COMPLETE_26_1_WORLD" --execute
 ```
 
 The ten fixtures are creation UI, world generation, Atlas recovery, Atlas UI,
@@ -162,7 +204,9 @@ needed for this handoff.
 
 ## Validation boundary
 
-Windows CI exercises the static contracts and the actual parent/child timeout
-test. This preparation is not a claim that the full Minecraft release suite has
-already run on Windows. The Windows agent must run the native preflight, quick
-cells and full fixtures above and report their real outcomes.
+All 461 local Python tests run on macOS (459 pass, two Windows-only launcher tests
+skip). Windows/Linux static CI passes, including the actual parent/child timeout
+test on Windows. This preparation is not a claim that replacement Minecraft
+release candidates have completed their full suite on either host. Whichever
+machine runs the release must run its native preflight, fresh quick cells and
+full fixtures above and report their real outcomes.
