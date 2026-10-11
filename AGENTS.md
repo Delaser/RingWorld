@@ -158,6 +158,19 @@ from fresh frozen-candidate release qualification.
 
 ## Release-test setup and captures
 
+An authorized release agent must self-correct routine host/harness/tooling
+failures within the existing scope: diagnose the actual cause, preserve failed
+evidence, repair on a branch, add a regression, validate the failing fixture,
+review/merge the tested PR and restart qualification from clean pushed main.
+Do not stop for generic permission solely because a source repair is needed.
+Follow the autonomous recovery section in `docs/RELEASE_RUNBOOK.md`; preserve
+Windows/macOS support, all supported 26.x loader parity, default settles and all
+100 full fixtures. Source changes require fresh quick runs and candidates;
+host-only repairs do not justify changing pins or weakening gates. Stop only at
+a real authorization/security boundary, unresolved diagnosis or owner usage
+floor. No uploads without the separate owner publication instruction.
+
+
 For release agents on either macOS or Windows, follow `docs/RELEASE_RUNBOOK.md`.
 Use the same Python coordinators, manifests and test gates on both hosts. Qualification
 launches Gradle's checked-in wrapper JAR directly through Java on Windows and uses
