@@ -1579,5 +1579,7 @@
     "Vanilla sky top-section copies, palette encoding and ordinary young-GC pauses remain.",
     "Required ticket graph operations are still indivisible.",
     "Full replacement release qualification remains required."
-  ]
+  ],
+  "productionFunctionalSource": "292ab1765178b0df3af4add8510bd5457e446f86",
+  "measurementSourceNote": "Uncommitted implementation later committed as 292ab17, plus temporary ownership/tick/graph probes excluded from production; not a frozen release artifact."
 }

@@ -99,6 +99,40 @@ the already recorded measurement patch. All probes are removed from production.
 The public server is restored to its prior JAR and the private service, tunnel
 and three test clients are stopped after each replay.
 
-Production source supported-version builds and fresh/reopen runtime validation
-are in progress. Full replacement-JAR release qualification remains required;
-old release PASS evidence cannot qualify these changes.
+## Supported-version validation
+
+Functional production source `292ab1765178b0df3af4add8510bd5457e446f86` passes:
+
+| Source ABI | Fabric Java cases | NeoForge Java cases | Fresh / reopened runtime |
+| --- | ---: | ---: | --- |
+| 26.1 (shared 26.1–26.1.2 group) | 505 | 505 | Both loaders PASS |
+| 26.2 | 505 | 505 | Both loaders PASS |
+| 26.3 | 508 | 508 | Both loaders PASS |
+
+All six source builds and 3,036 Java test executions pass. All nine GitHub CI
+checks and 367 local static contracts pass. Twelve native phases complete a
+524,288-cell Atlas or reopen it with zero generation time; independent format-11,
+world-identity, decoded-length and present-cell audits match every report. Every
+reopen is byte-identical to its immediately preceding completed fresh cache.
+The six fresh runs also pass real rate-command, pause/drain/resume/cancel/restart
+and synthetic FPS 4→2→1→2→4 checks. Interrupted/resumed disk phases from the prior
+24-phase validation are retained; this lighting follow-up reruns fresh/reopen,
+not a new 24-phase disk-interruption matrix.
+
+A final build-only pass uses the required `0.0.0-qualification+mc<version>`
+identity and `qualification` release label for all six disposable development
+JARs. Their ZIP audits retain all three lighting mixins and 30 wall previews,
+with no temporary ownership/tick/graph probe classes. Runtime validation uses
+development classpaths; these artifacts are not frozen release candidates.
+
+Compact counts, saved-file hashes, CI links and artifact audit hashes are in
+[`evidence/server-lighting-validation-2026-10-11.json`](evidence/server-lighting-validation-2026-10-11.json).
+The first local static invocation omitted `PYTHONPATH=scripts`, causing four
+module import errors. Its raw failed invocation is retained; correcting only
+the invocation environment passes all 367 contracts.
+
+Full replacement-JAR release qualification remains required; old release PASS
+evidence cannot qualify these changes. PR #279 remains draft, no public
+candidate promotion or upload has occurred, and the public JAR hash remains
+`9f6c522fd83d1c82231beb8f06e869a427efbc642c8d556b5c3e37c33530e5e1`.
+

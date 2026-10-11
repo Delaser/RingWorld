@@ -1,0 +1,342 @@
+{
+  "functionalSource": "292ab1765178b0df3af4add8510bd5457e446f86",
+  "scope": "Production source development validation, not frozen-JAR full-release qualification",
+  "staticContracts": {
+    "tests": 367,
+    "failures": 0,
+    "errors": 0
+  },
+  "javaSuites": {
+    "26.1-fabric": {
+      "tests": 505,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "26.1-neoforge": {
+      "tests": 505,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "26.3-fabric": {
+      "tests": 508,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "26.3-neoforge": {
+      "tests": 508,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "26.2-fabric": {
+      "tests": 505,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "26.2-neoforge": {
+      "tests": 505,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "nativePhases": [
+    {
+      "cell": "26.3-fabric",
+      "phase": "fresh",
+      "exit": 0,
+      "elapsed": 131.27150106430054,
+      "report": "/Users/chris/Documents/RingWorld-public-worktrees/outside-building-255/dist/qualification/capture-auto-runtime-20261010/26.3-fabric/run/run-headless-prewarm/world/ringworld-prewarm/fresh.json",
+      "status": "COMPLETE",
+      "format": 11,
+      "savedSha256": "aa360663705412e0794c158eada238bb9ed425c9de256edcd90e6d7feb9db6fa",
+      "savedBytes": 311135,
+      "decodedBytes": 6291500,
+      "presentCells": 524288,
+      "reportedElapsedMillis": 102650,
+      "identityMatchesReport": true,
+      "reopenMatchesFresh": null,
+      "nativeProbes": {
+        "atlas-rate-test": true,
+        "atlas-concurrency-test": true,
+        "atlas-auto-test": true
+      }
+    },
+    {
+      "cell": "26.3-fabric",
+      "phase": "reopen",
+      "exit": 0,
+      "elapsed": 18.46773910522461,
+      "report": "/Users/chris/Documents/RingWorld-public-worktrees/outside-building-255/dist/qualification/capture-auto-runtime-20261010/26.3-fabric/run/run-headless-prewarm/world/ringworld-prewarm/reopen.json",
+      "status": "COMPLETE",
+      "format": 11,
+      "savedSha256": "aa360663705412e0794c158eada238bb9ed425c9de256edcd90e6d7feb9db6fa",
+      "savedBytes": 311135,
+      "decodedBytes": 6291500,
+      "presentCells": 524288,
+      "reportedElapsedMillis": 0,
+      "identityMatchesReport": true,
+      "reopenMatchesFresh": true,
+      "nativeProbes": {}
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "fresh",
+      "exit": 0,
+      "elapsed": 125.09634017944336,
+      "report": "/Users/chris/Documents/RingWorld-public-worktrees/outside-building-255/dist/qualification/capture-auto-runtime-20261010/26.3-neoforge/run/run-headless-prewarm/world/ringworld-prewarm/fresh.json",
+      "status": "COMPLETE",
+      "format": 11,
+      "savedSha256": "f460bcc964c7bcb144473adfb6401281044102820727936b49170bcf7d0e7d14",
+      "savedBytes": 310934,
+      "decodedBytes": 6291500,
+      "presentCells": 524288,
+      "reportedElapsedMillis": 96345,
+      "identityMatchesReport": true,
+      "reopenMatchesFresh": null,
+      "nativeProbes": {
+        "atlas-rate-test": true,
+        "atlas-concurrency-test": true,
+        "atlas-auto-test": true
+      }
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "reopen",
+      "exit": 0,
+      "elapsed": 16.118179082870483,
+      "report": "/Users/chris/Documents/RingWorld-public-worktrees/outside-building-255/dist/qualification/capture-auto-runtime-20261010/26.3-neoforge/run/run-headless-prewarm/world/ringworld-prewarm/reopen.json",
+      "status": "COMPLETE",
+      "format": 11,
+      "savedSha256": "f460bcc964c7bcb144473adfb6401281044102820727936b49170bcf7d0e7d14",
+      "savedBytes": 310934,
+      "decodedBytes": 6291500,
+      "presentCells": 524288,
+      "reportedElapsedMillis": 0,
+      "identityMatchesReport": true,
+      "reopenMatchesFresh": true,
+      "nativeProbes": {}
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "fresh",
+      "exit": 0,
+      "elapsed": 137.48559021949768,
+      "report": "/Users/chris/Documents/RingWorld-public-worktrees/outside-building-255/dist/qualification/capture-auto-runtime-20261010/26.2-fabric/run/run-headless-prewarm/world/ringworld-prewarm/fresh.json",
+      "status": "COMPLETE",
+      "format": 11,
+      "savedSha256": "2bc6642f23eaa3897409f989d5b76987726a99ce10e554a6a596c242f136fecb",
+      "savedBytes": 313042,
+      "decodedBytes": 6291500,
+      "presentCells": 524288,
+      "reportedElapsedMillis": 113148,
+      "identityMatchesReport": true,
+      "reopenMatchesFresh": null,
+      "nativeProbes": {
+        "atlas-rate-test": true,
+        "atlas-concurrency-test": true,
+        "atlas-auto-test": true
+      }
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "reopen",
+      "exit": 0,
+      "elapsed": 18.200294733047485,
+      "report": "/Users/chris/Documents/RingWorld-public-worktrees/outside-building-255/dist/qualification/capture-auto-runtime-20261010/26.2-fabric/run/run-headless-prewarm/world/ringworld-prewarm/reopen.json",
+      "status": "COMPLETE",
+      "format": 11,
+      "savedSha256": "2bc6642f23eaa3897409f989d5b76987726a99ce10e554a6a596c242f136fecb",
+      "savedBytes": 313042,
+      "decodedBytes": 6291500,
+      "presentCells": 524288,
+      "reportedElapsedMillis": 0,
+      "identityMatchesReport": true,
+      "reopenMatchesFresh": true,
+      "nativeProbes": {}
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "fresh",
+      "exit": 0,
+      "elapsed": 143.18124961853027,
+      "report": "/Users/chris/Documents/RingWorld-public-worktrees/outside-building-255/dist/qualification/capture-auto-runtime-20261010/26.2-neoforge/run/run-headless-prewarm/world/ringworld-prewarm/fresh.json",
+      "status": "COMPLETE",
+      "format": 11,
+      "savedSha256": "69de0e58193245edaefe56f43318da1389d29bdaabed3f4546ebf8ae74526379",
+      "savedBytes": 312774,
+      "decodedBytes": 6291500,
+      "presentCells": 524288,
+      "reportedElapsedMillis": 117447,
+      "identityMatchesReport": true,
+      "reopenMatchesFresh": null,
+      "nativeProbes": {
+        "atlas-rate-test": true,
+        "atlas-concurrency-test": true,
+        "atlas-auto-test": true
+      }
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "reopen",
+      "exit": 0,
+      "elapsed": 18.05151677131653,
+      "report": "/Users/chris/Documents/RingWorld-public-worktrees/outside-building-255/dist/qualification/capture-auto-runtime-20261010/26.2-neoforge/run/run-headless-prewarm/world/ringworld-prewarm/reopen.json",
+      "status": "COMPLETE",
+      "format": 11,
+      "savedSha256": "69de0e58193245edaefe56f43318da1389d29bdaabed3f4546ebf8ae74526379",
+      "savedBytes": 312774,
+      "decodedBytes": 6291500,
+      "presentCells": 524288,
+      "reportedElapsedMillis": 0,
+      "identityMatchesReport": true,
+      "reopenMatchesFresh": true,
+      "nativeProbes": {}
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "fresh",
+      "exit": 0,
+      "elapsed": 151.17989301681519,
+      "report": "/Users/chris/Documents/RingWorld-public-worktrees/outside-building-255/dist/qualification/capture-auto-runtime-20261010/26.1-fabric/run/run-headless-prewarm/world/ringworld-prewarm/fresh.json",
+      "status": "COMPLETE",
+      "format": 11,
+      "savedSha256": "f0c867be3fdba8241a5bb724ee84ce57f6c30e0f3b508e949c1adef21b2d2a82",
+      "savedBytes": 312126,
+      "decodedBytes": 6291500,
+      "presentCells": 524288,
+      "reportedElapsedMillis": 124399,
+      "identityMatchesReport": true,
+      "reopenMatchesFresh": null,
+      "nativeProbes": {
+        "atlas-rate-test": true,
+        "atlas-concurrency-test": true,
+        "atlas-auto-test": true
+      }
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "reopen",
+      "exit": 0,
+      "elapsed": 17.70960807800293,
+      "report": "/Users/chris/Documents/RingWorld-public-worktrees/outside-building-255/dist/qualification/capture-auto-runtime-20261010/26.1-fabric/run/run-headless-prewarm/world/ringworld-prewarm/reopen.json",
+      "status": "COMPLETE",
+      "format": 11,
+      "savedSha256": "f0c867be3fdba8241a5bb724ee84ce57f6c30e0f3b508e949c1adef21b2d2a82",
+      "savedBytes": 312126,
+      "decodedBytes": 6291500,
+      "presentCells": 524288,
+      "reportedElapsedMillis": 0,
+      "identityMatchesReport": true,
+      "reopenMatchesFresh": true,
+      "nativeProbes": {}
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "fresh",
+      "exit": 0,
+      "elapsed": 147.12160205841064,
+      "report": "/Users/chris/Documents/RingWorld-public-worktrees/outside-building-255/dist/qualification/capture-auto-runtime-20261010/26.1-neoforge/run/run-headless-prewarm/world/ringworld-prewarm/fresh.json",
+      "status": "COMPLETE",
+      "format": 11,
+      "savedSha256": "4c740ca9037fc9b08a27f467e357311d5574f7ce155f44595bbfd585289952a7",
+      "savedBytes": 312536,
+      "decodedBytes": 6291500,
+      "presentCells": 524288,
+      "reportedElapsedMillis": 122361,
+      "identityMatchesReport": true,
+      "reopenMatchesFresh": null,
+      "nativeProbes": {
+        "atlas-rate-test": true,
+        "atlas-concurrency-test": true,
+        "atlas-auto-test": true
+      }
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "reopen",
+      "exit": 0,
+      "elapsed": 17.552796840667725,
+      "report": "/Users/chris/Documents/RingWorld-public-worktrees/outside-building-255/dist/qualification/capture-auto-runtime-20261010/26.1-neoforge/run/run-headless-prewarm/world/ringworld-prewarm/reopen.json",
+      "status": "COMPLETE",
+      "format": 11,
+      "savedSha256": "4c740ca9037fc9b08a27f467e357311d5574f7ce155f44595bbfd585289952a7",
+      "savedBytes": 312536,
+      "decodedBytes": 6291500,
+      "presentCells": 524288,
+      "reportedElapsedMillis": 0,
+      "identityMatchesReport": true,
+      "reopenMatchesFresh": true,
+      "nativeProbes": {}
+    }
+  ],
+  "artifactAudit": [
+    {
+      "cell": "26.1-fabric",
+      "path": "dist/qualification/capture-auto-runtime-20261010/26.1-neoforge/build/fabric/libs/ringworld-0.0.0-qualification+mc26.1.jar",
+      "sha256": "3154674c36bcb3c498214a1e944f9bc10cfe4877def59f8ff7e5b99074fb0d3c",
+      "bytes": 3462703,
+      "temporaryProbesAbsent": true,
+      "wallPreviewCount": 30,
+      "qualificationIdentity": true
+    },
+    {
+      "cell": "26.1-neoforge",
+      "path": "dist/qualification/capture-auto-runtime-20261010/26.1-neoforge/build/neoforge/libs/ringworld-neoforge-0.0.0-qualification+mc26.1.jar",
+      "sha256": "adca81d2802ca5337148e94544793d3cb6000b5de518ef132f0d8b8cf8fcabf5",
+      "bytes": 3443277,
+      "temporaryProbesAbsent": true,
+      "wallPreviewCount": 30,
+      "qualificationIdentity": true
+    },
+    {
+      "cell": "26.2-fabric",
+      "path": "dist/qualification/capture-auto-runtime-20261010/26.2-neoforge/build/fabric/libs/ringworld-0.0.0-qualification+mc26.2.jar",
+      "sha256": "7bca576bc7351f04d0a4dd0dc25205a98ac8b47a2667148afef9d330d1e51f99",
+      "bytes": 3462553,
+      "temporaryProbesAbsent": true,
+      "wallPreviewCount": 30,
+      "qualificationIdentity": true
+    },
+    {
+      "cell": "26.2-neoforge",
+      "path": "dist/qualification/capture-auto-runtime-20261010/26.2-neoforge/build/neoforge/libs/ringworld-neoforge-0.0.0-qualification+mc26.2.jar",
+      "sha256": "c8b5d2994937a052e252334bf185746896318f36733bc1c76a72d8cd077f0549",
+      "bytes": 3443123,
+      "temporaryProbesAbsent": true,
+      "wallPreviewCount": 30,
+      "qualificationIdentity": true
+    },
+    {
+      "cell": "26.3-fabric",
+      "path": "dist/qualification/capture-auto-runtime-20261010/26.3-neoforge/build/fabric/libs/ringworld-0.0.0-qualification+mc26.3.jar",
+      "sha256": "c3e487544a2a63c860f4786ab26f39a0000714ae45c0523f027487576ed69e58",
+      "bytes": 3468017,
+      "temporaryProbesAbsent": true,
+      "wallPreviewCount": 30,
+      "qualificationIdentity": true
+    },
+    {
+      "cell": "26.3-neoforge",
+      "path": "dist/qualification/capture-auto-runtime-20261010/26.3-neoforge/build/neoforge/libs/ringworld-neoforge-0.0.0-qualification+mc26.3.jar",
+      "sha256": "f1b3d54e36ce827d7eef0fa174d8f22ba8bb783d39a99ac48e44ea058f5ef399",
+      "bytes": 3448547,
+      "temporaryProbesAbsent": true,
+      "wallPreviewCount": 30,
+      "qualificationIdentity": true
+    }
+  ],
+  "ci": {
+    "source": "292ab1765178b0df3af4add8510bd5457e446f86",
+    "checks": 9,
+    "status": "PASS",
+    "buildRun": "https://github.com/Delaser/RingWorld/actions/runs/38119667451",
+    "staticRun": "https://github.com/Delaser/RingWorld/actions/runs/38119667416",
+    "launcherRun": "https://github.com/Delaser/RingWorld/actions/runs/38119667459"
+  },
+  "invocationCorrection": "An initial local static invocation omitted PYTHONPATH=scripts and had four import errors. No product source changed; rerunning with the workflow environment passed all 367 contracts. Raw failed invocation is retained."
+}
