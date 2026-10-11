@@ -30,7 +30,9 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
     @unittest.skipUnless(os.name == "nt", "Windows extended paths")
     def test_cleanup_removes_long_paths_and_preserves_evidence(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
+            # Match the coordinator's canonical identity, including Windows
+            # temporary directories supplied through an 8.3 short-name alias.
+            root = Path(directory).resolve()
             cell = {"id": "26.1-fabric", "loader": "fabric",
                     "minecraft": {"version": "26.1"}}
             run_id = "20260826T000000Z-0123456789ab"
