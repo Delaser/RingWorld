@@ -17,8 +17,8 @@ checks pass. Temporary probes are removed from production. All six source/loader
 3,036 Java tests, 367 static contracts and nine CI checks pass. All 12 native
 fresh/reopen phases pass; six independent byte-identical cache reopen audits
 report zero regeneration. All six development artifact audits pass. Public
-server restored to its prior JAR. PR #279 remains draft; full replacement-JAR
-release qualification is still required. See [cause, implementation and evidence](SERVER_LIGHTING_SNAPSHOTS_2026_10_11.md).
+server restored to its prior JAR. The owner approved PR #279 for integration
+on October 11; full replacement-JAR release qualification is still required. See [cause, implementation and evidence](SERVER_LIGHTING_SNAPSHOTS_2026_10_11.md).
 
 # Large-server chunk-work fixes — historical GC gate, superseded above
 
@@ -72,7 +72,8 @@ transition; this is not hitch-free or a full release qualification. The public
 Large server is restored with tested diagnostic JAR `9f6c522f`, complete Atlas,
 auto policy and authentication preserved. Test clients/tunnel are stopped.
 See [trial, limitations and evidence](SERVER_MULTIPLAYER_LOAD_2026_10_10.md).
-The old six 1.4 release JARs remain held; PR #279 is not merged or published.
+The old six 1.4 release JARs remain held. PR #279 is approved for integration;
+publication and public-server promotion remain separate and have not happened.
 
 # Adaptive Atlas capture — development validation complete
 
@@ -110,14 +111,6 @@ The old six release files must be rebuilt and fully requalified before publicati
 No new public upload is authorized.
 
 # Current state
-
-October 11: Nearby block correction (previously labelled normalisation) defaults
-on, including after disconnect. The Display toggle, live `/ringworld distortion`
-commands and three-chunk default range remain. Shared client sources compile for
-all six supported version/loader groups; 12 version-source checks pass. The
-capture fixture selects Off explicitly for its baseline and expects On after
-disconnect. Native capture and frozen release qualification were not rerun for
-this default change; the previously staged JARs do not contain it.
 
 October 10: RingWorld 1.4 has six locally prepared standalone JARs from merged
 source `6ee5bd5`. All ten quick cells and all 100 full-suite fixture invocations

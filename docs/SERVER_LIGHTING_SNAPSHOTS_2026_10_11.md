@@ -132,6 +132,6 @@ module import errors. Its raw failed invocation is retained; correcting only
 the invocation environment passes all 367 contracts.
 
 Full replacement-JAR release qualification remains required; old release PASS
-evidence cannot qualify these changes. PR #279 remains draft, no public
+evidence cannot qualify these changes. The owner approved PR #279 for integration on October 11; no public
 candidate promotion or upload has occurred, and the public JAR hash remains
 `9f6c522fd83d1c82231beb8f06e869a427efbc642c8d556b5c3e37c33530e5e1`.
