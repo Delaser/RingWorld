@@ -48,6 +48,9 @@ _SAFE_INHERITED_ENVIRONMENT = frozenset(
     {
         "PATH",
         "HOME",
+        "USERPROFILE",
+        "HOMEDRIVE",
+        "HOMEPATH",
         "TMPDIR",
         "TMP",
         "TEMP",

@@ -64,6 +64,15 @@ Gradle wrapper JAR directly through Java, avoiding batch quoting, and uses the
 pinned NeoForge installer's `user_jvm_args.txt` and `win_args.txt` through Java.
 Normal manual `gradlew.bat` commands remain available on Windows.
 
+Nested child runners retain Windows home-directory variables while still
+filtering secrets. Disposable cleanup uses native extended paths even when
+Windows long-path policy is disabled; evidence paths keep their ordinary form.
+Cleanup must preserve retained screenshots/reports and the validated worldgen
+source. A cleanup failure still fails the fixture. Some static symlink-security
+tests require Windows symlink privileges; report an unavailable privilege
+separately and retain native CI evidence, rather than removing those checks or
+claiming a complete local static PASS.
+
 ## Prepare the production test world
 
 The production fixtures need a stopped, fully pregenerated world saved in **26.1**,
@@ -204,9 +213,20 @@ needed for this handoff.
 
 ## Validation boundary
 
-All 461 local Python tests run on macOS (459 pass, two Windows-only launcher tests
+All 463 local Python tests run on macOS (459 pass, four Windows-only tests
 skip). Windows/Linux static CI passes, including the actual parent/child timeout
 test on Windows. This preparation is not a claim that replacement Minecraft
 release candidates have completed their full suite on either host. Whichever
 machine runs the release must run its native preflight, fresh quick cells and
 full fixtures above and report their real outcomes.
+
+The first native Windows cycle on source `fdabc511` passed all ten quick cells,
+but its full coordinators reported ten FAIL and ninety INCOMPLETE fixtures.
+Missing child-home variables and long-path cleanup were confirmed harness bugs;
+dependency timeouts also affected some children. Two creation-UI children saved
+52 screenshots, but cleanup failure prevented coordinator PASS. Preserve those
+reports as failed evidence. After the runner fixes, first verify the native
+regressions and a targeted development fixture, then use fresh quick candidates
+and all 100 full fixtures from the approved pushed source. Do not combine the
+earlier quick runs with a changed-source full run or claim the old candidates
+are staged releases.

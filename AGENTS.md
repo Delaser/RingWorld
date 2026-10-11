@@ -167,6 +167,15 @@ cleanup and the Windows native parent/child probe. Windows static CI is not proo
 of full Minecraft runtime qualification. Fresh quick and all 100 full fixtures
 remain required, with one clean pushed source and unchanged frozen candidates.
 
+Sanitized child environments must retain Windows `USERPROFILE`, `HOMEDRIVE` and
+`HOMEPATH` so nested Python runners can resolve their home and validate caches.
+Keep the secret allowlist filtering intact. Disposable cleanup uses native
+extended paths on Windows without changing recorded evidence paths. Preserve
+containment, symlink rejection and the retained worldgen source; do not turn
+cleanup errors into PASS. The initial native full run found these two harness
+bugs after all ten quick cells passed. Fixed runners require fresh qualification;
+earlier frozen candidates and failed reports retain their original source identity.
+
 All Gradle nightly fixtures accept the same hash-checked `--gradle-loom-cache`
 seed while retaining isolated writable state. Production projection runs all
 four weather/time conditions in one JVM; require every environment completion,
