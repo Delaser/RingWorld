@@ -1,5 +1,10 @@
 # RingWorld 1.4 — qualified, not uploaded
 
+**Publication hold:** a Large-server Atlas checkpoint stall was reproduced after
+this qualification. The six files below predate the persistence fix. Retain them
+as historical evidence; replace and fully requalify all six before publishing
+1.4. See [checkpoint fix and measurements](../../../docs/SERVER_ATLAS_CHECKPOINTS.md).
+
 Qualification completed on 10 October 2026. Six standalone runtime JARs are
 prepared from merged source `6ee5bd56c1de8044c658d80d5a0c0f4a9d6c4085`.
 **Automated release gates: PASS. Owner visual confirmation: pending. No upload,

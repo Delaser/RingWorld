@@ -140,6 +140,28 @@ class RingTerrainAtlasTest {
     }
 
     @Test
+    void completedChunkCountRemainsExactAcrossSamplingStepsAndClear() {
+        for (int step : new int[]{1, 2, 4, 8}) {
+            RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH, step);
+            assertEquals(0, atlas.presentChunkCount());
+            int z0 = GEOMETRY.minWidthZ();
+            for (int z = 0; z < GEOMETRY.widthBlocks(); z += step) {
+                for (int x = 0; x < GEOMETRY.circumferenceBlocks(); x += step) {
+                    if (x != 0 || z != 0) atlas.putBlockSample(x, z0 + z, 70, 0x556677);
+                }
+            }
+            long total = (long)GEOMETRY.circumferenceChunks() * GEOMETRY.widthChunks();
+            assertFalse(atlas.isComplete());
+            assertEquals(total - 1, atlas.presentChunkCount());
+            atlas.putBlockSample(0, z0, 70, 0x556677);
+            assertTrue(atlas.isComplete());
+            assertEquals(total, atlas.presentChunkCount());
+            atlas.clear();
+            assertEquals(0, atlas.presentChunkCount());
+        }
+    }
+
+    @Test
     void chunkCoverageAdvancesOnlyAfterEveryCellArrives() {
         RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         int firstZ = GEOMETRY.minWidthZ();

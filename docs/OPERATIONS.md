@@ -17,7 +17,12 @@ finish when lowering the limit. Integrated single-player uses focused owner FPS 
 tick time; dedicated servers use tick time. This is a process performance
 setting, not saved world geometry. `/ringworld atlas status` reports the active
 target and auto/fixed mode. See [policy and validation](ATLAS_CONCURRENCY_253.md).
-The owner approved integration in PR #273. This is not installed on the large 1.3 server.
+Capture follows the same adaptive target, capped at four ready chunks per tick
+and a soft 2 ms budget checked between chunks. Numeric eight still means eight
+requests but at most four captures. One chunk can exceed the time target.
+The owner authorized a Large-server 1.4 update on 10 October; its original world
+and installation are backed up. Optional `ringworld.atlasCaptureTimings` logs
+explicit capture duration and observed tick maxima every 200 ticks.
 
 
 ## Active development stack
@@ -237,7 +242,8 @@ development benchmark on production hardware.
 The upcoming-release #253 implementation adaptively targets 4 / 2 / 1 outstanding requests,
 or a fixed 1–8 numeric JVM override; all policies
 check the normal server queue's 64-task submission threshold before each
-request and explicitly capture at most one ready chunk per tick.
+request and explicitly capture up to four ready chunks per tick within a soft
+2 ms budget, sharing automatic backoff/recovery with request admission.
 
 | Geometry | Canonical chunks | Performance / Balanced / High / Very high cells |
 | --- | ---: | ---: |
@@ -705,7 +711,7 @@ Created RingWorld layout
 Migrated RingWorld settings format
 [diagnostic] joined ring world
 RingWorld settings acknowledged
-Loaded/Saved RingWorld terrain atlas
+Loaded RingWorld terrain atlas / RingWorld Atlas checkpoint (with atlasSaveTimings)
 RingWorld terrain atlas progress
 RingWorld atlas: ... generation running|paused|complete
 Textured ring surface ready
@@ -740,3 +746,12 @@ F3 replaces the normal position section in the Overworld with:
   latitude. Existing safe canonical portals are reused across the X seam.
   There is no operator setting for this policy and an existing world does not
   need regeneration after the mod update.
+
+## Server checkpoint performance
+
+Periodic Atlas writes and completion verification now use the bounded persistence
+worker. Main-thread snapshot preparation copies/repairs slices across ticks. Only
+normal stop/unload drains synchronously. Enable `-Dringworld.atlasSaveTimings=true`
+for phase timings; see [checkpoint design and evidence](SERVER_ATLAS_CHECKPOINTS.md).
+Do not enable the intentional synchronous comparison probe on a public server
+with players connected.

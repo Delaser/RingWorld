@@ -1,0 +1,88 @@
+diff --git a/src/main/resources/ringworld.mixins.json b/src/main/resources/ringworld.mixins.json
+index 82dc33f..d2d22ce 100644
+--- a/src/main/resources/ringworld.mixins.json
++++ b/src/main/resources/ringworld.mixins.json
+@@ -2,6 +2,6 @@
+   "required": true,
+   "package": "dev.ringworld.mixin",
+   "compatibilityLevel": "JAVA_25",
+-  "mixins": ["ChunkMapMaintenanceMixin", "ServerAutosaveMixin", "ServerPlayerLocationWorkMixin", "BlockEntityMixin", "BlockItemMixin", "BucketItemMixin", "BlockEntityPositionAccessor", "BoundedRegionArrayMixin", "ChunkGeneratorLocateMixin", "ChunkGeneratorMixin", "ChunkGeneratorStructureStateMixin", "ChunkNoiseSamplerMixin", "ChunkPosDistanceLevelPropagatorMixin", "ChunkRegionMixin", "DensityCoordinateConsumerMixin", "EntityDistanceMixin", "EntityNavigationMixin", "EntityTrackingSectionMixin", "ExplosionImplMixin", "EyeOfEnderMixin", "LevelChunkMixin", "LevelMixin", "MapItemMixin", "MapItemSavedDataMixin", "MinecraftServerMixin", "MultiTickSchedulerMixin", "NoiseChunkGeneratorMixin", "PeriodicSurfaceSystemMixin", "OceanMonumentStructureMixin", "PathfindToRaidGoalMixin", "PlayerInteractionDistanceMixin", "PortalForcerMixin", "ProjectileUtilMixin", "RaidFixtureAccessor", "RaidMixin", "RaiderMoveThroughVillageGoalMixin", "RaidsAccessor", "RaidsMixin", "RandomSpreadStructurePlacementMixin", "ServerChunkManagerMixin", "ServerChunkLoadingManagerMixin", "ServerEntityManagerMixin", "ServerEntityManagerListenerMixin", "ServerEntityTrackerMixin", "ServerPlayNetworkHandlerMixin", "ServerPlayerSleepMixin", "ServerWorldMixin", "StrongholdStructureMixin", "StructureBiomeMixin", "StructurePlacementMixin", "SurfaceNoiseThresholdMixin", "SurfaceSystemMixin", "WorldEntityLookupMixin", "WorldTickSchedulerMixin"],
++  "mixins": ["ChunkMapMaintenanceMixin", "ServerAutosaveMixin", "StallCauseTickMixin", "StallCauseGraphMixin", "ServerPlayerLocationWorkMixin", "BlockEntityMixin", "BlockItemMixin", "BucketItemMixin", "BlockEntityPositionAccessor", "BoundedRegionArrayMixin", "ChunkGeneratorLocateMixin", "ChunkGeneratorMixin", "ChunkGeneratorStructureStateMixin", "ChunkNoiseSamplerMixin", "ChunkPosDistanceLevelPropagatorMixin", "ChunkRegionMixin", "DensityCoordinateConsumerMixin", "EntityDistanceMixin", "EntityNavigationMixin", "EntityTrackingSectionMixin", "ExplosionImplMixin", "EyeOfEnderMixin", "LevelChunkMixin", "LevelMixin", "MapItemMixin", "MapItemSavedDataMixin", "MinecraftServerMixin", "MultiTickSchedulerMixin", "NoiseChunkGeneratorMixin", "PeriodicSurfaceSystemMixin", "OceanMonumentStructureMixin", "PathfindToRaidGoalMixin", "PlayerInteractionDistanceMixin", "PortalForcerMixin", "ProjectileUtilMixin", "RaidFixtureAccessor", "RaidMixin", "RaiderMoveThroughVillageGoalMixin", "RaidsAccessor", "RaidsMixin", "RandomSpreadStructurePlacementMixin", "ServerChunkManagerMixin", "ServerChunkLoadingManagerMixin", "ServerEntityManagerMixin", "ServerEntityManagerListenerMixin", "ServerEntityTrackerMixin", "ServerPlayNetworkHandlerMixin", "ServerPlayerSleepMixin", "ServerWorldMixin", "StrongholdStructureMixin", "StructureBiomeMixin", "StructurePlacementMixin", "SurfaceNoiseThresholdMixin", "SurfaceSystemMixin", "WorldEntityLookupMixin", "WorldTickSchedulerMixin"],
+   "injectors": {"defaultRequire": 1}
+ }
+diff --git a/src/main/java/dev/ringworld/mixin/StallCauseTickMixin.java b/src/main/java/dev/ringworld/mixin/StallCauseTickMixin.java
+new file mode 100644
+index 0000000..e70748f
+--- /dev/null
++++ b/src/main/java/dev/ringworld/mixin/StallCauseTickMixin.java
+@@ -0,0 +1,32 @@
++package dev.ringworld.mixin;
++
++import java.util.function.BooleanSupplier;
++import jdk.jfr.Event;
++import jdk.jfr.Name;
++import jdk.jfr.Threshold;
++import net.minecraft.server.MinecraftServer;
++import org.spongepowered.asm.mixin.Mixin;
++import org.spongepowered.asm.mixin.Unique;
++import org.spongepowered.asm.mixin.injection.At;
++import org.spongepowered.asm.mixin.injection.Inject;
++import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
++
++/** Temporary exact boundaries; does not change vanilla tick timing. */
++@Mixin(MinecraftServer.class)
++abstract class StallCauseTickMixin {
++    @Unique private Tick ringworld$tick;
++    @Name("ringworld.DiagnosticTick") @Threshold("0 ms")
++    public static class Tick extends Event { public int tick; }
++    @Inject(method = "tickServer", at = @At("HEAD"))
++    private void ringworld$begin(BooleanSupplier haveTime, CallbackInfo ci) {
++        if (!Boolean.getBoolean("ringworld.stallCause")) return;
++        ringworld$tick = new Tick();
++        ringworld$tick.tick = ((MinecraftServer)(Object)this).getTickCount() + 1;
++        ringworld$tick.begin();
++    }
++    @Inject(method = "tickServer", at = @At("RETURN"))
++    private void ringworld$end(BooleanSupplier haveTime, CallbackInfo ci) {
++        if (ringworld$tick == null) return;
++        ringworld$tick.end(); ringworld$tick.commit(); ringworld$tick = null;
++    }
++}
+diff --git a/src/main/java/dev/ringworld/mixin/StallCauseGraphMixin.java b/src/main/java/dev/ringworld/mixin/StallCauseGraphMixin.java
+new file mode 100644
+index 0000000..9b9c4bd
+--- /dev/null
++++ b/src/main/java/dev/ringworld/mixin/StallCauseGraphMixin.java
+@@ -0,0 +1,32 @@
++package dev.ringworld.mixin;
++
++import java.util.ArrayDeque;
++import jdk.jfr.Event;
++import jdk.jfr.Name;
++import jdk.jfr.Threshold;
++import net.minecraft.server.level.ServerChunkCache;
++import org.spongepowered.asm.mixin.Mixin;
++import org.spongepowered.asm.mixin.Unique;
++import org.spongepowered.asm.mixin.injection.At;
++import org.spongepowered.asm.mixin.injection.Inject;
++import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
++
++/** Measurement only: include complete graph work performed between tick boundaries. */
++@Mixin(ServerChunkCache.class)
++abstract class StallCauseGraphMixin {
++    @Unique private final ArrayDeque<Graph> ringworld$graphs = new ArrayDeque<>();
++    @Name("ringworld.DiagnosticGraph") @Threshold("1 ms")
++    public static class Graph extends Event { public int tick; }
++    @Inject(method = "runDistanceManagerUpdates", at = @At("HEAD"))
++    private void ringworld$begin(CallbackInfoReturnable<Boolean> cir) {
++        if (!Boolean.getBoolean("ringworld.stallCause")) return;
++        Graph graph = new Graph();
++        graph.tick = ((net.minecraft.server.level.ServerLevel) ((ServerChunkCache) (Object) this).getLevel()).getServer().getTickCount();
++        graph.begin(); ringworld$graphs.push(graph);
++    }
++    @Inject(method = "runDistanceManagerUpdates", at = @At("RETURN"))
++    private void ringworld$end(CallbackInfoReturnable<Boolean> cir) {
++        if (ringworld$graphs.isEmpty()) return;
++        Graph graph = ringworld$graphs.pop(); graph.end(); graph.commit();
++    }
++}

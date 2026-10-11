@@ -1,0 +1,442 @@
+{
+  "rows": [
+    {
+      "mode": "sync",
+      "warmup": "true",
+      "operation": "0",
+      "cells": "16777216",
+      "ownerMs": "7532.463259",
+      "snapshotMs": "0.0",
+      "writeMs": "7532.385639",
+      "tickMs": "7533.518391",
+      "heapUsedMiB": "713"
+    },
+    {
+      "mode": "async",
+      "warmup": "true",
+      "operation": "1",
+      "cells": "16777216",
+      "ownerMs": "5.587033",
+      "snapshotMs": "103.35489",
+      "writeMs": "7660.524839",
+      "tickMs": "6.362184",
+      "heapUsedMiB": "922"
+    },
+    {
+      "mode": "sync",
+      "warmup": "false",
+      "operation": "2",
+      "cells": "16777216",
+      "ownerMs": "7375.517867",
+      "snapshotMs": "0.0",
+      "writeMs": "7375.477995",
+      "tickMs": "7376.884781",
+      "heapUsedMiB": "924"
+    },
+    {
+      "mode": "async",
+      "warmup": "false",
+      "operation": "3",
+      "cells": "16777216",
+      "ownerMs": "4.938382",
+      "snapshotMs": "242.724345",
+      "writeMs": "7327.819061",
+      "tickMs": "5.369384",
+      "heapUsedMiB": "943"
+    },
+    {
+      "mode": "async",
+      "warmup": "false",
+      "operation": "4",
+      "cells": "16777216",
+      "ownerMs": "10.685607",
+      "snapshotMs": "548.650997",
+      "writeMs": "7484.378936",
+      "tickMs": "11.313492",
+      "heapUsedMiB": "948"
+    },
+    {
+      "mode": "sync",
+      "warmup": "false",
+      "operation": "5",
+      "cells": "16777216",
+      "ownerMs": "7793.498881",
+      "snapshotMs": "0.0",
+      "writeMs": "7793.478616",
+      "tickMs": "7794.383429",
+      "heapUsedMiB": "950"
+    },
+    {
+      "mode": "sync",
+      "warmup": "false",
+      "operation": "6",
+      "cells": "16777216",
+      "ownerMs": "7998.103368",
+      "snapshotMs": "0.0",
+      "writeMs": "7998.029306",
+      "tickMs": "7999.100908",
+      "heapUsedMiB": "952"
+    },
+    {
+      "mode": "async",
+      "warmup": "false",
+      "operation": "7",
+      "cells": "16777216",
+      "ownerMs": "3.05118",
+      "snapshotMs": "336.266078",
+      "writeMs": "7971.700888",
+      "tickMs": "5.57444",
+      "heapUsedMiB": "956"
+    },
+    {
+      "mode": "async",
+      "warmup": "false",
+      "operation": "8",
+      "cells": "16777216",
+      "ownerMs": "2.132733",
+      "snapshotMs": "103.557792",
+      "writeMs": "7794.009263",
+      "tickMs": "2.640242",
+      "heapUsedMiB": "960"
+    },
+    {
+      "mode": "sync",
+      "warmup": "false",
+      "operation": "9",
+      "cells": "16777216",
+      "ownerMs": "7767.509421",
+      "snapshotMs": "0.0",
+      "writeMs": "7767.4797",
+      "tickMs": "7774.880118",
+      "heapUsedMiB": "962"
+    },
+    {
+      "mode": "sync",
+      "warmup": "false",
+      "operation": "10",
+      "cells": "16777216",
+      "ownerMs": "7144.311657",
+      "snapshotMs": "0.0",
+      "writeMs": "7144.286047",
+      "tickMs": "7144.959899",
+      "heapUsedMiB": "963"
+    },
+    {
+      "mode": "async",
+      "warmup": "false",
+      "operation": "11",
+      "cells": "16777216",
+      "ownerMs": "12.62509",
+      "snapshotMs": "292.510215",
+      "writeMs": "7877.754783",
+      "tickMs": "13.490389",
+      "heapUsedMiB": "966"
+    },
+    {
+      "mode": "async",
+      "warmup": "false",
+      "operation": "12",
+      "cells": "16777216",
+      "ownerMs": "3.399357",
+      "snapshotMs": "367.560477",
+      "writeMs": "7740.283652",
+      "tickMs": "3.652033",
+      "heapUsedMiB": "973"
+    },
+    {
+      "mode": "sync",
+      "warmup": "false",
+      "operation": "13",
+      "cells": "16777216",
+      "ownerMs": "7278.762728",
+      "snapshotMs": "0.0",
+      "writeMs": "7278.69161",
+      "tickMs": "7279.72559",
+      "heapUsedMiB": "974"
+    }
+  ],
+  "source_atlas_sha256": "743b8f062d0d33bef3ca472395b67d77975c6e7ae95da6e529d17bb2dbb4ffd5",
+  "candidate_sha256": "1e19417b7c655d7a0289700e4815d597a28c4fb78af75833f0456f1f2be618eb",
+  "sync": {
+    "count": 6,
+    "owner_mean_ms": 7559.617320333333,
+    "owner_max_ms": 7998.103368,
+    "tick_max_ms": 7999.100908,
+    "write_mean_ms": 7559.573879,
+    "heap_max_mib": 974
+  },
+  "async": {
+    "count": 6,
+    "owner_mean_ms": 6.138724833333333,
+    "owner_max_ms": 12.62509,
+    "tick_max_ms": 13.490389,
+    "write_mean_ms": 7699.3244305,
+    "heap_max_mib": 973
+  },
+  "minecraft": "26.3",
+  "loader": "NeoForge 26.3.0.37-beta",
+  "logical_cpus": 4,
+  "ram_mib": 7941,
+  "max_heap_mib": 4096,
+  "geometry": {
+    "circumference": 32768,
+    "width": 512,
+    "cells": 16777216
+  },
+  "players": 0,
+  "method": "unchanged 6ee5bd56 synchronous save codec vs bounded writer, same backed-up complete Atlas, one warmup per mode and six AB/BA pairs",
+  "scope": "server checkpoint latency; not gameplay FPS, network packet loss or a full release gate",
+  "benchmark_source_note": "trial4 preceded the final worker catch(Throwable) fail-safe; the successful copy/write path is unchanged",
+  "final_code_commit": "d82602e",
+  "development_validation": {
+    "code_commit": "d82602e",
+    "native_launches": [
+      {
+        "cell": "26.3-fabric",
+        "phase": "fresh",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 51798,
+        "sha256": "d7701674bb5fb2ee90018ff874ec522e34d5629ab4545aa3aae8dcc0a6f374a8"
+      },
+      {
+        "cell": "26.3-fabric",
+        "phase": "interrupted",
+        "status": "INTERRUPTED",
+        "cells": 13056,
+        "total": 262144,
+        "elapsedMillis": 4788,
+        "sha256": "e15c6d50bd79abb08589ba08ededa851e704b8636e3ac01860ae9f64cde5122c"
+      },
+      {
+        "cell": "26.3-fabric",
+        "phase": "resumed",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 49963,
+        "sha256": "fd3935b7911a39f3c2e7a8900f021e2b0fdb30c65cda9176c08699103422b250"
+      },
+      {
+        "cell": "26.3-fabric",
+        "phase": "reopen",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 0,
+        "sha256": "fd3935b7911a39f3c2e7a8900f021e2b0fdb30c65cda9176c08699103422b250"
+      },
+      {
+        "cell": "26.3-neoforge",
+        "phase": "fresh",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 51700,
+        "sha256": "1834ae82a7561aa3766c21da6573df4465a8da563c41fb0e54a33bf8cd0d9604"
+      },
+      {
+        "cell": "26.3-neoforge",
+        "phase": "interrupted",
+        "status": "INTERRUPTED",
+        "cells": 13056,
+        "total": 262144,
+        "elapsedMillis": 4876,
+        "sha256": "a5214588276750580555c2828132b2398ec3cc3f7ebf69243b23ba104420e9c6"
+      },
+      {
+        "cell": "26.3-neoforge",
+        "phase": "resumed",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 50199,
+        "sha256": "1d2c3b532d3c7e3f447d1903e3d4124d2d0951ae1ce52b1d3e887aaab8f32831"
+      },
+      {
+        "cell": "26.3-neoforge",
+        "phase": "reopen",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 0,
+        "sha256": "1d2c3b532d3c7e3f447d1903e3d4124d2d0951ae1ce52b1d3e887aaab8f32831"
+      },
+      {
+        "cell": "26.2-fabric",
+        "phase": "fresh",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 51973,
+        "sha256": "0ebe817dcbd45572dd62da79164a5e42cfa73c6b102f472acbf39e15c6444c3b"
+      },
+      {
+        "cell": "26.2-fabric",
+        "phase": "interrupted",
+        "status": "INTERRUPTED",
+        "cells": 12544,
+        "total": 262144,
+        "elapsedMillis": 5272,
+        "sha256": "2b5aa197be02919e3cb769d3a262227540d46d7c70c8eed072af70d24bda13e8"
+      },
+      {
+        "cell": "26.2-fabric",
+        "phase": "resumed",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 50638,
+        "sha256": "49452f9de37699d7526d3d9721faf7995be9983483d3a34dd528326df3c200b6"
+      },
+      {
+        "cell": "26.2-fabric",
+        "phase": "reopen",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 0,
+        "sha256": "49452f9de37699d7526d3d9721faf7995be9983483d3a34dd528326df3c200b6"
+      },
+      {
+        "cell": "26.2-neoforge",
+        "phase": "fresh",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 52348,
+        "sha256": "2ce5fbaa8c318495f008439a9a942475b2b3df13c02644cc7a01b297525497fd"
+      },
+      {
+        "cell": "26.2-neoforge",
+        "phase": "interrupted",
+        "status": "INTERRUPTED",
+        "cells": 12544,
+        "total": 262144,
+        "elapsedMillis": 5216,
+        "sha256": "bafa0a35866abd8e6945b5ae655d9a5ff1cc80f72ce9984a79b72baccfb1d7bd"
+      },
+      {
+        "cell": "26.2-neoforge",
+        "phase": "resumed",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 50631,
+        "sha256": "2a023c62d712078c42150d4ceffdbd0841b8db66c0d60bdf7fbf27afd42121e8"
+      },
+      {
+        "cell": "26.2-neoforge",
+        "phase": "reopen",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 0,
+        "sha256": "2a023c62d712078c42150d4ceffdbd0841b8db66c0d60bdf7fbf27afd42121e8"
+      },
+      {
+        "cell": "26.1-fabric",
+        "phase": "fresh",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 52015,
+        "sha256": "1a174831edc3b164cd6d80cdc2f20ead95919a28f682bf4a9056fc05cd592911"
+      },
+      {
+        "cell": "26.1-fabric",
+        "phase": "interrupted",
+        "status": "INTERRUPTED",
+        "cells": 11008,
+        "total": 262144,
+        "elapsedMillis": 5156,
+        "sha256": "66e15f70f9ccf4bdf621bcbe579a17dde82bdbd981179bb07fb2af9b9c16bc5d"
+      },
+      {
+        "cell": "26.1-fabric",
+        "phase": "resumed",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 50819,
+        "sha256": "b755f9da43b323bb0ccc1d37580fc0b23d8218ac4c74755ea7c64262e05a2bd8"
+      },
+      {
+        "cell": "26.1-fabric",
+        "phase": "reopen",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 0,
+        "sha256": "b755f9da43b323bb0ccc1d37580fc0b23d8218ac4c74755ea7c64262e05a2bd8"
+      },
+      {
+        "cell": "26.1-neoforge",
+        "phase": "fresh",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 52009,
+        "sha256": "a468b629f2631d22263456468f7d1e1e87a80c1579bfa6873b7073ab3896dc75"
+      },
+      {
+        "cell": "26.1-neoforge",
+        "phase": "interrupted",
+        "status": "INTERRUPTED",
+        "cells": 11264,
+        "total": 262144,
+        "elapsedMillis": 5188,
+        "sha256": "5443e473ce4f41b52713dc5c370e2e8565a2ec6533758a128ba88079b5780a50"
+      },
+      {
+        "cell": "26.1-neoforge",
+        "phase": "resumed",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 51079,
+        "sha256": "29bff65d61f1610e74cb1a3c1e5fcfffbd61b74d4cae4d11b10242fad153f08f"
+      },
+      {
+        "cell": "26.1-neoforge",
+        "phase": "reopen",
+        "status": "COMPLETE",
+        "cells": 262144,
+        "total": 262144,
+        "elapsedMillis": 0,
+        "sha256": "29bff65d61f1610e74cb1a3c1e5fcfffbd61b74d4cae4d11b10242fad153f08f"
+      }
+    ],
+    "build_groups": {
+      "26.1": "PASS",
+      "26.2": "PASS",
+      "26.3": "PASS"
+    },
+    "python": {
+      "run": 452,
+      "passed": 450,
+      "skipped": 2
+    },
+    "oldest_java_tests_per_loader": 492,
+    "oldest_java_failures": 0
+  },
+  "normal_server_validation": {
+    "checkpoint_count": 32,
+    "maximum_owner_copy_ms": 63.892663,
+    "overload_warnings": 0,
+    "save_errors": 0,
+    "flush_errors": 0,
+    "region_coverage": {
+      "canonical_chunks": 65536,
+      "present_chunk_records": 65536,
+      "missing_examples": [],
+      "region_files": 128,
+      "scope": "region location-table coverage; does not assert every chunk terrain value"
+    },
+    "jar_sha256": "f98f421baca28dcc4b3815f2b85c0130604e67f35e8325d5da647ee578470693",
+    "comparison_probe_enabled": false,
+    "pregeneration_enabled": true,
+    "scope": "Normal format-11 recapture on pregenerated Large chunks; not a player-load or packet-loss test. Includes a 63.9 ms post-restart copy-step outlier, no overload/save/flush warnings in the retained window."
+  }
+}

@@ -1,0 +1,266 @@
+{
+  "before": {
+    "idle": {
+      "samples": 12,
+      "meanTickMs": 0.20833333333333334,
+      "worstWindowMeanMs": 0.3,
+      "medianWindowP95Ms": 0.35,
+      "worstWindowP99Ms": 8.7,
+      "meanCpuPercentOneCore100": 1.557150103005711,
+      "peakRssMiB": 1271.171875,
+      "peakSwapMiB": 0.0,
+      "allSamplesThreePlayers": false,
+      "durationSeconds": 60
+    },
+    "joining": {
+      "samples": 30,
+      "meanTickMs": 31.7,
+      "worstWindowMeanMs": 61.6,
+      "medianWindowP95Ms": 284.85,
+      "worstWindowP99Ms": 484.4,
+      "meanCpuPercentOneCore100": 270.92759061077976,
+      "peakRssMiB": 2562.21484375,
+      "peakSwapMiB": 0.0,
+      "allSamplesThreePlayers": false,
+      "durationSeconds": 150
+    },
+    "move": {
+      "samples": 24,
+      "meanTickMs": 38.979166666666664,
+      "worstWindowMeanMs": 42.2,
+      "medianWindowP95Ms": 296.65,
+      "worstWindowP99Ms": 455.5,
+      "meanCpuPercentOneCore100": 236.55840000626037,
+      "peakRssMiB": 4224.8515625,
+      "peakSwapMiB": 0.0,
+      "allSamplesThreePlayers": true,
+      "durationSeconds": 120
+    },
+    "fast-move": {
+      "samples": 24,
+      "meanTickMs": 32.88333333333333,
+      "worstWindowMeanMs": 38.6,
+      "medianWindowP95Ms": 286.29999999999995,
+      "worstWindowP99Ms": 506.3,
+      "meanCpuPercentOneCore100": 244.50272395832482,
+      "peakRssMiB": 4462.765625,
+      "peakSwapMiB": 0.0,
+      "allSamplesThreePlayers": true,
+      "durationSeconds": 120
+    },
+    "stationary": {
+      "samples": 24,
+      "meanTickMs": 33.44166666666667,
+      "worstWindowMeanMs": 39.7,
+      "medianWindowP95Ms": 293.45000000000005,
+      "worstWindowP99Ms": 462.4,
+      "meanCpuPercentOneCore100": 224.73220838640262,
+      "peakRssMiB": 4501.51953125,
+      "peakSwapMiB": 0.0,
+      "allSamplesThreePlayers": true,
+      "durationSeconds": 120
+    },
+    "profile": {
+      "serverThreadSamples": 2929,
+      "presentChunkCountSamplesInRetainedTopStacks": 1307
+    }
+  },
+  "after": {
+    "idle": {
+      "samples": 12,
+      "meanTickMs": 0.6083333333333333,
+      "worstWindowMeanMs": 1.0,
+      "medianWindowP95Ms": 0.8,
+      "worstWindowP99Ms": 16.1,
+      "meanCpuPercentOneCore100": 3.0232136889832826,
+      "peakRssMiB": 1308.12109375,
+      "peakSwapMiB": 0.0,
+      "allSamplesThreePlayers": false,
+      "durationSeconds": 60,
+      "observedTps": 20.0043448350773
+    },
+    "joining": {
+      "samples": 30,
+      "meanTickMs": 17.46666666666667,
+      "worstWindowMeanMs": 42.5,
+      "medianWindowP95Ms": 24.1,
+      "worstWindowP99Ms": 270.1,
+      "meanCpuPercentOneCore100": 163.30758656447153,
+      "peakRssMiB": 1922.4140625,
+      "peakSwapMiB": 0.0,
+      "allSamplesThreePlayers": false,
+      "durationSeconds": 150,
+      "observedTps": 19.72328525169267
+    },
+    "move": {
+      "samples": 24,
+      "meanTickMs": 23.2375,
+      "worstWindowMeanMs": 30.0,
+      "medianWindowP95Ms": 41.7,
+      "worstWindowP99Ms": 268.7,
+      "meanCpuPercentOneCore100": 281.1389156443943,
+      "peakRssMiB": 4239.6015625,
+      "peakSwapMiB": 0.0,
+      "allSamplesThreePlayers": true,
+      "durationSeconds": 120,
+      "observedTps": 20.265386204047914
+    },
+    "fast-move": {
+      "samples": 24,
+      "meanTickMs": 22.383333333333333,
+      "worstWindowMeanMs": 29.7,
+      "medianWindowP95Ms": 45.349999999999994,
+      "worstWindowP99Ms": 273.7,
+      "meanCpuPercentOneCore100": 262.0770341956429,
+      "peakRssMiB": 4726.6484375,
+      "peakSwapMiB": 0.0,
+      "allSamplesThreePlayers": true,
+      "durationSeconds": 120,
+      "observedTps": 19.97415606023496
+    },
+    "stationary": {
+      "samples": 24,
+      "meanTickMs": 24.645833333333332,
+      "worstWindowMeanMs": 29.0,
+      "medianWindowP95Ms": 36.6,
+      "worstWindowP99Ms": 451.6,
+      "meanCpuPercentOneCore100": 237.56065618906456,
+      "peakRssMiB": 4736.953125,
+      "peakSwapMiB": 0.0,
+      "allSamplesThreePlayers": true,
+      "durationSeconds": 120,
+      "observedTps": 19.998966906573916
+    },
+    "center": {
+      "samples": 12,
+      "meanTickMs": 32.8,
+      "worstWindowMeanMs": 47.3,
+      "medianWindowP95Ms": 44.45,
+      "worstWindowP99Ms": 1135.3,
+      "meanCpuPercentOneCore100": 255.21783607827024,
+      "peakRssMiB": 4740.37890625,
+      "peakSwapMiB": 0.0,
+      "allSamplesThreePlayers": true,
+      "durationSeconds": 60,
+      "observedTps": 19.223154181216028
+    },
+    "profile": {
+      "serverThreadSamples": 1477,
+      "presentChunkCountSamplesInRetainedTopStacks": 0
+    }
+  },
+  "sourcePatch": "constant-time completed Atlas presentChunkCount",
+  "beforeJarSha256": "a13bcbee0b655bf805f6e0883a31e5e6a84e2ddf6933468e10114d33f64bfe2b",
+  "afterJarSha256": "9f6c522fd83d1c82231beb8f06e869a427efbc642c8d556b5c3e37c33530e5e1",
+  "environment": {
+    "minecraft": "26.3",
+    "neoforge": "26.3.0.37-beta",
+    "logicalCpus": 4,
+    "serverMaxHeapGiB": 4,
+    "serverViewDistance": 28,
+    "simulationDistance": 8,
+    "clients": 3,
+    "clientViewDistance": 12,
+    "clientFpsCap": 15,
+    "walkingBlocksPerSecond": 5,
+    "fastBlocksPerSecond": 32,
+    "travelZ": 256,
+    "extraCenterZ": 0,
+    "networkRoute": "SSH tunnel to isolated loopback-only offline server; public authentication preserved"
+  },
+  "tests": [
+    {
+      "name": "dev.ringworld.world.RingTerrainAtlasTest",
+      "tests": "23",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-10T10:19:18.226Z",
+      "hostname": "Chriss-MacBook-Air.local",
+      "time": "1.27",
+      "mc": "26.3",
+      "loader": "fabric"
+    },
+    {
+      "name": "dev.ringworld.world.RingTerrainAtlasTest",
+      "tests": "23",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-10T10:19:45.113Z",
+      "hostname": "Chriss-MacBook-Air.local",
+      "time": "0.425",
+      "mc": "26.3",
+      "loader": "neoforge"
+    },
+    {
+      "name": "dev.ringworld.world.RingTerrainAtlasTest",
+      "tests": "23",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-10T10:19:57.742Z",
+      "hostname": "Chriss-MacBook-Air.local",
+      "time": "0.685",
+      "mc": "26.2",
+      "loader": "fabric"
+    },
+    {
+      "name": "dev.ringworld.world.RingTerrainAtlasTest",
+      "tests": "23",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-10T10:20:20.434Z",
+      "hostname": "Chriss-MacBook-Air.local",
+      "time": "0.945",
+      "mc": "26.2",
+      "loader": "neoforge"
+    },
+    {
+      "name": "dev.ringworld.world.RingTerrainAtlasTest",
+      "tests": "23",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-10T10:20:32.776Z",
+      "hostname": "Chriss-MacBook-Air.local",
+      "time": "1.174",
+      "mc": "26.1",
+      "loader": "fabric"
+    },
+    {
+      "name": "dev.ringworld.world.RingTerrainAtlasTest",
+      "tests": "23",
+      "skipped": "0",
+      "failures": "0",
+      "errors": "0",
+      "timestamp": "2026-10-10T10:20:55.955Z",
+      "hostname": "Chriss-MacBook-Air.local",
+      "time": "0.706",
+      "mc": "26.1",
+      "loader": "neoforge"
+    }
+  ],
+  "publicUpdate": {
+    "sha256": "9f6c522fd83d1c82231beb8f06e869a427efbc642c8d556b5c3e37c33530e5e1",
+    "jar": "/opt/ringworld-server/mods/ringworld-neoforge-1.4.0-capture-status+mc26.3.jar",
+    "backup": "/opt/ringworld-server-archives/pre-1.4-checkpoint-20261010/pre-status-scan-fix.jar",
+    "restart": "controller restores public service after test"
+  },
+  "overloadWarnings": {
+    "before": 4,
+    "afterSharedPhases": 2,
+    "afterExtraCenterPhase": 1
+  },
+  "rawEvidenceDirectory": "logs/server-multiplayer-load",
+  "limitations": [
+    "window statistics, not pooled tick percentiles",
+    "sequential trials; initial join placement timing differs",
+    "extra in-band case has no pre-fix pair",
+    "three hidden clients at 12 chunks; no survival/20-player/long-soak qualification",
+    "network packet loss and representative client FPS unmeasured",
+    "remaining 1135.3 ms in-band transition window P99; not hitch-free",
+    "complete-Atlas shortcut only; partial coverage still scans"
+  ]
+}

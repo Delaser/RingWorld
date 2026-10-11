@@ -1,0 +1,573 @@
+{
+  "code_commit": "3ea998d62483e2c78e03adf00337f591e03dc91d",
+  "minecraft": "26.3",
+  "loader": "NeoForge 26.3.0.37-beta",
+  "geometry": {
+    "circumference": 32768,
+    "width": 512,
+    "cells": 16777216
+  },
+  "players": 0,
+  "jar_sha256": "a13bcbee0b655bf805f6e0883a31e5e6a84e2ddf6933468e10114d33f64bfe2b",
+  "jar_note": "Diagnostic build made from the working tree subsequently committed as 3ea998d; not a frozen release candidate.",
+  "method": "Six alternating policy operations: 1,auto,auto,1,1,auto. Discard first 200-tick window after each command, retain next two. Fixed 1 changes both admission and capture; it is not an isolated capture-only baseline.",
+  "policy_comparison": {
+    "1": {
+      "windows": 6,
+      "chunks_per_200_ticks": 99.83333333333333,
+      "owner_ms_per_tick": 0.4772877033333333,
+      "owner_max_ms": 11.700686,
+      "observed_tick_max_ms": 37.254585,
+      "targets": [
+        1
+      ],
+      "cells_per_second_at_20_tps": 2555.733333333333
+    },
+    "auto": {
+      "windows": 6,
+      "chunks_per_200_ticks": 501.5,
+      "owner_ms_per_tick": 1.9467884975,
+      "owner_max_ms": 20.752974,
+      "observed_tick_max_ms": 33.41061,
+      "targets": [
+        4
+      ],
+      "cells_per_second_at_20_tps": 12838.4
+    }
+  },
+  "raw_operations": [
+    {
+      "operation": 0,
+      "mode": "1",
+      "policy": "RingWorld chunk generation: fixed, 1 concurrent requests, up to 1 captures/tick (2 ms budget). Existing requests finish normally. Setting lasts until the world closes.",
+      "warmup_window": {
+        "chunks": 320,
+        "ownerTotalMs": 243.625295,
+        "ownerMaxMs": 4.857295,
+        "tickMaxMs": 24.404054,
+        "target": 1,
+        "observedAt": 1791620945.2037544
+      },
+      "windows": [
+        {
+          "chunks": 93,
+          "ownerTotalMs": 93.35434,
+          "ownerMaxMs": 3.182591,
+          "tickMaxMs": 23.785028,
+          "target": 1,
+          "observedAt": 1791620955.2198157
+        },
+        {
+          "chunks": 106,
+          "ownerTotalMs": 119.302232,
+          "ownerMaxMs": 11.700686,
+          "tickMaxMs": 37.254585,
+          "target": 1,
+          "observedAt": 1791620965.0357518
+        }
+      ],
+      "status_after": "RingWorld atlas: 14301184/16777216 cells (85.2%), generation running, 6937 cells/s, ETA 5m56s, requests 1 (fixed)"
+    },
+    {
+      "operation": 1,
+      "mode": "auto",
+      "policy": "RingWorld chunk generation: auto, 4 concurrent requests, up to 4 captures/tick (2 ms budget). Existing requests finish normally. Setting lasts until the world closes.",
+      "warmup_window": {
+        "chunks": 462,
+        "ownerTotalMs": 410.07798,
+        "ownerMaxMs": 6.586839,
+        "tickMaxMs": 41.547998,
+        "target": 4,
+        "observedAt": 1791620975.165639
+      },
+      "windows": [
+        {
+          "chunks": 484,
+          "ownerTotalMs": 417.805422,
+          "ownerMaxMs": 20.752974,
+          "tickMaxMs": 33.032765,
+          "target": 4,
+          "observedAt": 1791620985.1832309
+        },
+        {
+          "chunks": 511,
+          "ownerTotalMs": 390.145018,
+          "ownerMaxMs": 5.169515,
+          "tickMaxMs": 26.963914,
+          "target": 4,
+          "observedAt": 1791620995.2031422
+        }
+      ],
+      "status_after": "RingWorld atlas: 14679552/16777216 cells (87.5%), generation running, 9027 cells/s, ETA 3m52s, requests 4 (auto)"
+    },
+    {
+      "operation": 2,
+      "mode": "auto",
+      "policy": "RingWorld chunk generation: auto, 4 concurrent requests, up to 4 captures/tick (2 ms budget). Existing requests finish normally. Setting lasts until the world closes.",
+      "warmup_window": {
+        "chunks": 519,
+        "ownerTotalMs": 386.203421,
+        "ownerMaxMs": 7.541724,
+        "tickMaxMs": 36.948437,
+        "target": 4,
+        "observedAt": 1791621005.1133287
+      },
+      "windows": [
+        {
+          "chunks": 458,
+          "ownerTotalMs": 371.333116,
+          "ownerMaxMs": 13.461025,
+          "tickMaxMs": 33.41061,
+          "target": 4,
+          "observedAt": 1791621015.1368992
+        },
+        {
+          "chunks": 529,
+          "ownerTotalMs": 380.186594,
+          "ownerMaxMs": 13.575789,
+          "tickMaxMs": 24.4603,
+          "target": 4,
+          "observedAt": 1791621025.1550512
+        }
+      ],
+      "status_after": "RingWorld atlas: 15064832/16777216 cells (89.8%), generation running, 10067 cells/s, ETA 2m50s, requests 4 (auto)"
+    },
+    {
+      "operation": 3,
+      "mode": "1",
+      "policy": "RingWorld chunk generation: fixed, 1 concurrent requests, up to 1 captures/tick (2 ms budget). Existing requests finish normally. Setting lasts until the world closes.",
+      "warmup_window": {
+        "chunks": 124,
+        "ownerTotalMs": 97.180214,
+        "ownerMaxMs": 4.529288,
+        "tickMaxMs": 18.835162,
+        "target": 1,
+        "observedAt": 1791621035.0907493
+      },
+      "windows": [
+        {
+          "chunks": 88,
+          "ownerTotalMs": 68.287845,
+          "ownerMaxMs": 3.544898,
+          "tickMaxMs": 14.927454,
+          "target": 1,
+          "observedAt": 1791621045.1030214
+        },
+        {
+          "chunks": 104,
+          "ownerTotalMs": 94.021415,
+          "ownerMaxMs": 6.39119,
+          "tickMaxMs": 17.356759,
+          "target": 1,
+          "observedAt": 1791621055.1179106
+        }
+      ],
+      "status_after": "RingWorld atlas: 15141376/16777216 cells (90.2%), generation running, 8467 cells/s, ETA 3m13s, requests 1 (fixed)"
+    },
+    {
+      "operation": 4,
+      "mode": "1",
+      "policy": "RingWorld chunk generation: fixed, 1 concurrent requests, up to 1 captures/tick (2 ms budget). Existing requests finish normally. Setting lasts until the world closes.",
+      "warmup_window": {
+        "chunks": 96,
+        "ownerTotalMs": 101.234729,
+        "ownerMaxMs": 11.075184,
+        "tickMaxMs": 16.252347,
+        "target": 1,
+        "observedAt": 1791621065.040596
+      },
+      "windows": [
+        {
+          "chunks": 108,
+          "ownerTotalMs": 96.334243,
+          "ownerMaxMs": 8.87801,
+          "tickMaxMs": 17.431916,
+          "target": 1,
+          "observedAt": 1791621075.054091
+        },
+        {
+          "chunks": 100,
+          "ownerTotalMs": 101.445169,
+          "ownerMaxMs": 5.514688,
+          "tickMaxMs": 17.091865,
+          "target": 1,
+          "observedAt": 1791621085.0686677
+        }
+      ],
+      "status_after": "RingWorld atlas: 15218944/16777216 cells (90.7%), generation running, 7435 cells/s, ETA 3m29s, requests 1 (fixed)"
+    },
+    {
+      "operation": 5,
+      "mode": "auto",
+      "policy": "RingWorld chunk generation: auto, 4 concurrent requests, up to 4 captures/tick (2 ms budget). Existing requests finish normally. Setting lasts until the world closes.",
+      "warmup_window": {
+        "chunks": 493,
+        "ownerTotalMs": 374.428828,
+        "ownerMaxMs": 10.515452,
+        "tickMaxMs": 21.643173,
+        "target": 4,
+        "observedAt": 1791621095.1690226
+      },
+      "windows": [
+        {
+          "chunks": 518,
+          "ownerTotalMs": 388.809791,
+          "ownerMaxMs": 5.732255,
+          "tickMaxMs": 30.352357,
+          "target": 4,
+          "observedAt": 1791621105.194658
+        },
+        {
+          "chunks": 509,
+          "ownerTotalMs": 387.866256,
+          "ownerMaxMs": 11.353888,
+          "tickMaxMs": 21.540518,
+          "target": 4,
+          "observedAt": 1791621115.2145803
+        }
+      ],
+      "status_after": "RingWorld atlas: 15612672/16777216 cells (93.1%), generation running, 8280 cells/s, ETA 2m20s, requests 4 (auto)"
+    }
+  ],
+  "previous_rebuild_observation": {
+    "cells_per_second": 5112,
+    "request_target": 4,
+    "explicit_capture_ceiling": 1,
+    "scope": "Earlier normal rebuild on this same Large world, different portions of terrain/time; observational comparison, not paired identical-chunk benchmark."
+  },
+  "complete_cache_audit": {
+    "format": 11,
+    "circumference": 32768,
+    "width": 512,
+    "present": 16777216,
+    "cells": 16777216,
+    "complete": true,
+    "sha256": "3bca663214e181e632cc97e31f4f10f78f312124a7f2f90d4f7bb1d9645e90c9",
+    "jar_sha256": "a13bcbee0b655bf805f6e0883a31e5e6a84e2ddf6933468e10114d33f64bfe2b"
+  },
+  "limits": [
+    "No active-player, gameplay FPS or network packet-loss test.",
+    "Explicit capture owner time excludes chunk-load callbacks, loading/generation and checkpoint work.",
+    "Rates normalized to 20 TPS / 200-tick windows; observed sample boundaries were approximately ten seconds apart.",
+    "Two-millisecond budget is soft; one indivisible chunk and GC can exceed it.",
+    "This is development evidence; the previous six release JARs remain held pending rebuild/full qualification."
+  ],
+  "source_build_tests": {
+    "26.1": {
+      "fabric": {
+        "tests": 496,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "neoforge": {
+        "tests": 496,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "26.2": {
+      "fabric": {
+        "tests": 496,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "neoforge": {
+        "tests": 496,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "26.3": {
+      "fabric": {
+        "tests": 499,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "neoforge": {
+        "tests": 499,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    }
+  },
+  "python": {
+    "tests": 452,
+    "passed": 450,
+    "skipped": 2
+  },
+  "ci_checks": [
+    {
+      "name": "26.1 Fabric source build",
+      "state": "SUCCESS"
+    },
+    {
+      "name": "Static qualification contracts (windows-latest)",
+      "state": "SUCCESS"
+    },
+    {
+      "name": "Static qualification contracts (ubuntu-latest)",
+      "state": "SUCCESS"
+    },
+    {
+      "name": "26.2 Fabric source build",
+      "state": "SUCCESS"
+    },
+    {
+      "name": "package-launcher",
+      "state": "SUCCESS"
+    },
+    {
+      "name": "26.1 NeoForge source build",
+      "state": "SUCCESS"
+    },
+    {
+      "name": "26.2 NeoForge source build",
+      "state": "SUCCESS"
+    },
+    {
+      "name": "26.3 Fabric source build",
+      "state": "SUCCESS"
+    },
+    {
+      "name": "26.3 NeoForge source build",
+      "state": "SUCCESS"
+    }
+  ],
+  "server_reopen": {
+    "status": "RingWorld atlas: 16777216/16777216 cells (100.0%), generation complete, requests 4 (auto)",
+    "attempts": 1,
+    "environment": "Environment=HOME=/opt/ringworld-server JAVA_TOOL_OPTIONS=",
+    "service": "active"
+  },
+  "normal_server_log_audit": {
+    "overload_warnings": 0,
+    "save_errors": 0,
+    "flush_errors": 0,
+    "chunk_retry_warnings": 0
+  },
+  "native_validation": [
+    {
+      "cell": "26.3-fabric",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 82804,
+      "sha256": "b7711c31c0de272f3abec77b8eef93dde6f85698e833d77026cc28cfc1b890b2"
+    },
+    {
+      "cell": "26.3-fabric",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "cells": 14592,
+      "total": 524288,
+      "elapsedMillis": 5051,
+      "sha256": "6e5075ca63becb241c5436bec9c1952f5e003432b1f6386836ad9ea221f7b481"
+    },
+    {
+      "cell": "26.3-fabric",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 67655,
+      "sha256": "45c12ab5c1a5685cb76539f48c271581619fe3790185a31b58467f3fb5789406"
+    },
+    {
+      "cell": "26.3-fabric",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 0,
+      "sha256": "45c12ab5c1a5685cb76539f48c271581619fe3790185a31b58467f3fb5789406"
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 85946,
+      "sha256": "36319b03eb31090d514686adf41a46a9462c55be3ef5e4df8e31c9ae03375813"
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "cells": 14592,
+      "total": 524288,
+      "elapsedMillis": 5114,
+      "sha256": "3cafdf1986401a8e1633cf070e385edc59e0fceaa9b7131e1de6140f224d1ca8"
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 70495,
+      "sha256": "e1ca84baf5e4219e8f7bdbf3ddbf81a821431dcc6762312d64ccbfce2c19d122"
+    },
+    {
+      "cell": "26.3-neoforge",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 0,
+      "sha256": "e1ca84baf5e4219e8f7bdbf3ddbf81a821431dcc6762312d64ccbfce2c19d122"
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 95753,
+      "sha256": "779003db8101d59226a49763ed770c0c1d2ce115d50dfd208244a5f59b038618"
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "cells": 10752,
+      "total": 524288,
+      "elapsedMillis": 5211,
+      "sha256": "34d9ddb7cb2fe66ec25722134563a3d32d25b801189d3395e76d57fb2a1b3e1b"
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 80067,
+      "sha256": "faaf0306cd12719e5e2b0ae36c16ca433946c8f0bf955365274cf740e2320f3f"
+    },
+    {
+      "cell": "26.2-fabric",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 0,
+      "sha256": "faaf0306cd12719e5e2b0ae36c16ca433946c8f0bf955365274cf740e2320f3f"
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 94800,
+      "sha256": "7325db2952714b9d051bbaa9bc727381d642bbc287c1361e44bf4088e947a16d"
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "cells": 14592,
+      "total": 524288,
+      "elapsedMillis": 5345,
+      "sha256": "caed58b9c2e9717ac41556074e60fa54c259f3df78d6c81f4dfff3ff256df102"
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 81110,
+      "sha256": "f087d9406e2f2ba5062350e8df0a3ed958c3fb176d2a52c80b82fc20aafd1fb3"
+    },
+    {
+      "cell": "26.2-neoforge",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 0,
+      "sha256": "f087d9406e2f2ba5062350e8df0a3ed958c3fb176d2a52c80b82fc20aafd1fb3"
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 96209,
+      "sha256": "30621991fd0de5344d72bc94da4f84711db2d1f41c7b789cfc61033d1279f767"
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "cells": 11520,
+      "total": 524288,
+      "elapsedMillis": 5278,
+      "sha256": "a8efb56b899195fde9a0c92eac5e96b68e0c0b8b610aa8a540d0a3dc55658e0f"
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 81030,
+      "sha256": "5b14c682d62e0eb7b7f228967095cd9d04c1ba01142efd630839097284a9eb1f"
+    },
+    {
+      "cell": "26.1-fabric",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 0,
+      "sha256": "5b14c682d62e0eb7b7f228967095cd9d04c1ba01142efd630839097284a9eb1f"
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "fresh",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 74051,
+      "sha256": "c0d241d88be16af3f911ff6420ae83662e7290e6b7649e12e7442c66d563bdc1"
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "interrupted",
+      "status": "INTERRUPTED",
+      "cells": 13568,
+      "total": 524288,
+      "elapsedMillis": 5292,
+      "sha256": "45a3b0c9b35433b0fcb7943a0ed94515fc4c869ba0b7ff8ad4b2e8995868768d"
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "resumed",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 63300,
+      "sha256": "54ceae5ae932be505695e38671c4e0a76faa68ab1244cec9d222e5b8d2bb0d3e"
+    },
+    {
+      "cell": "26.1-neoforge",
+      "phase": "reopen",
+      "status": "COMPLETE",
+      "cells": 524288,
+      "total": 524288,
+      "elapsedMillis": 0,
+      "sha256": "54ceae5ae932be505695e38671c4e0a76faa68ab1244cec9d222e5b8d2bb0d3e"
+    }
+  ],
+  "native_probe_checks": "Every fresh runtime passes pause/drain/resume/cancel/restart, session rate override, and real mailbox synthetic FPS 4->2->1->2->4."
+}

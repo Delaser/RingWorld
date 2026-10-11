@@ -30,7 +30,7 @@ final class RingAtlasPregenerationBatch<T> {
                 || slots.stream().anyMatch(slot -> slot.request != null || slot.selection.selected() != null);
     }
 
-    /** One ready slot per tick, fairly rotating; unfinished older loads never block ready ones. */
+    /** Next ready slot, fairly rotating; unfinished older loads never block ready ones. */
     Slot<T> nextCompleted() {
         for (int offset = 0; offset < slots.size(); offset++) {
             int index = (nextCompletedSlot + offset) % slots.size();

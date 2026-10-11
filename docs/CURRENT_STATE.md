@@ -1,12 +1,116 @@
-# Current state
+# Large-server lighting allocation — development validation complete
 
-October 11: Nearby block correction (previously labelled normalisation) defaults
-on, including after disconnect. The Display toggle, live `/ringworld distortion`
-commands and three-chunk default range remain. Shared client sources compile for
-all six supported version/loader groups; 12 version-source checks pass. The
-capture fixture selects Off explicitly for its baseline and expects On after
-disconnect. Native capture and frozen release qualification were not rerun for
-this default change; the previously staged JARs do not contain it.
+October 11: nearby block correction (previously labelled normalisation) now
+defaults on, including after disconnect. The client Display toggle, live
+`/ringworld distortion` commands and default three-chunk range remain available.
+All six client/loader compilation checks and 12 version-source checks pass.
+The capture fixture explicitly selects Off for its baseline and expects On
+after disconnect; native capture/release qualification was not rerun for this change.
+
+October 11: server Overworld lighting snapshots now share unchanged lookup
+partitions instead of cloning every section map on each publication. Two
+pristine Large-world / three-client repeats show zero full G1 compactions,
+versus one 682 ms compaction before. Worst whole ticks fall from 796 ms to
+277/266 ms; sampled allocation falls from 254 to 181/183 MiB/s. Ordinary young
+GC and indivisible ticket work remain. Both on-disk edits and flush/stop/reopen
+checks pass. Temporary probes are removed from production. All six source/loader builds,
+3,036 Java tests, 367 static contracts and nine CI checks pass. All 12 native
+fresh/reopen phases pass; six independent byte-identical cache reopen audits
+report zero regeneration. All six development artifact audits pass. Public
+server restored to its prior JAR. The owner approved PR #279 for integration
+on October 11; full replacement-JAR release qualification is still required. See [cause, implementation and evidence](SERVER_LIGHTING_SNAPSHOTS_2026_10_11.md).
+
+# Large-server chunk-work fixes — historical GC gate, superseded above
+
+October 11: PR #279 now spreads scheduled Overworld chunk snapshots across ticks,
+bounds ordinary unload/eager work with pressure-based catch-up, and defers the
+first optional location check after movement by one vanilla interval. Required
+ticket graphs, explicit saves, flush and shutdown stay complete. A matched
+three-client Large-world pair reduces autosave from 387 to 106 ms and the worst
+GC-free movement tick from 1,029 to 177 ms. The worst full tick falls from 1,939
+to 796 ms, but one new 682 ms full G1 compaction remains a release concern.
+Do not treat this as overall acceptance. Edit-on-disk and restart read-back pass;
+all six builds/Java suites and nine CI checks pass. All 24 corrected native lifecycle phases and independent saved-file audits pass. Public service restored to its prior JAR, clients/tunnel stopped;
+PR #279 and all replacement/release qualification remain held. See
+[implementation, matched evidence and limits](SERVER_STALL_INVESTIGATION_2026_10_10.md).
+
+# Queued player-load Atlas capture — development validation complete
+
+The approved shared queue, tint-only biome lookups and tile-header reservation
+are implemented on PR #279. Player and ready captures share the existing 4/2/1
+policy and soft 2 ms budget. The actual three-client Large-server repeat observes
+the four-chunk ceiling and a lower Atlas capture sample share (6.9%→1.5%), but
+**no overall tick-time improvement**. In-band transition spikes still reach
+1,228 ms, surrounding vanilla unload/save snapshots and GC. Queue refreshes may
+lag during bursts. No retention or heap change was added. All six local builds/Java suites pass
+(3,000 test executions), together with 367 local static qualification tests and
+all nine CI checks. All 24 native fresh/interrupted/resumed/reopened phases pass
+across the three source ABIs and both loaders; independent saved-file audits
+match every reported count, and completed reopens preserve bytes with zero
+generation time. Old release JARs and full replacement qualification stay held. See [results and limits](SERVER_STALL_INVESTIGATION_2026_10_10.md).
+
+# Pre-queue Large-server investigation — historical baseline
+
+The lighter three-client recording reproduces 1,265/1,006 ms transition P99
+windows without heap-inspection GC. Chunk unloading/snapshotting and ticket
+updates coincide with the longest transition; genuine GC pauses reach 391 ms.
+Inline player-loaded Atlas captures bypass the pregen budget and contribute
+6.9% of travel execution samples. Recommended follow-ups are bounded load
+captures, tint-only biome lookups, and the tile-header buffer correction, then
+matched chunk-churn/GC experiments. No production fix was made during that baseline recording. Public
+server restored; clients/tunnel stopped. See the
+[investigation and limitations](SERVER_STALL_INVESTIGATION_2026_10_10.md).
+
+# Large-server multiplayer trial — follow-up fix tested
+
+October 10: three real hidden/muted clients exposed repeated complete-Atlas
+coverage scans in player progress updates. The shared constant-time completion
+shortcut passes 23 Atlas tests in all six source/loader groups. Walking average
+tick time fell from 39.0 to 23.2 ms, and median window P95 from 296.7 to 41.7 ms.
+Remaining loading outliers include a 1,135 ms P99 window on an additional in-band
+transition; this is not hitch-free or a full release qualification. The public
+Large server is restored with tested diagnostic JAR `9f6c522f`, complete Atlas,
+auto policy and authentication preserved. Test clients/tunnel are stopped.
+See [trial, limitations and evidence](SERVER_MULTIPLAYER_LOAD_2026_10_10.md).
+The old six 1.4 release JARs remain held. PR #279 is approved for integration;
+publication and public-server promotion remain separate and have not happened.
+
+# Adaptive Atlas capture — development validation complete
+
+October 10: source `3ea998d` extends the existing auto request policy to ready
+capture: 4/2/1 chunks per tick, capped at four within a soft 2 ms budget. Existing
+commands and local FPS/server tick feedback are reused. All six builds/tests
+pass: 496 Java cases per loader on 26.1/26.2 and 499 on 26.3; Python runs 452
+with two Windows-only skips. All nine CI checks pass. All 24 native fresh,
+interruption, resume and reopen phases pass, with real concurrency/rate probes
+and synthetic local FPS 4→2→1→2→4 in every fresh runtime. Independently audited
+saved files match their reports; completed reopens have zero elapsed generation
+and unchanged cache bytes. These are development runs on each source ABI, not
+fresh frozen-JAR release qualification across all ten runtime cells.
+
+The actual Large server observes ~12,838 cells/s on auto, versus the previous
+normal rebuild's ~5,112 cells/s (different terrain portions/times). Explicit
+capture averages 1.95 ms/tick; the settled auto windows' worst full tick is
+33.41 ms. Its Atlas is now independently verified complete and reopens at 100%
+with unchanged bytes. Auto is restored and all timing/probe flags are off.
+See [policy, measurements and evidence](ATLAS_CONCURRENCY_253.md). Both this
+change and the checkpoint fix remain in PR #279; the old six release files stay
+held pending replacement and full qualification. Nothing is publicly uploaded.
+
+# Server Atlas checkpoint follow-up — development validation complete
+
+The six qualified 1.4 files from `6ee5bd56` predate this persistence fix. Their
+100-fixture PASS does not qualify replacement JARs. The checkpoint change and
+authorized Large-server update are tracked in [checkpoint persistence](SERVER_ATLAS_CHECKPOINTS.md).
+All six source/loader builds and tests pass, together with 24 native save,
+interruption, resume and reopen phases. Six paired measurements on the actual
+Large server reduced the worst observed checkpoint tick from 7,999 ms to 13.49 ms.
+The final server build is running with the comparison probe disabled and normal
+Atlas recapture restored; the original world and installation are backed up.
+The old six release files must be rebuilt and fully requalified before publication.
+No new public upload is authorized.
+
+# Current state
 
 October 10: RingWorld 1.4 has six locally prepared standalone JARs from merged
 source `6ee5bd5`. All ten quick cells and all 100 full-suite fixture invocations
