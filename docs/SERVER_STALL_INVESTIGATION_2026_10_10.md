@@ -1,5 +1,11 @@
 # Remaining Large-server stalls — 10 October 2026
 
+The later [lighting snapshot follow-up](SERVER_LIGHTING_SNAPSHOTS_2026_10_11.md)
+removes the dominant avoidable whole-map allocation: two matched repeats have
+zero full GCs, worst ticks of 277/266 ms and lower allocation. Historical failed
+candidates below remain retained; replacement full-release qualification is
+still separate.
+
 ## Follow-up implementation: ordinary chunk work
 
 The approved fix adds owner-thread work limits separately from Atlas persistence:

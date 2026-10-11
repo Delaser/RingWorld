@@ -1,0 +1,43 @@
+--- /dev/null
++++ b/src/main/java/dev/ringworld/server/RingLightStorageProbe.java
+@@ -0,0 +1,30 @@
++package dev.ringworld.server;
++
++import net.minecraft.world.level.chunk.DataLayer;
++import net.minecraft.world.level.lighting.DataLayerStorageMap;
++
++/** Temporary native ownership probe; only runs when explicitly enabled. */
++public final class RingLightStorageProbe {
++    public static void verify(DataLayerStorageMap<?> live) {
++        var writer = live.copy();
++        long a = 0L, b = (1L << 42) | 5L;
++        writer.setLayer(a, new DataLayer(3));
++        writer.setLayer(b, new DataLayer(7));
++        var first = writer.copy();
++        first.disableCache();
++        writer.copyDataLayer(a).set(0, 0, 0, 13);
++        writer.removeLayer(b);
++        writer.clearCache();
++        var second = writer.copy();
++        second.disableCache();
++        writer.copyDataLayer(a).set(0, 0, 0, 1);
++        writer.clearCache();
++        if (first.getLayer(a).get(0,0,0) != 3 || first.getLayer(b).get(0,0,0) != 7
++                || second.getLayer(a).get(0,0,0) != 13 || second.hasLayer(b)
++                || writer.getLayer(a).get(0,0,0) != 1 || live.hasLayer(a) || live.hasLayer(b)) {
++            throw new IllegalStateException("Lighting snapshot ownership failed");
++        }
++        org.slf4j.LoggerFactory.getLogger("ringworld").info("Lighting snapshot ownership PASS partitioned={}",
++                ((RingLightSectionStorage) live).ringworld$table() != null);
++    }
++}
+--- a/src/main/java/dev/ringworld/mixin/LayerLightSectionStorageMixin.java
++++ b/src/main/java/dev/ringworld/mixin/LayerLightSectionStorageMixin.java
+@@ -21,6 +21,7 @@
+             // Opt in before the first snapshot is published or any lighting tasks can run.
+             ((RingLightSectionStorage) map).ringworld$table(new RingLightSectionTable<>());
+         }
++        if (Boolean.getBoolean("ringworld.lightStorageProbe")) dev.ringworld.server.RingLightStorageProbe.verify(map);
+         return map.copy();
+     }
+ }

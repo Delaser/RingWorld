@@ -35,8 +35,10 @@
 - Scheduled Overworld chunk autosaves spread their snapshots across ticks.
   Ordinary unload and eager-save work has a small allowance that increases under
   backlog or heap pressure. Manual saves, flushes and shutdown still complete
-  their normal save paths. These changes remain under development validation
-  because a full-GC pause remains in the Large-server repeat.
+  their normal save paths. Replacement release qualification remains pending.
+- Server lighting snapshots share unchanged lookup partitions, reducing large
+  temporary map copies during heavy chunk loading and unloading. Two Large-ring
+  repeats avoid the full-GC stall observed in the earlier development candidate.
 - After crossing chunks, the optional location advancement check waits one extra
   normal interval before querying structures, reducing immediate ticket-update
   bursts. Continuous movement cannot starve the check.

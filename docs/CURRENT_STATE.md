@@ -1,4 +1,17 @@
-# Large-server chunk-work fixes — development candidate, GC follow-up required
+# Large-server lighting allocation — matched follow-up passed, matrix checking
+
+October 11: server Overworld lighting snapshots now share unchanged lookup
+partitions instead of cloning every section map on each publication. Two
+pristine Large-world / three-client repeats show zero full G1 compactions,
+versus one 682 ms compaction before. Worst whole ticks fall from 796 ms to
+277/266 ms; sampled allocation falls from 254 to 181/183 MiB/s. Ordinary young
+GC and indivisible ticket work remain. Both on-disk edits and flush/stop/reopen
+checks pass. Temporary probes are removed from production; six source/loader
+builds and fresh/reopen checks are in progress. Public server restored to its
+prior JAR. PR #279 remains draft and replacement full-release qualification is
+still required. See [cause, implementation and evidence](SERVER_LIGHTING_SNAPSHOTS_2026_10_11.md).
+
+# Large-server chunk-work fixes — historical GC gate, superseded above
 
 October 11: PR #279 now spreads scheduled Overworld chunk snapshots across ticks,
 bounds ordinary unload/eager work with pressure-based catch-up, and defers the

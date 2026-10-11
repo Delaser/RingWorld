@@ -60,11 +60,22 @@ adapters equivalent. **Do not split the live loading-ticket graph across ticks**
 without staging holder state and validating retention: the rejected trial
 exposed an unloaded-future crash and new full-GC stalls. Ticket operations remain
 vanilla and can still exceed a tick's allowance. The matched `cf3c5b6` run lowers
-targeted bursts but has one new 682 ms full G1 compaction; overall release
-acceptance stays held. Completed-cache reopen must match the immediately preceding
+targeted bursts but has one new 682 ms full G1 compaction; that historical GC gate is superseded by the partitioned-lighting follow-up
+with zero full GCs in two repeats. Replacement release qualification stays held.
+Completed-cache reopen must match the immediately preceding
 resumed save, not an earlier fresh rebuild of a world that continues ticking.
 See the causes and validation in
 `docs/SERVER_STALL_INVESTIGATION_2026_10_10.md`.
+
+Server Overworld lighting lookup snapshots use `RingLightSectionTable`: 256
+copy-on-write partitions grouped by section column. Preserve the single lighting
+writer, independent copied directories, vanilla `DataLayer` value copies,
+read-cache invalidation and volatile publication timing. Never mutate a published
+lookup or share mutable section values across snapshots. Client/Nether/End retain
+vanilla maps. The original wrapper map remains empty after opt-in; concrete copy
+methods must propagate the partitioned table, including their covariant bridge.
+Whole-map cloning was the dominant avoidable allocation in the full-GC follow-up.
+See `docs/SERVER_LIGHTING_SNAPSHOTS_2026_10_11.md` for measurements and acceptance.
 
 For stall profiling, disable JFR heap-statistics/ObjectCount collection: the
 initial multiplayer profiler forced 0.6–0.7 second full GCs. Use GC pause events,
