@@ -4,6 +4,10 @@ This is the current export route for supported Minecraft 26.x releases.
 The last published release is [1.3 on CurseForge](RELEASE_1_3_PUBLICATION_2026-09-30.md).
 The latest development source requires fresh qualification before another release.
 
+For native Windows execution, use the [Windows release runbook](WINDOWS_RELEASE_RUNBOOK.md).
+It covers the host preflight, production-world preparation and all three
+quick/full groups. Full Windows runtime qualification must be performed on that host.
+
 ## Outputs
 
 | Candidate group | Qualification manifest | Runtime files |

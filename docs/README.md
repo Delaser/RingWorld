@@ -23,10 +23,13 @@ Start here:
   publication route; [export audit](JAR_EXPORT_AUDIT_2026-10-09.md) records cleanup
   and remaining manual checks.
 
+- [Windows release runbook](WINDOWS_RELEASE_RUNBOOK.md): native host preflight,
+  production-world preparation, fresh six-JAR qualification and handoff.
+
 - [Floating-build Atlas sampling (#257)](FLOATING_ATLAS_257.md): conservative
   server capture/live updates, cache invalidation and native checks.
 
-- [Nearby block normalisation (#256)](NEARBY_DISTORTION_TRIAL.md): client controls,
+- [Nearby block correction (#256)](NEARBY_DISTORTION_TRIAL.md): client controls,
   fixed-height projection, integration checks and remaining limitations.
 
 - [Compressed wall previews (#260)](WALL_PREVIEW_COMPRESSION_260.md): shared PNG

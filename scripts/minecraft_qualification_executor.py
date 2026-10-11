@@ -37,6 +37,7 @@ from minecraft_qualification_model import (
     is_within,
 )
 from verify_distribution_license import parse_neoforge_metadata
+from qualification_host import terminate_process_tree
 
 
 LOCK_FORMAT = 1
@@ -380,26 +381,7 @@ def _drain_pipe(source: Any, sink: _BoundedRedactingLog, failures: list[BaseExce
 
 def _terminate_process_group(process: subprocess.Popen[bytes]) -> None:
     """Terminate the whole command group and reap it before evidence closes."""
-    if process.poll() is not None:
-        return
-    if os.name == "nt":
-        process.terminate()
-    else:
-        import signal
-
-        os.killpg(process.pid, signal.SIGTERM)
-    try:
-        process.wait(timeout=5)
-        return
-    except subprocess.TimeoutExpired:
-        pass
-    if os.name == "nt":
-        process.kill()
-    else:
-        import signal
-
-        os.killpg(process.pid, signal.SIGKILL)
-    process.wait(timeout=5)
+    terminate_process_tree(process)
 
 
 def execute_command(record: CommandRecord, paths: QualificationPaths, *, ordinal: int) -> ExecutedCommand:

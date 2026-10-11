@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 from contextlib import nullcontext
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import queue
 import re
 import shutil
@@ -46,6 +46,7 @@ from minecraft_qualification_executor import (
     write_terminal_report,
 )
 from minecraft_qualification_model import CommandRecord, PhaseName, QualificationPaths, Verdict, is_within, socket_port_probe
+from qualification_host import is_windows, neoforge_windows_argv
 
 
 MAX_DOWNLOAD_BYTES = 1024 * 1024 * 1024
@@ -461,8 +462,18 @@ def _verify_launcher(plan: ExternalRuntimeSmokePlan) -> None:
         raise ExternalRuntimeExecutionError("NeoForge generated run-script contract does not match runtime layout")
     _regular_file(contract.path, "NeoForge generated run script")
     _regular_file(contract.required_sibling, "NeoForge generated JVM arguments")
-    if not os.access(contract.path, os.X_OK) or plan.launch.argv != contract.launch_argv:
+    if plan.launch.argv != contract.launch_argv:
         raise ExternalRuntimeExecutionError("NeoForge launch command is not the generated executable run script")
+    if is_windows():
+        version = PurePosixPath(urlparse(plan.downloads[0].url).path).parent.name
+        expected = neoforge_windows_argv(version)
+        if contract.path.name != "run.bat" or plan.launch.argv != expected:
+            raise ExternalRuntimeExecutionError("NeoForge Windows launch differs from its pinned installer arguments")
+        arguments = plan.layout.root / expected[2][1:]
+        _assert_no_symlink_components(arguments, plan.layout.root, "NeoForge Windows arguments")
+        _regular_file(arguments, "NeoForge Windows arguments")
+    elif not os.access(contract.path, os.X_OK):
+        raise ExternalRuntimeExecutionError("NeoForge generated run script is not executable")
 
 
 def _launcher_path(plan: ExternalRuntimeSmokePlan) -> Path:

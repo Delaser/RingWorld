@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 from dataclasses import replace
 import gzip
 import hashlib
@@ -162,7 +164,7 @@ class ExternalRuntimeAtlasRecoveryExecutorTest(unittest.TestCase):
         bodies[changed_server.url] = server
         for index, entry in enumerate(plan.smoke.downloads):
             body = installer if index == 0 else b"fabric-api-" + cell_id.encode("ascii")
-            changed = RuntimeDownload(entry.name, f"https://test.invalid/{index}.jar", "sha256", sha256(body), entry.destination)
+            changed = RuntimeDownload(entry.name, f"https://test.invalid{urlparse(entry.url).path}", "sha256", sha256(body), entry.destination)
             downloads.append(changed)
             bodies[changed.url] = body
             if index > 0:
@@ -188,6 +190,10 @@ class ExternalRuntimeAtlasRecoveryExecutorTest(unittest.TestCase):
                 plan.smoke.layout.neoforge_run_script.write_text("#!/bin/sh\n", encoding="utf-8")
                 plan.smoke.layout.neoforge_run_script.chmod(0o700)
                 plan.smoke.layout.neoforge_user_jvm_args.write_text("-Xmx1G\n", encoding="utf-8")
+                if plan.smoke.launch.argv[0] == "java":
+                    args = plan.smoke.layout.root / plan.smoke.launch.argv[2][1:]
+                    args.parent.mkdir(parents=True, exist_ok=True)
+                    args.write_text("# generated Windows arguments\n", encoding="utf-8")
                 installed_server = (
                     plan.runtime_root / "libraries" / "net" / "minecraft" / "server"
                     / plan.smoke.minecraft_version

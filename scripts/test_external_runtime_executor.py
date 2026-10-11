@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from urllib.parse import urlparse
+
 from dataclasses import replace
 import hashlib
 import importlib.util
@@ -89,7 +91,7 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
         mods = list(planned.mods)
         for index, download in enumerate(planned.downloads):
             body = installer_body if index == 0 else b"fake-fabric-api-" + cell_id.encode("ascii")
-            replacement = SMOKE.RuntimeDownload(download.name, f"https://test.invalid/{index}.jar", "sha256", sha256(body), download.destination)
+            replacement = SMOKE.RuntimeDownload(download.name, f"https://test.invalid{urlparse(download.url).path}", "sha256", sha256(body), download.destination)
             downloads.append(replacement)
             if index > 0:
                 mods[1] = replace(mods[1], source=replacement.destination, sha256=replacement.checksum)
@@ -136,6 +138,10 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
                 plan.layout.neoforge_run_script.write_text("#!/bin/sh\n", encoding="utf-8")
                 plan.layout.neoforge_run_script.chmod(0o700)
                 plan.layout.neoforge_user_jvm_args.write_text("-Xmx1G\n", encoding="utf-8")
+                if plan.launch.argv[0] == "java":
+                    args = plan.layout.root / plan.launch.argv[2][1:]
+                    args.parent.mkdir(parents=True, exist_ok=True)
+                    args.write_text("# generated Windows arguments\n", encoding="utf-8")
                 installed_server = plan.layout.root / "libraries" / "net" / "minecraft" / "server" / plan.minecraft_version
                 installed_server.mkdir(parents=True)
                 (installed_server / f"server-{plan.minecraft_version}.jar").write_bytes(
@@ -252,6 +258,22 @@ class ExternalRuntimeExecutorTest(unittest.TestCase):
                 "/libraries/net/minecraft/server/",
                 result.runtime_identity.minecraft_server_path.replace("\\", "/"),
             )
+
+    def test_windows_neoforge_requires_pinned_generated_argument_file(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, \
+                patch.object(SMOKE, "is_windows", return_value=True), \
+                patch.object(EXECUTOR, "is_windows", return_value=True):
+            _, plan, _ = self.plan(Path(directory), "26.1-neoforge")
+            plan.layout.root.mkdir(parents=True)
+            plan.layout.neoforge_run_script.write_text("@echo off\n", encoding="utf-8")
+            plan.layout.neoforge_user_jvm_args.write_text("-Xmx1G\n", encoding="utf-8")
+            arguments = plan.layout.root / plan.launch.argv[2][1:]
+            arguments.parent.mkdir(parents=True)
+            arguments.write_text("# installer arguments\n", encoding="utf-8")
+            EXECUTOR._verify_launcher(plan)
+            arguments.unlink()
+            with self.assertRaises(EXECUTOR.ExternalRuntimeExecutionError):
+                EXECUTOR._verify_launcher(plan)
 
     def test_redirect_or_checksum_failure_is_fail_closed_before_installer(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

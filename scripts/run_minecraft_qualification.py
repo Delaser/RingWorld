@@ -11,6 +11,8 @@ without runtime I/O.
 
 from __future__ import annotations
 
+from qualification_host import gradle_argv
+
 import argparse
 import hashlib
 import json
@@ -558,7 +560,7 @@ def frozen_candidate_plan(
     command = CommandRecord(
         PhaseName.SHARED_CONTRACT,
         (
-            str(repository_root / "gradlew"), "--console=plain", "--no-daemon", "--max-workers=1",
+            *gradle_argv(repository_root), "--console=plain", "--no-daemon", "--max-workers=1",
             "--project-cache-dir", str(paths.cache_directory / "gradle-project"),
             *property_args, *tasks,
         ),

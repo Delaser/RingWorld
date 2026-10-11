@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from qualification_host import gradle_argv
+
 import argparse
 import json
 from pathlib import Path
@@ -48,7 +50,7 @@ def _command(cell: Mapping[str, Any], paths: QualificationPaths,
         environment += (("GRADLE_RO_DEP_CACHE", str(dependency_cache)),)
     return CommandRecord(
         PhaseName.BUILD_AND_UNIT,
-        (str(paths.repository_root / "gradlew"), "--console=plain", "--no-daemon", "--max-workers=1",
+        (*gradle_argv(paths.repository_root), "--console=plain", "--no-daemon", "--max-workers=1",
          "--project-cache-dir", str(paths.cache_directory / "gradle-project"), *properties, task),
         paths.repository_root, environment, timeout,
     )

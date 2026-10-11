@@ -8,6 +8,8 @@ never builds a replacement jar and never reads launcher accounts.
 
 from __future__ import annotations
 
+from qualification_host import gradle_argv, terminate_process_tree
+
 import argparse
 from datetime import datetime, timezone
 import hashlib
@@ -15,7 +17,6 @@ import json
 import os
 from pathlib import Path
 import re
-import signal
 import socket
 import struct
 import subprocess
@@ -253,7 +254,7 @@ def _base_argv(prepared: AtlasRecoveryInvocation) -> tuple[str, ...]:
     paths = prepared.paths
     properties = tuple(f"-P{name}={value}" for name, value in gradle_properties(prepared.cell, paths))
     return (
-        str(paths.repository_root / "gradlew"), "--console=plain", "--no-daemon", "--max-workers=1",
+        *gradle_argv(paths.repository_root), "--console=plain", "--no-daemon", "--max-workers=1",
         "--project-cache-dir", str(paths.cache_directory / "gradle-project"), *properties,
         f"-PringQualificationFrozenCandidateJar={prepared.candidate.path}",
         f"-PringQualificationFrozenCandidateSha256={prepared.candidate.sha256}",
@@ -316,20 +317,7 @@ def _wait_marker(process: subprocess.Popen[bytes], log: Path, marker: str,
 
 
 def _terminate(process: subprocess.Popen[bytes]) -> None:
-    if process.poll() is not None:
-        return
-    if os.name == "nt":
-        process.terminate()
-    else:
-        os.killpg(process.pid, signal.SIGTERM)
-    try:
-        process.wait(timeout=10)
-    except subprocess.TimeoutExpired:
-        if os.name == "nt":
-            process.kill()
-        else:
-            os.killpg(process.pid, signal.SIGKILL)
-        process.wait(timeout=10)
+    terminate_process_tree(process, timeout=10)
 
 
 def _start(record: CommandRecord, output: Path, *, stdin: bool = False) -> tuple[subprocess.Popen[bytes], Any]:

@@ -8,6 +8,8 @@ execution adapter.
 
 from __future__ import annotations
 
+from qualification_host import gradle_argv
+
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 import hashlib
@@ -476,12 +478,11 @@ def planned_commands(
         build_tasks = (":neoforge:test", ":neoforge:build")
     else:
         raise InvocationError(f"unsupported loader {loader!r}")
-    executable = str(paths.repository_root / "gradlew")
     return (
         CommandRecord(
             PhaseName.BUILD_AND_UNIT,
             (
-                executable, "--console=plain", "--no-daemon", "--max-workers=1",
+                *gradle_argv(paths.repository_root), "--console=plain", "--no-daemon", "--max-workers=1",
                 "--project-cache-dir", str(paths.cache_directory / "gradle-project"),
                 *property_args, *build_tasks,
             ),
