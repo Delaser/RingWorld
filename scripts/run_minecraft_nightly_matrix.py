@@ -216,7 +216,20 @@ def _child_cell_root(root: Path, cell: Mapping[str, Any],
     return cell_root
 
 
+def _filesystem_path(path: Path) -> Path:
+    """Use native extended paths on Windows without changing evidence identities."""
+    if os.name != "nt":
+        return path
+    text = str(path.absolute())
+    if text.startswith("\\\\?\\"):
+        return path
+    if text.startswith("\\\\"):
+        return Path("\\\\?\\UNC\\" + text[2:])
+    return Path("\\\\?\\" + text)
+
+
 def _delete_disposable_tree(path: Path) -> None:
+    path = _filesystem_path(path)
     if path.is_symlink():
         path.unlink()
         return
@@ -261,6 +274,7 @@ def _delete_disposable_tree_preserving(path: Path, retained: Path) -> bool:
     Returns whether *path* itself was removed.  Only ancestors of *retained*
     are left behind, so no logs, libraries, or other runtime state survives.
     """
+    path, retained = _filesystem_path(path), _filesystem_path(retained)
     if path == retained:
         return False
     if path.is_symlink():

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import sys
 import tempfile
@@ -21,11 +22,39 @@ from run_minecraft_nightly_matrix import (  # noqa: E402
     _classified_infrastructure_reason, _cleanup_disposable_child_state, _cooldown,
     _retain_terminal_artifacts, _retryable_infrastructure_failure,
     _schedule_infrastructure_retry, _selected_fixtures, _terminal_markdown,
-    _verify_terminals,
+    _verify_terminals, _filesystem_path,
 )
 
 
 class MinecraftNightlyMatrixTest(unittest.TestCase):
+    @unittest.skipUnless(os.name == "nt", "Windows extended paths")
+    def test_cleanup_removes_long_paths_and_preserves_evidence(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            # Match the coordinator's canonical identity, including Windows
+            # temporary directories supplied through an 8.3 short-name alias.
+            root = Path(directory).resolve()
+            cell = {"id": "26.1-fabric", "loader": "fabric",
+                    "minecraft": {"version": "26.1"}}
+            run_id = "20260826T000000Z-0123456789ab"
+            cell_root = (root / "dist/qualification/ringworld/26.1/fabric" / run_id
+                         / "26.1-fabric")
+            target = cell_root / "gradle-home" / ("a" * 80) / ("b" * 80) / "input.pom"
+            self.assertGreater(len(str(target)), 260)
+            extended = _filesystem_path(target)
+            extended.parent.mkdir(parents=True)
+            extended.write_text("dependency", encoding="utf-8")
+            evidence = cell_root / "evidence/terminal.json"
+            evidence.parent.mkdir(parents=True)
+            evidence.write_text("{}", encoding="utf-8")
+            sibling = root / "unrelated.txt"
+            sibling.write_text("keep", encoding="utf-8")
+            removed, retained = _cleanup_disposable_child_state(root, cell, {"run_id": run_id})
+            self.assertEqual((str(cell_root / "gradle-home"),), removed)
+            self.assertIsNone(retained)
+            self.assertFalse(_filesystem_path(cell_root / "gradle-home").exists())
+            self.assertEqual("{}", evidence.read_text(encoding="utf-8"))
+            self.assertEqual("keep", sibling.read_text(encoding="utf-8"))
+
     def arguments(self) -> argparse.Namespace:
         return argparse.Namespace(
             manifest="config/minecraft-version-matrix.json", quick_run_id="quick-run",

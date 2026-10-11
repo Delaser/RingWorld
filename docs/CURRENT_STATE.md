@@ -1,5 +1,14 @@
 # Large-server lighting allocation — development validation complete
 
+October 11: native Windows qualification on `fdabc511` passed all ten quick
+cells, then found missing child-home environment variables and long-path cleanup
+errors in the full coordinators. Latest full reports contain ten FAIL and ninety
+INCOMPLETE fixtures; two subordinate UI passes/52 screenshots do not override
+those failures. The focused runner correction preserves Windows home variables
+and uses extended paths only for disposable cleanup, retaining source-world and
+evidence protection. Fresh qualification remains required after integration;
+no six-JAR release stage or upload is authorized by these partial results.
+
 October 11: release qualification uses the same coordinators on macOS and Windows.
 Windows uses Java to launch the reviewed Gradle wrapper and NeoForge argument
 files, with tree-wide timeout cleanup; macOS retains its native scripts/process groups.

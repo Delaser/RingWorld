@@ -7,6 +7,7 @@ from datetime import datetime, timezone
 import hashlib
 import json
 import os
+import subprocess
 from pathlib import Path
 import sys
 import tempfile
@@ -60,6 +61,19 @@ def paths_at(root: Path) -> QualificationPaths:
 
 
 class QualificationExecutorTest(unittest.TestCase):
+    @unittest.skipUnless(os.name == "nt", "Windows home resolution")
+    def test_sanitized_child_can_resolve_windows_home(self) -> None:
+        environment = sanitized_environment(inherited={
+            **os.environ, "GITHUB_TOKEN": "must-not-inherit",
+        })
+        self.assertNotIn("GITHUB_TOKEN", environment)
+        result = subprocess.run(
+            [sys.executable, "-c", "from pathlib import Path; print(Path.home())"],
+            env=environment, capture_output=True, text=True, timeout=10,
+        )
+        self.assertEqual(0, result.returncode, result.stderr)
+        self.assertEqual(Path.home(), Path(result.stdout.strip()))
+
     def test_run_id_is_utc_and_unique(self) -> None:
         fixed = datetime(2026, 8, 12, 12, 34, 56, tzinfo=timezone.utc)
         first, second = new_run_id(fixed), new_run_id(fixed)
