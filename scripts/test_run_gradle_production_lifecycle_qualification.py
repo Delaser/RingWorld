@@ -24,7 +24,7 @@ from run_gradle_production_lifecycle_qualification import (  # noqa: E402
 class GradleProductionLifecycleQualificationTest(unittest.TestCase):
     def test_death_fails_before_atlas_timeout_without_respawn(self) -> None:
         source = (ROOT / "src/client/java/dev/ringworld/client/ProductionLifecycleTestClient.java").read_text(encoding="utf-8")
-        start = source.index("if (client.screen instanceof DeathScreen")
+        start = source.index("if (RingMinecraftClientAccess.screen(client) instanceof DeathScreen")
         end = source.index("if (!client.isGameLoadFinished()", start)
         guard = source[start:end]
         self.assertIn("!client.player.isAlive()", guard)

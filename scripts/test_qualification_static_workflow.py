@@ -12,6 +12,16 @@ WORKFLOW = ROOT / ".github" / "workflows" / "qualification-static.yml"
 
 
 class QualificationStaticWorkflowTest(unittest.TestCase):
+    def test_lifecycle_runtime_regression_has_explicit_jdk_on_both_hosts(self) -> None:
+        source = WORKFLOW.read_text(encoding="utf-8")
+        self.assertEqual(2, source.count('- "scripts/test_production_lifecycle_player_safety.py"'))
+        self.assertEqual(2, source.count('- "src/main/java/dev/ringworld/server/RingWorldProductionLifecycleTest.java"'))
+        job = source[source.index("  lifecycle-player-safety:"):source.index("  qualification-static:")]
+        self.assertIn("os: [ubuntu-latest, windows-latest]", job)
+        self.assertIn("actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961", job)
+        self.assertIn('java-version: "25"', job)
+        self.assertIn("python -m unittest scripts/test_production_lifecycle_player_safety.py", job)
+
     def test_workflow_uses_one_cross_platform_pure_python_command(self) -> None:
         source = WORKFLOW.read_text(encoding="utf-8")
         self.assertIn("PYTHONPATH: scripts", source)

@@ -37,7 +37,7 @@ public final class ProductionLifecycleTestClient {
             finish(client, false, "missing productionLifecycleWorld");
             return true;
         }
-        if (client.screen instanceof DeathScreen
+        if (RingMinecraftClientAccess.screen(client) instanceof DeathScreen
                 || (client.player != null && !client.player.isAlive())) {
             finish(client, false, "player died stage=" + stage
                     + " screen=" + CopiedWorldFileFixUpgrade.currentScreen(client));
