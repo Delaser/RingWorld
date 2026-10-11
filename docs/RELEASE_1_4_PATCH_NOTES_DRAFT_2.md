@@ -1,5 +1,7 @@
 # RingWorld 1.4 — second draft
 
+## Server performance
+
 - Spread automatic world saves over several ticks > Reduces the pause when a
   busy server saves > Tested autosave tick: ~387 ms → ~106 ms.
 - Reduced bursts of chunk cleanup and location checks while travelling > Less
@@ -14,20 +16,27 @@
   thread; progress is preserved for resuming later.
 - Removed repeated checks of the entire completed Atlas > Reduces recurring
   server work when players view generation progress, especially on Large rings.
+
+## Generation and Atlas updates
+
 - Added automatic chunk-generation speed control > Pregeneration can run faster
   when there is spare capacity and slow down when performance drops > Auto starts
   at four requests; `/ringworld chunk_gen_rate 1|2|4|8|auto` changes it live.
 - Made Atlas updates from newly loaded chunks adapt to server load > Reduces
   bursts of work as players explore; the distant view can catch up gradually
   during heavy loading.
-- Compressed the wall preview images > Smaller downloads while keeping the
-  previews in the selector > Development JARs: ~13 MB → ~3.3 MB, about 75% smaller.
+
+## Building
+
 - Enabled building beyond the side walls > Build platforms and structures
   outside the ring > On by default, with a World-menu toggle and
   `/ringworld building outside on|off|show`. On servers, operators control the
   setting for everyone; turning it off keeps existing builds.
 - Fixed players and nearby entities disappearing outside the walls > Characters
   and other nearby entities remain visible when stepping off the ring.
+
+## Rendering
+
 - Closed gaps along the distant terrain edges and damaged wall sections > Fewer
   visible holes between the terrain and walls.
 - Matched distant walls to the configured wall height and depth > The distant
@@ -48,7 +57,14 @@
   unrecognized materials are kept.
 - Corrected distant wall settings on Minecraft 26.3 > Wall style, height, decay
   and seed now match the saved world settings consistently across supported versions.
+
+## Download size and cleanup
+
+- Compressed the wall preview images > Smaller downloads while keeping the
+  previews in the selector > Development JARs: ~13 MB → ~3.3 MB, about 75% smaller.
 - Tidied shared seed-preview code > Reduces duplication between supported versions.
+
+## Versions and testing
 
 Applies to Minecraft 26.1–26.1.2, 26.2 and 26.3 on Fabric and NeoForge.
 Older Atlas caches rebuild automatically for the floating-platform change.
