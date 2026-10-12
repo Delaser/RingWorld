@@ -13,6 +13,8 @@ import re
 import shutil
 from typing import Callable, Optional, Sequence
 
+from minecraft_neoform_seed import NeoFormSeedError, verified_entries, verified_files
+
 
 class LoomSeedError(RuntimeError):
     """The optional cache seed cannot safely be used."""
@@ -31,7 +33,7 @@ def _file_hash(path: Path, algorithm: str) -> str:
 
 def validated_loom_seed(cache: Path | None, repository_root: Path, version: str,
                         *, cache_validator: CacheValidator) -> tuple[Path, ...]:
-    """Return only independently hash-checked Mojang files from ``cache``."""
+    """Return hash-checked Mojang files and optional indexed NeoForm artifacts."""
     if cache is None:
         return ()
     resolved = cache_validator(cache, repository_root)
@@ -77,7 +79,11 @@ def validated_loom_seed(cache: Path | None, repository_root: Path, version: str,
         raise
     except (KeyError, StopIteration, TypeError, ValueError, json.JSONDecodeError) as error:
         raise LoomSeedError("Loom seed metadata is malformed") from error
-    return (*required, *asset_files)
+    try:
+        intermediates = verified_files(resolved)
+    except (NeoFormSeedError, OSError, ValueError) as error:
+        raise LoomSeedError(f"invalid NeoForm acceleration seed: {error}") from error
+    return (*required, *asset_files, *intermediates)
 
 
 def stage_loom_seed(files: Sequence[Path], gradle_home: Path, version: str,
@@ -87,10 +93,21 @@ def stage_loom_seed(files: Sequence[Path], gradle_home: Path, version: str,
         raise LoomSeedError("unsupported loader")
     if not files:
         return
+    # Optional indexed NeoForm artifacts live beside the existing Mojang seed.
+    # Revalidate on staging, so a changed seed cannot race the earlier check.
+    seed_root = files[0].parent
+    try:
+        entries = verified_entries(seed_root)
+    except (NeoFormSeedError, OSError, ValueError) as error:
+        raise LoomSeedError(f"invalid NeoForm acceleration seed: {error}") from error
+    intermediates = tuple(path for path, _ in entries)
+    if any(path not in files for path in intermediates):
+        raise LoomSeedError("NeoForm seed changed after validation")
+    ordinary = tuple(path for path in files if path not in intermediates)
     if loader == "neoforge":
-        if len(files) < 5:
+        if len(ordinary) < 5:
             raise LoomSeedError("Loom seed has no validated asset index")
-        manifest, metadata, client, server, asset_index, *asset_objects = files
+        manifest, metadata, client, server, asset_index, *asset_objects = ordinary
         version_name = f"minecraft_{version}"
         expected_sources = (
             (manifest, "mojang_versions_manifest.json"),
@@ -131,10 +148,18 @@ def stage_loom_seed(files: Sequence[Path], gradle_home: Path, version: str,
             target = destination / "objects" / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
+        for source, expected_hash in entries:
+            target = runtime_cache / "intermediate_results" / source.name
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if target.is_symlink():
+                raise LoomSeedError("NeoForm target is a symlink")
+            shutil.copyfile(source, target)
+            if _file_hash(target, "sha256") != expected_hash:
+                raise LoomSeedError("NeoForm seed changed while staging")
         return
     source_root = files[0].parent
     destination = gradle_home / "caches/fabric-loom"
-    for source in files:
+    for source in ordinary:
         relative = source.relative_to(source_root)
         target = destination / relative
         target.parent.mkdir(parents=True, exist_ok=True)

@@ -191,6 +191,46 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
             self.assertFalse((home / "caches/fabric-loom").exists())
             self.assertFalse((home / "caches/neoformruntime/26.2").exists())
 
+    def test_neoforge_intermediate_seed_is_private_and_ignored_by_fabric(self) -> None:
+        from minecraft_neoform_seed import provision, verified_files
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            seed, cache = root / "seed", root / "cache"
+            sources = [seed / "mojang_versions_manifest.json"]
+            sources.extend(seed / "26.2" / name for name in (
+                "mojang_minecraft_info.json", "minecraft-client.jar", "minecraft-server.jar"))
+            sources.append(seed / "assets/indexes/26.2-32.json")
+            for path in sources:
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(path.name.encode())
+            (cache / "intermediate_results").mkdir(parents=True)
+            (cache / "intermediate_results/recompile_123_output.jar").write_bytes(b"compiled")
+            provision(cache, seed)
+            intermediates = verified_files(seed)
+            sources.extend(intermediates)
+            _stage_loom_seed(sources, root / "neo", "26.2", loader="neoforge")
+            target = root / "neo/caches/neoformruntime/intermediate_results/recompile_123_output.jar"
+            self.assertEqual(b"compiled", target.read_bytes())
+            target.write_bytes(b"private mutable runtime")
+            self.assertEqual(b"compiled", intermediates[0].read_bytes())
+            _stage_loom_seed(sources, root / "fabric", "26.2", loader="fabric")
+            self.assertFalse((root / "fabric/caches/fabric-loom/neoformruntime").exists())
+            # A source mutation after pre-copy validation must not be accepted
+            # merely because the source and destination now match each other.
+            import shutil
+            from unittest.mock import patch
+            original_copy = shutil.copyfile
+            def mutate_during_copy(source, destination, **kwargs):
+                if Path(source) == intermediates[0]:
+                    Path(source).write_bytes(b"mutated during copy")
+                return original_copy(source, destination, **kwargs)
+            with patch("minecraft_loom_seed.shutil.copyfile", side_effect=mutate_during_copy):
+                with self.assertRaisesRegex(GradleMultiplayerError, "changed while staging"):
+                    _stage_loom_seed(sources, root / "raced", "26.2", loader="neoforge")
+            intermediates[0].write_bytes(b"tampered")
+            with self.assertRaisesRegex(GradleMultiplayerError, "hash mismatch"):
+                _stage_loom_seed(sources, root / "bad", "26.2", loader="neoforge")
+
     def test_loom_seed_rejects_unsupported_loader(self) -> None:
         with self.assertRaisesRegex(GradleMultiplayerError, "unsupported loader"):
             _stage_loom_seed((), Path("/unused"), "26.2", loader="unsupported")

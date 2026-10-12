@@ -173,9 +173,17 @@ the existing cache flags; Mac caches and absolute paths are not prerequisites.
 ## Full release suite
 
 Replace the run-ID and world-path placeholders below with the **new PASS quick
-run IDs** and prepared world's absolute path. Run each command separately,
-requiring exit code 0 and complete PASS before proceeding. Run all ten
+run IDs** and prepared world's absolute path. For the next qualification after
+the active `5b53acf` Windows run, use the serial all-group coordinator below.
+It records failures and continues independent fixtures and groups; a nonzero
+final exit still blocks staging. Run all ten
 fixtures per cell without `--cell` or `--fixture` filters: 60 + 20 + 20 = 100.
+
+```text
+python scripts/run_release_full_matrix.py --quick-26-1 NEW_26_1_X_QUICK_RUN_ID --quick-26-2 NEW_26_2_QUICK_RUN_ID --quick-26-3 NEW_26_3_QUICK_RUN_ID --production-world "PATH_TO_COMPLETE_26_1_WORLD" --execute
+```
+
+For diagnosis or running a single group, the original commands remain available:
 
 ```text
 python scripts/run_minecraft_nightly_matrix.py --manifest config/minecraft-version-matrix.json --quick-run-id NEW_26_1_X_QUICK_RUN_ID --production-world "PATH_TO_COMPLETE_26_1_WORLD" --execute
@@ -188,6 +196,30 @@ multiplayer, raids, map/compass, production lifecycle, curved objects, and
 production rendering. Preserve the default settle times and four weather/time
 conditions. A dry run or filtered run is INCOMPLETE, not full-release PASS.
 Saved-world upgrades and optional launcher bundles remain outside this release's scope.
+
+The all-group coordinator accepts the same optional `--gradle-dependency-cache`,
+`--gradle-distribution-zip` and `--gradle-loom-cache` flags. It requires all three
+complete PASS groups to report the same source commit. Each group retains its
+normal nightly report; the wrapper writes an INCOMPLETE checkpoint after each
+group and a final summary under `dist/qualification/release-full`. The nightly
+runner writes an immutable INCOMPLETE checkpoint after every fixture, continues
+independent fixtures after a failure and retains every failed attempt. These
+checkpoints are evidence retention, not automatic resume or release PASS.
+
+Recognized pre-claim dependency-download/startup failures may retry twice, with
+the existing 120-second cooldown and a new isolated child run each time. Gameplay
+assertions, crashes after launch, cleanup failures and unrecognized failures do
+not get automatic assertion retries. Unsafe process-tree cleanup or source/identity
+failures may stop the affected group; the wrapper still attempts the other
+independently prepared groups. If the coordinator cannot write evidence, stop
+rather than run tests whose results cannot be retained. Restore the host prerequisite or
+repair the diagnosed defect under the recovery rules below. A later PASS never
+deletes the failed attempt.
+
+Optional NeoForge intermediate setup acceleration is documented in
+`docs/RELEASE_TEST_SPEED.md`. Neither this coordinator nor the cache provisioner
+builds new quick candidates, stages files or uploads a release. Do not edit, pull,
+merge or restart an active qualification checkout to introduce these improvements.
 
 On failure, retain the logs, terminal reports, source SHA and frozen hashes.
 Identify the cause before retrying; do not overwrite evidence or quietly call a
@@ -231,6 +263,13 @@ and merge of a verified repair. It does not authorize publication or weaker gate
 6. Continue the next suite automatically after a complete PASS. Stage all six
    JARs only after the full gates pass; hand back hashes, checklists and screenshots
    for owner visual review. No upload, release tag or public-server update.
+
+Next-run continuation changes only the handling of independent failures; it does
+not relax source/candidate requirements. Separating the in-game Java fixture
+implementation from shipped JARs remains follow-up work. Until that is implemented
+and its provenance/reuse rules are qualified, a harness source repair still
+requires fresh candidates and all 100 fixtures. Do not label checkpoint retention
+as having solved that rebuild requirement.
 
 Stop for a specific action outside the authorized scope, an unavailable OS
 security interaction, the owner's usage floor, or a cause that remains unresolved

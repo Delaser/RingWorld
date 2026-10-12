@@ -55,7 +55,7 @@ EXACT_CANDIDATE_FIXTURES = {"worldgen", "atlas-recovery", "multiplayer", "raid",
                             "production-lifecycle", "production-render"}
 DEFAULT_MULTIPLAYER_COOLDOWN_SECONDS = 120
 MAXIMUM_MULTIPLAYER_COOLDOWN_SECONDS = 600
-INFRASTRUCTURE_RETRY_LIMIT = 1
+INFRASTRUCTURE_RETRY_LIMIT = 2
 INFRASTRUCTURE_RETRY_COOLDOWN_SECONDS = 120
 GRADLE_DOWNLOAD_FAILURE_REASON = "Gradle dependency download failed before fixture launch"
 RETRYABLE_INFRASTRUCTURE_REASONS = frozenset({
@@ -562,13 +562,8 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
         }
     results: list[dict[str, Any]] = []
     ordinal = 1
-    blocked_cells: set[str] = set()
     for item in planned["commands"]:
         cell_id, fixture = str(item["cell"]), str(item["fixture"])
-        if cell_id in blocked_cells:
-            results.append({"cell": cell_id, "fixture": fixture, "verdict": "INCOMPLETE",
-                            "reason": "earlier fixture failed"})
-            continue
         paths = QualificationPaths.from_cell(root, by_id[cell_id], run_id)
         create_contained_directories(paths)
         cooldown_seconds = (int(planned["multiplayer_cooldown_seconds"])
@@ -637,8 +632,6 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
             if not retry_scheduled:
                 break
             _cooldown(INFRASTRUCTURE_RETRY_COOLDOWN_SECONDS)
-        if verdict != "PASS":
-            blocked_cells.add(cell_id)
         results.append({
             "cell": cell_id, "fixture": fixture, "verdict": verdict or "FAIL",
             "reason": child_reason, "child": payload,
@@ -657,6 +650,21 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
                         "started_at": child.started_at_utc, "elapsed_seconds": child.elapsed_seconds,
                         "stdout": child.stdout_log, "stderr": child.stderr_log},
         })
+        # An independent fixture failure must not discard the rest of this
+        # matrix. Each child has its own runtime, world and evidence directory.
+        # Preserve an immutable checkpoint after every result, so an interrupted
+        # coordinator still leaves reviewable evidence for completed fixtures.
+        checkpoint = {
+            **planned, "mode": "EXECUTED", "run_id": run_id,
+            "started_source_commit": provenance.commit,
+            "completed_at": datetime.now(timezone.utc).isoformat(),
+            "verdict": "INCOMPLETE", "results": list(results),
+        }
+        write_terminal_report(
+            root / "dist/qualification/nightly-matrix" / run_id, checkpoint,
+            _terminal_markdown(planned["cells"], "INCOMPLETE"),
+            stem=f"checkpoint-{len(results):04d}",
+        )
     all_pass = all(item["verdict"] == "PASS" for item in results)
     verdict = "PASS" if all_pass and planned["complete_matrix_selection"] else (
         "INCOMPLETE" if all_pass else "FAIL")
