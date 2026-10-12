@@ -29,6 +29,8 @@ public final class RingProjectionCaptureClient {
     private static final double CAPTURE_CAMERA_Y = 120.0;
     private int stage;
     private int environmentIndex;
+    private final RingIntegratedCaptureControl.PlayerSafety playerSafety =
+            new RingIntegratedCaptureControl.PlayerSafety();
     private final AtomicInteger pendingScreenshots = new AtomicInteger();
     private final boolean allEnvironments = "all".equalsIgnoreCase(
             System.getProperty(ENVIRONMENT_PROPERTY, "noon").trim());
@@ -61,6 +63,7 @@ public final class RingProjectionCaptureClient {
         applyFocusPolicy(client);
         if (stage >= 4) return true;
         if (!ensureWorldOpen(client)) return true;
+        if (!playerSafety.ensure(client, detail -> finish(client, false, detail))) return true;
         if (stage == 3) {
             if (++completionTicks > POSITION_TIMEOUT_TICKS) {
                 finish(client, false, "timed out saving projection screenshots");

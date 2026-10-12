@@ -32,6 +32,8 @@ public final class RingVisualParityCaptureClient {
     private static final double SEAM_CAMERA_Y = 120.0;
 
     private int stage;
+    private final RingIntegratedCaptureControl.PlayerSafety playerSafety =
+            new RingIntegratedCaptureControl.PlayerSafety();
     private int worldOpenTicks;
     private int atlasReadyTicks;
     private int positionTicks;
@@ -62,12 +64,14 @@ public final class RingVisualParityCaptureClient {
 
     public boolean tick(Minecraft client) {
         if (!Boolean.getBoolean(ENABLE_PROPERTY)) return false;
+        if (stage > CaptureView.values().length) return true;
         applyFocusPolicy(client);
+        if (!ensureWorldOpen(client)) return true;
+        if (!playerSafety.ensure(client, detail -> finish(client, false, detail))) return true;
         if (stage >= CaptureView.values().length) {
             if (++completionTicks >= 20) finish(client, true, "captures complete");
             return true;
         }
-        if (!ensureWorldOpen(client)) return true;
         if (RingMinecraftClientAccess.screen(client) instanceof PauseScreen) RingMinecraftClientAccess.setScreen(client, null);
         if (RingMinecraftClientAccess.screen(client) != null) return true;
 
