@@ -24,6 +24,7 @@ public final class ProductionLifecycleTestClient {
     private int stageTicks;
     private int dimensionTicks;
     private boolean initialOpenRequested;
+    private boolean safetyRegistrationRequested;
     private final CopiedWorldFileFixUpgrade copiedWorldFileFixUpgrade =
             new CopiedWorldFileFixUpgrade();
     private RingGeometry baselineGeometry;
@@ -42,6 +43,12 @@ public final class ProductionLifecycleTestClient {
             finish(client, false, "player died stage=" + stage
                     + " screen=" + CopiedWorldFileFixUpgrade.currentScreen(client));
             return true;
+        }
+        var server = client.getSingleplayerServer();
+        if (!safetyRegistrationRequested && server != null && client.player != null) {
+            var playerId = client.player.getUUID();
+            server.execute(() -> RingWorldProductionLifecycleTest.markPlayerForSafety(playerId));
+            safetyRegistrationRequested = true;
         }
         if (!client.isGameLoadFinished() && client.level == null) {
             stageTicks = 0;

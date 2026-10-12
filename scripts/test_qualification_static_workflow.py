@@ -21,6 +21,8 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
         self.assertIn("actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961", job)
         self.assertIn('java-version: "25"', job)
         self.assertIn("python -m unittest scripts/test_production_lifecycle_player_safety.py", job)
+        self.assertIn("scripts/test_capture_player_safety.py", job)
+        self.assertEqual(2, source.count('- "scripts/test_capture_player_safety.py"'))
 
     def test_workflow_uses_one_cross_platform_pure_python_command(self) -> None:
         source = WORKFLOW.read_text(encoding="utf-8")

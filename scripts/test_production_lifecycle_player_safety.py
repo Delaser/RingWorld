@@ -56,11 +56,15 @@ static boolean safe(ServerPlayer p){return p.noGravity && p.abilities.flying && 
 public static void main(String[] args)throws Exception{
 var server=new MinecraftServer(); var id=java.util.UUID.randomUUID();
 var original=new ServerPlayer(id); server.players.add(original);
-RingWorldProductionLifecycleTest.markClientReady(id);
+RingWorldProductionLifecycleTest.markPlayerForSafety(id);
 RingWorldProductionLifecycleTest.tick(server);
 check(!safe(original),"ordinary gameplay changed while opt-in disabled");
 System.setProperty("ringworld.productionLifecycleTest","true");
 RingWorldProductionLifecycleTest.tick(server); check(safe(original),"registered initial player unprotected");
+for(int i=0;i<2400;i++)RingWorldProductionLifecycleTest.tick(server);
+check(!RingWorldProductionLifecycleTest.transferCyclePassed()&&!RingWorldProductionLifecycleTest.transferCycleFailed(),"safety registration started transfers before complete Atlas baseline");
+check(original.updates==1,"warmup sent redundant abilities packets");
+RingWorldProductionLifecycleTest.markClientReady(id);
 var field=RingWorldProductionLifecycleTest.class.getDeclaredField("transferCycleFinished"); field.setAccessible(true); field.setBoolean(null,true);
 server.players.clear(); var reopened=new ServerPlayer(id); var unrelated=new ServerPlayer(java.util.UUID.randomUUID());
 server.players.add(reopened); server.players.add(unrelated);
@@ -77,6 +81,15 @@ RingWorldProductionLifecycleTest.tick(server); check(!safe(disabled),"disabled h
 
 
 class LifecyclePlayerSafetyTest(unittest.TestCase):
+    def test_client_registers_safety_before_complete_baseline_without_marking_ready(self):
+        client = (ROOT / 'src/client/java/dev/ringworld/client/ProductionLifecycleTestClient.java').read_text(encoding='utf-8')
+        tick = client[client.index('public boolean tick(Minecraft client)'):client.index('private void captureProductionBaseline')]
+        self.assertIn('server.execute(() -> RingWorldProductionLifecycleTest.markPlayerForSafety(playerId))', tick)
+        self.assertNotIn('markClientReady', tick)
+        self.assertLess(tick.index('markPlayerForSafety'), tick.index('switch (stage)'))
+        baseline = client[client.index('private void captureProductionBaseline'):]
+        self.assertLess(baseline.index('!atlas.isComplete()'), baseline.index('markClientReady'))
+
     def test_real_coordinator_protects_only_registered_live_player_across_reopen(self):
         java_home = Path(os.environ.get('JAVA_HOME', ''))
         suffix = '.exe' if os.name == 'nt' else ''

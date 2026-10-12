@@ -2,6 +2,7 @@ package dev.ringworld.client;
 
 import dev.ringworld.RingWorldMod;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -70,4 +71,34 @@ final class RingIntegratedCaptureControl {
     }
 
     record Context(MinecraftServer server, ServerLevel world, ServerPlayer player) { }
+
+    /** Protect only the copied-world capture player, before any Atlas/render wait. */
+    static final class PlayerSafety {
+        private boolean requested;
+        private volatile boolean ready;
+        private volatile String failure;
+
+        boolean ensure(Minecraft client, Consumer<String> failed) {
+            if (RingMinecraftClientAccess.screen(client) instanceof DeathScreen
+                    || (client.player != null && !client.player.isAlive())) {
+                failed.accept("capture player died before completion");
+                return false;
+            }
+            if (failure != null) {
+                failed.accept(failure);
+                return false;
+            }
+            if (ready) return true;
+            if (!requested) {
+                requested = true;
+                execute(client, "capture player safety", context -> {
+                    if (!context.player().isAlive()) {
+                        throw new IllegalStateException("capture player is dead");
+                    }
+                    context.player().setGameMode(GameType.SPECTATOR);
+                }, () -> ready = true, detail -> failure = detail);
+            }
+            return false;
+        }
+    }
 }
