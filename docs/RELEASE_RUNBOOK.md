@@ -277,6 +277,20 @@ from complete-baseline readiness: dimension transfers still wait for the full
 Atlas baseline, and survival mode plus the close/reopen ability-reset check
 remain unchanged.
 
+Production projection and parity clients can cross local midnight. Minecraft
+rotates `latest.log` into a dated compressed archive, so completion in the new
+file alone is not the complete session. Their shared loader verifiers and Python
+runner read dated log parts in date/numeric-index order followed by `latest.log`,
+retain the combined readable log and original parts, and still require exact
+patch identity, every environment, seam frame samples and all captures. Archive
+merging is scoped to one fresh capture runtime: copied-world preparations clear
+logs, and frozen-runner installation rejects pre-existing log contents. Reject
+missing, linked, corrupt or oversized parts rather than ignoring them.
+On Windows `5b53acf`, 69 full fixtures passed before the 26.2 Fabric parity
+finalizer rejected metrics logged at 23:59:58 after daily rotation; the client
+completed at 00:00:19. Keep that failed qualification separate from replacement
+source results. It does not qualify staged files.
+
 ## Stage and hand back six JARs
 
 After all three full suites pass, create new release inputs below an ignored

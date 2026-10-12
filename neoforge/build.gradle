@@ -1250,28 +1250,8 @@ tasks.register('verifyNeoForgeProductionVisualParityClient') {
     description = 'Fails unless the NeoForge seam and both finite-width rim captures completed.'
     mustRunAfter('runProductionVisualParityClient')
     doLast {
-        def logFile = new File(neoForgeVisualParityRun, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
-        if (!log.contains('[visual-parity-capture] result=true, captures complete')) {
-            throw new GradleException("NeoForge visual-parity capture did not pass; inspect ${logFile}")
-        }
-        def seamMetrics = log.readLines().findAll {
-            it.contains('[visual-parity-capture] seam motion frame metrics:')
-        }
-        if (seamMetrics.isEmpty()) {
-            throw new GradleException("NeoForge visual-parity capture is missing seam-motion frame metrics; inspect ${logFile}")
-        }
-        def sampleMatcher = (seamMetrics.last() =~ /samples=(\d+)/)
-        if (!sampleMatcher.find() || sampleMatcher.group(1).toInteger() <= 0) {
-            throw new GradleException("NeoForge visual-parity capture recorded no seam-motion frame samples; inspect ${logFile}")
-        }
-        ['seam', 'seam-join', 'min-rim', 'max-rim'].each { view ->
-            def screenshot = new File(neoForgeVisualParityRun,
-                    "screenshots/ringworld-visual-parity-${view}.png")
-            if (!screenshot.isFile()) {
-                throw new GradleException("NeoForge visual-parity capture is missing ${screenshot}")
-            }
-        }
+        rootProject.ext.verifyRingVisualParityOutputs(neoForgeVisualParityRun,
+                'NeoForge visual-parity capture')
     }
 }
 
