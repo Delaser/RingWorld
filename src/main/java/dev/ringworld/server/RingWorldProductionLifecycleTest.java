@@ -30,6 +30,7 @@ public final class RingWorldProductionLifecycleTest {
     private static final int STAGE_TIMEOUT_TICKS = 1_200;
     private static final Map<UUID, Progress> PROGRESS = new HashMap<>();
     private static final Set<UUID> CLIENT_READY = new HashSet<>();
+    private static final Set<UUID> PROTECTED_PLAYERS = new HashSet<>();
     private static volatile boolean transferCycleFinished;
     private static volatile boolean transferCyclePassed;
 
@@ -43,8 +44,14 @@ public final class RingWorldProductionLifecycleTest {
 
     /** Called on the integrated server thread once the real client has its complete baseline. */
     public static void markClientReady(UUID playerId) {
+        markPlayerForSafety(playerId);
         CLIENT_READY.add(playerId);
         RingWorldMod.LOGGER.info("[production-lifecycle] client baseline ready player={}", playerId);
+    }
+
+    /** Register safety during initial Atlas warmup without starting transfers. */
+    public static void markPlayerForSafety(UUID playerId) {
+        PROTECTED_PLAYERS.add(playerId);
     }
 
     public static boolean transferCyclePassed() {
@@ -62,7 +69,7 @@ public final class RingWorldProductionLifecycleTest {
         // transfer result intentionally survives that close/reopen in this JVM;
         // player safety must survive it too, until the client reports and exits.
         for (ServerPlayer player : server.getPlayerList().getPlayers()) {
-            if (CLIENT_READY.contains(player.getUUID()) && player.isAlive()) {
+            if (PROTECTED_PLAYERS.contains(player.getUUID()) && player.isAlive()) {
                 preparePlayer(player);
             }
         }

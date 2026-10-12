@@ -271,6 +271,11 @@ never dismiss a death screen or respawn to make a capture pass. Both capture
 clients must fail explicitly on death, including the version-owned 26.3 parity
 implementation. Keep all Atlas, camera, environment, screenshot and fresh-session
 parity assertions intact after establishing player safety.
+The lifecycle client likewise registers its test player for server-owned flight
+and invulnerability immediately on join. This safety registration is separate
+from complete-baseline readiness: dimension transfers still wait for the full
+Atlas baseline, and survival mode plus the close/reopen ability-reset check
+remain unchanged.
 
 ## Stage and hand back six JARs
 
