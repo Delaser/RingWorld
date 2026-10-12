@@ -592,24 +592,62 @@ def requireNonUniformPng = { File screenshot, String label ->
 	}
 }
 
+// Copied capture preparations clear logs; the frozen runner uses a new runtime
+// for each JVM. Dated archives therefore belong to this one capture session.
+// latest.log alone loses startup/metrics when Minecraft rolls it at midnight.
+def readCaptureSessionLog = { File logFile ->
+	def directory = logFile.parentFile
+	if (java.nio.file.Files.isSymbolicLink(directory.toPath()) || !directory.isDirectory()) {
+		throw new GradleException("Capture log directory is missing or unsafe: ${directory}")
+	}
+	def archives = directory.listFiles().findAll { it.name ==~ /[0-9]{4}-[0-9]{2}-[0-9]{2}-[0-9]+\.log\.gz/ }
+	archives.sort { a, b ->
+		(a.name.substring(0, 10) <=> b.name.substring(0, 10)) ?:
+				(a.name.substring(11, a.name.length() - 7).toBigInteger() <=>
+				 b.name.substring(11, b.name.length() - 7).toBigInteger())
+	}
+	def text = new StringBuilder()
+	int remaining = 64 * 1024 * 1024
+	(archives + [logFile]).each { part ->
+		if (java.nio.file.Files.isSymbolicLink(part.toPath()) || !part.isFile()) {
+			throw new GradleException("Capture log part is missing or unsafe: ${part}")
+		}
+		try {
+			def input = new FileInputStream(part)
+			try {
+				if (part.name.endsWith('.gz')) input = new java.util.zip.GZIPInputStream(input)
+				byte[] bytes = input.readNBytes(remaining + 1)
+				if (bytes.length > remaining) throw new IOException('capture log exceeds 64 MiB')
+				remaining -= bytes.length
+				text.append(new String(bytes, java.nio.charset.StandardCharsets.UTF_8)).append('\n')
+			} finally { input.close() }
+		} catch (IOException failure) {
+			throw new GradleException("Cannot read capture log part: ${part}", failure)
+		}
+	}
+	return text.toString()
+}
+
 def verifyFabricProjectionOutputs = { File runDirectory, String environment ->
 	def normalizedEnvironment = environment.trim().toLowerCase(Locale.ROOT)
 	if (!(normalizedEnvironment in ["noon", "dusk", "night", "rain", "all"])) {
 		throw new GradleException("ringProjectionEnvironment must be noon, dusk, night, rain, or all")
 	}
 	def logFile = new File(runDirectory, "logs/latest.log")
-	requireFabricRuntimeGateLog(logFile,
-			"[projection-capture] result=true, captures complete",
-			"[projection-capture] result=false", "Projection capture")
+	def log = readCaptureSessionLog(logFile)
+	if (!log.contains("[projection-capture] result=true, captures complete")
+			|| log.contains("[projection-capture] result=false")) {
+		throw new GradleException("Projection capture did not pass; inspect ${logFile}")
+	}
 	def environments = normalizedEnvironment == "all"
 			? ["noon", "dusk", "night", "rain"] : [normalizedEnvironment]
 	environments.each { mode ->
 		if (normalizedEnvironment == "all") {
-			if (!logFile.text.contains("[projection-capture] environment=${mode} complete")) {
+			if (!log.contains("[projection-capture] environment=${mode} complete")) {
 				throw new GradleException("Projection capture is missing ${mode} completion")
 			}
 			["tangent", "handoff", "radial-up"].each { view ->
-				if (!logFile.text.contains("[projection-capture] environment=${mode} ${view} frame metrics:")) {
+				if (!log.contains("[projection-capture] environment=${mode} ${view} frame metrics:")) {
 					throw new GradleException("Projection capture is missing ${mode} ${view} frame metrics")
 				}
 			}
@@ -623,8 +661,8 @@ def verifyFabricProjectionOutputs = { File runDirectory, String environment ->
 // Both loader finalizers use the same screenshot and batch-evidence contract.
 ext.verifyRingProjectionOutputs = verifyFabricProjectionOutputs
 
-def requireVisualParitySeamMotionMetrics = { File logFile, String label ->
-	def metrics = logFile.readLines("UTF-8").findAll {
+def requireVisualParitySeamMotionMetrics = { String log, File logFile, String label ->
+	def metrics = log.readLines().findAll {
 		it.contains("[visual-parity-capture] seam motion frame metrics:")
 	}
 	if (metrics.isEmpty()) {
@@ -636,21 +674,23 @@ def requireVisualParitySeamMotionMetrics = { File logFile, String label ->
 	}
 }
 
-def verifyFabricVisualParityOutputs = { File runDirectory ->
+def verifyFabricVisualParityOutputs = { File runDirectory, String label = "Fabric visual-parity capture" ->
 	def logFile = new File(runDirectory, "logs/latest.log")
-	requireFabricRuntimeGateLog(logFile,
-			"[visual-parity-capture] result=true, captures complete",
-			"[visual-parity-capture] result=false",
-			"Fabric visual-parity capture")
-	requireVisualParitySeamMotionMetrics(logFile, "Fabric visual-parity capture")
+	def log = readCaptureSessionLog(logFile)
+	if (!log.contains("[visual-parity-capture] result=true, captures complete")
+			|| log.contains("[visual-parity-capture] result=false")) {
+		throw new GradleException("${label} did not pass; inspect ${logFile}")
+	}
+	requireVisualParitySeamMotionMetrics(log, logFile, label)
 	["seam", "seam-join", "min-rim", "max-rim"].each { view ->
 		def screenshot = new File(runDirectory,
 				"screenshots/ringworld-visual-parity-${view}.png")
 		if (!screenshot.isFile()) {
-			throw new GradleException("Fabric visual-parity capture is missing " + screenshot)
+			throw new GradleException("${label} is missing " + screenshot)
 		}
 	}
 }
+ext.verifyRingVisualParityOutputs = verifyFabricVisualParityOutputs
 
 def verifyFabricLayoutSwitchOutputs = { File runDirectory, List<String> destinations, String expectation ->
 	def logFile = new File(runDirectory, "logs/latest.log")
@@ -1790,6 +1830,12 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 				throw new GradleException("Could not create PNG verifier fixture ${destination}")
 			}
 		}
+		def writeGzip = { File destination, String value ->
+			destination.parentFile.mkdirs()
+			new java.util.zip.GZIPOutputStream(new FileOutputStream(destination)).withCloseable {
+				it.write(value.getBytes(java.nio.charset.StandardCharsets.UTF_8))
+			}
+		}
 		def expectRejected = { String caseName, Closure verification ->
 			boolean rejected = false
 			try {
@@ -1873,6 +1919,32 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 		expectRejected("zero visual-parity seam-motion samples") {
 			verifyFabricVisualParityOutputs(visualParity)
 		}
+
+		// Real midnight failure: metrics before rollover, completion afterwards.
+		def rolled = new File(visualParity, "logs/2026-10-12-2.log.gz")
+		def laterRolled = new File(visualParity, "logs/2026-10-12-10.log.gz")
+		writeGzip(rolled, "[visual-parity-capture] seam motion frame metrics: samples=0\n")
+		writeGzip(laterRolled, "[visual-parity-capture] seam motion frame metrics: samples=846\n")
+		writeText(new File(visualParity, "logs/latest.log"),
+				"[visual-parity-capture] result=true, captures complete\n")
+		verifyFabricVisualParityOutputs(visualParity)
+		verifyFabricVisualParityOutputs(visualParity, "NeoForge visual-parity capture")
+		writeGzip(rolled, "[visual-parity-capture] result=false\n")
+		expectRejected("pre-midnight failure remains fatal") { verifyFabricVisualParityOutputs(visualParity) }
+		writeText(rolled, "corrupt compressed log")
+		expectRejected("corrupt rolled capture log") { verifyFabricVisualParityOutputs(visualParity) }
+		delete(rolled)
+		delete(laterRolled)
+		expectRejected("rollover without retained metrics") { verifyFabricVisualParityOutputs(visualParity) }
+
+		writePng(new File(projection, "screenshots/ringworld-projection-rain-up.png"))
+		def projectionArchive = new File(projection, "logs/2026-10-12-1.log.gz")
+		writeGzip(projectionArchive, batchLog.replace("[projection-capture] result=true, captures complete\n", ""))
+		writeText(new File(projection, "logs/latest.log"), "[projection-capture] result=true, captures complete\n")
+		verifyFabricProjectionOutputs(projection, "all")
+		writeGzip(projectionArchive, batchLog.replace("environment=night handoff frame metrics", "missing"))
+		expectRejected("rolled batch still requires every frame metric") { verifyFabricProjectionOutputs(projection, "all") }
+		delete(projectionArchive)
 
 		def layoutSwitch = new File(fixtureRoot, "layout-switch")
 		writeText(new File(layoutSwitch, "logs/latest.log"),

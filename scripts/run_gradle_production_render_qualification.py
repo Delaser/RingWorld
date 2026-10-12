@@ -4,9 +4,11 @@
 from __future__ import annotations
 
 import argparse
+import gzip
 import json
 import math
 from pathlib import Path
+import re
 import shutil
 import sys
 from typing import Any, Mapping, Sequence
@@ -94,6 +96,10 @@ def _runtime(prepared: Any, name: str) -> Path:
 
 
 def _install_runtime(prepared: Any, runtime: Path) -> dict[str, str]:
+    # Archives are valid only from this JVM, never from a previous invocation.
+    logs = runtime / "logs"
+    if logs.is_symlink() or (logs.exists() and (not logs.is_dir() or any(logs.iterdir()))):
+        raise GradleProductionRenderError("production capture requires a fresh log directory")
     mods = runtime / "mods"
     mods.mkdir(parents=True, exist_ok=True)
     installed = mods / "ringworld-qualification.jar"
@@ -141,12 +147,45 @@ def _verify_patch(text: str, prepared: Any) -> None:
         raise GradleProductionRenderError("production render client patch marker is missing")
 
 
+def _capture_log_parts(log: Path) -> tuple[Path, ...]:
+    directory = log.parent
+    if directory.is_symlink() or not directory.is_dir():
+        raise GradleProductionRenderError("capture log directory is missing or unsafe")
+    archive_pattern = re.compile(r"([0-9]{4}-[0-9]{2}-[0-9]{2})-([0-9]+)\.log\.gz")
+    archives = []
+    for part in directory.iterdir():
+        match = archive_pattern.fullmatch(part.name)
+        if match:
+            archives.append((match[1], int(match[2]), part))
+    parts = tuple(part for _, _, part in sorted(archives)) + (log,)
+    if any(part.is_symlink() or not part.is_file() for part in parts):
+        raise GradleProductionRenderError("capture log part is missing or unsafe")
+    return parts
+
+
+def _read_capture_log(log: Path) -> str:
+    remaining = 64 * 1024 * 1024
+    text = []
+    for part in _capture_log_parts(log):
+        try:
+            opener = gzip.open if part.suffix == ".gz" else open
+            with opener(part, "rb") as stream:
+                data = stream.read(remaining + 1)
+            if len(data) > remaining:
+                raise GradleProductionRenderError("capture session log exceeds 64 MiB")
+            remaining -= len(data)
+            text.append(data.decode("utf-8", errors="replace"))
+        except (OSError, EOFError) as error:
+            raise GradleProductionRenderError(f"cannot read capture log part: {part}") from error
+    return "\n".join(text)
+
+
 def _verify_projection(prepared: Any, environment: str) -> tuple[dict[str, Any], ...]:
     runtime = _runtime(prepared, "run-production-projection")
     log = runtime / "logs/latest.log"
     if log.is_symlink() or not log.is_file():
         raise GradleProductionRenderError("projection client log is missing")
-    text = log.read_text(encoding="utf-8", errors="replace")
+    text = _read_capture_log(log)
     _verify_patch(text, prepared)
     if "[projection-capture] result=false" in text \
             or "[projection-capture] result=true, captures complete" not in text:
@@ -167,14 +206,15 @@ def _verify_parity(prepared: Any) -> tuple[dict[str, Any], ...]:
     log = runtime / "logs/latest.log"
     if log.is_symlink() or not log.is_file():
         raise GradleProductionRenderError("visual-parity client log is missing")
-    text = log.read_text(encoding="utf-8", errors="replace")
+    text = _read_capture_log(log)
     _verify_patch(text, prepared)
     if "[visual-parity-capture] result=false" in text \
             or "[visual-parity-capture] result=true, captures complete" not in text:
         raise GradleProductionRenderError("visual-parity fixture did not pass")
     metrics = next((line for line in reversed(text.splitlines())
                     if "[visual-parity-capture] seam motion frame metrics:" in line), None)
-    if metrics is None or "samples=0" in metrics:
+    samples = re.search(r"\bsamples=([0-9]+)\b", metrics or "")
+    if samples is None or int(samples[1]) <= 0:
         raise GradleProductionRenderError("visual-parity seam frame metrics are missing")
     return tuple(_png(runtime / "screenshots" / f"ringworld-visual-parity-{view}.png")
                  for view in ("seam", "seam-join", "min-rim", "max-rim"))
@@ -183,7 +223,12 @@ def _verify_parity(prepared: Any) -> tuple[dict[str, Any], ...]:
 def _copy_log(prepared: Any, runtime_name: str, target_name: str) -> dict[str, str]:
     source = _runtime(prepared, runtime_name) / "logs/latest.log"
     target = prepared.paths.logs_directory / target_name
-    shutil.copy2(source, target)
+    target.write_text(_read_capture_log(source), encoding="utf-8")
+    # Retain original compressed parts as well as the complete readable log.
+    archive_target = prepared.paths.logs_directory / (target_name + ".parts")
+    archive_target.mkdir(exist_ok=False)
+    for part in _capture_log_parts(source):
+        shutil.copy2(part, archive_target / part.name)
     return {"path": str(target), "sha256": _sha256(target)}
 
 

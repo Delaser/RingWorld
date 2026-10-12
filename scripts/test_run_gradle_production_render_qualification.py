@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import gzip
 import sys
 import tempfile
 import unittest
@@ -86,6 +87,57 @@ class GradleProductionRenderQualificationTest(unittest.TestCase):
             self.assertEqual(list(ENVIRONMENTS), [c.args[1] for c in verify.call_args_list])
             self.assertEqual(16, len(result["captures"]))
             self.assertIn("-PringProjectionEnvironment=all", execute.call_args_list[1].args[0])
+
+    def test_midnight_parity_verifies_and_retains_complete_session(self) -> None:
+        for loader in ("fabric", "neoforge"):
+            with self.subTest(loader=loader), tempfile.TemporaryDirectory() as directory:
+                runtime = Path(directory)
+                logs = runtime / "logs"
+                logs.mkdir()
+                output = runtime / "retained"
+                output.mkdir()
+                prepared = SimpleNamespace(cell={"minecraft": {"version": "26.2"}, "loader": loader},
+                                           paths=SimpleNamespace(logs_directory=output))
+                marker = "Loading Minecraft 26.2 with Fabric" if loader == "fabric" else "Minecraft 26.2 (minecraft)"
+                early = marker + "\n[visual-parity-capture] seam motion frame metrics: samples=846\n"
+                archive = logs / "2026-10-12-1.log.gz"
+                archive.write_bytes(gzip.compress(early.encode()))
+                (logs / "latest.log").write_text("[visual-parity-capture] result=true, captures complete\n")
+                with patch.object(runner, "_runtime", return_value=runtime), patch.object(runner, "_png", return_value={}):
+                    self.assertEqual(4, len(runner._verify_parity(prepared)))
+                    copied = runner._copy_log(prepared, "unused", "parity-game.log")
+                    self.assertIn(early, Path(copied["path"]).read_text())
+                    self.assertEqual(archive.read_bytes(), (output / "parity-game.log.parts" / archive.name).read_bytes())
+                    archive.write_bytes(gzip.compress((early + "[visual-parity-capture] result=false\n").encode()))
+                    with self.assertRaisesRegex(GradleProductionRenderError, "did not pass"):
+                        runner._verify_parity(prepared)
+                    archive.write_bytes(b"corrupt gzip")
+                    with self.assertRaisesRegex(GradleProductionRenderError, "cannot read"):
+                        runner._verify_parity(prepared)
+                    archive.unlink()
+                    with self.assertRaisesRegex(GradleProductionRenderError, "patch marker"):
+                        runner._verify_parity(prepared)
+
+    def test_rollover_numeric_order_and_missing_metrics_remain_strict(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "latest.log"
+            log.write_text("done")
+            for number in (10, 2, 1):
+                log.with_name(f"2026-10-12-{number}.log.gz").write_bytes(gzip.compress(str(number).encode()))
+            self.assertEqual("1\n2\n10\ndone", runner._read_capture_log(log))
+            log.with_name("debug-1.log.gz").write_bytes(b"not part of the capture log")
+            self.assertEqual("1\n2\n10\ndone", runner._read_capture_log(log))
+            log.unlink()
+            with self.assertRaisesRegex(GradleProductionRenderError, "missing or unsafe"):
+                runner._read_capture_log(log)
+
+    def test_capture_installation_rejects_stale_logs(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            runtime = Path(directory)
+            (runtime / "logs").mkdir()
+            (runtime / "logs/2026-10-12-1.log.gz").write_bytes(gzip.compress(b"old PASS"))
+            with self.assertRaisesRegex(GradleProductionRenderError, "fresh log directory"):
+                runner._install_runtime(None, runtime)
 
     def test_png_verifier_rejects_non_png(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
