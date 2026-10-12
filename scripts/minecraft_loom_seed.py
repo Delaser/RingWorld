@@ -150,6 +150,8 @@ def stage_loom_seed(files: Sequence[Path], gradle_home: Path, version: str,
             shutil.copy2(source, target)
         for source, expected_hash in entries:
             target = runtime_cache / "intermediate_results" / source.name
+            if target.parent.is_symlink():
+                raise LoomSeedError("NeoForm target directory is a symlink")
             target.parent.mkdir(parents=True, exist_ok=True)
             if target.is_symlink():
                 raise LoomSeedError("NeoForm target is a symlink")

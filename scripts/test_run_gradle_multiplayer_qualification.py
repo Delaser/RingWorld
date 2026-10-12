@@ -218,7 +218,6 @@ class GradleMultiplayerQualificationTest(unittest.TestCase):
             # A source mutation after pre-copy validation must not be accepted
             # merely because the source and destination now match each other.
             import shutil
-            from unittest.mock import patch
             original_copy = shutil.copyfile
             def mutate_during_copy(source, destination, **kwargs):
                 if Path(source) == intermediates[0]:

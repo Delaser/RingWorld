@@ -34,7 +34,7 @@ def verified_entries(root: Path) -> tuple[tuple[Path, str], ...]:
     index = root / INDEX
     if not index.exists() and not index.is_symlink():
         return ()
-    if index.is_symlink() or not index.is_file():
+    if index.is_symlink() or not index.is_file() or index.stat().st_size > 2 * 1024**2:
         raise NeoFormSeedError('NeoForm seed index is not a plain file')
     data = json.loads(index.read_text(encoding='utf-8'))
     if not isinstance(data, dict):
