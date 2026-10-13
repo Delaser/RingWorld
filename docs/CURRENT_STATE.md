@@ -1,3 +1,14 @@
+October 13 release-tooling follow-up: same-source resume planning, bounded
+multiplayer navigation traces, descriptive timing summaries and combined
+multiplayer/raid preparation+assets are implemented and validated in PR #293. The suite passes 418 Python tests,
+local builds pass 514 Java cases per loader, and a real 26.1.2 Fabric two-client
+smoke passes. Warm prepare/assets time falls 7.73s to 4.07s; the complete matrix
+uses twenty fewer Gradle startups. These are setup measurements, not a measured
+full-suite percentage. Traces observed random-stroll AI replacing the commanded
+path in a passing run; the earlier Windows fault remains unconfirmed.
+Original Windows 57efcb0 candidates/results remain unchanged; this is not fresh
+release qualification. See `docs/RELEASE_TEST_SPEED.md`.
+
 # Large-server lighting allocation — development validation complete
 
 October 13 follow-up: the distant Atlas is suppressed only while the actual

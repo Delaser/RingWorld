@@ -141,3 +141,82 @@ Further improvements, in priority order (not implemented by this review):
 
 Keep all 100 full fixtures and ten quick cells. These improvements are for the
 next qualified source; never relabel old PASS evidence after a runtime change.
+
+## Resume, diagnostics and setup batching (13 October 2026 follow-up)
+
+The three improvements from the Windows build review are implemented on
+`codex/release-test-resume-speed`:
+
+- The nightly planner accepts repeated `--resume-aggregate` inputs. The all-group
+  wrapper forwards repeated `--resume-26-1`, `--resume-26-2`, `--resume-26-3`
+  flags. Both dry-run selection and execution independently validate the same
+  source, quick candidate/evidence, manifest SHA-256 and production inventory.
+  Reused PASS terminals and relocated captures/logs pass the existing strict
+  source-ABI/exact-candidate review. Only missing/INCOMPLETE keys run by default.
+  `--retry-failed-fixtures` explicitly authorizes rerunning recorded FAIL keys;
+  it does not waive assertions or erase attempts. Duplicate cumulative
+  checkpoints with identical terminals are accepted; ambiguous replacements,
+  changed evidence and incomplete key coverage cannot qualify. Reports lacking
+  a manifest digest remain on the manual review route. Source changes cannot
+  inherit old coverage.
+- Resumed complete coverage is `COMPOSITE_COVERAGE_REVIEWED` with
+  `monolithic_pass=false`. Fresh complete coverage keeps PASS. Partial selection
+  stays INCOMPLETE and failures stay FAIL. All 100 keys and ten quick cells remain.
+- Shared multiplayer diagnostics log the zombie's path/node/reachability,
+  movement target, running goals and already-loaded source/current/target chunks.
+  Normal traces are capped at 32 records, with terminal arrival/failure always
+  recorded. The accessor only reads goals. No path recomputation, chunk loading,
+  AI changes or altered timing/arrival tolerance is introduced.
+- Each nightly and all-group execution writes immutable `timing.json` and
+  `timing.md` beside its terminal. The report separates setup/assets,
+  concurrent runtime intervals, verification, retries, configured settles,
+  unclassified overhead and time from skipped prior commands. Recorded local
+  offsets permit first-game-log observations independent of review-host timezone;
+  bounded game logs provide observed initial Atlas-to-detailed intervals.
+  Observations overlap other buckets and are not additive. Missing measurements
+  are not invented. These reports do not change qualification verdicts.
+
+The additional speed pass batches multiplayer and raid preparation plus asset
+warmup into one Gradle command. Across ten cells this removes twenty Gradle JVM
+startups/configurations. Each fixture still gets isolated writable caches/worlds,
+unchanged post-prepare/raid settles, server/client ordering, frozen-JAR checks,
+raid reload and verifiers. This is an operation-count improvement, not a measured
+percentage reduction in full-release wall time. Do not reuse mutable caches or
+combine unrelated native fixtures to claim a larger improvement.
+
+Validation: 418 Python tests pass (two expected platform skips on macOS),
+514 Java cases per loader pass locally, and all eleven CI checks at `701646d`
+pass, including all six source/loader build groups and Windows/Linux contracts.
+The final timing-only correction and preparation-order regressions are covered
+by the Python suite; native Java/batching behaviour is unchanged.
+
+A real 26.1.2 Fabric dedicated server plus two hidden, muted clients passes the
+full multiplayer scenario, navigation, reconnects, shutdown and verifiers at
+`701646d`. This was a disposable source-ABI development smoke using normal dev
+caches, not a frozen release invocation. The initial probe failed because its
+copied EULA was prepared too late; the corrected run retains that failed record.
+
+The warm ABBA preparation comparison measures separate prepare/assets at
+7.73 seconds on average versus 4.07 seconds combined (47.3% lower for this setup
+step). The comparison uses the same disposable configuration after an unmeasured
+warmup; it proves neither a full-suite percentage nor cold NeoForge/Windows
+cache savings. First-game-log delays were 10.86 seconds for the server and
+13.86/13.84 seconds for the two clients. The deliberate 120-second settle stayed.
+
+The navigation trace records a reachable commanded target `(2050,120,15)` at
+arming, then at tick 11 `WaterAvoidingRandomStrollGoal` replaces it with an
+unreachable `(2049,122,14)` target while all observed chunks remain loaded.
+The zombie still reaches the existing arrival tolerance and the fixture passes.
+This confirms interference in this run, but does not reproduce or fix the earlier
+Windows failures. No AI goal or assertion was changed. Preserve this lead for
+separate diagnosis rather than claiming that retries fixed the navigation bug.
+
+See [sanitized native/benchmark evidence](RELEASE_TEST_RESUME_SPEED_2026_10_13.json).
+No new release candidates are qualified or uploaded by this tooling change.
+
+A second CI speed check found duplicate workflow runs at the same revision
+(`d1f597d`, two sets of the eleven check contexts). The three workflows now use
+concurrency keyed by workflow, ref and GitHub execution SHA. Only an identical
+run can supersede another; different commits, PR integration bases and refs keep
+independent runs. All six matrix jobs and Windows/Linux contracts remain. This
+affects CI build/static/package work, not local frozen release qualification.

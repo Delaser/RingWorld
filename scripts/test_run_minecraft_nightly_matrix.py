@@ -344,10 +344,10 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             self.assertEqual(2, execute.call_count)
             self.assertEqual(["FAIL", "PASS"], [r["verdict"] for r in result["results"]])
             self.assertEqual("FAIL", result["verdict"])
-            self.assertEqual(["checkpoint-0001", "checkpoint-0002", "terminal"],
+            self.assertEqual(["checkpoint-0001", "checkpoint-0002", "timing", "terminal"],
                              [c.kwargs["stem"] for c in writes.call_args_list])
             self.assertTrue(all(c.args[1]["verdict"] == "INCOMPLETE"
-                                for c in writes.call_args_list[:-1]))
+                                for c in writes.call_args_list if c.kwargs["stem"].startswith("checkpoint")))
 
     def test_retry_is_narrowly_limited_to_pre_claim_server_startup_timeout(self) -> None:
         startup_timeout = "timed out waiting for marker 'Done ('"

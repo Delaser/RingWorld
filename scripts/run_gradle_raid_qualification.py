@@ -206,15 +206,11 @@ def _execute(prepared: Any, dependency_cache: Path | None, distribution_zip: Pat
     eula.parent.mkdir(parents=True, exist_ok=True)
     eula.write_text("# Disposable qualification runtime only.\neula=true\n", encoding="utf-8")
     commands: list[dict[str, Any]] = []
-    prepare = execute_command(_record(prepared, (tasks["prepare"],), timeout, dependency_cache), paths, ordinal=1)
-    commands.append(_executed_record("prepare", prepare))
+    prepare = execute_command(_record(prepared, (tasks["prepare"], tasks["assets"]), timeout, dependency_cache), paths, ordinal=1)
+    commands.append(_executed_record("prepare-and-assets", prepare))
     if prepare.verdict is not Verdict.PASS:
         raise GradleRaidError("fixture preparation failed")
     installed = _verify_installed(prepared)
-    assets = execute_command(_record(prepared, (tasks["assets"],), timeout, dependency_cache), paths, ordinal=2)
-    commands.append(_executed_record("assets", assets))
-    if assets.verdict is not Verdict.PASS:
-        raise GradleRaidError("serial asset warmup failed")
     port = int(cell["profile"]["server_port"])
     rcon_port, password = port + 1000, f"ringworld-{paths.run_id[-12:]}"
     _configure_rcon(paths.run_directory / "run-raid-seam/server", rcon_port, password)

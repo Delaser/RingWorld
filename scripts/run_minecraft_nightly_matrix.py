@@ -104,6 +104,10 @@ def parser() -> argparse.ArgumentParser:
     result.add_argument("--gradle-loom-cache")
     result.add_argument("--multiplayer-cooldown-seconds", type=int,
                         default=DEFAULT_MULTIPLAYER_COOLDOWN_SECONDS)
+    result.add_argument("--resume-aggregate", action="append", default=[],
+                        help="Immutable terminal/checkpoint from this exact source and quick run")
+    result.add_argument("--retry-failed-fixtures", action="store_true",
+                        help="Explicitly authorize one rerun of previously failed fixture keys")
     result.add_argument("--execute", action="store_true")
     return result
 
@@ -526,8 +530,9 @@ def plan(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict
         for cell in cells for fixture in fixtures
     ]
     complete = len(cells) == len(manifest["cells"]) and fixtures == FIXTURES
-    return {
-        "format": 1, "mode": "EXECUTE" if arguments.execute else "DRY_RUN",
+    planned = {
+        "format": 2, "manifest_sha256": _sha256(manifest_path),
+        "mode": "EXECUTE" if arguments.execute else "DRY_RUN",
         "quick_run_id": arguments.quick_run_id, "cells": [cell["id"] for cell in cells],
         "fixtures": list(fixtures), "complete_matrix_selection": complete,
         "multiplayer_cooldown_seconds": arguments.multiplayer_cooldown_seconds,
@@ -537,6 +542,43 @@ def plan(arguments: argparse.Namespace, *, repository_root: Path = ROOT) -> dict
         "production_world": {"path": str(source), "inventory": inventory, **observation},
         "commands": commands,
     }
+
+    reports = getattr(arguments, "resume_aggregate", ())
+    if reports:
+        # Dry runs must show the same exact-key selection as execution.
+        source = collect_source_provenance(root, manifest_path)
+        expected = _expected_identities(root, manifest_path, arguments, planned["cells"], resume=True)
+        selection = _resume_selection(root, manifest, manifest_path, arguments, planned, source.commit, expected)
+        pending = {tuple(key) for key in selection["pending"]}
+        planned["commands"] = [c for c in planned["commands"] if (c["cell"], c["fixture"]) in pending]
+        planned["resume_preview"] = selection
+    return planned
+
+
+def _expected_identities(root, manifest_path, arguments, cells, *, resume=False):
+    expected = {}
+    for cell_id in cells:
+        prepared = prepare_invocation(repository_root=root, manifest_path=manifest_path,
+                cell_id=str(cell_id), quick_run_id=arguments.quick_run_id, run_id=new_run_id())
+        if resume:
+            from review_composite_nightly_evidence import _load
+            quick = _load(prepared.quick_terminal_evidence.path)
+            if quick.get("provenance", {}).get("commit") != prepared.source_provenance["commit"]:
+                raise NightlyMatrixError("resume quick candidate was built from a different source")
+        expected[str(cell_id)] = {
+            "frozen_candidate_sha256": prepared.candidate.sha256,
+            "quick_terminal_sha256": prepared.quick_terminal_evidence.sha256}
+    return expected
+
+
+def _resume_selection(root, manifest, manifest_path, arguments, planned, commit, expected):
+    from minecraft_nightly_resume import select_resume
+    return select_resume(root=root, manifest=manifest, manifest_sha256=_sha256(manifest_path),
+            quick_run_id=arguments.quick_run_id, source_commit=commit,
+            production_inventory=planned["production_world"]["inventory"],
+            reports=[Path(p) for p in getattr(arguments, "resume_aggregate", ())],
+            expected=expected, fixtures=planned["fixtures"],
+            retry_failed=getattr(arguments, "retry_failed_fixtures", False))
 
 
 def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
@@ -551,19 +593,20 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
     run_id = new_run_id()
     manifest = load_manifest(manifest_path)
     by_id = {cell["id"]: cell for cell in manifest["cells"]}
-    expected: dict[str, dict[str, str]] = {}
-    for cell_id in planned["cells"]:
-        prepared = prepare_invocation(
-            repository_root=root, manifest_path=manifest_path, cell_id=str(cell_id),
-            quick_run_id=arguments.quick_run_id, run_id=new_run_id())
-        expected[str(cell_id)] = {
-            "frozen_candidate_sha256": prepared.candidate.sha256,
-            "quick_terminal_sha256": prepared.quick_terminal_evidence.sha256,
-        }
-    results: list[dict[str, Any]] = []
+    reports = getattr(arguments, "resume_aggregate", ())
+    expected = _expected_identities(root, manifest_path, arguments, planned["cells"], resume=bool(reports))
+    resume = (_resume_selection(root, manifest, manifest_path, arguments, planned, provenance.commit, expected)
+              if reports else None)
+    if resume is not None and planned.get("resume_preview") is not None:
+        if resume != planned["resume_preview"]:
+            raise NightlyMatrixError("resume evidence changed after planning")
+    results: list[dict[str, Any]] = [] if resume is None else [*resume["preserved"], *resume["blocked"]]
+    pending = None if resume is None else {tuple(key) for key in resume["pending"]}
     ordinal = 1
     for item in planned["commands"]:
         cell_id, fixture = str(item["cell"]), str(item["fixture"])
+        if pending is not None and (cell_id, fixture) not in pending:
+            continue
         paths = QualificationPaths.from_cell(root, by_id[cell_id], run_id)
         create_contained_directories(paths)
         cooldown_seconds = (int(planned["multiplayer_cooldown_seconds"])
@@ -659,22 +702,34 @@ def execute(arguments: argparse.Namespace, planned: Mapping[str, Any], *,
             "started_source_commit": provenance.commit,
             "completed_at": datetime.now(timezone.utc).isoformat(),
             "verdict": "INCOMPLETE", "results": list(results),
+            "resume": resume, "monolithic_pass": False,
         }
         write_terminal_report(
             root / "dist/qualification/nightly-matrix" / run_id, checkpoint,
             _terminal_markdown(planned["cells"], "INCOMPLETE"),
             stem=f"checkpoint-{len(results):04d}",
         )
-    all_pass = all(item["verdict"] == "PASS" for item in results)
+    keys = [(item["cell"], item["fixture"]) for item in results]
+    expected_keys = {(cell, fixture) for cell in planned["cells"]
+                     for fixture in planned.get("fixtures", {item["fixture"] for item in results})}
+    complete_results = len(keys) == len(set(keys)) and set(keys) == expected_keys
+    all_pass = complete_results and all(item["verdict"] == "PASS" for item in results)
     verdict = "PASS" if all_pass and planned["complete_matrix_selection"] else (
         "INCOMPLETE" if all_pass else "FAIL")
+    if resume is not None and verdict == "PASS":
+        verdict = "COMPOSITE_COVERAGE_REVIEWED"
     report = {
         **planned, "mode": "EXECUTED", "run_id": run_id,
         "started_source_commit": provenance.commit,
         "completed_at": datetime.now(timezone.utc).isoformat(),
-        "verdict": verdict, "results": results,
+        "verdict": verdict, "results": results, "resume": resume,
+        "monolithic_pass": verdict == "PASS" and resume is None,
     }
+    from minecraft_qualification_timing import summary, markdown as timing_markdown
+    timings = summary(results, root)
+    report["timing_summary"] = timings
     evidence = root / "dist/qualification/nightly-matrix" / run_id
+    write_terminal_report(evidence, timings, timing_markdown(timings), stem="timing")
     write_terminal_report(
         evidence, report,
         _terminal_markdown(planned["cells"], verdict),
@@ -694,7 +749,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(json.dumps(result, sort_keys=True))
     if not arguments.execute:
         return 0
-    return 0 if result["verdict"] == "PASS" else 1
+    return 0 if result["verdict"] in {"PASS", "COMPOSITE_COVERAGE_REVIEWED"} else 1
 
 
 if __name__ == "__main__":

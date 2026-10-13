@@ -378,3 +378,33 @@ After the exact-path parser fix, verify its native regression and a targeted
 Atlas recovery development fixture, then run fresh quick and complete full
 qualification from the approved merged source. Historical reports and frozen
 candidates keep their original source identity.
+
+## Resume only unfinished full fixtures
+
+Use the same cross-platform all-group command and frozen quick run IDs, adding
+one or more exact terminal/checkpoint paths for each group to resume:
+
+```text
+python scripts/run_release_full_matrix.py --quick-26-1 QUICK_26_1 --quick-26-2 QUICK_26_2 --quick-26-3 QUICK_26_3 --production-world WORLD --resume-26-1 CHECKPOINT_26_1 --resume-26-2 TERMINAL_26_2 --resume-26-3 TERMINAL_26_3
+```
+
+This first plans without launching Minecraft. Review preserved, pending and
+blocked keys in `resume_preview`; add `--execute` to run the exact pending keys.
+Supply the same validated dependency/distribution/Loom seed flags as a fresh run.
+If the owner authorizes retrying failed assertions, add `--retry-failed-fixtures`;
+otherwise those FAIL keys remain blocked while other missing work continues.
+Do not rebuild, change source, edit evidence or replace candidates between plan
+and execution. Old reports without `manifest_sha256` use manual composite review.
+Repeated cumulative checkpoints may reference the same unchanged PASS terminals;
+different PASS evidence for an already preserved key is rejected as ambiguous.
+
+After resume, require the complete manifest keyset and review
+`COMPOSITE_COVERAGE_REVIEWED`, explicitly not a monolithic nightly PASS.
+Original failed attempts/checkpoints remain immutable. Check `timing.json` and
+`timing.md` for setup/runtime/retry costs; unmeasured details are not speedup
+claims. Read `[navigation-trace]` in multiplayer server logs when an arrival
+assertion fails, without changing AI/tolerances to force success.
+
+These tools do not stage or publish. Follow the ordinary same-source, owner
+visual, six-JAR and publication gates afterwards. See
+[implementation and speed limits](RELEASE_TEST_SPEED.md).

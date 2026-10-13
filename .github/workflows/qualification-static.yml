@@ -15,6 +15,11 @@ on:
       - "scripts/qualification_host.py"
       - "scripts/minecraft_loom_seed.py"
       - "scripts/minecraft_neoform_seed.py"
+      - "scripts/minecraft_nightly_resume.py"
+      - "scripts/minecraft_qualification_timing.py"
+      - "scripts/test_minecraft_nightly_resume.py"
+      - "scripts/test_minecraft_qualification_timing.py"
+      - "scripts/test_qualification_preparation_batch.py"
       - "scripts/test_qualification_host.py"
       - "scripts/test_production_lifecycle_player_safety.py"
       - "scripts/test_capture_player_safety.py"
@@ -55,6 +60,11 @@ on:
       - "scripts/qualification_host.py"
       - "scripts/minecraft_loom_seed.py"
       - "scripts/minecraft_neoform_seed.py"
+      - "scripts/minecraft_nightly_resume.py"
+      - "scripts/minecraft_qualification_timing.py"
+      - "scripts/test_minecraft_nightly_resume.py"
+      - "scripts/test_minecraft_qualification_timing.py"
+      - "scripts/test_qualification_preparation_batch.py"
       - "scripts/test_qualification_host.py"
       - "scripts/test_production_lifecycle_player_safety.py"
       - "scripts/test_capture_player_safety.py"
@@ -80,6 +90,11 @@ on:
       - "docs/TESTING.md"
       - "AGENTS.md"
   workflow_dispatch:
+
+# Deduplicate only identical workflow inputs; do not cancel a different revision.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -171,6 +186,9 @@ jobs:
           scripts/test_copied_world_file_fix_upgrade.py
           scripts/test_run_minecraft_nightly_matrix.py
           scripts/test_run_release_full_matrix.py
+          scripts/test_minecraft_nightly_resume.py
+          scripts/test_minecraft_qualification_timing.py
+          scripts/test_qualification_preparation_batch.py
           scripts/test_minecraft_qualification_neoform_seed.py
           scripts/test_review_composite_nightly_evidence.py
           scripts/test_qualification_static_workflow.py

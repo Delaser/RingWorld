@@ -44,3 +44,11 @@ class ReleaseFullMatrixTest(unittest.TestCase):
         self.assertTrue(all(report['verdict'] == 'INCOMPLETE' for report, _ in checkpoints))
         self.assertEqual([1, 2, 3], [len(report['groups']) for report, _ in checkpoints])
         self.assertEqual('FAIL', result['verdict'])
+
+    def test_resumed_coverage_remains_composite_not_monolithic(self):
+        arguments = argparse.Namespace(execute=True, quick_26_1='a', quick_26_2='b', quick_26_3='c')
+        result = run_groups(arguments, executor=lambda args, manifest, quick: {
+            'verdict': 'COMPOSITE_COVERAGE_REVIEWED' if quick == 'a' else 'PASS',
+            'started_source_commit': 'same-source'})
+        self.assertEqual('COMPOSITE_COVERAGE_REVIEWED', result['verdict'])
+        self.assertFalse(result['monolithic_pass'])
