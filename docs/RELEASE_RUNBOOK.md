@@ -229,9 +229,7 @@ an already-exited PID is accepted only after confirming the exit. Other cleanup
 failures still fail the fixture. Do not kill unrelated Java processes. Never
 reuse a retained cell while its processes still run.
 
-## Autonomous recovery during an authorized release
-
-### Prepare a useful NeoForge acceleration seed
+## Prepare a useful NeoForge acceleration seed
 
 Snapshot only stopped trusted workers. Prefer the retained NeoForge quick-run
 Gradle homes: those have already prepared each supported Minecraft version
@@ -259,6 +257,8 @@ force a hit. Verify actual `Used cache of decompile`, `transformSources` and
 `recompile` records in a small setup probe before launching the long suite.
 Unmatched artifacts remain optional acceleration: legacy seeds are still hash
 checked and NeoForge may legitimately regenerate them.
+
+## Autonomous recovery during an authorized release
 
 The release agent owns diagnosis and routine harness/tooling repairs through
 qualification and staging. A failed fixture is evidence to investigate, not a
