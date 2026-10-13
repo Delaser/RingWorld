@@ -9,6 +9,20 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RingShaderContractTest {
+    @Test void adaptedEntryPointsArePrivateAndForeignShadersStayUnchanged() {
+        for (String path : List.of("terrain", "core/terrain", "rendertype_clouds", "clouds")) {
+            var original = Identifier.withDefaultNamespace(path);
+            var adapted = RingShaderContract.materialShader(original);
+            assertEquals("ringworld", adapted.getNamespace());
+            assertTrue(adapted.getPath().startsWith("core/"));
+            assertEquals(adapted, RingShaderContract.materialShader(adapted));
+        }
+        var foreign = Identifier.fromNamespaceAndPath("another_mod", "terrain");
+        assertSame(foreign, RingShaderContract.materialShader(foreign));
+        var vanillaUi = Identifier.withDefaultNamespace("core/position_tex");
+        assertSame(vanillaUi, RingShaderContract.materialShader(vanillaUi));
+    }
+
     @Test void onlyCurvedMaterialsReceiveThePrivateBinding() {
         for (String path : List.of("terrain", "core/terrain", "rendertype_clouds", "clouds")) {
             assertTrue(RingShaderContract.usesRingUniforms(Identifier.withDefaultNamespace(path)));

@@ -19,6 +19,11 @@ Minecraft-namespace RingWorld includes. The existing GLSL projection, handoff an
 material rules now live in `ringworld:projection.glsl`, `ringworld:handoff.glsl`
 and `ringworld:material.glsl`. Terrain, clouds and Atlas entry points reuse these
 resources; replacement renderers should adapt formats and bindings to them.
+Terrain/cloud entry points also use the RingWorld namespace. Pipeline builders
+select these private equivalents for the matching stock materials; unrelated
+mod shaders are left alone. No Minecraft shader assets are overwritten. Artifact
+pair checks include the private shader resources, and incremental copies remove
+the former stock-namespace entry points.
 `RingRenderView` captures an immutable CPU projection for visibility workers;
 worker queries must not read mutable client state.
 
@@ -30,6 +35,21 @@ alignment, water matching and stable depth handoff as acceptance criteria.
 Content mods following Minecraft's material/binding paths should benefit from
 the reduced shared-state ownership. A renderer which bypasses those paths still
 needs a thin adapter; do not infer universal compatibility or shader-pack support.
+
+The draft Sodium adapter translates its decoded camera-relative terrain into
+that shared projection, carries horizontal/vertical handoff distances, and calls
+the shared water, coverage and atmosphere functions. Its visibility adapter uses
+`RingRenderView` bounds and disables flat-only occlusion/face rejection in a ring;
+ordinary GPU backface culling remains. The older OpenGL path temporarily binds
+the private buffer and restores the indexed and generic bindings. Newer paths
+use declared RenderPass bindings. Shader composition retains Sodium's decoded
+format and material sampling; no Sodium shader implementation is bundled. Unknown
+source anchors fail with a contract error instead of silently producing flat
+terrain. Adapters are absent when Sodium is absent, with discovery performed
+without initializing its classes. This is experimental and unqualified until
+native startup, reload, all required views and movement pass on each supported
+version and loader. Other replacement renderers still need their own narrow
+format/binding adapters to the same contract.
 
 Development tests can load a clean mod set through
 `-PringCompatibilityModsDir=PATH_TO_MOD_JARS`. This applies to both loaders, never
@@ -184,3 +204,16 @@ occurs with only RingWorld and Fabric API. An unlisted combination is
 - Positive conflict detection is a pure deterministic test. The release gate
   does not install unsupported third-party mods merely to force their startup
   paths.
+
+### Baseline diagnostic matrix, 13 October 2026
+
+On unchanged 1.4 source `57efcb0`, 19 of 20 planned no-mod/Sodium startup and
+capture cases completed, including the separately banked 26.1.2 Fabric pair.
+26.3 NeoForge with Sodium timed out at approximately 90% client Atlas transfer;
+it did not report a shader or startup crash. Retain that failure and retry it
+serially. Completed captures still require visual review. Matched 26.1 and
+26.3 Fabric seam images confirm a flat/live terrain and curved Atlas mismatch,
+with visible sky gaps at the handoff. Both rims render in the current default
+natural Medium world; the historical #249 missing-wall claim is not reproduced
+by this case. The adapter and private entry-point routing need native checks
+before any support status changes.

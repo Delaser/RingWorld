@@ -22,6 +22,11 @@ abstract class RingPipelineUniformsMixin {
     @Unique private boolean ringworld$bindingAdded;
     @Inject(method = "build", at = @At("HEAD"))
     private void ringworld$declarePrivateUniforms(CallbackInfoReturnable<RenderPipeline> cir) {
+        var builder = (RenderPipeline.Builder)(Object)this;
+        var vertex = shaders.get(ShaderType.VERTEX);
+        var fragment = shaders.get(ShaderType.FRAGMENT);
+        if (vertex != null) builder.withVertexShader(RingShaderContract.materialShader(vertex));
+        if (fragment != null) builder.withFragmentShader(RingShaderContract.materialShader(fragment));
         if (!ringworld$bindingAdded && RingShaderContract.usesRingUniforms(shaders.get(ShaderType.VERTEX))) {
             ((RenderPipeline.Builder)(Object)this).withBindGroupLayout(BindGroupLayout.builder().withUniform(RingShaderContract.UNIFORM, UniformType.UNIFORM_BUFFER).build());
             ringworld$bindingAdded = true;

@@ -17,9 +17,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(RenderPipeline.Builder.class)
 abstract class RingPipelineUniformsMixin {
     @Shadow private Optional<Identifier> vertexShader;
+    @Shadow private Optional<Identifier> fragmentShader;
     @Unique private boolean ringworld$bindingAdded;
     @Inject(method = "build", at = @At("HEAD"))
     private void ringworld$declarePrivateUniforms(CallbackInfoReturnable<RenderPipeline> cir) {
+        var builder = (RenderPipeline.Builder)(Object)this;
+        vertexShader.map(RingShaderContract::materialShader).ifPresent(builder::withVertexShader);
+        fragmentShader.map(RingShaderContract::materialShader).ifPresent(builder::withFragmentShader);
         if (!ringworld$bindingAdded && RingShaderContract.usesRingUniforms(vertexShader.orElse(null))) {
             ((RenderPipeline.Builder)(Object)this).withBindGroupLayout(BindGroupLayout.builder().withUniform(RingShaderContract.UNIFORM, UniformType.UNIFORM_BUFFER).build());
             ringworld$bindingAdded = true;

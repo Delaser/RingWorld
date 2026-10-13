@@ -58,6 +58,8 @@ def write_shared_contract(archive: zipfile.ZipFile, *, mutation: str | None = No
             content = b"deliberately-different"
         archive.writestr(name, content)
     archive.writestr("assets/minecraft/shaders/core/terrain.vsh", b"shared shader")
+    private_shader = "assets/ringworld/shaders/core/terrain.vsh"
+    archive.writestr(private_shader, b"different" if mutation == private_shader else b"shared ring shader")
 
 
 def write_jar(path: Path, *, minecraft: str = "26.1.2", identifier: str = "MPL-2.0", environment: str = "*", compatibility_api: int = 1, sensitive: str | None = None, sensitive_content: str = "secret", embedded_license: bytes = LICENSE, contract_mutation: str | None = None, build_identity: bytes | None = b"artifactVersion=1.0.0+mc26.1.2\nreleaseLabel=1.0\n") -> None:
@@ -269,6 +271,13 @@ class ModrinthStagingTest(unittest.TestCase):
         validate_candidate_pair(self.jar, self.config, self.neo_jar, self.neo_config, self.license)
         write_neoforge_jar(self.neo_jar, contract_mutation="dev/ringworld/world/RingGeometry.class")
         with self.assertRaisesRegex(VerificationError, "shared contract entry differs.*RingGeometry.class"):
+            validate_candidate_pair(self.jar, self.config, self.neo_jar, self.neo_config, self.license)
+
+    def test_checks_private_shader_equality_across_loaders(self) -> None:
+        write_jar(self.jar)
+        write_neoforge_jar(self.neo_jar,
+                           contract_mutation="assets/ringworld/shaders/core/terrain.vsh")
+        with self.assertRaisesRegex(VerificationError, "shared contract entry differs.*ringworld/shaders"):
             validate_candidate_pair(self.jar, self.config, self.neo_jar, self.neo_config, self.license)
 
     def test_rejects_wrong_minecraft_dependency(self) -> None:

@@ -216,8 +216,8 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
                           VERSION_ROOT / "26.3/client/resources"):
             proxy_vertex = (resources / "assets/ringworld/shaders/core/ring_surface.vsh").read_text()
             proxy_fragment = (resources / "assets/ringworld/shaders/core/ring_surface.fsh").read_text()
-            live_vertex = (resources / "assets/minecraft/shaders/core/terrain.vsh").read_text()
-            live_fragment = (resources / "assets/minecraft/shaders/core/terrain.fsh").read_text()
+            live_vertex = (resources / "assets/ringworld/shaders/core/terrain.vsh").read_text()
+            live_fragment = (resources / "assets/ringworld/shaders/core/terrain.fsh").read_text()
             self.assertIn("float cameraY = float(CameraBlockPos.y) - CameraOffset.y", proxy_vertex)
             self.assertIn("float worldY = RingWorldVertical.w - intrinsicHeight", proxy_vertex)
             self.assertIn("handoffDistance = length(vec2(intrinsicDistance, worldY - cameraY))", proxy_vertex)

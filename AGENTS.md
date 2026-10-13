@@ -18,8 +18,11 @@ private-uniform refactor preserves Minecraft's Globals ABI and publisher.
 GameRenderer: allocate at construction, update at frame start and close at
 shutdown. Reuse RingWorld-namespace projection/handoff/material GLSL and
 immutable `RingRenderView` snapshots for replacement-renderer adapters. Apply equivalent behaviour across
-all supported 26.x versions and both loaders. The new Sodium neighbour hook is
-only a prototype; do not remove unsupported notices or claim support from it.
+all supported 26.x versions and both loaders. Terrain/cloud entry points are
+private RingWorld resources selected by pipeline builders; do not restore stock
+shader asset overrides. Optional Sodium format/binding/visibility adapters are
+experimental and consume the shared visual contract. The neighbour-ready hook
+remains an ignored prototype; do not remove unsupported notices or claim support from it.
 Use clean natural-world copies and no-mod controls: the old floating-build save
 also has gaps without Sodium. Preserve failed evidence and distinguish a harness
 completion marker from visual acceptance. See `docs/COMPATIBILITY.md`.

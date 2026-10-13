@@ -289,3 +289,10 @@ server source resolution; `/ringworld lod reset` follows the server default.
 The choice resets on disconnect. It changes local display samples, texture
 budget and mesh density, without changing terrain, server settings, or downloads.
 A client cannot recover finer terrain detail than the server Atlas contains.
+
+### Rendering compatibility development
+
+The `codex/mod-compatibility-core` draft separates RingWorld-owned uniforms and
+shared projection/material rules from Minecraft’s shader state. Sodium is the
+first replacement-renderer test case; support remains unqualified while the
+paired native matrix and visual checks run. See [compatibility work](docs/COMPATIBILITY.md).

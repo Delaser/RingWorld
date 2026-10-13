@@ -90,6 +90,7 @@ SHARED_PREFIXES = (
     "dev/ringworld/api/",
     "dev/ringworld/net/",
     "assets/minecraft/shaders/",
+    "assets/ringworld/shaders/",
 )
 FABRIC_JAR = Path("build/libs/ringworld-1.0.0+mc26.1.2.jar")
 NEOFORGE_JAR = Path("neoforge/build/libs/ringworld-neoforge-1.0.0+mc26.1.2.jar")
@@ -393,7 +394,7 @@ def shared_contract_entries(fabric: zipfile.ZipFile, neoforge: zipfile.ZipFile) 
         for name in archive.namelist():
             if name.endswith("/"):
                 continue
-            if name.startswith("assets/minecraft/shaders/"):
+            if name.startswith(("assets/minecraft/shaders/", "assets/ringworld/shaders/")):
                 entries.add(name)
             elif name.startswith("dev/ringworld/api/") and name.endswith(".class"):
                 entries.add(name)

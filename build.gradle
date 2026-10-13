@@ -2175,6 +2175,11 @@ tasks.named('processClientResources') {
 		['globals.glsl', 'ringworld_projection.glsl', 'ringworld_handoff.glsl'].each {
 			delete(new File(destinationDir, 'assets/minecraft/shaders/include/' + it))
 		}
+		['terrain', 'rendertype_clouds', 'clouds'].each { shader ->
+		    ['vsh', 'fsh'].each { suffix ->
+		        delete(new File(destinationDir, 'assets/minecraft/shaders/core/' + shader + '.' + suffix))
+		    }
+		}
 	}
 }
 
