@@ -293,6 +293,10 @@ A client cannot recover finer terrain detail than the server Atlas contains.
 ### Rendering compatibility development
 
 The `codex/mod-compatibility-core` draft separates RingWorld-owned uniforms and
-shared projection/material rules from Minecraft’s shader state. Sodium is the
-first replacement-renderer test case; support remains unqualified while the
-paired native matrix and visual checks run. See [compatibility work](docs/COMPATIBILITY.md).
+shared projection/material rules from Minecraft's shader state. Sodium now uses
+that same curve and Atlas handoff. Native development checks pass on Fabric and
+NeoForge for Minecraft 26.1, 26.1.1, 26.1.2, 26.2 and 26.3, using Sodium 0.8.9/0.9.2
+as listed in the [validation record](docs/SODIUM_COMPATIBILITY_2026_10_13.md).
+These results use macOS OpenGL; they do not certify arbitrary modpacks, shader
+packs or other graphics backends. This draft is separate from the active 1.4
+release qualification. See the [compatibility contract](docs/COMPATIBILITY.md).

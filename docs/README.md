@@ -115,6 +115,7 @@ Start here:
   build/dedicated-server checkpoint.
 - [`NETWORK_PROTOCOL.md`](NETWORK_PROTOCOL.md): login handshake, atlas
   transport, and canonical/presentation packet mapping.
+- [`SODIUM_COMPATIBILITY_2026_10_13.md`](SODIUM_COMPATIBILITY_2026_10_13.md): shared renderer contract, Sodium repair, native matrix and limitations.
 - [`COMPATIBILITY.md`](COMPATIBILITY.md): versioned read-only API, supported
   baseline, known unsupported mods/shaders, and loader boundary.
 - [`RENDERING.md`](RENDERING.md): terrain curvature, culling, distant texture,

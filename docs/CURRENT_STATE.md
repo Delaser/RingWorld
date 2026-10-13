@@ -1,5 +1,15 @@
 # Large-server lighting allocation — development validation complete
 
+October 13: PR #292 (`codex/mod-compatibility-core`) separates private RingWorld
+shader state and validates Sodium through thin adapters to the shared rendering
+contract. All five supported game versions pass seam/rim checks on both loaders;
+correction/reload, full-terrain lighting, objects and two-client exterior/seam
+visibility also pass on the recorded representatives. The obsolete Sodium
+conflict notice is removed on this branch. Native evidence is macOS OpenGL;
+release qualification and the active Windows candidate remain separate.
+See [the validation record](SODIUM_COMPATIBILITY_2026_10_13.md).
+
+
 October 11: fresh Windows qualification on `eb414a55` passed all ten quick
 cells and the creation-UI development slice. The full run passed creation UI
 and world generation, then Atlas recovery rejected the game's native

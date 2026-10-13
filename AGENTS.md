@@ -20,12 +20,22 @@ shutdown. Reuse RingWorld-namespace projection/handoff/material GLSL and
 immutable `RingRenderView` snapshots for replacement-renderer adapters. Apply equivalent behaviour across
 all supported 26.x versions and both loaders. Terrain/cloud entry points are
 private RingWorld resources selected by pipeline builders; do not restore stock
-shader asset overrides. Optional Sodium format/binding/visibility adapters are
-experimental and consume the shared visual contract. The neighbour-ready hook
-remains an ignored prototype; do not remove unsupported notices or claim support from it.
+shader asset overrides. Optional Sodium format/binding/visibility adapters consume
+this same contract. Native development validation passes all ten supported game/loader
+cells, plus correction/reload, weather, objects and two-client visibility checks;
+see `docs/SODIUM_COMPATIBILITY_2026_10_13.md` for exact builds and limits.
+Do not infer Iris, Nvidium, shader-pack or Vulkan support from Sodium results.
+The exterior-neighbour prototype was not needed and remains unintegrated.
 Use clean natural-world copies and no-mod controls: the old floating-build save
 also has gaps without Sodium. Preserve failed evidence and distinguish a harness
 completion marker from visual acceptance. See `docs/COMPATIBILITY.md`.
+Comparison captures must wait for a coherent complete detailed GPU Atlas and
+retirement/completion of its preceding texture crossfade. Do not require the
+newest network revision or an empty worker queue. After setup teleports, wait
+for the camera/rim chunks and consecutive settled ticks: an idle mesher can also
+mean that chunks have not arrived. These are opt-in capture gates, not changes
+to ordinary rendering or the active frozen release qualification.
+
 
 ## Atlas pregeneration concurrency (#253)
 
@@ -1729,7 +1739,7 @@ version numbers.
   target leaves the old-chart path behind and can stop navigation at the seam.
 - `RingRenderProfile` visual-policy version 5 owns the live/proxy/detail
   transitions, reveal, haze, and local cloud fade. Keep Java profile fields
-  and the seven appended RingWorld Globals vectors synchronized. The 2026-08-01
+  and the private RingWorld uniform block synchronized. The 2026-08-01
   6/12/28 review retained its deterministic interleaved-gradient dither; an
   unordered pixel-hash experiment produced worse salt-and-pepper grain and was
   rejected. Profile 5 also raises the circumference mesh cap to 2,048 so the

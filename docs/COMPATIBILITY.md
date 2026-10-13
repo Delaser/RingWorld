@@ -2,80 +2,46 @@
 
 ## Compatibility work based on 1.4 (13 October 2026)
 
-The owner requires a broadly compatible rendering architecture, using Sodium as
-the first test case, without reducing RingWorld's accepted visual quality.
-Work is isolated on `codex/mod-compatibility-core`, based on `57efcb0`.
-The active Windows release qualification and its frozen candidates remain
-unchanged. No third-party combination is newly qualified by this work yet.
+`codex/mod-compatibility-core`, based on `57efcb0`, preserves RingWorld's accepted
+visuals while reducing ownership of Minecraft's shared shader state. The active
+Windows 1.4 qualification and its frozen candidates remain unchanged.
 
-The first core change removes RingWorld's replacement of Minecraft's shared
-`Globals` include and buffer publisher. RingWorld data instead occupies a private
-176-byte `RingWorld` uniform block under `assets/ringworld`. The frame renderer owns, updates and closes the private buffer independently of
-Minecraft’s `GlobalSettingsUniform`; Minecraft updates its own uniforms normally; the standard default-binding path adds the private buffer,
-and only shaders consuming it get the corresponding pipeline binding. This keeps
-the existing projection, fade, water, atmosphere and nearby-correction values.
-Incremental resource processing removes obsolete packaged Globals and former
-Minecraft-namespace RingWorld includes. The existing GLSL projection, handoff and
-material rules now live in `ringworld:projection.glsl`, `ringworld:handoff.glsl`
-and `ringworld:material.glsl`. Terrain, clouds and Atlas entry points reuse these
-resources; replacement renderers should adapt formats and bindings to them.
-Terrain/cloud entry points also use the RingWorld namespace. Pipeline builders
-select these private equivalents for the matching stock materials; unrelated
-mod shaders are left alone. No Minecraft shader assets are overwritten. Artifact
-pair checks include the private shader resources, and incremental copies remove
-the former stock-namespace entry points.
-`RingRenderView` captures an immutable CPU projection for visibility workers;
-worker queries must not read mutable client state.
+RingWorld owns an independent 176-byte uniform block on `GameRenderer`, with
+matching allocation, per-frame updates and shutdown cleanup. Minecraft retains
+its normal `Globals` include and publisher. Terrain/cloud entry points use the
+RingWorld namespace, selected by matching stock pipeline builders; unrelated
+mod shaders retain their own assets and bindings. Incremental packaging removes
+obsolete stock-namespace RingWorld overrides.
 
-Use one shared visual contract for the vanilla renderer and replacement-renderer
-adapters. Adapters may translate vertex formats, buffer binding and visibility
-hooks; they must not introduce an alternative ring geometry or poorer fallback.
-Keep the current CPU/GPU projection, height-dependent visibility, seams, wall
-alignment, water matching and stable depth handoff as acceptance criteria.
-Content mods following Minecraft's material/binding paths should benefit from
-the reduced shared-state ownership. A renderer which bypasses those paths still
-needs a thin adapter; do not infer universal compatibility or shader-pack support.
+Vanilla terrain, clouds and Atlas reuse the same projection/handoff/material
+GLSL; CPU visibility uses immutable `RingRenderView` snapshots. Optional renderer
+adapters may translate vertex formats, binding and visibility hooks. They must
+preserve the same geometry, altitude-aware depth handoff, water, atmosphere and
+wall alignment. A flat fallback or disabled Atlas is not compatibility.
 
-The draft Sodium adapter translates its decoded camera-relative terrain into
-that shared projection, carries horizontal/vertical handoff distances, and calls
-the shared water, coverage and atmosphere functions. Its visibility adapter uses
-`RingRenderView` bounds and disables flat-only occlusion/face rejection in a ring;
-ordinary GPU backface culling remains. The older OpenGL path temporarily binds
-the private buffer and restores the indexed and generic bindings. Newer paths
-use declared RenderPass bindings. Shader composition retains Sodium's decoded
-format and material sampling; no Sodium shader implementation is bundled. Unknown
-source anchors fail with a contract error instead of silently producing flat
-terrain. Adapters are absent when Sodium is absent, with discovery performed
-without initializing its classes. This is experimental and unqualified until
-native startup, reload, all required views and movement pass on each supported
-version and loader. Other replacement renderers still need their own narrow
-format/binding adapters to the same contract.
+Sodium adapters now pass native development validation on all ten supported
+Minecraft/loader cells, using 0.8.9 for 26.1/26.1.1 and matching 0.9.2 builds for
+26.1.2/26.2/26.3. Corrected natural-world captures close the flat/live-versus-curved
+Atlas gaps. Additional checks cover correction commands, reloads, objects,
+weather/time, both other dimensions, exterior walls and two-client visibility.
+See the [cause, implementation and validation record](SODIUM_COMPATIBILITY_2026_10_13.md)
+for exact scope, evidence and retained failed diagnostics.
 
-Development tests can load a clean mod set through
-`-PringCompatibilityModsDir=PATH_TO_MOD_JARS`. This applies to both loaders, never
-bundles those JARs and is rejected in formal vanilla release qualification mode.
-Keep the mod inventory and hashes with every diagnostic capture. No-mod controls,
-loader startup and screenshot completion are distinct from visual acceptance.
+Older OpenGL adapters restore indexed/range and generic buffer bindings; newer
+adapters declare the stock and private buffers through RenderPass. Visibility
+uses shared curved bounds and refreshes its graph when stationary correction
+settings change. Shader composition uses Sodium's original runtime resources;
+no Sodium implementation or dependency is bundled. Unknown source anchors fail
+clearly rather than silently drawing flat terrain. Optional mixins are absent
+without Sodium and do not initialize foreign classes during discovery.
 
-Validation in progress: fresh natural-world controls and Sodium runs across
-26.1, 26.1.1, 26.1.2, 26.2 and 26.3, on both loaders; compare both rims, natural
-seam traversal, terrain/Atlas curvature and fade, water/translucency, objects,
-clouds, weather/time and resource reloads. The initial 2048x128 floating-build
-save has rim gaps even with vanilla and is unsuitable for attributing #249 to
-Sodium. Preserve its diagnostic logs but use the stopped, fully sampled natural
-16384x256 Minecraft 26.1 source for clean forward-compatible copies.
-
-The initial private-buffer change passes all six source/loader CI builds and the
-26.1.2 Fabric and NeoForge unit suites. Its natural Medium no-mod comparison
-preserves both rim views within about 0.004 mean RGB levels (0–255), and seam
-views within 0.13–0.21. This is preservation evidence for the initial change,
-not a visual gate for later edits or a third-party support claim. The subsequent
-shared-GLSL extraction and independent frame publisher need their own native
-checks. The pinned baseline matrix retains logs, source/world/mod hashes and
-paired captures; screenshot completion remains pending manual visual review.
-Sodium's neighbour-ready trial is retained in ignored diagnostic evidence; it does not fix
-the independent terrain-shader and visibility pipelines. Keep Sodium listed as
-unsupported until the complete matrix and visual review pass.
+Development runs can load a clean mod directory through
+`-PringCompatibilityModsDir=PATH_TO_MOD_JARS` on either loader. This does not
+bundle dependencies and is rejected in formal vanilla release qualification.
+Keep source/world/mod hashes with diagnostic captures. Native validation used
+macOS OpenGL; it does not certify every driver, future Sodium build, shader pack
+or modpack. Other replacement renderers still need narrow adapters to the same
+contract. Content and texture-pack compatibility must be tested, not inferred.
 
 The following older release records remain historical qualification evidence.
 
@@ -92,7 +58,7 @@ Later stable versions use the same fail-closed intake described in
 
 ## Supported baseline
 
-The upcoming 1.3 release accepts newer NeoForge builds above each jar's minimum,
+Version 1.3 and later accept newer NeoForge builds above each jar's minimum,
 while keeping its Minecraft version limits. Exact tested loader pins remain in
 qualification records; accepting a loader version is not evidence it was tested.
 Published 1.2 jars still have their old upper caps, including an exact
@@ -102,11 +68,11 @@ The release gate covers this exact foundation:
 
 | Component | Supported contract |
 | --- | --- |
-| Minecraft | Java Edition 26.1, 26.1.1, 26.1.2, or 26.2; matching jar required |
+| Minecraft | Java Edition 26.1, 26.1.1, 26.1.2, 26.2 or 26.3; matching jar required |
 | Java | 25 |
-| Loader | Fabric Loader 0.19.3 or the exact qualified NeoForge build for that game version |
+| Loader | Fabric Loader 0.19.3 or NeoForge at/above the matching JAR minimum; tested pins remain in qualification records |
 | API | Matching Fabric API on Fabric only |
-| Renderer | Vanilla OpenGL terrain, entity, cloud, and shader pipeline; experimental Vulkan is not qualified |
+| Renderer | Vanilla OpenGL; the draft Sodium adapter has the native development coverage above; experimental Vulkan is not qualified |
 | Server | Integrated and dedicated servers with RingWorld installed |
 | Client | Matching RingWorld settings/atlas channel generations and format |
 
@@ -122,16 +88,15 @@ shader contract.
 
 ## Known unsupported combinations
 
-These are deliberately listed as unsupported for the current dual-loader
-release.
+These remain unsupported by this source branch. Published JARs retain their
+original compatibility inventories.
 The loader probe reports a clear early log error when it finds their mod IDs;
 it does not crash the game or claim that every version necessarily fails in
 the same way.
 
 | Mod / family | Mod ID | Conflict |
 | --- | --- | --- |
-| Sodium | `sodium` | Replaces the chunk renderer and terrain shader path |
-| Iris | `iris` | Owns a shader pipeline without RingWorld's extended globals |
+| Iris | `iris` | Owns a shader pipeline without RingWorld's curved material contract |
 | VulkanMod | `vulkanmod` | Replaces the OpenGL renderer and shader contract |
 | Canvas Renderer | `canvas` | Replaces Fabric's vanilla-compatible renderer path |
 | Distant Horizons | `distanthorizons` | Adds an independent flat-world distant LOD |
@@ -140,7 +105,7 @@ the same way.
 | Gravity Changer | `gravity_changer` | Changes the vanilla `-Y` intrinsic gravity contract |
 | C2ME | `c2me` | Rewrites chunk and world-generation internals |
 | OptiFabric | `optifabric` | Replaces terrain and shader internals |
-| Nvidium | `nvidium` | Replaces the already-unsupported Sodium terrain renderer |
+| Nvidium | `nvidium` | Replaces Sodium terrain with a separate unsupported rendering pipeline |
 
 The Java inventory is authoritative for early detection:
 `RingCompatibilityContract.VERSION == 1`. Adding a new entry does not break
@@ -205,7 +170,10 @@ occurs with only RingWorld and Fabric API. An unlisted combination is
   does not install unsupported third-party mods merely to force their startup
   paths.
 
-### Baseline diagnostic matrix, 13 October 2026
+### Historical initial diagnostics, 13 October 2026
+
+The following intermediate statuses are superseded by the completed development
+validation linked above. Original failed evidence is retained.
 
 On unchanged 1.4 source `57efcb0`, 19 of 20 planned no-mod/Sodium startup and
 capture cases completed, including the separately banked 26.1.2 Fabric pair.

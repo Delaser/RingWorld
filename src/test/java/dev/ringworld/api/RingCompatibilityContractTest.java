@@ -18,16 +18,19 @@ class RingCompatibilityContractTest {
         assertEquals(1, RingWorldApi.API_VERSION);
 
         var conflicts = RingCompatibilityContract.findLoadedConflicts(
-                List.of("minecraft", "fabric-api", "SODIUM", "example-safe-mod"));
+                List.of("minecraft", "fabric-api", "CANVAS", "example-safe-mod"));
         assertEquals(1, conflicts.size());
-        assertEquals("sodium", conflicts.getFirst().modId());
+        assertEquals("canvas", conflicts.getFirst().modId());
         assertEquals(RingCompatibilityContract.Area.RENDERER, conflicts.getFirst().area());
     }
 
     @Test
-    void baselineFabricStackHasNoKnownConflict() {
-        assertTrue(RingCompatibilityContract.findLoadedConflicts(
-                List.of("minecraft", "fabricloader", "fabric-api", "ringworld")).isEmpty());
+    void sodiumIsNotADeclaredConflictOnEitherLoader() {
+        for (var ids : List.of(
+                List.of("minecraft", "fabricloader", "fabric-api", "ringworld", "sodium"),
+                List.of("minecraft", "neoforge", "ringworld", "sodium"))) {
+            assertTrue(RingCompatibilityContract.findLoadedConflicts(ids).isEmpty(), ids.toString());
+        }
     }
 
     @Test
