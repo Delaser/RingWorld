@@ -220,3 +220,11 @@ concurrency keyed by workflow, ref and GitHub execution SHA. Only an identical
 run can supersede another; different commits, PR integration bases and refs keep
 independent runs. All six matrix jobs and Windows/Linux contracts remain. This
 affects CI build/static/package work, not local frozen release qualification.
+
+The [fixture/cache follow-up](RELEASE_FIXTURE_STABILITY_2026_10_13.md) verifies
+matching-metadata NeoForm seeding on this Mac: 107.60s cold vs 18.70s seeded
+preparation, with actual expensive-node hits. A stale source manifest reused
+only preprocessing. Provisioning now rejects that mismatch and can combine
+the stopped per-version quick workers. This is setup-only native evidence;
+Windows timing and total-suite savings are not yet measured. The same follow-up
+records focused navigation and copied-Survival player-safety validation.

@@ -5,7 +5,7 @@ import net.minecraft.world.entity.ai.goal.GoalSelector;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-/** Read-only access used by the opt-in multiplayer fixture's failure trace. */
+/** Goal access for the opt-in tagged navigator fixture and its read-only trace. */
 @Mixin(Mob.class)
 public interface MobFixtureGoalsAccessor {
     @Accessor("goalSelector") GoalSelector ringworld$fixtureGoals();

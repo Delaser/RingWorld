@@ -229,6 +229,35 @@ an already-exited PID is accepted only after confirming the exit. Other cleanup
 failures still fail the fixture. Do not kill unrelated Java processes. Never
 reuse a retained cell while its processes still run.
 
+## Prepare a useful NeoForge acceleration seed
+
+Snapshot only stopped trusted workers. Prefer the retained NeoForge quick-run
+Gradle homes: those have already prepared each supported Minecraft version
+using the current authenticated Loom metadata and the same read-only dependency
+cache paths as the full run. Combine their `caches/neoformruntime` directories
+into a **new** existing external Loom seed directory. The same command works
+on Windows and macOS with native absolute paths:
+
+```text
+python scripts/minecraft_neoform_seed.py --source-cache "QUICK_26_1_GRADLE_HOME/caches/neoformruntime" --source-cache "QUICK_26_1_1_GRADLE_HOME/caches/neoformruntime" --source-cache "QUICK_26_1_2_GRADLE_HOME/caches/neoformruntime" --source-cache "QUICK_26_2_GRADLE_HOME/caches/neoformruntime" --source-cache "QUICK_26_3_GRADLE_HOME/caches/neoformruntime" --loom-seed "NEW_EXTERNAL_LOOM_SEED"
+```
+
+The external destination must already contain the validated Mojang metadata,
+client/server JARs and assets for the selected versions, with no existing
+NeoForm snapshot/index. Do not replace the seed used by a running worker.
+Different bytes for the same intermediate key are rejected rather than choosing
+an arbitrary cache. Per-version output keys combine without sharing writable
+homes or changing candidate/evidence gates.
+
+If source metadata differs from the Loom seed, warm a fresh isolated worker
+with that seed and the pinned dependencies first. Mojang asset-index changes
+can invalidate decompile keys even when the Minecraft version string and game
+JARs are unchanged. Do not rewrite cache keys or substitute stale metadata to
+force a hit. Verify actual `Used cache of decompile`, `transformSources` and
+`recompile` records in a small setup probe before launching the long suite.
+Unmatched artifacts remain optional acceleration: legacy seeds are still hash
+checked and NeoForge may legitimately regenerate them.
+
 ## Autonomous recovery during an authorized release
 
 The release agent owns diagnosis and routine harness/tooling repairs through

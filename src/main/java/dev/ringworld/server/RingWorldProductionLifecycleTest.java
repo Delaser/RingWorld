@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Relative;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.portal.TeleportTransition;
 import net.minecraft.world.phys.Vec3;
 
@@ -165,6 +166,10 @@ public final class RingWorldProductionLifecycleTest {
     }
 
     private static void preparePlayer(ServerPlayer player) {
+        // Dimension/Atlas lifecycle checks do not depend on survival damage,
+        // hunger or item consumption. Set the actual mode, rather than only
+        // patching abilities which vanilla can replace on dimension/reopen.
+        if (!player.isCreative()) player.setGameMode(GameType.CREATIVE);
         boolean update = !player.getAbilities().mayfly || !player.getAbilities().flying
                 || !player.getAbilities().invulnerable;
         player.getAbilities().mayfly = true;

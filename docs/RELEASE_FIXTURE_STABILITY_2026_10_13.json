@@ -1,0 +1,547 @@
+{
+  "scope": "Development diagnostics and focused native checks on macOS. Not fresh quick/full release qualification; no publication. Windows/Linux contracts and all six CI source/loader builds pass at d21e3f9. Native Windows cache timing is not measured.",
+  "runtime_source_commit": "d21e3f9bbd8ea5ad6c9914dceb46ac5582872a8c",
+  "cache": {
+    "stale_metadata": {
+      "raw_report": {
+        "path": "logs/release-fixture-stability/cache-20261013T174835Z-186e54cfc936/status.json",
+        "sha256": "25708c66c285f87e97261d0f4b6fe085e254b3d0fd29ee26617617ae852fbbce"
+      },
+      "seed_files": 174,
+      "seed_bytes": 1744807047,
+      "samples": [
+        {
+          "mode": "cold",
+          "elapsed_seconds": 97.123242375,
+          "staging_seconds": 6.570914333000001,
+          "return_code": 0,
+          "run_id": "20261013T174852Z-0e19b6d7df5b",
+          "artifacts": [
+            {
+              "name": "minecraft-patched-26.1.2.87.jar",
+              "bytes": 35104746,
+              "sha256": "9300cd467b083a94a918edd2f2b65787cd84ea73f68a1a5bcab65b9a5038707f"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-sources.jar",
+              "bytes": 19949440,
+              "sha256": "b9be024f44cfc3cf9973b6c43edc52c06c79e099b4e263cbd850a7062da67bcd"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-merged.jar",
+              "bytes": 43952778,
+              "sha256": "88dccc6dedeeb2f8d9227315d1d1c25b8e37dfa11092f197b800b9d9391f71bc"
+            }
+          ],
+          "nodes": [
+            "\u2713 Completed downloadManifest in 0.50s",
+            "\u2713 Completed downloadJson in 0.02s",
+            "\u2713 Completed downloadClient in 0.02s",
+            "\u2713 Completed downloadServer in 0.02s",
+            "\u2713 Completed preProcessJar in 2.40s",
+            "\u2713 Completed decompile in 34.45s",
+            "\u2713 Completed patch in 3.04s",
+            "\u2713 Completed applyNeoforgePatches in 2.73s",
+            "\u2713 Completed transformSources in 11.38s",
+            "\u2713 Completed recompile in 21.24s",
+            "\u2713 Completed mergeWithSources in 2.51s",
+            "Total runtime: 78.93s"
+          ]
+        },
+        {
+          "mode": "seeded",
+          "elapsed_seconds": 94.79718033399999,
+          "staging_seconds": 8.407636667000006,
+          "return_code": 0,
+          "run_id": "20261013T175037Z-49f2037a5ee9",
+          "artifacts": [
+            {
+              "name": "minecraft-patched-26.1.2.87.jar",
+              "bytes": 35104746,
+              "sha256": "8ddb0a150e452902318ca12828bb4c7be3a92d9a79774682e415fbc7de9ca5d7"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-sources.jar",
+              "bytes": 19949440,
+              "sha256": "f85b2da5c0d32b6db96186ebd87405d9846fc197598075b64a8e8821199caf69"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-merged.jar",
+              "bytes": 43952778,
+              "sha256": "64acbe502cd90990a22445ffa6fed4c3b97c03c196c6636c2cbc7b0473f36f74"
+            }
+          ],
+          "nodes": [
+            "\u2713 Completed downloadManifest in 0.35s",
+            "\u2713 Completed downloadJson in 0.00s",
+            "\u2713 Completed downloadServer in 0.02s",
+            "\u2713 Completed downloadClient in 0.02s",
+            "\u267b Used cache of preProcessJar in 0.00s",
+            "\u2713 Completed decompile in 36.99s",
+            "\u2713 Completed patch in 3.16s",
+            "\u2713 Completed applyNeoforgePatches in 2.67s",
+            "\u2713 Completed transformSources in 11.48s",
+            "\u2713 Completed recompile in 20.93s",
+            "\u2713 Completed mergeWithSources in 2.49s",
+            "Total runtime: 78.59s"
+          ]
+        },
+        {
+          "mode": "seeded",
+          "elapsed_seconds": 93.45373908300002,
+          "staging_seconds": 16.035913584000014,
+          "return_code": 0,
+          "run_id": "20261013T175222Z-560781ee029a",
+          "artifacts": [
+            {
+              "name": "minecraft-patched-26.1.2.87.jar",
+              "bytes": 35104746,
+              "sha256": "95f7f4fb72fb353a34b8e602fe30010c7d5de5227ac5d18d43c756f63e166c4a"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-sources.jar",
+              "bytes": 19949440,
+              "sha256": "676a2b31390a18e0f9ad0532253027e43fd9adca82bfd093692444adf26b22b3"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-merged.jar",
+              "bytes": 43952778,
+              "sha256": "a0b11c10a11503cb38abe0f8f35e20142aa23ca14abc25c36da7e8197f23fc29"
+            }
+          ],
+          "nodes": [
+            "\u2713 Completed downloadManifest in 0.35s",
+            "\u2713 Completed downloadJson in 0.00s",
+            "\u2713 Completed downloadServer in 0.02s",
+            "\u2713 Completed downloadClient in 0.02s",
+            "\u267b Used cache of preProcessJar in 0.00s",
+            "\u2713 Completed decompile in 34.44s",
+            "\u2713 Completed patch in 3.31s",
+            "\u2713 Completed applyNeoforgePatches in 2.67s",
+            "\u2713 Completed transformSources in 11.03s",
+            "\u2713 Completed recompile in 21.17s",
+            "\u2713 Completed mergeWithSources in 2.51s",
+            "Total runtime: 76.01s"
+          ]
+        },
+        {
+          "mode": "cold",
+          "elapsed_seconds": 97.25449720800003,
+          "staging_seconds": 7.517938249999986,
+          "return_code": 0,
+          "run_id": "20261013T175414Z-5ab2db04180b",
+          "artifacts": [
+            {
+              "name": "minecraft-patched-26.1.2.87.jar",
+              "bytes": 35104746,
+              "sha256": "89aac1ea7e365bfc3cab0a7dd05a1000eb0216ab8dcfb26c2da942b693260bf4"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-sources.jar",
+              "bytes": 19949440,
+              "sha256": "735ccc3dd60b345992802c159c6104f12cb15923ab2db3e2a132b98d299e41ba"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-merged.jar",
+              "bytes": 43952778,
+              "sha256": "55ad34300cae05820ac0d0e42f2989c04b4951c1b96c2678fbc907734bfccc2e"
+            }
+          ],
+          "nodes": [
+            "\u2713 Completed downloadManifest in 0.45s",
+            "\u2713 Completed downloadJson in 0.00s",
+            "\u2713 Completed downloadServer in 0.02s",
+            "\u2713 Completed downloadClient in 0.02s",
+            "\u2713 Completed preProcessJar in 2.34s",
+            "\u2713 Completed decompile in 36.24s",
+            "\u2713 Completed patch in 3.09s",
+            "\u2713 Completed applyNeoforgePatches in 2.66s",
+            "\u2713 Completed transformSources in 11.57s",
+            "\u2713 Completed recompile in 21.57s",
+            "\u2713 Completed mergeWithSources in 2.46s",
+            "Total runtime: 80.97s"
+          ]
+        }
+      ],
+      "cold_mean_seconds": 97.18886979150003,
+      "seeded_mean_seconds": 94.1254597085
+    },
+    "matching_metadata": {
+      "raw_report": {
+        "path": "logs/release-fixture-stability/cache-20261013T175650Z-42ac3e7e54d4/status.json",
+        "sha256": "9657097e6c54dcfd7b2d0f224538174b7bcd43ca96c4fe8de31b361615b8ff50"
+      },
+      "seed_files": 17,
+      "seed_bytes": 193765425,
+      "samples": [
+        {
+          "mode": "cold",
+          "elapsed_seconds": 106.375329834,
+          "staging_seconds": 3.5484631250000005,
+          "return_code": 0,
+          "run_id": "20261013T175657Z-d1598a8de0f7",
+          "artifacts": [
+            {
+              "name": "minecraft-patched-26.1.2.87.jar",
+              "bytes": 35104746,
+              "sha256": "7eae12b00fa6aab91ce9a21cc9ca80b3dcc19b29ec9daab10c2a69b651009519"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-sources.jar",
+              "bytes": 19949440,
+              "sha256": "0530fd3a6c802bcb76d6f775232caf63a04acdc67742289016d39aab085718f7"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-merged.jar",
+              "bytes": 43952778,
+              "sha256": "2b1c83a0c107eba0598f0a65e81da5660a59936914051404f9ba3bed7ccdfc2b"
+            }
+          ],
+          "nodes": [
+            "\u2713 Completed downloadManifest in 0.35s",
+            "\u2713 Completed downloadJson in 0.00s",
+            "\u2713 Completed downloadServer in 0.02s",
+            "\u2713 Completed downloadClient in 0.02s",
+            "\u2713 Completed preProcessJar in 2.32s",
+            "\u2713 Completed decompile in 43.18s",
+            "\u2713 Completed patch in 3.25s",
+            "\u2713 Completed applyNeoforgePatches in 2.77s",
+            "\u2713 Completed transformSources in 10.99s",
+            "\u2713 Completed recompile in 21.67s",
+            "\u2713 Completed mergeWithSources in 2.55s",
+            "Total runtime: 87.63s"
+          ]
+        },
+        {
+          "mode": "seeded",
+          "elapsed_seconds": 19.066564583,
+          "staging_seconds": 3.4168523330000085,
+          "return_code": 0,
+          "run_id": "20261013T175852Z-d43619efff68",
+          "artifacts": [
+            {
+              "name": "minecraft-patched-26.1.2.87.jar",
+              "bytes": 35104746,
+              "sha256": "7eae12b00fa6aab91ce9a21cc9ca80b3dcc19b29ec9daab10c2a69b651009519"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-sources.jar",
+              "bytes": 19949440,
+              "sha256": "0530fd3a6c802bcb76d6f775232caf63a04acdc67742289016d39aab085718f7"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-merged.jar",
+              "bytes": 43952778,
+              "sha256": "2b1c83a0c107eba0598f0a65e81da5660a59936914051404f9ba3bed7ccdfc2b"
+            }
+          ],
+          "nodes": [
+            "\u2713 Completed downloadManifest in 0.61s",
+            "\u2713 Completed downloadJson in 0.00s",
+            "\u2713 Completed downloadServer in 0.02s",
+            "\u2713 Completed downloadClient in 0.02s",
+            "\u267b Used cache of preProcessJar in 0.00s",
+            "\u267b Used cache of decompile in 0.00s",
+            "\u267b Used cache of patch in 0.00s",
+            "\u267b Used cache of applyNeoforgePatches in 0.00s",
+            "\u267b Used cache of transformSources in 0.00s",
+            "\u267b Used cache of recompile in 0.00s",
+            "\u267b Used cache of mergeWithSources in 0.00s",
+            "Total runtime: 1.14s"
+          ]
+        },
+        {
+          "mode": "seeded",
+          "elapsed_seconds": 18.332852375000016,
+          "staging_seconds": 4.052745499999986,
+          "return_code": 0,
+          "run_id": "20261013T175916Z-42fecaea1318",
+          "artifacts": [
+            {
+              "name": "minecraft-patched-26.1.2.87.jar",
+              "bytes": 35104746,
+              "sha256": "7eae12b00fa6aab91ce9a21cc9ca80b3dcc19b29ec9daab10c2a69b651009519"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-sources.jar",
+              "bytes": 19949440,
+              "sha256": "0530fd3a6c802bcb76d6f775232caf63a04acdc67742289016d39aab085718f7"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-merged.jar",
+              "bytes": 43952778,
+              "sha256": "2b1c83a0c107eba0598f0a65e81da5660a59936914051404f9ba3bed7ccdfc2b"
+            }
+          ],
+          "nodes": [
+            "\u2713 Completed downloadManifest in 0.50s",
+            "\u2713 Completed downloadJson in 0.00s",
+            "\u2713 Completed downloadClient in 0.02s",
+            "\u2713 Completed downloadServer in 0.02s",
+            "\u267b Used cache of preProcessJar in 0.00s",
+            "\u267b Used cache of decompile in 0.00s",
+            "\u267b Used cache of patch in 0.00s",
+            "\u267b Used cache of applyNeoforgePatches in 0.00s",
+            "\u267b Used cache of transformSources in 0.00s",
+            "\u267b Used cache of recompile in 0.00s",
+            "\u267b Used cache of mergeWithSources in 0.00s",
+            "Total runtime: 1.30s"
+          ]
+        },
+        {
+          "mode": "cold",
+          "elapsed_seconds": 108.81696541699998,
+          "staging_seconds": 4.564446624999988,
+          "return_code": 0,
+          "run_id": "20261013T175939Z-31ef318ce43c",
+          "artifacts": [
+            {
+              "name": "minecraft-patched-26.1.2.87.jar",
+              "bytes": 35104746,
+              "sha256": "dd8b0eae82df905a50d52c8faf1c8fae0f0a99c3e7e79d12a49e76fd45106660"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-sources.jar",
+              "bytes": 19949440,
+              "sha256": "52f311aa3ba7e9c5cbd855749304a6f0893a58861c2b508b25c19196f039aa9f"
+            },
+            {
+              "name": "minecraft-patched-26.1.2.87-merged.jar",
+              "bytes": 43952778,
+              "sha256": "bb71ca4857b987986212c3767ef795523e5e6397aa4b64fc9e2b8a87d75f8c95"
+            }
+          ],
+          "nodes": [
+            "\u2713 Completed downloadManifest in 0.39s",
+            "\u2713 Completed downloadJson in 0.00s",
+            "\u2713 Completed downloadServer in 0.02s",
+            "\u2713 Completed downloadClient in 0.02s",
+            "\u2713 Completed preProcessJar in 2.35s",
+            "\u2713 Completed decompile in 42.22s",
+            "\u2713 Completed patch in 3.05s",
+            "\u2713 Completed applyNeoforgePatches in 2.68s",
+            "\u2713 Completed transformSources in 11.31s",
+            "\u2713 Completed recompile in 23.06s",
+            "\u2713 Completed mergeWithSources in 5.72s",
+            "Total runtime: 91.50s"
+          ]
+        }
+      ],
+      "cold_mean_seconds": 107.59614762549998,
+      "seeded_mean_seconds": 18.69970847900001,
+      "reduction_percent": 82.62046653929808,
+      "seeded_outputs_match_bootstrap": true
+    },
+    "version_manifest_sha1": {
+      "old": "a5ba42111e0de7712d677c458bd0dbfc9f36482e",
+      "current": "78941de799d2675be5bddca699b245d7cbd567ae"
+    },
+    "changed_metadata_fields": [
+      "assetIndex"
+    ],
+    "limits": "Both ABBA comparisons use fresh isolated Gradle homes/project/builds, fixed read-only dependencies and pinned 26.1.2 NeoForge 26.1.2.87. Setup/staging costs are separate. Independent cold rebuild archive hashes may differ; seeded outputs match their bootstrap exactly. Not a whole-suite speedup."
+  },
+  "multiplayer": [
+    {
+      "raw_report": {
+        "path": "logs/release-fixture-stability/native-20261013T180137Z-06d5a6757e7b/status.json",
+        "sha256": "862c437a61d55cfbd2e6869d33f9a3626100b40c419a3f93fac9b623081d553c"
+      },
+      "source_commit": "d21e3f9bbd8ea5ad6c9914dceb46ac5582872a8c",
+      "cell": "26.1.2-neoforge",
+      "fixture_pass": true,
+      "navigation_traces": [
+        "[13Oct2026 20:05:24.685] [Server thread/INFO] [ringworld/]: [navigation-trace] event=armed tick=0 position=(2042.5, 120.0, 15.5) velocity=(0.0, 0.0, 0.0) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=0/8 next=BlockPos{x=2042, y=120, z=15} moveWanted=false moveTarget=(0.0,0.0,0.0) moveSpeed=0.0 mobTarget=null goals=[] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[13Oct2026 20:05:24.717] [Server thread/INFO] [ringworld/]: [navigation-trace] event=progress tick=1 position=(2042.5528955718337, 120.0, 15.500684663666759) velocity=(0.028880985575796145, -0.0784000015258789, 3.7382640547122014E-4) alive=true onGround=false navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=1/8 next=BlockPos{x=2043, y=120, z=15} moveWanted=false moveTarget=(2043.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[13Oct2026 20:05:25.060] [Server thread/INFO] [ringworld/]: [navigation-trace] event=progress tick=8 position=(2043.2144077516257, 120.0, 15.50042247761225) velocity=(0.06274147466836219, -0.0784000015258789, -1.1076646328276488E-5) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=2/8 next=BlockPos{x=2044, y=120, z=15} moveWanted=false moveTarget=(2044.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[13Oct2026 20:05:25.512] [Server thread/INFO] [ringworld/]: [navigation-trace] event=progress tick=17 position=(2044.2611598708752, 120.0, 15.500214536931518) velocity=(0.06361604889064362, -0.0784000015258789, -5.538323584447097E-6) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=3/8 next=BlockPos{x=2045, y=120, z=15} moveWanted=false moveTarget=(2045.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[13Oct2026 20:05:25.711] [Server thread/INFO] [ringworld/]: [navigation-trace] event=progress tick=21 position=(2044.727231626925, 120.0, 15.500163819689236) velocity=(0.06361950257293175, -0.0784000015258789, -8.307485166516219E-6) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=1/6 next=BlockPos{x=2045, y=120, z=15} moveWanted=false moveTarget=(2045.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[13Oct2026 20:05:25.911] [Server thread/INFO] [ringworld/]: [navigation-trace] event=progress tick=25 position=(2045.1933103051372, 120.0, 15.500113102447342) velocity=(0.06361981044082461, -0.0784000015258789, -2.7691617922235485E-6) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=2/6 next=BlockPos{x=2046, y=120, z=15} moveWanted=false moveTarget=(2046.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[13Oct2026 20:05:26.362] [Server thread/INFO] [ringworld/]: [navigation-trace] event=progress tick=34 position=(2046.2419888337386, 120.0, 15.50004209830707) velocity=(0.06361984223570986, -0.0784000015258789, -2.7691617922235485E-6) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=3/6 next=BlockPos{x=2047, y=120, z=15} moveWanted=false moveTarget=(2047.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[13Oct2026 20:05:26.760] [Server thread/INFO] [ringworld/]: [navigation-trace] event=progress tick=42 position=(2047.1741475877789, 120.0, 15.500001524512633) velocity=(0.06361984237233312, -0.0784000015258789, -2.7691617922235485E-6) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=4/6 next=BlockPos{x=2048, y=120, z=15} moveWanted=false moveTarget=(2048.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[13Oct2026 20:05:27.160] [Server thread/INFO] [ringworld/]: [navigation-trace] event=progress tick=50 position=(0.10630634211793222, 120.0, 15.499996452788329) velocity=(0.06361984237341223, -0.0784000015258789, 0.0) alive=true onGround=true navigationDone=false target=BlockPos{x=2, y=120, z=15} pathReachable=true pathDistance=1.0 node=4/6 next=BlockPos{x=0, y=120, z=15} moveWanted=true moveTarget=(0.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[13Oct2026 20:05:27.210] [Server thread/INFO] [ringworld/]: [navigation-trace] event=progress tick=51 position=(0.22282618641061402, 120.0, 15.499996452788329) velocity=(0.06361984237341613, -0.0784000015258789, 0.0) alive=true onGround=true navigationDone=false target=BlockPos{x=2, y=120, z=15} pathReachable=true pathDistance=1.0 node=5/6 next=BlockPos{x=1, y=120, z=15} moveWanted=false moveTarget=(1.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[13Oct2026 20:05:27.659] [Server thread/INFO] [ringworld/]: [navigation-trace] event=progress tick=60 position=(1.2186047831255475, 120.0, 15.499996452788329) velocity=(0.03473643797061629, -0.0784000015258789, 0.0) alive=true onGround=true navigationDone=true target=BlockPos{x=2, y=120, z=15} pathReachable=true pathDistance=1.0 node=6/6 next=null moveWanted=false moveTarget=(1.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[13Oct2026 20:05:27.660] [Server thread/INFO] [ringworld/]: [navigation-trace] event=arrival tick=60 position=(1.2186047831255475, 120.0, 15.499996452788329) velocity=(0.03473643797061629, -0.0784000015258789, 0.0) alive=true onGround=true navigationDone=true target=BlockPos{x=2, y=120, z=15} pathReachable=true pathDistance=1.0 node=6/6 next=null moveWanted=false moveTarget=(1.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true"
+      ],
+      "game_logs": [
+        {
+          "role": "server",
+          "path": "dist/qualification/ringworld/26.1.2/neoforge/20261013T180137Z-06d5a6757e7b/26.1.2-neoforge/run/run-multiplayer/server/logs/latest.log",
+          "sha256": "b60a7aebccdaf522b21d4f05c69bcce8abb96b90fa1774f7539c23588cdfae3a"
+        },
+        {
+          "role": "client-a",
+          "path": "dist/qualification/ringworld/26.1.2/neoforge/20261013T180137Z-06d5a6757e7b/26.1.2-neoforge/run/run-multiplayer/client-a/logs/latest.log",
+          "sha256": "a4ebcb3c3b71b6b42f22daaea106f19132e3ff2f0d03ab3833dfa4cd7be21047"
+        },
+        {
+          "role": "client-b",
+          "path": "dist/qualification/ringworld/26.1.2/neoforge/20261013T180137Z-06d5a6757e7b/26.1.2-neoforge/run/run-multiplayer/client-b/logs/latest.log",
+          "sha256": "fa57417497faa647982cb925324d10480981d9963732689dc9051d9beffad747"
+        }
+      ]
+    },
+    {
+      "raw_report": {
+        "path": "logs/release-fixture-stability/native-20261013T180612Z-d4b437cafe9c/status.json",
+        "sha256": "92d28c5f4741b3695e0ba59249f675edf4cabe0b0b4caf92651e6df80a5d1044"
+      },
+      "source_commit": "d21e3f9bbd8ea5ad6c9914dceb46ac5582872a8c",
+      "cell": "26.2-fabric",
+      "fixture_pass": true,
+      "navigation_traces": [
+        "[20:09:41] [Server thread/INFO] (ringworld) [navigation-trace] event=armed tick=0 position=(2042.5, 120.0, 15.5) velocity=(0.0, 0.0, 0.0) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=0/8 next=BlockPos{x=2042, y=120, z=15} moveWanted=false moveTarget=(0.0,0.0,0.0) moveSpeed=0.0 mobTarget=null goals=[] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[20:09:41] [Server thread/INFO] (ringworld) [navigation-trace] event=progress tick=1 position=(2042.5528385009802, 120.0, 15.502550088507816) velocity=(0.028849824886222217, -0.0784000015258789, 0.0013923484869918538) alive=true onGround=false navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=1/8 next=BlockPos{x=2043, y=120, z=15} moveWanted=false moveTarget=(2043.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[20:09:42] [Server thread/INFO] (ringworld) [navigation-trace] event=progress tick=8 position=(2043.2142562863662, 120.0, 15.501629461817839) velocity=(0.0627405207984986, -0.0784000015258789, -3.5999093421648095E-5) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=2/8 next=BlockPos{x=2044, y=120, z=15} moveWanted=false moveTarget=(2044.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[20:09:42] [Server thread/INFO] (ringworld) [navigation-trace] event=progress tick=17 position=(2044.2610051965817, 120.0, 15.50087884701636) velocity=(0.06361596860105617, -0.0784000015258789, -2.2153290975317567E-5) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=3/8 next=BlockPos{x=2045, y=120, z=15} moveWanted=false moveTarget=(2045.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[20:09:42] [Server thread/INFO] (ringworld) [navigation-trace] event=progress tick=21 position=(2044.727076690648, 120.0, 15.500706408416928) velocity=(0.06361947816220204, -0.0784000015258789, -2.4922452137077835E-5) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=1/6 next=BlockPos{x=2045, y=120, z=15} moveWanted=false moveTarget=(2045.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[20:09:42] [Server thread/INFO] (ringworld) [navigation-trace] event=progress tick=25 position=(2045.1931551771584, 120.0, 15.500518754651125) velocity=(0.06361979108249365, -0.0784000015258789, -1.1076646328276488E-5) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=2/6 next=BlockPos{x=2046, y=120, z=15} moveWanted=false moveTarget=(2046.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[20:09:43] [Server thread/INFO] (ringworld) [navigation-trace] event=progress tick=34 position=(2046.2418335237633, 120.0, 15.500270240182884) velocity=(0.06361983298277864, -0.0784000015258789, -8.307485166516219E-6) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=3/6 next=BlockPos{x=2047, y=120, z=15} moveWanted=false moveTarget=(2047.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[20:09:43] [Server thread/INFO] (ringworld) [navigation-trace] event=progress tick=42 position=(2047.1739922134625, 120.0, 15.500148518803412) velocity=(0.0636198402587475, -0.0784000015258789, -5.538323584447097E-6) alive=true onGround=true navigationDone=false target=BlockPos{x=2050, y=120, z=15} pathReachable=true pathDistance=1.0 node=4/6 next=BlockPos{x=2048, y=120, z=15} moveWanted=false moveTarget=(2048.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[20:09:44] [Server thread/INFO] (ringworld) [navigation-trace] event=progress tick=50 position=(0.10615096318269934, 120.0, 15.500067371214525) velocity=(0.06361984235671819, -0.0784000015258789, -5.538323584447097E-6) alive=true onGround=true navigationDone=false target=BlockPos{x=2, y=120, z=15} pathReachable=true pathDistance=1.0 node=4/6 next=BlockPos{x=0, y=120, z=15} moveWanted=true moveTarget=(0.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[20:09:44] [Server thread/INFO] (ringworld) [navigation-trace] event=progress tick=51 position=(0.22267080745868711, 120.0, 15.50006229949022) velocity=(0.06361984236430118, -0.0784000015258789, -2.7691617922235485E-6) alive=true onGround=true navigationDone=false target=BlockPos{x=2, y=120, z=15} pathReachable=true pathDistance=1.0 node=5/6 next=BlockPos{x=1, y=120, z=15} moveWanted=false moveTarget=(1.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[20:09:44] [Server thread/INFO] (ringworld) [navigation-trace] event=progress tick=60 position=(1.21844940415363, 120.0, 15.500021725695785) velocity=(0.034736437970576975, -0.0784000015258789, 0.0) alive=true onGround=true navigationDone=true target=BlockPos{x=2, y=120, z=15} pathReachable=true pathDistance=1.0 node=6/6 next=null moveWanted=false moveTarget=(1.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true",
+        "[20:09:44] [Server thread/INFO] (ringworld) [navigation-trace] event=arrival tick=60 position=(1.21844940415363, 120.0, 15.500021725695785) velocity=(0.034736437970576975, -0.0784000015258789, 0.0) alive=true onGround=true navigationDone=true target=BlockPos{x=2, y=120, z=15} pathReachable=true pathDistance=1.0 node=6/6 next=null moveWanted=false moveTarget=(1.5,120.0,15.5) moveSpeed=1.0 mobTarget=null goals=[0:RingFixtureNavigationGoal[MOVE]] targetGoals=[] currentChunkLoaded=true sourceChunkLoaded=true targetChunkLoaded=true"
+      ],
+      "game_logs": [
+        {
+          "role": "server",
+          "path": "dist/qualification/ringworld/26.2/fabric/20261013T180612Z-d4b437cafe9c/26.2-fabric/run/run-multiplayer/server/logs/latest.log",
+          "sha256": "b68ef0fab2225abf586bf7cb35d5185775786faf34c3d35df7d4dd0e1a900089"
+        },
+        {
+          "role": "client-a",
+          "path": "dist/qualification/ringworld/26.2/fabric/20261013T180612Z-d4b437cafe9c/26.2-fabric/run/run-multiplayer/client-a/logs/latest.log",
+          "sha256": "ddef10933d3fd6b39a334b59654994aad528f62875d324ee923012c7802fda1e"
+        },
+        {
+          "role": "client-b",
+          "path": "dist/qualification/ringworld/26.2/fabric/20261013T180612Z-d4b437cafe9c/26.2-fabric/run/run-multiplayer/client-b/logs/latest.log",
+          "sha256": "78a15c694dbd067e6b1149feb28667c8871e3f5d7015f95d3e86eca3018f79d1"
+        }
+      ]
+    }
+  ],
+  "player_safety": {
+    "raw_report": {
+      "path": "logs/release-fixture-stability/safety-followup-20261013T181654Z-9a4786707bc7/status.json",
+      "sha256": "1017f6ccab5a7f2aabb566b810c02da4241a6faa6785db38f2692357441cb2f9"
+    },
+    "lifecycle_pass": true,
+    "layout_switch_pass": true,
+    "copied_worlds_forced_survival_before_open": [
+      "dist/qualification/ringworld/26.1.2/fabric/20261013T181026Z-47e90831b347/26.1.2-fabric/run/run-production-lifecycle/saves/Fixture Lifecycle",
+      "dist/qualification/ringworld/26.1.2/fabric/20261013T181026Z-47e90831b347/26.1.2-fabric/run/run-layout-switch/saves/Fixture Layout A",
+      "dist/qualification/ringworld/26.1.2/fabric/20261013T181026Z-47e90831b347/26.1.2-fabric/run/run-layout-switch/saves/Fixture Layout B"
+    ],
+    "persisted_player_modes": {
+      "lifecycle": [
+        {
+          "mode": 1,
+          "previous_mode": 0,
+          "flying": 1,
+          "invulnerable": 1
+        }
+      ],
+      "Fixture Layout A": [
+        {
+          "mode": 3,
+          "previous_mode": 0,
+          "flying": 1,
+          "invulnerable": 1
+        }
+      ],
+      "Fixture Layout B": [
+        {
+          "mode": 0,
+          "previous_mode": 1,
+          "flying": 1,
+          "invulnerable": 1
+        },
+        {
+          "mode": 0,
+          "previous_mode": 3,
+          "flying": 1,
+          "invulnerable": 1
+        },
+        {
+          "mode": 0,
+          "previous_mode": 3,
+          "flying": 1,
+          "invulnerable": 1
+        },
+        {
+          "mode": 0,
+          "previous_mode": 3,
+          "flying": 1,
+          "invulnerable": 1
+        },
+        {
+          "mode": 0,
+          "previous_mode": 3,
+          "flying": 1,
+          "invulnerable": 1
+        },
+        {
+          "mode": 0,
+          "previous_mode": 3,
+          "flying": 1,
+          "invulnerable": 1
+        },
+        {
+          "mode": 0,
+          "previous_mode": 3,
+          "flying": 1,
+          "invulnerable": 1
+        },
+        {
+          "mode": 0,
+          "previous_mode": 3,
+          "flying": 1,
+          "invulnerable": 1
+        },
+        {
+          "mode": 3,
+          "previous_mode": 0,
+          "flying": 1,
+          "invulnerable": 1
+        }
+      ]
+    },
+    "source_worlds_unchanged": true,
+    "original_helper_failure": {
+      "path": "logs/release-fixture-stability/safety-20261013T181026Z-47e90831b347/status.json",
+      "sha256": "2bd18c064444929cfbe1e4a2ff8ad66aafbfd92821e3fbd0202ff001e43c7c97",
+      "reason": "'types.SimpleNamespace' object has no attribute 'cell'"
+    },
+    "continuation": "Revalidated the completed lifecycle output with the missing cell context supplied, then ran only the remaining world switch. No lifecycle/gameplay rerun; original helper failure preserved."
+  },
+  "automated_tests": {
+    "python": 423,
+    "expected_skips": 2,
+    "java": {
+      "fabric": {
+        "tests": 516,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "neoforge": {
+        "tests": 516,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    },
+    "passing_python_log": {
+      "path": "logs/release-fixture-stability/python-rerun.log",
+      "sha256": "138630f0bc9b9a73c9b52e54f35d2ebcedae8c10f765020eff0ce4cdd508ca6e"
+    },
+    "original_python_error_log": {
+      "path": "logs/release-fixture-stability/python-final.log",
+      "sha256": "d7ade3ee857751ecb4325649d4a3ab296fbd6f39d11d45c00a6b42cfc30badf4"
+    },
+    "python_error_note": "An initial run encountered PermissionError from existing POSIX fatal-log process cleanup. Its focused test and the subsequent full 423-test run pass without changing cleanup or weakening assertions."
+  }
+}

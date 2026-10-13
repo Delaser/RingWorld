@@ -1,3 +1,17 @@
+Release fixture follow-up (13 October 2026, PR #294): the tagged navigator owns
+its one commanded MOVE input; native 26.1.2 NeoForge and 26.2 Fabric multiplayer
+scenarios pass unchanged arrival, combat, sleep/damage, death and portal checks.
+Production lifecycle now uses actual Creative for registered live players;
+layout-switch copies get independent Spectator safety. Copied Survival inputs
+pass transfers/reopen and both-save switching, with original saves unchanged.
+NeoForm snapshot provisioning rejects stale matching-version metadata and accepts
+multiple stopped per-version workers. Matched Mac ABBA setup is 107.60s cold vs
+18.70s seeded; all costly nodes hit and seeded outputs match their bootstrap.
+This is not total release timing or native Windows evidence. 423 Python tests
+(two expected skips), 516 Java tests per loader and all eleven CI checks pass at
+runtime/tooling source `d21e3f9`. No new full release qualification or upload.
+See [validation and limits](RELEASE_FIXTURE_STABILITY_2026_10_13.md).
+
 October 13 release-tooling follow-up: same-source resume planning, bounded
 multiplayer navigation traces, descriptive timing summaries and combined
 multiplayer/raid preparation+assets are implemented and validated in PR #293. The suite passes 418 Python tests,

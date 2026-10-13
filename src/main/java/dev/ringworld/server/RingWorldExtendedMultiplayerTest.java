@@ -2,6 +2,7 @@ package dev.ringworld.server;
 
 import com.mojang.datafixers.util.Either;
 import dev.ringworld.RingWorldMod;
+import dev.ringworld.mixin.MobFixtureGoalsAccessor;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingPortalDestinationBounds;
 import net.minecraft.core.BlockPos;
@@ -287,6 +288,11 @@ final class RingWorldExtendedMultiplayerTest {
         seamNavigator.setPersistenceRequired();
         dev.ringworld.world.RingMinecraftFixtureAccess.invulnerable(seamNavigator, true);
         seamNavigator.setPos(circumference - 5.5, 120.0, 15.5);
+        // Reserve MOVE for the one command below. The zombie keeps vanilla
+        // navigation/physics and its other AI, but random strolling must not
+        // replace the fixture's destination midway through the seam crossing.
+        ((MobFixtureGoalsAccessor) seamNavigator).ringworld$fixtureGoals()
+                .addGoal(0, new RingFixtureNavigationGoal());
         world.addFreshEntity(seamNavigator);
         seamNavigator.setOnGround(true);
         NAVIGATION_TRACE.reset();

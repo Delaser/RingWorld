@@ -220,8 +220,18 @@ Every nightly/all-group run emits descriptive timing JSON/Markdown; concurrent
 process durations use interval unions and reused time is separate. Do not turn
 unmeasured setup/cache speed into a claimed benchmark. Multiplayer/raid prepare
 and asset tasks share one Gradle process before unchanged settle/runtime phases.
-Navigation fixture diagnostics are bounded and read-only: never alter goals,
-paths, loaded chunks or arrival tolerances to make a flaky test pass.
+Navigation fixture diagnostics are bounded and read-only. The dedicated tagged
+zombie now reserves MOVE with `RingFixtureNavigationGoal`: a captured native
+trace showed random-stroll AI replacing the one commanded route. Keep the
+single vanilla `moveTo`, actual natural fold, path completion, arrival tolerance
+and timeout. Do not retry paths, teleport the mob, disable all AI or weaken
+assertions to make a flaky test pass. This test-input ownership is not a
+production navigation change or proof of the older Windows faults' cause.
+Pure production-lifecycle tests use actual Creative mode for registered living
+players, including replacements after reopen; layout-switch copies use the
+existing Spectator safety bridge separately for each server session. Never
+revive a dead player or dismiss a death screen. Keep Survival for real combat,
+item consumption, sleep damage, death/respawn and ordinary Nether portal waits.
 Optional immutable NeoForm seeds still use hash-checked private copies per child.
 See `docs/RELEASE_TEST_SPEED.md` and `docs/RELEASE_RUNBOOK.md`.
 
