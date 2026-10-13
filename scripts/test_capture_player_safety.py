@@ -109,5 +109,15 @@ class CapturePlayerSafetyTest(unittest.TestCase):
                 self.assertLess(safety, tick.index('ClientRingState.geometry()'))
 
 
+    def test_layout_switch_protects_each_new_player_without_changing_world_assertions(self):
+        source = (ROOT / 'src/client/java/dev/ringworld/client/LayoutSwitchTestClient.java').read_text()
+        self.assertIn('(stage == 1 || stage == 3) && client.player != null', source)
+        self.assertIn('!playerSafety.ensure(client, detail -> finish(client, false, detail))', source)
+        second = source[source.index('private void startSecondWorld'):source.index('private void verifySecondWorld')]
+        self.assertLess(second.index('playerSafety = new RingIntegratedCaptureControl.PlayerSafety()'),
+                        second.index('client.createWorldOpenFlows().openWorld'))
+        self.assertIn('disconnectClearedState && firstStorageVerified && expectedRelation', source)
+
+
 if __name__ == '__main__':
     unittest.main()

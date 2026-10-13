@@ -38,12 +38,18 @@ public final class LayoutSwitchTestClient {
     private long firstAtlasContentFingerprint;
     private boolean disconnectClearedState;
     private boolean firstStorageVerified;
+    private RingIntegratedCaptureControl.PlayerSafety playerSafety =
+            new RingIntegratedCaptureControl.PlayerSafety();
 
     public boolean tick(Minecraft client) {
         if (firstWorld.isEmpty() || secondWorld.isEmpty()) return false;
         if (!checkExpectation(client)) return true;
         if (++ticks > STAGE_TIMEOUT_TICKS) {
             finish(client, false, "timed out in stage " + stage);
+            return true;
+        }
+        if ((stage == 1 || stage == 3) && client.player != null
+                && !playerSafety.ensure(client, detail -> finish(client, false, detail))) {
             return true;
         }
 
@@ -105,6 +111,9 @@ public final class LayoutSwitchTestClient {
         RingWorldMod.LOGGER.info("[layout-switch] disconnect cleared client state={}",
                 disconnectClearedState);
         RingWorldMod.LOGGER.info("[layout-switch] opening second save '{}'", secondWorld);
+        // The second integrated server has a new ServerPlayer. Do not reuse
+        // the first session's completed safety acknowledgement.
+        playerSafety = new RingIntegratedCaptureControl.PlayerSafety();
         advanceTo(3);
         client.createWorldOpenFlows().openWorld(secondWorld,
                 () -> finish(client, false, "second save load cancelled"));

@@ -28,6 +28,7 @@ public class Level { public static final net.minecraft.resources.ResourceKey<Lev
 public class ResourceKey<T> { public String identifier(){return "test";} }''',
     'net/minecraft/server/level/ServerLevel.java': '''package net.minecraft.server.level;
 public class ServerLevel { public net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> dimension(){return net.minecraft.world.level.Level.OVERWORLD;} }''',
+    'net/minecraft/world/level/GameType.java': 'package net.minecraft.world.level; public enum GameType { SURVIVAL, CREATIVE }',
     'net/minecraft/world/entity/Relative.java': 'package net.minecraft.world.entity; public enum Relative { X }',
     'net/minecraft/world/phys/Vec3.java': '''package net.minecraft.world.phys;
 public record Vec3(double x,double y,double z){public static final Vec3 ZERO=new Vec3(0,0,0);}''',
@@ -40,6 +41,9 @@ public MinecraftServer getPlayerList(){return this;} public java.util.List<net.m
 public net.minecraft.server.level.ServerLevel getLevel(net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level> k){return new net.minecraft.server.level.ServerLevel();} }''',
     'net/minecraft/server/level/ServerPlayer.java': '''package net.minecraft.server.level;
 public class ServerPlayer { public final java.util.UUID id; public boolean alive=true,noGravity; public int updates;
+public net.minecraft.world.level.GameType mode=net.minecraft.world.level.GameType.SURVIVAL; public int modeChanges;
+public boolean isCreative(){return mode==net.minecraft.world.level.GameType.CREATIVE;}
+public void setGameMode(net.minecraft.world.level.GameType next){mode=next;modeChanges++;}
 public net.minecraft.world.phys.Vec3 velocity=new net.minecraft.world.phys.Vec3(0,-1,0);
 public static class Abilities {public boolean mayfly,flying,invulnerable;} public final Abilities abilities=new Abilities();
 public ServerPlayer(java.util.UUID id){this.id=id;} public java.util.UUID getUUID(){return id;} public boolean isAlive(){return alive;}
@@ -52,7 +56,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 public class SafetyRegression {
 static void check(boolean b,String s){if(!b)throw new AssertionError(s);}
-static boolean safe(ServerPlayer p){return p.noGravity && p.abilities.flying && p.abilities.mayfly && p.abilities.invulnerable && p.velocity.y()==0;}
+static boolean safe(ServerPlayer p){return p.isCreative() && p.noGravity && p.abilities.flying && p.abilities.mayfly && p.abilities.invulnerable && p.velocity.y()==0;}
 public static void main(String[] args)throws Exception{
 var server=new MinecraftServer(); var id=java.util.UUID.randomUUID();
 var original=new ServerPlayer(id); server.players.add(original);
@@ -63,17 +67,17 @@ System.setProperty("ringworld.productionLifecycleTest","true");
 RingWorldProductionLifecycleTest.tick(server); check(safe(original),"registered initial player unprotected");
 for(int i=0;i<2400;i++)RingWorldProductionLifecycleTest.tick(server);
 check(!RingWorldProductionLifecycleTest.transferCyclePassed()&&!RingWorldProductionLifecycleTest.transferCycleFailed(),"safety registration started transfers before complete Atlas baseline");
-check(original.updates==1,"warmup sent redundant abilities packets");
+check(original.updates==1 && original.modeChanges==1,"warmup sent redundant mode/abilities packets");
 RingWorldProductionLifecycleTest.markClientReady(id);
 var field=RingWorldProductionLifecycleTest.class.getDeclaredField("transferCycleFinished"); field.setAccessible(true); field.setBoolean(null,true);
 server.players.clear(); var reopened=new ServerPlayer(id); var unrelated=new ServerPlayer(java.util.UUID.randomUUID());
 server.players.add(reopened); server.players.add(unrelated);
 RingWorldProductionLifecycleTest.tick(server);
 check(safe(reopened),"protection stopped after transfer completion / player replacement");
-check(!safe(unrelated),"unregistered player changed");
+check(!safe(unrelated) && unrelated.modeChanges==0,"unregistered player changed");
 RingWorldProductionLifecycleTest.tick(server); check(reopened.updates==1,"redundant abilities packets");
 server.players.clear(); var dead=new ServerPlayer(id); dead.alive=false; server.players.add(dead);
-RingWorldProductionLifecycleTest.tick(server); check(!safe(dead) && !dead.alive,"dead player altered or resurrected");
+RingWorldProductionLifecycleTest.tick(server); check(!safe(dead) && !dead.alive && dead.modeChanges==0,"dead player altered or resurrected");
 System.clearProperty("ringworld.productionLifecycleTest"); server.players.clear(); var disabled=new ServerPlayer(id); server.players.add(disabled);
 RingWorldProductionLifecycleTest.tick(server); check(!safe(disabled),"disabled harness still changes player");
 }}''',
