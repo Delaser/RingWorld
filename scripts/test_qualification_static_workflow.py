@@ -76,6 +76,14 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
         for prohibited in ("./gradlew", "curl ", "wget ", "java ", "--execute", "urlopen("):
             self.assertNotIn(prohibited, source.lower())
 
+    def test_ci_deduplicates_only_the_same_workflow_ref_and_revision(self) -> None:
+        for name in ("java-build.yml", "qualification-static.yml", "package-windows.yml"):
+            source = (WORKFLOW.parent / name).read_text(encoding="utf-8")
+            concurrency = source[source.index("concurrency:"):source.index("permissions:")]
+            for identity in ("github.workflow", "github.ref", "github.sha"):
+                self.assertIn(identity, concurrency)
+            self.assertIn("cancel-in-progress: true", concurrency)
+
     def test_binary_recovery_evidence_uses_windows_binary_descriptors(self) -> None:
         for name in (
             "external_runtime_atlas_recovery_executor.py",

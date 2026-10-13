@@ -184,7 +184,7 @@ raid reload and verifiers. This is an operation-count improvement, not a measure
 percentage reduction in full-release wall time. Do not reuse mutable caches or
 combine unrelated native fixtures to claim a larger improvement.
 
-Validation: 417 Python tests pass (two expected platform skips on macOS),
+Validation: 418 Python tests pass (two expected platform skips on macOS),
 514 Java cases per loader pass locally, and all eleven CI checks at `701646d`
 pass, including all six source/loader build groups and Windows/Linux contracts.
 The final timing-only correction and preparation-order regressions are covered
@@ -213,3 +213,10 @@ separate diagnosis rather than claiming that retries fixed the navigation bug.
 
 See [sanitized native/benchmark evidence](RELEASE_TEST_RESUME_SPEED_2026_10_13.json).
 No new release candidates are qualified or uploaded by this tooling change.
+
+A second CI speed check found duplicate workflow runs at the same revision
+(`d1f597d`, two sets of the eleven check contexts). The three workflows now use
+concurrency keyed by workflow, ref and GitHub execution SHA. Only an identical
+run can supersede another; different commits, PR integration bases and refs keep
+independent runs. All six matrix jobs and Windows/Linux contracts remain. This
+affects CI build/static/package work, not local frozen release qualification.

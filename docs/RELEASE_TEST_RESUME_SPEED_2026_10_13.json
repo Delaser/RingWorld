@@ -70,7 +70,7 @@
     "interpretation": "Autonomous goal replaced the commanded path in this passing run. This is a lead, not a reproduced original Windows fault or a fix."
   },
   "local_python_tests": {
-    "total": 417,
+    "total": 418,
     "skipped": 2,
     "failures": 0
   },
@@ -82,5 +82,10 @@
   "preserved_failed_probe": {
     "run": "logs/release-test-improvements/native-20261013T172156Z-59fbe9a1c022",
     "reason": "Development probe wrote copied EULA after preparation instead of before it; no production gate changed."
+  },
+  "ci_duplicate_review": {
+    "source_commit": "d1f597d0b2fb9fc4a4a7d536f93ee2309eb2cd16",
+    "check_context_sets": 2,
+    "change": "Deduplicate only identical workflow/ref/execution SHA; preserve different revisions and all jobs."
   }
 }

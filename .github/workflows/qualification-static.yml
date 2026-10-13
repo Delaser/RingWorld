@@ -91,6 +91,11 @@ on:
       - "AGENTS.md"
   workflow_dispatch:
 
+# Deduplicate only identical workflow inputs; do not cancel a different revision.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
