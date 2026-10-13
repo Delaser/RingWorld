@@ -8,8 +8,11 @@ rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
 The owner requires general mod compatibility without degrading the accepted
 RingWorld visuals. Sodium is the first validation case, not a separate geometry
-implementation. Work on `codex/mod-compatibility-core` from 1.4 source `57efcb0`;
-do not interrupt, pull into or replace the active Windows qualification.
+implementation. Development used `codex/mod-compatibility-core` from 1.4 source
+`57efcb0`; the owner authorized integration of PRs #289/#292 on 13 October.
+The completed Windows qualification and six staged JARs still belong to
+`57efcb0`. Do not claim that they contain or qualify these later rendering
+changes; new runtime source requires fresh candidates and qualification.
 Keep renderer adapters thin and reuse the same projection, culling, material,
 water, atmosphere and Atlas-handoff contract. No flat-world fallback, disabled
 Atlas or weakened visual gates may be labelled compatibility. The current

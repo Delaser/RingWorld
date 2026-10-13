@@ -43,9 +43,10 @@ must restart with freshly frozen candidates from the corrected source.
 
 ## Next-run preparation (12 October 2026)
 
-The current Windows qualification on `5b53acf` remains unchanged. These changes
-are prepared on `codex/next-release-flow` for a later run; do not merge/pull them
-into an active checkout.
+This preparation was held on `codex/next-release-flow` while the Windows
+qualification ran. The owner authorized integration on 13 October; PR #289 is
+merged. It did not replace that run or its frozen candidates. The later completed
+`57efcb0` coverage and remaining improvements are recorded below.
 
 Measured Windows timing from the retained `75a2f64` run: the 60-fixture 26.1.x
 group took 4h 51m 31s, without infrastructure retries. In a matched creation UI
