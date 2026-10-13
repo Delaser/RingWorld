@@ -3,7 +3,7 @@
 #moj_import <minecraft:fog.glsl>
 #moj_import <minecraft:globals.glsl>
 #moj_import <ringworld:render_uniforms.glsl>
-#moj_import <minecraft:ringworld_projection.glsl>
+#moj_import <ringworld:projection.glsl>
 #moj_import <minecraft:chunksection.glsl>
 #moj_import <minecraft:projection.glsl>
 
@@ -39,23 +39,6 @@ vec4 minecraft_sample_lightmap(sampler2D lightMap, ivec2 uv) {
     return texture(lightMap, clamp((uv / 256.0) + 0.5 / 16.0, vec2(0.5 / 16.0), vec2(15.5 / 16.0)));
 }
 
-// Converts a physical ring-space delta back into the camera's local Minecraft
-// axes: circumference (X), local up (Y), and band width (Z).
-vec3 camera_local_ring_position(vec3 vertexCanonical, vec3 cameraCanonical) {
-    if (RingWorldDistortion.x > 0.5) return ring_trial_position(vertexCanonical, cameraCanonical);
-    float circumference = ring_circumference();
-    float baseRadius = circumference / (2.0 * 3.14159265358979323846);
-    float deltaAngle = 6.28318530717958647692
-        * (vertexCanonical.x - cameraCanonical.x) / circumference;
-    float vertexRadius = baseRadius + RingWorldVertical.x - vertexCanonical.y;
-    float cameraRadius = baseRadius + RingWorldVertical.x - cameraCanonical.y;
-    return vec3(
-        vertexRadius * sin(deltaAngle),
-        cameraRadius - vertexRadius * cos(deltaAngle),
-        vertexCanonical.z - cameraCanonical.z
-    );
-}
-
 void main() {
     vec3 vanillaPos = Position + (ChunkPosition - CameraBlockPos) + CameraOffset;
     if (!ring_active()) {
@@ -75,7 +58,7 @@ void main() {
     // Therefore camera world-space is block origin minus this offset. Using
     // plus here doubles sub-block movement and snaps every block boundary.
     vec3 cameraCanonical = vec3(CameraBlockPos) - CameraOffset;
-    vec3 pos = camera_local_ring_position(vertexCanonical, cameraCanonical);
+    vec3 pos = ring_project_position(vertexCanonical, cameraCanonical);
     gl_Position = ProjMat * ModelViewMat * vec4(pos, 1.0);
 
     // Chunk loading is measured along the intrinsic surface coordinates, not

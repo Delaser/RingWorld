@@ -5,7 +5,7 @@
 #include <minecraft:dynamictransforms.glsl>
 #include <minecraft:globals.glsl>
 #include <ringworld:render_uniforms.glsl>
-#include <minecraft:ringworld_projection.glsl>
+#include <ringworld:projection.glsl>
 #include <minecraft:projection.glsl>
 
 const int FLAG_MASK_DIR = 7;

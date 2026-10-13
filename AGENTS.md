@@ -13,8 +13,11 @@ do not interrupt, pull into or replace the active Windows qualification.
 Keep renderer adapters thin and reuse the same projection, culling, material,
 water, atmosphere and Atlas-handoff contract. No flat-world fallback, disabled
 Atlas or weakened visual gates may be labelled compatibility. The current
-private-uniform refactor preserves Minecraft's Globals ABI and publisher and
-adds a separate 176-byte `RingWorld` block. Apply equivalent behaviour across
+private-uniform refactor preserves Minecraft's Globals ABI and publisher.
+`RingFrameUniformsMixin` owns an independent 176-byte `RingWorld` block on
+GameRenderer: allocate at construction, update at frame start and close at
+shutdown. Reuse RingWorld-namespace projection/handoff/material GLSL and
+immutable `RingRenderView` snapshots for replacement-renderer adapters. Apply equivalent behaviour across
 all supported 26.x versions and both loaders. The new Sodium neighbour hook is
 only a prototype; do not remove unsupported notices or claim support from it.
 Use clean natural-world copies and no-mod controls: the old floating-build save

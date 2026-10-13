@@ -10,11 +10,17 @@ unchanged. No third-party combination is newly qualified by this work yet.
 
 The first core change removes RingWorld's replacement of Minecraft's shared
 `Globals` include and buffer publisher. RingWorld data instead occupies a private
-176-byte `RingWorld` uniform block under `assets/ringworld`. Minecraft updates its
-own uniforms normally; the standard default-binding path adds the private buffer,
+176-byte `RingWorld` uniform block under `assets/ringworld`. The frame renderer owns, updates and closes the private buffer independently of
+Minecraft’s `GlobalSettingsUniform`; Minecraft updates its own uniforms normally; the standard default-binding path adds the private buffer,
 and only shaders consuming it get the corresponding pipeline binding. This keeps
 the existing projection, fade, water, atmosphere and nearby-correction values.
-Incremental resource processing must remove the obsolete packaged Globals override.
+Incremental resource processing removes obsolete packaged Globals and former
+Minecraft-namespace RingWorld includes. The existing GLSL projection, handoff and
+material rules now live in `ringworld:projection.glsl`, `ringworld:handoff.glsl`
+and `ringworld:material.glsl`. Terrain, clouds and Atlas entry points reuse these
+resources; replacement renderers should adapt formats and bindings to them.
+`RingRenderView` captures an immutable CPU projection for visibility workers;
+worker queries must not read mutable client state.
 
 Use one shared visual contract for the vanilla renderer and replacement-renderer
 adapters. Adapters may translate vertex formats, buffer binding and visibility
@@ -39,10 +45,14 @@ save has rim gaps even with vanilla and is unsuitable for attributing #249 to
 Sodium. Preserve its diagnostic logs but use the stopped, fully sampled natural
 16384x256 Minecraft 26.1 source for clean forward-compatible copies.
 
-The private-buffer change currently passes the 26.1.2 Fabric and NeoForge unit
-suites and one hidden, muted Fabric capture run. Four matched old/new screenshots
-on the small diagnostic save differ by 0.05–0.35 RGB levels on average (0–255).
-This is an initial preservation check, not full visual or compatibility acceptance.
+The initial private-buffer change passes all six source/loader CI builds and the
+26.1.2 Fabric and NeoForge unit suites. Its natural Medium no-mod comparison
+preserves both rim views within about 0.004 mean RGB levels (0–255), and seam
+views within 0.13–0.21. This is preservation evidence for the initial change,
+not a visual gate for later edits or a third-party support claim. The subsequent
+shared-GLSL extraction and independent frame publisher need their own native
+checks. The pinned baseline matrix retains logs, source/world/mod hashes and
+paired captures; screenshot completion remains pending manual visual review.
 Sodium's neighbour-ready trial is retained in ignored diagnostic evidence; it does not fix
 the independent terrain-shader and visibility pipelines. Keep Sodium listed as
 unsupported until the complete matrix and visual review pass.

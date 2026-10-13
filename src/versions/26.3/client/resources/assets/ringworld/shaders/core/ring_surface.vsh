@@ -4,7 +4,7 @@
 #include <minecraft:dynamictransforms.glsl>
 #include <minecraft:globals.glsl>
 #include <ringworld:render_uniforms.glsl>
-#include <minecraft:ringworld_projection.glsl>
+#include <ringworld:projection.glsl>
 #include <minecraft:projection.glsl>
 
 layout(location = 0) in vec3 Position;

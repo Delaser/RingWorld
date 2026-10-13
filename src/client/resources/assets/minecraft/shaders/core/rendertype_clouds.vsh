@@ -4,7 +4,7 @@
 #moj_import <minecraft:dynamictransforms.glsl>
 #moj_import <minecraft:globals.glsl>
 #moj_import <ringworld:render_uniforms.glsl>
-#moj_import <minecraft:ringworld_projection.glsl>
+#moj_import <ringworld:projection.glsl>
 #moj_import <minecraft:projection.glsl>
 
 const int FLAG_MASK_DIR = 7;

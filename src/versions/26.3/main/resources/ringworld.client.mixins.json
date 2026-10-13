@@ -23,7 +23,7 @@
     "ClientPlayNetworkHandlerMixin",
     "ChunkBuilderBuiltChunkMixin",
     "ChunkRenderingDataPreparerMixin",
-    "GlobalSettingsMixin",
+    "RingFrameUniformsMixin",
     "RingDefaultUniformsMixin",
     "RingPipelineUniformsMixin",
     "CloudRendererMixin",

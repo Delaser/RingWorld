@@ -2172,7 +2172,9 @@ tasks.named('processClientResources') {
 	doFirst {
 		// Copy tasks can retain deleted sources after an incremental build.
 		// Never ship the former replacement for Minecraft's shared shader ABI.
-		delete(new File(destinationDir, 'assets/minecraft/shaders/include/globals.glsl'))
+		['globals.glsl', 'ringworld_projection.glsl', 'ringworld_handoff.glsl'].each {
+			delete(new File(destinationDir, 'assets/minecraft/shaders/include/' + it))
+		}
 	}
 }
 

@@ -11,7 +11,9 @@ dependencies {
 
 tasks.named('processResources') {
     doFirst {
-        delete(new File(destinationDir, 'assets/minecraft/shaders/include/globals.glsl'))
+        ['globals.glsl', 'ringworld_projection.glsl', 'ringworld_handoff.glsl'].each {
+            delete(new File(destinationDir, 'assets/minecraft/shaders/include/' + it))
+        }
     }
 }
 

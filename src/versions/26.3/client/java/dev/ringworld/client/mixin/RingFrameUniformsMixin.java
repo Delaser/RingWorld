@@ -2,17 +2,15 @@ package dev.ringworld.client.mixin;
 
 import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.blaze3d.buffers.Std140Builder;
-import com.mojang.blaze3d.buffers.Std140SizeCalculator;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.ringworld.client.ClientRingState;
 import dev.ringworld.client.RingAtlasLightTuning;
 import dev.ringworld.world.RingDimensionReport;
 import dev.ringworld.world.RingCloudBounds;
-import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingRenderProfile;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.renderer.GlobalSettingsUniform;
+import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Unique;
 import net.minecraft.world.phys.Vec3;
@@ -23,9 +21,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /** Publishes RingWorld-owned uniforms without replacing Minecraft's Globals. */
-@Mixin(GlobalSettingsUniform.class)
-abstract class GlobalSettingsMixin {
-    private static final int RINGWORLD_GLOBALS_SIZE = dev.ringworld.client.render.RingShaderContract.UNIFORM_BYTES;
+@Mixin(GameRenderer.class)
+abstract class RingFrameUniformsMixin {
+    @Unique private static final int RINGWORLD_GLOBALS_SIZE = dev.ringworld.client.render.RingShaderContract.UNIFORM_BYTES;
 
     @Unique private static final Identifier RINGWORLD_BLOCK_ATLAS = net.minecraft.data.AtlasIds.BLOCKS;
     @Unique private static final Identifier RINGWORLD_WATER_STILL = Identifier.withDefaultNamespace("block/water_still");
@@ -59,11 +57,8 @@ abstract class GlobalSettingsMixin {
         if (ringworld$buffer != null) ringworld$buffer.close();
     }
 
-    @Inject(method = "update", at = @At("TAIL"))
-    private void ringworld$publishLayout(int width, int height, double glintStrength,
-                                         long time, float partialTick,
-                                         int menuBackgroundBlurriness, Vec3 cameraPosition,
-                                         boolean useRgss, CallbackInfo ci) {
+    @Inject(method = "render", at = @At("HEAD"))
+    private void ringworld$publishLayout(CallbackInfo ci) {
         RingGeometry geometry = ClientRingState.geometry();
         Minecraft client = Minecraft.getInstance();
         int active = geometry == null ? 0 : 1;
@@ -131,8 +126,10 @@ abstract class GlobalSettingsMixin {
                             atlasLight.peakStrength(), ClientRingState.skyProfile().backdrop().id());
             ringworld$waterBounds(builder, client, RINGWORLD_WATER_STILL, active == 1 && client.level != null);
             ringworld$waterBounds(builder, client, RINGWORLD_WATER_FLOW, active == 1 && client.level != null);
+            // Uploaded correction parameters are independent of camera Y.
+            // The shared shader reads the actual camera from vanilla Globals.
             var distortion = geometry == null ? null
-                    : dev.ringworld.client.RingDistortionTuning.projection(geometry, cameraPosition);
+                    : dev.ringworld.client.RingDistortionTuning.projection(geometry, Vec3.ZERO);
             builder.putVec4(geometry != null && dev.ringworld.client.RingDistortionTuning.enabled() ? 1.0F : 0.0F,
                     distortion == null ? 0.0F : (float)distortion.coreBlocks(),
                     distortion == null ? 0.0F : (float)distortion.blendEnd(),

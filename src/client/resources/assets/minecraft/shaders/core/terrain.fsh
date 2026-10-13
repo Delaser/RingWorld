@@ -3,7 +3,8 @@
 #moj_import <minecraft:fog.glsl>
 #moj_import <minecraft:globals.glsl>
 #moj_import <ringworld:render_uniforms.glsl>
-#moj_import <minecraft:ringworld_handoff.glsl>
+#moj_import <ringworld:handoff.glsl>
+#moj_import <ringworld:material.glsl>
 #moj_import <minecraft:chunksection.glsl>
 
 uniform sampler2D Sampler0;
@@ -90,31 +91,6 @@ bool ring_active() {
     return RingWorldLayout.x != 0;
 }
 
-float smootherstep(float edge0, float edge1, float value) {
-    float t = clamp((value - edge0) / max(0.0001, edge1 - edge0), 0.0, 1.0);
-    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
-}
-
-// Ordered coverage gives every 8x8 pixel area an even fade, without the
-// irregular speckle of a screen-space hash. Keep the pattern fixed in screen
-// space so motion does not introduce a new random threshold each frame.
-float ring_dither_threshold(vec2 pixel) {
-    ivec2 cell = ivec2(pixel) & ivec2(7);
-    int rank = 0;
-    for (int bit = 0; bit < 3; ++bit) {
-        int x = (cell.x >> bit) & 1;
-        int y = (cell.y >> bit) & 1;
-        int pair = ((x ^ y) << 1) | y;
-        rank |= pair << (4 - 2 * bit);
-    }
-    return (float(rank) + 0.5) / 64.0;
-}
-
-bool ring_water_sprite(vec2 uv, vec4 bounds) {
-    return bounds.x < bounds.z && bounds.y < bounds.w
-        && all(greaterThanEqual(uv, bounds.xy)) && all(lessThanEqual(uv, bounds.zw));
-}
-
 void main() {
     vec4 color = (UseRgss == 1
             ? sampleRGSS(Sampler0, texCoord0, 1.0f / TextureSize)
@@ -126,30 +102,11 @@ void main() {
     }
 #endif
 
-    if (ring_active() && ringIntrinsicDistance >= 0.0) {
-        if (ring_water_sprite(texCoord0, RingWorldWaterStill)
-                || ring_water_sprite(texCoord0, RingWorldWaterFlow)) {
-            float waterMatch = smootherstep(RingWorldHandoff.z, RingWorldHandoff.x,
-                                            ringIntrinsicDistance);
-            color.a = mix(color.a, 1.0, waterMatch);
-            vec3 atlasWater = vertexColor.rgb * 0.58;
-            float waterPeak = max(atlasWater.r, max(atlasWater.g, atlasWater.b));
-            atlasWater = mix(atlasWater, vec3(waterPeak), 0.12) * 1.15;
-            color.rgb = mix(color.rgb, atlasWater, waterMatch);
-        }
-        float proxyReveal = smootherstep(
-            RingWorldHandoff.x,
-            RingWorldHandoff.y,
-            ringHandoffDistance
-        );
-        if (ring_dither_threshold(gl_FragCoord.xy) < proxyReveal) {
-            discard;
-        }
-    }
+    color = ring_material_coverage(color, vertexColor, texCoord0,
+            ringIntrinsicDistance, ringHandoffDistance);
 
     if (ring_active() && ringIntrinsicDistance >= 0.0) {
-        color.rgb = mix(ring_handoff_edge_color(), color.rgb,
-                        ring_handoff_reveal(ringIntrinsicDistance));
+        color = ring_material_atmosphere(color, ringIntrinsicDistance, FogColor.rgb);
         fragColor = apply_fog(color, sphericalVertexDistance, cylindricalVertexDistance,
             FogEnvironmentalStart, FogEnvironmentalEnd, 1.0e20, 1.0e21, FogColor);
     } else {

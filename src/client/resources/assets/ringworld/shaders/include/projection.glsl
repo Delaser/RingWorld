@@ -22,3 +22,19 @@ vec3 ring_trial_position(vec3 point, vec3 camera) {
     float cameraRadius = RingWorldDistortion.w + RingWorldVertical.x - camera.y;
     return vec3(radius * sin(angle), cameraRadius - radius * cos(angle), point.z - camera.z);
 }
+
+// Canonical world coordinates to camera-local circumference, up and width.
+vec3 ring_project_position(vec3 vertexCanonical, vec3 cameraCanonical) {
+    if (RingWorldDistortion.x > 0.5) return ring_trial_position(vertexCanonical, cameraCanonical);
+    float circumference = float(RingWorldLayout.y);
+    float baseRadius = circumference / (2.0 * 3.14159265358979323846);
+    float deltaAngle = 6.28318530717958647692
+        * (vertexCanonical.x - cameraCanonical.x) / circumference;
+    float vertexRadius = baseRadius + RingWorldVertical.x - vertexCanonical.y;
+    float cameraRadius = baseRadius + RingWorldVertical.x - cameraCanonical.y;
+    return vec3(
+        vertexRadius * sin(deltaAngle),
+        cameraRadius - vertexRadius * cos(deltaAngle),
+        vertexCanonical.z - cameraCanonical.z
+    );
+}

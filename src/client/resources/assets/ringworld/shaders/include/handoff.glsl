@@ -5,11 +5,11 @@ float ring_handoff_smootherstep(float start, float end, float value) {
     return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
-vec3 ring_handoff_edge_color() {
+vec3 ring_handoff_edge_color(vec3 fogColor) {
     // Backdrop id shares the previously unused fourth Atlas-light component.
     if (RingWorldAtlasLight.w > 1.5) return vec3(1.0, 1.0, 3.0) / 255.0;
     if (RingWorldAtlasLight.w > 0.5) return vec3(5.0, 8.0, 16.0) / 255.0;
-    return FogColor.rgb;
+    return fogColor;
 }
 
 float ring_handoff_reveal(float distance) {
