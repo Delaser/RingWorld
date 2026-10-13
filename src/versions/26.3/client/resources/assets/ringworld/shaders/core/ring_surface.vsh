@@ -15,7 +15,7 @@ layout(location = 0) out vec2 texCoord0;
 layout(location = 1) out vec4 vertexColor;
 layout(location = 2) out float intrinsicDistance;
 layout(location = 6) out float handoffDistance;
-out float environmentalDistance;
+layout(location = 7) out float environmentalDistance;
 layout(location = 3) out float intrinsicHeight;
 layout(location = 4) out float intrinsicWidth;
 layout(location = 5) flat out vec3 depthMapping;

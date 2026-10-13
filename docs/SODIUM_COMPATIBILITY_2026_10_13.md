@@ -150,4 +150,8 @@ stays disabled, and clear-air fragments retain the previous exact path. Water
 vision, lava, powder snow, blindness and darkness retain vanilla ranges/colour;
 no custom fixed underwater cutoff or Sodium-only workaround is introduced.
 No GPU buffer layout, texture, mesh, proxy alpha/depth or server data changes.
-Fix validation is pending below.
+The first 26.3 fix run (`extra-underwater-20261013T161231Z-722f93d0eb9f`)
+failed shader compilation because the added varying lacked an explicit SPIR-V
+location. It was stopped and retained as FAIL. Both stages now use location 7;
+a static ABI regression checks matching explicit, unique locations for every
+proxy varying. Fix validation is pending below.
