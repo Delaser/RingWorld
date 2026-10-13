@@ -1,9 +1,10 @@
 # Large-server lighting allocation — development validation complete
 
-October 13 follow-up: submerged cameras exposed missing environmental fog on
-Atlas fragments. The branch applies vanilla immersion/effect fog without changing
-clear-air haze, depth mapping or live/proxy coverage. Native follow-up validation
-is in progress; the frozen Windows 1.4 candidates remain unchanged.
+October 13 follow-up: the distant Atlas is suppressed only while the actual
+render camera is in water. Nearby chunks keep Minecraft fog and clear-air
+Atlas rendering is unchanged. The owner selected this simpler shared policy
+instead of adding underwater Atlas shader fog. Native validation is in progress;
+the frozen Windows 1.4 candidates remain unchanged.
 
 October 13: PR #292 (`codex/mod-compatibility-core`) separates private RingWorld
 shader state and validates Sodium through thin adapters to the shared rendering

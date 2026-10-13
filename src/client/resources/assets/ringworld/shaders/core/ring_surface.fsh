@@ -15,7 +15,6 @@ in vec2 texCoord0;
 in vec4 vertexColor;
 in float intrinsicDistance;
 in float handoffDistance;
-in float environmentalDistance;
 in float intrinsicHeight;
 in float intrinsicWidth;
 flat in vec3 depthMapping;
@@ -204,10 +203,4 @@ void main() {
     // flavour nearby unknown cells, then each published revision cross-fades
     // into the next instead of exposing a hard tile update.
     fragColor = vec4(mix(ring_handoff_edge_color(FogColor.rgb), litTerrain, reveal), proxyAlpha);
-    // Use vanilla immersion/effect colour and range, including water vision.
-    // Leave clear-air weather/handoff haze untouched and omit view-distance fog.
-    if (ColorModulator.x > 0.5) {
-        fragColor = apply_fog(fragColor, environmentalDistance, 0.0,
-                FogEnvironmentalStart, FogEnvironmentalEnd, 1.0e20, 1.0e21, FogColor);
-    }
 }

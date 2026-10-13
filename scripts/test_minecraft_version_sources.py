@@ -201,24 +201,6 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         self.assertIn('withShaderDefine("RINGWORLD_REVERSED_DEPTH")', new)
         self.assertIn("isZZeroToOne() ? 0.0001F : -0.9999F", new)
 
-    def test_26_3_proxy_varyings_have_matching_explicit_locations(self):
-        # RenderPearl compiles SPIR-V: unnamed varying locations fail resource reload.
-        base = VERSION_ROOT / "26.3/client/resources/assets/ringworld/shaders/core"
-        varyings = []
-        for extension, direction in (("vsh", "out"), ("fsh", "in")):
-            source = (base / ("ring_surface." + extension)).read_text()
-            declarations = re.findall(r"^(.*)\b" + direction + r" (\w+) (\w+);$", source, re.MULTILINE)
-            locations = {}
-            for qualifier, value_type, name in declarations:
-                location = re.search(r"layout\(location = (\d+)\)", qualifier)
-                self.assertIsNotNone(location, name)
-                slot = int(location.group(1))
-                self.assertNotIn(slot, locations)
-                locations[slot] = (value_type, name, "flat" in qualifier)
-            varyings.append(locations)
-        self.assertEqual(varyings[0], varyings[1])
-        self.assertIn(("float", "environmentalDistance", False), varyings[0].values())
-
     def test_proxy_depth_coverage_retains_smooth_alpha(self):
         proxy = (ROOT / "src/client/resources/assets/ringworld/shaders/core/ring_surface.fsh").read_text()
         self.assertIn("gl_FragDepth = mix(0.0, surfaceDepth, proxyAlpha)", proxy)

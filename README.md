@@ -22,8 +22,8 @@ during heavy chunk loading and unloading.
 Completed-world progress reports also avoid repeatedly scanning the Atlas for
 each player; see [the three-client server trial](docs/SERVER_MULTIPLAYER_LOAD_2026_10_10.md).
 
-Development PR #292 also makes the distant Atlas respect underwater visibility,
-using Minecraft's immersion fog while retaining RingWorld's clear-air appearance.
+Development PR #292 also hides the distant Atlas while the camera is underwater.
+Nearby real blocks keep normal underwater fog; resurfacing restores the ring.
 See [compatibility development and validation](docs/SODIUM_COMPATIBILITY_2026_10_13.md).
 
 ## What does it look like?

@@ -51,7 +51,8 @@ public final class RingUnderwaterCaptureClient {
             }
             return true;
         }
-        client.options.renderDistance().set(8);
+        client.options.renderDistance().set(Math.clamp(
+                Integer.getInteger("ringworld.underwaterViewDistance", 8), 2, 32));
         client.options.cloudStatus().set(net.minecraft.client.CloudStatus.OFF);
         client.options.vignette().set(false);
         RingMinecraftClientAccess.setGuiHidden(client, true);

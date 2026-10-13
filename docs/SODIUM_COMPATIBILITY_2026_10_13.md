@@ -132,35 +132,37 @@ qualify an older frozen candidate or silently change its publication metadata.
 
 ## Submerged-camera follow-up
 
-The prior matrix does not qualify underwater visibility. The Atlas fragment
-shader omitted environmental fog although live terrain retained it. A new
-opt-in `ringworld.captureUnderwater` client fixture creates only a disposable
-world with a sealed pool, checks the actual camera fluid, and records above,
-submerged, near-surface, resurfaced and post-reload frames. Both loader hooks
-use the same fixture; existing release captures are unchanged. Baseline `5bc88b2`, 26.3 Fabric without Sodium, reproduces a clearly visible
-far ring through water in `extra-underwater-20261013T160945Z-9283c3527c22`.
+The original compatibility matrix did not qualify submerged cameras. Baseline
+`5bc88b2`, 26.3 Fabric without Sodium, reproduces a clearly visible far ring
+through water in `extra-underwater-20261013T160945Z-9283c3527c22`.
 
-The repair uses the previously unused Atlas-only `ColorModulator.x` component to
-select immersion/effect fog from the actual render camera. The backdrop remains
-in the private `RingWorldAtlasLight.w` field. Both Atlas shader ABIs apply
-Minecraft's existing `FogColor` and environmental ranges after authored lighting,
-using the greater canonical/projected distance multiplied by live terrain's 1.02
-fog scale. This distance precedes proxy depth compression. Render-distance fog
-stays disabled, and clear-air fragments retain the previous exact path. Water
-vision, lava, powder snow, blindness and darkness retain vanilla ranges/colour;
-no custom fixed underwater cutoff or Sodium-only workaround is introduced.
-No GPU buffer layout, texture, mesh, proxy alpha/depth or server data changes.
-The first 26.3 fix run (`extra-underwater-20261013T161231Z-722f93d0eb9f`)
-failed shader compilation because the added varying lacked an explicit SPIR-V
-location. It was stopped and retained as FAIL. Both stages now use location 7;
-a static ABI regression checks matching explicit, unique locations for every
-proxy varying. The first Sodium run (`extra-underwater-20261013T161733Z-d700b29c3bde`)
-passed the four initial camera views but timed out at the submerged reload gate.
-Sodium deliberately suppresses the sky pass while immersed. After reload, the
-Atlas has no reason to rebuild GPU buffers until that pass resumes. The fixture
-now permits absent GPU buffers for that one submerged post-reload capture and
-requires a sixth, resurfaced frame with a fully rebuilt coherent detailed Atlas.
-Initial above/submerged/surface/resurfaced captures still require readiness.
-The partial NeoForge case was stopped before capture to apply this fixture repair;
-no rendering change was made for this intentional Sodium sky suppression.
-Fix validation is pending below.
+The owner selected a simpler general rendering policy: skip the Atlas render
+when the actual render camera reports `FogType.WATER`. Real chunks retain
+Minecraft's underwater fog; the Atlas remains normal above water. This uses
+shared rendering code for all versions/loaders, without Sodium hooks, custom
+fog cutoffs or shader changes. GPU resources are retained rather than destroyed
+when submerging. After a submerged resource reload, buffers can stay absent
+until resurfacing, when the ordinary renderer rebuilds them. It also correctly
+uses the camera rather than the player when in third person.
+
+The opt-in `ringworld.captureUnderwater` fixture creates a disposable sealed
+pool with nearby gold blocks and checks actual camera fluid. It captures above,
+submerged, near-surface, resurfaced, submerged after reload, and resurfaced after
+reload. Above-water readiness includes a complete coherent detailed GPU Atlas.
+The submerged reload frame permits absent GPU buffers; the final resurfaced
+frame must prove complete GPU recovery. Existing release fixtures are unchanged.
+General compatibility is the design goal; Sodium is a targeted check, not a
+mandatory duplicate of every feature fixture.
+
+A superseded shader-fog experiment first failed 26.3 compilation for a missing
+SPIR-V location (`extra-underwater-20261013T161231Z-722f93d0eb9f`), then passed
+26.3 no-Sodium after repair (`extra-underwater-20261013T161420Z-517270f09d7e`).
+It is removed from the final implementation, including its helper/varying test.
+The first Sodium fixture (`extra-underwater-20261013T161733Z-d700b29c3bde`)
+timed out after reload because it required a GPU rebuild while Sodium legitimately
+suppresses the entire sky pass underwater. The corrected fixture passes 26.1.2
+Fabric (`extra-underwater-20261013T162601Z-35333626a206`). Its partial NeoForge
+case was stopped when the owner selected the simpler implementation; unrun cells
+are not claimed as passes. Those records remain historical development evidence.
+
+Final-policy validation is pending below.

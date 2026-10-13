@@ -86,13 +86,18 @@ public final class RingSurfaceTextureRenderer {
         // callbacks normally destroy those resources; this guard makes the
         // world-hash boundary authoritative even if a callback is missed.
         if (atlas == null) return;
+        Minecraft client = Minecraft.getInstance();
+        // Distant scenery must not remain visible through underwater fog.
+        // Use the render camera (also correct for third person), retain buffers
+        // for resurfacing, and leave real chunks to Minecraft's normal fog.
+        if (dev.ringworld.client.RingMinecraftClientAccess.camera(client).getFluidInCamera()
+                == net.minecraft.world.level.material.FogType.WATER) return;
         long resourceStarted = System.nanoTime();
         ensureResources(geometry, atlas);
         flagRenderStall("surface resource update (including allocation/release)", resourceStarted);
         if (!geometry.equals(bufferedGeometry) || atlas.worldHash() != bufferedWorldHash
                 || vertexBuffer == null || surfaceTexture == null || vertexCount == 0) return;
 
-        Minecraft client = Minecraft.getInstance();
         float textureMorph = updateTextureMorph(System.nanoTime());
         float visibleCompletion = previousSurfaceTextureView == null
                 ? surfaceCompletion
@@ -135,8 +140,7 @@ public final class RingSurfaceTextureRenderer {
         }
         GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(
                 modelView,
-                // x is the Atlas-only environmental-fog flag; backdrop lives in RingWorldAtlasLight.w.
-                new Vector4f(RingAtlasFog.enabled(dev.ringworld.client.RingMinecraftClientAccess.camera(client)) ? 1.0F : 0.0F,
+                new Vector4f(ClientRingState.skyProfile().backdrop().id(),
                         alpha, textureMorph, generationFog),
                 new Vector3f((float)cameraAngle, (float)camera.z, RingSurfaceGpu.farBackgroundDepth()),
                 wallPaletteMatrix);

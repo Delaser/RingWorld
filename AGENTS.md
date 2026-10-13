@@ -29,13 +29,15 @@ The exterior-neighbour prototype was not needed and remains unintegrated.
 Use clean natural-world copies and no-mod controls: the old floating-build save
 also has gaps without Sodium. Preserve failed evidence and distinguish a harness
 completion marker from visual acceptance. See `docs/COMPATIBILITY.md`.
-Atlas immersion/effect fog uses vanilla Fog colour/ranges and the same greater
-canonical/projected distance as live terrain (including its 1.02 scale), never
-compressed proxy depth. `ColorModulator.x` is the Atlas environmental-fog flag;
-backdrop IDs live in `RingWorldAtlasLight.w`. Do not reintroduce clear-air
-view-distance fog, disable the Atlas wholesale, or alter proxy coverage/depth.
-The opt-in `ringworld.captureUnderwater` fixture asserts actual camera fluid,
-checks resurfacing/reload and uses only a disposable world on both loaders.
+Atlas visibility uses the actual render camera: skip the distant Atlas while
+`getFluidInCamera()` is WATER, retaining GPU resources for resurfacing. Real
+chunks keep vanilla environmental fog. This is a shared immersion policy, not
+a renderer-mod workaround. Clear-air geometry, haze, proxy coverage/depth and
+uniform layouts stay unchanged. The opt-in `ringworld.captureUnderwater`
+fixture uses a disposable world and asserts camera fluid, resurfacing and
+post-reload resurfacing; absent underwater Atlas buffers are intentional.
+Use targeted replacement-renderer checks rather than repeating every feature
+fixture against Sodium. General compatibility remains the design goal.
 Comparison captures must wait for a coherent complete detailed GPU Atlas and
 retirement/completion of its preceding texture crossfade. Do not require the
 newest network revision or an empty worker queue. After setup teleports, wait
