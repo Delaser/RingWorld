@@ -1,5 +1,10 @@
 # Large-server lighting allocation — development validation complete
 
+October 13 follow-up: submerged cameras exposed missing environmental fog on
+Atlas fragments. The branch applies vanilla immersion/effect fog without changing
+clear-air haze, depth mapping or live/proxy coverage. Native follow-up validation
+is in progress; the frozen Windows 1.4 candidates remain unchanged.
+
 October 13: PR #292 (`codex/mod-compatibility-core`) separates private RingWorld
 shader state and validates Sodium through thin adapters to the shared rendering
 contract. All five supported game versions pass seam/rim checks on both loaders;

@@ -14,6 +14,7 @@ out vec2 texCoord0;
 out vec4 vertexColor;
 out float intrinsicDistance;
 out float handoffDistance;
+out float environmentalDistance;
 out float intrinsicHeight;
 out float intrinsicWidth;
 flat out vec3 depthMapping;
@@ -85,6 +86,10 @@ void main() {
     float cameraY = float(CameraBlockPos.y) - CameraOffset.y;
     float worldY = RingWorldVertical.w - intrinsicHeight;
     handoffDistance = length(vec2(intrinsicDistance, worldY - cameraY));
+    // Match live terrain's greater canonical/projected distance and fog scale.
+    // Never derive environmental fog from the compressed proxy depth.
+    environmentalDistance = 1.02 * max(handoffDistance,
+            length((ModelViewMat * vec4(projected, 1.0)).xyz));
     intrinsicWidth = Position.z;
     texCoord0 = UV0;
     vertexColor = Color;

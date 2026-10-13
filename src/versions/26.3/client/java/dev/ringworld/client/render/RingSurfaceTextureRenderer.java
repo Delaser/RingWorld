@@ -135,7 +135,8 @@ public final class RingSurfaceTextureRenderer {
         }
         GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(
                 modelView,
-                new Vector4f(ClientRingState.skyProfile().backdrop().id(),
+                // x is the Atlas-only environmental-fog flag; backdrop lives in RingWorldAtlasLight.w.
+                new Vector4f(RingAtlasFog.enabled(dev.ringworld.client.RingMinecraftClientAccess.camera(client)) ? 1.0F : 0.0F,
                         alpha, textureMorph, generationFog),
                 new Vector3f((float)cameraAngle, (float)camera.z, RingSurfaceGpu.farBackgroundDepth()),
                 wallPaletteMatrix);

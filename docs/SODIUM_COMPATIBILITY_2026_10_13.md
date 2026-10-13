@@ -137,5 +137,17 @@ shader omitted environmental fog although live terrain retained it. A new
 opt-in `ringworld.captureUnderwater` client fixture creates only a disposable
 world with a sealed pool, checks the actual camera fluid, and records above,
 submerged, near-surface, resurfaced and post-reload frames. Both loader hooks
-use the same fixture; existing release captures are unchanged. Baseline/fix
-results will be recorded here after native validation.
+use the same fixture; existing release captures are unchanged. Baseline `5bc88b2`, 26.3 Fabric without Sodium, reproduces a clearly visible
+far ring through water in `extra-underwater-20261013T160945Z-9283c3527c22`.
+
+The repair uses the previously unused Atlas-only `ColorModulator.x` component to
+select immersion/effect fog from the actual render camera. The backdrop remains
+in the private `RingWorldAtlasLight.w` field. Both Atlas shader ABIs apply
+Minecraft's existing `FogColor` and environmental ranges after authored lighting,
+using the greater canonical/projected distance multiplied by live terrain's 1.02
+fog scale. This distance precedes proxy depth compression. Render-distance fog
+stays disabled, and clear-air fragments retain the previous exact path. Water
+vision, lava, powder snow, blindness and darkness retain vanilla ranges/colour;
+no custom fixed underwater cutoff or Sodium-only workaround is introduced.
+No GPU buffer layout, texture, mesh, proxy alpha/depth or server data changes.
+Fix validation is pending below.

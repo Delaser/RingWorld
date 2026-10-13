@@ -29,6 +29,13 @@ The exterior-neighbour prototype was not needed and remains unintegrated.
 Use clean natural-world copies and no-mod controls: the old floating-build save
 also has gaps without Sodium. Preserve failed evidence and distinguish a harness
 completion marker from visual acceptance. See `docs/COMPATIBILITY.md`.
+Atlas immersion/effect fog uses vanilla Fog colour/ranges and the same greater
+canonical/projected distance as live terrain (including its 1.02 scale), never
+compressed proxy depth. `ColorModulator.x` is the Atlas environmental-fog flag;
+backdrop IDs live in `RingWorldAtlasLight.w`. Do not reintroduce clear-air
+view-distance fog, disable the Atlas wholesale, or alter proxy coverage/depth.
+The opt-in `ringworld.captureUnderwater` fixture asserts actual camera fluid,
+checks resurfacing/reload and uses only a disposable world on both loaders.
 Comparison captures must wait for a coherent complete detailed GPU Atlas and
 retirement/completion of its preceding texture crossfade. Do not require the
 newest network revision or an empty worker queue. After setup teleports, wait
