@@ -25,7 +25,9 @@ public final class RingVisualParityCaptureClient {
     private static final int MIN_VIEW_DISTANCE_CHUNKS = 2;
     private static final int MAX_VIEW_DISTANCE_CHUNKS = 32;
     private static final int WORLD_OPEN_TIMEOUT_TICKS = 2_400;
-    private static final int ATLAS_READY_TIMEOUT_TICKS = 2_400;
+    // Match the bounded cold-load allowance of ProductionLifecycleTestClient:
+    // 4,194,304 cells alone need 2,048 server ticks at the normal tile budget.
+    private static final int ATLAS_READY_TIMEOUT_TICKS = 6_000;
     private static final int POSITION_TIMEOUT_TICKS = 600;
     private static final int RENDER_TIMEOUT_TICKS = 1_200;
     private static final int SETTLE_TICKS = 120;

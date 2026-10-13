@@ -217,3 +217,11 @@ with visible sky gaps at the handoff. Both rims render in the current default
 natural Medium world; the historical #249 missing-wall claim is not reproduced
 by this case. The adapter and private entry-point routing need native checks
 before any support status changes.
+
+The initial adapter/native control pair also exceeded the old visual-parity
+2,400-client-tick Atlas limit. The parity fixture now uses the existing lifecycle
+6,000-tick cold-load allowance on both resource ABIs. A Medium Atlas alone needs
+2,048 server ticks at the ordinary tile budget, before startup and tick delays.
+Completion, rendered-section, pose and screenshot checks are unchanged; this
+changes only the opt-in fixture deadline, not game behaviour or the active frozen
+Windows qualification. Preserve the original failed runs.
