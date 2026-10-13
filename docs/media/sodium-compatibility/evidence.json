@@ -246,6 +246,66 @@
           "elapsed_seconds": 211.19
         }
       ]
+    },
+    {
+      "kind": "underwater-final-policy",
+      "report": "logs/sodium-compatibility/extra-underwater-20261013T163548Z-5b218be96886/status.json",
+      "report_sha256": "47964357631991896ca40452de7026eead6f1d6db0b70822b205f515fcbb3c8b",
+      "source_commit": "622346993b701f03e138f5dc2185a347943664e0",
+      "variant": "vanilla",
+      "cases": [
+        {
+          "cell": "26.1.2-fabric",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 142.05
+        }
+      ],
+      "visual_review": "Reviewed all six camera states: far ring absent underwater, nearby gold/glass visible, coherent ring restored above water and after reload."
+    },
+    {
+      "kind": "underwater-final-policy",
+      "report": "logs/sodium-compatibility/extra-underwater-20261013T163810Z-1362cb64ff6c/status.json",
+      "report_sha256": "3058e8e56aa4190aacf935b7da53ae37bfaf5e5fc806ce9275370b6101ce4ee4",
+      "source_commit": "622346993b701f03e138f5dc2185a347943664e0",
+      "variant": "vanilla",
+      "cases": [
+        {
+          "cell": "26.2-neoforge",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 221.1
+        }
+      ],
+      "visual_review": "Reviewed all six camera states: far ring absent underwater, nearby gold/glass visible, coherent ring restored above water and after reload."
+    },
+    {
+      "kind": "underwater-final-policy",
+      "report": "logs/sodium-compatibility/extra-underwater-20261013T164151Z-5094b63ca7d4/status.json",
+      "report_sha256": "695176883b86c1483b28350695de457246a5ba64560e6dafe7985d83e616ed1a",
+      "source_commit": "622346993b701f03e138f5dc2185a347943664e0",
+      "variant": "vanilla",
+      "cases": [
+        {
+          "cell": "26.3-fabric",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 115.72
+        }
+      ],
+      "visual_review": "Reviewed all six camera states: far ring absent underwater, nearby gold/glass visible, coherent ring restored above water and after reload."
+    },
+    {
+      "kind": "underwater-final-policy",
+      "report": "logs/sodium-compatibility/extra-underwater-20261013T164347Z-1a9d6af322ac/status.json",
+      "report_sha256": "f6028ff58deb4501dad28108ac40b9b278d0308fc62cac56b6dbe80689e7762e",
+      "source_commit": "622346993b701f03e138f5dc2185a347943664e0",
+      "variant": "mods",
+      "cases": [
+        {
+          "cell": "26.3-neoforge",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 119.95
+        }
+      ],
+      "visual_review": "Reviewed all six camera states: far ring absent underwater, nearby gold/glass visible, coherent ring restored above water and after reload."
     }
   ],
   "media": [
@@ -301,5 +361,39 @@
     "readiness_repeat": "Both four-view controls reviewed; complete Atlas colours and both walls present.",
     "lighting": "Reviewed all three twelve-view contact sheets across noon, dusk, night and rain.",
     "other_fixtures": "Native assertions and representative object, dimension, weather and off-ring images reviewed; off-ring PNG count/decoding and adapter activation independently checked."
+  },
+  "underwater_rendering_source": "622346993b701f03e138f5dc2185a347943664e0",
+  "underwater_policy": "Skip Atlas rendering for actual render camera in WATER; real chunk fog and clear-air shaders unchanged.",
+  "underwater_media": [
+    {
+      "path": "underwater-before-after-26.3.gif",
+      "sha256": "1871bcedf87d0b4b11095ebafb1a39a17051995432a48338771bd0ad6508830e"
+    },
+    {
+      "path": "underwater-controls-26.3.jpg",
+      "sha256": "648514f20f9424cf557d93ab9ee79ccbc68c9e81ffea16e3c515862fdc79ab94"
+    }
+  ],
+  "underwater_pixel_metrics": {
+    "above": {
+      "upper_third_mean_absolute_rgb_difference": 0.02386685206869633,
+      "upper_third_changed_pixel_fraction": 0.0017033811475409837
+    },
+    "submerged": {
+      "upper_third_mean_absolute_rgb_difference": 9.674070550351288,
+      "upper_third_changed_pixel_fraction": 0.46177912763466045
+    },
+    "surface": {
+      "upper_third_mean_absolute_rgb_difference": 9.888120852849337,
+      "upper_third_changed_pixel_fraction": 0.44690061475409837
+    },
+    "resurfaced": {
+      "upper_third_mean_absolute_rgb_difference": 0.02386685206869633,
+      "upper_third_changed_pixel_fraction": 0.0017033811475409837
+    },
+    "reload": {
+      "upper_third_mean_absolute_rgb_difference": 9.142799204722873,
+      "upper_third_changed_pixel_fraction": 0.3053553132318501
+    }
   }
 }

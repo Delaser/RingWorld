@@ -3,8 +3,10 @@
 October 13 follow-up: the distant Atlas is suppressed only while the actual
 render camera is in water. Nearby chunks keep Minecraft fog and clear-air
 Atlas rendering is unchanged. The owner selected this simpler shared policy
-instead of adding underwater Atlas shader fog. Native validation is in progress;
-the frozen Windows 1.4 candidates remain unchanged.
+instead of adding underwater Atlas shader fog. All six camera/reload states pass on 26.1.2 Fabric, 26.2 NeoForge at two chunks,
+26.3 Fabric and a targeted 26.3 NeoForge + Sodium check. All 11 CI checks pass
+at rendering source `6223469`; see the compatibility evidence record. The
+frozen Windows 1.4 candidates remain unchanged.
 
 October 13: PR #292 (`codex/mod-compatibility-core`) separates private RingWorld
 shader state and validates Sodium through thin adapters to the shared rendering

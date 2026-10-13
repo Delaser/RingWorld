@@ -165,4 +165,28 @@ Fabric (`extra-underwater-20261013T162601Z-35333626a206`). Its partial NeoForge
 case was stopped when the owner selected the simpler implementation; unrun cells
 are not claimed as passes. Those records remain historical development evidence.
 
-Final-policy validation is pending below.
+Final-policy native checks at `6223469` all pass and all 24 captures were visually
+reviewed (macOS Apple M2/OpenGL):
+
+| Cell | Extra renderer | View distance | Six camera/reload states | Evidence run suffix |
+| --- | --- | --- | --- | --- |
+| 26.1.2 Fabric | None | 8 chunks | Pass | `163548Z-5b218be96886` |
+| 26.2 NeoForge | None | 2 chunks | Pass | `163810Z-1362cb64ff6c` |
+| 26.3 Fabric | None | 8 chunks | Pass | `164151Z-5094b63ca7d4` |
+| 26.3 NeoForge | Sodium 0.9.2 | 8 chunks | Pass | `164347Z-1a9d6af322ac` |
+
+Each suffix belongs to `logs/sodium-compatibility/extra-underwater-20261013T...`.
+No far-ring ghost remains in submerged or near-surface views; nearby gold/glass
+remain visible. Above, resurfaced and post-reload resurfaced frames show the
+complete ring. The low-distance case exposes no void gap. The matched 26.3
+upper-third above/resurfaced RGB difference versus baseline is 0.024/255
+(0.17% changed pixels), while submerged frames change as intended. Dynamic
+water/particles can differ between runs; this is not a pixel-perfect identity
+claim. GIF labels use Minecraft's bitmap font and a shared GIF palette.
+
+Both local loader builds pass 514 unit cases each (1,028 total, no failures,
+errors or skips). All 11 CI checks at rendering source `6223469` pass, including
+the six version/loader source-build/test groups and Windows/Linux contracts.
+This targets all supported 26.x versions through their shared source adapters;
+it is development validation, not another frozen full-release qualification.
+No Windows candidate, server, release artifact or publication was changed.
