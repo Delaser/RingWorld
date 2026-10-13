@@ -20,6 +20,21 @@ if ((qualificationRootProperty == null) != (qualificationCellProperty == null)) 
 
 def qualificationEnabled = qualificationRootProperty != null
 
+// Optional third-party mod for development compatibility probes only. It is
+// never bundled or admitted into the unmodified vanilla release qualification.
+def compatibilityModsPath = providers.gradleProperty('ringCompatibilityModsDir').orNull
+File compatibilityModsDir = compatibilityModsPath == null ? null : file(compatibilityModsPath)
+if (compatibilityModsDir != null && (qualificationEnabled || !compatibilityModsDir.isDirectory()
+        || java.nio.file.Files.isSymbolicLink(compatibilityModsDir.toPath()))) {
+	throw new GradleException('ringCompatibilityModsDir requires a plain directory and a normal development run')
+}
+def compatibilityModJars = compatibilityModsDir == null ? []
+        : compatibilityModsDir.listFiles().findAll { it.name.endsWith('.jar') }
+if (compatibilityModJars.any { !it.isFile() || java.nio.file.Files.isSymbolicLink(it.toPath()) }) {
+	throw new GradleException('compatibility mod JARs must be plain files')
+}
+ext.ringCompatibilityModJars = compatibilityModJars
+
 // Nightly fixtures may load the exact retained production jar instead of the
 // checkout's source-set mod. This mode is qualification-only and requires an
 // independently supplied SHA-256; normal development and release invocations
@@ -2123,6 +2138,7 @@ dependencies {
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	if (!compatibilityModJars.isEmpty()) runtimeOnly files(compatibilityModJars)
 
 	testImplementation platform('org.junit:junit-bom:5.11.4')
 	testImplementation 'org.junit.jupiter:junit-jupiter'
@@ -2151,6 +2167,24 @@ processResources {
 		}
 	}
 }
+
+tasks.named('processClientResources') {
+	doFirst {
+		// Copy tasks can retain deleted sources after an incremental build.
+		// Never ship the former replacement for Minecraft's shared shader ABI.
+		['globals.glsl', 'ringworld_projection.glsl', 'ringworld_handoff.glsl'].each {
+			delete(new File(destinationDir, 'assets/minecraft/shaders/include/' + it))
+		}
+		['terrain', 'rendertype_clouds', 'clouds'].each { shader ->
+		    ['vsh', 'fsh'].each { suffix ->
+		        delete(new File(destinationDir, 'assets/minecraft/shaders/core/' + shader + '.' + suffix))
+		    }
+		}
+	}
+}
+
+sourceSets.test.compileClasspath += sourceSets.client.output
+sourceSets.test.runtimeClasspath += sourceSets.client.output
 
 tasks.withType(JavaCompile).configureEach {
 	it.options.release = 25

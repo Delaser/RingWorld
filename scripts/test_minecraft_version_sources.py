@@ -41,6 +41,34 @@ def adapter_contract(path: Path) -> set[tuple[str, str, str]]:
 
 
 class MinecraftVersionSourcesTest(unittest.TestCase):
+    def test_private_uniform_bridge_is_present_in_every_selected_abi(self):
+        # ABI selection adds one version directory, not all older directories.
+        # Code shared by 26.1 and 26.2 must therefore live in shared sources.
+        for relative in ("render/RingRenderUniforms.java", "mixin/RingDefaultUniformsMixin.java"):
+            shared = ROOT / "src/client/java/dev/ringworld/client" / relative
+            current = VERSION_ROOT / "26.3/client/java/dev/ringworld/client" / relative
+            self.assertTrue(shared.is_file(), relative)
+            self.assertTrue(current.is_file(), relative)
+        for abi in ("26.1", "26.2", "26.3"):
+            pipeline = VERSION_ROOT / abi / "client/java/dev/ringworld/client/mixin/RingPipelineUniformsMixin.java"
+            self.assertTrue(pipeline.is_file(), abi)
+        for config in (ROOT / "src/main/resources/ringworld.client.mixins.json",
+                       VERSION_ROOT / "26.3/main/resources/ringworld.client.mixins.json"):
+            text = config.read_text()
+            self.assertIn('"RingDefaultUniformsMixin"', text)
+            self.assertIn('"RingPipelineUniformsMixin"', text)
+
+    def test_private_frame_publisher_does_not_replace_vanilla_globals(self):
+        for prefix in (ROOT / "src", VERSION_ROOT / "26.3"):
+            source = (prefix / "client/java/dev/ringworld/client/mixin/RingFrameUniformsMixin.java").read_text()
+            self.assertIn("@Mixin(GameRenderer.class)", source)
+            self.assertIn('@Inject(method = "render", at = @At("HEAD"))', source)
+            self.assertNotIn("GlobalSettingsUniform", source)
+            self.assertNotIn("cancellable", source)
+            self.assertIn("RingRenderUniforms.clear(ringworld$buffer)", source)
+            self.assertIn("ringworld$buffer.close()", source)
+            self.assertFalse((prefix / "client/resources/assets/minecraft/shaders/include/globals.glsl").exists())
+
     def test_atlas_renderer_logic_matches_across_gpu_package_abis(self):
         shared = (ROOT / "src/client/java/dev/ringworld/client/render/RingSurfaceTextureRenderer.java").read_text()
         current = (VERSION_ROOT / "26.3/client/java/dev/ringworld/client/render/RingSurfaceTextureRenderer.java").read_text()
@@ -180,7 +208,7 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         self.assertIn("float nativeDepth = depthMapping.x + depthMapping.y * gl_FragCoord.w", proxy)
         self.assertNotIn("ring_dither_threshold", proxy)
         self.assertIn("if (proxyAlpha <= 0.001)", proxy)
-        self.assertIn("fragColor = vec4(mix(ring_handoff_edge_color(), litTerrain, reveal), proxyAlpha)", proxy)
+        self.assertIn("fragColor = vec4(mix(ring_handoff_edge_color(FogColor.rgb), litTerrain, reveal), proxyAlpha)", proxy)
 
     def test_altitude_handoff_covers_terrain_below_native_vertical_range(self):
         # Both resource ABIs must coordinate coverage, including 26.3 OIT.
@@ -188,15 +216,17 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
                           VERSION_ROOT / "26.3/client/resources"):
             proxy_vertex = (resources / "assets/ringworld/shaders/core/ring_surface.vsh").read_text()
             proxy_fragment = (resources / "assets/ringworld/shaders/core/ring_surface.fsh").read_text()
-            live_vertex = (resources / "assets/minecraft/shaders/core/terrain.vsh").read_text()
-            live_fragment = (resources / "assets/minecraft/shaders/core/terrain.fsh").read_text()
+            live_vertex = (resources / "assets/ringworld/shaders/core/terrain.vsh").read_text()
+            live_fragment = (resources / "assets/ringworld/shaders/core/terrain.fsh").read_text()
             self.assertIn("float cameraY = float(CameraBlockPos.y) - CameraOffset.y", proxy_vertex)
             self.assertIn("float worldY = RingWorldVertical.w - intrinsicHeight", proxy_vertex)
             self.assertIn("handoffDistance = length(vec2(intrinsicDistance, worldY - cameraY))", proxy_vertex)
             self.assertRegex(proxy_fragment, r"RingWorldHandoff\.w,\s+handoffDistance")
             self.assertIn("ringHandoffDistance = length(vanillaPos)", live_vertex)
             self.assertIn("ringHandoffDistance = -1.0", live_vertex)
-            self.assertRegex(live_fragment, r"RingWorldHandoff\.y,\s+ringHandoffDistance")
+            self.assertRegex(live_fragment, r"ring_material_coverage\(color,\s+vertexColor,\s+texCoord0,\s+ringIntrinsicDistance,\s+ringHandoffDistance\)")
+            material = (ROOT / "src/client/resources/assets/ringworld/shaders/include/material.glsl").read_text()
+            self.assertRegex(material, r"RingWorldHandoff\.y,\s+ringHandoffDistance")
             # Material/detail distance stays horizontal, including the X seam.
             self.assertIn("ringIntrinsicDistance = length(vanillaPos.xz)", live_vertex)
             self.assertIn("sin(vertexAngle - ModelOffset.x)", proxy_vertex)

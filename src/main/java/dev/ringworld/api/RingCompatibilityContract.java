@@ -11,10 +11,8 @@ public final class RingCompatibilityContract {
     public static final int VERSION = 1;
 
     private static final List<Conflict> KNOWN_CONFLICTS = List.of(
-            new Conflict("sodium", "Sodium", Area.RENDERER,
-                    "replaces the chunk renderer and terrain shader path RingWorld bends"),
             new Conflict("iris", "Iris", Area.SHADERS,
-                    "owns a shader pipeline that does not implement RingWorld's extended globals"),
+                    "owns a shader pipeline that does not implement RingWorld's curved material contract"),
             new Conflict("vulkanmod", "VulkanMod", Area.RENDERER,
                     "replaces the OpenGL renderer and RingWorld shader contract"),
             new Conflict("canvas", "Canvas Renderer", Area.RENDERER,

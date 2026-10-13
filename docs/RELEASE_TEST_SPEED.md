@@ -43,9 +43,10 @@ must restart with freshly frozen candidates from the corrected source.
 
 ## Next-run preparation (12 October 2026)
 
-The current Windows qualification on `5b53acf` remains unchanged. These changes
-are prepared on `codex/next-release-flow` for a later run; do not merge/pull them
-into an active checkout.
+This preparation was held on `codex/next-release-flow` while the Windows
+qualification ran. The owner authorized integration on 13 October; PR #289 is
+merged. It did not replace that run or its frozen candidates. The later completed
+`57efcb0` coverage and remaining improvements are recorded below.
 
 Measured Windows timing from the retained `75a2f64` run: the 60-fixture 26.1.x
 group took 4h 51m 31s, without infrastructure retries. In a matched creation UI
@@ -95,3 +96,48 @@ retries and independent-group continuation. See `docs/RELEASE_RUNBOOK.md` for
 failure gates and the all-group command. Extraction of the embedded Java test
 harness and safe reuse after harness-only repairs remain a separate change; these
 improvements do not authorize mixing previous-source PASS results into a new run.
+
+## Windows 1.4 build review (13 October 2026)
+
+The `1.4 Build` chat reports 10/10 quick checks, 100/100 reviewed full-fixture
+coverage and six staged, verified JARs at frozen source `57efcb0`. This is
+composite coverage: 98 passes were retained and two failed multiplayer keys
+passed owner-authorized retries. Preserve the original failures and their
+provenance; do not call this a fresh monolithic 100/100 pass. No upload occurred.
+Those six JARs predate the shared rendering compatibility and submerged-camera
+changes in PR #292. Updated patch notes do not update staged binaries: new
+runtime source needs new candidates and qualification before publication.
+
+The two intermittent failures were zombie-navigation arrival assertions on
+26.1.2 NeoForge and 26.2 Fabric. One stopped before the seam; the other crossed
+but stopped short of the target. Four diagnostic runs and the authorized retries
+passed without a code repair. The cause is still unconfirmed. Do not disable AI,
+widen arrival tolerances or automatically classify this as infrastructure.
+
+The combined PR #289/#292 Python contract suite passes 401 tests (two expected
+platform skips on macOS). PR #289 adds independent-fixture/group continuation,
+immutable checkpoints, at most two retries for recognized infrastructure
+failures, and optional private NeoForm cache seeding. It does not automatically
+resume completed coverage or retry assertion failures. Native cache-hit timing
+still needs measurement; source/runtime qualification gates remain unchanged.
+
+Further improvements, in priority order (not implemented by this review):
+
+1. Add a portable resume planner which derives missing/failed cell-fixture keys
+   from existing strict evidence review instead of generating Windows-only
+   scripts by hand. Require identical frozen source, manifest, quick-run identity
+   and candidate hashes; preserve valid passes, immutable failure attempts and
+   composite-review gates. Assertion retries still need explicit authorization.
+2. Add bounded, logging-only navigation diagnostics to the shared multiplayer
+   fixture: path reachability, current/next node, target, actual position,
+   active goals and loaded-chunk state on route changes and assertion failure.
+   Use the correct game APIs and keep existing timing, goals, motion and arrival
+   assertions intact. Passing a later diagnostic run is not a bug fix.
+3. Produce one portable timing summary per run: dependency/setup, game startup,
+   Atlas transfer, required settles, fixture execution, retry/cooldown and
+   evidence/staging. Compare matched cold/warm NeoForge cache runs on both hosts
+   before claiming faster tests. This separates preparation cost from gameplay
+   and avoids cutting deliberate stability waits to improve a headline time.
+
+Keep all 100 full fixtures and ten quick cells. These improvements are for the
+next qualified source; never relabel old PASS evidence after a runtime change.

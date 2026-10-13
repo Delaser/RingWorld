@@ -21,6 +21,16 @@
 - Corrected the 26.3 Atlas renderer to use the world’s saved wall style, height,
   decay and seed consistently with the older supported versions.
 
+## Mod compatibility
+
+- Reworked the shared rendering core to keep Minecraft's shader state intact,
+  improving compatibility with other rendering mods without changing the ring's
+  appearance. Sodium now renders real terrain with the correct curve, walls,
+  water and transition into the Atlas across supported versions and loaders.
+- The distant Atlas no longer shows through the world while the camera is
+  underwater. Nearby blocks keep normal underwater fog, and the ring returns
+  when you resurface, including after a resource reload.
+
 ## Performance and size
 
 - Removed repeated full-Atlas scans when reporting progress in fully generated

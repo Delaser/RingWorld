@@ -4,6 +4,51 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
+## Mod compatibility work (13 October 2026)
+
+The owner requires general mod compatibility without degrading the accepted
+RingWorld visuals. Sodium is the first validation case, not a separate geometry
+implementation. Development used `codex/mod-compatibility-core` from 1.4 source
+`57efcb0`; the owner authorized integration of PRs #289/#292 on 13 October.
+The completed Windows qualification and six staged JARs still belong to
+`57efcb0`. Do not claim that they contain or qualify these later rendering
+changes; new runtime source requires fresh candidates and qualification.
+Keep renderer adapters thin and reuse the same projection, culling, material,
+water, atmosphere and Atlas-handoff contract. No flat-world fallback, disabled
+Atlas or weakened visual gates may be labelled compatibility. The current
+private-uniform refactor preserves Minecraft's Globals ABI and publisher.
+`RingFrameUniformsMixin` owns an independent 176-byte `RingWorld` block on
+GameRenderer: allocate at construction, update at frame start and close at
+shutdown. Reuse RingWorld-namespace projection/handoff/material GLSL and
+immutable `RingRenderView` snapshots for replacement-renderer adapters. Apply equivalent behaviour across
+all supported 26.x versions and both loaders. Terrain/cloud entry points are
+private RingWorld resources selected by pipeline builders; do not restore stock
+shader asset overrides. Optional Sodium format/binding/visibility adapters consume
+this same contract. Native development validation passes all ten supported game/loader
+cells, plus correction/reload, weather, objects and two-client visibility checks;
+see `docs/SODIUM_COMPATIBILITY_2026_10_13.md` for exact builds and limits.
+Do not infer Iris, Nvidium, shader-pack or Vulkan support from Sodium results.
+The exterior-neighbour prototype was not needed and remains unintegrated.
+Use clean natural-world copies and no-mod controls: the old floating-build save
+also has gaps without Sodium. Preserve failed evidence and distinguish a harness
+completion marker from visual acceptance. See `docs/COMPATIBILITY.md`.
+Atlas visibility uses the actual render camera: skip the distant Atlas while
+`getFluidInCamera()` is WATER, retaining GPU resources for resurfacing. Real
+chunks keep vanilla environmental fog. This is a shared immersion policy, not
+a renderer-mod workaround. Clear-air geometry, haze, proxy coverage/depth and
+uniform layouts stay unchanged. The opt-in `ringworld.captureUnderwater`
+fixture uses a disposable world and asserts camera fluid, resurfacing and
+post-reload resurfacing; absent underwater Atlas buffers are intentional.
+Use targeted replacement-renderer checks rather than repeating every feature
+fixture against Sodium. General compatibility remains the design goal.
+Comparison captures must wait for a coherent complete detailed GPU Atlas and
+retirement/completion of its preceding texture crossfade. Do not require the
+newest network revision or an empty worker queue. After setup teleports, wait
+for the camera/rim chunks and consecutive settled ticks: an idle mesher can also
+mean that chunks have not arrived. These are opt-in capture gates, not changes
+to ordinary rendering or the active frozen release qualification.
+
+
 ## Atlas pregeneration concurrency (#253)
 
 The owner approved integration through PR #273 on 9 October 2026. Shared
@@ -1617,9 +1662,11 @@ version numbers.
   creation editor's visible Small-is-experimental/mining advisory. Keep the policy
   flag `volatile`: generation runs on worker threads. Missing-policy legacy
   worlds must remain untouched.
-- The extended Globals UBO publishes the complete format-3 layout and render
-  profile. Its std140 field order, `GlobalSettings` allocation, and every
-  custom program that declares Globals must change together.
+- Compatibility work moves the complete render layout/profile into the private
+  176-byte RingWorld UBO. Keep its std140 field order, allocation and consuming
+  shaders synchronized, while preserving vanilla Globals and its publisher.
+  The released 1.4 baseline still uses the historical extended Globals layout;
+  do not confuse development validation with qualification of that release.
 - The dedicated multiplayer clients must not connect before
   `Minecraft.isGameLoadFinished()`. Joining during the initial resource
   reload can run leaf display ticks against unprepared particle sprites.
@@ -1715,7 +1762,7 @@ version numbers.
   target leaves the old-chart path behind and can stop navigation at the seam.
 - `RingRenderProfile` visual-policy version 5 owns the live/proxy/detail
   transitions, reveal, haze, and local cloud fade. Keep Java profile fields
-  and the seven appended RingWorld Globals vectors synchronized. The 2026-08-01
+  and the private RingWorld uniform block synchronized. The 2026-08-01
   6/12/28 review retained its deterministic interleaved-gradient dither; an
   unordered pixel-hash experiment produced worse salt-and-pepper grain and was
   rejected. Profile 5 also raises the circumference mesh cap to 2,048 so the

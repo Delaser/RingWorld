@@ -22,6 +22,10 @@ during heavy chunk loading and unloading.
 Completed-world progress reports also avoid repeatedly scanning the Atlas for
 each player; see [the three-client server trial](docs/SERVER_MULTIPLAYER_LOAD_2026_10_10.md).
 
+The distant Atlas is hidden while the camera is underwater.
+Nearby real blocks keep normal underwater fog; resurfacing restores the ring.
+See [compatibility development and validation](docs/SODIUM_COMPATIBILITY_2026_10_13.md).
+
 ## What does it look like?
 
 Nearby Minecraft terrain visibly curves away from you. Beyond normal render
@@ -289,3 +293,14 @@ server source resolution; `/ringworld lod reset` follows the server default.
 The choice resets on disconnect. It changes local display samples, texture
 budget and mesh density, without changing terrain, server settings, or downloads.
 A client cannot recover finer terrain detail than the server Atlas contains.
+
+### Rendering compatibility development
+
+The `codex/mod-compatibility-core` draft separates RingWorld-owned uniforms and
+shared projection/material rules from Minecraft's shader state. Sodium now uses
+that same curve and Atlas handoff. Native development checks pass on Fabric and
+NeoForge for Minecraft 26.1, 26.1.1, 26.1.2, 26.2 and 26.3, using Sodium 0.8.9/0.9.2
+as listed in the [validation record](docs/SODIUM_COMPATIBILITY_2026_10_13.md).
+These results use macOS OpenGL; they do not certify arbitrary modpacks, shader
+packs or other graphics backends. This draft is separate from the active 1.4
+release qualification. See the [compatibility contract](docs/COMPATIBILITY.md).

@@ -29,28 +29,24 @@ flowchart TD
 
 ## Sharing geometry with shaders
 
-`GlobalSettingsMixin` extends Minecraft's shared Globals UBO with named
-RingWorld vectors after the untouched vanilla fields:
+`RingFrameUniformsMixin` publishes a separate 176-byte `RingWorld` UBO from
+GameRenderer. Minecraft's stock Globals layout and publisher remain unchanged.
+The private block holds geometry, handoff/detail/atmosphere, Atlas lighting,
+water sprite bounds and distortion parameters; see
+[the shared compatibility contract](SODIUM_COMPATIBILITY_2026_10_13.md).
+Terrain/cloud entry points live in RingWorld's namespace and include the private
+`render_uniforms.glsl`. Matching material pipelines bind both vanilla and private
+uniforms. Optional renderer adapters consume the same shared contract.
 
-```text
-RingWorldLayout   = active, circumference, width, saved wall height
-RingWorldVertical = surface reference Y, wall top Y, cloud base Y, physical centre Y
-RingWorldRender   = min Z, max Z exclusive, half circumference, view distance
-RingWorldHandoff  = live fade start/end, proxy fade start/end
-RingWorldDetail   = detail start/end, near/far terrain reveal
-RingWorldAtmosphere = near/far haze, haze exponent, cloud fade start
-RingWorldAtmosphere2 = cloud fade end, visual profile version, inner cloud min/max Z planes
-```
-
-The vanilla camera, screen, time, menu-blur, and RGSS values keep their normal
-types and meanings. Terrain, cloud, and complete-ring shaders include the same
-overridden `globals.glsl`, and the custom ring pipeline declares Globals too.
-Values are rebuilt each frame from negotiated immutable settings, actual
-Overworld bounds, and `RingRenderProfile`.
-
-This remains a version-sensitive shader ABI extension. Any Minecraft shader or
-`GlobalSettings` upgrade must audit the std140 field order, buffer size, and
-all overridden programs.
+The actual render camera controls submerged Atlas visibility. If its fluid is
+WATER, `RingSurfaceTextureRenderer.render` returns before preparing/drawing the
+distant surface. Existing GPU buffers remain available for resurfacing. Real
+chunks retain Minecraft's normal underwater fog. A submerged reload may clear
+Atlas buffers; they rebuild normally after resurfacing. This is loader-neutral,
+requires no Sodium-specific hook and changes no above-water shader, coverage,
+geometry or depth policy. The opt-in `ringworld.captureUnderwater` fixture checks
+actual fluid state and above/submerged/near-surface/resurfaced/reload recovery in
+a disposable world; normal rendering fixtures remain unchanged.
 
 ## Real terrain curvature
 

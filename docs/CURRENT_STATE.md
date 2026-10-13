@@ -1,5 +1,23 @@
 # Large-server lighting allocation — development validation complete
 
+October 13 follow-up: the distant Atlas is suppressed only while the actual
+render camera is in water. Nearby chunks keep Minecraft fog and clear-air
+Atlas rendering is unchanged. The owner selected this simpler shared policy
+instead of adding underwater Atlas shader fog. All six camera/reload states pass on 26.1.2 Fabric, 26.2 NeoForge at two chunks,
+26.3 Fabric and a targeted 26.3 NeoForge + Sodium check. All 11 CI checks pass
+at rendering source `6223469`; see the compatibility evidence record. The
+frozen Windows 1.4 candidates remain unchanged.
+
+October 13: PR #292 (`codex/mod-compatibility-core`) separates private RingWorld
+shader state and validates Sodium through thin adapters to the shared rendering
+contract. All five supported game versions pass seam/rim checks on both loaders;
+correction/reload, full-terrain lighting, objects and two-client exterior/seam
+visibility also pass on the recorded representatives. The obsolete Sodium
+conflict notice is removed on this branch. Native evidence is macOS OpenGL;
+release qualification and the active Windows candidate remain separate.
+See [the validation record](SODIUM_COMPATIBILITY_2026_10_13.md).
+
+
 October 11: fresh Windows qualification on `eb414a55` passed all ten quick
 cells and the creation-UI development slice. The full run passed creation UI
 and world generation, then Atlas recovery rejected the game's native

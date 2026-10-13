@@ -18,20 +18,33 @@
     "FogRendererMixin",
     "GuiMixin",
     "LevelRendererMixin",
-    "ClientBlockItemMixin", "ClientBucketItemMixin", "ClientChunkMapMixin",
+    "ClientBlockItemMixin",
+    "ClientBucketItemMixin",
+    "ClientChunkMapMixin",
     "ClientConnectionMixin",
     "ClientPlayNetworkHandlerMixin",
     "ChunkBuilderBuiltChunkMixin",
     "ChunkRenderingDataPreparerMixin",
-    "GlobalSettingsMixin",
+    "RingFrameUniformsMixin",
+    "RingDefaultUniformsMixin",
+    "RingPipelineUniformsMixin",
     "CloudRendererMixin",
     "LivingEntitySleepingPositionMixin",
     "MinecraftMixin",
     "PlayerPositionDebugHudEntryMixin",
     "SkyRenderingMixin",
-    "SpriteContentsAccessor"
+    "SpriteContentsAccessor",
+    "compat.SodiumSimpleFrustumAccessor",
+    "compat.SodiumViewportMixin",
+    "compat.SodiumOcclusionMixin",
+    "compat.SodiumFaceVisibilityMixin",
+    "compat.SodiumPipelineBindingsMixin",
+    "compat.SodiumRenderPassMixin",
+    "compat.SodiumEngineShaderMixin",
+    "compat.SodiumProjectionChangesMixin"
   ],
   "injectors": {
     "defaultRequire": 1
-  }
+  },
+  "plugin": "dev.ringworld.client.compat.RingOptionalRenderMixins"
 }

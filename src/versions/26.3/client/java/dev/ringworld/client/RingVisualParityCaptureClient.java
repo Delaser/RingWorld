@@ -25,7 +25,9 @@ public final class RingVisualParityCaptureClient {
     private static final int MIN_VIEW_DISTANCE_CHUNKS = 2;
     private static final int MAX_VIEW_DISTANCE_CHUNKS = 32;
     private static final int WORLD_OPEN_TIMEOUT_TICKS = 2_400;
-    private static final int ATLAS_READY_TIMEOUT_TICKS = 2_400;
+    // Match the bounded cold-load allowance of ProductionLifecycleTestClient:
+    // 4,194,304 cells alone need 2,048 server ticks at the normal tile budget.
+    private static final int ATLAS_READY_TIMEOUT_TICKS = 6_000;
     private static final int POSITION_TIMEOUT_TICKS = 600;
     private static final int RENDER_TIMEOUT_TICKS = 1_200;
     private static final int SETTLE_TICKS = 120;
@@ -77,7 +79,8 @@ public final class RingVisualParityCaptureClient {
 
         RingGeometry geometry = ClientRingState.geometry();
         RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
-        if (geometry == null || atlas == null || !atlas.isComplete()) {
+        if (geometry == null || atlas == null || !atlas.isComplete()
+                || !dev.ringworld.client.render.RingSurfaceTextureRenderer.captureReady()) {
             if (++atlasReadyTicks > ATLAS_READY_TIMEOUT_TICKS) {
                 finish(client, false, "timed out waiting for complete terrain atlas");
             }
@@ -110,7 +113,9 @@ public final class RingVisualParityCaptureClient {
             client.player.setYRot(view.yaw);
             client.player.setXRot(view.pitch);
         }
-        if (!client.levelRenderer.hasRenderedAllSections()) {
+        if (!chunksAtViewReady(client, geometry, view)
+                || !client.levelRenderer.hasRenderedAllSections()) {
+            settleTicks = 0;
             if (++renderTicks > RENDER_TIMEOUT_TICKS) {
                 finish(client, false, "timed out rendering " + view.id + " position");
             }
@@ -136,13 +141,27 @@ public final class RingVisualParityCaptureClient {
         return true;
     }
 
+    /** An idle mesher can also mean that the teleport's chunks have not arrived. */
+    private static boolean chunksAtViewReady(Minecraft client, RingGeometry geometry, CaptureView view) {
+        int chunkX = client.player.blockPosition().getX() >> 4;
+        int chunkZ = client.player.blockPosition().getZ() >> 4;
+        if (!client.level.getChunkSource().hasChunk(chunkX, chunkZ)) return false;
+        return switch (view) {
+            case MIN_RIM -> client.level.getChunkSource().hasChunk(chunkX, geometry.minChunkZ());
+            case MAX_RIM -> client.level.getChunkSource().hasChunk(chunkX, geometry.maxChunkZ());
+            default -> true;
+        };
+    }
+
     private boolean runNaturalSeamCrossing(
             Minecraft client, RingGeometry geometry, CaptureView view) {
         if (seamCrossed) return true;
         if (!seamArmed) {
             client.player.setYRot(view.yaw);
             client.player.setXRot(view.pitch);
-            if (!client.levelRenderer.hasRenderedAllSections()) {
+            if (!chunksAtViewReady(client, geometry, view)
+                    || !client.levelRenderer.hasRenderedAllSections()) {
+                settleTicks = 0;
                 if (++renderTicks > RENDER_TIMEOUT_TICKS) {
                     finish(client, false, "timed out rendering the seam approach");
                 }

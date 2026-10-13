@@ -3,6 +3,25 @@ plugins {
     id 'net.neoforged.moddev' version "${moddevgradle_version}"
 }
 
+dependencies {
+    if (!rootProject.ext.ringCompatibilityModJars.isEmpty()) {
+        runtimeOnly files(rootProject.ext.ringCompatibilityModJars)
+    }
+}
+
+tasks.named('processResources') {
+    doFirst {
+        ['globals.glsl', 'ringworld_projection.glsl', 'ringworld_handoff.glsl'].each {
+            delete(new File(destinationDir, 'assets/minecraft/shaders/include/' + it))
+        }
+        ['terrain', 'rendertype_clouds', 'clouds'].each { shader ->
+            ['vsh', 'fsh'].each { suffix ->
+                delete(new File(destinationDir, 'assets/minecraft/shaders/core/' + shader + '.' + suffix))
+            }
+        }
+    }
+}
+
 tasks.named('check') {
 	dependsOn(rootProject.tasks.named('verifyOutboundPositionPacketInventory'))
 }

@@ -1,0 +1,399 @@
+{
+  "format": 1,
+  "scope": "native development validation; macOS Apple M2 OpenGL; not frozen release qualification",
+  "rendering_source": "535470c26e092f1ce9c23a0f6fe15f8f1daacac9",
+  "capture_readiness_source": "d0ef612569d4245a822e29d95a20b4eb304815e6",
+  "runs": [
+    {
+      "kind": "all-version-seam-rims",
+      "report": "logs/sodium-compatibility/matrix-20261013T134648Z-057427221f73/status.json",
+      "report_sha256": "77f5b6d7e769439de82e17421dd00d8191de02cae3017598a52d90a4ae336635",
+      "source_commit": "535470c26e092f1ce9c23a0f6fe15f8f1daacac9",
+      "cases": [
+        {
+          "cell": "26.1-fabric",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 178.99
+        },
+        {
+          "cell": "26.1-neoforge",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 217.19
+        },
+        {
+          "cell": "26.1.1-fabric",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 196.23
+        },
+        {
+          "cell": "26.1.1-neoforge",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 184.23
+        },
+        {
+          "cell": "26.1.2-fabric",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 185.62
+        },
+        {
+          "cell": "26.1.2-neoforge",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 185.5
+        },
+        {
+          "cell": "26.2-fabric",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 195.96
+        },
+        {
+          "cell": "26.2-neoforge",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 202.45
+        },
+        {
+          "cell": "26.3-fabric",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 210.92
+        },
+        {
+          "cell": "26.3-neoforge",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 208.5
+        }
+      ]
+    },
+    {
+      "kind": "capture-readiness-repeat",
+      "report": "logs/sodium-compatibility/matrix-20261013T145656Z-55ba9d859913/status.json",
+      "report_sha256": "29b1d0ad877df93663ba9247bde3a72e48da2220dadac622f357d29458cc9122",
+      "source_commit": "d0ef612569d4245a822e29d95a20b4eb304815e6",
+      "cases": [
+        {
+          "cell": "26.1-fabric",
+          "variant": "vanilla",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 186.63
+        },
+        {
+          "cell": "26.1-fabric",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 167.89
+        }
+      ]
+    },
+    {
+      "kind": "correction-old-and-mid",
+      "report": "logs/sodium-compatibility/extra-distortion-20261013T143312Z-9093f21eeb43/status.json",
+      "report_sha256": "3c4b027d47b6af4e25db4ff9b6450e2967a9925fa4191bb8900cec8501b90cae",
+      "source_commit": "535470c26e092f1ce9c23a0f6fe15f8f1daacac9",
+      "cases": [
+        {
+          "cell": "26.1-fabric",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 228.67
+        },
+        {
+          "cell": "26.2-fabric",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 207.58
+        }
+      ]
+    },
+    {
+      "kind": "correction-shared-and-latest",
+      "report": "logs/sodium-compatibility/extra-distortion-20261013T133853Z-44966bf8b479/status.json",
+      "report_sha256": "395fc6c558e75a4cbb137f1d4911cc4838adf487f2a6791c2d2db0348fce4e03",
+      "source_commit": "535470c26e092f1ce9c23a0f6fe15f8f1daacac9",
+      "cases": [
+        {
+          "cell": "26.1.2-fabric",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 126.58
+        },
+        {
+          "cell": "26.3-neoforge",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 220.68
+        }
+      ]
+    },
+    {
+      "kind": "curved-objects",
+      "report": "logs/sodium-compatibility/extra-objects-20261013T143049Z-82a7c1b0cc49/status.json",
+      "report_sha256": "8c00cfc806fff420da276f566e1dd940dc1915e155282822b8f3e67c19d8f181",
+      "source_commit": "535470c26e092f1ce9c23a0f6fe15f8f1daacac9",
+      "cases": [
+        {
+          "cell": "26.1.2-fabric",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 56.94
+        },
+        {
+          "cell": "26.3-neoforge",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 85.21
+        }
+      ]
+    },
+    {
+      "kind": "weather-dimensions-initial",
+      "report": "logs/sodium-compatibility/extra-horizon-20261013T141953Z-06656fed3dec/status.json",
+      "report_sha256": "f8c2ad0c224f31f807ea3f192604b7beee99b8b27ed7bbc818866289033b0a53",
+      "source_commit": "535470c26e092f1ce9c23a0f6fe15f8f1daacac9",
+      "cases": [
+        {
+          "cell": "26.1.2-neoforge",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 177.62
+        },
+        {
+          "cell": "26.2-neoforge",
+          "verdict": "FAIL",
+          "reason": "native fixture did not complete",
+          "elapsed_seconds": 336.06
+        },
+        {
+          "cell": "26.3-neoforge",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 141.98
+        }
+      ]
+    },
+    {
+      "kind": "weather-dimensions-26.2-retry",
+      "report": "logs/sodium-compatibility/extra-horizon-20261013T145324Z-66b374669844/status.json",
+      "report_sha256": "932fa49d12362bbc5908d9b98bc2d285a62b73a3ac8431bde548639c7593f7ca",
+      "source_commit": "d0ef612569d4245a822e29d95a20b4eb304815e6",
+      "cases": [
+        {
+          "cell": "26.2-neoforge",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 136.07
+        }
+      ]
+    },
+    {
+      "kind": "outside-building-off",
+      "report": "logs/sodium-compatibility/matrix-20261013T144029Z-a7139995dcb1/status.json",
+      "report_sha256": "c8686519a76c0967e510ab1bd186aebdacb95259c4fc0ba3d3326708f7014c4c",
+      "source_commit": "535470c26e092f1ce9c23a0f6fe15f8f1daacac9",
+      "cases": [
+        {
+          "cell": "26.1-fabric",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 197.94
+        },
+        {
+          "cell": "26.3-neoforge",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 194.89
+        }
+      ]
+    },
+    {
+      "kind": "two-client-off-ring",
+      "report": "logs/sodium-compatibility/offring-20261013T144735Z-55f4c8f99595/status.json",
+      "report_sha256": "19546c7779dd86f36b7a2c4da6845bb5be5dd155813d8557ae6f733d7cb984d8",
+      "source_commit": "535470c26e092f1ce9c23a0f6fe15f8f1daacac9",
+      "cases": [
+        {
+          "cell": "26.1.2-fabric",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 153.85
+        },
+        {
+          "cell": "26.3-neoforge",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 99.4
+        }
+      ]
+    },
+    {
+      "kind": "full-terrain-lighting",
+      "report": "logs/sodium-compatibility/matrix-20261013T150252Z-17b080fc8d82/status.json",
+      "report_sha256": "eb08a90e8722fed01df89b580b5d454932f0d5ab74a94b960acc43c34847a5be",
+      "source_commit": "d0ef612569d4245a822e29d95a20b4eb304815e6",
+      "cases": [
+        {
+          "cell": "26.1.2-fabric",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 203.26
+        },
+        {
+          "cell": "26.2-fabric",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 210.14
+        },
+        {
+          "cell": "26.3-fabric",
+          "variant": "mods",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 211.19
+        }
+      ]
+    },
+    {
+      "kind": "underwater-final-policy",
+      "report": "logs/sodium-compatibility/extra-underwater-20261013T163548Z-5b218be96886/status.json",
+      "report_sha256": "47964357631991896ca40452de7026eead6f1d6db0b70822b205f515fcbb3c8b",
+      "source_commit": "622346993b701f03e138f5dc2185a347943664e0",
+      "variant": "vanilla",
+      "cases": [
+        {
+          "cell": "26.1.2-fabric",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 142.05
+        }
+      ],
+      "visual_review": "Reviewed all six camera states: far ring absent underwater, nearby gold/glass visible, coherent ring restored above water and after reload."
+    },
+    {
+      "kind": "underwater-final-policy",
+      "report": "logs/sodium-compatibility/extra-underwater-20261013T163810Z-1362cb64ff6c/status.json",
+      "report_sha256": "3058e8e56aa4190aacf935b7da53ae37bfaf5e5fc806ce9275370b6101ce4ee4",
+      "source_commit": "622346993b701f03e138f5dc2185a347943664e0",
+      "variant": "vanilla",
+      "cases": [
+        {
+          "cell": "26.2-neoforge",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 221.1
+        }
+      ],
+      "visual_review": "Reviewed all six camera states: far ring absent underwater, nearby gold/glass visible, coherent ring restored above water and after reload."
+    },
+    {
+      "kind": "underwater-final-policy",
+      "report": "logs/sodium-compatibility/extra-underwater-20261013T164151Z-5094b63ca7d4/status.json",
+      "report_sha256": "695176883b86c1483b28350695de457246a5ba64560e6dafe7985d83e616ed1a",
+      "source_commit": "622346993b701f03e138f5dc2185a347943664e0",
+      "variant": "vanilla",
+      "cases": [
+        {
+          "cell": "26.3-fabric",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 115.72
+        }
+      ],
+      "visual_review": "Reviewed all six camera states: far ring absent underwater, nearby gold/glass visible, coherent ring restored above water and after reload."
+    },
+    {
+      "kind": "underwater-final-policy",
+      "report": "logs/sodium-compatibility/extra-underwater-20261013T164347Z-1a9d6af322ac/status.json",
+      "report_sha256": "f6028ff58deb4501dad28108ac40b9b278d0308fc62cac56b6dbe80689e7762e",
+      "source_commit": "622346993b701f03e138f5dc2185a347943664e0",
+      "variant": "mods",
+      "cases": [
+        {
+          "cell": "26.3-neoforge",
+          "verdict": "FIXTURE_PASS_VISUAL_REVIEW_REQUIRED",
+          "elapsed_seconds": 119.95
+        }
+      ],
+      "visual_review": "Reviewed all six camera states: far ring absent underwater, nearby gold/glass visible, coherent ring restored above water and after reload."
+    }
+  ],
+  "media": [
+    {
+      "path": "sodium-fix-26.3.gif",
+      "bytes": 900713,
+      "sha256": "9949abcfc6d0045ee536ca874d2db261f149487421d105ac8b10d42a75c9c4e6"
+    },
+    {
+      "path": "fixed-sodium-vs-control-26.1.gif",
+      "bytes": 875411,
+      "sha256": "07e8c4dc233b8eba0bb77a38b680329b33c2242afcb473e5e9ef15b3e985bd31"
+    },
+    {
+      "path": "lighting-weather-26.3.jpg",
+      "bytes": 309457,
+      "sha256": "33fd98fa9a76bd93079cdd0f024efbdf061b39b57b8787489efdbfa6c75525f6"
+    }
+  ],
+  "comparisons": [
+    {
+      "gif": "fixed-sodium-vs-control-26.1.gif",
+      "source_commit": "d0ef612569d4245a822e29d95a20b4eb304815e6",
+      "sources": [
+        {
+          "path": "logs/sodium-compatibility/matrix-20261013T145656Z-55ba9d859913/26.1-fabric-vanilla/screenshots/ringworld-visual-parity-seam.png",
+          "sha256": "620b007a2ae155dc388f3858004270d6ae83611f902ed013e02373cb0f81e253"
+        },
+        {
+          "path": "logs/sodium-compatibility/matrix-20261013T145656Z-55ba9d859913/26.1-fabric-mods/screenshots/ringworld-visual-parity-seam.png",
+          "sha256": "01fb30f8c36672c167f83c285cb3a9544f2a52bd29a85ce78556e592eb5e04de"
+        }
+      ]
+    },
+    {
+      "gif": "sodium-fix-26.3.gif",
+      "sources": [
+        {
+          "source_commit": "57efcb0",
+          "path": "logs/sodium-compatibility/matrix-20261013T115840Z-601c956630b2/26.3-fabric-mods/screenshots/ringworld-visual-parity-seam.png",
+          "sha256": "60b3b2d121b65e00070bf6debe54c4c5fafa04eba8bc9aeb281079dc826f47f3"
+        },
+        {
+          "source_commit": "535470c",
+          "path": "logs/sodium-compatibility/matrix-20261013T134648Z-057427221f73/26.3-fabric-mods/screenshots/ringworld-visual-parity-seam.png",
+          "sha256": "189131fc93b81787de00139e7d7a886878814b3ff664eb2cf7416cf13e572848"
+        }
+      ]
+    }
+  ],
+  "visual_review": {
+    "matrix": "Reviewed seam/join and both rim views across all ten cells; initial 26.1 Fabric grey/blank frames retained and superseded by the matched readiness repeat.",
+    "readiness_repeat": "Both four-view controls reviewed; complete Atlas colours and both walls present.",
+    "lighting": "Reviewed all three twelve-view contact sheets across noon, dusk, night and rain.",
+    "other_fixtures": "Native assertions and representative object, dimension, weather and off-ring images reviewed; off-ring PNG count/decoding and adapter activation independently checked."
+  },
+  "underwater_rendering_source": "622346993b701f03e138f5dc2185a347943664e0",
+  "underwater_policy": "Skip Atlas rendering for actual render camera in WATER; real chunk fog and clear-air shaders unchanged.",
+  "underwater_media": [
+    {
+      "path": "underwater-before-after-26.3.gif",
+      "sha256": "1871bcedf87d0b4b11095ebafb1a39a17051995432a48338771bd0ad6508830e"
+    },
+    {
+      "path": "underwater-controls-26.3.jpg",
+      "sha256": "648514f20f9424cf557d93ab9ee79ccbc68c9e81ffea16e3c515862fdc79ab94"
+    }
+  ],
+  "underwater_pixel_metrics": {
+    "above": {
+      "upper_third_mean_absolute_rgb_difference": 0.02386685206869633,
+      "upper_third_changed_pixel_fraction": 0.0017033811475409837
+    },
+    "submerged": {
+      "upper_third_mean_absolute_rgb_difference": 9.674070550351288,
+      "upper_third_changed_pixel_fraction": 0.46177912763466045
+    },
+    "surface": {
+      "upper_third_mean_absolute_rgb_difference": 9.888120852849337,
+      "upper_third_changed_pixel_fraction": 0.44690061475409837
+    },
+    "resurfaced": {
+      "upper_third_mean_absolute_rgb_difference": 0.02386685206869633,
+      "upper_third_changed_pixel_fraction": 0.0017033811475409837
+    },
+    "reload": {
+      "upper_third_mean_absolute_rgb_difference": 9.142799204722873,
+      "upper_third_changed_pixel_fraction": 0.3053553132318501
+    }
+  }
+}

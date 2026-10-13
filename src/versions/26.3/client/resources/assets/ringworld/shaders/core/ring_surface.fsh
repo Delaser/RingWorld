@@ -4,7 +4,8 @@
 #include <minecraft:dynamictransforms.glsl>
 #include <minecraft:fog.glsl>
 #include <minecraft:globals.glsl>
-#include <minecraft:ringworld_handoff.glsl>
+#include <ringworld:render_uniforms.glsl>
+#include <ringworld:handoff.glsl>
 
 uniform sampler2D Sampler0;
 uniform sampler2D Sampler1;
@@ -204,5 +205,5 @@ void main() {
     // The incomplete texture is deliberately opaque: real generated colours
     // flavour nearby unknown cells, then each published revision cross-fades
     // into the next instead of exposing a hard tile update.
-    fragColor = vec4(mix(ring_handoff_edge_color(), litTerrain, reveal), proxyAlpha);
+    fragColor = vec4(mix(ring_handoff_edge_color(FogColor.rgb), litTerrain, reveal), proxyAlpha);
 }

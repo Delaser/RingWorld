@@ -18,13 +18,11 @@ import net.minecraft.world.phys.Vec3;
 public final class CurvedRingFrustum extends Frustum {
     private static final int INTERSECTING = -1;
 
-    private final RingGeometry geometry;
-    private final Vec3 cameraPosition;
+    private final RingRenderView view;
 
     public CurvedRingFrustum(Frustum original, RingGeometry geometry, Vec3 cameraPosition) {
         super(original);
-        this.geometry = geometry;
-        this.cameraPosition = cameraPosition;
+        this.view = RingRenderView.capture(geometry, cameraPosition);
     }
 
     @Override
@@ -37,10 +35,10 @@ public final class CurvedRingFrustum extends Frustum {
 
     @Override
     public boolean isVisible(AABB canonicalBox) {
-        AABB local = dev.ringworld.client.RingDistortionTuning.bounds(geometry, canonicalBox, cameraPosition);
+        AABB local = view.bounds(canonicalBox);
         // Frustum stores an absolute camera origin and subtracts it internally.
         // Rebase the already camera-local curved envelope to that origin.
-        AABB rebased = local.move(cameraPosition);
+        AABB rebased = local.move(view.camera());
         return super.isVisible(rebased);
     }
 }

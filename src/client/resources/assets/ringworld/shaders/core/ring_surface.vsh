@@ -2,7 +2,8 @@
 
 #moj_import <minecraft:dynamictransforms.glsl>
 #moj_import <minecraft:globals.glsl>
-#moj_import <minecraft:ringworld_projection.glsl>
+#moj_import <ringworld:render_uniforms.glsl>
+#moj_import <ringworld:projection.glsl>
 #moj_import <minecraft:projection.glsl>
 
 in vec3 Position;

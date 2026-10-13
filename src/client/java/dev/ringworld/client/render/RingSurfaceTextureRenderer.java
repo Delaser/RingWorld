@@ -86,13 +86,18 @@ public final class RingSurfaceTextureRenderer {
         // callbacks normally destroy those resources; this guard makes the
         // world-hash boundary authoritative even if a callback is missed.
         if (atlas == null) return;
+        Minecraft client = Minecraft.getInstance();
+        // Distant scenery must not remain visible through underwater fog.
+        // Use the render camera (also correct for third person), retain buffers
+        // for resurfacing, and leave real chunks to Minecraft's normal fog.
+        if (dev.ringworld.client.RingMinecraftClientAccess.camera(client).getFluidInCamera()
+                == net.minecraft.world.level.material.FogType.WATER) return;
         long resourceStarted = System.nanoTime();
         ensureResources(geometry, atlas);
         flagRenderStall("surface resource update (including allocation/release)", resourceStarted);
         if (!geometry.equals(bufferedGeometry) || atlas.worldHash() != bufferedWorldHash
                 || vertexBuffer == null || surfaceTexture == null || vertexCount == 0) return;
 
-        Minecraft client = Minecraft.getInstance();
         float textureMorph = updateTextureMorph(System.nanoTime());
         float visibleCompletion = previousSurfaceTextureView == null
                 ? surfaceCompletion
@@ -538,6 +543,19 @@ public final class RingSurfaceTextureRenderer {
             levels++;
         }
         return levels;
+    }
+
+    /** A complete published scene, including the preceding side of its cross-fade.
+     * Newer complete revisions may still be building; they do not invalidate
+     * the coherent complete scene already displayed. Client-thread only. */
+    public static boolean captureReady() {
+        var atlas = ClientRingState.terrainAtlas();
+        return atlas != null && atlas.isComplete()
+                && vertexBuffer != null && vertexCount > 0 && surfaceTexture != null && bufferedMeshDetailed
+                && bufferedWorldHash == atlas.worldHash()
+                && bufferedGeometry != null && bufferedGeometry.equals(ClientRingState.geometry())
+                && surfaceCompletion >= 1.0F
+                && (previousSurfaceTextureView == null || previousSurfaceCompletion >= 1.0F);
     }
 
     public static boolean displayReady() {
