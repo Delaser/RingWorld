@@ -200,6 +200,17 @@ from fresh frozen-candidate release qualification.
 
 ## Release-test setup and captures
 
+Next-run release-flow work is isolated on `codex/next-release-flow`. Do not
+interrupt or change the active Windows `5b53acf` qualification to adopt it.
+After integration, prefer `scripts/run_release_full_matrix.py` for serial
+60+20+20 coverage: independent fixture/group failures continue, every result
+checkpoints and only recognized pre-claim infrastructure failures retry (two
+retries, unchanged cooldown). Failures remain failures and block staging.
+Optional indexed NeoForm intermediates accelerate setup through the existing
+verified Loom seed, with private copies per child; never share writable caches
+or worlds. See `docs/RELEASE_TEST_SPEED.md`. This does not yet detach the Java
+harness or authorize reuse across changed-source candidates.
+
 An authorized release agent must self-correct routine host/harness/tooling
 failures within the existing scope: diagnose the actual cause, preserve failed
 evidence, repair on a branch, add a regression, validate the failing fixture,

@@ -11,6 +11,9 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
+from contextlib import ExitStack
 
 ROOT = Path(__file__).resolve().parents[1]
 SCRIPTS = ROOT / "scripts"
@@ -308,6 +311,44 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
         with self.assertRaisesRegex(NightlyMatrixError, "bounded"):
             _cooldown(601, sleeper=intervals.append)
 
+    def test_failed_fixture_does_not_skip_independent_work_and_checkpoints_each_result(self) -> None:
+        import run_minecraft_nightly_matrix as runner
+        from minecraft_qualification_model import Verdict
+        with tempfile.TemporaryDirectory() as directory, ExitStack() as stack:
+            root = Path(directory)
+            cells = [{"id": "26.1-fabric", "loader": "fabric", "minecraft": {"version": "26.1"}, "profile": {"id": "safe-small", "evidence_directory": "dist/qualification/ringworld/26.1/fabric"}}]
+            planned = {"cells": ["26.1-fabric"], "complete_matrix_selection": True,
+                       "multiplayer_cooldown_seconds": 120,
+                       "commands": [{"cell": "26.1-fabric", "fixture": f, "argv": [f]}
+                                    for f in ("creation-ui", "atlas-ui")]}
+            child = SimpleNamespace(stdout_log="stdout", stderr_log="stderr", reason=None,
+                                    verdict=Verdict.PASS, argv=("runner",), return_code=0,
+                                    started_at_utc="2026-10-12T00:00:00Z", elapsed_seconds=1)
+            prepared = SimpleNamespace(candidate=SimpleNamespace(sha256="candidate"),
+                                       quick_terminal_evidence=SimpleNamespace(sha256="quick"))
+            replacements = {
+                "collect_source_provenance": SimpleNamespace(commit="source"),
+                "validate_gradle_dependency_cache": None, "validate_gradle_distribution_zip": None,
+                "load_manifest": {"cells": cells}, "prepare_invocation": prepared,
+                "create_contained_directories": None, "_verify_terminals": (),
+                "_retain_terminal_artifacts": (), "_cleanup_disposable_child_state": ((), None),
+            }
+            for name, value in replacements.items():
+                stack.enter_context(patch.object(runner, name, return_value=value))
+            execute = stack.enter_context(patch.object(runner, "execute_command", return_value=child))
+            stack.enter_context(patch.object(runner, "_last_json", side_effect=[
+                {"verdict": "FAIL", "reason": "assertion failed", "run_id": "failed"},
+                {"verdict": "PASS", "run_id": "passed"}]))
+            writes = stack.enter_context(patch.object(runner, "write_terminal_report"))
+            result = runner.execute(self.arguments(), planned, repository_root=root)
+            self.assertEqual(2, execute.call_count)
+            self.assertEqual(["FAIL", "PASS"], [r["verdict"] for r in result["results"]])
+            self.assertEqual("FAIL", result["verdict"])
+            self.assertEqual(["checkpoint-0001", "checkpoint-0002", "terminal"],
+                             [c.kwargs["stem"] for c in writes.call_args_list])
+            self.assertTrue(all(c.args[1]["verdict"] == "INCOMPLETE"
+                                for c in writes.call_args_list[:-1]))
+
     def test_retry_is_narrowly_limited_to_pre_claim_server_startup_timeout(self) -> None:
         startup_timeout = "timed out waiting for marker 'Done ('"
         untouched_claims = {"dedicated_server": False, "two_real_clients": False}
@@ -325,8 +366,10 @@ class MinecraftNightlyMatrixTest(unittest.TestCase):
             "FAIL", "raid terminal marker is missing", {"claims": untouched_claims}))
         self.assertTrue(_schedule_infrastructure_retry(
             1, "FAIL", startup_timeout, {"claims": untouched_claims}))
-        self.assertFalse(_schedule_infrastructure_retry(
+        self.assertTrue(_schedule_infrastructure_retry(
             2, "FAIL", startup_timeout, {"claims": untouched_claims}))
+        self.assertFalse(_schedule_infrastructure_retry(
+            3, "FAIL", startup_timeout, {"claims": untouched_claims}))
 
     def test_retry_classifies_only_exact_unclaimed_gradle_download_failure(self) -> None:
         payload = {"claims": {

@@ -40,3 +40,103 @@ places and removes stone, a natural material which must remain represented.
 Its revision, height, removal, handshake and normal-disconnect assertions remain
 required. The stopped run and logs remain under `logs/release-1.4`; qualification
 must restart with freshly frozen candidates from the corrected source.
+
+## Next-run preparation (12 October 2026)
+
+The current Windows qualification on `5b53acf` remains unchanged. These changes
+are prepared on `codex/next-release-flow` for a later run; do not merge/pull them
+into an active checkout.
+
+Measured Windows timing from the retained `75a2f64` run: the 60-fixture 26.1.x
+group took 4h 51m 31s, without infrastructure retries. In a matched creation UI
+fixture, Fabric spent 87.63s before the first game log and 42.98s afterwards;
+NeoForge spent 183.87s before the first game log and 41.00s afterwards. This
+identifies preparation as a substantial contributor, but is not a measured speedup
+for the next-run change. The 120-second settles remain intact.
+
+ModDevGradle 2.0.147's `NeoFormRuntimeTask` places its compiled intermediate cache
+at `GradleUserHome/caches/neoformruntime/intermediate_results`. Every isolated
+fixture currently discards that directory. The existing seed supplies Mojang
+downloads and assets, so repeated NeoForm compilation can remain despite it.
+
+An optional acceleration snapshot now lives beside the existing external Loom
+seed, without another runner flag. With the source worker stopped, use the same
+Python command on Windows or macOS, substituting that host's absolute paths:
+
+```text
+python scripts/minecraft_neoform_seed.py --source-cache "PATH_TO_TRUSTED_GRADLE_HOME/caches/neoformruntime" --loom-seed "PATH_TO_EXISTING_EXTERNAL_LOOM_SEED"
+```
+
+Provision only from a trusted worker using the pinned Minecraft/NeoForge tools.
+The SHA-256 inventory checks snapshot integrity; it is not vendor authentication
+or qualification evidence. The provisioner refuses to overwrite a snapshot and
+accepts only bounded plain intermediate JAR/ZIP/TXT files. Locks, worlds, credentials,
+RingWorld build outputs and mutable runtime state are excluded. A failed snapshot
+has no valid completed inventory and must not be used; provision a fresh seed.
+
+All eight Gradle fixture runners and quick preparation consume the optional
+inventory through `--gradle-loom-cache`. Before staging they validate its hashes,
+then copy files into each NeoForge child's private Gradle home and check the copies
+against the inventory. Fabric ignores these intermediate files. NeoForm still
+checks its own cache keys and regenerates missing or incompatible artifacts.
+The external snapshot is never writable/shared by running children. If the optional
+inventory is absent, setup behaves as before; a present corrupt inventory fails
+explicitly rather than silently becoming trusted. Keep the stopped source cache
+and existing external seed unchanged while qualification runs.
+
+No native cold/warm timing or Minecraft integration result is claimed for this
+snapshot yet. On the next run, compare the same NeoForge fixture with/without the
+optional snapshot, recording preparation time, actual cache hit/compile logs,
+candidate hashes and fixture results. Repeat on Windows and macOS before treating
+the acceleration as proven. Keep full release coverage and source-world isolation.
+
+The next coordinator preserves per-fixture checkpoints, bounded infrastructure
+retries and independent-group continuation. See `docs/RELEASE_RUNBOOK.md` for
+failure gates and the all-group command. Extraction of the embedded Java test
+harness and safe reuse after harness-only repairs remain a separate change; these
+improvements do not authorize mixing previous-source PASS results into a new run.
+
+## Windows 1.4 build review (13 October 2026)
+
+The `1.4 Build` chat reports 10/10 quick checks, 100/100 reviewed full-fixture
+coverage and six staged, verified JARs at frozen source `57efcb0`. This is
+composite coverage: 98 passes were retained and two failed multiplayer keys
+passed owner-authorized retries. Preserve the original failures and their
+provenance; do not call this a fresh monolithic 100/100 pass. No upload occurred.
+Those six JARs predate the shared rendering compatibility and submerged-camera
+changes in PR #292. Updated patch notes do not update staged binaries: new
+runtime source needs new candidates and qualification before publication.
+
+The two intermittent failures were zombie-navigation arrival assertions on
+26.1.2 NeoForge and 26.2 Fabric. One stopped before the seam; the other crossed
+but stopped short of the target. Four diagnostic runs and the authorized retries
+passed without a code repair. The cause is still unconfirmed. Do not disable AI,
+widen arrival tolerances or automatically classify this as infrastructure.
+
+The combined PR #289/#292 Python contract suite passes 401 tests (two expected
+platform skips on macOS). PR #289 adds independent-fixture/group continuation,
+immutable checkpoints, at most two retries for recognized infrastructure
+failures, and optional private NeoForm cache seeding. It does not automatically
+resume completed coverage or retry assertion failures. Native cache-hit timing
+still needs measurement; source/runtime qualification gates remain unchanged.
+
+Further improvements, in priority order (not implemented by this review):
+
+1. Add a portable resume planner which derives missing/failed cell-fixture keys
+   from existing strict evidence review instead of generating Windows-only
+   scripts by hand. Require identical frozen source, manifest, quick-run identity
+   and candidate hashes; preserve valid passes, immutable failure attempts and
+   composite-review gates. Assertion retries still need explicit authorization.
+2. Add bounded, logging-only navigation diagnostics to the shared multiplayer
+   fixture: path reachability, current/next node, target, actual position,
+   active goals and loaded-chunk state on route changes and assertion failure.
+   Use the correct game APIs and keep existing timing, goals, motion and arrival
+   assertions intact. Passing a later diagnostic run is not a bug fix.
+3. Produce one portable timing summary per run: dependency/setup, game startup,
+   Atlas transfer, required settles, fixture execution, retry/cooldown and
+   evidence/staging. Compare matched cold/warm NeoForge cache runs on both hosts
+   before claiming faster tests. This separates preparation cost from gameplay
+   and avoids cutting deliberate stability waits to improve a headline time.
+
+Keep all 100 full fixtures and ten quick cells. These improvements are for the
+next qualified source; never relabel old PASS evidence after a runtime change.
