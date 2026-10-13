@@ -231,6 +231,13 @@ and the large sky gaps at the seam are closed. The newer 26.2/26.3 no-mod contro
 also complete. Their Sodium startup checks identified the moved occlusion policy:
 the modern adapter modifies the boolean passed to `prepareRenderTrees`, which
 the worker captures; the older adapter retains `shouldUseOcclusionCulling`. A
-shared frame hook marks only the visibility graph dirty when correction mode or
+shared visibility-demand hook marks only the visibility graph dirty when correction mode or
 distance changes, covering stationary-camera command changes without remeshing.
 These repairs require repeat native checks; earlier failed evidence is retained.
+
+The projection-change check runs before `needsUpdate` returns: older Sodium
+skips its update method entirely when the graph is clean, so checking inside
+update would miss a command issued with a stationary camera. The shared demand
+hook covers both old and asynchronous renderers without new meshes. The first
+corrected 26.2 and 26.3 Fabric seam/rim capture runs now complete as well; wider
+loader coverage and native correction/reload checks remain in progress.

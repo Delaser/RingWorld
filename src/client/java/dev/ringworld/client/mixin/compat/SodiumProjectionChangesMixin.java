@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /** Refresh only visibility when a stationary player's projection settings change. */
 @Pseudo
@@ -18,8 +18,8 @@ abstract class SodiumProjectionChangesMixin {
     @Unique private boolean ringworld$initialized, ringworld$enabled;
     @Unique private int ringworld$chunks;
 
-    @Inject(method = {"update", "prepareRender"}, at = @At("HEAD"), require = 1)
-    private void ringworld$projectionChanged(CallbackInfo ci) {
+    @Inject(method = "needsUpdate", at = @At("HEAD"))
+    private void ringworld$projectionChanged(CallbackInfoReturnable<Boolean> cir) {
         if (ClientRingState.geometry() == null) return;
         boolean enabled = RingDistortionTuning.enabled();
         int chunks = RingDistortionTuning.chunks();
