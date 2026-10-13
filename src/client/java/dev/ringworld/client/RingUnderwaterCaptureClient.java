@@ -14,8 +14,8 @@ import net.minecraft.world.level.material.FogType;
 /** Opt-in, muted, disposable submerged-camera regression, shared by both loaders. */
 public final class RingUnderwaterCaptureClient {
     private static final RingUnderwaterCaptureClient INSTANCE = new RingUnderwaterCaptureClient();
-    private static final double[] HEIGHTS = {127.0, 121.0, 124.25, 127.0, 121.0};
-    private static final String[] NAMES = {"above", "submerged", "surface", "resurfaced", "reload"};
+    private static final double[] HEIGHTS = {127.0, 121.0, 124.25, 127.0, 121.0, 127.0};
+    private static final String[] NAMES = {"above", "submerged", "surface", "resurfaced", "reload", "reload-resurfaced"};
     private int ticks, stage, settle;
     private boolean opening, creating, setupRequested, positionRequested, pending;
     private volatile boolean setupReady;
@@ -30,7 +30,10 @@ public final class RingUnderwaterCaptureClient {
         client.options.getSoundSourceOptionInstance(net.minecraft.sounds.SoundSource.MASTER).set(0.0);
         client.options.pauseOnLostFocus = false;
         client.options.inactivityFpsLimit().set(net.minecraft.client.InactivityFpsLimit.MINIMIZED);
-        if (++ticks > 6_000) return fail(client, "timeout stage=" + stage);
+        if (++ticks > 6_000) return fail(client, "timeout stage=" + stage
+                + " atlasReady=" + RingSurfaceTextureRenderer.captureReady()
+                + " screen=" + RingMinecraftClientAccess.screen(client)
+                + " reload=" + (reload == null ? "not requested" : reload.isDone()));
         if (failure != null) return fail(client, failure);
         if (client.level == null || client.player == null) {
             if (!client.isGameLoadFinished() || creating) return true;
@@ -73,9 +76,8 @@ public final class RingUnderwaterCaptureClient {
             }
             return true;
         }
-        if (!RingSurfaceTextureRenderer.captureReady()) return true;
         if (stage == NAMES.length) {
-            RingWorldMod.LOGGER.info("[underwater-capture] PASS: camera fluid assertions, above/submerged/surface/resurfaced/reload; pixel review required");
+            RingWorldMod.LOGGER.info("[underwater-capture] PASS: camera fluid assertions, above/submerged/surface/resurfaced/reload/reload-resurfaced; pixel review required");
             client.stop();
             return true;
         }
@@ -95,13 +97,18 @@ public final class RingUnderwaterCaptureClient {
             if (!reload.isDone()) return true;
             if (reload.isCompletedExceptionally()) return fail(client, "reload failed");
         }
-        FogType expected = stage == 0 || stage == 3 ? FogType.NONE : FogType.WATER;
+        // Sodium can legitimately omit the whole sky pass underwater. After
+        // reload its Atlas buffers stay absent until resurfacing; require their
+        // recovery in stage 5 instead of waiting forever in submerged stage 4.
+        if (stage != 4 && !RingSurfaceTextureRenderer.captureReady()) { settle = 0; return true; }
+        FogType expected = stage == 0 || stage == 3 || stage == 5 ? FogType.NONE : FogType.WATER;
         if (RingMinecraftClientAccess.camera(client).getFluidInCamera() != expected
                 || !client.level.getChunkSource().hasChunk(32, 0)
                 || !client.levelRenderer.hasRenderedAllSections()) { settle = 0; return true; }
         if (++settle < 120) return true;
-        RingWorldMod.LOGGER.info("[underwater-capture] {} fluid={} camera={} atlasReady=true",
-                NAMES[stage], expected, RingMinecraftClientAccess.camera(client).position());
+        RingWorldMod.LOGGER.info("[underwater-capture] {} fluid={} camera={} atlasReady={}",
+                NAMES[stage], expected, RingMinecraftClientAccess.camera(client).position(),
+                RingSurfaceTextureRenderer.captureReady());
         pending = true;
         String name = "underwater-" + NAMES[stage] + ".png";
         RingMinecraftClientAccess.grabScreenshot(client.gameDirectory, name,

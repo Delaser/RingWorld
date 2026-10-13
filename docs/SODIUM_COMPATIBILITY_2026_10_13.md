@@ -154,4 +154,13 @@ The first 26.3 fix run (`extra-underwater-20261013T161231Z-722f93d0eb9f`)
 failed shader compilation because the added varying lacked an explicit SPIR-V
 location. It was stopped and retained as FAIL. Both stages now use location 7;
 a static ABI regression checks matching explicit, unique locations for every
-proxy varying. Fix validation is pending below.
+proxy varying. The first Sodium run (`extra-underwater-20261013T161733Z-d700b29c3bde`)
+passed the four initial camera views but timed out at the submerged reload gate.
+Sodium deliberately suppresses the sky pass while immersed. After reload, the
+Atlas has no reason to rebuild GPU buffers until that pass resumes. The fixture
+now permits absent GPU buffers for that one submerged post-reload capture and
+requires a sixth, resurfaced frame with a fully rebuilt coherent detailed Atlas.
+Initial above/submerged/surface/resurfaced captures still require readiness.
+The partial NeoForge case was stopped before capture to apply this fixture repair;
+no rendering change was made for this intentional Sodium sky suppression.
+Fix validation is pending below.
