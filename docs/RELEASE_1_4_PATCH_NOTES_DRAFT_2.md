@@ -58,6 +58,16 @@
 - Corrected distant wall settings on Minecraft 26.3 > Wall style, height, decay
   and seed now match the saved world settings consistently across supported versions.
 
+## Mod compatibility
+
+- Reworked the shared rendering core > Improves compatibility with rendering
+  mods while preserving the existing ring appearance.
+- Fixed Sodium's terrain curve and Atlas transition > Real blocks, walls and
+  water now line up with the distant ring across supported versions and loaders.
+- Hide the distant Atlas underwater > Nearby blocks keep normal water fog,
+  without the far ring showing through; resurfacing restores the ring, including
+  after a resource reload.
+
 ## Download size and cleanup
 
 - Compressed the wall preview images > Smaller downloads while keeping the
