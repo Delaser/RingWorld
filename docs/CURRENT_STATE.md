@@ -1,3 +1,9 @@
+October 13 release-tooling follow-up: same-source resume planning, bounded
+multiplayer navigation traces, descriptive timing summaries and combined
+multiplayer/raid preparation+assets are implemented for development validation.
+Original Windows 57efcb0 candidates/results remain unchanged; this is not fresh
+release qualification. See `docs/RELEASE_TEST_SPEED.md`.
+
 # Large-server lighting allocation — development validation complete
 
 October 13 follow-up: the distant Atlas is suppressed only while the actual

@@ -19,10 +19,16 @@ GROUPS = (
 )
 
 
+def label_option(name: str) -> str:
+    return name.removeprefix('quick_').replace('_', '-')
+
+
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(description=__doc__)
     for _, _, name in GROUPS:
         result.add_argument('--' + name.replace('_', '-'), required=True)
+        result.add_argument('--resume-' + label_option(name), action='append', default=[])
+    result.add_argument('--retry-failed-fixtures', action='store_true')
     result.add_argument('--production-world', required=True)
     for option in ('gradle-dependency-cache', 'gradle-distribution-zip', 'gradle-loom-cache'):
         result.add_argument('--' + option)
@@ -35,6 +41,10 @@ def run_group(arguments: argparse.Namespace, manifest: str, quick_id: str) -> di
         '--manifest', manifest, '--quick-run-id', quick_id,
         '--production-world', arguments.production_world,
         *(['--execute'] if arguments.execute else []),
+        *(['--retry-failed-fixtures'] if getattr(arguments, 'retry_failed_fixtures', False) else []),
+        *[value for _, group_manifest, name in GROUPS if group_manifest == manifest
+          for path in getattr(arguments, 'resume_' + label_option(name).replace('-', '_'), [])
+          for value in ('--resume-aggregate', path)],
         *[value for name in ('gradle_dependency_cache', 'gradle_distribution_zip', 'gradle_loom_cache')
           if getattr(arguments, name, None) for value in ('--' + name.replace('_', '-'), getattr(arguments, name))],
     ])
@@ -56,10 +66,13 @@ def run_groups(arguments: argparse.Namespace, *, executor: Callable = run_group,
                         'groups': list(results)}, len(results))
     commits = {r['report'].get('started_source_commit') for r in results if 'report' in r}
     same_source = len(commits) == 1 and None not in commits
-    return {'format': 1, 'mode': 'EXECUTED' if arguments.execute else 'DRY_RUN',
-            'verdict': ('PASS' if arguments.execute and same_source
-                        and all(r['verdict'] == 'PASS' for r in results)
-                        else 'FAIL' if arguments.execute else 'INCOMPLETE'), 'groups': results}
+    covered = all(r['verdict'] in {'PASS', 'COMPOSITE_COVERAGE_REVIEWED'} for r in results)
+    composite = any(r['verdict'] == 'COMPOSITE_COVERAGE_REVIEWED' for r in results)
+    verdict = ('COMPOSITE_COVERAGE_REVIEWED' if composite else 'PASS') if arguments.execute and same_source and covered else ('FAIL' if arguments.execute else 'INCOMPLETE')
+    timing_groups = [{'group': row['group'], 'timing': row.get('report', {}).get('timing_summary')}
+                     for row in results]
+    return {'timing_groups': timing_groups, 'format': 2, 'mode': 'EXECUTED' if arguments.execute else 'DRY_RUN',
+            'verdict': verdict, 'monolithic_pass': verdict == 'PASS', 'groups': results}
 
 
 def main() -> int:
@@ -75,10 +88,16 @@ def main() -> int:
     result = run_groups(arguments, checkpoint=checkpoint if arguments.execute else None)
     if arguments.execute:
         result['run_id'] = run_id
+        from minecraft_qualification_timing import markdown
+        timings = [row['timing'] for row in result['timing_groups'] if row['timing'] is not None]
+        combined = {'format': 1, 'fixtures': [row for timing in timings for row in timing['fixtures']],
+                    'limitations': ['Group timings are descriptive; missing groups have no measured timing.'],
+                    'groups': result['timing_groups']}
+        write_terminal_report(evidence, combined, markdown(combined), stem='timing')
         write_terminal_report(evidence,
                               result, '# Full release matrix\n\nVerdict: ' + result['verdict'] + '\n')
     print(json.dumps(result, sort_keys=True))
-    return 0 if not arguments.execute or result['verdict'] == 'PASS' else 1
+    return 0 if not arguments.execute or result['verdict'] in {'PASS', 'COMPOSITE_COVERAGE_REVIEWED'} else 1
 
 
 if __name__ == '__main__':

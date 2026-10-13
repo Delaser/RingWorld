@@ -141,3 +141,48 @@ Further improvements, in priority order (not implemented by this review):
 
 Keep all 100 full fixtures and ten quick cells. These improvements are for the
 next qualified source; never relabel old PASS evidence after a runtime change.
+
+## Resume, diagnostics and setup batching (13 October 2026 follow-up)
+
+The three improvements from the Windows build review are implemented on
+`codex/release-test-resume-speed`:
+
+- The nightly planner accepts repeated `--resume-aggregate` inputs. The all-group
+  wrapper forwards repeated `--resume-26-1`, `--resume-26-2`, `--resume-26-3`
+  flags. Both dry-run selection and execution independently validate the same
+  source, quick candidate/evidence, manifest SHA-256 and production inventory.
+  Reused PASS terminals and relocated captures/logs pass the existing strict
+  source-ABI/exact-candidate review. Only missing/INCOMPLETE keys run by default.
+  `--retry-failed-fixtures` explicitly authorizes rerunning recorded FAIL keys;
+  it does not waive assertions or erase attempts. Duplicate cumulative
+  checkpoints with identical terminals are accepted; ambiguous replacements,
+  changed evidence and incomplete key coverage cannot qualify. Reports lacking
+  a manifest digest remain on the manual review route. Source changes cannot
+  inherit old coverage.
+- Resumed complete coverage is `COMPOSITE_COVERAGE_REVIEWED` with
+  `monolithic_pass=false`. Fresh complete coverage keeps PASS. Partial selection
+  stays INCOMPLETE and failures stay FAIL. All 100 keys and ten quick cells remain.
+- Shared multiplayer diagnostics log the zombie's path/node/reachability,
+  movement target, running goals and already-loaded source/current/target chunks.
+  Normal traces are capped at 32 records, with terminal arrival/failure always
+  recorded. The accessor only reads goals. No path recomputation, chunk loading,
+  AI changes or altered timing/arrival tolerance is introduced.
+- Each nightly and all-group execution writes immutable `timing.json` and
+  `timing.md` beside its terminal. The report separates setup/assets,
+  concurrent runtime intervals, verification, retries, configured settles,
+  unclassified overhead and time from skipped prior commands. Recorded local
+  offsets permit first-game-log observations independent of review-host timezone;
+  bounded game logs provide observed initial Atlas-to-detailed intervals.
+  Observations overlap other buckets and are not additive. Missing measurements
+  are not invented. These reports do not change qualification verdicts.
+
+The additional speed pass batches multiplayer and raid preparation plus asset
+warmup into one Gradle command. Across ten cells this removes twenty Gradle JVM
+startups/configurations. Each fixture still gets isolated writable caches/worlds,
+unchanged post-prepare/raid settles, server/client ordering, frozen-JAR checks,
+raid reload and verifiers. This is an operation-count improvement, not a measured
+percentage reduction in full-release wall time. Do not reuse mutable caches or
+combine unrelated native fixtures to claim a larger improvement.
+
+Validation and native development measurements are recorded after testing below.
+No new release candidates are qualified or uploaded by this tooling change.

@@ -203,16 +203,27 @@ from fresh frozen-candidate release qualification.
 
 ## Release-test setup and captures
 
-Next-run release-flow work is isolated on `codex/next-release-flow`. Do not
-interrupt or change the active Windows `5b53acf` qualification to adopt it.
-After integration, prefer `scripts/run_release_full_matrix.py` for serial
-60+20+20 coverage: independent fixture/group failures continue, every result
-checkpoints and only recognized pre-claim infrastructure failures retry (two
-retries, unchanged cooldown). Failures remain failures and block staging.
-Optional indexed NeoForm intermediates accelerate setup through the existing
-verified Loom seed, with private copies per child; never share writable caches
-or worlds. See `docs/RELEASE_TEST_SPEED.md`. This does not yet detach the Java
-harness or authorize reuse across changed-source candidates.
+Release tooling uses `scripts/run_release_full_matrix.py` for serial 60+20+20
+coverage on Windows/macOS. Independent failures continue, results checkpoint,
+and only recognized pre-claim infrastructure failures get two automatic retries.
+Same-source resume accepts explicit `--resume-26-1`, `--resume-26-2` and
+`--resume-26-3` aggregates/checkpoints. Validate current source, strict quick
+candidate/evidence, manifest digest, production-world inventory and every reused
+terminal/artifact hash before skipping any key. Missing/INCOMPLETE keys run;
+FAIL keys remain blocked unless the operator explicitly selects
+`--retry-failed-fixtures`. Keep original failure records. Completed resumed
+coverage is `COMPOSITE_COVERAGE_REVIEWED`, never a monolithic PASS. Older reports
+without a manifest digest need the existing manual composite review. Changed
+runtime/source needs new candidates; do not reuse the completed Windows 57efcb0
+results for later changes. Resume planning and execution must agree exactly.
+Every nightly/all-group run emits descriptive timing JSON/Markdown; concurrent
+process durations use interval unions and reused time is separate. Do not turn
+unmeasured setup/cache speed into a claimed benchmark. Multiplayer/raid prepare
+and asset tasks share one Gradle process before unchanged settle/runtime phases.
+Navigation fixture diagnostics are bounded and read-only: never alter goals,
+paths, loaded chunks or arrival tolerances to make a flaky test pass.
+Optional immutable NeoForm seeds still use hash-checked private copies per child.
+See `docs/RELEASE_TEST_SPEED.md` and `docs/RELEASE_RUNBOOK.md`.
 
 An authorized release agent must self-correct routine host/harness/tooling
 failures within the existing scope: diagnose the actual cause, preserve failed

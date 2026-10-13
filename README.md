@@ -26,6 +26,9 @@ The distant Atlas is hidden while the camera is underwater.
 Nearby real blocks keep normal underwater fog; resurfacing restores the ring.
 See [compatibility development and validation](docs/SODIUM_COMPATIBILITY_2026_10_13.md).
 
+Release checks can resume verified same-source fixture coverage without repeating
+completed tests; see [the release runbook](docs/RELEASE_RUNBOOK.md).
+
 ## What does it look like?
 
 Nearby Minecraft terrain visibly curves away from you. Beyond normal render

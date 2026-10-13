@@ -341,6 +341,7 @@ def _process_record(name: str, process: subprocess.Popen[bytes], output: Path,
                     started: str, elapsed: float) -> dict[str, Any]:
     return {
         "name": name, "exit_code": process.returncode, "started_at": started,
+        "started_at_local": datetime.fromisoformat(started).astimezone().isoformat(),
         "elapsed_seconds": elapsed, "output": str(output), "output_sha256": _sha256(output),
     }
 
@@ -350,6 +351,7 @@ def _executed_record(name: str, result: Any) -> dict[str, Any]:
         "name": name, "phase": result.phase, "verdict": result.verdict.value,
         "argv": list(result.argv), "exit_code": result.return_code,
         "started_at": result.started_at_utc, "elapsed_seconds": result.elapsed_seconds,
+        "started_at_local": datetime.fromisoformat(result.started_at_utc).astimezone().isoformat(),
         "stdout": result.stdout_log, "stderr": result.stderr_log, "reason": result.reason,
     }
 
@@ -423,15 +425,11 @@ def _execute(prepared: AtlasRecoveryInvocation, dependency_cache: Path | None,
     eula.write_text("# Disposable qualification runtime only.\neula=true\n", encoding="utf-8")
 
     commands: list[dict[str, Any]] = []
-    prepare = execute_command(_record(prepared, (tasks["prepare"],), timeout, dependency_cache), paths, ordinal=1)
-    commands.append(_executed_record("prepare", prepare))
+    prepare = execute_command(_record(prepared, (tasks["prepare"], tasks["assets"]), timeout, dependency_cache), paths, ordinal=1)
+    commands.append(_executed_record("prepare-and-assets", prepare))
     if prepare.verdict is not Verdict.PASS:
         raise GradleMultiplayerError("fixture preparation failed")
     installed = _verify_installed_candidates(prepared)
-    assets = execute_command(_record(prepared, (tasks["assets"],), timeout, dependency_cache), paths, ordinal=2)
-    commands.append(_executed_record("assets", assets))
-    if assets.verdict is not Verdict.PASS:
-        raise GradleMultiplayerError("serial asset warmup failed")
     _configure_client_frame_caps(paths.run_directory / "run-multiplayer")
     _post_prepare_settle(post_prepare_settle_seconds)
 

@@ -75,6 +75,7 @@ final class RingWorldExtendedMultiplayerTest {
     private static BlockPos overworldNetherPortal;
     private static BlockPos expectedOverworldPortalReturn;
     private static Zombie seamNavigator;
+    private static final RingNavigationFixtureTrace NAVIGATION_TRACE = new RingNavigationFixtureTrace();
     private static final RingMultiplayerPhaseTelemetry COLD_TELEMETRY = new RingMultiplayerPhaseTelemetry();
     private static RingMultiplayerReadinessGate postEndWeatherGate;
     private static boolean weatherArmed;
@@ -193,6 +194,7 @@ final class RingWorldExtendedMultiplayerTest {
 
     private static void awaitFixture(ServerLevel world, RingGeometry geometry,
                                      ServerPlayer playerA, ServerPlayer playerB) {
+        NAVIGATION_TRACE.record(world, geometry, seamNavigator, ticks, "progress");
         boolean serverChest = doubleChestValid(world, geometry);
         boolean serverLectern = world.getBlockEntity(lecternPos()) instanceof LecternBlockEntity lectern
                 && lectern.hasBook()
@@ -220,9 +222,11 @@ final class RingWorldExtendedMultiplayerTest {
         boolean clientsPassed = RingWorldMultiplayerTest.clientPassed("A", "extended_fixture")
                 && RingWorldMultiplayerTest.clientPassed("B", "extended_fixture");
         if (serverFixturePassed && clientsPassed) {
+            NAVIGATION_TRACE.record(world, geometry, seamNavigator, ticks, "arrival");
             prepareBed(world, geometry, playerA);
             advance(2);
         } else if (ticks >= TIMEOUT_TICKS) {
+            NAVIGATION_TRACE.record(world, geometry, seamNavigator, ticks, "failure");
             RingWorldMod.LOGGER.error(
                     "[multiplayer-extended] fixture result=false (doubleChest={}, aliasRecovery={}, lectern={}, redstone={}, waterReachedDestination={}, navigationStarted={}, navigatorFolded={}, navigatorPathDone={}, navigatorReachedTarget={}, navigatorX={}, navigatorZ={}, explosion={}, clientA={}, clientB={})",
                     serverChest, aliasRecoveryPassed, serverLectern, redstone,
@@ -285,8 +289,10 @@ final class RingWorldExtendedMultiplayerTest {
         seamNavigator.setPos(circumference - 5.5, 120.0, 15.5);
         world.addFreshEntity(seamNavigator);
         seamNavigator.setOnGround(true);
+        NAVIGATION_TRACE.reset();
         navigationStarted = false;
         navigationStarted = seamNavigator.getNavigation().moveTo(2.5, 120.0, 15.5, 1.0);
+        NAVIGATION_TRACE.record(world, geometry, seamNavigator, 0, "armed");
         RingWorldMod.LOGGER.info(
                 "[multiplayer-extended] seam navigator armed started={} sourceX={} target={} path={}",
                 navigationStarted, seamNavigator.getX(), seamNavigator.getNavigation().getTargetPos(),
