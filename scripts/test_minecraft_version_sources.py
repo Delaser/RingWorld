@@ -41,6 +41,23 @@ def adapter_contract(path: Path) -> set[tuple[str, str, str]]:
 
 
 class MinecraftVersionSourcesTest(unittest.TestCase):
+    def test_private_uniform_bridge_is_present_in_every_selected_abi(self):
+        # ABI selection adds one version directory, not all older directories.
+        # Code shared by 26.1 and 26.2 must therefore live in shared sources.
+        for relative in ("render/RingRenderUniforms.java", "mixin/RingDefaultUniformsMixin.java"):
+            shared = ROOT / "src/client/java/dev/ringworld/client" / relative
+            current = VERSION_ROOT / "26.3/client/java/dev/ringworld/client" / relative
+            self.assertTrue(shared.is_file(), relative)
+            self.assertTrue(current.is_file(), relative)
+        for abi in ("26.1", "26.2", "26.3"):
+            pipeline = VERSION_ROOT / abi / "client/java/dev/ringworld/client/mixin/RingPipelineUniformsMixin.java"
+            self.assertTrue(pipeline.is_file(), abi)
+        for config in (ROOT / "src/main/resources/ringworld.client.mixins.json",
+                       VERSION_ROOT / "26.3/main/resources/ringworld.client.mixins.json"):
+            text = config.read_text()
+            self.assertIn('"RingDefaultUniformsMixin"', text)
+            self.assertIn('"RingPipelineUniformsMixin"', text)
+
     def test_atlas_renderer_logic_matches_across_gpu_package_abis(self):
         shared = (ROOT / "src/client/java/dev/ringworld/client/render/RingSurfaceTextureRenderer.java").read_text()
         current = (VERSION_ROOT / "26.3/client/java/dev/ringworld/client/render/RingSurfaceTextureRenderer.java").read_text()
