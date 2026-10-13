@@ -225,3 +225,12 @@ The initial adapter/native control pair also exceeded the old visual-parity
 Completion, rendered-section, pose and screenshot checks are unchanged; this
 changes only the opt-in fixture deadline, not game behaviour or the active frozen
 Windows qualification. Preserve the original failed runs.
+
+Native follow-up: the first corrected 26.1.2 Fabric control/Sodium pair completes
+and the large sky gaps at the seam are closed. The newer 26.2/26.3 no-mod controls
+also complete. Their Sodium startup checks identified the moved occlusion policy:
+the modern adapter modifies the boolean passed to `prepareRenderTrees`, which
+the worker captures; the older adapter retains `shouldUseOcclusionCulling`. A
+shared frame hook marks only the visibility graph dirty when correction mode or
+distance changes, covering stationary-camera command changes without remeshing.
+These repairs require repeat native checks; earlier failed evidence is retained.

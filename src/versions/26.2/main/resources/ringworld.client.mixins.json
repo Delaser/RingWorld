@@ -39,7 +39,8 @@
     "compat.SodiumFaceVisibilityMixin",
     "compat.SodiumPipelineBindingsMixin",
     "compat.SodiumRenderPassMixin",
-    "compat.SodiumEngineShaderMixin"
+    "compat.SodiumEngineShaderMixin",
+    "compat.SodiumProjectionChangesMixin"
   ],
   "injectors": {
     "defaultRequire": 1
