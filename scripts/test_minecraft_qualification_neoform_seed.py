@@ -4,7 +4,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from minecraft_neoform_seed import NeoFormSeedError, provision, verified_files
+from minecraft_neoform_seed import NeoFormSeedError, provision, provision_many, verified_files
 
 
 class NeoFormSeedTest(unittest.TestCase):
@@ -59,3 +59,56 @@ class NeoFormSeedTest(unittest.TestCase):
                 with self.assertRaisesRegex(NeoFormSeedError, 'changed while snapshotting'):
                     provision(cache, seed)
             self.assertFalse((seed / 'neoform-seed.json').exists())
+
+    def test_stale_source_metadata_is_rejected_before_creating_a_seed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cache, seed = root / 'cache', root / 'seed'
+            (cache / 'intermediate_results').mkdir(parents=True)
+            (cache / 'intermediate_results/decompile_abc_output.zip').write_bytes(b'old output')
+            (cache / 'artifacts').mkdir()
+            (cache / 'artifacts/minecraft_26.1.2_version_manifest.json').write_text('old asset index')
+            (seed / '26.1.2').mkdir(parents=True)
+            metadata = seed / '26.1.2/mojang_minecraft_info.json'
+            metadata.write_text('current asset index')
+            with self.assertRaisesRegex(NeoFormSeedError, 'differs from Loom seed for 26.1.2'):
+                provision(cache, seed)
+            self.assertFalse((seed / 'neoformruntime').exists())
+            # A freshly warmed worker with the same metadata may be snapshotted.
+            (cache / 'artifacts/minecraft_26.1.2_version_manifest.json').write_bytes(metadata.read_bytes())
+            provision(cache, seed)
+            self.assertEqual(1, len(verified_files(seed)))
+
+    def test_multiple_version_caches_combine_and_deduplicate_identical_inputs(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            sources = [root / '26.1', root / '26.2']
+            seed = root / 'seed'; seed.mkdir()
+            for index, cache in enumerate(sources):
+                (cache / 'intermediate_results').mkdir(parents=True)
+                (cache / 'intermediate_results/preProcessJar_common_output.jar').write_bytes(b'shared')
+                (cache / f'intermediate_results/recompile_version{index}_output.jar').write_bytes(bytes([index]))
+            provision_many(sources, seed)
+            self.assertEqual(3, len(verified_files(seed)))
+
+    def test_conflicting_same_key_outputs_never_create_a_seed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            sources = [root / 'first', root / 'second']
+            seed = root / 'seed'; seed.mkdir()
+            for index, cache in enumerate(sources):
+                (cache / 'intermediate_results').mkdir(parents=True)
+                (cache / 'intermediate_results/recompile_same_output.jar').write_bytes(bytes([index]))
+            with self.assertRaisesRegex(NeoFormSeedError, 'conflicting'):
+                provision_many(sources, seed)
+            self.assertFalse((seed / 'neoformruntime').exists())
+
+    def test_source_metadata_cannot_traverse_seed_root(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            cache, seed = root / 'cache', root / 'seed'
+            (cache / 'intermediate_results').mkdir(parents=True)
+            (cache / 'artifacts').mkdir(); seed.mkdir()
+            (cache / 'artifacts/minecraft_.._version_manifest.json').write_text('bad')
+            with self.assertRaisesRegex(NeoFormSeedError, 'version is invalid'):
+                provision(cache, seed)

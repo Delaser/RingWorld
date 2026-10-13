@@ -10,6 +10,7 @@ import json
 from pathlib import Path
 import re
 import shutil
+from typing import Sequence
 
 INDEX = 'neoform-seed.json'
 NAME = re.compile(r'[A-Za-z0-9_-]+\.(?:jar|zip|txt)')
@@ -73,38 +74,68 @@ def verified_files(root: Path) -> tuple[Path, ...]:
 
 def provision(source: Path, root: Path) -> None:
     """Snapshot a stopped, trusted worker cache beside an existing Loom seed."""
-    if source.is_symlink() or not source.is_dir() or root.is_symlink() or not root.is_dir():
+    provision_many((source,), root)
+
+
+def provision_many(sources: Sequence[Path], root: Path) -> None:
+    """Combine stopped per-version caches; refuse stale metadata and collisions."""
+    if (not sources or root.is_symlink() or not root.is_dir()
+            or any(source.is_symlink() or not source.is_dir() for source in sources)):
         raise NeoFormSeedError('cache and seed must be plain directories')
     if any(path.exists() or path.is_symlink() for path in (root / INDEX, root / 'neoformruntime')):
         raise NeoFormSeedError('refusing to overwrite an existing NeoForm seed')
-    base = source / 'intermediate_results'
-    if base.is_symlink() or not base.is_dir():
-        raise NeoFormSeedError('missing plain intermediate_results directory')
-    entries, total = [], 0
-    for path in sorted(base.iterdir()):
-        if path.is_symlink() or not path.is_file() or not NAME.fullmatch(path.name):
-            raise NeoFormSeedError('unexpected intermediate cache entry')
-        total += path.stat().st_size
-        if total > MAX_BYTES or len(entries) >= 2000:
-            raise NeoFormSeedError('NeoForm cache exceeds snapshot limits')
-        entries.append({'name': path.name, 'bytes': path.stat().st_size, 'sha256': digest(path)})
+    entries, inputs, total = {}, {}, 0
+    for source in sources:
+        artifacts = source / 'artifacts'
+        if artifacts.is_symlink():
+            raise NeoFormSeedError('NeoForm artifacts directory is a symlink')
+        for metadata in artifacts.glob('minecraft_*_version_manifest.json'):
+            version = metadata.name.removeprefix('minecraft_').removesuffix('_version_manifest.json')
+            if version in {'.', '..'} or not re.fullmatch(r'[A-Za-z0-9._-]+', version):
+                raise NeoFormSeedError('NeoForm metadata version is invalid')
+            expected = root / version / 'mojang_minecraft_info.json'
+            if expected.exists() or expected.is_symlink():
+                if (metadata.is_symlink() or not metadata.is_file()
+                        or expected.parent.is_symlink() or expected.is_symlink() or not expected.is_file()):
+                    raise NeoFormSeedError('NeoForm source metadata is not a plain file')
+                if digest(metadata) != digest(expected):
+                    raise NeoFormSeedError(
+                        f'NeoForm source metadata differs from Loom seed for {version}; '
+                        'warm a fresh isolated worker with the current Loom seed before snapshotting')
+        base = source / 'intermediate_results'
+        if base.is_symlink() or not base.is_dir():
+            raise NeoFormSeedError('missing plain intermediate_results directory')
+        for path in sorted(base.iterdir()):
+            if path.is_symlink() or not path.is_file() or not NAME.fullmatch(path.name):
+                raise NeoFormSeedError('unexpected intermediate cache entry')
+            item = {'name': path.name, 'bytes': path.stat().st_size, 'sha256': digest(path)}
+            if path.name in entries:
+                if entries[path.name] != item:
+                    raise NeoFormSeedError('conflicting NeoForm intermediate cache entries')
+                continue
+            total += item['bytes']
+            if total > MAX_BYTES or len(entries) >= 2000:
+                raise NeoFormSeedError('NeoForm cache exceeds snapshot limits')
+            entries[path.name], inputs[path.name] = item, path
     if not entries:
         raise NeoFormSeedError('NeoForm cache is empty')
     target = root / 'neoformruntime' / 'intermediate_results'
     target.mkdir(parents=True)
-    for item in entries:
-        shutil.copyfile(base / item['name'], target / item['name'])
+    inventory = [entries[name] for name in sorted(entries)]
+    for item in inventory:
+        shutil.copyfile(inputs[item['name']], target / item['name'])
         if digest(target / item['name']) != item['sha256']:
             raise NeoFormSeedError('NeoForm cache changed while snapshotting')
     with (root / INDEX).open('x', encoding='utf-8') as stream:
-        json.dump({'format': 1, 'files': entries}, stream, sort_keys=True)
+        json.dump({'format': 1, 'files': inventory}, stream, sort_keys=True)
     verified_files(root)
 
 
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--source-cache', type=Path, required=True)
+    parser.add_argument('--source-cache', type=Path, action='append', required=True,
+                        help='Stopped trusted NeoForm cache; repeat for supported versions')
     parser.add_argument('--loom-seed', type=Path, required=True)
     args = parser.parse_args()
-    provision(args.source_cache, args.loom_seed)
+    provision_many(args.source_cache, args.loom_seed)

@@ -60,3 +60,21 @@ node records, rather than inferring reuse from copied files or UP-TO-DATE tasks.
 Record seed-copy cost separately from Gradle/NFRt work. Cache inputs never qualify
 a JAR or permit reuse across changed runtime source. Measurements and host scope
 will be recorded after the native probe finishes.
+
+The first probe identified a stale source-cache metadata problem: the global
+NeoForm cache used version-manifest SHA-1 `a5ba42111e0de7712d677c458bd0dbfc9f36482e`,
+while the authenticated Loom seed used `78941de799d2675be5bddca699b245d7cbd567ae`.
+The only differing JSON field was `assetIndex`. The decompile cache key includes
+the full version manifest, so its key changed from
+`696d1977f66a4a0a000e7e056366503a9e9218f4` to
+`7ed02a2b17d84ea688b90a5e130d8660e6dfcf79`. Copied old intermediates reused only
+preprocessing and did not materially accelerate setup.
+
+Snapshot provisioning now rejects a source manifest that differs from the
+destination's corresponding Loom metadata before creating a snapshot. Repeated
+`--source-cache` inputs combine the stopped per-version quick workers; identical
+intermediate keys must have identical bytes. No stale input, filename/hash
+rewriting, live shared cache or assertion waiver is introduced. Missing optional
+source metadata/legacy inventories retain their existing behavior, so a snapshot
+is still not a universal promise of hits. Warm with the actual pinned tools and
+read-only dependency-cache layout, and inspect native node records.
