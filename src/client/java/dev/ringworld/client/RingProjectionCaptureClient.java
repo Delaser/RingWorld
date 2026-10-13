@@ -87,7 +87,8 @@ public final class RingProjectionCaptureClient {
 
         RingGeometry geometry = ClientRingState.geometry();
         var atlas = ClientRingState.terrainAtlas();
-        if (geometry == null || atlas == null || !atlas.isComplete()) {
+        if (geometry == null || atlas == null || !atlas.isComplete()
+                || !dev.ringworld.client.render.RingSurfaceTextureRenderer.captureReady()) {
             if (!waitingLogged) {
                 waitingLogged = true;
                 RingWorldMod.LOGGER.info(

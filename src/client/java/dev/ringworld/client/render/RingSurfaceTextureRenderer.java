@@ -540,6 +540,19 @@ public final class RingSurfaceTextureRenderer {
         return levels;
     }
 
+    /** A complete published scene, including the preceding side of its cross-fade.
+     * Newer complete revisions may still be building; they do not invalidate
+     * the coherent complete scene already displayed. Client-thread only. */
+    public static boolean captureReady() {
+        var atlas = ClientRingState.terrainAtlas();
+        return atlas != null && atlas.isComplete()
+                && vertexBuffer != null && vertexCount > 0 && surfaceTexture != null && bufferedMeshDetailed
+                && bufferedWorldHash == atlas.worldHash()
+                && bufferedGeometry != null && bufferedGeometry.equals(ClientRingState.geometry())
+                && surfaceCompletion >= 1.0F
+                && (previousSurfaceTextureView == null || previousSurfaceCompletion >= 1.0F);
+    }
+
     public static boolean displayReady() {
         return vertexBuffer != null && surfaceTexture != null && pendingTextureBuild == null
                 && bufferedAtlasRevision == ClientRingState.terrainAtlasRevision();
