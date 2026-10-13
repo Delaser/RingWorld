@@ -4,6 +4,7 @@
 #include <minecraft:fog.glsl>
 #include <minecraft:oit.glsl>
 #include <minecraft:globals.glsl>
+#include <ringworld:render_uniforms.glsl>
 
 layout(location = 0) in float vertexDistance;
 layout(location = 1) in vec4 vertexColor;

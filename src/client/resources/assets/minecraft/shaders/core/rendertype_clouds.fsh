@@ -2,6 +2,7 @@
 
 #moj_import <minecraft:fog.glsl>
 #moj_import <minecraft:globals.glsl>
+#moj_import <ringworld:render_uniforms.glsl>
 
 in float vertexDistance;
 in vec4 vertexColor;

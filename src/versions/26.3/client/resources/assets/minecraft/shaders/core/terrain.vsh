@@ -3,6 +3,7 @@
 
 #include <minecraft:fog.glsl>
 #include <minecraft:globals.glsl>
+#include <ringworld:render_uniforms.glsl>
 #include <minecraft:ringworld_projection.glsl>
 #include <minecraft:terrainglobals.glsl>
 #ifndef MULTIDRAW_TERRAIN

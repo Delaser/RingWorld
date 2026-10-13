@@ -24,6 +24,8 @@
     "ChunkBuilderBuiltChunkMixin",
     "ChunkRenderingDataPreparerMixin",
     "GlobalSettingsMixin",
+    "RingDefaultUniformsMixin",
+    "RingPipelineUniformsMixin",
     "CloudRendererMixin",
     "LivingEntitySleepingPositionMixin",
     "MinecraftMixin",

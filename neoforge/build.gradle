@@ -3,6 +3,18 @@ plugins {
     id 'net.neoforged.moddev' version "${moddevgradle_version}"
 }
 
+dependencies {
+    if (!rootProject.ext.ringCompatibilityModJars.isEmpty()) {
+        runtimeOnly files(rootProject.ext.ringCompatibilityModJars)
+    }
+}
+
+tasks.named('processResources') {
+    doFirst {
+        delete(new File(destinationDir, 'assets/minecraft/shaders/include/globals.glsl'))
+    }
+}
+
 tasks.named('check') {
 	dependsOn(rootProject.tasks.named('verifyOutboundPositionPacketInventory'))
 }

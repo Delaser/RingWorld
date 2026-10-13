@@ -4,6 +4,23 @@ This file is the first-stop operating guide for coding agents working in this
 repository. Read it before changing topology, networking, world generation, or
 rendering. Detailed design documents live under [`docs/`](docs/README.md).
 
+## Mod compatibility work (13 October 2026)
+
+The owner requires general mod compatibility without degrading the accepted
+RingWorld visuals. Sodium is the first validation case, not a separate geometry
+implementation. Work on `codex/mod-compatibility-core` from 1.4 source `57efcb0`;
+do not interrupt, pull into or replace the active Windows qualification.
+Keep renderer adapters thin and reuse the same projection, culling, material,
+water, atmosphere and Atlas-handoff contract. No flat-world fallback, disabled
+Atlas or weakened visual gates may be labelled compatibility. The current
+private-uniform refactor preserves Minecraft's Globals ABI and publisher and
+adds a separate 176-byte `RingWorld` block. Apply equivalent behaviour across
+all supported 26.x versions and both loaders. The new Sodium neighbour hook is
+only a prototype; do not remove unsupported notices or claim support from it.
+Use clean natural-world copies and no-mod controls: the old floating-build save
+also has gaps without Sodium. Preserve failed evidence and distinguish a harness
+completion marker from visual acceptance. See `docs/COMPATIBILITY.md`.
+
 ## Atlas pregeneration concurrency (#253)
 
 The owner approved integration through PR #273 on 9 October 2026. Shared
@@ -1606,9 +1623,11 @@ version numbers.
   creation editor's visible Small-is-experimental/mining advisory. Keep the policy
   flag `volatile`: generation runs on worker threads. Missing-policy legacy
   worlds must remain untouched.
-- The extended Globals UBO publishes the complete format-3 layout and render
-  profile. Its std140 field order, `GlobalSettings` allocation, and every
-  custom program that declares Globals must change together.
+- Compatibility work moves the complete render layout/profile into the private
+  176-byte RingWorld UBO. Keep its std140 field order, allocation and consuming
+  shaders synchronized, while preserving vanilla Globals and its publisher.
+  The released 1.4 baseline still uses the historical extended Globals layout;
+  do not confuse development validation with qualification of that release.
 - The dedicated multiplayer clients must not connect before
   `Minecraft.isGameLoadFinished()`. Joining during the initial resource
   reload can run leaf display ticks against unprepared particle sprites.

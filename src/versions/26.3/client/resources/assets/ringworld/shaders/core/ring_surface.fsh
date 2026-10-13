@@ -4,6 +4,7 @@
 #include <minecraft:dynamictransforms.glsl>
 #include <minecraft:fog.glsl>
 #include <minecraft:globals.glsl>
+#include <ringworld:render_uniforms.glsl>
 #include <minecraft:ringworld_handoff.glsl>
 
 uniform sampler2D Sampler0;

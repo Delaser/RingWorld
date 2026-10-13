@@ -1,5 +1,54 @@
 # Compatibility contract
 
+## Compatibility work based on 1.4 (13 October 2026)
+
+The owner requires a broadly compatible rendering architecture, using Sodium as
+the first test case, without reducing RingWorld's accepted visual quality.
+Work is isolated on `codex/mod-compatibility-core`, based on `57efcb0`.
+The active Windows release qualification and its frozen candidates remain
+unchanged. No third-party combination is newly qualified by this work yet.
+
+The first core change removes RingWorld's replacement of Minecraft's shared
+`Globals` include and buffer publisher. RingWorld data instead occupies a private
+176-byte `RingWorld` uniform block under `assets/ringworld`. Minecraft updates its
+own uniforms normally; the standard default-binding path adds the private buffer,
+and only shaders consuming it get the corresponding pipeline binding. This keeps
+the existing projection, fade, water, atmosphere and nearby-correction values.
+Incremental resource processing must remove the obsolete packaged Globals override.
+
+Use one shared visual contract for the vanilla renderer and replacement-renderer
+adapters. Adapters may translate vertex formats, buffer binding and visibility
+hooks; they must not introduce an alternative ring geometry or poorer fallback.
+Keep the current CPU/GPU projection, height-dependent visibility, seams, wall
+alignment, water matching and stable depth handoff as acceptance criteria.
+Content mods following Minecraft's material/binding paths should benefit from
+the reduced shared-state ownership. A renderer which bypasses those paths still
+needs a thin adapter; do not infer universal compatibility or shader-pack support.
+
+Development tests can load a clean mod set through
+`-PringCompatibilityModsDir=PATH_TO_MOD_JARS`. This applies to both loaders, never
+bundles those JARs and is rejected in formal vanilla release qualification mode.
+Keep the mod inventory and hashes with every diagnostic capture. No-mod controls,
+loader startup and screenshot completion are distinct from visual acceptance.
+
+Validation in progress: fresh natural-world controls and Sodium runs across
+26.1, 26.1.1, 26.1.2, 26.2 and 26.3, on both loaders; compare both rims, natural
+seam traversal, terrain/Atlas curvature and fade, water/translucency, objects,
+clouds, weather/time and resource reloads. The initial 2048x128 floating-build
+save has rim gaps even with vanilla and is unsuitable for attributing #249 to
+Sodium. Preserve its diagnostic logs but use the stopped, fully sampled natural
+16384x256 Minecraft 26.1 source for clean forward-compatible copies.
+
+The private-buffer change currently passes the 26.1.2 Fabric and NeoForge unit
+suites and one hidden, muted Fabric capture run. Four matched old/new screenshots
+on the small diagnostic save differ by 0.05–0.35 RGB levels on average (0–255).
+This is an initial preservation check, not full visual or compatibility acceptance.
+Sodium's neighbour-ready trial is retained in ignored diagnostic evidence; it does not fix
+the independent terrain-shader and visibility pipelines. Keep Sodium listed as
+unsupported until the complete matrix and visual review pass.
+
+The following older release records remain historical qualification evidence.
+
 RingWorld is an engine-level mod, not an ordinary content mod. Both the server
 and every client need the matching game version, loader and RingWorld build.
 Compatibility contract version 1 remains the shared contract in the 1.1

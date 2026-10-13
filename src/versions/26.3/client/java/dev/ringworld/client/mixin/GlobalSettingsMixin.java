@@ -13,37 +13,25 @@ import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingRenderProfile;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GlobalSettingsUniform;
-import net.minecraft.util.Mth;
 import net.minecraft.resources.Identifier;
 import org.spongepowered.asm.mixin.Unique;
 import net.minecraft.world.phys.Vec3;
 import org.lwjgl.system.MemoryStack;
-import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-/**
- * Extends Minecraft's shared Globals UBO with a named, synchronized RingWorld
- * layout. All overridden terrain/cloud shaders consume the same values, while
- * non-RingWorld shaders simply ignore the trailing fields.
- */
+/** Publishes RingWorld-owned uniforms without replacing Minecraft's Globals. */
 @Mixin(GlobalSettingsUniform.class)
 abstract class GlobalSettingsMixin {
-    private static final int RINGWORLD_GLOBALS_SIZE = new Std140SizeCalculator()
-            .putIVec3().putFloat().putVec3().putFloat().putVec2().putInt().putInt()
-            .putIVec4().putVec4().putVec4().putVec4().putVec4().putVec4().putVec4().putVec4()
-            .putVec4().putVec4()
-            .putVec4().get();
+    private static final int RINGWORLD_GLOBALS_SIZE = dev.ringworld.client.render.RingShaderContract.UNIFORM_BYTES;
 
     @Unique private static final Identifier RINGWORLD_BLOCK_ATLAS = net.minecraft.data.AtlasIds.BLOCKS;
     @Unique private static final Identifier RINGWORLD_WATER_STILL = Identifier.withDefaultNamespace("block/water_still");
     @Unique private static final Identifier RINGWORLD_WATER_FLOW = Identifier.withDefaultNamespace("block/water_flow");
 
-    @Shadow @Final private GpuBuffer buffer;
+    @Unique private GpuBuffer ringworld$buffer;
 
     @Unique
     private static void ringworld$waterBounds(Std140Builder builder, Minecraft client, Identifier texture, boolean active) {
@@ -57,24 +45,25 @@ abstract class GlobalSettingsMixin {
         }
     }
 
-    @ModifyArg(
-            method = "<init>",
-            at = @At(value = "INVOKE",
-                    target = "Lcom/mojang/renderpearl/api/device/GpuDevice;createBuffer(Ljava/util/function/Supplier;IJ)Lcom/mojang/renderpearl/api/buffers/GpuBuffer;"),
-            index = 2)
-    private long ringworld$extendGlobalsBuffer(long vanillaSize) {
-        return RINGWORLD_GLOBALS_SIZE;
+    @Inject(method = "<init>", at = @At("RETURN"))
+    private void ringworld$allocateOwnUniforms(CallbackInfo ci) {
+        ringworld$buffer = RenderSystem.getDevice().createBuffer(
+                () -> "RingWorld render uniforms", GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_COPY_DST,
+                RINGWORLD_GLOBALS_SIZE);
+        dev.ringworld.client.render.RingRenderUniforms.publish(ringworld$buffer);
     }
 
-    @Inject(method = "update", at = @At("HEAD"), cancellable = true)
+    @Inject(method = "close", at = @At("HEAD"))
+    private void ringworld$closeOwnUniforms(CallbackInfo ci) {
+        dev.ringworld.client.render.RingRenderUniforms.clear(ringworld$buffer);
+        if (ringworld$buffer != null) ringworld$buffer.close();
+    }
+
+    @Inject(method = "update", at = @At("TAIL"))
     private void ringworld$publishLayout(int width, int height, double glintStrength,
                                          long time, float partialTick,
                                          int menuBackgroundBlurriness, Vec3 cameraPosition,
                                          boolean useRgss, CallbackInfo ci) {
-        int cameraX = Mth.floor(cameraPosition.x);
-        int cameraY = Mth.floor(cameraPosition.y);
-        int cameraZ = Mth.floor(cameraPosition.z);
-
         RingGeometry geometry = ClientRingState.geometry();
         Minecraft client = Minecraft.getInstance();
         int active = geometry == null ? 0 : 1;
@@ -109,16 +98,6 @@ abstract class GlobalSettingsMixin {
 
         try (MemoryStack stack = MemoryStack.stackPush()) {
             var builder = Std140Builder.onStack(stack, RINGWORLD_GLOBALS_SIZE)
-                    .putIVec3(cameraX, cameraY, cameraZ)
-                    .putFloat((float)glintStrength)
-                    .putVec3((float)(cameraX - cameraPosition.x),
-                            (float)(cameraY - cameraPosition.y),
-                            (float)(cameraZ - cameraPosition.z))
-                    .putFloat(((float)(time % 24_000L) + partialTick)
-                            / 24_000.0F)
-                    .putVec2(width, height)
-                    .putInt(menuBackgroundBlurriness)
-                    .putInt(useRgss ? 1 : 0)
                     // active, circumference, width, saved wall height
                     .putIVec4(active, circumference, ringWidth, wallHeight)
                     // surface reference, wall top, cloud base, physical centre
@@ -159,9 +138,7 @@ abstract class GlobalSettingsMixin {
                     distortion == null ? 0.0F : (float)distortion.blendEnd(),
                     distortion == null ? 0.0F : (float)distortion.referenceRadius());
             var data = builder.get();
-            dev.ringworld.client.render.RingSurfaceGpu.writeBuffer(buffer.slice(), data);
+            dev.ringworld.client.render.RingSurfaceGpu.writeBuffer(ringworld$buffer.slice(), data);
         }
-        RenderSystem.setGlobalSettingsUniform(buffer);
-        ci.cancel();
     }
 }
