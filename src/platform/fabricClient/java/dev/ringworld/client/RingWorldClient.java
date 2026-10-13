@@ -255,6 +255,7 @@ public final class RingWorldClient implements ClientModInitializer {
             if (dev.ringworld.client.RingFloatingAtlasCaptureClient.tickIfEnabled(client)) return;
             if (dev.ringworld.client.RingFloatingStructureCaptureClient.tickIfEnabled(client)) return;
             if (dev.ringworld.client.RingHorizonCaptureClient.tickIfEnabled(client)) return;
+            if (dev.ringworld.client.RingUnderwaterCaptureClient.tickIfEnabled(client)) return;
             if (productionLifecycleTest.tick(client)) return;
             if (layoutSwitchTest.tick(client)) return;
             if (multiplayerTest.tick(client)) return;

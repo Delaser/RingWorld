@@ -129,3 +129,13 @@ tested, not inferred.
 The draft PR remains separate from the active Windows release source. Merging
 and qualifying replacement release JARs are later steps; these results cannot
 qualify an older frozen candidate or silently change its publication metadata.
+
+## Submerged-camera follow-up
+
+The prior matrix does not qualify underwater visibility. The Atlas fragment
+shader omitted environmental fog although live terrain retained it. A new
+opt-in `ringworld.captureUnderwater` client fixture creates only a disposable
+world with a sealed pool, checks the actual camera fluid, and records above,
+submerged, near-surface, resurfaced and post-reload frames. Both loader hooks
+use the same fixture; existing release captures are unchanged. Baseline/fix
+results will be recorded here after native validation.
