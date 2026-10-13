@@ -97,7 +97,9 @@ def fixture_timing(row: Mapping[str, Any], root: Path) -> dict[str, Any]:
     attempts = row.get('attempts') or [{'command': row.get('command', {})}]
     outer = sum(seconds(a.get('command', {}).get('elapsed_seconds')) for a in attempts)
     if row.get('reused_from'):
-        return {'reused': True, 'executed_seconds': 0.0, 'prior_command_seconds_skipped': outer}
+        passed = row.get('verdict') == 'PASS'
+        return {'reused': passed, 'blocked_prior_failure': not passed, 'executed_seconds': 0.0,
+                'prior_command_seconds_skipped': outer if passed else 0.0}
     child = row.get('child', {})
     if not isinstance(child, Mapping):
         child = {}

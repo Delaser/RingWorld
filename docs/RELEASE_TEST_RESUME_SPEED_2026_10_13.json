@@ -1,0 +1,86 @@
+{
+  "format": 1,
+  "scope": "Native development validation; macOS Apple M2/OpenGL; not frozen release qualification",
+  "native_source_commit": "701646d5b3672821a614c34cc217cfdc0a7dbe08",
+  "native_run": "logs/release-test-improvements/native-20261013T172326Z-6604f41ab004",
+  "native_report_sha256": "0919253cbd3a4bbecefdeff23185455b69cd3c0c91d2e9187e6cc44e35359b9c",
+  "native_cell": "26.1.2-fabric",
+  "native_fixture_pass": true,
+  "native_navigation_trace_count": 13,
+  "setup_benchmark": {
+    "order": "separate,combined,combined,separate after warmup",
+    "measurements": [
+      {
+        "mode": "separate",
+        "elapsed_seconds": 7.7264435
+      },
+      {
+        "mode": "combined",
+        "elapsed_seconds": 4.084088874999999
+      },
+      {
+        "mode": "combined",
+        "elapsed_seconds": 4.054504958999999
+      },
+      {
+        "mode": "separate",
+        "elapsed_seconds": 7.729730624999998
+      }
+    ],
+    "separate_mean_seconds": 7.728087062499999,
+    "combined_mean_seconds": 4.069296916999999,
+    "setup_percent_reduction": 47.34405960892991,
+    "gradle_launches_removed_per_complete_matrix": 20,
+    "limits": "Warm Fabric preparation on one Mac; not a full-suite percentage or a Windows/NeoForge cache speedup claim."
+  },
+  "startup_observations": [
+    {
+      "name": "server",
+      "first_game_log_delay_seconds": 10.859737,
+      "after_first_game_log_seconds": 107.28883408300001
+    },
+    {
+      "name": "client-a",
+      "first_game_log_delay_seconds": 13.856907,
+      "after_first_game_log_seconds": 89.29125329100003
+    },
+    {
+      "name": "client-b",
+      "first_game_log_delay_seconds": 13.844478,
+      "after_first_game_log_seconds": 89.29152458300003
+    }
+  ],
+  "navigation_observation": {
+    "armed_target": [
+      2050,
+      120,
+      15
+    ],
+    "armed_path_reachable": true,
+    "changed_at_tick": 11,
+    "active_move_goal": "WaterAvoidingRandomStrollGoal",
+    "replacement_target": [
+      2049,
+      122,
+      14
+    ],
+    "replacement_path_reachable": false,
+    "all_observed_chunks_loaded": true,
+    "arrival_assertion_passed": true,
+    "interpretation": "Autonomous goal replaced the commanded path in this passing run. This is a lead, not a reproduced original Windows fault or a fix."
+  },
+  "local_python_tests": {
+    "total": 417,
+    "skipped": 2,
+    "failures": 0
+  },
+  "local_java_tests": {
+    "fabric": 514,
+    "neoforge": 514,
+    "failures": 0
+  },
+  "preserved_failed_probe": {
+    "run": "logs/release-test-improvements/native-20261013T172156Z-59fbe9a1c022",
+    "reason": "Development probe wrote copied EULA after preparation instead of before it; no production gate changed."
+  }
+}

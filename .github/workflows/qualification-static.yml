@@ -19,6 +19,7 @@ on:
       - "scripts/minecraft_qualification_timing.py"
       - "scripts/test_minecraft_nightly_resume.py"
       - "scripts/test_minecraft_qualification_timing.py"
+      - "scripts/test_qualification_preparation_batch.py"
       - "scripts/test_qualification_host.py"
       - "scripts/test_production_lifecycle_player_safety.py"
       - "scripts/test_capture_player_safety.py"
@@ -63,6 +64,7 @@ on:
       - "scripts/minecraft_qualification_timing.py"
       - "scripts/test_minecraft_nightly_resume.py"
       - "scripts/test_minecraft_qualification_timing.py"
+      - "scripts/test_qualification_preparation_batch.py"
       - "scripts/test_qualification_host.py"
       - "scripts/test_production_lifecycle_player_safety.py"
       - "scripts/test_capture_player_safety.py"
@@ -181,6 +183,7 @@ jobs:
           scripts/test_run_release_full_matrix.py
           scripts/test_minecraft_nightly_resume.py
           scripts/test_minecraft_qualification_timing.py
+          scripts/test_qualification_preparation_batch.py
           scripts/test_minecraft_qualification_neoform_seed.py
           scripts/test_review_composite_nightly_evidence.py
           scripts/test_qualification_static_workflow.py

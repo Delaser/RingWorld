@@ -60,3 +60,11 @@ class QualificationTimingTest(unittest.TestCase):
             self.assertEqual(12.5, startup_observation(command, root)['first_game_log_delay_seconds'])
             command.pop('started_at_local')
             self.assertEqual({}, startup_observation(command, root))
+
+    def test_blocked_failure_is_not_counted_as_reused_pass_or_saved_test_time(self):
+        row = {'cell': 'a', 'fixture': 'raid', 'verdict': 'FAIL',
+               'reused_from': {'path': 'old'}, 'command': {'elapsed_seconds': 100}}
+        result = summary([row], Path('/unused'))
+        self.assertEqual(0, result['reused_fixture_count'])
+        self.assertEqual(0, result['prior_command_seconds_skipped'])
+        self.assertTrue(result['fixtures'][0]['blocked_prior_failure'])

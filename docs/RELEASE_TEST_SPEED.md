@@ -184,5 +184,32 @@ raid reload and verifiers. This is an operation-count improvement, not a measure
 percentage reduction in full-release wall time. Do not reuse mutable caches or
 combine unrelated native fixtures to claim a larger improvement.
 
-Validation and native development measurements are recorded after testing below.
+Validation: 417 Python tests pass (two expected platform skips on macOS),
+514 Java cases per loader pass locally, and all eleven CI checks at `701646d`
+pass, including all six source/loader build groups and Windows/Linux contracts.
+The final timing-only correction and preparation-order regressions are covered
+by the Python suite; native Java/batching behaviour is unchanged.
+
+A real 26.1.2 Fabric dedicated server plus two hidden, muted clients passes the
+full multiplayer scenario, navigation, reconnects, shutdown and verifiers at
+`701646d`. This was a disposable source-ABI development smoke using normal dev
+caches, not a frozen release invocation. The initial probe failed because its
+copied EULA was prepared too late; the corrected run retains that failed record.
+
+The warm ABBA preparation comparison measures separate prepare/assets at
+7.73 seconds on average versus 4.07 seconds combined (47.3% lower for this setup
+step). The comparison uses the same disposable configuration after an unmeasured
+warmup; it proves neither a full-suite percentage nor cold NeoForge/Windows
+cache savings. First-game-log delays were 10.86 seconds for the server and
+13.86/13.84 seconds for the two clients. The deliberate 120-second settle stayed.
+
+The navigation trace records a reachable commanded target `(2050,120,15)` at
+arming, then at tick 11 `WaterAvoidingRandomStrollGoal` replaces it with an
+unreachable `(2049,122,14)` target while all observed chunks remain loaded.
+The zombie still reaches the existing arrival tolerance and the fixture passes.
+This confirms interference in this run, but does not reproduce or fix the earlier
+Windows failures. No AI goal or assertion was changed. Preserve this lead for
+separate diagnosis rather than claiming that retries fixed the navigation bug.
+
+See [sanitized native/benchmark evidence](RELEASE_TEST_RESUME_SPEED_2026_10_13.json).
 No new release candidates are qualified or uploaded by this tooling change.
