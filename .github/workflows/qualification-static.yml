@@ -13,11 +13,17 @@ on:
       - "src/client/**"
       - "scripts/minecraft_qualification_*.py"
       - "scripts/qualification_host.py"
+      - "scripts/minecraft_loom_seed.py"
+      - "scripts/minecraft_neoform_seed.py"
       - "scripts/test_qualification_host.py"
       - "scripts/test_production_lifecycle_player_safety.py"
       - "scripts/test_capture_player_safety.py"
       - "src/main/java/dev/ringworld/server/RingWorldProductionLifecycleTest.java"
       - "scripts/run_minecraft_qualification.py"
+      - "scripts/run_release_full_matrix.py"
+      - "scripts/test_run_release_full_matrix.py"
+      - "scripts/run_minecraft_nightly_matrix.py"
+      - "scripts/test_run_minecraft_nightly_matrix.py"
       - "scripts/external_runtime_*.py"
       - "scripts/external_graphical_*.py"
       - "scripts/run_*_qualification.py"
@@ -47,11 +53,17 @@ on:
       - "src/client/**"
       - "scripts/minecraft_qualification_*.py"
       - "scripts/qualification_host.py"
+      - "scripts/minecraft_loom_seed.py"
+      - "scripts/minecraft_neoform_seed.py"
       - "scripts/test_qualification_host.py"
       - "scripts/test_production_lifecycle_player_safety.py"
       - "scripts/test_capture_player_safety.py"
       - "src/main/java/dev/ringworld/server/RingWorldProductionLifecycleTest.java"
       - "scripts/run_minecraft_qualification.py"
+      - "scripts/run_release_full_matrix.py"
+      - "scripts/test_run_release_full_matrix.py"
+      - "scripts/run_minecraft_nightly_matrix.py"
+      - "scripts/test_run_minecraft_nightly_matrix.py"
       - "scripts/external_runtime_*.py"
       - "scripts/external_graphical_*.py"
       - "scripts/run_*_qualification.py"
@@ -158,6 +170,8 @@ jobs:
           scripts/test_run_gradle_production_render_qualification.py
           scripts/test_copied_world_file_fix_upgrade.py
           scripts/test_run_minecraft_nightly_matrix.py
+          scripts/test_run_release_full_matrix.py
+          scripts/test_minecraft_qualification_neoform_seed.py
           scripts/test_review_composite_nightly_evidence.py
           scripts/test_qualification_static_workflow.py
 
