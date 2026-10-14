@@ -1,9 +1,10 @@
 # RingWorld 1.3 release preparation
 
 Publication update (14 October 2026): the owner authorized Modrinth upload of
-the same six qualified files. All six are publicly listed and independent CDN
-downloads match the hashes below; see the
-[Modrinth publication record](../../../docs/RELEASE_1_3_MODRINTH_PUBLICATION_2026-10-14.md).
+the same six qualified files, then re-upload after 1.2 to preserve release order.
+See the [final Modrinth publication record](../../../docs/RELEASE_1_2_1_3_MODRINTH_HISTORY_2026-10-14.md)
+for current IDs and independently verified downloads. Original upload IDs are
+retained in the [superseded record](../../../docs/RELEASE_1_3_MODRINTH_PUBLICATION_2026-10-14.md).
 The September qualification and initial CurseForge scope below remain historical.
 
 Six local JARs are staged under `dist/qualified-release/final-1.3/` from

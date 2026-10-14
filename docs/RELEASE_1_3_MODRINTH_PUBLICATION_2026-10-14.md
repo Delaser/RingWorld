@@ -1,5 +1,12 @@
 # RingWorld 1.3 Modrinth publication — 2026-10-14
 
+Historical first-upload record: the owner subsequently requested removing
+these six listings and uploading 1.2 followed by 1.3, to preserve release order.
+The version IDs below were deleted and must not be used as current download
+links. See [the final history upload record](RELEASE_1_2_1_3_MODRINTH_HISTORY_2026-10-14.md)
+for replacement IDs and verified files. Original hashes and evidence below are
+retained for the audit trail.
+
 The owner authorized uploading the six existing 1.3 release JARs to Modrinth.
 All six were published through the authenticated project dashboard and are
 publicly **listed**, with release channel, matching loader/game tags and the

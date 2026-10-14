@@ -1,5 +1,12 @@
 # RingWorld 1.2 release preparation
 
+Modrinth publication update (14 October 2026): the owner authorized uploading
+all six original 1.2 files for posterity, followed by 1.3. The current version
+IDs and independently verified hashes are in
+[the history upload record](../../../docs/RELEASE_1_2_1_3_MODRINTH_HISTORY_2026-10-14.md).
+No historical JAR was rebuilt or relabelled. The September scope below remains
+the original qualification and CurseForge publication record.
+
 September 20 final: all six 1.2 jars are submitted to CurseForge; all CDN hashes match.
 See [publication record](../../../docs/RELEASE_1_2_PUBLICATION_2026-09-20.md). Modrinth remains deferred.
 The preparation notes below are historical and superseded by that record.
