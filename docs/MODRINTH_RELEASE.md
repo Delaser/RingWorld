@@ -23,6 +23,22 @@ and the exact short-lived owner authorization. It creates an unlisted version;
 listing/promotion is a separate action. It has no delete/update/deploy route.
 Keep tokens out of repository files, shell history, stages and logs.
 
+### Local credential storage (14 October 2026)
+
+The owner approved a dedicated PAT named **RingWorld release uploads**, with
+only **Create versions** and **Read versions**, expiring **12 January 2027**.
+Its value is stored in this Mac's default Keychain as a generic password:
+service `RingWorld.Modrinth`, account `MODRINTH_TOKEN`. Storage and exact
+read-back were verified; no credential value belongs in this repository.
+
+Retrieve it privately into the publisher process's `MODRINTH_TOKEN` environment
+when an upload is authorized. It is not globally exported and is not installed
+on the Windows build PC. Keychain access by a different executable may require
+an OS access prompt; the storing Python process used Security.framework directly.
+The narrow token does not grant account-profile access, version edits/deletion,
+project edits or payout permissions. No successful upload using this PAT has
+yet been performed; the six 1.3 files were uploaded through the dashboard.
+
 Record the returned version ID. Inspect hosted loader/game/dependency metadata,
 independently download/hash the hosted JAR, and record public/review status before
 claiming publication. The MPL-2.0 licence and public corresponding-source route
