@@ -1,4 +1,4 @@
-# RingWorld 1.4 — second draft
+# RingWorld 1.4
 
 ## Server performance
 
@@ -62,8 +62,12 @@
 
 - Reworked the shared rendering core > Improves compatibility with rendering
   mods while preserving the existing ring appearance.
-- Fixed Sodium's terrain curve and Atlas transition > Real blocks, walls and
-  water now line up with the distant ring across supported versions and loaders.
+- Improved shader compatibility by preserving Minecraft's shader state > Other
+  rendering mods have fewer shared-state conflicts. This does not establish
+  general Iris or shader-pack support.
+- Added experimental Sodium support and fixed its terrain curve and Atlas
+  transition > Real blocks, walls and water line up with the distant ring.
+  Sodium compatibility remains experimental; see the compatibility notes.
 - Hide the distant Atlas underwater > Nearby blocks keep normal water fog,
   without the far ring showing through; resurfacing restores the ring, including
   after a resource reload.
@@ -82,7 +86,11 @@ Older Atlas caches rebuild automatically for the floating-platform change.
 Performance figures come from development tests on a pregenerated Large ring
 with three players and a 4 GiB server heap. Autosave/movement and lighting figures
 come from separate stages of that testing; they are not chunk-loading times or
-guaranteed results on every server. Shorter pauses still occur. Replacement
-release qualification remains pending.
+guaranteed results on every server. Shorter pauses still occur.
+
+The final six JARs passed all ten quick checks and cover all 100 full-suite
+cases through recorded composite qualification. One installer timeout passed
+on retry; the original evidence is retained. These release tests used the
+vanilla renderer; Sodium has separate, narrower development validation.
 
 Corresponding source: {{RINGWORLD_CORRESPONDING_SOURCE_URL}}

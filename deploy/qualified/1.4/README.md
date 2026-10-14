@@ -1,4 +1,6 @@
-# RingWorld 1.4 — qualified, not uploaded
+# RingWorld 1.4 — published replacement; historical qualification below
+
+**14 October 2026:** The six replacement JARs from `1533878` are uploaded to both hosts and independently CDN-hash verified. Modrinth is listed; CurseForge is processing for automatic publication after approval. See the [publication record](../../../docs/RELEASE_1_4_PUBLICATION_2026-10-14.md) for current files, qualification and hashes. Everything below describes the superseded `6ee5bd56` candidate.
 
 **Publication hold:** a Large-server Atlas checkpoint stall was reproduced after
 this qualification. The six files below predate the persistence fix. Retain them
