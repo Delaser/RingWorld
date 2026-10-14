@@ -1,8 +1,11 @@
 # Modrinth release workflow
 
-Modrinth is deferred at the owner's request; the published-file history is
-recorded in [the 1.1 publication record](RELEASE_1_1_PUBLICATION_2026-08-27.md).
-Resume it only within a newly authorized release scope. Use the
+The owner resumed Modrinth publication for the six existing 1.3 JARs on
+14 October 2026. All six are listed and their hosted downloads match the
+qualified hashes; see [the publication record](RELEASE_1_3_MODRINTH_PUBLICATION_2026-10-14.md).
+Earlier published-file history is recorded in
+[the 1.1 publication record](RELEASE_1_1_PUBLICATION_2026-08-27.md).
+Future uploads still require their own authorized release scope. Use the
 [current JAR export runbook](JAR_EXPORT.md); the older 1.0 clean-build staging
 command is not the current supported-version matrix export route.
 

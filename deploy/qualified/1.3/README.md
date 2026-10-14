@@ -1,5 +1,11 @@
 # RingWorld 1.3 release preparation
 
+Publication update (14 October 2026): the owner authorized Modrinth upload of
+the same six qualified files. All six are publicly listed and independent CDN
+downloads match the hashes below; see the
+[Modrinth publication record](../../../docs/RELEASE_1_3_MODRINTH_PUBLICATION_2026-10-14.md).
+The September qualification and initial CurseForge scope below remain historical.
+
 Six local JARs are staged under `dist/qualified-release/final-1.3/` from
 source commit `f1b243af48f44452179f7a109877799584c8f47d`. They cover
 Minecraft 26.1–26.1.2, 26.2 and 26.3 on Fabric and NeoForge. After the owner
