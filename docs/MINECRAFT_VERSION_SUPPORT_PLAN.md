@@ -9,6 +9,14 @@ fresh host-managed installs, and successful unattended API-upload integration
 See [the publication record](RELEASE_1_1_PUBLICATION_2026-08-27.md).
 Detailed dated implementation checkpoints below remain historical evidence.
 
+Next-release testing update (owner approved 14 October 2026): see
+[the qualification plan](NEXT_RELEASE_TEST_MATRIX.md). Every supported version
+still needs exact-candidate compatibility evidence, while representative full
+suites move to 26.1.2/26.2/26.3 on both loaders. Older 26.1 patches retain quick
+checks and focused graphical/reload/reopen/multiplayer profiles, with broader
+testing when affected by a change. This planned policy does not change the
+active 1.4 run or the existing executable qualification gates.
+
 ## Support model
 
 Minecraft 26.1 is RingWorld's source and build compatibility floor.

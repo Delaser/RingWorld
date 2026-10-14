@@ -1,5 +1,12 @@
 # Release test setup and capture consolidation
 
+Next campaign: the owner approved [60 full fixtures plus four focused patch
+compatibility profiles](NEXT_RELEASE_TEST_MATRIX.md) on 14 October 2026. Keep all
+ten quick cells and six JARs. Estimated saving is 2–2.5 hours, pending native
+measurement and implementation of the coordinator/evidence/staging policy.
+The active 1.4 run on `1533878` retains its 100 full fixtures. Historical timing
+and implementation records below describe the existing workflow.
+
 The 9 October 2026 change keeps all supported versions, both loaders, ten nightly
 fixtures per cell, isolated worlds, frozen candidates and evidence requirements.
 

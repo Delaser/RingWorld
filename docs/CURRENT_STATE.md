@@ -1,3 +1,10 @@
+Next-release test plan (owner approved 14 October 2026): retain ten quick cells
+and six JARs; use full suites on 26.1.2/26.2/26.3 for both loaders (60 fixtures)
+and four focused compatibility profiles on 26.1/26.1.1. Implementation and native
+validation are still required before the next campaign. The active 1.4 run on
+`1533878` keeps its 100-fixture requirements and accepted checkpoints. See
+[the plan](NEXT_RELEASE_TEST_MATRIX.md) for coverage, escalation and estimates.
+
 Release fixture follow-up (13 October 2026, PR #294): the tagged navigator owns
 its one commanded MOVE input; native 26.1.2 NeoForge and 26.2 Fabric multiplayer
 scenarios pass unchanged arrival, combat, sleep/damage, death and portal checks.

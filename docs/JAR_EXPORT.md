@@ -9,6 +9,13 @@ Both hosts run the same Python coordinators, manifests and quick/full gates;
 only native launch and process cleanup differ. It covers host preflight,
 production-world preparation, all three qualification groups and staging.
 
+For the next fresh campaign, implement the owner-approved
+[reduced repetition plan](NEXT_RELEASE_TEST_MATRIX.md): ten quick cells,
+60 full fixtures and four older-patch compatibility profiles. The active 1.4
+campaign on `1533878` keeps its existing 100-fixture gates. Export validators
+must understand the explicit new policy before its reports can qualify JARs;
+the unchanged tools must continue rejecting incomplete old-policy coverage.
+
 ## Outputs
 
 | Candidate group | Qualification manifest | Runtime files |

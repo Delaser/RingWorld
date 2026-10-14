@@ -9,6 +9,16 @@ It prepares six JARs and their evidence; **do not upload, publish, tag a release
 or update the public server**. The earlier staged 1.4 JARs predate the latest fixes.
 Use fresh quick runs and test their exact frozen candidates throughout.
 
+## Approved plan for the next campaign
+
+The owner approved [representative full suites and focused patch checks](NEXT_RELEASE_TEST_MATRIX.md)
+on 14 October 2026: keep ten quick cells, run 60 full fixtures on 26.1.2/26.2/26.3
+and four compatibility profiles on 26.1/26.1.1, covering both loaders throughout.
+Implement and validate that explicit coverage policy before the next fresh
+campaign. The active 1.4 campaign on `1533878` and the executable commands below
+still require 100 full fixtures. Do not shorten that run or use filters to bypass
+its completeness checks. Update these commands with the policy implementation.
+
 ## Machine and source
 
 - Git, Python 3.13, and a JDK 25 installation. Put the JDK's `bin` first on PATH

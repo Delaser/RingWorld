@@ -203,6 +203,15 @@ from fresh frozen-candidate release qualification.
 
 ## Release-test setup and captures
 
+Next-release coverage plan (owner approved 14 October 2026): implement
+`docs/NEXT_RELEASE_TEST_MATRIX.md` before the next fresh campaign. It retains
+ten quick cells and replaces the repeated full 26.1/26.1.1 suites with four
+focused patch-compatibility profiles; full suites remain on 26.1.2, 26.2 and
+26.3 for both loaders (60 full fixtures). The active 1.4 run on `1533878` keeps
+its existing 100-fixture policy. Until the new coordinator/evidence/staging
+policy is implemented and validated, the executable workflow below is unchanged;
+do not treat filtered old-policy reports as complete qualification.
+
 Release tooling uses `scripts/run_release_full_matrix.py` for serial 60+20+20
 coverage on Windows/macOS. Independent failures continue, results checkpoint,
 and only recognized pre-claim infrastructure failures get two automatic retries.
