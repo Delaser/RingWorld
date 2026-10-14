@@ -283,6 +283,9 @@ runs remain INCOMPLETE; final release qualification covers all ten cells.
 
 ## Supported-version parity and release state
 
+**14 October 2026:** The owner-authorized 1.4 replacements from `1533878fe3a6eab7562830b3f39cbd7caae6d46a` are uploaded to CurseForge and Modrinth; all twelve CDN downloads match the six Windows-qualified JARs. Modrinth is listed; CurseForge was Processing at the post-upload check and is set to publish automatically after approval. Ten quick cells passed and all 100 full cases have reviewed composite coverage, with one retained installer failure/retry. Do not label it a monolithic full run. See [publication record](docs/RELEASE_1_4_PUBLICATION_2026-10-14.md) and [final notes](docs/RELEASE_1_4_PATCH_NOTES.md). This supersedes the older 1.4 publication holds below; old source/JAR hashes are historical. Both public descriptions match the current listing template and end with the complete supported command reference. Sodium remains experimental; shader-state improvements do not establish general shader-pack support.
+
+
 October 10, 2026: six 1.4 JARs from `6ee5bd56c1de8044c658d80d5a0c0f4a9d6c4085`
 pass all ten quick cells and 100 complete full-suite fixture invocations. Nothing
 is uploaded; owner visuals remain pending. Preserve the clean pushed

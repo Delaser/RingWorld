@@ -1,3 +1,11 @@
+# Current public descriptions
+
+14 October 2026: CurseForge and Modrinth descriptions match the current template,
+based on the live CurseForge page and updated for 1.4. Both end with the supported
+slash-command reference. See [publication record](../../docs/RELEASE_1_4_PUBLICATION_2026-10-14.md).
+
+The historical rewrite record follows.
+
 # Project description rewrite — 2026-09-07
 
 Owner authorized continuing past the weekly quota pause to complete this rewrite.

@@ -1,5 +1,8 @@
 # RingWorld documentation
 
+- [RingWorld 1.4 publication, files and qualification](RELEASE_1_4_PUBLICATION_2026-10-14.md)
+- [RingWorld 1.4 final grouped patch notes](RELEASE_1_4_PATCH_NOTES.md)
+
 - [Remaining Large-server stalls](SERVER_STALL_INVESTIGATION_2026_10_10.md):
   matched three-client measurements, chunk-work fixes and the remaining GC release concern.
 - [Large-server multiplayer load trial](SERVER_MULTIPLAYER_LOAD_2026_10_10.md):
