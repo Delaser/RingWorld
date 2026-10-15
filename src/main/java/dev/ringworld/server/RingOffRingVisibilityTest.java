@@ -57,8 +57,8 @@ final class RingOffRingVisibilityTest {
             a.teleportTo(world, x, stage == 6 ? 310 : 180, z, Set.<RelativeMovement>of(), 180, 0);
             double bx = stage == 3 ? x + 300 : geometry.wrapX(x + 6);
             b.teleportTo(world, bx, 180, bz, Set.<RelativeMovement>of(), 90, 0);
-            if (cow != null) cow.discard();
-            if (boat != null) boat.discard();
+            retire(world, cow);
+            retire(world, boat);
             cow = spawn(world, "cow", x - 3, z);
             boat = spawn(world, "oak_boat", x + 3, z);
             armed = true;
@@ -78,6 +78,12 @@ final class RingOffRingVisibilityTest {
             }
             return;
         }
+        if (ticks % 100 == 0) {
+            RingWorldMod.LOGGER.info("[off-ring] pending stage={} entities={}", stage,
+                    java.util.stream.StreamSupport.stream(world.getAllEntities().spliterator(), false)
+                            .filter(e -> e.getCustomName() != null && e.getCustomName().getString().startsWith("RingVisibility-"))
+                            .map(e -> e.getId() + ":" + e.getUUID() + ":" + e.getRemovalReason() + ':' + e.position()).toList());
+        }
         if (ticks > 40 && passed("A", "off_ring_" + stage) && passed("B", "off_ring_" + stage)) {
             RingWorldMod.LOGGER.info("[off-ring] stage={} result=true", stage);
             stage++;
@@ -96,6 +102,13 @@ final class RingOffRingVisibilityTest {
         entity.setCustomName(Component.literal("RingVisibility-" + type));
         world.addFreshEntity(entity);
         return entity;
+    }
+
+    private static void retire(ServerLevel world, Entity entity) {
+        if (entity == null) return;
+        RingWorldMod.LOGGER.info("[off-ring] retiring id={} uuid={} reason={} currentSame={}",
+                entity.getId(), entity.getUUID(), entity.getRemovalReason(), world.getEntity(entity.getUUID()) == entity);
+        entity.discard();
     }
 
     private static boolean passed(String role, String phase) {
