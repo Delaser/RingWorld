@@ -906,3 +906,45 @@ also requires actual client air/collision/position/flight proof. Terrain and
 cloud projection are not edited. Native dual-loader reruns and fresh image
 review remain pending. The screenshot packet will be refreshed after them;
 performance, soak, upgrade, native-close and formal acceptance remain separate.
+
+### 16 October: visual completion and closed-world retention repair
+
+The owner requested continuation from check 15. All 26 graphical native
+verifiers per loader now pass as explicitly composite evidence. Only clouds
+were repeated at `13f6e78`: all six unobstructed-camera proofs and Fancy/Fast
+below/inside/above captures pass on both loaders. The 51-page PDF and
+326-capture HTML packet was rendered, visually inspected and delivered with
+release acceptance pending. The rejected 48-page packet is preserved.
+
+Both exact `13f6e78` jars also pass ten ordinary native disconnect/reopen cycles,
+37-diamond inventory and UUID disk checks after each disconnect, raw session/GPU
+teardown and eleven normal all-dimension saves. The first failed attempt is
+retained: Windows wrote CRLF where the disk acknowledgement expected LF.
+Writing exact binary LF repaired that handoff without changing the game.
+
+Resource acceptance did not pass. A separate diagnostic waits for ordinary
+texture/cache workers to finish, then requests full GC after normal disconnect.
+Fabric's post-full-GC heap grows from 347 to 945 MiB over ten cycles; tracked
+native Other grows by about 8 MiB per cycle. NeoForge reproduces similar growth.
+Fabric's retained diagnostic histogram contains eight client levels, eight
+integrated servers and 24 server levels, while only two Atlas instances and one
+active Atlas-service state remain. The histogram's additional collection is
+disclosed. These forced-collection windows are not ordinary performance data.
+
+The client chunk registry used weak manager keys but strong storage values.
+Pinned mappings confirm storage's `field_16254` refers to its manager; loaded
+chunks provide another path through their client level. This defeats the weak
+key and retains the closed world graph. The actual-source regression reproduces
+the cycle before the fix. Weak values break that path while vanilla's live
+manager continues owning its current storage. All three ownership cases pass;
+the existing driver/workflow checks also pass, for sixteen focused cases total.
+The public registry API and chart behavior are unchanged.
+
+The repair is implemented; native validation is pending. Freeze new jars and
+repeat the affected memory/reopen, multiplayer/whole-chart teleport, map/compass,
+layout-switch, cache-identity and production lifecycle gates. Retain unaffected
+visual results with reviewed source/archive provenance. Do not restart the full
+visual suite or infer resource stability from the old functional passes.
+Large paired performance, real FPS policy, soak, upgrade/closure, moving wall/water
+review and formal acceptance remain outstanding. No release upload or 1.20.1
+implementation is claimed.

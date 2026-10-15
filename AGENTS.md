@@ -182,6 +182,14 @@ Fabric/Forge. Follow `versions/mc1.21.1/IMPLEMENTATION_1_4_2026-10-15.md` for
 current changes/evidence and continue diagnosis/retesting through acceptance.
 Do not publish or modify the public server under this build authorization.
 
+Keep both keys and values weak in `RingClientChunkMaps`. Vanilla private storage
+retains its owning client manager; strong values defeat weak keys and retain
+closed client/integrated-server worlds. The live manager owns its current
+storage. `scripts/test_client_chunk_map_lifecycle.py` compiles the actual registry
+with minimal type stubs and tests abandoned cycles, live storage and replacement.
+Native repeated-reopen/resource and seam/teleport checks remain required; this
+bounded ownership regression alone is not runtime qualification.
+
 The [dual-version plan](docs/BACKPORT_1_4_DUAL_VERSION_PLAN_2026-10-15.md)
 audits published 1.4 source `1533878` against the local 1.3 checkpoint `8f1fe43`.
 The initial 1.21.1 intake builds, 1,085 Java cases, both 26-capture creation gates and

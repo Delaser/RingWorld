@@ -2467,3 +2467,20 @@ an air eye block, collision clearance, the expected eye height/column and
 Creative flight. The packaged driver requires ordered native `[cloud-camera]`
 proofs for both Fancy and Fast. Re-run only clouds on both loaders and inspect
 the actual images. Native validation of this repair is pending.
+
+### Client chunk registry ownership regression
+
+Run `python -m unittest scripts/test_client_chunk_map_lifecycle.py` with JDK17
+or newer available through `JAVA_HOME` or PATH. It compiles the actual
+`RingClientChunkMaps` and interface with minimal Minecraft type stubs. Storage
+points back to its owner. Bounded GC must collect an abandoned cycle, preserve
+a live manager's current storage and release replaced storage. The old
+strong-value registry fails the abandoned-cycle case; weak values pass all three.
+A separate Windows/Linux CI job runs this check. It does not launch Minecraft
+or qualify graphical/platform compatibility.
+
+Native explicit-collection diagnostics follow normal disconnect and worker
+convergence. Interpret actual GC/NMT/OS records separately from ordinary frame
+and tick performance. Raw client-session teardown did not catch the registry's
+strong-value retention path. The 1.4 implementation ledger records its native
+reproduction and the required focused reruns.

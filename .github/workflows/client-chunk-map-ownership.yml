@@ -1,0 +1,43 @@
+name: Client chunk registry ownership
+
+on:
+  pull_request:
+    paths:
+      - "src/client/java/dev/ringworld/client/chunk/RingClientChunkMaps.java"
+      - "src/client/java/dev/ringworld/client/chunk/RingClientChunkMapAccess.java"
+      - "src/client/java/dev/ringworld/client/mixin/ClientChunkMapMixin.java"
+      - "scripts/test_client_chunk_map_lifecycle.py"
+      - ".github/workflows/client-chunk-map-ownership.yml"
+  push:
+    paths:
+      - "src/client/java/dev/ringworld/client/chunk/RingClientChunkMaps.java"
+      - "src/client/java/dev/ringworld/client/chunk/RingClientChunkMapAccess.java"
+      - "src/client/java/dev/ringworld/client/mixin/ClientChunkMapMixin.java"
+      - "scripts/test_client_chunk_map_lifecycle.py"
+      - ".github/workflows/client-chunk-map-ownership.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ownership-regression:
+    # Minimal type stubs compile the real registry; this never launches Minecraft
+    # and does not qualify either platform's graphical runtime.
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Exercise live, abandoned, and replaced storage ownership
+        run: python -m unittest scripts/test_client_chunk_map_lifecycle.py

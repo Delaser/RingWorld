@@ -426,6 +426,13 @@ large teleport may make the old and new client chunk-array windows disjoint;
 the client then clears and re-keys its chunk map before accepting packets in
 the new chart.
 
+The client chunk registry must own neither the manager nor its private storage.
+Vanilla storage retains its manager, including through loaded chunks and their
+level. Weak keys with strong storage values therefore retain disconnected worlds.
+`RingClientChunkMaps` uses weak keys and weak values; the live vanilla manager
+already strongly owns its current storage. Replacing storage updates that
+association without extending the lifetime of the previous client chart.
+
 ## World generation
 
 ### Periodic terrain noise
