@@ -1,0 +1,93 @@
+{
+  "schemaVersion": 1,
+  "kind": "planning-only",
+  "release": "1.4",
+  "upstreamRevision": "1533878fe3a6eab7562830b3f39cbd7caae6d46a",
+  "baselineRevision": "8f1fe43a3f706d98883b75fce478dc80c5c56817",
+  "executionReady": false,
+  "qualificationStatus": "NOT_RUN",
+  "loaderDecision": "Owner confirmed: Fabric/Forge for 1.20.1; Fabric/NeoForge for 1.21.1",
+  "contracts": {
+    "settingsFormat": 5,
+    "terrainNoiseMapping": 4,
+    "atlasFormat": 11,
+    "atlasSourceStep": 1,
+    "maximumAtlasCells": 16777216,
+    "crossMinecraftConnections": false,
+    "saveDowngradeSupported": false,
+    "preserveLocalRecaptureFairness": true,
+    "requireNonblockingChunkAcquisition": true,
+    "requireExactPackagedCandidates": true,
+    "requireIndependentDiskEvidence": true,
+    "sourceChangesInvalidateAcceptance": true
+  },
+  "cells": [
+    {"id": "1.21.1-fabric", "minecraft": "1.21.1", "loader": "fabric", "javaMajor": 21, "status": "NOT_RUN", "runtimeManifest": null},
+    {"id": "1.21.1-neoforge", "minecraft": "1.21.1", "loader": "neoforge", "javaMajor": 21, "status": "NOT_RUN", "runtimeManifest": null},
+    {"id": "1.20.1-fabric", "minecraft": "1.20.1", "loader": "fabric", "javaMajor": 17, "status": "NOT_RUN", "runtimeManifest": null},
+    {"id": "1.20.1-forge", "minecraft": "1.20.1", "loader": "forge", "javaMajor": 17, "status": "NOT_RUN", "runtimeManifest": null}
+  ],
+  "coreFixtures": [
+    "creation-ui", "worldgen", "atlas-recovery", "atlas-ui", "multiplayer",
+    "raid", "map-compass", "production-lifecycle", "curved-objects", "production-render"
+  ],
+  "requiredExtensions": [
+    "atlas-concurrency-checkpoints", "scheduled-save-lighting",
+    "exterior-building-visibility", "projection-sky-wall-water",
+    "version-upgrade-rejection", "memory-performance-soak", "render-core-isolation"
+  ],
+  "featureGates": {
+    "F01": ["atlas-recovery", "atlas-concurrency-checkpoints", "memory-performance-soak"],
+    "F02": ["atlas-concurrency-checkpoints", "multiplayer", "memory-performance-soak"],
+    "F03": ["atlas-concurrency-checkpoints", "memory-performance-soak"],
+    "F04": ["scheduled-save-lighting", "memory-performance-soak"],
+    "F05": ["scheduled-save-lighting", "multiplayer", "memory-performance-soak"],
+    "F06": ["atlas-ui", "exterior-building-visibility", "version-upgrade-rejection"],
+    "F07": ["exterior-building-visibility", "multiplayer"],
+    "F08": ["projection-sky-wall-water", "curved-objects", "render-core-isolation"],
+    "F09": ["projection-sky-wall-water", "production-render"],
+    "F10": ["projection-sky-wall-water", "production-render"],
+    "F11": ["projection-sky-wall-water", "production-render", "production-lifecycle"],
+    "F12": ["atlas-ui", "atlas-concurrency-checkpoints", "projection-sky-wall-water"],
+    "F13": ["render-core-isolation", "curved-objects", "production-render"],
+    "F14": ["projection-sky-wall-water", "render-core-isolation"],
+    "F15": ["creation-ui", "render-core-isolation"],
+    "F16": ["creation-ui", "worldgen", "atlas-recovery", "atlas-ui", "multiplayer", "raid", "map-compass", "production-lifecycle", "curved-objects", "production-render", "version-upgrade-rejection"]
+  },
+  "performance": {
+    "pairedRepeatsMinimum": 3,
+    "checkpointPairsMinimum": 6,
+    "soakMinutesMinimum": 60,
+    "disconnectReopensMinimum": 10,
+    "largeServerHeapMiB": 4096,
+    "largeServerClients": 3,
+    "ordinaryMeanTickMsBelow": 50,
+    "ordinaryP95TickMsMaximum": 50,
+    "p95RegressionPercentMaximum": 10,
+    "p99RegressionPercentMaximum": 15,
+    "recurringWarmCheckpointStepMsBlocker": 100,
+    "requireRawMeasurements": true,
+    "requireHealthyClients": true
+  },
+  "compatibility": {
+    "releaseRenderer": "vanilla",
+    "sodiumClaim": "pending-target-specific-validation",
+    "forgeRendererAlternativesClaim": "not-qualified",
+    "shaderPacksClaim": "not-qualified",
+    "createFlywheelClaim": "benched"
+  },
+  "platforms": {
+    "primaryFullMatrix": "windows-x64",
+    "linuxDedicated": "NOT_RUN",
+    "macosGraphical": "NOT_RUN"
+  },
+  "blockers": [
+    "1.4 product features have not been ported or accepted on either backport",
+    "Audit and replace the blocking 1.21.1 chunk acquisition boundary",
+    "Preserve local unloaded-recapture fairness while merging upstream service changes",
+    "Review and pin the complete 1.20.1 toolchain/dependency graph",
+    "Implement explicit backport runtime manifests and qualification adapters",
+    "Prepare independently inventoried native production worlds for each Minecraft version",
+    "Execute all core, feature, performance, recovery and packaged-candidate gates"
+  ]
+}

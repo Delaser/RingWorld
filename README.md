@@ -13,11 +13,13 @@ work across the join.
 [Project showcase](https://andwhatnotstudio.com/ringworld/) ·
 [Report a problem](https://github.com/Delaser/RingWorld/issues)
 
-> **Minecraft 1.21.1 backport branch:** this branch contains RingWorld 1.0
-> Beta 1 for Fabric and NeoForge on Java 21. The exact release jars, hashes,
-> validation scope, limitations, known build problems, and future update
-> guidance are recorded in the
+> **Minecraft 1.21.1 maintenance branch:** Fabric and NeoForge use Java 21.
+> The published Beta 2 and later development checkpoints, exact artifacts,
+> validation scope, limitations and update guidance are recorded in the
 > [1.21.1 backport guide](versions/mc1.21.1/README.md).
+> The [1.4 backport and dual-version acceptance plan](docs/BACKPORT_1_4_DUAL_VERSION_PLAN_2026-10-15.md)
+> audits the published 1.4 changes and plans 1.21.1 plus 1.20.1 support.
+> It does not claim an accepted 1.4 backport or a working 1.20.1 build yet.
 
 ## What does it look like?
 

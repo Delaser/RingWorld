@@ -18,6 +18,8 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
         self.assertIn("python -m unittest", source)
         self.assertIn('"scripts/external_graphical_*.py"', source)
         self.assertIn('"scripts/run_*_qualification.py"', source)
+        self.assertIn('"config/backport-1.4-acceptance-plan.json"', source)
+        self.assertIn('"scripts/validate_backport_acceptance_plan.py"', source)
         for test in (
             "test_validate_minecraft_version_matrix.py",
             "test_qualification_gradle_isolation.py",
@@ -49,6 +51,7 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
             "test_publish_qualified_release.py",
             "test_external_graphical_creation_ui.py",
             "test_run_creation_ui_qualification.py",
+            "test_validate_backport_acceptance_plan.py",
         ):
             self.assertIn(test, source)
         for prohibited in ("./gradlew", "curl ", "wget ", "java ", "--execute", "urlopen("):

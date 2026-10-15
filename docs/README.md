@@ -6,6 +6,13 @@ path, mixin, configuration field, or operational procedure changes.
 
 Start here:
 
+- [1.4 backport, dual-version support and acceptance](BACKPORT_1_4_DUAL_VERSION_PLAN_2026-10-15.md):
+  published-source functionality audit, 1.21.1/1.20.1 port stages, all ten 26.x
+  fixture families, feature/performance/reliability gates and pending execution.
+- [1.4 acceptance planning contract](../config/backport-1.4-acceptance-plan.json):
+  four proposed cells and 68 required cell-family keys; validate with
+  `python scripts/validate_backport_acceptance_plan.py`. Planning validity is
+  explicitly not runtime qualification.
 - [`../AGENTS.md`](../AGENTS.md): concise operating rules for future coding
   agents.
 - [`../LICENSE`](../LICENSE): authoritative Mozilla Public License 2.0 terms.

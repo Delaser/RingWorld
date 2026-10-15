@@ -11,6 +11,16 @@ compatibility claim.
 
 ## Current feature handoffs
 
+The [1.4 audit and dual-version plan](../../docs/BACKPORT_1_4_DUAL_VERSION_PLAN_2026-10-15.md)
+pins published mainline source `1533878` and local starting point `8f1fe43`.
+Fresh existing-baseline builds and all 1,085 Java cases pass. Both loaders also
+pass fresh 26-capture creation and 13-capture Atlas UI gates. These are 1.3
+baseline checks, not accepted 1.4 artifacts. The audit identifies the blocking
+1.21.1 `getChunkFuture` owner-thread path and the need to preserve the local
+recapture fairness fix. The separate 1.20.1 lane is planned, not implemented.
+Full acceptance retains all ten 26.x fixture families and adds explicit 1.4,
+upgrade, performance and soak checks. See the [audit record](MAINLINE_1_4_AUDIT_2026-10-15.md).
+
 The [mainline 1.3 development candidate](MAINLINE_1_3_IMPLEMENTATION_2026-10-02.md)
 ports the one-block Atlas, water/light contract, wall rendering, interaction
 corrections and unified UI to both loaders. It records the new builds and
