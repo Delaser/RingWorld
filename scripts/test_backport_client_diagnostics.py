@@ -1,0 +1,37 @@
+import unittest
+
+from scripts.run_backport_client_diagnostics import cases, required_native_captures
+
+
+class BackportClientRecipeTests(unittest.TestCase):
+    def test_every_projection_environment_keeps_three_raw_windows_and_native_verifier(self):
+        recipes = cases()
+        self.assertEqual(len(recipes), len({case.name for case in recipes}))
+        for environment in ('noon', 'dusk', 'night', 'rain'):
+            recipe = next(case for case in recipes if case.name == 'production-' + environment)
+            self.assertEqual((3, 3, 'medium', 'verifyProductionProjectionClient'),
+                             (recipe.captures, recipe.raw_frames, recipe.master, recipe.verifier))
+            self.assertEqual(environment, recipe.properties['projectionEnvironment'])
+            self.assertEqual(environment, recipe.gradle_properties['ProjectionEnvironment'])
+
+    def test_safe_small_matrix_lifecycle_and_new_native_controls_are_not_omitted(self):
+        recipes = {case.name: case for case in cases()}
+        for distance in (6, 12, 28):
+            recipe = recipes['small-seam-rims-' + str(distance)]
+            self.assertEqual(('small', 4, 1), (recipe.master, recipe.captures, recipe.raw_frames))
+        for name in ('creation-ui', 'atlas-ui', 'map-compass', 'curved-objects',
+                     'production-lifecycle', 'layout-switch', 'underwater', 'horizon',
+                     'floating-atlas', 'walls', 'altitude', 'clouds', 'foliage', 'streaming',
+                     'fabulous-noon', 'fabulous-rain'):
+            self.assertIn(name, recipes)
+        self.assertEqual(7, recipes['underwater'].captures)
+        self.assertEqual('First', recipes['layout-switch'].properties['layoutSwitchFirst'])
+        self.assertEqual('Second', recipes['layout-switch'].properties['layoutSwitchSecond'])
+
+    def test_unverified_native_controls_require_every_named_image(self):
+        for recipe in cases():
+            if recipe.verifier is None:
+                self.assertEqual(recipe.captures, len(required_native_captures(recipe)))
+
+
+if __name__ == '__main__': unittest.main()

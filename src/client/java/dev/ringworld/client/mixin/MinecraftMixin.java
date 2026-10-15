@@ -30,5 +30,6 @@ abstract class MinecraftMixin {
     @Inject(method = "runTick", at = @At("TAIL"))
     private void ringworld$recordCreationUiTestFrame(boolean advanceGameTime, CallbackInfo ci) {
         RingWorldCreationUiTestClient.frameRendered();
+        dev.ringworld.client.RingFloatingAtlasCaptureClient.frameRendered();
     }
 }

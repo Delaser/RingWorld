@@ -132,6 +132,7 @@ public final class RingHandoffFoliageCaptureClient {
     private long totalFrameNanos;
     private long maximumFrameNanos;
     private int frameSamples;
+    private final RingFrameEvidence rawFrames = new RingFrameEvidence();
     private int slowFrames;
     private int streamingCoverageDropFrames;
     private int streamingCoverageDropRun;
@@ -281,6 +282,7 @@ public final class RingHandoffFoliageCaptureClient {
             totalFrameNanos += elapsed;
             maximumFrameNanos = Math.max(maximumFrameNanos, elapsed);
             frameSamples++;
+            rawFrames.record(elapsed);
             if (elapsed > 50_000_000L) slowFrames++;
         }
         lastFrameNanos = now;
@@ -1105,6 +1107,7 @@ public final class RingHandoffFoliageCaptureClient {
     }
 
     private void startFrameMetrics() {
+        rawFrames.reset();
         frameMetricsActive = true;
         lastFrameNanos = 0L;
         totalFrameNanos = 0L;
@@ -1118,6 +1121,7 @@ public final class RingHandoffFoliageCaptureClient {
     }
 
     private void finishFrameMetrics() {
+        rawFrames.write("foliage-motion", frameSamples);
         frameMetricsActive = false;
         double averageMillis = frameSamples == 0
                 ? 0.0 : totalFrameNanos / 1_000_000.0 / frameSamples;

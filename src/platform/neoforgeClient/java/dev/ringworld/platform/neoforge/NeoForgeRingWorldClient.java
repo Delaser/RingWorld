@@ -339,6 +339,10 @@ public final class NeoForgeRingWorldClient {
         if (!Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) {
             ClientRingState.saveTerrainAtlasIfDue(false);
         }
+        if (dev.ringworld.client.RingUnderwaterCaptureClient.tickIfEnabled(client)) return;
+        if (dev.ringworld.client.RingHorizonCaptureClient.tickIfEnabled(client)) return;
+        if (dev.ringworld.client.RingFloatingAtlasCaptureClient.tickIfEnabled(client)) return;
+        if (dev.ringworld.client.RingFloatingStructureCaptureClient.tickIfEnabled(client)) return;
         if (PRODUCTION_LIFECYCLE.tick(client)) return;
         if (LAYOUT_SWITCH.tick(client)) return;
         if (MULTIPLAYER_TEST.tick(client)) return;

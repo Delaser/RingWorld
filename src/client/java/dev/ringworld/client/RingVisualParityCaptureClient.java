@@ -57,6 +57,7 @@ public final class RingVisualParityCaptureClient {
     private long seamMotionTotalFrameNanos;
     private long seamMotionMaxFrameNanos;
     private int seamMotionFrameSamples;
+    private final RingFrameEvidence rawFrames = new RingFrameEvidence();
     private int seamMotionSlowFrames;
 
     public boolean tick(Minecraft client) {
@@ -211,12 +212,14 @@ public final class RingVisualParityCaptureClient {
             seamMotionTotalFrameNanos += elapsed;
             seamMotionMaxFrameNanos = Math.max(seamMotionMaxFrameNanos, elapsed);
             seamMotionFrameSamples++;
+            rawFrames.record(elapsed);
             if (elapsed > 50_000_000L) seamMotionSlowFrames++;
         }
         seamMotionLastFrameNanos = now;
     }
 
     private void startSeamMotionMetrics() {
+        rawFrames.reset();
         seamMotionMetricsActive = true;
         seamMotionLastFrameNanos = 0L;
         seamMotionTotalFrameNanos = 0L;
@@ -226,6 +229,7 @@ public final class RingVisualParityCaptureClient {
     }
 
     private void finishSeamMotionMetrics() {
+        rawFrames.write("natural-seam", seamMotionFrameSamples);
         seamMotionMetricsActive = false;
         double averageMillis = seamMotionFrameSamples == 0 ? 0.0
                 : seamMotionTotalFrameNanos / 1_000_000.0 / seamMotionFrameSamples;

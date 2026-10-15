@@ -52,6 +52,9 @@ class QualificationStaticWorkflowTest(unittest.TestCase):
             "test_external_graphical_creation_ui.py",
             "test_run_creation_ui_qualification.py",
             "test_validate_backport_acceptance_plan.py",
+            "test_backport_exterior_diagnostics.py",
+            "test_backport_client_diagnostics.py",
+            "test_verify_backport_frame_evidence.py",
         ):
             self.assertIn(test, source)
         for prohibited in ("./gradlew", "curl ", "wget ", "java ", "--execute", "urlopen("):

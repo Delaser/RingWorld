@@ -6,6 +6,7 @@ plugins {
 tasks.named('check') {
 	dependsOn(rootProject.tasks.named('verifyOutboundPositionPacketInventory'))
 	dependsOn(rootProject.tasks.named('verifyBackportDependencyInventory'))
+	dependsOn(rootProject.tasks.named('verifyRuntimeEvidenceRollover'))
 	dependsOn(rootProject.tasks.named('verifyBackportHandoffShaderBindings'))
 }
 

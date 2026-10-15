@@ -63,6 +63,7 @@ public final class RingProjectionCaptureClient {
     private long totalFrameNanos;
     private long maxFrameNanos;
     private int frameSamples;
+    private final RingFrameEvidence rawFrames = new RingFrameEvidence();
     private int slowFrames;
     private int streamingStableTicks;
 
@@ -437,6 +438,7 @@ public final class RingProjectionCaptureClient {
             totalFrameNanos += elapsed;
             maxFrameNanos = Math.max(maxFrameNanos, elapsed);
             frameSamples++;
+            rawFrames.record(elapsed);
             if (elapsed > 50_000_000L) slowFrames++;
         }
         lastFrameNanos = now;
@@ -612,6 +614,7 @@ public final class RingProjectionCaptureClient {
     }
 
     private void completeCaptureStage(String label) {
+        rawFrames.write("projection-" + label, frameSamples);
         double averageMillis = frameSamples == 0
                 ? 0.0 : totalFrameNanos / 1_000_000.0 / frameSamples;
         RingWorldMod.LOGGER.info(
@@ -623,6 +626,7 @@ public final class RingProjectionCaptureClient {
     }
 
     private void completeStreamingCapture() {
+        rawFrames.write("projection-streaming-fallback", frameSamples);
         double averageMillis = frameSamples == 0
                 ? 0.0 : totalFrameNanos / 1_000_000.0 / frameSamples;
         RingWorldMod.LOGGER.info(
@@ -634,6 +638,7 @@ public final class RingProjectionCaptureClient {
     }
 
     private void resetFrameMetrics() {
+        rawFrames.reset();
         lastFrameNanos = 0L;
         totalFrameNanos = 0L;
         maxFrameNanos = 0L;

@@ -332,3 +332,42 @@ Both full builds pass (Fabric 610 / NeoForge 633, zero failures/errors/skips).
 The first build failed on a missing `DeathScreen` import; the repaired build
 passes with no assertion changes. Native execution of the affected lifecycle,
 world switch, navigation and production-capture cases is still outstanding.
+
+### Native visual feature fixtures and raw measurements
+
+Mainline's underwater, horizon, floating-Atlas/platform, wall/altitude and cloud
+fixtures are adapted to native 1.21.1 creation, camera, teleport, gamerule and
+screenshot APIs. Only native-version source copies are opened; the 26.x
+file-fix upgrade helper is not applicable. Native 1.21.1 has no separate
+vignette/inactivity options used by the newer fixture. Normal controls remain
+unchanged outside opt-in flags.
+
+The underwater fixture keeps all six mainline states and adds a rear camera
+below the open pool surface while the player's eyes remain dry. It independently
+asserts actual camera fluid, suppressed proxy drawing and above-water recovery.
+Floating-Atlas floor edits wait for normal recapture to drain even when the
+input cache was already complete, then wait for the client to match the baseline.
+Natural/short-gap/thick-layer controls, stacked builds, seam, colour/light/water,
+support edits, initial capture and normal save/reopen assertions remain intact.
+
+Opt-in `ringworld.rawFrameEvidence` retains every measured projection, natural
+seam and foliage duration in bounded, exclusive RWFR files. Ordinary play
+allocates no sample buffers and writes no measurement files. An independent
+reader validates header/length/positive samples and computes percentiles and
+slow-frame counts; it deliberately produces no performance PASS verdict.
+
+`scripts/run_backport_client_diagnostics.py` defines 24 serial packaged cases
+per loader (at least 143 captures and 24 raw frame windows), using inventory-
+verified official class/module paths and the actual copied runtime jar. Existing
+Gradle preparation/verifiers run in fresh contained qualification directories;
+new native controls require every named PNG. Saved Atlas data is independently
+decoded, original inputs are inventoried and preserved, and optional successful
+world retirement retains file inventories plus settings/maps/player/Atlas data.
+Failed attempts retain their worlds. Source drift, missing/corrupt samples or
+captures, explicit failures and abnormal exits cannot pass. These tools label
+every result diagnostic-only and cannot substitute for the 68-family final
+acceptance/performance/platform/review verdict. Both full builds pass at this
+checkpoint; the new native graphical cases have not run yet.
+
+Ten Python diagnostic/measurement/workflow checks pass and are wired into the
+static workflow. Their result is tooling validation, not Minecraft execution.
