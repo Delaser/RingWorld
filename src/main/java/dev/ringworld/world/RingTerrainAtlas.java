@@ -46,7 +46,12 @@ public final class RingTerrainAtlas {
     // Low nibble: block light; high nibble: authored water coverage (0..15).
     private final byte[] blockLights;
     private final boolean[] present;
+    // Derived only, never serialized: at most 256 cells per canonical chunk.
+    private final short[] presentCellsPerChunk;
+    private final int samplesPerChunk;
+    private final int cellsPerChunk;
     private int presentCount;
+    private int completeChunkCount;
     private long revision;
 
     public RingTerrainAtlas(RingGeometry geometry, long worldHash) {
@@ -72,6 +77,10 @@ public final class RingTerrainAtlas {
         this.sideColors = new int[cellCount];
         this.blockLights = new byte[cellCount];
         this.present = new boolean[cellCount];
+        this.samplesPerChunk = 16 / sampleStep;
+        this.cellsPerChunk = samplesPerChunk * samplesPerChunk;
+        this.presentCellsPerChunk = new short[Math.multiplyExact(
+                geometry.circumferenceChunks(), geometry.widthChunks())];
     }
 
     public static long worldHash(RingWorldSettings settings) {
@@ -92,7 +101,8 @@ public final class RingTerrainAtlas {
     public long revision() { return revision; }
     public int cellCount() { return present.length; }
     public long estimatedMemoryBytes() {
-        return (long)present.length * ESTIMATED_BYTES_PER_CELL;
+        return (long)present.length * ESTIMATED_BYTES_PER_CELL
+                + (long)presentCellsPerChunk.length * Short.BYTES;
     }
     public long estimatedWireBytes() {
         return (long)present.length * ESTIMATED_BYTES_PER_CELL
@@ -129,7 +139,10 @@ public final class RingTerrainAtlas {
         System.arraycopy(sideColors, 0, copy.sideColors, 0, sideColors.length);
         System.arraycopy(blockLights, 0, copy.blockLights, 0, blockLights.length);
         System.arraycopy(present, 0, copy.present, 0, present.length);
+        System.arraycopy(presentCellsPerChunk, 0, copy.presentCellsPerChunk, 0,
+                presentCellsPerChunk.length);
         copy.presentCount = presentCount;
+        copy.completeChunkCount = completeChunkCount;
         copy.revision = revision;
         return copy;
     }
@@ -140,7 +153,7 @@ public final class RingTerrainAtlas {
                 || sampleStep != destination.sampleStep || first < 0 || count < 0
                 || first > present.length - count) throw new IllegalArgumentException("invalid checkpoint slice");
         for (int i = first; i < first + count; i++) {
-            if (present[i] != destination.present[i]) destination.presentCount += present[i] ? 1 : -1;
+            destination.setPresence(i, present[i]);
         }
         System.arraycopy(heights, first, destination.heights, first, count);
         System.arraycopy(colors, first, destination.colors, first, count);
@@ -152,7 +165,8 @@ public final class RingTerrainAtlas {
     /** Call only after all slices and subsequently dirtied slices match this live source. */
     public void finishCheckpointCopy(RingTerrainAtlas source) {
         if (!geometry.equals(source.geometry) || worldHash != source.worldHash
-                || sampleStep != source.sampleStep || presentCount != source.presentCount) {
+                || sampleStep != source.sampleStep || presentCount != source.presentCount
+                || completeChunkCount != source.completeChunkCount) {
             throw new IllegalStateException("incomplete checkpoint copy");
         }
         revision = source.revision;
@@ -226,10 +240,7 @@ public final class RingTerrainAtlas {
         boolean changed = !present[index] || heights[index] != clampedHeight
                 || colors[index] != rgb || blockLights[index] != light
                 || sideColors[index] != (sideColor & 0xFFFFFF);
-        if (!present[index]) {
-            present[index] = true;
-            presentCount++;
-        }
+        setPresence(index, true);
         heights[index] = clampedHeight;
         colors[index] = rgb;
         sideColors[index] = sideColor & 0xFFFFFF;
@@ -389,8 +400,7 @@ public final class RingTerrainAtlas {
                                 || colors[index] != incomingColor
                                 || blockLights[index] != incomingBlockLight
                                 || sideColors[index] != sideColor;
-                        if (!present[index]) presentCount++;
-                        present[index] = true;
+                        setPresence(index, true);
                         heights[index] = incomingHeight;
                         colors[index] = incomingColor;
                         blockLights[index] = incomingBlockLight;
@@ -451,12 +461,11 @@ public final class RingTerrainAtlas {
             atlas.revision = input.readLong();
             if (atlas.revision < 0L) throw new IOException("negative terrain atlas revision");
             for (int index = 0; index < atlas.present.length; index++) {
-                atlas.present[index] = input.readBoolean();
+                atlas.setPresence(index, input.readBoolean());
                 atlas.heights[index] = input.readShort();
                 atlas.colors[index] = input.readInt() & 0xFFFFFF;
                 atlas.blockLights[index] = input.readByte();
                 atlas.sideColors[index] = input.readInt() & 0xFFFFFF;
-                if (atlas.present[index]) atlas.presentCount++;
             }
             if (input.read() != -1) throw new IOException("trailing terrain atlas data");
             return atlas;
@@ -519,29 +528,15 @@ public final class RingTerrainAtlas {
     }
 
     public boolean isChunkPresent(int chunkX, int chunkRow) {
-        int samplesPerChunk = 16 / sampleStep;
-        int firstX = chunkX * samplesPerChunk;
-        int firstZ = chunkRow * samplesPerChunk;
-        for (int z = 0; z < samplesPerChunk; z++) {
-            for (int x = 0; x < samplesPerChunk; x++) {
-                if (!hasCell(firstX + x, firstZ + z)) return false;
-            }
-        }
-        return true;
+        if (chunkRow < 0 || chunkRow >= geometry.widthChunks()) return false;
+        int chunksAlong = geometry.circumferenceChunks();
+        return presentCellsPerChunk[chunkRow * chunksAlong + Math.floorMod(chunkX, chunksAlong)]
+                == cellsPerChunk;
     }
 
     /** Exact durable count used for progress reporting after restart/resume. */
     public long presentChunkCount() {
-        // Completed worlds publish status to each player repeatedly. The cell
-        // counter already proves every chunk is present; avoid a full scan.
-        if (isComplete()) return (long)geometry.circumferenceChunks() * geometry.widthChunks();
-        long count = 0;
-        for (int chunkX = 0; chunkX < geometry.circumferenceChunks(); chunkX++) {
-            for (int chunkRow = 0; chunkRow < geometry.widthChunks(); chunkRow++) {
-                if (isChunkPresent(chunkX, chunkRow)) count++;
-            }
-        }
-        return count;
+        return completeChunkCount;
     }
 
     public void clear() {
@@ -549,7 +544,24 @@ public final class RingTerrainAtlas {
         Arrays.fill(colors, 0);
         Arrays.fill(blockLights, (byte)0);
         Arrays.fill(present, false);
+        Arrays.fill(presentCellsPerChunk, (short)0);
         presentCount = 0;
+        completeChunkCount = 0;
+    }
+
+    /** Owner-thread presence accounting shared by edits, wire merges and snapshots. */
+    private void setPresence(int cellIndex, boolean value) {
+        if (present[cellIndex] == value) return;
+        int chunkX = (cellIndex % columns) / samplesPerChunk;
+        int chunkRow = (cellIndex / columns) / samplesPerChunk;
+        int chunkIndex = chunkRow * geometry.circumferenceChunks() + chunkX;
+        int before = presentCellsPerChunk[chunkIndex];
+        if (before == cellsPerChunk) completeChunkCount--;
+        int after = before + (value ? 1 : -1);
+        presentCellsPerChunk[chunkIndex] = (short)after;
+        if (after == cellsPerChunk) completeChunkCount++;
+        present[cellIndex] = value;
+        presentCount += value ? 1 : -1;
     }
 
     private int index(int column, int row) { return row * columns + column; }

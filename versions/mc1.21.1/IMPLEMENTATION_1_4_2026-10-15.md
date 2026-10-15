@@ -288,3 +288,25 @@ The graphical runtime verifiers now read ordered date/sequence rollover archives
 plus `latest.log`, bounded to 64 MiB per attempt. A real gzip fixture retains
 an earlier failure across midnight and rejects corrupt archives. Runs must own
 fresh log directories; archives from a prior attempt are not valid evidence.
+
+### Partial Large progress cost
+
+The old diagnostic Large producer exposes increasing partial-status cost:
+674 observations through 3,540,224/16,777,216 cells include a 27.1799 ms maximum.
+This is one headless query, not a three-player gameplay/performance verdict.
+A stable atomic checkpoint with 3,583,488 present cells was independently
+validated and retained at `.codex-tmp/b14-worlds/large-partial-checkpoint/`.
+
+The candidate replaces partial `presentChunkCount()` scans with a derived short
+cell count per canonical chunk and an exact complete-chunk counter. First
+presence, repeated edits/tiles, loading, snapshot copying, reusable checkpoint
+repairs (including removals) and clearing all maintain that index. The wire/disk
+format remains 11. Large source-step-1 memory adds 128 KiB per Atlas; the
+instance memory estimate includes this derived storage. Both chunk-presence and
+progress queries are constant time; first-missing iteration checks chunks.
+
+Ten new parameterized cases pass on each loader, using an independent full cell
+oracle at all five legal sample steps and non-power-of-two dimensions. Full
+unit totals are Fabric 608 / NeoForge 631. Real partial Large status/three-client
+measurements still need the newly frozen candidate; the running producer and
+queued exterior diagnostics retain their earlier exact source/jar identities.
