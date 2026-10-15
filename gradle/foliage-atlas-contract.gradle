@@ -1,0 +1,47 @@
+// The one-block Atlas includes authoritative leaf planes. Pixel isolation uses
+// a same-Atlas client geometry ablation; final removal restores native content.
+ext.validateFoliageAtlasContract = { Map proof ->
+    def invalid = { String reason -> throw new GradleException("Foliage Atlas contract: ${reason}") }
+    ['beforeContent', 'fixtureContent', 'controlContent', 'clearContent'].each { key ->
+        def value = proof[key]
+        if (!(value instanceof String) || !(value ==~ /[0-9]{1,20}/)
+                || new BigInteger(value).bitLength() > 64) invalid("invalid unsigned ${key}")
+    }
+    if (!(proof.beforeRevision >= 0 && proof.fixtureRevision > proof.beforeRevision
+            && proof.clearRevision > proof.fixtureRevision)) invalid('revision order')
+    if (proof.beforeContent == proof.fixtureContent) invalid('authoritative leaves absent from Atlas')
+    if (proof.controlRevision != proof.fixtureRevision || proof.controlContent != proof.fixtureContent)
+        invalid('ablation changed Atlas')
+    if (proof.clearContent != proof.beforeContent) invalid('original Atlas content not restored')
+    if (proof.originalBlocks != 15015 || proof.clearOriginalBlocks != 15015
+            || proof.clientOriginalBlocks != 15015 || proof.serverBlocks != 7508)
+        invalid('incomplete original-state restoration or authority proof')
+    if (proof.probeX != 3912 || proof.probeZ != -32 || proof.probeHeight != 110)
+        invalid('natural-leaf sample does not bind the fixture')
+}
+
+tasks.register('verifyFoliageAtlasContract') {
+    group = 'ringworld verification'
+    description = 'Rejects stale-Atlas ablation, missing native foliage, incomplete restoration and invalid content evidence.'
+    doLast {
+        def valid = [beforeRevision: 10L, fixtureRevision: 14L, clearRevision: 18L,
+                beforeContent: '18446744073709551615', fixtureContent: '55',
+                controlContent: '55', clearContent: '18446744073709551615', controlRevision: 14L,
+                originalBlocks: 15015, clearOriginalBlocks: 15015, clientOriginalBlocks: 15015,
+                serverBlocks: 7508, probeX: 3912, probeZ: -32, probeHeight: 110]
+        project.ext.validateFoliageAtlasContract(valid)
+        def rejected = [
+                [fixtureContent: valid.beforeContent], [controlRevision: 15L], [controlContent: '56'],
+                [clearContent: '44'], [clientOriginalBlocks: 15014], [clearOriginalBlocks: 7508],
+                [serverBlocks: 0], [clearRevision: 14L], [fixtureRevision: 9L],
+                [probeHeight: 109], [beforeContent: '18446744073709551616'], [beforeContent: '-1']]
+        rejected.eachWithIndex { changes, index ->
+            boolean failed = false
+            try { project.ext.validateFoliageAtlasContract(new LinkedHashMap(valid) + changes) }
+            catch (GradleException expected) { failed = true }
+            if (!failed) throw new GradleException("Foliage contract accepted invalid case ${index}: ${changes}")
+        }
+        logger.lifecycle('[foliage-atlas-contract] PASS valid native contract and 12 negative cases')
+    }
+}
+tasks.named('check') { dependsOn tasks.named('verifyFoliageAtlasContract') }

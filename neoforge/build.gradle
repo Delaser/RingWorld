@@ -11,6 +11,8 @@ tasks.named('check') {
 }
 
 version = rootProject.mod_version
+
+tasks.named('check') { dependsOn rootProject.tasks.named('verifyFoliageAtlasContract') }
 group = rootProject.maven_group
 
 base {

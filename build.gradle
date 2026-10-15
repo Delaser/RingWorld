@@ -1181,12 +1181,14 @@ tasks.register("verifyBackportHandoffShaderBindings") {
 	doLast { requireHandoffShaderBindingContract() }
 }
 
+apply from: 'gradle/foliage-atlas-contract.gradle'
+
 def verifyHandoffFoliageOutputs = { File runDirectory, String label ->
 	requireHandoffShaderBindingContract()
 	def logFile = new File(runDirectory, "logs/latest.log")
 	def log = logFile.isFile() ? readRuntimeEvidenceLog(logFile) : ""
 	if (!log.contains(
-			"[handoff-foliage-capture] result=true, captures complete, screenshots=9")
+            "[handoff-foliage-capture] result=true, captures complete, screenshots=11")
 			|| log.contains("[handoff-foliage-capture] result=false")
 			|| log.contains("[handoff-foliage-capture] ")
 					&& log.contains(" screenshot failure:")) {
@@ -1317,7 +1319,7 @@ def verifyHandoffFoliageOutputs = { File runDirectory, String label ->
 	int resetFallbackIndex = log.indexOf(resetFallbackLines.first())
 	int resetRecoveryIndex = log.indexOf(resetRecoveryLines.first())
 	int resultIndex = log.indexOf(
-			"[handoff-foliage-capture] result=true, captures complete, screenshots=9")
+            "[handoff-foliage-capture] result=true, captures complete, screenshots=11")
 	if (!(resetRequestedIndex < resetFallbackIndex
 			&& resetFallbackIndex < resetRecoveryIndex
 			&& resetRecoveryIndex < resultIndex)) {
@@ -1406,16 +1408,34 @@ def verifyHandoffFoliageOutputs = { File runDirectory, String label ->
 	if (clearedLines.size() != 1) {
 		throw new GradleException("${label} requires one cleared-fixture marker: ${logFile}")
 	}
-	def cleared = (clearedLines.first() =~ /blocks=(\d+), atlasRevision=(\d+)/)
+    def cleared = (clearedLines.first() =~ /blocks=(\d+), atlasRevision=(\d+), content=(\d+), originalBlocks=(\d+)/)
 	if (!cleared.find() || cleared.group(1).toInteger() != 7_508
 			|| cleared.group(2).toLong() != quiescence["post-clear"]
-			|| quiescence["pre-fixture"] != quiescence["post-fixture"]
-			|| quiescence["post-fixture"] != quiescence["post-clear"]
 			|| atlasRevision != quiescence["post-fixture"]) {
 		throw new GradleException(
 				"${label} did not isolate live foliage from Atlas revisions: ${logFile}")
 	}
-	["empty-a", "empty-b"].each { id ->
+    def contentLines = log.readLines().findAll { it.contains('[handoff-foliage-capture] Atlas content contract ') }
+    def authorityLines = log.readLines().findAll { it.contains('[handoff-foliage-capture] Atlas-only authority ') }
+    if (contentLines.size() != 1 || authorityLines.size() != 1)
+        throw new GradleException("${label} lacks unique Atlas content/authority evidence")
+    def content = (contentLines.first() =~ /beforeRevision=(\d+), beforeContent=(\d+), fixtureRevision=(\d+), fixtureContent=(\d+), probeX=(-?\d+), probeZ=(-?\d+), probeHeight=(\d+), originalBlocks=(\d+)/)
+    def authority = (authorityLines.first() =~ /serverBlocks=(\d+), clientOriginalBlocks=(\d+), atlasRevision=(\d+), content=(\d+)/)
+    if (!content.find() || !authority.find() || content.group(1).toLong() != quiescence['pre-fixture']
+            || content.group(3).toLong() != atlasRevision)
+        throw new GradleException("${label} has unbound Atlas content evidence")
+    project.ext.validateFoliageAtlasContract([
+            beforeRevision: content.group(1).toLong(), beforeContent: content.group(2),
+            fixtureRevision: content.group(3).toLong(), fixtureContent: content.group(4),
+            probeX: content.group(5).toInteger(), probeZ: content.group(6).toInteger(),
+            probeHeight: content.group(7).toInteger(), originalBlocks: content.group(8).toInteger(),
+            clearRevision: cleared.group(2).toLong(), clearContent: cleared.group(3),
+            clearOriginalBlocks: cleared.group(4).toInteger(), serverBlocks: authority.group(1).toInteger(),
+            clientOriginalBlocks: authority.group(2).toInteger(), controlRevision: authority.group(3).toLong(),
+            controlContent: authority.group(4)])
+    def controlRevisions = ['atlas-only-a': atlasRevision, 'atlas-only-b': atlasRevision,
+                            'empty-a': quiescence['post-clear'], 'empty-b': quiescence['post-clear']]
+    controlRevisions.each { id, expectedRevision ->
 		def lines = log.readLines().findAll {
 			it.contains("[handoff-foliage-capture] captured ${id} at ")
 		}
@@ -1429,7 +1449,7 @@ def verifyHandoffFoliageOutputs = { File runDirectory, String label ->
 				|| Math.abs(Double.parseDouble(pose.group(3)) - 0.5D) > 0.001D
 				|| Math.abs(Double.parseDouble(pose.group(4)) - 90.0D) > 0.001D
 				|| Math.abs(Double.parseDouble(pose.group(5)) - fixturePitch) > 0.001D
-				|| pose.group(6).toLong() != quiescence["post-clear"]
+                || pose.group(6).toLong() != expectedRevision
 				|| Double.parseDouble(pose.group(7)) < 0.95D
 				|| !pose.group(8).toBoolean()
 				|| pose.group(9).toInteger() != 70
@@ -1448,7 +1468,7 @@ def verifyHandoffFoliageOutputs = { File runDirectory, String label ->
 		requireHandoffFoliageDetail(screenshot, label)
 		screenshots[id] = screenshot
 	}
-	["empty-a", "empty-b"].each { id ->
+    controlRevisions.keySet().each { id ->
 		def screenshot = new File(runDirectory,
 				"screenshots/ringworld-handoff-foliage-${id}.png")
 		requireReadablePng(screenshot, label)
@@ -1456,7 +1476,10 @@ def verifyHandoffFoliageOutputs = { File runDirectory, String label ->
 	}
 	requireReadablePng(new File(runDirectory,
 			"screenshots/ringworld-handoff-foliage-reset-fallback.png"), label)
-	requireHandoffFoliageRepeatability(screenshots, label)
+    def isolatedScreenshots = new LinkedHashMap(screenshots)
+    isolatedScreenshots['empty-a'] = screenshots['atlas-only-a']
+    isolatedScreenshots['empty-b'] = screenshots['atlas-only-b']
+    requireHandoffFoliageRepeatability(isolatedScreenshots, label)
 }
 ext.verifyHandoffFoliageOutputs = verifyHandoffFoliageOutputs
 

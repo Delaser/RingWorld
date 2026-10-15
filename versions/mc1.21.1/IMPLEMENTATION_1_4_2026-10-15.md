@@ -807,3 +807,37 @@ The prepared PDF/HTML report generator requires current-candidate terminal/image
 hashes and complete dual-loader graphical/gameplay records. It does not generate
 a completed report from the interrupted queue. Performance/soak, the native
 manual-close investigation and moving wall/water review remain acceptance gates.
+
+### One-block foliage isolation contract
+
+At `a7553fb`, the native Fabric foliage client completes all nine captures and
+144 motion steps, with 1,370 measured frames, zero frames over 50 ms and zero
+unsafe coverage frames, then saves normally. Its verifier still fails, so the
+attempt under `dist/qualification/b14-foliage-fixed-fabric` remains FAIL.
+The legacy verifier requires the pre-placement, post-placement and post-clear
+Atlas revisions to be equal. Its leaf planes were deliberately placed on an
+eight-block sample boundary. The one-block Atlas correctly samples those
+authoritative leaves: the motion phase retains revision 407, and clearing
+advances to 527. Loosening the revision assertion alone would also invalidate
+the old pixel mask's claim to isolate live foliage from the proxy.
+
+The revised fixture retains server-authored leaves and all motion, compile,
+coverage, blocked-sky and same-pose repeatability checks. It records the native
+one-block leaf sample and changed content fingerprint, then creates two
+explicit Atlas-only controls at the same post-fixture revision/content by
+temporarily restoring the original block states only in the client's diagnostic
+volume. A server-thread proof requires all 7,508 authoritative leaves and the
+unchanged Atlas to remain present. The existing pixel algorithm uses these
+same-Atlas controls to isolate live geometry. No production sampler, proxy,
+protocol, or recapture behavior is disabled or overridden.
+
+The authoritative cleanup restores all 15,015 original block states, including
+positions that the checkerboard assigned air. Volumes containing block entities
+are rejected before any placement, so a block-state-only snapshot cannot discard
+their data. The fixture requires client agreement, drained native work and exact
+Atlas content-fingerprint restoration; revisions must advance in the correct
+order. Separate restored-world captures remain. The shared verifier validates
+all controls, and its pure contract includes twelve negative cases for stale
+Atlas, missing native leaves, incomplete authority/restoration and malformed
+content evidence. These changes require fresh builds and real-client validation
+on both loaders; no acceptance PASS is claimed from the design alone.

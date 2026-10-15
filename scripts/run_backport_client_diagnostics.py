@@ -93,7 +93,7 @@ def cases() -> list[Case]:
                            properties={'visualParityWorld': 'Input', 'visualParityViewDistanceChunks': str(distance)},
                            gradle_properties={'VisualParityViewDistanceChunks': str(distance)}, raw_frames=1))
     result.append(Case('foliage', 'run-handoff-foliage-capture', 'captureRingHandoffFoliage',
-                       '[handoff-foliage-capture] result=true, captures complete', 8,
+                       '[handoff-foliage-capture] result=true, captures complete', 11,
                        verifier='verifyHandoffFoliageCaptureClient', master='medium',
                        properties={'handoffFoliageWorld': 'Input'}, raw_frames=1))
     result.append(Case('streaming', 'run-production-streaming-projection', 'captureRingProjection',
@@ -119,6 +119,10 @@ def inventory(path: Path) -> list[dict]:
 
 
 def required_native_captures(case: Case) -> set[str]:
+    if case.name == 'foliage':
+        return {'ringworld-handoff-foliage-' + name + '.png' for name in
+                ('reset-fallback', 'negative-z', 'center-a', 'center-a-control', 'positive-z',
+                 'center-b', 'center-b-control', 'atlas-only-a', 'atlas-only-b', 'empty-a', 'empty-b')}
     if case.name == 'cache-identity':
         return {'cache-identity-' + name + '.png' for name in ('baseline', 'repaired', 'reused')}
     if case.name == 'underwater':

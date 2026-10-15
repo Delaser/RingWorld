@@ -10,6 +10,8 @@ import dev.ringworld.world.RingRenderProfile;
 import dev.ringworld.world.RingTerrainAtlas;
 import net.minecraft.world.level.GameRules;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -26,6 +28,7 @@ import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.LeavesBlock;
 import net.minecraft.world.level.block.state.BlockState;
 
@@ -69,7 +72,8 @@ public final class RingHandoffFoliageCaptureClient {
     private static final int EXPECTED_FIXTURE_BLOCKS = 7_508;
     private static final int EXPECTED_SENTINELS = PLANE_DISTANCES.length * 2;
     private static final int EXPECTED_NATURAL_STEPS = 144;
-    private static final int EXPECTED_SCREENSHOTS = 9;
+    private static final int EXPECTED_SCREENSHOTS = 11;
+    private static final int EXPECTED_ORIGINAL_BLOCKS = 15_015;
     private static final int MAX_STREAMING_COVERAGE_DROP_FRAMES = 64;
     private static final int MAX_STREAMING_COVERAGE_DROP_RUN = 32;
     private static final double NATURAL_STEP = 0.25;
@@ -111,6 +115,14 @@ public final class RingHandoffFoliageCaptureClient {
     private boolean fixtureClearRequested;
     private volatile boolean fixtureCleared;
     private volatile int clearedFixtureBlocks;
+    private volatile Map<BlockPos, BlockState> fixtureOriginalBlocks = Map.of();
+    private long baselineAtlasRevision;
+    private long baselineAtlasContent;
+    private long fixtureAtlasContent;
+    private long fixtureAtlasRevision;
+    private long armedAtlasContent;
+    private boolean atlasOnlyRequested;
+    private volatile boolean atlasOnlyServerProof;
     private long envelopeFrameBaseline = -1L;
     private long controlFrameBaseline = -1L;
     private long sectionRebuildFrameBaseline = -1L;
@@ -119,6 +131,7 @@ public final class RingHandoffFoliageCaptureClient {
     private int atlasStableTicks;
     private volatile boolean atlasIdleProbePending;
     private volatile long idleServerAtlasRevision = Long.MIN_VALUE;
+    private volatile long idleServerAtlasContent;
     private boolean atlasRevisionArmed;
     private double cameraX;
     private double targetAtlasHeight;
@@ -201,6 +214,9 @@ public final class RingHandoffFoliageCaptureClient {
             return fail(client, "terrain Atlas revision changed from " + atlasRevision
                     + " to " + atlas.revision());
         }
+        if (atlasRevisionArmed && atlas.contentFingerprint() != armedAtlasContent) {
+            return fail(client, "terrain Atlas content changed inside an isolated capture phase");
+        }
 
         return switch (stage) {
             case WAITING_FOR_WORLD -> true;
@@ -246,6 +262,9 @@ public final class RingHandoffFoliageCaptureClient {
             case WAIT_BLINDNESS -> waitForBlockedSkyEnvelope(client);
             case REQUEST_BLINDNESS_CLEAR -> requestBlindnessClear(client);
             case WAIT_BLINDNESS_CLEAR -> waitForRecoveredSkyEnvelope(client, atlas);
+            case REQUEST_ATLAS_ONLY -> requestAtlasOnly(client);
+            case WAIT_ATLAS_ONLY -> waitForAtlasOnly(client, atlas);
+            case CAPTURE_ATLAS_ONLY_CONTROL -> captureAtlasOnlyControl(client, atlas);
             case REQUEST_FIXTURE_CLEAR -> requestFixtureClear(client, geometry);
             case WAIT_FIXTURE_CLEAR -> waitForFixtureClear(client, geometry, atlas);
             case CAPTURE_EMPTY_CONTROL -> captureEmptyControl(
@@ -420,6 +439,8 @@ public final class RingHandoffFoliageCaptureClient {
         }
         if (!fixtureBuildRequested) {
             if (!atlasIsQuiescent(client, atlas, "pre-fixture")) return true;
+            baselineAtlasRevision = atlas.revision();
+            baselineAtlasContent = atlas.contentFingerprint();
             captureFinalAtlasGeometry(client, geometry, atlas);
             fixtureBuildRequested = true;
             int[] fixtureCenters = planeCenterYs.clone();
@@ -473,6 +494,21 @@ public final class RingHandoffFoliageCaptureClient {
             String geometryFailure = finalAtlasGeometryFailure(client, geometry, atlas);
             if (geometryFailure != null) return fail(client, geometryFailure);
             atlasRevision = atlas.revision();
+            fixtureAtlasContent = atlas.contentFingerprint();
+            fixtureAtlasRevision = atlasRevision;
+            armedAtlasContent = fixtureAtlasContent;
+            int probeX = planeBlockX(cameraX, PLANE_DISTANCES[0]);
+            int probeHeight = planeCenterYs[0] + PLANE_ABOVE_CENTER + 1;
+            if (atlasRevision <= baselineAtlasRevision || fixtureAtlasContent == baselineAtlasContent
+                    || atlas.cellHeight(probeX, MIN_PLANE_Z - geometry.minWidthZ()) != probeHeight) {
+                return fail(client, "one-block Atlas did not retain the authoritative natural-leaf fixture");
+            }
+            RingWorldMod.LOGGER.info(
+                    "[handoff-foliage-capture] Atlas content contract beforeRevision={}, beforeContent={}, "
+                            + "fixtureRevision={}, fixtureContent={}, probeX={}, probeZ={}, probeHeight={}, originalBlocks={}",
+                    baselineAtlasRevision, Long.toUnsignedString(baselineAtlasContent), atlasRevision,
+                    Long.toUnsignedString(fixtureAtlasContent), probeX, MIN_PLANE_Z, probeHeight,
+                    fixtureOriginalBlocks.size());
             atlasRevisionArmed = true;
             fixtureConfirmed = true;
             RingWorldMod.LOGGER.info(
@@ -664,6 +700,7 @@ public final class RingHandoffFoliageCaptureClient {
                                 && !RingAtlasPregenerationService.hasPendingDirtyTiles(context.world())
                                 ? RingAtlasPregenerationService.atlas(context.world()).revision()
                                 : Long.MIN_VALUE;
+                        idleServerAtlasContent = RingAtlasPregenerationService.atlas(context.world()).contentFingerprint();
                         atlasIdleProbePending = false;
                     },
                     () -> { },
@@ -673,7 +710,8 @@ public final class RingHandoffFoliageCaptureClient {
                     });
         }
         long revision = atlas.revision();
-        if (revision != observedAtlasRevision || idleServerAtlasRevision != revision) {
+        if (revision != observedAtlasRevision || idleServerAtlasRevision != revision
+                || idleServerAtlasContent != atlas.contentFingerprint()) {
             observedAtlasRevision = revision;
             atlasStableTicks = 0;
             return false;
@@ -1014,8 +1052,60 @@ public final class RingHandoffFoliageCaptureClient {
                         + "atlasRevision={}",
                 blockedRevealScale, blockedProxyDrawn, recoveredScale,
                 recoveredDrawn, atlas.revision());
-        stage = Stage.REQUEST_FIXTURE_CLEAR;
+        stage = Stage.REQUEST_ATLAS_ONLY;
         return true;
+    }
+
+    /** Same authoritative Atlas and lighting, with only diagnostic live geometry removed. */
+    private boolean requestAtlasOnly(Minecraft client) {
+        if (!atlasOnlyRequested) {
+            atlasOnlyRequested = true;
+            fixtureOriginalBlocks.forEach((position, original) -> client.level.setBlock(position, original, 3));
+            RingIntegratedCaptureControl.execute(client, "handoff foliage Atlas-only authority proof", context -> {
+                RingTerrainAtlas serverAtlas = RingAtlasPregenerationService.atlas(context.world());
+                if (!fixtureMatches(context.world()) || serverAtlas.revision() != atlasRevision
+                        || serverAtlas.contentFingerprint() != fixtureAtlasContent) {
+                    throw new IllegalStateException("Atlas-only control changed authoritative fixture or Atlas");
+                }
+                atlasOnlyServerProof = true;
+            }, () -> { }, detail -> serverControlFailure = detail);
+        }
+        settleTicks = 0;
+        renderWaitTicks = 0;
+        stage = Stage.WAIT_ATLAS_ONLY;
+        return true;
+    }
+
+    private boolean atlasOnlyReady(Minecraft client) {
+        return atlasOnlyServerProof && atPose(client, CENTER_Z) && hasFullRadius(client)
+                && client.levelRenderer.hasRenderedAllSections()
+                && RingSurfaceTextureRenderer.legacyStreamingWindowComplete()
+                && originalBlocksMatch(client.level);
+    }
+
+    private boolean waitForAtlasOnly(Minecraft client, RingTerrainAtlas atlas) {
+        setCameraOrientation(client);
+        if (!atlasOnlyReady(client)) {
+            settleTicks = 0;
+            if (++renderWaitTicks > RENDER_TIMEOUT_TICKS) return fail(client, "Atlas-only geometry did not compile exactly");
+            return true;
+        }
+        if (++settleTicks < SHORT_SETTLE_TICKS) return true;
+        RingWorldMod.LOGGER.info(
+                "[handoff-foliage-capture] Atlas-only authority serverBlocks={}, clientOriginalBlocks={}, atlasRevision={}, content={}",
+                EXPECTED_FIXTURE_BLOCKS, fixtureOriginalBlocks.size(), atlas.revision(),
+                Long.toUnsignedString(atlas.contentFingerprint()));
+        return captureAtCurrentPose(client, atlas, "atlas-only-a",
+                "ringworld-handoff-foliage-atlas-only-a.png", Stage.CAPTURE_ATLAS_ONLY_CONTROL);
+    }
+
+    private boolean captureAtlasOnlyControl(Minecraft client, RingTerrainAtlas atlas) {
+        setCameraOrientation(client);
+        if (!atlasOnlyReady(client)) return fail(client, "Atlas-only control lost its exact geometry state");
+        if (controlFrameBaseline < 0L) { controlFrameBaseline = renderedFrames; return true; }
+        if (renderedFrames - controlFrameBaseline < 2L) return true;
+        return captureAtCurrentPose(client, atlas, "atlas-only-b",
+                "ringworld-handoff-foliage-atlas-only-b.png", Stage.REQUEST_FIXTURE_CLEAR);
     }
 
     private boolean requestFixtureClear(Minecraft client, RingGeometry geometry) {
@@ -1059,16 +1149,21 @@ public final class RingHandoffFoliageCaptureClient {
             return true;
         }
         if (!atlasIsQuiescent(client, atlas, "post-clear")) return true;
+        if (atlas.contentFingerprint() != baselineAtlasContent || atlas.revision() <= fixtureAtlasRevision) {
+            return fail(client, "authoritative fixture restoration did not recover original Atlas content");
+        }
         String geometryFailure = finalAtlasGeometryFailure(client, geometry, atlas);
         if (geometryFailure != null) return fail(client, geometryFailure);
         if (!atlasRevisionArmed) {
             atlasRevision = atlas.revision();
+            armedAtlasContent = atlas.contentFingerprint();
             atlasRevisionArmed = true;
         }
         if (++settleTicks < SHORT_SETTLE_TICKS) return true;
         RingWorldMod.LOGGER.info(
-                "[handoff-foliage-capture] fixture cleared blocks={}, atlasRevision={}",
-                clearedFixtureBlocks, atlas.revision());
+                "[handoff-foliage-capture] fixture cleared blocks={}, atlasRevision={}, content={}, originalBlocks={}",
+                clearedFixtureBlocks, atlas.revision(), Long.toUnsignedString(atlas.contentFingerprint()),
+                fixtureOriginalBlocks.size());
         return captureAtCurrentPose(client, atlas, "empty-a",
                 "ringworld-handoff-foliage-empty-a.png", Stage.CAPTURE_EMPTY_CONTROL);
     }
@@ -1163,6 +1258,10 @@ public final class RingHandoffFoliageCaptureClient {
     }
 
     private boolean fixtureMatches(Minecraft client) {
+        return fixtureMatches(client.level);
+    }
+
+    private boolean fixtureMatches(Level level) {
         if (createdFixtureBlocks != EXPECTED_FIXTURE_BLOCKS || planeCenterYs == null) {
             return false;
         }
@@ -1175,7 +1274,7 @@ public final class RingHandoffFoliageCaptureClient {
                 int localY = y - minY;
                 for (int z = MIN_PLANE_Z; z <= MAX_PLANE_Z; z++) {
                     BlockState expected = fixtureState(plane, localY, z - MIN_PLANE_Z);
-                    BlockState actual = client.level.getBlockState(new BlockPos(x, y, z));
+                    BlockState actual = level.getBlockState(new BlockPos(x, y, z));
                     if (expected.isAir()) {
                         if (!actual.isAir()) return false;
                     } else {
@@ -1186,29 +1285,31 @@ public final class RingHandoffFoliageCaptureClient {
                 }
             }
             int sentinelOffsetY = plane & 1;
-            if (isFixtureLeaf(client, x, minY + sentinelOffsetY, MIN_PLANE_Z)) sentinels++;
-            if (isFixtureLeaf(client, x, minY + sentinelOffsetY, MAX_PLANE_Z)) sentinels++;
+            if (isFixtureLeaf(level, x, minY + sentinelOffsetY, MIN_PLANE_Z)) sentinels++;
+            if (isFixtureLeaf(level, x, minY + sentinelOffsetY, MAX_PLANE_Z)) sentinels++;
         }
         return foliageBlocks == EXPECTED_FIXTURE_BLOCKS
                 && sentinels == EXPECTED_SENTINELS;
     }
 
-    private static boolean isFixtureLeaf(Minecraft client, int x, int y, int z) {
-        BlockState state = client.level.getBlockState(new BlockPos(x, y, z));
+    private static boolean isFixtureLeaf(Level level, int x, int y, int z) {
+        BlockState state = level.getBlockState(new BlockPos(x, y, z));
         return (state.is(Blocks.AZALEA_LEAVES)
                 || state.is(Blocks.FLOWERING_AZALEA_LEAVES))
                 && state.getValue(LeavesBlock.PERSISTENT);
     }
 
-    private static int createFixture(ServerLevel world, RingGeometry geometry,
+    private int createFixture(ServerLevel world, RingGeometry geometry,
                                      int[] centers) {
         int foliageBlocks = 0;
+        var originals = new HashMap<BlockPos, BlockState>();
+        var replacements = new HashMap<BlockPos, BlockState>();
         double fixtureCameraX = geometry.circumferenceBlocks() / 4.0 + 0.5;
         for (int plane = 0; plane < PLANE_DISTANCES.length; plane++) {
             int x = planeBlockX(fixtureCameraX, PLANE_DISTANCES[plane]);
             if (Math.floorMod(x, 8) != 0) {
                 throw new IllegalStateException(
-                        "blend-only foliage plane must stay on an Atlas-cell boundary at x="
+                        "diagnostic plane must retain its reviewed eight-block alignment at x="
                                 + x);
             }
             int minY = centers[plane] - PLANE_BELOW_CENTER;
@@ -1216,15 +1317,23 @@ public final class RingHandoffFoliageCaptureClient {
                 int localY = y - minY;
                 for (int z = MIN_PLANE_Z; z <= MAX_PLANE_Z; z++) {
                     BlockState state = fixtureState(plane, localY, z - MIN_PLANE_Z);
-                    world.setBlock(new BlockPos(x, y, z), state, 3);
+                    BlockPos position = new BlockPos(x, y, z);
+                    if (world.getBlockEntity(position) != null) {
+                        throw new IllegalStateException("Diagnostic foliage volume contains a block entity at " + position);
+                    }
+                    originals.put(position, world.getBlockState(position));
+                    replacements.put(position, state);
                     if (!state.isAir()) foliageBlocks++;
                 }
             }
         }
+        if (originals.size() != EXPECTED_ORIGINAL_BLOCKS) throw new IllegalStateException("Incomplete fixture state snapshot");
+        fixtureOriginalBlocks = Map.copyOf(originals);
+        replacements.forEach((position, replacement) -> world.setBlock(position, replacement, 3));
         return foliageBlocks;
     }
 
-    private static int clearFixture(ServerLevel world, RingGeometry geometry,
+    private int clearFixture(ServerLevel world, RingGeometry geometry,
                                     int[] centers) {
         int cleared = 0;
         double fixtureCameraX = geometry.circumferenceBlocks() / 4.0 + 0.5;
@@ -1235,30 +1344,21 @@ public final class RingHandoffFoliageCaptureClient {
                 int localY = y - minY;
                 for (int z = MIN_PLANE_Z; z <= MAX_PLANE_Z; z++) {
                     if (fixtureState(plane, localY, z - MIN_PLANE_Z).isAir()) continue;
-                    world.setBlock(new BlockPos(x, y, z), Blocks.AIR.defaultBlockState(), 3);
                     cleared++;
                 }
             }
         }
+        fixtureOriginalBlocks.forEach((position, original) -> world.setBlock(position, original, 3));
         return cleared;
     }
 
     private boolean fixtureIsCleared(Minecraft client) {
-        if (clearedFixtureBlocks != EXPECTED_FIXTURE_BLOCKS || planeCenterYs == null) {
-            return false;
-        }
-        for (int plane = 0; plane < PLANE_DISTANCES.length; plane++) {
-            int x = planeBlockX(cameraX, PLANE_DISTANCES[plane]);
-            int minY = planeCenterYs[plane] - PLANE_BELOW_CENTER;
-            for (int y = minY; y <= planeCenterYs[plane] + PLANE_ABOVE_CENTER; y++) {
-                int localY = y - minY;
-                for (int z = MIN_PLANE_Z; z <= MAX_PLANE_Z; z++) {
-                    if (fixtureState(plane, localY, z - MIN_PLANE_Z).isAir()) continue;
-                    if (!client.level.getBlockState(new BlockPos(x, y, z)).isAir()) return false;
-                }
-            }
-        }
-        return true;
+        return clearedFixtureBlocks == EXPECTED_FIXTURE_BLOCKS && originalBlocksMatch(client.level);
+    }
+
+    private boolean originalBlocksMatch(Level level) {
+        return fixtureOriginalBlocks.size() == EXPECTED_ORIGINAL_BLOCKS
+                && fixtureOriginalBlocks.entrySet().stream().allMatch(entry -> level.getBlockState(entry.getKey()).equals(entry.getValue()));
     }
 
     private static BlockState fixtureState(int plane, int localY, int localZ) {
@@ -1340,6 +1440,9 @@ public final class RingHandoffFoliageCaptureClient {
         WAIT_BLINDNESS("wait-blindness"),
         REQUEST_BLINDNESS_CLEAR("request-blindness-clear"),
         WAIT_BLINDNESS_CLEAR("wait-blindness-clear"),
+        REQUEST_ATLAS_ONLY("request-atlas-only"),
+        WAIT_ATLAS_ONLY("wait-atlas-only"),
+        CAPTURE_ATLAS_ONLY_CONTROL("capture-atlas-only-control"),
         REQUEST_FIXTURE_CLEAR("request-fixture-clear"),
         WAIT_FIXTURE_CLEAR("wait-fixture-clear"),
         CAPTURE_EMPTY_CONTROL("capture-empty-control"),
