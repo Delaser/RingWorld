@@ -229,3 +229,32 @@ assumptions and were updated to require the new continuous-backdrop behavior,
 retaining the exact native method ABI, special-fog guards and ring-before-sun
 ordering. Real-client execution is the next diagnostic checkpoint; no GPU,
 production visual or performance PASS is inferred from compilation.
+
+### P5 bounded graphical checkpoint
+
+All four fresh source-ABI UI runs pass at `7b811be`: 26 menu-only creation
+captures and 21 expanded Atlas captures per loader (94 total). Each numerical
+GPU probe passes 9,504 samples on the NVIDIA GTX 1080 Ti / 560.94 driver, with
+identical maximum CPU/GPU component error `0.0011974855266316808` blocks.
+Both integrated servers persist complete format-11 Atlases after ordered
+stone revisions and normal disconnect; raw correction/feedback/session teardown
+passes. The Fabric compact Display/default/details and progressive handoff
+captures were inspected. Evidence, PNG hashes, independent disk receipts and
+source archive are under `.codex-tmp/b14-render-ui/`.
+
+These are bounded functional graphical diagnostics. Production-size weather/
+lifecycle, real dedicated multiplayer/worldgen/raid, exterior placement and
+visibility, underwater/reload, repeated memory/performance tests and the frozen
+acceptance runner are not yet qualified. 1.20.1 implementation has not started.
+
+## Extended native acceptance fixtures (in progress)
+
+The 1.4 headless concurrency/pause/drain/cancel/restart and synthetic-FPS
+backoff/recovery probes are being ported before production input preparation.
+They remain opt-in and explicitly do not replace healthy real-client FPS tests.
+The optional headless metrics retain raw previous-tick nanoseconds as well as
+summaries. An opt-in owner-span log measures partial/complete progress counting,
+so Large-world status cost is measured rather than inferred from the complete
+Atlas shortcut. These new fixtures require build and native execution before
+credit. Production-world inputs will be copied; original 1.3/Beta saves stay
+untouched.
