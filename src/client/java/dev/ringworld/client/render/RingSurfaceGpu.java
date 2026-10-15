@@ -25,9 +25,17 @@ final class RingSurfaceGpu {
             BufferBuilder builder = new BufferBuilder(allocator, VertexFormat.Mode.TRIANGLES, format);
             mesh.emitTriangles(new RingSurfaceMesh.VertexConsumer() {
                 private int sideColor = -1;
+                private float intrinsicX, intrinsicY, intrinsicZ;
+                private boolean intrinsicReady;
                 @Override public void sideColor(int rgb) { sideColor = rgb; }
+                @Override public void intrinsic(float x, float y, float z) {
+                    intrinsicX = x; intrinsicY = y; intrinsicZ = z;
+                    intrinsicReady = true;
+                }
                 @Override public void vertex(float x, float y, float z, float u, float v) {
-                    builder.addVertex(x, y, z).setUv(u, v)
+                    if (!intrinsicReady) throw new IllegalStateException("surface vertex lacks intrinsic coordinates");
+                    intrinsicReady = false;
+                    builder.addVertex(intrinsicX, intrinsicY, intrinsicZ).setUv(u, v)
                             .setColor(sideColor < 0 ? vertexArgb : 0xFF000000 | sideColor);
                 }
             });

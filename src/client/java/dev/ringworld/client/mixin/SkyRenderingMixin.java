@@ -45,8 +45,6 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(LevelRenderer.class)
 abstract class SkyRenderingMixin {
     @Shadow @Final private static ResourceLocation SUN_LOCATION;
-    @Shadow private VertexBuffer skyBuffer;
-    @Shadow private VertexBuffer darkBuffer;
     @Shadow private VertexBuffer starBuffer;
 
     @Inject(method = "close", at = @At("TAIL"))
@@ -71,22 +69,9 @@ abstract class SkyRenderingMixin {
             PoseStack poseStack = new PoseStack();
             poseStack.mulPose(viewMatrix);
             RingSkyProfile profile = ClientRingState.skyProfile();
-            Vec3 nativeSky = level.getSkyColor(camera.getPosition(), tickProgress);
-            int fixedRgb = RingSkyCycle.fixedBackdropRgb(profile);
-            float red = fixedRgb < 0 ? (float)nativeSky.x : (fixedRgb >> 16 & 255) / 255.0F;
-            float green = fixedRgb < 0 ? (float)nativeSky.y : (fixedRgb >> 8 & 255) / 255.0F;
-            float blue = fixedRgb < 0 ? (float)nativeSky.z : (fixedRgb & 255) / 255.0F;
-
             RenderSystem.depthMask(false);
-            RenderSystem.setShader(GameRenderer::getPositionShader);
-            RenderSystem.setShaderColor(red, green, blue, 1.0F);
-            ShaderInstance shader = RenderSystem.getShader();
-            skyBuffer.bind();
-            skyBuffer.drawWithShader(poseStack.last().pose(), projectionMatrix, shader);
-            darkBuffer.bind();
-            darkBuffer.drawWithShader(poseStack.last().pose(), projectionMatrix, shader);
-            VertexBuffer.unbind();
-
+            // FogRenderer clears to the live backdrop at every height. Flat
+            // sky discs would reintroduce a horizontal boundary.
             RenderSystem.enableBlend();
             RenderSystem.blendFuncSeparate(GlStateManager.SourceFactor.SRC_ALPHA,
                     GlStateManager.DestFactor.ONE, GlStateManager.SourceFactor.ONE,
@@ -117,7 +102,7 @@ abstract class SkyRenderingMixin {
             RenderSystem.defaultBlendFunc();
             RenderSystem.depthMask(true);
         }
-        // The custom branch draws matching upper/lower hemispheres and stars.
+        // The continuous cleared backdrop and physical star field replace flat discs.
         // It intentionally omits vanilla sunrise, sun, moon, and black lower disc.
         ci.cancel();
     }
@@ -185,7 +170,7 @@ abstract class SkyRenderingMixin {
         if (profile.lightSource() == RingSkyProfile.LightSource.NONE) return;
         RingSkyCycle.SunVisual visual = RingSkyCycle.sunVisual(
                 level.getDayTime() + tickProgress);
-        Vec3 starDirection = geometry.directionToRingCenter(cameraPosition);
+        Vec3 starDirection = dev.ringworld.client.RingDistortionTuning.centerDirection(geometry, cameraPosition);
         float starTiltRadians = (float)Math.atan2(starDirection.z, starDirection.y);
 
         poseStack.pushPose();

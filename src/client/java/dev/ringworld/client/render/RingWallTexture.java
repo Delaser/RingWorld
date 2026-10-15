@@ -99,7 +99,8 @@ final class RingWallTexture {
                     for (int row = 0; row < rows; row++) {
                         int y = bottom + (int)((row + 0.5) * height / rows);
                         int color = 0;
-                        if (RingWallPattern.blockPresent(style, x, y, depth, top, geometry.circumferenceBlocks(), seed)) {
+                        // Closed crest geometry carries decay; mips remain opaque.
+                        {
                             int roll = style.equals(RingWallStyle.LEGACY)
                                     ? RingWallPattern.legacyMaterialRoll(x, y, edge + inward * depth)
                                     : RingWallPattern.materialRoll(style, x, y, depth, geometry.circumferenceBlocks(), seed);

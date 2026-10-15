@@ -2,7 +2,6 @@ package dev.ringworld.client.mixin;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.ringworld.client.ClientRingState;
-import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingSkyCycle;
 import dev.ringworld.world.RingSkyProfile;
 import net.minecraft.client.Camera;
@@ -39,10 +38,7 @@ abstract class FogRendererMixin {
                 || hasSpecialFog(camera, level)) return;
 
         RingSkyProfile profile = ClientRingState.skyProfile();
-        int wallTopY = RingGenerationBoundary.wallTopExclusive(
-                level.getMinBuildHeight(), level.getHeight(),
-                ClientRingState.wallHeightBlocks());
-        float blend = RingSkyCycle.exposedHorizonBlend(camera.getPosition().y, wallTopY);
+        float blend = 1.0F; // A cylinder has no altitude-dependent horizontal horizon.
         Vec3 sky = level.getSkyColor(camera.getPosition(), tickProgress);
         RingSkyCycle.FogColor matched = RingSkyCycle.fogColor(
                 profile,

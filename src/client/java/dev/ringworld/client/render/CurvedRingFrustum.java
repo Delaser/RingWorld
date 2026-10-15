@@ -15,21 +15,19 @@ import net.minecraft.world.phys.Vec3;
  * fixes upward-looking chunk pop without drawing every section at distance.</p>
  */
 public final class CurvedRingFrustum extends Frustum {
-    private final RingGeometry geometry;
-    private final Vec3 cameraPosition;
+    private final RingRenderView view;
 
     public CurvedRingFrustum(Frustum original, RingGeometry geometry, Vec3 cameraPosition) {
         super(original);
-        this.geometry = geometry;
-        this.cameraPosition = cameraPosition;
+        this.view = RingRenderView.capture(geometry, cameraPosition);
     }
 
     @Override
     public boolean isVisible(AABB canonicalBox) {
-        AABB local = geometry.toCameraLocalBounds(canonicalBox, cameraPosition);
+        AABB local = view.bounds(canonicalBox);
         // Frustum stores an absolute camera origin and subtracts it internally.
         // Rebase the already camera-local curved envelope to that origin.
-        AABB rebased = local.move(cameraPosition);
+        AABB rebased = local.move(view.camera());
         return super.isVisible(rebased);
     }
 }

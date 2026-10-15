@@ -178,16 +178,13 @@ public final class RingWallStyleScreen extends Screen {
                 layout.contentLeft() + (layout.contentWidth() + 5) / 2,
                 layout.valuesY() - 11, LABEL_COLOR);
         int previewHeight = layout.previewHeight();
-        int previewWidth = Math.min(layout.contentWidth(), previewHeight * 640 / 355);
+        int previewWidth = Math.min(layout.contentWidth(), RingWallPreviewSamples.widthForHeight(previewHeight));
         int previewLeft = (width - previewWidth) / 2;
         ResourceLocation preview = previewTexture();
         graphics.fill(previewLeft - 1, layout.previewY() - 1,
                 previewLeft + previewWidth + 1, layout.previewY() + previewHeight + 1, BORDER_COLOR);
-        if (preview != null && minecraft.getResourceManager().getResource(preview).isPresent()) {
-            graphics.blit(preview, previewLeft, layout.previewY(),
-                    previewWidth, previewHeight,
-                    0.0F, 0.0F, 640, 355, 640, 355);
-        } else {
+        if (!RingWallPreviewSamples.draw(graphics, minecraft, preview, previewLeft,
+                layout.previewY(), previewWidth, previewHeight)) {
             graphics.drawCenteredString(font, Component.literal("No sample for this saved pattern"),
                     width / 2, layout.previewY() + previewHeight / 2, LABEL_COLOR);
         }
@@ -211,10 +208,7 @@ public final class RingWallStyleScreen extends Screen {
     }
 
     private ResourceLocation previewTexture() {
-        if (!Arrays.asList(RingWallStyle.Pattern.selectableValues()).contains(pattern)) return null;
-        return ResourceLocation.fromNamespaceAndPath("ringworld", "textures/gui/wall_samples/wall-"
-                + palette.name().toLowerCase(Locale.ROOT) + "-"
-                + pattern.name().toLowerCase(Locale.ROOT) + ".png");
+        return RingWallPreviewSamples.texture(palette, pattern);
     }
 
     private Layout layout() {

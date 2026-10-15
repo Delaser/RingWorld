@@ -9,6 +9,9 @@ public final class RingAtlasPerformanceFeedback {
     private static long lastReport;
     private RingAtlasPerformanceFeedback() { }
 
+    public static void clearSession() { lastServer = null; lastReport = 0; }
+    public static boolean sessionCleared() { return lastServer == null && lastReport == 0; }
+
     public static void tick(Minecraft client) {
         var server = client.getSingleplayerServer();
         if (server == null || client.level == null || client.isPaused() || !client.isWindowActive()) {

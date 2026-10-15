@@ -14,13 +14,14 @@ in float vertexDistance;
 in vec4 vertexColor;
 in vec2 texCoord0;
 in float ringIntrinsicDistance;
+in float ringHandoffDistance;
 out vec4 fragColor;
 
 void main() {
     vec4 color = texture(Sampler0, texCoord0) * vertexColor * ColorModulator;
     float coverageFade = 0.0;
     if (RingWorldLayout.x != 0 && ringIntrinsicDistance >= 0.0) {
-        coverageFade = ringLiveCoverageFade(ringIntrinsicDistance);
+        coverageFade = ringLiveCoverageFade(ringHandoffDistance);
         if (ringWaterSprite(texCoord0, RingWorldWaterStill)
                 || ringWaterSprite(texCoord0, RingWorldWaterFlow)) {
             float matchWater = ringSmootherstep(RingWorldHandoff.z, RingWorldHandoff.x, ringIntrinsicDistance);

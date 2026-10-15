@@ -80,6 +80,8 @@ public final class RingWorldMapScreen extends Screen {
             building.active = ClientRingState.canControlBuilding();
             addRenderableWidget(building);
         } else if (page == Page.DISPLAY) {
+            boolean compact = height < 300;
+            if (!(compact && showDetails)) {
             RingLodQuality[] levels = RingLodQuality.values();
             int gap = 4, each = (panel - gap * 2) / 3;
             for (int i = 0; i < levels.length; i++) {
@@ -89,10 +91,19 @@ public final class RingWorldMapScreen extends Screen {
                             RingClientLodTuning.select(level); rebuild();
                         }).bounds(left + i * (each + gap), 85, each, 20).build());
             }
+            addRenderableWidget(Button.builder(Component.literal("Nearby block correction: "
+                            + (RingDistortionTuning.enabled() ? "On" : "Off")), button -> {
+                        RingDistortionTuning.select(!RingDistortionTuning.enabled()); rebuild();
+                    }).bounds(left, compact ? 132 : 145, panel, 20).build());
+            addRenderableWidget(Button.builder(Component.literal("Correction distance: "
+                            + RingDistortionTuning.chunks() + " chunks each way"), button -> {
+                        RingDistortionTuning.distance(RingDistortionTuning.chunks() % 8 + 1); rebuild();
+                    }).bounds(left, compact ? 156 : 169, panel, 20).build());
+            }
             addRenderableWidget(Button.builder(Component.literal(
                             showDetails ? "Hide detail information" : "Detail information"),
                     button -> { showDetails = !showDetails; rebuild(); })
-                    .bounds(left, 156, panel, 20).build());
+                    .bounds(left, compact ? 180 : 196, panel, 20).build());
         } else {
             Optional<AtlasPregenerationStatus> current = AtlasPregenerationClientState.status();
             if (current.isPresent()) {
@@ -195,14 +206,25 @@ public final class RingWorldMapScreen extends Screen {
             return;
         }
         if (page == Page.DISPLAY) {
+            boolean compact = height < 300;
+            if (compact && showDetails) {
+                g.drawString(font, Component.literal("Distant terrain detail"), left, 69, 0xFFE5ECE5);
+                g.drawString(font, Component.literal("Low 8-block; Medium 2-block; High 1-block samples."),
+                        left, 90, 0xFFB4C4BA);
+                g.drawString(font, Component.literal("Source Atlas: one sample per block."), left, 107, 0xFFB4C4BA);
+                g.drawString(font, Component.literal("Nearby correction: " + (RingDistortionTuning.enabled() ? "On" : "Off")
+                        + ", " + RingDistortionTuning.chunks() + " chunks each way."), left, 124, 0xFFB4C4BA);
+                g.drawString(font, Component.literal("Applies only to this player."), left, 141, 0xFFB4C4BA);
+                return;
+            }
             g.drawString(font, Component.literal("Distant terrain detail"), left, 69, 0xFFE5ECE5);
             g.drawString(font, Component.literal("Applies to this player immediately."), left, 116, 0xFFB4C4BA);
-            g.drawString(font, Component.literal("Other players can choose differently."), left, 129, 0xFFB4C4BA);
+            if (!compact) g.drawString(font, Component.literal("Other players can choose differently."), left, 129, 0xFFB4C4BA);
             if (showDetails) {
                 g.drawString(font, Component.literal("Low 8-block; Medium 2-block; High 1-block samples."),
-                        left, 184, 0xFFB4C4BA);
+                        left, 224, 0xFFB4C4BA);
                 g.drawString(font, Component.literal("Source Atlas: one sample per block."),
-                        left, 197, 0xFFB4C4BA);
+                        left, 237, 0xFFB4C4BA);
             }
             return;
         }

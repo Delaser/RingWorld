@@ -14,6 +14,7 @@ in float vertexDistance;
 in vec4 vertexColor;
 in vec2 texCoord0;
 in float ringIntrinsicDistance;
+in float ringHandoffDistance;
 out vec4 fragColor;
 
 void main() {
@@ -23,7 +24,7 @@ void main() {
     bool ringHandoffActive =
         RingWorldLayout.x != 0 && ringIntrinsicDistance >= 0.0;
     if (ringHandoffActive) {
-        coverageFade = ringLiveCoverageFade(ringIntrinsicDistance);
+        coverageFade = ringLiveCoverageFade(ringHandoffDistance);
     }
     vec4 fogged = linear_fog(color, vertexDistance, FogStart, FogEnd, FogColor);
     if (ringHandoffActive) {

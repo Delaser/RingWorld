@@ -57,7 +57,8 @@ class RingFogRenderingSourceContractTest {
         assertTrue(mixin.contains("MobEffects.DARKNESS"));
         assertTrue(mixin.contains("level.effects().isFoggyAt("));
         assertTrue(mixin.contains("shouldCreateWorldFog()"));
-        assertTrue(mixin.contains("RingSkyCycle.exposedHorizonBlend("));
+        assertFalse(mixin.contains("RingSkyCycle.exposedHorizonBlend("));
+        assertTrue(mixin.contains("float blend = 1.0F"));
         assertFalse(mixin.contains("setShaderFogStart"));
         assertFalse(mixin.contains("setShaderFogEnd"));
         assertFalse(mixin.contains("setShaderFogShape"));

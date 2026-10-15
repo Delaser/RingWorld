@@ -499,15 +499,10 @@ public final class RingWorldEditorScreen extends Screen {
         int x = b.x(), y = b.top() + 69;
         int imageWidth = b.compact() ? Math.min(160, (b.innerWidth() - 10) / 2)
                 : b.innerWidth() / 2 - 5;
-        int imageHeight = b.compact() ? Math.round(imageWidth * 355.0F / 640.0F)
+        int imageHeight = b.compact() ? RingWallPreviewSamples.heightForWidth(imageWidth)
                 : Math.min(141, b.bottom() - y - 72);
-        ResourceLocation sample = ResourceLocation.fromNamespaceAndPath("ringworld",
-                "textures/gui/wall_samples/wall-" + palette.name().toLowerCase(java.util.Locale.ROOT)
-                        + "-" + pattern.name().toLowerCase(java.util.Locale.ROOT) + ".png");
-        if (minecraft.getResourceManager().getResource(sample).isPresent()) {
-            RingGuiBlit.blit(g, sample, x, y, x + imageWidth, y + imageHeight,
-                    0.0F, 1.0F, 0.0F, 1.0F);
-        } else {
+        ResourceLocation sample = RingWallPreviewSamples.texture(palette, pattern);
+        if (!RingWallPreviewSamples.draw(g, minecraft, sample, x, y, imageWidth, imageHeight)) {
             g.drawString(font, Component.literal("Sample unavailable"), x, y + 12, ERROR);
         }
         if (b.compact()) {

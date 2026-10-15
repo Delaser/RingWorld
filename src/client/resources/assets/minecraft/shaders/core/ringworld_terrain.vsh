@@ -17,37 +17,30 @@ uniform int FogShape;
 uniform ivec4 RingWorldLayout;
 uniform vec4 RingWorldVertical;
 uniform vec4 RingWorldCamera;
+uniform vec4 RingWorldDistortion;
+
+#moj_import <ringworld_projection.glsl>
 
 out float vertexDistance;
 out vec4 vertexColor;
 out vec2 texCoord0;
 out float ringIntrinsicDistance;
+out float ringHandoffDistance;
 
 const float TAU = 6.28318530717958647692;
 const float RING_FOG_DISTANCE_SCALE = 1.02;
-
-vec3 cameraLocalRingPosition(vec3 vertexCanonical, vec3 cameraCanonical) {
-    float circumference = float(RingWorldLayout.y);
-    float baseRadius = circumference / TAU;
-    float deltaAngle = TAU * (vertexCanonical.x - cameraCanonical.x) / circumference;
-    float vertexRadius = baseRadius + RingWorldVertical.x - vertexCanonical.y;
-    float cameraRadius = baseRadius + RingWorldVertical.x - cameraCanonical.y;
-    return vec3(
-        vertexRadius * sin(deltaAngle),
-        cameraRadius - vertexRadius * cos(deltaAngle),
-        vertexCanonical.z - cameraCanonical.z
-    );
-}
 
 void main() {
     vec3 vanillaPos = Position + ChunkOffset;
     vec3 pos = vanillaPos;
     ringIntrinsicDistance = -1.0;
+    ringHandoffDistance = -1.0;
     if (RingWorldLayout.x != 0) {
         vec3 cameraCanonical = RingWorldCamera.xyz;
         vec3 vertexCanonical = cameraCanonical + vanillaPos;
-        pos = cameraLocalRingPosition(vertexCanonical, cameraCanonical);
+        pos = ring_project_position(vertexCanonical, cameraCanonical);
         ringIntrinsicDistance = length(vanillaPos.xz);
+        ringHandoffDistance = length(vanillaPos);
     }
 
     gl_Position = ProjMat * ModelViewMat * vec4(pos, 1.0);

@@ -29,6 +29,7 @@ abstract class GlobalSettingsMixin {
     @Inject(method = "apply", at = @At("HEAD"))
     private void ringworld$publishLayout(CallbackInfo ci) {
         ShaderInstance shader = (ShaderInstance)(Object)this;
+        if (shader.getUniform("RingWorldLayout") == null) return;
         RingGeometry geometry = ClientRingState.geometry();
         Minecraft client = Minecraft.getInstance();
 
@@ -40,6 +41,13 @@ abstract class GlobalSettingsMixin {
         Vec3 camera = client.gameRenderer.getMainCamera().getPosition();
         set(shader, "RingWorldCamera", (float)camera.x, (float)camera.y,
                 (float)camera.z, 0.0F);
+        var correction = geometry == null ? null
+                : dev.ringworld.client.RingDistortionTuning.projection(geometry, camera);
+        set(shader, "RingWorldDistortion",
+                geometry != null && dev.ringworld.client.RingDistortionTuning.enabled() ? 1.0F : 0.0F,
+                correction == null ? 0.0F : (float)correction.coreBlocks(),
+                correction == null ? 0.0F : (float)correction.blendEnd(),
+                correction == null ? 0.0F : (float)correction.referenceRadius());
         set(shader, "RingWorldCloudOffset",
                 RingCloudShaderState.cellX(), RingCloudShaderState.cellY(),
                 RingCloudShaderState.cellZ(), 0.0F);
@@ -50,7 +58,7 @@ abstract class GlobalSettingsMixin {
                 : RingDimensionReport.VANILLA_OVERWORLD_BOTTOM_Y;
         float wallTopY = active == 1 ? worldBottomY + wallHeight : 0.0F;
         float cloudBaseY = active == 1
-                ? wallTopY + RingDimensionReport.CLOUD_CLEARANCE_BLOCKS : 0.0F;
+                ? RingCloudBounds.baseHeight(worldBottomY, wallHeight) : 0.0F;
         float physicalCenterY = geometry == null ? 0.0F : (float)geometry.physicalCenterY();
         set(shader, "RingWorldVertical", surfaceReferenceY, wallTopY,
                 cloudBaseY, physicalCenterY);

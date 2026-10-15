@@ -96,7 +96,7 @@ abstract class LevelRendererMixin implements RingDrawableSectionView {
             poseStack.translate(x, y, z);
             return;
         }
-        RingObjectTransform transform = RingObjectTransform.fromCameraRelative(
+        RingObjectTransform transform = dev.ringworld.client.RingDistortionTuning.object(
                 geometry, camera, x, y, z);
         Vec3 local = transform.cameraLocalPosition();
         poseStack.translate(local.x, local.y, local.z);

@@ -52,6 +52,7 @@ public final class AtlasPregenerationUiTestClient {
     private int buildingStage;
     private long buildingUpdatesBeforeStaleRequest;
     private int buildingStaleRequestTick;
+    private int correctionStage;
     private boolean displayTabRequested, displayTabCaptured, technicalRequested, technicalCaptured;
     private boolean finalCaptureSaved;
     private long revisionBeforeEdit;
@@ -207,10 +208,7 @@ public final class AtlasPregenerationUiTestClient {
                     return true;
                 }
                 if (!displayTabCaptured) {
-                    capture(client, "atlas-ui-02-display", false);
-                    displayTabCaptured = true;
-                    screen.openGenerationForAutomation();
-                    arm();
+                    if (!exerciseCorrectionControls(client, screen)) return false;
                     return true;
                 }
                 if (!technicalRequested) {
@@ -531,15 +529,65 @@ public final class AtlasPregenerationUiTestClient {
         return true;
     }
 
+    private boolean exerciseCorrectionControls(Minecraft client, RingWorldMapScreen screen) {
+        switch (correctionStage) {
+            case 0 -> {
+                if (!RingDistortionTuning.enabled() || RingDistortionTuning.chunks() != 3)
+                    return fail(client, "nearby correction did not start on at three chunks");
+                capture(client, "atlas-ui-02-display", false);
+                pressButtonPrefix(screen, "Nearby block correction:");
+            }
+            case 1 -> {
+                if (RingDistortionTuning.enabled()) return fail(client, "correction widget did not turn off");
+                capture(client, "atlas-ui-02-correction-off", false);
+                pressButtonPrefix(screen, "Nearby block correction:");
+                for (int i = 0; i < 5; i++) pressButtonPrefix(screen, "Correction distance:");
+                if (RingDistortionTuning.chunks() != 8) return fail(client, "correction widget did not reach eight chunks");
+            }
+            case 2 -> {
+                capture(client, "atlas-ui-02-correction-eight", false);
+                pressButtonPrefix(screen, "Correction distance:");
+                if (RingDistortionTuning.chunks() != 1) return fail(client, "correction widget did not wrap to one chunk");
+            }
+            case 3 -> {
+                capture(client, "atlas-ui-02-correction-one", false);
+                pressButtonPrefix(screen, "Correction distance:");
+                pressButtonPrefix(screen, "Correction distance:");
+            }
+            case 4 -> {
+                if (!RingDistortionTuning.enabled() || RingDistortionTuning.chunks() != 3)
+                    return fail(client, "correction defaults were not restored");
+                capture(client, "atlas-ui-02-correction-restored", false);
+                pressButtonPrefix(screen, "Detail information");
+            }
+            case 5 -> {
+                capture(client, "atlas-ui-02-display-details", false);
+                pressButtonPrefix(screen, "Hide detail information");
+            }
+            case 6 -> {
+                RingWorldMod.LOGGER.info("[atlas-ui-test] correction-controls toggle=true distances=1,3,8 defaults=restored");
+                displayTabCaptured = true;
+                screen.openGenerationForAutomation();
+            }
+            default -> throw new IllegalStateException("unexpected correction fixture stage");
+        }
+        correctionStage++; arm();
+        return true;
+    }
+
     private static void pressBuildingToggle(RingWorldMapScreen screen) {
+        pressButtonPrefix(screen, "Outside building:");
+    }
+
+    private static void pressButtonPrefix(RingWorldMapScreen screen, String prefix) {
         for (var child : screen.children()) {
-            if (child instanceof Button button && button.getMessage().getString().startsWith("Outside building:")) {
-                if (!button.active) throw new IllegalStateException("owner outside-building button is disabled");
+            if (child instanceof Button button && button.getMessage().getString().startsWith(prefix)) {
+                if (!button.active) throw new IllegalStateException("fixture button is disabled: " + prefix);
                 button.onPress();
                 return;
             }
         }
-        throw new IllegalStateException("outside-building button is missing");
+        throw new IllegalStateException("fixture button is missing: " + prefix);
     }
 
     private boolean verifyClientReady(Minecraft client) {

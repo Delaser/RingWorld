@@ -112,6 +112,7 @@ neoForge {
             client()
             gameDirectory = qualificationRunFile('run-atlas-ui')
             systemProperty 'ringworld.atlasUiTest', 'true'
+            systemProperty 'ringworld.projectionGpuProbe', 'true'
             systemProperty 'ringworld.atlasUiExpectedBuildLabel',
                     "${rootProject.release_label} · ${rootProject.mod_version}"
             programArgument '--username'
@@ -2764,6 +2765,17 @@ tasks.register('verifyNeoForgeAtlasUiClient') {
         if (!log.contains('[atlas-ui-test] building-policy widgets=on-off-on staleFingerprint=rejected')) {
             throw new GradleException("Atlas UI did not verify the World-page building policy")
         }
+        if (!log.contains('[projection-gpu-probe] PASS') || log.contains('[projection-gpu-probe] FAIL')) {
+            throw new GradleException("Atlas UI did not verify the numerical GPU projection contract")
+        }
+        if (!log.contains('[atlas-ui-test] correction-controls toggle=true distances=1,3,8 defaults=restored')) {
+            throw new GradleException("Atlas UI did not verify correction controls and reset")
+        }
+        ['correction-off', 'correction-eight', 'correction-one', 'correction-restored', 'display-details'].each { state ->
+            rootProject.ext.requireReadablePng(new File(neoForgeAtlasUiRun, "screenshots/atlas-ui-02-${state}.png"),
+                    'Atlas UI correction controls')
+        }
+
         ['on', 'off', 'restored'].each { state ->
             rootProject.ext.requireReadablePng(new File(neoForgeAtlasUiRun, "screenshots/atlas-ui-02-world-${state}.png"),
                     'Atlas UI World page')

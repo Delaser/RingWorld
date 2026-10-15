@@ -36,8 +36,7 @@ public final class RingCloudShaderState {
         int bottom = client.level == null
                 ? RingDimensionReport.VANILLA_OVERWORLD_BOTTOM_Y
                 : client.level.getMinBuildHeight();
-        return bottom + ClientRingState.wallHeightBlocks()
-                + RingDimensionReport.CLOUD_CLEARANCE_BLOCKS;
+        return dev.ringworld.world.RingCloudBounds.baseHeight(bottom, ClientRingState.wallHeightBlocks());
     }
 
     public static float cellX() { return cellX; }

@@ -50,7 +50,7 @@ class RingSkyRenderingSourceContractTest {
 
         assertTrue(source.contains("method = \"renderSky(Lorg/joml/Matrix4f;"));
         assertTrue(source.contains("RingGeometry geometry = ClientRingState.geometry()"));
-        assertTrue(source.contains("RingSkyCycle.fixedBackdropRgb(profile)"));
+        assertTrue(source.contains("ClientRingState.skyProfile()"));
         assertTrue(source.contains("RingSkyCycle.starBrightness("));
         assertTrue(source.contains("RingSkyCycle.starFieldAngleRadians("));
         assertTrue(source.contains("RingSkyCycle.FIXED_SUN_ANGLE_RADIANS"));
@@ -63,7 +63,7 @@ class RingSkyRenderingSourceContractTest {
         int lower = source.indexOf("darkBuffer.drawWithShader(");
         int ring = source.indexOf("RingSurfaceTextureRenderer.render(poseStack");
         int selectedSun = source.indexOf("RenderSystem.setShaderTexture(0, SUN_LOCATION)");
-        assertTrue(upper >= 0 && lower > upper, "matching lower hemisphere must follow upper sky");
+        assertTrue(upper < 0 && lower < 0, "flat sky discs must not restore a horizontal horizon");
         assertTrue(ring >= 0 && selectedSun > ring, "ring proxy must precede selected sun");
     }
 

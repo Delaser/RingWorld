@@ -6,6 +6,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class RingCloudBoundsTest {
     @Test
+    void oneDeckHeightFollowsTheSavedWallAcrossWorldMinima() {
+        assertEquals(104, RingCloudBounds.baseHeight(-64, 160));
+        assertEquals(200, RingCloudBounds.baseHeight(-64, 256));
+        assertEquals(40, RingCloudBounds.baseHeight(-128, 160));
+    }
+
+    @Test
     void followsInnerFacesForAllPresetWidthsAndCustomThickness() {
         for (int width : new int[] {128, 256, 512}) {
             RingCloudBounds bounds = RingCloudBounds.betweenInnerRimFaces(

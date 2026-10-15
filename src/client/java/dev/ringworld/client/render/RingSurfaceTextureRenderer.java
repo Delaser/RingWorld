@@ -108,6 +108,8 @@ public final class RingSurfaceTextureRenderer {
     public static void render(PoseStack matrices, RingGeometry geometry, Vec3 camera,
                               float alpha) {
         beginLegacyProxyFrame();
+        if (Minecraft.getInstance().gameRenderer.getMainCamera().getFluidInCamera()
+                == net.minecraft.world.level.material.FogType.WATER) return;
         RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
         // Never fall through to buffers left by another world while the
         // current world's atlas is absent or has no trustworthy cells. Session
@@ -133,9 +135,6 @@ public final class RingSurfaceTextureRenderer {
         legacyProxyGenerationFog = generationFog;
         legacyProxyRevealScale = Mth.clamp(alpha, 0.0F, 1.0F)
                 * (1.0F - Mth.clamp(generationFog, 0.0F, 1.0F));
-        double cameraAngle = Math.PI * 2.0 * geometry.wrapX(camera.x)
-                / geometry.circumferenceBlocks();
-        double cameraRadius = geometry.physicalRadiusAt(camera.y);
         if (projectionDiagnosticWorldHash != atlas.worldHash()) {
             projectionDiagnosticWorldHash = atlas.worldHash();
             double oppositeSurfaceDistance =
@@ -154,15 +153,8 @@ public final class RingSurfaceTextureRenderer {
         }
 
         Matrix4f modelView = new Matrix4f(matrices.last().pose());
-        // Model vertices use global ring coordinates. Rotate the entire static
-        // object into the camera's tangent frame, then move its centre to the
-        // same local point used by curved real chunk vertices.
-        modelView.translate(0.0F, (float)cameraRadius, (float)-camera.z);
-        modelView.rotateZ((float)-cameraAngle);
-        Uniform modelOffset = shader.getUniform("ModelOffset");
-        if (modelOffset != null) {
-            modelOffset.set((float)cameraAngle, (float)camera.z, 0.0F);
-        }
+        // Private GPU positions are intrinsic; the shader applies the same
+        // camera-local projection as live terrain, without an ambiguous inverse.
         int effectiveChunks = client.options.getEffectiveRenderDistance();
         int cameraChunkX = Mth.floor(camera.x) >> 4;
         int cameraChunkZ = Mth.floor(camera.z) >> 4;
@@ -334,12 +326,13 @@ public final class RingSurfaceTextureRenderer {
         int worldBottomY = client.level == null ? RingDimensionReport.VANILLA_OVERWORLD_BOTTOM_Y
                 : client.level.getMinBuildHeight();
         MeshInputs meshInputs = new MeshInputs(ClientRingState.surfaceReferenceY(),
-                worldBottomY + ClientRingState.wallHeightBlocks(),
+                worldBottomY + ClientRingState.wallHeightBlocks(), ClientRingState.wallHeightBlocks(),
                 ClientRingState.wallStyle().thicknessBlocks(),
                 RingWallShaderStyle.encode(ClientRingState.wallStyle(), ClientRingState.generatorSeed(), client.level),
                 geometry.equals(bufferedGeometry) && atlas.worldHash() == bufferedWorldHash,
                 vertexBuffer != null, bufferedMeshDetailed, bufferedMeshHeightFingerprint,
-                ClientRingState.wallStyle(), ClientRingState.generatorSeed(), worldBottomY,
+                ClientRingState.wallStyle(), ClientRingState.generatorSeed(),
+                worldBottomY,
                 RingWallShaderStyle.paletteColors(ClientRingState.wallStyle(), state -> RingWallMaterialColors.color(state, client.level)), bufferedWallKey);
         RingTerrainPreview preview = ClientRingState.terrainPreview();
         pendingTextureBuild = CompletableFuture.supplyAsync(
@@ -368,7 +361,8 @@ public final class RingSurfaceTextureRenderer {
             if (RingSurfaceMeshRefreshPolicy.shouldRebuild(inputs.sameAtlas(), inputs.hasMesh(),
                     atlas.isComplete(), inputs.detailed(), preparedSnapshot.heightFingerprint(), inputs.fingerprint())) {
                 RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(atlas.geometry(), atlas, atlas.isComplete(),
-                        inputs.referenceY(), inputs.wallTopY(), inputs.savedStyle(), profile);
+                        inputs.referenceY(), inputs.wallTopY(), inputs.wallHeightBlocks(),
+                        inputs.savedStyle(), inputs.seed(), profile);
                 packed = RingSurfaceGpu.packMesh(mesh, inputs.wallStyle().vertexArgb());
                 int wallColumns = Math.min(16384, profile.textureColumns());
                 wallKey = RingWallTexture.contentKey(atlas, inputs.savedStyle(), inputs.seed(),
@@ -791,7 +785,7 @@ public final class RingSurfaceTextureRenderer {
         }
     }
 
-    private record MeshInputs(int referenceY, int wallTopY, int wallThickness,
+    private record MeshInputs(int referenceY, int wallTopY, int wallHeightBlocks, int wallThickness,
                               RingWallShaderStyle.Encoded wallStyle, boolean sameAtlas,
                               boolean hasMesh, boolean detailed, long fingerprint,
                               dev.ringworld.world.RingWallStyle savedStyle, long seed, int bottomY, int[] palette, RingWallTexture.ContentKey previousWallKey) { }

@@ -173,3 +173,59 @@ Atlases and the restored saved building policy. Evidence and 32 PNG hashes:
 The Fabric World-Off view was visually inspected. This is bounded integrated
 client evidence; dedicated non-operator, bed/bucket, both-rim exterior gameplay,
 production rendering and full performance acceptance remain outstanding.
+
+## P5: projection, wall closure and atmosphere (in progress)
+
+The port carries the shared height-dependent nearby projection, default-on
+three-chunk session settings, immutable visibility views, matched terrain/object/
+cloud/proxy projection, and vertical coverage with horizontal material detail
+(visual policy 7). Stationary setting changes invalidate the native visibility
+graph. Native per-program RingWorld uniforms preserve stock Globals and skip
+unrelated programs; mainline's GPU-buffer API is not copied into the legacy ABI.
+
+Closed seeded crest/cap geometry, both finite terrain-edge closures, saved-height
+exterior depth and the positive `maxZ+1` outer face are ported. Wall colour mips
+remain opaque, retaining the backport's legacy material coordinate hash. The
+CPU/GPU cloud deck shares one saved-wall-derived height. Flat sky discs are
+removed and ordinary-air backdrop matching is no longer altitude-dependent;
+water, special-effect and other-dimension guards remain. The actual render camera
+being underwater skips Atlas drawing without discarding retained resources.
+
+A private backport adaptation removes the ambiguous inverse from physical mesh
+positions: the GPU stream receives intrinsic coordinates through optional mesh
+consumer metadata. Physical mesh/API consumers remain unchanged. This preserves
+Y=319 terrain even when a small original cylinder has negative physical radius.
+A pure regression checks metadata for every terrain/cap/closure vertex, and an
+opt-in transform-feedback driver probe compares the shipped projection function
+with CPU output at 1024/2048/16384/32768 circumference, distances 1/3/8, four
+camera heights, both correction states and multi-lap/seam vertices. Atlas UI
+verifiers now require that numerical driver PASS. Full build/native validation
+and production visual review for P5 remain pending.
+
+The legacy proxy remains immediately after section compilation, with the existing
+opaque streaming floor, finite-Z exclusion, exact chunk identity, adjacent-fringe
+and distinct-tick readiness checks, and live/Atlas overlap. No final acceptance
+or release is claimed at this implementation checkpoint.
+
+The 1.21.1 shader-import ABI prefixes `shaders/include/` before parsing a
+ResourceLocation, so its shared projection is an added
+`minecraft:shaders/include/ringworld_projection.glsl` resource rather than a
+modern namespaced import. It replaces no stock include or Globals file. The
+GPU probe consumes that exact shipped include. Both Atlas UI verifiers also
+require actual correction-widget On/Off, 1/3/8, restored defaults and five new
+captures. Compact Display details use a separate layout to avoid footer overlap.
+
+All thirty upstream preview PNGs are 384x213 downsampled versions of the older
+640x355 images (same aspect ratio), totalling 2,370,843 bytes instead of
+12,684,720. They are not byte/pixel-identical lossless replacements. The
+Industrial engineered pair was inspected. Editor and standalone wall selector
+now share one normalized-UV drawing helper; draft/apply behavior is unchanged.
+Native creation-screen review remains required. Client teardown now also resets
+the integrated-frame-feedback mailbox and correction visibility cache directly.
+
+The P5 dual build and unit/contracts pass (Fabric 598 / NeoForge 621). Initial
+source guards correctly rejected the old altitude-gated horizon/two-disc
+assumptions and were updated to require the new continuous-backdrop behavior,
+retaining the exact native method ABI, special-fog guards and ring-before-sun
+ordering. Real-client execution is the next diagnostic checkpoint; no GPU,
+production visual or performance PASS is inferred from compilation.

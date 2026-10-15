@@ -9,12 +9,16 @@ public final class RingWorldClientSession {
     public static void clear() {
         RingSurfaceTextureRenderer.clear();
         RingClientLodTuning.clearSession();
+        RingDistortionTuning.clearSession();
+        RingAtlasPerformanceFeedback.clearSession();
         AtlasPregenerationClientState.clear();
         ClientRingState.clear();
     }
 
     public static boolean isCleared() {
-        return RingSurfaceTextureRenderer.sessionCleared()
+        return RingAtlasPerformanceFeedback.sessionCleared()
+                && RingDistortionTuning.sessionCleared()
+                && RingSurfaceTextureRenderer.sessionCleared()
                 && AtlasPregenerationClientState.sessionCleared()
                 && ClientRingState.sessionCleared();
     }

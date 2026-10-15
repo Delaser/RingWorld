@@ -17,6 +17,7 @@ uniform sampler2D Sampler3;
 in vec2 texCoord0;
 in vec4 vertexColor;
 in float intrinsicDistance;
+in float handoffDistance;
 in float intrinsicHeight;
 in float intrinsicWidth;
 flat in vec3 depthMapping;
@@ -63,7 +64,6 @@ void main() {
         float strip = intrinsicWidth < 0.0 ? 0.0 : 1.0;
         if (texCoord0.y < -1.5 || texCoord0.y > 2.5) strip += 2.0;
         vec4 wall = filteredWall(vec2(texCoord0.x, (strip + vertical) / 4.0), strip);
-        if (wall.a < 0.5) discard;
         sampled = vec4(wall.rgb, 0.0);
     }
 
@@ -77,7 +77,7 @@ void main() {
         RingWorldHandoff.z - (sharedLiveFadeStart - RingWorldHandoff.z)
     );
     float proxyAlpha = smootherstep(
-        legacyProxyFadeStart, RingWorldHandoff.z, intrinsicDistance
+        legacyProxyFadeStart, RingWorldHandoff.z, handoffDistance
     );
     // During initial chunk/section streaming, keep an opaque Atlas underlay
     // beneath every positive distance. A proven complete finite-band window
@@ -86,7 +86,7 @@ void main() {
     float streamingProxyAlpha = smootherstep(
         RingWorldLegacyStreaming.x,
         RingWorldLegacyStreaming.y,
-        intrinsicDistance
+        handoffDistance
     );
     proxyAlpha = max(proxyAlpha, streamingProxyAlpha);
     if (proxyAlpha <= 0.001) discard;
