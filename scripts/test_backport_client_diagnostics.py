@@ -14,12 +14,18 @@ class BackportClientRecipeTests(unittest.TestCase):
                                        'clientContent': '111' if index == 2 else '0', 'serverContent': '111', 'revision': 42}
                                       for index in range(3)]}
         validate_cache_observations(report, original, foreign)
+        # Initial cold metadata precedes the fully settled authoritative baseline.
+        report['metadataInstalls'][0]['revision'] = 11
+        report['metadataInstalls'][0]['serverContent'] = '333'
+        validate_cache_observations(report, original, foreign)
         for wrong in [original, foreign | {'revision': 43}, foreign | {'status': 'PARTIAL'}]:
             with self.assertRaises(RuntimeError): validate_cache_observations(report, original, wrong)
         for key, wrong in [('cacheReused', True), ('presentBeforeStreaming', 1), ('clientContent', '111')]:
             import copy
             invalid = copy.deepcopy(report); invalid['metadataInstalls'][1][key] = wrong
             with self.assertRaises(RuntimeError): validate_cache_observations(invalid, original, foreign)
+        invalid = copy.deepcopy(report); invalid['metadataInstalls'][1]['revision'] = 11
+        with self.assertRaises(RuntimeError): validate_cache_observations(invalid, original, foreign)
 
     def test_first_run_normalization_preserves_fixture_graphics_and_is_idempotent(self):
         with tempfile.TemporaryDirectory() as directory:

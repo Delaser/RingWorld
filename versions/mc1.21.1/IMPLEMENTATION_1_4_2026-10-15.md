@@ -576,3 +576,18 @@ copy; every content/revision, metadata and teardown assertion remains intact.
 The failed world/cache files and logs are retained at
 `dist/qualification/b14-cache-regression-fabric/`. NeoForge did not launch after
 that failure. Fresh native runs on both loaders remain required.
+
+At `0f2e1b0`, Fabric's native fixture passes all three stages and normal
+disconnects: foreign revision-80 content is rejected with zero provisional cells,
+the full server stream repairs it, and the third open reuses all 262,144 cells
+with identical revision/content. The Python wrapper then fails because it
+incorrectly requires the initial cold-login revision/content (revision 11) to
+equal the subsequently settled authoritative baseline (revision 80). That cold
+phase legitimately includes normal loaded-chunk recaptures. The verifier now
+permits only that initial observation to precede the baseline; both actual
+rejection/reuse controls still require exact baseline revision/content and all
+three retain strict empty/complete and disconnect checks. Regression coverage
+includes the cold transition and rejects a mismatched rejection-stage revision.
+The failed wrapper attempt is preserved at
+`dist/qualification/b14-cache-regression-fabric-v2/`. Both fresh native wrapper
+runs remain required; NeoForge was not dispatched after the wrapper failure.

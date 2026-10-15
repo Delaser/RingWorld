@@ -162,11 +162,15 @@ def validate_cache_observations(report: dict, original: dict, foreign: dict) -> 
     require(isinstance(installs, list) and len(installs) == 3, 'Missing metadata observations')
     for index, item in enumerate(installs):
         reused = index == 2
-        require(item['cacheReused'] is reused
+        require(type(item['revision']) is int and type(item['presentBeforeStreaming']) is int
+                and isinstance(item['serverContent'], str) and item['serverContent'].isascii()
+                and item['serverContent'].isdecimal() and int(item['serverContent']) < 1 << 64
+                and item['cacheReused'] is reused
                 and item['presentBeforeStreaming'] == (original['cells'] if reused else 0)
                 and item['clientContent'] == (original['contentFingerprint'] if reused else '0')
-                and item['serverContent'] == original['contentFingerprint']
-                and item['revision'] == original['revision'], 'Native reject/repair/reuse observation differs')
+                and (index == 0 or item['serverContent'] == original['contentFingerprint'])
+                and (0 <= item['revision'] <= original['revision'] if index == 0
+                     else item['revision'] == original['revision']), 'Native reject/repair/reuse observation differs')
 
 
 def normalize_profile_options(runtime: Path) -> None:
