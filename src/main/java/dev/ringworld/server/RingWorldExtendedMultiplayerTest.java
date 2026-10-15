@@ -277,6 +277,9 @@ final class RingWorldExtendedMultiplayerTest {
         seamNavigator.setPersistenceRequired();
         seamNavigator.setInvulnerable(true);
         seamNavigator.setPos(circumference - 5.5, 120.0, 15.5);
+        // Own only this tagged fixture MOVE input; vanilla follows the original path.
+        ((dev.ringworld.mixin.MobFixtureGoalsAccessor)seamNavigator).ringworld$fixtureGoals()
+                .addGoal(0, new RingFixtureNavigationGoal());
         world.addFreshEntity(seamNavigator);
         seamNavigator.setOnGround(true);
         navigationStarted = false;

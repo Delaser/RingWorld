@@ -41,9 +41,9 @@ public final class RingHandoffFoliageCaptureClient {
     private static final String WORLD_PROPERTY = "ringworld.handoffFoliageWorld";
     private static final int EXPECTED_CIRCUMFERENCE = 16_384;
     private static final int EXPECTED_WIDTH = 256;
-    // Independently verified migrated settings and format-10 Atlas for the
+    // Independently verified migrated settings and format-11 Atlas for the
     // immutable production source, not a relaxed identity match.
-    private static final long EXPECTED_WORLD_HASH = 0xB2FD6B8C759FF1D4L;
+    private static final long EXPECTED_WORLD_HASH = 0x99266BA30DAB5309L;
     private static final int EXPECTED_SAMPLE_STEP = 1;
     private static final int EXPECTED_ATLAS_CELLS = 4_194_304;
     private static final int VIEW_DISTANCE_CHUNKS = 16;

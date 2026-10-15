@@ -28,6 +28,7 @@ public final class RingWorldProductionLifecycleTest {
     private static final int STAGE_TIMEOUT_TICKS = 1_200;
     private static final Map<UUID, Progress> PROGRESS = new HashMap<>();
     private static final Set<UUID> CLIENT_READY = new HashSet<>();
+    private static final Set<UUID> PROTECTED_PLAYERS = new HashSet<>();
     private static volatile boolean transferCycleFinished;
     private static volatile boolean transferCyclePassed;
 
@@ -41,9 +42,13 @@ public final class RingWorldProductionLifecycleTest {
 
     /** Called on the integrated server thread once the real client has its complete baseline. */
     public static void markClientReady(UUID playerId) {
+        markPlayerForSafety(playerId);
         CLIENT_READY.add(playerId);
         RingWorldMod.LOGGER.info("[production-lifecycle] client baseline ready player={}", playerId);
     }
+
+    /** Safety precedes Atlas warmup without starting transfers. */
+    public static void markPlayerForSafety(UUID playerId) { PROTECTED_PLAYERS.add(playerId); }
 
     public static boolean transferCyclePassed() {
         return transferCycleFinished && transferCyclePassed;
@@ -55,7 +60,11 @@ public final class RingWorldProductionLifecycleTest {
 
     /** Invoked once per server tick, rather than from the Overworld-only seam loop. */
     public static void tick(MinecraftServer server) {
-        if (!enabled() || transferCycleFinished) return;
+        if (!enabled()) return;
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            if (PROTECTED_PLAYERS.contains(player.getUUID()) && player.isAlive()) preparePlayer(player);
+        }
+        if (transferCycleFinished) return;
         ServerLevel overworld = server.getLevel(Level.OVERWORLD);
         if (overworld == null) return;
 
@@ -147,9 +156,14 @@ public final class RingWorldProductionLifecycleTest {
     }
 
     private static void preparePlayer(ServerPlayer player) {
+        if (!player.isCreative()) player.setGameMode(net.minecraft.world.level.GameType.CREATIVE);
+        boolean update = !player.getAbilities().mayfly || !player.getAbilities().flying
+                || !player.getAbilities().invulnerable;
         player.getAbilities().mayfly = true;
         player.getAbilities().flying = true;
-        player.onUpdateAbilities();
+        player.getAbilities().invulnerable = true;
+        player.setNoGravity(true);
+        if (update) player.onUpdateAbilities();
         player.setDeltaMovement(Vec3.ZERO);
     }
 

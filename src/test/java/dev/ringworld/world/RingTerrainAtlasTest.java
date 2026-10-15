@@ -22,6 +22,10 @@ class RingTerrainAtlasTest {
 
     @Test
     void fixedMasterIdentityMatchesQualificationReader() {
+        var production = new RingWorldSettings(256, 16384, -4161752564562038919L,
+                160, 64, 4, 5);
+        assertEquals("99266ba30dab5309", Long.toUnsignedString(
+                RingTerrainAtlas.worldHash(production), 16));
         var legacy = new RingWorldSettings(416, 2048, 155_088_888L, 160, 64, 4, 3);
         assertEquals("1954828054372612691", Long.toUnsignedString(RingTerrainAtlas.worldHash(legacy)));
         var current = new RingWorldSettings(256, 16384, -7617918596273893784L, 160, 64, 4,

@@ -1211,7 +1211,7 @@ def verifyHandoffFoliageOutputs = { File runDirectory, String label ->
 			|| Math.abs(Double.parseDouble(identity.group(1)) - 4_096.5D) > 0.001D
 			|| Math.abs(Double.parseDouble(identity.group(2)) - 120.0D) > 0.001D
 			|| Math.abs(Double.parseDouble(identity.group(3)) + 17.5D) > 0.001D
-			|| identity.group(4) != "b2fd6b8c759ff1d4"
+			|| identity.group(4) != "99266ba30dab5309"
 			|| identity.group(5).toInteger() != 1
 			|| identity.group(6).toInteger() != 4_194_304
 			|| identity.group(7).toInteger() != 4_194_304

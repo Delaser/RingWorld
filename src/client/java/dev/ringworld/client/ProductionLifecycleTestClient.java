@@ -20,6 +20,7 @@ public final class ProductionLifecycleTestClient {
     private int stageTicks;
     private int dimensionTicks;
     private boolean initialOpenRequested;
+    private boolean safetyRegistrationRequested;
     private RingGeometry baselineGeometry;
     private long baselineFingerprint;
     private long baselineAtlasWorldHash;
@@ -30,6 +31,17 @@ public final class ProductionLifecycleTestClient {
         if (worldName.isEmpty()) {
             finish(client, false, "missing productionLifecycleWorld");
             return true;
+        }
+        if (client.screen instanceof net.minecraft.client.gui.screens.DeathScreen
+                || (client.player != null && !client.player.isAlive())) {
+            finish(client, false, "player died stage=" + stage);
+            return true;
+        }
+        var safetyServer = client.getSingleplayerServer();
+        if (!safetyRegistrationRequested && safetyServer != null && client.player != null) {
+            var playerId = client.player.getUUID();
+            safetyServer.execute(() -> RingWorldProductionLifecycleTest.markPlayerForSafety(playerId));
+            safetyRegistrationRequested = true;
         }
         if (!client.isGameLoadFinished() && client.level == null) {
             stageTicks = 0;

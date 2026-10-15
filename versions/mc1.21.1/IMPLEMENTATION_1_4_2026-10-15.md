@@ -310,3 +310,25 @@ oracle at all five legal sample steps and non-power-of-two dimensions. Full
 unit totals are Fabric 608 / NeoForge 631. Real partial Large status/three-client
 measurements still need the newly frozen candidate; the running producer and
 queued exterior diagnostics retain their earlier exact source/jar identities.
+
+### Final mainline fixture-stability adaptations
+
+The native GoalSelector regression now proves the tagged fixture navigator owns
+MOVE without disabling LOOK, retrying a path or changing arrival/timeout checks.
+Registered lifecycle players enter actual Creative mode before Atlas waiting,
+and the server reapplies abilities to their replacement after reopen without
+healing or reviving them. Unexpected death fails the client. Layout switching
+uses a fresh server-owned Spectator acknowledgement for each copied session.
+
+Production captures require a coherent complete published scene, including the
+previous texture during a crossfade, while allowing harmless newer revisions to
+build. Rim/seam captures independently require the arrived camera/rim chunks.
+The immutable foliage fixture retains its stronger drain checks and now binds
+exact Atlas-11 identity `99266ba30dab5309`, decoded independently from the new
+production master; a Java identity assertion matches that reader. No wildcard
+or older-format guard is used.
+
+Both full builds pass (Fabric 610 / NeoForge 633, zero failures/errors/skips).
+The first build failed on a missing `DeathScreen` import; the repaired build
+passes with no assertion changes. Native execution of the affected lifecycle,
+world switch, navigation and production-capture cases is still outstanding.
