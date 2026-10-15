@@ -691,4 +691,28 @@ The graphical runner now independently enforces a 120-second normal shutdown
 deadline after native completion and captures a thread dump before retaining a
 failed attempt. Its tests reject capture-only success with a still-running
 process and preserve nonzero native exit codes. Fresh horizon retests on both
-loaders and an ordinary dedicated interruption/resume proof remain pending.
+loaders and an ordinary dedicated interruption/resume proof are now complete.
+Both horizon runs capture all sixteen views and stop normally; Fabric releases
+four pending Atlas loads and completes all-dimension saving within four seconds.
+Both loaders also pass ordinary interruption, paused reopen, headless completion,
+and byte-identical complete reopen on fresh 4096x256 disposable worlds. Exact
+records are retained under `dist/qualification/b14-horizon-shutdown-*` and
+`dist/qualification/b14-ordinary-stop`; these remain diagnostic evidence.
+
+### Wall curvature investigation
+
+The owner reports that wall curvature appears inconsistent with terrain. The
+shared mainline nearby correction deliberately makes angular spacing depend on
+vertex height. Both live terrain and the private Atlas shader use that function;
+this is not evidence of separate circumference settings. A numerical diagnostic
+for the 2048-block ring/default three-chunk correction finds a 0.803-degree
+sea/crest angular difference at delta X=48. Straight interpolation between the
+inner proxy wall's Y62/96 endpoints deviates by at most 0.049 blocks in that
+model, versus 0.673 blocks for the full outer Y-64/96 face. A build-height crest
+can produce substantially larger errors. These calculations do not identify
+the sole cause of the reported appearance or establish native visual acceptance.
+
+A new opt-in horizon projection control waits for complete Atlas/render readiness
+and captures identical ground/elevated poses with correction on and off. It
+retains normal reload/dimension/stop controls. Default horizon behavior is
+unchanged. Fresh native comparison is required before selecting a correction.

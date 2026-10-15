@@ -55,16 +55,31 @@ public final class RingHorizonCaptureClient {
                 client.getConnection().sendCommand("effect give @s minecraft:blindness 120 0 true");
             }
             client.getConnection().sendCommand("gamerule doDaylightCycle false");
+            if (projectionControl()) {
+                client.getConnection().sendCommand("gamerule doWeatherCycle false");
+                client.getConnection().sendCommand("gamerule randomTickSpeed 0");
+                client.getConnection().sendCommand("gamerule mobGriefing false");
+            }
             next();
         } else if (stage <= captureCount()) {
             if (client.level.dimension() != Level.OVERWORLD || ClientRingState.geometry() == null) return true;
+            if (projectionControl() && (ClientRingState.terrainAtlas() == null
+                    || !ClientRingState.terrainAtlas().isComplete()
+                    || !dev.ringworld.client.render.RingSurfaceTextureRenderer.displayReady())) return true;
             int index = stage - 1;
             boolean scene = Boolean.getBoolean("ringworld.horizonSceneControl");
-            String phase = scene ? "scene-day" : PHASES[index / 2];
+            String phase = projectionControl() ? (index < 2 ? "correction-on" : "correction-off")
+                    : scene ? "scene-day" : PHASES[index / 2];
             boolean elevated = index % 2 == 1;
             if (settle++ == 0) {
-                client.getConnection().sendCommand("time set " + (scene ? 6000 : TIMES[index / 2]));
-                client.getConnection().sendCommand("weather " + WEATHER[index / 2]);
+                if (projectionControl()) {
+                    RingDistortionTuning.select(index < 2);
+                    RingWorldMod.LOGGER.info("[horizon-projection-control] correction={} chunks={} completeCells={}",
+                            RingDistortionTuning.enabled(), RingDistortionTuning.chunks(),
+                            ClientRingState.terrainAtlas().presentCount());
+                }
+                client.getConnection().sendCommand("time set " + (scene || projectionControl() ? 6000 : TIMES[index / 2]));
+                client.getConnection().sendCommand("weather " + (projectionControl() ? "clear" : WEATHER[index / 2]));
                 client.getConnection().sendCommand(scene
                         ? "tp @s 512.5 " + (elevated ? "160 0 90 -70" : "80 0 90 -20")
                         : "tp @s 512.5 " + (elevated ? "160 96.5" : "80 96.5") + " 0 0");
@@ -107,8 +122,13 @@ public final class RingHorizonCaptureClient {
     private static final String[] WEATHER = {"clear", "clear", "clear", "clear", "rain", "thunder"};
 
     private static int captureCount() {
+        if (projectionControl()) return 4;
         return Boolean.getBoolean("ringworld.horizonCaptureShort")
                 || Boolean.getBoolean("ringworld.horizonSceneControl") ? 2 : PHASES.length * 2;
+    }
+
+    private static boolean projectionControl() {
+        return Boolean.getBoolean("ringworld.horizonProjectionControl");
     }
 
     private void capture(Minecraft client, String name) {

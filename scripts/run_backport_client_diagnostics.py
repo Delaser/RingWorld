@@ -56,6 +56,8 @@ def cases() -> list[Case]:
              'prepareCurvedObjectCapture', 'verifyCurvedObjectCaptureClient'),
         Case('underwater', 'run-underwater', 'captureUnderwater', '[underwater-capture] PASS:', 7),
         Case('horizon', 'run-horizon', 'captureHorizon', '[horizon-test] CAPTURE COMPLETE:', 16),
+        Case('horizon-projection-control', 'run-horizon', 'captureHorizon', '[horizon-test] CAPTURE COMPLETE:', 8,
+             properties={'horizonProjectionControl': 'true'}),
         Case('floating-atlas', 'run-floating-atlas', 'captureFloatingAtlas', '[floating-atlas] NATIVE PASS:', 5,
              master='small', world='RingWorld Floating Atlas Review'),
         Case('production-lifecycle', 'run-production-lifecycle', 'productionLifecycleTest',
@@ -122,6 +124,11 @@ def required_native_captures(case: Case) -> set[str]:
     if case.name == 'underwater':
         return {'underwater-' + name + '.png' for name in
                 ('above', 'submerged', 'surface', 'resurfaced', 'reload', 'reload-resurfaced', 'camera-only')}
+    if case.name == 'horizon-projection-control':
+        return {'horizon-correction-' + state + '-' + height + '.png'
+                for state in ('on', 'off') for height in ('ground', 'elevated')} | {
+                    'horizon-' + name + '.png' for name in
+                    ('after-reload', 'nether-control', 'end-control', 'overworld-return')}
     if case.name == 'horizon':
         return {'horizon-' + phase + '-' + height + '.png'
                 for phase in ('sunset', 'sunrise', 'day', 'night', 'rain', 'thunder')
@@ -284,7 +291,7 @@ def main() -> None:
             (runtime / 'config').mkdir(exist_ok=True)
             config = runtime / 'config/ringworld.properties'
             if not config.exists():
-                config.write_text(('widthBlocks=416\n' if case.name == 'horizon' else 'widthBlocks=128\n')
+                config.write_text(('widthBlocks=416\n' if case.name.startswith('horizon') else 'widthBlocks=128\n')
                                   + 'circumferenceBlocks=2048\nwallHeightBlocks=160\n'
                                   'testMode=false\ntestViewDistanceChunks=8\npregenerateTerrainAtlas=true\n')
             copy_mods(seed, runtime / 'mods', candidate, args.loader)
