@@ -420,9 +420,11 @@ def strongholdTestDirectory = qualificationRunFile("run-stronghold-test")
 def headlessPrewarmDirectory = qualificationRunFile("run-headless-prewarm")
 def raidSeamDirectory = qualificationRunFile("run-raid-seam")
 
+apply from: "gradle/runtime-evidence.gradle"
+
 def requireFabricRuntimeGateLog = { File logFile, String passMarker,
 									 String failMarker, String label ->
-	def log = logFile.isFile() ? logFile.getText("UTF-8") : ""
+	def log = logFile.isFile() ? readRuntimeEvidenceLog(logFile) : ""
 	if (!log.contains(passMarker) || log.contains(failMarker)) {
 		throw new GradleException("${label} did not pass; inspect ${logFile}")
 	}
@@ -434,7 +436,7 @@ def requireFabricRuntimeGateLog = { File logFile, String passMarker,
 // shaped 2-D window proof, so emergency Atlas coverage cannot masquerade as a
 // settled Experiment 19 handoff.
 def requireProjectionSettledRadius = { File logFile, String label ->
-	def log = logFile.isFile() ? logFile.getText("UTF-8") : ""
+	def log = logFile.isFile() ? readRuntimeEvidenceLog(logFile) : ""
 	def markerLines = log.readLines().findAll {
 		it.contains("[projection-capture] handoff capture armed at requestedChunks=")
 	}
@@ -467,7 +469,7 @@ ext.requireProjectionSettledRadius = requireProjectionSettledRadius
 // remains inside the fixed 0.58V proxy onset. Bind the screenshot to both the
 // measured chunks and the renderer-published opaque-near fallback state.
 def requireProjectionStreamingFallback = { File logFile, String label ->
-	def log = logFile.isFile() ? logFile.getText("UTF-8") : ""
+	def log = logFile.isFile() ? readRuntimeEvidenceLog(logFile) : ""
 	if (!log.contains("[projection-capture] result=true, streaming fallback capture complete")
 			|| log.contains("[projection-capture] result=false")) {
 		throw new GradleException("${label} did not pass; inspect ${logFile}")
@@ -569,7 +571,7 @@ ext.requireProjectionStreamingFallback = requireProjectionStreamingFallback
 // published state so a broad rain/Atlas tone drift cannot pass a one-row image
 // continuity check merely because it is gradual.
 def requireProjectionRevealScale = { File logFile, String label, String environment ->
-	def markerLines = logFile.isFile() ? logFile.readLines("UTF-8").findAll {
+	def markerLines = logFile.isFile() ? readRuntimeEvidenceLog(logFile).readLines().findAll {
 		it.contains("[projection-capture] handoff capture armed at requestedChunks=")
 	} : []
 	if (markerLines.isEmpty()) {
@@ -599,7 +601,7 @@ ext.requireProjectionRevealScale = requireProjectionRevealScale
 
 def requireProjectionGraphicsMode = { File logFile, String label, String expected ->
 	expected = expected.trim().toLowerCase(Locale.ROOT)
-	def markerLines = logFile.isFile() ? logFile.readLines("UTF-8").findAll {
+	def markerLines = logFile.isFile() ? readRuntimeEvidenceLog(logFile).readLines().findAll {
 		it.contains("[projection-capture] applied unattended focus policy and pre-login ")
 	} : []
 	if (markerLines.size() != 1
@@ -611,7 +613,7 @@ def requireProjectionGraphicsMode = { File logFile, String label, String expecte
 ext.requireProjectionGraphicsMode = requireProjectionGraphicsMode
 
 def requirePartialAtlasHandoff = { File logFile, String label ->
-	def policyLines = logFile.isFile() ? logFile.readLines("UTF-8").findAll {
+	def policyLines = logFile.isFile() ? readRuntimeEvidenceLog(logFile).readLines().findAll {
 		it.contains("[atlas-ui-test] applied pre-login view distance=")
 	} : []
 	if (policyLines.size() != 1
@@ -620,7 +622,7 @@ def requirePartialAtlasHandoff = { File logFile, String label ->
 		throw new GradleException(
 				"${label} did not bind its pre-login partial-capture policy: ${logFile}")
 	}
-	def markerLines = logFile.isFile() ? logFile.readLines("UTF-8").findAll {
+	def markerLines = logFile.isFile() ? readRuntimeEvidenceLog(logFile).readLines().findAll {
 		it.contains("[atlas-ui-test] partial-handoff requestedChunks=")
 	} : []
 	if (markerLines.size() != 1) {
@@ -1182,7 +1184,7 @@ tasks.register("verifyBackportHandoffShaderBindings") {
 def verifyHandoffFoliageOutputs = { File runDirectory, String label ->
 	requireHandoffShaderBindingContract()
 	def logFile = new File(runDirectory, "logs/latest.log")
-	def log = logFile.isFile() ? logFile.getText("UTF-8") : ""
+	def log = logFile.isFile() ? readRuntimeEvidenceLog(logFile) : ""
 	if (!log.contains(
 			"[handoff-foliage-capture] result=true, captures complete, screenshots=9")
 			|| log.contains("[handoff-foliage-capture] result=false")
@@ -1459,7 +1461,7 @@ def verifyHandoffFoliageOutputs = { File runDirectory, String label ->
 ext.verifyHandoffFoliageOutputs = verifyHandoffFoliageOutputs
 
 def requireVisualParitySeamMotionMetrics = { File logFile, String label ->
-	def metrics = logFile.readLines("UTF-8").findAll {
+	def metrics = readRuntimeEvidenceLog(logFile).readLines().findAll {
 		it.contains("[visual-parity-capture] seam motion frame metrics:")
 	}
 	if (metrics.isEmpty()) {
@@ -1493,7 +1495,7 @@ def verifyFabricLayoutSwitchOutputs = { File runDirectory, List<String> destinat
 			"[layout-switch] result-json={\"passed\":true,",
 			"[layout-switch] result-json={\"passed\":false,",
 			"Fabric layout-switch client")
-	if (!logFile.text.contains("[layout-switch] expectation=${expectation}")) {
+	if (!readRuntimeEvidenceLog(logFile).contains("[layout-switch] expectation=${expectation}")) {
 		throw new GradleException(
 				"Fabric layout-switch client did not run expected mode '${expectation}'; inspect ${logFile}")
 	}
@@ -1660,9 +1662,9 @@ tasks.register("verifyMultiplayerHarness") {
 		def serverLog = new File(multiplayerHarnessDirectory, "server/logs/latest.log")
 		def clientALog = new File(multiplayerHarnessDirectory, "client-a/logs/latest.log")
 		def clientBLog = new File(multiplayerHarnessDirectory, "client-b/logs/latest.log")
-		def serverText = serverLog.isFile() ? serverLog.text : ""
-		def clientAText = clientALog.isFile() ? clientALog.text : ""
-		def clientBText = clientBLog.isFile() ? clientBLog.text : ""
+		def serverText = serverLog.isFile() ? readRuntimeEvidenceLog(serverLog) : ""
+		def clientAText = clientALog.isFile() ? readRuntimeEvidenceLog(clientALog) : ""
+		def clientBText = clientBLog.isFile() ? readRuntimeEvidenceLog(clientBLog) : ""
 		if (!serverText.contains("[multiplayer] full scenario result=true")
 				|| serverText.contains("[multiplayer] full scenario result=false")) {
 			throw new GradleException("Fabric multiplayer server matrix did not pass; inspect ${serverLog}")
@@ -1997,7 +1999,7 @@ def verifyOptionalVisualSmokeOutputs = { File runDirectory, String label ->
 	def logFile = new File(runDirectory, "logs/latest.log")
 	requireFabricRuntimeGateLog(logFile, "[optional-visual-smoke] PASS",
 			"[optional-visual-smoke] FAIL", label)
-	def log = logFile.getText("UTF-8")
+	def log = readRuntimeEvidenceLog(logFile)
 	[
 			"[optional-visual-smoke] client-ready",
 			"[optional-visual-smoke] complete-atlas",
@@ -2226,7 +2228,7 @@ def verifyCreationUiConfig = { File runDirectory, String label ->
 def verifyCreationUiOutputs = { File runDirectory, String label ->
 	def logFile = new File(runDirectory, "logs/latest.log")
 	requireFabricRuntimeGateLog(logFile, "[creation-ui-test] PASS", "[creation-ui-test] FAIL", label)
-	def log = logFile.text
+	def log = readRuntimeEvidenceLog(logFile)
 	def firstSeed = (log =~ /\[creation-ui-test\] seed-preview seed=12345 identity=([0-9a-f]+) aspect=64:1 centeredSeam=true/)
 	def secondSeed = (log =~ /\[creation-ui-test\] seed-preview seed=67890 identity=([0-9a-f]+) aspect=64:1 centeredSeam=true/)
 	if (!firstSeed.find() || !secondSeed.find() || firstSeed.group(1) == secondSeed.group(1)) {
@@ -2367,7 +2369,7 @@ tasks.register("verifyMapCompassCaptureClient") {
 	mustRunAfter("runMapCompassCaptureClient")
 	doLast {
 		def logFile = new File(qualificationRunFile("run-map-compass-capture"), "logs/latest.log")
-		def log = logFile.isFile() ? logFile.text : ""
+		def log = logFile.isFile() ? readRuntimeEvidenceLog(logFile) : ""
 		if (!log.contains("[map-compass-capture] PASS") || log.contains("[map-compass-capture] FAIL")) {
 			throw new GradleException("Map and compass capture did not pass; inspect " + logFile)
 		}
@@ -2453,7 +2455,7 @@ tasks.register("verifyAtlasUiClient") {
 	mustRunAfter("runAtlasUiClient")
 	doLast {
 		def logFile = new File(qualificationRunFile("run-atlas-ui"), "logs/latest.log")
-		def log = logFile.isFile() ? logFile.text : ""
+		def log = logFile.isFile() ? readRuntimeEvidenceLog(logFile) : ""
 		if (!log.contains("[atlas-ui-test] PASS") || log.contains("[atlas-ui-test] FAIL")) {
 			throw new GradleException("Atlas UI client did not pass; inspect " + logFile)
 		}
@@ -2515,7 +2517,7 @@ tasks.register("verifyStrongholdTestServer") {
 	mustRunAfter("runStrongholdTestServer")
 	doLast {
 		def logFile = new File(strongholdTestDirectory, "logs/latest.log")
-		def log = logFile.isFile() ? logFile.text : ""
+		def log = logFile.isFile() ? readRuntimeEvidenceLog(logFile) : ""
 		if (!log.contains("[stronghold-test] PASS") || log.contains("[stronghold-test] FAILED")) {
 			throw new GradleException("Stronghold runtime gate did not pass; inspect " + logFile)
 		}
@@ -3375,7 +3377,7 @@ tasks.register("verifyCurvedObjectCaptureClient") {
 	mustRunAfter("runCurvedObjectCaptureClient")
 	doLast {
 		def logFile = new File(qualificationRunFile("run-curved-object-capture"), "logs/latest.log")
-		def log = logFile.isFile() ? logFile.text : ""
+		def log = logFile.isFile() ? readRuntimeEvidenceLog(logFile) : ""
 		if (!log.contains("[curved-object-capture] result=PASS, captures complete")
 				|| log.contains("[curved-object-capture] result=FAIL")) {
 			throw new GradleException("Fabric curved-object capture did not pass; inspect " + logFile)

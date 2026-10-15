@@ -258,3 +258,33 @@ so Large-world status cost is measured rather than inferred from the complete
 Atlas shortcut. These new fixtures require build and native execution before
 credit. Production-world inputs will be copied; original 1.3/Beta saves stay
 untouched.
+
+### Extended native and production-input checkpoint
+
+The four opt-in native runs pass at `a4658f9`: pause/drain/cancel/restart and
+fixed-rate persistence on Fabric/NeoForge, plus synthetic-FPS 4→2→1→2→4 on
+each. Each independent disk receipt finds all 262,144 cells. Raw tick samples
+independently reproduce reported percentiles and slow-tick counts; these are
+headless functional diagnostics, not ordinary-gameplay performance results.
+Evidence is `.codex-tmp/b14-native-probes/results.json`.
+
+Production preparation has completed a copied 16,384×256 Atlas-11 master with
+all 4,194,304 cells and unchanged original-save inventory. A fresh 32,768×512
+native world is generating under a four-GiB server heap. Producer source,
+jar, raw logs/GC data and stopped-master inventories are retained under
+`.codex-tmp/b14-worlds/`; this input preparation is not acceptance.
+
+The next native exterior fixtures port the upstream two-client placement,
+policy/save/reopen, render-pass visibility and vanilla void-damage scenarios.
+The placement fixture adds survival inventory preservation for rejected stone
+and beds, both possible exterior bed halves, and stale operator fingerprints.
+The 1.21.1 render path requires a dedicated exception for the native
+`LevelRenderer.isSectionCompiled` entity gate outside finite Z. Interior and
+non-Overworld behavior remain vanilla. Real model-render entry is recorded
+only under the opt-in visibility flag. Dual build/contracts pass with these
+fixtures; actual packaged execution remains required.
+
+The graphical runtime verifiers now read ordered date/sequence rollover archives
+plus `latest.log`, bounded to 64 MiB per attempt. A real gzip fixture retains
+an earlier failure across midnight and rejects corrupt archives. Runs must own
+fresh log directories; archives from a prior attempt are not valid evidence.

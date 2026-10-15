@@ -12,6 +12,7 @@
     "PauseScreenMixin",
     "ConfirmScreenAccessor",
     "EntityRenderManagerMixin",
+    "ExteriorEntityVisibilityMixin",
     "FogRendererMixin",
     "GuiMixin",
     "GuiGraphicsInvoker",

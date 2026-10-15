@@ -1282,7 +1282,7 @@ tasks.register('prepareNeoForgeCreateCompatOffClient') {
 
 def verifyCreateCompatibilityClient = { File runDirectory, boolean backendOff ->
     def logFile = new File(runDirectory, 'logs/latest.log')
-    def log = logFile.isFile() ? logFile.text : ''
+    def log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
     def expectedResult = backendOff
             ? '[create-compat-client] result=true off vanillaFallback=true flywheelEmbedding=zero durable=true backend=flywheel:off'
             : '[create-compat-client] result=true default realClicks=both-directions preview=both-charts transfer=true durable=true controllerCharts=both backend='
@@ -1632,7 +1632,7 @@ def bearingProjectedBounds = { String proof ->
 def verifyCreateCompatibilityBearingClient = { File runDirectory, String route,
                                                 String chart, String direction, String backendIdentity ->
         def logFile = new File(runDirectory, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
+        def log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
         if (backendIdentity == 'flywheel:instancing'
                 && log.contains('[create-bearing] result=false capability-rejected requested=flywheel:instancing')) {
             new File(runDirectory, 'capability-rejection.txt').text =
@@ -1811,7 +1811,7 @@ tasks.register('verifyNeoForgeCreateCompatWindmillClient') {
     doLast {
         def runDirectory = neoForgeCreateCompatWindmillClientRun
         def logFile = new File(runDirectory, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
+        def log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
         if (!log.contains('[create-windmill] result=true backend=flywheel:indirect realWindmill=true')
                 || !log.contains('windDriven=true liveRotation=true capturedBlocks=13 restoration=true')
                 || log.contains('[create-windmill] result=false')) {
@@ -1877,7 +1877,7 @@ tasks.register('verifyNeoForgeCreateCompatAbsentServer') {
     mustRunAfter('runCreateCompatAbsentServer')
     doLast {
         def logFile = new File(neoForgeCreateCompatAbsentRun, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
+        def log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
         if (!log.contains('[create-compat-boot] PASS mode=absent appliedServerMixins=0 appliedClientMixins=0')
                 || log.contains('[create-compat-boot] FAIL')
                 || log.contains('Create compatibility adapter disabled for unqualified tuple')) {
@@ -1894,7 +1894,7 @@ tasks.register('verifyNeoForgeCreateCompatServer') {
     mustRunAfter('runCreateCompatServer')
     doLast {
         def logFile = new File(neoForgeCreateCompatRun, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
+        def log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
         if (!log.contains('[create-compat-boot] PASS mode=exact appliedServerMixins=4 appliedClientMixins=0')
                 || !log.contains('[create-compat-fixture] PASS belts=both-directions '
                         + 'tanks=seam+baseline vault=unmodified controllerNbt=canonical')
@@ -2006,7 +2006,7 @@ tasks.register('verifyNeoForgeCreateCompatKineticVisualD2') {
             File runDirectory = definition.run as File
             File logFile = new File(runDirectory, 'logs/latest.log')
             if (!logFile.isFile()) throw new GradleException("Missing D2 log ${logFile}")
-            String log = logFile.text
+            String log = rootProject.ext.readRuntimeEvidenceLog(logFile)
             String expectedResult = '[create-kinetic-d1] result=true backend=' + definition.backend +
                     ' route=' + definition.route +
                     ' mechanism=encased-cog captures=12 fixedCameraPhases=3 poses=4 ' +
@@ -2258,7 +2258,7 @@ tasks.register('verifyNeoForgeCreateCompatKineticNetworkD3') {
         kineticD3Definitions.each { definition ->
             File runDirectory = definition.run as File
             File logFile = new File(runDirectory, 'logs/latest.log')
-            String log = logFile.isFile() ? logFile.text : ''
+            String log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
             String resultMarker = "[create-kinetic-d3] result=true backend=${definition.backend} " +
                     "route=${definition.route} modules=12 densityVisuals=${definition.density} " +
                     'captures=5 owned=0'
@@ -2497,7 +2497,7 @@ tasks.register('verifyNeoForgeCreateCompatLinearMatrix') {
         linearCreateCompatRuns.each { definition ->
             File runDirectory = definition.run as File
             File logFile = new File(runDirectory, 'logs/latest.log')
-            String log = logFile.isFile() ? logFile.text : ''
+            String log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
             String resultPrefix = "[create-linear] result=true backend=${definition.backend} " +
                     "route=${definition.route} mechanism=${definition.mechanism} " +
                     'realCreateMotion=true glued=true'
@@ -2742,7 +2742,7 @@ tasks.register('verifyNeoForgeAtlasUiClient') {
     mustRunAfter('runAtlasUiClient')
     doLast {
         def logFile = new File(neoForgeAtlasUiRun, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
+        def log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
         if (!log.contains('[atlas-ui-test] PASS') || log.contains('[atlas-ui-test] FAIL')) {
             throw new GradleException("NeoForge atlas UI client did not pass; inspect ${logFile}")
         }
@@ -2941,7 +2941,7 @@ tasks.register('verifyNeoForgeMapCompassCaptureClient') {
     mustRunAfter('runMapCompassCaptureClient')
     doLast {
         def logFile = new File(neoForgeMapCompassRun, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
+        def log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
         if (!log.contains('[map-compass-capture] PASS') || log.contains('[map-compass-capture] FAIL')) {
             throw new GradleException("NeoForge map and compass capture did not pass; inspect ${logFile}")
         }
@@ -3101,9 +3101,9 @@ tasks.register('verifyNeoForgeMultiplayerHarness') {
         def serverLog = new File(neoForgeMultiplayerServerRun, 'logs/latest.log')
         def clientALog = new File(neoForgeMultiplayerClientARun, 'logs/latest.log')
         def clientBLog = new File(neoForgeMultiplayerClientBRun, 'logs/latest.log')
-        def serverText = serverLog.isFile() ? serverLog.text : ''
-        def clientAText = clientALog.isFile() ? clientALog.text : ''
-        def clientBText = clientBLog.isFile() ? clientBLog.text : ''
+        def serverText = serverLog.isFile() ? rootProject.ext.readRuntimeEvidenceLog(serverLog) : ''
+        def clientAText = clientALog.isFile() ? rootProject.ext.readRuntimeEvidenceLog(clientALog) : ''
+        def clientBText = clientBLog.isFile() ? rootProject.ext.readRuntimeEvidenceLog(clientBLog) : ''
         if (!serverText.contains('[multiplayer] full scenario result=true')
                 || serverText.contains('[multiplayer] full scenario result=false')) {
             throw new GradleException("NeoForge multiplayer server matrix did not pass; inspect ${serverLog}")
@@ -3266,7 +3266,7 @@ tasks.register('verifyNeoForgeStrongholdTestServer') {
     mustRunAfter('runStrongholdTestServer')
     doLast {
         def logFile = new File(neoForgeStrongholdTestRun, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
+        def log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
         if (!log.contains('[stronghold-test] PASS') || log.contains('[stronghold-test] FAILED')) {
             throw new GradleException("NeoForge stronghold runtime gate did not pass; inspect ${logFile}")
         }
@@ -3459,7 +3459,7 @@ tasks.register('verifyNeoForgeProductionProjectionClient') {
     mustRunAfter('runProductionProjectionClient')
     doLast {
         def logFile = new File(neoForgeProjectionRun, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
+        def log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
         if (!log.contains('[projection-capture] result=true, captures complete')) {
             throw new GradleException("NeoForge projection capture did not pass; inspect ${logFile}")
         }
@@ -3677,7 +3677,7 @@ tasks.register('verifyNeoForgeProductionVisualParityClient') {
     mustRunAfter('runProductionVisualParityClient')
     doLast {
         def logFile = new File(neoForgeVisualParityRun, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
+        def log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
         if (!log.contains('[visual-parity-capture] result=true, captures complete')) {
             throw new GradleException("NeoForge visual-parity capture did not pass; inspect ${logFile}")
         }
@@ -3733,7 +3733,7 @@ tasks.register('verifyNeoForgeCurvedObjectCaptureClient') {
     mustRunAfter('runCurvedObjectCaptureClient')
     doLast {
         def logFile = new File(neoForgeCurvedObjectRun, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
+        def log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
         if (!log.contains('[curved-object-capture] result=PASS, captures complete')
                 || log.contains('[curved-object-capture] result=FAIL')) {
             throw new GradleException("NeoForge curved-object capture did not pass; inspect ${logFile}")
@@ -3823,7 +3823,7 @@ tasks.register('verifyNeoForgeLayoutSwitchClient') {
     mustRunAfter('runLayoutSwitchClient')
     doLast {
         def logFile = new File(neoForgeLayoutSwitchRun, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
+        def log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
         if (!log.contains('[layout-switch] result-json={"passed":true,')
                 || log.contains('[layout-switch] result-json={"passed":false,')) {
             throw new GradleException("NeoForge layout-switch client did not pass; inspect ${logFile}")
@@ -3895,7 +3895,7 @@ tasks.register('verifyNeoForgeProductionLifecycleClient') {
     mustRunAfter('runProductionLifecycleClient')
     doLast {
         def logFile = new File(neoForgeProductionLifecycleRun, 'logs/latest.log')
-        def log = logFile.isFile() ? logFile.text : ''
+        def log = logFile.isFile() ? rootProject.ext.readRuntimeEvidenceLog(logFile) : ''
         if (!log.contains('[production-lifecycle] result=true')
                 || log.contains('[production-lifecycle] result=false')) {
             throw new GradleException("NeoForge production lifecycle did not pass; inspect ${logFile}")

@@ -1,0 +1,64 @@
+// Callers own a fresh logs directory for one attempt. Include rollover archives
+// so a midnight boundary cannot discard an earlier assertion or failure.
+ext.readRuntimeEvidenceLog = { File latest ->
+    if (latest.name != 'latest.log') {
+        throw new GradleException("Expected a runtime latest.log: ${latest}")
+    }
+    if (!latest.isFile()) return ''
+    def archives = latest.parentFile.listFiles().findAll {
+        it.isFile() && (it.name ==~ /\d{4}-\d{2}-\d{2}-\d+\.log\.gz/)
+    }.sort { a, b ->
+        def dateOrder = a.name.substring(0, 10) <=> b.name.substring(0, 10)
+        dateOrder ?: (a.name.substring(11, a.name.indexOf('.log')).toInteger()
+                <=> b.name.substring(11, b.name.indexOf('.log')).toInteger())
+    }
+    def output = new ByteArrayOutputStream()
+    (archives + [latest]).each { input ->
+        new FileInputStream(input).withCloseable { raw ->
+            def stream = input == latest ? raw : new java.util.zip.GZIPInputStream(raw)
+            try {
+                byte[] buffer = new byte[8192]
+                int count
+                while ((count = stream.read(buffer)) != -1) {
+                    if (output.size() + count > 64 * 1024 * 1024) {
+                        throw new GradleException("Runtime evidence exceeds 64 MiB: ${latest.parentFile}")
+                    }
+                    output.write(buffer, 0, count)
+                }
+                output.write(10)
+            } finally {
+                stream.close()
+            }
+        }
+    }
+    output.toString('UTF-8')
+}
+
+tasks.named('check') { dependsOn('verifyRuntimeEvidenceRollover') }
+
+tasks.register('verifyRuntimeEvidenceRollover') {
+    group = 'ringworld verification'
+    description = 'Checks ordered midnight archives and fail-closed corrupt evidence.'
+    doLast {
+        def fixture = layout.buildDirectory.dir('runtime-evidence-rollover').get().asFile
+        delete(fixture)
+        fixture.mkdirs()
+        def compressed = { String name, String text ->
+            new java.util.zip.GZIPOutputStream(new FileOutputStream(new File(fixture, name))).withCloseable {
+                it.write(text.getBytes('UTF-8'))
+            }
+        }
+        compressed('2026-10-15-10.log.gz', 'late archive')
+        compressed('2026-10-15-2.log.gz', 'earlier FAIL')
+        compressed('2026-10-16-1.log.gz', 'next day')
+        new File(fixture, 'latest.log').text = 'final PASS'
+        assert readRuntimeEvidenceLog(new File(fixture, 'latest.log')) ==
+                'earlier FAIL\nlate archive\nnext day\nfinal PASS\n'
+        new File(fixture, '2026-10-16-2.log.gz').text = 'corrupt'
+        boolean rejected = false
+        try { readRuntimeEvidenceLog(new File(fixture, 'latest.log')) }
+        catch (java.io.IOException expected) { rejected = true }
+        assert rejected : 'Corrupt rollover evidence must fail closed'
+        delete(fixture)
+    }
+}
