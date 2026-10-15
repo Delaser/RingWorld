@@ -16,6 +16,7 @@ import dev.ringworld.world.RingNavigationAccess;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.protocol.game.ClientboundBlockUpdatePacket;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.ChunkPos;
@@ -96,6 +97,12 @@ public final class RingWorldServer {
         WORLD_GEOMETRY.remove(world);
         PENDING_LEGACY_RIM_MIGRATIONS.remove(world);
         if (isOverworld(world)) RingNoiseCoordinates.clearCache();
+    }
+
+    /** Final cleanup after world closing and its last geometry lookups finish. */
+    public static void onServerStopped(MinecraftServer server) {
+        WORLD_GEOMETRY.keySet().removeIf(world -> world.getServer() == server);
+        PENDING_LEGACY_RIM_MIGRATIONS.keySet().removeIf(world -> world.getServer() == server);
     }
 
     /** Loader-owned join callbacks call this after their own admission policy. */

@@ -3,6 +3,7 @@ package dev.ringworld.server;
 import dev.ringworld.net.RingWorldNetworking;
 import dev.ringworld.platform.fabric.FabricHeadlessPlayerAdmission;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerChunkEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerWorldEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
@@ -15,6 +16,7 @@ public final class FabricRingWorldServer {
         RingWorldServer.configurePreLoadRejectionHandler(RingWorldHeadlessPrewarm::recordPreLoadRejection);
         RingWorldHeadlessPrewarm.register();
         FabricTerrainAtlasPlatform.register();
+        ServerLifecycleEvents.SERVER_STOPPED.register(RingWorldServer::onServerStopped);
         ServerTickEvents.END_WORLD_TICK.register(world -> {
             RingWorldServer.tickRingWorld(world);
             if (RingWorldServer.isOverworld(world)) RingTerrainAtlasServer.tick(world);

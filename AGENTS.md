@@ -190,6 +190,14 @@ with minimal type stubs and tests abandoned cycles, live storage and replacement
 Native repeated-reopen/resource and seam/teleport checks remain required; this
 bounded ownership regression alone is not runtime qualification.
 
+Both loader adapters must call `RingWorldServer.onServerStopped` after normal
+world shutdown. A level-unload callback alone did not retire `WORLD_GEOMETRY`:
+JFR found closed Overworlds retaining eleven integrated servers after ten reopens.
+Final cleanup removes geometry and pending legacy-rim entries only for the stopped
+server. Keep the earlier unload cleanup and the existing Atlas durability order.
+`scripts/test_server_world_cache_lifecycle.py` tests the actual final cleanup
+method; native repeated reopen/resource checks must verify the platform hooks.
+
 The [dual-version plan](docs/BACKPORT_1_4_DUAL_VERSION_PLAN_2026-10-15.md)
 audits published 1.4 source `1533878` against the local 1.3 checkpoint `8f1fe43`.
 The initial 1.21.1 intake builds, 1,085 Java cases, both 26-capture creation gates and

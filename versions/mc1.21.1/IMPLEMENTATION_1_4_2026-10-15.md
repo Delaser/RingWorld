@@ -948,3 +948,33 @@ visual suite or infer resource stability from the old functional passes.
 Large paired performance, real FPS policy, soak, upgrade/closure, moving wall/water
 review and formal acceptance remain outstanding. No release upload or 1.20.1
 implementation is claimed.
+
+### Second retained-world root: final server cleanup
+
+The `10404cb` repair builds on both loaders with all 1,287 Java cases. Archive
+comparison confirms `RingClientChunkMaps.class` is its only runtime change.
+A stronger prototype assertion stopped its first production reopen test because
+one client cache remained after collection; that failed attempt is preserved.
+Do not assume one registry entry proves unbounded retention or erase the failure.
+
+An explicitly observation-only Small diagnostic records live registry referents,
+identities and vanilla camera/renderer fields over ten reopens. Only the latest
+client world remains in that weak registry after each full GC. The registry
+therefore no longer accumulates old client worlds, but heap and tracked native
+memory still grow. Its histogram has one client level yet eleven integrated
+servers and 33 server levels. No resource acceptance is awarded.
+
+JFR's retained-object paths identify the second root directly:
+`RingWorldServer.WORLD_GEOMETRY -> ServerLevel -> IntegratedServer`.
+Closed servers retain their registry/structure data through this static
+identity map. Existing level-unload callbacks are insufficient. The shared
+`onServerStopped` method now removes geometry and pending legacy-rim entries
+belonging to the stopped server; both loader final-stop events call it.
+Earlier unload cleanup and the Atlas save/flush order remain unchanged.
+
+Four actual-method ownership cases pass alongside the three client ownership
+cases and thirteen existing driver/workflow cases. Fresh strict builds and
+native resource/lifecycle validation of the combined repair remain pending.
+The latest diagnostic is retained as `COLLECTED_OWNERSHIP_DIAGNOSTIC`, never a
+release or production-world acceptance result. Its root-path dump and additional
+histogram safepoint are disclosed and excluded from ordinary performance.

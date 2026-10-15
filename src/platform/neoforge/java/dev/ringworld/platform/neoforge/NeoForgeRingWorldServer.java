@@ -15,6 +15,7 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
 import net.neoforged.neoforge.event.level.ChunkEvent;
 import net.neoforged.neoforge.event.level.LevelEvent;
 import net.neoforged.neoforge.event.server.ServerStoppingEvent;
+import net.neoforged.neoforge.event.server.ServerStoppedEvent;
 import net.neoforged.neoforge.event.tick.LevelTickEvent;
 import net.neoforged.neoforge.event.tick.ServerTickEvent;
 
@@ -91,6 +92,11 @@ public final class NeoForgeRingWorldServer {
     public void onServerStopping(ServerStoppingEvent event) {
         RingTerrainAtlasServer.serverStopping(event.getServer());
         HeadlessPrewarmCoordinator.serverStopping(event.getServer());
+    }
+
+    @SubscribeEvent
+    public void onServerStopped(ServerStoppedEvent event) {
+        RingWorldServer.onServerStopped(event.getServer());
     }
 
     @SubscribeEvent

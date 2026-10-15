@@ -2484,3 +2484,10 @@ convergence. Interpret actual GC/NMT/OS records separately from ordinary frame
 and tick performance. Raw client-session teardown did not catch the registry's
 strong-value retention path. The 1.4 implementation ledger records its native
 reproduction and the required focused reruns.
+
+`python -m unittest scripts/test_server_world_cache_lifecycle.py` executes the
+actual final-stop cleanup method with small owner/level stubs. Its four cases
+cover collection of an owned server/world graph, late cache repopulation,
+preservation of another server and idempotence. Both loader builds compile the
+complete class; native repeated reopens must independently exercise the final
+server-stop callbacks. The source-level harness does not qualify those hooks.

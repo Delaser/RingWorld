@@ -433,6 +433,12 @@ level. Weak keys with strong storage values therefore retain disconnected worlds
 already strongly owns its current storage. Replacing storage updates that
 association without extending the lifetime of the previous client chart.
 
+Server geometry and pending legacy-rim caches are also session-owned. Their
+level-unload removal is followed by final, server-scoped removal from both
+loader `SERVER_STOPPED` callbacks. This covers geometry consulted during world
+closing without moving cleanup ahead of normal saves or removing another
+server's active entries.
+
 ## World generation
 
 ### Periodic terrain noise

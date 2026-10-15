@@ -1,4 +1,4 @@
-name: Client chunk registry ownership
+name: World lifecycle ownership
 
 on:
   pull_request:
@@ -7,6 +7,10 @@ on:
       - "src/client/java/dev/ringworld/client/chunk/RingClientChunkMapAccess.java"
       - "src/client/java/dev/ringworld/client/mixin/ClientChunkMapMixin.java"
       - "scripts/test_client_chunk_map_lifecycle.py"
+      - "scripts/test_server_world_cache_lifecycle.py"
+      - "src/main/java/dev/ringworld/server/RingWorldServer.java"
+      - "src/platform/fabric/java/dev/ringworld/server/FabricRingWorldServer.java"
+      - "src/platform/neoforge/java/dev/ringworld/platform/neoforge/NeoForgeRingWorldServer.java"
       - ".github/workflows/client-chunk-map-ownership.yml"
   push:
     paths:
@@ -14,6 +18,10 @@ on:
       - "src/client/java/dev/ringworld/client/chunk/RingClientChunkMapAccess.java"
       - "src/client/java/dev/ringworld/client/mixin/ClientChunkMapMixin.java"
       - "scripts/test_client_chunk_map_lifecycle.py"
+      - "scripts/test_server_world_cache_lifecycle.py"
+      - "src/main/java/dev/ringworld/server/RingWorldServer.java"
+      - "src/platform/fabric/java/dev/ringworld/server/FabricRingWorldServer.java"
+      - "src/platform/neoforge/java/dev/ringworld/platform/neoforge/NeoForgeRingWorldServer.java"
       - ".github/workflows/client-chunk-map-ownership.yml"
   workflow_dispatch:
 
@@ -22,7 +30,7 @@ permissions:
 
 jobs:
   ownership-regression:
-    # Minimal type stubs compile the real registry; this never launches Minecraft
+    # Minimal type stubs exercise the real registry and final-stop method, without Minecraft
     # and does not qualify either platform's graphical runtime.
     runs-on: ${{ matrix.os }}
     timeout-minutes: 5
@@ -39,5 +47,5 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
-      - name: Exercise live, abandoned, and replaced storage ownership
-        run: python -m unittest scripts/test_client_chunk_map_lifecycle.py
+      - name: Exercise client storage and final server cache ownership
+        run: python -m unittest scripts/test_client_chunk_map_lifecycle.py scripts/test_server_world_cache_lifecycle.py
