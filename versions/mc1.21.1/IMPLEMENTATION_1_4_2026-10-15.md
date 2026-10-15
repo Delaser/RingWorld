@@ -85,3 +85,26 @@ and requires successful completion after Atlas cancellation. Native repeated
 interruption/resume and both-loader validation are required before crediting
 this repair. The earlier completed-world-only P1 proof did not exercise this
 pending-future cancellation case.
+
+## P3: scheduled maintenance and lighting (in progress)
+
+The required native hooks now scope scheduled autosaves in 1.21.1 `tickServer`,
+queue coordinate-only save sweeps, and apply normal/catch-up/heap-pressure
+budgets to ordinary unload/eager work. Explicit/flush saves and shutdown retain
+vanilla drains. The native `chunkSaveCooldowns` and one-argument
+`saveChunkIfNeeded` are used. A backport-owned asynchronous-write counter
+preserves original futures and exceptions because 1.21.1 lacks mainline's
+counter. Location advancements defer once after movement and cannot starve
+under continuous travel.
+
+Server Overworld light maps use mainline's partitioned lookup snapshots. The
+native covariant copy methods have separate required Sky/Block mixins; the
+client, Nether and End remain vanilla. An opt-in `ringworld.lightStorageProbe`
+checks real transformed cache invalidation, DataLayer identity/isolation,
+branch/removal and concurrent published reads on detached copies only. Normal
+play does not run it. All new injections remain required.
+
+Build/unit checks pass (Fabric 579 / NeoForge 602; zero failures, errors or
+skips); native packaged, real scheduled-durability, allocation/GC and controlled
+Large-world acceptance remain pending. These counts should be reconciled with
+the XML receipts if more cases are added before final qualification.

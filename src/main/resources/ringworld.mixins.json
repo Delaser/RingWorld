@@ -52,7 +52,14 @@
     "SurfaceSystemMixin",
     "WorldEntityLookupMixin",
     "WorldTickSchedulerMixin",
-    "RandomSpreadStructurePlacementMixin"
+    "RandomSpreadStructurePlacementMixin",
+    "ServerAutosaveMixin",
+    "ChunkMapMaintenanceMixin",
+    "ServerPlayerLocationWorkMixin",
+    "DataLayerStorageMapMixin",
+    "LayerLightSectionStorageMixin",
+    "SkyLightSectionSnapshotMixin",
+    "BlockLightSectionSnapshotMixin"
   ],
   "injectors": {
     "defaultRequire": 1
