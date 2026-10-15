@@ -10,6 +10,7 @@ on:
       - "scripts/test_validate_backport_acceptance_plan.py"
       - "scripts/*backport*diagnostics.py"
       - "scripts/*backport_frame_evidence.py"
+      - "scripts/*fabric_mixin_refmaps.py"
       - "scripts/minecraft_qualification_*.py"
       - "scripts/run_minecraft_qualification.py"
       - "scripts/external_runtime_*.py"
@@ -35,6 +36,7 @@ on:
       - "scripts/test_validate_backport_acceptance_plan.py"
       - "scripts/*backport*diagnostics.py"
       - "scripts/*backport_frame_evidence.py"
+      - "scripts/*fabric_mixin_refmaps.py"
       - "scripts/minecraft_qualification_*.py"
       - "scripts/run_minecraft_qualification.py"
       - "scripts/external_runtime_*.py"
@@ -116,6 +118,7 @@ jobs:
           scripts/test_backport_exterior_diagnostics.py
           scripts/test_backport_client_diagnostics.py
           scripts/test_verify_backport_frame_evidence.py
+          scripts/test_verify_fabric_mixin_refmaps.py
 
       # Static only: no Gradle, Minecraft runtime, installer, server, network,
       # credential, package, or publication action is allowed in this job.

@@ -3657,3 +3657,18 @@ tasks.withType(Jar).configureEach {
 		rename { 'LICENSE-RINGWORLD.txt' }
 	}
 }
+
+// Split Fabric environments generate distinct refmaps. Validate the runtime
+// resource linkage rather than relying on named development launches.
+tasks.register('verifyFabricMixinRefmaps', Exec) {
+    group = 'verification'
+    dependsOn('remapJar')
+    inputs.file('scripts/verify_fabric_mixin_refmaps.py')
+    inputs.file(tasks.named('remapJar').flatMap { it.archiveFile })
+    doFirst {
+        commandLine(System.getProperty('os.name').toLowerCase(Locale.ROOT).contains('windows')
+                ? 'python' : 'python3', rootProject.file('scripts/verify_fabric_mixin_refmaps.py'),
+                tasks.named('remapJar').get().archiveFile.get().asFile)
+    }
+}
+tasks.named('check') { dependsOn('verifyFabricMixinRefmaps') }

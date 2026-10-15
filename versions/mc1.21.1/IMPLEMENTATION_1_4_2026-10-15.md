@@ -371,3 +371,31 @@ checkpoint; the new native graphical cases have not run yet.
 
 Ten Python diagnostic/measurement/workflow checks pass and are wired into the
 static workflow. Their result is tooling validation, not Minecraft execution.
+
+### Production inputs and packaged mapping failure
+
+Both stopped production masters pass independent disk verification at producer
+`a4658f9`: Medium has 4,194,304 cells (233.61 seconds); Large has all
+16,777,216 cells (3,175.86 seconds), with four-GiB heap, clean all-dimension
+shutdown and no save/OOM error. Their inventories, hashes, GC logs and source
+archive are under `.codex-tmp/b14-worlds/`. The original save inventory remains
+unchanged. Large's old partial-status path has 3,121 observations: 1,170 exceed
+50 ms and two exceed 100 ms, maximum 107.7832 ms. Those direct owner spans justify
+the incremental count fix. Vanilla tick history excludes some end-hook work;
+its headless summaries are not inclusive gameplay performance qualification.
+
+The first packaged exterior attempt at `b62bce9` fails client startup. Both
+refmaps exist, but `ringworld.client.mixins.json` selects the common table, so
+required sleeping/disconnect targets and nested client classes cannot resolve.
+The attempt and watchdog/normal server shutdown remain at
+`.codex-tmp/b14-exterior-fabric/placement/FAILED.json`. Waiting follower runs were
+canceled without launching Minecraft and have explicit NOT_RUN receipts.
+
+Moving the configuration into `src/client/resources/` lets Loom select
+`client-ringworld-refmap.json`; NeoForge still consumes its native named
+configuration. No injector requirement or target was weakened. The new jar
+validator reproduces the old candidate failure and verifies every generated
+mapping selected by each referenced config, plus required native client entries.
+It is mandatory for Fabric `check`. Both builds and its three pure regressions
+pass. A fresh packaged rerun remains required; source-development UI successes
+could not establish this distribution linkage.

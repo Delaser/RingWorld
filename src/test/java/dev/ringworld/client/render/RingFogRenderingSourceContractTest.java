@@ -44,7 +44,7 @@ class RingFogRenderingSourceContractTest {
     @Test
     void fogHookIsOrdinaryAirColourOnlyAndProxyEdgesUseBackdrop() throws IOException {
         String mixin = read("src/client/java/dev/ringworld/client/mixin/FogRendererMixin.java");
-        String mixins = read("src/main/resources/ringworld.client.mixins.json");
+        String mixins = read("src/client/resources/ringworld.client.mixins.json");
         String renderer = read(
                 "src/client/java/dev/ringworld/client/render/RingSurfaceTextureRenderer.java");
         String shader = read("src/client/resources/assets/ringworld/shaders/core/ring_surface.fsh");
