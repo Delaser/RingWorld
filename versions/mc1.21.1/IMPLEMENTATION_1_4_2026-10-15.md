@@ -565,3 +565,14 @@ stopped after normal layout-switch completion with an explicit cancellation
 receipt. Remaining captures and the NeoForge graphical matrix were not launched.
 All those earlier successes remain historical diagnostics and must be refreshed
 on the changed candidate.
+
+The first native cache fixture at `53cd0af` proves rejection before streaming,
+full repair and positive reuse, then correctly fails its unchanged-world control.
+Independent cell comparison finds one changed top RGB at X=86/Z=32, with height,
+side, light/water and presence unchanged; saved entity inspection finds sheep
+beside that cell. Random-tick and spawning controls do not prevent existing sheep
+from modifying grass. The fixture now disables mob griefing in its disposable
+copy; every content/revision, metadata and teardown assertion remains intact.
+The failed world/cache files and logs are retained at
+`dist/qualification/b14-cache-regression-fabric/`. NeoForge did not launch after
+that failure. Fresh native runs on both loaders remain required.

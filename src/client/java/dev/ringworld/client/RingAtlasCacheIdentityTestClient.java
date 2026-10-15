@@ -81,6 +81,7 @@ public final class RingAtlasCacheIdentityTestClient {
                     RingIntegratedCaptureControl.normalizeEnvironment(context, 6000, false);
                     context.world().getGameRules().getRule(GameRules.RULE_RANDOMTICKING).set(0, context.server());
                     context.world().getGameRules().getRule(GameRules.RULE_DOMOBSPAWNING).set(false, context.server());
+                    context.world().getGameRules().getRule(GameRules.RULE_MOBGRIEFING).set(false, context.server());
                     context.world().getGameRules().getRule(GameRules.RULE_WEATHER_CYCLE).set(false, context.server());
                 }, () -> normalized = true, detail -> failure = detail);
             }
