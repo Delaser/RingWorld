@@ -59,6 +59,8 @@ public final class RingVisualParityCaptureClient {
     private int seamMotionFrameSamples;
     private final RingFrameEvidence rawFrames = new RingFrameEvidence();
     private int seamMotionSlowFrames;
+    private final RingIntegratedCaptureControl.PlayerSafety playerSafety =
+            new RingIntegratedCaptureControl.PlayerSafety();
 
     public boolean tick(Minecraft client) {
         if (!Boolean.getBoolean(ENABLE_PROPERTY)) return false;
@@ -68,6 +70,7 @@ public final class RingVisualParityCaptureClient {
             return true;
         }
         if (!ensureWorldOpen(client)) return true;
+        if (!playerSafety.ensure(client, detail -> finish(client, false, detail))) return true;
         if (client.screen instanceof PauseScreen) client.setScreen(null);
         if (client.screen != null) return true;
 

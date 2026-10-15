@@ -66,12 +66,15 @@ public final class RingProjectionCaptureClient {
     private final RingFrameEvidence rawFrames = new RingFrameEvidence();
     private int slowFrames;
     private int streamingStableTicks;
+    private final RingIntegratedCaptureControl.PlayerSafety playerSafety =
+            new RingIntegratedCaptureControl.PlayerSafety();
 
     public boolean tick(Minecraft client) {
         if (!Boolean.getBoolean(ENABLE_PROPERTY)) return false;
         applyFocusPolicy(client);
         if (stage >= 4) return true;
         if (!ensureWorldOpen(client)) return true;
+        if (!playerSafety.ensure(client, detail -> finish(client, false, detail))) return true;
         if (stage == 3) {
             if (Boolean.getBoolean(STREAMING_EDGE_PROPERTY)) {
                 return drainStreamingCapture(client);

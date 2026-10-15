@@ -7,8 +7,9 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.RelativeMovement;
-import net.minecraft.world.level.GameType;
+import dev.ringworld.server.RingIntegratedCaptureSafety;
 import net.minecraft.world.level.GameRules;
+import net.minecraft.world.level.GameType;
 
 import java.util.Set;
 import java.util.UUID;
@@ -61,7 +62,7 @@ final class RingIntegratedCaptureControl {
                 .set(false, context.server());
         context.server().getCommands().performPrefixedCommand(
                 source, raining ? "weather rain" : "weather clear");
-        context.player().setGameMode(GameType.SPECTATOR);
+        RingIntegratedCaptureSafety.prepareCreative(context.player());
     }
 
     static void teleport(Context context, double x, double y, double z) {
@@ -77,6 +78,7 @@ final class RingIntegratedCaptureControl {
         private boolean requested;
         private volatile boolean ready;
         private volatile String failure;
+        private int acknowledgementTicks;
 
         boolean ensure(Minecraft client, Consumer<String> failed) {
             if (client.screen instanceof DeathScreen
@@ -88,14 +90,22 @@ final class RingIntegratedCaptureControl {
                 failed.accept(failure);
                 return false;
             }
-            if (ready) return true;
+            if (ready) {
+                if (client.gameMode != null && client.player != null
+                        && client.gameMode.getPlayerMode() == GameType.CREATIVE
+                        && client.player.getAbilities().flying) return true;
+                if (++acknowledgementTicks > 200) {
+                    failed.accept("capture player did not acknowledge Creative flight");
+                }
+                return false;
+            }
             if (!requested) {
                 requested = true;
                 execute(client, "capture player safety", context -> {
                     if (!context.player().isAlive()) {
                         throw new IllegalStateException("capture player is dead");
                     }
-                    context.player().setGameMode(GameType.SPECTATOR);
+                    RingIntegratedCaptureSafety.prepareCreative(context.player());
                 }, () -> ready = true, detail -> failure = detail);
             }
             return false;

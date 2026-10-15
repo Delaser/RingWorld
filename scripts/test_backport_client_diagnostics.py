@@ -7,6 +7,17 @@ from scripts.run_backport_client_diagnostics import cases, required_native_captu
 
 
 class BackportClientRecipeTests(unittest.TestCase):
+    def test_dead_capture_player_fails_immediately_without_waiting_for_exit(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'process.log'
+            path.write_text('[projection-capture] result=false: capture player died before completion\n')
+            process = Mock(); process.poll.return_value = None
+            with patch('scripts.run_backport_client_diagnostics.time.sleep') as sleep:
+                with self.assertRaisesRegex(RuntimeError, 'explicit failure before exit'):
+                    wait_for_native_exit(process, path, 'CAPTURE COMPLETE')
+            sleep.assert_not_called()
+            process.wait.assert_not_called()
+
     def test_capture_success_without_normal_shutdown_times_out(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'process.log'

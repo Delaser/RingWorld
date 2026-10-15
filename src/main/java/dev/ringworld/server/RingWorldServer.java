@@ -100,6 +100,7 @@ public final class RingWorldServer {
 
     /** Loader-owned join callbacks call this after their own admission policy. */
     public static void onPlayerJoined(ServerPlayer player) {
+        RingIntegratedCaptureSafety.onPlayerJoined(player);
         RingWorldMultiplayerTest.prepareWaitingPlayer(player);
         player.level().getServer().execute(() -> rescueEmbeddedPlayer(player));
     }

@@ -50,7 +50,7 @@ public final class RingHorizonCaptureClient {
         if (capturePending || client.screen != null) return true;
         if (stage == 0) {
             if (ClientRingState.geometry() == null) return true;
-            client.getConnection().sendCommand("gamemode spectator @s");
+            client.getConnection().sendCommand("gamemode creative @s");
             if (Boolean.getBoolean("ringworld.horizonBlindnessControl")) {
                 client.getConnection().sendCommand("effect give @s minecraft:blindness 120 0 true");
             }

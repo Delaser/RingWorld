@@ -841,3 +841,43 @@ all controls, and its pure contract includes twelve negative cases for stale
 Atlas, missing native leaves, incomplete authority/restoration and malformed
 content evidence. These changes require fresh builds and real-client validation
 on both loaders; no acceptance PASS is claimed from the design alone.
+
+### Early Creative-mode capture setup
+
+At `1e64438`, both exact packaged foliage runs pass all eleven native captures,
+same-Atlas ablation authority and exact original-block/content restoration.
+Both report zero unsafe frames and zero history residual. Fabric records 1,373
+motion frames, P95 18.495 ms and one 50.200 ms frame; NeoForge records 1,370,
+P95 18.528 ms and maximum 33.331 ms. These are diagnostic frame windows, not
+paired performance acceptance. Both loaders also pass all six multiplayer and
+raid arm/reload phases, including vanilla victory/Hero, normal native exits and
+raw session teardown. Current records are under the `*-foliage-oneblock` roots.
+
+The following Fabric graphical queue passes fourteen cases before production
+noon. During that fixture's complete-Atlas wait, its copied Survival-world
+player is killed by a zombie. Setup changed the game mode only after the Atlas
+barrier, and the death screen bypassed further fixture ticks. The failed world,
+logs and earlier passes remain retained. The operator exits the failed world
+through the death screen's Title Screen action, then Quit Game: all dimensions
+save normally, but missing native completion correctly fails the attempt.
+Dependent graphical/report/performance operators stop; no report is generated.
+
+The owner explicitly requested Creative by default unless a test requires
+another mode. Opt-in integrated visual fixtures now prepare only their local
+owner in Creative flight at login, before ordinary server ticks and Atlas waits.
+The shared capture bridge also uses Creative, and the copied-world projection,
+seam/rims and foliage clients await server-owned Creative/flight acknowledgement
+before their readiness barriers. Death still fails; no player is healed or
+respawned. Dedicated multiplayer and deliberate Survival phases are excluded
+from this login policy. Horizon captures now retain Creative. Explicit observer
+or collision controls that require another mode remain separate.
+
+The packaged graphical driver requires the initial server Creative proof and
+rejects an explicit native failure immediately rather than waiting thirty
+minutes on a death screen. Its nine Python regression cases pass, including
+the new immediate-death refusal. Fresh strict builds and full exact-candidate
+native reruns are required; this repair is not yet natively validated.
+
+The owner cancelled the twenty-minute scheduled follow-up. It is deleted;
+work continues in this chat under the instruction to finish 1.21.1 and prepare
+it for publishing. That instruction does not authorize uploading a release.

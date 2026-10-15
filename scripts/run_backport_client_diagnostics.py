@@ -211,6 +211,9 @@ def wait_for_native_exit(child: subprocess.Popen, path: Path, marker: str,
         with path.open('rb') as stream:
             stream.seek(max(0, path.stat().st_size - 65_536))
             tail = stream.read().decode('utf-8', errors='replace')
+        require('capture player died before completion' not in tail
+                and 'result=false' not in tail,
+                'Native fixture reported an explicit failure before exit')
         if completed is None and marker in tail: completed = now
         if completed is not None and now - completed >= shutdown_seconds:
             raise TimeoutError('Native fixture completed but normal client/server shutdown exceeded '
@@ -330,6 +333,11 @@ def main() -> None:
                     and 'Mixin apply failed' not in text and 'OutOfMemoryError' not in text
                     and '] FAIL:' not in text and 'result=false' not in text and 'result=FAIL' not in text,
                     'Missing native completion or explicit product failure')
+            if case.flag in {'captureRingProjection', 'captureRingVisualParity', 'captureRingHandoffFoliage',
+                             'captureFloatingAtlas', 'captureUnderwater', 'captureHorizon', 'captureAtlasWalls',
+                             'cacheIdentityTest', 'layoutSwitchTest', 'productionLifecycleTest'}:
+                require('[capture-player] initial Creative flight ready player=BackportTester alive=true' in text,
+                        'Missing initial server-owned Creative flight proof')
             if case.verifier: gradle(case.verifier, 'verification.log')
             screenshots = sorted((runtime / 'screenshots').glob('*.png'))
             require(len(screenshots) >= case.captures, 'Missing screenshots')

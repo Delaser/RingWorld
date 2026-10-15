@@ -155,6 +155,8 @@ public final class RingHandoffFoliageCaptureClient {
     private float blockedProxyDrawn;
     private final AtomicInteger successfulScreenshotWrites = new AtomicInteger();
     private final AtomicReference<String> screenshotFailure = new AtomicReference<>();
+    private final RingIntegratedCaptureControl.PlayerSafety playerSafety =
+            new RingIntegratedCaptureControl.PlayerSafety();
 
     public boolean tick(Minecraft client) {
         if (!Boolean.getBoolean(ENABLE_PROPERTY)) return false;
@@ -164,6 +166,7 @@ public final class RingHandoffFoliageCaptureClient {
             return fail(client, "timed out in stage " + stage.id);
         }
         if (!ensureWorldOpen(client)) return true;
+        if (!playerSafety.ensure(client, detail -> fail(client, detail))) return true;
         if (client.screen instanceof PauseScreen) client.setScreen(null);
         if (client.screen != null || client.player == null || client.level == null) return true;
 
