@@ -399,3 +399,36 @@ mapping selected by each referenced config, plus required native client entries.
 It is mandatory for Fabric `check`. Both builds and its three pure regressions
 pass. A fresh packaged rerun remains required; source-development UI successes
 could not establish this distribution linkage.
+
+### Exterior runtime and inclusive performance measurements
+
+The corrected Fabric packaged runtime passes placement, persistence/reopen and
+all seven exterior visibility stages, including real player/cow/boat rendering,
+both rims, range rejection, falling and vanilla void damage. Its 32 captures,
+logs and source identity are retained at `.codex-tmp/b14-exterior-fabric-v2/`.
+This is bounded diagnostic evidence at `4a8a599`, not final acceptance.
+
+The NeoForge rerun fails before either client joins: its inherited launcher
+puts the parent `1.21.1.jar` on the module path under a basename absent from
+the official child profile's ignore list. The installed patched game then
+collides with that raw game module. The failed attempt is retained and
+classified as a harness-input failure; no gameplay assertion ran. A separate
+seed uses the official child-version basename with byte-identical, Mojang-hash-
+verified game content and unchanged official JVM arguments. Its native rerun
+remains required.
+
+Opt-in inclusive server timing now surrounds `tickServer`, including loader
+tail hooks, and accounts for scheduled owner work while excluding only normal
+scheduler parking. Managed blocking during a tick or queued task stays counted.
+Per-instance bounded primitive buffers export raw RWTK samples at shutdown;
+ordinary play allocates no evidence buffers. Records retain game/scheduled/idle
+durations, tick/player/phase identity and available owner CPU time. An independent
+reader rejects malformed, overlapping, incomplete or hash-mismatched records,
+then computes work percentiles and loop intervals without issuing a verdict.
+Four shared accounting cases and three reader regressions pass. Both full
+builds pass 614 Fabric / 637 NeoForge cases. A deliberately delayed late-hook
+native probe is still required before using this meter for performance gates.
+
+Fresh exterior diagnostics suppress the vanilla first-run tutorial overlay and
+detect abnormal client startup exits promptly. Earlier captures remain retained;
+their overlay is not evidence of a RingWorld layout defect.

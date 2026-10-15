@@ -177,6 +177,7 @@ def run(args: argparse.Namespace) -> None:
                 directory = phase / ('client-' + role.lower()); directory.mkdir()
                 copy_mods(seed, directory / 'mods', candidate, args.loader)
                 copy_tree(seed / 'config', directory / 'config')
+                (directory / 'options.txt').write_text('tutorialStep:none\nautoJump:false\n')
                 client_arguments(seed, directory, role, flags, args.port)
                 handle = (phase / ('client-' + role.lower() + '-process.log')).open('x', encoding='utf-8'); handles.append(handle)
                 child = subprocess.Popen([str(java), '@java-args.txt'], cwd=directory, env=environment,
@@ -184,7 +185,13 @@ def run(args: argparse.Namespace) -> None:
                 children.append(child); clients.append((role, child, directory))
                 time.sleep(2)
             save_json(phase / 'processes.json', {'parentPid': os.getpid(), 'children': [p.pid for p in children]})
-            require(server.wait(timeout=600) == 0, 'Dedicated server exit failed')
+            deadline = time.monotonic() + 600
+            while server.poll() is None:
+                for role, child, directory in clients:
+                    require(child.poll() in (None, 0), f'Client {role} exited abnormally before server completion')
+                require(time.monotonic() < deadline, 'Dedicated server completion timed out')
+                time.sleep(1)
+            require(server.returncode == 0, 'Dedicated server exit failed')
             server_text = server_log.read_text(encoding='utf-8', errors='replace')
             prefix = 'off-ring' if name == 'visibility' else 'outside-building'
             count = 7 if name == 'visibility' else 2 if name == 'reopen' else 6

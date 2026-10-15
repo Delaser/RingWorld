@@ -4,6 +4,7 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "AtlasChunkCacheInvoker",
+    "ServerTickEvidenceMixin",
     "MobFixtureGoalsAccessor",
     "BlockEntityMixin",
     "BlockEntityPositionAccessor",
