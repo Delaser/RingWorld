@@ -457,3 +457,23 @@ replacing the original bytes. Building and sky state are checked before
 publishing Overworld geometry or admitting players. Missing options in genuine
 older worlds keep their documented defaults. File-preservation and malformed-
 codec regressions are added; native corruption/rejection checks remain pending.
+
+The pending NeoForge visibility trace establishes a fixture ownership bug:
+the stage-3 cow unloads with `UNLOADED_TO_CHUNK`; the next stage discards that
+stale reference while the same UUID reloads as a different native entity.
+Independent inspection of the failed world's entity region confirms the extra
+saved cow. Current player/cow/boat extraction succeeds. Failed runs v3/v4/v5
+remain retained. The fixture now holds region tickets for its actual object
+chunks until explicit removal, removes objects before observer teleports, and
+asserts both native identity and removal from the index. Exact entity-count,
+ten-render-frame, range, seam and void checks remain unchanged; reruns on both
+loaders are required. Both builds still pass 617 / 640 cases.
+
+Fabric's seven native saved-state controls pass at `c2b5ca6`: healthy complete
+reopen; corrupt geometry/building/sky/structure; orphan policy; and a genuine
+unmodded 1.21.1 world. Negative cases reject before `Done` and retain exact
+invalid policy bytes. Their startup failure also exposes vanilla's secondary
+shutdown exception when no Overworld was constructed; this is retained as
+expected negative-case output, not described as a normal gameplay shutdown.
+NeoForge's corresponding native slice is in progress. Evidence is retained
+under `.codex-tmp/b14-saved-rejection/` and remains diagnostic-only.
