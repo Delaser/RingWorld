@@ -56,6 +56,17 @@ def runtime_rows(path: Path) -> tuple[dict, list[int]]:
     return metadata, durations
 
 
+def clock_correlation(start: dict, end: dict) -> tuple[int, int, int, int]:
+    first_mono, first_wall, first_error = clock_anchor(start)
+    last_mono, last_wall, last_error = clock_anchor(end)
+    elapsed = last_mono - first_mono
+    drift = last_wall - first_wall - elapsed
+    if (elapsed <= 0 or last_wall <= first_wall or max(first_error, last_error) > 1_000_000
+            or abs(drift) > 5_000_000 + elapsed // 2000 + first_error + last_error):
+        raise ValueError('clock correlation exceeds the bounded affine rate/uncertainty budget')
+    return first_mono, first_wall, last_mono, last_wall
+
+
 def verify_runtime_sequence(paths: list[Path], completion_path: Path) -> dict:
     if not paths:
         raise ValueError('missing runtime frame windows')
@@ -84,6 +95,7 @@ def verify_runtime_sequence(paths: list[Path], completion_path: Path) -> dict:
         raise ValueError('missing or incomplete runtime stream receipt')
     end_mono, end_wall, end_error = clock_anchor(complete)
     start_mono, start_wall, start_error = clock_anchor(first)
+    clock_correlation(first, complete)
     if end_mono < previous['lastEndNanoTime'] or start_mono > first['firstStartNanoTime']:
         raise ValueError('clock anchors do not bound the runtime stream')
     return {'kind': 'complete-runtime-frame-stream-not-performance-verdict',

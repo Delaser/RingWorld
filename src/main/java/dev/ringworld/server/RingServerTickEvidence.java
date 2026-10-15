@@ -103,6 +103,13 @@ public final class RingServerTickEvidence {
             metadata.addProperty("clockAnchorEpochSecond", anchor.epochSecond());
             metadata.addProperty("clockAnchorNanoAdjustment", anchor.nanoAdjustment());
             metadata.addProperty("clockAnchorUncertaintyNanos", anchor.uncertaintyNanos());
+            var end = dev.ringworld.world.RingClockAnchor.capture();
+            var endAnchor = new JsonObject();
+            endAnchor.addProperty("clockAnchorNanoTime", end.nanoTime());
+            endAnchor.addProperty("clockAnchorEpochSecond", end.epochSecond());
+            endAnchor.addProperty("clockAnchorNanoAdjustment", end.nanoAdjustment());
+            endAnchor.addProperty("clockAnchorUncertaintyNanos", end.uncertaintyNanos());
+            metadata.add("endClockAnchor", endAnchor);
             metadata.addProperty("scope", "tickServer including tail hooks plus scheduled work; intentional scheduler parking excluded");
             try (var writer = Files.newBufferedWriter(directory.resolve(name + ".json"), StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE_NEW)) { writer.write(metadata.toString()); }

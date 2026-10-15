@@ -29,5 +29,17 @@ class PerformanceWindowTests(unittest.TestCase):
             self.assertEqual([20, 30], measured_frames([path], start + 11, start + 100_000_070))
             self.assertEqual(durations, measured_frames([path], start, start + sum(durations)))
 
+    def test_affine_clock_correction_preserves_raw_cost_and_rejects_clock_steps(self):
+        start = {'clockAnchorNanoTime': 100, 'clockAnchorEpochSecond': 1792000000,
+                 'clockAnchorNanoAdjustment': 0, 'clockAnchorUncertaintyNanos': 100}
+        end = start | {'clockAnchorNanoTime': 200000000100, 'clockAnchorEpochSecond': 1792000199,
+                       'clockAnchorNanoAdjustment': 995000000}
+        # A gradual -25 ppm adjustment is observable and calibrated. Neither
+        # the frame duration nor a server work duration is rescaled for metrics.
+        self.assertEqual(1792000099997500000, epoch_nanos(start, 100000000100, end))
+        with self.assertRaises(ValueError):
+            epoch_nanos(start, 100000000100, end | {'clockAnchorEpochSecond': 1792000198})
+        with self.assertRaises(RuntimeError): epoch_nanos(start, 99, end)
+
 
 if __name__ == '__main__': unittest.main()

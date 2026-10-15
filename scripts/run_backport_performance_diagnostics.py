@@ -24,13 +24,13 @@ try:
         digest, require, runtime_inventory, save_json, wait_marker)
     from .run_backport_client_diagnostics import clean_source, inventory, normalize_profile_options
     from .verify_backport_tick_evidence import rows as tick_rows, summarize
-    from .verify_backport_frame_evidence import clock_anchor, runtime_rows, verify_runtime_sequence
+    from .verify_backport_frame_evidence import clock_anchor, clock_correlation, runtime_rows, verify_runtime_sequence
 except ImportError:
     from run_backport_exterior_diagnostics import (ROOT, copy_tree, copy_mods, client_arguments,
         digest, require, runtime_inventory, save_json, wait_marker)
     from run_backport_client_diagnostics import clean_source, inventory, normalize_profile_options
     from verify_backport_tick_evidence import rows as tick_rows, summarize
-    from verify_backport_frame_evidence import clock_anchor, runtime_rows, verify_runtime_sequence
+    from verify_backport_frame_evidence import clock_anchor, clock_correlation, runtime_rows, verify_runtime_sequence
 
 FAILURE = re.compile(r'Exception in server tick loop|Failed to save chunk|OutOfMemoryError|'
                      r'Mixin apply failed|InjectionError|\[runtime-frame-evidence\] FAIL|'
@@ -73,20 +73,25 @@ class Rcon:
     def close(self): self.connection.close()
 
 
-def epoch_nanos(metadata: dict, monotonic: int) -> int:
+def epoch_nanos(metadata: dict, monotonic: int, end_metadata: dict | None = None) -> int:
+    if end_metadata is not None:
+        first, first_wall, last, last_wall = clock_correlation(metadata, end_metadata)
+        require(first <= monotonic <= last, 'Sample lies outside its clock calibration')
+        return first_wall + (monotonic - first) * (last_wall - first_wall) // (last - first)
     anchor, epoch, _ = clock_anchor(metadata)
     return epoch + monotonic - anchor
 
 
-def measured_frames(paths: list[Path], started: int, ended: int) -> list[int]:
+def measured_frames(paths: list[Path], started: int, ended: int, completion: dict | None = None) -> list[int]:
     selected = []
     for path in paths:
         metadata, durations = runtime_rows(path)
-        begin = epoch_nanos(metadata, metadata['firstStartNanoTime'])
+        monotonic = metadata['firstStartNanoTime']
         for duration in durations:
-            end = begin + duration
+            begin = epoch_nanos(metadata, monotonic, completion)
+            end = epoch_nanos(metadata, monotonic + duration, completion)
             if begin >= started and end <= ended: selected.append(duration)
-            begin = end
+            monotonic += duration
     return selected
 
 
@@ -190,6 +195,10 @@ def main() -> None:
                 health.append(entry)
                 time.sleep(min(5, max(0, deadline - time.monotonic())))
             if phase == 'measured': ended = time.time_ns()
+        save_json(output / 'measurement-window.json', {'startEpochNanos': started, 'endEpochNanos': ended,
+            'clockModel': 'affine native start/end UTC anchors; raw durations stay monotonic',
+            'maximumClockRateErrorPpm': 500, 'additiveClockToleranceNanos': 5_000_000})
+        save_json(output / 'health.json', health)
         for role in 'ABC': controller.command('kick RingTester' + role + ' Measurement complete')
         for child in children[1:]: require(child.wait(timeout=90) == 0, 'Client did not close normally')
         server.stdin.write('stop\n'); server.stdin.flush()
@@ -197,20 +206,19 @@ def main() -> None:
         require('All dimensions are saved' in logs[0].read_text(encoding='utf-8', errors='replace'), 'Missing normal save')
         raw_ticks = list((runtime / 'world/ringworld-evidence').glob('ticks-three-client-*.rwtk'))
         require(len(raw_ticks) == 1, 'Missing inclusive server evidence')
-        metadata, samples = tick_rows(raw_ticks[0]); clock_anchor(metadata)
-        selected = [row for row in samples if started <= epoch_nanos(metadata, row[3])
-                    and epoch_nanos(metadata, row[3] + sum(row[4:7])) <= ended]
+        metadata, samples = tick_rows(raw_ticks[0]); end_anchor = metadata['endClockAnchor']
+        selected = [row for row in samples if started <= epoch_nanos(metadata, row[3], end_anchor)
+                    and epoch_nanos(metadata, row[3] + sum(row[4:7]), end_anchor) <= ended]
         require(len(selected) >= args.seconds * 10 and all(row[1] == 3 for row in selected), 'Missing healthy measured ticks')
         frames = {}
         for role in 'ABC':
             directory = output / ('client-' + role) / 'evidence/runtime-frames'
             paths = sorted(directory.glob('*.rwfr'), key=lambda path: int(path.stem.rsplit('-', 1)[1]))
-            stream = verify_runtime_sequence(paths, directory / ('frames-runtime-' + role + '-complete.json'))
-            require(abs(stream['clockDriftNanos']) <= 5_000_000 + stream['clockBracketUncertaintyNanos'], 'Unstable client wall clock')
-            values = measured_frames(paths, started, ended)
+            completion_path = directory / ('frames-runtime-' + role + '-complete.json')
+            stream = verify_runtime_sequence(paths, completion_path)
+            values = measured_frames(paths, started, ended, json.loads(completion_path.read_text(encoding='utf-8')))
             require(len(values) >= args.seconds * 10, 'Missing measured graphical frames')
             frames[role] = {'stream': stream, 'measured': summarize(values)}
-        save_json(output / 'health.json', health)
         require(inventory(master) == original and digest(candidate) == sha, 'Immutable input changed')
         clean_source(source)
         saved = verify_atlas(runtime / 'world/data/ringworld/settings.dat', runtime / 'world/data/ringworld/terrain-atlas.rwat.gz')

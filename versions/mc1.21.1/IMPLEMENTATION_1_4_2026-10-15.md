@@ -629,3 +629,20 @@ inclusive ticks, continuous frames and repeated native health/pose observations.
 Its first short instrumentation run is still pending. It cannot award release
 acceptance; paired baseline comparisons, production traversal, scheduled-save
 persistence checks and the 60-minute soak remain required.
+
+The first three-client Fabric run completes native joins, warmup, a measured
+minute, all three healthy players, complete continuous frame streams and normal
+client/server shutdown. Its collector then fails its original absolute 5 ms
+clock-drift guard: client A drifts -5.094 ms across 187 seconds, B -3.624 ms
+across 151 seconds, C -2.882 ms across 120 seconds. This proportional drift is
+consistent with gradual UTC clock adjustment, rather than missing frames.
+The attempt and raw streams remain retained as a failed diagnostic.
+
+Clock joining now calibrates an affine monotonic-to-UTC mapping from native
+start/end anchors on both server and clients. Raw performance durations remain
+unscaled monotonic differences. The correlation rejects excessive bracket
+uncertainty, unbounded clock steps and rates outside 500 ppm plus a fixed 5 ms
+allowance; this is an instrumentation bound, not a gameplay threshold. The
+collector retains its exact measured window and health observations before
+postprocessing. Unit coverage includes the observed gradual adjustment and a
+rejected one-second clock step. Fresh native collection remains required.
