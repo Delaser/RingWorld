@@ -98,6 +98,11 @@ public final class RingWorldMultiplayerTest {
         ServerPlayer playerB = playerNamed(world, "RingTesterB");
 
         if (!initialized) {
+            // This fixture explicitly creates its hostile-navigation/combat
+            // subjects. Ambient spawns must not ambush a survival portal
+            // observer while its next non-combat phase is settling.
+            world.getGameRules().getRule(net.minecraft.world.level.GameRules.RULE_DOMOBSPAWNING)
+                    .set(false, world.getServer());
             // Persisted test worlds can leave yesterday's arm marker behind.
             // Build the seam fixture before clients connect. On a new world,
             // synchronously generating both sides of the seam can take long

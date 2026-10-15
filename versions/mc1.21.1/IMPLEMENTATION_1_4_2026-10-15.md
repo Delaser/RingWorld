@@ -743,3 +743,28 @@ still independently require the raid's durable-save/victory marker and normal
 server/client exits, so an unexpected disconnect cannot earn PASS. Fresh raid
 arm/reload runs and separate investigation of the native window-close failure
 remain required.
+
+At `e6ee066`, Fabric again passes the full multiplayer matrix and both raid
+stages, including vanilla victory/Hero of the Village and normal native client
+exits with raw session teardown. The NeoForge multiplayer run then suffers an
+ambient creeper death immediately after its successful End return, while the
+survival observer waits for the weather phase's stability gate. The other client
+finishes locally and leaves; the weather fixture returns early for the missing
+peer before reaching its timeout. This attempt remains FAIL. A PID/path-bound
+temporary attach agent queues a normal halt on the owned NeoForge server without
+transforming classes; its source, archive, cleanup reason and all-dimension save
+remain with the failed evidence. No injected run is qualification evidence.
+
+The disposable multiplayer fixture now disables ambient spawning at its first
+world tick. Explicit hostile-navigation, explosion and combat subjects and all
+their assertions remain. No player is healed or revived after an unexpected
+death. Portal/weather phases immediately reject a dead observer, and missing
+peers cannot bypass the phase timeout. Fresh dual-loader multiplayer/raid
+coverage is required. Both graphical queues have stopped before dispatching
+their remaining cases.
+
+The no-RingWorld Fabric/API title-menu window-close control exits normally for
+both clients. The loaded GLFW DLL exactly matches its pinned native-archive
+bytes (`affa7e54eb0dedce4a5721c327c1a16035edbbd039cd402e08107d6d2d55eb1a`).
+This is not an identical disconnected-server control and does not classify the
+earlier access violation; that investigation remains open.

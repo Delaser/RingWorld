@@ -90,6 +90,19 @@ final class RingWorldExtendedMultiplayerTest {
         playerA = currentPlayer(world, "RingTesterA", playerA);
         playerB = currentPlayer(world, "RingTesterB", playerB);
         ticks++;
+        if (stage >= 6 && stage <= 11 && ((playerA != null && !playerA.isAlive())
+                || (playerB != null && !playerB.isAlive()))) {
+            RingWorldMod.LOGGER.error("[multiplayer-extended] result=false reason=unexpected-death stage={} aliveA={} aliveB={}",
+                    stage, playerA != null && playerA.isAlive(), playerB != null && playerB.isAlive());
+            finish(world, geometry, playerA, playerB);
+            return true;
+        }
+        if (stage < 12 && ticks >= TIMEOUT_TICKS && (playerA == null || playerB == null)) {
+            RingWorldMod.LOGGER.error("[multiplayer-extended] result=false reason=missing-player-timeout stage={} presentA={} presentB={}",
+                    stage, playerA != null, playerB != null);
+            finish(world, geometry, playerA, playerB);
+            return true;
+        }
         switch (stage) {
             case 0 -> prepareFixture(world, geometry, playerA, playerB, priorPassed);
             case 1 -> awaitFixture(world, geometry, playerA, playerB);
