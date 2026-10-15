@@ -494,3 +494,25 @@ assertion remains unchanged. The failed attempt stays at
 `dist/qualification/b14-packaged-clients-fabric-v2/atlas-ui/`. Subsequent cases
 and the NeoForge graphical matrix did not run in that attempt. This harness
 correction requires a fresh run; it does not change either frozen mod jar.
+
+At runner checkpoint `0520074`, Fabric's packaged creation, Atlas UI, map/compass
+and curved-object cases pass. Atlas UI retains all 21 captures, the native GPU
+probe, ordered live revisions and normal session teardown. Map/compass retains
+its eight captures and persistent-state reload checks. This is still bounded
+diagnostic evidence, using the unchanged `ff78c1d` product jars.
+
+The next underwater case is blocked at vanilla's first-run narrator/accessibility
+welcome screen, confirmed by computer-use inspection. It is closed normally
+before any world is created and classified as a harness-input failure. The
+driver now normalizes onboarding/tutorial/focus/autojump options for every fresh
+profile while preserving fixture graphics, frame limits and GUI scale. Its
+normalization regression proves preservation and idempotence. The failed output
+is retained at `dist/qualification/b14-packaged-clients-fabric-v3/underwater/`;
+the water assertions still need native execution.
+
+The future 1.20.1 portable Java 17 archive is verified and extracted locally.
+No 1.20.1 implementation, build or acceptance result is claimed. Approximately
+726 MiB of byte-identical disposable installed-library copies from successful
+diagnostics are retired with complete hash inventories and retained immutable
+seed counterparts. Failed worlds/logs, production masters, native raw samples
+and original runtime seeds remain preserved.

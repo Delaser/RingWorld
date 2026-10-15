@@ -82,9 +82,8 @@
     "macosGraphical": "NOT_RUN"
   },
   "blockers": [
-    "1.4 product features have not been ported or accepted on either backport",
-    "Audit and replace the blocking 1.21.1 chunk acquisition boundary",
-    "Preserve local unloaded-recapture fairness while merging upstream service changes",
+    "1.21.1 feature implementation is in diagnostic validation; 1.20.1 remains unimplemented",
+    "Complete native 1.21.1 core, feature, performance and reliability acceptance on frozen candidates",
     "Review and pin the complete 1.20.1 toolchain/dependency graph",
     "Implement explicit backport runtime manifests and qualification adapters",
     "Prepare independently inventoried native production worlds for each Minecraft version",

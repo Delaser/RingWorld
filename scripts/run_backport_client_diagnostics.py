@@ -143,6 +143,16 @@ def build_identity_arguments(case: Case, label: str) -> list[str]:
     return ['-Dringworld.' + case.flag.removesuffix('Test') + 'ExpectedBuildLabel=' + label]
 
 
+def normalize_profile_options(runtime: Path) -> None:
+    path = runtime / 'options.txt'
+    fixed = {'onboardAccessibility': 'false', 'tutorialStep': 'none',
+             'pauseOnLostFocus': 'false', 'autoJump': 'false'}
+    lines = path.read_text(encoding='utf-8').splitlines() if path.exists() else []
+    lines = [line for line in lines if line.partition(':')[0] not in fixed]
+    lines.extend(key + ':' + value for key, value in fixed.items())
+    path.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+
+
 def clean_source(source: str) -> None:
     require(subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == source,
             'Source checkpoint changed during diagnostics')
@@ -222,6 +232,7 @@ def main() -> None:
             print('START', args.loader, case.name, flush=True)
             if case.prepare: gradle(case.prepare, 'prepare.log')
             runtime.mkdir(parents=True, exist_ok=True)
+            normalize_profile_options(runtime)
             (runtime / 'config').mkdir(exist_ok=True)
             config = runtime / 'config/ringworld.properties'
             if not config.exists():
