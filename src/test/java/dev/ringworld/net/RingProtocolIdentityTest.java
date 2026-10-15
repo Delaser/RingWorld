@@ -38,8 +38,8 @@ class RingProtocolIdentityTest {
 
     @Test
     void terrainAtlasChannelsNameTheirRevisionedWireLayout() {
-        assertEquals("ringworld:terrain_atlas_metadata_v4", RingTerrainAtlasMetadataPayload.ID.id().toString());
-        assertEquals("ringworld:terrain_atlas_request_v2", RingTerrainAtlasRequestPayload.ID.id().toString());
+        assertEquals("ringworld:terrain_atlas_metadata_v5", RingTerrainAtlasMetadataPayload.ID.id().toString());
+        assertEquals("ringworld:terrain_atlas_request_v3", RingTerrainAtlasRequestPayload.ID.id().toString());
         assertEquals("ringworld:terrain_atlas_tile_v4", RingTerrainAtlasTilePayload.ID.id().toString());
         assertEquals("ringworld:terrain_atlas_revision_v1", RingTerrainAtlasRevisionPayload.ID.id().toString());
     }

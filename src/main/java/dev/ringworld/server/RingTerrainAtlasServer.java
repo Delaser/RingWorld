@@ -302,9 +302,11 @@ public final class RingTerrainAtlasServer {
         try { atlas = RingAtlasPregenerationService.atlas(overworld); }
         catch (IllegalStateException ignored) { return; }
         sendBuildingSettings(player);
+        RingWorldMod.LOGGER.info("[atlas-cache-identity] server revision={} content={} complete={}",
+                atlas.revision(), Long.toUnsignedString(atlas.contentFingerprint(), 16), atlas.isComplete());
         transport.send(player, new RingTerrainAtlasMetadataPayload(atlas.worldHash(), atlas.sampleStep(),
                 atlas.columns(), atlas.rows(), RingTerrainAtlas.TILE_SIZE, atlas.presentCount(), atlas.isComplete(),
-                atlas.revision()));
+                atlas.revision(), atlas.contentFingerprint()));
         if (!atlas.isComplete()) sendPreview(player, overworld, atlas);
         // Geometry acknowledgement is the first point at which a client can
         // safely bind this status to a RingWorld layout.
@@ -414,7 +416,7 @@ public final class RingTerrainAtlasServer {
     }
 
     public static void requestTiles(ServerPlayer player, long worldHash, long clientRevision,
-                                    boolean cacheComplete) {
+                                    boolean cacheComplete, long clientContentFingerprint) {
         ServerLevel overworld = player.level().getServer().getLevel(Level.OVERWORLD);
         if (overworld == null) return;
         RingTerrainAtlas atlas;
@@ -422,7 +424,9 @@ public final class RingTerrainAtlasServer {
         catch (IllegalStateException ignored) { return; }
         if (atlas.worldHash() != worldHash || clientRevision < 0L) return;
         Queue<RingAtlasPregenerationService.TileCoordinate> tiles = new ArrayDeque<>();
-        boolean exactCompleteCache = cacheComplete && clientRevision == atlas.revision();
+        boolean exactCompleteCache = cacheComplete && atlas.isComplete()
+                && dev.ringworld.world.RingAtlasCacheIdentity.matches(atlas.revision(), atlas.contentFingerprint(),
+                        clientRevision, clientContentFingerprint);
         if (!exactCompleteCache) {
             for (int z = 0; z < atlas.tileRows(); z++) for (int x = 0; x < atlas.tileColumns(); x++) {
                 tiles.add(new RingAtlasPregenerationService.TileCoordinate(x, z));

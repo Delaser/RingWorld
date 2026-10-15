@@ -218,7 +218,8 @@ public final class ClientRingState {
         if (Files.exists(cache)) {
             try {
                 replacement = RingTerrainAtlas.load(cache, current, metadata.worldHash());
-                if (replacement.revision() != metadata.revision()
+                if (!dev.ringworld.world.RingAtlasCacheIdentity.matches(metadata.revision(), metadata.contentFingerprint(),
+                        replacement.revision(), replacement.contentFingerprint())
                         || replacement.sampleStep() != metadata.sampleStep()) replacement = null;
             } catch (IOException exception) {
                 RingWorldMod.LOGGER.warn("Ignoring invalid client RingWorld terrain cache {}", cache, exception);
@@ -239,11 +240,21 @@ public final class ClientRingState {
         terrainAtlasRevision++;
         terrainAtlasDirty = false;
         terrainAtlasPendingRender = false;
+        RingWorldMod.LOGGER.info("[atlas-cache-identity] client revision={} content={} expected={} complete={}",
+                replacement.revision(), Long.toUnsignedString(replacement.contentFingerprint(), 16),
+                Long.toUnsignedString(metadata.contentFingerprint(), 16), replacement.isComplete());
         RingWorldMod.LOGGER.info("RingWorld terrain atlas ready: {}/{} cached cells ({}%)",
                 replacement.presentCount(), replacement.cellCount(),
                 Math.round(replacement.completion() * 1000.0) / 10.0);
-        return replacement.isComplete() && replacement.revision() == metadata.revision();
+        boolean cacheComplete = metadata.complete() && replacement.isComplete()
+                && dev.ringworld.world.RingAtlasCacheIdentity.matches(metadata.revision(), metadata.contentFingerprint(),
+                        replacement.revision(), replacement.contentFingerprint());
+        if (Boolean.getBoolean("ringworld.cacheIdentityTest"))
+            RingAtlasCacheIdentityTestClient.recordInstall(metadata, replacement, cacheComplete);
+        return cacheComplete;
     }
+
+    @Nullable static Path terrainAtlasCachePath() { return terrainAtlasCachePath; }
 
     public static void applyTerrainAtlasTile(long worldHash, int tileX, int tileZ, byte[] data) {
         RingTerrainAtlas atlas = terrainAtlas;

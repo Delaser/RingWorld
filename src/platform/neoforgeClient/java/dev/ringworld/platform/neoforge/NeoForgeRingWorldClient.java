@@ -257,7 +257,8 @@ public final class NeoForgeRingWorldClient {
             return;
         }
         RingClientPayloadTransport.send(new RingTerrainAtlasRequestPayload(
-                payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete));
+                payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete,
+                ClientRingState.terrainAtlas().contentFingerprint()));
     }
 
     private static void handleAtlasTile(RingTerrainAtlasTilePayload payload, IPayloadContext context) {
@@ -340,6 +341,7 @@ public final class NeoForgeRingWorldClient {
             ClientRingState.saveTerrainAtlasIfDue(false);
         }
         if (dev.ringworld.client.RingUnderwaterCaptureClient.tickIfEnabled(client)) return;
+        if (dev.ringworld.client.RingAtlasCacheIdentityTestClient.tickIfEnabled(client)) return;
         if (dev.ringworld.client.RingHorizonCaptureClient.tickIfEnabled(client)) return;
         if (dev.ringworld.client.RingFloatingAtlasCaptureClient.tickIfEnabled(client)) return;
         if (dev.ringworld.client.RingFloatingStructureCaptureClient.tickIfEnabled(client)) return;

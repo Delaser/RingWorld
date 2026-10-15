@@ -53,6 +53,7 @@ public final class RingTerrainAtlas {
     private int presentCount;
     private int completeChunkCount;
     private long revision;
+    private long contentFingerprint;
 
     public RingTerrainAtlas(RingGeometry geometry, long worldHash) {
         this(geometry, worldHash, SAMPLE_STEP_BLOCKS);
@@ -99,6 +100,8 @@ public final class RingTerrainAtlas {
     public int tileRows() { return divideCeil(rows, TILE_SIZE); }
     public int presentCount() { return presentCount; }
     public long revision() { return revision; }
+    /** Incremental non-cryptographic content identity; never scans the Atlas. */
+    public long contentFingerprint() { return contentFingerprint; }
     public int cellCount() { return present.length; }
     public long estimatedMemoryBytes() {
         return (long)present.length * ESTIMATED_BYTES_PER_CELL
@@ -144,6 +147,7 @@ public final class RingTerrainAtlas {
         copy.presentCount = presentCount;
         copy.completeChunkCount = completeChunkCount;
         copy.revision = revision;
+        copy.contentFingerprint = contentFingerprint;
         return copy;
     }
 
@@ -153,6 +157,11 @@ public final class RingTerrainAtlas {
                 || sampleStep != destination.sampleStep || first < 0 || count < 0
                 || first > present.length - count) throw new IllegalArgumentException("invalid checkpoint slice");
         for (int i = first; i < first + count; i++) {
+            if (present[i] != destination.present[i] || present[i]
+                    && (heights[i] != destination.heights[i] || colors[i] != destination.colors[i]
+                    || sideColors[i] != destination.sideColors[i] || blockLights[i] != destination.blockLights[i])) {
+                destination.contentFingerprint ^= destination.contentContribution(i) ^ contentContribution(i);
+            }
             destination.setPresence(i, present[i]);
         }
         System.arraycopy(heights, first, destination.heights, first, count);
@@ -166,7 +175,8 @@ public final class RingTerrainAtlas {
     public void finishCheckpointCopy(RingTerrainAtlas source) {
         if (!geometry.equals(source.geometry) || worldHash != source.worldHash
                 || sampleStep != source.sampleStep || presentCount != source.presentCount
-                || completeChunkCount != source.completeChunkCount) {
+                || completeChunkCount != source.completeChunkCount
+                || contentFingerprint != source.contentFingerprint) {
             throw new IllegalStateException("incomplete checkpoint copy");
         }
         revision = source.revision;
@@ -240,11 +250,14 @@ public final class RingTerrainAtlas {
         boolean changed = !present[index] || heights[index] != clampedHeight
                 || colors[index] != rgb || blockLights[index] != light
                 || sideColors[index] != (sideColor & 0xFFFFFF);
+        if (!changed) return false;
+        contentFingerprint ^= contentContribution(index);
         setPresence(index, true);
         heights[index] = clampedHeight;
         colors[index] = rgb;
         sideColors[index] = sideColor & 0xFFFFFF;
         blockLights[index] = light;
+        contentFingerprint ^= contentContribution(index);
         return changed;
     }
 
@@ -386,25 +399,12 @@ public final class RingTerrainAtlas {
                     int color = input.readInt();
                     int blockLight = input.readUnsignedByte();
                     int sideColor = input.readInt() & 0xFFFFFF;
-                    int index = index(firstX + x, firstZ + z);
-                    // Atlas samples are immutable once generated. A client may
-                    // have a more complete disk cache than a newly started or
-                    // still-pregenerating server snapshot, so an absent wire
-                    // cell must never erase valid cached terrain.
+                    // An absent progressive tile must not erase already received
+                    // cells. Disk caches are separately bound to metadata content
+                    // identity before they can participate in this merge.
                     if (incomingPresent) {
-                        short incomingHeight = (short)height;
-                        int incomingColor = color & 0xFFFFFF;
-                        byte incomingBlockLight = (byte)blockLight;
-                        changed |= !present[index]
-                                || heights[index] != incomingHeight
-                                || colors[index] != incomingColor
-                                || blockLights[index] != incomingBlockLight
-                                || sideColors[index] != sideColor;
-                        setPresence(index, true);
-                        heights[index] = incomingHeight;
-                        colors[index] = incomingColor;
-                        blockLights[index] = incomingBlockLight;
-                        sideColors[index] = sideColor;
+                        changed |= putCell(firstX + x, firstZ + z, height, color,
+                                blockLight & 15, sideColor, blockLight >>> 4);
                     }
                 }
             }
@@ -466,6 +466,7 @@ public final class RingTerrainAtlas {
                 atlas.colors[index] = input.readInt() & 0xFFFFFF;
                 atlas.blockLights[index] = input.readByte();
                 atlas.sideColors[index] = input.readInt() & 0xFFFFFF;
+                atlas.contentFingerprint ^= atlas.contentContribution(index);
             }
             if (input.read() != -1) throw new IOException("trailing terrain atlas data");
             return atlas;
@@ -547,6 +548,16 @@ public final class RingTerrainAtlas {
         Arrays.fill(presentCellsPerChunk, (short)0);
         presentCount = 0;
         completeChunkCount = 0;
+        contentFingerprint = 0;
+    }
+
+    private long contentContribution(int cellIndex) {
+        if (!present[cellIndex]) return 0;
+        long value = RingLayoutFingerprint.mix(cellIndex + 0x9E3779B97F4A7C15L);
+        value = RingLayoutFingerprint.mix(value ^ (Short.toUnsignedLong(heights[cellIndex]) << 48)
+                ^ Integer.toUnsignedLong(colors[cellIndex]));
+        return RingLayoutFingerprint.mix(value ^ ((long)Byte.toUnsignedInt(blockLights[cellIndex]) << 32)
+                ^ Integer.toUnsignedLong(sideColors[cellIndex]));
     }
 
     /** Owner-thread presence accounting shared by edits, wire merges and snapshots. */

@@ -70,7 +70,7 @@ public final class RingWorldNetworking {
                 context.server().execute(() -> {
                     if (!requireAcknowledged(context.player())) return;
                     RingTerrainAtlasServer.requestTiles(
-                            context.player(), payload.worldHash(), payload.revision(), payload.cacheComplete());
+                            context.player(), payload.worldHash(), payload.revision(), payload.cacheComplete(), payload.contentFingerprint());
                 }));
         ServerPlayNetworking.registerGlobalReceiver(RingAtlasPregenerationStatusRequestPayload.ID, (payload, context) ->
                 context.server().execute(() -> {

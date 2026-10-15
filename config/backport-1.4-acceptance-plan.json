@@ -19,6 +19,7 @@
     "requireNonblockingChunkAcquisition": true,
     "requireExactPackagedCandidates": true,
     "requireIndependentDiskEvidence": true,
+    "requireAtlasContentIdentity": true,
     "sourceChangesInvalidateAcceptance": true
   },
   "cells": [

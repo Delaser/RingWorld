@@ -2,10 +2,25 @@ import unittest
 from pathlib import Path
 import tempfile
 
-from scripts.run_backport_client_diagnostics import cases, required_native_captures, build_identity_arguments, normalize_profile_options
+from scripts.run_backport_client_diagnostics import cases, required_native_captures, build_identity_arguments, normalize_profile_options, validate_cache_observations
 
 
 class BackportClientRecipeTests(unittest.TestCase):
+    def test_cache_proof_requires_both_rejection_and_positive_reuse_at_an_identical_revision(self):
+        original = {'status': 'PASS', 'worldHash': '1', 'revision': 42, 'cells': 262144, 'contentFingerprint': '111'}
+        foreign = original | {'contentFingerprint': '222'}
+        report = {'schemaVersion': 1, 'normalDisconnects': 3, 'revision': 42, 'contentFingerprint': '111',
+                  'metadataInstalls': [{'cacheReused': index == 2, 'presentBeforeStreaming': 262144 if index == 2 else 0,
+                                       'clientContent': '111' if index == 2 else '0', 'serverContent': '111', 'revision': 42}
+                                      for index in range(3)]}
+        validate_cache_observations(report, original, foreign)
+        for wrong in [original, foreign | {'revision': 43}, foreign | {'status': 'PARTIAL'}]:
+            with self.assertRaises(RuntimeError): validate_cache_observations(report, original, wrong)
+        for key, wrong in [('cacheReused', True), ('presentBeforeStreaming', 1), ('clientContent', '111')]:
+            import copy
+            invalid = copy.deepcopy(report); invalid['metadataInstalls'][1][key] = wrong
+            with self.assertRaises(RuntimeError): validate_cache_observations(invalid, original, foreign)
+
     def test_first_run_normalization_preserves_fixture_graphics_and_is_idempotent(self):
         with tempfile.TemporaryDirectory() as directory:
             runtime = Path(directory)

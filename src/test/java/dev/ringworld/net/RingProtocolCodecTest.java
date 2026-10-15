@@ -218,6 +218,26 @@ class RingProtocolCodecTest {
         }
     }
 
+    @Test
+    void atlasMetadataBindsContentWithAnIndependentByteVector() {
+        var payload = new RingTerrainAtlasMetadataPayload(0x0102030405060708L, 1, 2048, 128,
+                16, 262144, true, 42, 0xFEDCBA9876543210L);
+        byte[] bytes = encode(RingTerrainAtlasMetadataPayload.CODEC, payload);
+        assertArrayEquals(java.util.HexFormat.of().parseHex(
+                "0102030405060708018010800110808010012afedcba9876543210"), bytes);
+        assertEquals(payload, decode(RingTerrainAtlasMetadataPayload.CODEC, bytes));
+        assertTruncatedRejected(RingTerrainAtlasMetadataPayload.CODEC, payload);
+    }
+
+    @Test
+    void atlasRequestBindsContentWithAnIndependentByteVector() {
+        var payload = new RingTerrainAtlasRequestPayload(0x0102030405060708L, 42, true, 0xFEDCBA9876543210L);
+        byte[] bytes = encode(RingTerrainAtlasRequestPayload.CODEC, payload);
+        assertArrayEquals(java.util.HexFormat.of().parseHex("01020304050607082a01fedcba9876543210"), bytes);
+        assertEquals(payload, decode(RingTerrainAtlasRequestPayload.CODEC, bytes));
+        assertTruncatedRejected(RingTerrainAtlasRequestPayload.CODEC, payload);
+    }
+
     private static <T> byte[] encode(
             StreamCodec<RegistryFriendlyByteBuf, T> codec, T value) {
         RegistryFriendlyByteBuf buffer = buffer();

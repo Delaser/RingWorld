@@ -95,6 +95,7 @@ def validate(plan: dict) -> dict:
                  f'wrong data contract: {key}')
     for key in ('preserveLocalRecaptureFairness', 'requireNonblockingChunkAcquisition',
                 'requireExactPackagedCandidates', 'requireIndependentDiskEvidence',
+                'requireAtlasContentIdentity',
                 'sourceChangesInvalidateAcceptance'):
         _require(contracts.get(key) is True, f'required safety contract missing: {key}')
     for key in ('crossMinecraftConnections', 'saveDowngradeSupported'):

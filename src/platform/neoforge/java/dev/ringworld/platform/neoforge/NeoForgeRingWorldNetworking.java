@@ -175,7 +175,7 @@ public final class NeoForgeRingWorldNetworking {
             RingTerrainAtlasRequestPayload payload, IPayloadContext context) {
         if (context.player() instanceof ServerPlayer player && requireAcknowledged(player, context)) {
             RingTerrainAtlasServer.requestTiles(
-                    player, payload.worldHash(), payload.revision(), payload.cacheComplete());
+                    player, payload.worldHash(), payload.revision(), payload.cacheComplete(), payload.contentFingerprint());
         }
     }
 

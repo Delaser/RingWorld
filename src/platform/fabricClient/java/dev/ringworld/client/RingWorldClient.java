@@ -209,7 +209,8 @@ public final class RingWorldClient implements ClientModInitializer {
                         return;
                     }
                     RingClientPayloadTransport.send(new RingTerrainAtlasRequestPayload(
-                            payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete));
+                            payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete,
+                            ClientRingState.terrainAtlas().contentFingerprint()));
                 });
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasTilePayload.ID, (payload, context) ->
                 ClientRingState.applyTerrainAtlasTile(
@@ -253,6 +254,7 @@ public final class RingWorldClient implements ClientModInitializer {
                 ClientRingState.saveTerrainAtlasIfDue(false);
             }
             if (dev.ringworld.client.RingUnderwaterCaptureClient.tickIfEnabled(client)) return;
+            if (dev.ringworld.client.RingAtlasCacheIdentityTestClient.tickIfEnabled(client)) return;
             if (dev.ringworld.client.RingHorizonCaptureClient.tickIfEnabled(client)) return;
             if (dev.ringworld.client.RingFloatingAtlasCaptureClient.tickIfEnabled(client)) return;
             if (dev.ringworld.client.RingFloatingStructureCaptureClient.tickIfEnabled(client)) return;

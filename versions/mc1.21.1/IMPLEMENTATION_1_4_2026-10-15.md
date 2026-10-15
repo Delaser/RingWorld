@@ -516,3 +516,52 @@ No 1.20.1 implementation, build or acceptance result is claimed. Approximately
 diagnostics are retired with complete hash inventories and retained immutable
 seed counterparts. Failed worlds/logs, production masters, native raw samples
 and original runtime seeds remain preserved.
+
+### Reproduced cache-history collision and content-bound reuse
+
+At `90a5674`, the isolated real `ClientRingState` regression fails: two complete
+Atlases with identical saved settings/world hash and revision 42 but different
+edited heights certify the foreign disk cache as current. Its source, Gradle
+init recipe, failed XML and raw log are retained under the cache-collision audit
+paths. This is a product correctness failure, independent of the earlier
+launcher/profile issues.
+
+Atlas content now has an incremental 64-bit non-cryptographic fingerprint over
+present cell index, signed height, top/side RGB and packed light/water. Changes,
+wire merges, disk reads, snapshots, clear and repaired reusable checkpoint copies
+maintain it; getters do not scan. Checkpoint completion and verification also
+bind the copied content. Disk format 11, world/layout hash and revision ordering
+remain unchanged. This fingerprint is a cache consistency check, not a security
+or cryptographic-integrity claim.
+
+Both sides require revision **and** content equality for complete-cache reuse.
+Mismatched cached content is discarded before provisional rendering. Metadata
+advances to `terrain_atlas_metadata_v5`, request to `terrain_atlas_request_v3`,
+each adding one fixed-width long; tile v4 / revision v1 remain unchanged. Required
+capability negotiation rejects older layouts. This deliberate correction is
+recorded in the dual-version plan and must be carried into the 1.20.1 adapters.
+
+Both builds pass 626 Fabric / 649 NeoForge cases. Tests retain the exact
+previously failing collision, positive reuse, all rendered fields/write order,
+five sample steps, wire/disk/snapshot/checkpoint repair and independent packet
+byte vectors. An independent Python disk reader computes content identity on
+request and agrees with the fixed signed-height/packed-light vector. Its streamed
+boundary/presence checks pass. Initial compilation failed only on an undeclared
+test IOException; repaired full builds pass without weakening assertions.
+
+The new packaged native cache fixture performs three normal opens/disconnects:
+fresh authoritative content; a deliberately foreign valid same-revision local
+cache that must be rejected before streaming and repaired; then exact positive
+cache reuse. It preserves original/foreign cache files and raw metadata decisions
+for independent decoding, plus three captures. It has compiled on both loaders
+but has not run yet at this checkpoint. The graphical recipe now has 25 cases.
+
+Before the source change, Fabric's underwater seven-state, horizon sixteen-state,
+floating-Atlas/platform/support-edit/save/reopen, production lifecycle and
+different-layout switch cases pass. Floating captures have 2,416 settled frames
+across five windows and zero over 50 ms; these summarized windows are diagnostic,
+not final raw-measurement performance acceptance. The queue is deliberately
+stopped after normal layout-switch completion with an explicit cancellation
+receipt. Remaining captures and the NeoForge graphical matrix were not launched.
+All those earlier successes remain historical diagnostics and must be refreshed
+on the changed candidate.

@@ -87,8 +87,14 @@ not an instruction to copy Minecraft-dependent files without adaptation.
   building state is separately saved and synchronized through
   `building_settings_v1` and `building_control_v1`, fingerprint/permission checked.
 - Atlas advances **10→11** because sampling meaning changes, not its 12-byte
-  cell layout. One-block source and 16,777,216-cell admission remain. Metadata/tile
-  IDs remain v4; their format/hash checks must reject old content. Rebuild old
+  cell layout. One-block source and 16,777,216-cell admission remain. The original
+  upstream metadata-v4/request-v2 cache shortcut requires metadata v5 /
+  request v3 in both backports: matching revision numbers from different edited
+  histories are insufficient, so both messages carry the incremental content
+  fingerprint. Tile v4 and revision v1 byte layouts remain unchanged. This is a
+  deliberate reliability correction discovered during implementation; older
+  channel layouts must fail capability negotiation. Their format/hash checks
+  must also reject old sampler content. Rebuild old
   visual caches from real chunks; never regenerate saved terrain to migrate a cache.
 - Small/Medium/Large source counts remain 262,144 / 4,194,304 / 16,777,216.
   Raw cell data is approximately 3/48/192 MiB, not total process memory.

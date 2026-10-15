@@ -10,10 +10,10 @@ import net.minecraft.resources.ResourceLocation;
 /** Describes the tiled, world-specific distant terrain cache. */
 public record RingTerrainAtlasMetadataPayload(long worldHash, int sampleStep, int columns, int rows,
                                               int tileSize, int presentCells, boolean complete,
-                                              long revision)
+                                              long revision, long contentFingerprint)
         implements CustomPacketPayload {
     public static final Type<RingTerrainAtlasMetadataPayload> ID = new Type<>(
-            ResourceLocation.fromNamespaceAndPath(RingWorldMod.MOD_ID, "terrain_atlas_metadata_v4"));
+            ResourceLocation.fromNamespaceAndPath(RingWorldMod.MOD_ID, "terrain_atlas_metadata_v5"));
     public static final StreamCodec<RegistryFriendlyByteBuf, RingTerrainAtlasMetadataPayload> CODEC =
             StreamCodec.of(RingTerrainAtlasMetadataPayload::encode,
                     RingTerrainAtlasMetadataPayload::decode);
@@ -27,12 +27,13 @@ public record RingTerrainAtlasMetadataPayload(long worldHash, int sampleStep, in
         buffer.writeVarInt(payload.presentCells());
         buffer.writeBoolean(payload.complete());
         buffer.writeVarLong(payload.revision());
+        buffer.writeLong(payload.contentFingerprint());
     }
 
     private static RingTerrainAtlasMetadataPayload decode(RegistryFriendlyByteBuf buffer) {
         return new RingTerrainAtlasMetadataPayload(buffer.readLong(), buffer.readVarInt(),
                 buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(), buffer.readVarInt(),
-                buffer.readBoolean(), buffer.readVarLong());
+                buffer.readBoolean(), buffer.readVarLong(), buffer.readLong());
     }
 
     @Override

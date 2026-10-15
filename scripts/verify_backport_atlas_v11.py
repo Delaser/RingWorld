@@ -42,7 +42,13 @@ def identity(settings):
     return fingerprint, mix(mix(fingerprint ^ (11 << 32)) ^ 1)
 
 
-def verify(settings_path, atlas_path, *, require_complete=True):
+def cell_content_identity(index, height, color, packed, side_color):
+    value = mix(index + 0x9E3779B97F4A7C15)
+    value = mix(value ^ ((height & 0xFFFF) << 48) ^ color)
+    return mix(value ^ (packed << 32) ^ side_color)
+
+
+def verify(settings_path, atlas_path, *, require_complete=True, include_content_identity=False):
     with gzip.open(settings_path, "rb") as stream:
         data = stream.read(4 * 1024 * 1024 + 1)
     if len(data) > 4 * 1024 * 1024:
@@ -56,6 +62,7 @@ def verify(settings_path, atlas_path, *, require_complete=True):
         raise ValueError("trailing settings bytes or unexpected settings format")
     fingerprint, expected_hash = identity(settings)
     present = water_cells = light_cells = 0
+    content_fingerprint = 0
     with gzip.open(atlas_path, "rb") as stream:
         header = stream.read(44)
         if len(header) != 44:
@@ -76,12 +83,15 @@ def verify(settings_path, atlas_path, *, require_complete=True):
             payload = stream.read(count * 12)
             if len(payload) != count * 12:
                 raise ValueError("truncated Atlas cells")
-            for exists, height, color, packed, side_color in struct.iter_unpack(">BhIBI", payload):
+            for index, (exists, height, color, packed, side_color) in enumerate(
+                    struct.iter_unpack(">BhIBI", payload), start=cells - remaining):
                 if exists not in (0, 1) or color > 0xFFFFFF or side_color > 0xFFFFFF:
                     raise ValueError("invalid Atlas presence or RGB value")
                 present += exists
                 water_cells += bool(exists and packed >> 4)
                 light_cells += bool(exists and packed & 15)
+                if include_content_identity and exists:
+                    content_fingerprint ^= cell_content_identity(index, height, color, packed, side_color)
             remaining -= count
         if stream.read(1):
             raise ValueError("trailing Atlas bytes")
@@ -92,7 +102,8 @@ def verify(settings_path, atlas_path, *, require_complete=True):
             "atlasFormat": version, "sampleStep": step, "cells": cells,
             "presentCells": present, "waterCells": water_cells, "litCells": light_cells,
             "revision": revision, "atlasSha256": hashlib.sha256(atlas_path.read_bytes()).hexdigest(),
-            "settingsSha256": hashlib.sha256(settings_path.read_bytes()).hexdigest()}
+            "settingsSha256": hashlib.sha256(settings_path.read_bytes()).hexdigest(),
+            **({"contentFingerprint": str(content_fingerprint)} if include_content_identity else {})}
 
 
 if __name__ == "__main__":
@@ -100,5 +111,7 @@ if __name__ == "__main__":
     parser.add_argument("settings", type=Path)
     parser.add_argument("atlas", type=Path)
     parser.add_argument("--allow-partial", action="store_true", help="Report partial data without a completion PASS")
+    parser.add_argument("--content-identity", action="store_true", help="Independently compute all content contributions")
     args = parser.parse_args()
-    print(json.dumps(verify(args.settings, args.atlas, require_complete=not args.allow_partial), indent=2))
+    print(json.dumps(verify(args.settings, args.atlas, require_complete=not args.allow_partial,
+                           include_content_identity=args.content_identity), indent=2))

@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -32,7 +34,7 @@ class ClientRingStateTest {
         coarse.putCell(0, 0, 90, 0x123456, 7, 0x123456, 15);
         coarse.save(cacheDirectory.resolve("terrain-" + Long.toUnsignedString(worldHash, 16) + ".rwat.gz"));
         ClientRingState.installTerrainAtlas(new RingTerrainAtlasMetadataPayload(worldHash, 1,
-                2048, 128, RingTerrainAtlas.TILE_SIZE, 0, false, 0));
+                2048, 128, RingTerrainAtlas.TILE_SIZE, 0, false, 0, 0));
         assertEquals(1, ClientRingState.terrainAtlas().sampleStep());
         assertEquals(0, ClientRingState.terrainAtlas().presentCount());
     }
@@ -59,7 +61,7 @@ class ClientRingStateTest {
                 worldHash, RingTerrainAtlas.SAMPLE_STEP_BLOCKS,
                 geometry.circumferenceBlocks() / RingTerrainAtlas.SAMPLE_STEP_BLOCKS,
                 geometry.widthBlocks() / RingTerrainAtlas.SAMPLE_STEP_BLOCKS,
-                RingTerrainAtlas.TILE_SIZE, 0, false, 0L));
+                RingTerrainAtlas.TILE_SIZE, 0, false, 0L, 0L));
         RingTerrainPreview preview = new RingTerrainPreview(
                 worldHash, 2, 1, new int[] {0x102030, 0x405060},
                 new short[] {64, 72});
@@ -103,7 +105,7 @@ class ClientRingStateTest {
         server.advanceRevision();
         RingTerrainAtlasMetadataPayload metadata = new RingTerrainAtlasMetadataPayload(
                 worldHash, server.sampleStep(), server.columns(), server.rows(),
-                RingTerrainAtlas.TILE_SIZE, server.presentCount(), false, server.revision());
+                RingTerrainAtlas.TILE_SIZE, server.presentCount(), false, server.revision(), server.contentFingerprint());
 
         ClientRingState.installTerrainAtlas(metadata);
         ClientRingState.applyTerrainAtlasTile(worldHash, 0, 0, server.encodeTile(0, 0));
@@ -136,7 +138,7 @@ class ClientRingStateTest {
                 worldHash, RingTerrainAtlas.SAMPLE_STEP_BLOCKS,
                 geometry.circumferenceBlocks() / RingTerrainAtlas.SAMPLE_STEP_BLOCKS,
                 geometry.widthBlocks() / RingTerrainAtlas.SAMPLE_STEP_BLOCKS,
-                RingTerrainAtlas.TILE_SIZE, 0, false, 0L));
+                RingTerrainAtlas.TILE_SIZE, 0, false, 0L, 0L));
         RingTerrainPreview high = new RingTerrainPreview(
                 worldHash, 1, 1, new int[] {0xABCDEF}, new short[] {80});
         RingTerrainPreview current = new RingTerrainPreview(
@@ -150,6 +152,34 @@ class ClientRingStateTest {
         assertEquals(RingTerrainPreviewStage.HIGH.wireValue(),
                 ClientRingState.terrainPreviewStage());
         assertEquals(0xABCDEF, ClientRingState.terrainPreview().color(0, 0));
+    }
+
+    @Test
+    void sameLayoutAndRevisionCannotCertifyDifferentEditedContent(@TempDir Path cache) throws Exception {
+        var settings = new RingWorldSettings(128, 2048, 259L, 160, 5);
+        var geometry = settings.geometry();
+        long hash = RingTerrainAtlas.worldHash(settings);
+        var first = new RingTerrainAtlas(geometry, hash);
+        var second = new RingTerrainAtlas(geometry, hash);
+        for (int row = 0; row < first.rows(); row++) for (int column = 0; column < first.columns(); column++) {
+            first.putCell(column, row, 64, 0x123456, 0, 0x123456, 0);
+            second.putCell(column, row, 64, 0x123456, 0, 0x123456, 0);
+        }
+        first.putCell(0, 0, 80, 0x123456, 0, 0x123456, 0);
+        second.putCell(0, 0, 90, 0x123456, 0, 0x123456, 0);
+        first.commitRevision(42); second.commitRevision(42);
+        assertNotEquals(first.contentFingerprint(), second.contentFingerprint());
+        ClientRingState.configureCacheDirectory(cache);
+        setSession(geometry);
+        first.save(cache.resolve("terrain-" + Long.toUnsignedString(hash, 16) + ".rwat.gz"));
+        assertTrue(ClientRingState.installTerrainAtlas(new RingTerrainAtlasMetadataPayload(
+                hash, 1, first.columns(), first.rows(), RingTerrainAtlas.TILE_SIZE,
+                first.presentCount(), true, 42, first.contentFingerprint())));
+        setSession(geometry);
+        assertFalse(ClientRingState.installTerrainAtlas(new RingTerrainAtlasMetadataPayload(
+                hash, 1, second.columns(), second.rows(), RingTerrainAtlas.TILE_SIZE,
+                second.presentCount(), true, 42, second.contentFingerprint())));
+        assertEquals(0, ClientRingState.terrainAtlas().presentCount(), "foreign content must not be rendered provisionally");
     }
 
     private static void setSession(RingGeometry geometry) {

@@ -129,7 +129,8 @@ final class RingAtlasCheckpointWriter implements AutoCloseable {
             if (verify) {
                 RingTerrainAtlas reopened = RingTerrainAtlas.load(path, snapshot.geometry(), snapshot.worldHash());
                 if (!reopened.isComplete() || reopened.revision() != snapshot.revision()
-                        || reopened.presentCount() != snapshot.presentCount()) {
+                        || reopened.presentCount() != snapshot.presentCount()
+                        || reopened.contentFingerprint() != snapshot.contentFingerprint()) {
                     throw new IOException("reopened Atlas does not match completed checkpoint");
                 }
             }

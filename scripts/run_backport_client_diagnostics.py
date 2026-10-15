@@ -47,6 +47,8 @@ def cases() -> list[Case]:
              'prepareCreationUiRun', 'verifyCreationUiClient'),
         Case('atlas-ui', 'run-atlas-ui', 'atlasUiTest', '[atlas-ui-test] PASS', 21,
              'prepareAtlasUiRun', 'verifyAtlasUiClient'),
+        Case('cache-identity', 'run-cache-identity', 'cacheIdentityTest', '[cache-identity-test] PASS:', 3,
+             master='small', properties={'cacheIdentityWorld': 'Input'}),
         Case('map-compass', 'run-map-compass-capture', 'captureMapCompass', '[map-compass-capture] PASS', 8,
              'prepareMapCompassCaptureRun', 'verifyMapCompassCaptureClient'),
         Case('curved-objects', 'run-curved-object-capture', 'curvedObjectCapture',
@@ -115,6 +117,8 @@ def inventory(path: Path) -> list[dict]:
 
 
 def required_native_captures(case: Case) -> set[str]:
+    if case.name == 'cache-identity':
+        return {'cache-identity-' + name + '.png' for name in ('baseline', 'repaired', 'reused')}
     if case.name == 'underwater':
         return {'underwater-' + name + '.png' for name in
                 ('above', 'submerged', 'surface', 'resurfaced', 'reload', 'reload-resurfaced', 'camera-only')}
@@ -141,6 +145,28 @@ def build_identity_arguments(case: Case, label: str) -> list[str]:
     if case.name not in ('creation-ui', 'atlas-ui'):
         return []
     return ['-Dringworld.' + case.flag.removesuffix('Test') + 'ExpectedBuildLabel=' + label]
+
+
+def validate_cache_observations(report: dict, original: dict, foreign: dict) -> None:
+    require(report.get('schemaVersion') == 1 and report.get('normalDisconnects') == 3,
+            'Missing native cache/disconnect controls')
+    require(original['status'] == foreign['status'] == 'PASS'
+            and original['worldHash'] == foreign['worldHash']
+            and original['revision'] == foreign['revision']
+            and original['cells'] == foreign['cells']
+            and original['contentFingerprint'] != foreign['contentFingerprint'],
+            'Cache proof did not isolate different content at the same world/revision')
+    require(report['contentFingerprint'] == original['contentFingerprint']
+            and report['revision'] == original['revision'], 'Native/independent original identities differ')
+    installs = report.get('metadataInstalls')
+    require(isinstance(installs, list) and len(installs) == 3, 'Missing metadata observations')
+    for index, item in enumerate(installs):
+        reused = index == 2
+        require(item['cacheReused'] is reused
+                and item['presentBeforeStreaming'] == (original['cells'] if reused else 0)
+                and item['clientContent'] == (original['contentFingerprint'] if reused else '0')
+                and item['serverContent'] == original['contentFingerprint']
+                and item['revision'] == original['revision'], 'Native reject/repair/reuse observation differs')
 
 
 def normalize_profile_options(runtime: Path) -> None:
@@ -283,6 +309,19 @@ def main() -> None:
             frames = [{'path': path.relative_to(output).as_posix(), **verify_frames(path)}
                       for path in sorted((runtime / 'evidence').glob('*.rwfr'))]
             require(len(frames) == case.raw_frames, 'Missing or unexpected raw frame windows')
+            cache_evidence = None
+            if case.name == 'cache-identity':
+                proof_path = runtime / 'evidence/cache-identity.json'
+                require(proof_path.stat().st_size <= 65_536, 'Oversized cache proof')
+                proof = json.loads(proof_path.read_text(encoding='utf-8'))
+                settings_path = runtime / 'saves' / case.world / 'data/ringworld/settings.dat'
+                original = verify_atlas(settings_path, runtime / 'evidence/cache-identity-original.rwat.gz',
+                                        include_content_identity=True)
+                foreign = verify_atlas(settings_path, runtime / 'evidence/cache-identity-foreign.rwat.gz',
+                                       include_content_identity=True)
+                validate_cache_observations(proof, original, foreign)
+                cache_evidence = {'observations': proof, 'original': original, 'foreign': foreign,
+                                  'nativeProofSha256': digest(proof_path)}
             clean_source(source)
             worlds = []
             for world in sorted((runtime / 'saves').glob('*')):
@@ -304,7 +343,7 @@ def main() -> None:
             record = {'status': 'PASS', 'diagnosticOnly': True, 'case': case.name,
                       'candidateSha256': sha, 'sourceCommit': source, 'elapsedSeconds': time.monotonic() - started,
                       'processLogSha256': digest(phase / 'process.log'), 'captures': pngs,
-                      'frames': frames, 'worlds': worlds}
+                      'frames': frames, 'worlds': worlds, 'cacheEvidence': cache_evidence}
             save_json(phase / 'terminal.json', record); rows.append(record)
             print('PASS', args.loader, case.name, flush=True)
         except BaseException as failure:
