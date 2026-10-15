@@ -7,9 +7,9 @@ import java.util.function.Supplier;
 /**
  * Owns one non-blocking, ticket-backed Minecraft chunk load.
  *
- * <p>Minecraft 26.1.2's ordinary {@code getChunkFuture} blocks the server
- * thread with {@code managedBlock}. Atlas generation instead starts the
- * public ticket-and-load operation on the server thread and retains its
+ * <p>Minecraft 1.21.1's ordinary {@code getChunkFuture} blocks the server
+ * thread with {@code managedBlock}. Atlas generation instead invokes the
+ * private owner-thread admission operation and retains its
  * ticket until the completed chunk has been consumed there. The release is
  * idempotent so cancellation and world unload cannot leak a loading ticket.</p>
  */
@@ -22,7 +22,11 @@ final class RingAtlasChunkRequest<T> implements AutoCloseable {
     private RingAtlasChunkRequest(CompletableFuture<?> loadFuture,
                                   Supplier<T> loadedResult,
                                   Runnable release) {
-        this.loadFuture = Objects.requireNonNull(loadFuture, "chunk load returned no future");
+        // Vanilla also attaches saving/generation dependencies to its future.
+        // Atlas cancellation must never poison that shared graph. Cancelling
+        // this dependent future does not propagate to vanilla's original.
+        this.loadFuture = Objects.requireNonNull(loadFuture, "chunk load returned no future")
+                .thenApply(result -> result);
         this.loadedResult = Objects.requireNonNull(loadedResult, "loadedResult");
         this.release = Objects.requireNonNull(release, "release");
     }

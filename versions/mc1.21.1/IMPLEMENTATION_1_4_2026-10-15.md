@@ -67,3 +67,21 @@ reader and tests are preserved; a separate strict format-11 reader binds the new
 semantic identity. Final native runtime, upgrade/recovery and production-scale
 performance evidence for this engine is still pending. No full acceptance PASS
 is claimed.
+
+### Interrupted-run defect found and repaired
+
+The first Atlas-11 packaged Fabric fresh generation and complete reopen pass,
+but the eight-request interrupted run failed. Cancelling a private vanilla
+admission future poisoned vanilla chunk-save dependencies, logged `Failed to
+save chunk` and stalled shutdown. The attempt remains under
+`.codex-tmp/b14a2/fabric/recovery-interrupt/` with an explicit `FAILED.json`;
+the owned JVM required forced termination after shutdown stopped progressing.
+It is not acceptance evidence.
+
+Atlas requests now retain a dependent completion future that they exclusively
+own. Cancelling it releases the Atlas ticket without cancelling vanilla's
+future. A regression models a vanilla save dependent on the original future
+and requires successful completion after Atlas cancellation. Native repeated
+interruption/resume and both-loader validation are required before crediting
+this repair. The earlier completed-world-only P1 proof did not exercise this
+pending-future cancellation case.

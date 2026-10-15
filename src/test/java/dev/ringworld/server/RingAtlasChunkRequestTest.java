@@ -31,16 +31,21 @@ class RingAtlasChunkRequestTest {
     }
 
     @Test
-    void cancellationClosesTheTicketLeaseExactlyOnce() {
+    void cancellationClosesOnlyOurLeaseWithoutPoisoningVanillaSaveDependencies() {
         CompletableFuture<Void> load = new CompletableFuture<>();
         AtomicInteger releases = new AtomicInteger();
         RingAtlasChunkRequest<String> request = RingAtlasChunkRequest.start(
                 () -> load, () -> "unused", releases::incrementAndGet);
+        CompletableFuture<String> vanillaSave = load.thenApply(ignored -> "saved");
 
         request.cancel();
         request.cancel();
 
-        assertTrue(load.isCancelled());
+        assertFalse(load.isCancelled());
+        assertFalse(load.isDone());
+        assertTrue(request.isDone());
+        load.complete(null);
+        assertEquals("saved", vanillaSave.join());
         assertEquals(1, releases.get());
     }
 
