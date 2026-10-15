@@ -23,11 +23,11 @@ class RingTerrainAtlasTest {
     @Test
     void fixedMasterIdentityMatchesQualificationReader() {
         var legacy = new RingWorldSettings(416, 2048, 155_088_888L, 160, 64, 4, 3);
-        assertEquals("8360113050493173708", Long.toUnsignedString(RingTerrainAtlas.worldHash(legacy)));
+        assertEquals("1954828054372612691", Long.toUnsignedString(RingTerrainAtlas.worldHash(legacy)));
         var current = new RingWorldSettings(256, 16384, -7617918596273893784L, 160, 64, 4,
                 new RingWallStyle(7, RingWallStyle.Palette.fromId(4), RingWallStyle.Pattern.fromId(3), 10, 1),
                 RingWorldGenerationSettings.DEFAULT.withAtlasFidelity(RingAtlasFidelity.VERY_HIGH), 5);
-        assertEquals("10564136735434774545", Long.toUnsignedString(RingTerrainAtlas.worldHash(current)));
+        assertEquals("12595855380162204875", Long.toUnsignedString(RingTerrainAtlas.worldHash(current)));
         assertEquals(1, new RingTerrainAtlas(legacy.geometry(), RingTerrainAtlas.worldHash(legacy)).sampleStep());
     }
 
@@ -142,6 +142,28 @@ class RingTerrainAtlasTest {
     }
 
     @Test
+    void completedChunkCountRemainsExactAcrossSamplingStepsAndClear() {
+        for (int step : new int[]{1, 2, 4, 8}) {
+            RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH, step);
+            assertEquals(0, atlas.presentChunkCount());
+            int z0 = GEOMETRY.minWidthZ();
+            for (int z = 0; z < GEOMETRY.widthBlocks(); z += step) {
+                for (int x = 0; x < GEOMETRY.circumferenceBlocks(); x += step) {
+                    if (x != 0 || z != 0) atlas.putBlockSample(x, z0 + z, 70, 0x556677);
+                }
+            }
+            long total = (long)GEOMETRY.circumferenceChunks() * GEOMETRY.widthChunks();
+            assertFalse(atlas.isComplete());
+            assertEquals(total - 1, atlas.presentChunkCount());
+            atlas.putBlockSample(0, z0, 70, 0x556677);
+            assertTrue(atlas.isComplete());
+            assertEquals(total, atlas.presentChunkCount());
+            atlas.clear();
+            assertEquals(0, atlas.presentChunkCount());
+        }
+    }
+
+    @Test
     void chunkCoverageAdvancesOnlyAfterEveryCellArrives() {
         RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH);
         int firstZ = GEOMETRY.minWidthZ();
@@ -199,7 +221,7 @@ class RingTerrainAtlasTest {
         RingTerrainAtlas source = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         source.putCell(0, 0, 70, 0x123456, 15);
         byte[] tile = source.encodeTile(0, 0);
-        // Format 10 packs water above the four-bit light value.
+        // Formats 10 and 11 pack water above the four-bit light value.
         tile[9] = 16;
         RingTerrainAtlas target = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         target.applyTile(0, 0, tile);

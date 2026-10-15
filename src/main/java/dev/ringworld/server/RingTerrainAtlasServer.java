@@ -75,8 +75,16 @@ public final class RingTerrainAtlasServer {
     }
 
     public static void registerCommands(CommandDispatcher<CommandSourceStack> dispatcher) {
+        var generationRate = Commands.literal("chunk_gen_rate")
+                .executes(context -> chunkGenerationRate(context.getSource(), null))
+                .then(Commands.literal("auto").executes(context -> chunkGenerationRate(context.getSource(), 0)));
+        for (int rate : new int[] {1, 2, 4, 8}) {
+            generationRate.then(Commands.literal(Integer.toString(rate))
+                    .executes(context -> chunkGenerationRate(context.getSource(), rate)));
+        }
         dispatcher.register(Commands.literal("ringworld")
                         .requires(source -> source.hasPermission(2))
+                        .then(generationRate)
                         .then(Commands.literal("atlas")
                                 .then(Commands.literal("status").executes(context -> {
                                     ServerLevel world = context.getSource().getServer().getLevel(Level.OVERWORLD);
@@ -110,6 +118,18 @@ public final class RingTerrainAtlasServer {
                                         .executes(context -> setSunStyle(
                                                 context.getSource(),
                                                 StringArgumentType.getString(context, "style"))))));
+    }
+
+    private static int chunkGenerationRate(CommandSourceStack source, Integer rate) {
+        ServerLevel world = source.getServer().getLevel(Level.OVERWORLD);
+        if (world == null || !RingAtlasPregenerationService.setChunkGenerationRate(world, rate)) {
+            source.sendFailure(Component.literal("RingWorld terrain atlas is unavailable"));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("RingWorld chunk generation: "
+                + RingAtlasPregenerationService.chunkGenerationRate(world)
+                + ". Existing requests finish normally. Setting lasts until the world closes."), rate != null);
+        return 1;
     }
 
     private static int querySky(CommandSourceStack source) {

@@ -5,10 +5,9 @@ import java.util.Objects;
 /**
  * Immutable, loader-neutral scheduling policy for an atlas pregeneration job.
  *
- * <p>The first scheduler implementation uses the conservative defaults: one
- * chunk in flight and a pending-task soft limit of 64. The bounded fields are
- * retained here so future platform adapters can make measured policy changes
- * without changing their public contract.</p>
+ * <p>The default is adaptive, starting at four requests with a pending-task soft limit of 64.
+ * The explicit concurrency trial accepts up to eight requests; all callers
+ * share the same server-owned writer and bounded completion capture.</p>
  */
 public record AtlasPregenerationOptions(
         AtlasPregenerationMode mode,
@@ -17,7 +16,8 @@ public record AtlasPregenerationOptions(
         int checkpointIntervalChunks,
         int progressIntervalTicks,
         boolean stopServerWhenComplete) {
-    public static final int DEFAULT_MAX_IN_FLIGHT_CHUNKS = 1;
+    public static final int DEFAULT_MAX_IN_FLIGHT_CHUNKS = 4;
+    public static final String CONCURRENCY_PROPERTY = "ringworld.atlasInFlightChunks";
     public static final int DEFAULT_PENDING_TASK_SOFT_LIMIT = 64;
     public static final int DEFAULT_CHECKPOINT_INTERVAL_CHUNKS = 200;
     public static final int DEFAULT_PROGRESS_INTERVAL_TICKS = 20;
@@ -56,11 +56,25 @@ public record AtlasPregenerationOptions(
     public static AtlasPregenerationOptions defaults(AtlasPregenerationMode mode) {
         Objects.requireNonNull(mode, "mode");
         return new AtlasPregenerationOptions(mode,
-                DEFAULT_MAX_IN_FLIGHT_CHUNKS,
+                trialConcurrency(System.getProperty(CONCURRENCY_PROPERTY)),
                 DEFAULT_PENDING_TASK_SOFT_LIMIT,
                 DEFAULT_CHECKPOINT_INTERVAL_CHUNKS,
                 DEFAULT_PROGRESS_INTERVAL_TICKS,
                 mode == AtlasPregenerationMode.HEADLESS_PREWARM);
+    }
+
+    /** Numeric overrides are fixed; absent/auto starts the adaptive four-request policy. */
+    public static int trialConcurrency(String value) {
+        if (isAdaptiveConcurrency(value)) return DEFAULT_MAX_IN_FLIGHT_CHUNKS;
+        try {
+            int result = Integer.parseInt(value.trim());
+            if (result >= 1 && result <= 8) return result;
+        } catch (NumberFormatException ignored) { }
+        throw new IllegalArgumentException(CONCURRENCY_PROPERTY + " must be auto or an integer from 1 to 8");
+    }
+
+    public static boolean isAdaptiveConcurrency(String value) {
+        return value == null || "auto".equalsIgnoreCase(value.trim());
     }
 
     /**

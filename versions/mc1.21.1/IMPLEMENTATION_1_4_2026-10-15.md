@@ -44,3 +44,26 @@ advances explicitly with the integrated feature port.
 P2 Atlas 11/sampler/coherent persistence; P3 adaptive capture/concurrency and
 chunk/light work; P4 exterior gameplay; P5 rendering/UI; full 1.21.1 acceptance;
 then the independent Java-17 1.20.1 Fabric/Forge graphs and their complete gates.
+
+## P2/P3: integrated Atlas engine (in progress)
+
+The native Java-21 implementation now carries Atlas format 11, the bounded
+manufactured-column selector, deferred loaded-chunk capture, eight retained
+request slots, adaptive 4/2/1 backoff, fixed 1/2/4/8 operator controls, and local
+integrated-client frame feedback on both loaders. The format bump deliberately
+rebuilds visual caches; saved dimensions, topology and terrain remain unchanged.
+The P1 private admission path is retained for every slot. Unloaded recapture
+cells remain droppable and exact/overflow fairness remains the backport policy.
+
+Checkpoint allocation, compression, replacement and verification run on a
+single worker. Owner-thread copies advance in bounded slices and repair slices
+edited during copying. Newer mutations remain dirty after an older write, and
+normal completion/cancellation waits for its durable checkpoint without blocking
+normal gameplay ticks. Blocking drain is confined to teardown. The foliage
+settlement observation now includes queued loaded-chunk captures.
+
+The development identity is `1.4.0-dev.1+mc1.21.1`. The historical format-10
+reader and tests are preserved; a separate strict format-11 reader binds the new
+semantic identity. Final native runtime, upgrade/recovery and production-scale
+performance evidence for this engine is still pending. No full acceptance PASS
+is claimed.

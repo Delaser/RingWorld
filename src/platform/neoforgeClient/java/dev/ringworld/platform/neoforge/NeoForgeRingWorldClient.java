@@ -287,6 +287,7 @@ public final class NeoForgeRingWorldClient {
     @SubscribeEvent
     public static void onClientTick(ClientTickEvent.Post event) {
         Minecraft client = Minecraft.getInstance();
+        dev.ringworld.client.RingAtlasPerformanceFeedback.tick(client);
         if (Boolean.getBoolean(RingCreate610KineticNetworkFixture.ENABLE_PROPERTY)) {
             if (RingCreate610KineticNetworkFixture.instance().startWorldIfEnabled(client)) return;
             RingCreate610KineticNetworkFixture.instance().tick(client);

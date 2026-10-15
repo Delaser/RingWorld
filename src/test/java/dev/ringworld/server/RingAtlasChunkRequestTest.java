@@ -3,10 +3,12 @@ package dev.ringworld.server;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -61,28 +63,33 @@ class RingAtlasChunkRequestTest {
     }
 
     @Test
-    void failedStartReleasesTheTicketAndPreservesReleaseFailure() {
+    void failedStartRetainsLeaseForCleanupAndPreservesBothFailures() {
         AtomicInteger releases = new AtomicInteger();
-        IllegalStateException failure = assertThrows(IllegalStateException.class,
-                () -> RingAtlasChunkRequest.start(() -> {
-                    throw new IllegalStateException("load failed");
-                }, () -> "unused", () -> {
-                    releases.incrementAndGet();
-                    throw new IllegalArgumentException("release failed");
-                }));
-
-        assertEquals("load failed", failure.getMessage());
-        assertEquals(1, releases.get());
-        assertEquals(1, failure.getSuppressed().length);
-        assertEquals("release failed", failure.getSuppressed()[0].getMessage());
+        AtomicInteger resultReads = new AtomicInteger();
+        RingAtlasChunkRequest<String> request = RingAtlasChunkRequest.start(() -> {
+            throw new IllegalStateException("load failed");
+        }, () -> { resultReads.incrementAndGet(); return "unused"; }, () -> {
+            if (releases.incrementAndGet() == 1) throw new IllegalArgumentException("release failed");
+        });
+        assertTrue(request.isDone());
+        CompletionException failure = assertThrows(CompletionException.class, request::joinResult);
+        assertEquals("load failed", failure.getCause().getMessage());
+        assertEquals("release failed", assertThrows(IllegalArgumentException.class, request::cancel).getMessage());
+        request.cancel();
+        request.close();
+        assertEquals(2, releases.get());
+        assertEquals(0, resultReads.get());
     }
 
     @Test
-    void nullLoadFutureFailsClosedAndReleasesTheTicket() {
+    void nullLoadFutureRetainsFailedRequestUntilTicketIsReleased() {
         AtomicInteger releases = new AtomicInteger();
-
-        assertThrows(NullPointerException.class, () -> RingAtlasChunkRequest.start(
-                () -> null, () -> "unused", releases::incrementAndGet));
+        RingAtlasChunkRequest<String> request = RingAtlasChunkRequest.start(
+                () -> null, () -> "unused", releases::incrementAndGet);
+        assertInstanceOf(NullPointerException.class,
+                assertThrows(CompletionException.class, request::joinResult).getCause());
+        assertEquals(0, releases.get());
+        request.cancel();
         assertEquals(1, releases.get());
     }
 

@@ -21,7 +21,12 @@ public final class RingAtlasSurfaceInvalidation {
 
     /** The changed block can alter the sampled top when it reaches the stored top face. */
     public static boolean mayAffectSurface(int changedBlockY, int storedTopFaceY) {
-        return (long)changedBlockY + 1L >= storedTopFaceY;
+        return mayAffectSurface(changedBlockY, storedTopFaceY, false);
+    }
+
+    /** A support edit can detach a manufactured top without touching its face. */
+    public static boolean mayAffectSurface(int changedBlockY, int storedTopFaceY, boolean manufacturedTop) {
+        return manufacturedTop || (long)changedBlockY + 1L >= storedTopFaceY;
     }
 
     /**

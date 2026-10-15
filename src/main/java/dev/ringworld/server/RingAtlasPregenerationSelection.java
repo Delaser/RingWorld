@@ -20,7 +20,11 @@ final class RingAtlasPregenerationSelection {
     private int retryAttempt;
 
     RingAtlasPregenerationSelection(RingGeometry geometry, RingTerrainAtlas atlas) {
-        cursor = new RingAtlasPregenerationCursor(geometry, atlas);
+        this(new RingAtlasPregenerationCursor(geometry, atlas));
+    }
+
+    RingAtlasPregenerationSelection(RingAtlasPregenerationCursor cursor) {
+        this.cursor = java.util.Objects.requireNonNull(cursor);
     }
 
     long totalChunks() { return cursor.totalChunks(); }

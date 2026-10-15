@@ -8,6 +8,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class RingAtlasSurfaceInvalidationTest {
+    @Test
+    void removingSupportBelowAManufacturedTopQueuesItsColumn() {
+        assertTrue(RingAtlasSurfaceInvalidation.mayAffectSurface(65, 252, true));
+        assertFalse(RingAtlasSurfaceInvalidation.mayAffectSurface(65, 252, false));
+        assertTrue(RingAtlasSurfaceInvalidation.mayAffectSurface(251, 252, false));
+    }
+
     private static final RingGeometry GEOMETRY = new RingGeometry(256, 2_048);
 
     @Test
