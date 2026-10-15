@@ -143,6 +143,14 @@ def run(args: argparse.Namespace) -> None:
     environment['JAVA_HOME'] = str(java_home)
     environment['PATH'] = str(java_home / 'bin') + os.pathsep + environment['PATH']
     environment.pop('JAVA_TOOL_OPTIONS', None)
+    if args.wait_for_file is not None:
+        # Scheduling only: the awaited file earns no evidence credit. The
+        # already archived source and copied runtime candidate stay frozen.
+        deadline = time.monotonic() + 4 * 60 * 60
+        print('WAIT scheduling prerequisite', args.wait_for_file, flush=True)
+        while not args.wait_for_file.is_file():
+            require(time.monotonic() < deadline, 'Scheduling prerequisite timed out')
+            time.sleep(1)
     phases = []
     for name in ('placement', 'reopen', 'visibility'):
         phase = output / name
@@ -227,6 +235,8 @@ def main() -> None:
     for option in ('candidate', 'java-home', 'client-seed', 'server-seed', 'eula', 'output'):
         parser.add_argument('--' + option, type=Path, required=True)
     parser.add_argument('--port', type=int, default=25568)
+    parser.add_argument('--wait-for-file', type=Path,
+                        help='Defer heavy native launches after freezing identity; scheduling only')
     args = parser.parse_args()
     require(1024 <= args.port <= 65535, 'Invalid isolated port')
     run(args)
