@@ -477,3 +477,20 @@ shutdown exception when no Overworld was constructed; this is retained as
 expected negative-case output, not described as a normal gameplay shutdown.
 NeoForge's corresponding native slice is in progress. Evidence is retained
 under `.codex-tmp/b14-saved-rejection/` and remains diagnostic-only.
+
+All fourteen native saved-state controls complete on Fabric and NeoForge.
+The held-entity visibility reruns also pass on both at `ff78c1d`, including all
+seven stages, explicit entity identity/removal, natural seam and vanilla void
+damage. Evidence is under `.codex-tmp/b14-exterior-neoforge-v6/` and
+`.codex-tmp/b14-exterior-fabric-v3/`.
+
+The first packaged graphical matrix passes Fabric's 26 creation captures and
+its GPU projection probe, then fails Atlas UI's build identity assertion: the
+UTF-8 argfile gives the Windows launcher `Â·` instead of `·`. The actual rendered
+identity is correct. A separate native Java probe reproduces the argfile mismatch
+and proves byte-correct UTF-8 property content when the label is passed as a
+native process argument. The driver now uses that boundary; the identity
+assertion remains unchanged. The failed attempt stays at
+`dist/qualification/b14-packaged-clients-fabric-v2/atlas-ui/`. Subsequent cases
+and the NeoForge graphical matrix did not run in that attempt. This harness
+correction requires a fresh run; it does not change either frozen mod jar.

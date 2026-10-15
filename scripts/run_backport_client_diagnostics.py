@@ -137,6 +137,12 @@ def required_native_captures(case: Case) -> set[str]:
     return set()
 
 
+def build_identity_arguments(case: Case, label: str) -> list[str]:
+    if case.name not in ('creation-ui', 'atlas-ui'):
+        return []
+    return ['-Dringworld.' + case.flag.removesuffix('Test') + 'ExpectedBuildLabel=' + label]
+
+
 def clean_source(source: str) -> None:
     require(subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip() == source,
             'Source checkpoint changed during diagnostics')
@@ -230,8 +236,9 @@ def main() -> None:
             lines = [line for line in (seed / 'java-args.txt').read_text(encoding='utf-8').splitlines()
                      if not line.strip('"').startswith('-Dringworld.')]
             flags = {case.flag: 'true', 'rawFrameEvidence': 'true', **case.properties}
-            if case.name in ('creation-ui', 'atlas-ui'):
-                flags[case.flag.removesuffix('Test') + 'ExpectedBuildLabel'] = label
+            # Windows' Java launcher reads @argfiles using its native encoding.
+            # Keep the Unicode identity on the native process argument boundary.
+            direct_arguments = build_identity_arguments(case, label)
             if case.name == 'atlas-ui': flags['projectionGpuProbe'] = 'true'
             lines[1:1] = ['"-Dringworld.' + key + '=' + value + '"' for key, value in flags.items()]
             dimensions = ('1920', '1080') if case.name in ('creation-ui', 'atlas-ui') else ('1280', '720')
@@ -243,7 +250,7 @@ def main() -> None:
             (runtime / 'java-args.txt').write_text('\n'.join(lines), encoding='utf-8')
             runtime_inventory(seed)
             with (phase / 'process.log').open('x', encoding='utf-8') as log:
-                child = subprocess.Popen([str(java), '@java-args.txt'], cwd=runtime, env=environment,
+                child = subprocess.Popen([str(java), *direct_arguments, '@java-args.txt'], cwd=runtime, env=environment,
                                          stdout=log, stderr=subprocess.STDOUT)
                 save_json(phase / 'process.json', {'parentPid': os.getpid(), 'pid': child.pid, 'runtime': str(runtime)})
                 require(child.wait(timeout=1800) == 0, 'Packaged client failed or crashed')

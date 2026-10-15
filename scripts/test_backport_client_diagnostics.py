@@ -1,9 +1,16 @@
 import unittest
 
-from scripts.run_backport_client_diagnostics import cases, required_native_captures
+from scripts.run_backport_client_diagnostics import cases, required_native_captures, build_identity_arguments
 
 
 class BackportClientRecipeTests(unittest.TestCase):
+    def test_unicode_build_identity_stays_on_the_native_argument_boundary(self):
+        label = '1.4 development · 1.4.0-dev.1+mc1.21.1'
+        recipes = {case.name: case for case in cases()}
+        self.assertEqual(['-Dringworld.atlasUiExpectedBuildLabel=' + label],
+                         build_identity_arguments(recipes['atlas-ui'], label))
+        self.assertEqual([], build_identity_arguments(recipes['underwater'], label))
+
     def test_every_projection_environment_keeps_three_raw_windows_and_native_verifier(self):
         recipes = cases()
         self.assertEqual(len(recipes), len({case.name for case in recipes}))
