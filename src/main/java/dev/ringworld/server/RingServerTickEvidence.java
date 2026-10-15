@@ -22,6 +22,7 @@ public final class RingServerTickEvidence {
     private static final AtomicInteger SEQUENCE = new AtomicInteger();
     private static volatile int phase;
     private final RingTickWorkAccounting accounting = new RingTickWorkAccounting();
+    private final dev.ringworld.world.RingClockAnchor anchor = dev.ringworld.world.RingClockAnchor.capture();
     private final ThreadMXBean cpu = ManagementFactory.getThreadMXBean();
     private final long[] starts = new long[CAPACITY], games = new long[CAPACITY],
             scheduled = new long[CAPACITY], idle = new long[CAPACITY], cpuNanos = new long[CAPACITY];
@@ -98,6 +99,10 @@ public final class RingServerTickEvidence {
             metadata.addProperty("lateHookStressProbe", Boolean.getBoolean("ringworld.testTickEvidence"));
             metadata.addProperty("shutdownNanos", shutdownNanos);
             metadata.addProperty("javaRuntime", System.getProperty("java.runtime.version"));
+            metadata.addProperty("clockAnchorNanoTime", anchor.nanoTime());
+            metadata.addProperty("clockAnchorEpochSecond", anchor.epochSecond());
+            metadata.addProperty("clockAnchorNanoAdjustment", anchor.nanoAdjustment());
+            metadata.addProperty("clockAnchorUncertaintyNanos", anchor.uncertaintyNanos());
             metadata.addProperty("scope", "tickServer including tail hooks plus scheduled work; intentional scheduler parking excluded");
             try (var writer = Files.newBufferedWriter(directory.resolve(name + ".json"), StandardCharsets.UTF_8,
                     StandardOpenOption.CREATE_NEW)) { writer.write(metadata.toString()); }

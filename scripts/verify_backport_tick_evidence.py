@@ -6,6 +6,10 @@ import json
 import math
 from pathlib import Path
 import struct
+try:
+    from .verify_backport_frame_evidence import clock_anchor
+except ImportError:
+    from verify_backport_frame_evidence import clock_anchor
 
 ROW = struct.Struct('>iiiqqqqq')
 CAPACITY = 131_072
@@ -26,6 +30,8 @@ def rows(path: Path) -> tuple[dict, list[tuple]]:
             or type(metadata.get('shutdownNanos')) is not int or metadata['shutdownNanos'] < 0
             or metadata.get('sha256') != hashlib.sha256(data).hexdigest()):
         raise ValueError('tick metadata is missing, incomplete or differs from retained bytes')
+    if any(key.startswith('clockAnchor') for key in metadata):
+        clock_anchor(metadata)
     samples = list(ROW.iter_unpack(data[12:]))
     for index, (tick, players, phase, start, game, busy, idle, cpu) in enumerate(samples):
         if (tick < 0 or not 0 <= players <= 1024 or not 0 <= phase <= 255

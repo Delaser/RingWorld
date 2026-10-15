@@ -31,5 +31,11 @@ abstract class MinecraftMixin {
     private void ringworld$recordCreationUiTestFrame(boolean advanceGameTime, CallbackInfo ci) {
         RingWorldCreationUiTestClient.frameRendered();
         dev.ringworld.client.RingFloatingAtlasCaptureClient.frameRendered();
+        dev.ringworld.client.RingRuntimeFrameEvidence.frame((Minecraft)(Object)this);
+    }
+
+    @Inject(method = "close", at = @At("TAIL"))
+    private void ringworld$flushRuntimeMeasurements(CallbackInfo ci) {
+        dev.ringworld.client.RingRuntimeFrameEvidence.finish();
     }
 }

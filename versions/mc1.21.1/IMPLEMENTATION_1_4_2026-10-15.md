@@ -591,3 +591,41 @@ includes the cold transition and rejects a mismatched rejection-stage revision.
 The failed wrapper attempt is preserved at
 `dist/qualification/b14-cache-regression-fabric-v2/`. Both fresh native wrapper
 runs remain required; NeoForge was not dispatched after the wrapper failure.
+
+### Cache regression completion and continuous performance evidence
+
+Fresh packaged Fabric and NeoForge cache regression v3 runs both pass all three
+normal opens/disconnects at runner `5cf0258` with the unchanged `0f2e1b0` product
+jars. Independent decoding verifies foreign same-revision content rejection
+before provisional rendering, complete authoritative repair, and subsequent
+exact cache reuse. Both settle to content fingerprint `6faaad226ea8d420`;
+Fabric revision is 91 and NeoForge revision is 142. The earlier product and
+harness failures remain preserved separately.
+
+The independent Large Atlas checkpoint stress collection also completes on both
+loaders from `5cf0258`. Each retains two warmup operations and six ordered AB/BA
+pairs. Every one of the fourteen gzip outputs per loader is byte-identical to
+the immutable source `f51d867ae68969c8dd42ee37e864b44259d6d490d8c397b01cb6dd78a3454b04`.
+Measured asynchronous owner steps are at most 2.8668 ms on Fabric and 2.1181 ms
+on NeoForge; synchronous controls take roughly 3.4 seconds. Inclusive raw tick
+streams and normal all-dimension shutdowns are retained. This is deliberately
+checkpoint stress evidence, not ordinary gameplay performance qualification.
+
+An opt-in continuous native frame recorder now uses a bounded primitive buffer
+pool and one disk worker. Exhaustion, failed writes, rejected work and missing
+tail windows cannot silently produce success. Shutdown receipts bind the entire
+sequence and sample count. Monotonic/UTC clock anchors permit joining independent
+server/client windows; start/end client anchors expose clock drift. Uninstrumented
+gameplay allocates no frame buffers. The shared server sampler also records its
+clock anchor without changing the raw tick format.
+
+Both strict builds pass 630 Fabric / 653 NeoForge cases. The new tests exercise
+delayed worker ownership, buffer exhaustion, disk/rejection failure, contiguous
+windows and shutdown. Independent Python readers check hashes, exact duration
+sums, clock bounds, ordered windows and a mandatory completion receipt. The
+serial packaged performance collector uses three real creative/flying clients,
+a 4 GiB server, 2 GiB per client, 28-chunk view, 8-chunk simulation, raw GC logs,
+inclusive ticks, continuous frames and repeated native health/pose observations.
+Its first short instrumentation run is still pending. It cannot award release
+acceptance; paired baseline comparisons, production traversal, scheduled-save
+persistence checks and the 60-minute soak remain required.

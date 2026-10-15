@@ -103,9 +103,14 @@ public final class MultiplayerTestClient {
     private int seamWeatherProbeTicks;
     private int completionGraceTicks;
     private boolean clientStopRequested;
+    private boolean performanceConnected;
 
     public boolean tick(Minecraft client) {
         if (role.isEmpty()) return false;
+        if (Boolean.getBoolean("ringworld.performanceClient") && performanceConnected && client.level == null) {
+            RingWorldMod.LOGGER.info("[performance-client:{}] disconnected after joining; stopping client", role);
+            client.stop(); return true;
+        }
         if (Boolean.getBoolean("ringworld.outsideBuildingTest")
                 && OutsideBuildingTestClient.finishIfDisconnected(client)) return true;
         if (Boolean.getBoolean("ringworld.offRingVisibilityTest")
@@ -117,6 +122,12 @@ public final class MultiplayerTestClient {
             client.options.enableVsync().set(false);
             client.options.pauseOnLostFocus = false;
             client.options.onboardAccessibility = false;
+            if (Boolean.getBoolean("ringworld.performanceClient")) {
+                client.options.framerateLimit().set(60);
+                client.options.graphicsMode().set(net.minecraft.client.GraphicsStatus.FANCY);
+                client.options.cloudStatus().set(net.minecraft.client.CloudStatus.FANCY);
+                client.options.getSoundSourceOptionInstance(net.minecraft.sounds.SoundSource.MASTER).set(0.0);
+            }
             optionsApplied = true;
         }
         if (client.level == null || client.player == null) {
@@ -124,6 +135,15 @@ public final class MultiplayerTestClient {
             return true;
         }
         if (client.screen instanceof PauseScreen) client.setScreen(null);
+        if (Boolean.getBoolean("ringworld.performanceClient")) {
+            performanceConnected = true;
+            if (client.gameMode != null && client.gameMode.getPlayerMode() == GameType.CREATIVE
+                    && !client.player.getAbilities().flying) {
+                client.player.getAbilities().flying = true;
+                client.player.onUpdateAbilities();
+            }
+            return true;
+        }
         if (!readySent && client.isGameLoadFinished()) {
             if (Boolean.getBoolean("ringworld.multiplayerDifferentLod")) {
                 var selected = role.equals("A") ? dev.ringworld.world.RingLodQuality.LOW
