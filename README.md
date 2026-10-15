@@ -20,6 +20,8 @@ work across the join.
 > The [1.4 backport and dual-version acceptance plan](docs/BACKPORT_1_4_DUAL_VERSION_PLAN_2026-10-15.md)
 > audits the published 1.4 changes and plans 1.21.1 plus 1.20.1 support.
 > It does not claim an accepted 1.4 backport or a working 1.20.1 build yet.
+> Implementation is underway; the [1.4 implementation ledger](versions/mc1.21.1/IMPLEMENTATION_1_4_2026-10-15.md)
+> tracks the ordered port and its acceptance evidence.
 
 ## What does it look like?
 

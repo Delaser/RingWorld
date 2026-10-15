@@ -11,6 +11,11 @@ compatibility claim.
 
 ## Current feature handoffs
 
+Implementation of the approved 1.4 plan is active on `codex/backport-1.4`.
+The [implementation ledger](IMPLEMENTATION_1_4_2026-10-15.md) records changes,
+diagnostics and acceptance progress. 1.21.1 must meet its gates before the
+1.20.1 Fabric/Forge port advances. Neither target is accepted yet.
+
 The [1.4 audit and dual-version plan](../../docs/BACKPORT_1_4_DUAL_VERSION_PLAN_2026-10-15.md)
 pins published mainline source `1533878` and local starting point `8f1fe43`.
 Fresh existing-baseline builds and all 1,085 Java cases pass. Both loaders also

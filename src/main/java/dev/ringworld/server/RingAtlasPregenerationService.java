@@ -661,17 +661,26 @@ public final class RingAtlasPregenerationService {
             }
             try {
                 // getChunkFuture would managedBlock this server tick. The
-                // public ticket-and-load API schedules FULL generation and
-                // returns immediately; retain our unique ticket until the
+                // private owner-thread admission schedules FULL generation
+                // without that wait; retain our unique ticket until the
                 // completed LevelChunk has been captured on a later tick.
                 ChunkPos position = new ChunkPos(selected.chunkX(), selected.chunkZ());
                 TicketType ticket = atlasLoadingTicket();
                 request = RingAtlasChunkRequest.start(
                         () -> {
                             world.getChunkSource().addRegionTicket(ticket, position, 0, position);
-                            return world.getChunkSource().getChunkFuture(
+                            long admissionStarted = System.nanoTime();
+                            var future = ((dev.ringworld.mixin.AtlasChunkCacheInvoker)
+                                    world.getChunkSource()).ringworld$requestChunkWithoutWaiting(
                                     position.x, position.z, net.minecraft.world.level.chunk.status.ChunkStatus.FULL,
                                     true);
+                            if (Boolean.getBoolean("ringworld.atlasRequestTimings")) {
+                                RingWorldMod.LOGGER.info(
+                                        "RingWorld atlas request admitted tick={} completeAtReturn={} ownerSpanMs={}",
+                                        owner.ticks, future.isDone(),
+                                        (System.nanoTime() - admissionStarted) / 1_000_000.0);
+                            }
+                            return future;
                         },
                         () -> world.getChunkSource().getChunkNow(
                                 selected.chunkX(), selected.chunkZ()),

@@ -3,6 +3,7 @@
   "package": "dev.ringworld.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
+    "AtlasChunkCacheInvoker",
     "BlockEntityMixin",
     "BlockEntityPositionAccessor",
     "BoundedRegionArrayMixin",
