@@ -160,3 +160,16 @@ fingerprint request, and retains all older generation/handoff/revision/teardown
 assertions. Its revision marker is now stone: Atlas 11 intentionally omits a
 qualifying floating manufactured gold block. Both Gradle verifiers require the
 new policy marker and three decodable captures. Real-client execution is next.
+
+### P4 real-client checkpoint
+
+Both source-ABI integrated Atlas UI runs pass at `6443b3b`, with sixteen
+captures each. New World-page widgets perform on/off/on payload round trips
+and stale-fingerprint rejection; old progressive/complete handoff, cancellation,
+retry, ordered stone placement/removal revisions and normal disconnect/raw
+session teardown remain. Independent server-disk readers find complete format-11
+Atlases and the restored saved building policy. Evidence and 32 PNG hashes:
+`.codex-tmp/b14-building-ui/results.json`; an exact source archive is retained.
+The Fabric World-Off view was visually inspected. This is bounded integrated
+client evidence; dedicated non-operator, bed/bucket, both-rim exterior gameplay,
+production rendering and full performance acceptance remain outstanding.
