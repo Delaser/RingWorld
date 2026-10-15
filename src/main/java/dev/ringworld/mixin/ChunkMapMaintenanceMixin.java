@@ -147,7 +147,16 @@ abstract class ChunkMapMaintenanceMixin {
     @Redirect(method = "processUnloads", at = @At(value = "INVOKE", target = "Ljava/lang/Runnable;run()V"))
     private void ringworld$unload(Runnable task) {
         if (ringworld$ordinaryTick) ringworld$tasks++;
-        task.run();
+        if (!ringworld$ordinaryTick && level.dimension() == Level.OVERWORLD
+                && level.getServer().isCurrentlySaving()) {
+            // A completed save dependency can still have generation references.
+            // Its unload callback then queues itself again. An unbounded shutdown
+            // drain must service the chunk owner's queue between callbacks or it
+            // can starve the work that releases those references forever.
+            // Retain every callback and the complete vanilla save/flush drain.
+            dev.ringworld.server.RingChunkUnloadProgress.run(task,
+                    () -> level.getChunkSource().pollTask());
+        } else task.run();
     }
 
     /** 1.21.1 has no native active-write counter; retain its original future and error handling. */

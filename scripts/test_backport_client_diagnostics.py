@@ -1,11 +1,30 @@
 import unittest
 from pathlib import Path
 import tempfile
+from unittest.mock import Mock, patch
 
-from scripts.run_backport_client_diagnostics import cases, required_native_captures, build_identity_arguments, normalize_profile_options, validate_cache_observations
+from scripts.run_backport_client_diagnostics import cases, required_native_captures, build_identity_arguments, normalize_profile_options, validate_cache_observations, wait_for_native_exit
 
 
 class BackportClientRecipeTests(unittest.TestCase):
+    def test_capture_success_without_normal_shutdown_times_out(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'process.log'
+            path.write_text('CAPTURE COMPLETE\nSaving worlds\n')
+            process = Mock(); process.poll.return_value = None
+            with patch('scripts.run_backport_client_diagnostics.time.monotonic', side_effect=[0, 1, 121]), \
+                    patch('scripts.run_backport_client_diagnostics.time.sleep'):
+                with self.assertRaisesRegex(TimeoutError, 'normal client/server shutdown'):
+                    wait_for_native_exit(process, path, 'CAPTURE COMPLETE')
+            process.wait.assert_not_called()
+
+    def test_native_exit_code_is_preserved_for_postprocessing(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'process.log'; path.write_text('CAPTURE COMPLETE\n')
+            process = Mock(); process.poll.side_effect = [None, 17]; process.wait.return_value = 17
+            with patch('scripts.run_backport_client_diagnostics.time.sleep'):
+                self.assertEqual(17, wait_for_native_exit(process, path, 'CAPTURE COMPLETE'))
+
     def test_cache_proof_requires_both_rejection_and_positive_reuse_at_an_identical_revision(self):
         original = {'status': 'PASS', 'worldHash': '1', 'revision': 42, 'cells': 262144, 'contentFingerprint': '111'}
         foreign = original | {'contentFingerprint': '222'}

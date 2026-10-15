@@ -190,6 +190,24 @@ def clean_source(source: str) -> None:
             'Tracked diagnostic source became dirty')
 
 
+def wait_for_native_exit(child: subprocess.Popen, path: Path, marker: str,
+                         seconds: int = 1800, shutdown_seconds: int = 120) -> int:
+    deadline = time.monotonic() + seconds
+    completed = None
+    while child.poll() is None:
+        now = time.monotonic()
+        require(now < deadline, 'Packaged client exceeded its fixture deadline')
+        with path.open('rb') as stream:
+            stream.seek(max(0, path.stat().st_size - 65_536))
+            tail = stream.read().decode('utf-8', errors='replace')
+        if completed is None and marker in tail: completed = now
+        if completed is not None and now - completed >= shutdown_seconds:
+            raise TimeoutError('Native fixture completed but normal client/server shutdown exceeded '
+                               + str(shutdown_seconds) + ' seconds')
+        time.sleep(1)
+    return child.wait()
+
+
 def main() -> None:
     from PIL import Image
     # The historical independent NBT parser is a standalone script module.
@@ -294,7 +312,8 @@ def main() -> None:
                 child = subprocess.Popen([str(java), *direct_arguments, '@java-args.txt'], cwd=runtime, env=environment,
                                          stdout=log, stderr=subprocess.STDOUT)
                 save_json(phase / 'process.json', {'parentPid': os.getpid(), 'pid': child.pid, 'runtime': str(runtime)})
-                require(child.wait(timeout=1800) == 0, 'Packaged client failed or crashed')
+                require(wait_for_native_exit(child, phase / 'process.log', case.marker) == 0,
+                        'Packaged client failed or crashed')
             text = (phase / 'process.log').read_text(encoding='utf-8', errors='replace')
             require(case.marker in text and 'Exception in server tick loop' not in text
                     and 'Mixin apply failed' not in text and 'OutOfMemoryError' not in text
@@ -351,6 +370,13 @@ def main() -> None:
             save_json(phase / 'terminal.json', record); rows.append(record)
             print('PASS', args.loader, case.name, flush=True)
         except BaseException as failure:
+            if child is not None and child.poll() is None and isinstance(failure, TimeoutError):
+                with (phase / 'timeout-threads.txt').open('x', encoding='utf-8') as trace:
+                    try:
+                        subprocess.run([str(java_home / 'bin/jcmd.exe'), str(child.pid), 'Thread.print', '-l'],
+                                       stdout=trace, stderr=subprocess.STDOUT, timeout=20)
+                    except (OSError, subprocess.TimeoutExpired) as diagnostic_failure:
+                        trace.write('\nThread diagnostic failed: ' + repr(diagnostic_failure))
             save_json(phase / 'FAILED.json', {'status': 'FAIL', 'diagnosticOnly': True, 'error': repr(failure)})
             raise
         finally:

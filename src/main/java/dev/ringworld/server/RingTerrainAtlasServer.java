@@ -50,6 +50,13 @@ import java.util.concurrent.Future;
 
 /** Loader-neutral command and streaming coordinator for the authoritative atlas service. */
 public final class RingTerrainAtlasServer {
+    /** Release background leases before vanilla begins its native chunk drain. */
+    public static void serverStopping(net.minecraft.server.MinecraftServer server) {
+        for (ServerLevel world : server.getAllLevels()) {
+            if (world != null && RingWorldServer.isOverworld(world))
+                RingAtlasPregenerationService.interruptForServerStop(world);
+        }
+    }
     private static final int STREAM_TILES_PER_TICK = 8;
     private static final int PROGRESS_INTERVAL_TICKS = 20;
     private static final Map<UUID, ClientStream> STREAMS = new HashMap<>();

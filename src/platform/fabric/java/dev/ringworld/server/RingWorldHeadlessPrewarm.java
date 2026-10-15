@@ -11,7 +11,10 @@ final class RingWorldHeadlessPrewarm {
 
     static void register() {
         ServerTickEvents.END_SERVER_TICK.register(HeadlessPrewarmCoordinator::tick);
-        ServerLifecycleEvents.SERVER_STOPPING.register(HeadlessPrewarmCoordinator::serverStopping);
+        ServerLifecycleEvents.SERVER_STOPPING.register(server -> {
+            RingTerrainAtlasServer.serverStopping(server);
+            HeadlessPrewarmCoordinator.serverStopping(server);
+        });
     }
 
     static boolean requested(MinecraftServer server) { return HeadlessPrewarmCoordinator.requested(server); }

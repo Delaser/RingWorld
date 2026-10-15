@@ -689,7 +689,7 @@ public final class RingAtlasPregenerationService {
         return state;
     }
 
-    /** Checkpoints an interrupted headless run without waiting on its future. */
+    /** Freeze every server kind and release leases before vanilla drains chunks. */
     public static void interruptForServerStop(ServerLevel world) {
         requireServerThread(world);
         WorldState state = WORLDS.get(world);
@@ -704,7 +704,10 @@ public final class RingAtlasPregenerationService {
         // chunk source may already be tearing down, so discard the lease and
         // checkpoint only cells captured from still-resident authoritative chunks.
         // The still-selected cursor chunk is therefore retried after resume.
+        int pending = state.job.requests.inFlight();
         state.job.cancelForUnload();
+        if (pending > 0) RingWorldMod.LOGGER.info(
+                "[atlas-shutdown] released pendingLoads={} remaining={}", pending, state.job.requests.inFlight());
     }
     private static String percent(double completion) { return String.format(java.util.Locale.ROOT, "%.1f", completion * 100.0); }
     private static String formatDuration(long seconds) {

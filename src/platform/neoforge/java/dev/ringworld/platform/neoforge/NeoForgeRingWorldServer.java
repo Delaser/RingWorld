@@ -89,6 +89,7 @@ public final class NeoForgeRingWorldServer {
 
     @SubscribeEvent
     public void onServerStopping(ServerStoppingEvent event) {
+        RingTerrainAtlasServer.serverStopping(event.getServer());
         HeadlessPrewarmCoordinator.serverStopping(event.getServer());
     }
 

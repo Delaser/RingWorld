@@ -646,3 +646,49 @@ allowance; this is an instrumentation bound, not a gameplay threshold. The
 collector retains its exact measured window and health observations before
 postprocessing. Unit coverage includes the observed gradual adjustment and a
 rejected one-second clock step. Fresh native collection remains required.
+
+### Completed bounded collections and a real partial-generation shutdown failure
+
+At `076b312`, fresh three-client native collections pass on both loaders. The
+60-second measured stationary Small windows each contain 1,199 inclusive server
+ticks: Fabric mean/P95 5.282/6.381 ms, NeoForge 5.626/6.856 ms, zero over 50 ms.
+All six measured client streams average 16.756–16.772 ms at a 60 FPS cap, with
+zero frames over 50 ms. Exact complete streams, health/pose observations, normal
+stops and independent saved-Atlas checks are retained. Z=64 is immediately
+outside this Small world's maxZ=63. These are instrumentation diagnostics,
+not interior/production traversal, paired-baseline or soak qualification.
+
+Both loaders also pass all four native worldgen phases and the aggregate matrix:
+production fresh/reload, deliberate seam crossing and scarce-structure terminal
+policy. Current Fabric additionally passes creation UI, Atlas UI, cache identity,
+maps/compasses, curved objects and underwater. All preceding attempts remain
+separate; final replacement qualification is still required.
+
+The following Fabric horizon run captures all sixteen controls, then stalls at
+normal logout while background Atlas generation is 88.9% complete. Two native
+thread dumps show an unbounded chunk-unload retry loop; an allocation histogram
+contains approximately 2.89 million completion callbacks. Shutdown exceeds
+120 seconds. The process is stopped after retaining diagnostics; its disposable
+world remains intact as failed evidence. Capture completion does not earn PASS.
+Both serial queues stop and no later graphical/gameplay test is dispatched.
+
+The native retry can observe a completed save future while generation references
+still need queued chunk-owner work. Unbounded saving must service that owner
+between callbacks rather than endlessly rescheduling the retry. The Overworld
+save drain now does so without discarding callbacks or narrowing the native
+flush. Ordinary tick ceilings and Nether/End behavior remain unchanged. A
+regression with real completed futures reproduces repeated retries and proves
+owner progress permits exactly one durable write without cancelling the future.
+
+The audit also finds early cancellation registered only for headless runs.
+Both loader stop hooks now freeze every Overworld Atlas and release background
+leases before native chunk draining; final coherent checkpoint/worker shutdown
+remains owned by level unload. Pending-release counts are logged. Both strict
+builds pass 632 Fabric / 655 NeoForge cases. The first compile attempt failed on
+a test method declaration typo; the corrected full builds pass.
+
+The graphical runner now independently enforces a 120-second normal shutdown
+deadline after native completion and captures a thread dump before retaining a
+failed attempt. Its tests reject capture-only success with a still-running
+process and preserve nonzero native exit codes. Fresh horizon retests on both
+loaders and an ordinary dedicated interruption/resume proof remain pending.
