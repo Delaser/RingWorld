@@ -23,7 +23,8 @@ class RingProtocolTransportSurfaceTest {
     private static final String SETTINGS = "dev/ringworld/net/RingSettingsPayload";
     private static final String SKY = "dev/ringworld/net/RingSkyProfilePayload";
     private static final String PREVIEW = "dev/ringworld/net/RingTerrainPreviewPayload";
-    private static final Set<String> REQUIRED = Set.of(SETTINGS, SKY, PREVIEW);
+    private static final String BUILDING = "dev/ringworld/net/RingBuildingSettingsPayload";
+    private static final Set<String> REQUIRED = Set.of(SETTINGS, SKY, BUILDING, PREVIEW);
 
     @Test
     void activeLoaderRegistersRequiresAndRoutesAllReviewedChannels() throws Exception {
@@ -43,7 +44,7 @@ class RingProtocolTransportSurfaceTest {
         MethodSignals registrations = server.method("registerPayloads");
         assertNotNull(registrations);
         assertTrue(registrations.idOwners.containsAll(REQUIRED),
-                platform.name() + " must register settings, sky, and preview clientbound IDs");
+                platform.name() + " must register settings, sky, building, and preview clientbound IDs");
         MethodSignals earlySend = server.method("sendSettings");
         assertNotNull(earlySend);
         assertTrue(earlySend.calls("dev/ringworld/net/RingProtocolCapabilities",
@@ -58,6 +59,7 @@ class RingProtocolTransportSurfaceTest {
             assertTrue(bootstrap.idOwners.containsAll(REQUIRED));
             assertDirectFabricHandler(client, "hasMatchingPayloadFingerprint");
             assertDirectFabricHandler(client, "setSkyProfile");
+            assertDirectFabricHandler(client, "setBuildingSettings");
             assertDirectFabricHandler(client, "installTerrainPreview");
         } else {
             MethodSignals router = client.method("handleClientPayload");
@@ -65,6 +67,7 @@ class RingProtocolTransportSurfaceTest {
             assertTrue(router.typeChecks.containsAll(REQUIRED));
             assertEnqueuedNeoForgeHandler(client, "handleSettings");
             assertEnqueuedNeoForgeHandler(client, "handleSkyProfile");
+            assertEnqueuedNeoForgeHandler(client, "handleBuildingSettings");
             assertEnqueuedNeoForgeHandler(client, "handleTerrainPreview");
         }
     }

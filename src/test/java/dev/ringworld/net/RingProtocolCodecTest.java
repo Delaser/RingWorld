@@ -192,6 +192,32 @@ class RingProtocolCodecTest {
         assertTruncatedRejected(RingSettingsAckPayload.CODEC, acknowledgement);
     }
 
+    @Test
+    void buildingPolicyCarriesExactLayoutPermissionAndEnabledBits() {
+        assertEquals("ringworld:building_settings_v1", RingBuildingSettingsPayload.ID.id().toString());
+        for (boolean enabled : new boolean[]{true, false}) {
+            for (boolean canControl : new boolean[]{true, false}) {
+                var payload = new RingBuildingSettingsPayload(Long.MIN_VALUE, enabled, canControl);
+                byte[] bytes = encode(RingBuildingSettingsPayload.CODEC, payload);
+                assertEquals(10, bytes.length);
+                assertEquals(payload, decode(RingBuildingSettingsPayload.CODEC, bytes));
+                assertTruncatedRejected(RingBuildingSettingsPayload.CODEC, payload);
+            }
+        }
+    }
+
+    @Test
+    void buildingControlCarriesOnlyTheRequestedPolicyAndLayoutIdentity() {
+        assertEquals("ringworld:building_control_v1", RingBuildingControlPayload.ID.id().toString());
+        for (boolean enabled : new boolean[]{true, false}) {
+            var payload = new RingBuildingControlPayload(Long.MAX_VALUE, enabled);
+            byte[] bytes = encode(RingBuildingControlPayload.CODEC, payload);
+            assertEquals(9, bytes.length);
+            assertEquals(payload, decode(RingBuildingControlPayload.CODEC, bytes));
+            assertTruncatedRejected(RingBuildingControlPayload.CODEC, payload);
+        }
+    }
+
     private static <T> byte[] encode(
             StreamCodec<RegistryFriendlyByteBuf, T> codec, T value) {
         RegistryFriendlyByteBuf buffer = buffer();

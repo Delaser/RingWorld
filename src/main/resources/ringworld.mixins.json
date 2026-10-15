@@ -59,7 +59,9 @@
     "DataLayerStorageMapMixin",
     "LayerLightSectionStorageMixin",
     "SkyLightSectionSnapshotMixin",
-    "BlockLightSectionSnapshotMixin"
+    "BlockLightSectionSnapshotMixin",
+    "BlockItemMixin",
+    "BucketItemMixin"
   ],
   "injectors": {
     "defaultRequire": 1

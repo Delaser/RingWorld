@@ -85,6 +85,10 @@ public final class RingTerrainAtlasServer {
         dispatcher.register(Commands.literal("ringworld")
                         .requires(source -> source.hasPermission(2))
                         .then(generationRate)
+                        .then(Commands.literal("building").then(Commands.literal("outside")
+                                .then(Commands.literal("on").executes(c -> outsideBuilding(c.getSource(), true)))
+                                .then(Commands.literal("off").executes(c -> outsideBuilding(c.getSource(), false)))
+                                .then(Commands.literal("show").executes(c -> outsideBuilding(c.getSource(), null)))))
                         .then(Commands.literal("atlas")
                                 .then(Commands.literal("status").executes(context -> {
                                     ServerLevel world = context.getSource().getServer().getLevel(Level.OVERWORLD);
@@ -130,6 +134,39 @@ public final class RingTerrainAtlasServer {
                 + RingAtlasPregenerationService.chunkGenerationRate(world)
                 + ". Existing requests finish normally. Setting lasts until the world closes."), rate != null);
         return 1;
+    }
+
+    private static int outsideBuilding(CommandSourceStack source, Boolean enabled) {
+        ServerLevel world = source.getServer().getLevel(Level.OVERWORLD);
+        if (world == null) return 0;
+        if (enabled != null) {
+            dev.ringworld.world.RingBuildingSettings.get(world).setOutsideBuilding(enabled);
+            for (ServerPlayer player : source.getServer().getPlayerList().getPlayers()) sendBuildingSettings(player);
+        }
+        source.sendSuccess(() -> Component.literal("RingWorld outside building: "
+                + (dev.ringworld.world.RingBuildingSettings.get(world).outsideBuilding() ? "on" : "off")
+                + (Boolean.FALSE.equals(enabled) ? ". Existing builds are kept." : ".")), enabled != null);
+        return 1;
+    }
+
+    public static void sendBuildingSettings(ServerPlayer player) {
+        ServerLevel world = player.level().getServer().getLevel(Level.OVERWORLD);
+        if (world == null) return;
+        var payload = new dev.ringworld.net.RingBuildingSettingsPayload(
+                dev.ringworld.world.RingWorldSettings.get(world).layoutFingerprint(),
+                dev.ringworld.world.RingBuildingSettings.get(world).outsideBuilding(), canControl(player));
+        if (transport.canSend(player, dev.ringworld.net.RingBuildingSettingsPayload.ID)) transport.send(player, payload);
+    }
+
+    public static void controlBuilding(ServerPlayer player, long fingerprint, boolean enabled) {
+        ServerLevel world = player.level().getServer().getLevel(Level.OVERWORLD);
+        if (world == null || player.level().dimension() != Level.OVERWORLD) return;
+        if (dev.ringworld.world.RingWorldSettings.get(world).layoutFingerprint() != fingerprint || !canControl(player)) {
+            sendBuildingSettings(player);
+            return;
+        }
+        dev.ringworld.world.RingBuildingSettings.get(world).setOutsideBuilding(enabled);
+        for (ServerPlayer viewer : world.getServer().getPlayerList().getPlayers()) sendBuildingSettings(viewer);
     }
 
     private static int querySky(CommandSourceStack source) {
@@ -264,6 +301,7 @@ public final class RingTerrainAtlasServer {
         RingTerrainAtlas atlas;
         try { atlas = RingAtlasPregenerationService.atlas(overworld); }
         catch (IllegalStateException ignored) { return; }
+        sendBuildingSettings(player);
         transport.send(player, new RingTerrainAtlasMetadataPayload(atlas.worldHash(), atlas.sampleStep(),
                 atlas.columns(), atlas.rows(), RingTerrainAtlas.TILE_SIZE, atlas.presentCount(), atlas.isComplete(),
                 atlas.revision()));
@@ -535,6 +573,7 @@ public final class RingTerrainAtlasServer {
         AtlasPregenerationStatus status = new AtlasPregenerationStatus(atlas.worldHash(),
                 atlas.geometry().circumferenceBlocks(), atlas.geometry().widthBlocks(), RingTerrainAtlas.FORMAT_VERSION,
                 atlas.sampleStep(), chunks, atlas.presentChunkCount(), progress, canControl(player), message);
+        sendBuildingSettings(player);
         transport.send(player, new RingAtlasPregenerationStatusPayload(status));
         ProgressObserver observer = PROGRESS_OBSERVERS.get(player.getUUID());
         if (observer != null && observer.world == world) {

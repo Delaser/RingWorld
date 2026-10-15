@@ -28,6 +28,9 @@ public final class ClientRingState {
     private static volatile int terrainNoiseMapping;
     private static volatile int settingsFormatVersion;
     private static volatile RingWallStyle wallStyle = RingWallStyle.LEGACY;
+    private static volatile boolean outsideBuilding = true;
+    private static volatile boolean canControlBuilding;
+    private static volatile long buildingSettingsUpdates;
     private static volatile RingSkyProfile skyProfile = RingSkyProfile.DEFAULT;
     private static volatile RingWorldGenerationSettings generationSettings =
             RingWorldGenerationSettings.DEFAULT;
@@ -158,6 +161,15 @@ public final class ClientRingState {
     public static int terrainNoiseMapping() { return terrainNoiseMapping; }
     public static int settingsFormatVersion() { return settingsFormatVersion; }
     public static RingWallStyle wallStyle() { return wallStyle; }
+    public static boolean outsideBuilding() { return outsideBuilding; }
+    public static boolean canControlBuilding() { return canControlBuilding; }
+    static long buildingSettingsUpdates() { return buildingSettingsUpdates; }
+    public static void setBuildingSettings(dev.ringworld.net.RingBuildingSettingsPayload payload) {
+        if (geometry == null || payload.fingerprint() != layoutFingerprint) return;
+        outsideBuilding = payload.enabled();
+        canControlBuilding = payload.canControl();
+        buildingSettingsUpdates = Math.incrementExact(buildingSettingsUpdates);
+    }
     public static RingSkyProfile skyProfile() { return skyProfile; }
     public static RingWorldGenerationSettings generationSettings() { return generationSettings; }
     public static long generatorSeed() { return generatorSeed; }
@@ -322,6 +334,7 @@ public final class ClientRingState {
                 && terrainNoiseMapping == 0
                 && settingsFormatVersion == 0
                 && wallStyle.equals(RingWallStyle.LEGACY)
+                && outsideBuilding && !canControlBuilding && buildingSettingsUpdates == 0L
                 && skyProfile.equals(RingSkyProfile.DEFAULT)
                 && generationSettings.equals(RingWorldGenerationSettings.DEFAULT)
                 && generatorSeed == 0L
@@ -415,6 +428,9 @@ public final class ClientRingState {
         settingsFormatVersion = 0;
         wallStyle = RingWallStyle.LEGACY;
         skyProfile = RingSkyProfile.DEFAULT;
+        outsideBuilding = true;
+        canControlBuilding = false;
+        buildingSettingsUpdates = 0L;
         generationSettings = RingWorldGenerationSettings.DEFAULT;
         layoutFingerprint = 0L;
         generatorSeed = 0L;

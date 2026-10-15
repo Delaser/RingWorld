@@ -3,6 +3,7 @@ package dev.ringworld.mixin;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.server.RingWorldServer;
 import dev.ringworld.world.RingChunkCoordinates;
+import dev.ringworld.world.RingChunkFilter;
 import dev.ringworld.world.RingEntityTracking;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingWorldConfig;
@@ -70,9 +71,12 @@ abstract class ServerEntityTrackerMixin {
         int canonicalChunkX = RingChunkCoordinates.wrapChunkX(chunkX, geometry);
         boolean canonicalChunkWatched =
                 player.getChunkTrackingView().contains(canonicalChunkX, chunkZ);
+        boolean exteriorChunkWatched = geometry.isExteriorChunkZ(chunkZ)
+                && player.getChunkTrackingView() instanceof RingChunkFilter filter
+                && filter.containsEntity(canonicalChunkX, chunkZ);
         boolean remainPaired = RingEntityTracking.shouldRemainPaired(
-                false, seenBy.contains(player.connection), canonicalChunkWatched);
-        if (remainPaired && RingWorldConfig.load().testMode()) {
+                false, seenBy.contains(player.connection), canonicalChunkWatched, exteriorChunkWatched);
+        if (remainPaired && !exteriorChunkWatched && RingWorldConfig.load().testMode()) {
             RingWorldMod.LOGGER.info(
                     "[multiplayer] preserved pending entity pairing id={} type={} canonicalChunk={},{} player={}",
                     entity.getId(), entity.getType(), canonicalChunkX, chunkZ,

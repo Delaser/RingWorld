@@ -108,3 +108,55 @@ Build/unit checks pass (Fabric 579 / NeoForge 602; zero failures, errors or
 skips); native packaged, real scheduled-durability, allocation/GC and controlled
 Large-world acceptance remain pending. These counts should be reconciled with
 the XML receipts if more cases are added before final qualification.
+
+## P4: exterior building and visibility (in progress)
+
+Player block/bucket placement now uses a separately persisted default-on policy,
+with both bed halves checked before mutation. The native SavedData factory keeps
+terrain settings and layout hashes unchanged. Both loaders register the identical
+building-settings/control wire records, reject control before acknowledgement,
+validate the current fingerprint and owner/operator authority, broadcast policy,
+and refresh permission snapshots with observed Atlas status. Client prediction
+uses the matching layout's policy and resets raw policy/permission state on
+teardown. The map gains a World page and the operator command is
+`/ringworld building outside on|off|show`.
+
+Periodic chunk/entity watching now includes nearby exterior builds within the
+ordinary distance window. Terrain generation and Atlas coverage retain their
+finite-Z guards. The legacy traversal seed no longer clamps an exterior camera
+to the rim because its actual chunk is streamed. The private legacy underlay
+coverage proof still excludes the exterior; it must not gain exterior Atlas LOD.
+Build, UI and real multiplayer placement/visibility acceptance are pending.
+
+### P2/P3 packaged functional checkpoint
+
+All fourteen official-loader dedicated phases pass at source `44cf94a`:
+fresh generation/reopen, fixed-eight-request clean interruption/resume/reopen,
+and copied format-10 visual-cache rebuild/reopen, on Fabric and NeoForge.
+Each complete phase has all 262,144 durable cells; interrupted phases have a
+strictly partial durable checkpoint and normal all-dimension shutdown. Complete
+reopens admit no requests and preserve cache bytes. Upgrade checks preserve the
+saved-settings values and layout fingerprint while rebuilding Atlas identity.
+These checks do not assert byte-identical region files or exhaustive block-state
+migration coverage. The complete gameplay/upgrade suite remains required.
+
+Every launch also passes the real light-storage probe: Overworld block/sky maps
+use partitioned snapshots and Nether/End block maps remain vanilla. Logs have
+no chunk-save failures. Evidence is `.codex-tmp/b14a4/results.json`, fourteen
+hash-bound process logs, retained Atlas/settings files and independent readers.
+The compiled source archive was compared against `44cf94a` (normalizing text
+line endings); jars are retained alongside their hashes. This is diagnostic
+functional evidence, not the final clean/pushed frozen acceptance matrix.
+
+The earlier `.codex-tmp/b14a3` first launch completed normally but its harness
+expected six light stores rather than vanilla's four; `FAILED.json` records
+that harness error. The corrected fourteen-phase run is fresh, not a relabelled
+PASS over the failed cancellation attempt.
+
+P4 build/unit checks pass on both loaders (Fabric 585 / NeoForge 608). The
+expanded real-client fixture adds World On/Off/restored captures using real
+widgets and policy payloads, waits for a fresh authority snapshot after a stale
+fingerprint request, and retains all older generation/handoff/revision/teardown
+assertions. Its revision marker is now stone: Atlas 11 intentionally omits a
+qualifying floating manufactured gold block. Both Gradle verifiers require the
+new policy marker and three decodable captures. Real-client execution is next.

@@ -2761,6 +2761,14 @@ tasks.register('verifyNeoForgeAtlasUiClient') {
         }
         rootProject.ext.requirePartialAtlasHandoff(
                 logFile, 'NeoForge Atlas UI client')
+        if (!log.contains('[atlas-ui-test] building-policy widgets=on-off-on staleFingerprint=rejected')) {
+            throw new GradleException("Atlas UI did not verify the World-page building policy")
+        }
+        ['on', 'off', 'restored'].each { state ->
+            rootProject.ext.requireReadablePng(new File(neoForgeAtlasUiRun, "screenshots/atlas-ui-02-world-${state}.png"),
+                    'Atlas UI World page')
+        }
+
         (1..11).each { index ->
             def prefix = String.format('atlas-ui-%02d-', index)
             if (fileTree(new File(neoForgeAtlasUiRun, 'screenshots')).matching { include prefix + '*.png' }.isEmpty()) {

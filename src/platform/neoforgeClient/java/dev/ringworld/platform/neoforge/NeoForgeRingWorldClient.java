@@ -172,6 +172,8 @@ public final class NeoForgeRingWorldClient {
 
     private static void handleClientPayload(CustomPacketPayload payload, IPayloadContext context) {
         if (payload instanceof RingSettingsPayload settings) handleSettings(settings, context);
+        else if (payload instanceof dev.ringworld.net.RingBuildingSettingsPayload building)
+            handleBuildingSettings(building, context);
         else if (payload instanceof RingSkyProfilePayload sky) handleSkyProfile(sky, context);
         else if (payload instanceof RingTerrainAtlasMetadataPayload metadata) handleAtlasMetadata(metadata, context);
         else if (payload instanceof RingTerrainAtlasTilePayload tile) handleAtlasTile(tile, context);
@@ -179,6 +181,11 @@ public final class NeoForgeRingWorldClient {
         else if (payload instanceof RingTerrainPreviewPayload preview) handleTerrainPreview(preview, context);
         else if (payload instanceof RingAtlasPregenerationStatusPayload status) handleAtlasStatus(status, context);
         else context.disconnect(Component.literal("Unknown RingWorld client payload."));
+    }
+
+    private static void handleBuildingSettings(dev.ringworld.net.RingBuildingSettingsPayload payload,
+                                               IPayloadContext context) {
+        context.enqueueWork(() -> ClientRingState.setBuildingSettings(payload));
     }
 
     private static void handleSettings(RingSettingsPayload payload, IPayloadContext context) {
@@ -226,7 +233,8 @@ public final class NeoForgeRingWorldClient {
     }
 
     private static boolean requiredServerChannelsAvailable() {
-        return RingClientPayloadTransport.canSend(dev.ringworld.net.RingSettingsAckPayload.ID)
+        return RingClientPayloadTransport.canSend(dev.ringworld.net.RingBuildingControlPayload.ID)
+                && RingClientPayloadTransport.canSend(dev.ringworld.net.RingSettingsAckPayload.ID)
                 && RingClientPayloadTransport.canSend(RingTerrainAtlasRequestPayload.ID)
                 && RingClientPayloadTransport.canSend(
                         dev.ringworld.net.RingAtlasPregenerationStatusRequestPayload.ID)

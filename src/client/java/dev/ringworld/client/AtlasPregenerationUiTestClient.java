@@ -49,6 +49,9 @@ public final class AtlasPregenerationUiTestClient {
     private int stage;
     private int ticks;
     private boolean capturedInitial;
+    private int buildingStage;
+    private long buildingUpdatesBeforeStaleRequest;
+    private int buildingStaleRequestTick;
     private boolean displayTabRequested, displayTabCaptured, technicalRequested, technicalCaptured;
     private boolean finalCaptureSaved;
     private long revisionBeforeEdit;
@@ -192,6 +195,10 @@ public final class AtlasPregenerationUiTestClient {
 
                     capture(client, "atlas-ui-02-map-initial", false);
                     capturedInitial = true;
+                }
+                if (buildingStage < 7) {
+                    if (!exerciseBuildingPolicy(client, screen)) return false;
+                    return true;
                 }
                 if (!displayTabRequested) {
                     screen.openDisplayForAutomation();
@@ -434,7 +441,7 @@ public final class AtlasPregenerationUiTestClient {
                 editedBlockZ = atlas.geometry().minWidthZ() + editedCellRow * step + step / 2;
                 revisionBeforeEdit = atlas.revision();
                 client.getConnection().sendCommand("setblock " + editedBlockX + " 200 " + editedBlockZ
-                        + " minecraft:gold_block");
+                        + " minecraft:stone");
                 stage++;
             }
             case 16 -> {
@@ -474,6 +481,67 @@ public final class AtlasPregenerationUiTestClient {
      * acceptance of the format-3 acknowledgement; this client proof binds the
      * resulting state to the fresh mapping-4 world actually being rendered.
      */
+    /** Actual widgets and payload round trips; a stale layout cannot change the world. */
+    private boolean exerciseBuildingPolicy(Minecraft client, RingWorldMapScreen screen) {
+        switch (buildingStage) {
+            case 0 -> {
+                if (!ClientRingState.canControlBuilding() || ClientRingState.buildingSettingsUpdates() == 0) return true;
+                if (!ClientRingState.outsideBuilding()) return fail(client, "new world outside-building default is off");
+                screen.openWorldForAutomation();
+                buildingStage++; arm();
+            }
+            case 1 -> {
+                capture(client, "atlas-ui-02-world-on", false);
+                pressBuildingToggle(screen);
+                buildingStage++; arm();
+            }
+            case 2 -> {
+                if (ClientRingState.outsideBuilding()) return true;
+                screen.openWorldForAutomation();
+                buildingStage++; arm();
+            }
+            case 3 -> {
+                capture(client, "atlas-ui-02-world-off", false);
+                buildingUpdatesBeforeStaleRequest = ClientRingState.buildingSettingsUpdates();
+                buildingStaleRequestTick = ticks;
+                RingClientPayloadTransport.send(new dev.ringworld.net.RingBuildingControlPayload(
+                        ClientRingState.layoutFingerprint() ^ 1L, true));
+                buildingStage++; arm();
+            }
+            case 4 -> {
+                if (ClientRingState.buildingSettingsUpdates() <= buildingUpdatesBeforeStaleRequest) return true;
+                if (ticks - buildingStaleRequestTick < 20) return true;
+                if (ClientRingState.outsideBuilding()) return fail(client, "stale fingerprint changed outside-building policy");
+                pressBuildingToggle(screen);
+                buildingStage++; arm();
+            }
+            case 5 -> {
+                if (!ClientRingState.outsideBuilding()) return true;
+                screen.openWorldForAutomation();
+                buildingStage++; arm();
+            }
+            case 6 -> {
+                capture(client, "atlas-ui-02-world-restored", false);
+                RingWorldMod.LOGGER.info("[atlas-ui-test] building-policy widgets=on-off-on staleFingerprint=rejected");
+                screen.openGenerationForAutomation();
+                buildingStage++; arm();
+            }
+            default -> throw new IllegalStateException("unexpected building fixture stage");
+        }
+        return true;
+    }
+
+    private static void pressBuildingToggle(RingWorldMapScreen screen) {
+        for (var child : screen.children()) {
+            if (child instanceof Button button && button.getMessage().getString().startsWith("Outside building:")) {
+                if (!button.active) throw new IllegalStateException("owner outside-building button is disabled");
+                button.onPress();
+                return;
+            }
+        }
+        throw new IllegalStateException("outside-building button is missing");
+    }
+
     private boolean verifyClientReady(Minecraft client) {
         if (client.level == null || client.getSingleplayerServer() == null || renderedFrames == 0) {
             return false;

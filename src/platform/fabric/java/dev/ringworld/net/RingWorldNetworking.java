@@ -25,6 +25,8 @@ public final class RingWorldNetworking {
     private RingWorldNetworking() { }
 
     public static void registerPayloads() {
+        PayloadTypeRegistry.playS2C().register(RingBuildingSettingsPayload.ID, RingBuildingSettingsPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(RingBuildingControlPayload.ID, RingBuildingControlPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(RingSettingsPayload.ID, RingSettingsPayload.CODEC);
         PayloadTypeRegistry.playS2C().register(
                 RingSkyProfilePayload.ID, RingSkyProfilePayload.CODEC);
@@ -46,6 +48,11 @@ public final class RingWorldNetworking {
     }
 
     public static void registerServer() {
+        ServerPlayNetworking.registerGlobalReceiver(RingBuildingControlPayload.ID, (payload, context) ->
+                context.server().execute(() -> {
+                    if (!requireAcknowledged(context.player())) return;
+                    RingTerrainAtlasServer.controlBuilding(context.player(), payload.fingerprint(), payload.enabled());
+                }));
         ServerPlayNetworking.registerGlobalReceiver(RingSettingsAckPayload.ID, (payload, context) ->
                 context.server().execute(() -> validateAcknowledgement(payload, context.player().connection)));
         ServerPlayNetworking.registerGlobalReceiver(RingMultiplayerTestPayload.ID, (payload, context) -> {

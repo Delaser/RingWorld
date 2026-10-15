@@ -160,7 +160,8 @@ public final class RingWorldClient implements ClientModInitializer {
                         return;
                     }
                     long fingerprint = RingSettingsHandshake.fingerprintFor(payload);
-                    if (!RingClientPayloadTransport.canSend(RingSettingsAckPayload.ID)
+                    if (!RingClientPayloadTransport.canSend(dev.ringworld.net.RingBuildingControlPayload.ID)
+                            || !RingClientPayloadTransport.canSend(RingSettingsAckPayload.ID)
                             || !RingClientPayloadTransport.canSend(RingTerrainAtlasRequestPayload.ID)
                             || !RingClientPayloadTransport.canSend(RingAtlasPregenerationStatusRequestPayload.ID)
                             || !RingClientPayloadTransport.canSend(RingAtlasPregenerationControlPayload.ID)) {
@@ -180,6 +181,8 @@ public final class RingWorldClient implements ClientModInitializer {
                             payload.formatVersion(), fingerprint);
                     RingClientPayloadTransport.send(RingSettingsHandshake.acknowledgementFor(payload));
                 });
+        ClientPlayNetworking.registerGlobalReceiver(dev.ringworld.net.RingBuildingSettingsPayload.ID,
+                (payload, context) -> ClientRingState.setBuildingSettings(payload));
         ClientPlayNetworking.registerGlobalReceiver(RingSkyProfilePayload.ID, (payload, context) -> {
                     try {
                         ClientRingState.setSkyProfile(payload.profile());

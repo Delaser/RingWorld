@@ -8,7 +8,7 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 public final class RingProtocolCapabilities {
     private static final List<CustomPacketPayload.Type<? extends CustomPacketPayload>>
             REQUIRED_CLIENTBOUND = List.of(
-                    RingSettingsPayload.ID, RingSkyProfilePayload.ID, RingTerrainPreviewPayload.ID);
+                    RingSettingsPayload.ID, RingSkyProfilePayload.ID, RingBuildingSettingsPayload.ID, RingTerrainPreviewPayload.ID);
 
     private RingProtocolCapabilities() { }
 

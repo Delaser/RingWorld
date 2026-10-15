@@ -11,6 +11,8 @@ import dev.ringworld.net.RingSettingsAckPayload;
 import dev.ringworld.net.RingSettingsHandshake;
 import dev.ringworld.net.RingSettingsPayload;
 import dev.ringworld.net.RingSkyProfilePayload;
+import dev.ringworld.net.RingBuildingSettingsPayload;
+import dev.ringworld.net.RingBuildingControlPayload;
 import dev.ringworld.net.RingTerrainAtlasMetadataPayload;
 import dev.ringworld.net.RingTerrainAtlasRequestPayload;
 import dev.ringworld.net.RingTerrainAtlasRevisionPayload;
@@ -44,6 +46,10 @@ public final class NeoForgeRingWorldNetworking {
 
     public static void registerPayloads(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar(CHANNEL_VERSION);
+        registrar.playToClient(RingBuildingSettingsPayload.ID, RingBuildingSettingsPayload.CODEC,
+                NeoForgeRingWorldNetworking::handleClientPayload);
+        registrar.playToServer(RingBuildingControlPayload.ID, RingBuildingControlPayload.CODEC,
+                NeoForgeRingWorldNetworking::handleBuildingControl);
         registrar.playToClient(RingSettingsPayload.ID, RingSettingsPayload.CODEC,
                 NeoForgeRingWorldNetworking::handleClientPayload);
         registrar.playToClient(RingSkyProfilePayload.ID, RingSkyProfilePayload.CODEC,
@@ -195,6 +201,14 @@ public final class NeoForgeRingWorldNetworking {
         if (context.player() instanceof ServerPlayer player && requireAcknowledged(player, context)) {
             RingTerrainAtlasServer.controlPregeneration(player, payload.worldHash(), payload.action());
         }
+    }
+
+    private static void handleBuildingControl(RingBuildingControlPayload payload, IPayloadContext context) {
+        context.enqueueWork(() -> {
+            if (context.player() instanceof ServerPlayer player && requireAcknowledged(player, context)) {
+                RingTerrainAtlasServer.controlBuilding(player, payload.fingerprint(), payload.enabled());
+            }
+        });
     }
 
     private static boolean requireAcknowledged(ServerPlayer player, IPayloadContext context) {

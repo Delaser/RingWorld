@@ -17,10 +17,10 @@ class RingProtocolIdentityTest {
     }
 
     @Test
-    void allThreeClientboundChannelsAreRequiredBeforeHandshake() {
+    void allFourClientboundChannelsAreRequiredBeforeHandshake() {
         var required = RingProtocolCapabilities.requiredClientbound();
         assertEquals(java.util.List.of(
-                RingSettingsPayload.ID, RingSkyProfilePayload.ID, RingTerrainPreviewPayload.ID),
+                RingSettingsPayload.ID, RingSkyProfilePayload.ID, RingBuildingSettingsPayload.ID, RingTerrainPreviewPayload.ID),
                 required);
         assertTrue(RingProtocolCapabilities.supportsRequiredClientbound(required::contains));
         for (var missing : required) {
