@@ -2450,3 +2450,20 @@ candidate runtime evidence.
 | Proxy brighter/greener at night | `Sampler2` lightmap binding and full-sky texel coordinates in `ring_surface.fsh` |
 | Rim collides but is invisible | Boundary `BuiltChunk.shouldBuild`, exterior-neighbour exception, section rebuild |
 | Server hitching | Atlas generation future and pending chunk tasks |
+
+### 1.21.1 / 1.4 cloud-camera review
+
+The packaged graphical adapters complete 26 native cases on each loader from
+the resumed `cf5fe1c` candidate and explicitly retained earlier evidence.
+Manual review still rejects the cloud fixture's below/inside views: at its
+fixed X=1192 column, independently decoded source Anvil data contains stone at
+eye Y=88 and dirt at Y=106. PNG decoding and `CAPTURE COMPLETE` cannot certify
+that scene. Preserve the original terminals and captures.
+
+The repaired cloud-only fixture selects an open column using the authoritative
+Atlas and native world heightmap, then checks all three player volumes on the
+server. Before each of the six screenshots it requires a loaded client chunk,
+an air eye block, collision clearance, the expected eye height/column and
+Creative flight. The packaged driver requires ordered native `[cloud-camera]`
+proofs for both Fancy and Fast. Re-run only clouds on both loaders and inspect
+the actual images. Native validation of this repair is pending.

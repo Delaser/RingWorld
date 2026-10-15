@@ -3,10 +3,29 @@ from pathlib import Path
 import tempfile
 from unittest.mock import Mock, patch
 
-from scripts.run_backport_client_diagnostics import cases, required_native_captures, build_identity_arguments, normalize_profile_options, validate_cache_observations, wait_for_native_exit
+from scripts.run_backport_client_diagnostics import cases, required_native_captures, build_identity_arguments, normalize_profile_options, validate_cache_observations, wait_for_native_exit, validate_cloud_cameras
 
 
 class BackportClientRecipeTests(unittest.TestCase):
+    def test_streaming_native_and_verifier_share_fabulous_policy(self):
+        recipe = next(case for case in cases() if case.name == 'streaming')
+        self.assertEqual('fabulous', recipe.properties['projectionGraphicsMode'])
+        self.assertEqual(recipe.properties['projectionGraphicsMode'], recipe.gradle_properties['ProjectionGraphicsMode'])
+
+    def test_cloud_camera_proof_rejects_occluded_or_displaced_native_views(self):
+        lines = []
+        for stage in range(6):
+            height = 104 + (-16, 2, 16)[stage % 3]
+            lines.append(f'[cloud-camera] stage={stage} mode={"FANCY" if stage < 3 else "FAST"} base=104 x=512.5 eyeY={height} z=0.5 expectedEyeY={height} serverVolumeClear=true clientEyeAir=true clientVolumeClear=true flying=true')
+        valid = '\n'.join(lines)
+        self.assertEqual(6, len(validate_cloud_cameras(valid)))
+        for wrong in [valid.replace('clientEyeAir=true', 'clientEyeAir=false', 1),
+                      valid.replace('eyeY=88 ', 'eyeY=88.2 ', 1),
+                      valid.replace('mode=FAST', 'mode=FANCY', 1),
+                      valid.replace('x=512.5', 'x=528.5', 1),
+                      valid.replace('eyeY=88 ', 'eyeY=NaN ', 1), '\n'.join(lines[:-1])]:
+            with self.assertRaises(RuntimeError): validate_cloud_cameras(wrong)
+
     def test_dead_capture_player_fails_immediately_without_waiting_for_exit(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / 'process.log'

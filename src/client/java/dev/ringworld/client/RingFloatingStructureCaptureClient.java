@@ -14,6 +14,8 @@ import net.minecraft.world.entity.RelativeMovement;
 import net.minecraft.world.level.GameType;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.level.levelgen.Heightmap;
 
 /** Disposable native-game study of real exterior building versus finite Atlas coverage. */
 public final class RingFloatingStructureCaptureClient {
@@ -22,6 +24,8 @@ public final class RingFloatingStructureCaptureClient {
     private boolean opening, creating, capturePending;
     private boolean reviewOpening, reviewReady;
     private CompletableFuture<Void> setup;
+    private double cloudCaptureX = Double.NaN;
+    private boolean cloudCameraProofLogged;
 
     public static boolean tickIfEnabled(Minecraft client) {
         if (Boolean.getBoolean("ringworld.captureAtlasWalls")) return INSTANCE.captureWalls(client);
@@ -65,6 +69,7 @@ public final class RingFloatingStructureCaptureClient {
             return true;
         }
         if (settle == 0) {
+            cloudCameraProofLogged = false;
             client.options.renderDistance().set(10);
             RingClientLodTuning.select(dev.ringworld.world.RingLodQuality.values()[!clouds && stage < 3 ? stage : 1]);
             if (altitude || clouds) {
@@ -81,10 +86,39 @@ public final class RingFloatingStructureCaptureClient {
                 server.execute(() -> {
                     try {
                         var player = server.getPlayerList().getPlayers().get(0);
+                        var world = server.overworld();
+                        if (clouds) {
+                            var source = server.createCommandSourceStack().withSuppressedOutput();
+                            for (String command : new String[]{"time set 6000", "weather clear",
+                                    "gamerule doDaylightCycle false", "gamerule doWeatherCycle false"}) {
+                                server.getCommands().performPrefixedCommand(source, command);
+                            }
+                            double lowestFeet = cloudBase - 16.0 - player.getEyeHeight();
+                            var serverAtlas = dev.ringworld.server.RingAtlasPregenerationService.atlas(world);
+                            if (!Double.isFinite(cloudCaptureX)) {
+                                for (int candidate = 0; candidate < Math.min(128, geometry.circumferenceBlocks() / 16); candidate++) {
+                                    int x = geometry.wrapBlockX(geometry.circumferenceBlocks() / 4 + candidate * 16);
+                                    if (serverAtlas.sample(x + 0.5, 0.5).height() >= lowestFeet - 4) continue;
+                                    if (world.getHeight(Heightmap.Types.WORLD_SURFACE, x, 0) >= lowestFeet - 2) continue;
+                                    cloudCaptureX = x + 0.5;
+                                    break;
+                                }
+                                if (!Double.isFinite(cloudCaptureX)) throw new IllegalStateException("No clear native cloud-capture column below deck");
+                            }
+                            for (double eyeOffset : new double[]{-16, 2, 16}) {
+                                double feet = cloudBase + eyeOffset - player.getEyeHeight();
+                                AABB bounds = new AABB(cloudCaptureX - 0.31, feet, 0.19,
+                                        cloudCaptureX + 0.31, feet + player.getBbHeight(), 0.81);
+                                if (!world.noCollision(player, bounds)
+                                        || !world.getBlockState(BlockPos.containing(cloudCaptureX, cloudBase + eyeOffset, 0.5)).isAir()) {
+                                    throw new IllegalStateException("Cloud camera column intersects native terrain");
+                                }
+                            }
+                        }
                         player.setGameMode(GameType.CREATIVE);
                         player.getAbilities().flying = true;
                         player.onUpdateAbilities();
-                        player.teleportTo(server.overworld(), 1192.649, y, 0.181,
+                        player.teleportTo(world, clouds ? cloudCaptureX : 1192.649, y, clouds ? 0.5 : 0.181,
                                 Set.<RelativeMovement>of(), -91.4F, clouds ? -12F : 78.3F);
                         setup.complete(null);
                     } catch (Throwable failure) { setup.completeExceptionally(failure); }
@@ -99,6 +133,23 @@ public final class RingFloatingStructureCaptureClient {
         }
         settle++;
         if (settle < 160 || !dev.ringworld.client.render.RingSurfaceTextureRenderer.displayReady()) return true;
+        if (clouds) {
+            int base = dev.ringworld.world.RingCloudBounds.baseHeight(client.level.getMinBuildHeight(), ClientRingState.wallHeightBlocks());
+            double expectedEyeY = base + (stage % 3 == 0 ? -16 : stage % 3 == 1 ? 2 : 16);
+            Vec3 eye = client.gameRenderer.getMainCamera().getPosition();
+            BlockPos eyeBlock = BlockPos.containing(eye);
+            if (!client.level.hasChunkAt(eyeBlock)) return true;
+            if (!client.level.getBlockState(eyeBlock).isAir() || !client.level.noCollision(client.player)
+                    || Math.abs(eye.x - cloudCaptureX) > 0.125 || Math.abs(eye.y - expectedEyeY) > 0.125
+                    || Math.abs(eye.z - 0.5) > 0.125 || !client.player.getAbilities().flying) {
+                throw new IllegalStateException("Native cloud capture camera is obstructed, displaced, or not flying");
+            }
+            if (!cloudCameraProofLogged) {
+                cloudCameraProofLogged = true;
+                RingWorldMod.LOGGER.info("[cloud-camera] stage={} mode={} base={} x={} eyeY={} z={} expectedEyeY={} serverVolumeClear=true clientEyeAir=true clientVolumeClear=true flying=true",
+                        stage, client.options.cloudStatus().get(), base, eye.x, eye.y, eye.z, expectedEyeY);
+            }
+        }
         capturePending = true;
         String name = clouds ? "cloud-altitude-" + (stage < 3 ? "fancy-" : "fast-")
                 + (stage % 3 == 0 ? "below" : stage % 3 == 1 ? "inside" : "above")

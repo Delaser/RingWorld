@@ -10,7 +10,9 @@ from __future__ import annotations
 import argparse
 from dataclasses import dataclass, field
 import json
+import math
 import os
+import re
 from pathlib import Path
 import shutil
 import subprocess
@@ -100,7 +102,10 @@ def cases() -> list[Case]:
                        '[projection-capture] result=true, streaming fallback capture complete', 1,
                        verifier='verifyProductionStreamingProjectionClient', master='medium',
                        properties={'projectionWorld': 'Input', 'projectionStreamingEdge': 'true',
-                                   'projectionViewDistanceChunks': '16'}, raw_frames=1))
+                                   'projectionViewDistanceChunks': '16', 'projectionGraphicsMode': 'fabulous',
+                                   'projectionEnvironment': 'noon'},
+                       gradle_properties={'ProjectionGraphicsMode': 'fabulous', 'ProjectionEnvironment': 'noon',
+                                          'ProjectionViewDistanceChunks': '16'}, raw_frames=1))
     for environment, distance in [('noon', 16), ('rain', 28)]:
         result.append(Case('fabulous-' + environment, 'run-production-projection', 'captureRingProjection',
                            '[projection-capture] result=true, captures complete', 3,
@@ -116,6 +121,30 @@ def cases() -> list[Case]:
 def inventory(path: Path) -> list[dict]:
     return [{'path': p.relative_to(path).as_posix(), 'bytes': p.stat().st_size, 'sha256': digest(p)}
             for p in sorted(path.rglob('*')) if p.is_file()]
+
+
+def validate_cloud_cameras(text: str) -> list[tuple]:
+    number = r'([-+0-9.Ee]+)'
+    pattern = re.compile(r'\[cloud-camera\] stage=(\d+) mode=(FANCY|FAST) base=(-?\d+) x='
+                         + number + r' eyeY=' + number + r' z=' + number + r' expectedEyeY=' + number
+                         + r' serverVolumeClear=true clientEyeAir=true clientVolumeClear=true flying=true')
+    lines = [line for line in text.splitlines() if '[cloud-camera]' in line]
+    require(len(lines) == 6, 'Cloud captures require six actual unobstructed-camera observations')
+    observations = []
+    for stage, line in enumerate(lines):
+        match = pattern.search(line)
+        require(match is not None, 'Malformed or obstructed native cloud camera')
+        actual_stage, mode, base = int(match[1]), match[2], int(match[3])
+        x, eye_y, z, expected = map(float, match.group(4, 5, 6, 7))
+        require(actual_stage == stage and mode == ('FANCY' if stage < 3 else 'FAST')
+                and all(math.isfinite(v) for v in (x, eye_y, z, expected))
+                and expected == base + (-16, 2, 16)[stage % 3] and abs(eye_y - expected) <= .125,
+                'Cloud camera did not bind its actual altitude/mode')
+        require(not observations or (abs(x - observations[0][0]) <= .125
+                                     and abs(z - observations[0][2]) <= .125 and base == observations[0][3]),
+                'Cloud mode comparison changed camera column or deck')
+        observations.append((x, eye_y, z, base, mode))
+    return observations
 
 
 def required_native_captures(case: Case) -> set[str]:
@@ -339,6 +368,7 @@ def main() -> None:
                 require('[capture-player] initial Creative flight ready player=BackportTester alive=true' in text,
                         'Missing initial server-owned Creative flight proof')
             if case.verifier: gradle(case.verifier, 'verification.log')
+            if case.name == 'clouds': validate_cloud_cameras(text)
             screenshots = sorted((runtime / 'screenshots').glob('*.png'))
             require(len(screenshots) >= case.captures, 'Missing screenshots')
             require(required_native_captures(case) <= {p.name for p in screenshots},

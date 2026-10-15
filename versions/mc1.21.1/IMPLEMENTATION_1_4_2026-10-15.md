@@ -881,3 +881,28 @@ native reruns are required; this repair is not yet natively validated.
 The owner cancelled the twenty-minute scheduled follow-up. It is deleted;
 work continues in this chat under the instruction to finish 1.21.1 and prepare
 it for publishing. That instruction does not authorize uploading a release.
+
+### Resumed graphics and cloud-camera review
+
+The owner requested resuming at check 15. Fourteen completed Fabric cases and
+six dedicated gameplay/raid phases remain bound to their original `1e64438`
+source/jar hashes. Both `cf5fe1c` focused Creative suites pass noon, seam/rims-6
+and foliage; the remaining graphical cases then complete on both loaders.
+One streaming attempt launches Fancy while its verifier requires Fabulous.
+That failed attempt remains retained. An explicit matching Fabulous launch and
+unchanged verifier pass; the packaged recipe now binds both properties.
+
+All 26 graphical verifiers per loader pass, with a composite evidence index.
+The generated, undelivered 48-page PDF and 326-capture HTML review expose a
+cloud-fixture problem: its fixed X=1192 camera is inside stone below the cloud
+deck and dirt inside it. Independent original-source Anvil decoding confirms
+those blocks at Y=88/106. The native PASS records are retained but do not earn
+cloud visual acceptance. Other completed cases are preserved.
+
+The repair changes only the opt-in cloud setup: select a clear column using
+the server-owned Atlas and actual heightmap, verify all three native player
+volumes, and keep that column for all six Fancy/Fast captures. Each capture
+also requires actual client air/collision/position/flight proof. Terrain and
+cloud projection are not edited. Native dual-loader reruns and fresh image
+review remain pending. The screenshot packet will be refreshed after them;
+performance, soak, upgrade, native-close and formal acceptance remain separate.

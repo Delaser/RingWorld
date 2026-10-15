@@ -22,6 +22,8 @@ work across the join.
 > It does not claim an accepted 1.4 backport or a working 1.20.1 build yet.
 > Implementation is underway; the [1.4 implementation ledger](versions/mc1.21.1/IMPLEMENTATION_1_4_2026-10-15.md)
 > tracks the ordered port and its acceptance evidence.
+> Screenshot review is a separate gate: a completed capture can still be invalid
+> when its camera is inside terrain. The current cloud-camera repair is recorded there.
 
 ## What does it look like?
 

@@ -184,11 +184,21 @@ Do not publish or modify the public server under this build authorization.
 
 The [dual-version plan](docs/BACKPORT_1_4_DUAL_VERSION_PLAN_2026-10-15.md)
 audits published 1.4 source `1533878` against the local 1.3 checkpoint `8f1fe43`.
-The current 1.21.1 builds, 1,085 Java cases, both 26-capture creation gates and
+The initial 1.21.1 intake builds, 1,085 Java cases, both 26-capture creation gates and
 both 13-capture Atlas UI gates pass as fresh baseline evidence. They do not
 qualify 1.4. The owner confirmed the planned 1.20.1 Java 17 Fabric/Forge lane;
 it is a documented version-specific loader exception, not implemented support.
 The 1.21.1 target remains Fabric/NeoForge. Do not advertise either new port.
+
+The owner requested resuming at check 15, preserving completed evidence. Both
+loaders subsequently complete all 26 packaged graphical verifiers, but manual
+review finds the cloud fixture's lower two camera heights inside stone/dirt.
+Retain those original captures and diagnostic passes without crediting them as
+cloud visual acceptance. Repair and repeat only clouds on both loaders. Its
+fixture must choose a server-verified open column, retain one column for all
+six Fancy/Fast below/inside/above views, and prove actual client eye air,
+collision clearance, altitude and Creative flight before each screenshot.
+Do not clear terrain, change cloud projection, or relax readiness to get a pass.
 
 Before adding multi-request pregeneration, replace the current server-thread
 public `getChunkFuture` boundary: pinned 1.21.1 bytecode confirms it enters
