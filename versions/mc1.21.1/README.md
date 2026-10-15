@@ -26,6 +26,17 @@ recapture fairness fix. The separate 1.20.1 lane is planned, not implemented.
 Full acceptance retains all ten 26.x fixture families and adds explicit 1.4,
 upgrade, performance and soak checks. See the [audit record](MAINLINE_1_4_AUDIT_2026-10-15.md).
 
+The active development artifacts identify as `1.4.0-dev.1+mc1.21.1`; the
+1.3 results above are historical intake references. Current strict builds pass
+632 Fabric/common cases and 655 NeoForge cases. Both loaders pass the fresh
+two-client gameplay and persisted-raid cycle at `898781c`. The graphical rerun
+finds an uncontrolled sheep grass edit in the foliage fixture after its Atlas
+quiescence gate; the fixture now disables mob griefing and requires fresh
+dual-loader validation. The complete performance/soak and exact-artifact
+acceptance matrix remains pending. No stable 1.4 backport is published.
+
+## Historical feature handoffs
+
 The [mainline 1.3 development candidate](MAINLINE_1_3_IMPLEMENTATION_2026-10-02.md)
 ports the one-block Atlas, water/light contract, wall rendering, interaction
 corrections and unified UI to both loaders. It records the new builds and

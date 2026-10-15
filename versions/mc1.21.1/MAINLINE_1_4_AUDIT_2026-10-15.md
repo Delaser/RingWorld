@@ -1,5 +1,10 @@
 # Mainline 1.4 intake audit — 15 October 2026
 
+This is the historical intake record, including its unchanged 1.3 reference
+checks. Active 1.4 implementation and runtime findings are maintained in the
+[implementation ledger](IMPLEMENTATION_1_4_2026-10-15.md). Statements below
+about unimplemented features describe intake, not current development status.
+
 Full functionality, implementation order, support matrix and acceptance criteria:
 [dual-version plan](../../docs/BACKPORT_1_4_DUAL_VERSION_PLAN_2026-10-15.md).
 
@@ -87,7 +92,7 @@ adds seven required feature/reliability/performance families, with explicit
 measurement gates. Four proposed backport cells imply 40 + 28 required keys.
 These counts describe planning coverage, not completed runtime tests.
 
-## Current result
+## Result at intake
 
 The existing backport baseline is buildable and passes the bounded fresh checks
 above. Neither 1.4 backport has been implemented or accepted. 1.20.1 has no

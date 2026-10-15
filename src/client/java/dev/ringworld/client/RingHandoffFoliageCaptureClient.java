@@ -388,6 +388,10 @@ public final class RingHandoffFoliageCaptureClient {
                     // its explicit foliage edits still exercise live recaptures.
                     context.world().getGameRules().getRule(GameRules.RULE_RANDOMTICKING)
                             .set(0, context.server());
+                    // Sheep eating grass is an AI tick, not a random block tick.
+                    // Its valid Atlas recapture would invalidate the fixed snapshot.
+                    context.world().getGameRules().getRule(GameRules.RULE_MOBGRIEFING)
+                            .set(false, context.server());
                     context.player().teleportTo(context.world(), cameraX, CAMERA_Y, INITIAL_Z,
                             Set.<RelativeMovement>of(), CAMERA_YAW, 0.0F);
                     initialPlacementComplete = true;

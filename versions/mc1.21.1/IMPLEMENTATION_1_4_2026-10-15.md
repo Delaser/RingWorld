@@ -768,3 +768,42 @@ both clients. The loaded GLFW DLL exactly matches its pinned native-archive
 bytes (`affa7e54eb0dedce4a5721c327c1a16035edbbd039cd402e08107d6d2d55eb1a`).
 This is not an identical disconnected-server control and does not classify the
 earlier access violation; that investigation remains open.
+
+### Current-candidate gameplay and foliage isolation
+
+At `898781c`, both loaders pass the full two-client multiplayer matrix, raid
+arm/save, and raid reload through vanilla victory/Hero of the Village, including
+normal client exits and raw session teardown. Records are retained under
+`dist/qualification/b14-packaged-gameplay-isolated`.
+
+The subsequent Fabric graphical rerun passes floating Atlas, production
+lifecycle, different-layout switching, walls, altitude, clouds, all four
+production lighting environments, safe-small 6/12/28-chunk seam/rims, and the
+production seam/rims gate. It then fails foliage: the Atlas changes from
+revision 436 to 437 immediately after a 200-tick quiescent observation. The
+attempt saves all dimensions normally and remains FAIL under
+`dist/qualification/b14-packaged-clients-fabric-isolated/foliage`. NeoForge and
+the queued completion/report operators stop before dispatching dependent work.
+
+A separate, explicitly unqualified private overlay inserts only two conditional
+JDK stack traces into the Atlas service. Its fresh native reproduction identifies
+`EatBlockGoal`/sheep AI changing `(4194,63,46)` just after post-fixture quiescence,
+followed by revision 575 to 576 and the unchanged assertion failing. Pinned Tiny
+mappings identify Fabric `class_1345` as `EatBlockGoal`. An earlier bounded trace
+also sees underground scheduled lava changes; those are not asserted to cause
+the post-quiescence failure. Overlay source, class before/after bytes, hashes,
+control receipts, raw logs and failed world remain under
+`dist/qualification/b14-foliage-mutation-trace`. No overlay is a shipping or
+qualification artifact.
+
+The foliage fixture now disables mob griefing in its disposable copied world,
+alongside its existing zero random-tick speed. This prevents sheep AI from
+invalidating the fixed visual snapshot. Explicit foliage edits, live recapture,
+revision stability, streaming coverage and motion assertions remain intact.
+Fresh dual-loader foliage and exact-candidate regression evidence are required.
+
+The owner requested a screenshot report upon completion of 1.21.1 testing.
+The prepared PDF/HTML report generator requires current-candidate terminal/image
+hashes and complete dual-loader graphical/gameplay records. It does not generate
+a completed report from the interrupted queue. Performance/soak, the native
+manual-close investigation and moving wall/water review remain acceptance gates.
