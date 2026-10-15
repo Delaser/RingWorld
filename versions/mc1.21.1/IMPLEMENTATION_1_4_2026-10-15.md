@@ -432,3 +432,28 @@ native probe is still required before using this meter for performance gates.
 Fresh exterior diagnostics suppress the vanilla first-run tutorial overlay and
 detect abnormal client startup exits promptly. Earlier captures remain retained;
 their overlay is not evidence of a RingWorld layout defect.
+
+The inclusive meter's native late-hook proof passes on both official dedicated
+runtimes at `ef5e517`. Fabric's delayed hook is 100.959 ms, its vanilla stored
+sample 1.040 ms and its enclosing measured game work 102.316 ms. NeoForge's
+corresponding values are 100.871 / 5.100 / 106.332 ms. Raw samples, independent
+summaries and normal shutdown evidence are under
+`.codex-tmp/b14-inclusive-tick-probe/`. These deliberately stressed runs prove
+the measurement boundary only, not ordinary-play performance.
+
+NeoForge's corrected packaged profile now launches both real clients and passes
+placement/reopen. Its visibility run reaches stages 0–3, then times out waiting
+for client B's stage-4 render proof after returning from beyond tracking range;
+client A passes stage 4. The failure and clean save remain at
+`.codex-tmp/b14-exterior-neoforge-v3/visibility/`. Added dormant fixture logs
+retain the pending entity/render inventory and a screenshot without weakening
+the ten-frame assertions. A visibility-only rerun is diagnostic-only.
+
+The native saved-data reader catches decode errors and returns null. RingWorld
+now distinguishes that from confirmed file absence before using defaults for
+geometry, building, sky or structure policy. Unreadable files, directories at
+file paths and incomplete saves with orphan policy files reject without
+replacing the original bytes. Building and sky state are checked before
+publishing Overworld geometry or admitting players. Missing options in genuine
+older worlds keep their documented defaults. File-preservation and malformed-
+codec regressions are added; native corruption/rejection checks remain pending.

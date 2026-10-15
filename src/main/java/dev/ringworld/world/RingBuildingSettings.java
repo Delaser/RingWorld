@@ -40,7 +40,7 @@ public final class RingBuildingSettings extends SavedData {
 
     public static RingBuildingSettings get(ServerLevel world) {
         var storage = world.getDataStorage();
-        RingBuildingSettings saved = storage.get(FACTORY, STORAGE_KEY);
+        RingBuildingSettings saved = RingSavedDataGuard.get(world, FACTORY, STORAGE_KEY);
         if (saved != null) return saved;
         RingBuildingSettings created = new RingBuildingSettings(true);
         created.setDirty();

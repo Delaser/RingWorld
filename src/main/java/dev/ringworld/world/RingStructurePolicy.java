@@ -95,7 +95,7 @@ public final class RingStructurePolicy extends SavedData {
 
     /** Missing policy means a pre-feature world whose structure layout must remain unchanged. */
     public static RingStructurePolicy get(ServerLevel world) {
-        RingStructurePolicy saved = world.getDataStorage().get(FACTORY, STORAGE_KEY);
+        RingStructurePolicy saved = RingSavedDataGuard.get(world, FACTORY, STORAGE_KEY);
         return saved != null ? saved : new RingStructurePolicy(0, FORMAT_VERSION);
     }
 

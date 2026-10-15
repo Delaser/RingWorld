@@ -48,7 +48,7 @@ public final class RingSkySettings extends SavedData {
 
     public static RingSkySettings get(ServerLevel world) {
         DimensionDataStorage storage = world.getDataStorage();
-        RingSkySettings saved = storage.get(FACTORY, STORAGE_KEY);
+        RingSkySettings saved = RingSavedDataGuard.get(world, FACTORY, STORAGE_KEY);
         if (saved != null) return saved;
         RingSkySettings fallback = new RingSkySettings(RingSkyProfile.DEFAULT);
         fallback.setDirty();

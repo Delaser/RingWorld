@@ -166,7 +166,7 @@ public final class RingWorldSettings extends SavedData {
         migrateLegacySettings(world);
         ensureStorageDirectory(world);
         DimensionDataStorage manager = world.getDataStorage();
-        RingWorldSettings saved = manager.get(FACTORY, STORAGE_KEY);
+        RingWorldSettings saved = RingSavedDataGuard.get(world, FACTORY, STORAGE_KEY);
         if (saved != null) {
             if (saved.formatVersion() == FORMAT_VERSION) return saved;
             RingWorldSettings upgraded = upgradeToCurrentFormat(saved);
@@ -181,6 +181,12 @@ public final class RingWorldSettings extends SavedData {
             throw new IllegalStateException(
                     "This Overworld already contains region files but has no RingWorld settings. "
                             + "Existing flat worlds cannot be converted in place.");
+        }
+
+        // Partial RingWorld saves cannot be treated as a brand-new world.
+        for (String key : new String[]{"ringworld/sky_settings", "ringworld/structure_policy",
+                "ringworld/building_settings"}) {
+            RingSavedDataGuard.requireMissing(RingSavedDataGuard.path(world, key));
         }
 
         RingWorldConfig config = RingWorldConfig.load();

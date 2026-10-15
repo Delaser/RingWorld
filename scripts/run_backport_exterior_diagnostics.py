@@ -152,10 +152,10 @@ def run(args: argparse.Namespace) -> None:
             require(time.monotonic() < deadline, 'Scheduling prerequisite timed out')
             time.sleep(1)
     phases = []
-    for name in ('placement', 'reopen', 'visibility'):
+    for name in (('visibility',) if args.visibility_only else ('placement', 'reopen', 'visibility')):
         phase = output / name
         phase.mkdir()
-        if name == 'visibility':
+        if name == 'visibility' and (runtime / 'world').exists():
             (runtime / 'world').rename(output / 'placement-world')
         (runtime / 'server.properties').write_text('server-ip=127.0.0.1\nserver-port=' + str(args.port) +
             '\nonline-mode=false\ngamemode=creative\ndifficulty=normal\nlevel-name=world\nlevel-seed=ringworld-exterior-1.4\nview-distance=6\nsimulation-distance=5\n')
@@ -242,6 +242,8 @@ def main() -> None:
     for option in ('candidate', 'java-home', 'client-seed', 'server-seed', 'eula', 'output'):
         parser.add_argument('--' + option, type=Path, required=True)
     parser.add_argument('--port', type=int, default=25568)
+    parser.add_argument('--visibility-only', action='store_true',
+                        help='Run only a fresh visibility diagnostic, without claiming placement/reopen evidence')
     parser.add_argument('--wait-for-file', type=Path,
                         help='Defer heavy native launches after freezing identity; scheduling only')
     args = parser.parse_args()

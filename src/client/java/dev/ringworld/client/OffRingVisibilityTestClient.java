@@ -18,6 +18,7 @@ public final class OffRingVisibilityTestClient {
     private static int stableTicks;
     private static int samples;
     private static boolean sent;
+    private static int diagnosticTicks;
 
     public static void recordExtraction(Entity entity) {
         if (ENABLED) extracted.add(entity.getId());
@@ -68,6 +69,19 @@ public final class OffRingVisibilityTestClient {
                     .filter(e -> e.getCustomName() != null && e.getCustomName().getString().startsWith("RingVisibility-"))
                     .filter(e -> extracted.contains(e.getId())).count();
             visible &= objects == 2;
+        }
+        if (!visible && ++diagnosticTicks % 100 == 0) {
+            RingWorldMod.LOGGER.info("[off-ring:{}] pending stage={} observer={} target={} rendered={} objects={}",
+                    role, stage, client.player.position(), a == null ? "absent" : a.position(),
+                    Set.copyOf(extracted), java.util.stream.StreamSupport.stream(
+                            client.level.entitiesForRendering().spliterator(), false)
+                            .filter(e -> e instanceof net.minecraft.world.entity.player.Player
+                                    || e.getCustomName() != null && e.getCustomName().getString().startsWith("RingVisibility-"))
+                            .map(e -> e.getId() + ":" + e.getType().toShortString() + ':' + e.position()).toList());
+            if (diagnosticTicks == 100) {
+                dev.ringworld.client.compat.Screenshot.grab(client.gameDirectory,
+                        "off-ring-" + role + "-pending-" + stage + ".png", client.getMainRenderTarget(), 1, message -> {});
+            }
         }
         extracted.clear();
         samples = visible ? samples + 1 : 0;

@@ -112,6 +112,9 @@ public final class RingWorldServer {
     public static RingGeometry attachWorldGeometry(ServerLevel world) {
         if (!isOverworld(world)) return null;
         RingWorldSettings settings = RingWorldSettings.get(world);
+        // Detect unreadable saved policy before publishing geometry or admitting players.
+        dev.ringworld.world.RingBuildingSettings.get(world);
+        dev.ringworld.world.RingSkySettings.get(world);
         RingGeometry geometry = settings.geometry();
         WORLD_GEOMETRY.put(world, geometry);
         attachGeneratorSettings(world, geometry, settings.wallHeightBlocks(),

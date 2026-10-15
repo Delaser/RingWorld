@@ -18,6 +18,11 @@ class RingBuildingSettingsTest {
                     .parse(JsonOps.INSTANCE, encoded).getOrThrow().outsideBuilding());
         }
     }
+    @Test void malformedSavedOptionCannotSilentlyEnableOutsideBuilding() {
+        JsonObject invalid = new JsonObject();
+        invalid.addProperty("outsideBuilding", "corrupted");
+        assertTrue(RingBuildingSettings.codecForTests().parse(JsonOps.INSTANCE, invalid).error().isPresent());
+    }
     @Test void disabledPolicyKeepsBothEdgesInclusiveButRejectsExterior() {
         var ring = new RingGeometry(128, 2048);
         assertTrue(RingBuildingSettings.allows(false, ring, -64));
