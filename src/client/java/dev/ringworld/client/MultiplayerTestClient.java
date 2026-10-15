@@ -104,9 +104,17 @@ public final class MultiplayerTestClient {
     private int completionGraceTicks;
     private boolean clientStopRequested;
     private boolean performanceConnected;
+    private boolean raidConnected;
 
     public boolean tick(Minecraft client) {
         if (role.isEmpty()) return false;
+        if (Boolean.getBoolean("ringworld.raidTestClient") && raidConnected && client.level == null) {
+            if (!RingWorldClientSession.isCleared()) {
+                throw new IllegalStateException("Raid client retained session state after disconnect");
+            }
+            RingWorldMod.LOGGER.info("[raid-test-client:{}] disconnected; raw session cleared; stopping normally", role);
+            client.stop(); return true;
+        }
         if (Boolean.getBoolean("ringworld.performanceClient") && performanceConnected && client.level == null) {
             RingWorldMod.LOGGER.info("[performance-client:{}] disconnected after joining; stopping client", role);
             client.stop(); return true;
@@ -135,6 +143,10 @@ public final class MultiplayerTestClient {
             return true;
         }
         if (client.screen instanceof PauseScreen) client.setScreen(null);
+        if (Boolean.getBoolean("ringworld.raidTestClient")) {
+            raidConnected = true;
+            return true;
+        }
         if (Boolean.getBoolean("ringworld.performanceClient")) {
             performanceConnected = true;
             if (client.gameMode != null && client.gameMode.getPlayerMode() == GameType.CREATIVE

@@ -716,3 +716,30 @@ A new opt-in horizon projection control waits for complete Atlas/render readines
 and captures identical ground/elevated poses with correction on and off. It
 retains normal reload/dimension/stop controls. Default horizon behavior is
 unchanged. Fresh native comparison is required before selecting a correction.
+
+The fresh complete-Atlas comparison passes on both loaders at `1761485` with
+eight captures each, resource reload, dimension controls and normal stopping.
+The broad wall arc remains with correction disabled. No separate circumference
+or radius path was found: live terrain/water and the private mesh share the
+same projection. Crest elevation and correction alter its apparent curve;
+the transition from detailed live water to plain Atlas water appears to
+exaggerate separation. This is a static visual observation, not a pixel-ownership
+or motion proof. The water transition remains an open visual-quality concern.
+
+Fabric's complete two-client gameplay matrix also passes at `1761485`, including
+the strict portal routing, bed reconnect, death and weather controls. The
+following raid arm server saves normally, but a client fails with a native
+GLFW access violation around automated window closure. The JVM crash report
+identifies the render thread in `RenderSystem.limitDisplayFPS`; it does not
+establish a RingWorld cause or a vanilla/environment cause. The attempt remains
+FAIL, with both server save and client crash evidence retained. Its closure
+receipt was written prematurely after the input API timed out; process exit
+validation correctly rejected the run. Future closure receipts must follow
+verified normal client exit.
+
+An opt-in raid client now stops through Minecraft's native loop after a joined
+session disconnects, asserting raw session teardown first. The coordinator must
+still independently require the raid's durable-save/victory marker and normal
+server/client exits, so an unexpected disconnect cannot earn PASS. Fresh raid
+arm/reload runs and separate investigation of the native window-close failure
+remain required.
