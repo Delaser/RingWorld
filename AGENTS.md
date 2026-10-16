@@ -49,6 +49,22 @@ mean that chunks have not arrived. These are opt-in capture gates, not changes
 to ordinary rendering or the active frozen release qualification.
 
 
+## Deep-water handoff (16 October 2026, development)
+
+Live/Atlas coverage uses the maximum of intrinsic horizontal distance and
+absolute canonical height separation. Do not restore a spherical norm: it
+prematurely discards submerged floors while the water above is transparent,
+exposing the sky-pass Atlas/void. Keep the same metric in
+both ABIs, including 26.3 OIT and replacement-renderer adapters. Water opacity
+also uses the shared conservative ray-to-bottom reach bound: nearby surface
+entry must not expose an unloaded farther floor. This advances only the water
+opacity ramp; do not apply that reach to solid-terrain coverage. Retain the
+vertical high-camera fallback, horizontal material distances, smooth proxy
+alpha/depth and submerged-camera skip. Profile version eight identifies this
+unreleased change. `ringworld.captureDeepWaterHandoff` is a muted disposable
+variant of the existing underwater fixture; normal capture inputs are unchanged.
+See [cause and validation](docs/DEEP_WATER_HANDOFF_2026_10_16.md).
+
 ## Atlas pregeneration concurrency (#253)
 
 The owner approved integration through PR #273 on 9 October 2026. Shared

@@ -15,6 +15,7 @@ in vec4 vertexColor;
 in vec2 texCoord0;
 in float ringIntrinsicDistance;
 in float ringHandoffDistance;
+in float ringWaterHandoffDistance;
 
 out vec4 fragColor;
 
@@ -103,7 +104,7 @@ void main() {
 #endif
 
     color = ring_material_coverage(color, vertexColor, texCoord0,
-            ringIntrinsicDistance, ringHandoffDistance);
+            ringIntrinsicDistance, ringHandoffDistance, ringWaterHandoffDistance);
 
     if (ring_active() && ringIntrinsicDistance >= 0.0) {
         color = ring_material_atmosphere(color, ringIntrinsicDistance, FogColor.rgb);

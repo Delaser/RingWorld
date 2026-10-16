@@ -3,7 +3,8 @@ package dev.ringworld.world;
 /**
  * One dimension-aware visual/resource profile shared by Java renderers and
  * shader globals. Coverage distances include intrinsic horizontal blocks and
- * canonical vertical separation; material/detail distances remain horizontal.
+ * canonical vertical separation independently (their maximum, not a sphere);
+ * material/detail distances remain horizontal.
  */
 public record RingRenderProfile(
         int visualProfileVersion,
@@ -35,7 +36,7 @@ public record RingRenderProfile(
      * Increment when visual-policy semantics change enough that comparison
      * captures need to identify a different profile.
      */
-    public static final int VISUAL_PROFILE_VERSION = 7;
+    public static final int VISUAL_PROFILE_VERSION = 8;
     public static final double LIVE_FADE_START_FACTOR = 0.90;
     public static final double LIVE_FADE_END_FACTOR = 1.02;
     public static final double PROXY_FADE_START_FACTOR = 0.68;

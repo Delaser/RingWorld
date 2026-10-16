@@ -1,5 +1,12 @@
 # Sodium compatibility development — 13 October 2026
 
+The unreleased [16 October deep-water follow-up](DEEP_WATER_HANDOFF_2026_10_16.md)
+centralizes the independent horizontal/vertical coverage metric and conservative
+water-ray reach guard in the shared projection include. The Sodium format adapter
+consumes them too; the qualification
+and compatibility results below describe their original source, not this later
+change.
+
 This work starts from RingWorld 1.4 source `57efcb0` on
 `codex/mod-compatibility-core` (PR #292). It does not replace the candidates in
 Windows release qualification. Development validation is separate from release

@@ -220,11 +220,11 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
             live_fragment = (resources / "assets/ringworld/shaders/core/terrain.fsh").read_text()
             self.assertIn("float cameraY = float(CameraBlockPos.y) - CameraOffset.y", proxy_vertex)
             self.assertIn("float worldY = RingWorldVertical.w - intrinsicHeight", proxy_vertex)
-            self.assertIn("handoffDistance = length(vec2(intrinsicDistance, worldY - cameraY))", proxy_vertex)
+            self.assertIn("handoffDistance = ring_handoff_distance(intrinsicDistance, worldY - cameraY)", proxy_vertex)
             self.assertRegex(proxy_fragment, r"RingWorldHandoff\.w,\s+handoffDistance")
-            self.assertIn("ringHandoffDistance = length(vanillaPos)", live_vertex)
+            self.assertIn("ringHandoffDistance = ring_handoff_distance(ringIntrinsicDistance, vanillaPos.y)", live_vertex)
             self.assertIn("ringHandoffDistance = -1.0", live_vertex)
-            self.assertRegex(live_fragment, r"ring_material_coverage\(color,\s+vertexColor,\s+texCoord0,\s+ringIntrinsicDistance,\s+ringHandoffDistance\)")
+            self.assertRegex(live_fragment, r"ring_material_coverage\(color,\s+vertexColor,\s+texCoord0,\s+ringIntrinsicDistance,\s+ringHandoffDistance,\s+ringWaterHandoffDistance\)")
             material = (ROOT / "src/client/resources/assets/ringworld/shaders/include/material.glsl").read_text()
             self.assertRegex(material, r"RingWorldHandoff\.y,\s+ringHandoffDistance")
             # Material/detail distance stays horizontal, including the X seam.
@@ -246,7 +246,48 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         self.assertGreater(234.67834 - 63.0, 160 * proxy_end)
         # Ground-level coverage is unchanged when vertical separation is zero.
         for horizontal in (0.0, 100.0, 160.0):
-            self.assertEqual(horizontal, math.hypot(horizontal, 0.0))
+            self.assertEqual(horizontal, max(horizontal, 0.0))
+
+    def test_deep_water_seabed_is_not_faded_inside_both_native_ranges(self):
+        projection = (ROOT / "src/client/resources/assets/ringworld/shaders/include/projection.glsl").read_text()
+        self.assertIn("return max(horizontal, abs(vertical))", projection)
+        adapter = (ROOT / "src/client/java/dev/ringworld/client/compat/SodiumTerrainShaders.java").read_text()
+        self.assertIn("ring_handoff_distance(length(position.xz), position.y)", adapter)
+        # Eight chunks, camera on the 160-block wall, seabed at Y=0.
+        # At horizontal distance 80, the old sphere faded the floor while
+        # the water surface was still transparent: there is no underwater proxy.
+        view = 128.0
+        horizontal, vertical = 80.0, 97.62
+        self.assertGreater(math.hypot(horizontal, vertical), view * 0.90)
+        self.assertLess(max(horizontal, vertical), view * 0.90)
+        self.assertLess(horizontal, view * 0.68)
+        # Independent limits must still hand off high-camera terrain, and
+        # must not retain terrain outside either range.
+        for horizontal, vertical in ((0, 172), (172, 0), (172, 172)):
+            self.assertGreater(max(horizontal, vertical), 160 * 0.98)
+        material = (ROOT / "src/client/resources/assets/ringworld/shaders/include/material.glsl").read_text()
+        self.assertRegex(material, r"float waterOpacity = ring_material_smootherstep\(RingWorldHandoff\.z, RingWorldHandoff\.x,\s+ringWaterHandoffDistance\)")
+        self.assertRegex(material, r"float waterMatch = ring_material_smootherstep\(RingWorldHandoff\.z, RingWorldHandoff\.x,\s+ringIntrinsicDistance\)")
+
+    def test_water_opacity_accounts_for_floor_beyond_surface_entry(self):
+        # A surface inside view range can expose an unloaded deeper floor.
+        # The bottom bound closes that ray while steep, close rays stay clear.
+        view, camera, surface, bottom = 256.0, 97.62, 63.0, -64.0
+        scale = (camera - bottom) / (camera - surface)
+        self.assertLess(80.0, view * 0.68)
+        self.assertGreater(80.0 * scale, view * 0.90)
+        self.assertLess(10.0 * scale, view * 0.68)
+        projection = (ROOT / "src/client/resources/assets/ringworld/shaders/include/projection.glsl").read_text()
+        self.assertIn("if (surfaceDrop <= 0.0) return ordinary", projection)
+        self.assertIn("RingWorldVertical.y - float(RingWorldLayout.w)", projection)
+        adapter = (ROOT / "src/client/java/dev/ringworld/client/compat/SodiumTerrainShaders.java").read_text()
+        self.assertIn("ring_water_handoff_distance(position, ringworldCamera.y)", adapter)
+        for resources in (
+            ROOT / "src/client/resources",
+            ROOT / "src/versions/26.3/client/resources",
+        ):
+            vertex = (resources / "assets/ringworld/shaders/core/terrain.vsh").read_text()
+            self.assertIn("ring_water_handoff_distance(vanillaPos, cameraCanonical.y)", vertex)
 
     def test_proxy_far_clamp_preserves_perspective_and_uses_backend_depth(self):
         shader = (ROOT / "src/client/resources/assets/ringworld/shaders/core/ring_surface.vsh").read_text()

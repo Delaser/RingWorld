@@ -1,3 +1,17 @@
+Deep-water handoff follow-up (16 October 2026, unreleased): shared coverage
+uses independent horizontal/vertical limits, preventing premature seabed fade.
+Water opacity also accounts for a view ray reaching a farther floor beyond
+coverage; shallow-angle water becomes opaque sooner through a conservative
+world-bottom bound. Both shader ABIs and the Sodium adapter share these helpers.
+The submerged-camera policy, GPU bindings and server/generation work are
+unchanged. All six source build/test cells pass (3,102 Java cases); the Python
+suite passes 511 tests with four Windows-only skips. All six representative
+native game/loader checks pass, plus 26.3 Fabric with Sodium and a 16-chunk
+check (48 final-source captures, including resource reload and resurfacing).
+These are development checks, not release qualification or demo deployment;
+owner visual acceptance is pending.
+See [cause, evidence and limits](DEEP_WATER_HANDOFF_2026_10_16.md).
+
 Release fixture follow-up (13 October 2026, PR #294): the tagged navigator owns
 its one commanded MOVE input; native 26.1.2 NeoForge and 26.2 Fabric multiplayer
 scenarios pass unchanged arrival, combat, sleep/damage, death and portal checks.
