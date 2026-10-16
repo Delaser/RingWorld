@@ -16,6 +16,7 @@ import dev.ringworld.client.render.RingCloudShaderState;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingSkyCycle;
 import dev.ringworld.world.RingSkyProfile;
+import dev.ringworld.world.RingSurfaceWeather;
 import net.minecraft.client.Camera;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -164,7 +165,10 @@ abstract class SkyRenderingMixin {
         float weatherAlpha = 1.0F - level.getRainLevel(tickProgress);
         PoseStack poseStack = new PoseStack();
         poseStack.mulPose(viewMatrix);
-        RingSurfaceTextureRenderer.render(poseStack, geometry, cameraPosition, weatherAlpha);
+        // Terrain remains visible through rain haze. The renderer publishes
+        // this same reveal to the Atlas and live-terrain handoff shaders.
+        float terrainReveal = RingSurfaceWeather.reveal(level.getRainLevel(tickProgress));
+        RingSurfaceTextureRenderer.render(poseStack, geometry, cameraPosition, terrainReveal);
 
         RingSkyProfile profile = ClientRingState.skyProfile();
         if (profile.lightSource() == RingSkyProfile.LightSource.NONE) return;

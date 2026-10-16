@@ -158,6 +158,21 @@ public final class RingProjectionCaptureClient {
         if (++settleTicks < CAPTURE_SETTLE_TICKS) return true;
         settleTicks = 0;
 
+        if (selectedEnvironment() == CaptureEnvironment.RAIN) {
+            float rain = client.level.getRainLevel(1.0F);
+            float reveal = RingSurfaceTextureRenderer.legacyProxyRevealScale();
+            float expectedReveal = dev.ringworld.world.RingSurfaceWeather.reveal(rain);
+            float proxyDrawn = RingSurfaceTextureRenderer.legacyProxyDrawnThisFrame();
+            if (rain < 0.99F || !Float.isFinite(reveal)
+                    || Math.abs(reveal - expectedReveal) > 0.002F || proxyDrawn < 0.5F) {
+                finish(client, false, "rain capture requires visible, weather-faded Atlas coverage");
+                return true;
+            }
+            RingWorldMod.LOGGER.info(
+                    "[projection-rain-visibility] stage={}, rain={}, revealScale={}, proxyDrawn={}",
+                    stage, rain, reveal, proxyDrawn);
+        }
+
         if (stage == 0) {
             Screenshot.grab(
                     client.gameDirectory, screenshotName("tangent"),

@@ -978,3 +978,29 @@ native resource/lifecycle validation of the combined repair remain pending.
 The latest diagnostic is retained as `COLLECTED_OWNERSHIP_DIAGNOSTIC`, never a
 release or production-world acceptance result. Its root-path dump and additional
 histogram safepoint are disclosed and excluded from ordinary performance.
+
+### Rain visibility correction, 16 October
+
+The owner requested a visible but weather-faded Atlas with a continuous live
+terrain connection in rain. The 1.21.1 sky adapter passed the celestial
+`1 - rain` alpha into terrain reveal. At full rain that value became zero,
+replacing the Atlas entirely with fog colour. The same zero also reached the
+live-terrain tone convergence, so an earlier rain capture could complete without
+proving a visible distant ring.
+
+`RingSurfaceWeather` now retains 55% of lit terrain at full rain and interpolates
+continuously from the exact clear-weather value of one. Both loaders share this
+policy. The existing renderer publishes the same value to the Atlas draw and
+live-terrain handoff. Celestial alpha, opaque coverage/depth, readiness, generation
+fog, projection, underwater exclusion, saved formats and dependency pins retain
+their existing behavior. The helper is Java-17-compatible for the planned 1.20.1
+port; it does not establish implemented support for that version.
+
+The opt-in rain projection fixture now requires actual full rain, a drawn proxy
+and the expected nonzero native reveal before each screenshot. The strict
+dual-loader build passes with four new weather-policy cases per loader. Native
+rain/Fabulous-rain and clear-weather transition controls still require fresh
+validation and visual review. Existing saves, failed attempts, the 52-case
+graphical composite, upgrade/persistence and other diagnostic records remain
+retained under their original source and jar identities. This focused change
+does not relabel those records as final exact-artifact release acceptance.
