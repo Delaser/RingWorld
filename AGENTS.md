@@ -183,9 +183,13 @@ current changes/evidence and continue diagnosis/retesting through acceptance.
 Do not publish or modify the public server under this build authorization.
 
 The internal 1.21.1 acceptance build now uses `1.4.0+mc1.21.1` metadata.
-It is not qualified or published. Three completed Fabric Large comparison
-pairs flag increased rare client stalls despite passing relative P95/P99
-limits; a focused reusable texture-sampling repair is under validation.
+It is not qualified or published. The latest three Fabric Large comparison
+pairs still flag increased rare client stalls and a client P95 ratio of 1.1081
+against the 1.10 limit. After correcting a host-specific JFR clock-rate mismatch
+against matching native GC identities, eleven of thirteen long frames contain
+whole-mesh GPU upload samples. Exact packed-byte mesh reuse passes 1,509 dual
+unit cases; native rendering and Large validation remain pending. Preserve
+the uncalibrated diagnostic records, but do not use them for stack attribution.
 Preserve prior diagnostic identities and failed attempts. Read the active
 handoff before launching tests and never reopen archived hardlinked test
 worlds in place; make independent copies for reproduction.

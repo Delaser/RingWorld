@@ -7,6 +7,7 @@ import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.ringworld.world.RingSurfaceMesh;
+import dev.ringworld.world.RingSurfaceMeshBytes;
 
 /** Minecraft 1.21.1 vertex-buffer adapter for the shared CPU surface mesh. */
 final class RingSurfaceGpu {
@@ -39,7 +40,9 @@ final class RingSurfaceGpu {
                             .setColor(sideColor < 0 ? vertexArgb : 0xFF000000 | sideColor);
                 }
             });
-            return new PackedMesh(allocator, builder.buildOrThrow(), count);
+            MeshData data = builder.buildOrThrow();
+            try { return new PackedMesh(allocator, data, count); }
+            catch (RuntimeException | Error failure) { data.close(); throw failure; }
         } catch (RuntimeException | Error failure) { allocator.close(); throw failure; }
     }
 
@@ -60,10 +63,14 @@ final class RingSurfaceGpu {
         private ByteBufferBuilder allocator;
         private MeshData data;
         private final int vertexCount;
+        private final RingSurfaceMeshBytes identity;
         PackedMesh(ByteBufferBuilder allocator, MeshData data, int vertexCount) {
             this.allocator = allocator; this.data = data; this.vertexCount = vertexCount;
+            identity = RingSurfaceMeshBytes.identify(data.vertexBuffer(), vertexCount,
+                    DefaultVertexFormat.POSITION_TEX_COLOR.getVertexSize());
         }
         int vertexCount() { return vertexCount; }
+        RingSurfaceMeshBytes identity() { return identity; }
         @Override public void close() {
             try { if (data != null) data.close(); } finally {
                 data = null;

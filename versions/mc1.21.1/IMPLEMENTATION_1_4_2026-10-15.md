@@ -1304,3 +1304,55 @@ for 200 writes with a test sink excluding disk allocation; reduced-display/mip
 reuse measures 480 bytes for twenty complete builds. These small synthetic
 allocation contracts do not prove Large performance. Native cache/noon smoke
 and the failed Large workload must pass before continuing paired acceptance.
+
+### Exact GPU mesh reuse and corrected diagnostic clocks, 17 October
+
+The storage candidates at `e02f6bc` pass both loaders' native cache/noon controls.
+Their three Fabric Large candidate legs also complete normal saving, loaded-work
+drain and native edit verification after restart. The third historical 1.3 leg
+throws a snapshot-allocation heap error during cold transfer. That original
+failure remains retained; one fresh retry with identical arguments succeeds.
+No completed leg or original save is overwritten.
+
+The independently rehashed three-pair review remains blocked. Median server
+P95/P99 ratios are 0.4823/0.5774, but client B's median P95 ratio is 1.1081,
+above the 1.10 limit. Candidate client frames over 250 ms total 6/2/5 across
+the three legs, versus 1/0/0 historically. Candidate clients have no measured
+frames over 500 ms. One 345 ms frame overlaps a 329.983 ms full collection;
+the remaining long frames do not overlap native GC pauses. These results are
+diagnostic evidence, not release acceptance.
+
+JFR event timestamps on this host run about 0.25% slower than native frame and
+GC-log clocks. Uncorrected sampled-stack selections can therefore be nearly
+two seconds away from the actual frame; retain those earlier analyses but do
+not use them for attribution. Matching major GC identities and durations gives
+an affine calibration with residuals below 3 ms on all nine candidate clients.
+Six bounded clock-contract tests reject insufficient spans, duplicate identities,
+duration mismatches, clock steps and excessive extrapolation. The corrected
+windows retain the existing five-millisecond pad. Raw frame/tick statistics
+and acceptance limits are unchanged. Eleven of thirteen long frames now contain
+native samples in `RingSurfaceGpu.uploadMesh`; one contains the full collection
+and one remains unattributed. Sample overlap is evidence for a focused repair,
+not a claim that every stall has a single cause.
+
+The repair hashes the actual packed vertex-byte range on the existing surface
+worker. A full-Atlas height/material key can change at cells outside the mesh's
+sampled lattice even when every emitted vertex remains identical. Only the
+same world/layout with a valid GPU mesh and matching vertex count, stride and
+SHA-256 identity may reuse that buffer. Changed positions, UVs and material
+colours still upload normally. Publication advances the matching height key
+and detailed-state metadata after the coherent texture update. Teardown clears
+the identity; an abandoned build cannot acquire ownership in a new session.
+Mesh generation, shaders, rain visibility, readiness, server code and saved/wire
+formats remain unchanged.
+
+The strict dual build passes 743 Fabric/common and 766 NeoForge cases (1,509
+total), with no failures, errors or skips. Nine new cases cover all packed-byte
+fields, raw floating-point bits, direct/read-only/sliced buffers, ownership,
+draw-state validation and a real unsampled Atlas mutation that changes the
+old key while preserving the emitted mesh. A sampled-neighbour mutation must
+change the identity. The first test attempt used an adjacent unsampled row
+for that negative control; its failed record is retained and the coordinate
+was corrected to the actual sampled row. Native affected rendering/lifecycle
+checks and the failed Large workload remain required; no acceptance is granted
+from these unit cases.
