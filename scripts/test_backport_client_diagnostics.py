@@ -80,12 +80,17 @@ class BackportClientRecipeTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             runtime = Path(directory)
             path = runtime / 'options.txt'
-            path.write_text('guiScale:4\nrenderDistance:28\nmaxFps:60\nonboardAccessibility:true\n')
+            path.write_text('guiScale:4\nrenderDistance:28\ngraphicsMode:2\n'
+                            'maxFps:240\nenableVsync:true\nmaxFps:5\nonboardAccessibility:true\n')
             normalize_profile_options(runtime)
             first = path.read_text()
             normalize_profile_options(runtime)
             self.assertEqual(first, path.read_text())
-            self.assertTrue(first.startswith('guiScale:4\nrenderDistance:28\nmaxFps:60\n'))
+            self.assertTrue(first.startswith('guiScale:4\nrenderDistance:28\ngraphicsMode:2\n'))
+            self.assertEqual(['maxFps:60'],
+                             [line for line in first.splitlines() if line.startswith('maxFps:')])
+            self.assertEqual(['enableVsync:false'],
+                             [line for line in first.splitlines() if line.startswith('enableVsync:')])
             self.assertEqual(1, first.count('onboardAccessibility:false'))
             self.assertIn('tutorialStep:none\n', first)
             self.assertIn('pauseOnLostFocus:false\n', first)

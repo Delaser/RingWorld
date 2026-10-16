@@ -2491,3 +2491,28 @@ cover collection of an owned server/world graph, late cache repopulation,
 preservation of another server and idempotence. Both loader builds compile the
 complete class; native repeated reopens must independently exercise the final
 server-stop callbacks. The source-level harness does not qualify those hooks.
+
+### 1.21.1 / 1.4 rain visibility and capture presentation
+
+`RingSurfaceWeatherTest` verifies the exact clear value of one, visible/faded
+full-rain value of 0.55, continuous bounded interpolation and malformed-input
+safety. Celestial alpha remains separate. The packaged projection verifier
+requires three ordered full-rain/drawn-proxy observations and rejects hidden
+or unfaded terrain; its image-detail and continuity checks are unchanged.
+
+The packaged client adapter normalizes `maxFps:60` and `enableVsync:false`,
+removing duplicate inherited values while preserving unrelated options. Its
+identity records `controlledPresentation`. This is the same function used in
+the fourteen reviewed native weather/control runs, including Fancy 16-chunk
+and Fabulous 28-chunk full-rain views on both loaders. It is a reproducible
+visual diagnostic profile, not a claim about ordinary/default performance or
+the separate deliberate FPS-backoff stimuli.
+
+Eight clear/streaming/foliage controls pass alongside the four production rain
+cells. The two additional fresh-world horizon fixtures cover ground/elevated
+rain/thunder, resource reload and dimension controls, but finish with partial
+Atlas caches. All 80 native screenshots and four labelled derived foliage
+images were reviewed. Raw frame files remain diagnostics; paired performance,
+soak and complete release qualification are separate. Exact hashes, retained
+failures and evidence limits are in the
+[1.4 implementation ledger](../versions/mc1.21.1/IMPLEMENTATION_1_4_2026-10-15.md).

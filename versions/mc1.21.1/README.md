@@ -28,12 +28,16 @@ upgrade, performance and soak checks. See the [audit record](MAINLINE_1_4_AUDIT_
 
 The active development artifacts identify as `1.4.0-dev.1+mc1.21.1`; the
 1.3 results above are historical intake references. Current strict builds pass
-632 Fabric/common cases and 655 NeoForge cases. Both loaders pass the fresh
-two-client gameplay and persisted-raid cycle at `898781c`. The graphical rerun
-finds an uncontrolled sheep grass edit in the foliage fixture after its Atlas
-quiescence gate; the fixture now disables mob griefing and requires fresh
-dual-loader validation. The complete performance/soak and exact-artifact
-acceptance matrix remains pending. No stable 1.4 backport is published.
+636 Fabric/common cases and 659 NeoForge cases. Both loaders pass the repaired
+foliage and cloud-camera fixtures; their original failed attempts remain retained.
+The current rain correction keeps the complete Atlas visible with a shared
+weather fade at the live-terrain handoff. Four complete-Atlas rain cells, eight
+clear/streaming/foliage controls and two fresh-world horizon weather/reload
+fixtures pass, with all 80 native screenshots reviewed. The horizon worlds are
+explicitly partial-Atlas evidence. Gameplay, raid, upgrade and resource/lifecycle
+records retain their own source and artifact identities in the implementation
+ledger. The complete performance/soak and exact-artifact acceptance matrix
+remains pending. No stable 1.4 backport is published.
 
 ## Historical feature handoffs
 

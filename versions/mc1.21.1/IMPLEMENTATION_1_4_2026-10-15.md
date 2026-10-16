@@ -1067,3 +1067,25 @@ not current visibility proof. These fourteen focused runs do not restart the
 whole visual suite or qualify the release: paired Large performance, soaks,
 remaining closure controls, moving wall/water review, formal execution and
 final release staging remain pending. No publication or 1.20.1 support is claimed.
+
+The public packaged-client adapter now pins 60 FPS with VSync off and records
+that presentation profile. Its normalization function is structurally identical
+to all four retained operator snapshots from the twelve focused production and
+transition phases. A direct inherited-options check also verifies duplicate
+removal, preservation of render distance/graphics options and idempotence.
+This promotes the already exercised diagnostic policy; it changes no runtime
+class, shader, world input or performance acceptance threshold.
+The existing options regression now covers conflicting/duplicate inherited
+FPS and VSync values while retaining GUI scale, render distance, graphics mode
+and idempotence. All sixteen client/performance/exterior driver cases pass.
+
+The unmeasured Large comparison-cache preparation also completes from the
+unchanged private 1.3 sampler/scheduler. Independent parsing verifies a genuine
+format-10 cache with all 16,777,216 cells, normal all-dimension saving and
+unchanged original Large input. Only that native cache is carried into an
+otherwise original-world benchmark clone. The clone links original immutable
+files to avoid unnecessary duplication: always copy it before a game launch.
+Preparation uses a tick sprint and is explicitly excluded from benchmark data.
+The retained terminal is
+`dist/qualification/b14-native-v10-reference-large/terminal.json`; it does not
+qualify current Atlas-11 behavior or 1.4 performance.

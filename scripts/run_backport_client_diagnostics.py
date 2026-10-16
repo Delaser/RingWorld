@@ -216,7 +216,8 @@ def validate_cache_observations(report: dict, original: dict, foreign: dict) -> 
 def normalize_profile_options(runtime: Path) -> None:
     path = runtime / 'options.txt'
     fixed = {'onboardAccessibility': 'false', 'tutorialStep': 'none',
-             'pauseOnLostFocus': 'false', 'autoJump': 'false'}
+             'pauseOnLostFocus': 'false', 'autoJump': 'false',
+             'maxFps': '60', 'enableVsync': 'false'}
     lines = path.read_text(encoding='utf-8').splitlines() if path.exists() else []
     lines = [line for line in lines if line.partition(':')[0] not in fixed]
     lines.extend(key + ':' + value for key, value in fixed.items())
@@ -285,7 +286,8 @@ def main() -> None:
     subprocess.run(['git', 'archive', '--format=zip', '--output=' + str(output / 'source.zip'), source], cwd=ROOT, check=True)
     save_json(output / 'identity.json', {'diagnosticOnly': True, 'qualificationStatus': 'NOT_QUALIFIED',
         'sourceCommit': source, 'candidateSha256': sha, 'buildIdentity': identity, 'loader': args.loader,
-        'minecraft': '1.21.1', 'javaVersion': java_version, 'runtimeClasspath': runtime_inventory(seed)})
+        'minecraft': '1.21.1', 'javaVersion': java_version, 'runtimeClasspath': runtime_inventory(seed),
+        'controlledPresentation': {'maxFps': 60, 'enableVsync': False}})
     if args.wait_for_file is not None:
         print('WAIT scheduling prerequisite', args.wait_for_file, flush=True)
         deadline = time.monotonic() + 4 * 60 * 60

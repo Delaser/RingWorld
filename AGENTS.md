@@ -216,6 +216,17 @@ six Fancy/Fast below/inside/above views, and prove actual client eye air,
 collision clearance, altitude and Creative flight before each screenshot.
 Do not clear terrain, change cloud projection, or relax readiness to get a pass.
 
+Terrain weather reveal uses the shared `RingSurfaceWeather` policy, separately
+from celestial `1 - rain` alpha: full rain retains 0.55, clear weather remains
+exactly one, and the existing live/Atlas handoff shares that envelope. Do not
+restore a zero-reveal rain assertion or alter opaque coverage, generation fog,
+underwater exclusion or readiness to make rain visible. The shared rain verifier
+requires three ordered full-rain/drawn-proxy observations. The packaged visual
+diagnostic adapter pins 60 FPS with VSync off and records that presentation
+profile; its raw frame windows are diagnostic, not paired performance acceptance.
+See the implementation ledger for the fourteen focused native runs and retained
+unaffected evidence. Full release acceptance remains pending.
+
 Before adding multi-request pregeneration, replace the current server-thread
 public `getChunkFuture` boundary: pinned 1.21.1 bytecode confirms it enters
 `managedBlock`. Preserve the local unloaded-cell/overflow fairness fix when
