@@ -11,6 +11,7 @@ import net.minecraft.client.GraphicsStatus;
 import dev.ringworld.client.compat.Screenshot;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.server.level.ChunkTrackingView;
+import net.minecraft.world.level.GameRules;
 
 /**
  * Opt-in, non-destructive visual probe for the projection directions and
@@ -58,6 +59,8 @@ public final class RingProjectionCaptureClient {
     private CaptureEnvironment selectedEnvironment;
     private GraphicsStatus selectedGraphicsStatus;
     private boolean captureStageArmed;
+    private final RingCaptureDeadline captureDeadline =
+            new RingCaptureDeadline(java.util.concurrent.TimeUnit.SECONDS.toNanos(120));
     private float capturePitch;
     private long lastFrameNanos;
     private long totalFrameNanos;
@@ -107,6 +110,10 @@ public final class RingProjectionCaptureClient {
         if (!ensureCaptureSetup(client, geometry)) return true;
         if (Boolean.getBoolean(STREAMING_EDGE_PROPERTY)) {
             return tickStreamingEdgeCapture(client, geometry, atlas);
+        }
+        if (captureStageArmed && captureDeadline.expired(System.nanoTime())) {
+            finish(client, false, "capture stage did not reach a stable window within 120 seconds");
+            return true;
         }
         int effectiveViewDistanceChunks = client.options.getEffectiveRenderDistance();
         int cameraChunkX = (int)Math.floor(client.player.getX()) >> 4;
@@ -558,6 +565,17 @@ public final class RingProjectionCaptureClient {
                     context -> {
                         RingIntegratedCaptureControl.normalizeEnvironment(
                                 context, environment.timeTicks, environment.raining);
+                        // These copied-world screenshots require a stable ten-second
+                        // view. Natural block ticks and sheep grass edits can keep
+                        // restarting section compilation even when coverage is safe.
+                        // Ordinary gameplay/performance fixtures keep their own rules.
+                        context.world().getGameRules().getRule(GameRules.RULE_RANDOMTICKING)
+                                .set(0, context.server());
+                        context.world().getGameRules().getRule(GameRules.RULE_MOBGRIEFING)
+                                .set(false, context.server());
+                        RingWorldMod.LOGGER.info(
+                                "[projection-capture] disposable visual quiescence: "
+                                        + "randomTickSpeed=0, mobGriefing=false");
                         RingIntegratedCaptureControl.teleport(
                                 context, targetX, CAPTURE_CAMERA_Y, targetZ);
                     },
@@ -619,6 +637,7 @@ public final class RingProjectionCaptureClient {
         }
         resetFrameMetrics();
         captureStageArmed = true;
+        captureDeadline.start(System.nanoTime());
     }
 
     private static int contiguousLoadedChunks(Minecraft client, int cameraChunkX,

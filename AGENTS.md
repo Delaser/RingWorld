@@ -190,6 +190,13 @@ Preserve prior diagnostic identities and failed attempts. Read the active
 handoff before launching tests and never reopen archived hardlinked test
 worlds in place; make independent copies for reproduction.
 
+The first allocation-candidate NeoForge noon fixture was closed normally after
+extended readiness oscillation and remains failed diagnostic evidence. Its
+projection-only successor quiesces natural block mutations in disposable
+screenshot worlds and adds an independent stage deadline. It retains all
+readiness/image assertions and requires fresh native proof. Do not carry this
+visual quiescence into ordinary performance/default/soak worlds.
+
 Keep both keys and values weak in `RingClientChunkMaps`. Vanilla private storage
 retains its owning client manager; strong values defeat weak keys and retain
 closed client/integrated-server worlds. The live manager owns its current

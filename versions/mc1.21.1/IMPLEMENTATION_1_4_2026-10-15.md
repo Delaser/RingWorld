@@ -1135,3 +1135,44 @@ report 616 measured bytes for 200,000 warmed reusable samples, within the
 Affected native texture/performance validation remains pending.
 Existing records retain their original identities;
 this repair does not invalidate unrelated completed tests or qualify a release.
+
+### Projection fixture stability diagnosis, 16 October
+
+The stable-labelled allocation candidate at `c884edf` passes all four focused
+Fabric controls: noon, foliage, early streaming and Fabulous rain. Foliage
+retains all 144 motion steps, zero unsafe coverage frames and exact restoration.
+The three projection controls retain their ordinary random-tick/mob rules in
+these original runs; their individual frame summaries remain diagnostic.
+
+The first NeoForge noon attempt repeatedly loses the required ten-second
+settled window. Its exact streaming window is complete, but vanilla's global
+section-ready predicate flickers while Atlas revisions continue. After about
+15 minutes, the client was closed through its native window and saved all
+dimensions normally. The incomplete attempt, original copied world, partial
+capture, raw frames and short JFR trace remain retained as a failed diagnostic;
+it does not pass the noon gate or count toward the closure matrix.
+
+Source review identifies an independent fixture defect: the local wait counter
+resets on every briefly ready tick, so oscillation can evade its deadline until
+the outer 30-minute process limit. A monotonic two-minute deadline now applies
+after each settled projection stage is armed. The original 200 consecutive
+ready ticks, full-radius/compiled-window predicates, image checks and raw frame
+recording remain intact. The separate early-streaming capture/drain contract is
+unchanged.
+
+Only the opt-in projection fixture's disposable world now sets random block
+ticks to zero and disables mob block griefing, as the existing foliage fixture
+already does. Native logs disclose this visual quiescence. Ordinary gameplay,
+Large comparisons, default profiles and soaks keep random ticks and mobs on.
+The failed world's disk state confirms those rules had remained at 3/true and
+that terrain/Atlas changes occurred, but does not by itself attribute every
+readiness reset. Bounded JFR samples show section compilation, coverage checks
+and ordinary spawning; they are not a complete causal proof. Fresh native
+validation must establish whether the controlled visual fixture settles.
+
+The strict dual rebuild passes 656 Fabric/common and 679 NeoForge cases (1,335
+total), with no failures, errors or skips. Nine new deadline cases per loader
+cover the boundary, repeated polling, separate stages, `nanoTime` rollover,
+backward-clock rejection and invalid budgets. The sampling oracle and allocation
+budget still pass. Native retries are pending; no previous failed attempt is
+promoted and the release remains unqualified.

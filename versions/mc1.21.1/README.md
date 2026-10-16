@@ -31,7 +31,8 @@ remaining runtime gates exercise the intended release metadata. This label
 does not establish acceptance or authorize publication. Prior development
 artifacts identify as `1.4.0-dev.1+mc1.21.1`; the 1.3 results above are historical
 intake references. Both development and stable-labelled allocation-repair builds
-pass 647 Fabric/common cases and 670 NeoForge cases. Both loaders pass the repaired
+pass 647 Fabric/common cases and 670 NeoForge cases. The subsequent projection
+fixture deadline/quiescence build passes 656 and 679 respectively. Both loaders pass the repaired
 foliage and cloud-camera fixtures; their original failed attempts remain retained.
 The current rain correction keeps the complete Atlas visible with a shared
 weather fade at the live-terrain handoff. Four complete-Atlas rain cells, eight
@@ -47,6 +48,9 @@ but flag increased rare client stalls. A focused texture-sampling allocation
 repair passes 4,096 bit-exact frozen-jar vectors on both loaders; its native
 visual/performance validation remains pending. Existing completed diagnostic
 evidence and failed attempts remain preserved with their original identities.
+Four focused Fabric controls pass on the allocation candidate. An extended
+NeoForge noon readiness oscillation is retained as an incomplete failed attempt;
+the bounded, quiescent projection fixture requires a fresh native retry.
 
 ## Historical feature handoffs
 
