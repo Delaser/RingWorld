@@ -180,6 +180,7 @@ public final class RingSurfaceMesh {
                     (double)geometry.circumferenceBlocks() / segments,
                     (innerFaces.maximumZ() - innerFaces.minimumZ()) / bands));
 
+            var surfaceSample = new RingTerrainAtlas.MutableSurfaceSample();
             for (int segment = 0; segment <= segments; segment++) {
                 double canonicalX = (double)segment * geometry.circumferenceBlocks() / segments;
                 // The final U remains one at the periodic seam, but its
@@ -210,9 +211,8 @@ public final class RingSurfaceMesh {
                                     innerFaces.maximumZ() - atlas.sampleStep())
                             : surfaceMaximumZ;
                     double sampleZ = Math.max(sampleMinimumZ, Math.min(sampleMaximumZ, z));
-                    double surfaceHeight = detailed
-                            ? atlas.sample(canonicalX, sampleZ).height()
-                            : referenceHeight;
+                    atlas.sampleInto(canonicalX, sampleZ, surfaceSample);
+                    double surfaceHeight = detailed ? surfaceSample.height() : referenceHeight;
                     if (band == 0) minimumRimBottom[segment] = (float)(Math.min(referenceHeight, surfaceHeight) - 2.0);
                     if (band == bands) maximumRimBottom[segment] = (float)(Math.min(referenceHeight, surfaceHeight) - 2.0);
                     double radius = geometry.physicalRadiusAt(surfaceHeight);
@@ -224,7 +224,7 @@ public final class RingSurfaceMesh {
                     textureV[index] = (float)((sampleZ - geometry.minWidthZ())
                             / geometry.widthBlocks());
                     heights[index] = (float)surfaceHeight;
-                    edgeColors[index] = atlas.sample(canonicalX, sampleZ).color();
+                    edgeColors[index] = surfaceSample.color();
                     upperU[index] = u;
                     upperV[index] = textureV[index];
                     if (detailed) {

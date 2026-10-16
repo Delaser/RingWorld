@@ -151,6 +151,29 @@ public final class RingTerrainAtlas {
         return copy;
     }
 
+    /**
+     * Replaces an exclusively owned reusable snapshot without allocating cell arrays.
+     * The caller must exclude readers of destination for the complete copy. Unlike
+     * {@link #snapshot()}, this does not create a new independent lifetime.
+     */
+    public void copySnapshotTo(RingTerrainAtlas destination) {
+        if (destination == this || !geometry.equals(destination.geometry)
+                || worldHash != destination.worldHash || sampleStep != destination.sampleStep) {
+            throw new IllegalArgumentException("snapshot destination must be separate and have identical layout");
+        }
+        System.arraycopy(heights, 0, destination.heights, 0, heights.length);
+        System.arraycopy(colors, 0, destination.colors, 0, colors.length);
+        System.arraycopy(sideColors, 0, destination.sideColors, 0, sideColors.length);
+        System.arraycopy(blockLights, 0, destination.blockLights, 0, blockLights.length);
+        System.arraycopy(present, 0, destination.present, 0, present.length);
+        System.arraycopy(presentCellsPerChunk, 0, destination.presentCellsPerChunk, 0,
+                presentCellsPerChunk.length);
+        destination.presentCount = presentCount;
+        destination.completeChunkCount = completeChunkCount;
+        destination.revision = revision;
+        destination.contentFingerprint = contentFingerprint;
+    }
+
     /** Owner-thread checkpoint slice; destination is exclusively owned until copying finishes. */
     public void copyCheckpointCells(RingTerrainAtlas destination, int first, int count) {
         if (!geometry.equals(destination.geometry) || worldHash != destination.worldHash

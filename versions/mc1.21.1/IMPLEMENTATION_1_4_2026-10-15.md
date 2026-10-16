@@ -1176,3 +1176,52 @@ cover the boundary, repeated polling, separate stages, `nanoTime` rollover,
 backward-clock rejection and invalid budgets. The sampling oracle and allocation
 budget still pass. Native retries are pending; no previous failed attempt is
 promoted and the release remains unqualified.
+
+### Large allocation follow-up, 16 October
+
+All seven fresh projection controls now pass on both loaders, completing the
+eight-case composite with the unchanged Fabric foliage run. The new NeoForge
+noon run settles in about 191 seconds. Both foliage runs retain all 144 motion
+steps, zero unsafe frames, zero history residual and exact block/Atlas
+restoration. All eight contact sheets and twelve full-size native images were
+reviewed; the complete evidence retains 36 native and four derived images.
+Early streaming still shows a deliberately coarse opaque safety floor. These
+controlled visual worlds do not provide ordinary-play performance evidence.
+
+The first exact `043aa09` Large collection completes all three clients, both
+movement cycles, ordinary disk persistence without explicit flush, queue drain,
+normal shutdown and native block verification after reopening. Optional copied
+client caches are correctly rejected because the live server revision advanced
+before login; ordinary streaming completes. The cache-profile queue stops at
+its acceptance guard. This is retained diagnostic evidence, not a product
+failure or a matched performance pair. No cache header or identity check was
+changed.
+
+Client outliers of roughly 250–600 ms remain, with several overlapping full
+G1 compactions. Bounded JFR allocation samples now identify large renderer
+snapshot and pixel arrays as the dominant remaining avoidable allocation
+source. Remaining immutable mesh samples also allocate. JFR weights are
+estimates, and overlap alone does not attribute every stall.
+
+The focused follow-up gives the renderer a session-owned reusable snapshot and
+complete-texture scratch arrays. An exclusive lease prevents recapture while
+the worker or unpublished result still owns the buffers. Success, worker
+failure and submission failure release the lease; teardown drops the workspace
+so an abandoned worker cannot overwrite a later session. The existing public
+independent `snapshot()` operation is unchanged. A separate exclusive-copy
+operation copies all cells, counters, revision and content identity. Mesh
+construction uses the already verified reusable sampler without changing
+projection or interpolation arithmetic. Weather, shaders, coverage readiness,
+server acquisition and saved/network formats remain unchanged.
+
+The strict dual build passes 698 Fabric/common and 721 NeoForge cases (1,419
+total), with zero failures, errors or skips. Ten workspace cases per loader
+cover complete-to-partial replacement, all sampling steps, invalid ownership,
+resolution/layout/world changes and an actual asynchronous abandoned-worker
+handoff. Warm capture/scratch reuse allocates 12,000 bytes for 500 captures.
+Thirty-two full vertex/material/intrinsic streams match SHA-256 oracles generated
+independently from the frozen pre-repair jar. The checked-in oracle SHA-256 is
+`2c4bf6de059f8607cf78f50a3969fc8cd0080167cf1ecd8b1f5a9cdddb8bad97`.
+Native affected rendering/lifecycle controls and Large measurements remain
+required. Completed unrelated evidence remains preserved with its original
+source and artifact identity; the release is not yet qualified.
