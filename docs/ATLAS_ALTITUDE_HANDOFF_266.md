@@ -4,6 +4,10 @@ Tracks [issue #266](https://github.com/Delaser/RingWorld/issues/266).
 The wall closure repair is already merged through #265. This is a separate
 coverage correction, not a change to wall dimensions or terrain generation.
 
+The spherical coverage metric described below is historical. The
+[16 October deep-water correction](DEEP_WATER_HANDOFF_2026_10_16.md) replaces it
+with independent horizontal/vertical limits while preserving altitude coverage.
+
 ## Failure and fix
 
 The owner's complete 2,048 × 128 study showed a sky-coloured hole when looking

@@ -1,5 +1,8 @@
 # RingWorld documentation
 
+- [Deep-water handoff development fix](DEEP_WATER_HANDOFF_2026_10_16.md):
+  premature seabed fading when viewed through water from above.
+
 - [RingWorld 1.4 publication, files and qualification](RELEASE_1_4_PUBLICATION_2026-10-14.md)
 - [RingWorld 1.4 final grouped patch notes](RELEASE_1_4_PATCH_NOTES.md)
 

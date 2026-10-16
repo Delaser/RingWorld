@@ -1,3 +1,22 @@
+// Native horizontal traversal and vertical section limits are independent.
+// All terrain adapters and the Atlas use this same coverage metric.
+float ring_handoff_distance(float horizontal, float vertical) {
+    return max(horizontal, abs(vertical));
+}
+
+// A ray entering water nearby can reach its floor beyond live coverage.
+// Use the world's bottom as a conservative bound; no sampled seabed is needed.
+// This only advances the water opacity ramp, never terrain coverage itself.
+float ring_water_handoff_distance(vec3 relative, float cameraY) {
+    float horizontal = length(relative.xz);
+    float ordinary = ring_handoff_distance(horizontal, relative.y);
+    float surfaceDrop = -relative.y;
+    if (surfaceDrop <= 0.0) return ordinary;
+    float bottomY = RingWorldVertical.y - float(RingWorldLayout.w);
+    float floorDrop = max(surfaceDrop, cameraY - bottomY);
+    return max(ordinary, horizontal * floorDrop / max(surfaceDrop, 0.25));
+}
+
 // Mirrors RingNearbyProjection: unit arc spacing nearby, positive spacing everywhere.
 float ring_trial_angle(float delta, float vertexY) {
     float circumference = float(RingWorldLayout.y);

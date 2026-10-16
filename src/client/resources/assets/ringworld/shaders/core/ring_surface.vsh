@@ -84,7 +84,8 @@ void main() {
     // Keep horizontal distance for materials; use canonical height for coverage.
     float cameraY = float(CameraBlockPos.y) - CameraOffset.y;
     float worldY = RingWorldVertical.w - intrinsicHeight;
-    handoffDistance = length(vec2(intrinsicDistance, worldY - cameraY));
+    // Use independent limits, matching live terrain rather than a sphere.
+    handoffDistance = ring_handoff_distance(intrinsicDistance, worldY - cameraY);
     intrinsicWidth = Position.z;
     texCoord0 = UV0;
     vertexColor = Color;
