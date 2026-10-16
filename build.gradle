@@ -592,9 +592,31 @@ def requireProjectionRevealScale = { File logFile, String label, String environm
 	}
 	boolean rain = environment == "rain"
 	if (!Double.isFinite(scale) || scale < 0.0D || scale > 1.0D
-			|| (rain ? scale > 0.05D : scale < 0.95D)) {
+			|| (rain ? Math.abs(scale - 0.55D) > 0.002D : scale < 0.95D)) {
 		throw new GradleException(
 				"${label} has proxy reveal scale ${scale} for ${environment}: ${logFile}")
+	}
+	if (rain) {
+		def weatherLines = readRuntimeEvidenceLog(logFile).readLines().findAll {
+			it.contains("[projection-rain-visibility]")
+		}
+		if (weatherLines.size() != 3) {
+			throw new GradleException("${label} requires three visible full-rain captures: ${logFile}")
+		}
+		weatherLines.eachWithIndex { line, stage ->
+			def weather = (line =~ /stage=(\d+), rain=([+\-0-9.Ee]+), revealScale=([+\-0-9.Ee]+), proxyDrawn=([+\-0-9.Ee]+)/)
+			if (!weather.find()) {
+				throw new GradleException("${label} has malformed rain visibility evidence: ${logFile}")
+			}
+			double amount = Double.parseDouble(weather.group(2))
+			double reveal = Double.parseDouble(weather.group(3))
+			double drawn = Double.parseDouble(weather.group(4))
+			if (weather.group(1).toInteger() != stage || !Double.isFinite(amount)
+					|| amount < 0.99D || amount > 1.0D || !Double.isFinite(reveal)
+					|| Math.abs(reveal - 0.55D) > 0.002D || drawn != 1.0D) {
+				throw new GradleException("${label} did not prove visible full-rain Atlas stage ${stage}: ${logFile}")
+			}
+		}
 	}
 }
 ext.requireProjectionRevealScale = requireProjectionRevealScale
@@ -3064,6 +3086,27 @@ tasks.register("verifyFabricRuntimeGateContracts") {
 						+ "[projection-capture] result=true, captures complete\n")
 		expectRejected("wrong clear-weather proxy reveal scale") {
 			verifyFabricProjectionOutputs(projection, "noon")
+		}
+		def rainContractLog = new File(fixtureRoot, "rain-reveal/latest.log")
+		def validRainContract = "[projection-capture] handoff capture armed at requestedChunks=16, proxyRevealScale=0.55\n" +
+				(0..2).collect { stage ->
+					"[projection-rain-visibility] stage=${stage}, rain=1.0, revealScale=0.55, proxyDrawn=1.0\n"
+				}.join("")
+		writeText(rainContractLog, validRainContract)
+		requireProjectionRevealScale(rainContractLog, "rain visibility contract fixture", "rain")
+		[
+			"invisible rain Atlas": validRainContract.replace("proxyRevealScale=0.55", "proxyRevealScale=0.0"),
+			"unfaded rain Atlas": validRainContract.replace("proxyRevealScale=0.55", "proxyRevealScale=1.0"),
+			"missing rain stage": validRainContract.readLines().take(3).join("\n"),
+			"unsettled precipitation": validRainContract.replace("rain=1.0", "rain=0.25"),
+			"missing drawn proxy": validRainContract.replace("proxyDrawn=1.0", "proxyDrawn=0.0"),
+			"duplicate rain stage": validRainContract.replace("stage=2", "stage=1"),
+			"stale capture reveal": validRainContract.replace("revealScale=0.55", "revealScale=0.0")
+		].each { caseName, invalid ->
+			writeText(rainContractLog, invalid)
+			expectRejected(caseName) {
+				requireProjectionRevealScale(rainContractLog, "rain visibility contract fixture", "rain")
+			}
 		}
 		writeText(new File(projection, "logs/latest.log"),
 				"[projection-capture] handoff capture armed at requestedChunks=16, "

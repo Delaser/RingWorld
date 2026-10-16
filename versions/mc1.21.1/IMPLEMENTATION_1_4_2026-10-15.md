@@ -1004,3 +1004,13 @@ validation and visual review. Existing saves, failed attempts, the 52-case
 graphical composite, upgrade/persistence and other diagnostic records remain
 retained under their original source and jar identities. This focused change
 does not relabel those records as final exact-artifact release acceptance.
+
+The first Fabric native rain attempt at `84d1580` produces all three captures
+with full rain, reveal 0.55 and a drawn proxy, then saves and closes normally.
+Its Gradle verifier rejects that result because the historical rain assertion
+explicitly required reveal at most 0.05. The failed record and original verifier
+log remain retained. The shared Fabric/NeoForge assertion now requires the 0.55
+envelope and three ordered full-rain/drawn-proxy observations. Its positive
+contract and seven negative controls pass, including rejection of zero reveal,
+unfaded terrain, missing/duplicate stages, partial rain and a missing proxy.
+Clear-weather, image-detail and handoff-continuity assertions are unchanged.
