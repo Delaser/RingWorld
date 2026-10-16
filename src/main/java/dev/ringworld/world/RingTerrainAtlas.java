@@ -111,6 +111,12 @@ public final class RingTerrainAtlas {
         return (long)present.length * ESTIMATED_BYTES_PER_CELL
                 + (long)tileColumns() * tileRows() * 2L;
     }
+
+    /** Exclusive cache-only capture; public independent Atlas snapshots remain unchanged. */
+    void copyCacheImageTo(RingAtlasCacheImage destination) {
+        if(!destination.matches(this))throw new IllegalArgumentException("cache image belongs to another Atlas");
+        destination.capture(heights,colors,sideColors,blockLights,present,revision);
+    }
     public boolean isComplete() { return presentCount == present.length; }
     public double completion() { return present.length == 0 ? 1.0 : (double)presentCount / present.length; }
 

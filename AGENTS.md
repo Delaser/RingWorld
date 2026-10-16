@@ -188,7 +188,11 @@ pairs still flag increased rare client stalls and a client P95 ratio of 1.1081
 against the 1.10 limit. After correcting a host-specific JFR clock-rate mismatch
 against matching native GC identities, eleven of thirteen long frames contain
 whole-mesh GPU upload samples. Exact packed-byte mesh reuse passes 1,509 dual
-unit cases; native rendering and Large validation remain pending. Preserve
+unit cases. Mesh reuse and staged publication pass both native cache/noon
+smokes; the next ordinary Large run still has one full-GC stall. A diagnostic
+four-processor profile worsens that pause and is not adopted. Cache-only native
+storage now passes 1,587 dual unit cases; actual release on disconnect and
+ordinary Large validation remain pending. Preserve
 the uncalibrated diagnostic records, but do not use them for stack attribution.
 Preserve prior diagnostic identities and failed attempts. Read the active
 handoff before launching tests and never reopen archived hardlinked test

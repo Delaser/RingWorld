@@ -54,7 +54,7 @@ public final class ClientRingState {
     private static long lastTerrainAtlasChangeMillis;
     private static Path cacheDirectory = Path.of("ringworld-cache");
     private static final dev.ringworld.world.RingAtlasCacheWriter CACHE_WRITER =
-            new dev.ringworld.world.RingAtlasCacheWriter();
+            new dev.ringworld.world.RingAtlasCacheWriter(RingAtlasNativeCacheMemory::allocate);
     private static java.util.concurrent.CompletableFuture<Void> terrainAtlasSave;
 
     private ClientRingState() { }

@@ -1387,3 +1387,36 @@ and build-close failure each retire both owners. They do not qualify native
 GPU staging or lifecycle. Fresh affected native controls and the failed Large
 workload remain required. This repair does not claim to resolve full collections
 or the unattributed audio-query frame.
+
+### Cache encoding storage outside the client heap, 17 October
+
+The staged-mesh candidates at `1534f03` pass both loaders' cache/noon smokes
+and the twelve-image visual review. Their first ordinary Fabric Large run has
+no frames over 250 ms on A or B. C still has a 343.324 ms frame overlapping
+a 329.567 ms full collection at the 4 GiB heap limit. A separate same-artifact
+four-processor diagnostic does not resolve this: C's full collection lasts
+525.468 ms and its frame reaches 535.894 ms. Retain that failed diagnostic;
+subsequent acceptance uses the original uncapped processor profile.
+
+Cache encoding previously retained a 192 MiB Java snapshot for a complete
+Large Atlas, with further isolated images needed while encoding. The client
+now supplies explicitly owned LWJGL native buffers to the shared cache writer.
+Bulk capture keeps the same exclusive active/pending ownership and revision;
+the worker emits the original format-11 bytes and atomic file replacement.
+Idle storage is reusable only within the session. Disconnect releases idle
+storage immediately and lets queued final saves finish before releasing their
+active storage. Allocation failure preserves an earlier queued save. Common
+code keeps a heap allocator and has no LWJGL dependency. Public Atlas snapshot,
+sampling, persistence and rendering algorithms are unchanged.
+
+The strict dual build passes 782 Fabric/common and 805 NeoForge cases (1,587
+total), with no failures, errors or skips. Thirty-two encoding comparisons use
+the existing independent Atlas encoder across dense/partial layouts, water,
+lighting, four steps and heap/direct storage. Seven further cases cover full
+overwrite, ownership failure paths, active save/discard, queued-save survival
+and capture allocation below 512 KiB for a four-million-cell Atlas. Direct
+buffer test doubles prove ownership contracts, not actual native freeing.
+The packaged cache fixture additionally waits for the actual native byte count
+to reach zero after each of its three normal disconnects, within its existing
+watchdog. Both native loaders and the failed ordinary Large workload must
+validate this candidate before any performance or release credit.

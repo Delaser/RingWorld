@@ -66,6 +66,10 @@ public final class RingAtlasCacheIdentityTestClient {
             if (stage == 2 || stage == 5 || stage == 8) {
                 if (client.level != null || client.getSingleplayerServer() != null) return true;
                 require(ClientRingState.sessionCleared(), "normal disconnect left raw client state");
+                // Final immutable saves may still be encoding after normal
+                // disconnect. Do not poison/reopen the cache until their
+                // explicitly owned native storage has also retired.
+                if (RingAtlasNativeCacheMemory.liveBytes() != 0L) return true;
                 completedDisconnects++;
                 if (stage == 2) poisonCache(client);
                 if (stage == 8) { finish(client); return true; }
@@ -151,6 +155,7 @@ public final class RingAtlasCacheIdentityTestClient {
         require(completedDisconnects == 3 && installs.size() == 3, "missing disconnect or metadata controls");
         var report = new JsonObject(); report.addProperty("schemaVersion", 1);
         report.addProperty("normalDisconnects", completedDisconnects);
+        report.addProperty("nativeCacheBytesAfterDisconnect", RingAtlasNativeCacheMemory.liveBytes());
         report.addProperty("revision", baseline.revision());
         report.addProperty("contentFingerprint", Long.toUnsignedString(baseline.contentFingerprint()));
         var observations = new JsonArray();

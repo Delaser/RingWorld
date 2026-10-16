@@ -18,7 +18,7 @@ class RingAtlasCacheWriterReuseTest {
     void activeEncodingNeverLendsItsStorageToPendingOwnerUpdates(@TempDir Path directory) throws Exception {
         var tasks=new ArrayDeque<Runnable>();
         var started=new CountDownLatch(1);var finish=new CountDownLatch(1);
-        var calls=new AtomicInteger();var snapshots=new ArrayList<RingTerrainAtlas>();
+        var calls=new AtomicInteger();var snapshots=new ArrayList<RingAtlasCacheImage>();
         var writer=new RingAtlasCacheWriter(tasks::add,(path,snapshot)->{
             snapshots.add(snapshot);
             if(calls.incrementAndGet()==1) {
@@ -47,7 +47,7 @@ class RingAtlasCacheWriterReuseTest {
 
     @Test
     void idleReuseAndSessionDiscardRespectGenerations(@TempDir Path directory) {
-        var tasks=new ArrayDeque<Runnable>();var snapshots=new ArrayList<RingTerrainAtlas>();
+        var tasks=new ArrayDeque<Runnable>();var snapshots=new ArrayList<RingAtlasCacheImage>();
         var writer=new RingAtlasCacheWriter(tasks::add,(path,snapshot)->snapshots.add(snapshot));
         var source=new RingTerrainAtlas(GEOMETRY,42,8);Path path=directory.resolve("atlas.gz");
         writer.submit(path,source);tasks.remove().run();assertTrue(writer.hasReusableSnapshot());
@@ -62,7 +62,7 @@ class RingAtlasCacheWriterReuseTest {
 
     @Test
     void changedWorldIdentityCannotReuseIncompatibleArrays(@TempDir Path directory) {
-        var tasks=new ArrayDeque<Runnable>();var snapshots=new ArrayList<RingTerrainAtlas>();
+        var tasks=new ArrayDeque<Runnable>();var snapshots=new ArrayList<RingAtlasCacheImage>();
         var writer=new RingAtlasCacheWriter(tasks::add,(path,snapshot)->snapshots.add(snapshot));
         for(var source:new RingTerrainAtlas[]{new RingTerrainAtlas(GEOMETRY,42,8),new RingTerrainAtlas(GEOMETRY,43,8),
                 new RingTerrainAtlas(GEOMETRY,43,4),new RingTerrainAtlas(new RingGeometry(416,2048),43,4)}) {

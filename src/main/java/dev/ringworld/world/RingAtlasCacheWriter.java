@@ -1,6 +1,7 @@
 package dev.ringworld.world;
 
 import java.nio.file.Path;
+import java.nio.ByteBuffer;
 import java.util.LinkedHashMap;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
@@ -12,12 +13,17 @@ import java.util.concurrent.TimeUnit;
 public final class RingAtlasCacheWriter {
     private final Executor executor;
     private final CacheSink sink;
+    private final MemoryFactory memoryFactory;
     private final LinkedHashMap<Path, Write> pending = new LinkedHashMap<>();
     private boolean draining;
-    private RingTerrainAtlas reusableSnapshot;
+    private RingAtlasCacheImage reusableSnapshot;
     private long snapshotGeneration;
 
     public RingAtlasCacheWriter() {
+        this(RingAtlasCacheImage::allocateHeap);
+    }
+
+    public RingAtlasCacheWriter(MemoryFactory memoryFactory) {
         this(new ThreadPoolExecutor(0, 1, 1, TimeUnit.SECONDS,
                 new LinkedBlockingQueue<>(), task -> {
                     Thread thread = new Thread(task, "RingWorld atlas cache writer");
@@ -25,7 +31,7 @@ public final class RingAtlasCacheWriter {
                     // expire, so this does not keep an otherwise closed client alive.
                     thread.setDaemon(false);
                     return thread;
-                }));
+                }), (path,snapshot)->snapshot.save(path), memoryFactory);
         Runtime.getRuntime().addShutdownHook(new Thread(this::awaitIdle,
                 "RingWorld atlas cache final flush"));
     }
@@ -33,29 +39,48 @@ public final class RingAtlasCacheWriter {
     RingAtlasCacheWriter(Executor executor) { this(executor, (path, snapshot) -> snapshot.save(path)); }
 
     RingAtlasCacheWriter(Executor executor, CacheSink sink) {
+        this(executor,sink,RingAtlasCacheImage::allocateHeap);
+    }
+
+    RingAtlasCacheWriter(Executor executor, CacheSink sink, MemoryFactory memoryFactory) {
         this.executor = java.util.Objects.requireNonNull(executor, "executor");
         this.sink = java.util.Objects.requireNonNull(sink, "sink");
+        this.memoryFactory = java.util.Objects.requireNonNull(memoryFactory, "memoryFactory");
+    }
+
+    /** Each allocation must be exclusive until close; the client supplies native memory. */
+    @FunctionalInterface public interface MemoryFactory { Memory allocate(int bytes); }
+    public interface Memory extends AutoCloseable {
+        ByteBuffer buffer();
+        @Override void close();
     }
 
     @FunctionalInterface
     interface CacheSink {
-        void save(Path path, RingTerrainAtlas snapshot) throws java.io.IOException;
+        void save(Path path, RingAtlasCacheImage snapshot) throws java.io.IOException;
     }
 
     public CompletableFuture<Void> submit(Path path, RingTerrainAtlas atlas) {
+        java.util.Objects.requireNonNull(atlas,"atlas");
         Path target = path.toAbsolutePath().normalize();
         synchronized (this) {
             Write previous = pending.get(target);
             // A pending snapshot cannot be read by the writer while this lock
             // is held. An active write is removed from pending and never lends
             // its storage until all encoding and file replacement have finished.
-            RingTerrainAtlas snapshot = previous == null ? reusableSnapshot : previous.snapshot();
-            if (previous == null) reusableSnapshot = null;
-            if (snapshot == null || !snapshot.geometry().equals(atlas.geometry())
-                    || snapshot.worldHash() != atlas.worldHash() || snapshot.sampleStep() != atlas.sampleStep()) {
-                snapshot = new RingTerrainAtlas(atlas.geometry(), atlas.worldHash(), atlas.sampleStep());
+            RingAtlasCacheImage candidate = previous == null ? reusableSnapshot : previous.snapshot();
+            RingAtlasCacheImage snapshot = candidate;
+            if (snapshot == null || !snapshot.matches(atlas)) {
+                snapshot = new RingAtlasCacheImage(atlas,memoryFactory);
             }
-            atlas.copySnapshotTo(snapshot);
+            try { atlas.copyCacheImageTo(snapshot); }
+            catch(RuntimeException | Error failure) {
+                if(snapshot==candidate)abortPending(failure,false);
+                snapshot.close();
+                throw failure;
+            }
+            if(previous==null)reusableSnapshot=null;
+            if(candidate!=null && candidate!=snapshot)candidate.close();
             CompletableFuture<Void> completion = previous == null
                     ? new CompletableFuture<>() : previous.completion();
             pending.put(target, new Write(snapshot, completion, snapshotGeneration));
@@ -75,6 +100,7 @@ public final class RingAtlasCacheWriter {
     /** Drop idle storage and prevent earlier-session writes from repopulating it. Does not cancel saves. */
     public synchronized void discardReusableSnapshots() {
         snapshotGeneration++;
+        if(reusableSnapshot!=null)reusableSnapshot.close();
         reusableSnapshot = null;
     }
 
@@ -115,23 +141,30 @@ public final class RingAtlasCacheWriter {
                 synchronized (this) {
                     if (event.success && write.generation() == snapshotGeneration && reusableSnapshot == null) {
                         reusableSnapshot = write.snapshot();
-                    }
+                    } else write.snapshot().close();
                 }
             }
         }
     }
 
     private void abortPending(Throwable failure) {
+        abortPending(failure,true);
+    }
+
+    private void abortPending(Throwable failure,boolean resetDrain) {
         Write[] rejected;
         synchronized (this) {
+            if(reusableSnapshot!=null)reusableSnapshot.close();
             reusableSnapshot = null;
             snapshotGeneration++;
             rejected = pending.values().toArray(Write[]::new);
             pending.clear();
-            draining = false;
+            if(resetDrain)draining = false;
             notifyAll();
         }
-        for (Write write : rejected) write.completion().completeExceptionally(failure);
+        for (Write write : rejected) {
+            try { write.snapshot().close(); } finally { write.completion().completeExceptionally(failure); }
+        }
     }
 
     /** Only the JVM shutdown hook waits; render-thread teardown merely queues a snapshot. */
@@ -147,7 +180,7 @@ public final class RingAtlasCacheWriter {
         if (interrupted) Thread.currentThread().interrupt();
     }
 
-    private record Write(RingTerrainAtlas snapshot, CompletableFuture<Void> completion, long generation) {}
+    private record Write(RingAtlasCacheImage snapshot, CompletableFuture<Void> completion, long generation) {}
 
     @jdk.jfr.Name("ringworld.AtlasCacheSave")
     @jdk.jfr.Label("RingWorld Atlas cache save")
