@@ -22,9 +22,11 @@ import zipfile
 try:
     from scripts.run_backport_exterior_diagnostics import ROOT, copy_mods, copy_tree, digest, require, runtime_inventory, save_json
     from scripts.verify_backport_frame_evidence import verify as verify_frames
+    from scripts.backport_ui_capture_state_proof import validate as validate_ui_capture_state
 except ModuleNotFoundError:
     from run_backport_exterior_diagnostics import ROOT, copy_mods, copy_tree, digest, require, runtime_inventory, save_json
     from verify_backport_frame_evidence import verify as verify_frames
+    from backport_ui_capture_state_proof import validate as validate_ui_capture_state
 
 
 @dataclass
@@ -371,6 +373,7 @@ def main() -> None:
                         'Missing initial server-owned Creative flight proof')
             if case.verifier: gradle(case.verifier, 'verification.log')
             if case.name == 'clouds': validate_cloud_cameras(text)
+            ui_capture_state = validate_ui_capture_state(text) if case.name == 'atlas-ui' else None
             screenshots = sorted((runtime / 'screenshots').glob('*.png'))
             require(len(screenshots) >= case.captures, 'Missing screenshots')
             require(required_native_captures(case) <= {p.name for p in screenshots},
@@ -418,6 +421,7 @@ def main() -> None:
                       'candidateSha256': sha, 'sourceCommit': source, 'elapsedSeconds': time.monotonic() - started,
                       'processLogSha256': digest(phase / 'process.log'), 'captures': pngs,
                       'frames': frames, 'worlds': worlds, 'cacheEvidence': cache_evidence}
+            if ui_capture_state is not None: record['uiCaptureStateEvidence'] = ui_capture_state
             save_json(phase / 'terminal.json', record); rows.append(record)
             print('PASS', args.loader, case.name, flush=True)
         except BaseException as failure:

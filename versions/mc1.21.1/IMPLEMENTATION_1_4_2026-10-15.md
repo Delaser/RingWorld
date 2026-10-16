@@ -1225,3 +1225,39 @@ independently from the frozen pre-repair jar. The checked-in oracle SHA-256 is
 Native affected rendering/lifecycle controls and Large measurements remain
 required. Completed unrelated evidence remains preserved with its original
 source and artifact identity; the release is not yet qualified.
+
+### Atlas UI capture acknowledgement, 16 October
+
+The exclusive-workspace candidates at `abe6eb6` pass all sixteen focused
+native controls: noon, Atlas UI, cache identity, production lifecycle/reopen,
+different-layout switching, foliage, early streaming and Fabulous rain on both
+loaders. Both foliage runs preserve 144 motion steps, zero unsafe coverage
+frames, exact restoration and zero history residual. The image set contains
+84 native captures and four derived verifier images.
+
+Manual review of all sixteen contact sheets catches an evidence defect:
+NeoForge's capture labelled resumed still shows the preceding paused screen.
+The fixture checks the actual RUNNING acknowledgement before capture, but its
+three-frame wait starts when the request is sent. A late acknowledgement can
+therefore capture the preceding framebuffer. The original successful functional
+terminal and stale screenshot remain retained; that image is not accepted as
+visual proof of the resumed screen.
+
+The opt-in fixture now waits three actual rendered frames after observing the
+expected server state, resetting on state loss or a new request. A pure barrier
+rejects tick-only advancement and backward/invalid counters. Native logs bind
+running, paused, resumed and cancelled captures to acknowledgement/frame
+boundaries, and the packaged driver validates their ordered states and delays.
+Six negative host-contract cases reject absent, stale, duplicate, reordered or
+insufficiently rendered boundaries. The existing eleven driver tests also pass.
+
+The review additionally finds a stale completion estimate on a cancelled job.
+Only a running generation job now displays its projected ETA; complete shows
+zero and inactive/saving states show Unknown. Transported progress and server
+work are unchanged. Seven state cases per loader cover this display policy.
+The strict dual rebuild passes 712 Fabric/common and 735 NeoForge cases (1,447
+total), with no failures, errors or skips. Only the two Atlas UI runs need fresh
+captures; renderer, Atlas, server, persistence and weather implementations are
+unchanged from the workspace candidates. Their fourteen other focused controls
+remain retained with original identities, subject to the narrow archive impact
+check. Large performance acceptance and the final review report remain pending.

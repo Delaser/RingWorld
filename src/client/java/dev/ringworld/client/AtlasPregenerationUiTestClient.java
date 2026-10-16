@@ -46,6 +46,7 @@ public final class AtlasPregenerationUiTestClient {
     private static final int DISCONNECT_TIMEOUT_TICKS = 200;
     private long renderedFrames;
     private long readyAfterFrame;
+    private final RingCaptureStateBarrier stateCaptureBarrier = new RingCaptureStateBarrier(SETTLE_FRAMES);
     private int stage;
     private int ticks;
     private boolean capturedInitial;
@@ -237,7 +238,7 @@ public final class AtlasPregenerationUiTestClient {
                 ((ConfirmScreenAccessor)confirm).ringworld$exitButtons().get(0).onPress(); arm(); stage++;
             }
             case 4 -> {
-                if (status == null || status.progress().state() != AtlasPregenerationState.RUNNING || !settled()) return true;
+                if (!settledState(status, AtlasPregenerationState.RUNNING)) return true;
                 capture(client, "atlas-ui-04-running", false);
                 // The next capture is world-only evidence. Keep the map/UI
                 // screenshots unchanged while excluding HUD pixels from the
@@ -385,17 +386,17 @@ public final class AtlasPregenerationUiTestClient {
                 AtlasPregenerationClientState.control(status.worldHash(), AtlasPregenerationAction.PAUSE); arm(); stage++;
             }
             case 9 -> {
-                if (status == null || status.progress().state() != AtlasPregenerationState.PAUSED || !settled()) return true;
+                if (!settledState(status, AtlasPregenerationState.PAUSED)) return true;
                 capture(client, "atlas-ui-07-paused", false);
                 AtlasPregenerationClientState.control(status.worldHash(), AtlasPregenerationAction.RESUME); arm(); stage++;
             }
             case 10 -> {
-                if (status == null || status.progress().state() != AtlasPregenerationState.RUNNING || !settled()) return true;
+                if (!settledState(status, AtlasPregenerationState.RUNNING)) return true;
                 capture(client, "atlas-ui-08-resumed", false);
                 AtlasPregenerationClientState.control(status.worldHash(), AtlasPregenerationAction.CANCEL); arm(); stage++;
             }
             case 11 -> {
-                if (status == null || status.progress().state() != AtlasPregenerationState.CANCELLED || !settled()) return true;
+                if (!settledState(status, AtlasPregenerationState.CANCELLED)) return true;
                 capture(client, "atlas-ui-09-cancelled", false);
                 if (!(client.screen instanceof RingWorldMapScreen screen)) return true;
                 Button retry = screen.children().stream().filter(Button.class::isInstance)
@@ -470,8 +471,16 @@ public final class AtlasPregenerationUiTestClient {
         return true;
     }
 
-    private void arm() { readyAfterFrame = renderedFrames + SETTLE_FRAMES; }
+    private void arm() {
+        readyAfterFrame = renderedFrames + SETTLE_FRAMES;
+        stateCaptureBarrier.reset();
+    }
     private boolean settled() { return renderedFrames >= readyAfterFrame; }
+
+    private boolean settledState(AtlasPregenerationStatus status, AtlasPregenerationState expected) {
+        return settled() && stateCaptureBarrier.ready(status == null ? null : status.progress().state(),
+                expected, renderedFrames);
+    }
 
     /**
      * This runs only after the real integrated world has connected and at
@@ -649,6 +658,12 @@ public final class AtlasPregenerationUiTestClient {
         return loaded;
     }
     private void capture(Minecraft client, String name, boolean finalCapture) {
+        if (name.equals("atlas-ui-04-running") || name.equals("atlas-ui-07-paused")
+                || name.equals("atlas-ui-08-resumed") || name.equals("atlas-ui-09-cancelled")) {
+            var status = AtlasPregenerationClientState.status().orElseThrow();
+            RingWorldMod.LOGGER.info("[atlas-ui-test] rendered-state capture={} state={} acknowledgedFrame={} captureFrame={}",
+                    name, status.progress().state(), stateCaptureBarrier.firstObservedFrame(), renderedFrames);
+        }
         Screenshot.grab(client.gameDirectory, name + ".png", client.getMainRenderTarget(), 1, message -> {
             if (finalCapture) finalCaptureSaved = true;
             RingWorldMod.LOGGER.info("[atlas-ui-test] screenshot {}: {}", name, message.getString());

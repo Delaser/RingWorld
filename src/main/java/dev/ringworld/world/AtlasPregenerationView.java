@@ -40,7 +40,11 @@ public record AtlasPregenerationView(
                 format(progress.elapsed()),
                 progress.cellsPerSecond() > 0.01
                         ? String.format(Locale.ROOT, "%.1f cells/s", progress.cellsPerSecond()) : "Calculating…",
-                progress.eta().map(AtlasPregenerationView::format).orElse("Unknown"),
+                switch (progress.state()) {
+                    case RUNNING -> progress.eta().map(AtlasPregenerationView::format).orElse("Unknown");
+                    case COMPLETE -> "0s";
+                    default -> "Unknown";
+                },
                 title(progress.state()),
                 progress.lastError().or(() -> status.message()).orElse(""),
                 Set.copyOf(actions));
