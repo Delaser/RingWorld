@@ -9,7 +9,9 @@ import java.util.Objects;
  */
 public final class RingSurfaceBuildWorkspace {
     private RingTerrainAtlas snapshot;
+    private RingTerrainAtlas reducedSnapshot;
     private int[] pixels, blockLights;
+    private final int[][] mipPixels = new int[32][];
     private float[] heights;
     private Lease active;
 
@@ -39,6 +41,26 @@ public final class RingSurfaceBuildWorkspace {
         public RingTerrainAtlas atlas() {
             requireOpen();
             return snapshot;
+        }
+
+        /** Worker-only, under this lease; the public independent display-copy API is unchanged. */
+        public RingTerrainAtlas displayAtlas(RingLodQuality quality) {
+            requireOpen();
+            if (quality == null || !snapshot.isComplete() || quality.sampleStep() <= snapshot.sampleStep()) return snapshot;
+            if (reducedSnapshot == null || !reducedSnapshot.geometry().equals(snapshot.geometry())
+                    || reducedSnapshot.worldHash() != snapshot.worldHash()
+                    || reducedSnapshot.sampleStep() != quality.sampleStep()) {
+                reducedSnapshot = new RingTerrainAtlas(snapshot.geometry(), snapshot.worldHash(), quality.sampleStep());
+            }
+            quality.copyDisplaySnapshotTo(snapshot, reducedSnapshot);
+            return reducedSnapshot;
+        }
+
+        public int[] mipPixels(int level, int count) {
+            requireOpen();
+            if (level <= 0 || level >= mipPixels.length || count <= 0) throw new IllegalArgumentException("invalid mip scratch dimensions");
+            if (mipPixels[level] == null || mipPixels[level].length != count) mipPixels[level] = new int[count];
+            return mipPixels[level];
         }
 
         /** Each build overwrites every element before reading these scratch arrays. */

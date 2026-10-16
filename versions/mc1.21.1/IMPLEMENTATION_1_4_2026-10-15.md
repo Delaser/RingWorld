@@ -1261,3 +1261,46 @@ captures; renderer, Atlas, server, persistence and weather implementations are
 unchanged from the workspace candidates. Their fourteen other focused controls
 remain retained with original identities, subject to the narrow archive impact
 check. Large performance acceptance and the final review report remain pending.
+
+### Remaining client storage allocation, 16 October
+
+Both acknowledged-frame Atlas UI repeats pass on `469da6c`; full-size review
+confirms Generating/Pause after resume and Cancelled/Retry with Unknown ETA
+after cancellation. The reviewed focused composite retains fourteen unchanged
+workspace-candidate controls and these two new UI runs: 84 native images, four
+derived images, sixteen contact sheets and sixteen full-size image inspections.
+Original stale UI evidence remains retained. Early streaming/partial generation
+still has coarse, tiled or faceted loading appearances; those images do not
+certify settled quality. Moving wall/water review remains pending.
+
+The first ordinary, unseeded Large run with the UI candidate saves its edit
+without explicit flush, drains loaded captures, closes normally and verifies
+the edited block through a native restart. Performance remains blocked. Its
+measured clients have 5/7/5 frames over 250 ms and 1/3/0 over 500 ms. Several
+outliers overlap full G1 compactions of approximately 258–393 ms. Bounded JFR
+samples confirm that renderer snapshot/pixel and immutable mesh-sample hot
+allocations have disappeared from the leading groups; client-cache snapshots
+and reduced-display copies are now the leading avoidable Atlas allocations.
+This is a diagnostic collection, not a completed matched pair or acceptance.
+
+The next repair reuses only exclusively owned client cache snapshots, complete
+reduced-display buffers and per-level mip scratch. Active cache encoding never
+lends its snapshot to a new capture; pending writes coalesce under the owner
+lock. Session generation changes discard idle buffers and prevent older writes
+from restoring them, while preserving all queued final saves and their paths.
+Raw client teardown also checks that no idle cache snapshot remains. Worker
+fatal errors/executor rejection complete pending failures and release drain
+state instead of stranding shutdown. The public independent snapshot, display
+copy and mip APIs retain their original algorithms; new destination APIs are
+validated separately. Server implementation, file/wire formats, projection,
+coverage readiness, weather and shader resources are unchanged.
+
+The strict dual build passes 734 Fabric/common and 757 NeoForge cases (1,491
+total), with no failures, errors or skips. New cases cover actual concurrent
+active/pending snapshot isolation with final file verification, session discard,
+world/layout changes, failure/retry, byte-equivalent reduced-display and mip
+replacement, and allocation after warmup. Cache capture measures 121,600 bytes
+for 200 writes with a test sink excluding disk allocation; reduced-display/mip
+reuse measures 480 bytes for twenty complete builds. These small synthetic
+allocation contracts do not prove Large performance. Native cache/noon smoke
+and the failed Large workload must pass before continuing paired acceptance.

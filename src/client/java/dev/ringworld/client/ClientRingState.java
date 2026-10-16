@@ -102,6 +102,7 @@ public final class ClientRingState {
                            RingWallStyle newWallStyle, RingSkyProfile newSkyProfile,
                            long newGeneratorSeed, int newSettingsFormatVersion,
                            long newLayoutFingerprint) {
+        CACHE_WRITER.discardReusableSnapshots();
         set(newGeometry, newWallHeightBlocks, newSurfaceReferenceY, newTerrainNoiseMapping,
                 newWallStyle, newSkyProfile, RingWorldGenerationSettings.DEFAULT,
                 newGeneratorSeed, newSettingsFormatVersion, newLayoutFingerprint);
@@ -360,7 +361,8 @@ public final class ClientRingState {
                 && !hasServerAtlasWorldHash
                 && terrainAtlasCachePath == null
                 && !terrainAtlasDirty
-                && !terrainAtlasPendingRender;
+                && !terrainAtlasPendingRender
+                && !CACHE_WRITER.hasReusableSnapshot();
     }
 
     /** Coalesces partial writes and waits for quiet tiles before copying a complete Atlas. */
@@ -432,6 +434,7 @@ public final class ClientRingState {
 
     public static void clear() {
         saveTerrainAtlasIfDue(true);
+        CACHE_WRITER.discardReusableSnapshots();
         geometry = null;
         wallHeightBlocks = 0;
         surfaceReferenceY = 0;

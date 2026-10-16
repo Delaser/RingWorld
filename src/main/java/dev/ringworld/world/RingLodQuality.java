@@ -51,4 +51,22 @@ public enum RingLodQuality {
         }
         return count == 0 ? 0 : (int)Math.round((double)sum / count);
     }
+
+    /** Replaces an exclusively owned complete display buffer; never share it with an active build. */
+    public void copyDisplaySnapshotTo(RingTerrainAtlas source, RingTerrainAtlas destination) {
+        if (!source.isComplete() || sampleStep <= source.sampleStep() || source == destination
+                || !source.geometry().equals(destination.geometry())
+                || source.worldHash() != destination.worldHash() || destination.sampleStep() != sampleStep) {
+            throw new IllegalArgumentException("complete source and separate matching reduced display buffer required");
+        }
+        for (int row = 0; row < destination.rows(); row++) {
+            int sourceRow = Math.min(source.rows() - 1, (row * sampleStep + sampleStep / 2) / source.sampleStep());
+            for (int col = 0; col < destination.columns(); col++) {
+                int sourceCol = Math.min(source.columns() - 1, (col * sampleStep + sampleStep / 2) / source.sampleStep());
+                destination.putCell(col, row, source.cellHeight(sourceCol, sourceRow),
+                        source.cellColor(sourceCol, sourceRow), source.cellBlockLight(sourceCol, sourceRow),
+                        source.cellSideColor(sourceCol, sourceRow), waterCoverage(source, col, row));
+            }
+        }
+    }
 }

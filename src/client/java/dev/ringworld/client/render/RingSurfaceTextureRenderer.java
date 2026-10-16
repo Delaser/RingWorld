@@ -357,11 +357,9 @@ public final class RingSurfaceTextureRenderer {
                                              MeshInputs inputs, RingTerrainPreview preview,
                                              RingSurfaceBuildWorkspace.Lease lease) {
         if (generation != textureBuildGeneration) throw new java.util.concurrent.CancellationException("obsolete surface job");
-        RingSurfaceBuildSnapshot displaySnapshot = quality == null
-                || !sourceSnapshot.atlas().isComplete()
-                || quality.sampleStep() <= sourceSnapshot.atlas().sampleStep() ? sourceSnapshot
-                : new RingSurfaceBuildSnapshot(quality.displaySnapshot(sourceSnapshot.atlas()),
-                        sourceSnapshot.renderRevision());
+        RingTerrainAtlas displayAtlas = lease.displayAtlas(quality);
+        RingSurfaceBuildSnapshot displaySnapshot = displayAtlas == sourceSnapshot.atlas() ? sourceSnapshot
+                : new RingSurfaceBuildSnapshot(displayAtlas, sourceSnapshot.renderRevision());
         RingSurfaceBuildSnapshot preparedSnapshot = displaySnapshot.resolveDetailedHeightFingerprint();
         RingTerrainAtlas atlas = preparedSnapshot.atlas();
         long meshStarted = System.nanoTime();
@@ -493,8 +491,10 @@ public final class RingSurfaceTextureRenderer {
                     }
                 }
                 if (level + 1 < mipLevels) {
-                    levelPixels = RingSurfaceLod.buildNextMipRgbLight(
-                            levelPixels, levelWidth, levelHeight);
+                    int[] nextPixels = lease.mipPixels(level + 1,
+                            Math.max(1, levelWidth >> 1) * Math.max(1, levelHeight >> 1));
+                    RingSurfaceLod.buildNextMipRgbLight(levelPixels, levelWidth, levelHeight, nextPixels);
+                    levelPixels = nextPixels;
                     levelWidth = Math.max(1, levelWidth >> 1);
                     levelHeight = Math.max(1, levelHeight >> 1);
                 }

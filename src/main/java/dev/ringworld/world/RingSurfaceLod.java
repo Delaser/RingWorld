@@ -140,6 +140,26 @@ public final class RingSurfaceLod {
         return target;
     }
 
+    /** Same box filter into exclusively owned scratch storage; every output element is overwritten. */
+    public static void buildNextMipRgbLight(int[] source, int sourceWidth, int sourceHeight, int[] target) {
+        if (sourceWidth <= 0 || sourceHeight <= 0 || source.length != sourceWidth * sourceHeight
+                || target == source || target.length != Math.max(1, sourceWidth >> 1) * Math.max(1, sourceHeight >> 1)) {
+            throw new IllegalArgumentException("invalid source or destination mip dimensions");
+        }
+        int targetWidth = Math.max(1, sourceWidth >> 1);
+        int targetHeight = Math.max(1, sourceHeight >> 1);
+        for (int y = 0; y < targetHeight; y++) {
+            int y0 = Math.min(sourceHeight - 1, y * 2);
+            int y1 = Math.min(sourceHeight - 1, y0 + 1);
+            for (int x = 0; x < targetWidth; x++) {
+                int x0 = Math.floorMod(x * 2, sourceWidth);
+                int x1 = Math.floorMod(x0 + 1, sourceWidth);
+                target[y * targetWidth + x] = averageChannels(source[y0 * sourceWidth + x0],
+                        source[y0 * sourceWidth + x1], source[y1 * sourceWidth + x0], source[y1 * sourceWidth + x1]);
+            }
+        }
+    }
+
     private static int averageChannels(int first, int second, int third, int fourth) {
         int alpha = ((first >>> 24) + (second >>> 24)
                 + (third >>> 24) + (fourth >>> 24) + 2) >> 2;
