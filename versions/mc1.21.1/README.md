@@ -26,9 +26,12 @@ recapture fairness fix. The separate 1.20.1 lane is planned, not implemented.
 Full acceptance retains all ten 26.x fixture families and adds explicit 1.4,
 upgrade, performance and soak checks. See the [audit record](MAINLINE_1_4_AUDIT_2026-10-15.md).
 
-The active development artifacts identify as `1.4.0-dev.1+mc1.21.1`; the
-1.3 results above are historical intake references. Current strict builds pass
-636 Fabric/common cases and 659 NeoForge cases. Both loaders pass the repaired
+The internal acceptance candidates now identify as `1.4.0+mc1.21.1` so the
+remaining runtime gates exercise the intended release metadata. This label
+does not establish acceptance or authorize publication. Prior development
+artifacts identify as `1.4.0-dev.1+mc1.21.1`; the 1.3 results above are historical
+intake references. Both development and stable-labelled allocation-repair builds
+pass 647 Fabric/common cases and 670 NeoForge cases. Both loaders pass the repaired
 foliage and cloud-camera fixtures; their original failed attempts remain retained.
 The current rain correction keeps the complete Atlas visible with a shared
 weather fade at the live-terrain handoff. Four complete-Atlas rain cells, eight
@@ -38,6 +41,12 @@ explicitly partial-Atlas evidence. Gameplay, raid, upgrade and resource/lifecycl
 records retain their own source and artifact identities in the implementation
 ledger. The complete performance/soak and exact-artifact acceptance matrix
 remains pending. No stable 1.4 backport is published.
+
+The three retained Fabric Large comparison pairs meet relative P95/P99 limits
+but flag increased rare client stalls. A focused texture-sampling allocation
+repair passes 4,096 bit-exact frozen-jar vectors on both loaders; its native
+visual/performance validation remains pending. Existing completed diagnostic
+evidence and failed attempts remain preserved with their original identities.
 
 ## Historical feature handoffs
 

@@ -414,13 +414,14 @@ public final class RingSurfaceTextureRenderer {
         }
         double spacingX = (double)geometry.circumferenceBlocks() / targetColumns;
         double spacingZ = (double)geometry.widthBlocks() / targetRows;
+        RingTerrainAtlas.MutableSurfaceSample sample = new RingTerrainAtlas.MutableSurfaceSample();
         if (atlas.isComplete()) {
             for (int row = 0; row < targetRows; row++) {
                 double z = geometry.minWidthZ()
                         + (row + 0.5) * spacingZ;
                 for (int column = 0; column < targetColumns; column++) {
                     double x = (column + 0.5) * spacingX;
-                    RingTerrainAtlas.SurfaceSample sample = atlas.sample(x, z);
+                    atlas.sampleInto(x, z, sample);
                     int index = row * targetColumns + column;
                     heights[index] = (float)sample.height();
                     pixels[index] = RingWaterColor.tint(sample.color(), sample.waterCoverage());
@@ -432,7 +433,7 @@ public final class RingSurfaceTextureRenderer {
                 double z = geometry.minWidthZ() + (row + 0.5) * spacingZ;
                 for (int column = 0; column < targetColumns; column++) {
                     double x = (column + 0.5) * spacingX;
-                    RingTerrainAtlas.SurfaceSample sample = atlas.sample(x, z);
+                    atlas.sampleInto(x, z, sample);
                     if (sample.present()) pixels[row * targetColumns + column] =
                             RingWaterColor.tint(pixels[row * targetColumns + column], sample.waterCoverage());
                     blockLights[row * targetColumns + column] = sample.present()

@@ -305,6 +305,16 @@ public final class RingTerrainAtlas {
      * progressively without producing zero-height spikes.
      */
     public SurfaceSample sample(double canonicalX, double canonicalZ) {
+        return sampleWithFactory(canonicalX, canonicalZ, IMMUTABLE_SAMPLE_FACTORY);
+    }
+
+    /** Fills caller-owned scratch storage; do not share or retain it as an immutable snapshot. */
+    public void sampleInto(double canonicalX, double canonicalZ, MutableSurfaceSample destination) {
+        sampleWithFactory(canonicalX, canonicalZ,
+                java.util.Objects.requireNonNull(destination, "destination").receiver);
+    }
+
+    private <T> T sampleWithFactory(double canonicalX, double canonicalZ, SampleFactory<T> factory) {
         double atlasX = geometry.wrapX(canonicalX) / sampleStep - 0.5;
         double atlasZ = (canonicalZ - geometry.minWidthZ()) / sampleStep - 0.5;
         int x0 = (int)Math.floor(atlasX);
@@ -337,11 +347,11 @@ public final class RingTerrainAtlas {
                 weightTotal += weight;
             }
         }
-        if (weightTotal <= 0.0) return SurfaceSample.MISSING;
+        if (weightTotal <= 0.0) return factory.missing();
         int color = clampColor(red / weightTotal) << 16
                 | clampColor(green / weightTotal) << 8
                 | clampColor(blue / weightTotal);
-        return new SurfaceSample(height / weightTotal, color,
+        return factory.create(height / weightTotal, color,
                 blockLight / weightTotal, weightTotal, waterCoverage / weightTotal);
     }
 
@@ -589,6 +599,44 @@ public final class RingTerrainAtlas {
 
     private static int clampColor(double value) {
         return Math.max(0, Math.min(255, (int)Math.round(value)));
+    }
+
+    private interface SampleFactory<T> {
+        T create(double height, int color, double blockLight, double coverage, double waterCoverage);
+        T missing();
+    }
+
+    private static final SampleFactory<SurfaceSample> IMMUTABLE_SAMPLE_FACTORY = new SampleFactory<>() {
+        public SurfaceSample create(double height, int color, double blockLight, double coverage, double waterCoverage) {
+            return new SurfaceSample(height, color, blockLight, coverage, waterCoverage);
+        }
+        public SurfaceSample missing() { return SurfaceSample.MISSING; }
+    };
+
+    /** One worker-owned sample sink; contains only primitive values and its own receiver. */
+    public static final class MutableSurfaceSample {
+        private double height = RingGeometry.SURFACE_Y;
+        private int color = -1;
+        private double blockLight;
+        private double coverage;
+        private double waterCoverage;
+        private final SampleFactory<Void> receiver = new SampleFactory<>() {
+            public Void create(double height, int color, double blockLight, double coverage, double waterCoverage) {
+                MutableSurfaceSample.this.height = height;
+                MutableSurfaceSample.this.color = color;
+                MutableSurfaceSample.this.blockLight = blockLight;
+                MutableSurfaceSample.this.coverage = coverage;
+                MutableSurfaceSample.this.waterCoverage = waterCoverage;
+                return null;
+            }
+            public Void missing() { return create(RingGeometry.SURFACE_Y, -1, 0.0, 0.0, 0.0); }
+        };
+        public double height() { return height; }
+        public int color() { return color; }
+        public double blockLight() { return blockLight; }
+        public double coverage() { return coverage; }
+        public double waterCoverage() { return waterCoverage; }
+        public boolean present() { return color >= 0 && coverage > 0.0; }
     }
 
     public record SurfaceSample(double height, int color, double blockLight, double coverage,

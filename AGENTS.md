@@ -182,6 +182,14 @@ Fabric/Forge. Follow `versions/mc1.21.1/IMPLEMENTATION_1_4_2026-10-15.md` for
 current changes/evidence and continue diagnosis/retesting through acceptance.
 Do not publish or modify the public server under this build authorization.
 
+The internal 1.21.1 acceptance build now uses `1.4.0+mc1.21.1` metadata.
+It is not qualified or published. Three completed Fabric Large comparison
+pairs flag increased rare client stalls despite passing relative P95/P99
+limits; a focused reusable texture-sampling repair is under validation.
+Preserve prior diagnostic identities and failed attempts. Read the active
+handoff before launching tests and never reopen archived hardlinked test
+worlds in place; make independent copies for reproduction.
+
 Keep both keys and values weak in `RingClientChunkMaps`. Vanilla private storage
 retains its owning client manager; strong values defeat weak keys and retain
 closed client/integrated-server worlds. The live manager owns its current
