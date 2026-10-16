@@ -1356,3 +1356,34 @@ for that negative control; its failed record is retained and the coordinate
 was corrected to the actual sampled row. Native affected rendering/lifecycle
 checks and the failed Large workload remain required; no acceptance is granted
 from these unit cases.
+
+### Separate mesh preparation from surface publication, 17 October
+
+The exact-byte candidates at `e49d928` pass both loaders' cache-identity and
+noon projection smokes. Twelve native images were reviewed through two contact
+sheets and four full-size inspections. The first repaired Fabric Large run
+also saves its gold-block edit ordinarily, drains loaded work, exits normally
+and verifies the block through a native restart. This is one diagnostic run,
+not three matched pairs. Its measured client P95 values are 24.53/24.31/26.94 ms;
+frames over 250 ms are 2/1/0, with no frames over 500 ms. One A frame combines
+a 163.74 ms mesh upload with texture upload and release; another A frame has
+an OpenAL device-query sample but remains unattributed. B's 386.76 ms frame
+overlaps a 349.249 ms full collection. These residual failures remain open.
+
+The next renderer repair prepares a changed GPU mesh on one render call while
+retaining the preceding matched mesh and texture. A private staged owner holds
+the replacement, immutable build and exclusive workspace lease. The following
+render call rechecks the existing generation/world/revision guard before
+publishing the texture and mesh together. An identical packed mesh still uses
+the existing buffer. Resource reload/disconnect closes both staged owners;
+current-revision readiness and raw teardown include this pending state.
+The ordinary complete-scene capture predicate, shaders, rain policy, coverage
+proof and all vertex algorithms are unchanged.
+
+Strict dual build/check passes, retaining all 1,509 passing unit cases.
+Three additional bounded cases compile the actual private staged-owner close
+implementation with minimal resource stubs: normal close, GPU-close failure
+and build-close failure each retire both owners. They do not qualify native
+GPU staging or lifecycle. Fresh affected native controls and the failed Large
+workload remain required. This repair does not claim to resolve full collections
+or the unattributed audio-query frame.
