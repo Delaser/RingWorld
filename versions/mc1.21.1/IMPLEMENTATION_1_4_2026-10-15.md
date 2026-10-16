@@ -1130,7 +1130,8 @@ is now selected for subsequent internal acceptance candidates; neither the
 label nor compilation establishes release acceptance. The stable-labelled
 strict rebuild also passes all 1,317 cases and the existing dependency, shader,
 Mixin, loader-boundary and runtime-verifier contracts. Both allocation tests
-report zero measured bytes for 200,000 warmed reusable samples.
+report 616 measured bytes for 200,000 warmed reusable samples, within the
+262,144-byte bound and without a result object for every point.
 Affected native texture/performance validation remains pending.
 Existing records retain their original identities;
 this repair does not invalidate unrelated completed tests or qualify a release.
