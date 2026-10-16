@@ -1014,3 +1014,56 @@ envelope and three ordered full-rain/drawn-proxy observations. Its positive
 contract and seven negative controls pass, including rejection of zero reveal,
 unfaded terrain, missing/duplicate stages, partial rain and a missing proxy.
 Clear-weather, image-detail and handoff-continuity assertions are unchanged.
+
+Fresh packaged validation at `e4ab935` now passes on both loaders. The strict
+dual build passes 636 Fabric/common and 659 NeoForge Java cases (1,295 total),
+with no failures, errors or skipped cases. Frozen runtime jars are retained in
+the local `b14-rain-visibility-candidates-v3` identity:
+
+- Fabric: `d3c2a43ef11c0ce08b106d4003d40b060ce1f597cf0f5f7203aee9701a8a2efc`.
+- NeoForge: `a42c9fea11e4850469c52a2cd7aa0f459d1ce79a0a3667daf48ccfedb35dbfde`.
+
+All four complete-Atlas rain cells pass: Fancy at 16 chunks and Fabulous at
+28 chunks on each loader. Each produces three ordered native observations of
+full rain, reveal 0.55 and a drawn proxy, passes the unchanged image-detail and
+handoff-continuity checks, saves all dimensions normally, and passes the
+independent persisted Atlas-11 check. All twelve rain screenshots were reviewed.
+
+Eight clear-weather controls also pass: Fancy noon, Fabulous noon, deliberately
+early streaming and the foliage/rebuild fixture on each loader. Both foliage
+runs retain all 144 motion steps, zero unsafe coverage frames, zero history
+residual, and exact authoritative block/Atlas-content restoration. Early
+streaming retains the opaque safety floor and proves a complete subsequent
+drain. All required images were reviewed; the four derived foliage mask/residual
+images remain explicitly labelled as derived evidence. The local
+`.codex-tmp/b14-rain-focused-evidence.json` independently rehashes the installed
+jars, native logs, images, actual presentation options, raw frame files and
+persisted Atlas/settings inputs for these twelve phases.
+
+The existing sixteen-capture horizon fixture additionally passes on each
+loader, including ground/elevated rain and thunder, resource reload, and
+Nether/End/Overworld controls. All 32 images were reviewed, with the weather
+and reload views also inspected full-size. These fresh worlds finish with
+partial Atlas caches (639,488 and 652,032 of 851,968 cells respectively).
+Their bounded weather/reload evidence must not be described as complete-Atlas
+reveal or performance proof; that reveal is established by the four production
+rain cells above. The separate local `b14-rain-horizon-evidence.json` binds
+their native weather sequence, installed jars, images and independent disk
+inputs.
+
+The six matched Fabulous clear captures retain downsampled luma correlations
+of 0.999939 to 1.0 against the prior `2e6ecd6` captures, with mean absolute luma
+differences below 0.098 on the 0–255 scale. This descriptive comparison supports
+the reviewed unchanged clear appearance; it is not paired performance evidence
+or an attribution of the remaining pixel variation.
+
+Independent archive comparison against `2e6ecd6` confirms that all server
+classes and resources are byte-identical. The only semantic changes are the
+weather helper, sky adapter and opt-in projection capture fixture; two nested
+fixture classes differ only in source-line numbers. Prior unrelated diagnostic
+records, original saves and failed attempts remain intact with their original
+identities. Old rain images are historical evidence of the hidden-Atlas defect,
+not current visibility proof. These fourteen focused runs do not restart the
+whole visual suite or qualify the release: paired Large performance, soaks,
+remaining closure controls, moving wall/water review, formal execution and
+final release staging remain pending. No publication or 1.20.1 support is claimed.
