@@ -177,6 +177,18 @@ artifacts as a deliberate dependency update and review every changed pin.
 
 ### 1.4 backport intake, 15 October 2026
 
+Latest owner override, 17 October: stop and drastically simplify acceptance.
+Preserve completed functionality, UI, visual and save/reopen evidence. Do not
+resume historical benchmark matrices, hour-long soaks, repeated closure
+matrices or additional diagnostic infrastructure. Finish the final Java 21
+dual build, runtime metadata/licence/checksum verification and local staging,
+and retain the known Large-world stall limitations in the release notes.
+The original strict performance screen was not passed; the owner accepted
+that limitation under the reduced scope. The longer acceptance requirements
+below describe the earlier plan and do not override this later instruction.
+No upload or public-server change is authorized. See the final section of
+`versions/mc1.21.1/IMPLEMENTATION_1_4_2026-10-15.md`.
+
 Implementation is now owner-authorized, in order: 1.21.1 then 1.20.1
 Fabric/Forge. Follow `versions/mc1.21.1/IMPLEMENTATION_1_4_2026-10-15.md` for
 current changes/evidence and continue diagnosis/retesting through acceptance.

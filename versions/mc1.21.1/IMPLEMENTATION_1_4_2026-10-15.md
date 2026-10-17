@@ -1517,3 +1517,44 @@ prototype, its 1,599-case build and six stream failure tests are retained as
 an unadopted diagnostic; batching keeps the standard stream implementation and
 adds no production class. Fresh native cache identity checks and full paired,
 default, partial and soak measurements must qualify the final candidate.
+
+
+### Final local release preparation and reduced acceptance scope, 17 October
+
+The owner explicitly stopped the extended testing and replaced the remaining
+benchmark matrices, hour-long soaks and repeated closure diagnostics with
+essential build, functionality, visual and save/reopen checks. Preserve all
+completed evidence; do not restart the abandoned queues. The interrupted fresh
+Fabric historical leg was cancelled by the owner and saved all dimensions
+normally. It is not a new diagnosed product failure.
+
+The final code checkpoint is `0e886b2`. Its strict dual build passes 782
+Fabric/common and 805 NeoForge cases without failures, errors or skips.
+Both exact candidates pass native cache identity controls. GPU, renderer,
+server, UI and resource entries remain byte-identical to the preceding
+candidate's affected dual-loader visual/lifecycle controls; only cache-worker
+record batching changed. Four ordinary default-policy Small/Medium cells
+(Fabric and NeoForge) complete scheduled-save, independent disk-edit,
+normal shutdown and native reopen checks. Mean server ticks range from
+12.3 to 21.6 ms; P95 ranges from 15.3 to 29.3 ms. Those twelve client streams
+have no measured frames over 250 ms.
+
+Three completed Fabric Large comparisons contain two client frames over
+250 ms in 55.94 combined client-minutes, versus three in 70.95 historical
+client-minutes. Both current events occurred on client A (302 and 339 ms);
+their full cause remains unresolved. No measured client frame exceeds 500 ms.
+Whole-workload P95/P99 comparisons stay within the original relative limits.
+Current server ticks over 500 ms number eleven in 18.65 minutes, versus
+117 in 23.65 historical minutes. Terrain-transition maxima reach approximately
+three seconds. These are bounded stress observations, not proof that every
+machine or ordinary gameplay session behaves the same way. The original
+strict rare-event screen remains failed; the owner accepted these limitations
+and removed the remaining exhaustive qualification requirement. Do not
+relabel that screen as passed.
+
+The explicit 1.4 staging profile performs one clean Java 21 dual-loader build,
+checks runtime identity, MPL licensing and shared named classes/resources,
+and stages only the runtime jars with checksums and exact corresponding-source
+links. Final rebuilt bytes must match the frozen candidates before carrying
+forward their native evidence. Publication is not authorized by local staging.
+Minecraft 1.20.1 remains separate, unimplemented follow-up work.
