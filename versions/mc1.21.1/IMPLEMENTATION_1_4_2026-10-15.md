@@ -1469,3 +1469,51 @@ failure, invalid indexed input, and both staged close failure paths. These
 checks do not certify native GL behavior or latency. A fresh exact candidate
 must pass affected native rendering/lifecycle controls and the failed Large
 workload before proceeding to the remaining acceptance cells.
+
+### Native GPU controls and cache encoder CPU review, 17 October
+
+The bounded-transfer candidates at `a7101b7` pass both loaders' cache identity,
+production noon, underwater/reload, production lifecycle/reopen, layout switch,
+foliage, deliberately early streaming and Fabulous rain controls. All sixteen
+native cases save and exit normally. Fifty-six native images and four derived
+verifier images are retained; sixteen contact sheets and sixteen full-size
+native images were inspected. Rain remains visibly faded and connected, and
+submerged cameras have no distant-ring ghost. The existing near-water detail
+versus opaque distant-water contrast still needs the moving-view review.
+
+The first ordinary Large Fabric run completes independent ordinary disk-edit
+proof, loaded-capture queue retirement, normal exits and native gold-block
+restart. Raw client P95 values are 25.526/26.363/28.539 ms and maxima are
+106.246/108.604/111.485 ms, with zero frames over 250/500 ms and zero measured
+full collections. Minimum observed physical/commit headroom is 2.818/1.276 GB.
+This is one current leg, not paired performance acceptance. The largest server
+tick is 2.888 seconds in the first exterior transition; its calibrated samples
+include vanilla chunk loading, ticket/filter work and decoding. The selected
+park events are vanilla chunk I/O, not cache encoder calls. Sampled overlap
+does not exhaustively attribute the complete tick.
+
+Centre-movement frame percentiles remain slower than the historical reference,
+while the quiet view is faster. One bounded current/historical client-A review
+finds more current vanilla terrain drawing and section-check samples and less
+FPS-limit waiting. These are sampled stacks, not exact CPU time or visible
+chunk counts; a higher-work-throughput explanation remains unproven. Keep the
+phase results visible alongside the original whole-workload acceptance limits.
+
+The same review finds substantial cache-worker samples in per-value output
+stream locking. Cache records are fixed twelve-byte format-11 values. The
+worker now interleaves 4,096 records into a reusable 49,152-byte local heap
+buffer and writes each batch through the original standard JDK stream chain.
+All byte-order conversion remains on the worker. Capture, native storage,
+ownership, atomic replacement, geometry, GPU code, shaders and UI are unchanged.
+The strict dual build retains 782 Fabric/common and 805 NeoForge passing cases;
+all thirty-two independent full-GZIP byte comparisons pass, including partial
+final batches, sparse cells, water, lighting, both storage types and four steps.
+
+A synthetic four-million-cell encoder diagnostic uses warmup and three
+alternating pairs. Every output has the same compressed SHA-256; median CPU
+ratio is approximately 0.913. This is isolated encoder evidence, not gameplay
+acceptance or proof of the centre-phase cause. An earlier custom-buffer
+prototype, its 1,599-case build and six stream failure tests are retained as
+an unadopted diagnostic; batching keeps the standard stream implementation and
+adds no production class. Fresh native cache identity checks and full paired,
+default, partial and soak measurements must qualify the final candidate.

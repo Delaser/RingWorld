@@ -90,9 +90,20 @@ final class RingAtlasCacheImage implements AutoCloseable {
             output.writeLong(worldHash);
             output.writeInt(geometry.widthBlocks());output.writeInt(geometry.circumferenceBlocks());
             output.writeInt(sampleStep);output.writeInt(columns);output.writeInt(rows);output.writeLong(revision);
-            for(int i=0;i<cells;i++) {
-                output.writeByte(presence.get(i));output.writeShort(heights.get(i));
-                output.writeInt(colors.get(i));output.writeByte(lights.get(i));output.writeInt(sideColors.get(i));
+            // The image and output belong exclusively to this worker. Batch
+            // fixed-width records instead of locking the output stream for
+            // each of the five primitive values in every cell. Native storage
+            // remains in its capture-friendly channel layout; all interleaving
+            // and big-endian conversion happen here, away from the caller.
+            byte[] bytes=new byte[4096*12];
+            ByteBuffer encoded=ByteBuffer.wrap(bytes).order(ByteOrder.BIG_ENDIAN);
+            for(int first=0;first<cells;first+=4096) {
+                encoded.clear();
+                int end=first+Math.min(4096,cells-first);
+                for(int i=first;i<end;i++)
+                    encoded.put(presence.get(i)).putShort(heights.get(i))
+                            .putInt(colors.get(i)).put(lights.get(i)).putInt(sideColors.get(i));
+                output.write(bytes,0,encoded.position());
             }
         }
         try { Files.move(temporary,path,StandardCopyOption.ATOMIC_MOVE,StandardCopyOption.REPLACE_EXISTING); }
