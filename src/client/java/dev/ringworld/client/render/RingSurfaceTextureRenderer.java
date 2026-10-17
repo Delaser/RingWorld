@@ -260,8 +260,26 @@ public final class RingSurfaceTextureRenderer {
                                                                           int revision) {
         if (stagedTextureBuild != null) {
             StagedTextureBuild staged = stagedTextureBuild;
+            if (!canPublishTextureBuild(staged.build(), geometry, atlas, revision)) {
+                stagedTextureBuild = null;
+                staged.close();
+                scheduleTextureBuild(geometry, atlas, revision);
+                return null;
+            }
+            if (!staged.upload().complete()) {
+                try {
+                    long started = System.nanoTime();
+                    staged.upload().advance();
+                    flagRenderStall("mesh GPU slice upload", started);
+                    return null;
+                } catch (RuntimeException | Error failure) {
+                    stagedTextureBuild = null;
+                    staged.close();
+                    throw failure;
+                }
+            }
             stagedTextureBuild = null;
-            return publishTextureBuild(staged.build(), staged.replacement(), geometry, atlas, revision);
+            return publishTextureBuild(staged.build(), staged.upload().take(), geometry, atlas, revision);
         }
         if (pendingTextureBuild != null) {
             if (!pendingTextureBuild.isDone()) return null;
@@ -276,18 +294,19 @@ public final class RingSurfaceTextureRenderer {
             pendingTextureBuild = null;
             if (canPublishTextureBuild(build, geometry, atlas, revision)) {
                 if (build.mesh() != null) {
-                    VertexBuffer replacement = null;
+                    RingSurfaceGpu.Upload upload = null;
                     try {
                         long started = System.nanoTime();
-                        replacement = RingSurfaceGpu.uploadMesh(build.mesh());
-                        flagRenderStall("mesh GPU upload", started);
+                        upload = RingSurfaceGpu.beginUpload(build.mesh());
+                        flagRenderStall("mesh GPU allocation", started);
                         // This frame still draws the previous matched mesh and
-                        // texture. Publish the replacement and its texture only
-                        // on the next render call, after rechecking ownership.
-                        stagedTextureBuild = new StagedTextureBuild(build, replacement);
+                        // texture. Later calls transfer bounded slices, then
+                        // publish the replacement and its texture together
+                        // only after rechecking ownership again.
+                        stagedTextureBuild = new StagedTextureBuild(build, upload);
                         return null;
                     } catch (RuntimeException | Error failure) {
-                        try { if (replacement != null) replacement.close(); }
+                        try { if (upload != null) upload.close(); }
                         finally { build.close(); }
                         throw failure;
                     }
@@ -858,9 +877,9 @@ public final class RingSurfaceTextureRenderer {
     }
 
     /** Render-thread ownership of a prepared but not yet visible replacement. */
-    private record StagedTextureBuild(TextureBuild build, VertexBuffer replacement) implements AutoCloseable {
+    private record StagedTextureBuild(TextureBuild build, RingSurfaceGpu.Upload upload) implements AutoCloseable {
         @Override public void close() {
-            try { replacement.close(); } finally { build.close(); }
+            try { upload.close(); } finally { build.close(); }
         }
     }
 

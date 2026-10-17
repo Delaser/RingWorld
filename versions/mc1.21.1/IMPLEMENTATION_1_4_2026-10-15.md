@@ -1420,3 +1420,52 @@ The packaged cache fixture additionally waits for the actual native byte count
 to reach zero after each of its three normal disconnects, within its existing
 watchdog. Both native loaders and the failed ordinary Large workload must
 validate this candidate before any performance or release credit.
+
+### Bounded GPU vertex transfer, 17 October
+
+The native-cache candidates at `de39ab6` pass both loaders' cache/noon gates
+and twelve affected rendering/lifecycle controls. All three Fabric comparison
+pairs complete ordinary durability, drain, normal exits and native restart.
+Tick/frame percentile limits pass and none of the eighteen measured client
+legs has a full collection. The severe-frame screen remains blocked: current
+client B has one frame over 250 ms, as does historical B, but its shorter
+measured duration yields a higher event rate. Current A additionally has a
+337.030 ms frame without its own GC or safepoint; its one late vanilla block
+read sample is insufficient attribution. Retain this unresolved evidence.
+An additional raw boundary audit finds no over-250-ms frames excluded at the
+measurement-window boundaries in any of the six runs.
+
+Current B's 255.768 ms frame contains three calibrated native samples in
+vertex `glBufferData`, matching its logged 249.82 ms ring-mesh upload.
+Historical B's 293.259 ms frame also contains three samples in that operation.
+These are actual large vertex transfers, not an introduced checkpoint stall.
+The earlier strict JFR inspector rejected one young-GC duration mismatch;
+its failure is retained. A separate inspector accepts the differently scoped
+young-GC timing only when the unique same-ID native start/end interval and
+all five native phase components independently corroborate the JFR duration.
+All anchors and the original 3 ms clock-fit tolerance remain required; raw
+pause/frame statistics are unchanged. Seventeen positive/negative clock
+checks pass. This analysis does not resolve the unattributed A frame.
+
+The renderer now allocates an unpublished vertex buffer and transfers at most
+8 MiB of the original immutable packed bytes per later render call. The pinned
+1.21.1 vanilla adapter initializes VAO/draw/index state with a storage-free
+MeshData header; the original MeshData and allocator remain owned by the build.
+No original vertex data is submitted to the monolithic upload. The old matched
+mesh/texture continues drawing throughout transfer. Every transfer rechecks
+the existing generation/world/revision guard; publication waits for all bytes
+and occurs with the matching texture on a subsequent call. Disconnect/reload
+retires the incomplete GPU owner before releasing the build's CPU storage.
+This limits transferred bytes, not driver latency, and still needs native proof.
+There is no change to mesh algorithms, draw counts, shaders, rain visibility,
+coverage/readiness rules, server work, wire/save formats or policy defaults.
+
+The strict dual build retains all 1,587 passing Java cases with no failures,
+errors or skips. Eight bounded tests compile the actual GPU adapter and staged
+close implementation with recording GL/type stubs. They cover exact complete
+byte reconstruction and offsets, early/double publication rejection, original
+buffer-view preservation, abandonment, failed transfer retry, allocation
+failure, invalid indexed input, and both staged close failure paths. These
+checks do not certify native GL behavior or latency. A fresh exact candidate
+must pass affected native rendering/lifecycle controls and the failed Large
+workload before proceeding to the remaining acceptance cells.

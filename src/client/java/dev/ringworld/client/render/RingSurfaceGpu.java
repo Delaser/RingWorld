@@ -8,14 +8,15 @@ import com.mojang.blaze3d.vertex.VertexBuffer;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import dev.ringworld.world.RingSurfaceMesh;
 import dev.ringworld.world.RingSurfaceMeshBytes;
+import com.mojang.blaze3d.platform.GlStateManager;
+import com.mojang.blaze3d.systems.RenderSystem;
+import java.nio.ByteBuffer;
+import org.lwjgl.opengl.GL11;
+import org.lwjgl.opengl.GL15;
 
 /** Minecraft 1.21.1 vertex-buffer adapter for the shared CPU surface mesh. */
 final class RingSurfaceGpu {
     private RingSurfaceGpu() { }
-
-    static VertexBuffer createVertexBuffer(RingSurfaceMesh.Mesh mesh, int vertexArgb) {
-        try (PackedMesh packed = packMesh(mesh, vertexArgb)) { return uploadMesh(packed); }
-    }
 
     /** Native bytes are prepared on the serial worker; no GL calls occur here. */
     static PackedMesh packMesh(RingSurfaceMesh.Mesh mesh, int vertexArgb) {
@@ -46,17 +47,87 @@ final class RingSurfaceGpu {
         } catch (RuntimeException | Error failure) { allocator.close(); throw failure; }
     }
 
-    static VertexBuffer uploadMesh(PackedMesh packed) {
-        com.mojang.blaze3d.systems.RenderSystem.assertOnRenderThread();
+    /** Allocate draw state first; transfer at most one bounded slice on later render calls. */
+    static Upload beginUpload(PackedMesh packed) {
+        RenderSystem.assertOnRenderThread();
+        MeshData data = packed.data;
+        if (data == null || data.indexBuffer() != null
+                || data.drawState().mode() != VertexFormat.Mode.TRIANGLES) {
+            throw new IllegalArgumentException("surface upload requires an owned unindexed triangle mesh");
+        }
+        ByteBuffer source = data.vertexBuffer().asReadOnlyBuffer();
         VertexBuffer replacement = new VertexBuffer(VertexBuffer.Usage.STATIC);
         try {
             replacement.bind();
-            MeshData data = packed.data;
-            packed.data = null; // VertexBuffer.upload owns and closes the submitted MeshData.
-            replacement.upload(data);
-            return replacement;
+            // Pinned 1.21.1 VertexBuffer sets up its VAO, format and sequential
+            // indices while skipping vertex transfer when this view is null.
+            // Only the header is submitted/closed here. PackedMesh continues to
+            // own the real MeshData and allocator until the entire build retires.
+            replacement.upload(new DrawStateOnly(data.drawState()));
+            int bufferId = GL11.glGetInteger(GL15.GL_ARRAY_BUFFER_BINDING);
+            if (bufferId <= 0) throw new IllegalStateException("surface vertex buffer was not bound");
+            GL15.glBufferData(GL15.GL_ARRAY_BUFFER, (long) source.remaining(), GL15.GL_STATIC_DRAW);
+            return new Upload(replacement, bufferId, source);
         } catch (RuntimeException | Error failure) { replacement.close(); throw failure; }
-        finally { VertexBuffer.unbind(); }
+        finally {
+            GlStateManager._glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
+            VertexBuffer.unbind();
+        }
+    }
+
+    private static final class DrawStateOnly extends MeshData {
+        DrawStateOnly(DrawState state) { super(null, state); }
+        @Override public ByteBuffer vertexBuffer() { return null; }
+        @Override public void close() { /* Header owns no vertex or index storage. */ }
+    }
+
+    /** Never drawable until every byte has transferred; the previous matched surface stays active. */
+    static final class Upload implements AutoCloseable {
+        static final int BYTES_PER_RENDER_CALL = 8 * 1024 * 1024;
+        private VertexBuffer replacement;
+        private final int bufferId;
+        private ByteBuffer source;
+        private int offset;
+
+        private Upload(VertexBuffer replacement, int bufferId, ByteBuffer source) {
+            this.replacement = replacement;
+            this.bufferId = bufferId;
+            this.source = source;
+        }
+
+        boolean complete() { return source != null && !source.hasRemaining(); }
+
+        void advance() {
+            RenderSystem.assertOnRenderThread();
+            if (replacement == null || source == null) throw new IllegalStateException("surface upload is closed");
+            if (complete()) return;
+            int length = Math.min(BYTES_PER_RENDER_CALL, source.remaining());
+            ByteBuffer slice = source.slice();
+            slice.limit(length);
+            try {
+                GlStateManager._glBindBuffer(GL15.GL_ARRAY_BUFFER, bufferId);
+                GL15.glBufferSubData(GL15.GL_ARRAY_BUFFER, (long) offset, slice);
+                source.position(source.position() + length);
+                offset += length;
+            } finally { GlStateManager._glBindBuffer(GL15.GL_ARRAY_BUFFER, 0); }
+        }
+
+        VertexBuffer take() {
+            RenderSystem.assertOnRenderThread();
+            if (!complete() || replacement == null) throw new IllegalStateException("surface upload is incomplete");
+            VertexBuffer ready = replacement;
+            replacement = null;
+            source = null;
+            return ready;
+        }
+
+        @Override public void close() {
+            RenderSystem.assertOnRenderThread();
+            VertexBuffer abandoned = replacement;
+            replacement = null;
+            source = null;
+            if (abandoned != null) abandoned.close();
+        }
     }
 
     static final class PackedMesh implements AutoCloseable {
