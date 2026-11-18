@@ -94,6 +94,19 @@ public final class RingSurfaceGpu {
         return RenderSystem.getDevice().createTexture("RingWorld canonical surface atlas",
                 GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_TEXTURE_BINDING, GpuFormat.RGBA8_UNORM, width, height, 1, mipLevels);
     }
+    public static long uploadChangedRows(GpuTexture target, NativeImage[] levels, long[][] resident, long[][] next) {
+        var encoder = RenderSystem.getDevice().createCommandEncoder();
+        long texels = dev.ringworld.world.RingSurfaceRowUpdates.transfer(resident, next, levels[0].getWidth(), (mip, row, count) -> {
+            NativeImage image = levels[mip];
+            int width = image.getWidth();
+            int stride = width * Integer.BYTES;
+            var bytes = image.getPixelBytes().slice(row * stride, count * stride);
+            encoder.writeToTexture(target, bytes, mip, 0, 0, row, width, count);
+        });
+        encoder.submit();
+        return texels;
+    }
+
     public static void uploadSurfaceTexture(GpuTexture texture, NativeImage[] levels) {
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
         for (int level = 0; level < levels.length; level++) encoder.writeToTexture(texture, levels[level], level, 0, 0, 0);

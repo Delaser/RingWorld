@@ -157,11 +157,12 @@ final class RingAtlasCheckpointWriter implements AutoCloseable {
         if (active == null) return;
         try {
             if (allocation != null) {
-                allocation.get(60, TimeUnit.SECONDS);
+                // advance and poll consume worker failures; awaiting only synchronizes the owner.
+                allocation.handle((result, failure) -> null).get(60, TimeUnit.SECONDS);
                 // Captures are frozen at teardown: finish pending copies before waiting for disk.
                 advance(atlas, Long.MAX_VALUE);
             }
-            active.get(60, TimeUnit.SECONDS);
+            active.handle((result, failure) -> null).get(60, TimeUnit.SECONDS);
         } catch (Exception exception) {
             if (exception instanceof InterruptedException) Thread.currentThread().interrupt();
             throw new CompletionException(exception);

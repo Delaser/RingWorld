@@ -33,6 +33,18 @@ class RingAtlasSideColorTest {
         assertNotEquals(original, atlas.surfaceHeightFingerprint());
     }
 
+    @Test void matchingTopAndSideColourOnEitherInnerRimRequiresMeshRefresh() {
+        for (int thickness : new int[]{1, 5, 16}) {
+            var atlas = new RingTerrainAtlas(GEOMETRY, 12, 1);
+            for (int row : new int[]{thickness, GEOMETRY.widthBlocks() - thickness - 1}) {
+                atlas.putCell(3, row, 112, 0xaa4422);
+                long before = atlas.surfaceHeightFingerprint(thickness);
+                atlas.putCell(3, row, 112, 0x22aa44);
+                assertNotEquals(before, atlas.surfaceHeightFingerprint(thickness));
+            }
+        }
+    }
+
     @Test void steepCliffEmitsSideMaterialWithoutChangingVertexCount() {
         var atlas = new RingTerrainAtlas(GEOMETRY, 12, 1);
         for (int row=0; row<atlas.rows(); row++) for (int col=0; col<atlas.columns(); col++)

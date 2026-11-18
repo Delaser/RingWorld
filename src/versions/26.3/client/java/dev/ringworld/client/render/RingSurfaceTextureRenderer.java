@@ -50,6 +50,9 @@ public final class RingSurfaceTextureRenderer {
     private static GpuTextureView surfaceTextureView;
     private static GpuTexture previousSurfaceTexture;
     private static GpuTextureView previousSurfaceTextureView;
+    // Each texture carries the hashes of its own last upload. A morph can skip any number of revisions.
+    private static long[][] surfaceRowHashes, previousRowHashes;
+    private static int previousColumns;
     private static float surfaceCompletion;
     private static float previousSurfaceCompletion;
     private static long textureMorphStartedNanos;
@@ -263,7 +266,8 @@ public final class RingSurfaceTextureRenderer {
                 || quality.sampleStep() <= sourceSnapshot.atlas().sampleStep() ? sourceSnapshot
                 : new RingSurfaceBuildSnapshot(quality.displaySnapshot(sourceSnapshot.atlas()),
                         sourceSnapshot.renderRevision());
-        RingSurfaceBuildSnapshot preparedSnapshot = displaySnapshot.resolveDetailedHeightFingerprint();
+        RingSurfaceBuildSnapshot preparedSnapshot = displaySnapshot.resolveDetailedHeightFingerprint(
+                inputs.wallHeightBlocks() > 0 ? inputs.savedStyle().thicknessBlocks() : 0);
         RingTerrainAtlas atlas = preparedSnapshot.atlas();
         long meshStarted = System.nanoTime();
         RingSurfaceGpu.PackedMesh packed = null;
@@ -379,6 +383,7 @@ public final class RingSurfaceTextureRenderer {
 
         int mipLevels = mipLevels(targetColumns, targetRows);
         NativeImage[] images = new NativeImage[mipLevels];
+        long[][] rowHashes = new long[mipLevels][];
         int[] levelPixels = pixels;
         int levelWidth = targetColumns;
         int levelHeight = targetRows;
@@ -386,10 +391,15 @@ public final class RingSurfaceTextureRenderer {
             for (int level = 0; level < mipLevels; level++) {
                 NativeImage image = new NativeImage(levelWidth, levelHeight, false);
                 images[level] = image;
+                rowHashes[level] = new long[levelHeight];
                 for (int y = 0; y < levelHeight; y++) {
+                    long hash = 0xCBF29CE484222325L;
                     for (int x = 0; x < levelWidth; x++) {
-                        image.setPixel(x, y, levelPixels[y * levelWidth + x]);
+                        int pixel = levelPixels[y * levelWidth + x];
+                        image.setPixel(x, y, pixel);
+                        hash = (hash ^ pixel) * 0x100000001B3L;
                     }
+                    rowHashes[level][y] = hash;
                 }
                 if (level + 1 < mipLevels) {
                     levelPixels = RingSurfaceLod.buildNextMipRgbLight(
@@ -398,7 +408,7 @@ public final class RingSurfaceTextureRenderer {
                     levelHeight = Math.max(1, levelHeight >> 1);
                 }
             }
-            return new TextureImages(generation, targetColumns, targetRows, images);
+            return new TextureImages(generation, targetColumns, targetRows, images, rowHashes);
         } catch (RuntimeException | Error exception) {
             for (NativeImage image : images) {
                 if (image != null) image.close();
@@ -412,47 +422,61 @@ public final class RingSurfaceTextureRenderer {
             return false;
         }
         long started = System.nanoTime();
-        textureColumns = images.columns();
-        textureRows = images.rows();
-        int mipLevels = images.levels().length;
-        // Each revision gets a new target so the shader can retain and blend
-        // the previous visible texture without another CPU upload per frame.
-        GpuTexture targetTexture = RingSurfaceGpu.createSurfaceTexture(
-                textureColumns, textureRows, mipLevels);
-        GpuTextureView targetView = null;
+        NativeImage[] levels = images.levels();
+        boolean reuse = previousSurfaceTexture != null && previousColumns == images.columns()
+                && previousRowHashes.length == levels.length && previousRowHashes[0].length == images.rows();
+        GpuTexture target;
+        GpuTextureView view = null;
+        long texels;
+        if (reuse) {
+            target = previousSurfaceTexture;
+            view = previousSurfaceTextureView;
+        } else {
+            destroyPreviousSurfaceTexture();
+            target = RingSurfaceGpu.createSurfaceTexture(images.columns(), images.rows(), levels.length);
+        }
         try {
-            targetView = RenderSystem.getDevice().createTextureView(targetTexture);
-            RingSurfaceGpu.uploadSurfaceTexture(targetTexture, images.levels());
+            if (reuse) {
+                texels = RingSurfaceGpu.uploadChangedRows(target, levels, previousRowHashes, images.rowHashes());
+            } else {
+                view = RenderSystem.getDevice().createTextureView(target);
+                RingSurfaceGpu.uploadSurfaceTexture(target, levels);
+                texels = 0;
+                for (NativeImage level : levels) texels += (long)level.getWidth() * level.getHeight();
+            }
         } catch (RuntimeException | Error exception) {
-            if (targetView != null) targetView.close();
-            targetTexture.close();
+            if (reuse) destroyPreviousSurfaceTexture();
+            else {
+                if (view != null) view.close();
+                target.close();
+            }
             throw exception;
         }
         flagRenderStall("Atlas texture GPU upload", started);
-
-        destroyPreviousSurfaceTexture();
-        if (surfaceTexture == null || surfaceTextureView == null) {
-            surfaceTexture = targetTexture;
-            surfaceTextureView = targetView;
-            surfaceCompletion = completion;
-            previousSurfaceCompletion = completion;
-            textureMorphStartedNanos = 0L;
-        } else {
-            previousSurfaceTexture = surfaceTexture;
-            previousSurfaceTextureView = surfaceTextureView;
-            previousSurfaceCompletion = surfaceCompletion;
-            surfaceTexture = targetTexture;
-            surfaceTextureView = targetView;
-            surfaceCompletion = completion;
-            textureMorphStartedNanos = System.nanoTime();
+        if (Boolean.getBoolean("ringworld.profileSurfaceBuilds")) {
+            RingWorldMod.LOGGER.info("RingWorld Atlas transfer: {} {} texels", reuse ? "rows" : "full", texels);
         }
+
+        previousSurfaceTexture = surfaceTexture;
+        previousSurfaceTextureView = surfaceTextureView;
+        previousRowHashes = surfaceRowHashes;
+        previousColumns = textureColumns;
+        previousSurfaceCompletion = surfaceCompletion;
+        surfaceTexture = target;
+        surfaceTextureView = view;
+        surfaceRowHashes = images.rowHashes();
+        textureColumns = images.columns();
+        textureRows = images.rows();
+        surfaceCompletion = completion;
+        textureMorphStartedNanos = previousSurfaceTexture == null ? 0L : System.nanoTime();
         return true;
     }
 
     private static float updateTextureMorph(long nowNanos) {
         if (previousSurfaceTextureView == null || textureMorphStartedNanos == 0L) return 1.0F;
         float progress = RingSurfaceMorph.progress(nowNanos - textureMorphStartedNanos);
-        if (progress >= 1.0F) {
+        // Keep the spare between streamed revisions, but release it when a partial stream goes idle.
+        if (progress >= 1.0F && (surfaceCompletion >= 1.0F || nowNanos - textureMorphStartedNanos >= 10_000_000_000L)) {
             destroyPreviousSurfaceTexture();
             textureMorphStartedNanos = 0L;
         }
@@ -460,7 +484,7 @@ public final class RingSurfaceTextureRenderer {
     }
 
     private record TextureImages(long generation, int columns, int rows,
-                                 NativeImage[] levels) implements AutoCloseable {
+                                 NativeImage[] levels, long[][] rowHashes) implements AutoCloseable {
         @Override
         public void close() {
             for (NativeImage image : levels) {
@@ -641,6 +665,7 @@ public final class RingSurfaceTextureRenderer {
         surfaceTextureView = null;
         if (surfaceTexture != null) surfaceTexture.close();
         surfaceTexture = null;
+        surfaceRowHashes = null;
         surfaceCompletion = 0.0F;
         previousSurfaceCompletion = 0.0F;
         textureMorphStartedNanos = 0L;
@@ -651,5 +676,6 @@ public final class RingSurfaceTextureRenderer {
         previousSurfaceTextureView = null;
         if (previousSurfaceTexture != null) previousSurfaceTexture.close();
         previousSurfaceTexture = null;
+        previousRowHashes = null;
     }
 }

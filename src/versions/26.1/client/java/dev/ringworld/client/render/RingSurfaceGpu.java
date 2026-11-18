@@ -86,6 +86,16 @@ public final class RingSurfaceGpu {
                 width, height, 1, mipLevels);
     }
 
+    public static long uploadChangedRows(GpuTexture target, NativeImage[] levels, long[][] resident, long[][] next) {
+        var encoder = RenderSystem.getDevice().createCommandEncoder();
+        long texels = dev.ringworld.world.RingSurfaceRowUpdates.transfer(resident, next, levels[0].getWidth(), (mip, row, count) -> {
+            NativeImage image = levels[mip];
+            int width = image.getWidth();
+            encoder.writeToTexture(target, image, mip, 0, 0, row, width, count, 0, row);
+        });
+        return texels;
+    }
+
     public static void uploadSurfaceTexture(GpuTexture texture, NativeImage[] levels) {
         for (int level = 0; level < levels.length; level++) {
             int width = levels[level].getWidth(), height = levels[level].getHeight();

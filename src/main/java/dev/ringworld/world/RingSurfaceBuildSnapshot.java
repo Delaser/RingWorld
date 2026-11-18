@@ -44,6 +44,10 @@ public record RingSurfaceBuildSnapshot(
         return resolveDetailedHeightFingerprint(atlas::surfaceHeightFingerprint);
     }
 
+    public RingSurfaceBuildSnapshot resolveDetailedHeightFingerprint(int rimThickness) {
+        return resolveDetailedHeightFingerprint(() -> atlas.surfaceHeightFingerprint(rimThickness));
+    }
+
     /** Pure seam proving that partial builds never invoke the O(cells) scan. */
     RingSurfaceBuildSnapshot resolveDetailedHeightFingerprint(LongSupplier fingerprintSupplier) {
         Objects.requireNonNull(fingerprintSupplier, "fingerprintSupplier");

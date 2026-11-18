@@ -285,6 +285,7 @@ public final class RingAtlasPregenerationService {
     private static void drainBeforeStop(ServerLevel world, WorldState state) {
         state.stopping = true;
         drainLoadedCaptures(world, state);
+        state.recaptures.beginFinalDrain();
         while (state.recaptures.hasPending()) processRecaptures(world, state);
         commitPendingRevision(state);
     }
@@ -526,6 +527,7 @@ public final class RingAtlasPregenerationService {
                             row / RingTerrainAtlas.TILE_SIZE));
                 }
             }
+            state.recaptures.capturedRange(row * atlas.columns() + chunk.getPos().getMinBlockX() / step, 16 / step);
         }
         if (changed) {
             state.checkpoints.markDirty();
@@ -580,7 +582,7 @@ public final class RingAtlasPregenerationService {
                         changed = true;
                     }
                 } else {
-                    state.recaptures.enqueue(cell);
+                    state.recaptures.defer(cell, atlas.columns());
                 }
                 continue;
             }

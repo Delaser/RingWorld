@@ -131,6 +131,22 @@ class RingAtlasCheckpointWriterTest {
         writer.close();
     }
 
+    @Test void teardownCanPollAndRetryAfterTheDiskRecovers(@TempDir Path directory) throws Exception {
+        Path parent = Files.createFile(directory.resolve("data"));
+        Path file = parent.resolve("atlas.gz");
+        var writer = new RingAtlasCheckpointWriter(file, true, Runnable::run);
+        writer.request(atlas, false);
+        writer.awaitActive(atlas);
+        Files.delete(parent);
+        assertThrows(CompletionException.class, writer::poll);
+        writer.request(atlas, false);
+        writer.awaitActive(atlas);
+        writer.poll();
+        writer.close();
+        assertTrue(Files.isRegularFile(file));
+        assertFalse(writer.dirty());
+    }
+
     @Test void finalDrainNeedsNoOwnerThreadCallbacks(@TempDir Path directory) throws Exception {
         var writer = new RingAtlasCheckpointWriter(directory.resolve("atlas.gz"), true);
         writer.request(atlas, false);

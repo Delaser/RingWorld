@@ -158,14 +158,26 @@ public final class RingTerrainAtlas {
 
     /** Stable key for mesh height and distinct side-material vertex colours. */
     public long surfaceHeightFingerprint() {
+        return surfaceHeightFingerprint(RingWallStyle.DEFAULT.thicknessBlocks());
+    }
+
+    public long surfaceHeightFingerprint(int rimThickness) {
+        // The rim closure bakes the highest of the two neighbouring rows' side colours even when it equals the top.
+        double innerWidth = geometry.widthBlocks() - 2.0 * rimThickness;
+        double inset = rimThickness + Math.min(sampleStep, innerWidth);
+        int lowRow = (int)Math.floor(inset / sampleStep - 0.5);
+        int highRow = (int)Math.floor((geometry.widthBlocks() - inset) / sampleStep - 0.5);
         long fingerprint = 0xCBF29CE484222325L;
         for (int index = 0; index < cellCount; index++) {
             Page page = pages[index >>> PAGE_SHIFT];
             long sample = page.present[index & PAGE_MASK]
                     ? 0x1_0000L | Short.toUnsignedLong(page.heights[index & PAGE_MASK])
                     : 0L;
-            fingerprint ^= sample ^ (page.present[index & PAGE_MASK] && page.sideColors[index & PAGE_MASK] != page.colors[index & PAGE_MASK]
-                    ? (0x1000000L | page.sideColors[index & PAGE_MASK]) << 17 : 0L);
+            int row = index / columns;
+            boolean rim = rimThickness > 0 && (row == lowRow || row == lowRow + 1 || row == highRow || row == highRow + 1);
+            boolean distinct = page.sideColors[index & PAGE_MASK] != page.colors[index & PAGE_MASK];
+            fingerprint ^= sample ^ (page.present[index & PAGE_MASK] && (rim || distinct)
+                    ? ((distinct ? 0x1000000L : 0x2000000L) | page.sideColors[index & PAGE_MASK]) << 17 : 0L);
             fingerprint *= 0x100000001B3L;
         }
         fingerprint ^= Integer.toUnsignedLong(columns);
