@@ -278,7 +278,7 @@ public final class RingSurfaceTextureRenderer {
                     atlas.isComplete(), inputs.detailed(), preparedSnapshot.heightFingerprint(), inputs.fingerprint())) {
                 RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(atlas.geometry(), atlas, atlas.isComplete(),
                         inputs.referenceY(), inputs.wallTopY(), inputs.wallHeightBlocks(),
-                        inputs.savedStyle(), inputs.seed(), profile);
+                        inputs.savedStyle(), inputs.seed(), profile, quality == dev.ringworld.world.RingLodQuality.MEDIUM);
                 packed = RingSurfaceGpu.packMesh(mesh, inputs.wallStyle().vertexArgb());
                 int wallColumns = Math.min(16384, profile.textureColumns());
                 nextWallTextureKey = RingWallTexture.contentKey(atlas, inputs.savedStyle(), inputs.seed(),

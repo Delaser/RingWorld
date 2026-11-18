@@ -142,6 +142,33 @@ class RingSurfaceMeshTest {
     }
 
     @Test
+    void mediumDryFacesRegainTextureButShorelinesAndDistinctRockKeepTheirUpperSample() {
+        var geometry = new RingGeometry(128, 2048);
+        var atlas = new RingTerrainAtlas(geometry, HASH, 2);
+        for (int row = 0; row < atlas.rows(); row++) {
+            for (int col = 0; col < atlas.columns(); col++) {
+                atlas.putCell(col, row, col < 512 ? 64 : 96, 0x227722);
+            }
+        }
+        var profile = RingLodQuality.MEDIUM.profile(geometry, 96);
+        var dry = RingSurfaceMesh.build(geometry, atlas, true, 64, 64, 0, RingWallStyle.DEFAULT, 0, profile, true);
+        assertNotEquals(dry.triangleVertex(255, 16, 0).u(), dry.triangleVertex(255, 16, 1).u());
+        long key = atlas.surfaceHeightFingerprint(0);
+        for (boolean sand : new boolean[]{false, true}) {
+            int color = sand ? net.minecraft.world.level.material.MapColor.SAND.col : 0x227722;
+            atlas.putCell(510, 32, 64, color, 0, color, sand ? 0 : 1);
+            assertNotEquals(key, atlas.surfaceHeightFingerprint(0));
+            var shore = RingSurfaceMesh.build(geometry, atlas, true, 64, 64, 0, RingWallStyle.DEFAULT, 0, profile, true);
+            assertEquals(shore.triangleVertex(255, 16, 0).u(), shore.triangleVertex(255, 16, 1).u());
+        }
+        atlas.putCell(510, 32, 64, 0x227722);
+        for (int row = 0; row < atlas.rows(); row++) atlas.putCell(512, row, 96, 0x227722, 0, 0x666666, 0);
+        var rock = RingSurfaceMesh.build(geometry, atlas, true, 64, 64, 0, RingWallStyle.DEFAULT, 0, profile, true);
+        assertTrue(rock.triangleVertex(255, 16, 0).u() >= 2.0);
+        assertEquals(rock.triangleVertex(255, 16, 0).u(), rock.triangleVertex(255, 16, 1).u());
+    }
+
+    @Test
     void rimBottomOverlapsTerrainBelowReferenceHeight() {
         var geometry = new RingGeometry(128, 2048);
         var atlas = flatCompleteAtlas(geometry, 48);

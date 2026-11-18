@@ -176,6 +176,9 @@ public final class RingTerrainAtlas {
             int row = index / columns;
             boolean rim = rimThickness > 0 && (row == lowRow || row == lowRow + 1 || row == highRow || row == highRow + 1);
             boolean distinct = page.sideColors[index & PAGE_MASK] != page.colors[index & PAGE_MASK];
+            if (sampleStep == RingLodQuality.MEDIUM.sampleStep() && sample != 0 && shoreline(page, index & PAGE_MASK)) {
+                sample |= 1L << 48;
+            }
             fingerprint ^= sample ^ (page.present[index & PAGE_MASK] && (rim || distinct)
                     ? ((distinct ? 0x1000000L : 0x2000000L) | page.sideColors[index & PAGE_MASK]) << 17 : 0L);
             fingerprint *= 0x100000001B3L;
@@ -371,6 +374,16 @@ public final class RingTerrainAtlas {
         int index = index(Math.floorMod(column, columns), row);
         Page page = pages[index >>> PAGE_SHIFT];
         return page.present[index & PAGE_MASK] ? page.blockLights[index & PAGE_MASK] & 15 : 0;
+    }
+
+    boolean shorelineCell(int column, int row) {
+        int index = index(column, row);
+        return shoreline(pages[index >>> PAGE_SHIFT], index & PAGE_MASK);
+    }
+
+    private static boolean shoreline(Page page, int offset) {
+        return (page.blockLights[offset] & 0xf0) != 0
+                || page.colors[offset] == net.minecraft.world.level.material.MapColor.SAND.col;
     }
 
     public int cellWaterCoverage(int column, int row) {
