@@ -13,6 +13,9 @@ import dev.ringworld.world.RingSkyProfile;
 import dev.ringworld.world.RingWorldSettings;
 import dev.ringworld.world.RingWorldGenerationSettings;
 import net.minecraft.client.Minecraft;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
@@ -39,6 +42,7 @@ public final class ClientRingState {
     private static volatile long cameraSeamCrossings;
     private static volatile long seamCorrectionPackets;
     @Nullable private static volatile RingTerrainAtlas terrainAtlas;
+    @Nullable private static volatile RingTerrainAtlas pendingAtlasInstall;
     @Nullable private static volatile RingTerrainPreview terrainPreview;
     private static volatile int terrainPreviewStage = -1;
     private static volatile long serverAtlasWorldHash;
@@ -140,6 +144,7 @@ public final class ClientRingState {
         cameraSeamCrossings = 0;
         seamCorrectionPackets = 0;
         terrainAtlas = null;
+        pendingAtlasInstall = null;
         terrainPreview = null;
         terrainPreviewStage = -1;
         serverAtlasWorldHash = 0L;
@@ -152,6 +157,15 @@ public final class ClientRingState {
         lastTerrainAtlasChangeMillis = 0L;
         lastTerrainAtlasSaveMillis = 0L;
         lastTerrainAtlasPublishMillis = 0L;
+    }
+
+    /** The same offset seed places a dripstone model and its hitbox on every X image. */
+    public static BlockPos dripstoneOffsetPosition(BlockState state, BlockPos position) {
+        if (!state.is(Blocks.POINTED_DRIPSTONE)) return position;
+        RingGeometry ring = geometry();
+        if (ring == null) return position;
+        int x = ring.wrapBlockX(position.getX());
+        return x == position.getX() ? position : new BlockPos(x, position.getY(), position.getZ());
     }
 
     @Nullable
@@ -210,30 +224,25 @@ public final class ClientRingState {
 
     public static long seamCorrectionPackets() { return seamCorrectionPackets; }
 
-    /** Installs metadata and reuses a complete world-hash cache when available. */
-    public static boolean installTerrainAtlas(RingTerrainAtlasMetadataPayload metadata) {
+    private static final java.util.concurrent.ExecutorService CACHE_READER =
+            java.util.concurrent.Executors.newSingleThreadExecutor(
+                    Thread.ofPlatform().daemon().name("RingWorld Atlas cache reader").factory());
+
+    /** Accept previews immediately. Request tiles once this session's cache check finishes. */
+    public static void installTerrainAtlas(RingTerrainAtlasMetadataPayload metadata,
+                                           java.util.function.Consumer<Boolean> requestTiles) {
         RingGeometry current = geometry;
-        if (current == null || metadata.tileSize() != RingTerrainAtlas.TILE_SIZE) return false;
-        RingTerrainAtlas replacement = null;
+        if (current == null || metadata.tileSize() != RingTerrainAtlas.TILE_SIZE
+                || metadata.revision() < 0L) return;
+        var empty = new RingTerrainAtlas(current, metadata.worldHash(), metadata.sampleStep());
+        if (empty.columns() != metadata.columns() || empty.rows() != metadata.rows()) {
+            RingWorldMod.LOGGER.warn("Server RingWorld terrain atlas dimensions do not match ring geometry");
+            return;
+        }
         Path cache = cacheDirectory.resolve(
                 "terrain-" + Long.toUnsignedString(metadata.worldHash(), 16) + ".rwat.gz");
-        if (metadata.revision() < 0L) return false;
-        if (Files.exists(cache)) {
-            try {
-                replacement = RingTerrainAtlas.loadIfRevisionMatches(cache, current, metadata.worldHash(),
-                        metadata.revision()).orElse(null);
-            } catch (IOException exception) {
-                RingWorldMod.LOGGER.warn("Ignoring invalid client RingWorld terrain cache {}", cache, exception);
-            }
-        }
-        if (replacement == null) {
-            replacement = new RingTerrainAtlas(current, metadata.worldHash(), metadata.sampleStep());
-        }
-        if (replacement.columns() != metadata.columns() || replacement.rows() != metadata.rows()) {
-            RingWorldMod.LOGGER.warn("Server RingWorld terrain atlas dimensions do not match ring geometry");
-            return false;
-        }
-        terrainAtlas = replacement;
+        terrainAtlas = null;
+        pendingAtlasInstall = empty;
         serverAtlasWorldHash = metadata.worldHash();
         hasServerAtlasWorldHash = true;
         terrainAtlasCachePath = cache;
@@ -241,10 +250,28 @@ public final class ClientRingState {
         terrainAtlasRevision++;
         terrainAtlasDirty = false;
         terrainAtlasPendingRender = false;
-        RingWorldMod.LOGGER.info("RingWorld terrain atlas ready: {}/{} cached cells ({}%)",
-                replacement.presentCount(), replacement.cellCount(),
-                Math.round(replacement.completion() * 1000.0) / 10.0);
-        return replacement.isComplete() && replacement.revision() == metadata.revision();
+        CACHE_READER.execute(() -> {
+            if (pendingAtlasInstall != empty) return;
+            RingTerrainAtlas cached = empty;
+            try {
+                if (Files.exists(cache)) {
+                    cached = RingTerrainAtlas.loadIfRevisionMatches(cache, current, metadata.worldHash(),
+                            metadata.revision()).filter(a -> a.sampleStep() == metadata.sampleStep()).orElse(empty);
+                }
+            } catch (IOException exception) {
+                RingWorldMod.LOGGER.warn("Ignoring invalid client RingWorld terrain cache {}", cache, exception);
+            }
+            RingTerrainAtlas result = cached;
+            Minecraft.getInstance().execute(() -> {
+                if (pendingAtlasInstall != empty) return;
+                pendingAtlasInstall = null;
+                terrainAtlas = result;
+                terrainAtlasRevision++;
+                RingWorldMod.LOGGER.info("RingWorld terrain atlas ready: {}/{} cached cells ({}%)",
+                        result.presentCount(), result.cellCount(), Math.round(result.completion() * 1000.0) / 10.0);
+                requestTiles.accept(result.isComplete() && result.revision() == metadata.revision());
+            });
+        });
     }
 
     public static void applyTerrainAtlasTile(long worldHash, int tileX, int tileZ, byte[] data) {
@@ -299,8 +326,7 @@ public final class ClientRingState {
     public static int terrainPreviewStage() { return terrainPreviewStage; }
 
     public static void installTerrainPreview(RingTerrainPreviewPayload payload) {
-        RingTerrainAtlas atlas = terrainAtlas;
-        if (atlas == null || atlas.worldHash() != payload.worldHash()) return;
+        if (!hasServerAtlasWorldHash || serverAtlasWorldHash != payload.worldHash()) return;
         try {
             RingTerrainPreviewStage stage = RingTerrainPreviewStage.fromWireValue(payload.stage());
             RingTerrainPreview decoded = RingTerrainPreview.decode(payload.data());
@@ -437,6 +463,7 @@ public final class ClientRingState {
         cameraSeamCrossings = 0;
         seamCorrectionPackets = 0;
         terrainAtlas = null;
+        pendingAtlasInstall = null;
         terrainPreview = null;
         terrainPreviewStage = -1;
         serverAtlasWorldHash = 0L;

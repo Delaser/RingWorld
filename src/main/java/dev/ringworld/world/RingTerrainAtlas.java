@@ -41,12 +41,48 @@ public final class RingTerrainAtlas {
     private final int sampleStep;
     private final int columns;
     private final int rows;
-    private final short[] heights;
-    private final int[] colors;
-    private final int[] sideColors;
-    // Low nibble: block light; high nibble: authored water coverage (0..15).
-    private final byte[] blockLights;
-    private final boolean[] present;
+    // Snapshots share pages. Each owner detaches only the pages it subsequently edits.
+    private static final int PAGE_SHIFT = 10;
+    private static final int PAGE_SIZE = 1 << PAGE_SHIFT;
+    private static final int PAGE_MASK = PAGE_SIZE - 1;
+    private static final Page EMPTY = new Page();
+    private final Page[] pages;
+    private final java.util.BitSet writable = new java.util.BitSet();
+    private final int cellCount;
+
+    private static final class Page {
+        final short[] heights;
+        final int[] colors;
+        final int[] sideColors;
+        final byte[] blockLights;
+        final boolean[] present;
+
+        Page() {
+            heights = new short[PAGE_SIZE];
+            colors = new int[PAGE_SIZE];
+            sideColors = new int[PAGE_SIZE];
+            blockLights = new byte[PAGE_SIZE];
+            present = new boolean[PAGE_SIZE];
+        }
+
+        Page(Page source) {
+            heights = source.heights.clone();
+            colors = source.colors.clone();
+            sideColors = source.sideColors.clone();
+            blockLights = source.blockLights.clone();
+            present = source.present.clone();
+        }
+    }
+
+    private Page writablePage(int index) {
+        int page = index >>> PAGE_SHIFT;
+        if (!writable.get(page)) {
+            pages[page] = pages[page] == EMPTY ? new Page() : new Page(pages[page]);
+            writable.set(page);
+        }
+        return pages[page];
+    }
+
     private int presentCount;
     private long revision;
 
@@ -67,12 +103,9 @@ public final class RingTerrainAtlas {
         if (cells > RingDimensionReport.MAX_ATLAS_CELLS) {
             throw new IllegalArgumentException(RingDimensionReport.atlasLimitMessage(cells));
         }
-        int cellCount = Math.toIntExact(cells);
-        this.heights = new short[cellCount];
-        this.colors = new int[cellCount];
-        this.sideColors = new int[cellCount];
-        this.blockLights = new byte[cellCount];
-        this.present = new boolean[cellCount];
+        this.cellCount = Math.toIntExact(cells);
+        pages = new Page[divideCeil(cellCount, PAGE_SIZE)];
+        Arrays.fill(pages, EMPTY);
     }
 
     public static long worldHash(RingWorldSettings settings) {
@@ -91,26 +124,27 @@ public final class RingTerrainAtlas {
     public int tileRows() { return divideCeil(rows, TILE_SIZE); }
     public int presentCount() { return presentCount; }
     public long revision() { return revision; }
-    public int cellCount() { return present.length; }
+    public int cellCount() { return cellCount; }
     public long estimatedMemoryBytes() {
-        return (long)present.length * ESTIMATED_BYTES_PER_CELL;
+        return (long)cellCount * ESTIMATED_BYTES_PER_CELL;
     }
     public long estimatedWireBytes() {
-        return (long)present.length * ESTIMATED_BYTES_PER_CELL
+        return (long)cellCount * ESTIMATED_BYTES_PER_CELL
                 + (long)tileColumns() * tileRows() * 2L;
     }
-    public boolean isComplete() { return presentCount == present.length; }
-    public double completion() { return present.length == 0 ? 1.0 : (double)presentCount / present.length; }
+    public boolean isComplete() { return presentCount == cellCount; }
+    public double completion() { return cellCount == 0 ? 1.0 : (double)presentCount / cellCount; }
 
     /** Stable key for mesh height and distinct side-material vertex colours. */
     public long surfaceHeightFingerprint() {
         long fingerprint = 0xCBF29CE484222325L;
-        for (int index = 0; index < heights.length; index++) {
-            long sample = present[index]
-                    ? 0x1_0000L | Short.toUnsignedLong(heights[index])
+        for (int index = 0; index < cellCount; index++) {
+            Page page = pages[index >>> PAGE_SHIFT];
+            long sample = page.present[index & PAGE_MASK]
+                    ? 0x1_0000L | Short.toUnsignedLong(page.heights[index & PAGE_MASK])
                     : 0L;
-            fingerprint ^= sample ^ (present[index] && sideColors[index] != colors[index]
-                    ? (0x1000000L | sideColors[index]) << 17 : 0L);
+            fingerprint ^= sample ^ (page.present[index & PAGE_MASK] && page.sideColors[index & PAGE_MASK] != page.colors[index & PAGE_MASK]
+                    ? (0x1000000L | page.sideColors[index & PAGE_MASK]) << 17 : 0L);
             fingerprint *= 0x100000001B3L;
         }
         fingerprint ^= Integer.toUnsignedLong(columns);
@@ -125,11 +159,8 @@ public final class RingTerrainAtlas {
      */
     public RingTerrainAtlas snapshot() {
         RingTerrainAtlas copy = new RingTerrainAtlas(geometry, worldHash, sampleStep);
-        System.arraycopy(heights, 0, copy.heights, 0, heights.length);
-        System.arraycopy(colors, 0, copy.colors, 0, colors.length);
-        System.arraycopy(sideColors, 0, copy.sideColors, 0, sideColors.length);
-        System.arraycopy(blockLights, 0, copy.blockLights, 0, blockLights.length);
-        System.arraycopy(present, 0, copy.present, 0, present.length);
+        System.arraycopy(pages, 0, copy.pages, 0, pages.length);
+        writable.clear();
         copy.presentCount = presentCount;
         copy.revision = revision;
         return copy;
@@ -139,15 +170,24 @@ public final class RingTerrainAtlas {
     public void copyCheckpointCells(RingTerrainAtlas destination, int first, int count) {
         if (!geometry.equals(destination.geometry) || worldHash != destination.worldHash
                 || sampleStep != destination.sampleStep || first < 0 || count < 0
-                || first > present.length - count) throw new IllegalArgumentException("invalid checkpoint slice");
-        for (int i = first; i < first + count; i++) {
-            if (present[i] != destination.present[i]) destination.presentCount += present[i] ? 1 : -1;
+                || first > cellCount - count) throw new IllegalArgumentException("invalid checkpoint slice");
+        for (int i = first; i < first + count;) {
+            int offset = i & PAGE_MASK;
+            int length = Math.min(first + count - i, PAGE_SIZE - offset);
+            Page source = pages[i >>> PAGE_SHIFT];
+            if (source != destination.pages[i >>> PAGE_SHIFT]) {
+                Page target = destination.writablePage(i);
+                for (int j = offset; j < offset + length; j++) {
+                    if (source.present[j] != target.present[j]) destination.presentCount += source.present[j] ? 1 : -1;
+                }
+                System.arraycopy(source.heights, offset, target.heights, offset, length);
+                System.arraycopy(source.colors, offset, target.colors, offset, length);
+                System.arraycopy(source.sideColors, offset, target.sideColors, offset, length);
+                System.arraycopy(source.blockLights, offset, target.blockLights, offset, length);
+                System.arraycopy(source.present, offset, target.present, offset, length);
+            }
+            i += length;
         }
-        System.arraycopy(heights, first, destination.heights, first, count);
-        System.arraycopy(colors, first, destination.colors, first, count);
-        System.arraycopy(sideColors, first, destination.sideColors, first, count);
-        System.arraycopy(blockLights, first, destination.blockLights, first, count);
-        System.arraycopy(present, first, destination.present, first, count);
     }
 
     /** Call only after all slices and subsequently dirtied slices match this live source. */
@@ -221,59 +261,69 @@ public final class RingTerrainAtlas {
             throw new IllegalArgumentException("atlas block light must be between 0 and 15");
         }
         int index = index(column, row);
+        Page page = pages[index >>> PAGE_SHIFT];
         short clampedHeight = (short)Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, surfaceY));
         int rgb = mapColor & 0xFFFFFF;
         byte light = (byte)(blockLight | waterCoverage << 4);
-        boolean changed = !present[index] || heights[index] != clampedHeight
-                || colors[index] != rgb || blockLights[index] != light
-                || sideColors[index] != (sideColor & 0xFFFFFF);
-        if (!present[index]) {
-            present[index] = true;
+        boolean changed = !page.present[index & PAGE_MASK] || page.heights[index & PAGE_MASK] != clampedHeight
+                || page.colors[index & PAGE_MASK] != rgb || page.blockLights[index & PAGE_MASK] != light
+                || page.sideColors[index & PAGE_MASK] != (sideColor & 0xFFFFFF);
+        if (!changed) return false;
+        page = writablePage(index);
+        if (!page.present[index & PAGE_MASK]) {
+            page.present[index & PAGE_MASK] = true;
             presentCount++;
         }
-        heights[index] = clampedHeight;
-        colors[index] = rgb;
-        sideColors[index] = sideColor & 0xFFFFFF;
-        blockLights[index] = light;
-        return changed;
+        page.heights[index & PAGE_MASK] = clampedHeight;
+        page.colors[index & PAGE_MASK] = rgb;
+        page.sideColors[index & PAGE_MASK] = sideColor & 0xFFFFFF;
+        page.blockLights[index & PAGE_MASK] = light;
+        return true;
     }
 
     public boolean hasCell(int column, int row) {
         if (row < 0 || row >= rows) return false;
-        return present[index(Math.floorMod(column, columns), row)];
+        int index = index(Math.floorMod(column, columns), row);
+        Page page = pages[index >>> PAGE_SHIFT];
+        return page.present[index & PAGE_MASK];
     }
 
     /** Raw canonical texel access for the client-side GPU surface texture. */
     public int cellColor(int column, int row) {
         if (row < 0 || row >= rows) return -1;
         int index = index(Math.floorMod(column, columns), row);
-        return present[index] ? colors[index] : -1;
+        Page page = pages[index >>> PAGE_SHIFT];
+        return page.present[index & PAGE_MASK] ? page.colors[index & PAGE_MASK] : -1;
     }
 
     public int cellSideColor(int column, int row) {
         if (row < 0 || row >= rows) return -1;
         int index = index(Math.floorMod(column, columns), row);
-        return present[index] ? sideColors[index] : -1;
+        Page page = pages[index >>> PAGE_SHIFT];
+        return page.present[index & PAGE_MASK] ? page.sideColors[index & PAGE_MASK] : -1;
     }
 
     /** Raw canonical height access for the low-detail cylindrical mesh. */
     public int cellHeight(int column, int row) {
         if (row < 0 || row >= rows) return (int)RingGeometry.SURFACE_Y;
         int index = index(Math.floorMod(column, columns), row);
-        return present[index] ? heights[index] : (int)RingGeometry.SURFACE_Y;
+        Page page = pages[index >>> PAGE_SHIFT];
+        return page.present[index & PAGE_MASK] ? page.heights[index & PAGE_MASK] : (int)RingGeometry.SURFACE_Y;
     }
 
     /** Raw exposed block-light level, from zero through vanilla's maximum fifteen. */
     public int cellBlockLight(int column, int row) {
         if (row < 0 || row >= rows) return 0;
         int index = index(Math.floorMod(column, columns), row);
-        return present[index] ? blockLights[index] & 15 : 0;
+        Page page = pages[index >>> PAGE_SHIFT];
+        return page.present[index & PAGE_MASK] ? page.blockLights[index & PAGE_MASK] & 15 : 0;
     }
 
     public int cellWaterCoverage(int column, int row) {
         if (row < 0 || row >= rows) return 0;
         int index = index(Math.floorMod(column, columns), row);
-        return present[index] ? (blockLights[index] & 255) >>> 4 : 0;
+        Page page = pages[index >>> PAGE_SHIFT];
+        return page.present[index & PAGE_MASK] ? (page.blockLights[index & PAGE_MASK] & 255) >>> 4 : 0;
     }
 
     /**
@@ -304,13 +354,14 @@ public final class RingTerrainAtlas {
                 double wx = dx == 0 ? 1.0 - fx : fx;
                 double weight = wx * wz;
                 int index = index(column, row);
-                if (!present[index] || weight <= 0.0) continue;
-                height += heights[index] * weight;
-                red += (colors[index] >> 16 & 0xFF) * weight;
-                green += (colors[index] >> 8 & 0xFF) * weight;
-                blue += (colors[index] & 0xFF) * weight;
-                blockLight += (blockLights[index] & 15) * weight;
-                waterCoverage += ((blockLights[index] & 255) >>> 4) / 15.0 * weight;
+                Page page = pages[index >>> PAGE_SHIFT];
+                if (!page.present[index & PAGE_MASK] || weight <= 0.0) continue;
+                height += page.heights[index & PAGE_MASK] * weight;
+                red += (page.colors[index & PAGE_MASK] >> 16 & 0xFF) * weight;
+                green += (page.colors[index & PAGE_MASK] >> 8 & 0xFF) * weight;
+                blue += (page.colors[index & PAGE_MASK] & 0xFF) * weight;
+                blockLight += (page.blockLights[index & PAGE_MASK] & 15) * weight;
+                waterCoverage += ((page.blockLights[index & PAGE_MASK] & 255) >>> 4) / 15.0 * weight;
                 weightTotal += weight;
             }
         }
@@ -336,11 +387,12 @@ public final class RingTerrainAtlas {
                 for (int z = 0; z < tileHeight; z++) {
                     for (int x = 0; x < tileWidth; x++) {
                         int index = index(firstX + x, firstZ + z);
-                        output.writeBoolean(present[index]);
-                        output.writeShort(heights[index]);
-                        output.writeInt(colors[index]);
-                        output.writeByte(blockLights[index]);
-                        output.writeInt(sideColors[index]);
+                        Page page = pages[index >>> PAGE_SHIFT];
+                        output.writeBoolean(page.present[index & PAGE_MASK]);
+                        output.writeShort(page.heights[index & PAGE_MASK]);
+                        output.writeInt(page.colors[index & PAGE_MASK]);
+                        output.writeByte(page.blockLights[index & PAGE_MASK]);
+                        output.writeInt(page.sideColors[index & PAGE_MASK]);
                     }
                 }
             }
@@ -376,26 +428,9 @@ public final class RingTerrainAtlas {
                     int color = input.readInt();
                     int blockLight = input.readUnsignedByte();
                     int sideColor = input.readInt() & 0xFFFFFF;
-                    int index = index(firstX + x, firstZ + z);
-                    // Atlas samples are immutable once generated. A client may
-                    // have a more complete disk cache than a newly started or
-                    // still-pregenerating server snapshot, so an absent wire
-                    // cell must never erase valid cached terrain.
                     if (incomingPresent) {
-                        short incomingHeight = (short)height;
-                        int incomingColor = color & 0xFFFFFF;
-                        byte incomingBlockLight = (byte)blockLight;
-                        changed |= !present[index]
-                                || heights[index] != incomingHeight
-                                || colors[index] != incomingColor
-                                || blockLights[index] != incomingBlockLight
-                                || sideColors[index] != sideColor;
-                        if (!present[index]) presentCount++;
-                        present[index] = true;
-                        heights[index] = incomingHeight;
-                        colors[index] = incomingColor;
-                        blockLights[index] = incomingBlockLight;
-                        sideColors[index] = sideColor;
+                        changed |= putCell(firstX + x, firstZ + z, height, color,
+                                blockLight & 15, sideColor, blockLight >>> 4);
                     }
                 }
             }
@@ -418,12 +453,13 @@ public final class RingTerrainAtlas {
             output.writeInt(columns);
             output.writeInt(rows);
             output.writeLong(revision);
-            for (int index = 0; index < present.length; index++) {
-                output.writeBoolean(present[index]);
-                output.writeShort(heights[index]);
-                output.writeInt(colors[index]);
-                output.writeByte(blockLights[index]);
-                output.writeInt(sideColors[index]);
+            for (int index = 0; index < cellCount; index++) {
+                Page page = pages[index >>> PAGE_SHIFT];
+                output.writeBoolean(page.present[index & PAGE_MASK]);
+                output.writeShort(page.heights[index & PAGE_MASK]);
+                output.writeInt(page.colors[index & PAGE_MASK]);
+                output.writeByte(page.blockLights[index & PAGE_MASK]);
+                output.writeInt(page.sideColors[index & PAGE_MASK]);
             }
         }
         try {
@@ -466,13 +502,14 @@ public final class RingTerrainAtlas {
             if (expectedRevision >= 0 && revision != expectedRevision) return Optional.empty();
             RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, hash, sampleStep);
             atlas.revision = revision;
-            for (int index = 0; index < atlas.present.length; index++) {
-                atlas.present[index] = input.readBoolean();
-                atlas.heights[index] = input.readShort();
-                atlas.colors[index] = input.readInt() & 0xFFFFFF;
-                atlas.blockLights[index] = input.readByte();
-                atlas.sideColors[index] = input.readInt() & 0xFFFFFF;
-                if (atlas.present[index]) atlas.presentCount++;
+            for (int index = 0; index < atlas.cellCount; index++) {
+                Page page = atlas.writablePage(index);
+                page.present[index & PAGE_MASK] = input.readBoolean();
+                page.heights[index & PAGE_MASK] = input.readShort();
+                page.colors[index & PAGE_MASK] = input.readInt() & 0xFFFFFF;
+                page.blockLights[index & PAGE_MASK] = input.readByte();
+                page.sideColors[index & PAGE_MASK] = input.readInt() & 0xFFFFFF;
+                if (page.present[index & PAGE_MASK]) atlas.presentCount++;
             }
             if (input.read() != -1) throw new IOException("trailing terrain atlas data");
             return Optional.of(atlas);
@@ -561,10 +598,8 @@ public final class RingTerrainAtlas {
     }
 
     public void clear() {
-        Arrays.fill(heights, (short)0);
-        Arrays.fill(colors, 0);
-        Arrays.fill(blockLights, (byte)0);
-        Arrays.fill(present, false);
+        Arrays.fill(pages, EMPTY);
+        writable.clear();
         presentCount = 0;
     }
 

@@ -194,8 +194,7 @@ public final class RingWorldClient implements ClientModInitializer {
                     }
                 }));
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasMetadataPayload.ID, (payload, context) ->
-                context.client().execute(() -> {
-                    boolean cacheComplete = ClientRingState.installTerrainAtlas(payload);
+                context.client().execute(() -> ClientRingState.installTerrainAtlas(payload, cacheComplete -> {
                     // This short-lived capture validates live object/terrain
                     // alignment and intentionally does not download the LOD
                     // atlas while its two frames are settling.
@@ -210,7 +209,7 @@ public final class RingWorldClient implements ClientModInitializer {
                     }
                     RingClientPayloadTransport.send(new RingTerrainAtlasRequestPayload(
                             payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete));
-                }));
+                })));
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasTilePayload.ID, (payload, context) ->
                 context.client().execute(() -> ClientRingState.applyTerrainAtlasTile(
                         payload.worldHash(), payload.tileX(), payload.tileZ(), payload.data())));

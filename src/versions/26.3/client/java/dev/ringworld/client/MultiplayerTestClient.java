@@ -652,7 +652,17 @@ public final class MultiplayerTestClient {
             } else if (netherEnterSent && client.level.dimension() == Level.OVERWORLD
                     && !netherReturnSent) {
                 netherReturnSent = true;
-                sendResult("nether_return", ClientRingState.geometry() != null, client.player.getX());
+                var ring = ClientRingState.geometry();
+                boolean sameShape = false;
+                if (ring != null) {
+                    var stone = net.minecraft.world.level.block.Blocks.POINTED_DRIPSTONE.defaultBlockState();
+                    var pos = new BlockPos(16, 69, 36);
+                    var shape = stone.getCollisionShape(client.level, pos).bounds();
+                    int lap = ring.circumferenceBlocks();
+                    sameShape = shape.equals(stone.getCollisionShape(client.level, pos.offset(lap, 0, 0)).bounds())
+                            && shape.equals(stone.getCollisionShape(client.level, pos.offset(-lap, 0, 0)).bounds());
+                }
+                sendResult("nether_return", sameShape, client.player.getX());
                 RingWorldMod.LOGGER.info("[multiplayer:A] physical Nether portal return x={} ringStateReady={}",
                         client.player.getX(), ClientRingState.geometry() != null);
             } else if (netherReturnSent && client.level.dimension() == Level.END && !endEnterSent) {

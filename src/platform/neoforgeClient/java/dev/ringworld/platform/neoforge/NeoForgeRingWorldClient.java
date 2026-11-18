@@ -254,15 +254,16 @@ public final class NeoForgeRingWorldClient {
 
     private static void handleAtlasMetadataOnClientThread(
             RingTerrainAtlasMetadataPayload payload, IPayloadContext context) {
-        boolean cacheComplete = ClientRingState.installTerrainAtlas(payload);
-        if (Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) return;
-        if (!RingClientPayloadTransport.canSend(RingTerrainAtlasRequestPayload.ID)) {
-            context.disconnect(Component.literal(
-                    "Server RingWorld terrain-atlas protocol is missing or out of date."));
-            return;
-        }
-        RingClientPayloadTransport.send(new RingTerrainAtlasRequestPayload(
-                payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete));
+        ClientRingState.installTerrainAtlas(payload, cacheComplete -> {
+            if (Boolean.getBoolean(CurvedObjectCaptureClient.ENABLE_PROPERTY)) return;
+            if (!RingClientPayloadTransport.canSend(RingTerrainAtlasRequestPayload.ID)) {
+                context.disconnect(Component.literal(
+                        "Server RingWorld terrain-atlas protocol is missing or out of date."));
+                return;
+            }
+            RingClientPayloadTransport.send(new RingTerrainAtlasRequestPayload(
+                    payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete));
+        });
     }
 
     private static void handleAtlasTile(RingTerrainAtlasTilePayload payload, IPayloadContext context) {

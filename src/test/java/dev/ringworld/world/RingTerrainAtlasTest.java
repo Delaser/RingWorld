@@ -21,6 +21,24 @@ class RingTerrainAtlasTest {
     private static final long HASH = 0x1234_5678_9ABC_DEF0L;
 
     @Test
+    void sharedPagesStayIndependentThroughCheckpointWritesAndClear() {
+        RingTerrainAtlas original = new RingTerrainAtlas(GEOMETRY, HASH);
+        original.putCell(1023, 0, 80, 0x010203);
+        original.putCell(0, 1, 81, 0x123456);
+        RingTerrainAtlas first = original.snapshot();
+        RingTerrainAtlas second = first.snapshot();
+        first.putCell(0, 1, 82, 0xffffff);
+        original.clear();
+        original.copyCheckpointCells(first, 1023, 2);
+        assertEquals(0, first.presentCount());
+        assertEquals(0x010203, second.cellColor(1023, 0));
+        assertEquals(0x123456, second.cellColor(0, 1));
+        second.putCell(1023, 0, 77, 0xaabbcc);
+        assertFalse(original.hasCell(1023, 0));
+        assertFalse(first.hasCell(1023, 0));
+    }
+
+    @Test
     void fixedMasterIdentityMatchesQualificationReader() {
         var legacy = new RingWorldSettings(416, 2048, 155_088_888L, 160, 64, 4, 3);
         assertEquals("1954828054372612691", Long.toUnsignedString(RingTerrainAtlas.worldHash(legacy)));
