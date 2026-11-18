@@ -17,6 +17,8 @@ public final class RingSurfaceLod {
      */
     public static final int VANILLA_MYCELIUM_TOP_RGB = 0x6F6365;
 
+    public static final int VANILLA_SAND_TOP_RGB = 0xdbcfa3;
+
     private RingSurfaceLod() { }
 
     /** Encodes atlas coverage as transparency without inventing missing terrain. */

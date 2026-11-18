@@ -11,7 +11,6 @@ import dev.ringworld.world.AtlasPregenerationState;
 import dev.ringworld.world.RingAtlasPregenerationCursor;
 import dev.ringworld.world.RingAtlasSurfaceInvalidation;
 import dev.ringworld.world.RingGeometry;
-import dev.ringworld.world.RingSurfaceLod;
 import dev.ringworld.world.RingTerrainAtlas;
 import dev.ringworld.world.RingWorldConfig;
 import dev.ringworld.world.RingWorldSettings;
@@ -27,6 +26,7 @@ import net.minecraft.world.level.LightLayer;
 import net.minecraft.world.level.ChunkPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.storage.LevelResource;
@@ -56,9 +56,6 @@ public final class RingAtlasPregenerationService {
     public static final int TILE_PUBLICATION_INTERVAL_TICKS = 20;
     public static final int RECAPTURE_CELLS_PER_TICK = 64;
     private static final int TEARDOWN_RELEASE_ATTEMPTS = 3;
-    private static final double WATER_TEXTURE_LUMINANCE = 0.58;
-    private static final double GRASS_TEXTURE_LUMINANCE = 0.68;
-    private static final double FOLIAGE_TEXTURE_LUMINANCE = 0.52;
     private static final String CACHE_FILE = "terrain-atlas.rwat.gz";
     private static final String LEGACY_CACHE_FILE = "ringworld-terrain-atlas.rwat.gz";
     private static final String CACHE_DIRECTORY = RingWorldMod.MOD_ID;
@@ -222,6 +219,9 @@ public final class RingAtlasPregenerationService {
             state.maxCaptureNanos = Math.max(state.maxCaptureNanos, elapsed);
         }
         processRecaptures(world, state);
+        if (!state.stopping && state.recolour != null && !state.recolour.complete()) {
+            state.recolour.tick(world, chunk -> captureChunk(world, chunk, state, true).changed());
+        }
         commitPendingRevision(state);
         Job job = state.job;
         if (job != null) {
@@ -243,6 +243,7 @@ public final class RingAtlasPregenerationService {
         if (state != null && !state.stopping) {
             var geometry = state.atlas.geometry();
             var position = chunk.getPos();
+            if (state.recolour != null) state.recolour.onLoad(position);
             if (position.x() >= 0 && position.x() < geometry.circumferenceChunks()
                     && position.z() >= geometry.minChunkZ()
                     && position.z() < geometry.minChunkZ() + geometry.widthChunks()) {
@@ -269,7 +270,7 @@ public final class RingAtlasPregenerationService {
 
     private static void capturePlayerChunk(ServerLevel world, WorldState state, LevelChunk chunk) {
         boolean wasComplete = state.atlas.isComplete();
-        CaptureResult result = captureChunk(world, chunk, state);
+        CaptureResult result = captureChunk(world, chunk, state, false);
         if (wasComplete && result.changed()) state.revisionPending = true;
     }
 
@@ -342,6 +343,15 @@ public final class RingAtlasPregenerationService {
         return requireState(world).dirtyTiles.hasPending();
     }
 
+    static String recolour(ServerLevel world) {
+        requireServerThread(world);
+        WorldState state = WORLDS.get(world);
+        if (state == null || state.stopping) return "terrain atlas unavailable";
+        if (state.recolour == null || state.recolour.complete())
+            state.recolour = new RingAtlasRecolour(world, state.atlas.geometry());
+        return state.recolour.status();
+    }
+
     public static String status(ServerLevel world) {
         WorldState state = WORLDS.get(world);
         if (state == null) return "terrain atlas unavailable";
@@ -355,7 +365,8 @@ public final class RingAtlasPregenerationService {
                 + percent(state.atlas.completion()) + "%), generation "
                 + progress.state().name().toLowerCase(java.util.Locale.ROOT) + rate
                 + (state.job == null ? "" : ", requests " + state.job.requestLimit()
-                + (state.job.adaptive.automatic() ? " (auto)" : " (fixed)"));
+                + (state.job.adaptive.automatic() ? " (auto)" : " (fixed)"))
+                + (state.recolour == null ? "" : ", " + state.recolour.status());
     }
 
     /** Session-only server-thread override, including future jobs in this world. Zero restores auto. */
@@ -421,7 +432,7 @@ public final class RingAtlasPregenerationService {
                 CaptureResult result = new CaptureResult(true, false);
                 if (needsCapture) {
                     captured++;
-                    result = captureChunk(world, chunk, state);
+                    result = captureChunk(world, chunk, state, false);
                     state.loadedChunks.remove(chunk.getPos().x(), chunk.getPos().z());
                 }
                 if (!result.valid() || !state.atlas.isChunkPresent(selected.chunkX(), selected.chunkRow())) {
@@ -493,7 +504,7 @@ public final class RingAtlasPregenerationService {
         return job == null ? 0 : job.requestLimit();
     }
 
-    private static CaptureResult captureChunk(ServerLevel world, LevelChunk chunk, WorldState state) {
+    private static CaptureResult captureChunk(ServerLevel world, ChunkAccess chunk, WorldState state, boolean coloursOnly) {
         RingTerrainAtlas atlas = state.atlas;
         int chunkX = chunk.getPos().x();
         int chunkZ = chunk.getPos().z();
@@ -515,19 +526,26 @@ public final class RingAtlasPregenerationService {
                 int blockX = chunk.getPos().getMinBlockX() + localX;
                 BlockPos surface = new BlockPos(blockX, surfaceY, blockZ);
                 BlockState surfaceState = chunk.getBlockState(surface);
-                int color = surfaceColor(world, surface, surfaceState);
-                int blockLight = surfaceBlockLight(world, surface, surfaceState);
+                int atlasX = blockX / step;
+                // Disk maintenance is colour-only. Leave missing, stale and wet cells to normal live capture.
+                if (coloursOnly && (!atlas.hasCell(atlasX, row) || atlas.cellHeight(atlasX, row) != surfaceY + 1
+                        || surfaceState.isAir() || atlas.cellWaterCoverage(atlasX, row) != 0
+                        || surfaceState.getFluidState().is(FluidTags.WATER))) continue;
+                int color = state.colours.surface(world, chunk, surface, surfaceState);
+                int blockLight = coloursOnly ? atlas.cellBlockLight(atlasX, row) : surfaceBlockLight(world, surface, surfaceState);
                 if (atlas.putBlockSample(blockX, blockZ, surfaceY + 1, color, blockLight,
-                        sideColor(world, chunk, surface, surfaceState, color, atlas.sampleStep()),
+                        sideColor(state.colours, world, chunk, surface, surfaceState, color, atlas.sampleStep()),
                         surfaceState.getFluidState().is(FluidTags.WATER) ? 15 : 0)) {
                     changed = true;
-                    int atlasX = atlas.geometry().wrapBlockX(blockX) / step;
+                    if (coloursOnly) state.revisionPending = true;
                     state.checkpoints.changedCell(atlasX, row, atlas.columns());
                     state.dirtyTiles.publish(new TileCoordinate(atlasX / RingTerrainAtlas.TILE_SIZE,
                             row / RingTerrainAtlas.TILE_SIZE));
                 }
             }
-            state.recaptures.capturedRange(row * atlas.columns() + chunk.getPos().getMinBlockX() / step, 16 / step);
+            if (!coloursOnly) {
+                state.recaptures.capturedRange(row * atlas.columns() + chunk.getPos().getMinBlockX() / step, 16 / step);
+            }
         }
         if (changed) {
             state.checkpoints.markDirty();
@@ -537,7 +555,7 @@ public final class RingAtlasPregenerationService {
     }
 
     /** Bounded side sampling; never requests neighbouring chunks. */
-    private static int sideColor(ServerLevel world, LevelChunk chunk, BlockPos surface,
+    private static int sideColor(RingAtlasColours colours, ServerLevel world, ChunkAccess chunk, BlockPos surface,
                                  BlockState top, int topColor, int step) {
         if (top.is(BlockTags.LEAVES) || top.is(BlockTags.LOGS) || !top.getFluidState().isEmpty())
             return topColor;
@@ -552,7 +570,7 @@ public final class RingAtlasPregenerationService {
             BlockPos side = new BlockPos(surface.getX(), y, surface.getZ());
             BlockState material = chunk.getBlockState(side);
             if (material.isAir() || !material.getFluidState().isEmpty()) continue;
-            int color = surfaceColor(world, side, material);
+            int color = colours.surface(world, chunk, side, material);
             red += color >> 16 & 255; green += color >> 8 & 255; blue += color & 255; count++;
         }
         if (count > 0) return (red / count) << 16 | (green / count) << 8 | blue / count;
@@ -561,7 +579,7 @@ public final class RingAtlasPregenerationService {
         BlockPos below = surface.below(8);
         BlockState material = chunk.getBlockState(below);
         return material.isAir() || !material.getFluidState().isEmpty()
-                ? topColor : surfaceColor(world, below, material);
+                ? topColor : colours.surface(world, chunk, below, material);
     }
 
     private static void processRecaptures(ServerLevel world, WorldState state) {
@@ -591,10 +609,10 @@ public final class RingAtlasPregenerationService {
             int surfaceY = RingAtlasSurfaceSampler.surfaceY(chunk, localX, localZ);
             BlockPos surface = new BlockPos(blockX, surfaceY, blockZ);
             BlockState surfaceState = chunk.getBlockState(surface);
-            int color = surfaceColor(world, surface, surfaceState);
+            int color = state.colours.surface(world, chunk, surface, surfaceState);
             int blockLight = surfaceBlockLight(world, surface, surfaceState);
             if (atlas.putCell(cell.column(), cell.row(), surfaceY + 1, color, blockLight,
-                        sideColor(world, chunk, surface, surfaceState, color, atlas.sampleStep()),
+                        sideColor(state.colours, world, chunk, surface, surfaceState, color, atlas.sampleStep()),
                         surfaceState.getFluidState().is(FluidTags.WATER) ? 15 : 0)) {
                 changed = true;
                 state.checkpoints.changedCell(cell.column(), cell.row(), atlas.columns());
@@ -612,26 +630,6 @@ public final class RingAtlasPregenerationService {
         state.atlas.advanceRevision();
         state.checkpoints.markDirty();
         if (state.job != null) state.job.refreshProgress();
-    }
-
-    private static int surfaceColor(ServerLevel world, BlockPos surface, BlockState state) {
-        if (state.getFluidState().is(FluidTags.WATER)) {
-            return RingSurfaceLod.applyTextureLuminance(world.getBiome(surface).value().getWaterColor(), WATER_TEXTURE_LUMINANCE);
-        }
-        if (state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.SHORT_GRASS) || state.is(Blocks.TALL_GRASS)
-                || state.is(Blocks.FERN) || state.is(Blocks.LARGE_FERN)) {
-            return RingSurfaceLod.applyTextureLuminanceWithMapFallback(
-                    world.getBiome(surface).value().getGrassColor(surface.getX(), surface.getZ()), state.getMapColor(world, surface).col,
-                    GRASS_TEXTURE_LUMINANCE);
-        }
-        if (state.is(BlockTags.LEAVES) || state.is(Blocks.VINE)) {
-            return RingSurfaceLod.applyTextureLuminanceWithMapFallback(
-                    world.getBiome(surface).value().getFoliageColor(), state.getMapColor(world, surface).col, FOLIAGE_TEXTURE_LUMINANCE);
-        }
-        if (state.is(Blocks.MYCELIUM)) {
-            return RingSurfaceLod.VANILLA_MYCELIUM_TOP_RGB;
-        }
-        return state.getMapColor(world, surface).col;
     }
 
     private static int surfaceBlockLight(ServerLevel world, BlockPos surface, BlockState state) {
@@ -745,6 +743,8 @@ public final class RingAtlasPregenerationService {
         private final RingTerrainAtlas atlas;
         private final Path path;
         private final RingAtlasDirtyTileQueue dirtyTiles = new RingAtlasDirtyTileQueue();
+        private RingAtlasRecolour recolour;
+        private final RingAtlasColours colours = new RingAtlasColours();
         private final RingAtlasRecaptureQueue recaptures = new RingAtlasRecaptureQueue();
         private final RingAtlasLoadedChunkQueue loadedChunks = new RingAtlasLoadedChunkQueue();
         private final RingAtlasCheckpointWriter checkpoints;

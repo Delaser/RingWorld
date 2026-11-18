@@ -306,6 +306,7 @@ pregeneration without changing immutable world layout:
 /ringworld atlas start
 /ringworld atlas pause
 /ringworld atlas resume
+/ringworld atlas recolour
 ```
 
 `start` explicitly begins an idle partial atlas. `resume` resumes a process-local
@@ -314,6 +315,15 @@ the handle has returned to `IDLE`. Neither command changes immutable world
 layout or discards saved cells. The local #131 runtime gate covers both the
 idle start and restart-from-`IDLE` resume paths; either command rejects a
 release-pending terminal handle until its loading ticket has closed.
+
+After updating RingWorld, visited chunks pick up the current Atlas colours as they
+load. To refresh the rest of an existing Atlas, run `/ringworld atlas recolour`.
+Check progress with `/ringworld atlas status`. The pass reads one saved chunk at
+a time and also works with pregeneration disabled. It updates top and side colours
+in populated dry cells whose surface height still agrees with the save. It keeps
+height, light, water and coverage intact. Clients receive the usual tile updates.
+Missing, unfinished or older-format chunks wait for normal visits. A server restart
+ends the scan and saves applied changes. Run the command again to finish.
 
 Players in a RingWorld Overworld can instead open **RingWorld Map** from the
 pause menu. Its generation actions require an integrated-world owner or a

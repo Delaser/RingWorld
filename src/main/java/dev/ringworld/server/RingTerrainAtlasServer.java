@@ -99,6 +99,13 @@ public final class RingTerrainAtlasServer {
                                             : "RingWorld atlas: " + RingAtlasPregenerationService.status(world)), false);
                                     return world == null ? 0 : 1;
                                 }))
+                                .then(Commands.literal("recolour").executes(context -> {
+                                    ServerLevel world = context.getSource().getServer().getLevel(Level.OVERWORLD);
+                                    if (world == null) return 0;
+                                    String result = RingAtlasPregenerationService.recolour(world);
+                                    context.getSource().sendSuccess(() -> Component.literal("RingWorld Atlas " + result), false);
+                                    return 1;
+                                }))
                                 .then(Commands.literal("start").executes(context -> control(
                                         context.getSource().getServer().getLevel(Level.OVERWORLD),
                                         AtlasPregenerationAction.START, context.getSource())))

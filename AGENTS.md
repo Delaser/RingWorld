@@ -1616,6 +1616,10 @@ version numbers.
   import ZIP, macOS/Linux/Windows managed-patch copy/retirement paths, package
   manifest hashes and tests synchronized. Never silently downgrade a loader.
 - `/ringworld atlas status|start|pause|resume` controls background pregeneration.
+- `/ringworld atlas recolour` refreshes existing dry Atlas samples from live
+  or already-saved full chunks, with one read in flight. Preserve cell coverage,
+  dimensions, lighting and the existing storage identity for colour-only updates.
+  See [Operations](docs/OPERATIONS.md) for progress and restart behaviour.
   Pause is process-local and does not alter immutable saved layout.
 - Atlas format 8 retains format 6's exposed top-face height,
   texture-luminance-corrected, biome-tinted colour from the actual highest

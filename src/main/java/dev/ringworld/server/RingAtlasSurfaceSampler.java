@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.chunk.ChunkAccess;
 import net.minecraft.world.level.chunk.LevelChunk;
 import net.minecraft.world.level.levelgen.Heightmap;
 
@@ -12,7 +13,7 @@ import net.minecraft.world.level.levelgen.Heightmap;
 final class RingAtlasSurfaceSampler {
     private RingAtlasSurfaceSampler() { }
 
-    static int surfaceY(LevelChunk chunk, int localX, int localZ) {
+    static int surfaceY(ChunkAccess chunk, int localX, int localZ) {
         int top = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, localX, localZ);
         var position = new BlockPos.MutableBlockPos(chunk.getPos().getMinBlockX() + localX,
                 top, chunk.getPos().getMinBlockZ() + localZ);

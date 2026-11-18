@@ -383,7 +383,8 @@ public final class RingTerrainAtlas {
 
     private static boolean shoreline(Page page, int offset) {
         return (page.blockLights[offset] & 0xf0) != 0
-                || page.colors[offset] == net.minecraft.world.level.material.MapColor.SAND.col;
+                || page.colors[offset] == net.minecraft.world.level.material.MapColor.SAND.col
+                || page.colors[offset] == RingSurfaceLod.VANILLA_SAND_TOP_RGB;
     }
 
     public int cellWaterCoverage(int column, int row) {
