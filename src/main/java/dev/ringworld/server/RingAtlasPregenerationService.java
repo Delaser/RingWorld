@@ -123,8 +123,7 @@ public final class RingAtlasPregenerationService {
         requireServerThread(world);
         WorldState state = WORLDS.get(world);
         if (state == null) return;
-        state.stopping = true;
-        drainLoadedCaptures(world, state);
+        drainBeforeStop(world, state);
         // Level unload can run after the chunk source has evicted the result
         // named by an already-completed load future. Never resolve that result
         // during teardown: cancel/release its ticket and leave the selected
@@ -281,6 +280,13 @@ public final class RingAtlasPregenerationService {
             LevelChunk chunk = world.getChunkSource().getChunkNow(position.x(), position.z());
             if (chunk != null) capturePlayerChunk(world, state, chunk);
         }
+    }
+
+    private static void drainBeforeStop(ServerLevel world, WorldState state) {
+        state.stopping = true;
+        drainLoadedCaptures(world, state);
+        while (state.recaptures.hasPending()) processRecaptures(world, state);
+        commitPendingRevision(state);
     }
 
     /** Queues one potentially surface-affecting block mutation without rescanning inline. */
@@ -494,11 +500,14 @@ public final class RingAtlasPregenerationService {
         }
         boolean changed = false;
         int step = atlas.sampleStep();
-        for (int localZ = step / 2; localZ < 16; localZ += step) {
+        int minBlockZ = chunk.getPos().getMinBlockZ();
+        int endRow = atlas.firstSampleRowAt(minBlockZ + 16);
+        for (int row = atlas.firstSampleRowAt(minBlockZ); row < endRow; row++) {
+            int blockZ = atlas.geometry().minWidthZ() + row * step + step / 2;
+            int localZ = blockZ - minBlockZ;
             for (int localX = step / 2; localX < 16; localX += step) {
                 int surfaceY = RingAtlasSurfaceSampler.surfaceY(chunk, localX, localZ);
                 int blockX = chunk.getPos().getMinBlockX() + localX;
-                int blockZ = chunk.getPos().getMinBlockZ() + localZ;
                 BlockPos surface = new BlockPos(blockX, surfaceY, blockZ);
                 BlockState surfaceState = chunk.getBlockState(surface);
                 int color = surfaceColor(world, surface, surfaceState);
@@ -508,10 +517,9 @@ public final class RingAtlasPregenerationService {
                         surfaceState.getFluidState().is(FluidTags.WATER) ? 15 : 0)) {
                     changed = true;
                     int atlasX = atlas.geometry().wrapBlockX(blockX) / step;
-                    int atlasZ = Math.floorDiv(blockZ - atlas.geometry().minWidthZ(), step);
-                    state.checkpoints.changedCell(atlasX, atlasZ, atlas.columns());
+                    state.checkpoints.changedCell(atlasX, row, atlas.columns());
                     state.dirtyTiles.publish(new TileCoordinate(atlasX / RingTerrainAtlas.TILE_SIZE,
-                            atlasZ / RingTerrainAtlas.TILE_SIZE));
+                            row / RingTerrainAtlas.TILE_SIZE));
                 }
             }
         }
@@ -558,12 +566,20 @@ public final class RingAtlasPregenerationService {
             int blockX = cell.column() * atlas.sampleStep() + atlas.sampleStep() / 2;
             int blockZ = atlas.geometry().minWidthZ()
                     + cell.row() * atlas.sampleStep() + atlas.sampleStep() / 2;
-            BlockPos sample = new BlockPos(blockX, 0, blockZ);
-            if (!world.hasChunkAt(sample)) {
-                state.recaptures.enqueue(cell);
+            LevelChunk chunk = world.getChunkSource().getChunkNow(blockX >> 4, blockZ >> 4);
+            if (chunk == null) {
+                if (state.stopping) {
+                    // The chunk may already have been evicted. Its missing sample is the
+                    // durable retry marker used by both pregeneration and player loads.
+                    if (atlas.invalidateCell(cell.column(), cell.row())) {
+                        state.checkpoints.changedCell(cell.column(), cell.row(), atlas.columns());
+                        changed = true;
+                    }
+                } else {
+                    state.recaptures.enqueue(cell);
+                }
                 continue;
             }
-            LevelChunk chunk = world.getChunkAt(sample);
             int localX = Math.floorMod(blockX, 16);
             int localZ = Math.floorMod(blockZ, 16);
             int surfaceY = RingAtlasSurfaceSampler.surfaceY(chunk, localX, localZ);
@@ -685,8 +701,7 @@ public final class RingAtlasPregenerationService {
         // NeoForge may deliver further CHUNK_LOAD callbacks while Minecraft
         // drains its final save. Freeze captures before checkpoint/report so
         // their durable cell counts cannot change underneath the stop result.
-        state.stopping = true;
-        drainLoadedCaptures(world, state);
+        drainBeforeStop(world, state);
         if (state.job == null) return;
         // Shutdown is not a normal completed-request consumption tick. The
         // chunk source may already be tearing down, so discard the lease and
@@ -793,8 +808,10 @@ public final class RingAtlasPregenerationService {
         private AtlasPregenerationProgress snapshot() {
             long elapsed = rateElapsedNanos;
             if (state == AtlasPregenerationState.RUNNING) elapsed += Math.max(0L, System.nanoTime() - rateStartedNanos);
+            int present = owner.atlas.presentCount();
+            // Shutdown can invalidate dirty samples in chunks that already unloaded.
             return AtlasPregenerationProgress.snapshot(state, completedChunks, requests.totalChunks,
-                    startingPresentCells, owner.atlas.presentCount(), owner.atlas.cellCount(),
+                    Math.min(startingPresentCells, present), present, owner.atlas.cellCount(),
                     Duration.ofNanos(elapsed), lastError);
         }
         @Override public void pause() { enqueue(this::pauseOnServerThread); }

@@ -281,6 +281,15 @@ public final class RingTerrainAtlas {
         return true;
     }
 
+    /** Persist unavailable dirty samples as missing so the resume cursor revisits them. */
+    public boolean invalidateCell(int column, int row) {
+        if (!hasCell(column, row)) return false;
+        int index = index(Math.floorMod(column, columns), row);
+        writablePage(index).present[index & PAGE_MASK] = false;
+        presentCount--;
+        return true;
+    }
+
     public boolean hasCell(int column, int row) {
         if (row < 0 || row >= rows) return false;
         int index = index(Math.floorMod(column, columns), row);
@@ -571,13 +580,22 @@ public final class RingTerrainAtlas {
         return (long)chunksAlong * chunksAcross;
     }
 
+    /** First Atlas row with its sample centre at or beyond this world Z boundary. */
+    public int firstSampleRowAt(int blockZ) {
+        int offset = blockZ - geometry.minWidthZ() - sampleStep / 2;
+        return Math.clamp(Math.ceilDiv(offset, sampleStep), 0, rows);
+    }
+
     public boolean isChunkPresent(int chunkX, int chunkRow) {
+        if (chunkRow < 0 || chunkRow >= geometry.widthChunks()
+                || chunkX < 0 || chunkX >= geometry.circumferenceChunks()) return false;
         int samplesPerChunk = 16 / sampleStep;
         int firstX = chunkX * samplesPerChunk;
-        int firstZ = chunkRow * samplesPerChunk;
-        for (int z = 0; z < samplesPerChunk; z++) {
+        int minBlockZ = (geometry.minChunkZ() + chunkRow) * 16;
+        int endRow = firstSampleRowAt(minBlockZ + 16);
+        for (int z = firstSampleRowAt(minBlockZ); z < endRow; z++) {
             for (int x = 0; x < samplesPerChunk; x++) {
-                if (!hasCell(firstX + x, firstZ + z)) return false;
+                if (!hasCell(firstX + x, z)) return false;
             }
         }
         return true;

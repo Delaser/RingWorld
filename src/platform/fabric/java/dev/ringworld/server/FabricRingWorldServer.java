@@ -24,7 +24,6 @@ public final class FabricRingWorldServer {
         ServerChunkEvents.CHUNK_LOAD.register((world, chunk, generated) -> {
             if (!RingWorldServer.isOverworld(world)) return;
             RingTerrainAtlasServer.captureLoadedChunk(world, chunk);
-            RingWorldServer.onChunkLoaded(world, chunk);
         });
         ServerLevelEvents.LOAD.register((server, world) -> {
             try {

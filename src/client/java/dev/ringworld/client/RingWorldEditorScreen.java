@@ -302,7 +302,10 @@ public final class RingWorldEditorScreen extends Screen {
     void setDraftSeed(String value) {
         seed = value;
     }
-    void useDraftSeed() { selectedSeed = seed; previewSeedUsed = true; }
+    void useDraftSeed() {
+        selectedSeed = seed.isBlank() ? Long.toString(resolvedDraftSeed()) : seed;
+        previewSeedUsed = true;
+    }
     String selectedSeed() { return selectedSeed; }
     long resolvedDraftSeed() {
         return WorldOptions.parseSeed(seed).orElseGet(owner::ringworld$resolvedSeed);
@@ -370,7 +373,7 @@ public final class RingWorldEditorScreen extends Screen {
                     validWallStyle(), new RingSkyProfile(backdrop, sun, RingSkyProfile.FORMAT_VERSION),
                     generation, monument);
             if (previewSeedUsed) owner.ringworld$setPreviewSeedText(selectedSeed);
-            else owner.ringworld$setSeedText(selectedSeed);
+            else if (!selectedSeed.equals(owner.ringworld$seedText())) owner.ringworld$setSeedText(selectedSeed);
             owner.ringworld$refreshLayoutButton();
             RingMinecraftClientAccess.setScreen(minecraft, parent);
         } catch (RuntimeException exception) {

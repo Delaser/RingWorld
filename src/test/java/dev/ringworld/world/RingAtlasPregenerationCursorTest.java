@@ -40,6 +40,31 @@ class RingAtlasPregenerationCursorTest {
     }
 
     @Test
+    void splitEdgeChunksCoverAnOddChunkWidthAtEverySampleStep() {
+        var geometry = new RingGeometry(144, 2048);
+        assertEquals(10, geometry.widthChunks());
+        for (int step : List.of(1, 2, 4, 8, 16)) {
+            var atlas = new RingTerrainAtlas(geometry, HASH, step);
+            var cursor = new RingAtlasPregenerationCursor(geometry, atlas);
+            Optional<RingAtlasPregenerationCursor.Chunk> next;
+            while ((next = cursor.nextChunk()).isPresent()) {
+                var chunk = next.get();
+                int startZ = chunk.chunkZ() * 16;
+                for (int row = atlas.firstSampleRowAt(startZ); row < atlas.firstSampleRowAt(startZ + 16); row++) {
+                    int blockZ = geometry.minWidthZ() + row * step + step / 2;
+                    assertEquals(chunk.chunkZ(), Math.floorDiv(blockZ, 16));
+                    for (int x = step / 2; x < 16; x += step) {
+                        assertTrue(atlas.putBlockSample(chunk.chunkX() * 16 + x, blockZ, 65, 0x123456));
+                    }
+                }
+                assertTrue(atlas.isChunkPresent(chunk.chunkX(), chunk.chunkRow()));
+            }
+            assertTrue(atlas.isComplete());
+            assertEquals(1280, atlas.presentChunkCount());
+        }
+    }
+
+    @Test
     void preservesCanonicalCoordinatesForNonPowerOfTwoCircumference() {
         RingGeometry geometry = new RingGeometry(256, 1_040);
         RingAtlasPregenerationCursor cursor = cursor(geometry);

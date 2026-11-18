@@ -52,7 +52,6 @@ public final class NeoForgeRingWorldServer {
             if (RingWorldServer.isOverworld(world)) {
                 RingTerrainAtlasServer.captureLoadedChunk(world, event.getChunk());
             }
-            RingWorldServer.onChunkLoaded(world, event.getChunk());
         }
     }
 
