@@ -156,6 +156,16 @@ public final class ClientRingState {
         lastTerrainAtlasPublishMillis = 0L;
     }
 
+    /** The same offset seed places a dripstone model and its hitbox on every X image. */
+    public static net.minecraft.core.BlockPos dripstoneOffsetPosition(
+            net.minecraft.world.level.block.state.BlockState state, net.minecraft.core.BlockPos position) {
+        if (!state.is(net.minecraft.world.level.block.Blocks.POINTED_DRIPSTONE)) return position;
+        RingGeometry ring = geometry();
+        if (ring == null) return position;
+        int x = ring.wrapBlockX(position.getX());
+        return x == position.getX() ? position : new net.minecraft.core.BlockPos(x, position.getY(), position.getZ());
+    }
+
     @Nullable
     public static RingGeometry geometry() {
         Minecraft client = Minecraft.getInstance();

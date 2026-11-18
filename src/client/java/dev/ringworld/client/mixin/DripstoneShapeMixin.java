@@ -17,10 +17,6 @@ abstract class DripstoneShapeMixin {
     @ModifyVariable(method = "getShape", at = @At("HEAD"), argsOnly = true)
     private BlockPos ringworld$shapePosition(BlockPos position, BlockState state, BlockGetter level,
                                               BlockPos original, CollisionContext context) {
-        if (!(level instanceof ClientLevel)) return position;
-        var geometry = ClientRingState.geometry();
-        if (geometry == null) return position;
-        int x = geometry.wrapBlockX(position.getX());
-        return x == position.getX() ? position : new BlockPos(x, position.getY(), position.getZ());
+        return level instanceof ClientLevel ? ClientRingState.dripstoneOffsetPosition(state, position) : position;
     }
 }
