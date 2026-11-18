@@ -255,8 +255,8 @@ public final class ClientRingState {
             RingTerrainAtlas cached = empty;
             try {
                 if (Files.exists(cache)) {
-                    cached = RingTerrainAtlas.loadIfRevisionMatches(cache, current, metadata.worldHash(),
-                            metadata.revision()).filter(a -> a.sampleStep() == metadata.sampleStep()).orElse(empty);
+                    cached = RingTerrainAtlas.loadMatchingCache(cache, current, metadata.worldHash(),
+                            metadata.revision(), metadata.sampleStep(), metadata.contentFingerprint()).orElse(empty);
                 }
             } catch (IOException exception) {
                 RingWorldMod.LOGGER.warn("Ignoring invalid client RingWorld terrain cache {}", cache, exception);

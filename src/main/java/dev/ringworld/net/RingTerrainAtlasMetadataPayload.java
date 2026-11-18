@@ -10,10 +10,10 @@ import net.minecraft.resources.Identifier;
 /** Describes the tiled, world-specific distant terrain cache. */
 public record RingTerrainAtlasMetadataPayload(long worldHash, int sampleStep, int columns, int rows,
                                               int tileSize, int presentCells, boolean complete,
-                                              long revision)
+                                              long revision, long contentFingerprint)
         implements CustomPacketPayload {
     public static final Type<RingTerrainAtlasMetadataPayload> ID = new Type<>(
-            Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "terrain_atlas_metadata_v4"));
+            Identifier.fromNamespaceAndPath(RingWorldMod.MOD_ID, "terrain_atlas_metadata_v5"));
     public static final StreamCodec<RegistryFriendlyByteBuf, RingTerrainAtlasMetadataPayload> CODEC = StreamCodec.composite(
             ByteBufCodecs.LONG, RingTerrainAtlasMetadataPayload::worldHash,
             ByteBufCodecs.VAR_INT, RingTerrainAtlasMetadataPayload::sampleStep,
@@ -23,6 +23,7 @@ public record RingTerrainAtlasMetadataPayload(long worldHash, int sampleStep, in
             ByteBufCodecs.VAR_INT, RingTerrainAtlasMetadataPayload::presentCells,
             ByteBufCodecs.BOOL, RingTerrainAtlasMetadataPayload::complete,
             ByteBufCodecs.VAR_LONG, RingTerrainAtlasMetadataPayload::revision,
+            ByteBufCodecs.LONG, RingTerrainAtlasMetadataPayload::contentFingerprint,
             RingTerrainAtlasMetadataPayload::new);
 
     @Override

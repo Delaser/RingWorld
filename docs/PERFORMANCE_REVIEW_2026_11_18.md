@@ -31,3 +31,28 @@ With that class substituted into the published JAR, the same blast destroyed the
 The final source built and passed the shared Java suites on Fabric and NeoForge at each representative Minecraft version. Each loader ran 519 tests on 26.1.2, 519 on 26.2 and 522 on 26.3, for 3,120 executions and zero failures. The repository Python suite ran 509 tests with four platform skips. New cases cover stale headers versus truncated matching caches, initial tile order, dirty tiles during a transfer and clients joining with a complete cache.
 
 The final 26.3 NeoForge JAR built using the repository's pinned dependencies also passed the plain blast and Lithium cross-seam damage probes on the reported 26.3.0.100 runtime. An exploratory build using 26.3.0.100 as a compile-time dependency failed while recompiling NeoForm's generated HolderSet source with the default development plugin. The runtime checks used the official installed 26.3.0.100 server. These were source suites and targeted runtime checks.
+
+## Large-ring cache and tile-stream retest after PR #308
+
+The baseline was `fd22257`. Both server and client used the same candidate in each run. Each server started from a separate filesystem clone of the same fully generated Large world (32,768 × 512 blocks, 16,777,216 samples). The game was Minecraft 26.3 with NeoForge 26.3.0.7-beta on an M2 Mac, using loopback multiplayer, a 1 GiB client heap, two JVM-visible client processors, 12-chunk render distance and an 854 × 480 client window. Each cold client started with an empty cache. Each warm client reopened the complete cache written by its own cold run.
+
+Elapsed times start at the client’s connection message. Login uses the server’s player-admission message. First surface and full detail use client renderer publication messages. There was one run per condition and the logs resolve whole seconds.
+
+| Build | Cache | Login | Cache check finished | First Atlas surface | Full-detail Atlas |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Before | Cold | 1 s | 2 s | 5 s | 413 s |
+| Before | Warm | 1 s | 3 s | 6 s | 6 s |
+| After | Cold | 2 s | 2 s | 5 s | 414 s |
+| After | Warm | 1 s | 3 s | 6 s | 6 s |
+
+On the complete test ring all 65,536 tiles contained terrain. At eight tiles per tick and 20 TPS, transmitting that initial set takes about 410 seconds. The targeted savings apply to partial rings and to edits made during transfer. Both cold and both warm joins succeeded. The reported laptop and network timeout in #300 remain unverified.
+
+| Production-code probe | Before | After |
+| --- | ---: | ---: |
+| Allocated 1,024-sample pages after reopening a one-cell Large Atlas | 16,384 | 1 |
+| Tiles sent for that one-cell Atlas | 65,536 | 1 |
+| Empty tile payload bytes before transport compression | 201,454,590 | 0 |
+| Packet carrying an edit to the first tile just sent | 65,537 | 2 |
+| Equal-revision save fork with height 103 tries to reuse a cache containing height 90 | Accepted | Rejected |
+
+The edit probe kept a second populated tile pending so replay priority was exercised independently of the empty-tile skip. Fabric and NeoForge builds and Java tests passed on 26.1, 26.1.1, 26.1.2, 26.2 and 26.3. The Python suite passed with four platform skips. This is targeted validation for #300.

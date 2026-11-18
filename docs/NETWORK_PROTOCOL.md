@@ -18,9 +18,9 @@ All identifiers use the `ringworld` namespace.
 | S2C | `ringworld:settings_v6` | width, circumference, seed, wallHeight, surfaceReferenceY, terrainNoiseMapping, rim style, sky profile, Atlas fidelity, world layout, river/structure flags, formatVersion, layoutFingerprint | Install the complete immutable world layout, presentation, and worldgen identity |
 | C2S | `ringworld:settings_ack_v3` | formatVersion, independently recomputed layoutFingerprint | Prove the client installed and verified the same layout |
 | S2C | `ringworld:sky_profile_v1` | backdrop, light-source representation, profile format | Apply a live server-owned visual sky change without altering terrain identity |
-| S2C | `ringworld:terrain_atlas_metadata_v2` | worldHash, sampleStep, columns, rows, tileSize, presentCells, complete, revision | Describe server atlas/cache identity and durable surface generation |
-| C2S | `ringworld:terrain_atlas_request_v2` | worldHash, revision, cacheComplete | Request a full snapshot or subscribe an exact complete cache |
-| S2C | `ringworld:terrain_atlas_tile_v2` | worldHash, tileX, tileZ, byte array | Transfer one height/colour tile |
+| S2C | `ringworld:terrain_atlas_metadata_v5` | worldHash, sampleStep, columns, rows, tileSize, presentCells, complete, revision, contentFingerprint | Describe server atlas/cache identity and durable surface generation |
+| C2S | `ringworld:terrain_atlas_request_v3` | worldHash, revision, cacheComplete, contentFingerprint | Request populated tiles or subscribe a matching complete cache |
+| S2C | `ringworld:terrain_atlas_tile_v4` | worldHash, tileX, tileZ, byte array | Transfer one height/colour tile |
 | S2C | `ringworld:terrain_atlas_revision_v1` | worldHash, revision | Commit all earlier ordered tile changes as one durable revision |
 | C2S | `ringworld:atlas_pregen_status_request_v1` | worldHash | Observe the authoritative Generate Entire Ring status |
 | C2S | `ringworld:atlas_pregen_control_v1` | worldHash, stable action value | Request start, pause, resume, or cancel; server rechecks authority |
@@ -65,9 +65,9 @@ sequenceDiagram
             alt Mismatch
                 S-->>C: Disconnect: acknowledgement mismatch
             else Match
-                S->>C: terrain_atlas_metadata_v2(revision)
-                C->>C: Load only an exact-revision cache
-                C->>S: terrain_atlas_request_v2(revision,cacheComplete)
+                S->>C: terrain_atlas_metadata_v5(revision,contentFingerprint)
+                C->>C: Check revision and fingerprint against local samples
+                C->>S: terrain_atlas_request_v3(revision,cacheComplete,contentFingerprint)
                 opt Cache is stale or incomplete
                     S->>C: Up to 8 atlas tiles per server tick
                 end
@@ -162,7 +162,7 @@ packed light/water: byte (low/high nibble, each 0–15)
 side RGB: int (low 24 bits)
 ```
 
-Current metadata and tile channels are v4; cells remain twelve bytes each.
+Metadata uses v5, tile requests use v3, and tiles use v4. Each cell occupies twelve bytes.
 Disk format 11 invalidates the previous top-only cache identity without adding
 wire fields. The height is the exposed top face one coordinate above the
 selected surface block. Recognized detached manufactured layers can be skipped
@@ -181,9 +181,9 @@ The first two tile bytes are its actual width and height. Tile decoding checks:
 - payload length is bounded;
 - no bytes trail the expected data.
 
-Cells received as absent do not erase present client-cache cells. This allows a
-client with a previously complete cache to reconnect while a restored server
-atlas is temporarily less complete. Applying an identical present tile is
+Present samples in a tile update the local Atlas. The client discards a cache
+whose content fingerprint differs from the advertised Atlas before accepting
+tiles. Applying an identical present tile is
 idempotent: it does not advance the client revision, save the cache, or rebuild
 the full GPU ring. Only the actual incomplete-to-complete transition bypasses
 the ordinary publish/save coalescing intervals. A revision commit is the
@@ -194,7 +194,8 @@ identical full texture again for the later commit packet.
 
 The server:
 
-- streams at most 8 tiles per player per tick;
+- streams up to eight tiles per player per tick, initially selecting only tiles with present samples;
+- alternates changed tiles with pending initial tiles when both queues have work;
 - queues dirty tiles for every connected atlas subscriber every 20 ticks;
 - resamples support edits beneath manufactured tops even below the cached face,
   so later attachment/detachment reaches every subscriber;
@@ -204,9 +205,12 @@ The server:
   that player's ordered connection.
 
 Clients never advance the durable atlas revision per tile. This avoids
-mistaking a disconnected half-batch for a valid complete cache. Exact revision
-and completeness permit reconnect reuse; any mismatch starts from a fresh
-client atlas and receives the authoritative full tile snapshot.
+mistaking a disconnected half-batch for a valid complete cache. A complete
+cache can skip the initial transfer when its layout, sampling step, revision
+and 64-bit content fingerprint match. Each present sample contributes its
+position, height, colours, light and water coverage. The reader recomputes the
+fingerprint from the existing disk format. Divergent copies of a world can
+therefore share a layout and revision without using each other’s terrain.
 
 ## Canonical and presentation packet mapping
 

@@ -21,6 +21,26 @@ class RingTerrainAtlasTest {
     private static final long HASH = 0x1234_5678_9ABC_DEF0L;
 
     @Test
+    void cacheIdentityTracksContentAcrossCopiesAndRestart(@TempDir Path dir) throws Exception {
+        var first = new RingTerrainAtlas(GEOMETRY, HASH);
+        first.putCell(3, 0, 60, 42, 2, 11, 4);
+        var fork = first.snapshot();
+        fork.putCell(3, 0, 60, 42, 2, 12, 4);
+        first.advanceRevision();
+        fork.advanceRevision();
+        var path = dir.resolve("cache.gz");
+        first.save(path);
+        assertTrue(RingTerrainAtlas.loadMatchingCache(path, GEOMETRY, HASH, fork.revision(), 1, fork.contentFingerprint()).isEmpty());
+        assertTrue(RingTerrainAtlas.loadMatchingCache(path, GEOMETRY, HASH, first.revision(), 1, first.contentFingerprint()).isPresent());
+        fork.putCell(3, 0, 60, 42, 2, 11, 4);
+        assertEquals(first.contentFingerprint(), fork.contentFingerprint());
+        fork.invalidateCell(3, 0);
+        assertEquals(0L, fork.contentFingerprint());
+        assertTrue(fork.populatedTiles().isEmpty());
+        assertEquals(1, first.populatedTiles().cardinality());
+    }
+
+    @Test
     void partialChunkCountsFollowSnapshotRepairAndReload(@TempDir Path dir) throws Exception {
         var geometry = new RingGeometry(144, 2048);
         var live = new RingTerrainAtlas(geometry, HASH, 8);
