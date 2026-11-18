@@ -38,7 +38,7 @@ public record RingGeometry(int widthBlocks, int circumferenceBlocks) {
     }
 
     public int widthChunks() {
-        return widthBlocks / 16;
+        return maxChunkZ() - minChunkZ() + 1;
     }
 
     /** Intrinsic Y coordinate occupied by the physical centre of the ring. */

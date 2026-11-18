@@ -42,7 +42,7 @@ abstract class PortalForcerMixin {
         if (level.dimension() != Level.OVERWORLD) return;
         RingGeometry geometry = RingWorldServer.geometryFor(level);
         int rimThickness = RingWorldSettings.get(level).wallStyle().thicknessBlocks();
-        BlockPos anchor = RingPortalDestinationBounds.normalizeSearchAnchor(
+        BlockPos anchor = RingPortalDestinationBounds.existingPortalAnchor(
                 geometry, approximateExitPos, rimThickness);
         int radius = toNether ? 16 : 128;
         PoiManager pois = level.getPoiManager();

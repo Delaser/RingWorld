@@ -148,7 +148,8 @@ Every saved layout field takes precedence on subsequent loads. Changing
 bootstrap dimensions, wall height, wall style, sky backdrop, or sun style does not resize
 or redecorate an existing RingWorld. Format-1 and format-2 saves migrate through
 format 3 with surface reference Y=64 and their legacy terrain-noise mapping
-preserved. Pre-format-4 worlds receive the exact legacy rim style. Pre-format-5
+preserved. Chunk loads leave existing rims and player builds intact. Pre-format-4
+worlds use the legacy rim style for newly generated chunks. Pre-format-5
 worlds receive Balanced/Vanilla/Off/Off generation defaults; fresh worlds save
 format 5, the corrected annular mapping, and their chosen rim/generation settings. This
 prevents unexplored chunks in an alpha
@@ -715,7 +716,6 @@ Loaded RingWorld terrain atlas / RingWorld Atlas checkpoint (with atlasSaveTimin
 RingWorld terrain atlas progress
 RingWorld atlas: ... generation running|paused|complete
 Textured ring surface ready
-Migrated legacy rim chunk
 [test] ...
 [multiplayer] ...
 ```
@@ -736,18 +736,25 @@ F3 replaces the normal position section in the Overworld with:
 - Invalid/mismatched atlas files are ignored and rebuilt; a wrong-world hash
   is never accepted or migrated.
 - A stale complete client atlas is protected by world hash.
-- Legacy stone-brick boundary chunks migrate gradually, one loaded chunk per
-  tick.
 - Nether and End should remain usable even if Overworld-specific rendering is
   unavailable; a missing dimension guard is a bug.
 - Nether travel can span any number of effective RingWorld laps. On return,
   vanilla first scales the Nether coordinates by 8; RingWorld then wraps X and
   clamps only an out-of-band Z target to the nearest portal-safe interior
-  latitude. Existing safe canonical portals are reused across the X seam.
+  latitude. Existing portals are ranked from that target across the X seam.
+  The extra 16-block inward margin applies only when creating a portal.
   There is no operator setting for this policy and an existing world does not
   need regeneration after the mod update.
 
+Atlas coverage includes both edge chunks when the ring width is an odd number
+of chunks. For example, a 144-block band spans ten world chunk rows, with eight
+blocks inside each outer row.
+
 ## Server checkpoint performance
+
+On clean shutdown the server samples pending surface edits before chunks unload.
+If an affected chunk is already unavailable, its dirty samples are saved as
+missing and revisited by pregeneration or when the chunk next loads.
 
 Periodic Atlas writes and completion verification now use the bounded persistence
 worker. Main-thread snapshot preparation copies/repairs slices across ticks. Only

@@ -144,7 +144,11 @@ public final class HeadlessPrewarmCoordinator {
             RingAtlasAutoScaleProbe.clear(server.overworld());
         }
         Run run = RUNS.get(server);
-        if (run == null || run.finished || run.world == null) return;
+        if (run == null || run.finished || run.world == null) {
+            // A normal server also needs to sample last-tick edits while chunks are resident.
+            if (server.overworld() != null) RingAtlasPregenerationService.interruptForServerStop(server.overworld());
+            return;
+        }
         String reason = "server stopped before verified atlas completion";
         try {
             RingAtlasPregenerationService.interruptForServerStop(run.world);

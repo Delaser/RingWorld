@@ -49,6 +49,19 @@ class RingPortalDestinationBoundsTest {
     }
 
     @Test
+    void lookupKeepsAnExactSafeRimPortalWhileCreationKeepsItsSweepClear() {
+        for (int z : List.of(-56, 55)) {
+            var target = new BlockPos(2048, 70, z);
+            var portal = new BlockPos(0, 70, z);
+            var lookup = RingPortalDestinationBounds.existingPortalAnchor(SMALL, target, 5);
+            var creation = RingPortalDestinationBounds.normalizeSearchAnchor(SMALL, target, 5);
+            assertEquals(portal, lookup);
+            assertEquals(0.0, RingPortalDestinationBounds.periodicDistanceSquared(SMALL, lookup, portal));
+            assertEquals(256.0, RingPortalDestinationBounds.periodicDistanceSquared(SMALL, lookup, creation));
+        }
+    }
+
+    @Test
     void periodicQueriesExposeBothCanonicalSidesOfTheSeam() {
         BlockPos anchor = new BlockPos(2, 70, 0);
         assertEquals(List.of(

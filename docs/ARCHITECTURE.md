@@ -561,8 +561,8 @@ outward neighbour is intentionally absent. `ChunkBuilderBuiltChunkMixin`
 treats only chunk rows beyond the finite Z range as mesh-ready placeholders;
 all interior neighbours retain vanilla full-chunk and lighting requirements.
 
-Legacy full-height stone-brick rims are detected by content and migrated at a
-maximum of one loaded boundary chunk per tick.
+Rims are written during generation. Chunk loads preserve existing boundary blocks
+and inventories, including player-placed stone bricks on top of an old rim.
 
 ## Persistence and caches
 

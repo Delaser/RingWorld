@@ -469,6 +469,24 @@ public final class RingWorldCreationUiTestClient {
             return;
         }
         capture(client, "creation-ui-19-footer-applied-scale4", () -> {
+            String priorSeed = owner.ringworld$seedText();
+            owner.ringworld$setSeedText("");
+            long expected = owner.ringworld$resolvedSeed();
+            owner.ringworld$openNewEditorForAutomation();
+            ((RingWorldEditorScreen)RingMinecraftClientAccess.screen(client)).ringworld$automationApply();
+            if (owner.ringworld$resolvedSeed() != expected || !owner.ringworld$seedText().isEmpty()) {
+                fail(client, "applying settings rerolled the blank vanilla seed"); return;
+            }
+            owner.ringworld$openNewEditorForAutomation();
+            var editor = (RingWorldEditorScreen)RingMinecraftClientAccess.screen(client);
+            editor.useDraftSeed();
+            editor.setDraftSeed("999");
+            editor.ringworld$automationApply();
+            if (!Long.toString(expected).equals(owner.ringworld$seedText())
+                    || owner.ringworld$resolvedSeed() != expected) {
+                fail(client, "Use did not preserve the resolved blank preview seed"); return;
+            }
+            owner.ringworld$setSeedText(priorSeed);
             owner.ringworld$openNewEditorForAutomation();
             armAndAdvance();
         });

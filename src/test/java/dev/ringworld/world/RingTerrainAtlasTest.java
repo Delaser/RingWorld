@@ -21,6 +21,22 @@ class RingTerrainAtlasTest {
     private static final long HASH = 0x1234_5678_9ABC_DEF0L;
 
     @Test
+    void anUnavailableDirtyCellStaysMissingAfterCheckpointAndIsRetried(@TempDir Path dir) throws Exception {
+        var atlas = new RingTerrainAtlas(GEOMETRY, HASH, 1);
+        atlas.putCell(8, 7, 91, 0x123456);
+        var before = atlas.snapshot();
+        assertTrue(atlas.invalidateCell(8, 7));
+        assertFalse(atlas.invalidateCell(8, 7));
+        assertTrue(before.hasCell(8, 7));
+        assertEquals(0, atlas.presentCount());
+        Path path = dir.resolve("atlas.gz");
+        atlas.save(path);
+        var reopened = RingTerrainAtlas.load(path, GEOMETRY, HASH);
+        assertFalse(reopened.hasCell(8, 7));
+        assertFalse(reopened.isChunkPresent(0, 0));
+    }
+
+    @Test
     void sharedPagesStayIndependentThroughCheckpointWritesAndClear() {
         RingTerrainAtlas original = new RingTerrainAtlas(GEOMETRY, HASH);
         original.putCell(1023, 0, 80, 0x010203);

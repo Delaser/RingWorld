@@ -39,7 +39,6 @@ import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.Vec3;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.Set;
@@ -59,8 +58,6 @@ public final class RingWorldServer {
     private static final Map<UUID, Integer> TEST_VEHICLES = new HashMap<>();
     private static final Map<UUID, Integer> TEST_AI_MOBS = new HashMap<>();
     private static final Map<UUID, Integer> TEST_EXPLOSION_ENTITIES = new HashMap<>();
-    private static final Map<ServerLevel, LinkedHashMap<Long, net.minecraft.world.level.chunk.LevelChunk>>
-            PENDING_LEGACY_RIM_MIGRATIONS = new IdentityHashMap<>();
     private static final AtomicLong NON_CANONICAL_HOLDER_REQUESTS = new AtomicLong();
     private static BiConsumer<net.minecraft.server.MinecraftServer, Throwable> PRE_LOAD_REJECTION_HANDLER =
             (server, failure) -> { };
@@ -78,20 +75,9 @@ public final class RingWorldServer {
         return world.dimension() == Level.OVERWORLD;
     }
 
-    /** Queues safe deferred rim migration from a loader-owned chunk-load callback. */
-    public static void onChunkLoaded(ServerLevel world, net.minecraft.world.level.chunk.LevelChunk chunk) {
-        if (!isOverworld(world)) return;
-        if (RingGenerationBoundary.containsRim(chunk, geometryFor(world))) {
-            PENDING_LEGACY_RIM_MIGRATIONS
-                    .computeIfAbsent(world, unused -> new LinkedHashMap<>())
-                    .putIfAbsent(chunk.getPos().pack(), chunk);
-        }
-    }
-
     /** Clears loader-neutral state after a platform level-unload callback. */
     public static void onLevelUnloaded(ServerLevel world) {
         WORLD_GEOMETRY.remove(world);
-        PENDING_LEGACY_RIM_MIGRATIONS.remove(world);
         if (isOverworld(world)) RingNoiseCoordinates.clearCache();
     }
 
@@ -211,7 +197,6 @@ public final class RingWorldServer {
         for (Entity entity : world.getAllEntities()) {
             canonicalizeEntityPosition(entity, geometry);
         }
-        migrateOneLegacyRimChunk(world, geometry);
         // The raid proof owns a separate disposable server run and deliberately
         // does not share the long baseline multiplayer state machine.
         if (RingWorldRaidSeamTest.enabled()) {
@@ -242,31 +227,6 @@ public final class RingWorldServer {
             navigation.ringworld$foldPath((int)Math.rint(shift));
         }
         return shift;
-    }
-
-    /**
-     * Migrates at most one loaded boundary chunk per tick. Besides avoiding
-     * chunk-load reentrancy, the limit keeps an old world's first login from
-     * turning hundreds of rim conversions into one watchdog-sized tick.
-     */
-    private static void migrateOneLegacyRimChunk(ServerLevel world, RingGeometry geometry) {
-        LinkedHashMap<Long, net.minecraft.world.level.chunk.LevelChunk> pending =
-                PENDING_LEGACY_RIM_MIGRATIONS.get(world);
-        if (pending == null || pending.isEmpty()) return;
-
-        var iterator = pending.entrySet().iterator();
-        var entry = iterator.next();
-        iterator.remove();
-
-        long started = System.nanoTime();
-        boolean migrated = RingGenerationBoundary.migrateLegacyRim(entry.getValue(), geometry,
-                RingWorldSettings.get(world).wallHeightBlocks());
-        if (migrated) {
-            double elapsedMs = (System.nanoTime() - started) / 1_000_000.0;
-            RingWorldMod.LOGGER.info("Migrated legacy rim chunk {} in {} ms ({} queued)",
-                    entry.getValue().getPos(), elapsedMs, pending.size());
-        }
-        if (pending.isEmpty()) PENDING_LEGACY_RIM_MIGRATIONS.remove(world);
     }
 
     /**
