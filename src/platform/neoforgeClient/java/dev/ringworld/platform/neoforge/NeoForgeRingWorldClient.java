@@ -262,7 +262,7 @@ public final class NeoForgeRingWorldClient {
                 return;
             }
             RingClientPayloadTransport.send(new RingTerrainAtlasRequestPayload(
-                    payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete));
+                    payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete, payload.contentFingerprint()));
         });
     }
 

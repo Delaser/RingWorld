@@ -262,7 +262,7 @@ public final class RingTerrainAtlasServer {
         catch (IllegalStateException ignored) { return; }
         transport.send(player, new RingTerrainAtlasMetadataPayload(atlas.worldHash(), atlas.sampleStep(),
                 atlas.columns(), atlas.rows(), RingTerrainAtlas.TILE_SIZE, atlas.presentCount(), atlas.isComplete(),
-                atlas.revision()));
+                atlas.revision(), atlas.contentFingerprint()));
         if (!atlas.isComplete()) sendPreview(player, overworld, atlas);
         // Geometry acknowledgement is the first point at which a client can
         // safely bind this status to a RingWorld layout.
@@ -342,20 +342,21 @@ public final class RingTerrainAtlasServer {
     }
 
     public static void requestTiles(ServerPlayer player, long worldHash, long clientRevision,
-                                    boolean cacheComplete) {
+                                    boolean cacheComplete, long cacheFingerprint) {
         ServerLevel overworld = player.level().getServer().getLevel(Level.OVERWORLD);
         if (overworld == null) return;
         RingTerrainAtlas atlas;
         try { atlas = RingAtlasPregenerationService.atlas(overworld); }
         catch (IllegalStateException ignored) { return; }
         if (atlas.worldHash() != worldHash || clientRevision < 0L) return;
-        boolean exactCompleteCache = cacheComplete && clientRevision == atlas.revision();
-        ClientStream stream = new ClientStream(overworld, atlas.tileColumns(), atlas.tileRows(),
+        boolean exactCompleteCache = cacheComplete && atlas.isComplete() && clientRevision == atlas.revision()
+                && cacheFingerprint == atlas.contentFingerprint();
+        ClientStream stream = new ClientStream(overworld, atlas,
                 exactCompleteCache ? clientRevision : -1L);
         STREAMS.put(player.getUUID(), stream);
         if (!exactCompleteCache) {
-            RingWorldMod.LOGGER.info("Streaming {} RingWorld terrain atlas tiles (~{} KiB) to {}", stream.initialTileCount,
-                    Math.max(1L, atlas.estimatedWireBytes() / 1_024L), player.getName().getString());
+            RingWorldMod.LOGGER.info("Streaming {} populated RingWorld terrain atlas tiles to {}",
+                    stream.initialTiles.cardinality(), player.getName().getString());
         }
     }
 
@@ -593,31 +594,38 @@ public final class RingTerrainAtlasServer {
     static final class ClientStream {
         private final ServerLevel world;
         private final int columns;
-        private final int initialTileCount;
+        private final java.util.BitSet initialTiles;
         private int nextInitialTile;
+        private boolean lastWasChange;
         private final LinkedHashSet<RingAtlasPregenerationService.TileCoordinate> changes = new LinkedHashSet<>();
         private long committedRevision;
 
-        ClientStream(ServerLevel world, int columns, int rows, long committedRevision) {
+        ClientStream(ServerLevel world, RingTerrainAtlas atlas, long committedRevision) {
             this.world = world;
-            this.columns = columns;
-            this.initialTileCount = Math.multiplyExact(columns, rows);
-            this.nextInitialTile = committedRevision >= 0 ? initialTileCount : 0;
+            this.columns = atlas.tileColumns();
+            this.initialTiles = committedRevision >= 0 ? new java.util.BitSet() : atlas.populatedTiles();
+            this.nextInitialTile = initialTiles.nextSetBit(0);
             this.committedRevision = committedRevision;
         }
 
         void queueChange(RingAtlasPregenerationService.TileCoordinate tile) {
-            // Unsent initial tiles are read live when their turn comes.
-            if (tile.z() * columns + tile.x() < nextInitialTile) changes.add(tile);
+            // Pending initial tiles will be read live. Newly populated or already-sent tiles need delivery.
+            if (!initialTiles.get(tile.z() * columns + tile.x())) changes.add(tile);
         }
 
         boolean hasTiles() {
-            return nextInitialTile < initialTileCount || !changes.isEmpty();
+            return nextInitialTile >= 0 || !changes.isEmpty();
         }
 
         RingAtlasPregenerationService.TileCoordinate nextTile() {
-            if (nextInitialTile == initialTileCount) return changes.removeFirst();
-            int index = nextInitialTile++;
+            if (!changes.isEmpty() && (nextInitialTile < 0 || !lastWasChange)) {
+                lastWasChange = true;
+                return changes.removeFirst();
+            }
+            lastWasChange = false;
+            int index = nextInitialTile;
+            initialTiles.clear(index);
+            nextInitialTile = initialTiles.nextSetBit(index + 1);
             return new RingAtlasPregenerationService.TileCoordinate(index % columns, index / columns);
         }
     }

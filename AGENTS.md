@@ -1960,6 +1960,7 @@ Completion means:
 - Nether and End remain unchanged;
 - unit build and relevant integration tests pass.
 
+- For a warm Atlas join, check the cached sample content as well as layout, sampling step and revision. Two copies of one save can have different terrain at the same revision. Keep cache reads sparse and share empty pages. Cold streams start with populated tiles, then interleave pending initial tiles and live changes within the existing eight-tile budget.
 - Client Atlas cache writes must remain off the render thread. Queue immutable snapshots with captured paths through the single RingAtlasCacheWriter; preserve per-path coalescing, final disconnect snapshot ordering, and shutdown draining. Worker completions must not mutate a later client session. Do not reintroduce forced synchronous saves on every revision commit.
 
 - Atlas finite terrain edges need side-material closure above the rim. The wall

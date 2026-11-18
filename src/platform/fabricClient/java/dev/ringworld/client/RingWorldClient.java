@@ -208,7 +208,7 @@ public final class RingWorldClient implements ClientModInitializer {
                         return;
                     }
                     RingClientPayloadTransport.send(new RingTerrainAtlasRequestPayload(
-                            payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete));
+                            payload.worldHash(), ClientRingState.terrainAtlasDurableRevision(), cacheComplete, payload.contentFingerprint()));
                 })));
         ClientPlayNetworking.registerGlobalReceiver(RingTerrainAtlasTilePayload.ID, (payload, context) ->
                 context.client().execute(() -> ClientRingState.applyTerrainAtlasTile(
