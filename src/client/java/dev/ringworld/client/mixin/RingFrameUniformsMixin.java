@@ -113,9 +113,10 @@ abstract class RingFrameUniformsMixin {
                             profile == null ? 0.0F : (float)profile.hazeFar(),
                             profile == null ? 0.0F : (float)profile.hazeExponent(),
                             profile == null ? 0.0F : (float)profile.cloudFadeStartBlocks())
-                    // cloud fade end, visual policy version, inner Z face planes
+                    // cloud fade end, current rain strength, inner Z face planes
                     .putVec4(profile == null ? 0.0F : (float)profile.cloudFadeEndBlocks(),
-                            profile == null ? 0.0F : profile.visualProfileVersion() + 1,
+                            profile == null || client.level == null ? 0.0F : client.level.getRainLevel(
+                                    client.getDeltaTracker().getGameTimeDeltaPartialTick(false)),
                             cloudBounds == null ? 0.0F : (float)cloudBounds.minimumZ(),
                             cloudBounds == null ? 0.0F : (float)cloudBounds.maximumZ())
                     // process-local Atlas-light debug profile; never persisted

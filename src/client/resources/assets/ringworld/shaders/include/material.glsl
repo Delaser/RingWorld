@@ -30,13 +30,16 @@ vec4 ring_material_coverage(vec4 color, vec4 vertexColor, vec2 texCoord0,
     if ((RingWorldLayout.x != 0) && ringIntrinsicDistance >= 0.0) {
         if (ring_material_water_sprite(texCoord0, RingWorldWaterStill)
                 || ring_material_water_sprite(texCoord0, RingWorldWaterFlow)) {
+            // Seal translucent water over the same 3D band in which the Atlas appears.
             float waterMatch = ring_material_smootherstep(RingWorldHandoff.z, RingWorldHandoff.x,
-                                            ringIntrinsicDistance);
-            color.a = mix(color.a, 1.0, waterMatch);
+                                            ringHandoffDistance);
+            float matchedAlpha = mix(color.a, 1.0, waterMatch);
             vec3 atlasWater = vertexColor.rgb * 0.58;
             float waterPeak = max(atlasWater.r, max(atlasWater.g, atlasWater.b));
-            atlasWater = mix(atlasWater, vec3(waterPeak), 0.12) * 1.15;
-            color.rgb = mix(color.rgb, atlasWater, waterMatch);
+            atlasWater = mix(atlasWater, vec3(waterPeak), 0.06) * 0.89;
+            // Interpolate the contribution to the final pixel as opacity rises.
+            color.rgb = mix(color.rgb, atlasWater, waterMatch / max(matchedAlpha, 0.00001));
+            color.a = matchedAlpha;
         }
         float proxyReveal = ring_material_smootherstep(
             RingWorldHandoff.x,
@@ -52,7 +55,7 @@ vec4 ring_material_coverage(vec4 color, vec4 vertexColor, vec2 texCoord0,
 
 vec4 ring_material_atmosphere(vec4 color, float distance, vec3 fogColor) {
     if (RingWorldLayout.x != 0 && distance >= 0.0) {
-        color.rgb = mix(ring_handoff_edge_color(fogColor), color.rgb, ring_handoff_reveal(distance));
+        color.rgb = mix(ring_handoff_edge_color(fogColor), color.rgb, ring_handoff_reveal(distance, RingWorldAtmosphere2.y));
     }
     return color;
 }

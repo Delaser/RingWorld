@@ -459,6 +459,31 @@ The later production 6/12/28 matrix and profile-5 mesh comparison are recorded
 separately in
 [`ATLAS_VISUAL_BASELINE_2026-08-01.md`](ATLAS_VISUAL_BASELINE_2026-08-01.md).
 
+### Water and weather at the terrain handoff
+
+[Western lake before and after at 12 chunks, with a 22-chunk reference](media/water-handoff/lake.jpg)
+
+Live water seals over the 68–90% band using the same three-dimensional
+distance as Atlas coverage. This matters when the camera is on the rim above a
+lake. The shader blends the water's contribution to the final pixel as opacity
+increases. The previous straight RGB blend brightened the partly transparent
+water. The GPU and the Atlas texture worker use the same biome-relative tint.
+Existing saved water samples work immediately with the new client.
+
+At the edge of live terrain, Minecraft also applies environmental fog. The Atlas
+now carries that colour across the boundary for land, water and walls. Its fog
+distance is capped at the live fade end, and its contribution tapers to zero at
+twice that distance. Both surfaces apply the same rain haze curve. This reuses
+the existing fog uniforms and one slot in the RingWorld uniform block. The pass
+count, texture sampling, chunk generation and Atlas storage format stay the same.
+
+The stored water sample describes the visible fluid surface. It has no seabed
+depth or colour, so detailed shallows, kelp and submerged sand bars can still end
+at the transition. After a long teleport there is a separate failure mode:
+the nearby Atlas cutout uses camera distance and can clear an area before
+Minecraft finishes rendering its chunks. For visual comparisons wait for the
+camera chunk, the chunks towards the subject and the terrain meshes to settle.
+
 ### Lighting and colour matching
 
 The atlas stores terrain albedo rather than a permanently lit screenshot. The

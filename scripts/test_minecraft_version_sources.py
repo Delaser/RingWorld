@@ -208,7 +208,8 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         self.assertIn("float nativeDepth = depthMapping.x + depthMapping.y * gl_FragCoord.w", proxy)
         self.assertNotIn("ring_dither_threshold", proxy)
         self.assertIn("if (proxyAlpha <= 0.001)", proxy)
-        self.assertIn("fragColor = vec4(mix(ring_handoff_edge_color(FogColor.rgb), litTerrain, reveal), proxyAlpha)", proxy)
+        self.assertIn("mix(ring_handoff_edge_color(FogColor.rgb), litTerrain, reveal)", proxy)
+        self.assertIn("mix(terrain, FogColor.rgb, fog * FogColor.a), proxyAlpha", proxy)
 
     def test_altitude_handoff_covers_terrain_below_native_vertical_range(self):
         # Both resource ABIs must coordinate coverage, including 26.3 OIT.
@@ -227,7 +228,8 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
             self.assertRegex(live_fragment, r"ring_material_coverage\(color,\s+vertexColor,\s+texCoord0,\s+ringIntrinsicDistance,\s+ringHandoffDistance\)")
             material = (ROOT / "src/client/resources/assets/ringworld/shaders/include/material.glsl").read_text()
             self.assertRegex(material, r"RingWorldHandoff\.y,\s+ringHandoffDistance")
-            # Material/detail distance stays horizontal, including the X seam.
+            self.assertRegex(material, r"float waterMatch = ring_material_smootherstep\(RingWorldHandoff\.z, RingWorldHandoff\.x,\s+ringHandoffDistance\)")
+            # Atmospheric detail distance stays horizontal, including the X seam.
             self.assertIn("ringIntrinsicDistance = length(vanillaPos.xz)", live_vertex)
             self.assertIn("sin(vertexAngle - ModelOffset.x)", proxy_vertex)
 
