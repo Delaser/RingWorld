@@ -154,9 +154,9 @@ class RingSurfaceMeshTest {
         var dry = RingSurfaceMesh.build(geometry, atlas, true, 64, 64, 0, RingWallStyle.DEFAULT, 0, profile, true);
         assertNotEquals(dry.triangleVertex(255, 16, 0).u(), dry.triangleVertex(255, 16, 1).u());
         long key = atlas.surfaceHeightFingerprint(0);
-        for (boolean sand : new boolean[]{false, true}) {
-            int color = sand ? net.minecraft.world.level.material.MapColor.SAND.col : 0x227722;
-            atlas.putCell(510, 32, 64, color, 0, color, sand ? 0 : 1);
+        for (int color : new int[]{0x227722, net.minecraft.world.level.material.MapColor.SAND.col,
+                RingSurfaceLod.VANILLA_SAND_TOP_RGB}) {
+            atlas.putCell(510, 32, 64, color, 0, color, color == 0x227722 ? 1 : 0);
             assertNotEquals(key, atlas.surfaceHeightFingerprint(0));
             var shore = RingSurfaceMesh.build(geometry, atlas, true, 64, 64, 0, RingWallStyle.DEFAULT, 0, profile, true);
             assertEquals(shore.triangleVertex(255, 16, 0).u(), shore.triangleVertex(255, 16, 1).u());
