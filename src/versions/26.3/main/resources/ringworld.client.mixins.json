@@ -21,6 +21,7 @@
     "ClientBlockItemMixin",
     "ClientBucketItemMixin",
     "ClientChunkMapMixin",
+    "DripstoneShapeMixin",
     "ClientConnectionMixin",
     "ClientPlayNetworkHandlerMixin",
     "ChunkBuilderBuiltChunkMixin",
