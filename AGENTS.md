@@ -1374,6 +1374,8 @@ version numbers.
   exercise a disposable Medium/Very-high to Small/Very-high transition; run
   them serially and retain logs/captures before repeating a loader run.
 
+- During a progressive Atlas download keep the two crossfade textures separate. Compare the incoming rows of every mip with the contents of the GPU target being reused, including revisions skipped by that target. Release the spare once the completed crossfade or an idle partial stream no longer needs it. Include both inner rim sample footprints in the mesh key even when top and side colours match.
+- Overworld scheduled tick membership queries use the same canonical X as writes. An unavailable dirty Atlas sample waits for a full chunk capture or the final shutdown drain. Let the owner poll and retire a failed checkpoint before retrying a shutdown save.
 - The complete-ring renderer accepts a current-world zero-cell or partial Atlas
   as soon as its identity metadata arrives. Missing cells use an opaque,
   deterministic world-hash fallback with smooth generated-terrain palette propagation;

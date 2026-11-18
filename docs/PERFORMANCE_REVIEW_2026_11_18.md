@@ -56,3 +56,40 @@ On the complete test ring all 65,536 tiles contained terrain. At eight tiles per
 | Equal-revision save fork with height 103 tries to reuse a cache containing height 90 | Accepted | Rejected |
 
 The edit probe kept a second populated tile pending so replay priority was exercised independently of the empty-tile skip. Fabric and NeoForge builds and Java tests passed on 26.1, 26.1.1, 26.1.2, 26.2 and 26.3. The Python suite passed with four platform skips. This is targeted validation for #300.
+
+## Progressive Atlas texture uploads, frame times and gameplay regressions
+
+Compared the merged #309 code (`f0497ae`) with the candidate on local NeoForge 26.3 multiplayer. Both servers used separate copies of the same fully generated 32,768 × 512 ring. Each client used a 1 GiB heap, two JVM-visible processors, a 12-chunk view distance and a muted 854 × 480 window on the same M2 Mac. Cold clients began empty. Each warm join reused the complete cache written by its own cold client. The client and server processes were stopped after measurement.
+
+| Measurement | Cold before | Cold after | Warm before | Warm after |
+| --- | ---: | ---: | ---: | ---: |
+| Seconds from connect to first Atlas surface | 6 | 5 | 6 | 6 |
+| Seconds from connect to full detail | 414 | 413 | 6 | 6 |
+| Batches using the full-upload path | 398 | 2 | 1 | 1 |
+| Batches using the changed-row path | 0 | 397 | 0 | 0 |
+| MiB of texture data submitted, including mips | 16981.32 | 738.3 | 42.67 | 42.67 |
+| Atlas upload batches over 16.67 ms | 288 | 2 | 1 | 1 |
+| Longest Atlas upload (ms) | 40.5 | 28.9 | 33.5 | 33.2 |
+| Whole frames sampled | 13428 | 13662 | 229 | 286 |
+| Whole-frame p95 (ms) | 34.8 | 34.7 | 21.9 | 23.3 |
+| Whole-frame p99 (ms) | 42.6 | 34.8 | 75.3 | 88.3 |
+| Whole frames over 50 ms | 23 | 15 | 5 | 6 |
+| Whole frames over 100 ms | 4 | 2 | 1 | 2 |
+| Longest whole frame (ms) | 300.7 | 165.1 | 187.2 | 139.6 |
+
+Upload stalls measure render-thread time inside an Atlas transfer. Whole-frame timings come from the same test-only frame-end timestamp recorder on both builds, from the first in-world frames through the wall-clock second when the first full-detail mesh appeared. Join milestones use one-second logs. Bytes are texture payloads submitted to the graphics API, including mip levels, before any driver-internal work. One cold and one warm join per build were sampled. Local validation jobs overlapped part of the baseline cold transfer. The reporter’s hardware and network remain untested.
+
+The final cold update changed every row when the client switched to its detailed mesh. Including the two initial textures, three transfers carried full-texture payloads. Cold texture traffic fell 95.7%. The stream still took nearly seven minutes to reach full detail.
+
+Progressive updates reuse the preceding crossfade target and write adjacent changed scanlines in each mip. Initial targets receive a full upload. The render thread finishes each transfer before publishing the new texture. The previous texture remains available for the crossfade and the idle spare is released.
+
+| Regression probe | Before | After |
+| --- | --- | --- |
+| Restore filesystem access after a failed checkpoint, edit terrain, then flush | Three flushes failed and no file was written | First flush saved the newer height and cleared the dirty flag |
+| Queue 4,096 unavailable cells and one loaded overflow edit for 4,000 ticks | 256,000 lookups and the edit was never visited | 4,352 lookups, the loaded edit was visited once on tick one |
+| Scheduled tick at X=0, queried through X=2048 | Pending and due-this-tick queries both missed | Both queries found the canonical tick |
+| Equal top and side material changes on an exposed rim at constant height | 6,144 red vertices would change on rebuild, but the rebuild was skipped | The same colour change triggered a rebuild |
+
+Fabric dedicated server probes verified tick aliases and rim mesh refresh on 26.1.2, 26.2 and 26.3. Fabric and NeoForge JAR builds and Java tests passed for all five 26.x targets. The Python suite ran 509 tests with four skips.
+
+A NeoForge 26.3 GPU readback checked all 10,752 bytes across three mip levels after changing 448 texels in disjoint row ranges. All four colour channels matched the CPU reference, including untouched rows. On the warm reconnect both builds restored all 16,777,216 cached cells, streamed zero tiles, and uploaded one complete texture. The two short warm samples showed mixed whole-frame timings.
