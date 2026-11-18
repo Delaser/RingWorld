@@ -26,6 +26,10 @@ The distant Atlas is hidden while the camera is underwater.
 Nearby real blocks keep normal underwater fog; resurfacing restores the ring.
 See [compatibility development and validation](docs/SODIUM_COMPATIBILITY_2026_10_13.md).
 
+An unreleased [deep-water handoff correction](docs/DEEP_WATER_HANDOFF_2026_10_16.md)
+retains submerged floors within the native horizontal and vertical view limits,
+and closes distant water transparency before it exposes an unloaded floor.
+
 Release checks can resume verified same-source fixture coverage without repeating
 completed tests; see [the release runbook](docs/RELEASE_RUNBOOK.md).
 

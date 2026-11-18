@@ -21,6 +21,7 @@ final class CopiedWorldFileFixUpgrade {
             "ringworld.productionLifecycleTest",
             "ringworld.captureAtlasWalls",
             "ringworld.captureFloatingAtlas",
+            "ringworld.captureDeepWaterHandoff",
             "ringworld.distortionTrialExit"
     };
     private static final String BACKUP_CONFIRM_SCREEN =

@@ -26,13 +26,17 @@ bool ring_material_water_sprite(vec2 uv, vec4 bounds) {
 
 
 vec4 ring_material_coverage(vec4 color, vec4 vertexColor, vec2 texCoord0,
-        float ringIntrinsicDistance, float ringHandoffDistance) {
+        float ringIntrinsicDistance, float ringHandoffDistance, float ringWaterHandoffDistance) {
     if ((RingWorldLayout.x != 0) && ringIntrinsicDistance >= 0.0) {
         if (ring_material_water_sprite(texCoord0, RingWorldWaterStill)
                 || ring_material_water_sprite(texCoord0, RingWorldWaterFlow)) {
+            // Close the water before a deeper, farther floor leaves coverage.
             float waterMatch = ring_material_smootherstep(RingWorldHandoff.z, RingWorldHandoff.x,
                                             ringIntrinsicDistance);
-            color.a = mix(color.a, 1.0, waterMatch);
+            float waterOpacity = ring_material_smootherstep(RingWorldHandoff.z, RingWorldHandoff.x,
+                                            ringWaterHandoffDistance);
+            // Keep the accepted texture/colour transition at its normal range.
+            color.a = mix(color.a, 1.0, waterOpacity);
             vec3 atlasWater = vertexColor.rgb * 0.58;
             float waterPeak = max(atlasWater.r, max(atlasWater.g, atlasWater.b));
             atlasWater = mix(atlasWater, vec3(waterPeak), 0.12) * 1.15;

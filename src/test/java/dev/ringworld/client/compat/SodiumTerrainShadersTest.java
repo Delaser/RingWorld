@@ -31,7 +31,10 @@ class SodiumTerrainShadersTest {
                 """;
         String adapted = SodiumTerrainShaders.adapt(shader("blocks/block_layer_opaque.vsh"), source);
         assertTrue(adapted.contains("ring_project_position(position + ringworldCamera, ringworldCamera)"));
-        assertTrue(adapted.contains("ringworldDistances = vec2(length(position.xz), length(position))"));
+        assertTrue(adapted.contains("ring_handoff_distance(length(position.xz), position.y)"));
+        assertTrue(adapted.contains("ring_water_handoff_distance(position, ringworldCamera.y)"));
+        assertTrue(adapted.contains("return max(horizontal, abs(vertical))"));
+        assertFalse(adapted.contains("length(position))"));
         assertTrue(adapted.contains("uniform float RingWorldCameraY"));
         assertTrue(adapted.contains("max(v_FragDistance, getFragDistance(ringworldFlat))"));
         assertEquals(adapted, SodiumTerrainShaders.adapt(shader("blocks/block_layer_opaque.vsh"), adapted));
@@ -58,7 +61,7 @@ class SodiumTerrainShadersTest {
                 }
                 """;
         String adapted = SodiumTerrainShaders.adapt(shader("shaders/blocks/block_layer_opaque.fsh"), source);
-        assertTrue(adapted.contains("layout(location = 4) in vec2 ringworldDistances"));
+        assertTrue(adapted.contains("layout(location = 4) in vec3 ringworldDistances"));
         assertTrue(adapted.indexOf("vec4 ring_material_atmosphere(") < adapted.indexOf("vec4 calculateFinalColor("));
         assertTrue(adapted.indexOf("color = ring_material_atmosphere(") < adapted.indexOf("color = sampleColorForAccumulation("));
         assertTrue(adapted.indexOf("discard;", adapted.indexOf("void main()")) < adapted.indexOf("color = ring_material_coverage("));

@@ -18,6 +18,7 @@ layout(location = 3) in vec2 texCoord0;
 layout(location = 4) in float chunkVisibility;
 layout(location = 5) in float ringIntrinsicDistance;
 layout(location = 6) in float ringHandoffDistance;
+layout(location = 7) in float ringWaterHandoffDistance;
 
 #ifndef OIT_ALPHA_ONLY
 layout(location = 0) out vec4 fragColor;
@@ -110,7 +111,7 @@ void main() {
 #endif
 
     color = ring_material_coverage(color, vertexColor, texCoord0,
-            ringIntrinsicDistance, ringHandoffDistance);
+            ringIntrinsicDistance, ringHandoffDistance, ringWaterHandoffDistance);
 
 #ifdef OIT_ALPHA_ONLY
     executeAlphaOnlyPhase(gl_FragCoord.z, color.a);

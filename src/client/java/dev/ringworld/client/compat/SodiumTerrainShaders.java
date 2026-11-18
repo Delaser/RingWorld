@@ -21,7 +21,7 @@ public final class SodiumTerrainShaders {
         String direction = vertex ? "out" : "in";
         String header = "\n// RingWorld terrain adapter\n" + include("render_uniforms")
                 + (vertex ? include("projection") : include("handoff") + include("material"))
-                + (explicit ? "layout(location = 4) " : "") + direction + " vec2 ringworldDistances;\n";
+                + (explicit ? "layout(location = 4) " : "") + direction + " vec3 ringworldDistances;\n";
         if (vertex) {
             header += engine
                     ? (explicit ? "#include" : "#moj_import") + " <minecraft:globals.glsl>\n"
@@ -30,10 +30,12 @@ public final class SodiumTerrainShaders {
             source = replaceOnce(source, "vec3 position = _vert_position + translation;", """
                     vec3 position = _vert_position + translation;
                     vec3 ringworldFlat = position;
-                    ringworldDistances = vec2(-1.0);
+                    ringworldDistances = vec3(-1.0);
                     if (RingWorldLayout.x != 0) {
                         vec3 ringworldCamera = vec3(0.0, CAMERA_Y, 0.0);
-                        ringworldDistances = vec2(length(position.xz), length(position));
+                        ringworldDistances = vec3(length(position.xz),
+                                ring_handoff_distance(length(position.xz), position.y),
+                                ring_water_handoff_distance(position, ringworldCamera.y));
                         position = ring_project_position(position + ringworldCamera, ringworldCamera);
                     }
                     """.replace("CAMERA_Y", cameraY));
@@ -48,7 +50,7 @@ public final class SodiumTerrainShaders {
                         }
                     #endif
                     color = ring_material_coverage(color, v_Color, v_TexCoord,
-                            ringworldDistances.x, ringworldDistances.y);
+                            ringworldDistances.x, ringworldDistances.y, ringworldDistances.z);
                     """);
             if (explicit) {
                 source = replaceOnce(source, "vec4 calculateFinalColor(vec4 color) {", """
