@@ -146,7 +146,8 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         self.assertFalse((ROOT / "src/main/java/dev/ringworld/mixin/SurfaceNoiseThresholdMixin.java").exists())
         self.assertFalse((ROOT / "src/main/java/dev/ringworld/mixin/DensityCoordinateConsumerMixin.java").exists())
         chunk_region = (ROOT / "src/main/java/dev/ringworld/mixin/ChunkRegionMixin.java").read_text()
-        self.assertIn('method = {"markPosForPostprocessing", "markPosForPostProcessing"}', chunk_region)
+        self.assertIn("getChunk(IILnet/minecraft/world/level/chunk/status/ChunkStatus;Z)", chunk_region)
+        self.assertIn("nearestImageChunkX", chunk_region)
         self.assertIn(
             "WorldGenRegion;getChunk(Lnet/minecraft/core/BlockPos;)Lnet/minecraft/world/level/chunk/ChunkAccess;",
             chunk_region,

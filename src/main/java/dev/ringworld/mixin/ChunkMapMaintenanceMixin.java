@@ -1,5 +1,6 @@
 package dev.ringworld.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyExpressionValue;
 import dev.ringworld.server.RingChunkWorkContext;
 import dev.ringworld.server.RingChunkMaintenanceBudget;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
@@ -117,9 +118,8 @@ abstract class ChunkMapMaintenanceMixin {
                 && (ringworld$tasks == 0 || System.nanoTime() - ringworld$start < ringworld$budget.nanos());
     }
 
-    @Redirect(method = "processUnloads", at = @At(value = "INVOKE", target = "Ljava/util/Queue;size()I"))
-    private int ringworld$boundedMandatoryDrain(Queue<Runnable> queue) {
-        int size = queue.size();
+    @ModifyExpressionValue(method = "processUnloads", at = @At(value = "INVOKE", target = "Ljava/util/Queue;size()I"))
+    private int ringworld$boundedMandatoryDrain(int size) {
         return ringworld$ordinaryTick ? Math.min(size, 2000) : size;
     }
 
