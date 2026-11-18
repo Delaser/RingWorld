@@ -92,6 +92,24 @@ public final class RingTopology {
         return List.copyOf(result);
     }
 
+    /** Vanilla searches two blocks beyond an entity query for overlapping section owners. */
+    public static boolean needsEntityImages(AABB box, RingGeometry geometry) {
+        return box.minX < 2.0 || box.maxX > geometry.circumferenceBlocks() - 2.0;
+    }
+
+    public List<AABB> entityQueryBoxes(AABB box) {
+        int circumference = geometry.circumferenceBlocks();
+        if (box.getXsize() >= circumference) {
+            return List.of(new AABB(0, box.minY, box.minZ, circumference, box.maxY, box.maxZ));
+        }
+        AABB base = canonicalBox(box);
+        var boxes = new ArrayList<AABB>(3);
+        boxes.add(base);
+        if (base.minX < 2.0) boxes.add(base.move(circumference, 0, 0));
+        if (base.maxX > circumference - 2.0) boxes.add(base.move(-circumference, 0, 0));
+        return boxes;
+    }
+
     /** Projects a canonical entity box into the image nearest an observer. */
     public AABB projectBoxNear(AABB canonicalBox, double observerChartX) {
         canonicalBox = canonicalBox(canonicalBox);

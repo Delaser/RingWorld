@@ -73,11 +73,15 @@ The pre-fix server-thread profile contains 1,307 of 2,929 execution samples
 `publishObservedStatus → sendPregenerationStatus → presentChunkCount → isChunkPresent → hasCell`
 
 Each player status message rescanned the Large Atlas despite its maintained
-present-cell count already proving completion. `presentChunkCount()` now returns
+present-cell count already proving completion. The October fix returned
 the exact geometry-derived total immediately when `isComplete()` is true.
-Incomplete coverage keeps its exact scan. There is no new worker, storage field,
-packet, tuning knob or disk-format change. The repeated scan is absent from the
-fixed profile. Save/capture budgets are unchanged.
+Incomplete coverage still used an exact scan in that build. The repeated scan
+was absent from the completed-world profile.
+
+The November follow-up also removes the partial-world scan. Each chunk tracks
+its remaining samples in memory. The completed-chunk total changes only when
+a chunk gains its last missing sample or loses its first one. Cache loads
+rebuild these counters from the existing presence bits.
 
 The new regression covers missing coverage, completion and clearing at steps
 1, 2, 4 and 8. All 23 Atlas tests pass in each of six source/loader groups:

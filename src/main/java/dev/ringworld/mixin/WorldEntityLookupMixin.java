@@ -33,8 +33,8 @@ abstract class WorldEntityLookupMixin {
         if (topology == null) return;
         List<Entity> result = Lists.newArrayList();
         Set<Entity> seen = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
-        for (RingTopology.QueryWindow window : topology.canonicalWindows(box)) {
-            getEntities().get(window.canonicalBox(), entity -> {
+        for (AABB window : topology.entityQueryBoxes(box)) {
+            getEntities().get(window, entity -> {
                 if (entity != except && seen.add(entity) && predicate.test(entity)) result.add(entity);
             });
         }
@@ -50,8 +50,8 @@ abstract class WorldEntityLookupMixin {
         RingTopology topology = topologyFor(box);
         if (topology == null) return;
         Set<T> seen = java.util.Collections.newSetFromMap(new IdentityHashMap<>());
-        for (RingTopology.QueryWindow window : topology.canonicalWindows(box)) {
-            getEntities().get(filter, window.canonicalBox(), entity -> {
+        for (AABB window : topology.entityQueryBoxes(box)) {
+            getEntities().get(filter, window, entity -> {
                 if (seen.add(entity) && predicate.test(entity)) result.add(entity);
                 return result.size() >= limit
                         ? net.minecraft.util.AbortableIterationConsumer.Continuation.ABORT
@@ -65,7 +65,7 @@ abstract class WorldEntityLookupMixin {
     private RingTopology topologyFor(AABB box) {
         if (!((Object) this instanceof ServerLevel world) || world.dimension() != Level.OVERWORLD) return null;
         var geometry = RingWorldServer.geometryFor(world);
-        if (box.minX >= 0.0 && box.maxX <= geometry.circumferenceBlocks()) return null;
+        if (!RingTopology.needsEntityImages(box, geometry)) return null;
         return new RingTopology(geometry);
     }
 }

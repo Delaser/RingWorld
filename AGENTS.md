@@ -139,11 +139,10 @@ biome queries and the two-byte tile-header reservation preserve colours and
 wire format. A single capture, GC or preemption may exceed the soft budget. See the
 [remaining stall investigation](docs/SERVER_STALL_INVESTIGATION_2026_10_10.md).
 
-Completed Atlas progress reports must use the maintained present-cell count to
-return total chunk coverage in constant time. Do not rescan every cell for every
-connected player: the three-client Large-server trial found this consumed about
-45% of sampled server-thread execution. Preserve exact partial-coverage counting
-and clearing semantics. See [multiplayer measurements](docs/SERVER_MULTIPLAYER_LOAD_2026_10_10.md).
+Atlas progress reports read the maintained completed-chunk count in constant time
+at every completion level. Keep missing-sample counts correct for split rim
+chunks, snapshot copies, checkpoint repairs, cache loads and invalidations.
+The server publishes progress per player. See [multiplayer measurements](docs/SERVER_MULTIPLAYER_LOAD_2026_10_10.md).
 
 The six `6ee5bd56` 1.4 JARs predate this fix and are on publication hold.
 Do not reuse their full-suite PASS to qualify replacements.
