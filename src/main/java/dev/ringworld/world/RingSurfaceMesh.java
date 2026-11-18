@@ -1,5 +1,6 @@
 package dev.ringworld.world;
 
+import java.util.BitSet;
 import java.util.Objects;
 
 /**
@@ -50,6 +51,14 @@ public final class RingSurfaceMesh {
     public static Mesh build(RingGeometry geometry, RingTerrainAtlas atlas,
                              boolean detailed, double referenceHeight, double wallTopHeight,
                              int wallHeightBlocks, RingWallStyle style, long seed, RingRenderProfile profile) {
+        return build(geometry, atlas, detailed, referenceHeight, wallTopHeight, wallHeightBlocks,
+                style, seed, profile, false);
+    }
+
+    public static Mesh build(RingGeometry geometry, RingTerrainAtlas atlas,
+                             boolean detailed, double referenceHeight, double wallTopHeight,
+                             int wallHeightBlocks, RingWallStyle style, long seed, RingRenderProfile profile,
+                             boolean textureDrySlopes) {
         Objects.requireNonNull(geometry, "geometry");
         Objects.requireNonNull(atlas, "atlas");
         if (!geometry.equals(atlas.geometry())) {
@@ -68,7 +77,7 @@ public final class RingSurfaceMesh {
         int segments = Math.min(atlas.columns(), profile.circumferenceSegments());
         int bands = Math.min(atlas.rows(), profile.widthBands());
         return new Mesh(geometry, atlas, detailed, referenceHeight, wallTopHeight,
-                innerFaces, segments, bands, wallHeightBlocks, style, seed);
+                innerFaces, segments, bands, wallHeightBlocks, style, seed, textureDrySlopes);
     }
 
     /** A consumer of the exact float vertex values written to the GPU buffer. */
@@ -92,6 +101,7 @@ public final class RingSurfaceMesh {
         private final float[] upperU;
         private final float[] upperV;
         private final int[] upperSideColor;
+        private final BitSet dryQuads = new BitSet();
         private final double steepHeightThreshold;
         private final RingGeometry geometry;
         private final boolean bridgeRims;
@@ -109,7 +119,7 @@ public final class RingSurfaceMesh {
         private Mesh(RingGeometry geometry, RingTerrainAtlas atlas, boolean detailed,
                      double referenceHeight, double wallTopHeight,
                      RingCloudBounds innerFaces, int segments, int bands,
-                     int wallHeightBlocks, RingWallStyle style, long seed) {
+                     int wallHeightBlocks, RingWallStyle style, long seed, boolean textureDrySlopes) {
             this.geometry = geometry;
             this.segments = segments;
             this.bands = bands;
@@ -232,6 +242,36 @@ public final class RingSurfaceMesh {
                     }
                 }
             }
+            if (textureDrySlopes && detailed && atlas.sampleStep() == RingLodQuality.MEDIUM.sampleStep()) {
+                classifyDrySlopes(atlas);
+            }
+        }
+
+        private void classifyDrySlopes(RingTerrainAtlas atlas) {
+            for (int segment = 0; segment < segments; segment++) {
+                // Inspect the entire footprint including its bilinear texture neighbours, across the X seam.
+                int left = (int)Math.floor((double)segment * atlas.columns() / segments - 0.5);
+                int right = (int)Math.ceil((double)(segment + 1) * atlas.columns() / segments - 0.5);
+                for (int band = 0; band < bands; band++) {
+                    int a = index(segment, band), b = index(segment + 1, band);
+                    int c = index(segment + 1, band + 1), d = index(segment, band + 1);
+                    float min = Math.min(Math.min(heights[a], heights[b]), Math.min(heights[c], heights[d]));
+                    float max = Math.max(Math.max(heights[a], heights[b]), Math.max(heights[c], heights[d]));
+                    if (max - min < steepHeightThreshold) continue;
+                    int first = Math.max(0, (int)Math.floor(textureV[a] * atlas.rows() - 0.5));
+                    int last = Math.min(atlas.rows() - 1, (int)Math.ceil(textureV[d] * atlas.rows() - 0.5));
+                    if (dryFootprint(atlas, left, right, first, last)) dryQuads.set(band + segment * bands);
+                }
+            }
+        }
+
+        private static boolean dryFootprint(RingTerrainAtlas atlas, int left, int right, int first, int last) {
+            for (int row = first; row <= last; row++) {
+                for (int col = left; col <= right; col++) {
+                    if (atlas.shorelineCell(Math.floorMod(col, atlas.columns()), row)) return false;
+                }
+            }
+            return true;
         }
 
         public int segments() { return segments; }
@@ -250,8 +290,9 @@ public final class RingSurfaceMesh {
                 for (int band = 0; band < bands; band++) {
                     int a = index(segment, band), b = index(segment + 1, band);
                     int c = index(segment + 1, band + 1), d = index(segment, band + 1);
-                    emitTriangle(consumer, a, b, c);
-                    emitTriangle(consumer, a, c, d);
+                    boolean dry = dryQuads.get(segment * bands + band);
+                    emitTriangle(consumer, a, b, c, dry);
+                    emitTriangle(consumer, a, c, d, dry);
                 }
             }
             consumer.sideColor(-1);
@@ -354,21 +395,23 @@ public final class RingSurfaceMesh {
             int a = index(segment, band), b = index(segment + 1, band);
             int c = index(segment + 1, band + 1), d = index(segment, band + 1);
             int point = switch (vertex) { case 0, 3 -> a; case 1 -> b; case 2, 4 -> c; default -> d; };
-            int color = vertex < 3 ? triangleColorIndex(a, b, c) : triangleColorIndex(a, c, d);
+            boolean dry = dryQuads.get(segment * bands + band);
+            int color = vertex < 3 ? triangleColorIndex(a, b, c, dry) : triangleColorIndex(a, c, d, dry);
             return new Vertex(positionsX[point], positionsY[point], positionsZ[point],
                     color < 0 ? textureU[point] : upperU[color] + (upperSideColor[color] < 0 ? 0 : 2),
                     color < 0 ? textureV[point] : upperV[color]);
         }
 
-        private int triangleColorIndex(int a, int b, int c) {
+        private int triangleColorIndex(int a, int b, int c, boolean dry) {
             int highest = heights[a] >= heights[b] ? a : b;
             if (heights[c] > heights[highest]) highest = c;
+            if (dry && upperSideColor[highest] < 0) return -1;
             float lowest = Math.min(heights[a], Math.min(heights[b], heights[c]));
             return heights[highest] - lowest >= steepHeightThreshold ? highest : -1;
         }
 
-        private void emitTriangle(VertexConsumer consumer, int a, int b, int c) {
-            int color = triangleColorIndex(a, b, c);
+        private void emitTriangle(VertexConsumer consumer, int a, int b, int c, boolean dry) {
+            int color = triangleColorIndex(a, b, c, dry);
             consumer.sideColor(color < 0 ? -1 : upperSideColor[color]);
             emitVertex(consumer, a, color);
             emitVertex(consumer, b, color);
