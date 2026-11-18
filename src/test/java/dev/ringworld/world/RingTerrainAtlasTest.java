@@ -21,6 +21,28 @@ class RingTerrainAtlasTest {
     private static final long HASH = 0x1234_5678_9ABC_DEF0L;
 
     @Test
+    void partialChunkCountsFollowSnapshotRepairAndReload(@TempDir Path dir) throws Exception {
+        var geometry = new RingGeometry(144, 2048);
+        var live = new RingTerrainAtlas(geometry, HASH, 8);
+        live.putCell(0, 0, 70, 1);
+        var checkpoint = live.snapshot();
+        live.putCell(1, 0, 70, 1);
+        assertEquals(1, live.presentChunkCount());
+        assertEquals(0, checkpoint.presentChunkCount());
+        live.copyCheckpointCells(checkpoint, 1, 1);
+        checkpoint.finishCheckpointCopy(live);
+        assertEquals(1, checkpoint.presentChunkCount());
+        live.invalidateCell(0, 0);
+        assertEquals(0, live.presentChunkCount());
+        assertEquals(1, checkpoint.presentChunkCount());
+        Path path = dir.resolve("partial.gz");
+        checkpoint.save(path);
+        assertEquals(1, RingTerrainAtlas.load(path, geometry, HASH).presentChunkCount());
+        live.copyCheckpointCells(checkpoint, 0, 1);
+        assertEquals(0, checkpoint.presentChunkCount());
+    }
+
+    @Test
     void anUnavailableDirtyCellStaysMissingAfterCheckpointAndIsRetried(@TempDir Path dir) throws Exception {
         var atlas = new RingTerrainAtlas(GEOMETRY, HASH, 1);
         atlas.putCell(8, 7, 91, 0x123456);

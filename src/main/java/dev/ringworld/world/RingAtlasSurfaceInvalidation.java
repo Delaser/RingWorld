@@ -4,6 +4,13 @@ import java.util.Optional;
 
 /** Loader-neutral mapping from block mutations to canonical atlas cells. */
 public final class RingAtlasSurfaceInvalidation {
+    public static final int MAX_SIDE_DEPTH = 24;
+
+    public static boolean mayAffectSide(int changedBlockY, int storedTopFaceY) {
+        long depth = (long)storedTopFaceY - 1 - changedBlockY;
+        return depth >= 0 && depth <= MAX_SIDE_DEPTH;
+    }
+
     private RingAtlasSurfaceInvalidation() { }
 
     public static Optional<Cell> cellFor(RingGeometry geometry, int sampleStep,

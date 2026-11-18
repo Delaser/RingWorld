@@ -83,6 +83,9 @@ public final class RingTerrainAtlas {
         return pages[page];
     }
 
+    // X-major indexing matches the pregeneration cursor. Partial edge chunks can own fewer samples.
+    private final short[] missingByChunk;
+    private int completeChunks;
     private int presentCount;
     private long revision;
 
@@ -104,6 +107,8 @@ public final class RingTerrainAtlas {
             throw new IllegalArgumentException(RingDimensionReport.atlasLimitMessage(cells));
         }
         this.cellCount = Math.toIntExact(cells);
+        missingByChunk = new short[Math.multiplyExact(geometry.circumferenceChunks(), geometry.widthChunks())];
+        resetCoverage();
         pages = new Page[divideCeil(cellCount, PAGE_SIZE)];
         Arrays.fill(pages, EMPTY);
     }
@@ -161,6 +166,8 @@ public final class RingTerrainAtlas {
         RingTerrainAtlas copy = new RingTerrainAtlas(geometry, worldHash, sampleStep);
         System.arraycopy(pages, 0, copy.pages, 0, pages.length);
         writable.clear();
+        System.arraycopy(missingByChunk, 0, copy.missingByChunk, 0, missingByChunk.length);
+        copy.completeChunks = completeChunks;
         copy.presentCount = presentCount;
         copy.revision = revision;
         return copy;
@@ -178,7 +185,10 @@ public final class RingTerrainAtlas {
             if (source != destination.pages[i >>> PAGE_SHIFT]) {
                 Page target = destination.writablePage(i);
                 for (int j = offset; j < offset + length; j++) {
-                    if (source.present[j] != target.present[j]) destination.presentCount += source.present[j] ? 1 : -1;
+                    if (source.present[j] != target.present[j]) {
+                        int index = i + j - offset;
+                        destination.changePresence(index % columns, index / columns, source.present[j] ? 1 : -1);
+                    }
                 }
                 System.arraycopy(source.heights, offset, target.heights, offset, length);
                 System.arraycopy(source.colors, offset, target.colors, offset, length);
@@ -272,7 +282,7 @@ public final class RingTerrainAtlas {
         page = writablePage(index);
         if (!page.present[index & PAGE_MASK]) {
             page.present[index & PAGE_MASK] = true;
-            presentCount++;
+            changePresence(column, row, 1);
         }
         page.heights[index & PAGE_MASK] = clampedHeight;
         page.colors[index & PAGE_MASK] = rgb;
@@ -286,7 +296,7 @@ public final class RingTerrainAtlas {
         if (!hasCell(column, row)) return false;
         int index = index(Math.floorMod(column, columns), row);
         writablePage(index).present[index & PAGE_MASK] = false;
-        presentCount--;
+        changePresence(Math.floorMod(column, columns), row, -1);
         return true;
     }
 
@@ -518,7 +528,7 @@ public final class RingTerrainAtlas {
                 page.colors[index & PAGE_MASK] = input.readInt() & 0xFFFFFF;
                 page.blockLights[index & PAGE_MASK] = input.readByte();
                 page.sideColors[index & PAGE_MASK] = input.readInt() & 0xFFFFFF;
-                if (page.present[index & PAGE_MASK]) atlas.presentCount++;
+                if (page.present[index & PAGE_MASK]) atlas.changePresence(index % atlas.columns, index / atlas.columns, 1);
             }
             if (input.read() != -1) throw new IOException("trailing terrain atlas data");
             return Optional.of(atlas);
@@ -589,36 +599,39 @@ public final class RingTerrainAtlas {
     public boolean isChunkPresent(int chunkX, int chunkRow) {
         if (chunkRow < 0 || chunkRow >= geometry.widthChunks()
                 || chunkX < 0 || chunkX >= geometry.circumferenceChunks()) return false;
-        int samplesPerChunk = 16 / sampleStep;
-        int firstX = chunkX * samplesPerChunk;
-        int minBlockZ = (geometry.minChunkZ() + chunkRow) * 16;
-        int endRow = firstSampleRowAt(minBlockZ + 16);
-        for (int z = firstSampleRowAt(minBlockZ); z < endRow; z++) {
-            for (int x = 0; x < samplesPerChunk; x++) {
-                if (!hasCell(firstX + x, z)) return false;
-            }
-        }
-        return true;
+        return missingByChunk[chunkX * geometry.widthChunks() + chunkRow] == 0;
     }
 
-    /** Exact durable count used for progress reporting after restart/resume. */
-    public long presentChunkCount() {
-        // Completed worlds publish status to each player repeatedly. The cell
-        // counter already proves every chunk is present; avoid a full scan.
-        if (isComplete()) return (long)geometry.circumferenceChunks() * geometry.widthChunks();
-        long count = 0;
-        for (int chunkX = 0; chunkX < geometry.circumferenceChunks(); chunkX++) {
-            for (int chunkRow = 0; chunkRow < geometry.widthChunks(); chunkRow++) {
-                if (isChunkPresent(chunkX, chunkRow)) count++;
-            }
+    public long presentChunkCount() { return completeChunks; }
+
+    private void changePresence(int column, int row, int delta) {
+        int chunkX = (column * sampleStep) >> 4;
+        int chunkZ = (geometry.minWidthZ() + row * sampleStep + sampleStep / 2) >> 4;
+        int chunk = chunkX * geometry.widthChunks() + chunkZ - geometry.minChunkZ();
+        if (missingByChunk[chunk] == 0) completeChunks--;
+        missingByChunk[chunk] -= delta;
+        if (missingByChunk[chunk] == 0) completeChunks++;
+        presentCount += delta;
+    }
+
+    private void resetCoverage() {
+        int across = geometry.widthChunks();
+        completeChunks = 0;
+        for (int row = 0; row < across; row++) {
+            int z = (geometry.minChunkZ() + row) * 16;
+            missingByChunk[row] = (short)((firstSampleRowAt(z + 16) - firstSampleRowAt(z)) * (16 / sampleStep));
+            if (missingByChunk[row] == 0) completeChunks += geometry.circumferenceChunks();
         }
-        return count;
+        for (int i = across; i < missingByChunk.length; i += across) {
+            System.arraycopy(missingByChunk, 0, missingByChunk, i, across);
+        }
     }
 
     public void clear() {
         Arrays.fill(pages, EMPTY);
         writable.clear();
         presentCount = 0;
+        resetCoverage();
     }
 
     private int index(int column, int row) { return row * columns + column; }

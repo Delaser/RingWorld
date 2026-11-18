@@ -301,6 +301,10 @@ public final class RingAtlasPregenerationService {
         if (cell == null || !atlas.hasCell(cell.column(), cell.row())) return;
         boolean reachesStoredSurface = RingAtlasSurfaceInvalidation.mayAffectSurface(
                 position.getY(), atlas.cellHeight(cell.column(), cell.row()));
+        if (!reachesStoredSurface && RingAtlasSurfaceInvalidation.mayAffectSide(
+                position.getY(), atlas.cellHeight(cell.column(), cell.row()))) {
+            state.recaptures.enqueue(cell);
+        }
         // A support edit can change omission without touching the highest block.
         // Inspect only the current top here; defer the column scan to the bounded writer.
         boolean manufacturedTop = !reachesStoredSurface && RingAtlasSurfaceSampler.hasManufacturedTop(
@@ -542,7 +546,7 @@ public final class RingAtlasPregenerationService {
             if ((nx >> 4) != chunk.getPos().x() || (nz >> 4) != chunk.getPos().z()) continue;
             int neighbourY = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, nx & 15, nz & 15);
             if (surface.getY() - neighbourY < 4) continue;
-            int y = surface.getY() - Math.min(24, Math.max(2, (surface.getY() - neighbourY) / 2));
+            int y = surface.getY() - Math.min(RingAtlasSurfaceInvalidation.MAX_SIDE_DEPTH, Math.max(2, (surface.getY() - neighbourY) / 2));
             BlockPos side = new BlockPos(surface.getX(), y, surface.getZ());
             BlockState material = chunk.getBlockState(side);
             if (material.isAir() || !material.getFluidState().isEmpty()) continue;

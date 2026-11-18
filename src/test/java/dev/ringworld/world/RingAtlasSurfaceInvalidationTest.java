@@ -10,6 +10,13 @@ class RingAtlasSurfaceInvalidationTest {
     private static final RingGeometry GEOMETRY = new RingGeometry(256, 2_048);
 
     @Test
+    void sideEditsIncludeTheFallbackAndDeepestCliffMaterial() {
+        assertTrue(RingAtlasSurfaceInvalidation.mayAffectSide(180, 189));
+        assertTrue(RingAtlasSurfaceInvalidation.mayAffectSide(164, 189));
+        assertFalse(RingAtlasSurfaceInvalidation.mayAffectSide(163, 189));
+    }
+
+    @Test
     void mapsPresentationXToOneCanonicalCellAndBoundsFiniteZ() {
         assertEquals(new RingAtlasSurfaceInvalidation.Cell(0, 0),
                 RingAtlasSurfaceInvalidation.cellFor(

@@ -23,7 +23,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(ServerChunkCache.class)
 abstract class ServerChunkManagerMixin {
     @ModifyVariable(
-            method = "getChunk(IILnet/minecraft/world/level/chunk/status/ChunkStatus;Z)Lnet/minecraft/world/level/chunk/ChunkAccess;",
+            method = {"getChunk(IILnet/minecraft/world/level/chunk/status/ChunkStatus;Z)Lnet/minecraft/world/level/chunk/ChunkAccess;",
+                    "getChunkNow(II)Lnet/minecraft/world/level/chunk/LevelChunk;"},
             at = @At("HEAD"), argsOnly = true, ordinal = 0)
     private int ringworld$canonicalChunkX(int chunkX) {
         Level world = ((ServerChunkCache) (Object) this).getLevel();
