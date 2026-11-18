@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -434,22 +435,37 @@ public final class RingTerrainAtlas {
 
     public static RingTerrainAtlas load(Path path, RingGeometry expectedGeometry,
                                         long expectedHash) throws IOException {
-        try (DataInputStream input = new DataInputStream(new GZIPInputStream(
-                new BufferedInputStream(Files.newInputStream(path))))) {
+        return readCache(path, expectedGeometry, expectedHash, -1L).orElseThrow();
+    }
+
+    /** A stale client cache is a normal miss. Its body can be skipped entirely. */
+    public static Optional<RingTerrainAtlas> loadIfRevisionMatches(Path path, RingGeometry geometry,
+                                                                   long hash, long revision) throws IOException {
+        if (revision < 0) throw new IllegalArgumentException("negative expected revision");
+        return readCache(path, geometry, hash, revision);
+    }
+
+    private static Optional<RingTerrainAtlas> readCache(Path path, RingGeometry geometry,
+                                                        long expectedHash, long expectedRevision) throws IOException {
+        try (var file = Files.newInputStream(path);
+             DataInputStream input = new DataInputStream(new BufferedInputStream(new GZIPInputStream(file, 8192)))) {
             if (input.readInt() != MAGIC) throw new IOException("not a RingWorld terrain atlas");
             if (input.readInt() != FORMAT_VERSION) throw new IOException("unsupported terrain atlas version");
             long hash = input.readLong();
             int width = input.readInt();
             int circumference = input.readInt();
             int sampleStep = input.readInt();
-            RingGeometry geometry = new RingGeometry(width, circumference);
-            RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, hash, sampleStep);
-            if (!geometry.equals(expectedGeometry) || hash != expectedHash
-                    || input.readInt() != atlas.columns || input.readInt() != atlas.rows) {
+            if (width != geometry.widthBlocks() || circumference != geometry.circumferenceBlocks()
+                    || hash != expectedHash || sampleStep <= 0 || 16 % sampleStep != 0
+                    || input.readInt() != divideCeil(circumference, sampleStep)
+                    || input.readInt() != divideCeil(width, sampleStep)) {
                 throw new IOException("terrain atlas does not match this ring world");
             }
-            atlas.revision = input.readLong();
-            if (atlas.revision < 0L) throw new IOException("negative terrain atlas revision");
+            long revision = input.readLong();
+            if (revision < 0L) throw new IOException("negative terrain atlas revision");
+            if (expectedRevision >= 0 && revision != expectedRevision) return Optional.empty();
+            RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, hash, sampleStep);
+            atlas.revision = revision;
             for (int index = 0; index < atlas.present.length; index++) {
                 atlas.present[index] = input.readBoolean();
                 atlas.heights[index] = input.readShort();
@@ -459,7 +475,7 @@ public final class RingTerrainAtlas {
                 if (atlas.present[index]) atlas.presentCount++;
             }
             if (input.read() != -1) throw new IOException("trailing terrain atlas data");
-            return atlas;
+            return Optional.of(atlas);
         }
     }
 
