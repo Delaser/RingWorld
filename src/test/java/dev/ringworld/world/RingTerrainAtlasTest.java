@@ -87,6 +87,24 @@ class RingTerrainAtlasTest {
     }
 
     @Test
+    void staleCacheSkipsCellBodyButMatchingRevisionRequiresIt(@TempDir Path directory) throws Exception {
+        RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH, 8);
+        Path cache = directory.resolve("client.rwat.gz");
+        atlas.save(cache);
+        assertTrue(RingTerrainAtlas.loadIfRevisionMatches(cache, GEOMETRY, HASH, 0).isPresent());
+        byte[] header;
+        try (var input = new java.util.zip.GZIPInputStream(Files.newInputStream(cache))) {
+            header = input.readNBytes(44);
+        }
+        try (var output = new GZIPOutputStream(Files.newOutputStream(cache))) {
+            output.write(header);
+        }
+        assertTrue(RingTerrainAtlas.loadIfRevisionMatches(cache, GEOMETRY, HASH, 1).isEmpty());
+        assertThrows(java.io.EOFException.class,
+                () -> RingTerrainAtlas.loadIfRevisionMatches(cache, GEOMETRY, HASH, 0));
+    }
+
+    @Test
     void committedRevisionSurvivesDiskAndRejectsRollback(@TempDir Path directory) throws Exception {
         RingTerrainAtlas atlas = new RingTerrainAtlas(GEOMETRY, HASH, 8);
         assertTrue(atlas.commitRevision(4L));

@@ -220,8 +220,8 @@ public final class ClientRingState {
         if (metadata.revision() < 0L) return false;
         if (Files.exists(cache)) {
             try {
-                replacement = RingTerrainAtlas.load(cache, current, metadata.worldHash());
-                if (replacement.revision() != metadata.revision()) replacement = null;
+                replacement = RingTerrainAtlas.loadIfRevisionMatches(cache, current, metadata.worldHash(),
+                        metadata.revision()).orElse(null);
             } catch (IOException exception) {
                 RingWorldMod.LOGGER.warn("Ignoring invalid client RingWorld terrain cache {}", cache, exception);
             }
