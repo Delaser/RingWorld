@@ -15,7 +15,16 @@ public final class RingClientLodTuning {
         RingSurfaceTextureRenderer.clear();
         return summary();
     }
-    public static void clearSession() { quality = RingLodQuality.MEDIUM; }
+    public static void clearSession() {
+        quality = RingLodQuality.MEDIUM;
+        RingLayerTrial.setBandWidth(RingLayerTrial.DEFAULT_BAND);
+    }
+    public static String band(Float width) {
+        if (!RingLayerTrial.enabled()) return "Layer band requires the two-layer Atlas trial.";
+        if (width != null) RingLayerTrial.setBandWidth(width);
+        return "Two-layer Atlas band: " + RingLayerTrial.bandWidth() + "x"
+                + (quality == RingLodQuality.MEDIUM ? "" : " (select Medium LOD to see it)");
+    }
     public static RingRenderProfile profile(RingGeometry geometry, double distance) {
         int limit = RingMinecraftClientAccess.maxTextureSize();
         return quality.profile(geometry, distance, limit);

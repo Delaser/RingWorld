@@ -16,7 +16,8 @@ import java.util.zip.GZIPInputStream;
 final class RingLayerTrialPages {
     private static final String ROOT = System.getProperty("ringworld.layerTrialManifest");
     static final boolean ENABLED = ROOT != null;
-    static volatile int window;
+    record Window(int first, int count) {}
+    static volatile Window window = new Window(0, 0);
     private static Header manifest;
     record Header(long world, int segments, int bands, float minZ, float maxZ, int pageSegments,
                   boolean[] mask, String[] digests) {}

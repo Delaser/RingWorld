@@ -6,9 +6,15 @@ This isolated client experiment compares a single-height surface with a ground s
 
 The later [Large ring measurements and bridge correction](large-review/README.md) use all 65,536 saved chunks and a separate client page cache. The original two-patch measurements below are the historical comparison. The replay fixture now includes the final bridge boundary and corner fix.
 
+## Adjusting the band while playing
+
+On Medium LOD, use `/ringworld lod band` to read the current width or `/ringworld lod band 0.5` through `/ringworld lod band 2` to change it live. A width of 1 reproduces the measured trial. The new session default of 2 doubles the distance over which the second layer draws. Only the outer edge moves. At 12 effective chunks on a Large ring the band begins about 131 blocks away and ends at about 274 blocks at 1× or 418 blocks at 2×.
+
+The paged client reserves enough nearby pages for the full command range at the effective view distance. Changing the multiplier updates the shader without regenerating the Atlas or uploading a new mesh. Movement and render-distance changes can still require a mesh upload. The earlier benchmark used the original 16-page window, so its costs are specific to that build.
+
 ## Rendering
 
-With the JVM property `ringworld.layerTrial` set to the absolute path of the capture, the detailed mesh worker adds the replacement faces and marks the corresponding original terrain triangles. The shader selects the layer mesh between the proxy fade start and 1.4 times the native fade end. Normal depth and atmospheric handoff still apply. Outside that band the original surface draws. The outer switch is a hard boundary in this trial. Both meshes are submitted even when only one is visible.
+With the JVM property `ringworld.layerTrial` set to the absolute path of the capture, the detailed mesh worker adds the replacement faces and marks the corresponding original terrain triangles. At 1× the shader selects the layer mesh between the proxy fade start and 1.4 times the native fade end. Normal depth and atmospheric handoff still apply. Outside that band the original surface draws. The outer switch is a hard boundary in this trial. Both meshes are submitted even when only one is visible.
 
 The input is a local snapshot of the two test areas. An offline baker reads the save at two-block spacing, keeps the largest air gap of at least two blocks within its 32-block search, and stores exposed ground, crown/deck tops, undersides and side faces. The capture uses both the original Atlas colours and representative material colours. Small branches, fences and leaf transparency are simplified. Wall geometry uses the normal renderer. Boundary faces join the captured ground to the coarse mesh around each patch.
 

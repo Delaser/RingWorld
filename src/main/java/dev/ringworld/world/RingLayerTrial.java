@@ -61,13 +61,44 @@ public final class RingLayerTrial {
         }
     }
 
-    public static int cameraWindow(double x, int circumference) {
-        if (!RingLayerTrialPages.ENABLED) return 0;
-        return Math.floorMod((int)Math.floor(x / 256), Math.max(1, circumference / 256));
+    public static final float MIN_BAND = 0.5f;
+    public static final float MAX_BAND = 2.0f;
+    public static final float DEFAULT_BAND = 2.0f;
+    private static float bandWidth = DEFAULT_BAND;
+    private static int lastViewChunks;
+    private static int paddingPages;
+    private static RingGeometry lastGeometry;
+
+    public static float bandWidth() { return bandWidth; }
+
+    public static void setBandWidth(float width) {
+        if (!Float.isFinite(width) || width < MIN_BAND || width > MAX_BAND)
+            throw new IllegalArgumentException("Layer band width out of range");
+        bandWidth = width;
     }
 
-    public static void selectWindow(int window) {
-        RingLayerTrialPages.window = window;
+    public static boolean enabled() {
+        return RingLayerTrialPages.ENABLED || System.getProperty("ringworld.layerTrial") != null;
+    }
+
+    public static boolean updateWindow(double cameraX, RingGeometry geometry, int viewChunks) {
+        if (!RingLayerTrialPages.ENABLED) return false;
+        // Reserve the widest supported band so a live width change only changes a shader value.
+        if (lastViewChunks != viewChunks || !geometry.equals(lastGeometry)) {
+            var profile = RingRenderProfile.create(geometry, viewChunks * 16.0);
+            double start = profile.proxyFadeStartBlocks();
+            double widestEnd = start + MAX_BAND * (1.4 * profile.liveFadeEndBlocks() - start);
+            paddingPages = (int)Math.ceil(widestEnd / 64.0);
+            lastViewChunks = viewChunks;
+            lastGeometry = geometry;
+        }
+        int sector = Math.floorMod((int)Math.floor(cameraX / 256), Math.max(1, geometry.circumferenceBlocks() / 256));
+        int first = sector * 4 - paddingPages;
+        int count = Math.min(512, 4 + 2 * paddingPages);
+        var old = RingLayerTrialPages.window;
+        if (old.first() == first && old.count() == count) return false;
+        RingLayerTrialPages.window = new RingLayerTrialPages.Window(first, count);
+        return true;
     }
 
     private static final class Capture {
@@ -89,8 +120,9 @@ public final class RingLayerTrial {
                 var header = RingLayerTrialPages.header();
                 if (header.world() != atlas.worldHash() || segments != header.segments() || bands != header.bands()
                         || header.minZ() != minZ || header.maxZ() != maxZ) return null;
-                int first = RingLayerTrialPages.window * 4 - 6;
-                byte[][] pages = new byte[16][];
+                var window = RingLayerTrialPages.window;
+                int first = window.first();
+                byte[][] pages = new byte[window.count()][];
                 boolean[] mask = new boolean[segments * bands];
                 for (int i = 0; i < pages.length; i++) {
                     int page = Math.floorMod(first+i, header.digests().length);

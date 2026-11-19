@@ -125,6 +125,15 @@ public final class NeoForgeRingWorldClient {
             context.getSource().sendSuccess(() -> Component.literal(message), false);
             return 1;
         });
+        lod.then(dev.ringworld.world.RingLodCommandSuggestions.band(context -> {
+            String message = dev.ringworld.client.RingClientLodTuning.band(null);
+            context.getSource().sendSuccess(() -> Component.literal(message), false);
+            return 1;
+        }, context -> {
+            String message = dev.ringworld.client.RingClientLodTuning.band(FloatArgumentType.getFloat(context, "width"));
+            context.getSource().sendSuccess(() -> Component.literal(message), false);
+            return 1;
+        }));
         lod.then(Commands.literal("show").executes(context -> {
             String message = dev.ringworld.client.RingClientLodTuning.summary();
             context.getSource().sendSuccess(() -> Component.literal(message), false);

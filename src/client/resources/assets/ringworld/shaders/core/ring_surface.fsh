@@ -115,7 +115,8 @@ void main() {
     // Retain the distant single surface outside the transition neighbourhood.
     // Near coverage continues to use the regular native-to-Atlas fade below.
     if (covered || replacement) {
-        float outer = RingWorldHandoff.y * 1.4;
+        // Scale the width from the near edge, leaving the native handoff fixed.
+        float outer = mix(RingWorldHandoff.z, RingWorldHandoff.y * 1.4, ColorModulator.x);
         bool useLayers = handoffDistance >= RingWorldHandoff.z && handoffDistance < outer;
         if (replacement != useLayers) discard;
         surfaceUv.x -= replacement ? 8.0 : 4.0;
