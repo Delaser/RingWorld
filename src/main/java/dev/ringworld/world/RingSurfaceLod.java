@@ -21,6 +21,35 @@ public final class RingSurfaceLod {
 
     private RingSurfaceLod() { }
 
+    /** Fine shoreline colour and light for one GPU texel of a reduced display mesh. */
+    public static int detailTexel(RingTerrainAtlas source, int x, int y, int width, int height,
+                                  int terrainRgb, boolean shoreline) {
+        int left = (int)((long)x * source.columns() / width);
+        int top = (int)((long)y * source.rows() / height);
+        int right = Math.max(left + 1, (int)((long)(x + 1) * source.columns() / width));
+        int bottom = Math.max(top + 1, (int)((long)(y + 1) * source.rows() / height));
+        int count = (right - left) * (bottom - top);
+        int red = 0, green = 0, blue = 0, light = 0, peak = 0;
+        for (int row = top; row < bottom; row++) {
+            for (int col = left; col < right; col++) {
+                int level = source.cellBlockLight(col, row);
+                light += level;
+                peak = Math.max(peak, level);
+                if (shoreline) {
+                    int rgb = RingWaterColor.tint(source.cellColor(col, row), source.cellWaterCoverage(col, row) / 15.0);
+                    red += rgb >> 16 & 255;
+                    green += rgb >> 8 & 255;
+                    blue += rgb & 255;
+                }
+            }
+        }
+        if (shoreline) terrainRgb = (red / count << 16) | (green / count << 8) | blue / count;
+        // Preserve a sub-texel lamp at reduced brightness, only in the texel containing it.
+        double level = (peak + light / (double)count) * 0.5;
+        int alpha = (int)Math.round(level * 255.0 / 15.0);
+        return alpha << 24 | terrainRgb;
+    }
+
     /** Encodes atlas coverage as transparency without inventing missing terrain. */
     public static int surfaceArgb(int rgb, double coverage) {
         if (!Double.isFinite(coverage)) {

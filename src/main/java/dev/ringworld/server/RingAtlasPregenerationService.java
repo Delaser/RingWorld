@@ -539,7 +539,7 @@ public final class RingAtlasPregenerationService {
                 int color = state.colours.surface(world, chunk, surface, surfaceState, waterBiomes);
                 int blockLight = coloursOnly ? atlas.cellBlockLight(atlasX, row) : surfaceBlockLight(world, surface, surfaceState);
                 if (atlas.putBlockSample(blockX, blockZ, surfaceY + 1, color, blockLight,
-                        sideColor(state.colours, world, chunk, surface, surfaceState, color, atlas.sampleStep()),
+                        sideColor(state.colours, world, chunk, surface, surfaceState, color, atlas),
                         water)) {
                     changed = true;
                     if (coloursOnly) state.revisionPending = true;
@@ -561,15 +561,29 @@ public final class RingAtlasPregenerationService {
 
     /** Bounded side sampling; never requests neighbouring chunks. */
     private static int sideColor(RingAtlasColours colours, ServerLevel world, ChunkAccess chunk, BlockPos surface,
-                                 BlockState top, int topColor, int step) {
+                                 BlockState top, int topColor, RingTerrainAtlas atlas) {
+        int step = atlas.sampleStep();
         if (top.is(BlockTags.LEAVES) || top.is(BlockTags.LOGS) || !top.getFluidState().isEmpty())
             return topColor;
         int red = 0, green = 0, blue = 0, count = 0;
         for (int direction = 0; direction < 4; direction++) {
             int nx = surface.getX() + (direction == 0 ? step : direction == 1 ? -step : 0);
             int nz = surface.getZ() + (direction == 2 ? step : direction == 3 ? -step : 0);
-            if ((nx >> 4) != chunk.getPos().x() || (nz >> 4) != chunk.getPos().z()) continue;
-            int neighbourY = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, nx & 15, nz & 15);
+            int neighbourY;
+            if ((nx >> 4) == chunk.getPos().x() && (nz >> 4) == chunk.getPos().z()) {
+                neighbourY = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, nx & 15, nz & 15);
+            } else {
+                if (nz < atlas.geometry().minWidthZ() || nz > atlas.geometry().maxWidthZ()) continue;
+                int wrappedX = atlas.geometry().wrapBlockX(nx);
+                int col = wrappedX / step, row = (nz - atlas.geometry().minWidthZ()) / step;
+                if (atlas.hasCell(col, row)) {
+                    neighbourY = atlas.cellHeight(col, row) - 1;
+                } else {
+                    LevelChunk resident = world.getChunkSource().getChunkNow(wrappedX >> 4, nz >> 4);
+                    if (resident == null) continue;
+                    neighbourY = resident.getHeight(Heightmap.Types.WORLD_SURFACE, wrappedX & 15, nz & 15);
+                }
+            }
             if (surface.getY() - neighbourY < 4) continue;
             int y = surface.getY() - Math.min(RingAtlasSurfaceInvalidation.MAX_SIDE_DEPTH, Math.max(2, (surface.getY() - neighbourY) / 2));
             BlockPos side = new BlockPos(surface.getX(), y, surface.getZ());
@@ -617,7 +631,7 @@ public final class RingAtlasPregenerationService {
             int color = state.colours.surface(world, chunk, surface, surfaceState);
             int blockLight = surfaceBlockLight(world, surface, surfaceState);
             if (atlas.putCell(cell.column(), cell.row(), surfaceY + 1, color, blockLight,
-                        sideColor(state.colours, world, chunk, surface, surfaceState, color, atlas.sampleStep()),
+                        sideColor(state.colours, world, chunk, surface, surfaceState, color, atlas),
                         surfaceState.getFluidState().is(FluidTags.WATER) ? 15 : 0)) {
                 changed = true;
                 state.checkpoints.changedCell(cell.column(), cell.row(), atlas.columns());

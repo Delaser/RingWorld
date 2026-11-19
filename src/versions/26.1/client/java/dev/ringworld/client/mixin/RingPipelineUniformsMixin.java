@@ -25,6 +25,10 @@ abstract class RingPipelineUniformsMixin {
         fragmentShader.map(RingShaderContract::materialShader).ifPresent(builder::withFragmentShader);
         if (!ringworld$bindingAdded && RingShaderContract.usesRingUniforms(vertexShader.orElse(null))) {
             ((RenderPipeline.Builder)(Object)this).withUniform(RingShaderContract.UNIFORM, UniformType.UNIFORM_BUFFER);
+            var material = RingShaderContract.materialShader(vertexShader.orElse(null));
+            if (material.getNamespace().equals("ringworld") && material.getPath().equals("core/terrain")) {
+                builder.withSampler("RingWorldSurface");
+            }
             ringworld$bindingAdded = true;
         }
     }

@@ -4,6 +4,11 @@
 #moj_import <minecraft:globals.glsl>
 #moj_import <ringworld:render_uniforms.glsl>
 #moj_import <ringworld:handoff.glsl>
+in vec2 ringWaterUv;
+#ifndef OIT_ALPHA_ONLY
+uniform sampler2D Sampler2;
+#define RING_WATER_LIGHTMAP Sampler2
+#endif
 #moj_import <ringworld:material.glsl>
 #moj_import <minecraft:chunksection.glsl>
 

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RingWorld shoreline comparisons</title>
+<style>
+:root{color-scheme:dark;font:17px/1.5 system-ui,sans-serif;background:#141a20;color:#f0f4f7}body{max-width:1260px;margin:auto;padding:1rem}p{max-width:80ch}img{display:block;width:100%;height:auto}h2{margin:2.3rem 0 .35rem}a{color:#a6d4ff}figure{margin:1rem 0}figcaption{padding:.5rem 0;color:#ced8df}button{font:inherit;padding:.3em .8em;cursor:pointer}table{border-collapse:collapse}th,td{padding:.4em .8em;border-bottom:1px solid #5b676d;text-align:left}
+</style>
+<main><h1>Where real water meets the Atlas</h1>
+<p>Follow the same submerged shelf over 152 blocks. The first two views use a 12-chunk render distance. The third shows the shelf inside real terrain at 22 chunks. Watch the pale water along the near edge of the stone spit.</p>
+<figure><img id="shelf" src="shelf-midpoint.jpg" alt="Before, after and real-terrain reference of the stone spit. The new handoff retains the shallow blue ledge."><figcaption><button id="play" hidden>Play the 20 positions</button> <a href="shelf.webp">Open animation</a> · <a href="shelf-measurements.csv">Measurements by position</a></figcaption></figure>
+<table><tr><th>Sample</th><th>Before</th><th>After</th></tr><tr><td>Shallow shelf, all positions</td><td>7.14</td><td>2.79</td></tr><tr><td>Shallow shelf, X = 190.5</td><td>18.48</td><td>3.29</td></tr><tr><td>Darker water, all positions</td><td>2.94</td><td>3.33</td></tr></table>
+<p>Values are mean absolute RGB channel differences from the real-terrain reference on a 0–255 scale. Lower is closer. No sky-coloured pixels appeared in the deep-water test corridor in either run.</p>
+<details><summary>Capture and measurement setup</summary><p>NeoForge 26.3, seed 255, 2048 × 128 ring, clear noon, Medium detail. Each 2560 × 1440 capture used Y 88, Z 25.5, yaw 90°, pitch 5°. Camera X increased from 110.5 to 262.5 in eight-block steps. The crop tracks the stone spit. A 290 × 84 window below the spit selects shallow and darker pixels using colours in the reference alone. The colour error weights each selected pixel equally across all positions. Pixels must have blue more than 42 above green. The shelf mask uses red 68–92 and green 94–122. The darker mask uses red 48–61 and green 75–93. A second 310 × 90 window checks for pixels within four channel values of the sampled sky. At X = 182.5 the shelf error was 14.33 before, 2.46 after, and 2.51 after with Sodium 0.9.2.</p></details>
+<h2>Low-detail shoreline</h2><img loading="lazy" src="low-shore.jpg" alt="Paired views showing the water and the small sand and stone edges on Low detail."><p>Wet and dry source samples keep their own colours inside a coarse shoreline cell.</p>
+<h2>Exposed cliff at a chunk boundary</h2><img loading="lazy" src="cliff.jpg" alt="A controlled cliff face changes from grey to sandstone orange across its exposed lower face."><p>A sandstone band beneath a stone cap makes the sampling difference visible. Both saves have the same blocks.</p>
+<h2>Small lights at night</h2><img loading="lazy" src="lamps.jpg" alt="Midnight views of a quay with six glowstone posts, before and after the Low-detail texture change."><p>Both copies record all six glowstone posts at light level 15. Low detail now assigns light to the source location within its coarse cell. The difference is subtle at this distance.</p>
+<h2>Joining while the seed preview is delayed</h2><img loading="lazy" src="partial.jpg" alt="The distant ring is grey before. After, terrain colour is visible on the received half."><p>In this controlled client test, half the real Atlas tiles are available and the seed preview is held back. The received part of the ring appears immediately.</p>
+</main><script>
+const shelf=document.getElementById('shelf'),button=document.getElementById('play');
+let playing=false;
+function show(active){playing=active;shelf.src=active?'shelf.webp':'shelf-midpoint.jpg';button.textContent=active?'Show midpoint still':'Play the 20 positions'}
+button.hidden=false;button.onclick=()=>show(!playing);
+if(!matchMedia('(prefers-reduced-motion: reduce)').matches)show(true);
+</script></html>
