@@ -30,6 +30,21 @@ class RingLodQualityTest {
         assertEquals(source.cellColor(3,5), display.cellColor(1,2));
         assertEquals(source.cellHeight(3,5), display.cellHeight(1,2));
         assertEquals(source.cellBlockLight(3,5), display.cellBlockLight(1,2));
+        // These are actual captured block centres, including the wrap and both finite edges.
+        for (int col : new int[] {0, 1, display.columns() - 1}) {
+            for (int row : new int[] {0, 2, display.rows() - 1}) {
+                double x = 2 * col + 1.5;
+                double z = geometry.minWidthZ() + 2 * row + 1.5;
+                var sample = display.sample(x, z);
+                assertEquals(source.sample(x, z), sample);
+                assertEquals(sample, display.sample(x - geometry.circumferenceBlocks(), z));
+            }
+        }
+        double seamHeight = 0.75 * display.cellHeight(display.columns() - 1, 0) + 0.25 * display.cellHeight(0, 0);
+        assertEquals(seamHeight, display.sample(0, geometry.minWidthZ()).height());
+        assertEquals(display.sample(0, geometry.minWidthZ()), display.sample(2048, geometry.minWidthZ()));
+        assertEquals(display.sample(1.5, geometry.minWidthZ() + 1.5), display.sample(1.5, geometry.minWidthZ() - 1));
+        assertEquals(display.sample(1.5, geometry.maxWidthZ() + 0.5), display.sample(1.5, geometry.maxWidthZ() + 2));
         display.putCell(0,0,0,0);
         assertEquals(262144, source.cellCount());
         assertEquals(1, source.cellHeight(1,1));

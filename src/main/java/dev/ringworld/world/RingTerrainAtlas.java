@@ -127,6 +127,16 @@ public final class RingTerrainAtlas {
     public RingGeometry geometry() { return geometry; }
     public long worldHash() { return worldHash; }
     public int sampleStep() { return sampleStep; }
+
+    // A Medium cell uses the block at offset (1, 1), centred 1.5 blocks from the cell edge.
+    double sampleCenterInCells() {
+        return sampleStep == RingLodQuality.MEDIUM.sampleStep() ? 0.75 : 0.5;
+    }
+
+    double sampleCoordinate(double blockOffset) {
+        return blockOffset / sampleStep - sampleCenterInCells();
+    }
+
     public int columns() { return columns; }
     public int rows() { return rows; }
     public int tileColumns() { return divideCeil(columns, TILE_SIZE); }
@@ -165,8 +175,8 @@ public final class RingTerrainAtlas {
         // The rim closure bakes the highest of the two neighbouring rows' side colours even when it equals the top.
         double innerWidth = geometry.widthBlocks() - 2.0 * rimThickness;
         double inset = rimThickness + Math.min(sampleStep, innerWidth);
-        int lowRow = (int)Math.floor(inset / sampleStep - 0.5);
-        int highRow = (int)Math.floor((geometry.widthBlocks() - inset) / sampleStep - 0.5);
+        int lowRow = (int)Math.floor(sampleCoordinate(inset));
+        int highRow = (int)Math.floor(sampleCoordinate(geometry.widthBlocks() - inset));
         long fingerprint = 0xCBF29CE484222325L;
         for (int index = 0; index < cellCount; index++) {
             Page page = pages[index >>> PAGE_SHIFT];
@@ -400,8 +410,8 @@ public final class RingTerrainAtlas {
      * progressively without producing zero-height spikes.
      */
     public SurfaceSample sample(double canonicalX, double canonicalZ) {
-        double atlasX = geometry.wrapX(canonicalX) / sampleStep - 0.5;
-        double atlasZ = (canonicalZ - geometry.minWidthZ()) / sampleStep - 0.5;
+        double atlasX = sampleCoordinate(geometry.wrapX(canonicalX));
+        double atlasZ = sampleCoordinate(canonicalZ - geometry.minWidthZ());
         int x0 = (int)Math.floor(atlasX);
         int z0 = (int)Math.floor(atlasZ);
         double fx = atlasX - x0;

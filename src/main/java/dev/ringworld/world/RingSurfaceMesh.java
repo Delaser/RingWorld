@@ -219,8 +219,8 @@ public final class RingSurfaceMesh {
                     upperU[index] = u;
                     upperV[index] = textureV[index];
                     if (detailed) {
-                        double ax = geometry.wrapX(canonicalX) / atlas.sampleStep() - 0.5;
-                        double az = (sampleZ - geometry.minWidthZ()) / atlas.sampleStep() - 0.5;
+                        double ax = atlas.sampleCoordinate(geometry.wrapX(canonicalX));
+                        double az = atlas.sampleCoordinate(sampleZ - geometry.minWidthZ());
                         int x0 = (int)Math.floor(ax), z0 = (int)Math.floor(az);
                         int highest = Integer.MIN_VALUE;
                         for (int dz = 0; dz < 2; dz++) for (int dx = 0; dx < 2; dx++) {
@@ -232,8 +232,8 @@ public final class RingSurfaceMesh {
                             int height = atlas.cellHeight(col, row);
                             if (height > highest) {
                                 highest = height;
-                                upperU[index] = (col + 0.5F) / atlas.columns();
-                                upperV[index] = (row + 0.5F) / atlas.rows();
+                                upperU[index] = (col + (float)atlas.sampleCenterInCells()) / atlas.columns();
+                                upperV[index] = (row + (float)atlas.sampleCenterInCells()) / atlas.rows();
                                 int side = atlas.cellSideColor(col, row);
                                 edgeColors[index] = side;
                                 upperSideColor[index] = side == atlas.cellColor(col, row) ? -1 : side;
@@ -250,16 +250,16 @@ public final class RingSurfaceMesh {
         private void classifyDrySlopes(RingTerrainAtlas atlas) {
             for (int segment = 0; segment < segments; segment++) {
                 // Inspect the entire footprint including its bilinear texture neighbours, across the X seam.
-                int left = (int)Math.floor((double)segment * atlas.columns() / segments - 0.5);
-                int right = (int)Math.ceil((double)(segment + 1) * atlas.columns() / segments - 0.5);
+                int left = (int)Math.floor((double)segment * atlas.columns() / segments - atlas.sampleCenterInCells());
+                int right = (int)Math.ceil((double)(segment + 1) * atlas.columns() / segments - atlas.sampleCenterInCells());
                 for (int band = 0; band < bands; band++) {
                     int a = index(segment, band), b = index(segment + 1, band);
                     int c = index(segment + 1, band + 1), d = index(segment, band + 1);
                     float min = Math.min(Math.min(heights[a], heights[b]), Math.min(heights[c], heights[d]));
                     float max = Math.max(Math.max(heights[a], heights[b]), Math.max(heights[c], heights[d]));
                     if (max - min < steepHeightThreshold) continue;
-                    int first = Math.max(0, (int)Math.floor(textureV[a] * atlas.rows() - 0.5));
-                    int last = Math.min(atlas.rows() - 1, (int)Math.ceil(textureV[d] * atlas.rows() - 0.5));
+                    int first = Math.max(0, (int)Math.floor(textureV[a] * atlas.rows() - atlas.sampleCenterInCells()));
+                    int last = Math.min(atlas.rows() - 1, (int)Math.ceil(textureV[d] * atlas.rows() - atlas.sampleCenterInCells()));
                     if (dryFootprint(atlas, left, right, first, last)) dryQuads.set(band + segment * bands);
                 }
             }
