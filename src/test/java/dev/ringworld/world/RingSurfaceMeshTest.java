@@ -11,6 +11,34 @@ class RingSurfaceMeshTest {
     private static final long HASH = 0x4D45_5348L;
 
     @Test
+    void waterBackingRequiresFullCoverageAcrossTheWrappedFootprint() {
+        var geometry = new RingGeometry(128, 2048);
+        var atlas = new RingTerrainAtlas(geometry, HASH, 2);
+        int water = 0x335577;
+        for (int row = 0; row < atlas.rows(); row++) {
+            for (int col = 0; col < atlas.columns(); col++) {
+                atlas.putCell(col, row, 63, water, 0, water, 15);
+            }
+        }
+        var profile = RingLodQuality.MEDIUM.profile(geometry, 192);
+        var wet = RingSurfaceMesh.build(geometry, atlas, true, 64, 64, 1, profile);
+        int band = wet.bands() / 2;
+        int last = wet.segments() - 1;
+        assertTrue(wet.triangleVertex(last, band, 1).u() < 0);
+        assertTrue(wet.triangleVertex(0, band, 0).u() < 0);
+        long key = atlas.surfaceHeightFingerprint(0);
+
+        // A partial cell at X=0 contributes to both sides of the seam.
+        atlas.putCell(0, atlas.rows() / 2, 63, water, 0, water, 14);
+        assertNotEquals(key, atlas.surfaceHeightFingerprint(0));
+        var mixed = RingSurfaceMesh.build(geometry, atlas, true, 64, 64, 1, profile);
+        assertEquals(wet.vertexCount(), mixed.vertexCount());
+        assertTrue(mixed.triangleVertex(last, band, 1).u() >= 0);
+        assertTrue(mixed.triangleVertex(0, band, 0).u() >= 0);
+        assertTrue(mixed.triangleVertex(2, band, 0).u() < 0);
+    }
+
+    @Test
     void detailedProductionMeshSharesEveryAdjacentBandBoundaryExactly() {
         RingGeometry geometry = new RingGeometry(256, 16_384);
         RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(

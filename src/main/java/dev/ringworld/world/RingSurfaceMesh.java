@@ -102,6 +102,7 @@ public final class RingSurfaceMesh {
         private final float[] upperV;
         private final int[] upperSideColor;
         private final BitSet dryQuads = new BitSet();
+        private final BitSet waterQuads = new BitSet();
         private final double steepHeightThreshold;
         private final RingGeometry geometry;
         private final boolean bridgeRims;
@@ -246,12 +247,12 @@ public final class RingSurfaceMesh {
                     }
                 }
             }
-            if (textureDrySlopes && detailed && atlas.sampleStep() == RingLodQuality.MEDIUM.sampleStep()) {
-                classifyDrySlopes(atlas);
+            if (detailed) {
+                classifyFootprints(atlas, textureDrySlopes && atlas.sampleStep() == RingLodQuality.MEDIUM.sampleStep());
             }
         }
 
-        private void classifyDrySlopes(RingTerrainAtlas atlas) {
+        private void classifyFootprints(RingTerrainAtlas atlas, boolean textureDrySlopes) {
             for (int segment = 0; segment < segments; segment++) {
                 // Inspect the entire footprint including its bilinear texture neighbours, across the X seam.
                 int left = (int)Math.floor((double)segment * atlas.columns() / segments - atlas.sampleCenterInCells());
@@ -261,12 +262,27 @@ public final class RingSurfaceMesh {
                     int c = index(segment + 1, band + 1), d = index(segment, band + 1);
                     float min = Math.min(Math.min(heights[a], heights[b]), Math.min(heights[c], heights[d]));
                     float max = Math.max(Math.max(heights[a], heights[b]), Math.max(heights[c], heights[d]));
-                    if (max - min < steepHeightThreshold) continue;
+                    boolean flat = max == min;
+                    if (!flat && !(textureDrySlopes && max - min >= steepHeightThreshold)) continue;
                     int first = Math.max(0, (int)Math.floor(textureV[a] * atlas.rows() - atlas.sampleCenterInCells()));
                     int last = Math.min(atlas.rows() - 1, (int)Math.ceil(textureV[d] * atlas.rows() - atlas.sampleCenterInCells()));
-                    if (dryFootprint(atlas, left, right, first, last)) dryQuads.set(band + segment * bands);
+                    int quad = band + segment * bands;
+                    if (flat) {
+                        if (waterFootprint(atlas, left, right, first, last)) waterQuads.set(quad);
+                    } else if (dryFootprint(atlas, left, right, first, last)) {
+                        dryQuads.set(quad);
+                    }
                 }
             }
+        }
+
+        private static boolean waterFootprint(RingTerrainAtlas atlas, int left, int right, int first, int last) {
+            for (int row = first; row <= last; row++) {
+                for (int col = left; col <= right; col++) {
+                    if (atlas.cellWaterCoverage(col, row) != 15) return false;
+                }
+            }
+            return true;
         }
 
         private static boolean dryFootprint(RingTerrainAtlas atlas, int left, int right, int first, int last) {
@@ -296,7 +312,7 @@ public final class RingSurfaceMesh {
                     int a = index(segment, band), b = index(segment + 1, band);
                     int c = index(segment + 1, band + 1), d = index(segment, band + 1);
                     boolean dry = dryQuads.get(segment * bands + band);
-                    float tag = trial != null && trial.replaces(segment, band) ? RingLayerTrial.ORIGINAL : 0f;
+                    float tag = surfaceTag(segment, band);
                     emitTriangle(consumer, a, b, c, dry, tag);
                     emitTriangle(consumer, a, c, d, dry, tag);
                 }
@@ -405,8 +421,19 @@ public final class RingSurfaceMesh {
             boolean dry = dryQuads.get(segment * bands + band);
             int color = vertex < 3 ? triangleColorIndex(a, b, c, dry) : triangleColorIndex(a, c, d, dry);
             return new Vertex(positionsX[point], positionsY[point], positionsZ[point],
-                    color < 0 ? textureU[point] : upperU[color] + (upperSideColor[color] < 0 ? 0 : 2),
+                    taggedU(surfaceTag(segment, band), color < 0 ? textureU[point] : upperU[color] + (upperSideColor[color] < 0 ? 0 : 2)),
                     color < 0 ? textureV[point] : upperV[color]);
+        }
+
+        // Negative U is reserved for flat, fully wet footprints. Keep the layer
+        // tag in its magnitude so the two-layer handoff still selects one surface.
+        private float surfaceTag(int segment, int band) {
+            float layer = trial != null && trial.replaces(segment, band) ? RingLayerTrial.ORIGINAL : 0f;
+            return waterQuads.get(segment * bands + band) ? -1f - layer : layer;
+        }
+
+        private static float taggedU(float tag, float u) {
+            return tag < 0f ? tag - u : tag + u;
         }
 
         private int triangleColorIndex(int a, int b, int c, boolean dry) {
@@ -430,7 +457,7 @@ public final class RingSurfaceMesh {
             // colour down the face. Zero UV derivatives also avoid mip filtering
             // the lower sand/water back into that face. Gentle slopes retain UVs.
             consumer.vertex(positionsX[point], positionsY[point], positionsZ[point],
-                    tag + (color < 0 ? textureU[point] : upperU[color] + (upperSideColor[color] < 0 ? 0 : 2)),
+                    taggedU(tag, color < 0 ? textureU[point] : upperU[color] + (upperSideColor[color] < 0 ? 0 : 2)),
                     color < 0 ? textureV[point] : upperV[color]);
         }
 

@@ -111,6 +111,8 @@ vec4 filteredWall(vec2 uv, float strip) {
 
 void main() {
     vec2 surfaceUv = texCoord0;
+    bool water = surfaceUv.x < 0.0;
+    if (water) surfaceUv.x = -1.0 - surfaceUv.x;
     bool replacement = surfaceUv.x >= 8.0;
     bool covered = surfaceUv.x >= 4.0 && !replacement;
     // Retain the distant single surface outside the transition neighbourhood.
@@ -158,6 +160,12 @@ void main() {
     // Fill missing destination chunks behind native geometry during a teleport.
     // Only colour coverage changes. Near proxy fragments still write far depth.
     float coverageAlpha = mix(proxyAlpha, 1.0, RingWorldRender.z);
+    // Opaque backing only where native geometry leaves the bed uncovered.
+    // Its depth is behind the live range, so loaded coral and sand still win.
+    float waterY = RingWorldVertical.w - intrinsicHeight;
+    bool waterBacking = water && proxyAlpha < 1.0
+            && float(CameraBlockPos.y) - CameraOffset.y > waterY;
+    if (waterBacking) coverageAlpha = 1.0;
     if (coverageAlpha <= 0.001) {
         discard;
     }
@@ -176,6 +184,19 @@ void main() {
     float surfaceDepth = min(nativeDepth, 1.0 + tailOffset);
     gl_FragDepth = mix(1.0, surfaceDepth, proxyAlpha);
 #endif
+
+    if (waterBacking) {
+        // Move along this view ray to just beyond the native fade, keeping the
+        // physical water silhouette. Use the same ordered far tail on both APIs.
+        float inverseW = gl_FragCoord.w * min(1.0, handoffDistance / (1.05 * RingWorldHandoff.y));
+        float backNative = depthMapping.x + depthMapping.y * inverseW;
+#ifdef RINGWORLD_REVERSED_DEPTH
+        float backDepth = max(backNative, depthMapping.z * inverseW);
+#else
+        float backDepth = min(backNative, 1.0 + depthMapping.z * inverseW);
+#endif
+        gl_FragDepth = mix(backDepth, surfaceDepth, proxyAlpha);
+    }
 
     // Match the final live chunks' atmosphere before their geometry fades.
     // ColorModulator.y carries the celestial rain fade (1 - rain).
