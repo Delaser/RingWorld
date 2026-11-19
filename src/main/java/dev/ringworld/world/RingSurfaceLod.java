@@ -117,27 +117,7 @@ public final class RingSurfaceLod {
      * finite band edges, matching the sampler used by the renderer.
      */
     public static int[] buildNextMipArgb(int[] source, int sourceWidth, int sourceHeight) {
-        if (sourceWidth <= 0 || sourceHeight <= 0
-                || source.length != sourceWidth * sourceHeight) {
-            throw new IllegalArgumentException("invalid source mip dimensions");
-        }
-        int targetWidth = Math.max(1, sourceWidth >> 1);
-        int targetHeight = Math.max(1, sourceHeight >> 1);
-        int[] target = new int[targetWidth * targetHeight];
-        for (int y = 0; y < targetHeight; y++) {
-            int y0 = Math.min(sourceHeight - 1, y * 2);
-            int y1 = Math.min(sourceHeight - 1, y0 + 1);
-            for (int x = 0; x < targetWidth; x++) {
-                int x0 = Math.floorMod(x * 2, sourceWidth);
-                int x1 = Math.floorMod(x0 + 1, sourceWidth);
-                target[y * targetWidth + x] = averageArgb(
-                        source[y0 * sourceWidth + x0],
-                        source[y0 * sourceWidth + x1],
-                        source[y1 * sourceWidth + x0],
-                        source[y1 * sourceWidth + x1]);
-            }
-        }
-        return target;
+        return buildNextMip(source, sourceWidth, sourceHeight, true);
     }
 
     /**
@@ -146,25 +126,70 @@ public final class RingSurfaceLod {
      * alpha filtering, unlit terrain must still contribute its RGB.
      */
     public static int[] buildNextMipRgbLight(int[] source, int sourceWidth, int sourceHeight) {
+        return buildNextMip(source, sourceWidth, sourceHeight, false);
+    }
+
+    private static int[] buildNextMip(int[] source, int sourceWidth, int sourceHeight, boolean alphaWeighted) {
         if (sourceWidth <= 0 || sourceHeight <= 0
-                || source.length != sourceWidth * sourceHeight) {
+                || source.length != (long)sourceWidth * sourceHeight) {
             throw new IllegalArgumentException("invalid source mip dimensions");
         }
         int targetWidth = Math.max(1, sourceWidth >> 1);
         int targetHeight = Math.max(1, sourceHeight >> 1);
         int[] target = new int[targetWidth * targetHeight];
+        if ((sourceWidth > 1 && sourceWidth % 2 != 0) || (sourceHeight > 1 && sourceHeight % 2 != 0)) {
+            for (int y = 0; y < targetHeight; y++) {
+                for (int x = 0; x < targetWidth; x++) {
+                    target[y * targetWidth + x] = areaSample(source, sourceWidth, sourceHeight,
+                            targetWidth, targetHeight, x, y, alphaWeighted);
+                }
+            }
+            return target;
+        }
         for (int y = 0; y < targetHeight; y++) {
             int y0 = Math.min(sourceHeight - 1, y * 2);
             int y1 = Math.min(sourceHeight - 1, y0 + 1);
             for (int x = 0; x < targetWidth; x++) {
                 int x0 = Math.floorMod(x * 2, sourceWidth);
                 int x1 = Math.floorMod(x0 + 1, sourceWidth);
-                target[y * targetWidth + x] = averageChannels(
-                        source[y0 * sourceWidth + x0], source[y0 * sourceWidth + x1],
-                        source[y1 * sourceWidth + x0], source[y1 * sourceWidth + x1]);
+                int first = source[y0 * sourceWidth + x0], second = source[y0 * sourceWidth + x1];
+                int third = source[y1 * sourceWidth + x0], fourth = source[y1 * sourceWidth + x1];
+                target[y * targetWidth + x] = alphaWeighted
+                        ? averageArgb(first, second, third, fourth)
+                        : averageChannels(first, second, third, fourth);
             }
         }
         return target;
+    }
+
+    // An odd dimension makes a destination texel overlap up to three source texels
+    // on that axis. Integer overlap lengths keep both ends in the correct UV footprint.
+    private static int areaSample(int[] source, int width, int height, int targetWidth, int targetHeight,
+                                  int x, int y, boolean alphaWeighted) {
+        long left = (long)x * width, top = (long)y * height;
+        long right = left + width, bottom = top + height;
+        long red = 0, green = 0, blue = 0, alpha = 0;
+        for (int sy = (int)(top / targetHeight); (long)sy * targetHeight < bottom; sy++) {
+            long rowStart = (long)sy * targetHeight;
+            long overlapY = Math.min(bottom, rowStart + targetHeight) - Math.max(top, rowStart);
+            for (int sx = (int)(left / targetWidth); (long)sx * targetWidth < right; sx++) {
+                long colStart = (long)sx * targetWidth;
+                long weight = overlapY * (Math.min(right, colStart + targetWidth) - Math.max(left, colStart));
+                int pixel = source[sy * width + sx];
+                alpha += weight * (pixel >>> 24);
+                long colorWeight = alphaWeighted ? weight * (pixel >>> 24) : weight;
+                red += colorWeight * (pixel >> 16 & 255);
+                green += colorWeight * (pixel >> 8 & 255);
+                blue += colorWeight * (pixel & 255);
+            }
+        }
+        long area = (long)width * height;
+        long colorWeight = alphaWeighted ? alpha : area;
+        if (colorWeight == 0) return 0;
+        return (int)((alpha + area / 2) / area) << 24
+                | (int)((red + colorWeight / 2) / colorWeight) << 16
+                | (int)((green + colorWeight / 2) / colorWeight) << 8
+                | (int)((blue + colorWeight / 2) / colorWeight);
     }
 
     private static int averageChannels(int first, int second, int third, int fourth) {
