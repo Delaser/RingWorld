@@ -531,6 +531,30 @@ include twenty positions across one shallow shelf, a real-terrain reference
 at each position, separate shallow/deep measurements, and the four other
 handoff cases.
 
+### Medium sample alignment
+
+Medium keeps the block at local (1, 1) in each two-by-two group. Its physical
+centre is 1.5 blocks from the group origin along both X and Z. The terrain mesh interpolates around that position. Medium resolves each
+GPU colour texel from the original block footprint, so a bank inherits the
+material at its world position. Steep-face UVs,
+dry-slope classification and the rim mesh cache key use the same sample origin.
+The mesh still closes at the physical X seam and still clips to the two inner
+wall faces. Existing Atlas files already store the required samples.
+
+[Twenty matched shoreline positions](media/medium-atlas-alignment/shelf.webp) ·
+[Fixed midpoint, before and after](media/medium-atlas-alignment/midpoint-flip.webp) ·
+[Wrap and both rims](media/medium-atlas-alignment/rim-seam.jpg) ·
+[Per-position measurements](media/medium-atlas-alignment/measurements.csv) ·
+[Fixed-animation water control](media/medium-atlas-alignment/fixed-frame-water.csv)
+
+The seed-255 test used 20 identical positions at 12 chunks with a 22-chunk
+real-terrain reference. With the original water and aquatic-plant sprites
+held on frame zero in all three clients, mean absolute RGB channel error fell
+from 3.12 to 2.87 for the shelf and rose from 3.76 to 3.85 for darker water
+(0–255 scale). At the last eleven positions the shelf improved from 4.14 to
+3.74. With normal animation the stone-edge error rose from 3.87 to 4.01.
+Six additional native views covered the wrap and both rims.
+
 ### Lighting and colour matching
 
 The atlas stores terrain albedo rather than a permanently lit screenshot. The

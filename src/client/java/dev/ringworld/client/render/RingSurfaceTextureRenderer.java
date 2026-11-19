@@ -14,6 +14,7 @@ import dev.ringworld.client.RingClientLodTuning;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingGenerationBoundary;
 import dev.ringworld.world.RingDimensionReport;
+import dev.ringworld.world.RingLodQuality;
 import dev.ringworld.world.RingRenderProfile;
 import dev.ringworld.world.RingSurfaceLod;
 import dev.ringworld.world.RingSurfaceBuildSnapshot;
@@ -274,7 +275,7 @@ public final class RingSurfaceTextureRenderer {
     /** Runs entirely on the existing texture worker, including the complete-only hash scan. */
     private static TextureBuild buildTexture(RingSurfaceBuildSnapshot sourceSnapshot,
                                              long generation, RingRenderProfile profile,
-                                             dev.ringworld.world.RingLodQuality quality,
+                                             RingLodQuality quality,
                                              MeshInputs inputs, RingTerrainPreview preview) {
         if (generation != textureBuildGeneration) throw new java.util.concurrent.CancellationException("obsolete surface job");
         RingSurfaceBuildSnapshot displaySnapshot = quality == null
@@ -294,7 +295,7 @@ public final class RingSurfaceTextureRenderer {
                     atlas.isComplete(), inputs.detailed(), preparedSnapshot.heightFingerprint(), inputs.fingerprint())) {
                 RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(atlas.geometry(), atlas, atlas.isComplete(),
                         inputs.referenceY(), inputs.wallTopY(), inputs.wallHeightBlocks(),
-                        inputs.savedStyle(), inputs.seed(), profile, quality == dev.ringworld.world.RingLodQuality.MEDIUM);
+                        inputs.savedStyle(), inputs.seed(), profile, quality == RingLodQuality.MEDIUM);
                 packed = RingSurfaceGpu.packMesh(mesh, inputs.wallStyle().vertexArgb());
                 int wallColumns = Math.min(16384, profile.textureColumns());
                 nextWallTextureKey = RingWallTexture.contentKey(atlas, inputs.savedStyle(), inputs.seed(),
@@ -360,8 +361,10 @@ public final class RingSurfaceTextureRenderer {
                     heights[index] = (float)sample.height();
                     pixels[index] = RingWaterColor.tint(sample.color(), sample.waterCoverage());
                     if (source != atlas) {
-                        boolean shore = sample.waterCoverage() > 0 && sample.waterCoverage() < 1;
-                        int texel = RingSurfaceLod.detailTexel(source, column, row, targetColumns, targetRows, pixels[index], shore);
+                        // Medium retains captured material at its real world position on the coarser mesh.
+                        boolean sourceColor = atlas.sampleStep() == RingLodQuality.MEDIUM.sampleStep()
+                                || (sample.waterCoverage() > 0 && sample.waterCoverage() < 1);
+                        int texel = RingSurfaceLod.detailTexel(source, column, row, targetColumns, targetRows, pixels[index], sourceColor);
                         pixels[index] = texel & 0xFFFFFF;
                         blockLights[index] = texel >>> 24;
                     } else {

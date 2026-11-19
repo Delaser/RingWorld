@@ -21,9 +21,9 @@ public final class RingSurfaceLod {
 
     private RingSurfaceLod() { }
 
-    /** Fine shoreline colour and light for one GPU texel of a reduced display mesh. */
+    /** Resolve source light and, when requested, surface colour inside one display texel. */
     public static int detailTexel(RingTerrainAtlas source, int x, int y, int width, int height,
-                                  int terrainRgb, boolean shoreline) {
+                                  int terrainRgb, boolean sourceColor) {
         int left = (int)((long)x * source.columns() / width);
         int top = (int)((long)y * source.rows() / height);
         int right = Math.max(left + 1, (int)((long)(x + 1) * source.columns() / width));
@@ -35,7 +35,7 @@ public final class RingSurfaceLod {
                 int level = source.cellBlockLight(col, row);
                 light += level;
                 peak = Math.max(peak, level);
-                if (shoreline) {
+                if (sourceColor) {
                     int rgb = RingWaterColor.tint(source.cellColor(col, row), source.cellWaterCoverage(col, row) / 15.0);
                     red += rgb >> 16 & 255;
                     green += rgb >> 8 & 255;
@@ -43,7 +43,7 @@ public final class RingSurfaceLod {
                 }
             }
         }
-        if (shoreline) terrainRgb = (red / count << 16) | (green / count << 8) | blue / count;
+        if (sourceColor) terrainRgb = (red / count << 16) | (green / count << 8) | blue / count;
         // Preserve a sub-texel lamp at reduced brightness, only in the texel containing it.
         double level = (peak + light / (double)count) * 0.5;
         int alpha = (int)Math.round(level * 255.0 / 15.0);
