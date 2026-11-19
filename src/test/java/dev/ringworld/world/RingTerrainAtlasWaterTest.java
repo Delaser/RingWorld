@@ -54,6 +54,20 @@ class RingTerrainAtlasWaterTest {
         assertThrows(IllegalArgumentException.class, () -> atlas.putCell(0,0,0,0,0,0,16));
     }
 
+    @Test void shallowBedShowsThroughAndDeepWaterKeepsItsBiomeColour() {
+        int water = 0x254484, sand = 0xdbcfa3, stone = 0x7e7e7e;
+        int shallow = RingWaterColor.overBed(water, sand, 1);
+        for (int depth = 2; depth <= RingWaterColor.MAX_BED_DEPTH + 1; depth++) {
+            int next = RingWaterColor.overBed(water, sand, depth);
+            for (int shift : new int[]{0, 8, 16}) {
+                assertTrue(((next >> shift) & 255) <= ((shallow >> shift) & 255));
+            }
+            shallow = next;
+        }
+        assertEquals(water, shallow);
+        assertNotEquals(RingWaterColor.overBed(water, sand, 1), RingWaterColor.overBed(water, stone, 1));
+    }
+
     @Test void matchedTintAppliesToAnyBiomeColourWithBoundedChannels() {
         assertEquals(0x264075, RingWaterColor.tint(0x254484, 1));
         assertEquals(0xE3E3E3, RingWaterColor.tint(0xFFFFFF, 1));

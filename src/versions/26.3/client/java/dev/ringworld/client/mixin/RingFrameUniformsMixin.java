@@ -78,8 +78,9 @@ abstract class RingFrameUniformsMixin {
 
         float minWidthZ = geometry == null ? 0.0F : geometry.minWidthZ();
         float maxWidthZExclusive = geometry == null ? 0.0F : geometry.maxWidthZ() + 1.0F;
-        float halfCircumference = geometry == null ? 0.0F
-                : geometry.circumferenceBlocks() * 0.5F;
+        var cameraEntity = client.getCameraEntity();
+        float teleportCover = geometry == null || cameraEntity == null ? 0.0F
+                : dev.ringworld.client.render.RingSurfaceTextureRenderer.teleportCoverage(client, geometry, cameraEntity.position());
         float viewDistanceBlocks = active == 1
                 ? client.options.getEffectiveRenderDistance() * 16.0F
                 : 0.0F;
@@ -97,9 +98,9 @@ abstract class RingFrameUniformsMixin {
                     .putIVec4(active, circumference, ringWidth, wallHeight)
                     // surface reference, wall top, cloud base, physical centre
                     .putVec4(surfaceReferenceY, wallTopY, cloudBaseY, physicalCenterY)
-                    // min Z, max Z exclusive, half circumference, view distance
+                    // min Z, max Z exclusive, temporary Atlas cover, view distance
                     .putVec4(minWidthZ, maxWidthZExclusive,
-                            halfCircumference, viewDistanceBlocks)
+                            teleportCover, viewDistanceBlocks)
                     // live terrain dither, then visual proxy alpha
                     .putVec4(profile == null ? 0.0F : (float)profile.liveFadeStartBlocks(),
                             profile == null ? 0.0F : (float)profile.liveFadeEndBlocks(),

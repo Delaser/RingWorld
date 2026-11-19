@@ -95,7 +95,7 @@ void main() {
     vec4 color = (UseRgss == 1
             ? sampleRGSS(Sampler0, texCoord0, 1.0f / TextureSize)
             : sampleNearest(Sampler0, texCoord0, 1.0f / TextureSize)) * vertexColor;
-    color = mix(FogColor * vec4(1, 1, 1, color.a), color, ChunkVisibility);
+    color = mix(FogColor * vec4(1, 1, 1, color.a), color, max(ChunkVisibility, RingWorldRender.z));
 #ifdef ALPHA_CUTOUT
     if (color.a < ALPHA_CUTOUT) {
         discard;

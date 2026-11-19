@@ -477,12 +477,31 @@ twice that distance. Both surfaces apply the same rain haze curve. This reuses
 the existing fog uniforms and one slot in the RingWorld uniform block. The pass
 count, texture sampling, chunk generation and Atlas storage format stay the same.
 
-The stored water sample describes the visible fluid surface. It has no seabed
-depth or colour, so detailed shallows, kelp and submerged sand bars can still end
-at the transition. After a long teleport there is a separate failure mode:
-the nearby Atlas cutout uses camera distance and can clear an area before
-Minecraft finishes rendering its chunks. For visual comparisons wait for the
-camera chunk, the chunks towards the subject and the terrain meshes to settle.
+For shallow water, the server now searches the same column up to seven blocks
+below the surface. An opaque bed contributes reflected colour, strongest at one
+block and fading with depth. Aquatic plants can sit between the water and its
+bed. The result fits in the existing surface RGB. Existing worlds can update
+visited chunks normally or run `/ringworld atlas recolour` for saved terrain.
+
+On a camera jump of at least 16 blocks between frames, keep the Atlas visible
+behind the destination. Check for resident chunks inside the ring and an empty
+section-render queue at most ten times per second while waiting. Once ready,
+fade the temporary cover over 350 ms. Only the colour coverage increases:
+normal proxy depth still lets real blocks draw in front. Newly arrived native
+sections use their material colour over the fallback instead of fading from
+sky-coloured fog. This requires an available Atlas mesh.
+
+On NeoForge 26.3 a cold 954-block teleport was captured on copies of the same
+complete 2,048 × 128 ring (seed 255, noon, Medium LOD). At 12 chunks, the
+central lake region was 93.7% sky on arrival and at 0.5 seconds before the fix,
+and 0% in both samples afterward. The region was x=1110–1379, y=800–1359 in
+the 2560 × 1440 captures, with each RGB channel within four of the sky sample
+at (8,8). For the settled shoreline (x=1270–1509, y=420–509), mean absolute
+channel error against the 22-chunk real-terrain reference fell from 11.96 to
+5.87 on the 0–255 scale. These are measurements of this viewpoint.
+
+[Shallow shoreline comparison](media/shallow-water-teleport/shallows.jpg) ·
+[First destination frame](media/shallow-water-teleport/arrival.jpg)
 
 ### Lighting and colour matching
 

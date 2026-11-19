@@ -320,7 +320,7 @@ After updating RingWorld, visited chunks pick up the current Atlas colours as th
 load. To refresh the rest of an existing Atlas, run `/ringworld atlas recolour`.
 Check progress with `/ringworld atlas status`. The pass reads one saved chunk at
 a time and also works with pregeneration disabled. It updates top and side colours
-in populated dry cells whose surface height still agrees with the save. It keeps
+in populated cells whose surface height and water coverage still agree with the save. It keeps
 height, light, water and coverage intact. Clients receive the usual tile updates.
 Missing, unfinished or older-format chunks wait for normal visits. A server restart
 ends the scan and saves applied changes. Run the command again to finish.
