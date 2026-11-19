@@ -495,6 +495,16 @@ magenta. In the underwater crop, 42,457 of 174,258 pixels matched the wall
 colour change before the fix and eight afterward, with water animation running.
 The exposed rim control returned 17,226 marked pixels in each build.
 
+At the reef, the live water surface adds its biome tint even when the
+background already contains the finished Atlas water colour. This produced a
+bright cyan arc. The renderer now shades the submerged background at 30% of
+its surface albedo and restores the full colour over the final fifth of the
+water-sealing interval. Teleport coverage restores the full fallback colour
+as destination chunks load. The native water opacity, reef lighting and
+wall-occlusion depth still use the same paths.
+
+[Large-ring bay at the same camera position before and after](../experiments/two-layer-atlas/large-review/water-band.jpg).
+
 At the edge of live terrain, Minecraft also applies environmental fog. The Atlas
 now carries that colour across the boundary for land, water and walls. Its fog
 distance is capped at the live fade end, and its contribution tapers to zero at

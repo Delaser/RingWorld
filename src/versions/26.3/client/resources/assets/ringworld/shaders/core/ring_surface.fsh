@@ -217,6 +217,7 @@ void main() {
     const vec2 fullSkyNoBlockLight = vec2(0.5 / 16.0, 15.5 / 16.0);
     vec3 surfaceLight = texture(Sampler2, fullSkyNoBlockLight).rgb;
     vec3 litTerrain = sampled.rgb * surfaceLight;
+    if (waterBacking) litTerrain *= ring_handoff_water_backing(handoffDistance);
     // Surface texture alpha is a separate server-authored exposed block-light
     // level. Reveal it only when the live lightmap says environmental daylight
     // is low; daytime terrain RGB and nearby real lighting remain untouched.
