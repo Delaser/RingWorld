@@ -54,9 +54,9 @@ class RingTerrainAtlasWaterTest {
         assertThrows(IllegalArgumentException.class, () -> atlas.putCell(0,0,0,0,0,0,16));
     }
 
-    @Test void acceptedTintAppliesToAnyBiomeColourWithBoundedChannels() {
-        assertEquals(0x385798, RingWaterColor.tint(0x254484, 1));
-        assertEquals(0xFFFFFF, RingWaterColor.tint(0xFFFFFF, 1));
+    @Test void matchedTintAppliesToAnyBiomeColourWithBoundedChannels() {
+        assertEquals(0x264075, RingWaterColor.tint(0x254484, 1));
+        assertEquals(0xE3E3E3, RingWaterColor.tint(0xFFFFFF, 1));
         assertEquals(0, RingWaterColor.tint(0, 1));
         assertNotEquals(0x446633, RingWaterColor.tint(0x446633, 1));
     }

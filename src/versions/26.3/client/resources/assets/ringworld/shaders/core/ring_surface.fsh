@@ -166,9 +166,7 @@ void main() {
     // Add bounded rain haze beyond the live-terrain transition. Full rain
     // retains 65% of the normal reveal instead of erasing the terrain.
     float rain = 1.0 - clamp(ColorModulator.y, 0.0, 1.0);
-    float rainDistance = smootherstep(RingWorldDetail.x, RingWorldDetail.y, intrinsicDistance);
-    float reveal = ring_handoff_reveal(intrinsicDistance)
-                   * (1.0 - 0.35 * rain * rainDistance);
+    float reveal = ring_handoff_reveal(intrinsicDistance, rain);
 
     // ColorModulator.w is the incomplete-Atlas generation haze. It begins
     // dense, clears with authoritative coverage, and reaches exactly zero for
@@ -205,5 +203,7 @@ void main() {
     // The incomplete texture is deliberately opaque: real generated colours
     // flavour nearby unknown cells, then each published revision cross-fades
     // into the next instead of exposing a hard tile update.
-    fragColor = vec4(mix(ring_handoff_edge_color(FogColor.rgb), litTerrain, reveal), proxyAlpha);
+    vec3 terrain = mix(ring_handoff_edge_color(FogColor.rgb), litTerrain, reveal);
+    float fog = ring_handoff_environment(handoffDistance, FogEnvironmentalStart, FogEnvironmentalEnd);
+    fragColor = vec4(mix(terrain, FogColor.rgb, fog * FogColor.a), proxyAlpha);
 }

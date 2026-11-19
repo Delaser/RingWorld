@@ -1,6 +1,6 @@
 package dev.ringworld.world;
 
-/** Accepted 26.3 water appearance, applied before texture mip filtering. */
+/** Distant water target, applied before mip filtering. Keep material.glsl in sync. */
 public final class RingWaterColor {
     private RingWaterColor() { }
 
@@ -14,7 +14,7 @@ public final class RingWaterColor {
     }
 
     private static int channel(int value, int peak, double amount) {
-        double water = (value * 0.88 + peak * 0.12) * 1.15;
+        double water = (value * 0.94 + peak * 0.06) * 0.89;
         return Math.max(0, Math.min(255, (int)Math.round(value + (water - value) * amount)));
     }
 }
