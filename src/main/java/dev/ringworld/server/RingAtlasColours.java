@@ -9,6 +9,8 @@ import net.minecraft.tags.BlockTags;
 import net.minecraft.tags.FluidTags;
 import net.minecraft.world.level.FoliageColor;
 import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.biome.BiomeManager;
+import dev.ringworld.world.RingWaterColor;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.chunk.ChunkAccess;
@@ -21,9 +23,26 @@ final class RingAtlasColours {
     private final Map<Biome, ClimateSample> climates = new IdentityHashMap<>();
 
     int surface(ServerLevel world, ChunkAccess chunk, BlockPos pos, BlockState state) {
-        if (state.getFluidState().is(FluidTags.WATER)) {
-            return RingSurfaceLod.applyTextureLuminance(world.getBiome(pos).value().getWaterColor(), 0.58);
+        return surface(world, chunk, pos, state, world.getBiomeManager());
+    }
+
+    int surface(ServerLevel world, ChunkAccess chunk, BlockPos pos, BlockState state, BiomeManager waterBiomes) {
+        if (!state.getFluidState().is(FluidTags.WATER)) return drySurface(world, chunk, pos, state);
+        int water = RingSurfaceLod.applyTextureLuminance(waterBiomes.getBiome(pos).value().getWaterColor(), 0.58);
+        if (state.isSolidRender()) return water;
+        var bed = pos.mutable();
+        for (int depth = 1; depth <= RingWaterColor.MAX_BED_DEPTH && bed.getY() > chunk.getMinY(); depth++) {
+            bed.setY(bed.getY() - 1);
+            BlockState material = chunk.getBlockState(bed);
+            if (material.isSolidRender()) {
+                return RingWaterColor.overBed(water, drySurface(world, chunk, bed, material), depth);
+            }
+            if (!material.getFluidState().is(FluidTags.WATER)) break;
         }
+        return water;
+    }
+
+    private int drySurface(ServerLevel world, ChunkAccess chunk, BlockPos pos, BlockState state) {
         if (state.is(Blocks.SPRUCE_LEAVES)) return tint(FoliageColor.FOLIAGE_EVERGREEN, 126);
         if (state.is(Blocks.BIRCH_LEAVES)) return tint(FoliageColor.FOLIAGE_BIRCH, 130);
         if (state.is(Blocks.CHERRY_LEAVES)) return 0xe5adc2;

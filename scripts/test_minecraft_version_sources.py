@@ -202,14 +202,20 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         self.assertIn("isZZeroToOne() ? 0.0001F : -0.9999F", new)
 
     def test_proxy_depth_coverage_retains_smooth_alpha(self):
-        proxy = (ROOT / "src/client/resources/assets/ringworld/shaders/core/ring_surface.fsh").read_text()
-        self.assertIn("gl_FragDepth = mix(0.0, surfaceDepth, proxyAlpha)", proxy)
-        self.assertIn("gl_FragDepth = mix(1.0, surfaceDepth, proxyAlpha)", proxy)
-        self.assertIn("float nativeDepth = depthMapping.x + depthMapping.y * gl_FragCoord.w", proxy)
-        self.assertNotIn("ring_dither_threshold", proxy)
-        self.assertIn("if (proxyAlpha <= 0.001)", proxy)
-        self.assertIn("mix(ring_handoff_edge_color(FogColor.rgb), litTerrain, reveal)", proxy)
-        self.assertIn("mix(terrain, FogColor.rgb, fog * FogColor.a), proxyAlpha", proxy)
+        for resources, visibility in ((ROOT / "src/client/resources", "ChunkVisibility"),
+                                      (VERSION_ROOT / "26.3/client/resources", "chunkVisibility")):
+            shaders = resources / "assets/ringworld/shaders/core"
+            proxy = (shaders / "ring_surface.fsh").read_text()
+            live = (shaders / "terrain.fsh").read_text()
+            self.assertIn(f"max({visibility}, RingWorldRender.z)", live)
+            self.assertIn("gl_FragDepth = mix(0.0, surfaceDepth, proxyAlpha)", proxy)
+            self.assertIn("gl_FragDepth = mix(1.0, surfaceDepth, proxyAlpha)", proxy)
+            self.assertIn("float nativeDepth = depthMapping.x + depthMapping.y * gl_FragCoord.w", proxy)
+            self.assertNotIn("ring_dither_threshold", proxy)
+            self.assertIn("mix(proxyAlpha, 1.0, RingWorldRender.z)", proxy)
+            self.assertIn("if (coverageAlpha <= 0.001)", proxy)
+            self.assertIn("mix(ring_handoff_edge_color(FogColor.rgb), litTerrain, reveal)", proxy)
+            self.assertIn("mix(terrain, FogColor.rgb, fog * FogColor.a), coverageAlpha", proxy)
 
     def test_altitude_handoff_covers_terrain_below_native_vertical_range(self):
         # Both resource ABIs must coordinate coverage, including 26.3 OIT.

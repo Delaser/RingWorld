@@ -514,6 +514,11 @@ public final class RingAtlasPregenerationService {
         if (chunkX < 0 || chunkX >= chunksAlong || chunkZ < minChunkZ || chunkZ >= minChunkZ + chunksAcross) {
             return CaptureResult.OUTSIDE;
         }
+        // Detached FULL chunks carry their saved biome palette. Vanilla resolves its fuzzy
+        // quart coordinates first. At the chunk edge the normal non-loading resolver wins.
+        var waterBiomes = coloursOnly ? world.getBiomeManager().withDifferentSource((x, y, z) ->
+                (x >> 2) == chunkX && (z >> 2) == chunkZ ? chunk.getNoiseBiome(x, y, z) : world.getNoiseBiome(x, y, z))
+                : world.getBiomeManager();
         boolean changed = false;
         int step = atlas.sampleStep();
         int minBlockZ = chunk.getPos().getMinBlockZ();
@@ -527,15 +532,15 @@ public final class RingAtlasPregenerationService {
                 BlockPos surface = new BlockPos(blockX, surfaceY, blockZ);
                 BlockState surfaceState = chunk.getBlockState(surface);
                 int atlasX = blockX / step;
-                // Disk maintenance is colour-only. Leave missing, stale and wet cells to normal live capture.
+                int water = surfaceState.getFluidState().is(FluidTags.WATER) ? 15 : 0;
+                // Only recolour samples whose saved surface and material coverage still agree.
                 if (coloursOnly && (!atlas.hasCell(atlasX, row) || atlas.cellHeight(atlasX, row) != surfaceY + 1
-                        || surfaceState.isAir() || atlas.cellWaterCoverage(atlasX, row) != 0
-                        || surfaceState.getFluidState().is(FluidTags.WATER))) continue;
-                int color = state.colours.surface(world, chunk, surface, surfaceState);
+                        || surfaceState.isAir() || atlas.cellWaterCoverage(atlasX, row) != water)) continue;
+                int color = state.colours.surface(world, chunk, surface, surfaceState, waterBiomes);
                 int blockLight = coloursOnly ? atlas.cellBlockLight(atlasX, row) : surfaceBlockLight(world, surface, surfaceState);
                 if (atlas.putBlockSample(blockX, blockZ, surfaceY + 1, color, blockLight,
                         sideColor(state.colours, world, chunk, surface, surfaceState, color, atlas.sampleStep()),
-                        surfaceState.getFluidState().is(FluidTags.WATER) ? 15 : 0)) {
+                        water)) {
                     changed = true;
                     if (coloursOnly) state.revisionPending = true;
                     state.checkpoints.changedCell(atlasX, row, atlas.columns());

@@ -1616,7 +1616,7 @@ version numbers.
   import ZIP, macOS/Linux/Windows managed-patch copy/retirement paths, package
   manifest hashes and tests synchronized. Never silently downgrade a loader.
 - `/ringworld atlas status|start|pause|resume` controls background pregeneration.
-- `/ringworld atlas recolour` refreshes existing dry Atlas samples from live
+- `/ringworld atlas recolour` refreshes existing land and water Atlas samples from live
   or already-saved full chunks, with one read in flight. Preserve cell coverage,
   dimensions, lighting and the existing storage identity for colour-only updates.
   See [Operations](docs/OPERATIONS.md) for progress and restart behaviour.

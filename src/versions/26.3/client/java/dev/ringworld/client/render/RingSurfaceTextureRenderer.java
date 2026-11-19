@@ -77,6 +77,15 @@ public final class RingSurfaceTextureRenderer {
                 return thread;
             });
 
+    private static final RingTeleportCoverage teleportCoverage = new RingTeleportCoverage();
+
+    public static float teleportCoverage(Minecraft client, RingGeometry geometry, Vec3 camera) {
+        if (client.level == null || vertexBuffer == null || !geometry.equals(bufferedGeometry)
+                || dev.ringworld.client.RingMinecraftClientAccess.camera(client).getFluidInCamera()
+                        == net.minecraft.world.level.material.FogType.WATER) return 0;
+        return teleportCoverage.opacity(client, geometry, camera);
+    }
+
     private RingSurfaceTextureRenderer() { }
 
     /** Loader adapters register this pipeline during their client setup event. */
@@ -623,6 +632,7 @@ public final class RingSurfaceTextureRenderer {
     }
 
     public static void clear() {
+        teleportCoverage.clear();
         textureBuildGeneration++;
         wallPaletteMatrix = new Matrix4f();
         CompletableFuture<TextureBuild> abandonedBuild = pendingTextureBuild;

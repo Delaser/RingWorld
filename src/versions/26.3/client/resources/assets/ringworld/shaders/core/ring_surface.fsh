@@ -142,7 +142,10 @@ void main() {
         RingWorldHandoff.w,
         handoffDistance
     );
-    if (proxyAlpha <= 0.001) {
+    // Fill missing destination chunks behind native geometry during a teleport.
+    // Only colour coverage changes. Near proxy fragments still write far depth.
+    float coverageAlpha = mix(proxyAlpha, 1.0, RingWorldRender.z);
+    if (coverageAlpha <= 0.001) {
         discard;
     }
 
@@ -205,5 +208,5 @@ void main() {
     // into the next instead of exposing a hard tile update.
     vec3 terrain = mix(ring_handoff_edge_color(FogColor.rgb), litTerrain, reveal);
     float fog = ring_handoff_environment(handoffDistance, FogEnvironmentalStart, FogEnvironmentalEnd);
-    fragColor = vec4(mix(terrain, FogColor.rgb, fog * FogColor.a), proxyAlpha);
+    fragColor = vec4(mix(terrain, FogColor.rgb, fog * FogColor.a), coverageAlpha);
 }

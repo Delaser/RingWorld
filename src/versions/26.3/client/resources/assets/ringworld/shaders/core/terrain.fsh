@@ -101,7 +101,7 @@ void main() {
             ? sampleRGSS(Sampler0, texCoord0, 1.0f / TextureSize)
             : sampleNearest(Sampler0, texCoord0, 1.0f / TextureSize)) * vertexColor;
     #ifndef OIT_ALPHA_ONLY
-    color = mix(FogColor * vec4(1, 1, 1, color.a), color, chunkVisibility);
+    color = mix(FogColor * vec4(1, 1, 1, color.a), color, max(chunkVisibility, RingWorldRender.z));
 #endif
 #ifdef ALPHA_CUTOUT
     if (color.a < ALPHA_CUTOUT) {
