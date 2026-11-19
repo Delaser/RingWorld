@@ -136,6 +136,9 @@ abstract class RingFrameUniformsMixin {
                     distortion == null ? 0.0F : (float)distortion.coreBlocks(),
                     distortion == null ? 0.0F : (float)distortion.blendEnd(),
                     distortion == null ? 0.0F : (float)distortion.referenceRadius());
+            var camera = dev.ringworld.client.RingMinecraftClientAccess.camera(client).position();
+            builder.putVec4(geometry == null ? 0F : (float)geometry.wrapX(camera.x), (float)camera.z,
+                    dev.ringworld.client.render.RingSurfaceTextureRenderer.waterSurface() == null ? 0F : 1F, 0F);
             var data = builder.get();
             dev.ringworld.client.render.RingSurfaceGpu.writeBuffer(ringworld$buffer.slice(), data);
         }

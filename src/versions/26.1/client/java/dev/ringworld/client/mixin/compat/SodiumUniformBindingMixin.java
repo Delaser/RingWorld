@@ -1,5 +1,11 @@
 package dev.ringworld.client.mixin.compat;
 
+import com.mojang.blaze3d.opengl.GlSampler;
+import com.mojang.blaze3d.opengl.GlTextureView;
+import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.textures.AddressMode;
+import com.mojang.blaze3d.textures.FilterMode;
+import dev.ringworld.client.render.RingSurfaceTextureRenderer;
 import dev.ringworld.client.RingMinecraftClientAccess;
 import dev.ringworld.client.render.RingRenderUniforms;
 import net.minecraft.client.Minecraft;
@@ -7,6 +13,7 @@ import org.lwjgl.opengl.GL20C;
 import org.lwjgl.opengl.GL30C;
 import org.lwjgl.opengl.GL31C;
 import org.lwjgl.opengl.GL32C;
+import org.lwjgl.opengl.GL33C;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Pseudo;
 import org.spongepowered.asm.mixin.Unique;
@@ -22,6 +29,10 @@ abstract class SodiumUniformBindingMixin {
     @Unique private long ringworld$previousStart, ringworld$previousSize;
     @Unique private int ringworld$genericBinding;
     @Unique private boolean ringworld$bound;
+    // Stock Sodium uses units 0–3. Borrow a separate unit and restore its previous state.
+    @Unique private static final int RINGWORLD_SURFACE_UNIT = 7;
+    @Unique private int ringworld$previousTexture, ringworld$previousSampler;
+    @Unique private boolean ringworld$surfaceBound;
 
     @Inject(method = "setupState", at = @At("TAIL"))
     private void ringworld$bind(CallbackInfo ci) {
@@ -38,6 +49,22 @@ abstract class SodiumUniformBindingMixin {
         GL31C.glUniformBlockBinding(program, block, 1);
         GL30C.glBindBufferBase(GL31C.GL_UNIFORM_BUFFER, 1, ((SodiumGlBufferAccessor)buffer).ringworld$handle());
         ringworld$bound = true;
+        int location = GL20C.glGetUniformLocation(program, "RingWorldSurface");
+        if (location >= 0) {
+            var surface = RingSurfaceTextureRenderer.waterSurface();
+            if (surface == null) surface = Minecraft.getInstance().gameRenderer.levelLightmap();
+            int active = GL20C.glGetInteger(GL20C.GL_ACTIVE_TEXTURE);
+            GL20C.glActiveTexture(GL20C.GL_TEXTURE0 + RINGWORLD_SURFACE_UNIT);
+            ringworld$previousTexture = GL20C.glGetInteger(GL20C.GL_TEXTURE_BINDING_2D);
+            ringworld$previousSampler = GL30C.glGetIntegeri(GL33C.GL_SAMPLER_BINDING, RINGWORLD_SURFACE_UNIT);
+            GL20C.glBindTexture(GL20C.GL_TEXTURE_2D, ((GlTextureView)surface).texture().glId());
+            var sampler = RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE,
+                    FilterMode.LINEAR, FilterMode.LINEAR, true);
+            GL33C.glBindSampler(RINGWORLD_SURFACE_UNIT, ((GlSampler)sampler).getId());
+            GL20C.glUniform1i(location, RINGWORLD_SURFACE_UNIT);
+            GL20C.glActiveTexture(active);
+            ringworld$surfaceBound = true;
+        }
         int camera = GL20C.glGetUniformLocation(program, "RingWorldCameraY");
         if (camera >= 0) {
             GL20C.glUniform1f(camera, (float)RingMinecraftClientAccess.camera(Minecraft.getInstance()).position().y);
@@ -54,6 +81,14 @@ abstract class SodiumUniformBindingMixin {
                     ringworld$previousStart, ringworld$previousSize);
         }
         GL20C.glBindBuffer(GL31C.GL_UNIFORM_BUFFER, ringworld$genericBinding);
+        if (ringworld$surfaceBound) {
+            int active = GL20C.glGetInteger(GL20C.GL_ACTIVE_TEXTURE);
+            GL20C.glActiveTexture(GL20C.GL_TEXTURE0 + RINGWORLD_SURFACE_UNIT);
+            GL20C.glBindTexture(GL20C.GL_TEXTURE_2D, ringworld$previousTexture);
+            GL33C.glBindSampler(RINGWORLD_SURFACE_UNIT, ringworld$previousSampler);
+            GL20C.glActiveTexture(active);
+            ringworld$surfaceBound = false;
+        }
         ringworld$bound = false;
     }
 }

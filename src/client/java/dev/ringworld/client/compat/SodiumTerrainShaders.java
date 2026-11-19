@@ -20,8 +20,10 @@ public final class SodiumTerrainShaders {
         boolean explicit = source.contains("layout(location = 0)");
         String direction = vertex ? "out" : "in";
         String header = "\n// RingWorld terrain adapter\n" + include("render_uniforms")
-                + (vertex ? include("projection") : include("handoff") + include("material"))
+                + (vertex ? include("projection") : include("handoff"))
                 + (explicit ? "layout(location = 4) " : "") + direction + " vec2 ringworldDistances;\n";
+        header += (explicit ? "layout(location = 5) " : "") + direction + " vec2 ringWaterUv;\n";
+        if (!vertex) header += "#ifndef OIT_ALPHA_ONLY\nuniform sampler2D u_LightTex;\n#define RING_WATER_LIGHTMAP u_LightTex\n#endif\n" + include("material");
         if (vertex) {
             header += engine
                     ? (explicit ? "#include" : "#moj_import") + " <minecraft:globals.glsl>\n"
@@ -31,9 +33,12 @@ public final class SodiumTerrainShaders {
                     vec3 position = _vert_position + translation;
                     vec3 ringworldFlat = position;
                     ringworldDistances = vec2(-1.0);
+                    ringWaterUv = vec2(0.0);
                     if (RingWorldLayout.x != 0) {
                         vec3 ringworldCamera = vec3(0.0, CAMERA_Y, 0.0);
                         ringworldDistances = vec2(length(position.xz), length(position));
+                        ringWaterUv = (position.xz + RingWorldWaterChart.xy - vec2(0.0, RingWorldRender.x))
+                                / vec2(RingWorldLayout.yz);
                         position = ring_project_position(position + ringworldCamera, ringworldCamera);
                     }
                     """.replace("CAMERA_Y", cameraY));

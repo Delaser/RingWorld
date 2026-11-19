@@ -31,9 +31,7 @@ public final class RingSurfacePlaceholder {
         int cells = Math.multiplyExact(targetColumns, targetRows);
         int[] argb = new int[cells];
         float[] heights = new float[cells];
-        if (preview == null) {
-            // The first visible replacement is the coherent 512x16 seed
-            // preview, never the retired procedural map or growing smears.
+        if (preview == null && atlas.presentCount() == 0) {
             Arrays.fill(argb, 0xFF000000 | NEUTRAL_GREY);
             Arrays.fill(heights, (float)RingGeometry.SURFACE_Y);
             return new Surface(targetColumns, targetRows, argb, heights);
@@ -48,6 +46,9 @@ public final class RingSurfacePlaceholder {
                 if (realColor >= 0) {
                     argb[targetIndex] = 0xFF000000 | realColor;
                     heights[targetIndex] = atlas.cellHeight(atlasColumn, atlasRow);
+                } else if (preview == null) {
+                    argb[targetIndex] = 0xFF000000 | NEUTRAL_GREY;
+                    heights[targetIndex] = (float)RingGeometry.SURFACE_Y;
                 } else {
                     // Sample directly at GPU resolution so the 4096x64 stage
                     // is not first collapsed through the 2048x32 Atlas grid.

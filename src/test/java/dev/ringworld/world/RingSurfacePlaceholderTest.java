@@ -19,16 +19,18 @@ class RingSurfacePlaceholderTest {
     }
 
     @Test
-    void atlasCellsRemainHiddenUntilTheFirstCoherentPreviewArrives() {
+    void knownCellsAreVisibleWhileMissingCellsWaitForTheSeedPreview() {
         RingGeometry geometry = new RingGeometry(128, 2_048);
         RingTerrainAtlas atlas = new RingTerrainAtlas(geometry, 42L);
         atlas.putCell(0, 0, 91, 0x123456);
         atlas.putCell(atlas.columns() - 1, 0, 87, 0x654321);
 
         RingSurfacePlaceholder.Surface surface = RingSurfacePlaceholder.resolve(atlas);
-        for (int pixel : surface.argb()) {
-            assertEquals(0xFF000000 | RingSurfacePlaceholder.NEUTRAL_GREY, pixel);
-        }
+        assertEquals(0xFF123456, surface.argb()[0]);
+        assertEquals(91F, surface.heights()[0]);
+        assertEquals(0xFF654321, surface.argb()[atlas.columns() - 1]);
+        assertEquals(0xFF000000 | RingSurfacePlaceholder.NEUTRAL_GREY, surface.argb()[1]);
+        assertEquals((float)RingGeometry.SURFACE_Y, surface.heights()[1]);
     }
 
     @Test

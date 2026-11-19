@@ -49,6 +49,8 @@ public enum RingLodQuality {
                 count++;
             }
         }
-        return count == 0 ? 0 : (int)Math.round((double)sum / count);
+        if (sum == 0 || sum == count * 15) return sum == 0 ? 0 : 15;
+        // Keep even a single wet or dry block distinguishable at Low.
+        return Math.clamp((int)Math.round((double)sum / count), 1, 14);
     }
 }

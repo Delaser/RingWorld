@@ -79,6 +79,13 @@ public final class RingSurfaceTextureRenderer {
 
     private static final RingTeleportCoverage teleportCoverage = new RingTeleportCoverage();
 
+    /** Only a complete, currently displayed Atlas can supply live water colours. */
+    public static GpuTextureView waterSurface() {
+        var atlas = ClientRingState.terrainAtlas();
+        return atlas != null && atlas.worldHash() == bufferedWorldHash && surfaceCompletion == 1F
+                ? surfaceTextureView : null;
+    }
+
     public static float teleportCoverage(Minecraft client, RingGeometry geometry, Vec3 camera) {
         if (client.level == null || vertexBuffer == null || !geometry.equals(bufferedGeometry)
                 || dev.ringworld.client.RingMinecraftClientAccess.camera(client).getFluidInCamera()
@@ -304,7 +311,7 @@ public final class RingSurfaceTextureRenderer {
             }
             if (generation != textureBuildGeneration) throw new java.util.concurrent.CancellationException("obsolete surface job");
             return new TextureBuild(preparedSnapshot,
-                    buildTexturePixels(atlas, generation, profile, preview), packed, inputs.wallStyle(),
+                    buildTexturePixels(atlas, sourceSnapshot.atlas(), generation, profile, preview), packed, inputs.wallStyle(),
                     wallImages, nextWallTextureKey);
         } catch (RuntimeException | Error exception) {
             if (packed != null) packed.close();
@@ -313,7 +320,7 @@ public final class RingSurfaceTextureRenderer {
         }
     }
 
-    private static TextureImages buildTexturePixels(RingTerrainAtlas atlas, long generation,
+    private static TextureImages buildTexturePixels(RingTerrainAtlas atlas, RingTerrainAtlas source, long generation,
                                                      RingRenderProfile profile, RingTerrainPreview preview) {
         RingGeometry geometry = atlas.geometry();
         // A partial atlas never needs the expanded final texture: its source
@@ -352,7 +359,14 @@ public final class RingSurfaceTextureRenderer {
                     int index = row * targetColumns + column;
                     heights[index] = (float)sample.height();
                     pixels[index] = RingWaterColor.tint(sample.color(), sample.waterCoverage());
-                    blockLights[index] = lightAlpha(sample.blockLight());
+                    if (source != atlas) {
+                        boolean shore = sample.waterCoverage() > 0 && sample.waterCoverage() < 1;
+                        int texel = RingSurfaceLod.detailTexel(source, column, row, targetColumns, targetRows, pixels[index], shore);
+                        pixels[index] = texel & 0xFFFFFF;
+                        blockLights[index] = texel >>> 24;
+                    } else {
+                        blockLights[index] = lightAlpha(sample.blockLight());
+                    }
                 }
             }
         } else {

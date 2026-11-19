@@ -40,7 +40,7 @@ class RingShaderContractTest {
         while (matcher.find()) names.add(matcher.group(1));
         assertEquals(List.of("RingWorldLayout", "RingWorldVertical", "RingWorldRender", "RingWorldHandoff",
                 "RingWorldDetail", "RingWorldAtmosphere", "RingWorldAtmosphere2", "RingWorldAtlasLight",
-                "RingWorldWaterStill", "RingWorldWaterFlow", "RingWorldDistortion"), names);
+                "RingWorldWaterStill", "RingWorldWaterFlow", "RingWorldDistortion", "RingWorldWaterChart"), names);
         assertEquals(names.size() * 16, RingShaderContract.UNIFORM_BYTES);
         assertTrue(own.contains("uniform " + RingShaderContract.UNIFORM));
         // Fabric exposes stock game assets in its test classpath; NeoForge's

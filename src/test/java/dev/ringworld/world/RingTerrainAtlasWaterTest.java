@@ -54,6 +54,22 @@ class RingTerrainAtlasWaterTest {
         assertThrows(IllegalArgumentException.class, () -> atlas.putCell(0,0,0,0,0,0,16));
     }
 
+    @Test void lowDetailKeepsASingleWaterBlockAndLampAtTheirSourcePositions() {
+        var atlas = new RingTerrainAtlas(GEOMETRY, 123);
+        for (int z = 0; z < atlas.rows(); z++) for (int x = 0; x < atlas.columns(); x++)
+            atlas.putCell(x, z, 63, 0xaaa077, 0, 0x776655, 0);
+        atlas.putCell(1, 1, 63, 0x254484, 15, 0x254484, 15);
+        var low = RingLodQuality.LOW.displaySnapshot(atlas);
+        assertEquals(1, low.cellWaterCoverage(0, 0));
+        int lamp = RingSurfaceLod.detailTexel(atlas, 1, 1, atlas.columns(), atlas.rows(), 0, true);
+        assertEquals(255, lamp >>> 24);
+        assertEquals(RingWaterColor.tint(0x254484, 1), lamp & 0xffffff);
+        assertEquals(0xaaa077, RingSurfaceLod.detailTexel(atlas, 2, 1, atlas.columns(), atlas.rows(), 0, true));
+        int reduced = RingSurfaceLod.detailTexel(atlas, 0, 0, atlas.columns()/8, atlas.rows()/8, 0, true);
+        assertTrue((reduced >>> 24) > 0 && (reduced >>> 24) < 255);
+        assertEquals(0, RingSurfaceLod.detailTexel(atlas, 1, 0, atlas.columns()/8, atlas.rows()/8, 0, false));
+    }
+
     @Test void shallowBedShowsThroughAndDeepWaterKeepsItsBiomeColour() {
         int water = 0x254484, sand = 0xdbcfa3, stone = 0x7e7e7e;
         int shallow = RingWaterColor.overBed(water, sand, 1);

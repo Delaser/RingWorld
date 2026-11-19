@@ -5,7 +5,7 @@ import net.minecraft.resources.Identifier;
 /** Shared material-shader contract, independent of a particular renderer mod. */
 public final class RingShaderContract {
     public static final String UNIFORM = "RingWorld";
-    public static final int UNIFORM_BYTES = 11 * 16;
+    public static final int UNIFORM_BYTES = 12 * 16;
     private RingShaderContract() { }
 
     /** Keep adapted entry points in our namespace, leaving stock assets untouched. */

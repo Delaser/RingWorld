@@ -22,6 +22,8 @@ out vec2 texCoord0;
 out float ringIntrinsicDistance;
 out float ringHandoffDistance;
 
+out vec2 ringWaterUv;
+
 float ring_circumference() {
     return float(RingWorldLayout.y);
 }
@@ -41,6 +43,7 @@ vec4 minecraft_sample_lightmap(sampler2D lightMap, ivec2 uv) {
 
 void main() {
     vec3 vanillaPos = Position + (ChunkPosition - CameraBlockPos) + CameraOffset;
+    ringWaterUv = vec2(0.0);
     if (!ring_active()) {
         gl_Position = ProjMat * ModelViewMat * vec4(vanillaPos, 1.0);
         sphericalVertexDistance = fog_spherical_distance(vanillaPos);
@@ -53,6 +56,8 @@ void main() {
     }
 
     vec3 vertexCanonical = Position + vec3(ChunkPosition);
+    ringWaterUv = vec2((float(ChunkPosition.x % RingWorldLayout.y) + Position.x) / float(RingWorldLayout.y),
+            (vertexCanonical.z - RingWorldRender.x) / float(RingWorldLayout.z));
     // Vanilla's CameraOffset is the translation from the integer camera
     // origin to the real camera (normally the negated fractional position).
     // Therefore camera world-space is block origin minus this offset. Using

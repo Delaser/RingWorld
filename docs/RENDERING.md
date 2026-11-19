@@ -503,6 +503,34 @@ channel error against the 22-chunk real-terrain reference fell from 11.96 to
 [Shallow shoreline comparison](media/shallow-water-teleport/shallows.jpg) ·
 [First destination frame](media/shallow-water-teleport/arrival.jpg)
 
+### Shallow shelves and partial Atlas handoff
+
+When live water seals, it samples the displayed Atlas at the same world position.
+A complete texture from the current world supplies the bed-reflected colour,
+lit by the live sky lightmap. Water keeps the biome fallback while the texture
+is unavailable. Sampling mip level zero explicitly avoids unstable derivatives
+where water and dry fragments share a quad. The opacity band remains 68–90%.
+
+Low and Medium can reduce the terrain mesh while retaining finer texture
+detail. Mixed shoreline cells take their texture colour from the source
+footprint, tinting wet samples individually. The light channel also uses that
+footprint. When several source samples map to one texel, half the peak plus
+half the mean keeps small bright sources local. When a partial Atlas arrives
+ahead of its seed preview, received cells supply colour and height immediately.
+Only missing cells use the neutral placeholder.
+
+Cliff material still comes from the sampled column. At a chunk boundary, an
+existing adjacent Atlas height or a resident neighbour supplies the drop. The
+X lookup wraps and the Z lookup stops at the rims. This requires no new chunk
+tickets. The existing `/ringworld atlas recolour` pass can refresh side colours
+from saved terrain. The texture and partial-preview changes work with existing
+Atlas data.
+
+The [paired in-game comparisons](media/atlas-shoreline-handoff/index.html)
+include twenty positions across one shallow shelf, a real-terrain reference
+at each position, separate shallow/deep measurements, and the four other
+handoff cases.
+
 ### Lighting and colour matching
 
 The atlas stores terrain albedo rather than a permanently lit screenshot. The

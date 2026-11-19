@@ -13,6 +13,7 @@ abstract class SodiumPipelineBindingsMixin {
     @Redirect(method = "<clinit>", at = @At(value = "INVOKE", target = "Lcom/mojang/renderpearl/api/pipeline/BindGroupLayout$Builder;build()Lcom/mojang/renderpearl/api/pipeline/BindGroupLayout;", ordinal = 0))
     private static BindGroupLayout ringworld$declare(BindGroupLayout.Builder builder) {
         return builder.withUniform("Globals", UniformType.UNIFORM_BUFFER)
-                .withUniform("RingWorld", UniformType.UNIFORM_BUFFER).build();
+                .withUniform("RingWorld", UniformType.UNIFORM_BUFFER)
+                .withUniform("RingWorldSurface", UniformType.COMBINED_IMAGE_SAMPLER).build();
     }
 }

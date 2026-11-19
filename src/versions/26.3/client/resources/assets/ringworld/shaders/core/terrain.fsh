@@ -5,6 +5,11 @@
 #include <minecraft:globals.glsl>
 #include <ringworld:render_uniforms.glsl>
 #include <ringworld:handoff.glsl>
+layout(location = 7) in vec2 ringWaterUv;
+#ifndef OIT_ALPHA_ONLY
+uniform sampler2D Sampler2;
+#define RING_WATER_LIGHTMAP Sampler2
+#endif
 #include <ringworld:material.glsl>
 #include <minecraft:terrainglobals.glsl>
 #include <minecraft:oit.glsl>
