@@ -44,6 +44,14 @@ vec4 ring_material_coverage(vec4 color, vec4 vertexColor, vec2 texCoord0,
             // Seal translucent water over the same 3D band in which the Atlas appears.
             float waterMatch = ring_material_smootherstep(RingWorldHandoff.z, RingWorldHandoff.x,
                                             ringHandoffDistance);
+            // The Atlas captures the bed from above. At grazing angles its ledges
+            // appear on the water plane, so retain the live bed's parallax longer.
+            // Fully seal at the original distance, before live coverage drops.
+            if (RingWorldWaterChart.z > 0.5) {
+                float horizontalFraction = ringIntrinsicDistance / max(ringHandoffDistance, 0.001);
+                float grazing = smoothstep(0.70, 0.97, horizontalFraction);
+                waterMatch = mix(waterMatch, waterMatch * waterMatch * waterMatch, grazing);
+            }
             float matchedAlpha = mix(color.a, 1.0, waterMatch);
             vec3 atlasWater = vertexColor.rgb * 0.58;
             float waterPeak = max(atlasWater.r, max(atlasWater.g, atlasWater.b));
