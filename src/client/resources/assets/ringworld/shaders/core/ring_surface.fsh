@@ -110,11 +110,23 @@ vec4 filteredWall(vec2 uv, float strip) {
 
 void main() {
     vec2 surfaceUv = texCoord0;
-    if (surfaceUv.x >= 2.0) surfaceUv.x -= 2.0;
+    bool replacement = surfaceUv.x >= 8.0;
+    bool covered = surfaceUv.x >= 4.0 && !replacement;
+    // Retain the distant single surface outside the transition neighbourhood.
+    // Near coverage continues to use the regular native-to-Atlas fade below.
+    if (covered || replacement) {
+        float outer = RingWorldHandoff.y * 1.4;
+        bool useLayers = handoffDistance >= RingWorldHandoff.z && handoffDistance < outer;
+        if (replacement != useLayers) discard;
+        surfaceUv.x -= replacement ? 8.0 : 4.0;
+    }
+    bool side = surfaceUv.x >= 2.0;
+    if (side) surfaceUv.x -= 2.0;
     vec4 previous = texture(Sampler1, surfaceUv);
     vec4 current = texture(Sampler0, surfaceUv);
     vec4 sampled = mix(previous, current, clamp(ColorModulator.z, 0.0, 1.0));
-    if (texCoord0.x >= 2.0) sampled.rgb = vertexColor.rgb * 0.85;
+    if (side) sampled.rgb = vertexColor.rgb * 0.85;
+    if (replacement) sampled = vec4(vertexColor.rgb, 0.0);
     bool rimBridge = texCoord0.y < 0.0 || texCoord0.y > 1.0;
     if (rimBridge) {
         float worldY = RingWorldVertical.w - intrinsicHeight;

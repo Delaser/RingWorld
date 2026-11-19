@@ -111,6 +111,7 @@ public final class RingSurfaceMesh {
         private final int capBands;
         private final float[][] wallTops;
         private final int[] edgeColors;
+        private final RingLayerTrial trial;
         private final float bridgeMinimumZ;
         private final float bridgeMaximumZ;
         private final float outerMinimumZ;
@@ -129,6 +130,9 @@ public final class RingSurfaceMesh {
             // Atlas completes. Keep the style-derived closed rim at every Atlas
             // stage and terminate terrain at its inner faces instead.
             bridgeRims = wallHeightBlocks > 0;
+            trial = detailed && bridgeRims ? RingLayerTrial.matching(atlas, segments, bands,
+                    innerFaces.minimumZ() - RIM_SURFACE_OVERLAP_BLOCKS,
+                    innerFaces.maximumZ() + RIM_SURFACE_OVERLAP_BLOCKS) : null;
             minimumRimBottom = new float[segments + 1];
             maximumRimBottom = new float[segments + 1];
             // The nominal top is the alignment plane. The saved height controls
@@ -278,6 +282,7 @@ public final class RingSurfaceMesh {
         public int bands() { return bands; }
         public int vertexCount() {
             int surface = Math.multiplyExact(Math.multiplyExact(segments, bands), 6);
+            if (trial != null) surface = Math.addExact(surface, trial.vertexCount());
             // Four wall faces, bounded cap bands on both rims, two terrain edges.
             return bridgeRims ? Math.addExact(surface,
                     Math.multiplyExact(segments, 36 + 12 * capBands)) : surface;
@@ -291,10 +296,12 @@ public final class RingSurfaceMesh {
                     int a = index(segment, band), b = index(segment + 1, band);
                     int c = index(segment + 1, band + 1), d = index(segment, band + 1);
                     boolean dry = dryQuads.get(segment * bands + band);
-                    emitTriangle(consumer, a, b, c, dry);
-                    emitTriangle(consumer, a, c, d, dry);
+                    float tag = trial != null && trial.replaces(segment, band) ? RingLayerTrial.ORIGINAL : 0f;
+                    emitTriangle(consumer, a, b, c, dry, tag);
+                    emitTriangle(consumer, a, c, d, dry, tag);
                 }
             }
+            if (trial != null) trial.emit(consumer, geometry);
             consumer.sideColor(-1);
             if (bridgeRims) {
                 for (int segment = 0; segment < segments; segment++) {
@@ -410,20 +417,20 @@ public final class RingSurfaceMesh {
             return heights[highest] - lowest >= steepHeightThreshold ? highest : -1;
         }
 
-        private void emitTriangle(VertexConsumer consumer, int a, int b, int c, boolean dry) {
+        private void emitTriangle(VertexConsumer consumer, int a, int b, int c, boolean dry, float tag) {
             int color = triangleColorIndex(a, b, c, dry);
             consumer.sideColor(color < 0 ? -1 : upperSideColor[color]);
-            emitVertex(consumer, a, color);
-            emitVertex(consumer, b, color);
-            emitVertex(consumer, c, color);
+            emitVertex(consumer, a, color, tag);
+            emitVertex(consumer, b, color, tag);
+            emitVertex(consumer, c, color, tag);
         }
 
-        private void emitVertex(VertexConsumer consumer, int point, int color) {
+        private void emitVertex(VertexConsumer consumer, int point, int color, float tag) {
             // Constant texel-centre UVs on a steep face take the upper sample's
             // colour down the face. Zero UV derivatives also avoid mip filtering
             // the lower sand/water back into that face. Gentle slopes retain UVs.
             consumer.vertex(positionsX[point], positionsY[point], positionsZ[point],
-                    color < 0 ? textureU[point] : upperU[color] + (upperSideColor[color] < 0 ? 0 : 2),
+                    tag + (color < 0 ? textureU[point] : upperU[color] + (upperSideColor[color] < 0 ? 0 : 2)),
                     color < 0 ? textureV[point] : upperV[color]);
         }
 
