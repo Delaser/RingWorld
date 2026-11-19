@@ -336,6 +336,13 @@ shading before upload. The renderer also constructs an explicit box-filtered
 mip chain with periodic X sampling and clamped Z sampling. The GPU sampler uses
 repeat U, clamp V, linear magnification/minification, and mip filtering.
 
+When either source dimension at a mip level is odd, the worker averages the
+area each source texel occupies in the destination. For example, the 13 → 6
+step of a 416-block-wide texture includes the last strip at the positive-Z
+rim. The same rule preserves the last longitude column at the X wrap. Terrain
+filters block light separately from RGB. Wall textures weight RGB by opacity.
+Even levels retain the four-sample filter.
+
 The 26.3 wall colour atlas now also uses distance-filtered mipmaps; its old
 single-level nearest sampler made contrasting block colours shimmer under
 camera movement. The worker builds alpha-weighted mips (decay holes do not

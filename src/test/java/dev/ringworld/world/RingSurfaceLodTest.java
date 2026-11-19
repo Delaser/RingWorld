@@ -2,6 +2,7 @@ package dev.ringworld.world;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -92,6 +93,20 @@ class RingSurfaceLodTest {
                 }
             }
         }
+    }
+
+    @Test
+    void oddMipIncludesTheLastRowAndSharesTheMiddleColumnByArea() {
+        // 5 -> 2 splits the middle column equally and includes the entire final column.
+        int[] terrain = {0, 0, 0xff640000, 0, 0xff000064};
+        assertArrayEquals(new int[]{0x33140000, 0x99140028},
+                RingSurfaceLod.buildNextMipRgbLight(terrain, 5, 1));
+        assertArrayEquals(new int[]{0x33640000, 0x99210043},
+                RingSurfaceLod.buildNextMipArgb(terrain, 5, 1));
+        int[] corner = new int[9];
+        corner[8] = 0xffaabbcc;
+        assertArrayEquals(new int[]{0x1c131517}, RingSurfaceLod.buildNextMipRgbLight(corner, 3, 3));
+        assertArrayEquals(new int[]{0x1caabbcc}, RingSurfaceLod.buildNextMipArgb(corner, 3, 3));
     }
 
     @Test
