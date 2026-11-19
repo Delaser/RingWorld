@@ -85,6 +85,24 @@ def legacy_edge(x, z):
     tx = u - i
     tz = v - j
     return sum((sample_medium((i + dx) * 4, minz + (j + dz) * (maxz - minz) / bands) * (tx if dx else 1 - tx) * (tz if dz else 1 - tz) for dx in (0, 1) for dz in (0, 1)))
+def stitch_edge(A, B, floor, color):
+    # Each coarse lattice corner is a bend in the old edge, including corners
+    # inside one of our two-block samples. Closing to only the ends cuts across it.
+    dx, dz = B[0] - A[0], B[1] - A[1]
+    if dx:
+        cuts = [(k * 4 - A[0]) / dx for k in range(int(np.floor(min(A[0], B[0]) / 4)) + 1, int(np.ceil(max(A[0], B[0]) / 4)))]
+    else:
+        spacing = (maxz - minz) / bands
+        cuts = [(minz + k * spacing - A[1]) / dz for k in range(int(np.floor((min(A[1], B[1]) - minz) / spacing)) + 1, int(np.ceil((max(A[1], B[1]) - minz) / spacing)))]
+    points = [(A[0] + dx*t, A[1] + dz*t) for t in [0.0, *sorted(cuts), 1.0]]
+    for a, b in zip(points, points[1:]):
+        # Sub-block overlap also covers raster precision and the difference
+        # between the curved projection of a coarse chord and a subdivided one.
+        ya, yb = legacy_edge(*a), legacy_edge(*b)
+        lo_a, hi_a = min(ya, floor) - 0.125, max(ya, floor) + 0.125
+        lo_b, hi_b = min(yb, floor) - 0.125, max(yb, floor) + 0.125
+        add(color, [(a[0], lo_a, a[1]), (b[0], lo_b, b[1]), (b[0], hi_b, b[1]), (a[0], hi_a, a[1])])
+
 for (xs, xe, zs, ze) in regions:
     mask[xs:xe, zs:ze] = 1
     X = edges(xs * 4, xe * 4)
@@ -103,16 +121,22 @@ for (xs, xe, zs, ze) in regions:
                 neighbour = grid.get((i + di, j + dj))
                 if neighbour is None:
                     if not low:
-                        atop = legacy_edge(*A)
-                        btop = legacy_edge(*B)
-                        if max(abs(atop - high), abs(btop - high)) > 0.01:
-                            add(tinted(rgb, shade), [(A[0], atop, A[1]), (B[0], btop, B[1]), (B[0], high, B[1]), (A[0], high, A[1])])
+                        stitch_edge(A, B, high, tinted(rgb, shade))
                     neighbour = profile((x + xx) / 2 + di * 2, (z + zz) / 2 + dj * 2)
                 exposed = [(low, high)]
                 for (nl, nh, _) in neighbour:
                     exposed = [(u, v) for (a0, b0) in exposed for (u, v) in [(a0, min(nl, b0)), (max(nh, a0), b0)] if u < v]
                 for (u, v) in exposed:
-                    add(tinted(rgb, shade), [(A[0], u, A[1]), (B[0], u, B[1]), (B[0], v, B[1]), (A[0], v, A[1])])
+                    # Add a tiny overlap along the side plane. At a stepped
+                    # corner, shortening the wall to exactly the fine chord
+                    # can expose the background between two vertical faces.
+                    eps = 1 / 32
+                    ax = A[0] - eps * np.sign(B[0] - A[0])
+                    az = A[1] - eps * np.sign(B[1] - A[1])
+                    bx = B[0] + eps * np.sign(B[0] - A[0])
+                    bz = B[1] + eps * np.sign(B[1] - A[1])
+                    add(tinted(rgb, shade), [(ax, u-eps, az), (bx, u-eps, bz),
+                                            (bx, v+eps, bz), (ax, v+eps, az)])
 with gzip.open(Path(sys.argv[3]), 'wb') as f:
     f.write(struct.pack('>Iqiiff', 1381452849, world, segs, bands, minz, maxz))
     f.write(mask.tobytes())

@@ -59,6 +59,7 @@ public final class RingSurfaceTextureRenderer {
     private static long textureMorphStartedNanos;
     private static RingGeometry bufferedGeometry;
     private static long bufferedWorldHash;
+    private static int trialWindow = -1;
     private static int bufferedAtlasRevision = -1;
     private static boolean bufferedMeshDetailed;
     private static long bufferedMeshHeightFingerprint =
@@ -114,6 +115,13 @@ public final class RingSurfaceTextureRenderer {
         if (dev.ringworld.client.RingMinecraftClientAccess.camera(client).getFluidInCamera()
                 == net.minecraft.world.level.material.FogType.WATER) return;
         long resourceStarted = System.nanoTime();
+        int desiredWindow = dev.ringworld.world.RingLayerTrial.cameraWindow(camera.x, geometry.circumferenceBlocks());
+        if (desiredWindow != trialWindow && pendingTextureBuild == null && stagedUpload == null) {
+            trialWindow = desiredWindow;
+            dev.ringworld.world.RingLayerTrial.selectWindow(trialWindow);
+            bufferedAtlasRevision = -1;
+            bufferedMeshHeightFingerprint = Long.MIN_VALUE;
+        }
         ensureResources(geometry, atlas);
         flagRenderStall("surface resource update (including allocation/release)", resourceStarted);
         if (!geometry.equals(bufferedGeometry) || atlas.worldHash() != bufferedWorldHash

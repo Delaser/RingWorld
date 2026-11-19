@@ -6,7 +6,6 @@ from pathlib import Path
 import gzip, zlib, struct, io, sys
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
-regions = Path(sys.argv[1]) / 'dimensions/minecraft/overworld/region'
 
 class NBT:
 
@@ -43,6 +42,7 @@ class NBT:
         return self.tag(10)
 
 def chunks():
+    regions = Path(sys.argv[1]) / 'dimensions/minecraft/overworld/region'
     for path in sorted(regions.glob('r.*.*.mca')):
         (_, rx, rz, _) = path.name.split('.')
         (rx, rz) = map(int, (rx, rz))

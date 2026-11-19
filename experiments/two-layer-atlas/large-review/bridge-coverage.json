@@ -1,0 +1,42 @@
+[
+  {
+    "view": 5,
+    "baseline": 0,
+    "previous": 2,
+    "fixed": 0,
+    "real": 0,
+    "new_pixels": 0
+  },
+  {
+    "view": 6,
+    "baseline": 0,
+    "previous": 4,
+    "fixed": 0,
+    "real": 0,
+    "new_pixels": 0
+  },
+  {
+    "view": 7,
+    "baseline": 0,
+    "previous": 4,
+    "fixed": 0,
+    "real": 0,
+    "new_pixels": 0
+  },
+  {
+    "view": 8,
+    "baseline": 0,
+    "previous": 6,
+    "fixed": 0,
+    "real": 0,
+    "new_pixels": 0
+  },
+  {
+    "view": 9,
+    "baseline": 9,
+    "previous": 11,
+    "fixed": 9,
+    "real": 0,
+    "new_pixels": 0
+  }
+]

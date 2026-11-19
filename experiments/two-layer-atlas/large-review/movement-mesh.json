@@ -1,0 +1,26 @@
+{
+  "baseline": {
+    "worker_mesh_ms": [
+      354.051333
+    ],
+    "render_thread_mesh_upload_ms": [
+      42.727417
+    ]
+  },
+  "candidate": {
+    "worker_mesh_ms": [
+      490.689542,
+      353.4645,
+      459.0465,
+      536.159125,
+      395.899333
+    ],
+    "render_thread_mesh_upload_ms": [
+      68.598167,
+      39.477208,
+      40.58375,
+      53.039291,
+      45.762041
+    ]
+  }
+}

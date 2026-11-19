@@ -8,7 +8,7 @@ import java.nio.file.Path;
 import java.util.zip.GZIPInputStream;
 
 /** Opt-in development capture of a saved world's two-layer patches. */
-final class RingLayerTrial {
+public final class RingLayerTrial {
     static final float ORIGINAL = 4f;
     static final float REPLACEMENT = 8f;
     private final long worldHash;
@@ -36,6 +36,40 @@ final class RingLayerTrial {
         }
     }
 
+    private RingLayerTrial(RingLayerTrialPages.Header header, boolean[] mask, byte[][] pages) throws IOException {
+        worldHash = header.world();
+        segments = header.segments();
+        bands = header.bands();
+        minZ = header.minZ();
+        maxZ = header.maxZ();
+        replaced = mask;
+        int faces = 0;
+        for (byte[] page : pages) {
+            if (page.length % 52 != 0) throw new IOException("Invalid page length");
+            faces = Math.addExact(faces, page.length / 52);
+        }
+        colors = new int[faces];
+        corners = new float[Math.multiplyExact(faces, 12)];
+        int pos = 0;
+        for (byte[] page : pages) {
+            var data = java.nio.ByteBuffer.wrap(page);
+            while (data.hasRemaining()) {
+                colors[pos] = data.getInt();
+                for (int j = 0; j < 12; j++) corners[pos*12+j] = data.getFloat();
+                pos++;
+            }
+        }
+    }
+
+    public static int cameraWindow(double x, int circumference) {
+        if (!RingLayerTrialPages.ENABLED) return 0;
+        return Math.floorMod((int)Math.floor(x / 256), Math.max(1, circumference / 256));
+    }
+
+    public static void selectWindow(int window) {
+        RingLayerTrialPages.window = window;
+    }
+
     private static final class Capture {
         static final RingLayerTrial DATA = load();
         private static RingLayerTrial load() {
@@ -50,6 +84,27 @@ final class RingLayerTrial {
     }
 
     static RingLayerTrial matching(RingTerrainAtlas atlas, int segments, int bands, double minZ, double maxZ) {
+        if (RingLayerTrialPages.ENABLED) {
+            try {
+                var header = RingLayerTrialPages.header();
+                if (header.world() != atlas.worldHash() || segments != header.segments() || bands != header.bands()
+                        || header.minZ() != minZ || header.maxZ() != maxZ) return null;
+                int first = RingLayerTrialPages.window * 4 - 6;
+                byte[][] pages = new byte[16][];
+                boolean[] mask = new boolean[segments * bands];
+                for (int i = 0; i < pages.length; i++) {
+                    int page = Math.floorMod(first+i, header.digests().length);
+                    pages[i] = RingLayerTrialPages.read(header.digests()[page], 8_000_000);
+                    int stride = header.pageSegments() * bands;
+                    System.arraycopy(header.mask(), page * stride, mask, page * stride, stride);
+                }
+                var result = new RingLayerTrial(header, mask, pages);
+                System.out.println("Layer trial page window " + first + " faces=" + result.colors.length);
+                return result;
+            } catch (IOException e) {
+                throw new IllegalStateException("Unable to read trial layer pages", e);
+            }
+        }
         var data = Capture.DATA;
         if (data == null || data.worldHash != atlas.worldHash() || data.segments != segments || data.bands != bands
                 || data.minZ != minZ || data.maxZ != maxZ) return null;

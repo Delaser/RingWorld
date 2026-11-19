@@ -2,6 +2,10 @@
 
 This isolated client experiment compares a single-height surface with a ground surface and one overhead span. The two acceptance scenes are a natural forest by the rim and a 101-block stone-brick bridge built from ordinary blocks in a disposable copy of seed 255. The bridge has four polished-andesite piers and spruce parapets. The original world and the published mod are unaffected.
 
+## Full Large ring follow-up
+
+The later [Large ring measurements and bridge correction](large-review/README.md) use all 65,536 saved chunks and a separate client page cache. The original two-patch measurements below are the historical comparison. The replay fixture now includes the final bridge boundary and corner fix.
+
 ## Rendering
 
 With the JVM property `ringworld.layerTrial` set to the absolute path of the capture, the detailed mesh worker adds the replacement faces and marks the corresponding original terrain triangles. The shader selects the layer mesh between the proxy fade start and 1.4 times the native fade end. Normal depth and atmospheric handoff still apply. Outside that band the original surface draws. The outer switch is a hard boundary in this trial. Both meshes are submitted even when only one is visible.
