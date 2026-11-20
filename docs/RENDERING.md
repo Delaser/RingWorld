@@ -477,6 +477,42 @@ increases. The previous straight RGB blend brightened the partly transparent
 water. The GPU and the Atlas texture worker use the same biome-relative tint.
 Existing saved water samples work immediately with the new client.
 
+From above a deep reef, the sightline through translucent water can reach the
+end of the live seabed while the water surface is still well inside render
+distance. The far Atlas wall used to show through that opening. For flat mesh
+quads whose entire sampled footprint is water, the Atlas now draws the water
+colour behind the live terrain. Near the camera it places that colour just
+past the live fade in depth, then brings it up to the normal Atlas surface
+through the handoff. Loaded coral and sand still draw in front. Mixed
+shoreline cells retain the ordinary handoff, and a submerged camera still
+skips the Atlas. This reuses the existing mesh, draw pass and saved water
+coverage. No Atlas regeneration is needed.
+
+[Large-ring reef before and after](../experiments/two-layer-atlas/large-review/reef-water.jpg).
+The same camera on NeoForge 26.3, Medium LOD, 12 server chunks, was captured
+twice per build, with ordinary colours and with only the Atlas rim marked
+magenta. In the underwater crop, 42,457 of 174,258 pixels matched the wall
+colour change before the fix and eight afterward, with water animation running.
+The exposed rim control returned 17,226 marked pixels in each build.
+
+At the reef, the live water surface adds its biome tint even when the
+background already contains the finished Atlas water colour. This produced a
+bright cyan arc. The renderer now shades the submerged background at 30% of
+its surface albedo and restores the full colour over the final fifth of the
+water-sealing interval. Teleport coverage restores the full fallback colour
+as destination chunks load. The native water opacity, reef lighting and
+wall-occlusion depth still use the same paths.
+
+At the same 12-chunk Large-ring bay viewpoint, the peak brightness above the
+surrounding water fell from 16.44 to 1.36 on a 0–255 scale. The measurement
+uses the central 80 columns of an 800 × 450 frame and interpolates between the
+water on either side of the band. At the earlier reef viewpoint, colouring the
+Atlas wall magenta produced zero strong marker pixels in the underwater crop
+and 17,226 on the exposed rim. Both checks used the packaged NeoForge 26.3
+client with Medium detail.
+
+[Bay before and after](../experiments/two-layer-atlas/large-review/water-band.jpg) · [Two-layer trial, controls and known costs](../experiments/two-layer-atlas/README.md)
+
 At the edge of live terrain, Minecraft also applies environmental fog. The Atlas
 now carries that colour across the boundary for land, water and walls. Its fog
 distance is capped at the live fade end, and its contribution tapers to zero at

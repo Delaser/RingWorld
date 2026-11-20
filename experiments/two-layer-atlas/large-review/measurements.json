@@ -1,0 +1,180 @@
+{
+  "baseline": {
+    "cold": {
+      "login_s": 1,
+      "detail_s": 425,
+      "bytes": 0,
+      "pages": 0,
+      "first_window_layer_bytes": 0,
+      "first_ready": "16384x256 source atlas expanded to 16384x512 GPU texture, 6979584 vertices, 4194304 cells (100.0%), mesh=terrain-height",
+      "windows": [],
+      "frames": [
+        33.337624999999996,
+        37.7392646,
+        43.38619357999998,
+        91.395709
+      ]
+    },
+    "warm": {
+      "login_s": 1,
+      "detail_s": 7,
+      "bytes": 0,
+      "pages": 0,
+      "first_window_layer_bytes": 0,
+      "first_ready": "16384x256 source atlas expanded to 16384x512 GPU texture, 6979584 vertices, 4194304 cells (100.0%), mesh=terrain-height",
+      "windows": [],
+      "frames": [
+        17.911896,
+        34.155943449999995,
+        37.517490659999986,
+        78.76816699999999
+      ]
+    },
+    "by_site": {
+      "jungle": {
+        "n": 2000,
+        "median": 33.328625,
+        "p95": 34.7920976,
+        "p99": 40.86004982
+      },
+      "spruce": {
+        "n": 2000,
+        "median": 33.333209,
+        "p95": 34.823410100000004,
+        "p99": 42.397558329999995
+      }
+    },
+    "steady": {
+      "n": 4000,
+      "ms": [
+        33.332708499999995,
+        34.8163559,
+        41.517872579999995,
+        91.395709
+      ],
+      "over50": 18
+    },
+    "travel": [
+      {
+        "crossing": 0,
+        "n": 175,
+        "p95": 37.2,
+        "max": 69.13,
+        "over50": 3
+      },
+      {
+        "crossing": 1,
+        "n": 178,
+        "p95": 34.78,
+        "max": 40.37,
+        "over50": 0
+      },
+      {
+        "crossing": 2,
+        "n": 178,
+        "p95": 34.78,
+        "max": 41.28,
+        "over50": 0
+      },
+      {
+        "crossing": 3,
+        "n": 177,
+        "p95": 34.81,
+        "max": 57.81,
+        "over50": 1
+      }
+    ]
+  },
+  "candidate": {
+    "cold": {
+      "login_s": 1,
+      "detail_s": 416,
+      "bytes": 3742157,
+      "pages": 27,
+      "first_window_layer_bytes": 459176,
+      "first_ready": "16384x256 source atlas expanded to 16384x512 GPU texture, 7123152 vertices, 4194304 cells (100.0%), mesh=terrain-height",
+      "windows": [
+        "Layer trial page window 26 faces=23928",
+        "Layer trial page window 102 faces=236206"
+      ],
+      "frames": [
+        33.347875,
+        46.391362199999996,
+        69.03506266999997,
+        183.62824999999998
+      ]
+    },
+    "warm": {
+      "login_s": 1,
+      "detail_s": 11,
+      "bytes": 0,
+      "pages": 0,
+      "first_window_layer_bytes": 0,
+      "first_ready": "16384x256 source atlas expanded to 16384x512 GPU texture, 8396820 vertices, 4194304 cells (100.0%), mesh=terrain-height",
+      "windows": [
+        "Layer trial page window 102 faces=236206",
+        "Layer trial page window 26 faces=23928"
+      ],
+      "frames": [
+        28.347042000000002,
+        34.7937795,
+        41.35653316,
+        72.491
+      ]
+    },
+    "by_site": {
+      "jungle": {
+        "n": 2000,
+        "median": 33.32962499999999,
+        "p95": 34.7769607,
+        "p99": 41.055416
+      },
+      "spruce": {
+        "n": 2000,
+        "median": 33.36610399999999,
+        "p95": 45.23726075,
+        "p99": 66.45131249999999
+      }
+    },
+    "steady": {
+      "n": 4000,
+      "ms": [
+        33.333667,
+        41.33269789999999,
+        61.381214409999956,
+        183.62824999999998
+      ],
+      "over50": 85
+    },
+    "travel": [
+      {
+        "crossing": 0,
+        "n": 172,
+        "p95": 38.63,
+        "max": 97.74,
+        "over50": 4
+      },
+      {
+        "crossing": 1,
+        "n": 175,
+        "p95": 35.17,
+        "max": 77.64,
+        "over50": 2
+      },
+      {
+        "crossing": 2,
+        "n": 175,
+        "p95": 36.16,
+        "max": 81.24,
+        "over50": 2
+      },
+      {
+        "crossing": 3,
+        "n": 176,
+        "p95": 34.8,
+        "max": 71.6,
+        "over50": 2
+      }
+    ]
+  }
+}

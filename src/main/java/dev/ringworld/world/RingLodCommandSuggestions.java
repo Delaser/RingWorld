@@ -1,11 +1,20 @@
 package dev.ringworld.world;
 
+import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.FloatArgumentType;
+import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
 /** Client chat validation metadata; actual execution stays in the loader's client dispatcher. */
 public final class RingLodCommandSuggestions {
     private RingLodCommandSuggestions() {}
+
+    public static <S> LiteralArgumentBuilder<S> band(Command<S> show, Command<S> set) {
+        return LiteralArgumentBuilder.<S>literal("band").executes(show)
+                .then(RequiredArgumentBuilder.<S, Float>argument("width",
+                        FloatArgumentType.floatArg(RingLayerTrial.MIN_BAND, RingLayerTrial.MAX_BAND)).executes(set));
+    }
 
     public static <S> void ensurePresent(CommandDispatcher<S> dispatcher) {
         var root = dispatcher.getRoot().getChild("ringworld");
@@ -19,8 +28,9 @@ public final class RingLodCommandSuggestions {
                             .executes(context -> 0)));
             dispatcher.register(LiteralArgumentBuilder.<S>literal("ringworld").then(distortion));
         }
-        if (root != null && root.getChild("lod") != null) return;
+        if (root != null && root.getChild("lod") != null && root.getChild("lod").getChild("band") != null) return;
         var lod = LiteralArgumentBuilder.<S>literal("lod").executes(context -> 0);
+        lod.then(band(context -> 0, context -> 0));
         lod.then(LiteralArgumentBuilder.<S>literal("show").executes(context -> 0));
         lod.then(LiteralArgumentBuilder.<S>literal("reset").executes(context -> 0));
         for (var quality : RingLodQuality.values()) {

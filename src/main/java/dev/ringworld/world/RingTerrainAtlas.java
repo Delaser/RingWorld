@@ -183,6 +183,9 @@ public final class RingTerrainAtlas {
             long sample = page.present[index & PAGE_MASK]
                     ? 0x1_0000L | Short.toUnsignedLong(page.heights[index & PAGE_MASK])
                     : 0L;
+            if (sample != 0 && ((page.blockLights[index & PAGE_MASK] & 255) >>> 4) == 15) {
+                sample |= 1L << 49;
+            }
             int row = index / columns;
             boolean rim = rimThickness > 0 && (row == lowRow || row == lowRow + 1 || row == highRow || row == highRow + 1);
             boolean distinct = page.sideColors[index & PAGE_MASK] != page.colors[index & PAGE_MASK];

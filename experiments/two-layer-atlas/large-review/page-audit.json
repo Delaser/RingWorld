@@ -1,0 +1,11 @@
+{
+  "pages": 512,
+  "empty_pages": 98,
+  "covered_quads": 170700,
+  "faces": 3679601,
+  "vertices": 22077606,
+  "downloadable_bytes": 51416784,
+  "zip_bytes": 51436531,
+  "atlas_bytes": 13573323,
+  "manifest": "f37310ddaa036b06ae38df92a28a75e2580817a4ccf0f940b0682f95d5eb6b2e"
+}

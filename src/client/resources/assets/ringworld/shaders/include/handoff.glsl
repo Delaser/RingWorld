@@ -22,6 +22,15 @@ float ring_handoff_reveal(float distance, float rain) {
     return reveal * (1.0 - haze * detail) * (1.0 - 0.35 * rain * detail);
 }
 
+// A live water surface already supplies the biome tint. In the overlap, the
+// Atlas colour behind it represents the submerged bed. Restore the surface
+// colour before the live surface dithers away, or immediately for a teleport.
+float ring_handoff_water_backing(float distance) {
+    float restoreStart = mix(RingWorldHandoff.z, RingWorldHandoff.x, 0.8);
+    float restore = smoothstep(restoreStart, RingWorldHandoff.x, distance);
+    return mix(0.30, 1.0, max(restore, RingWorldRender.z));
+}
+
 // Carry the last live blocks' environmental fog onto the first Atlas faces.
 // Cap at the native range, then hand it back to the ring's long-distance haze.
 float ring_handoff_environment(float distance, float fogStart, float fogEnd) {

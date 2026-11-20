@@ -26,9 +26,13 @@ class RingLodCommandSuggestionsTest {
         }
         assertTrue(dispatcher.parse("ringworld distortion distance 9", new Object())
                 .getReader().canRead());
+        for (String arg : new String[]{"", " 0.5", " 1", " 1.5", " 2"})
+            assertEquals(0, dispatcher.execute("ringworld lod band" + arg, new Object()));
+        assertThrows(com.mojang.brigadier.exceptions.CommandSyntaxException.class,
+                () -> dispatcher.execute("ringworld lod band 3", new Object()));
         var choices = dispatcher.getCompletionSuggestions(
                 dispatcher.parse("ringworld lod ", new Object())).get();
-        assertEquals(java.util.Set.of("low", "medium", "high", "show", "reset"),
+        assertEquals(java.util.Set.of("low", "medium", "high", "show", "reset", "band"),
                 choices.getList().stream().map(s -> s.getText()).collect(java.util.stream.Collectors.toSet()));
         var suggestions = dispatcher.getCompletionSuggestions(
                 dispatcher.parse("ringworld ", new Object())).get();

@@ -1,0 +1,41 @@
+{
+  "top1": {
+    "seconds": 32.239005459006876,
+    "chunks": 65536,
+    "samples": 4194304,
+    "depth": 1
+  },
+  "full1": {
+    "seconds": 38.54737204196863,
+    "chunks": 65536,
+    "samples": 4194304,
+    "depth": 33
+  },
+  "full2": {
+    "seconds": 34.94206566712819,
+    "chunks": 65536,
+    "samples": 4194304,
+    "depth": 33
+  },
+  "top2": {
+    "seconds": 32.510899665998295,
+    "chunks": 65536,
+    "samples": 4194304,
+    "depth": 1
+  },
+  "profile": {
+    "seconds": 2.0027996671851724,
+    "split": 357570
+  },
+  "pack": {
+    "seconds": 3.651810167124495,
+    "faces": 3679601,
+    "pages": 512,
+    "quads": 170700,
+    "bytes": 51436531
+  },
+  "http": {
+    "seconds": 1.6041101671289653,
+    "manifest": "f37310ddaa036b06ae38df92a28a75e2580817a4ccf0f940b0682f95d5eb6b2e"
+  }
+}

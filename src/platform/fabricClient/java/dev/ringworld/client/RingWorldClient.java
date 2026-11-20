@@ -300,6 +300,15 @@ public final class RingWorldClient implements ClientModInitializer {
                 context.getSource().sendFeedback(Component.literal(message));
                 return 1;
             });
+            lod.then(dev.ringworld.world.RingLodCommandSuggestions.band(context -> {
+                String message = dev.ringworld.client.RingClientLodTuning.band(null);
+                context.getSource().sendFeedback(Component.literal(message));
+                return 1;
+            }, context -> {
+                String message = dev.ringworld.client.RingClientLodTuning.band(FloatArgumentType.getFloat(context, "width"));
+                context.getSource().sendFeedback(Component.literal(message));
+                return 1;
+            }));
             lod.then(ClientCommands.literal("show").executes(context -> {
                 String message = dev.ringworld.client.RingClientLodTuning.summary();
                 context.getSource().sendFeedback(Component.literal(message));

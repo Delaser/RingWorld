@@ -114,6 +114,12 @@ public final class RingSurfaceTextureRenderer {
         if (dev.ringworld.client.RingMinecraftClientAccess.camera(client).getFluidInCamera()
                 == net.minecraft.world.level.material.FogType.WATER) return;
         long resourceStarted = System.nanoTime();
+        if (pendingTextureBuild == null && stagedUpload == null
+                && dev.ringworld.world.RingLayerTrial.updateWindow(camera.x, geometry,
+                        client.options.getEffectiveRenderDistance())) {
+            bufferedAtlasRevision = -1;
+            bufferedMeshHeightFingerprint = Long.MIN_VALUE;
+        }
         ensureResources(geometry, atlas);
         flagRenderStall("surface resource update (including allocation/release)", resourceStarted);
         if (!geometry.equals(bufferedGeometry) || atlas.worldHash() != bufferedWorldHash
@@ -161,7 +167,7 @@ public final class RingSurfaceTextureRenderer {
         }
         GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(
                 modelView,
-                new Vector4f(ClientRingState.skyProfile().backdrop().id(),
+                new Vector4f(dev.ringworld.world.RingLayerTrial.bandWidth(),
                         alpha, textureMorph, generationFog),
                 new Vector3f((float)cameraAngle, (float)camera.z, RingSurfaceGpu.farBackgroundDepth()),
                 wallPaletteMatrix);
