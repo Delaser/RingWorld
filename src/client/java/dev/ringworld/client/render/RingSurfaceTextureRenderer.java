@@ -510,7 +510,7 @@ public final class RingSurfaceTextureRenderer {
                 var packed = build.mesh();
                 if (mesh == null) mesh = new RingSurfaceBuffers(packed.vertexCount());
                 long started = System.nanoTime();
-                if (mesh.uploadNext(packed.data().vertexBuffer(), packed.vertexCount())) {
+                if (mesh.uploadNext(packed.data().vertexBuffer(), packed.vertexCount(), packed.uniqueCounts())) {
                     flagRenderStall("mesh GPU page upload", started);
                     return true;
                 }

@@ -70,24 +70,40 @@ public final class RingSurfaceGpu {
                     builder.addVertex(x, y, z).setUv(u, v).setColor(color);
                 }
             });
-            return new PackedMesh(allocator, builder.buildOrThrow(), mesh.vertexCount(), mesh.layerOffsets());
+            var data = builder.buildOrThrow();
+            try {
+                int[] unique = RingSurfacePageIndices.pack(data.vertexBuffer(), mesh.vertexCount(), format.getVertexSize());
+                return new PackedMesh(allocator, data, mesh.vertexCount(), mesh.layerOffsets(), unique);
+            } catch (RuntimeException | Error ex) {
+                data.close();
+                throw ex;
+            }
         } catch (RuntimeException | Error exception) {
             allocator.close();
             throw exception;
         }
     }
 
-    record MeshPage(GpuBuffer buffer) implements AutoCloseable {
-        @Override public void close() { buffer.close(); }
+    record MeshPage(GpuBuffer buffer, GpuBuffer indices) implements AutoCloseable {
+        @Override public void close() {
+            try { buffer.close(); } finally { if (indices != null) indices.close(); }
+        }
     }
 
-    static MeshPage uploadPage(ByteBuffer data) {
-        return new MeshPage(RenderSystem.getDevice().createBuffer(
-                () -> "RingWorld surface triangles", GpuBuffer.USAGE_VERTEX, data));
+    static MeshPage uploadPage(ByteBuffer data, ByteBuffer indices) {
+        var device = RenderSystem.getDevice();
+        var vertices = device.createBuffer(() -> "RingWorld surface vertices", GpuBuffer.USAGE_VERTEX, data);
+        try {
+            return new MeshPage(vertices, indices == null ? null : device.createBuffer(
+                    () -> "RingWorld surface indices", GpuBuffer.USAGE_INDEX, indices));
+        } catch (RuntimeException | Error ex) {
+            vertices.close();
+            throw ex;
+        }
     }
 
     public record PackedMesh(ByteBufferBuilder allocator, MeshData data,
-                             int vertexCount, int[] layerOffsets) implements AutoCloseable {
+                             int vertexCount, int[] layerOffsets, int[] uniqueCounts) implements AutoCloseable {
         @Override public void close() {
             try { data.close(); } finally { allocator.close(); }
         }
@@ -142,9 +158,14 @@ public final class RingSurfaceGpu {
         while (first < end) {
             int local = first % RingSurfaceBuffers.PAGE_VERTICES;
             int count = Math.min(end - first, RingSurfaceBuffers.PAGE_VERTICES - local);
-            var page = mesh.pages[first / RingSurfaceBuffers.PAGE_VERTICES].buffer();
-            pass.setVertexBuffer(0, page.slice());
-            pass.draw(count, 1, local, 0);
+            var page = mesh.pages[first / RingSurfaceBuffers.PAGE_VERTICES];
+            pass.setVertexBuffer(0, page.buffer().slice());
+            if (page.indices() == null) {
+                pass.draw(count, 1, local, 0);
+            } else {
+                pass.setIndexBuffer(page.indices(), com.mojang.blaze3d.IndexType.SHORT);
+                pass.drawIndexed(count, 1, local, 0, 0);
+            }
             first += count;
         }
     }
