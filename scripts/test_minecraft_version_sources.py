@@ -175,7 +175,7 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
         source = (VERSION_ROOT / "26.2/client/java/dev/ringworld/client/render/RingSurfaceGpu.java").read_text()
         self.assertIn("RenderPipelines.GUI_TEXTURED_SNIPPET", source)
         self.assertNotIn(".withBindGroupLayout(BindGroupLayouts.DYNAMIC_TRANSFORMS)", source)
-        self.assertIn("pass.draw(vertexCount, 1, 0, 0)", source)
+        self.assertIn("pass.draw(count, 1, local, 0)", source)
 
     def test_fabric_and_neoforge_include_selected_java_and_resource_roots(self):
         fabric = FABRIC_BUILD.read_text(encoding="utf-8")
@@ -237,11 +237,14 @@ class MinecraftVersionSourcesTest(unittest.TestCase):
             self.assertRegex(material, r"float waterMatch = ring_material_smootherstep\(RingWorldHandoff\.z, RingWorldHandoff\.x,\s+ringHandoffDistance\)")
             # Atmospheric detail distance stays horizontal, including the X seam.
             self.assertIn("ringIntrinsicDistance = length(vanillaPos.xz)", live_vertex)
-            self.assertIn("sin(vertexAngle - ModelOffset.x)", proxy_vertex)
+            self.assertIn("mod(vertexAngle - ModelOffset.x + TAU * 0.5, TAU) - TAU * 0.5", proxy_vertex)
 
         policy = (ROOT / "src/main/java/dev/ringworld/world/RingRenderProfile.java").read_text()
         proxy_end = float(re.search(r"PROXY_FADE_END_FACTOR = ([0-9.]+)", policy)[1])
         proxy_start = float(re.search(r"PROXY_FADE_START_FACTOR = ([0-9.]+)", policy)[1])
+        for delta in (-1.5 * math.tau, -math.tau + 0.001, -0.001, 0.0, math.pi, math.tau - 0.001):
+            wrapped = (delta + math.pi) % math.tau - math.pi
+            self.assertAlmostEqual(abs(wrapped), abs(math.atan2(math.sin(delta), math.cos(delta))))
         for chunks in (2, 6, 10, 28):
             for camera_y in (130.0, 234.67834, 340.0, -100.0):
                 camera_section = math.floor(camera_y / 16)

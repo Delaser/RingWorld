@@ -317,7 +317,7 @@ idle start and restart-from-`IDLE` resume paths; either command rejects a
 release-pending terminal handle until its loading ticket has closed.
 
 After updating RingWorld, visited chunks pick up the current Atlas colours as they
-load. To refresh the rest of an existing Atlas, run `/ringworld atlas recolour`.
+load. Visiting chunks also captures the overhead spans used by Medium LOD. To refresh colours and spans in the rest of an existing Atlas, run `/ringworld atlas recolour`.
 Check progress with `/ringworld atlas status`. The pass reads one saved chunk at
 a time and also works with pregeneration disabled. It updates top and side colours
 in populated cells whose surface height and water coverage still agree with the save. It keeps

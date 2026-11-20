@@ -23,6 +23,31 @@ final class RingAtlasSurfaceSampler {
         });
     }
 
+    /** One sample per 2x2 Medium footprint, using only this already loaded chunk. */
+    static int layer(ChunkAccess chunk, BlockPos selected) {
+        if ((selected.getX() & 1) == 0 || (selected.getZ() & 1) == 0) return 0;
+        int top = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, selected.getX() & 15, selected.getZ() & 15);
+        if (top < chunk.getMinY() || top - selected.getY() > 47) return 0;
+        var pos = selected.mutable();
+        pos.setY(top);
+        var roof = chunk.getBlockState(pos);
+        if (!roof.is(BlockTags.LEAVES) && !roof.is(BlockTags.LOGS)
+                && material(roof) != RingAtlasColumnSurface.Material.BUILT) return 0;
+        int y = top;
+        int minimum = chunk.getMinY();
+        while (y >= minimum && top - y < 17 && !chunk.getBlockState(pos.setY(y)).isAir()) y--;
+        int thickness = top - y;
+        if (thickness < 1 || thickness > 16) return 0;
+        int firstAir = y;
+        while (y >= minimum && firstAir - y < 32 && chunk.getBlockState(pos.setY(y)).isAir()) y--;
+        int gap = firstAir - y;
+        if (y < minimum || gap < 2 || gap > 31 || (selected.getY() != top && selected.getY() != y)) return 0;
+        boolean storedFloor = selected.getY() == y;
+        var other = storedFloor ? roof : chunk.getBlockState(pos);
+        int palette = other.getMapColor(chunk, pos.setY(storedFloor ? top : y)).id;
+        return gap | ((thickness - 1) << 5) | (palette << 9) | (storedFloor ? 0x8000 : 0);
+    }
+
     /** Cheap invalidation check only: the full scan stays in the queued writer. */
     static boolean hasManufacturedTop(LevelChunk chunk, int localX, int localZ) {
         int top = chunk.getHeight(Heightmap.Types.WORLD_SURFACE, localX, localZ);

@@ -34,7 +34,7 @@ public enum RingLodQuality {
                 int sourceCol = Math.min(source.columns() - 1, (col * sampleStep + sampleStep / 2) / source.sampleStep());
                 result.putCell(col, row, source.cellHeight(sourceCol, sourceRow),
                         source.cellColor(sourceCol, sourceRow), source.cellBlockLight(sourceCol, sourceRow),
-                        source.cellSideColor(sourceCol, sourceRow), waterCoverage(source, col, row));
+                        source.cellSideColor(sourceCol, sourceRow), waterCoverage(source, col, row), source.cellLayer(sourceCol, sourceRow));
             }
         }
         return result;

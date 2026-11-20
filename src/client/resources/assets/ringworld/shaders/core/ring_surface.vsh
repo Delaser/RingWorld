@@ -71,12 +71,9 @@ void main() {
     }
 
     // Position.xy is the global cylinder and ModelOffset.x is the canonical
-    // camera angle. atan(sin, cos) produces the shortest periodic angle even
+    // camera angle. Wrapping the angle gives the shortest distance even
     // at U=0/1, so the handoff cannot acquire a second seam.
-    float deltaAngle = atan(
-        sin(vertexAngle - ModelOffset.x),
-        cos(vertexAngle - ModelOffset.x)
-    );
+    float deltaAngle = mod(vertexAngle - ModelOffset.x + TAU * 0.5, TAU) - TAU * 0.5;
     float surfaceDistance = abs(deltaAngle) * float(RingWorldLayout.y) / TAU;
     intrinsicDistance = length(vec2(surfaceDistance, Position.z - ModelOffset.y));
     intrinsicHeight = originalRadius;

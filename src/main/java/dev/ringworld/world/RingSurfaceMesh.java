@@ -58,7 +58,7 @@ public final class RingSurfaceMesh {
     public static Mesh build(RingGeometry geometry, RingTerrainAtlas atlas,
                              boolean detailed, double referenceHeight, double wallTopHeight,
                              int wallHeightBlocks, RingWallStyle style, long seed, RingRenderProfile profile,
-                             boolean textureDrySlopes) {
+                             boolean mediumDetail) {
         Objects.requireNonNull(geometry, "geometry");
         Objects.requireNonNull(atlas, "atlas");
         if (!geometry.equals(atlas.geometry())) {
@@ -77,7 +77,7 @@ public final class RingSurfaceMesh {
         int segments = Math.min(atlas.columns(), profile.circumferenceSegments());
         int bands = Math.min(atlas.rows(), profile.widthBands());
         return new Mesh(geometry, atlas, detailed, referenceHeight, wallTopHeight,
-                innerFaces, segments, bands, wallHeightBlocks, style, seed, textureDrySlopes);
+                innerFaces, segments, bands, wallHeightBlocks, style, seed, mediumDetail);
     }
 
     /** A consumer of the exact float vertex values written to the GPU buffer. */
@@ -112,7 +112,9 @@ public final class RingSurfaceMesh {
         private final int capBands;
         private final float[][] wallTops;
         private final int[] edgeColors;
-        private final RingLayerTrial trial;
+        private final Layers layers;
+        private final double[] sine;
+        private final double[] cosine;
         private final float bridgeMinimumZ;
         private final float bridgeMaximumZ;
         private final float outerMinimumZ;
@@ -121,7 +123,7 @@ public final class RingSurfaceMesh {
         private Mesh(RingGeometry geometry, RingTerrainAtlas atlas, boolean detailed,
                      double referenceHeight, double wallTopHeight,
                      RingCloudBounds innerFaces, int segments, int bands,
-                     int wallHeightBlocks, RingWallStyle style, long seed, boolean textureDrySlopes) {
+                     int wallHeightBlocks, RingWallStyle style, long seed, boolean mediumDetail) {
             this.geometry = geometry;
             this.segments = segments;
             this.bands = bands;
@@ -131,9 +133,6 @@ public final class RingSurfaceMesh {
             // Atlas completes. Keep the style-derived closed rim at every Atlas
             // stage and terminate terrain at its inner faces instead.
             bridgeRims = wallHeightBlocks > 0;
-            trial = detailed && bridgeRims ? RingLayerTrial.matching(atlas, segments, bands,
-                    innerFaces.minimumZ() - RIM_SURFACE_OVERLAP_BLOCKS,
-                    innerFaces.maximumZ() + RIM_SURFACE_OVERLAP_BLOCKS) : null;
             minimumRimBottom = new float[segments + 1];
             maximumRimBottom = new float[segments + 1];
             // The nominal top is the alignment plane. The saved height controls
@@ -176,6 +175,10 @@ public final class RingSurfaceMesh {
                     (double)geometry.circumferenceBlocks() / segments,
                     (innerFaces.maximumZ() - innerFaces.minimumZ()) / bands));
 
+            sine = new double[columns];
+            cosine = new double[columns];
+            layers = detailed && mediumDetail && atlas.sampleStep() == RingLodQuality.MEDIUM.sampleStep()
+                    ? new Layers(vertices) : null;
             for (int segment = 0; segment <= segments; segment++) {
                 double canonicalX = (double)segment * geometry.circumferenceBlocks() / segments;
                 // The final U remains one at the periodic seam, but its
@@ -184,6 +187,8 @@ public final class RingSurfaceMesh {
                 // open edge after float conversion.
                 double angle = segment == segments ? 0.0
                         : Math.PI * 2.0 * canonicalX / geometry.circumferenceBlocks();
+                sine[segment] = Math.sin(angle);
+                cosine[segment] = Math.cos(angle);
                 float u = (float)(canonicalX / geometry.circumferenceBlocks());
                 for (int band = 0; band <= bands; band++) {
                     double surfaceMinimumZ = bridgeRims
@@ -206,21 +211,26 @@ public final class RingSurfaceMesh {
                                     innerFaces.maximumZ() - atlas.sampleStep())
                             : surfaceMaximumZ;
                     double sampleZ = Math.max(sampleMinimumZ, Math.min(sampleMaximumZ, z));
-                    double surfaceHeight = detailed
-                            ? atlas.sample(canonicalX, sampleZ).height()
-                            : referenceHeight;
+                    var sample = atlas.sample(canonicalX, sampleZ);
+                    double surfaceHeight = detailed ? sample.height() : referenceHeight;
                     if (band == 0) minimumRimBottom[segment] = (float)(Math.min(referenceHeight, surfaceHeight) - 2.0);
                     if (band == bands) maximumRimBottom[segment] = (float)(Math.min(referenceHeight, surfaceHeight) - 2.0);
                     double radius = geometry.physicalRadiusAt(surfaceHeight);
                     int index = index(segment, band);
-                    positionsX[index] = (float)(radius * Math.sin(angle));
-                    positionsY[index] = (float)(-radius * Math.cos(angle));
+                    positionsX[index] = (float)(radius * sine[segment]);
+                    positionsY[index] = (float)(-radius * cosine[segment]);
                     positionsZ[index] = (float)z;
                     textureU[index] = u;
                     textureV[index] = (float)((sampleZ - geometry.minWidthZ())
                             / geometry.widthBlocks());
                     heights[index] = (float)surfaceHeight;
-                    edgeColors[index] = atlas.sample(canonicalX, sampleZ).color();
+                    edgeColors[index] = sample.color();
+                    if (layers != null && band > 0 && band < bands) {
+                        int col = (int)Math.round(atlas.sampleCoordinate(geometry.wrapX(canonicalX)));
+                        int row = (int)Math.round(atlas.sampleCoordinate(sampleZ - geometry.minWidthZ()));
+                        int span = atlas.cellLayer(col, row);
+                        if (span != 0) layers.set(index, span, atlas.cellHeight(col, row), atlas.cellColor(col, row));
+                    }
                     upperU[index] = u;
                     upperV[index] = textureV[index];
                     if (detailed) {
@@ -247,12 +257,13 @@ public final class RingSurfaceMesh {
                     }
                 }
             }
+            if (layers != null) layers.classify();
             if (detailed) {
-                classifyFootprints(atlas, textureDrySlopes && atlas.sampleStep() == RingLodQuality.MEDIUM.sampleStep());
+                classifyFootprints(atlas, mediumDetail && atlas.sampleStep() == RingLodQuality.MEDIUM.sampleStep());
             }
         }
 
-        private void classifyFootprints(RingTerrainAtlas atlas, boolean textureDrySlopes) {
+        private void classifyFootprints(RingTerrainAtlas atlas, boolean mediumDetail) {
             for (int segment = 0; segment < segments; segment++) {
                 // Inspect the entire footprint including its bilinear texture neighbours, across the X seam.
                 int left = (int)Math.floor((double)segment * atlas.columns() / segments - atlas.sampleCenterInCells());
@@ -263,7 +274,7 @@ public final class RingSurfaceMesh {
                     float min = Math.min(Math.min(heights[a], heights[b]), Math.min(heights[c], heights[d]));
                     float max = Math.max(Math.max(heights[a], heights[b]), Math.max(heights[c], heights[d]));
                     boolean flat = max == min;
-                    if (!flat && !(textureDrySlopes && max - min >= steepHeightThreshold)) continue;
+                    if (!flat && !(mediumDetail && max - min >= steepHeightThreshold)) continue;
                     int first = Math.max(0, (int)Math.floor(textureV[a] * atlas.rows() - atlas.sampleCenterInCells()));
                     int last = Math.min(atlas.rows() - 1, (int)Math.ceil(textureV[d] * atlas.rows() - atlas.sampleCenterInCells()));
                     int quad = band + segment * bands;
@@ -298,10 +309,14 @@ public final class RingSurfaceMesh {
         public int bands() { return bands; }
         public int vertexCount() {
             int surface = Math.multiplyExact(Math.multiplyExact(segments, bands), 6);
-            if (trial != null) surface = Math.addExact(surface, trial.vertexCount());
+            if (layers != null) surface = Math.addExact(surface, layers.faces * 6);
             // Four wall faces, bounded cap bands on both rims, two terrain edges.
             return bridgeRims ? Math.addExact(surface,
                     Math.multiplyExact(segments, 36 + 12 * capBands)) : surface;
+        }
+
+        public int[] layerOffsets() {
+            return layers == null || layers.faces == 0 ? null : layers.offsets;
         }
 
         /** Emits the two consistently wound triangles for every finite quad. */
@@ -317,7 +332,6 @@ public final class RingSurfaceMesh {
                     emitTriangle(consumer, a, c, d, dry, tag);
                 }
             }
-            if (trial != null) trial.emit(consumer, geometry);
             consumer.sideColor(-1);
             if (bridgeRims) {
                 for (int segment = 0; segment < segments; segment++) {
@@ -338,6 +352,7 @@ public final class RingSurfaceMesh {
                     consumer.sideColor(-1);
                 }
             }
+            if (layers != null) layers.emit(consumer);
         }
 
         private void emitVerticalBridgeQuad(VertexConsumer consumer, int segment, float z, float v,
@@ -395,11 +410,8 @@ public final class RingSurfaceMesh {
 
         private void emitBridgeVertex(VertexConsumer consumer, int segment, float y, float z,
                                       float u, float v) {
-            double canonicalX = (double)segment * geometry.circumferenceBlocks() / segments;
-            double angle = segment == segments ? 0.0
-                    : Math.PI * 2.0 * canonicalX / geometry.circumferenceBlocks();
             double radius = geometry.physicalRadiusAt(y);
-            consumer.vertex((float)(radius * Math.sin(angle)), (float)(-radius * Math.cos(angle)),
+            consumer.vertex((float)(radius * sine[segment]), (float)(-radius * cosine[segment]),
                     z, u, v);
         }
 
@@ -428,7 +440,7 @@ public final class RingSurfaceMesh {
         // Negative U is reserved for flat, fully wet footprints. Keep the layer
         // tag in its magnitude so the two-layer handoff still selects one surface.
         private float surfaceTag(int segment, int band) {
-            float layer = trial != null && trial.replaces(segment, band) ? RingLayerTrial.ORIGINAL : 0f;
+            float layer = (layers != null && layers.covered.get(segment * bands + band)) ? RingLayerBand.ORIGINAL : 0f;
             return waterQuads.get(segment * bands + band) ? -1f - layer : layer;
         }
 
@@ -459,6 +471,106 @@ public final class RingSurfaceMesh {
             consumer.vertex(positionsX[point], positionsY[point], positionsZ[point],
                     taggedU(tag, color < 0 ? textureU[point] : upperU[color] + (upperSideColor[color] < 0 ? 0 : 2)),
                     color < 0 ? textureV[point] : upperV[color]);
+        }
+
+        /** Ground uses the original lattice where the two surfaces meet. Adjacent canopy
+         * quads share roof vertices and only exposed edges need a vertical face. */
+        private final class Layers {
+            final short[] spans;
+            final short[] stored;
+            final int[] rgb;
+            final BitSet covered = new BitSet();
+            final BitSet caps = new BitSet();
+            final int[] offsets = new int[segments + 1];
+            int faces;
+            Layers(int size) {
+                spans = new short[size];
+                stored = new short[size];
+                rgb = new int[size];
+            }
+            void set(int i, int span, int y, int color) {
+                spans[i] = (short)span;
+                stored[i] = (short)y;
+                rgb[i] = color;
+            }
+            int top(int i) {
+                int span = spans[i] & 65535;
+                return stored[i] + ((span & 0x8000) == 0 ? 0 : thickness(i) + (span & 31));
+            }
+            int thickness(int i) { return ((spans[i] >>> 5) & 15) + 1; }
+            int other(int i) {
+                return net.minecraft.world.level.material.MapColor.byId((spans[i] >>> 9) & 63).col;
+            }
+            void classify() {
+                for (int x = 0; x < segments; x++) for (int z = 0; z < bands; z++) {
+                    int a = index(x, z), b = a + 1, d = a + columns, c = d + 1;
+                    if ((spans[a] | spans[b] | spans[c] | spans[d]) == 0) continue;
+                    int q = x * bands + z;
+                    covered.set(q);
+                    faces++;
+                    // A split sample owns the quad beginning at its lattice point.
+                    if (spans[a] != 0) { caps.set(q); faces += 2; }
+                }
+                for (int q = caps.nextSetBit(0); q >= 0; q = caps.nextSetBit(q + 1)) {
+                    for (int edge = 0; edge < 4; edge++) if (!neighbour(q, edge)) faces++;
+                }
+            }
+            boolean neighbour(int q, int edge) {
+                return switch (edge) {
+                    case 0 -> q % bands != 0 && caps.get(q - 1);
+                    case 1 -> caps.get((q + bands) % (segments * bands));
+                    case 2 -> q % bands < bands - 1 && caps.get(q + 1);
+                    default -> caps.get(Math.floorMod(q - bands, segments * bands));
+                };
+            }
+            // A boundary vertex can belong to two different caps. Resolve its height once
+            // from incident owners in canonical order, including across the periodic seam.
+            int capSource(int i) {
+                if (spans[i] != 0) return i;
+                int x = i % columns;
+                int left = x == 0 ? i + segments - 1 : i - 1;
+                if (spans[left] != 0) return left;
+                if (i >= columns && spans[i - columns] != 0) return i - columns;
+                return left - columns;
+            }
+
+            void point(VertexConsumer out, int i, int face) {
+                int color;
+                float y;
+                if (face == 0) {
+                    if (spans[i] == 0) { y = heights[i]; color = edgeColors[i]; }
+                    else { y = top(i) - thickness(i) - (spans[i] & 31); color = spans[i] < 0 ? rgb[i] : other(i); }
+                } else {
+                    int source = capSource(i);
+                    y = top(source) - (face == 2 ? thickness(source) : 0);
+                    color = spans[source] < 0 ? other(source) : rgb[source];
+                }
+                out.sideColor(color);
+                emitBridgeVertex(out, i % columns, y, positionsZ[i], RingLayerBand.REPLACEMENT, 0.5f);
+            }
+            void quad(VertexConsumer out, int a, int b, int c, int d, int f, int g) {
+                point(out, a, f); point(out, b, f); point(out, c, g);
+                point(out, a, f); point(out, c, g); point(out, d, g);
+            }
+            void emit(VertexConsumer out) {
+                int nextSegment = 0;
+                int position = vertexCount() - faces * 6;
+                for (int q = covered.nextSetBit(0); q >= 0; q = covered.nextSetBit(q + 1)) {
+                    int a = index(q / bands, q % bands), b = a + 1, d = a + columns, c = d + 1;
+                    while (nextSegment <= q / bands) offsets[nextSegment++] = position;
+                    position += 6;
+                    quad(out, a, b, c, d, 0, 0);
+                    if (!caps.get(q)) continue;
+                    position += 12;
+                    quad(out, a, b, c, d, 1, 1);
+                    quad(out, d, c, b, a, 2, 2);
+                    if (!neighbour(q, 0)) { quad(out, b, a, a, b, 1, 2); position += 6; }
+                    if (!neighbour(q, 1)) { quad(out, c, b, b, c, 1, 2); position += 6; }
+                    if (!neighbour(q, 2)) { quad(out, d, c, c, d, 1, 2); position += 6; }
+                    if (!neighbour(q, 3)) { quad(out, a, d, d, a, 1, 2); position += 6; }
+                }
+                while (nextSegment <= segments) offsets[nextSegment++] = position;
+            }
         }
 
         private int index(int segment, int band) {

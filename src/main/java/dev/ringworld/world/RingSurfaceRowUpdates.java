@@ -10,21 +10,43 @@ public final class RingSurfaceRowUpdates {
     }
 
     public static long transfer(long[][] resident, long[][] next, int width, Upload upload) {
-        long texels = 0;
-        for (int mip = 0; mip < next.length; mip++) {
-            long[] before = resident[mip], after = next[mip];
-            int row = 0;
-            while (row < after.length) {
-                if (after[row] == before[row]) {
-                    row++;
-                    continue;
-                }
-                int first = row++;
-                while (row < after.length && after[row] != before[row]) row++;
-                upload.rows(mip, first, row - first);
-                texels += (long)(row - first) * Math.max(1, width >> mip);
-            }
+        return new Cursor(resident, next, width).transferNext(Integer.MAX_VALUE, upload);
+    }
+
+    /** Resumes a partially populated, unpublished target. A null resident means every row is new. */
+    public static final class Cursor {
+        private final long[][] resident, next;
+        private final int width;
+        private int mip, row;
+
+        public Cursor(long[][] resident, long[][] next, int width) {
+            this.resident = resident;
+            this.next = next;
+            this.width = width;
         }
-        return texels;
+
+        public boolean done() { return mip == next.length; }
+
+        public int transferNext(int budget, Upload upload) {
+            if (budget < width) throw new IllegalArgumentException("budget must fit one full row");
+            int texels = 0;
+            while (!done()) {
+                int stride = Math.max(1, width >> mip);
+                int remaining = (budget - texels) / stride;
+                if (remaining == 0) break;
+                long[] after = next[mip];
+                long[] before = resident == null ? null : resident[mip];
+                while (row < after.length && before != null && after[row] == before[row]) row++;
+                int first = row;
+                int limit = row + Math.min(remaining, after.length - row);
+                while (row < limit && (before == null || after[row] != before[row])) row++;
+                if (row > first) {
+                    upload.rows(mip, first, row - first);
+                    texels += (row - first) * stride;
+                }
+                if (row == after.length) { mip++; row = 0; }
+            }
+            return texels;
+        }
     }
 }

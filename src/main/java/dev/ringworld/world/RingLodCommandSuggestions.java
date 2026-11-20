@@ -13,7 +13,7 @@ public final class RingLodCommandSuggestions {
     public static <S> LiteralArgumentBuilder<S> band(Command<S> show, Command<S> set) {
         return LiteralArgumentBuilder.<S>literal("band").executes(show)
                 .then(RequiredArgumentBuilder.<S, Float>argument("width",
-                        FloatArgumentType.floatArg(RingLayerTrial.MIN_BAND, RingLayerTrial.MAX_BAND)).executes(set));
+                        FloatArgumentType.floatArg(RingLayerBand.MIN_BAND, RingLayerBand.MAX_BAND)).executes(set));
     }
 
     public static <S> void ensurePresent(CommandDispatcher<S> dispatcher) {

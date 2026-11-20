@@ -151,7 +151,8 @@ public final class RingTerrainAtlas {
         if (!page.present[offset]) return 0;
         long location = ((long)index << 24) | ((long)Short.toUnsignedInt(page.heights[offset]) << 8)
                 | Byte.toUnsignedInt(page.blockLights[offset]);
-        long colors = ((long)page.colors[offset] << 24) | page.sideColors[offset];
+        long colors = ((long)(page.colors[offset] & 0xffffff) << 24) | (page.sideColors[offset] & 0xffffff);
+        colors |= (long)layer(page.colors[offset], page.sideColors[offset]) << 48;
         return RingLayoutFingerprint.mix(RingLayoutFingerprint.mix(location) ^ colors ^ 0x62A9D9ED799705F5L);
     }
 
@@ -188,12 +189,17 @@ public final class RingTerrainAtlas {
             }
             int row = index / columns;
             boolean rim = rimThickness > 0 && (row == lowRow || row == lowRow + 1 || row == highRow || row == highRow + 1);
-            boolean distinct = page.sideColors[index & PAGE_MASK] != page.colors[index & PAGE_MASK];
+            int side = page.sideColors[index & PAGE_MASK];
+            int top = page.colors[index & PAGE_MASK];
+            boolean distinct = ((side ^ top) & 0xffffff) != 0;
+            if (sample != 0 && layer(top, side) != 0) {
+                sample ^= RingLayoutFingerprint.mix((long)layer(top, side) << 24 | (top & 0xffffff));
+            }
             if (sampleStep == RingLodQuality.MEDIUM.sampleStep() && sample != 0 && shoreline(page, index & PAGE_MASK)) {
                 sample |= 1L << 48;
             }
             fingerprint ^= sample ^ (page.present[index & PAGE_MASK] && (rim || distinct)
-                    ? ((distinct ? 0x1000000L : 0x2000000L) | page.sideColors[index & PAGE_MASK]) << 17 : 0L);
+                    ? ((distinct ? 0x1000000L : 0x2000000L) | (side & 0xffffff)) << 17 : 0L);
             fingerprint *= 0x100000001B3L;
         }
         fingerprint ^= Integer.toUnsignedLong(columns);
@@ -311,6 +317,11 @@ public final class RingTerrainAtlas {
 
     public boolean putCell(int column, int row, int surfaceY,
                            int mapColor, int blockLight, int sideColor, int waterCoverage) {
+        return putCell(column, row, surfaceY, mapColor, blockLight, sideColor, waterCoverage, 0);
+    }
+
+    public boolean putCell(int column, int row, int surfaceY,
+                           int mapColor, int blockLight, int sideColor, int waterCoverage, int layer) {
         if (waterCoverage < 0 || waterCoverage > 15) {
             throw new IllegalArgumentException("atlas water coverage must be between 0 and 15");
         }
@@ -321,11 +332,13 @@ public final class RingTerrainAtlas {
         int index = index(column, row);
         Page page = pages[index >>> PAGE_SHIFT];
         short clampedHeight = (short)Math.max(Short.MIN_VALUE, Math.min(Short.MAX_VALUE, surfaceY));
-        int rgb = mapColor & 0xFFFFFF;
+        // The existing RGB fields have a spare byte each in both the cache and the network tile.
+        int rgb = (mapColor & 0xffffff) | (layer >>> 8) << 24;
+        int side = (sideColor & 0xffffff) | layer << 24;
         byte light = (byte)(blockLight | waterCoverage << 4);
         boolean changed = !page.present[index & PAGE_MASK] || page.heights[index & PAGE_MASK] != clampedHeight
                 || page.colors[index & PAGE_MASK] != rgb || page.blockLights[index & PAGE_MASK] != light
-                || page.sideColors[index & PAGE_MASK] != (sideColor & 0xFFFFFF);
+                || page.sideColors[index & PAGE_MASK] != side;
         if (!changed) return false;
         contentFingerprint ^= sampleFingerprint(index, page, index & PAGE_MASK);
         page = writablePage(index);
@@ -335,7 +348,7 @@ public final class RingTerrainAtlas {
         }
         page.heights[index & PAGE_MASK] = clampedHeight;
         page.colors[index & PAGE_MASK] = rgb;
-        page.sideColors[index & PAGE_MASK] = sideColor & 0xFFFFFF;
+        page.sideColors[index & PAGE_MASK] = side;
         page.blockLights[index & PAGE_MASK] = light;
         contentFingerprint ^= sampleFingerprint(index, page, index & PAGE_MASK);
         return true;
@@ -363,14 +376,25 @@ public final class RingTerrainAtlas {
         if (row < 0 || row >= rows) return -1;
         int index = index(Math.floorMod(column, columns), row);
         Page page = pages[index >>> PAGE_SHIFT];
-        return page.present[index & PAGE_MASK] ? page.colors[index & PAGE_MASK] : -1;
+        return page.present[index & PAGE_MASK] ? page.colors[index & PAGE_MASK] & 0xffffff : -1;
     }
 
     public int cellSideColor(int column, int row) {
         if (row < 0 || row >= rows) return -1;
         int index = index(Math.floorMod(column, columns), row);
         Page page = pages[index >>> PAGE_SHIFT];
-        return page.present[index & PAGE_MASK] ? page.sideColors[index & PAGE_MASK] : -1;
+        return page.present[index & PAGE_MASK] ? page.sideColors[index & PAGE_MASK] & 0xffffff : -1;
+    }
+
+    private static int layer(int top, int side) {
+        return ((top >>> 24) << 8) | (side >>> 24);
+    }
+
+    public int cellLayer(int column, int row) {
+        if (row < 0 || row >= rows) return 0;
+        int i = index(Math.floorMod(column, columns), row);
+        Page page = pages[i >>> PAGE_SHIFT];
+        return page.present[i & PAGE_MASK] ? layer(page.colors[i & PAGE_MASK], page.sideColors[i & PAGE_MASK]) : 0;
     }
 
     /** Raw canonical height access for the low-detail cylindrical mesh. */
@@ -396,8 +420,8 @@ public final class RingTerrainAtlas {
 
     private static boolean shoreline(Page page, int offset) {
         return (page.blockLights[offset] & 0xf0) != 0
-                || page.colors[offset] == net.minecraft.world.level.material.MapColor.SAND.col
-                || page.colors[offset] == RingSurfaceLod.VANILLA_SAND_TOP_RGB;
+                || (page.colors[offset] & 0xffffff) == net.minecraft.world.level.material.MapColor.SAND.col
+                || (page.colors[offset] & 0xffffff) == RingSurfaceLod.VANILLA_SAND_TOP_RGB;
     }
 
     public int cellWaterCoverage(int column, int row) {
@@ -508,10 +532,10 @@ public final class RingTerrainAtlas {
                     int height = input.readShort();
                     int color = input.readInt();
                     int blockLight = input.readUnsignedByte();
-                    int sideColor = input.readInt() & 0xFFFFFF;
+                    int sideColor = input.readInt();
                     if (incomingPresent) {
                         changed |= putCell(firstX + x, firstZ + z, height, color,
-                                blockLight & 15, sideColor, blockLight >>> 4);
+                                blockLight & 15, sideColor, blockLight >>> 4, layer(color, sideColor));
                     }
                 }
             }
@@ -598,9 +622,9 @@ public final class RingTerrainAtlas {
                 Page page = atlas.writablePage(index);
                 page.present[index & PAGE_MASK] = true;
                 page.heights[index & PAGE_MASK] = input.readShort();
-                page.colors[index & PAGE_MASK] = input.readInt() & 0xFFFFFF;
+                page.colors[index & PAGE_MASK] = input.readInt();
                 page.blockLights[index & PAGE_MASK] = input.readByte();
-                page.sideColors[index & PAGE_MASK] = input.readInt() & 0xFFFFFF;
+                page.sideColors[index & PAGE_MASK] = input.readInt();
                 atlas.contentFingerprint ^= sampleFingerprint(index, page, index & PAGE_MASK);
                 atlas.changePresence(index % atlas.columns, index / atlas.columns, 1);
             }
