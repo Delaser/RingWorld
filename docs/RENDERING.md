@@ -552,15 +552,51 @@ wall faces. Existing Atlas files already store the required samples.
 [Fixed midpoint, before and after](media/medium-atlas-alignment/midpoint-flip.webp) ·
 [Wrap and both rims](media/medium-atlas-alignment/rim-seam.jpg) ·
 [Per-position measurements](media/medium-atlas-alignment/measurements.csv) ·
-[Fixed-animation water control](media/medium-atlas-alignment/fixed-frame-water.csv)
+[Original water comparison](media/medium-atlas-alignment/fixed-frame-water.csv)
 
 The seed-255 test used 20 identical positions at 12 chunks with a 22-chunk
-real-terrain reference. With the original water and aquatic-plant sprites
-held on frame zero in all three clients, mean absolute RGB channel error fell
+real-terrain reference. All three clients fell back to vanilla animation when
+Minecraft rejected the original frame-zero pack during reload. In that animated
+comparison, mean absolute RGB channel error fell
 from 3.12 to 2.87 for the shelf and rose from 3.76 to 3.85 for darker water
 (0–255 scale). At the last eleven positions the shelf improved from 4.14 to
 3.74. With normal animation the stone-edge error rose from 3.87 to 4.01.
 Six additional native views covered the wrap and both rims.
+
+### Submerged ledges at the terrain handoff
+
+A real water surface shows the lakebed below it. The Atlas stores the colour
+from that column on the water surface, so at a grazing angle the shelf can
+appear displaced as the native water becomes opaque. With a complete colour
+texture, the shared water shader keeps the native bed visible longer in the
+overlap. It blends from the original opacity curve when looking straight down
+to its cube at grazing angles. Water still becomes opaque before native chunk
+coverage starts to drop. Distant Atlas-only water still has a single surface.
+
+On seed 255, the 20-position west-facing shoreline run used NeoForge 26.3,
+Medium LOD, and 12 chunks for both builds. The same 20 views at 22 chunks
+supplied the real-terrain reference. Water, kelp and seagrass sprites repeated
+their first vanilla frame across the original animation strips. Reload logs
+and saved client options confirmed the test pack remained active in each run.
+
+| Measurement | Before (#317) | After |
+| --- | ---: | ---: |
+| Darker water, mean absolute channel error (0–255) | 3.240 | 2.837 |
+| Shallow shelf, same measure | 2.357 | 2.133 |
+| Submerged ledge, mean vertical contour error (pixels) | 3.067 | 2.865 |
+| Exposed stone edge, mean absolute channel error | 4.010 | 4.010 |
+| Sky-coloured pixels in the water sampling window | 0 | 0 |
+
+The contour check used 3,141 reference columns containing a shelf-to-dark-water
+step, looked for its strongest vertical drop within ten pixels, and assigned
+eleven pixels of error to unresolved columns. Across the farthest eleven views
+the contour error went from 4.393 to 4.101 pixels. At the final six positions
+both builds produced identical water scores. The recalibrated opacity helps
+where live chunks still contribute.
+
+[Before, after and real terrain at X 182.5](media/submerged-ledges/handoff.png) ·
+[All 20 positions](media/submerged-ledges/all-positions.webp) ·
+[Per-position measurements](media/submerged-ledges/measurements.csv)
 
 ### Lighting and colour matching
 
