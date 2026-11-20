@@ -503,7 +503,15 @@ water-sealing interval. Teleport coverage restores the full fallback colour
 as destination chunks load. The native water opacity, reef lighting and
 wall-occlusion depth still use the same paths.
 
-[Large-ring bay at the same camera position before and after](../experiments/two-layer-atlas/large-review/water-band.jpg).
+At the same 12-chunk Large-ring bay viewpoint, the peak brightness above the
+surrounding water fell from 16.44 to 1.36 on a 0–255 scale. The measurement
+uses the central 80 columns of an 800 × 450 frame and interpolates between the
+water on either side of the band. At the earlier reef viewpoint, colouring the
+Atlas wall magenta produced zero strong marker pixels in the underwater crop
+and 17,226 on the exposed rim. Both checks used the packaged NeoForge 26.3
+client with Medium detail.
+
+[Bay before and after](../experiments/two-layer-atlas/large-review/water-band.jpg) · [Two-layer trial, controls and known costs](../experiments/two-layer-atlas/README.md)
 
 At the edge of live terrain, Minecraft also applies environmental fog. The Atlas
 now carries that colour across the boundary for land, water and walls. Its fog

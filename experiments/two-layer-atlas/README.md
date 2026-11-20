@@ -2,6 +2,14 @@
 
 This isolated client experiment compares a single-height surface with a ground surface and one overhead span. The two acceptance scenes are a natural forest by the rim and a 101-block stone-brick bridge built from ordinary blocks in a disposable copy of seed 255. The bridge has four polished-andesite piers and spruce parapets. The original world and the published mod are unaffected.
 
+## What players see
+
+- Ordinary play uses the water handoff fixes automatically. Shallow ledges keep their perspective for longer, the far rim stays hidden through deep water, and the bright cyan arc fades into the surrounding water. Existing Atlases work with these changes.
+- With the Medium two-layer experiment enabled, the client draws the ground beneath tree crowns and bridge decks. The bridge correction closed the extra gaps at the edge of the detailed patch in all five test views.
+- The experimental layer uses a static capture. After editing a bridge or forest, bake the pages again to update it. Normal gameplay continues to use the single-layer Atlas unless a fixture or manifest is supplied.
+
+[Water rendering notes](../../docs/RENDERING.md#water-and-weather-at-the-terrain-handoff) · [Deep reef comparison](large-review/reef-water.jpg) · [Colour band comparison](large-review/water-band.jpg)
+
 ## Full Large ring follow-up
 
 The later [Large ring measurements and bridge correction](large-review/README.md) use all 65,536 saved chunks and a separate client page cache. The original two-patch measurements below are the historical comparison. The replay fixture now includes the final bridge boundary and corner fix.

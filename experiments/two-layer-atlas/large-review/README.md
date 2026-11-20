@@ -60,8 +60,10 @@ Starting with the existing saved Large ring, the complete offline retrofit took 
 
 A separate instrumented NeoForge server read 64 columns per resident chunk across the Large ring. It warmed up on 32 chunks and measured 256 different chunks in alternating order. The existing surface selector averaged 0.0125 ms per chunk. Including the second-span scan averaged 0.0195 ms, an additional 0.0070 ms per chunk. P95 rose from 0.0564 to 0.0718 ms. Chunk acquisition, colour sampling, mesh packing and network transfer are outside this microbenchmark. Fresh Minecraft terrain generation was not rerun. [Offline generation measurements](generation.json) · [Live server samples](live-sample-cost.csv)
 
-## Merge decision
+## Integration status and follow-up
 
-Keep the experiment off main. Stored pages and steady draw cost are tractable for this world. Rebuilding and uploading the combined terrain mesh when the camera changes page groups causes a repeatable travel hitch. The next acceptance check is this same one-block crossing with independently uploaded pages, in addition to the five bridge views.
+The owner accepted this work for integration on 20 November 2026. The water fixes apply in normal play. The second terrain layer remains an opt-in Medium LOD experiment using a local fixture or a baked page manifest.
+
+The repeatable travel hitch remains open. A page-group change uploads the combined terrain mesh, including the base ring. The next performance check is the same one-block boundary crossing after giving pages independent GPU buffers, followed by the five bridge views. The numbers above were measured at 1× with the original 16-page window. The current 2× default has visual coverage on this Large ring. Its generation, join and frame-time costs have not been rebenchmarked as a set.
 
 Both Fabric and NeoForge Gradle builds passed for 26.1, 26.1.1, 26.1.2, 26.2 and 26.3. The native visual, frame and multiplayer measurements in this report used NeoForge 26.3.
