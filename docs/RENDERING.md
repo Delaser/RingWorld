@@ -511,7 +511,7 @@ Atlas wall magenta produced zero strong marker pixels in the underwater crop
 and 17,226 on the exposed rim. Both checks used the packaged NeoForge 26.3
 client with Medium detail.
 
-[Bay before and after](../experiments/two-layer-atlas/large-review/water-band.jpg) · [Two-layer trial, controls and known costs](../experiments/two-layer-atlas/README.md)
+[Bay before and after](../experiments/two-layer-atlas/large-review/water-band.jpg) · [Historical two-layer trial and measurements](../experiments/two-layer-atlas/README.md)
 
 At the edge of live terrain, Minecraft also applies environmental fog. The Atlas
 now carries that colour across the boundary for land, water and walls. Its fog
@@ -843,3 +843,30 @@ Old caches rebuild normally; world blocks and saved geometry are unchanged.
 Storage remains twelve bytes per cell. Both loaders share capture, storage and
 protocol. The appearance change is implemented in each source adapter, pending
 older-version runtime verification.
+
+## Ground below tree crowns and bridge decks
+
+Medium LOD draws a second surface in the transition to the distant Atlas. At 12
+chunks on a Large ring the default 2× band extends from about 131 to 418 blocks.
+`/ringworld lod band` reports the current setting. A width from 0.5 to 2 changes
+the outer edge live. Low and High retain their existing single-surface meshes.
+
+During normal capture the server checks the Medium sample columns for leaves,
+logs, or a manufactured roof above 2–31 blocks of air. It stores one roof up to
+16 blocks thick, the gap, the complementary map colour and which surface the
+ordinary Atlas selected. Deeper gaps, multiple stacked decks and natural cave
+ceilings retain the ordinary surface. The two spare bytes in the existing RGB
+fields carry this information through saves, snapshots and multiplayer tiles.
+Zero is the original single-surface representation.
+
+On an older save, visiting chunks fills in this detail. To refresh unvisited
+saved terrain, an operator can run `/ringworld atlas recolour`. New worlds
+collect it during Atlas generation. The client stores ground and cap geometry
+after the ordinary surface and walls in its mesh. It draws the range of caps
+near the camera, splitting the draw at the X wrap when necessary. Moving the
+camera or changing the band width does not invalidate the mesh. Replacement
+meshes upload in whole-triangle pages. Changed texture rows are staged in
+batches of at most 524,288 RGBA texels, and the renderer publishes the mesh
+and texture together when both are ready.
+
+[Large-ring scene and frame-time comparison](../experiments/two-layer-atlas/default-comparison/README.md)

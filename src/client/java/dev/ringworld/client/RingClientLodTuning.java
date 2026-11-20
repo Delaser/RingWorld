@@ -17,12 +17,11 @@ public final class RingClientLodTuning {
     }
     public static void clearSession() {
         quality = RingLodQuality.MEDIUM;
-        RingLayerTrial.setBandWidth(RingLayerTrial.DEFAULT_BAND);
+        RingLayerBand.setBandWidth(RingLayerBand.DEFAULT_BAND);
     }
     public static String band(Float width) {
-        if (!RingLayerTrial.enabled()) return "Layer band requires the two-layer Atlas trial.";
-        if (width != null) RingLayerTrial.setBandWidth(width);
-        return "Two-layer Atlas band: " + RingLayerTrial.bandWidth() + "x"
+        if (width != null) RingLayerBand.setBandWidth(width);
+        return "Two-layer Atlas band: " + RingLayerBand.bandWidth() + "x"
                 + (quality == RingLodQuality.MEDIUM ? "" : " (select Medium LOD to see it)");
     }
     public static RingRenderProfile profile(RingGeometry geometry, double distance) {

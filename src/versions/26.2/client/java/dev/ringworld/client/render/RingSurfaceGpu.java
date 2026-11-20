@@ -70,21 +70,24 @@ public final class RingSurfaceGpu {
                     builder.addVertex(x, y, z).setUv(u, v).setColor(color);
                 }
             });
-            return new PackedMesh(allocator, builder.buildOrThrow(), mesh.vertexCount());
+            return new PackedMesh(allocator, builder.buildOrThrow(), mesh.vertexCount(), mesh.layerOffsets());
         } catch (RuntimeException | Error exception) {
             allocator.close();
             throw exception;
         }
     }
 
-    /** Only native GPU creation remains on the render thread. Does not own packed. */
-    public static GpuBuffer uploadMesh(PackedMesh packed) {
-        return RenderSystem.getDevice().createBuffer(() -> "RingWorld textured surface mesh",
-                GpuBuffer.USAGE_VERTEX, packed.data().vertexBuffer());
+    record MeshPage(GpuBuffer buffer) implements AutoCloseable {
+        @Override public void close() { buffer.close(); }
+    }
+
+    static MeshPage uploadPage(ByteBuffer data) {
+        return new MeshPage(RenderSystem.getDevice().createBuffer(
+                () -> "RingWorld surface triangles", GpuBuffer.USAGE_VERTEX, data));
     }
 
     public record PackedMesh(ByteBufferBuilder allocator, MeshData data,
-                             int vertexCount) implements AutoCloseable {
+                             int vertexCount, int[] layerOffsets) implements AutoCloseable {
         @Override public void close() {
             try { data.close(); } finally { allocator.close(); }
         }
@@ -94,9 +97,9 @@ public final class RingSurfaceGpu {
         return RenderSystem.getDevice().createTexture("RingWorld canonical surface atlas",
                 GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_TEXTURE_BINDING, GpuFormat.RGBA8_UNORM, width, height, 1, mipLevels);
     }
-    public static long uploadChangedRows(GpuTexture target, NativeImage[] levels, long[][] resident, long[][] next) {
+    public static int uploadRows(GpuTexture target, NativeImage[] levels, dev.ringworld.world.RingSurfaceRowUpdates.Cursor cursor) {
         var encoder = RenderSystem.getDevice().createCommandEncoder();
-        long texels = dev.ringworld.world.RingSurfaceRowUpdates.transfer(resident, next, levels[0].getWidth(), (mip, row, count) -> {
+        int texels = cursor.transferNext(512 * 1024, (mip, row, count) -> {
             NativeImage image = levels[mip];
             int width = image.getWidth();
             int stride = width * Integer.BYTES;
@@ -112,7 +115,7 @@ public final class RingSurfaceGpu {
         for (int level = 0; level < levels.length; level++) encoder.writeToTexture(texture, levels[level], level, 0, 0, 0);
         encoder.submit();
     }
-    public static void draw(Minecraft client, GpuBuffer vertexBuffer, int vertexCount,
+    public static void draw(Minecraft client, RingSurfaceBuffers mesh, int vertexCount, int[] offsets, int first, int end,
                             GpuTextureView current, GpuTextureView previous, GpuTextureView walls, GpuBufferSlice transforms) {
         GpuTextureView color = RingMinecraftClientAccess.mainRenderTarget(client).getColorTextureView();
         GpuTextureView depth = RingMinecraftClientAccess.mainRenderTarget(client).getDepthTextureView();
@@ -123,13 +126,29 @@ public final class RingSurfaceGpu {
             pass.bindTexture("Sampler1", previous, RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.LINEAR, true));
             pass.bindTexture("Sampler2", client.gameRenderer.levelLightmap(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
             pass.bindTexture("Sampler3", walls, RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.LINEAR, true));
-            pass.setVertexBuffer(0, vertexBuffer.slice());
-            // 26.2 orders counts first, then offsets: vertices, instances,
-            // first vertex, first instance (the latter must be zero on macOS).
-            pass.draw(vertexCount, 1, 0, 0);
+            if (offsets == null || first == end) {
+                drawRange(pass, mesh, 0, vertexCount);
+            } else if (first < end) {
+                drawRange(pass, mesh, 0, offsets[0]);
+                drawRange(pass, mesh, offsets[first], offsets[end]);
+            } else {
+                drawRange(pass, mesh, 0, offsets[end]);
+                drawRange(pass, mesh, offsets[first], vertexCount);
+            }
         }
         encoder.submit();
     }
+    private static void drawRange(RenderPass pass, RingSurfaceBuffers mesh, int first, int end) {
+        while (first < end) {
+            int local = first % RingSurfaceBuffers.PAGE_VERTICES;
+            int count = Math.min(end - first, RingSurfaceBuffers.PAGE_VERTICES - local);
+            var page = mesh.pages[first / RingSurfaceBuffers.PAGE_VERTICES].buffer();
+            pass.setVertexBuffer(0, page.slice());
+            pass.draw(count, 1, local, 0);
+            first += count;
+        }
+    }
+
     public static void writeBuffer(GpuBufferSlice target, ByteBuffer data) {
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder(); encoder.writeToBuffer(target, data); encoder.submit();
     }

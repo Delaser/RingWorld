@@ -291,7 +291,10 @@ rights to imply that an unofficial fork is endorsed by the RingWorld project.
 ### Local Atlas display quality
 
 Use `/ringworld lod low|medium|high` to select your local
-LOD display budget. `/ringworld lod show` reports the selected level and the
+LOD display budget. Medium draws the ground beneath tree crowns and short bridge spans
+in the transition to distant terrain. Use `/ringworld lod band 0.5` through
+`/ringworld lod band 2` to adjust its width while playing (default 2×).
+`/ringworld lod show` reports the selected level and the
 server source resolution; `/ringworld lod reset` follows the server default.
 The choice resets on disconnect. It changes local display samples, texture
 budget and mesh density, without changing terrain, server settings, or downloads.

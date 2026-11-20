@@ -1,6 +1,5 @@
 package dev.ringworld.client.render;
 
-import com.mojang.renderpearl.api.buffers.GpuBuffer;
 import com.mojang.renderpearl.api.buffers.GpuBufferSlice;
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 import com.mojang.blaze3d.platform.NativeImage;
@@ -45,8 +44,9 @@ import net.minecraft.world.phys.Vec3;
  * mesh or allocates distant vanilla chunk sections.</p>
  */
 public final class RingSurfaceTextureRenderer {
-    private static GpuBuffer vertexBuffer;
+    private static RingSurfaceBuffers vertexBuffer;
     private static int vertexCount;
+    private static int[] layerOffsets;
     private static GpuTexture surfaceTexture;
     private static GpuTextureView surfaceTextureView;
     private static GpuTexture previousSurfaceTexture;
@@ -114,12 +114,6 @@ public final class RingSurfaceTextureRenderer {
         if (dev.ringworld.client.RingMinecraftClientAccess.camera(client).getFluidInCamera()
                 == net.minecraft.world.level.material.FogType.WATER) return;
         long resourceStarted = System.nanoTime();
-        if (pendingTextureBuild == null && stagedUpload == null
-                && dev.ringworld.world.RingLayerTrial.updateWindow(camera.x, geometry,
-                        client.options.getEffectiveRenderDistance())) {
-            bufferedAtlasRevision = -1;
-            bufferedMeshHeightFingerprint = Long.MIN_VALUE;
-        }
         ensureResources(geometry, atlas);
         flagRenderStall("surface resource update (including allocation/release)", resourceStarted);
         if (!geometry.equals(bufferedGeometry) || atlas.worldHash() != bufferedWorldHash
@@ -167,13 +161,24 @@ public final class RingSurfaceTextureRenderer {
         }
         GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(
                 modelView,
-                new Vector4f(dev.ringworld.world.RingLayerTrial.bandWidth(),
+                new Vector4f(dev.ringworld.world.RingLayerBand.bandWidth(),
                         alpha, textureMorph, generationFog),
                 new Vector3f((float)cameraAngle, (float)camera.z, RingSurfaceGpu.farBackgroundDepth()),
                 wallPaletteMatrix);
 
-        RingSurfaceGpu.draw(client, vertexBuffer, vertexCount, surfaceTextureView,
-                previousSurfaceTextureView == null ? surfaceTextureView : previousSurfaceTextureView,
+        int first = 0, end = 0;
+        if (layerOffsets != null) {
+            int segments = layerOffsets.length - 1;
+            double step = (double)geometry.circumferenceBlocks() / segments;
+            int centre = (int)(geometry.wrapX(camera.x) / step);
+            int radius = 1 + (int)Math.ceil(client.options.getEffectiveRenderDistance() * 48.0 / step);
+            if (2L * radius + 1 < segments && geometry.physicalRadiusAt(client.level.getMaxY()) > 0) {
+                first = Math.floorMod(centre - radius, segments);
+                end = Math.floorMod(centre + radius + 1, segments);
+            }
+        }
+        RingSurfaceGpu.draw(client, vertexBuffer, vertexCount, layerOffsets, first, end, surfaceTextureView,
+                textureMorph >= 1.0f || previousSurfaceTextureView == null ? surfaceTextureView : previousSurfaceTextureView,
                 wallTextureView, transforms);
         modelView.popMatrix();
     }
@@ -240,10 +245,8 @@ public final class RingSurfaceTextureRenderer {
                         retain = true;
                         return null;
                     }
-                    if (uploadTexture(build.images(), (float)build.snapshot().atlas().completion())) {
-                        stagedUpload.publish();
-                        return build.snapshot();
-                    }
+                    stagedUpload.publish();
+                    return build.snapshot();
                 }
             } finally {
                 if (!retain) {
@@ -449,66 +452,14 @@ public final class RingSurfaceTextureRenderer {
         }
     }
 
-    private static boolean uploadTexture(TextureImages images, float completion) {
-        if (images.generation() != textureBuildGeneration) {
-            return false;
-        }
-        long started = System.nanoTime();
-        NativeImage[] levels = images.levels();
-        boolean reuse = previousSurfaceTexture != null && previousColumns == images.columns()
-                && previousRowHashes.length == levels.length && previousRowHashes[0].length == images.rows();
-        GpuTexture target;
-        GpuTextureView view = null;
-        long texels;
-        if (reuse) {
-            target = previousSurfaceTexture;
-            view = previousSurfaceTextureView;
-        } else {
-            destroyPreviousSurfaceTexture();
-            target = RingSurfaceGpu.createSurfaceTexture(images.columns(), images.rows(), levels.length);
-        }
-        try {
-            if (reuse) {
-                texels = RingSurfaceGpu.uploadChangedRows(target, levels, previousRowHashes, images.rowHashes());
-            } else {
-                view = RenderSystem.getDevice().createTextureView(target);
-                RingSurfaceGpu.uploadSurfaceTexture(target, levels);
-                texels = 0;
-                for (NativeImage level : levels) texels += (long)level.getWidth() * level.getHeight();
-            }
-        } catch (RuntimeException | Error exception) {
-            if (reuse) destroyPreviousSurfaceTexture();
-            else {
-                if (view != null) view.close();
-                target.close();
-            }
-            throw exception;
-        }
-        flagRenderStall("Atlas texture GPU upload", started);
-        if (Boolean.getBoolean("ringworld.profileSurfaceBuilds")) {
-            RingWorldMod.LOGGER.info("RingWorld Atlas transfer: {} {} texels", reuse ? "rows" : "full", texels);
-        }
-
-        previousSurfaceTexture = surfaceTexture;
-        previousSurfaceTextureView = surfaceTextureView;
-        previousRowHashes = surfaceRowHashes;
-        previousColumns = textureColumns;
-        previousSurfaceCompletion = surfaceCompletion;
-        surfaceTexture = target;
-        surfaceTextureView = view;
-        surfaceRowHashes = images.rowHashes();
-        textureColumns = images.columns();
-        textureRows = images.rows();
-        surfaceCompletion = completion;
-        textureMorphStartedNanos = previousSurfaceTexture == null ? 0L : System.nanoTime();
-        return true;
-    }
-
     private static float updateTextureMorph(long nowNanos) {
         if (previousSurfaceTextureView == null || textureMorphStartedNanos == 0L) return 1.0F;
         float progress = RingSurfaceMorph.progress(nowNanos - textureMorphStartedNanos);
-        // Keep the spare between streamed revisions, but release it when a partial stream goes idle.
-        if (progress >= 1.0F && (surfaceCompletion >= 1.0F || nowNanos - textureMorphStartedNanos >= 10_000_000_000L)) {
+        // Complete Atlas edits coalesce for up to ten seconds. Keep the spare across
+        // several edits so updating a handful of rows doesn't allocate a full texture.
+        boolean finishedInitialStream = surfaceCompletion >= 1.0F && previousSurfaceCompletion < 1.0F;
+        long retention = surfaceCompletion >= 1.0F ? 30_000_000_000L : 10_000_000_000L;
+        if (progress >= 1.0F && (finishedInitialStream || nowNanos - textureMorphStartedNanos >= retention)) {
             destroyPreviousSurfaceTexture();
             textureMorphStartedNanos = 0L;
         }
@@ -541,7 +492,12 @@ public final class RingSurfaceTextureRenderer {
     /** Keeps the displayed ring intact while the render thread uploads one resource per pass. */
     private static final class StagedUpload implements AutoCloseable {
         final TextureBuild build;
-        GpuBuffer mesh;
+        RingSurfaceBuffers mesh;
+        GpuTexture surface;
+        GpuTextureView surfaceView;
+        dev.ringworld.world.RingSurfaceRowUpdates.Cursor rows;
+        long transferred;
+        boolean reused;
         GpuTexture wall;
         GpuTextureView wallView;
 
@@ -550,11 +506,14 @@ public final class RingSurfaceTextureRenderer {
         }
 
         boolean prepareNext() {
-            if (build.mesh() != null && mesh == null) {
+            if (build.mesh() != null) {
+                var packed = build.mesh();
+                if (mesh == null) mesh = new RingSurfaceBuffers(packed.vertexCount());
                 long started = System.nanoTime();
-                mesh = RingSurfaceGpu.uploadMesh(build.mesh());
-                flagRenderStall("mesh GPU upload", started);
-                return true;
+                if (mesh.uploadNext(packed.data().vertexBuffer(), packed.vertexCount())) {
+                    flagRenderStall("mesh GPU page upload", started);
+                    return true;
+                }
             }
             if (build.wallImages() != null && wall == null) {
                 long started = System.nanoTime();
@@ -565,15 +524,60 @@ public final class RingSurfaceTextureRenderer {
                 flagRenderStall("wall texture GPU upload", started);
                 return true;
             }
+            var images = build.images();
+            if (surface == null) {
+                // Keep both sides of the displayed cross-fade immutable until it finishes.
+                if (updateTextureMorph(System.nanoTime()) < 1.0F) return true;
+                reused = previousSurfaceTexture != null && previousColumns == images.columns()
+                        && previousRowHashes.length == images.levels().length && previousRowHashes[0].length == images.rows();
+                rows = new dev.ringworld.world.RingSurfaceRowUpdates.Cursor(
+                        reused ? previousRowHashes : null, images.rowHashes(), images.columns());
+                if (reused) {
+                    surface = previousSurfaceTexture;
+                    surfaceView = previousSurfaceTextureView;
+                    previousSurfaceTexture = null;
+                    previousSurfaceTextureView = null;
+                    previousRowHashes = null;
+                } else {
+                    destroyPreviousSurfaceTexture();
+                    surface = RingSurfaceGpu.createSurfaceTexture(images.columns(), images.rows(), images.levels().length);
+                    surfaceView = RenderSystem.getDevice().createTextureView(surface);
+                }
+                return true;
+            }
+            if (!rows.done()) {
+                long started = System.nanoTime();
+                transferred += RingSurfaceGpu.uploadRows(surface, images.levels(), rows);
+                flagRenderStall("Atlas texture GPU upload", started);
+                return true;
+            }
             return false;
         }
 
         void publish() {
+            if (Boolean.getBoolean("ringworld.profileSurfaceBuilds")) {
+                RingWorldMod.LOGGER.info("RingWorld Atlas transfer: {} {} texels", reused ? "rows" : "full", transferred);
+            }
+            previousSurfaceTexture = surfaceTexture;
+            previousSurfaceTextureView = surfaceTextureView;
+            previousRowHashes = surfaceRowHashes;
+            previousColumns = textureColumns;
+            previousSurfaceCompletion = surfaceCompletion;
+            surfaceTexture = surface;
+            surfaceTextureView = surfaceView;
+            surface = null;
+            surfaceView = null;
+            surfaceRowHashes = build.images().rowHashes();
+            textureColumns = build.images().columns();
+            textureRows = build.images().rows();
+            surfaceCompletion = (float)build.snapshot().atlas().completion();
+            textureMorphStartedNanos = previousSurfaceTexture == null ? 0L : System.nanoTime();
             if (mesh != null) {
                 if (vertexBuffer != null) vertexBuffer.close();
                 vertexBuffer = mesh;
                 mesh = null;
                 vertexCount = build.mesh().vertexCount();
+                layerOffsets = build.mesh().layerOffsets();
                 wallPaletteMatrix = build.wallStyle().paletteMatrix();
                 bufferedMeshDetailed = build.snapshot().atlas().isComplete();
                 bufferedMeshHeightFingerprint = build.snapshot().heightFingerprint();
@@ -592,6 +596,8 @@ public final class RingSurfaceTextureRenderer {
         @Override
         public void close() {
             if (mesh != null) mesh.close();
+            if (surfaceView != null) surfaceView.close();
+            if (surface != null) surface.close();
             if (wallView != null) wallView.close();
             if (wall != null) wall.close();
             build.close();
@@ -668,6 +674,7 @@ public final class RingSurfaceTextureRenderer {
         if (vertexBuffer != null) vertexBuffer.close();
         vertexBuffer = null;
         vertexCount = 0;
+        layerOffsets = null;
         destroySurfaceTexture();
         bufferedGeometry = null;
         bufferedWorldHash = 0L;

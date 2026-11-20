@@ -301,18 +301,22 @@ public final class RingAtlasPregenerationService {
         RingAtlasSurfaceInvalidation.Cell cell = RingAtlasSurfaceInvalidation.cellFor(
                 atlas.geometry(), atlas.sampleStep(), position.getX(), position.getZ()).orElse(null);
         if (cell == null || !atlas.hasCell(cell.column(), cell.row())) return;
-        boolean reachesStoredSurface = RingAtlasSurfaceInvalidation.mayAffectSurface(
-                position.getY(), atlas.cellHeight(cell.column(), cell.row()));
-        if (!reachesStoredSurface && RingAtlasSurfaceInvalidation.mayAffectSide(
-                position.getY(), atlas.cellHeight(cell.column(), cell.row()))) {
+        int storedHeight = atlas.cellHeight(cell.column(), cell.row());
+        boolean reachesStoredSurface = RingAtlasSurfaceInvalidation.mayAffectSurface(position.getY(), storedHeight);
+        // A new platform below foliage can create the first eligible span in a formerly
+        // empty column. Check the bounded anchor even if there was no prior descriptor.
+        int step = atlas.sampleStep();
+        int sampleX = cell.column() * step + step / 2;
+        int sampleZ = atlas.geometry().minWidthZ() + cell.row() * step + step / 2;
+        boolean touchesLayer = (sampleX & sampleZ & 1) != 0 && position.getY() >= storedHeight - 48;
+        if (!reachesStoredSurface && (touchesLayer || RingAtlasSurfaceInvalidation.mayAffectSide(position.getY(), storedHeight))) {
             state.recaptures.enqueue(cell);
         }
         // A support edit can change omission without touching the highest block.
         // Inspect only the current top here; defer the column scan to the bounded writer.
         boolean manufacturedTop = !reachesStoredSurface && RingAtlasSurfaceSampler.hasManufacturedTop(
                 world.getChunkAt(position), position.getX() & 15, position.getZ() & 15);
-        if (RingAtlasSurfaceInvalidation.mayAffectSurface(position.getY(),
-                atlas.cellHeight(cell.column(), cell.row()), manufacturedTop)) {
+        if (RingAtlasSurfaceInvalidation.mayAffectSurface(position.getY(), storedHeight, manufacturedTop)) {
             // Vanilla block light reaches fifteen blocks. Queue the changed
             // cell and its bounded neighbours so a torch close to an Atlas
             // sample boundary can illuminate both sides, and removing it
@@ -538,9 +542,9 @@ public final class RingAtlasPregenerationService {
                         || surfaceState.isAir() || atlas.cellWaterCoverage(atlasX, row) != water)) continue;
                 int color = state.colours.surface(world, chunk, surface, surfaceState, waterBiomes);
                 int blockLight = coloursOnly ? atlas.cellBlockLight(atlasX, row) : surfaceBlockLight(world, surface, surfaceState);
-                if (atlas.putBlockSample(blockX, blockZ, surfaceY + 1, color, blockLight,
+                if (atlas.putCell(atlasX, row, surfaceY + 1, color, blockLight,
                         sideColor(state.colours, world, chunk, surface, surfaceState, color, atlas),
-                        water)) {
+                        water, RingAtlasSurfaceSampler.layer(chunk, surface))) {
                     changed = true;
                     if (coloursOnly) state.revisionPending = true;
                     state.checkpoints.changedCell(atlasX, row, atlas.columns());
@@ -632,7 +636,7 @@ public final class RingAtlasPregenerationService {
             int blockLight = surfaceBlockLight(world, surface, surfaceState);
             if (atlas.putCell(cell.column(), cell.row(), surfaceY + 1, color, blockLight,
                         sideColor(state.colours, world, chunk, surface, surfaceState, color, atlas),
-                        surfaceState.getFluidState().is(FluidTags.WATER) ? 15 : 0)) {
+                        surfaceState.getFluidState().is(FluidTags.WATER) ? 15 : 0, RingAtlasSurfaceSampler.layer(chunk, surface))) {
                 changed = true;
                 state.checkpoints.changedCell(cell.column(), cell.row(), atlas.columns());
                 state.dirtyTiles.publish(new TileCoordinate(

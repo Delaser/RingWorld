@@ -1,4 +1,6 @@
-# Two-layer Atlas trial
+# Historical two-layer Atlas trial
+
+Current development captures the second layer during ordinary gameplay and enables it on Medium. The fixture and page-server instructions below reproduce the historical trial at commit `986390c`. [Current implementation and measurements](default-comparison/README.md)
 
 This isolated client experiment compares a single-height surface with a ground surface and one overhead span. The two acceptance scenes are a natural forest by the rim and a 101-block stone-brick bridge built from ordinary blocks in a disposable copy of seed 255. The bridge has four polished-andesite piers and spruce parapets. The original world and the published mod are unaffected.
 
