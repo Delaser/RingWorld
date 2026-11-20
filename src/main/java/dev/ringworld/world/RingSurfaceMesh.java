@@ -6,10 +6,9 @@ import java.util.Objects;
 /**
  * Shared-vertex lattice for the atlas-backed complete-ring surface.
  *
- * <p>The GPU format is an unindexed triangle list, so boundary vertices are
- * repeated in the final buffer. They must nevertheless come from exactly one
- * sampled lattice vertex: independently sampling the two sides of a quad
- * boundary risks a visible crack when the final terrain-height mesh replaces
+ * <p>The mesh emits a triangle list. Repeated boundary vertices must come
+ * from exactly one sampled lattice vertex. Independently sampling both sides
+ * risks a visible crack when the final terrain-height mesh replaces
  * the progressive reference-height mesh. X remains periodic while Z has the
  * two finite width edges.</p>
  */
