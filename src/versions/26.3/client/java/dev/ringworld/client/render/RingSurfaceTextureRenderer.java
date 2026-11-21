@@ -21,6 +21,7 @@ import dev.ringworld.world.RingSurfaceMesh;
 import dev.ringworld.world.RingSurfaceMeshRefreshPolicy;
 import dev.ringworld.world.RingSurfaceGenerationFog;
 import dev.ringworld.world.RingSurfaceMorph;
+import dev.ringworld.world.RingSurfaceRowUpdates;
 import dev.ringworld.world.RingSurfacePlaceholder;
 import dev.ringworld.world.RingTerrainAtlas;
 import dev.ringworld.world.RingWaterColor;
@@ -495,9 +496,9 @@ public final class RingSurfaceTextureRenderer {
         RingSurfaceBuffers mesh;
         GpuTexture surface;
         GpuTextureView surfaceView;
-        dev.ringworld.world.RingSurfaceRowUpdates.Cursor rows;
+        RingSurfaceRowUpdates.Cursor rows;
         long transferred;
-        boolean reused;
+        String transferMode = "full";
         GpuTexture wall;
         GpuTextureView wallView;
 
@@ -528,11 +529,12 @@ public final class RingSurfaceTextureRenderer {
             if (surface == null) {
                 // Keep both sides of the displayed cross-fade immutable until it finishes.
                 if (updateTextureMorph(System.nanoTime()) < 1.0F) return true;
-                reused = previousSurfaceTexture != null && previousColumns == images.columns()
+                boolean reused = previousSurfaceTexture != null && previousColumns == images.columns()
                         && previousRowHashes.length == images.levels().length && previousRowHashes[0].length == images.rows();
-                rows = new dev.ringworld.world.RingSurfaceRowUpdates.Cursor(
-                        reused ? previousRowHashes : null, images.rowHashes(), images.columns());
+                long[][] resident = null;
                 if (reused) {
+                    transferMode = "rows";
+                    resident = previousRowHashes;
                     surface = previousSurfaceTexture;
                     surfaceView = previousSurfaceTextureView;
                     previousSurfaceTexture = null;
@@ -540,9 +542,26 @@ public final class RingSurfaceTextureRenderer {
                     previousRowHashes = null;
                 } else {
                     destroyPreviousSurfaceTexture();
+                    int patchTexels = surfaceTexture != null && surfaceCompletion == 1F
+                            && build.snapshot().atlas().isComplete() && bufferedWorldHash == build.snapshot().atlas().worldHash()
+                            ? RingSurfaceRowUpdates.smallPatchTexels(surfaceRowHashes, textureColumns,
+                                    images.rowHashes(), images.columns()) : -1;
+                    if (patchTexels == 0) {
+                        transferMode = "unchanged";
+                        return false;
+                    }
                     surface = RingSurfaceGpu.createSurfaceTexture(images.columns(), images.rows(), images.levels().length);
+                    if (patchTexels > 0) {
+                        long started = System.nanoTime();
+                        if (RingSurfaceGpu.copySurfaceTexture(surfaceTexture, surface, images.levels().length)) {
+                            transferMode = "copied+rows";
+                            resident = surfaceRowHashes;
+                        }
+                        flagRenderStall("Atlas texture GPU copy", started);
+                    }
                     surfaceView = RenderSystem.getDevice().createTextureView(surface);
                 }
+                rows = new RingSurfaceRowUpdates.Cursor(resident, images.rowHashes(), images.columns());
                 return true;
             }
             if (!rows.done()) {
@@ -556,22 +575,24 @@ public final class RingSurfaceTextureRenderer {
 
         void publish() {
             if (Boolean.getBoolean("ringworld.profileSurfaceBuilds")) {
-                RingWorldMod.LOGGER.info("RingWorld Atlas transfer: {} {} texels", reused ? "rows" : "full", transferred);
+                RingWorldMod.LOGGER.info("RingWorld Atlas transfer: {} {} texels", transferMode, transferred);
             }
-            previousSurfaceTexture = surfaceTexture;
-            previousSurfaceTextureView = surfaceTextureView;
-            previousRowHashes = surfaceRowHashes;
-            previousColumns = textureColumns;
-            previousSurfaceCompletion = surfaceCompletion;
-            surfaceTexture = surface;
-            surfaceTextureView = surfaceView;
-            surface = null;
-            surfaceView = null;
-            surfaceRowHashes = build.images().rowHashes();
-            textureColumns = build.images().columns();
-            textureRows = build.images().rows();
-            surfaceCompletion = (float)build.snapshot().atlas().completion();
-            textureMorphStartedNanos = previousSurfaceTexture == null ? 0L : System.nanoTime();
+            if (surface != null) {
+                previousSurfaceTexture = surfaceTexture;
+                previousSurfaceTextureView = surfaceTextureView;
+                previousRowHashes = surfaceRowHashes;
+                previousColumns = textureColumns;
+                previousSurfaceCompletion = surfaceCompletion;
+                surfaceTexture = surface;
+                surfaceTextureView = surfaceView;
+                surface = null;
+                surfaceView = null;
+                surfaceRowHashes = build.images().rowHashes();
+                textureColumns = build.images().columns();
+                textureRows = build.images().rows();
+                surfaceCompletion = (float)build.snapshot().atlas().completion();
+                textureMorphStartedNanos = previousSurfaceTexture == null ? 0L : System.nanoTime();
+            }
             if (mesh != null) {
                 if (vertexBuffer != null) vertexBuffer.close();
                 vertexBuffer = mesh;
