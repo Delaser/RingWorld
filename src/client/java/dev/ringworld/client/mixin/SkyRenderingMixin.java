@@ -3,7 +3,10 @@ package dev.ringworld.client.mixin;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.math.Axis;
 import dev.ringworld.client.ClientRingState;
+import dev.ringworld.client.RingMinecraftClientAccess;
 import dev.ringworld.client.render.RingSurfaceTextureRenderer;
+import dev.ringworld.client.render.RingSkyTarget;
+import net.minecraft.client.Minecraft;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingSkyCycle;
 import dev.ringworld.world.RingSkyProfile;
@@ -147,7 +150,9 @@ abstract class SkyRenderingMixin {
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null) return;
 
-        RingSurfaceTextureRenderer.render(matrices, geometry,
+        var target = this instanceof RingSkyTarget sky ? sky.ringworld$skyTarget()
+                : RingMinecraftClientAccess.mainRenderTarget(Minecraft.getInstance());
+        RingSurfaceTextureRenderer.render(target, matrices, geometry,
                 new Vec3(ringworld$cameraX, ringworld$cameraY, ringworld$cameraZ),
                 alpha);
 

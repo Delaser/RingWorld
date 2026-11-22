@@ -33,6 +33,7 @@
     "LivingEntitySleepingPositionMixin",
     "MinecraftMixin",
     "PlayerPositionDebugHudEntryMixin",
+    "SkyRenderTargetAccessor",
     "SkyRenderingMixin",
     "SpriteContentsAccessor",
     "compat.SodiumSimpleFrustumAccessor",

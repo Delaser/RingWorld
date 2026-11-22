@@ -6,6 +6,7 @@ import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.ClientRingState;
@@ -100,7 +101,7 @@ public final class RingSurfaceTextureRenderer {
     /** Loader adapters register this pipeline during their client setup event. */
     public static RenderPipeline pipeline() { return RingSurfaceGpu.pipeline(); }
 
-    public static void render(PoseStack matrices, RingGeometry geometry, Vec3 camera,
+    public static void render(RenderTarget target, PoseStack matrices, RingGeometry geometry, Vec3 camera,
                               float alpha) {
         RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
         // Never fall through to buffers left by another world while the
@@ -178,7 +179,7 @@ public final class RingSurfaceTextureRenderer {
                 end = Math.floorMod(centre + radius + 1, segments);
             }
         }
-        RingSurfaceGpu.draw(client, vertexBuffer, vertexCount, layerOffsets, first, end, surfaceTextureView,
+        RingSurfaceGpu.draw(client, target, vertexBuffer, vertexCount, layerOffsets, first, end, surfaceTextureView,
                 textureMorph >= 1.0f || previousSurfaceTextureView == null ? surfaceTextureView : previousSurfaceTextureView,
                 wallTextureView, transforms);
         modelView.popMatrix();

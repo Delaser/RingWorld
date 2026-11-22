@@ -8,6 +8,7 @@ import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.CommandEncoder;
@@ -23,7 +24,6 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.opengl.GlTexture;
-import dev.ringworld.client.RingMinecraftClientAccess;
 import dev.ringworld.world.RingSurfaceMesh;
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -144,10 +144,10 @@ public final class RingSurfaceGpu {
         for (int level = 0; level < levels.length; level++) encoder.writeToTexture(texture, levels[level], level, 0, 0, 0);
         encoder.submit();
     }
-    public static void draw(Minecraft client, RingSurfaceBuffers mesh, int vertexCount, int[] offsets, int first, int end,
+    public static void draw(Minecraft client, RenderTarget target, RingSurfaceBuffers mesh, int vertexCount, int[] offsets, int first, int end,
                             GpuTextureView current, GpuTextureView previous, GpuTextureView walls, GpuBufferSlice transforms) {
-        GpuTextureView color = RingMinecraftClientAccess.mainRenderTarget(client).getColorTextureView();
-        GpuTextureView depth = RingMinecraftClientAccess.mainRenderTarget(client).getDepthTextureView();
+        GpuTextureView color = target.getColorTextureView();
+        GpuTextureView depth = target.getDepthTextureView();
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
         try (RenderPass pass = encoder.createRenderPass(() -> "RingWorld textured surface", color, Optional.empty(), depth, OptionalDouble.empty())) {
             pass.setPipeline(PIPELINE); RenderSystem.bindDefaultUniforms(pass); pass.setUniform("DynamicTransforms", transforms);

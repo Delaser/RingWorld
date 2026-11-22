@@ -144,7 +144,7 @@ abstract class SkyRenderingMixin {
         RingGeometry geometry = ClientRingState.geometry();
         if (geometry == null) return;
 
-        RingSurfaceTextureRenderer.render(matrices, geometry,
+        RingSurfaceTextureRenderer.render(renderTarget, matrices, geometry,
                 new Vec3(ringworld$cameraX, ringworld$cameraY, ringworld$cameraZ),
                 alpha);
 

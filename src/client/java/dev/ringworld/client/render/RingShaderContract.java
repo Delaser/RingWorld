@@ -8,22 +8,20 @@ public final class RingShaderContract {
     public static final int UNIFORM_BYTES = 12 * 16;
     private RingShaderContract() { }
 
-    /** Keep adapted entry points in our namespace, leaving stock assets untouched. */
-    public static Identifier materialShader(Identifier shader) {
-        if (shader == null || !shader.getNamespace().equals("minecraft")) return shader;
-        String path = shader.getPath();
+    /**
+     * Both stages exchange private varyings. A pipeline borrowing just one stock stage
+     * belongs to its creator and must keep its original shaders and binding layout.
+     */
+    public static Identifier pairedMaterial(Identifier vertex, Identifier fragment) {
+        if (vertex == null || !vertex.equals(fragment)) return null;
+        String path = vertex.getPath();
         if (path.startsWith("core/")) path = path.substring(5);
-        return path.equals("terrain") || path.equals("rendertype_clouds") || path.equals("clouds")
-                ? Identifier.fromNamespaceAndPath("ringworld", "core/" + path) : shader;
-    }
-
-    public static boolean usesRingUniforms(Identifier shader) {
-        if (shader == null) return false;
-        String path = shader.getPath();
-        if (path.startsWith("core/")) path = path.substring(5);
-        return shader.getNamespace().equals("ringworld") && (path.equals("ring_surface")
-                || path.equals("terrain") || path.equals("rendertype_clouds") || path.equals("clouds"))
-                || shader.getNamespace().equals("minecraft")
-                && (path.equals("terrain") || path.equals("rendertype_clouds") || path.equals("clouds"));
+        boolean owned = vertex.getNamespace().equals("ringworld");
+        if (owned && path.equals("ring_surface")) return vertex;
+        if (!owned && !vertex.getNamespace().equals("minecraft")) return null;
+        return switch (path) {
+            case "terrain", "rendertype_clouds", "clouds" -> Identifier.fromNamespaceAndPath("ringworld", "core/" + path);
+            default -> null;
+        };
     }
 }

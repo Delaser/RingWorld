@@ -32,7 +32,21 @@ Tests used an Apple M2 with macOS OpenGL, Fabric, seed 259 and a disposable 2,04
 | Iris 1.11.4, Sodium 0.9.2 and MakeUp Ultra Fast 9.6a on 26.2 | The pack loaded, local walls rendered, and the camera crossed the seam. In the forward view, the opposite arc disappeared. Compare the [Sodium control](media/sodium-compatibility/26.2-sodium-seam.jpg) and [active pack](media/sodium-compatibility/26.2-makeup-seam.jpg). |
 | Iris 1.11.4, Sodium 0.9.2 and Photon 1.4 on 26.2 | Iris disabled the pack when its deferred4 program needed 17 fragment samplers on a driver exposing 16. The same error occurred with Fabric explicitly disabling RingWorld. An active-pack comparison requires a driver that can link this program. |
 
-The MakeUp run logged a completed Atlas and reached the ring renderer's projection diagnostic. The capture proves the visible arc disappears with the pack active. The next probe should compare the Atlas colour/depth target immediately after its draw and after pack composition, then check real terrain and shadow positions separately.
+### What happens to the far arc with a shader pack
+
+A frame capture on the 26.2 seam isolated two separate problems. At the Atlas draw, Minecraft’s color and depth overrides were both unset. RingWorld drew into the main color and depth textures. The surrounding pack sky used a forward depth comparison, while the stock 26.2 Atlas pipeline used reversed depth. Switching to forward depth alone still left the arc missing. A diagnostic draw that always passed depth produced a clearly visible opposite arc in the main color texture. The finished frame from that run lost the arc and acquired holes in the nearby terrain. Generation, download and mesh construction had all completed.
+
+Two experiments presented the same Atlas through a sky pass the pack recognizes. Both recovered the arc. The celestial pass lit it like the sun, and the alpha-blended End sky pass also turned the surrounding sky black. These findings rule out a depth-only change and a sky-sprite overlay as fixes for this pack. A terrain integration needs to supply color and per-pixel depth to the active scene before its fog, clouds and water are composed. The next acceptance views are the distant arc, a cloud crossing it, and a nearby water or terrain silhouette while moving. [Atlas color immediately after the diagnostic draw](media/sodium-compatibility/26.2-atlas-draw.png) · [Finished frame from the same diagnostic run](media/sodium-compatibility/26.2-atlas-finished.jpg) · [Celestial pass experiment](media/sodium-compatibility/26.2-atlas-celestial.jpg)
+
+A third 26.2 probe submitted the curved mesh with Minecraft’s ordinary solid-block vertex format and material. The pack drew parts of the mesh alongside its terrain, but the far surface vanished into the sky and strips of wall projected above the loaded rims. The probe used a radial normal, full skylight and an opaque Atlas texture. It lacked the production wall material, distance handoff and far-depth encoding. Reversing triangle winding in that same probe changed which rim faces appeared and caused the Atlas to cover nearby trees and terrain. The production Atlas has two-sided faces and suppresses its coverage inside the real chunk range. Both properties need to survive a move to ordinary terrain rendering. The remaining distance question is where the pack clips or fogs an opaque curved patch with a known depth. The solid-block and sky-sprite experiments are absent from the development build. [Solid-block experiment](media/sodium-compatibility/26.2-atlas-solid-block-trial.jpg) · [Reversed winding](media/sodium-compatibility/26.2-atlas-winding-trial.jpg) · [Iris geometry pass reference](https://shaders.properties/current/reference/programs/gbuffers/)
+
+### Shared pipeline ownership
+
+RingWorld adapts terrain and cloud shaders as a matched vertex/fragment pair. A mod can reuse either vanilla stage with its own other stage and keep its original bindings. A mod can also reuse the builder after creating a curved pipeline. The finished pipeline receives RingWorld’s bindings without modifying the builder. On 26.3 a pipeline with additional programmable stages also retains its own layout.
+
+On 26.2 a native test mod built both mixed-stage permutations and then reused the same builder for stock and custom materials. It verified the shader IDs and binding counts of each finished pipeline.
+
+The Atlas now takes its color and depth from the sky renderer’s destination. Minecraft 26.1.x uses the main target for its sky. On 26.2 and 26.3 the renderer accepts a target at construction, which can differ from the main framebuffer. A native test mod supplied a second render target on 26.2 and observed that exact object at the Atlas GPU draw. A deferred shader pack can still composite from separately managed attachments.
 
 ## Compatibility work based on 1.4 (13 October 2026)
 
@@ -124,13 +138,11 @@ shader contract.
 
 These remain unsupported by this source branch. Published JARs retain their
 original compatibility inventories.
-The loader probe reports a clear early log error when it finds their mod IDs;
-it does not crash the game or claim that every version necessarily fails in
-the same way.
+The loader probe logs a warning for shader-pack conflicts and an error for the other listed conflicts. Loading continues. For Iris, compare the same view with the pack on and off.
 
 | Mod / family | Mod ID | Conflict |
 | --- | --- | --- |
-| Iris | `iris` | Owns a shader pipeline without RingWorld's curved material contract |
+| Iris with an active shader pack | `iris` | A pack can replace the distant arc during composition. With packs off, Iris 1.11.4 passed the 26.2 surface and reload probe. |
 | VulkanMod | `vulkanmod` | Replaces the OpenGL renderer and shader contract |
 | Canvas Renderer | `canvas` | Replaces Fabric's vanilla-compatible renderer path |
 | Distant Horizons | `distanthorizons` | Adds an independent flat-world distant LOD |
