@@ -33,11 +33,6 @@ public final class NeoForgeRingWorldMod {
         var loadedIds = ModList.get().getMods().stream()
                 .map(info -> info.getModId())
                 .toList();
-        for (var conflict : dev.ringworld.api.RingCompatibilityContract.findLoadedConflicts(loadedIds)) {
-            RingWorldMod.LOGGER.error(
-                    "Unsupported RingWorld combination detected: {} ({}): {}. "
-                            + "Remove it before reporting RingWorld rendering or topology defects.",
-                    conflict.displayName(), conflict.modId(), conflict.reason());
-        }
+        RingWorldMod.logLoadedConflicts(loadedIds);
     }
 }

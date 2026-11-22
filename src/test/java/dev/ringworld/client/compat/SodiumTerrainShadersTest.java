@@ -1,6 +1,9 @@
 package dev.ringworld.client.compat;
 
 import static org.junit.jupiter.api.Assertions.*;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.StringReader;
 import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
@@ -15,12 +18,29 @@ class SodiumTerrainShadersTest {
         assertSame(source, SodiumTerrainShaders.adapt(Identifier.withDefaultNamespace("terrain.vsh"), source));
     }
 
+    @Test void unrelatedResourceKeepsItsReaderAndPosition() throws IOException {
+        try (var reader = new BufferedReader(new StringReader("first\nsecond"))) {
+            assertEquals("first", reader.readLine());
+            assertSame(reader, SodiumTerrainShaders.adaptReader(
+                    Identifier.fromNamespaceAndPath("another_mod", "core/block_layer_opaque.vsh"), reader));
+            assertSame(reader, SodiumTerrainShaders.adaptReader(shader("include/fog.glsl"), reader));
+            assertEquals("second", reader.readLine());
+        }
+    }
+
+    @Test void claimedReaderClosesEvenWhenShaderAdaptationFails() {
+        var reader = new BufferedReader(new StringReader("void main() {}"));
+        assertThrows(IllegalStateException.class, () ->
+                SodiumTerrainShaders.adaptReader(shader("blocks/block_layer_opaque.vsh"), reader));
+        assertThrows(IOException.class, reader::readLine);
+    }
+
     @Test void unknownTerrainContractsFailClearlyRatherThanRenderFlat() {
         assertThrows(IllegalStateException.class,
                 () -> SodiumTerrainShaders.adapt(shader("blocks/block_layer_opaque.vsh"), "void main() {}"));
     }
 
-    @Test void vertexAdapterReusesSharedProjectionAndPreservesFlatInputDistance() {
+    @Test void vertexAdapterReusesSharedProjectionAndPreservesFlatInputDistance() throws IOException {
         String source = """
                 #version 330
                 #import <sodium:include/fog.glsl>
@@ -35,6 +55,34 @@ class SodiumTerrainShadersTest {
         assertTrue(adapted.contains("uniform float RingWorldCameraY"));
         assertTrue(adapted.contains("max(v_FragDistance, getFragDistance(ringworldFlat))"));
         assertEquals(adapted, SodiumTerrainShaders.adapt(shader("blocks/block_layer_opaque.vsh"), adapted));
+        var original = new BufferedReader(new StringReader(source));
+        try (var transformed = SodiumTerrainShaders.adaptReader(shader("blocks/block_layer_opaque.vsh"), original)) {
+            var contents = new java.io.StringWriter();
+            transformed.transferTo(contents);
+            assertEquals(adapted, contents.toString());
+        }
+        assertThrows(IOException.class, original::readLine);
+    }
+
+    @Test void projectsTheRenderersDecodedPositionIncludingItsCameraOffset() {
+        var id = shader("blocks/block_layer_opaque.vsh");
+        String source = """
+                #include <sodium:globals.glsl>
+                void main() {
+                    vec3 position = (_vert_position + translation) - u_CameraOffset;
+                #ifdef USE_FOG
+                    v_FragDistance = getFragDistance(position);
+                #endif
+                    gl_Position = u_ProjectionMatrix * u_ModelViewMatrix * vec4(position, 1.0);
+                }
+                """;
+        String adapted = SodiumTerrainShaders.adapt(id, source);
+        int decode = adapted.indexOf("vec3 position = (_vert_position + translation) - u_CameraOffset;");
+        int project = adapted.indexOf("position = ring_project_position(");
+        assertTrue(decode >= 0 && decode < project && project < adapted.indexOf("#ifdef USE_FOG"));
+        assertEquals(adapted, SodiumTerrainShaders.adapt(id, adapted));
+        assertThrows(IllegalStateException.class, () -> SodiumTerrainShaders.adapt(id,
+                source.replace("#ifdef USE_FOG", "{\nvec3 position = other;\n}\n#ifdef USE_FOG")));
     }
 
     @Test void modernOitRunsCoverageBeforeAlphaAndAtmosphereBeforePremultiplication() {

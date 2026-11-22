@@ -1,6 +1,7 @@
 package dev.ringworld.client.mixin;
 
 import dev.ringworld.client.RingWorldClientSession;
+import dev.ringworld.client.render.RingSurfaceTextureRenderer;
 import dev.ringworld.client.RingWorldCreationUiTestClient;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
@@ -25,6 +26,17 @@ abstract class MinecraftMixin {
     @Inject(method = "clearClientLevel", at = @At("HEAD"))
     private void ringworld$clearClientSession(Screen nextScreen, CallbackInfo ci) {
         RingWorldClientSession.clear();
+    }
+
+    @Inject(method = "onResourceLoadFinished", at = @At("HEAD"))
+    private void ringworld$refreshAtlasMaterials(CallbackInfo ci) {
+        // The loaded pack owns the block models and sprite colors used by Atlas walls.
+        if (((Minecraft)(Object)this).level != null) RingSurfaceTextureRenderer.clear();
+    }
+
+    @Inject(method = "close", at = @At("HEAD"))
+    private void ringworld$closeAtlas(CallbackInfo ci) {
+        RingSurfaceTextureRenderer.clear();
     }
 
     /** Menu rendering does not reach either loader's level-render callback. */

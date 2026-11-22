@@ -39,7 +39,7 @@ void main() {
     if (RingWorldDistortion.x > 0.5) {
         vec3 point = vec3(vertexAngle * float(RingWorldLayout.y) / TAU,
                 float(RingWorldLayout.y) / TAU + RingWorldVertical.x - originalRadius, Position.z);
-        projected = ring_trial_position(point, vec3(CameraBlockPos) - CameraOffset);
+        projected = ring_trial_position(point, TextureMat[3].xyz);
     }
     gl_Position = ProjMat * ModelViewMat * vec4(projected, 1.0);
     // Unclipped perspective depth is offset + scale / clipW. Derive the
@@ -83,7 +83,7 @@ void main() {
     intrinsicHeight = originalRadius;
     // Native section traversal has a vertical range as well as an X/Z range.
     // Keep horizontal distance for materials; use canonical height for coverage.
-    float cameraY = float(CameraBlockPos.y) - CameraOffset.y;
+    float cameraY = TextureMat[3].y;
     float worldY = RingWorldVertical.w - intrinsicHeight;
     handoffDistance = length(vec2(intrinsicDistance, worldY - cameraY));
     intrinsicWidth = Position.z;

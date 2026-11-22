@@ -39,3 +39,13 @@ float ring_handoff_environment(float distance, float fogStart, float fogEnd) {
     float fog = clamp((nativeDistance - fogStart) / max(0.0001, fogEnd - fogStart), 0.0, 1.0);
     return fog * (1.0 - smoothstep(edge, 2.0 * edge, distance));
 }
+
+// A deferred pack has already shaded the opaque chunks when the Atlas is drawn.
+// Blend matching opaque surfaces over the pack's distance fog. A sub-block
+// offset along the view ray breaks depth ties with temporally jittered terrain.
+// The screen position and alpha stay physical; restore exact depth past the overlap.
+float ring_handoff_overlay_inverse_w(float inverseW, float distance) {
+    float range = RingWorldHandoff.y;
+    float offset = 0.75 * (1.0 - smoothstep(1.5 * range, 2.0 * range, distance));
+    return inverseW / max(0.5, 1.0 - offset * inverseW);
+}

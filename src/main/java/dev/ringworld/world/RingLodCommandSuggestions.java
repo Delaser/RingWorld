@@ -3,6 +3,8 @@ package dev.ringworld.world;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.FloatArgumentType;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
+import java.util.function.BiFunction;
 import com.mojang.brigadier.builder.RequiredArgumentBuilder;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
@@ -16,8 +18,27 @@ public final class RingLodCommandSuggestions {
                         FloatArgumentType.floatArg(RingLayerBand.MIN_BAND, RingLayerBand.MAX_BAND)).executes(set));
     }
 
+    public static <S> LiteralArgumentBuilder<S> shaderSupport(Command<S> show, Command<S> on, Command<S> off) {
+        return LiteralArgumentBuilder.<S>literal("shadersupport").executes(show)
+                .then(LiteralArgumentBuilder.<S>literal("on").executes(on))
+                .then(LiteralArgumentBuilder.<S>literal("off").executes(off));
+    }
+
+    public static <S> LiteralArgumentBuilder<S> atlasContrast(BiFunction<S, Integer, Integer> run) {
+        return LiteralArgumentBuilder.<S>literal("atlascontrast").executes(c -> run.apply(c.getSource(), null))
+                .then(LiteralArgumentBuilder.<S>literal("off").executes(c -> run.apply(c.getSource(), 0)))
+                .then(LiteralArgumentBuilder.<S>literal("on").executes(c -> run.apply(c.getSource(), 100)))
+                .then(RequiredArgumentBuilder.<S, Integer>argument("percent", IntegerArgumentType.integer(0, 100))
+                        .executes(c -> run.apply(c.getSource(), IntegerArgumentType.getInteger(c, "percent"))));
+    }
+
     public static <S> void ensurePresent(CommandDispatcher<S> dispatcher) {
         var root = dispatcher.getRoot().getChild("ringworld");
+        if (root == null || root.getChild("atlascontrast") == null)
+            dispatcher.register(LiteralArgumentBuilder.<S>literal("ringworld").then(atlasContrast((source, value) -> 0)));
+        if (root == null || root.getChild("shadersupport") == null)
+            dispatcher.register(LiteralArgumentBuilder.<S>literal("ringworld").then(
+                    shaderSupport(context -> 0, context -> 0, context -> 0)));
         if (root == null || root.getChild("distortion") == null) {
             var distortion = LiteralArgumentBuilder.<S>literal("distortion").executes(context -> 0);
             for (String action : new String[]{"on", "off", "show"})

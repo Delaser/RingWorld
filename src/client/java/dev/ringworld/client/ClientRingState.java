@@ -17,8 +17,8 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.Level;
+import net.minecraft.client.multiplayer.ClientLevel;
 import org.jetbrains.annotations.Nullable;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -170,9 +170,12 @@ public final class ClientRingState {
 
     @Nullable
     public static RingGeometry geometry() {
-        Minecraft client = Minecraft.getInstance();
-        return geometry != null && client.level != null
-                && client.level.dimension() == Level.OVERWORLD
+        return geometry(Minecraft.getInstance().level);
+    }
+
+    @Nullable
+    public static RingGeometry geometry(@Nullable ClientLevel world) {
+        return geometry != null && world != null && world.dimension() == Level.OVERWORLD
                 ? geometry : null;
     }
 

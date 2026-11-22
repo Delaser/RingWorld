@@ -9,28 +9,26 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RingShaderContractTest {
-    @Test void adaptedEntryPointsArePrivateAndForeignShadersStayUnchanged() {
+    @Test void curvedMaterialsOwnBothStagesOrNeither() {
+        var foreign = Identifier.fromNamespaceAndPath("another_mod", "core/terrain");
+        var atlas = Identifier.fromNamespaceAndPath("ringworld", "core/ring_surface");
+        assertEquals(atlas, RingShaderContract.pairedMaterial(atlas, atlas));
         for (String path : List.of("terrain", "core/terrain", "rendertype_clouds", "clouds")) {
-            var original = Identifier.withDefaultNamespace(path);
-            var adapted = RingShaderContract.materialShader(original);
+            var stock = Identifier.withDefaultNamespace(path);
+            var adapted = RingShaderContract.pairedMaterial(stock, stock);
             assertEquals("ringworld", adapted.getNamespace());
             assertTrue(adapted.getPath().startsWith("core/"));
-            assertEquals(adapted, RingShaderContract.materialShader(adapted));
+            assertEquals(adapted, RingShaderContract.pairedMaterial(adapted, adapted));
+            assertNull(RingShaderContract.pairedMaterial(foreign, stock));
+            assertNull(RingShaderContract.pairedMaterial(stock, foreign));
+            assertNull(RingShaderContract.pairedMaterial(stock, null));
+            assertNull(RingShaderContract.pairedMaterial(null, stock));
         }
-        var foreign = Identifier.fromNamespaceAndPath("another_mod", "terrain");
-        assertSame(foreign, RingShaderContract.materialShader(foreign));
-        var vanillaUi = Identifier.withDefaultNamespace("core/position_tex");
-        assertSame(vanillaUi, RingShaderContract.materialShader(vanillaUi));
-    }
-
-    @Test void onlyCurvedMaterialsReceiveThePrivateBinding() {
-        for (String path : List.of("terrain", "core/terrain", "rendertype_clouds", "clouds")) {
-            assertTrue(RingShaderContract.usesRingUniforms(Identifier.withDefaultNamespace(path)));
-        }
-        assertTrue(RingShaderContract.usesRingUniforms(Identifier.fromNamespaceAndPath("ringworld", "core/ring_surface")));
-        assertFalse(RingShaderContract.usesRingUniforms(null));
-        assertFalse(RingShaderContract.usesRingUniforms(Identifier.withDefaultNamespace("core/position_tex")));
-        assertFalse(RingShaderContract.usesRingUniforms(Identifier.fromNamespaceAndPath("another_mod", "terrain")));
+        assertNull(RingShaderContract.pairedMaterial(foreign, foreign));
+        assertNull(RingShaderContract.pairedMaterial(Identifier.withDefaultNamespace("core/terrain"),
+                Identifier.withDefaultNamespace("core/clouds")));
+        var ui = Identifier.withDefaultNamespace("core/position_tex");
+        assertNull(RingShaderContract.pairedMaterial(ui, ui));
     }
 
     @Test void privateUniformAbiIsCompleteAndSeparateFromMinecraft() throws IOException {

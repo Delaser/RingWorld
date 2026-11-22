@@ -6,8 +6,6 @@ import java.util.ArrayList;
 import java.util.List;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockState;
-import org.joml.Matrix4f;
-import org.joml.Vector4f;
 
 /** Derives Atlas-wall shader inputs from the real generated block palette. */
 final class RingWallShaderStyle {
@@ -15,25 +13,13 @@ final class RingWallShaderStyle {
 
     private RingWallShaderStyle() { }
 
-    static Encoded encode(RingWallStyle style, long worldSeed, Level world) {
+    static int vertexColor(RingWallStyle style, long worldSeed, Level world) {
         List<Run> runs = runs(style, world);
         while (runs.size() > MAX_SHADER_MATERIALS) mergeSmallestAdjacentRun(runs);
-        while (runs.size() < MAX_SHADER_MATERIALS) {
-            Run last = runs.getLast();
-            runs.add(new Run(100, 100, last.rgb()));
-        }
-
-        Matrix4f palette = new Matrix4f();
-        for (int index = 0; index < 4; index++) {
-            Run run = runs.get(index);
-            palette.setColumn(index, new Vector4f(
-                    red(run.rgb()), green(run.rgb()), blue(run.rgb()), run.end() / 100.0F));
-        }
-        Run fifth = runs.get(4);
+        Run fallback = runs.getLast();
         int seedBits = (int)((worldSeed ^ worldSeed >>> 32) & 31L);
         int metadata = style.pattern().id() * 32 + seedBits;
-        int vertexArgb = metadata << 24 | fifth.rgb();
-        return new Encoded(palette, vertexArgb);
+        return metadata << 24 | fallback.rgb();
     }
 
     static int[] paletteColors(RingWallStyle style, Level world) {
@@ -88,9 +74,6 @@ final class RingWallShaderStyle {
         return RingWallMaterialColors.color(state, world);
     }
 
-    private static float red(int rgb) { return red255(rgb) / 255.0F; }
-    private static float green(int rgb) { return green255(rgb) / 255.0F; }
-    private static float blue(int rgb) { return blue255(rgb) / 255.0F; }
     private static int red255(int rgb) { return rgb >>> 16 & 255; }
     private static int green255(int rgb) { return rgb >>> 8 & 255; }
     private static int blue255(int rgb) { return rgb & 255; }
@@ -98,7 +81,6 @@ final class RingWallShaderStyle {
         return red << 16 | green << 8 | blue;
     }
 
-    record Encoded(Matrix4f paletteMatrix, int vertexArgb) { }
     private record Run(int start, int end, int rgb) {
         int length() { return end - start; }
     }

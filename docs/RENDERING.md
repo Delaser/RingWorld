@@ -29,11 +29,17 @@ flowchart TD
 
 ## Sharing geometry with shaders
 
-`RingFrameUniformsMixin` publishes a separate 176-byte `RingWorld` UBO from
+`RingFrameUniformsMixin` publishes a separate 192-byte `RingWorld` UBO from
 GameRenderer. Minecraft's stock Globals layout and publisher remain unchanged.
 The private block holds geometry, handoff/detail/atmosphere, Atlas lighting,
 water sprite bounds and distortion parameters; see
 [the shared compatibility contract](SODIUM_COMPATIBILITY_2026_10_13.md).
+The sky pass captures its level, eye and immersion with the extracted sky state.
+The Atlas supplies that eye in the translation column of its own dynamic texture
+matrix. A second dry camera gets a separate RingWorld uniform buffer and shares
+the resident mesh and textures. Each buffer is uploaded on its first use and whenever any packed byte changes. A submerged camera skips the draw. The client
+session releases those assets on teardown. [Native view and shader-pack checks](COMPATIBILITY.md#active-sky-views-and-sodium-bindings).
+
 Terrain/cloud entry points live in RingWorld's namespace and include the private
 `render_uniforms.glsl`. Matching material pipelines bind both vanilla and private
 uniforms. Optional renderer adapters consume the same shared contract.

@@ -8,6 +8,7 @@ import com.mojang.blaze3d.pipeline.BlendFunction;
 import com.mojang.blaze3d.pipeline.ColorTargetState;
 import com.mojang.blaze3d.pipeline.DepthStencilState;
 import com.mojang.blaze3d.pipeline.RenderPipeline;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.platform.CompareOp;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.CommandEncoder;
@@ -23,7 +24,6 @@ import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.opengl.GlTexture;
-import dev.ringworld.client.RingMinecraftClientAccess;
 import dev.ringworld.world.RingSurfaceMesh;
 import java.nio.ByteBuffer;
 import java.util.Optional;
@@ -144,25 +144,50 @@ public final class RingSurfaceGpu {
         for (int level = 0; level < levels.length; level++) encoder.writeToTexture(texture, levels[level], level, 0, 0, 0);
         encoder.submit();
     }
-    public static void draw(Minecraft client, RingSurfaceBuffers mesh, int vertexCount, int[] offsets, int first, int end,
-                            GpuTextureView current, GpuTextureView previous, GpuTextureView walls, GpuBufferSlice transforms) {
-        GpuTextureView color = RingMinecraftClientAccess.mainRenderTarget(client).getColorTextureView();
-        GpuTextureView depth = RingMinecraftClientAccess.mainRenderTarget(client).getDepthTextureView();
+    public static boolean useDeferredAtlas(Minecraft client, RenderTarget target) {
+        return target == dev.ringworld.client.RingMinecraftClientAccess.mainRenderTarget(client)
+                && target.getColorTexture() instanceof GlTexture
+                && dev.ringworld.client.RingShaderSupport.useDeferredAtlas();
+    }
+
+    public static void draw(Minecraft client, RenderTarget target, RingSurfaceBuffers mesh, int vertexCount, int[] offsets, int first, int end,
+                            GpuTextureView current, GpuTextureView previous, GpuTextureView walls, GpuBufferSlice transforms, GpuBuffer alternateUniforms, boolean deferred) {
+        if (deferred) {
+            dev.ringworld.client.compat.IrisAtlasTarget.schedule(() ->
+                    drawNow(client, target, mesh, vertexCount, offsets, first, end,
+                            current, previous, walls, transforms, alternateUniforms));
+            return;
+        }
+        drawNow(client, target, mesh, vertexCount, offsets, first, end, current, previous, walls, transforms, alternateUniforms);
+    }
+
+    private static void drawNow(Minecraft client, RenderTarget target, RingSurfaceBuffers mesh, int vertexCount, int[] offsets, int first, int end,
+                            GpuTextureView current, GpuTextureView previous, GpuTextureView walls, GpuBufferSlice transforms, GpuBuffer alternateUniforms) {
+        GpuTextureView color = target.getColorTextureView();
+        GpuTextureView depth = target.getDepthTextureView();
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
         try (RenderPass pass = encoder.createRenderPass(() -> "RingWorld textured surface", color, Optional.empty(), depth, OptionalDouble.empty())) {
             pass.setPipeline(PIPELINE); RenderSystem.bindDefaultUniforms(pass); pass.setUniform("DynamicTransforms", transforms);
+            if (alternateUniforms != null) pass.setUniform(RingShaderContract.UNIFORM, alternateUniforms);
             pass.bindTexture("Sampler0", current, RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.LINEAR, true));
             pass.bindTexture("Sampler1", previous, RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.LINEAR, true));
             pass.bindTexture("Sampler2", client.gameRenderer.levelLightmap(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));
             pass.bindTexture("Sampler3", walls, RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.LINEAR, true));
-            if (offsets == null || first == end) {
-                drawRange(pass, mesh, 0, vertexCount);
-            } else if (first < end) {
-                drawRange(pass, mesh, 0, offsets[0]);
-                drawRange(pass, mesh, offsets[first], offsets[end]);
-            } else {
-                drawRange(pass, mesh, 0, offsets[end]);
-                drawRange(pass, mesh, offsets[first], vertexCount);
+            long original = target == dev.ringworld.client.RingMinecraftClientAccess.mainRenderTarget(client)
+                    && target.getColorTexture() instanceof GlTexture gl
+                    ? dev.ringworld.client.RingShaderSupport.bindAtlas(gl.glId()) : 0;
+            try {
+                if (offsets == null || first == end) {
+                    drawRange(pass, mesh, 0, vertexCount);
+                } else if (first < end) {
+                    drawRange(pass, mesh, 0, offsets[0]);
+                    drawRange(pass, mesh, offsets[first], offsets[end]);
+                } else {
+                    drawRange(pass, mesh, 0, offsets[end]);
+                    drawRange(pass, mesh, offsets[first], vertexCount);
+                }
+            } finally {
+                dev.ringworld.client.RingShaderSupport.restoreAtlas(original);
             }
         }
         encoder.submit();

@@ -5,14 +5,20 @@ import com.mojang.blaze3d.buffers.Std140Builder;
 import com.mojang.blaze3d.systems.RenderSystem;
 import dev.ringworld.client.ClientRingState;
 import dev.ringworld.client.RingAtlasLightTuning;
+import dev.ringworld.client.RingMinecraftClientAccess;
 import dev.ringworld.world.RingDimensionReport;
 import dev.ringworld.world.RingCloudBounds;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingRenderProfile;
+import dev.ringworld.client.render.RingRenderUniforms;
+import dev.ringworld.client.render.RingUniformCache;
+import dev.ringworld.client.render.RingSkyView;
+import dev.ringworld.client.render.RingSurfaceTextureRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import net.minecraft.resources.Identifier;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.client.multiplayer.ClientLevel;
 import org.lwjgl.system.MemoryStack;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
@@ -22,7 +28,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /** Publishes RingWorld-owned uniforms without replacing Minecraft's Globals. */
 @Mixin(GameRenderer.class)
-abstract class RingFrameUniformsMixin {
+abstract class RingFrameUniformsMixin implements RingRenderUniforms.SkyViewSource {
     @Unique private static final int RINGWORLD_GLOBALS_SIZE = dev.ringworld.client.render.RingShaderContract.UNIFORM_BYTES;
 
     @Unique private static final Identifier RINGWORLD_BLOCK_ATLAS = net.minecraft.data.AtlasIds.BLOCKS;
@@ -40,6 +46,9 @@ abstract class RingFrameUniformsMixin {
     }
 
     @Unique private GpuBuffer ringworld$buffer;
+    @Unique private GpuBuffer ringworld$skyBuffer;
+    @Unique private final RingUniformCache ringworld$mainContents = new RingUniformCache(RINGWORLD_GLOBALS_SIZE);
+    @Unique private RingUniformCache ringworld$skyContents;
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void ringworld$allocateOwnUniforms(CallbackInfo ci) {
@@ -53,20 +62,44 @@ abstract class RingFrameUniformsMixin {
     private void ringworld$closeOwnUniforms(CallbackInfo ci) {
         dev.ringworld.client.render.RingRenderUniforms.clear(ringworld$buffer);
         if (ringworld$buffer != null) ringworld$buffer.close();
+        if (ringworld$skyBuffer != null) ringworld$skyBuffer.close();
     }
 
     @Inject(method = "render", at = @At("HEAD"))
     private void ringworld$publishLayout(CallbackInfo ci) {
         RingGeometry geometry = ClientRingState.geometry();
         Minecraft client = Minecraft.getInstance();
+        var camera = RingMinecraftClientAccess.camera(client);
+        float teleportCover = geometry == null || client.getCameraEntity() == null ? 0.0F
+                : RingSurfaceTextureRenderer.teleportCoverage(client, geometry, camera);
+        ringworld$writeView(ringworld$buffer, ringworld$mainContents, client, client.level, geometry, camera.position(), teleportCover);
+    }
+
+    @Override
+    public GpuBuffer ringworld$skyViewBuffer(ClientLevel world, RingSkyView view) {
+        if (ringworld$skyBuffer == null) {
+            ringworld$skyContents = new RingUniformCache(RINGWORLD_GLOBALS_SIZE);
+            ringworld$skyBuffer = RenderSystem.getDevice().createBuffer(
+                    () -> "RingWorld alternate sky view", GpuBuffer.USAGE_UNIFORM | GpuBuffer.USAGE_COPY_DST,
+                    RINGWORLD_GLOBALS_SIZE);
+        }
+        // The main camera owns the cold-teleport tracker. Other views use the normal handoff.
+        ringworld$writeView(ringworld$skyBuffer, ringworld$skyContents, Minecraft.getInstance(), world, view.geometry(), view.eye(), 0);
+        return ringworld$skyBuffer;
+    }
+
+    @Unique
+    private static void ringworld$writeView(GpuBuffer buffer, RingUniformCache contents,
+                                            Minecraft client, ClientLevel world,
+                                            RingGeometry geometry, Vec3 eye, float teleportCover) {
         int active = geometry == null ? 0 : 1;
         int circumference = geometry == null ? 0 : geometry.circumferenceBlocks();
         int ringWidth = geometry == null ? 0 : geometry.widthBlocks();
         int wallHeight = geometry == null ? 0 : ClientRingState.wallHeightBlocks();
 
         float surfaceReferenceY = geometry == null ? 0.0F : ClientRingState.surfaceReferenceY();
-        int worldBottomY = active == 1 && client.level != null
-                ? client.level.getMinY()
+        int worldBottomY = active == 1 && world != null
+                ? world.getMinY()
                 : RingDimensionReport.VANILLA_OVERWORLD_BOTTOM_Y;
         float wallTopY = active == 1 ? worldBottomY + wallHeight : 0.0F;
         float cloudBaseY = active == 1
@@ -76,9 +109,6 @@ abstract class RingFrameUniformsMixin {
 
         float minWidthZ = geometry == null ? 0.0F : geometry.minWidthZ();
         float maxWidthZExclusive = geometry == null ? 0.0F : geometry.maxWidthZ() + 1.0F;
-        var cameraEntity = client.getCameraEntity();
-        float teleportCover = geometry == null || cameraEntity == null ? 0.0F
-                : dev.ringworld.client.render.RingSurfaceTextureRenderer.teleportCoverage(client, geometry, cameraEntity.position());
         float viewDistanceBlocks = active == 1
                 ? client.options.getEffectiveRenderDistance() * 16.0F
                 : 0.0F;
@@ -116,15 +146,15 @@ abstract class RingFrameUniformsMixin {
                             profile == null ? 0.0F : (float)profile.cloudFadeStartBlocks())
                     // cloud fade end, current rain strength, inner Z face planes
                     .putVec4(profile == null ? 0.0F : (float)profile.cloudFadeEndBlocks(),
-                            profile == null || client.level == null ? 0.0F : client.level.getRainLevel(
+                            profile == null || world == null ? 0.0F : world.getRainLevel(
                                     client.getDeltaTracker().getGameTimeDeltaPartialTick(false)),
                             cloudBounds == null ? 0.0F : (float)cloudBounds.minimumZ(),
                             cloudBounds == null ? 0.0F : (float)cloudBounds.maximumZ())
                     // process-local Atlas-light debug profile; never persisted
                     .putVec4(atlasLight.shaderMode(), atlasLight.falloffExponent(),
                             atlasLight.peakStrength(), ClientRingState.skyProfile().backdrop().id());
-            ringworld$waterBounds(builder, client, RINGWORLD_WATER_STILL, active == 1 && client.level != null);
-            ringworld$waterBounds(builder, client, RINGWORLD_WATER_FLOW, active == 1 && client.level != null);
+            ringworld$waterBounds(builder, client, RINGWORLD_WATER_STILL, active == 1 && world != null);
+            ringworld$waterBounds(builder, client, RINGWORLD_WATER_FLOW, active == 1 && world != null);
             // Uploaded correction parameters are independent of camera Y.
             // The shared shader reads the actual camera from vanilla Globals.
             var distortion = geometry == null ? null
@@ -133,11 +163,13 @@ abstract class RingFrameUniformsMixin {
                     distortion == null ? 0.0F : (float)distortion.coreBlocks(),
                     distortion == null ? 0.0F : (float)distortion.blendEnd(),
                     distortion == null ? 0.0F : (float)distortion.referenceRadius());
-            var camera = dev.ringworld.client.RingMinecraftClientAccess.camera(client).position();
-            builder.putVec4(geometry == null ? 0F : (float)geometry.wrapX(camera.x), (float)camera.z,
+            builder.putVec4(geometry == null ? 0F : (float)geometry.wrapX(eye.x), (float)eye.z,
                     dev.ringworld.client.render.RingSurfaceTextureRenderer.waterSurface() == null ? 0F : 1F, 0F);
             var data = builder.get();
-            dev.ringworld.client.render.RingSurfaceGpu.writeBuffer(ringworld$buffer.slice(), data);
+            if (!contents.matches(data)) {
+                dev.ringworld.client.render.RingSurfaceGpu.writeBuffer(buffer.slice(), data.duplicate());
+                contents.record(data);
+            }
         }
     }
 }
