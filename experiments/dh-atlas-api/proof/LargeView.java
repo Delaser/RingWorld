@@ -37,7 +37,8 @@ abstract class LargeView {
             return;
         }
         if (stop == 0
-                || (now - start > 60_000_000_000L
+                || (Boolean.getBoolean("trial.tour")
+                        && now - start > 60_000_000_000L
                         && now - last > Long.getLong("trial.dwellMs", 2000) * 1_000_000L)) {
             last = now;
             // Alternate travel directions on opposite sides and transversely nudge subsequent laps.

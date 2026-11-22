@@ -39,16 +39,28 @@ final class DhSurfaceReader extends Thread {
             while (!isInterrupted()) {
                 int before = complete.cardinality();
                 // A new cache per pass lets a subsequent pass see newly generated sections.
-                try (var cache = DhApi.Delayed.terrainRepo.createSoftCache()) {
+                var repo = DhApi.Delayed.terrainRepo;
+                try (var cache = repo.createSoftCache()) {
+                    int checked = 0;
                     for (int i = complete.nextClearBit(0);
                             i < total && !isInterrupted();
                             i = complete.nextClearBit(i + 1)) {
                         int cx = i / across, cz = geometry.minChunkZ() + i % across;
-                        var result =
-                                DhApi.Delayed.terrainRepo.getAllTerrainDataAtChunkPos(
-                                        level, cx, cz, cache);
+                        // Release DH's decoded section data in small batches, including on sparse
+                        // retries.
+                        if (checked == 128) {
+                            cache.clear();
+                            checked = 0;
+                            Thread.sleep(2);
+                        }
+                        checked++;
+                        // A complete chunk must have its first column. Avoid decoding all 256 on a
+                        // miss.
+                        var first = repo.getColumnDataAtBlockPos(level, cx * 16, cz * 16, cache);
+                        if (!first.success || first.payload == null || first.payload.length == 0)
+                            continue;
+                        var result = repo.getAllTerrainDataAtChunkPos(level, cx, cz, cache);
                         if (result.success && readChunk(cx, cz, result.payload)) complete.set(i);
-                        if ((i & 31) == 31) Thread.sleep(2);
                     }
                 } catch (RuntimeException failure) {
                     if (isInterrupted()) return;
