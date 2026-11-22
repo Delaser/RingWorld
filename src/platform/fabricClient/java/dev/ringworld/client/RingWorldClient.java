@@ -288,6 +288,12 @@ public final class RingWorldClient implements ClientModInitializer {
                         context.getSource().sendFeedback(Component.literal(dev.ringworld.client.RingShaderSupport.select(false)));
                         return 1;
                     })));
+            dispatcher.register(ClientCommands.literal("ringworld").then(
+                dev.ringworld.world.RingLodCommandSuggestions.atlasContrast((source, value) -> {
+                    String message = dev.ringworld.client.RingAtlasContrast.command(value);
+                    source.sendFeedback(Component.literal(message));
+                    return 1;
+                })));
             var distortion = ClientCommands.literal("distortion").executes(context -> {
                 String message = dev.ringworld.client.RingDistortionTuning.summary();
                 context.getSource().sendFeedback(Component.literal(message));

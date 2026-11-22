@@ -110,6 +110,12 @@ A second run of the updated build measured 6.05 ms moving and 5.85 ms stationary
 
 The development build detects active Iris shader packs on the client. `/ringworld shadersupport` reports the preference and pack status. `/ringworld shadersupport off` bypasses the Atlas attachment and local terrain projection immediately. `/ringworld shadersupport on` restores automatic detection. The setting persists between sessions. Each multiplayer client controls its own preference and the shader pack retains its own settings.
 
+Use `/ringworld atlascontrast` to see the current shader pack’s setting.
+`/ringworld atlascontrast on` reduces clear-day Atlas haze and deepens midtones at full strength (100%).
+`/ringworld atlascontrast off` restores the default look (0%). Use any whole percentage from 0 to 100,
+such as `/ringworld atlascontrast 50` for half strength. Each client remembers the value
+for each shader pack and applies it immediately while shader support is enabled.
+
 Both loaders reuse the normal Atlas mesh, textures, water and depth. On the OpenGL backend, the main view draws the Atlas into the pack’s scene color after deferred lighting and before translucent terrain. Iris resolves the first color output of the pack’s translucent terrain program. The adapter uses the existing opaque path if that target is unavailable. It restores the previous attachment and framebuffer before returning. Nearby terrain and shadow programs use the shared ring projection. Iris is a compile-only dependency and remains optional for players.
 
 #### Sildur’s black ring and Complementary’s border fog

@@ -45,6 +45,10 @@ public final class RingShaderSupport {
                 : "RingWorld shader support is on. Waiting for a shader pack.";
     }
 
+    static String activePackName() {
+        return detected ? IrisAtlasTarget.activePackName() : null;
+    }
+
     public static boolean useDeferredAtlas() {
         return detected && enabled() && IrisAtlasTarget.canDefer();
     }

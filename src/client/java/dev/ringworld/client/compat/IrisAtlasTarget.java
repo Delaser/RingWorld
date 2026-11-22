@@ -25,6 +25,10 @@ public final class IrisAtlasTarget {
         return Iris.getPipelineManager().getPipelineNullable() instanceof IrisRenderingPipeline;
     }
 
+    public static String activePackName() {
+        return active() ? Iris.getCurrentPackName() : null;
+    }
+
     private static GlFramebuffer litBuffer(IrisRenderingPipeline iris) {
         var program = iris.getShaderMap().getShader(ShaderKey.TERRAIN_TRANSLUCENT);
         return program instanceof IrisPackTargetAccess target ? target.ringworld$litFramebuffer() : null;

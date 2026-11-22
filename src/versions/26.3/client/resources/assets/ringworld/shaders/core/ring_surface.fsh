@@ -148,11 +148,6 @@ void main() {
     float rain = 1.0 - clamp(ColorModulator.y, 0.0, 1.0);
     float reveal = ring_handoff_reveal(intrinsicDistance, rain);
 
-    // ColorModulator.w is the incomplete-Atlas generation haze. It begins
-    // dense, clears with authoritative coverage, and reaches exactly zero for
-    // a complete ring. The renderer interpolates it alongside texture morphs.
-    reveal *= 1.0 - clamp(ColorModulator.w, 0.0, 1.0);
-
     // Atlas samples are exposed top surfaces, so use the same lightmap texel
     // as a real face with maximum sky light and no block light. This carries
     // Minecraft's current RGB sky tint and all client lightmap effects into
@@ -181,6 +176,10 @@ void main() {
         ? RingWorldAtlasLight.z
         : (0.42 + 0.24 * nightVisibility);
     litTerrain += lampColor * artificialLight * lightPeak;
+    float contrast = TextureMat[1].w * smoothstep(0.35, 0.85, surfaceLight.g) * (1.0 - rain);
+    reveal = mix(reveal, 1.0, 0.72 * contrast) * (1.0 - clamp(ColorModulator.w, 0.0, 1.0));
+    float materialY = dot(litTerrain, vec3(0.2126, 0.7152, 0.0722));
+    litTerrain *= 1.0 - 0.20 * (1.0 - smoothstep(0.05, 0.80, materialY)) * contrast * (1.0 - nightVisibility);
     // The incomplete texture is deliberately opaque: real generated colours
     // flavour nearby unknown cells, then each published revision cross-fades
     // into the next instead of exposing a hard tile update.

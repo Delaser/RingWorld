@@ -47,6 +47,21 @@ class RingLodCommandSuggestionsTest {
         assertTrue(suggestions.getList().stream().anyMatch(s -> s.getText().equals("lod")));
     }
 
+    @Test void atlasContrastSurvivesServerCommandRefreshAndValidatesRange() throws Exception {
+        var dispatcher = new CommandDispatcher<Object>();
+        dispatcher.register(LiteralArgumentBuilder.<Object>literal("ringworld").then(
+                RingLodCommandSuggestions.atlasContrast((source, percent) -> percent == null ? -1 : percent)));
+        RingLodCommandSuggestions.ensurePresent(dispatcher);
+        assertEquals(-1, dispatcher.execute("ringworld atlascontrast", new Object()));
+        assertEquals(100, dispatcher.execute("ringworld atlascontrast on", new Object()));
+        assertEquals(0, dispatcher.execute("ringworld atlascontrast off", new Object()));
+        assertEquals(45, dispatcher.execute("ringworld atlascontrast 45", new Object()));
+        for (String value : new String[]{"-1", "101"}) {
+            assertThrows(com.mojang.brigadier.exceptions.CommandSyntaxException.class,
+                    () -> dispatcher.execute("ringworld atlascontrast " + value, new Object()));
+        }
+    }
+
     @Test void freshCommandTreeGetsSuggestionsAfterReconnectOrServerRefresh() {
         var dispatcher = new CommandDispatcher<Object>();
         RingLodCommandSuggestions.ensurePresent(dispatcher);

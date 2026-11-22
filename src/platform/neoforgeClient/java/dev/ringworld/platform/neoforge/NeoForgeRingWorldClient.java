@@ -116,6 +116,12 @@ public final class NeoForgeRingWorldClient {
                     context.getSource().sendSuccess(() -> Component.literal(message), false);
                     return 1;
                 })));
+        event.getDispatcher().register(Commands.literal("ringworld").then(
+            dev.ringworld.world.RingLodCommandSuggestions.atlasContrast((source, value) -> {
+                String message = dev.ringworld.client.RingAtlasContrast.command(value);
+                source.sendSuccess(() -> Component.literal(message), false);
+                return 1;
+            })));
         var distortion = Commands.literal("distortion").executes(context -> {
             String message = dev.ringworld.client.RingDistortionTuning.summary();
             context.getSource().sendSuccess(() -> Component.literal(message), false);
