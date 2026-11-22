@@ -1,5 +1,39 @@
 # Compatibility contract
 
+## Compatibility priorities from CurseForge (22 November 2026)
+
+The [RingWorld comments](https://www.curseforge.com/minecraft/mc-mods/ringworld/comments) contain 54 posts, including replies. Several independent players describe incorrect shader-pack output. Others ask how to use Sodium, report invisible nearby walls, or ask whether a second distant-terrain renderer can coexist with the Ring Atlas.
+
+| Priority | Player evidence | Test or engineering consequence |
+|---|---|---|
+| Terrain and shader packs | Reports name Iris, Photon, MakeUp Ultra Fast and Derivative. One 26.2 Sodium report distinguishes invisible **loaded** walls from visible **distant** walls. | First compare the same rim and seam on stock rendering and Sodium alone. Then add Iris with packs disabled and enable one pack at a time. Check real blocks, Atlas alignment, water, shadows and reload separately. |
+| External distant terrain | One player asks about Voxy and Distant Horizons. | Check which renderer draws the distant surface, which projection it uses, and whether both write depth over the same terrain. The question alone establishes demand. |
+| Audio and world generation | One player names Sounds without a version or symptom. Another reports playing successfully with Lost Cities and Oh The Biomes We've Gone. | Obtain a minimal audio reproduction before changing audio hooks. Check content generation and seam continuity on representative worlds before declaring support. |
+| Older game versions | Several players request 1.20.1. A 1.21.1 user reports a NeoForge startup crash with Sodium 0.8.13. | Track the backport independently. [Issue #322](https://github.com/Delaser/RingWorld/issues/322) identifies an injection into a replaced section-rendering method. |
+
+The explosion crash reported with RingWorld alone is tracked in [#301](https://github.com/Delaser/RingWorld/issues/301). The [compatibility umbrella](https://github.com/Delaser/RingWorld/issues/98) covers broader interoperability.
+
+For new work, keep projection, fog, handoff, water and visibility decisions shared. Compose with existing shader reads and preserve the active provider's material. Use a renderer-specific adapter only to translate an actual difference in inputs or pass lifecycle. The Iris interface exposes separate geometry and shadow passes. A candidate should project the same canonical position in both, keep block coordinates available for material sampling, and compare shadow alignment under motion. [Geometry passes](https://shaders.properties/current/reference/programs/gbuffers/) · [Coordinate spaces](https://shaders.properties/current/how-to/coordinate_spaces/)
+
+A second testable assumption is where the Atlas is drawn. Across all three 26.x renderer adapters, the sky hook calls the Atlas renderer and its draw code selects the main colour and depth attachments directly. Instrument whether that hook runs and which attachments the active renderer later composites before changing the draw destination.
+
+### Development probes
+
+The shader-loading hook now operates on the source or reader returned by the active resource loader. The 26.2 path passes unrelated readers through by identity without consuming or closing them. The terrain adapter applies projection after the renderer decodes the position, preserving the renderer’s arithmetic. Comparing actual Sodium JAR resources with the pre-change adapter produced byte-identical vertex and fragment sources for the tested 0.8.9 and 0.9.2 builds. Sodium 0.9.3 subtracts a camera offset at that step. A regression test reproduces the old rejection and checks that the offset is retained and the projection runs before optional fog.
+
+Tests used an Apple M2 with macOS OpenGL, Fabric, seed 259 and a disposable 2,048 × 128 ring.
+
+| Combination | Observation |
+|---|---|
+| Sodium 0.8.9 on 26.1.1 and Sodium 0.9.2 on 26.2 and 26.3 | Entered the ring, captured six water/surface views and recovered after a resource reload. |
+| Sodium 0.9.2 on 26.2, with and without Iris 1.11.4 installed, packs off | Both completed the reload test. The above-water views showed the same curved ring. |
+| Sodium 0.9.3 on 26.3 | The pre-change adapter rejected the shipped vertex shader. The revised client loaded the ring, crossed the seam and captured the curved arc and both visible loaded rims. |
+| Stock renderer versus Sodium 0.9.2 on 26.2 | On copies of the same completed save, both traversed the wrap seam and drew both loaded rim walls. |
+| Iris 1.11.4, Sodium 0.9.2 and MakeUp Ultra Fast 9.6a on 26.2 | The pack loaded, local walls rendered, and the camera crossed the seam. In the forward view, the opposite arc disappeared. Compare the [Sodium control](media/sodium-compatibility/26.2-sodium-seam.jpg) and [active pack](media/sodium-compatibility/26.2-makeup-seam.jpg). |
+| Iris 1.11.4, Sodium 0.9.2 and Photon 1.4 on 26.2 | Iris disabled the pack when its deferred4 program needed 17 fragment samplers on a driver exposing 16. The same error occurred with Fabric explicitly disabling RingWorld. An active-pack comparison requires a driver that can link this program. |
+
+The MakeUp run logged a completed Atlas and reached the ring renderer's projection diagnostic. The capture proves the visible arc disappears with the pack active. The next probe should compare the Atlas colour/depth target immediately after its draw and after pack composition, then check real terrain and shadow positions separately.
+
 ## Compatibility work based on 1.4 (13 October 2026)
 
 `codex/mod-compatibility-core`, based on `57efcb0`, preserves RingWorld's accepted

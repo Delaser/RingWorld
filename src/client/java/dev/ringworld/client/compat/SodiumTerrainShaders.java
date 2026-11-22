@@ -1,20 +1,44 @@
 package dev.ringworld.client.compat;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 import net.minecraft.resources.Identifier;
 
 /** Format adapter only: all projection, water and handoff math stays in shared GLSL. */
 public final class SodiumTerrainShaders {
+    // Hook the decoded position, preserving camera offsets and other provider-owned arithmetic.
+    private static final Pattern DECODED_POSITION = Pattern.compile("(?m)^\\h*vec3\\h+position\\h*=\\s*[^;{}#]+;");
     private SodiumTerrainShaders() { }
 
-    public static String adapt(Identifier name, String source) {
-        if (!name.getNamespace().equals("sodium")) return source;
+    // Minecraft 26.2 supplies a live reader. Leave its ownership, contents and position
+    // alone for all shaders outside the adapter, including other mods' resources.
+    public static BufferedReader adaptReader(Identifier name, BufferedReader reader) throws IOException {
+        if (!isTerrainStage(name)) return reader;
+        try (reader) {
+            var source = new StringWriter();
+            reader.transferTo(source);
+            return new BufferedReader(new StringReader(adapt(name, source.toString())));
+        }
+    }
+
+    private static boolean isTerrainStage(Identifier name) {
+        if (!name.getNamespace().equals("sodium")) return false;
         String path = name.getPath();
         if (path.startsWith("shaders/")) path = path.substring("shaders/".length());
-        boolean vertex = path.equals("blocks/block_layer_opaque.vsh") || path.equals("core/block_layer_opaque.vsh");
-        boolean fragment = path.equals("blocks/block_layer_opaque.fsh") || path.equals("core/block_layer_opaque.fsh");
-        if (!vertex && !fragment) return source;
+        return switch (path) {
+            case "blocks/block_layer_opaque.vsh", "core/block_layer_opaque.vsh",
+                 "blocks/block_layer_opaque.fsh", "core/block_layer_opaque.fsh" -> true;
+            default -> false;
+        };
+    }
+
+    public static String adapt(Identifier name, String source) {
+        if (!isTerrainStage(name)) return source;
+        boolean vertex = name.getPath().endsWith(".vsh");
         if (source.contains("// RingWorld terrain adapter")) return source;
         boolean engine = source.contains("#moj_import") || source.contains("#include");
         boolean explicit = source.contains("layout(location = 0)");
@@ -29,8 +53,11 @@ public final class SodiumTerrainShaders {
                     ? (explicit ? "#include" : "#moj_import") + " <minecraft:globals.glsl>\n"
                     : "uniform float RingWorldCameraY;\n";
             String cameraY = engine ? "float(CameraBlockPos.y) - CameraOffset.y" : "RingWorldCameraY";
-            source = replaceOnce(source, "vec3 position = _vert_position + translation;", """
-                    vec3 position = _vert_position + translation;
+            var position = DECODED_POSITION.matcher(source);
+            if (!position.find()) throw new IllegalStateException("Missing decoded terrain position");
+            int endOfPosition = position.end();
+            if (position.find()) throw new IllegalStateException("Ambiguous decoded terrain position");
+            source = source.substring(0, endOfPosition) + "\n" + """
                     vec3 ringworldFlat = position;
                     ringworldDistances = vec2(-1.0);
                     ringWaterUv = vec2(0.0);
@@ -41,7 +68,7 @@ public final class SodiumTerrainShaders {
                                 / vec2(RingWorldLayout.yz);
                         position = ring_project_position(position + ringworldCamera, ringworldCamera);
                     }
-                    """.replace("CAMERA_Y", cameraY));
+                    """.replace("CAMERA_Y", cameraY) + source.substring(endOfPosition);
             source = replaceOnce(source, "v_FragDistance = getFragDistance(position);", """
                     v_FragDistance = getFragDistance(position);
                     if (RingWorldLayout.x != 0) {
