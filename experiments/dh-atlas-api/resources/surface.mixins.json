@@ -1,0 +1,7 @@
+{
+  "required": true,
+  "package": "dev.ringworld.trial.dh.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "client": ["SurfaceInputMixin"],
+  "injectors": {"defaultRequire": 1}
+}
