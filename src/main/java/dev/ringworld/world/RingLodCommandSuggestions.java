@@ -16,8 +16,17 @@ public final class RingLodCommandSuggestions {
                         FloatArgumentType.floatArg(RingLayerBand.MIN_BAND, RingLayerBand.MAX_BAND)).executes(set));
     }
 
+    public static <S> LiteralArgumentBuilder<S> shaderSupport(Command<S> show, Command<S> on, Command<S> off) {
+        return LiteralArgumentBuilder.<S>literal("shadersupport").executes(show)
+                .then(LiteralArgumentBuilder.<S>literal("on").executes(on))
+                .then(LiteralArgumentBuilder.<S>literal("off").executes(off));
+    }
+
     public static <S> void ensurePresent(CommandDispatcher<S> dispatcher) {
         var root = dispatcher.getRoot().getChild("ringworld");
+        if (root == null || root.getChild("shadersupport") == null)
+            dispatcher.register(LiteralArgumentBuilder.<S>literal("ringworld").then(
+                    shaderSupport(context -> 0, context -> 0, context -> 0)));
         if (root == null || root.getChild("distortion") == null) {
             var distortion = LiteralArgumentBuilder.<S>literal("distortion").executes(context -> 0);
             for (String action : new String[]{"on", "off", "show"})

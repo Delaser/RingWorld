@@ -111,8 +111,12 @@ void main() {
     // Reconstruct depth before the vertex clamp, including triangles that
     // straddle its boundary. Join the native curve to an ordered infinite
     // tail exactly where clamping starts: no plateau and no distance jump.
-    float nativeDepth = depthMapping.x + depthMapping.y * gl_FragCoord.w;
-    float tailOffset = depthMapping.z * gl_FragCoord.w;
+    bool overlay = TextureMat[0].w > 0.5 && !water && !replacement
+            && proxyAlpha > 0.001 && handoffDistance < 2.0 * RingWorldHandoff.y;
+    float inverseW = gl_FragCoord.w;
+    if (overlay) inverseW = ring_handoff_overlay_inverse_w(inverseW, handoffDistance);
+    float nativeDepth = depthMapping.x + depthMapping.y * inverseW;
+    float tailOffset = depthMapping.z * inverseW;
     // Both backend NDC ranges map to [0,1] here; reversed depth has far=0.
 #ifdef RINGWORLD_REVERSED_DEPTH
     float surfaceDepth = max(nativeDepth, tailOffset);
@@ -121,6 +125,8 @@ void main() {
     float surfaceDepth = min(nativeDepth, 1.0 + tailOffset);
     gl_FragDepth = mix(1.0, surfaceDepth, proxyAlpha);
 #endif
+
+    if (overlay) gl_FragDepth = surfaceDepth;
 
     if (waterBacking) {
         // Move along this view ray to just beyond the native fade, keeping the

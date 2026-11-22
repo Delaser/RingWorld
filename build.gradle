@@ -226,6 +226,22 @@ def fabricRaidSeamPort = {
 	}
 }
 
+// Iris is an optional compile-time ABI. The game and release jars do not include it.
+def irisAbi = project.minecraft_version.startsWith('26.1') ? '26.1' : project.minecraft_version
+ext.ringIrisCompileVersion = [
+    '26.1': [fabric: 'sZbVsl2Q', neoforge: 'qE5Y7GrZ'],
+    '26.2': [fabric: 'gxZWWnKH', neoforge: 'k55HdONq'],
+    '26.3': [fabric: 'vTN4NRGW', neoforge: 'Ag5S66CF']
+][irisAbi]
+allprojects {
+    repositories {
+        maven {
+            url = 'https://api.modrinth.com/maven'
+            content { includeModule 'maven.modrinth', 'iris' }
+        }
+    }
+}
+
 repositories {
 	mavenCentral()
 }
@@ -2135,6 +2151,7 @@ tasks.register("verifyCurvedObjectCaptureClient") {
 }
 
 dependencies {
+	clientCompileOnly("maven.modrinth:iris:${ringIrisCompileVersion.fabric}") { transitive = false }
 	minecraft "com.mojang:minecraft:${project.minecraft_version}"
 	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
 	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"

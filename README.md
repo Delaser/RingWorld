@@ -290,6 +290,10 @@ rights to imply that an unofficial fork is endorsed by the RingWorld project.
 
 ### Local Atlas display quality
 
+RingWorld detects active Iris shader packs automatically. Enter `/ringworld shadersupport`
+to check the status or `/ringworld shadersupport on|off` to change it immediately.
+This preference is saved on the client. Shader-pack appearance varies by pack and GPU.
+
 Use `/ringworld lod low|medium|high` to select your local
 LOD display budget. Medium draws the ground beneath tree crowns and short bridge spans
 in the transition to distant terrain. Use `/ringworld lod band 0.5` through

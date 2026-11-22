@@ -81,7 +81,7 @@ On Fabric 26.2, Sodium 0.9.2 and Iris 1.11.4 with MakeUp Ultra Fast 9.6a, a diag
 
 At sample (432, 90), the Atlas changed depth from 0 to approximately 0.000157. Iris used that same depth texture as `depthtex0`. The sample kept its Atlas depth through final presentation. Both copies of `colortex1` were byte-identical across the Atlas draw. MakeUp’s `deferred_fragment.glsl` reads color from `colortex1` and depth from `depthtex0`. The Minecraft main color image stayed byte-identical from the Atlas draw through the composite pass. `IrisRenderingPipeline.finalizeLevelRendering` then called `FinalPassRenderer.renderFinalPass`, which drew into main color and replaced it with the pack’s scene. The marked pixel became RGB (65, 97, 136). [See the same-frame captures](media/sodium-compatibility/26.2-makeup-frame-trace.jpg).
 
-The next experiment is to submit a single opaque patch to a renderer-owned terrain color and matching depth destination. Validate real blocks occluding it, then validate the handoff and beyond-far-plane depth before adding water or shadows. The diagnostic marker and GPU readbacks are confined to the test build.
+The follow-up opaque-material experiment below tested a single patch in the pack’s terrain color and depth targets, including occlusion by a nearby oak. The diagnostic marker and GPU readbacks are confined to the test build.
 
 ### Frame-time check
 
@@ -105,6 +105,65 @@ On NeoForge 26.3 with Sodium 0.9.2, a test mod held the camera at the seam-join 
 | CPU time submitting the Atlas draw, median ms | 0.910 | 0.025 |
 
 A second run of the updated build measured 6.05 ms moving and 5.85 ms stationary, with stationary p95 at 12.87 ms. It again skipped all 600 stationary writes. Neither updated NeoForge run recorded a motion frame over 50 ms. These are elapsed frame times and CPU submission times. This driver supplied no GPU timer-query data.
+
+### Automatic shader-pack support
+
+The development build detects active Iris shader packs on the client. `/ringworld shadersupport` reports the preference and pack status. `/ringworld shadersupport off` bypasses the Atlas attachment and local terrain projection immediately. `/ringworld shadersupport on` restores automatic detection. The setting persists between sessions. Each multiplayer client controls its own preference and the shader pack retains its own settings.
+
+Both loaders reuse the normal Atlas mesh, textures, water and depth. On the OpenGL backend, the main view draws the Atlas into the pack’s scene color after deferred lighting and before translucent terrain. Iris resolves the first color output of the pack’s translucent terrain program. The adapter uses the existing opaque path if that target is unavailable. It restores the previous attachment and framebuffer before returning. Nearby terrain and shadow programs use the shared ring projection. Iris is a compile-only dependency and remains optional for players.
+
+#### Sildur’s black ring and Complementary’s border fog
+
+[Matched interior views before and after](../experiments/opaque-atlas-patch/deferred-lighting-comparison.jpg)
+
+With Sildur’s Vibrant v2.02 Extreme and Fog off, a pixel at (854, 225) on the top of the outer wall already had RGB (0.367, 0.387, 0.445) in the opaque albedo texture. Its encoded normal was (0, 0) and its lightmap buffer still held the clear value. The pack decodes that normal by taking a square root whose argument becomes −1. Both copies of its scene color were black after deferred lighting at this pixel. In a diagnostic run on the original draw path, changing only the decoded normal in a small rectangle brought that presented wall pixel from RGB (0, 0, 0) to (160, 142, 139). An adjacent untreated wall pixel stayed black. The distributed adapter contains no shader-pack edits. With Complementary Reimagined r5.10, deferred border fog instead mixed the distant wall into the sky color.
+
+The detailed Atlas already supplies its own surface shading. RingWorld schedules that one draw with its original geometry, projection and frame uniforms at the end of Iris’s deferred lighting. The live depth attachment still occludes the Atlas behind nearer opaque blocks. The pack subsequently renders translucent terrain and post-processing. A fixed-camera test on Complementary placed a red concrete panel and lime stained glass in front of the arc. The concrete stayed opaque and the Atlas remained visible through the tinted glass. This uses neither pack names nor pack-specific definitions of albedo, material, normal or lightmap buffers. Pack effects already composited into the sky, including volumetric clouds, can appear behind the distant Atlas. [Iris deferred pass ordering](https://shaders.properties/current/reference/programs/deferred/)
+
+With default settings the corrected arc was also visible in Complementary Unbound, Sildur’s Vibrant Extreme, BSL and MakeUp. Native smoke tests exercised the three rendering ABIs and the NeoForge client toggle.
+
+Paired frame intervals on Minecraft 26.2 Fabric, Iris 1.11.4, Sodium 0.9.2, Apple M2 OpenGL, 12 chunks. In each of four fixed views the client alternated previous, changed, changed, previous for 180 frames each. Values are the average of the two window means, in milliseconds. This test includes all pack effects.
+
+| Pack and setting | Interior | Outside rim | Full loop | Shore |
+| --- | ---: | ---: | ---: | ---: |
+| Sildur’s Vibrant Extreme, Fog off | 26.40 → 29.00 | 20.95 → 21.56 | 18.95 → 20.13 | 26.07 → 26.59 |
+| Complementary Reimagined, default | 20.12 → 23.01 | 17.39 → 16.75 | 16.84 → 16.68 | 32.96 → 34.57 |
+
+An extra early color/depth draw was also tested on the corrected Complementary interior. Alternating four 180-frame windows averaged 22.10 ms for one Atlas draw and 23.97 ms for two. The shared adapter issues one draw pass.
+
+#### Wall flicker and fog at the live terrain boundary
+
+The opening interior shot exposes two narrow strips where the generated walls and the Atlas describe the same surface. At a stationary camera, shader-pack terrain jitter changes which surface passes the depth test. The loaded wall receives the pack’s border fog during lighting, while the Atlas is drawn afterward. Alternating between those colors makes the depth conflict especially visible. Disabling temporal anti-aliasing on the original Complementary path also stopped the flashing, but left a bright fog stripe. The revised path keeps temporal anti-aliasing enabled. The shader-off control is stable. Sampling the distant wall from outside the ring misses this overlap.
+
+The post-lighting draw now blends the Atlas color over matching opaque terrain using the existing distance fade. Its depth test gives the proxy a 0.75-block offset toward the camera along the view ray, tapering to zero between 1.5 and 2 times the handoff range. Screen positions stay fixed. The same calculation feeds both forward and reversed depth and the ordered far tail. Water backing and the separate replacement layer retain their own depth handling. The stock draw uses its original depth. This needs no extra render pass, texture lookup or change to a pack’s fog and anti-aliasing settings.
+
+In the 26.2 Fabric interior at 12 chunks, a 4,442-pixel mask selects the two visibly flashing strips in the original Complementary capture. Across 38 consecutive stationary frame pairs, the fraction jumping by more than 24 grayscale levels fell from 30.91% to zero with Complementary Reimagined and from 49.52% to zero with MakeUp. The average brightness difference from the adjacent distant wall fell from 49.9 to 2.8 and 31.3 to 2.2 levels respectively. Four alternating 180-frame windows in the Complementary interior measured mean frame intervals of 23.05 / 21.50 / 20.15 / 20.70 ms (previous, revised, revised, previous). This check covers one Apple M2 OpenGL scene. [Matched view and enlarged seam](media/sodium-compatibility/shader-wall-overlap.jpg)
+
+The seven matched Fabric recordings each include four 150-frame shots. Both stationary holds in the opening shot had zero above-threshold seam changes after the fix for Complementary Reimagined, Complementary Unbound, BSL, MakeUp and Sildur’s Vibrant Extreme (default and Fog off). The shader-off control measured zero throughout both holds before and after. Sildur's default preset already had low seam brightness contrast (3.9 before and 4.2 afterward). Nearby red concrete still occluded the ring and lime stained glass transmitted its color in the Complementary foreground fixture. NeoForge 26.2 presented all four matching views with Complementary active. Gradle checks passed on both loaders for 26.1, 26.1.1, 26.1.2, 26.2 and 26.3.
+
+#### Earlier opaque-pass baseline for the five most-downloaded CurseForge shaders, 22 November 2026
+
+Default pack settings, Minecraft 26.2 Fabric, Iris 1.11.4, Sodium 0.9.2, Apple M2 OpenGL, 12 chunks, VSync off. Each camera used the same completed 2,048 × 128 ring. The table gives mean frame intervals over 180 settled frames per view. The ranking is by lifetime downloads on [CurseForge](https://www.curseforge.com/minecraft/search?class=shaders&page=1&pageSize=20&sortBy=total+downloads).
+
+| Pack | Inside | Outside rim | Full loop | Waterline | Default appearance |
+| --- | ---: | ---: | ---: | ---: | --- |
+| Complementary Reimagined r5.10 | 19.52 ms | 16.06 ms | 15.62 ms | 28.04 ms | Border Fog obscures the distant arc. |
+| Complementary Unbound r5.10 | 22.83 ms | 22.78 ms | 19.46 ms | 36.53 ms | Border Fog obscures the distant arc. |
+| BSL v10.1.8 | 19.17 ms | 20.06 ms | 16.67 ms | 31.81 ms | Detailed interior and shore. Clouds and haze obscure parts of the exterior. |
+| MakeUp Ultra Fast 9.6a | 10.81 ms | 9.55 ms | 9.45 ms | 15.56 ms | Detailed arc, walls and water across all four views. |
+| Sildur’s Vibrant v2.02 Extreme | 25.72 ms | 28.65 ms | 25.00 ms | 34.72 ms | The far side becomes a blue silhouette. |
+
+The same MakeUp setup also rendered the normal mesh on NeoForge 26.2. Fabric native checks exercised the three renderer ABIs on 26.1.2, 26.2 and 26.3, with an additional 26.2 run without Iris or Sodium. Gradle checks passed for both loaders on all five supported 26.x versions.
+
+The stock captures use the same renderer with Iris present and its shader pack disabled. The exterior and full-loop frames were pixel-identical to the previous shader-off control. In a separate test, disabling the pack’s **Border Fog** restored visible terrain and wall materials in both Complementary editions. In Sildur’s Vibrant Extreme, disabling Fog changed the blue silhouette to black. Its distant surface still lacks visible color and detail. The pack still controls clouds, lighting and atmospheric haze. Default presets and adjusted presets are separate results. These captures cover the stated OpenGL driver and pack versions.
+
+#### Cost of the attachment switch
+
+Four consecutive 360-frame windows at the same MakeUp waterline alternated per-draw, per-pass, per-pass, per-draw. Mean frame intervals were 16.31, 15.39, 15.12 and 15.12 ms respectively. Successful color target switches fell from approximately two to one per frame. Averaging the two windows per mode gives 15.71 ms before and 15.25 ms after. The individual windows overlap. Per-pass switching removes redundant driver work, while the frame-time gain varies.
+
+### Curved Atlas terrain through a shader pack
+
+The [dual-loader MC 26.2 experiment and finished-frame comparisons](../experiments/opaque-atlas-patch/README.md) submit one physical Atlas patch through an Iris-assigned block material. MakeUp Ultra Fast and Sildur’s Enhanced Default preserve the patch and a real foreground oak occludes it. Sildur’s Vibrant receives the albedo and then fogs it away in deferred shading. Restricting the optical range change to the Atlas draw preserves the pack’s fog for ordinary terrain. The whole-ring follow-up displays the completed Atlas and both textured rims inside MakeUp on both loaders. A near overlap closes the open sky seen with a hard cutoff at the view distance. Color, water, moving-view performance and terrain detail still differ from the ordinary ring. The add-on is separate from shipped jars. A subsequent MakeUp trial draws the existing detailed Atlas mesh into the opaque pass with its normal wall and water resources. Interior, exterior, full-loop and waterline views are compared at identical camera positions. [Detailed mesh, water and timings](../experiments/opaque-atlas-patch/README.md#stock-atlas-mesh-and-water-through-makeup) [Whole-ring comparison](../experiments/opaque-atlas-patch/full-ring-comparison.jpg)
 
 ### Further interoperability work
 
@@ -204,7 +263,7 @@ The loader probe logs a warning for shader-pack conflicts and an error for the o
 
 | Mod / family | Mod ID | Conflict |
 | --- | --- | --- |
-| Iris with an active shader pack | `iris` | A pack can replace the distant arc during composition. With packs off, Iris 1.11.4 passed the 26.2 surface and reload probe. |
+| Iris with an active shader pack | `iris` | Development builds detect active packs. Appearance depends on pack fog and compositing. See [tested packs and commands](#automatic-shader-pack-support). With packs off, Iris 1.11.4 passed the 26.2 surface and reload probe. |
 | VulkanMod | `vulkanmod` | Replaces the OpenGL renderer and shader contract |
 | Canvas Renderer | `canvas` | Replaces Fabric's vanilla-compatible renderer path |
 | Distant Horizons | `distanthorizons` | Adds an independent flat-world distant LOD |

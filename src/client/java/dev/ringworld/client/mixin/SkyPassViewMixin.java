@@ -10,7 +10,8 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 
 @Mixin(LevelRenderer.class)
 abstract class SkyPassViewMixin {
-    @ModifyArg(method = "addSkyPass", at = @At(value = "INVOKE",
+    // NeoForge can retain a delegating overload. Exactly one overload schedules the actual sky draw.
+    @ModifyArg(method = "addSkyPass*", allow = 1, at = @At(value = "INVOKE",
             target = "Lcom/mojang/blaze3d/framegraph/FramePass;executes(Ljava/lang/Runnable;)V"), index = 0)
     private Runnable ringworld$bindSkyView(Runnable draw, @Local SkyRenderState state) {
         return RingSkyView.bind(((RingSkyView.Holder)state).ringworld$view(), draw);

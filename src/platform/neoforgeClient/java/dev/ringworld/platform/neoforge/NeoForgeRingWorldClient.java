@@ -99,6 +99,23 @@ public final class NeoForgeRingWorldClient {
 
     @SubscribeEvent
     public static void onRegisterClientCommands(RegisterClientCommandsEvent event) {
+        event.getDispatcher().register(Commands.literal("ringworld").then(
+            dev.ringworld.world.RingLodCommandSuggestions.shaderSupport(
+                context -> {
+                    String message = dev.ringworld.client.RingShaderSupport.summary();
+                    context.getSource().sendSuccess(() -> Component.literal(message), false);
+                    return 1;
+                },
+                context -> {
+                    String message = dev.ringworld.client.RingShaderSupport.select(true);
+                    context.getSource().sendSuccess(() -> Component.literal(message), false);
+                    return 1;
+                },
+                context -> {
+                    String message = dev.ringworld.client.RingShaderSupport.select(false);
+                    context.getSource().sendSuccess(() -> Component.literal(message), false);
+                    return 1;
+                })));
         var distortion = Commands.literal("distortion").executes(context -> {
             String message = dev.ringworld.client.RingDistortionTuning.summary();
             context.getSource().sendSuccess(() -> Component.literal(message), false);

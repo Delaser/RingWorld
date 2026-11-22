@@ -12,7 +12,7 @@ public final class RingCompatibilityContract {
 
     private static final List<Conflict> KNOWN_CONFLICTS = List.of(
             new Conflict("iris", "Iris", Area.SHADERS,
-                    "active packs can hide the distant ring or change terrain curvature. For rendering issues, compare the same view with the pack turned off"),
+                    "some packs obscure the distant ring during post-processing. Check /ringworld shadersupport and compare the same view with the pack turned off"),
             new Conflict("vulkanmod", "VulkanMod", Area.RENDERER,
                     "replaces the OpenGL renderer and RingWorld shader contract"),
             new Conflict("canvas", "Canvas Renderer", Area.RENDERER,

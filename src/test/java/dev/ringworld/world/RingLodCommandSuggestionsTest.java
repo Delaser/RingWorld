@@ -19,6 +19,14 @@ class RingLodCommandSuggestionsTest {
             assertFalse(parsed.getReader().canRead());
             assertNotNull(parsed.getContext().getCommand());
         }
+        var shaderCommands = new CommandDispatcher<Object>();
+        shaderCommands.register(LiteralArgumentBuilder.<Object>literal("ringworld").then(
+                RingLodCommandSuggestions.shaderSupport(c -> 1, c -> 2, c -> 3)));
+        RingLodCommandSuggestions.ensurePresent(shaderCommands);
+        assertEquals(1, shaderCommands.execute("ringworld shadersupport", new Object()));
+        assertEquals(2, shaderCommands.execute("ringworld shadersupport on", new Object()));
+        assertEquals(3, shaderCommands.execute("ringworld shadersupport off", new Object()));
+        assertNotNull(serverRoot.getChild("shadersupport").getChild("off"));
         for (String action : new String[]{"on", "off", "show", "distance 1", "distance 8"}) {
             var parsed = dispatcher.parse("ringworld distortion " + action, new Object());
             assertFalse(parsed.getReader().canRead());

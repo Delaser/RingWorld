@@ -161,13 +161,15 @@ public final class RingSurfaceTextureRenderer {
             modelView.translate(0.0F, (float)cameraRadius, (float)-camera.z);
             modelView.rotateZ((float)-cameraAngle);
         }
+        boolean deferred = RingSurfaceGpu.useDeferredAtlas(client, target);
         GpuBufferSlice transforms = RenderSystem.getDynamicUniforms().writeTransform(
                 modelView,
                 new Vector4f(dev.ringworld.world.RingLayerBand.bandWidth(),
                         alpha, textureMorph, generationFog),
                 new Vector3f((float)cameraAngle, (float)camera.z, RingSurfaceGpu.farBackgroundDepth()),
-                // The Atlas uses this transform slot for its own extracted eye.
-                new Matrix4f().translation((float)camera.x, (float)camera.y, (float)camera.z));
+                // Translation stores the extracted eye. Column zero W marks a post-lighting draw.
+                new Matrix4f().translation((float)camera.x, (float)camera.y, (float)camera.z)
+                        .m03(deferred ? 1.0F : 0.0F));
 
         int first = 0, end = 0;
         if (layerOffsets != null) {
@@ -184,7 +186,7 @@ public final class RingSurfaceTextureRenderer {
                 : ((RingRenderUniforms.SkyViewSource)client.gameRenderer).ringworld$skyViewBuffer(world, view);
         RingSurfaceGpu.draw(client, target, vertexBuffer, vertexCount, layerOffsets, first, end, surfaceTextureView,
                 textureMorph >= 1.0f || previousSurfaceTextureView == null ? surfaceTextureView : previousSurfaceTextureView,
-                wallTextureView, transforms, alternateUniforms);
+                wallTextureView, transforms, alternateUniforms, deferred);
         modelView.popMatrix();
     }
 
