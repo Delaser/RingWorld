@@ -23,6 +23,7 @@ import com.mojang.blaze3d.vertex.ByteBufferBuilder;
 import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.MeshData;
 import com.mojang.renderpearl.api.vertex.VertexFormat;
+import com.mojang.renderpearl.backend.opengl.GlTexture;
 import dev.ringworld.client.RingMinecraftClientAccess;
 import dev.ringworld.world.RingSurfaceMesh;
 import java.nio.ByteBuffer;
@@ -112,11 +113,23 @@ public final class RingSurfaceGpu {
 
     public static GpuTexture createSurfaceTexture(int width, int height, int mipLevels) {
         return RenderSystem.getDevice().createTexture("RingWorld canonical surface atlas",
-                GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_TEXTURE_BINDING, GpuFormat.RGBA8_UNORM, width, height, 1, mipLevels);
+                GpuTexture.USAGE_COPY_SRC | GpuTexture.USAGE_COPY_DST | GpuTexture.USAGE_TEXTURE_BINDING, GpuFormat.RGBA8_UNORM, width, height, 1, mipLevels);
     }
+    static boolean copySurfaceTexture(GpuTexture source, GpuTexture target, int levels) {
+        if (source instanceof GlTexture from && target instanceof GlTexture to) {
+            return RingSurfaceGlCopy.copy(from.glId(), to.glId(), source.getWidth(0), source.getHeight(0), levels);
+        }
+        var encoder = RenderSystem.getDevice().createCommandEncoder();
+        for (int mip = 0; mip < levels; mip++) {
+            encoder.copyTextureToTexture(source, target, mip, 0, 0, 0, 0, source.getWidth(mip), source.getHeight(mip));
+        }
+        encoder.submit();
+        return true;
+    }
+
     public static int uploadRows(GpuTexture target, NativeImage[] levels, dev.ringworld.world.RingSurfaceRowUpdates.Cursor cursor) {
         var encoder = RenderSystem.getDevice().createCommandEncoder();
-        int texels = cursor.transferNext(512 * 1024, (mip, row, count) -> {
+        int texels = cursor.transferNext(dev.ringworld.world.RingSurfaceRowUpdates.UPLOAD_BUDGET, (mip, row, count) -> {
             NativeImage image = levels[mip];
             int width = image.getWidth();
             int stride = width * Integer.BYTES;

@@ -6,6 +6,20 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RingSurfaceRowUpdatesTest {
+    @Test void onlySeedMatchingMipChainsWithSparseChanges() {
+        long[][] displayed = {{1,2,3,4}, {1,2}, {1}};
+        assertEquals(0, RingSurfaceRowUpdates.smallPatchTexels(displayed, 8, displayed, 8));
+        long[][] sparse = {{1,9,3,4}, {1,3}, {1}};
+        assertEquals(12, RingSurfaceRowUpdates.smallPatchTexels(displayed, 8, sparse, 8));
+        assertEquals(-1, RingSurfaceRowUpdates.smallPatchTexels(null, 8, sparse, 8));
+        assertEquals(-1, RingSurfaceRowUpdates.smallPatchTexels(displayed, 16, sparse, 8));
+        assertEquals(-1, RingSurfaceRowUpdates.smallPatchTexels(displayed, 8, new long[][]{{1,2,3,4}}, 8));
+        assertEquals(-1, RingSurfaceRowUpdates.smallPatchTexels(displayed, 8, new long[][]{{1,2,3,4},{1},{1}}, 8));
+        long[][] dense = {{9,9,9,9}, {1,2}, {1}};
+        assertEquals(-1, RingSurfaceRowUpdates.smallPatchTexels(displayed, 8, dense, 8));
+        assertEquals(-1, RingSurfaceRowUpdates.smallPatchTexels(displayed, 524288, sparse, 524288));
+    }
+
     @Test void aFreshTargetResumesAtTheNextRowAndNeverExceedsItsBudget() {
         long[][] pixels = {new long[5], new long[3], new long[1]};
         var cursor = new RingSurfaceRowUpdates.Cursor(null, pixels, 16);

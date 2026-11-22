@@ -64,3 +64,5 @@ The main tradeoff is CPU work when a replacement mesh is built. In a separate wo
 The complete seven-view replay had a median of 14.31 ms, compared with 19.00 ms for merged dev and 15.75 ms for published 1.4. In the bay on arrival, indexing recovered 7.58 ms of the 10.17 ms gap. All five supported 26.x game versions passed Fabric and NeoForge builds and tests, and all 14 source-parity checks passed. Native frame and image validation used NeoForge 26.3.
 
 A final shader experiment skipped native water matching and ordered coverage inside the distance where both blends are zero. On the same route, the bay median was 17.22 ms with that branch versus 17.14 ms without it. The seven-view median was 14.39 versus 14.31 ms. The shader experiment was discarded.
+
+[Spruce-to-bay replay after the spare Atlas texture expires](sparse-edits.md)
