@@ -145,12 +145,13 @@ public final class RingSurfaceGpu {
         encoder.submit();
     }
     public static void draw(Minecraft client, RenderTarget target, RingSurfaceBuffers mesh, int vertexCount, int[] offsets, int first, int end,
-                            GpuTextureView current, GpuTextureView previous, GpuTextureView walls, GpuBufferSlice transforms) {
+                            GpuTextureView current, GpuTextureView previous, GpuTextureView walls, GpuBufferSlice transforms, GpuBuffer alternateUniforms) {
         GpuTextureView color = target.getColorTextureView();
         GpuTextureView depth = target.getDepthTextureView();
         CommandEncoder encoder = RenderSystem.getDevice().createCommandEncoder();
         try (RenderPass pass = encoder.createRenderPass(() -> "RingWorld textured surface", color, Optional.empty(), depth, OptionalDouble.empty())) {
             pass.setPipeline(PIPELINE); RenderSystem.bindDefaultUniforms(pass); pass.setUniform("DynamicTransforms", transforms);
+            if (alternateUniforms != null) pass.setUniform(RingShaderContract.UNIFORM, alternateUniforms);
             pass.bindTexture("Sampler0", current, RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.LINEAR, true));
             pass.bindTexture("Sampler1", previous, RenderSystem.getSamplerCache().getSampler(AddressMode.REPEAT, AddressMode.CLAMP_TO_EDGE, FilterMode.LINEAR, FilterMode.LINEAR, true));
             pass.bindTexture("Sampler2", client.gameRenderer.levelLightmap(), RenderSystem.getSamplerCache().getClampToEdge(FilterMode.NEAREST));

@@ -6,9 +6,14 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
 
 /** Render-thread-owned buffer shared by adapters; never changes vanilla Globals. */
 public final class RingRenderUniforms {
+    public interface SkyViewSource {
+        GpuBuffer ringworld$skyViewBuffer(ClientLevel world, RingSkyView view);
+    }
+
     private static GpuBuffer current;
     private RingRenderUniforms() { }
     public static void publish(GpuBuffer buffer) { current = buffer; }

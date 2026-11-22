@@ -62,12 +62,53 @@ Reviewed against RingWorld `1b6c74c`, the installed Iris 1.11.4 API, Sodium 0.9.
 
 **What we can use today.** Iris 1.11.4 can assign an ordinary terrain program and a shadow program, register a shadow callback, and report reversed depth. Its public API has no entry for publishing an independent far projection and depth pair. The DH implementation binds those through DH events. MakeUp 9.6a already ships Overworld DH terrain and water shaders plus Voxy configuration. Its deferred shader samples scene color and depth and classifies samples close to the far plane as sky in several branches. The presence of those files does not route RingWorld draws through them or prove which branch erased the arc. [Iris public API](https://github.com/IrisShaders/Iris/blob/4ce5bb6ddd4b964b2b63442ebfca7e101ff128d0/common/src/api/java/net/irisshaders/iris/api/v0/IrisApi.java) · [Iris DH event bindings](https://github.com/IrisShaders/Iris/blob/4ce5bb6ddd4b964b2b63442ebfca7e101ff128d0/common/src/main/java/net/irisshaders/iris/compat/dh/LodRendererEvents.java) · [MakeUp source](https://github.com/javiergcim/MakeUpUltraFast)
 
-### Recommended order
+### Active sky views and Sodium bindings
 
-1. **Make view state local first.** `SkyRenderingMixin` receives a world and camera during extraction. `ClientRingState.geometry()` still selects the Overworld through the main client level, and `RingSurfaceTextureRenderer` checks the main camera for water. Capture the draw's level, eye and fluid together. Keep Atlas pages shared per world and keep the player camera as the curvature reference when submitting shadow geometry to the light's view. Test an above-water and underwater view in the same frame, a secondary non-ring level, and disposal of the secondary sky renderer. Verify the main view and its GPU resources survive.
-2. **Compose the two remaining Sodium binding hooks.** On 26.2 and 26.3 our optional adapter redirects the binding-layout build and a render-pass uniform write. In the inspected JARs the intercepted slice write is Sodium's `u_Globals`. Add RingWorld data around the original operation, preserve the incoming provider bindings, and verify each original call executes once with a second synthetic mod wrapping the same sites. Keep geometry and material decisions shared across loaders. [MixinExtras operation chaining](https://github.com/LlamaLad7/MixinExtras/wiki/WrapOperation)
-3. **Prove one distant terrain patch before designing an integration API.** Use one opaque, two-sided patch with known eye-space distance and a real block in front of one edge. Capture near, handoff and beyond-far-plane views on identical camera poses. Read color and depth immediately after geometry, after opaque lighting and after final composition. Reconstruct distance with the matching inverse projection. This separates clipping, reversed depth, fog and overwriting. Fabric and NeoForge world events can schedule a draw, while the renderer still determines which targets and materials reach the finished scene. [Fabric example](https://github.com/FabricMC/fabric-docs/blob/main/reference/26.1.2/src/client/java/com/example/docs/rendering/CustomRenderPipeline.java) · [NeoForge render stages](https://github.com/neoforged/NeoForge/blob/26.3.x/patches/net/minecraft/client/renderer/LevelRenderer.java.patch)
-4. **Expand only after the patch survives and occludes correctly.** Feed the existing curved mesh, side colors, normals, light, water coverage and real-to-Atlas handoff into that path. Preserve canonical block coordinates for sampling, curved positions for drawing, and previous-frame transforms across the wrap for temporal effects. Check water in front of and behind a rim, fog and clouds crossing the arc, moving shadows, and reload. Compare stock captures and frame time against the existing renderer. Keep full-ring shader support experimental until a second independent pack passes. Treat cooperation with external LOD renderers as a separate ownership test.
+The sky render state captures its own level, eye, fluid, sky profile and sun. Its frame-graph callback installs that snapshot for the duration of the draw and restores the outer view in a finally block. A different dimension gets its own sky. An underwater camera skips the Atlas even while another camera is above water. The Atlas shader receives the extracted eye in the existing dynamic transform upload. A secondary dry view has a separate, lazily allocated 192-byte RingWorld uniform buffer. The two buffers independently retain their last successful contents. When the camera, weather, lighting and remaining uniform values stay the same, the next frame skips the GPU write and command submission. Only the main view advances the cold-teleport tracker. Atlas pages belong to the client session and survive disposal of a temporary sky renderer. A completed in-world resource reload invalidates the Atlas materials so the next draw rebuilds with the newly loaded pack.
+
+On 26.2 and 26.3 the optional Sodium adapter decorates the binding-layout builder and adds RingWorld bindings after Sodium writes its original uniform slice. A second test mod wrapped both original operations. On Fabric 26.2 it observed 2,621 original `u_Globals` writes followed by 2,621 RingWorld bindings at the checkpoint. The NeoForge 26.3 probe verified the first 1,000 pairs. Both built the layout once with the provider and RingWorld bindings present. The Fabric probe also drew a second dry camera to an offscreen target, verified an underwater camera issued zero Atlas draws, checked a secondary Nether level, and confirmed GPU texture identity survived closing a temporary sky renderer. A subsequent in-world resource reload replaced the Atlas texture and rebuilt its materials. The view handling and shader decisions are shared by Fabric and NeoForge. Both loaders built and passed their Gradle checks for 26.1, 26.1.1, 26.1.2, 26.2 and 26.3. Native clients covered the three rendering ABIs on Fabric 26.1.1, Fabric 26.2 and NeoForge 26.3.
+
+### MakeUp frame trace
+
+On Fabric 26.2, Sodium 0.9.2 and Iris 1.11.4 with MakeUp Ultra Fast 9.6a, a diagnostic shader colored a strip of the actual curved surface magenta. It preserved the production mesh, depth test, depth output and draw order. The strip covers blocks within 18 blocks of the width center and beyond 165 blocks of intrinsic distance. The camera was at (2, 121.62, 0.5), with 12 chunks of render distance. A test mod read both Iris scene-color textures, Minecraft main color and the shared depth texture at successive boundaries of one frame. Counts below use every other pixel in each direction (854 × 480 samples).
+
+| Boundary | Marker in Minecraft main color | Marker in either Iris colortex1 texture |
+| --- | ---: | ---: |
+| Before the Atlas draw | 0 | 0 |
+| Immediately after the Atlas draw | 10,154 | 0 |
+| End of opaque geometry, after deferred lighting, and after composite | 10,154 at each boundary | 0 |
+| After Iris’s final pass | 0 | 0 |
+
+At sample (432, 90), the Atlas changed depth from 0 to approximately 0.000157. Iris used that same depth texture as `depthtex0`. The sample kept its Atlas depth through final presentation. Both copies of `colortex1` were byte-identical across the Atlas draw. MakeUp’s `deferred_fragment.glsl` reads color from `colortex1` and depth from `depthtex0`. The Minecraft main color image stayed byte-identical from the Atlas draw through the composite pass. `IrisRenderingPipeline.finalizeLevelRendering` then called `FinalPassRenderer.renderFinalPass`, which drew into main color and replaced it with the pack’s scene. The marked pixel became RGB (65, 97, 136). [See the same-frame captures](media/sodium-compatibility/26.2-makeup-frame-trace.jpg).
+
+The next experiment is to submit a single opaque patch to a renderer-owned terrain color and matching depth destination. Validate real blocks occluding it, then validate the handoff and beyond-far-plane depth before adding water or shadows. The diagnostic marker and GPU readbacks are confined to the test build.
+
+### Frame-time check
+
+Paired production-path runs used the same pre-generated 2,048 × 128 ring, camera motion across the wrap, 12-chunk render distance and Apple M2 OpenGL backend. VSync was off and the frame limit was set to 260 FPS. The baseline came from commit `8849740`. The table compares the last baseline lap with the final build on the same route. The measurement includes settling after crossing the wrap, so sample counts vary. Neither build had the diagnostic shader or framebuffer readback enabled.
+
+| Minecraft 26.2 Fabric | Before, mean ms/frame | After, mean ms/frame | Frames sampled, before / after | Frames over 50 ms, before / after |
+| --- | ---: | ---: | ---: | ---: |
+| Stock rendering | 8.06 | 7.21 | 886 / 989 | 0 / 0 |
+| Sodium 0.9.2 | 6.30 | 4.54 | 1,134 / 1,576 | 0 / 0 |
+| Sodium + Iris + MakeUp | 16.90 | 13.10 | 422 / 545 | 0 / 0 |
+
+Earlier runs with the view fix alone varied in both directions. Two fixed-camera comparisons prompted the upload change. The final build keeps the primary Atlas draw count and skips submitting unchanged uniform data. Motion, teleport coverage, rain and settings changes still update their actual packed values. These measurements cover the tested route on this Mac. The Sodium captures kept the same terrain silhouette at both rims and across the wrap. A repeat with clouds disabled isolated a nearby cloud that appeared over terrain in one seam-join capture. At that pose the mean absolute RGB differences from the baseline were 0.10, 0.18 and 0.33 on a 0–255 scale.
+
+On NeoForge 26.3 with Sodium 0.9.2, a test mod held the camera at the seam-join pose, warmed up for 150 frames, and sampled 600 frames. The trace counted actual writes to the RingWorld uniform buffer. The baseline wrote it 600 times. The updated renderer wrote it zero times during the stationary sample and used the primary view throughout.
+
+| NeoForge 26.3 + Sodium | Before | After |
+| --- | ---: | ---: |
+| Moving seam route, average ms/frame | 5.90 | 5.97 |
+| Stationary, average ms/frame | 5.85 | 5.22 |
+| Stationary, 95th percentile ms/frame | 13.31 | 10.23 |
+| CPU time submitting the Atlas draw, median ms | 0.910 | 0.025 |
+
+A second run of the updated build measured 6.05 ms moving and 5.85 ms stationary, with stationary p95 at 12.87 ms. It again skipped all 600 stationary writes. Neither updated NeoForge run recorded a motion frame over 50 ms. These are elapsed frame times and CPU submission times. This driver supplied no GPU timer-query data.
+
+### Further interoperability work
+
+1. **Expand only after the patch survives and occludes correctly.** Feed the existing curved mesh, side colors, normals, light, water coverage and real-to-Atlas handoff into that path. Preserve canonical block coordinates for sampling, curved positions for drawing, and previous-frame transforms across the wrap for temporal effects. Check water in front of and behind a rim, fog and clouds crossing the arc, moving shadows, and reload. Compare stock captures and frame time against the existing renderer. Keep full-ring shader support experimental until a second independent pack passes. Treat cooperation with external LOD renderers as a separate ownership test.
 
 ## Compatibility work based on 1.4 (13 October 2026)
 
@@ -75,7 +116,7 @@ Reviewed against RingWorld `1b6c74c`, the installed Iris 1.11.4 API, Sodium 0.9.
 visuals while reducing ownership of Minecraft's shared shader state. The active
 Windows 1.4 qualification and its frozen candidates remain unchanged.
 
-RingWorld owns an independent 176-byte uniform block on `GameRenderer`, with
+RingWorld owns an independent 192-byte uniform block on `GameRenderer`, with
 matching allocation, per-frame updates and shutdown cleanup. Minecraft retains
 its normal `Globals` include and publisher. Terrain/cloud entry points use the
 RingWorld namespace, selected by matching stock pipeline builders; unrelated

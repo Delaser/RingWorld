@@ -13,7 +13,6 @@ import dev.ringworld.client.ClientRingState;
 import dev.ringworld.client.RingClientLodTuning;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingGenerationBoundary;
-import dev.ringworld.world.RingDimensionReport;
 import dev.ringworld.world.RingLodQuality;
 import dev.ringworld.world.RingRenderProfile;
 import dev.ringworld.world.RingSurfaceLod;
@@ -32,10 +31,12 @@ import org.joml.Matrix4f;
 import org.joml.Matrix4fStack;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-
 import java.util.concurrent.CompletableFuture;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.Camera;
 import net.minecraft.world.phys.Vec3;
+import net.minecraft.client.multiplayer.ClientLevel;
+import net.minecraft.world.level.material.FogType;
 
 /**
  * Static, texture-backed representation of the generated surface.
@@ -71,7 +72,6 @@ public final class RingSurfaceTextureRenderer {
     private static CompletableFuture<TextureBuild> pendingTextureBuild;
     private static StagedUpload stagedUpload;
     private static volatile long textureBuildGeneration;
-    private static Matrix4f wallPaletteMatrix = new Matrix4f();
     // Serial even across clear/reload: abandoned jobs cannot multiply peak native allocations.
     private static final java.util.concurrent.ExecutorService BUILD_WORKER =
             java.util.concurrent.Executors.newSingleThreadExecutor(task -> {
@@ -89,11 +89,10 @@ public final class RingSurfaceTextureRenderer {
                 ? surfaceTextureView : null;
     }
 
-    public static float teleportCoverage(Minecraft client, RingGeometry geometry, Vec3 camera) {
+    public static float teleportCoverage(Minecraft client, RingGeometry geometry, Camera camera) {
         if (client.level == null || vertexBuffer == null || !geometry.equals(bufferedGeometry)
-                || dev.ringworld.client.RingMinecraftClientAccess.camera(client).getFluidInCamera()
-                        == net.minecraft.world.level.material.FogType.WATER) return 0;
-        return teleportCoverage.opacity(client, geometry, camera);
+                || camera.getFluidInCamera() == FogType.WATER) return 0;
+        return teleportCoverage.opacity(client, geometry, camera.position());
     }
 
     private RingSurfaceTextureRenderer() { }
@@ -101,22 +100,23 @@ public final class RingSurfaceTextureRenderer {
     /** Loader adapters register this pipeline during their client setup event. */
     public static RenderPipeline pipeline() { return RingSurfaceGpu.pipeline(); }
 
-    public static void render(RenderTarget target, PoseStack matrices, RingGeometry geometry, Vec3 camera,
-                              float alpha) {
+    public static void render(RenderTarget target, PoseStack matrices, RingSkyView view, float alpha) {
+        RingGeometry geometry = view.geometry();
+        Vec3 camera = view.eye();
+        ClientLevel world = view.world();
         RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
         // Never fall through to buffers left by another world while the
         // current world's atlas is absent or has no trustworthy cells. Session
         // callbacks normally destroy those resources; this guard makes the
         // world-hash boundary authoritative even if a callback is missed.
-        if (atlas == null) return;
+        if (atlas == null || world == null || geometry != ClientRingState.geometry(world)) return;
         Minecraft client = Minecraft.getInstance();
         // Distant scenery must not remain visible through underwater fog.
         // Use the render camera (also correct for third person), retain buffers
         // for resurfacing, and leave real chunks to Minecraft's normal fog.
-        if (dev.ringworld.client.RingMinecraftClientAccess.camera(client).getFluidInCamera()
-                == net.minecraft.world.level.material.FogType.WATER) return;
+        if (view.fluid() == FogType.WATER) return;
         long resourceStarted = System.nanoTime();
-        ensureResources(geometry, atlas);
+        ensureResources(world, geometry, atlas);
         flagRenderStall("surface resource update (including allocation/release)", resourceStarted);
         if (!geometry.equals(bufferedGeometry) || atlas.worldHash() != bufferedWorldHash
                 || vertexBuffer == null || surfaceTexture == null || vertexCount == 0) return;
@@ -166,7 +166,8 @@ public final class RingSurfaceTextureRenderer {
                 new Vector4f(dev.ringworld.world.RingLayerBand.bandWidth(),
                         alpha, textureMorph, generationFog),
                 new Vector3f((float)cameraAngle, (float)camera.z, RingSurfaceGpu.farBackgroundDepth()),
-                wallPaletteMatrix);
+                // The Atlas uses this transform slot for its own extracted eye.
+                new Matrix4f().translation((float)camera.x, (float)camera.y, (float)camera.z));
 
         int first = 0, end = 0;
         if (layerOffsets != null) {
@@ -174,14 +175,16 @@ public final class RingSurfaceTextureRenderer {
             double step = (double)geometry.circumferenceBlocks() / segments;
             int centre = (int)(geometry.wrapX(camera.x) / step);
             int radius = 1 + (int)Math.ceil(client.options.getEffectiveRenderDistance() * 48.0 / step);
-            if (2L * radius + 1 < segments && geometry.physicalRadiusAt(client.level.getMaxY()) > 0) {
+            if (2L * radius + 1 < segments && geometry.physicalRadiusAt(world.getMaxY()) > 0) {
                 first = Math.floorMod(centre - radius, segments);
                 end = Math.floorMod(centre + radius + 1, segments);
             }
         }
+        var alternateUniforms = view.primary() ? null
+                : ((RingRenderUniforms.SkyViewSource)client.gameRenderer).ringworld$skyViewBuffer(world, view);
         RingSurfaceGpu.draw(client, target, vertexBuffer, vertexCount, layerOffsets, first, end, surfaceTextureView,
                 textureMorph >= 1.0f || previousSurfaceTextureView == null ? surfaceTextureView : previousSurfaceTextureView,
-                wallTextureView, transforms);
+                wallTextureView, transforms, alternateUniforms);
         modelView.popMatrix();
     }
 
@@ -189,7 +192,7 @@ public final class RingSurfaceTextureRenderer {
     private static GpuTextureView wallTextureView;
     private static RingWallTexture.ContentKey wallTextureKey;
 
-    private static void ensureResources(RingGeometry geometry, RingTerrainAtlas atlas) {
+    private static void ensureResources(ClientLevel world, RingGeometry geometry, RingTerrainAtlas atlas) {
         if (atlas == null) return;
         int revision = ClientRingState.terrainAtlasRevision();
         boolean sameAtlas = geometry.equals(bufferedGeometry)
@@ -200,7 +203,7 @@ public final class RingSurfaceTextureRenderer {
                 && surfaceTextureView != null) return;
 
         RingSurfaceBuildSnapshot buildSnapshot = finishOrScheduleTextureBuild(
-                geometry, atlas, revision);
+                world, geometry, atlas, revision);
         if (buildSnapshot == null) return;
         RingTerrainAtlas builtAtlas = buildSnapshot.atlas();
         boolean detailed = builtAtlas.isComplete();
@@ -221,7 +224,7 @@ public final class RingSurfaceTextureRenderer {
      * while a build is pending. Callers must use the returned atlas for any
      * matching detailed mesh rather than sampling the live atlas again.
      */
-    private static RingSurfaceBuildSnapshot finishOrScheduleTextureBuild(RingGeometry geometry,
+    private static RingSurfaceBuildSnapshot finishOrScheduleTextureBuild(ClientLevel world, RingGeometry geometry,
                                                                           RingTerrainAtlas atlas,
                                                                           int revision) {
         if (pendingTextureBuild != null) {
@@ -265,17 +268,15 @@ public final class RingSurfaceTextureRenderer {
         RingRenderProfile profile = RingClientLodTuning.profile(geometry, 16.0);
         RingSurfaceBuildSnapshot buildSnapshot = new RingSurfaceBuildSnapshot(snapshot, revision);
         long generation = textureBuildGeneration;
-        Minecraft client = Minecraft.getInstance();
-        int worldBottomY = client.level == null ? RingDimensionReport.VANILLA_OVERWORLD_BOTTOM_Y
-                : client.level.getMinY();
+        int worldBottomY = world.getMinY();
         MeshInputs meshInputs = new MeshInputs(ClientRingState.surfaceReferenceY(),
                 worldBottomY + ClientRingState.wallHeightBlocks(),
                 ClientRingState.wallHeightBlocks(),
-                RingWallShaderStyle.encode(ClientRingState.wallStyle(), ClientRingState.generatorSeed(), client.level),
+                RingWallShaderStyle.vertexColor(ClientRingState.wallStyle(), ClientRingState.generatorSeed(), world),
                 geometry.equals(bufferedGeometry) && atlas.worldHash() == bufferedWorldHash,
                 vertexBuffer != null, bufferedMeshDetailed, bufferedMeshHeightFingerprint,
                 ClientRingState.wallStyle(), ClientRingState.generatorSeed(), worldBottomY,
-                RingWallShaderStyle.paletteColors(ClientRingState.wallStyle(), client.level),
+                RingWallShaderStyle.paletteColors(ClientRingState.wallStyle(), world),
                 wallTextureView == null ? null : wallTextureKey);
         RingTerrainPreview preview = ClientRingState.terrainPreview();
         pendingTextureBuild = CompletableFuture.supplyAsync(
@@ -307,7 +308,7 @@ public final class RingSurfaceTextureRenderer {
                 RingSurfaceMesh.Mesh mesh = RingSurfaceMesh.build(atlas.geometry(), atlas, atlas.isComplete(),
                         inputs.referenceY(), inputs.wallTopY(), inputs.wallHeightBlocks(),
                         inputs.savedStyle(), inputs.seed(), profile, quality == RingLodQuality.MEDIUM);
-                packed = RingSurfaceGpu.packMesh(mesh, inputs.wallStyle().vertexArgb());
+                packed = RingSurfaceGpu.packMesh(mesh, inputs.vertexColor());
                 int wallColumns = Math.min(16384, profile.textureColumns());
                 nextWallTextureKey = RingWallTexture.contentKey(atlas, inputs.savedStyle(), inputs.seed(),
                         inputs.bottomY(), inputs.wallTopY(), wallColumns, inputs.palette());
@@ -323,7 +324,7 @@ public final class RingSurfaceTextureRenderer {
             }
             if (generation != textureBuildGeneration) throw new java.util.concurrent.CancellationException("obsolete surface job");
             return new TextureBuild(preparedSnapshot,
-                    buildTexturePixels(atlas, sourceSnapshot.atlas(), generation, profile, preview), packed, inputs.wallStyle(),
+                    buildTexturePixels(atlas, sourceSnapshot.atlas(), generation, profile, preview), packed,
                     wallImages, nextWallTextureKey);
         } catch (RuntimeException | Error exception) {
             if (packed != null) packed.close();
@@ -481,7 +482,7 @@ public final class RingSurfaceTextureRenderer {
     /** Native texture images plus their immutable source content. */
     private record TextureBuild(RingSurfaceBuildSnapshot snapshot,
                                 TextureImages images, RingSurfaceGpu.PackedMesh mesh,
-                                RingWallShaderStyle.Encoded wallStyle, NativeImage[] wallImages,
+                                NativeImage[] wallImages,
                                 RingWallTexture.ContentKey wallTextureKey) implements AutoCloseable {
         @Override
         public void close() {
@@ -600,7 +601,6 @@ public final class RingSurfaceTextureRenderer {
                 mesh = null;
                 vertexCount = build.mesh().vertexCount();
                 layerOffsets = build.mesh().layerOffsets();
-                wallPaletteMatrix = build.wallStyle().paletteMatrix();
                 bufferedMeshDetailed = build.snapshot().atlas().isComplete();
                 bufferedMeshHeightFingerprint = build.snapshot().heightFingerprint();
             }
@@ -627,7 +627,7 @@ public final class RingSurfaceTextureRenderer {
     }
 
     private record MeshInputs(int referenceY, int wallTopY, int wallHeightBlocks,
-                              RingWallShaderStyle.Encoded wallStyle, boolean sameAtlas,
+                              int vertexColor, boolean sameAtlas,
                               boolean hasMesh, boolean detailed, long fingerprint,
                               dev.ringworld.world.RingWallStyle savedStyle, long seed, int bottomY,
                               int[] palette, RingWallTexture.ContentKey wallTextureKey) { }
@@ -685,7 +685,6 @@ public final class RingSurfaceTextureRenderer {
     public static void clear() {
         teleportCoverage.clear();
         textureBuildGeneration++;
-        wallPaletteMatrix = new Matrix4f();
         CompletableFuture<TextureBuild> abandonedBuild = pendingTextureBuild;
         if (abandonedBuild != null) abandonedBuild.thenAccept(TextureBuild::close);
         pendingTextureBuild = null;
