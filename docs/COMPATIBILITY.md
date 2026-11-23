@@ -17,6 +17,14 @@ For new work, keep projection, fog, handoff, water and visibility decisions shar
 
 The November investigation traced the Atlas from its sky draw to the finished frame. The frame captures below distinguish a valid sky target from the separate buffers a deferred shader pack uses to light terrain.
 
+### Distant Horizons
+
+RingWorld’s 26.x clients use the public DH 7.2 terrain and render-event APIs on Fabric and NeoForge. Installing DH activates the integration. It is a compile-only dependency and is optional for both the client and server. Remove the separate Fabric 26.2 trial jar when upgrading.
+
+In a RingWorld view, the stock flat DH pass yields to the curved ring. A background worker reads the highest block or water span from the DH cache. The placeholder stays visible until all canonical chunks have readable surface columns and the detailed GPU mesh can draw. Each player receives a local chat notice the first time the integration starts in a world. Other dimensions keep their ordinary DH rendering.
+
+Missing DH data keeps the placeholder active until exploration or generation fills the cache. The converted surface is a snapshot; it does not yet represent stacked spans or refresh subsequent edits in place. For measurements and qualification scope see the [handoff verification record](../experiments/dh-atlas-api/README.md).
+
 ### Development probes
 
 The shader-loading hook now operates on the source or reader returned by the active resource loader. The 26.2 path passes unrelated readers through by identity without consuming or closing them. The terrain adapter applies projection after the renderer decodes the position, preserving the renderer’s arithmetic. Comparing actual Sodium JAR resources with the pre-change adapter produced byte-identical vertex and fragment sources for the tested 0.8.9 and 0.9.2 builds. Sodium 0.9.3 subtracts a camera offset at that step. A regression test reproduces the old rejection and checks that the offset is retained and the projection runs before optional fog.
@@ -272,7 +280,6 @@ The loader probe logs a warning for shader-pack conflicts and an error for the o
 | Iris with an active shader pack | `iris` | Development builds detect active packs. Appearance depends on pack fog and compositing. See [tested packs and commands](#automatic-shader-pack-support). With packs off, Iris 1.11.4 passed the 26.2 surface and reload probe. |
 | VulkanMod | `vulkanmod` | Replaces the OpenGL renderer and shader contract |
 | Canvas Renderer | `canvas` | Replaces Fabric's vanilla-compatible renderer path |
-| Distant Horizons | `distanthorizons` | Adds an independent flat-world distant LOD. An opt-in [Fabric 26.2 development trial](../experiments/dh-atlas-api/README.md) reads the DH cache into RingWorld’s curved mesh. |
 | Bobby | `bobby` | Retains client chunks outside the transient presentation chart |
 | Immersive Portals | `imm_ptl_core` | Rewrites world views and entity/chunk relationships |
 | Gravity Changer | `gravity_changer` | Changes the vanilla `-Y` intrinsic gravity contract |

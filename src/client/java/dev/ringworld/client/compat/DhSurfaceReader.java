@@ -1,9 +1,10 @@
-package dev.ringworld.trial.dh;
+package dev.ringworld.client.compat;
 
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
 import com.seibel.distanthorizons.api.objects.data.DhApiTerrainDataPoint;
 
+import dev.ringworld.RingWorldMod;
 import dev.ringworld.world.RingSurfaceLod;
 import dev.ringworld.world.RingTerrainAtlas;
 
@@ -22,6 +23,12 @@ final class DhSurfaceReader extends Thread {
     private final IDhApiLevelWrapper level;
     private final RingTerrainAtlas building;
     volatile RingTerrainAtlas ready;
+    private volatile boolean cancelled;
+
+    void cancelRead() {
+        cancelled = true;
+        interrupt(); // Wake the retry delay, even when DH consumed an earlier interrupt.
+    }
 
     DhSurfaceReader(IDhApiLevelWrapper level, RingTerrainAtlas source) {
         super("RingWorld DH surface reader");
@@ -36,14 +43,14 @@ final class DhSurfaceReader extends Thread {
         int total = across * geometry.circumferenceChunks();
         var complete = new BitSet(total);
         try {
-            while (!isInterrupted()) {
+            while (!cancelled) {
                 int before = complete.cardinality();
                 // A new cache per pass lets a subsequent pass see newly generated sections.
                 var repo = DhApi.Delayed.terrainRepo;
                 try (var cache = repo.createSoftCache()) {
                     int checked = 0;
                     for (int i = complete.nextClearBit(0);
-                            i < total && !isInterrupted();
+                            i < total && !cancelled;
                             i = complete.nextClearBit(i + 1)) {
                         int cx = i / across, cz = geometry.minChunkZ() + i % across;
                         // Release DH's decoded section data in small batches, including on sparse
@@ -63,17 +70,20 @@ final class DhSurfaceReader extends Thread {
                         if (result.success && readChunk(cx, cz, result.payload)) complete.set(i);
                     }
                 } catch (RuntimeException failure) {
-                    if (isInterrupted()) return;
-                    System.err.println("DH API read failed, retrying in 8s: " + failure);
+                    if (cancelled) return;
+                    RingWorldMod.LOGGER.warn(
+                            "Distant Horizons terrain read failed, retrying", failure);
                     Thread.sleep(8000);
                     continue;
                 }
-                if (isInterrupted()) return;
+                if (cancelled) return;
                 int count = complete.cardinality();
-                System.out.printf(
-                        "DH API coverage %d/%d chunks; %d/%d surface samples%n",
-                        count, total, building.presentCount(), building.cellCount());
                 if (count == total && building.isComplete()) {
+                    RingWorldMod.LOGGER.info(
+                            "Distant Horizons terrain ready: {}/{} ring chunks, {} surface samples",
+                            count,
+                            total,
+                            building.presentCount());
                     ready = building;
                     return;
                 }

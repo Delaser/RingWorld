@@ -29,6 +29,9 @@ cells, plus correction/reload, weather, objects and two-client visibility checks
 see `docs/SODIUM_COMPATIBILITY_2026_10_13.md` for exact builds and limits.
 Do not infer Iris, Nvidium, shader-pack or Vulkan support from Sodium results.
 The exterior-neighbour prototype was not needed and remains unintegrated.
+Distant Horizons is an optional client-side source for the curved Atlas. Keep the
+placeholder, completeness check and first-join notice shared across both loaders.
+For the runtime probe and supported versions see [DH verification](experiments/dh-atlas-api/README.md).
 Use clean natural-world copies and no-mod controls: the old floating-build save
 also has gaps without Sodium. Preserve failed evidence and distinguish a harness
 completion marker from visual acceptance. See `docs/COMPATIBILITY.md`.

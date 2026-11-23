@@ -4,6 +4,7 @@ plugins {
 }
 
 dependencies {
+    compileOnly(rootProject.ext.ringDhApiDependency) { transitive = false }
     compileOnly("maven.modrinth:iris:${rootProject.ext.ringIrisCompileVersion.neoforge}") { transitive = false }
     if (!rootProject.ext.ringCompatibilityModJars.isEmpty()) {
         runtimeOnly files(rootProject.ext.ringCompatibilityModJars)
