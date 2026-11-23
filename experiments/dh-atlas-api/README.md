@@ -13,11 +13,35 @@ The optional DH integration is part of the normal RingWorld client on all suppor
 
 Build the QA-only jar with `python3 build_probe.py --classpath-file CLIENT_CLASSPATH --output PROBE.jar` using Java 25. The classpath file lists one dependency per line, including the compiled RingWorld client classes. Install the probe only in a disposable client instance. Use a completed native ring for the control and a populated DH cache for the handoff test. Start with `-Dprobe.expectDh=true` to require a published placeholder followed by a distinct, complete DH Atlas and a capture-ready detailed mesh. Omit that property for the native control. The client logs `RW_DH_PROBE_PASS` and exits on success. Count the RingWorld chat notice in the game log. Expect one on the first join and zero after restarting the client and reopening the same world with the same profile.
 
+## 26.x client runtime matrix · 23 November 2026
+
+Each cell ran twice with the unmodified upstream DH jar on a 2,048 × 128 ring. Both launches had to display the placeholder, read all 1,024 canonical chunks, and reach a capture-ready curved mesh with all 262,144 samples. The first launch used a fresh notice history. The second started a new game process with the same save and player. All ten cells logged one RingWorld notice on first join and zero on rejoin.
+
+| Minecraft | Distant Horizons | Fabric 0.19.5 | NeoForge |
+|---|---|---|---|
+| 26.1 | [3.3.3](https://modrinth.com/mod/distanthorizons/version/QHxoccsN) | Pass | Pass · 26.1.0.19-beta |
+| 26.1.1 | 3.3.3 | Pass | Pass · 26.1.1.15-beta |
+| 26.1.2 | 3.3.3 | Pass | Pass · 26.1.2.87 |
+| 26.2 | [3.3.3](https://modrinth.com/mod/distanthorizons/version/aAow4a9f) | Pass | Pass · 26.2.0.69 |
+| 26.3 | [3.3.4](https://modrinth.com/mod/distanthorizons/version/TGgEbP9A) | Pass | Pass · 26.3.0.7-beta |
+
+The 26.1-family jar declares Minecraft 26.1.0, 26.1.1 and 26.1.2. The published jar loaded unchanged on 26.1. DH's Fabric builds for 26.2 and 26.3 require Fabric Loader 0.19.5 or later. These handoff runs used a prefilled Small-ring DH cache. The cold Large-ring generation measurement below remains specific to Fabric 26.2.
+
+On two of the twenty starts, DH logged a `LodQuadTree` detail-level exception during rejoin. Both occurred on NeoForge, on Minecraft 26.1.1 and 26.3. Both clients subsequently displayed the detailed mesh and shut down normally. The cause of this intermittent DH error remains open.
+
+### Controls and multiplayer
+
+With DH absent, Fabric and NeoForge on 26.1.2, 26.2 and 26.3 each displayed a complete native Atlas and logged zero DH notices. The ten normal client jars include the bridge. DH API classes and the QA fixture are supplied separately.
+
+Dedicated multiplayer passed on 26.2 with Fabric clients on a Fabric server and NeoForge clients on a NeoForge server. Neither server had DH installed. Both clients held the placeholder on an empty cache, then displayed the detail on a seeded rejoin with notice counts of one and zero respectively. A NeoForge client pointed at the Fabric server was rejected during loader negotiation. Cross-loader networking and dedicated-server sessions on the other Minecraft versions remain outside this verification.
+
+To reproduce, use a Small dedicated RingWorld server without DH. Connect with a fresh player notice history and empty client DH cache. Use `-Dprobe.expectPartial=true -Dprobe.expectDh=true` to check that the placeholder remains visible through the first 200 client ticks and check the log for one notice. After clean disconnect, seed a copy of the same ring's completed DH cache in the disposable client's server-data directory. Rejoin as the same player with just `-Dprobe.expectDh=true` and check for the detailed mesh and zero additional notices.
+
 ## Trial coverage
 
-Two singleplayer tests used a 2,048 × 128 block ring with 1,024 canonical chunks. One started with a complete DH cache. The other held at 584 readable chunks until the test harness submitted the saved world chunks to DH. Both tests checked actual curved-mesh draw calls across the handoff. The harness chunk feeder, camera automation and screenshots are separate from the shipped mod.
+Two singleplayer tests used a 2,048 × 128 block ring with 1,024 canonical chunks. One started with a complete DH cache. The other held at 584 readable chunks until the test harness submitted the saved world chunks to DH. Both tests checked actual curved-mesh draw calls across the handoff. The chunk feeder, camera automation and screenshots used for that trial are separate from the shipped mod.
 
-The integration maps the highest visible block or fluid span and its biome colour. Stacked geometry, bridge undersides, live edits after the swap, and dedicated multiplayer qualification remain open. Fully air columns are conservatively treated as unavailable. The usual RingWorld server Atlas still runs. Stock DH can continue its own housekeeping even with the flat draw cancelled.
+The integration maps the highest visible block or fluid span and its biome colour. Stacked geometry, bridge undersides and live edits after the swap remain open. Fully air columns are conservatively treated as unavailable. The usual RingWorld server Atlas still runs. Stock DH can continue its own housekeeping even with the flat draw cancelled.
 
 ## Reproduce the Large test
 
