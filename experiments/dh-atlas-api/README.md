@@ -2,6 +2,8 @@
 
 This client add-on targets the RingWorld development renderer at c483799, Fabric on Minecraft 26.2, Java 25, and stock Distant Horizons 3.3.3. It can be removed from the client's mods directory after testing. Use a copy of the test world. The public DH terrain-data API supplies surface samples and RingWorld projects them onto its curved mesh.
 
+On the first join where the DH integration starts, the player gets a chat message explaining the placeholder and the automatic switch. Each player sees it once per world.
+
 ## Handoff
 
 1. In the RingWorld Overworld, cancel the stock flat DH draw using its before-render event. Let the existing RingWorld renderer publish its placeholder, including the seed preview when one has arrived.
