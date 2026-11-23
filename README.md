@@ -310,6 +310,10 @@ The choice resets on disconnect. It changes local display samples, texture
 budget and mesh density, without changing terrain, server settings, or downloads.
 A client cannot recover finer terrain detail than the server Atlas contains.
 
+### Distant Horizons
+
+On supported 26.x development builds, installing Distant Horizons activates the integration on Fabric and NeoForge. Remove the old Fabric trial add-on if you used it. RingWorld shows its placeholder while DH gathers terrain for the ring, then automatically draws the completed DH surface on the curved Atlas mesh. A first-join chat message explains the wait once per player per world. You can play throughout. The built-in Atlas works as usual when DH is absent. See the [tested DH versions and limits](docs/COMPATIBILITY.md#distant-horizons).
+
 ### Rendering compatibility development
 
 The `codex/mod-compatibility-core` draft separates RingWorld-owned uniforms and

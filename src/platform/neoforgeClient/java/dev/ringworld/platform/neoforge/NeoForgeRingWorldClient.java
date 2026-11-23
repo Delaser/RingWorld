@@ -74,6 +74,7 @@ public final class NeoForgeRingWorldClient {
     private NeoForgeRingWorldClient() { }
 
     public static void register(IEventBus modEventBus) {
+        dev.ringworld.client.compat.DhAtlasSupport.initialize(net.neoforged.fml.ModList.get().isLoaded("distanthorizons"));
         ClientRingState.configureCacheDirectory(FMLPaths.GAMEDIR.get().resolve("ringworld-cache"));
         RingClientPayloadTransport.configure(new NeoForgePayloadTransport());
         modEventBus.addListener(NeoForgeRingWorldClient::registerPayloadHandlers);

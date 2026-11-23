@@ -25,10 +25,10 @@ class RingCompatibilityContractTest {
     }
 
     @Test
-    void sodiumIsNotADeclaredConflictOnEitherLoader() {
+    void supportedTerrainRenderersAreNotDeclaredConflictsOnEitherLoader() {
         for (var ids : List.of(
-                List.of("minecraft", "fabricloader", "fabric-api", "ringworld", "sodium"),
-                List.of("minecraft", "neoforge", "ringworld", "sodium"))) {
+                List.of("minecraft", "fabricloader", "fabric-api", "ringworld", "sodium", "distanthorizons"),
+                List.of("minecraft", "neoforge", "ringworld", "sodium", "distanthorizons"))) {
             assertTrue(RingCompatibilityContract.findLoadedConflicts(ids).isEmpty(), ids.toString());
         }
     }

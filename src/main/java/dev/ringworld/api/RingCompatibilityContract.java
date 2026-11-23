@@ -17,8 +17,6 @@ public final class RingCompatibilityContract {
                     "replaces the OpenGL renderer and RingWorld shader contract"),
             new Conflict("canvas", "Canvas Renderer", Area.RENDERER,
                     "replaces Fabric's vanilla-compatible renderer path"),
-            new Conflict("distanthorizons", "Distant Horizons", Area.DISTANT_TERRAIN,
-                    "adds an independent flat-world LOD that conflicts with the atlas ring"),
             new Conflict("bobby", "Bobby", Area.CHUNK_CHART,
                     "retains client chunks outside RingWorld's transient presentation chart"),
             new Conflict("imm_ptl_core", "Immersive Portals", Area.TOPOLOGY,

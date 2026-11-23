@@ -10,6 +10,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.ringworld.RingWorldMod;
 import dev.ringworld.client.ClientRingState;
+import dev.ringworld.client.compat.DhAtlasSupport;
 import dev.ringworld.client.RingClientLodTuning;
 import dev.ringworld.world.RingGeometry;
 import dev.ringworld.world.RingGenerationBoundary;
@@ -84,7 +85,7 @@ public final class RingSurfaceTextureRenderer {
 
     /** Only a complete, currently displayed Atlas can supply live water colours. */
     public static GpuTextureView waterSurface() {
-        var atlas = ClientRingState.terrainAtlas();
+        var atlas = DhAtlasSupport.displayedSource();
         return atlas != null && atlas.worldHash() == bufferedWorldHash && surfaceCompletion == 1F
                 ? surfaceTextureView : null;
     }
@@ -104,7 +105,7 @@ public final class RingSurfaceTextureRenderer {
         RingGeometry geometry = view.geometry();
         Vec3 camera = view.eye();
         ClientLevel world = view.world();
-        RingTerrainAtlas atlas = ClientRingState.terrainAtlas();
+        RingTerrainAtlas atlas = DhAtlasSupport.select();
         // Never fall through to buffers left by another world while the
         // current world's atlas is absent or has no trustworthy cells. Session
         // callbacks normally destroy those resources; this guard makes the
@@ -198,7 +199,7 @@ public final class RingSurfaceTextureRenderer {
 
     private static void ensureResources(ClientLevel world, RingGeometry geometry, RingTerrainAtlas atlas) {
         if (atlas == null) return;
-        int revision = ClientRingState.terrainAtlasRevision();
+        int revision = DhAtlasSupport.revision();
         boolean sameAtlas = geometry.equals(bufferedGeometry)
                 && atlas.worldHash() == bufferedWorldHash;
         if (sameAtlas
@@ -672,7 +673,7 @@ public final class RingSurfaceTextureRenderer {
      * Newer complete revisions may still be building; they do not invalidate
      * the coherent complete scene already displayed. Client-thread only. */
     public static boolean captureReady() {
-        var atlas = ClientRingState.terrainAtlas();
+        var atlas = DhAtlasSupport.displayedSource();
         return atlas != null && atlas.isComplete()
                 && vertexBuffer != null && vertexCount > 0 && surfaceTexture != null && bufferedMeshDetailed
                 && bufferedWorldHash == atlas.worldHash()
@@ -683,10 +684,11 @@ public final class RingSurfaceTextureRenderer {
 
     public static boolean displayReady() {
         return vertexBuffer != null && surfaceTexture != null && pendingTextureBuild == null && stagedUpload == null
-                && bufferedAtlasRevision == ClientRingState.terrainAtlasRevision();
+                && bufferedAtlasRevision == DhAtlasSupport.revision();
     }
 
     public static void clear() {
+        DhAtlasSupport.clear();
         teleportCoverage.clear();
         textureBuildGeneration++;
         CompletableFuture<TextureBuild> abandonedBuild = pendingTextureBuild;

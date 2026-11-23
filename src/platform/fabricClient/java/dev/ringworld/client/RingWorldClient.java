@@ -129,6 +129,7 @@ public final class RingWorldClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        dev.ringworld.client.compat.DhAtlasSupport.initialize(net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("distanthorizons"));
         RenderPipelines.register(RingSurfaceTextureRenderer.pipeline());
         registerAtlasLightCommand();
         RingClientPayloadTransport.configure(new FabricRingClientPayloadTransport());

@@ -1,8 +1,6 @@
-# Distant Horizons surface handoff trial
+# Distant Horizons surface handoff verification
 
-This client add-on targets the RingWorld development renderer at c483799, Fabric on Minecraft 26.2, Java 25, and stock Distant Horizons 3.3.3. It can be removed from the client's mods directory after testing. Use a copy of the test world. The public DH terrain-data API supplies surface samples and RingWorld projects them onto its curved mesh.
-
-On the first join where the DH integration starts, the player gets a chat message explaining the placeholder and the automatic switch. Each player sees it once per world.
+The optional DH integration is part of the normal RingWorld client on all supported 26.x targets. This directory contains test fixtures and the original Large-ring measurements. Player installation and limitations are in the [compatibility guide](../../docs/COMPATIBILITY.md#distant-horizons).
 
 ## Handoff
 
@@ -11,15 +9,15 @@ On the first join where the DH integration starts, the player gets a chat messag
 3. Publish the privately built Atlas after every canonical chunk and every target sample is present. Keep the current GPU mesh visible during the normal staged upload. Discard the reader and its partial result when the renderer clears.
 4. Retry missing chunks with a fresh DH read cache. Release decoded sections every 128 chunk checks and check the first column before requesting all 256. The bridge reads existing DH data. Exploration, generation or a separate import must supply missing data. A cache that never covers the entire ring keeps displaying the placeholder.
 
-## Build
+## Run a client probe
 
-Run build_trial.py with Java 25 on PATH or set JAVA_HOME. Supply --classpath-file with the current RingWorld client development classpath (including compiled client/common classes, one entry per line), --loader-jar with Fabric Loader, --dh-jar with the stock Distant Horizons jar and --output with the desired client add-on jar path. Keep the regular RingWorld and DH jars installed alongside the resulting add-on.
+Build the QA-only jar with `python3 build_probe.py --classpath-file CLIENT_CLASSPATH --output PROBE.jar` using Java 25. The classpath file lists one dependency per line, including the compiled RingWorld client classes. Install the probe only in a disposable client instance. Use a completed native ring for the control and a populated DH cache for the handoff test. Start with `-Dprobe.expectDh=true` to require a published placeholder followed by a distinct, complete DH Atlas and a capture-ready detailed mesh. Omit that property for the native control. The client logs `RW_DH_PROBE_PASS` and exits on success. Count the RingWorld chat notice in the game log. Expect one on the first join and zero after restarting the client and reopening the same world with the same profile.
 
 ## Trial coverage
 
-Two singleplayer tests used a 2,048 × 128 block ring with 1,024 canonical chunks. One started with a complete DH cache. The other held at 584 readable chunks until the test harness submitted the saved world chunks to DH. Both tests checked actual curved-mesh draw calls across the handoff. The harness chunk feeder, camera automation and screenshots are separate from the add-on.
+Two singleplayer tests used a 2,048 × 128 block ring with 1,024 canonical chunks. One started with a complete DH cache. The other held at 584 readable chunks until the test harness submitted the saved world chunks to DH. Both tests checked actual curved-mesh draw calls across the handoff. The harness chunk feeder, camera automation and screenshots are separate from the shipped mod.
 
-This trial maps the highest visible block or fluid span and its biome colour. Stacked geometry, bridge undersides, live edits after the swap, dedicated multiplayer and NeoForge remain open. Fully air columns are conservatively treated as unavailable. The usual RingWorld server Atlas still runs. Stock DH can continue its own housekeeping even with the flat draw cancelled.
+The integration maps the highest visible block or fluid span and its biome colour. Stacked geometry, bridge undersides, live edits after the swap, and dedicated multiplayer qualification remain open. Fully air columns are conservatively treated as unavailable. The usual RingWorld server Atlas still runs. Stock DH can continue its own housekeeping even with the flat draw cancelled.
 
 ## Reproduce the Large test
 
@@ -47,4 +45,4 @@ The 108.79 ms frame ended 0.42 s before the first detailed draw. RingWorld timed
 
 An initial cold Large run with the original pass-wide reader cache reproduced one DH `LodQuadTree` exception about expected detail level 9 at 00:16:45, about one second after the fixture joined. It preceded both the first visible placeholder and the first camera tour. That run subsequently stressed world generation with two-second camera hops, encountered DH low-memory warnings, and ended before a swap. The restarted stationary run used the bounded reader cache, finished from empty, and reported **zero** such exceptions. These two runs establish that the DH error can recur at startup. They do not isolate its cause.
 
-The experiment stays opt-in. The next performance target is the wall texture upload before the completed mesh is published.
+The next performance target from this run is the wall texture upload before the completed mesh is published.

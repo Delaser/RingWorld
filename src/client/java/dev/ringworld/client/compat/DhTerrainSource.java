@@ -1,4 +1,4 @@
-package dev.ringworld.trial.dh;
+package dev.ringworld.client.compat;
 
 import com.seibel.distanthorizons.api.DhApi;
 import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
@@ -23,9 +23,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.UUID;
 
-public final class DhSurfaceTrial extends DhApiBeforeRenderEvent {
+final class DhTerrainSource {
     private static ClientLevel owner;
-    public static int cancelled;
     private static RingTerrainAtlas placeholder;
     private static DhSurfaceReader reader;
     private static long nextLookup;
@@ -33,18 +32,30 @@ public final class DhSurfaceTrial extends DhApiBeforeRenderEvent {
     private static Object preview;
     private static RingTerrainAtlas selected;
 
-    public static void register() {
-        DhApi.events.bind(DhApiBeforeRenderEvent.class, new DhSurfaceTrial());
-    }
-
-    public void beforeRender(DhApiCancelableEventParam<DhApiRenderParam> event) {
-        var client = Minecraft.getInstance();
-        if (client.level != null
-                && ClientRingState.geometry(client.level) != null
-                && event.value.clientLevelWrapper.getWrappedMcObject() == client.level) {
-            event.cancelEvent();
-            cancelled++;
+    static boolean register() {
+        if (DhApi.getApiMajorVersion() != 7 || DhApi.getApiMinorVersion() < 2) {
+            RingWorldMod.LOGGER.warn(
+                    "Distant Horizons API {}.{} is unsupported (requires API 7, minor version 2 or"
+                        + " later)",
+                    DhApi.getApiMajorVersion(),
+                    DhApi.getApiMinorVersion());
+            return false;
         }
+        DhApi.events.bind(
+                DhApiBeforeRenderEvent.class,
+                new DhApiBeforeRenderEvent() {
+                    @Override
+                    public void beforeRender(DhApiCancelableEventParam<DhApiRenderParam> event) {
+                        var client = Minecraft.getInstance();
+                        if (client.level != null
+                                && ClientRingState.geometry(client.level) != null
+                                && event.value.clientLevelWrapper.getWrappedMcObject()
+                                        == client.level) {
+                            event.cancelEvent();
+                        }
+                    }
+                });
+        return true;
     }
 
     public static RingTerrainAtlas select(RingTerrainAtlas serverAtlas) {
@@ -70,9 +81,22 @@ public final class DhSurfaceTrial extends DhApiBeforeRenderEvent {
                 && now >= nextLookup) {
             nextLookup = now + 500_000_000L;
             var proxy = DhApi.Delayed.worldProxy;
-            if (proxy != null && proxy.worldLoaded()) {
-                IDhApiLevelWrapper level = proxy.getSinglePlayerLevel();
-                if (level != null && level.getWrappedMcObject() == owner && client.player != null) {
+            if (proxy != null && proxy.worldLoaded() && client.player != null) {
+                // The integrated world's level list contains server wrappers. Request the
+                // client view explicitly there; remote worlds expose their client wrappers.
+                IDhApiLevelWrapper level =
+                        client.getSingleplayerServer() != null
+                                ? proxy.getSinglePlayerLevel()
+                                : null;
+                if (level == null) {
+                    for (var candidate : proxy.getAllLoadedLevelWrappers()) {
+                        if (candidate.getWrappedMcObject() == owner) {
+                            level = candidate;
+                            break;
+                        }
+                    }
+                }
+                if (level != null && level.getWrappedMcObject() == owner) {
                     reader = new DhSurfaceReader(level, placeholder);
                     reader.start();
                     announceOnFirstJoin(client, serverAtlas.worldHash());
@@ -126,7 +150,12 @@ public final class DhSurfaceTrial extends DhApiBeforeRenderEvent {
     }
 
     public static RingTerrainAtlas displayedSource(RingTerrainAtlas fallback) {
-        return selected == null ? fallback : selected;
+        return selected != null
+                        && fallback != null
+                        && owner == Minecraft.getInstance().level
+                        && fallback.worldHash() == selected.worldHash()
+                ? selected
+                : fallback;
     }
 
     public static int revision(int fallback) {
@@ -134,7 +163,7 @@ public final class DhSurfaceTrial extends DhApiBeforeRenderEvent {
     }
 
     public static void clear() {
-        if (reader != null) reader.interrupt();
+        if (reader != null) reader.cancelRead();
         reader = null;
         nextLookup = 0;
         owner = null;
