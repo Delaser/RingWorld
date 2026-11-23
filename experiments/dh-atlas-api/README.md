@@ -27,7 +27,7 @@ Each cell ran twice with the unmodified upstream DH jar on a 2,048 × 128 ring. 
 
 The 26.1-family jar declares Minecraft 26.1.0, 26.1.1 and 26.1.2. The published jar loaded unchanged on 26.1. DH's Fabric builds for 26.2 and 26.3 require Fabric Loader 0.19.5 or later. These handoff runs used a prefilled Small-ring DH cache. The cold Large-ring generation measurement below remains specific to Fabric 26.2.
 
-On two of the twenty starts, DH logged a `LodQuadTree` detail-level exception during rejoin. Both occurred on NeoForge, on Minecraft 26.1.1 and 26.3. Both clients subsequently displayed the detailed mesh and shut down normally. The cause of this intermittent DH error remains open.
+On two of the twenty starts, DH logged a `LodQuadTree` detail-level exception during rejoin. Both occurred on NeoForge, on Minecraft 26.1.1 and 26.3. Both clients subsequently displayed the detailed mesh and shut down normally. The [NeoForge rejoin investigation](QUADTREE_REJOINS.md) reproduced this exception without RingWorld and traced it to a zoom change during DH’s quadtree traversal.
 
 ### Controls and multiplayer
 
