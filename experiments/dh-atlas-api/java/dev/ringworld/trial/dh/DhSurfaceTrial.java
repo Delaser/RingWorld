@@ -1,0 +1,97 @@
+package dev.ringworld.trial.dh;
+
+import com.seibel.distanthorizons.api.DhApi;
+import com.seibel.distanthorizons.api.interfaces.world.IDhApiLevelWrapper;
+import com.seibel.distanthorizons.api.methods.events.abstractEvents.DhApiBeforeRenderEvent;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiCancelableEventParam;
+import com.seibel.distanthorizons.api.methods.events.sharedParameterObjects.DhApiRenderParam;
+
+import dev.ringworld.client.ClientRingState;
+import dev.ringworld.client.render.RingSurfaceTextureRenderer;
+import dev.ringworld.world.RingTerrainAtlas;
+
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.multiplayer.ClientLevel;
+
+public final class DhSurfaceTrial extends DhApiBeforeRenderEvent {
+    private static ClientLevel owner;
+    public static int cancelled;
+    private static RingTerrainAtlas placeholder;
+    private static DhSurfaceReader reader;
+    private static long nextLookup;
+    private static int revision;
+    private static Object preview;
+    private static RingTerrainAtlas selected;
+
+    public static void register() {
+        DhApi.events.bind(DhApiBeforeRenderEvent.class, new DhSurfaceTrial());
+    }
+
+    public void beforeRender(DhApiCancelableEventParam<DhApiRenderParam> event) {
+        var client = Minecraft.getInstance();
+        if (client.level != null
+                && ClientRingState.geometry(client.level) != null
+                && event.value.clientLevelWrapper.getWrappedMcObject() == client.level) {
+            event.cancelEvent();
+            cancelled++;
+        }
+    }
+
+    public static RingTerrainAtlas select(RingTerrainAtlas serverAtlas) {
+        var client = Minecraft.getInstance();
+        if (client.level == null
+                || serverAtlas == null
+                || ClientRingState.geometry(client.level) == null) {
+            return serverAtlas;
+        }
+        if (owner != client.level || placeholder.worldHash() != serverAtlas.worldHash()) {
+            clear();
+            owner = client.level;
+            placeholder =
+                    new RingTerrainAtlas(
+                            serverAtlas.geometry(),
+                            serverAtlas.worldHash(),
+                            serverAtlas.sampleStep());
+        }
+        long now = System.nanoTime();
+        if (reader == null
+                && selected == placeholder
+                && RingSurfaceTextureRenderer.displayReady()
+                && now >= nextLookup) {
+            nextLookup = now + 500_000_000L;
+            var proxy = DhApi.Delayed.worldProxy;
+            if (proxy != null && proxy.worldLoaded()) {
+                IDhApiLevelWrapper level = proxy.getSinglePlayerLevel();
+                if (level != null && level.getWrappedMcObject() == owner) {
+                    reader = new DhSurfaceReader(level, placeholder);
+                    reader.start();
+                }
+            }
+        }
+        var ready = reader == null ? null : reader.ready;
+        var current = ready == null ? placeholder : ready;
+        if (selected != current || (ready == null && ClientRingState.terrainPreview() != preview)) {
+            selected = current;
+            preview = ClientRingState.terrainPreview();
+            revision++;
+        }
+        return current;
+    }
+
+    public static RingTerrainAtlas displayedSource(RingTerrainAtlas fallback) {
+        return selected == null ? fallback : selected;
+    }
+
+    public static int revision(int fallback) {
+        return selected == null ? fallback : revision;
+    }
+
+    public static void clear() {
+        if (reader != null) reader.interrupt();
+        reader = null;
+        nextLookup = 0;
+        owner = null;
+        placeholder = selected = null;
+        preview = null;
+    }
+}

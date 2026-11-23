@@ -272,7 +272,7 @@ The loader probe logs a warning for shader-pack conflicts and an error for the o
 | Iris with an active shader pack | `iris` | Development builds detect active packs. Appearance depends on pack fog and compositing. See [tested packs and commands](#automatic-shader-pack-support). With packs off, Iris 1.11.4 passed the 26.2 surface and reload probe. |
 | VulkanMod | `vulkanmod` | Replaces the OpenGL renderer and shader contract |
 | Canvas Renderer | `canvas` | Replaces Fabric's vanilla-compatible renderer path |
-| Distant Horizons | `distanthorizons` | Adds an independent flat-world distant LOD |
+| Distant Horizons | `distanthorizons` | Adds an independent flat-world distant LOD. An opt-in [Fabric 26.2 development trial](../experiments/dh-atlas-api/README.md) reads the DH cache into RingWorld’s curved mesh. |
 | Bobby | `bobby` | Retains client chunks outside the transient presentation chart |
 | Immersive Portals | `imm_ptl_core` | Rewrites world views and entity/chunk relationships |
 | Gravity Changer | `gravity_changer` | Changes the vanilla `-Y` intrinsic gravity contract |
